@@ -12,7 +12,7 @@ import { addCustomTheme, deleteCustomTheme, isInUse, modeLabel, saveCustomTheme,
 import { copyTheme, MAX_NAME, themeFileName, themeToFile } from './model';
 import { paletteFromColour } from './palette';
 import { ThemePreview } from './ThemePreview';
-import { deriveTokens, EDITOR_CONTROLS, EDITOR_GROUPS, type ThemeMode, type ThemeTokens } from './tokens';
+import { deriveTokens, EDITOR_CONTROLS, EDITOR_GROUPS, SNAP_CONTROLS, switchSnapMode, type ThemeMode, type ThemeTokens } from './tokens';
 
 interface Snap {
   tokens: ThemeTokens;
@@ -248,7 +248,7 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
                   onClick={() => {
                     if (m === mode) return;
                     // Shadows and hover shades work differently in dark and light, so they're worked out again.
-                    commit({ tokens: deriveTokens(theme.tokens, m), mode: m });
+                    commit({ tokens: deriveTokens(switchSnapMode(theme.tokens, mode, m), m), mode: m });
                   }}
                 >
                   <Icon name={m === 'dark' ? 'moon' : 'sun'} size={14} />
@@ -335,7 +335,7 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
             <section key={g.id} className="th-group" aria-label={g.label}>
               <h4>{g.label}</h4>
               <p className="th-group-hint">{g.hint}</p>
-              {EDITOR_CONTROLS.filter((c) => c.group === g.id).map((c) => {
+              {[...EDITOR_CONTROLS, ...SNAP_CONTROLS].filter((c) => c.group === g.id).map((c) => {
                 const probs = problemsFor(theme.tokens, c.token);
                 const fixable = probs.find((r) => r.fg === c.token);
                 return (

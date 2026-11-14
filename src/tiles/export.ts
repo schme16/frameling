@@ -6,7 +6,7 @@
  * Godot and Tiled expect animation frames), wrapping to a new row when a tile no longer fits.
  */
 import type { Doc, TilemapDrawing, TilemapLayer } from '../core/format';
-import { drawingAt } from '../core/doc';
+import { drawingAt, tileOrigin } from '../core/doc';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y } from '../core/format';
 import { strToU8 } from 'fflate';
 import { encodePng, type RawImage } from '../io/png';
@@ -197,7 +197,7 @@ function nodeName(name: string, used: Set<string>, fallback: string): string {
  * Each layer is scaled by its pixel size over the picture's scale, so the level comes out the size it is in the
  * document (a 16 px tile at pixel size 2 covers 32 px in both).
  */
-export function godotTileScene(o: { tileSetPath: string; rootName: string; maps: { layer: TilemapLayer; map: TilemapDrawing | null }[]; atlas: TileAtlas }): string {
+export function godotTileScene(o: { tileSetPath: string; rootName: string; maps: { layer: TilemapLayer; map: TilemapDrawing | null }[]; atlas: TileAtlas; /** Where the first slot starts when the tile grid is off the corner (Tileset.gridX), in art pixels. */ origin?: { x: number; y: number } }): string {
   const used = new Set<string>();
   const root = nodeName(o.rootName, used, 'Level');
   const out: string[] = ['[gd_scene load_steps=2 format=3]', '', `[ext_resource type="TileSet" path=${gdString(o.tileSetPath)} id="1_tiles"]`, ''];
@@ -209,6 +209,7 @@ export function godotTileScene(o: { tileSetPath: string; rootName: string; maps:
     if (!layer.visible) out.push('visible = false');
     if (layer.opacity < 1) out.push(`modulate = Color(1, 1, 1, ${gdFloat(layer.opacity)})`);
     const k = (layer.pixelSize || 1) / (o.atlas.scale ?? 1);
+    if (o.origin && (o.origin.x || o.origin.y)) out.push(`position = Vector2(${gdFloat(o.origin.x * (layer.pixelSize || 1))}, ${gdFloat(o.origin.y * (layer.pixelSize || 1))})`);
     if (k !== 1) out.push(`scale = Vector2(${gdFloat(k)}, ${gdFloat(k)})`);
     if (map) out.push(`tile_map_data = PackedByteArray(${godotTileMapData(map, o.atlas).join(', ')})`);
     out.push('tile_set = ExtResource("1_tiles")', '');
@@ -254,14 +255,14 @@ export function tiledTileset(atlas: TileAtlas, o: { name: string; image: string;
   };
 }
 
-export function tiledMap(atlas: TileAtlas, o: { tilesetSource: string; maps: { layer: TilemapLayer; map: TilemapDrawing | null }[] }): object {
+export function tiledMap(atlas: TileAtlas, o: { tilesetSource: string; maps: { layer: TilemapLayer; map: TilemapDrawing | null }[]; origin?: { x: number; y: number } }): object {
   const where = new Map(atlas.tiles.map((t) => [t.key, t.frames[0]]));
   const width = Math.max(1, ...o.maps.map((m) => m.map?.columns ?? 0));
   const height = Math.max(1, ...o.maps.map((m) => m.map?.rows ?? 0));
   const layers = o.maps.map(({ layer, map }, i) => {
     const data = new Array<number>(width * height).fill(0);
     if (map) for (let y = 0; y < map.rows; y++) for (let x = 0; x < map.columns; x++) data[y * width + x] = tiledGid(atlas, map.cells[y * map.columns + x], 1, where);
-    return { id: i + 1, name: layer.name, type: 'tilelayer', x: 0, y: 0, width, height, opacity: layer.opacity, visible: layer.visible, data };
+    return { id: i + 1, name: layer.name, type: 'tilelayer', x: 0, y: 0, ...(o.origin && (o.origin.x || o.origin.y) ? { offsetx: o.origin.x * (atlas.scale ?? 1), offsety: o.origin.y * (atlas.scale ?? 1) } : {}), width, height, opacity: layer.opacity, visible: layer.visible, data };
   });
   return {
     type: 'map',
@@ -328,11 +329,11 @@ export function tilesetFiles(doc: Doc, s: TilesetExportSettings, frame: number):
   const files = [{ name: `${base}.png`, bytes: encodePng(atlas.image) }];
   const text = (name: string, t: string) => files.push({ name, bytes: strToU8(t) });
   if (s.godot || s.godotScene) text(`${base}.tres`, godotTileSet(atlas, texture, doc.fps));
-  if (s.godotScene && maps.length) text(`${base}.tscn`, godotTileScene({ tileSetPath: `${dir}${base}.tres`, rootName: doc.name, maps, atlas }));
+  if (s.godotScene && maps.length) text(`${base}.tscn`, godotTileScene({ tileSetPath: `${dir}${base}.tres`, rootName: doc.name, maps, atlas, origin: tileOrigin(doc) }));
   if (s.json) text(`${base}.json`, JSON.stringify(tilesetJson(atlas, { image: `${base}.png`, fps: doc.fps, maps }), null, 2) + '\n');
   if (s.tiled) {
     text(`${base}.tsj`, JSON.stringify(tiledTileset(atlas, { name: doc.name, image: `${base}.png`, fps: doc.fps }), null, 2) + '\n');
-    if (maps.length) text(`${base}.tmj`, JSON.stringify(tiledMap(atlas, { tilesetSource: `${base}.tsj`, maps })) + '\n');
+    if (maps.length) text(`${base}.tmj`, JSON.stringify(tiledMap(atlas, { tilesetSource: `${base}.tsj`, maps, origin: tileOrigin(doc) })) + '\n');
   }
   return files;
 }

@@ -1,6 +1,6 @@
 // The Interactives round trip, in the app: open a .flplay to edit the drawing inside it, and have Save put the changes
 // back into the same .flplay (the "Update the Interactives file" toggle, remembered per drawing).
-import { choose, registerChoice } from '../core/choices';
+import { choose, type ChoiceDef } from '../core/choices';
 import { store } from '../core/store';
 import { sceneOf } from '../core/symbols';
 import { baseName, desktop } from '../io/desktop';
@@ -13,18 +13,20 @@ import { getLink, readPlayable, setLink, type PlayableLink } from './link';
 export const PLAYABLE_FILTERS = [{ name: 'Interactives animations', extensions: ['flplay'] }];
 export const isPlayablePath = (p: string): boolean => /\.flplay$/i.test(p);
 
-registerChoice({
+const saveTarget: ChoiceDef<'flplay' | 'both'> = {
   id: 'interactives.saveTarget',
   title: 'Saving a drawing from Interactives',
   question: 'This drawing came from an Interactives file (.flplay). The editable drawing travels inside it. Where should Save put your changes?',
   category: 'Files',
   help: 'edit-in-frameling',
   default: 'flplay',
+  mustAsk: true,
   options: [
     { value: 'flplay', label: 'Just update the Interactives file', detail: 'One file to look after. Interactives picks up the changes next time it loads.' },
     { value: 'both', label: 'Also keep a .frameling file', detail: 'Asks where to save a .frameling the first time, then updates both.' },
   ],
-});
+};
+export const interactivesChoices = [saveTarget];
 
 /** Opens the drawing inside a .flplay. Resolves true when it's open. */
 export async function openPlayableBytes(bytes: Uint8Array, path: string): Promise<boolean> {
@@ -97,25 +99,28 @@ export async function updatePlayable(link: PlayableLink): Promise<boolean> {
   }
 }
 
-registerSaveHook({
-  // No .frameling yet: the first time, ask where Save should go.
-  instead: async () => {
-    const link = currentLink();
-    if (!link?.update) return null;
-    if ((await choose('interactives.saveTarget')) === 'both') return null;
-    const doc = store().rootDoc();
-    if (!(await updatePlayable(link))) return false;
-    if (store().rootDoc() === doc) store().setUi({ dirty: false });
-    void clearAutosaveCopy();
-    return true;
-  },
-  after: async (doc) => {
-    const link = getLink(doc.id);
-    if (link?.update) await updatePlayable(link);
-  },
-});
+/** Hooks Save and Open into the round trip. Run it as the feature (see index.ts) so turning the feature off takes them away. */
+export function registerRoundTrip(): void {
+  registerSaveHook({
+    // No .frameling yet: the first time, ask where Save should go.
+    instead: async () => {
+      const link = currentLink();
+      if (!link?.update) return null;
+      if ((await choose('interactives.saveTarget')) === 'both') return null;
+      const doc = store().rootDoc();
+      if (!(await updatePlayable(link))) return false;
+      if (store().rootDoc() === doc) store().setUi({ dirty: false });
+      void clearAutosaveCopy();
+      return true;
+    },
+    after: async (doc) => {
+      const link = getLink(doc.id);
+      if (link?.update) await updatePlayable(link);
+    },
+  });
 
-registerOpener(isPlayablePath, openPlayableBytes);
+  registerOpener(isPlayablePath, openPlayableBytes);
+}
 
 // Used by tests: the editable drawing as it would go back into the package.
 export const sourceBytes = (): Uint8Array => saveFile(store().rootDoc());

@@ -83,6 +83,7 @@ export const TEXT_QUEST: Quest = {
   minutes: 2,
   icon: 'text',
   badge: { id: 'wordsmith', name: 'Wordsmith', icon: 'text', color: '--grape' },
+  features: ['text'],
   requires: ['first-animation'],
   finish: 'Text stays text, so you can fix a typo any time and the animation just follows. The Title card example has more.',
   prepare: ensureBlankVectorPage,

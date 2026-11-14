@@ -7,7 +7,7 @@ import type { Doc } from '../core/format';
 import { askAboutUnsavedChanges, listRecentFiles, openPath } from '../io/document';
 import type { RecentFile } from '../preload/api';
 import { Icon, Logo } from './icons';
-import { Quill, useQuillShown } from './mascot';
+import { Quill, useQuillShown, useShowQuill } from './mascot';
 import { Modal } from './Modal';
 import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
@@ -19,7 +19,10 @@ import { toast } from './toast';
 import { SourceCards } from '../templates/YoursSection';
 import { templateSources } from '../templates/user';
 import { fitThumb, tagChips } from './exampleCards';
+import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
+import { hiddenTemplateIds } from '../features/host';
+import { openPixelChooser, PixelStarters } from '../pixel/Chooser';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -37,7 +40,9 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
   const quill = useQuillShown();
+  const quillOn = useShowQuill();
   const found = recovery.use((r) => r);
+  const firstDrawn = usePrefs((p) => p.firstDrawn);
 
   useEffect(() => {
     let live = true;
@@ -61,7 +66,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       <div className="ui-welcome-head">
         {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
         <div>
-          <h2>{line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new')}</h2>
+          <h2>{quillOn ? line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new') : mode === 'welcome' ? 'What would you like to make?' : 'Start something new'}</h2>
           <p>{line('welcome.lead')}</p>
         </div>
         <button type="button" className="ui-icon-btn ui-welcome-x" aria-label="Close" onClick={closeSheet}>
@@ -79,11 +84,34 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
               {found.name} was still open when Frameling closed. We kept a copy.
             </span>
           </div>
-          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
+          <button type="button" className="ui-btn ui-btn-primary" data-testid="toast.restore" onClick={restorePending}>
             Restore
           </button>
           <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
             Not now
+          </button>
+        </div>
+      )}
+
+      {/* A newcomer's best first step sits at the top, and stays there while the sheet scrolls, until something has been drawn. */}
+      {quest && mode === 'welcome' && !firstDrawn && (
+        <div className="ui-quest ui-quest-pinned" data-help="quests">
+          <span className="ui-quest-icon">
+            <Icon name={quest.icon} size={18} />
+          </span>
+          <div>
+            <strong>{quest.title}</strong>
+            <p>{quest.summary}</p>
+          </div>
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            onClick={() => {
+              startQuest(quest.id);
+              closeSheet();
+            }}
+          >
+            Show me
           </button>
         </div>
       )}
@@ -113,8 +141,8 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       )}
 
       <div className="ui-presets" data-help="new-document">
-        {PRESETS.map((p, i) => (
-          <button key={p.id} type="button" className="ui-preset" style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
+        {PRESETS.filter((p) => !p.pixelSize).map((p, i) => (
+          <button key={p.id} type="button" className="ui-preset" data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
             <span className={`ui-preset-art ${p.pixelSize ? 'is-pixel' : ''}`}>
               <span className="ui-preset-shape" style={{ aspectRatio: `${p.width} / ${p.height}` }} />
               <Icon name={p.icon} size={22} />
@@ -124,6 +152,27 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-preset-blurb">{p.blurb}</span>
           </button>
         ))}
+        {quill && (
+          <button
+            type="button"
+            className="ui-preset"
+            style={{ animationDelay: '100ms' }}
+            data-help="pixel-new"
+            data-testid="welcome.preset.pixel"
+            onClick={() => {
+              closeSheet();
+              window.setTimeout(openPixelChooser, 0);
+            }}
+          >
+            <span className="ui-preset-art is-pixel">
+              <span className="ui-preset-shape" style={{ aspectRatio: '1 / 1' }} />
+              <Icon name="pixel" size={22} />
+            </span>
+            <strong>Pixel art</strong>
+            <span className="ui-preset-size">Chunky little pixels</span>
+            <span className="ui-preset-blurb">One picture, an animation, frames on boards or sprites on a sheet. Quill asks which.</span>
+          </button>
+        )}
         <button type="button" className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
           <span className="ui-preset-art">
             <Icon name="settings" size={22} />
@@ -133,6 +182,8 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <span className="ui-preset-blurb">Choose the size, the speed and pixel art or not.</span>
         </button>
       </div>
+
+      {!quill && <PixelStarters onMade={closeSheet} />}
 
       {custom && (
         <form
@@ -185,7 +236,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-custom-sum">
               Makes a {dims.w} x {dims.h} drawing{!spec.pixel && units !== 'px' ? ` (${formatSize(dims.w, dims.h, units, cleanDpi(spec.dpi))})` : ''}.
             </span>
-            <button type="submit" className="ui-btn ui-btn-primary">
+            <button type="submit" className="ui-btn ui-btn-primary" data-testid="welcome.custom.start">
               Start
             </button>
           </div>
@@ -194,7 +245,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
       <Examples scrollTo={sheetMode === 'examples'} onPick={(doc, name) => void make(doc, name)} />
 
-      {quest && mode === 'welcome' && (
+      {quest && mode === 'welcome' && firstDrawn && (
         <div className="ui-quest">
           <span className="ui-quest-icon">
             <Icon name={quest.icon} size={22} />
@@ -285,8 +336,10 @@ function useTemplates(): TemplateLike[] {
   const [list, setList] = useState<TemplateLike[]>([]);
   useEffect(() => {
     let live = true;
+    // Templates that belong to a feature that is turned off are left out.
+    const hidden = hiddenTemplateIds();
     import('../templates')
-      .then((m) => live && setList(((m as { TEMPLATES?: TemplateLike[] }).TEMPLATES ?? []).filter((t) => t && typeof t.make === 'function')))
+      .then((m) => live && setList(((m as { TEMPLATES?: TemplateLike[] }).TEMPLATES ?? []).filter((t) => t && typeof t.make === 'function' && !hidden.has(t.id))))
       .catch(() => {});
     return () => void (live = false);
   }, []);
@@ -314,6 +367,7 @@ function Thumb({ template }: { template: TemplateLike }) {
         // Pixel art should stay chunky in the little picture.
         g.imageSmoothingEnabled = template.kind !== 'pixel';
         g.drawImage(img, 0, 0);
+        paintThumbBackdrop(el);
       }
     } catch {
       // No picture is fine, the card still works.

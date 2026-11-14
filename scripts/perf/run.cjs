@@ -23,6 +23,12 @@ const WIN_H = 900;
 app.commandLine.appendSwitch('enable-precise-memory-info');
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+// No GPU (xvfb): software WebGL, so the WebGL paths can run at all (the numbers are then software numbers).
+if (process.env.PERF_SOFTWARE_GL === '1') {
+  app.commandLine.appendSwitch('ignore-gpu-blocklist');
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+}
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,7 +70,7 @@ window.__h = (() => {
   // layers x frames, each frame a different drawing of strokesPer strokes (or one cel when frames is 1).
   function mkDoc({ width = 1280, height = 720, fps = 24, frames = 1, layers = 1, strokesPer = 50, pts = 12, seed = 7, opacity = 1 }) {
     const r = prng(seed);
-    const doc = { format: 'frameling', version: 1, id: id('doc'), name: 'perf', width, height, fps, length: frames, background: '#ffffff', layers: [], drawings: {}, clips: [], markers: [], swatches: [] };
+    const doc = { format: 'frameling', version: 1, lineage: true, id: id('doc'), name: 'perf', width, height, fps, length: frames, background: '#ffffff', layers: [], drawings: {}, clips: [], markers: [], swatches: [] };
     for (let l = 0; l < layers; l++) {
       const layer = { id: id('l'), name: 'L' + l, kind: 'vector', visible: true, locked: false, opacity, cels: [] };
       for (let f = 0; f < frames; f++) {
@@ -102,6 +108,7 @@ true;
 async function main() {
   ipcMain.handle('app:launchFile', () => null);
   ipcMain.handle('recent:list', () => []);
+  ipcMain.handle('library:list', () => []);
   ipcMain.handle('autosave:read', () => null);
   await app.whenReady();
   // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
@@ -370,6 +377,116 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ pixel-mixed blend modes
+  // One 1920x1080 frame: a backdrop and three layers on Linear dodge, Subtract and Divide, rendered by the single renderer
+  // (what an export does), with the GPU path off (pixel by pixel on the CPU, the old way) and on.
+  async function pixelblend() {
+    const spec = { width: 1920, height: 1080, frames: 1, layers: 4, strokesPer: 12, pts: 14, opacity: 1 };
+    const out = {};
+    // The same frame with every layer on Normal, for what the drawing alone costs.
+    {
+      const ms = [];
+      for (let lap = 0; lap < 5; lap++) ms.push(await js(`window.__framelingEffects.renderMs(window.__h.mkDoc(${JSON.stringify(spec)}), 0, 6)`));
+      out.normalMs = stats(ms);
+    }
+    for (const gpu of [false, true]) {
+      const ms = [];
+      for (let lap = 0; lap < 5; lap++) {
+        ms.push(
+          await js(`(() => {
+            const doc = window.__h.mkDoc(${JSON.stringify(spec)});
+            ['linear-dodge', 'subtract', 'divide'].forEach((m, i) => { doc.layers[i + 1].blend = m; doc.layers[i + 1].opacity = [0.8, 1, 0.6][i]; });
+            const E = window.__framelingEffects; E.setPixelBlendGpu(${gpu});
+            return E.renderMs(doc, 0, 6);
+          })()`),
+        );
+      }
+      out[gpu ? 'gpu' : 'cpu'] = { frameMs: stats(ms), gpuBlits: await js('window.__framelingEffects.gpuBlits()') };
+    }
+    out.speedup = Math.round((out.cpu.frameMs.p50 / out.gpu.frameMs.p50) * 100) / 100;
+    return out;
+  }
+
+  // ------------------------------------------------------------------ pixel drawing, full grid
+  // A pixel drawing that fills the whole grid (the worst case for the live preview): the first dab of a stroke, from the
+  // pointer event to the canvas showing it, how much is uploaded to the live canvas, and what each paint costs after.
+  async function pixellive() {
+    const out = {};
+    for (const size of [2048, 4096]) {
+      await setDoc({ frames: 1, layers: 1, strokesPer: 0 });
+      // Opening a pixel document asks about the workspace the first time: answer it in advance.
+      await js(`localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.follow': 'never' })); true`);
+      await js(`(() => {
+        const F = window.__frameling;
+        const doc = window.__h.mkDoc({ width: ${size}, height: ${size}, frames: 1, layers: 1, strokesPer: 0 });
+        const px = new Uint8ClampedArray(${size} * ${size} * 4);
+        for (let i = 0; i < ${size} * ${size}; i++) { const o = i * 4; px[o] = (i * 7) & 255; px[o + 1] = (i >> 6) & 255; px[o + 2] = 90; px[o + 3] = 255; }
+        const layer = doc.layers[0];
+        layer.kind = 'pixel'; layer.pixelSize = 1;
+        const dr = { id: 'px-full', kind: 'pixel', width: ${size}, height: ${size}, pixels: px };
+        doc.drawings = { [dr.id]: dr };
+        layer.cels = [{ id: 'cel-full', start: 0, length: 1, drawingId: dr.id }];
+        F.store().load(doc);
+        F.store().setUi({ tool: 'pencil', activeLayerId: layer.id, frame: 0, color: '#d6204a' });
+        F.run('view.fit');
+        return true;
+      })()`);
+      await js('window.__h.raf2()');
+      await sleep(400);
+      for (let i = 0; i < 2; i++) {
+        send({ type: 'keyDown', keyCode: 'Escape' });
+        send({ type: 'keyUp', keyCode: 'Escape' });
+        await sleep(150);
+      }
+      const runs = [];
+      for (let lap = 0; lap < 4; lap++) {
+        const box = await canvasBox();
+        await js(`(() => {
+          const T = window.__pxl = { down: 0, puts: [], hooked: false };
+          const proto = (typeof OffscreenCanvasRenderingContext2D !== 'undefined' ? OffscreenCanvasRenderingContext2D : CanvasRenderingContext2D).prototype;
+          if (!proto.__putHook) {
+            const orig = proto.putImageData; proto.__putHook = true;
+            proto.putImageData = function (img, ...a) { const t0 = performance.now(); const r = orig.call(this, img, ...a); window.__pxl.puts.push({ at: t0, ms: performance.now() - t0, px: (a[4] ?? img.width) * (a[5] ?? img.height) }); return r; };
+          }
+          window.addEventListener('pointerdown', (e) => { if (!T.down) T.down = e.timeStamp; }, { capture: true, once: true });
+          window.addEventListener('pointerup', (e) => { T.up = e.timeStamp; }, { capture: true, once: true });
+          window.__framelingPerf.reset();
+        })()`);
+        const cx = Math.round(box.x + box.w / 2 + lap * 30);
+        const cy = Math.round(box.y + box.h / 2);
+        const pts = [];
+        for (let i = 0; i < 60; i++) pts.push([cx + i * 3, cy + Math.round(Math.sin(i / 5) * 12)]);
+        await strokeThrough(pts, { perTick: 2, tickMs: 16 });
+        await sleep(250);
+        if (process.env.PERF_DEBUG) dbg('stroke ' + JSON.stringify(box) + ' ' + JSON.stringify(await js(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); const el = document.elementFromPoint(${cx}, ${cy}); return [el && el.className, window.__frameling.store().get().ui.tool, window.__framelingPerf.painted.length, Object.keys(window.__frameling.store().get().doc.drawings).length]; })()`)));
+        runs.push(
+          await js(`(() => {
+            const b = window.__framelingPerf, T = window.__pxl;
+            const first = b.painted.find((p) => p.t >= T.down);
+            const during = b.mainMs;
+            const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0; };
+            return {
+              firstPaintMs: first ? first.t - T.down : null,
+              firstMainMs: during[0] ?? null,
+              mainMsMedian: q(during, 0.5), mainMsP95: q(during, 0.95), mainMsMax: Math.max(0, ...during),
+              uploads: T.puts.length, uploadMs: T.puts.reduce((a, p) => a + p.ms, 0), uploadMegapixels: T.puts.reduce((a, p) => a + p.px, 0) / 1e6,
+              maxUploadMs: Math.max(0, ...T.puts.map((p) => p.ms)),
+              uploadMsWhileDrawing: T.puts.filter((p) => p.at < T.up).reduce((a, p) => a + p.ms, 0), maxUploadMsWhileDrawing: Math.max(0, ...T.puts.filter((p) => p.at < T.up).map((p) => p.ms)),
+              bigUploads: T.puts.filter((p) => p.ms > 2).map((p) => ({ ms: Math.round(p.ms * 10) / 10, megapixels: Math.round(p.px / 1e4) / 100, afterDownMs: Math.round(p.at - T.down), beforeUpMs: Math.round(T.up - p.at) })),
+              uploadMsAfterRelease: T.puts.filter((p) => p.at >= T.up).reduce((a, p) => a + p.ms, 0),
+            };
+          })()`),
+        );
+        await js('window.__frameling.store().undo()');
+        await js('window.__h.raf2()');
+        await sleep(150);
+      }
+      const med = (k) => stats(runs.map((r) => r[k])).p50;
+      out[size + 'px'] = { firstPaintMs: med('firstPaintMs'), firstMainMs: med('firstMainMs'), mainMsMedian: med('mainMsMedian'), mainMsP95: med('mainMsP95'), mainMsMax: med('mainMsMax'), uploads: med('uploads'), uploadMs: med('uploadMs'), uploadMegapixels: med('uploadMegapixels'), maxUploadMs: med('maxUploadMs'), uploadMsWhileDrawing: med('uploadMsWhileDrawing'), maxUploadMsWhileDrawing: med('maxUploadMsWhileDrawing'), uploadMsAfterRelease: med('uploadMsAfterRelease'), laps: runs };
+    }
+    return out;
+  }
+
   // ------------------------------------------------------------------ templates
   async function templates() {
     const out = {};
@@ -458,6 +575,50 @@ async function main() {
       bag = await readBag();
       const zoomedLongs = await js('window.__h.takeLongs()');
       out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds };
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------ onion skin through the camera
+  // A heavy drawing on every frame, a camera that is not the plain view, the canvas looking through it, onion skin on.
+  // Panning the view repaints without changing a ghost (cached ghost frames are only blitted); scrubbing changes them.
+  async function onionCamera() {
+    const out = {};
+    for (const [name, spec] of [
+      ['strokes300x2', { frames: 8, layers: 2, strokesPer: 300, pts: 30 }],
+      ['strokes1000x2', { frames: 8, layers: 2, strokesPer: 1000, pts: 30 }],
+    ]) {
+      await setDoc(spec);
+      await js(`(() => {
+        const f = window.__frameling;
+        const doc = JSON.parse(JSON.stringify(f.store().get().doc));
+        const view = { x: doc.width / 2 + 40, y: doc.height / 2, zoom: 1.25, rotation: 0 };
+        doc.drawings.camdr = { id: 'camdr', kind: 'camera', view };
+        doc.layers.push({ id: 'camlayer', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, onion: false, cels: [{ id: 'camcel', start: 0, length: doc.length, drawingId: 'camdr' }] });
+        f.store().load(doc);
+        f.anim.view({ throughCamera: true });
+        f.store().setUi({ tool: 'brush', playing: false, frame: 4, onion: { ...f.store().get().ui.onion, enabled: true, before: 2, after: 2 } });
+      })()`);
+      await js('window.__h.raf2()');
+      await sleep(400);
+      // Pan: 120 repaints with the same ghosts.
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      for (let i = 0; i < 120; i++) {
+        await js(`window.__frameling.store().setUi({ panX: ${Math.round(Math.sin(i / 10) * 60)}, panY: ${Math.round(Math.cos(i / 10) * 40)} })`);
+        await js('window.__h.raf2()');
+      }
+      let raf = await js('window.__h.stopRaf()');
+      let bag = await readBag();
+      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: (await js('window.__h.takeLongs()')).length };
+      // Scrub: step through the frames (each new frame brings new ghosts, then the cache serves the way back).
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      for (let i = 0; i < 80; i++) {
+        await js(`window.__frameling.store().setUi({ frame: ${2 + (i % 5)} })`);
+        await js('window.__h.raf2()');
+      }
+      raf = await js('window.__h.stopRaf()');
+      bag = await readBag();
+      out[name + '_scrub'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: (await js('window.__h.takeLongs()')).length };
     }
     return out;
   }
@@ -614,7 +775,7 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, memory, soak };
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();

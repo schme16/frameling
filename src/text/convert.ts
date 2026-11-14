@@ -47,13 +47,14 @@ export function textOutlines(s: TextShape): SubPath[] {
   drawText(g, { ...s, opacity: 1, color: '#000000' });
   const px = g.getImageData(0, 0, w, h).data;
   const mask = new Uint8Array(w * h);
+  const alpha = new Uint8Array(w * h);
   let x0 = w;
   let y0 = h;
   let x1 = -1;
   let y1 = -1;
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++)
-      if (px[(y * w + x) * 4 + 3] >= 128) {
+      if ((alpha[y * w + x] = px[(y * w + x) * 4 + 3]) >= 128) {
         mask[y * w + x] = 1;
         if (x < x0) x0 = x;
         if (x > x1) x1 = x;
@@ -61,9 +62,11 @@ export function textOutlines(s: TextShape): SubPath[] {
         if (y > y1) y1 = y;
       }
   if (x1 < 0) return [];
-  const loops = traceMask(mask, w, h, { x0, y0, x1, y1 });
+  // The anti-aliased edge places each contour point to a fraction of a pixel, so the curves stay smooth when the
+  // outlines are opened at a large size in another program.
+  const loops = traceMask(mask, w, h, { x0, y0, x1, y1 }, { field: alpha, level: 128 });
   const out: SubPath[] = [];
-  const fit = { ...DEFAULT_LOOP, simplify: 0.5, tolerance: 0.8 };
+  const fit = { ...DEFAULT_LOOP, simplify: 0.12, tolerance: 0.1, dense: true };
   for (const loop of loops) {
     if (Math.abs(ringArea2(loop)) < 4) continue;
     const pts: V[] = [];

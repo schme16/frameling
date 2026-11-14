@@ -1,13 +1,15 @@
 // One frame as an SVG: vector layers become real paths (brush strokes as their outline shape, exactly the one the
 // canvas fills), pixel layers become one rectangle per run of same-coloured pixels, so nothing is lost.
-import type { Doc, Drawing, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
+import type { Doc, Drawing, Gradient, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
-import { flattenTilemap } from '../tiles/model';
-import { particlesToSvg, textToSvg, withSprites } from './svg-extra';
+import { flattenDrawing } from '../core/layerKinds';
+import { shapeExportOf } from './shapeExport';
+import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
+import { gradientKey, sortedStops } from '../core/gradient';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
 export function n4(v: number): string {
@@ -41,6 +43,34 @@ export function splitColor(c: string): { color: string; alpha: number } {
 }
 
 const op = (v: number) => String(Math.round(v * 1000) / 1000);
+
+/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). */
+export function svgGradient(gr: Gradient): { id: string; def: string } {
+  const key = gradientKey(gr);
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (Math.imul(h, 31) + key.charCodeAt(i)) | 0;
+  const id = `grad${(h >>> 0).toString(36)}`;
+  const stops = sortedStops(gr.stops)
+    .map((st) => {
+      const { color, alpha } = splitColor(st.color);
+      return `<stop offset="${op(st.at)}" stop-color="${esc(color)}"${alpha < 1 ? ` stop-opacity="${op(alpha)}"` : ''}/>`;
+    })
+    .join('');
+  const def =
+    gr.kind === 'radial'
+      ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(gr.from.x)}" cy="${n2(gr.from.y)}" r="${n2(Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y))}">${stops}</radialGradient>`
+      : `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(gr.from.x)}" y1="${n2(gr.from.y)}" x2="${n2(gr.to.x)}" y2="${n2(gr.to.y)}">${stops}</linearGradient>`;
+  return { id, def };
+}
+
+/** A paint attribute for a gradient, with its definition to put alongside (inside a <defs> next to the shape). */
+function gradientPaint(attr: 'fill' | 'stroke', gr: Gradient, opacity: number, defs: string[]): string {
+  const g = svgGradient(gr);
+  defs.push(g.def);
+  return ` ${attr}="url(#${g.id})"` + (opacity < 1 ? ` ${attr}-opacity="${op(opacity)}"` : '');
+}
+
+const withDefs = (defs: string[], el: string) => (defs.length ? `<defs>${defs.join('')}</defs>${el}` : el);
 
 export function paint(attr: 'fill' | 'stroke', color: string, opacity: number): string {
   const { color: c, alpha } = splitColor(color);
@@ -87,15 +117,17 @@ export function subPathsToPathData(paths: SubPath[]): string {
 
 export function shapeToSvg(s: Shape, doc?: Doc): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
-  if (s.type === 'text') return textToSvg(s);
-  if (s.type === 'particles') return particlesToSvg(s);
+  // Text, particles and the like write themselves, through their registered export.
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
   }
   if (s.type === 'fill') {
     const d = subPathsToPathData(s.paths);
-    return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>` : '';
+    if (!d) return '';
+    const defs: string[] = [];
+    return withDefs(defs, `<path d="${d}"${s.gradient ? gradientPaint('fill', s.gradient, s.opacity, defs) : paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>`);
   }
   return pathShapeToSvg(s);
 }
@@ -111,7 +143,7 @@ export function posedLayerSvg(l: PosedLayer, doc?: Doc): string {
       : dr.kind === 'vector'
         ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
         : dr.kind === 'tilemap' && doc && l.frame !== undefined
-          ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+          ? tileRects(doc, dr, l.frame, l.pixelSize)
           : [];
   return parts.join('');
 }
@@ -161,11 +193,12 @@ function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh:
 function pathShapeToSvg(s: PathShape): string {
   const d = subPathsToPathData(s.paths);
   if (!d) return '';
-  let a = s.fill ? paint('fill', s.fill, s.opacity) + ' fill-rule="evenodd"' : ' fill="none"';
+  const defs: string[] = [];
+  let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
   if (s.stroke) {
-    a += paint('stroke', s.stroke.color, s.opacity) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
+    a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
   }
-  return `<path d="${d}"${a}/>`;
+  return withDefs(defs, `<path d="${d}"${a}/>`);
 }
 
 const hex2 = (v: number) => v.toString(16).padStart(2, '0');
@@ -174,6 +207,8 @@ const hex2 = (v: number) => v.toString(16).padStart(2, '0');
 export function pixelRects(d: PixelDrawing, size: number): string[] {
   const out: string[] = [];
   const px = d.pixels;
+  const ox = d.x ?? 0;
+  const oy = d.y ?? 0;
   type Open = { y: number; h: number; x: number; w: number; fill: string };
   let prev = new Map<string, Open>();
   const rects: Open[] = [];
@@ -210,23 +245,29 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
   }
   for (const r of rects) {
     const [hex, alpha] = r.fill.split(':');
-    out.push(`<rect x="${n2(r.x * size)}" y="${n2(r.y * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
+    out.push(`<rect x="${n2((r.x + ox) * size)}" y="${n2((r.y + oy) * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
   }
   return out;
+}
+
+/** A tile map as rectangles (nothing when the tiles code that flattens it is not loaded). */
+function tileRects(doc: Doc, d: Drawing, frame: number, pixelSize: number): string[] {
+  const px = flattenDrawing(doc, d, frame);
+  return px ? pixelRects(px, pixelSize) : [];
 }
 
 /** The SVG elements for a drawing as a layer shows it (pixel and tile drawings as rectangles). */
 export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number): string[] {
   if (d.kind === 'pixel') return pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
-  if (d.kind === 'tilemap') return pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
+  if (d.kind === 'tilemap') return tileRects(doc, d, frame, layer.kind === 'tilemap' ? layer.pixelSize : 1);
   if (d.kind === 'vector') return d.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean);
   return [];
 }
 
 /** A layer name made safe as an id, unique among `used`. */
-export function layerId(name: string, used: Set<string>): string {
-  let id = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
-  if (/^[0-9-]/.test(id)) id = 'layer-' + id;
+export function layerId(name: string, used: Set<string>, fallback = 'layer'): string {
+  let id = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || fallback;
+  if (/^[0-9-]/.test(id)) id = fallback + '-' + id;
   while (used.has(id)) id += '_';
   used.add(id);
   return id;
@@ -247,6 +288,9 @@ export function defsBlock(defs: string[], body: string): string {
   return all.length ? `<defs>\n${all.join('\n')}\n</defs>\n` : '';
 }
 
+/** The Inkscape namespace for the root element, when the drawing names its groups for Inkscape (inkscape:label on folders). */
+export const inkscapeNs = (body: string): string => (body.includes('inkscape:label=') ? ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"' : '');
+
 /** One frame as SVG, and plain words about anything SVG couldn't keep. */
 export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): { svg: string; notes: string[] } {
   const scale = opts.scale ?? 1;
@@ -264,6 +308,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       loop: false,
       defs,
       notes,
+      ids: used,
       body(layer) {
         const g = layerToSvg(doc, layer, frame, layerId(layer.name, used));
         if (!g) return '';
@@ -273,7 +318,8 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       },
     }),
   );
-  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
+  // isolation: layers blend with each other only, not with the web page behind the picture (same as the animated SVG).
+  const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">`];
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

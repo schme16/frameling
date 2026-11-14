@@ -3,6 +3,7 @@
 // drive it with a plain Store, a fake clock and an in-memory storage.
 import type { State } from '../core/store';
 import type { MiniStore } from '../ui/mini';
+import { QUESTS_KEY, readSaved, type Saved } from './saved';
 import { FRESH_PROGRESS, NO_PROBE, type Probe, type Quest, type QuestEvent, type QuestProgress, type QuestStep, type StepCtx } from './types';
 
 export interface StateSource {
@@ -26,7 +27,7 @@ export interface EngineDeps {
   now?(): number;
 }
 
-export const QUESTS_KEY = 'frameling.quests.v1';
+export { QUESTS_KEY };
 export const DEFAULT_HINT_AFTER = 20;
 
 interface Run {
@@ -39,9 +40,12 @@ interface Run {
   edits: string[];
   frames: Set<number>;
   probeKey: string;
+  /**
+   * Whether this step may finish. A step you went **back** to starts unarmed: if what it asks for is already true
+   * (the brush is still picked), it waits until that stops being true, so you can really do it again.
+   */
+  armed: boolean;
 }
-
-type Saved = Pick<QuestProgress, 'completed' | 'badges' | 'paused'>;
 
 export class QuestEngine {
   private run: Run | null = null;
@@ -124,6 +128,23 @@ export class QuestEngine {
     }
     this.finishStep(true);
     this.check();
+  }
+
+  /**
+   * Goes back one step to try it again. The step you land on counts as not done, and its "how things stood" snapshot
+   * is taken fresh, so doing the action moves you on by itself exactly as it did the first time.
+   */
+  back(): boolean {
+    const r = this.run;
+    if (!r || r.index === 0) return false;
+    const { quest } = r;
+    const index = r.index - 1;
+    const step = quest.steps[index];
+    this.patch((p) => ({ ...p, step: index, hint: false, done: { ...p.done, [quest.id]: (p.done[quest.id] ?? []).filter((id) => id !== step.id) } }));
+    this.begin(quest, index);
+    if (this.run) this.run.armed = false;
+    this.check();
+    return true;
   }
 
   /** "Next" for a step with no check of its own. */
@@ -244,6 +265,7 @@ export class QuestEngine {
       edits: [],
       frames: new Set([state.ui.frame]),
       probeKey: JSON.stringify(probe),
+      armed: true,
     };
     if (this.deps.progress.get().hint) this.patch((p) => ({ ...p, hint: false }));
     this.patch((p) => ({ ...p, step: index }));
@@ -294,7 +316,12 @@ export class QuestEngine {
           } catch {
             ok = false;
           }
-          if (!ok) break;
+          if (!ok) {
+            // What the step asks for is not true now, so doing it from here counts.
+            r.armed = true;
+            break;
+          }
+          if (!r.armed) break;
           this.finishStep(false);
         }
       } while (this.again && this.run);
@@ -334,19 +361,7 @@ export class QuestEngine {
   }
 
   private load(): Saved | null {
-    try {
-      const raw = this.deps.storage?.getItem(QUESTS_KEY);
-      if (!raw) return null;
-      const v = JSON.parse(raw) as Partial<Saved>;
-      const paused = v.paused && typeof v.paused.id === 'string' && Number.isInteger(v.paused.step) ? { id: v.paused.id, step: Math.max(0, v.paused.step) } : null;
-      return {
-        completed: Array.isArray(v.completed) ? v.completed.filter((x) => typeof x === 'string') : [],
-        badges: Array.isArray(v.badges) ? v.badges.filter((x) => typeof x === 'string') : [],
-        paused,
-      };
-    } catch {
-      return null;
-    }
+    return readSaved(this.deps.storage);
   }
 
   private save(): void {

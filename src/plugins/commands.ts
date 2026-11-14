@@ -1,6 +1,5 @@
 import { registerCommands } from '../core/registry';
 import { openPrefs } from '../ui/overlays';
-import { installFromFile } from './install';
 
 registerCommands([
   {
@@ -19,6 +18,6 @@ registerCommands([
     description: 'Add a plugin from a .zip file. Frameling shows what it asks for first.',
     help: 'plugins',
     keywords: ['plugin', 'add-on', 'extension', 'zip'],
-    run: () => void installFromFile(),
+    run: () => void import('./install').then((m) => m.installFromFile()),
   },
 ]);

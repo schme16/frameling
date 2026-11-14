@@ -1,22 +1,24 @@
 // The only changes a plugin can make to a drawing: a short, checked list. A batch of them is applied in one
 // store.update, so the whole batch is one step in Undo. Anything wrong in a batch stops all of it (nothing half done).
 import type { Draft } from 'immer';
-import type { Doc, Drawing, Layer, Shape } from '../core/format';
-import { uid } from '../core/doc';
+import type { ClipDirection, Doc, Drawing, Layer, Shape } from '../core/format';
+import { CLIP_DIRECTIONS, MAX_REPEAT, cleanRepeat, isDirection } from '../core/clipPlay';
+import { pixelGrid, uid } from '../core/doc';
+import { gridPixels, placeOnGrid, setGridPixels, setPlaced, trimPixels } from '../core/pixelBounds';
 import { scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
 import { flipH, flipV } from '../pixel/transform';
 
 export type PluginOp =
   | { op: 'flipDrawing'; drawingId: string; axis: 'horizontal' | 'vertical' }
   | { op: 'transformDrawing'; drawingId: string; matrix: number[] }
-  | { op: 'setPixels'; drawingId: string; pixels: Uint8ClampedArray | Uint8Array | number[] }
+  | { op: 'setPixels'; drawingId: string; pixels: Uint8ClampedArray | Uint8Array | number[]; x?: number; y?: number; width?: number; height?: number }
   | { op: 'setLayer'; layerId: string; name?: string; visible?: boolean; locked?: boolean; opacity?: number }
   | { op: 'setDocument'; name?: string; fps?: number; background?: string | null }
   | { op: 'setShapeStyle'; drawingId: string; shapeId: string; color?: string; fill?: string | null; opacity?: number }
   | { op: 'removeShape'; drawingId: string; shapeId: string }
   | { op: 'addMarker'; frame: number; name: string }
   | { op: 'removeMarker'; markerId: string }
-  | { op: 'addClip'; name: string; start: number; end: number; loop?: boolean }
+  | { op: 'addClip'; name: string; start: number; end: number; loop?: boolean; direction?: ClipDirection; repeat?: number }
   | { op: 'removeClip'; clipId: string }
   | { op: 'addSwatch'; name: string; color: string };
 
@@ -64,8 +66,11 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
         const m = o.axis === 'horizontal' ? scaleAbout(-1, 1, doc.width / 2, doc.height / 2) : scaleAbout(1, -1, doc.width / 2, doc.height / 2);
         d.shapes = transformShapes(d.shapes as Shape[], m) as Draft<Shape>[];
       } else if (d.kind === 'pixel') {
-        const img = { width: d.width, height: d.height, pixels: d.pixels as Uint8ClampedArray };
-        d.pixels = o.axis === 'horizontal' ? flipH(img, 'canvas') : flipV(img, 'canvas');
+        // Flipped across the whole art grid (the drawing only holds its painted part).
+        const l = doc.layers.find((x) => x.kind === 'pixel' && x.cels.some((c) => c.drawingId === d.id));
+        const g = l && l.kind === 'pixel' ? pixelGrid(doc as Doc, l) : { width: d.width + (d.x ?? 0), height: d.height + (d.y ?? 0) };
+        const img = { width: g.width, height: g.height, pixels: gridPixels(d as never, g.width, g.height) };
+        setGridPixels(d, o.axis === 'horizontal' ? flipH(img, 'canvas') : flipV(img, 'canvas'), g.width, g.height);
       } else throw new OpProblem('Tilemap drawings cannot be flipped by a plugin.');
       return;
     }
@@ -81,10 +86,26 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       const d = drawingOf(doc, o.drawingId);
       if (d.kind !== 'pixel') throw new OpProblem('setPixels works on pixel drawings only.');
       const p = o.pixels;
-      const len = d.width * d.height * 4;
-      if (!(p instanceof Uint8ClampedArray || p instanceof Uint8Array || Array.isArray(p)) || p.length !== len) throw new OpProblem(`pixels must be ${len} bytes (RGBA, ${d.width} x ${d.height}).`);
+      // The block the drawing holds, unless the plugin says where a different one goes (x, y, width, height in art pixels).
+      const sized = o.width !== undefined || o.height !== undefined || o.x !== undefined || o.y !== undefined;
+      const w = sized ? o.width : d.width;
+      const h = sized ? o.height : d.height;
+      const x = sized ? o.x ?? 0 : d.x ?? 0;
+      const y = sized ? o.y ?? 0 : d.y ?? 0;
+      if (![w, h, x, y].every(Number.isInteger) || w < 0 || h < 0 || w > 16384 || h > 16384 || x < 0 || y < 0 || x > 16384 || y > 16384) throw new OpProblem('x, y, width and height must be whole numbers from 0 to 16384.');
+      const len = w * h * 4;
+      if (!(p instanceof Uint8ClampedArray || p instanceof Uint8Array || Array.isArray(p)) || p.length !== len) throw new OpProblem(`pixels must be ${len} bytes (RGBA, ${w} x ${h}).`);
       // Always a fresh array: edits never share memory with what the plugin holds.
-      d.pixels = Uint8ClampedArray.from(p as ArrayLike<number>);
+      const fresh = Uint8ClampedArray.from(p as ArrayLike<number>);
+      if (w === 0 || h === 0) {
+        setPlaced(d, { x: 0, y: 0, width: 0, height: 0, pixels: fresh });
+        return;
+      }
+      // What lies outside the art grid is cut (the drawing is on a pixel layer), as everything else that places pixels does.
+      const l = doc.layers.find((q) => q.kind === 'pixel' && q.cels.some((c) => c.drawingId === d.id));
+      const g = l && l.kind === 'pixel' ? pixelGrid(doc as Doc, l) : null;
+      if (g && (x + w > g.width || y + h > g.height)) setGridPixels(d, placeOnGrid({ x, y, width: w, height: h, pixels: fresh }, g.width, g.height), g.width, g.height);
+      else setPlaced(d, trimPixels(fresh, w, h, x, y));
       return;
     }
     case 'setLayer': {
@@ -134,8 +155,9 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       return;
     }
     case 'addMarker': {
-      if (!fin(o.frame) || o.frame < 0 || o.frame >= doc.length) throw new OpProblem(`frame must be from 0 to ${doc.length - 1}.`);
-      doc.markers.push({ id: uid('m'), name: str(o.name ?? 'Marker', 'name') || 'Marker', frame: Math.round(o.frame) });
+      // Rounded first, so 9.6 in a 10 frame drawing is the (missing) frame 10, not a pass.
+      if (!fin(o.frame) || Math.round(o.frame) < 0 || Math.round(o.frame) >= doc.length) throw new OpProblem(`frame must be from 0 to ${doc.length - 1}.`);
+      doc.markers.push({ id: uid('m'), name: str(o.name ?? 'Marker', 'name') || 'Marker', frame: Math.round(o.frame) || 0 });
       return;
     }
     case 'removeMarker': {
@@ -145,8 +167,22 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       return;
     }
     case 'addClip': {
-      if (!fin(o.start) || !fin(o.end) || o.start < 0 || o.end < o.start || o.end >= doc.length) throw new OpProblem(`start and end must be frames from 0 to ${doc.length - 1}, start first.`);
-      doc.clips.push({ id: uid('c'), name: str(o.name ?? 'Clip', 'name') || 'Clip', start: Math.round(o.start), end: Math.round(o.end), loop: o.loop !== false });
+      if (!fin(o.start) || !fin(o.end) || Math.round(o.start) < 0 || Math.round(o.end) < Math.round(o.start) || Math.round(o.end) >= doc.length) throw new OpProblem(`start and end must be frames from 0 to ${doc.length - 1}, start first.`);
+      // How it plays: `direction` (forward when missing) and `repeat` (how many times, whole 1 to 999). Giving a repeat
+      // without saying `loop` means it plays that many times instead of for ever; a looping clip ignores its repeat.
+      if (o.direction !== undefined && !isDirection(o.direction)) throw new OpProblem(`direction must be one of ${CLIP_DIRECTIONS.map((x) => `"${x}"`).join(', ')}.`);
+      const repeat = o.repeat === undefined ? undefined : cleanRepeat(o.repeat);
+      if (o.repeat !== undefined && repeat === undefined) throw new OpProblem(`repeat must be a whole number from 1 to ${MAX_REPEAT}.`);
+      const loop = o.loop === undefined ? repeat === undefined : o.loop !== false;
+      doc.clips.push({
+        id: uid('c'),
+        name: str(o.name ?? 'Clip', 'name') || 'Clip',
+        start: Math.round(o.start) || 0,
+        end: Math.round(o.end),
+        loop,
+        ...(isDirection(o.direction) && o.direction !== 'forward' ? { direction: o.direction } : {}),
+        ...(!loop && repeat && repeat > 1 ? { repeat } : {}),
+      });
       return;
     }
     case 'removeClip': {

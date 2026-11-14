@@ -35,6 +35,9 @@ export const BLEND_MODES: BlendInfo[] = [
   { mode: 'hue', label: 'Hue only', term: 'Hue', description: 'Takes this layer\'s hue (red, blue...) and keeps the shading and strength of what is under it.' },
   { mode: 'saturation', label: 'Colourfulness only', term: 'Saturation', description: 'Takes how colourful this layer is. Grey makes what is under it grey.' },
   { mode: 'color', label: 'Colour only', term: 'Colour', description: 'Paints its colour onto the shading under it. Good for tinting a grey drawing.' },
+  { mode: 'linear-dodge', label: 'Glow brighter, plain', term: 'Linear dodge', description: 'Adds its colours to what is under it, like Glow brighter, but see-through parts and edges mix the way Aseprite and Photoshop do. For art made there.' },
+  { mode: 'subtract', label: 'Take away', term: 'Subtract', description: 'Takes its colours away from what is under it, so overlaps go darker and white leaves black. Good for cutting light out.' },
+  { mode: 'divide', label: 'Brighten by dividing', term: 'Divide', description: 'Divides what is under it by its colours, so dark parts of this layer brighten what is under it a lot and white changes nothing.' },
   { mode: 'luminosity', label: 'Lightness only', term: 'Luminosity', description: 'Takes this layer\'s light and dark and keeps the colours of what is under it.' },
 ];
 
@@ -42,9 +45,14 @@ export function blendInfo(mode: BlendMode | undefined): BlendInfo {
   return BLEND_MODES.find((b) => b.mode === (mode ?? 'normal')) ?? BLEND_MODES[0];
 }
 
+/** Blend modes the canvas has no operation for: the compositor mixes their pixels itself (see pixelBlend.ts). */
+export function isPixelBlend(mode: BlendMode | undefined): boolean {
+  return mode === 'subtract' || mode === 'divide' || mode === 'linear-dodge';
+}
+
 /** The canvas globalCompositeOperation for a blend mode. */
 export function compositeOp(mode: BlendMode | undefined): GlobalCompositeOperation {
-  if (!mode || mode === 'normal') return 'source-over';
+  if (!mode || mode === 'normal' || mode === 'subtract' || mode === 'divide' || mode === 'linear-dodge') return 'source-over';
   if (mode === 'add') return 'lighter';
   return mode;
 }

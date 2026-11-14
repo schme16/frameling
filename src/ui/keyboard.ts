@@ -4,10 +4,11 @@
 // only `global` commands work. A held Space is the canvas's pan key, so nothing fires while it's down.
 import { allCommands, type Command } from '../core/registry';
 import { syncDynamicCommands } from './dynamic';
-import { buildKeymap, comboFromEvent, comboToString } from './keys';
+import { activeOverrides, buildKeymap, comboFromEvent, comboToString } from './keys';
 import { anyOverlayOpen } from './overlays';
 import { commandEnabled, runCommand } from './palette';
 import { getPrefs } from './prefs';
+import { playCue } from './sounds';
 
 let spaceHeld = false;
 let capturing = 0;
@@ -25,7 +26,7 @@ export function holdKeyboard(): () => void {
 export function currentKeymap(): Map<string, Command[]> {
   syncDynamicCommands();
   const cmds = allCommands();
-  const keymap = getPrefs().keymap;
+  const keymap = activeOverrides();
   if (!cache || cache.count !== cmds.length || cache.keymap !== keymap) cache = { count: cmds.length, keymap, map: buildKeymap(cmds, keymap) };
   return cache.map;
 }
@@ -74,6 +75,24 @@ export function controlWantsKey(t: EventTarget | null, e: Pick<KeyboardEvent, 'k
   return false;
 }
 
+/**
+ * A bare Tab moves focus round the app, so a shortcut on it only fires from the canvas: nothing focused (or the canvas),
+ * with the mouse over the drawing. Anywhere else Tab keeps doing what it always does.
+ */
+export function tabIsShortcut(target: EventTarget | null, pointerOverCanvas: boolean): boolean {
+  const t = target instanceof HTMLElement ? target : null;
+  const atRest = !t || t === document.body || t === document.documentElement || !!t.closest('.cv-root');
+  return atRest && pointerOverCanvas;
+}
+
+function overCanvas(): boolean {
+  try {
+    return !!document.querySelector('.cv-root:hover');
+  } catch {
+    return false;
+  }
+}
+
 /** Handles one keydown. Returns true when a command took it. */
 export function dispatchKey(e: KeyboardEvent): boolean {
   if (e.defaultPrevented || e.isComposing || capturing) return false;
@@ -86,6 +105,7 @@ export function dispatchKey(e: KeyboardEvent): boolean {
   if (!combo) return false;
   const found = currentKeymap().get(comboToString(combo));
   if (!found) return false;
+  if (combo.key === 'Tab' && !tabIsShortcut(e.target, overCanvas())) return false;
   if (controlWantsKey(e.target, e)) return false;
   const typing = isTypingTarget(e.target);
   const overlay = anyOverlayOpen();
@@ -93,7 +113,11 @@ export function dispatchKey(e: KeyboardEvent): boolean {
   // Only a command that can run right now takes the key. Otherwise the next binding, or the browser, gets it
   // (arrow-key nudges must not swallow arrows when nothing is selected).
   const cmd = candidates.find(commandEnabled);
-  if (!cmd) return false;
+  if (!cmd) {
+    // Undo with nothing left to undo: a soft bonk, so you know the key did land.
+    if (candidates.some((c) => c.id === 'edit.undo')) playCue('nothingToUndo');
+    return false;
+  }
   e.preventDefault();
   runCommand(cmd);
   return true;

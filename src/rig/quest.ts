@@ -9,8 +9,6 @@ import { showPanel } from '../ui/dock';
 import { INK, PEACH, SUNNY, addVectorLayer, ellipsePath, emptyOf, hold, pathShape, rectPath, vectorDrawing } from '../templates/build';
 import { addBone, autoAttach, currentRig, ensureRig, setPose } from './ops';
 import { isRigLayer } from './pose';
-// The steps run these commands, so they must be registered wherever the quest is.
-import './commands';
 
 const SHOULDER = { x: 260, y: 300 };
 const ELBOW = { x: 430, y: 300 };
@@ -76,6 +74,7 @@ export const BONES_QUEST: Quest = {
   minutes: 3,
   icon: 'rig',
   badge: { id: 'puppeteer', name: 'Puppeteer', icon: 'rig', color: '--peach' },
+  features: ['rig'],
   requires: ['first-animation'],
   finish: 'Two poses and Frameling moved the arm between them. The Paper doll puppet example has a whole body to play with.',
   prepare: () => (isArmScene(store().get()) ? true : freshPage(makeArmScene)),

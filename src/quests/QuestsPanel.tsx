@@ -1,14 +1,18 @@
+import { useFeaturesVersion } from '../features/use';
 import { line } from '../ui/mascot/lines';
 import { Icon } from '../ui/icons';
 import { QuillSays } from '../ui/mascot';
 import { groupQuests } from './groups';
 import { Medal } from './Medal';
-import { allQuests, getQuest, isUnlocked, questProgress } from './registry';
-import { engine, playQuest, resumeQuest } from './runtime';
+import { allQuests, getFullQuest, getQuest, isUnlocked, questProgress } from './registry';
+// The panel brings the quest steps, the engine and the guide bar with it (they are not in the start-up).
+import { engine, playQuest, resumeQuest } from './boot';
 
 /** The Quests panel: every quest with its badge, whether it's open yet, and where you were up to. */
 export function QuestsPanel() {
   const p = questProgress.use((x) => x);
+  // Lessons of a feature that is off are left out.
+  useFeaturesVersion();
   const list = allQuests();
   const earned = list.filter((q) => q.badge && p.badges.includes(q.badge.id)).length;
   const total = list.filter((q) => q.badge).length;
@@ -24,7 +28,7 @@ export function QuestsPanel() {
       {p.active || p.paused ? (
         <p className="qp-lead">Short lessons that teach by doing. Each one earns a badge.</p>
       ) : (
-        <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill">
+        <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill" whenHidden={allDone ? <p className="qp-lead">All quests done. You can do any of them again.</p> : null}>
           <p className="qp-lead">{line(allDone ? 'quests.panel.allDone' : 'quests.panel.intro')}</p>
         </QuillSays>
       )}
@@ -46,6 +50,7 @@ export function QuestsPanel() {
               const paused = p.paused?.id === q.id;
               const open = isUnlocked(q, p);
               const needs = (q.requires ?? []).filter((id) => !p.completed.includes(id)).map((id) => getQuest(id)?.title ?? id);
+              const steps = getFullQuest(q.id)?.steps.length ?? 0;
               const stepNo = playing ? p.step : paused ? p.paused!.step : 0;
               return (
                 <li key={q.id} className={`qp-card${done ? ' is-done' : ''}${!open && !done ? ' is-locked' : ''}`}>
@@ -55,14 +60,14 @@ export function QuestsPanel() {
                     <p>{q.summary}</p>
                     <small>
                       {playing
-                        ? `Step ${stepNo + 1} of ${q.steps.length}, in progress`
+                        ? `Step ${stepNo + 1} of ${steps}, in progress`
                         : paused
-                          ? `Put down at step ${stepNo + 1} of ${q.steps.length}`
+                          ? `Put down at step ${stepNo + 1} of ${steps}`
                           : !open && !done
                             ? `Locked. Do "${needs[0]}" first.`
                             : done
                               ? `Done. Badge: ${q.badge?.name ?? 'none'}`
-                              : `About ${q.minutes} minute${q.minutes === 1 ? '' : 's'}, ${q.steps.length} steps`}
+                              : `About ${q.minutes} minute${q.minutes === 1 ? '' : 's'}, ${steps} steps`}
                     </small>
                     <div className="qp-actions">
                       {paused && (

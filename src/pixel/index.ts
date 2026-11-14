@@ -3,14 +3,78 @@
 import { lazyPanel } from '../core/lazy';
 import { getTool, registerCommand, registerPanel } from '../core/registry';
 import './commands';
+import './habits';
 import './help';
+import './help-ways';
 import { drawMirrorLines } from './tools';
 import './tools';
 import { activePixelLayer } from './tools';
 import { withMirror } from './ToolOptions';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
+import { store } from '../core/store';
+import { dock, inPixelWorkspace, showPanel } from '../ui/dock';
+import { paintWellsOn, setPaintWells, setShapeFilledSource } from '../tools/pixelWells';
+import { isPixelDoc } from './way';
+import { getPixelSettings } from './settings';
+import { previewSettings, setPreview } from './preview';
+import { watchOnePicture, watchPixelDocs, watchPixelTool } from './workspace';
+import './workspace-help';
+import './wayCommands';
+import './import';
+import './slices';
+import { installWayWatchers } from './wayOps';
+import { askAboutKeys } from './keysAsk';
 
 registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
+registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPanel(() => import('./PreviewPanel').then((m) => m.PreviewPanel)), zone: 'right', order: 80, help: 'pixel-preview' });
+
+// Paint and Back: in the Pixel workspace the two colour wells are Paint and Back, and every pixel tool paints with Paint.
+setShapeFilledSource(() => getPixelSettings().shapeFilled);
+const syncWells = () => {
+  // Paint and Back belong to pixel art: a drawing opened in the Pixel workspace keeps Fill and Stroke.
+  setPaintWells(inPixelWorkspace() && isPixelDoc(store().get().doc));
+  const ui = store().get().ui;
+  if (paintWellsOn() && (!ui.strokeOn || ui.activeWell !== 'stroke')) store().setUi({ strokeOn: true, activeWell: 'stroke' });
+};
+dock.subscribe(syncWells);
+store().subscribe(syncWells);
+syncWells();
+
+// Offer the Pixel workspace when pixel art opens (asked once).
+watchPixelDocs(store(), undefined, askAboutKeys);
+// Entering the Pixel workspace with a pixel sprite starts on the Pencil, so a tool is lit.
+watchPixelTool(store());
+installWayWatchers(store());
+// A one-picture file has nothing to preview: the Preview stays away until it moves.
+watchOnePicture(store());
+
+registerCommand({
+  id: 'pixel.previewPlay',
+  label: 'Play or pause the Preview',
+  category: 'Pixel',
+  description: 'Start or stop the animation in the Preview panel, which plays it at real size while you draw.',
+  help: 'pixel-preview',
+  keywords: ['preview', 'real size', '1x', 'actual size', 'play', 'loop', 'sprite preview'],
+  checked: () => previewSettings.get().playing,
+  run: () => {
+    showPanel('preview');
+    setPreview({ playing: !previewSettings.get().playing });
+  },
+});
+registerCommand({
+  id: 'pixel.previewSize',
+  label: 'Preview size (1x, 2x, 3x, fit)',
+  category: 'Pixel',
+  description: 'Change how big the Preview panel shows the animation. 1x is real size.',
+  help: 'pixel-preview',
+  keywords: ['preview', 'zoom', 'real size', 'actual size', 'scale'],
+  run: () => {
+    showPanel('preview');
+    const order = [1, 2, 3, 'fit'] as const;
+    const at = order.indexOf(previewSettings.get().zoom);
+    setPreview({ zoom: order[(at + 1) % order.length] });
+  },
+});
 
 registerCommand({
   id: 'pixel.rotate',
@@ -27,9 +91,9 @@ registerCommand({
   id: 'palette.import',
   label: 'Load a palette...',
   category: 'Pixel',
-  description: 'Load a .gpl, .hex or .pal palette file, or take the colours from a picture.',
+  description: 'Load a .gpl, .hex, .pal or Adobe swatch (.ase) palette file, or take the colours from a picture.',
   help: 'palette',
-  keywords: ['palette', 'import', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'colours from image'],
+  keywords: ['palette', 'import', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'colours from image', 'ase', 'adobe', 'swatches', 'illustrator', 'photoshop'],
   run: () => void importPalette(),
 });
 registerCommand({

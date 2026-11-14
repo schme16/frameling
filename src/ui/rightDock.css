@@ -1,0 +1,395 @@
+/* The right side: Properties and the labelled rail (RightDock.tsx). */
+
+/* The first group is a row (body and rail); groups stacked under it are ordinary tab groups. */
+.rd-top {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+.ui-zone-right.rd.is-collapsed {
+  width: 68px;
+}
+.rd-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.rd-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The heading over what's open: its name, help and close. */
+.rd-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 8px 6px 6px 12px;
+  color: var(--text);
+}
+.rd-head-title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+.rd-head .ui-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.rd-head-blurb {
+  margin: -2px 12px 6px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+
+/* The rail on the far right: an icon over a name for every place, groups split by a line. */
+.rd-rail {
+  flex: none;
+  width: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px 4px;
+  border-left: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--bg) 35%, var(--panel));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.ui-zone.rd.is-collapsed .rd-rail {
+  border-left: 0;
+}
+.rd-rail-items,
+.rd-rgroup,
+.rd-tablist,
+.rd-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Stacked groups share the rail: a heading over each group's places, and a line between the groups. */
+.rd-rail-items {
+  gap: 0;
+}
+.rd-rgroup + .rd-rgroup {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.rd-ghead {
+  margin: 0;
+  padding: 2px 2px 3px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+.rd-sep {
+  display: block;
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--line);
+}
+.rd-fill {
+  flex: 1;
+  min-height: 6px;
+}
+.rd-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 7px 2px 6px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1.15;
+  text-align: center;
+}
+:root[data-look='crisp'] .rd-item {
+  border-radius: 2px;
+}
+.rd-item:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.rd-item.is-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.rd-item.is-dragging {
+  opacity: 0.4;
+}
+.rd-item.drop-before::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: -3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.rd-item-label {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.rd-panels.is-open {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}
+.rd-fold {
+  align-self: center;
+  width: 26px;
+  height: 26px;
+}
+
+/* Properties: folding sections in one scroll. */
+.rd-props {
+  padding-bottom: 12px;
+}
+.rd-sec {
+  flex: none;
+  border-top: 1px solid var(--line-soft);
+  transition: background 0.4s var(--ease);
+}
+.rd-sec.is-flash {
+  background: color-mix(in srgb, var(--sunny) 14%, transparent);
+}
+:root[data-motion='reduce'] .rd-sec,
+:root[data-motion='reduce'] .rd-sec-chev {
+  transition: none;
+}
+.rd-sec-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 6px 0 4px;
+  background: var(--panel);
+  font-size: inherit;
+}
+.rd-sec-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 6px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs);
+  text-align: left;
+}
+.rd-sec-toggle:hover {
+  background: var(--hover-bg);
+}
+.rd-sec-chev {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.15s var(--ease);
+}
+.rd-sec.is-folded .rd-sec-chev {
+  transform: rotate(-90deg);
+}
+.rd-sec-title {
+  white-space: nowrap;
+}
+.rd-sec-detail {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
+.rd-sec-help {
+  width: 24px;
+  height: 24px;
+  opacity: 0.7;
+}
+.rd-sec-help:hover,
+.rd-sec-help:focus-visible {
+  opacity: 1;
+}
+/* The panels inside carry their own padding; trim the top so the header sits close. */
+.rd-sec-body > :first-child {
+  padding-top: 2px;
+}
+
+/* Sections that don't apply yet, and what would bring them up. */
+.rd-idle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 8px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+}
+.rd-idle-title {
+  margin: 0 4px 4px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rd-idle-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.rd-idle-item:hover {
+  background: var(--hover-bg);
+}
+.rd-idle-item .ui-icon {
+  grid-row: span 2;
+  color: var(--muted);
+}
+.rd-idle-name {
+  font-weight: 800;
+  font-size: var(--fs);
+}
+.rd-idle-why {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+/* All panels: a searchable list with a sentence each. */
+.rd-picker {
+  position: fixed;
+  z-index: 60;
+  width: 330px;
+  max-height: min(560px, calc(100vh - 80px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: var(--shadow);
+  animation: ui-drop 0.14s var(--ui-pop);
+}
+.rd-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--muted);
+}
+.rd-picker-search input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+.rd-picker-search:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.rd-picker-list {
+  overflow: auto;
+  padding: 0 6px 8px;
+}
+.rd-picker-group {
+  margin: 8px 8px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.rd-picker-item {
+  display: flex;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--radius-small);
+  color: var(--text);
+  cursor: pointer;
+}
+.rd-picker-item .ui-icon {
+  flex: none;
+  margin-top: 2px;
+}
+.rd-picker-item.is-current {
+  background: var(--hover-bg);
+  outline: 2px solid color-mix(in srgb, var(--focus) 60%, transparent);
+  outline-offset: -2px;
+}
+.rd-picker-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rd-picker-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 800;
+}
+.rd-picker-where {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.rd-picker-where.is-closed {
+  color: var(--accent);
+}
+.rd-picker-blurb {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+.rd-picker-none {
+  margin: 12px;
+  color: var(--muted);
+}
+.ui-tab-panels {
+  align-self: center;
+  width: 26px;
+  height: 26px;
+}
+/* Tool options says the tool's name in its header already. */
+#rd-sec-b-tool-options > .cv-panel > .cv-panel-title {
+  display: none;
+}

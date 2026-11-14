@@ -1,5 +1,5 @@
 // Help search: titles and headings count most, then keywords, then the words in the text. Typos are forgiven.
-import { allHelp, type HelpTopic } from '../../core/registry';
+import { allHelp, helpBody, type HelpTopic } from '../../core/registry';
 import { scoreWord, wordsOf } from '../match';
 import { plain, slug } from './markdown';
 
@@ -24,14 +24,14 @@ interface Entry {
   keywords: string[];
 }
 
-let index: Entry[] | null = null;
-let indexKey = '';
+// A few indexes at once: the topics on show, and the ones of features that are turned off (searched to offer turning them on).
+const indexes = new Map<string, Entry[]>();
 
 function build(topics: HelpTopic[]): Entry[] {
   const out: Entry[] = [];
   for (const t of topics) {
     // One entry for the opening of the topic and one for each heading's section.
-    const parts = t.body.split(/\n(?=#{1,4}\s)/);
+    const parts = helpBody(t).split(/\n(?=#{1,4}\s)/);
     parts.forEach((part, i) => {
       const m = /^#{1,4}\s+(.*)\n?/.exec(part);
       const heading = i > 0 && m ? m[1] : undefined;
@@ -45,17 +45,19 @@ function build(topics: HelpTopic[]): Entry[] {
 
 /** Forget the index (when topics change). Done automatically when the number of topics changes. */
 export function resetHelpIndex(): void {
-  index = null;
+  indexes.clear();
 }
 
 /** Ranked matches, best first, at most three from any one topic. */
 export function searchHelp(query: string, limit = 12, topics: HelpTopic[] = allHelp()): HelpHit[] {
   const words = wordsOf(query);
   if (!words.length) return [];
-  const key = topics.map((t) => t.id + t.body.length).join('|');
-  if (!index || key !== indexKey) {
+  const key = topics.map((t) => t.id + helpBody(t).length).join('|');
+  let index = indexes.get(key);
+  if (!index) {
+    if (indexes.size >= 4) indexes.delete(indexes.keys().next().value!);
     index = build(topics);
-    indexKey = key;
+    indexes.set(key, index);
   }
   const hits: HelpHit[] = [];
   for (const e of index) {

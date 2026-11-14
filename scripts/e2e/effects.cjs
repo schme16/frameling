@@ -3,11 +3,12 @@
 // compares pixels with values worked out by hand.
 //
 //   npm run build
-//   xvfb-run -a npx electron scripts/e2e/effects.cjs
+//   xvfb-run -a npx electron scripts/e2e/effects.cjs            (FILTER=fallback runs it on the JS blur used in Safari)
 //
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const W = 16;
 const H = 16;
@@ -23,7 +24,7 @@ function layer(name, shapes, extra = {}, length = 20) {
 function doc(parts, extra = {}) {
   const drawings = {};
   for (const p of parts) drawings[p.drawing.id] = p.drawing;
-  return { format: 'frameling', version: 1, id: 'd', name: 't', width: W, height: H, fps: 12, length: 20, background: '#ffffff', layers: parts.map((p) => p.layer), drawings, clips: [], markers: [], swatches: [], ...extra };
+  return { format: 'frameling', version: 1, lineage: true, id: 'd', name: 't', width: W, height: H, fps: 12, length: 20, background: '#ffffff', layers: parts.map((p) => p.layer), drawings, clips: [], markers: [], swatches: [], ...extra };
 }
 
 const px = (data, x, y) => data.slice((y * W + x) * 4, (y * W + x) * 4 + 4);
@@ -157,12 +158,24 @@ const anim = () => [{ id: 'a', kind: 'blur', values: { radius: 0 }, keys: [{ fra
 add('animated blur, frame 1: sharp', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [255, 255, 255, 255], 1]], 0);
 add('animated blur, frame 11: soft', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [200, 200, 200, 255], 50]], 10);
 
+// A rejection must end the run with a failure, not leave Electron hanging with the window hidden.
+const bail = (e) => {
+  console.error('FAIL harness error:', e && e.stack ? e.stack : e);
+  app.exit(1);
+};
+process.on('unhandledRejection', bail);
+process.on('uncaughtException', bail);
+setTimeout(() => bail(new Error('effects harness timed out after 180s')), 180000).unref();
+
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
+  installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   await win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'), { query: { debug: '1' } });
+  // The ?debug hooks are a separate download that arrives after the load event, so wait for them.
+  await win.webContents.executeJavaScript(`new Promise((ok, no) => { const t0 = Date.now(); const t = () => (window.__framelingEffects ? ok() : Date.now() - t0 > 20000 ? no(new Error('debug hooks never appeared')) : setTimeout(t, 50)); t(); })`);
+  // FILTER=fallback runs every case on the JS blur used where the canvas has no filter (Safari); FILTER=native forces the canvas filter.
+  if (process.env.FILTER) await win.webContents.executeJavaScript(`window.__framelingEffects.setFilterOverride(${JSON.stringify(process.env.FILTER)})`);
+  console.log(`canvas filter: ${await win.webContents.executeJavaScript('window.__framelingEffects.nativeFilterWorks() ? "native" : "JS fallback"')}`);
   let failed = 0;
   for (const c of cases) {
     const data = await win.webContents.executeJavaScript(`window.__framelingEffects.pixels(${JSON.stringify(c.d)}, ${c.frame})`);
@@ -183,4 +196,4 @@ app.whenReady().then(async () => {
   }
   console.log(failed ? `\n${failed} of ${cases.length} failed` : `\nall ${cases.length} passed`);
   app.exit(failed ? 1 : 0);
-});
+}).catch(bail);

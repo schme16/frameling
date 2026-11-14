@@ -8,16 +8,16 @@
 import { getStroke } from 'perfect-freehand';
 import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } from './symbols';
-import { DEFAULT_TILE_SIZE } from './doc';
-import { drawText, textBounds } from '../text/draw';
-import { posedParticles } from '../particles/draw';
-import { drawTilemap } from './tilemap';
-import { drawParticles } from '../particles/draw';
+import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
+import { folderChain } from './folders';
+import { shapeKind } from './shapeKinds';
+import { drawingKindOf } from './layerKinds';
 import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
+import { canvasGradient } from './gradient';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -41,7 +41,8 @@ const strokeOutlineCache = new WeakMap<StrokeShape, number[][]>();
 /** The filled outline polygon of a brush stroke, worked out fresh. */
 function computeOutline(s: StrokeShape): number[][] {
   const b = s.brush;
-  const simulate = s.points.every((p) => p.p === 0.5);
+  // Every point at the middle means nothing varied, so widths come from the speed instead. A pen's own widths stand.
+  const simulate = !s.realPressure && s.points.every((p) => p.p === 0.5);
   return getStroke(
     s.points.map((p) => [p.x, p.y, p.p]),
     {
@@ -134,23 +135,22 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
     if (isPosed(s)) drawInstance(g, s, at);
     return;
   }
-  if (s.type === 'text') return drawText(g, s);
-  if (s.type === 'particles') return drawParticles(g, s, drawInstance);
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeKind(s.type)?.draw(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
     g.fillStyle = s.color;
     g.fill(strokePath(s));
   } else if (s.type === 'fill') {
-    g.fillStyle = s.color;
+    g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
     g.fill(shapePath(s), 'evenodd');
   } else {
     const p = shapePath(s);
     if (s.fill) {
-      g.fillStyle = s.fill;
+      g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
       g.fill(p, 'evenodd');
     }
     if (s.stroke) {
-      g.strokeStyle = s.stroke.color;
+      g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
       g.lineWidth = s.stroke.width;
       g.lineJoin = s.stroke.join;
       g.lineCap = s.stroke.cap;
@@ -166,12 +166,30 @@ const pixelCanvasCache = new WeakMap<Uint8ClampedArray, OffscreenCanvas | HTMLCa
 export function pixelCanvas(d: PixelDrawing): OffscreenCanvas | HTMLCanvasElement {
   let c = pixelCanvasCache.get(d.pixels);
   if (!c) {
-    c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(d.width, d.height) : Object.assign(document.createElement('canvas'), { width: d.width, height: d.height });
+    // A blank drawing (nothing painted) gets a one pixel see-through picture, as a canvas cannot be 0 wide.
+    const w = Math.max(1, d.width);
+    const h = Math.max(1, d.height);
+    c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
     const g = c.getContext('2d') as Ctx2D;
-    g.putImageData(new ImageData(new Uint8ClampedArray(d.pixels), d.width, d.height), 0, 0);
+    if (d.width > 0 && d.height > 0) g.putImageData(new ImageData(new Uint8ClampedArray(d.pixels), d.width, d.height), 0, 0);
     pixelCanvasCache.set(d.pixels, c);
   }
   return c;
+}
+
+/** The picture already made for a pixel array, if any (never makes one). */
+export function peekPixelCanvas(pixels: Uint8ClampedArray): OffscreenCanvas | HTMLCanvasElement | undefined {
+  return pixelCanvasCache.get(pixels);
+}
+
+/** Hands over the finished picture of a new pixel array, so drawing it does not rebuild it from the pixels. */
+export function seedPixelCanvas(pixels: Uint8ClampedArray, canvas: OffscreenCanvas | HTMLCanvasElement): void {
+  pixelCanvasCache.set(pixels, canvas);
+}
+
+/** Forgets the picture made for a pixel array (it is made again when asked for). */
+export function dropPixelCanvas(pixels: Uint8ClampedArray): void {
+  pixelCanvasCache.delete(pixels);
 }
 
 /** Where a drawing is shown, which tilemaps need for their tiles (and animated tiles for the frame). */
@@ -185,11 +203,12 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContex
   if (d.kind === 'vector') {
     for (const s of d.shapes) drawShape(g, s, at);
   } else if (d.kind === 'tilemap') {
-    if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
+    if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
+    if (d.width < 1 || d.height < 1) return;
     const prev = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = false;
-    g.drawImage(pixelCanvas(d), 0, 0, d.width * pixelSize, d.height * pixelSize);
+    g.drawImage(pixelCanvas(d), (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize, d.width * pixelSize, d.height * pixelSize);
     g.imageSmoothingEnabled = prev;
   }
 }
@@ -276,7 +295,7 @@ const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
 export const meshStats = { textures: 0 };
 
 function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
-  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: 0, y: 0, canvas: pixelCanvas(d) };
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: (d.x ?? 0) * pixelSize, y: (d.y ?? 0) * pixelSize, canvas: pixelCanvas(d) };
   // Scales snap to powers of two so zooming doesn't redraw the picture every step.
   const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
   const list = meshTextures.get(d) ?? [];
@@ -403,11 +422,14 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
   if (hit && hit.ps === pixelSize) return hit.box;
   const b = { ...EMPTY };
   if (d.kind === 'pixel') {
-    grow(b, 0, 0);
-    grow(b, d.width * pixelSize, d.height * pixelSize);
+    if (d.width > 0 && d.height > 0) {
+      grow(b, (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize);
+      grow(b, ((d.x ?? 0) + d.width) * pixelSize, ((d.y ?? 0) + d.height) * pixelSize);
+    }
   } else if (d.kind === 'tilemap') {
-    grow(b, 0, 0);
-    grow(b, d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
+    const o = doc ? tileOrigin(doc, pixelSize) : { x: 0, y: 0 };
+    grow(b, o.x, o.y);
+    grow(b, o.x + d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, o.y + d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
   } else if (d.kind === 'vector')
     for (const s of d.shapes) {
       if (s.type === 'stroke') for (const [x, y] of strokeOutline(s)) grow(b, x, y);
@@ -419,12 +441,8 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
             if (p.c1) grow(b, p.c1.x, p.c1.y, r);
             if (p.c2) grow(b, p.c2.x, p.c2.y, r);
           }
-      } else if (s.type === 'text') {
-        const t = textBounds(s);
-        grow(b, t.x, t.y);
-        grow(b, t.x + t.w, t.y + t.h);
-      } else if (s.type === 'particles') {
-        for (const p of posedParticles(s)) grow(b, p.x, p.y, p.size * 2);
+      } else if (s.type !== 'instance') {
+        shapeKind(s.type)?.extend(s, (x, y, r) => grow(b, x, y, r));
       } else if (isPosed(s)) {
         const ib = instanceBox(s, doc);
         if (ib.x1 < ib.x0) continue;
@@ -458,12 +476,12 @@ function grow2(b: Box, d: Box): Box {
   return b;
 }
 
-/** How far past the drawing an effect can paint, in document pixels. */
+/** How far past the drawing an effect can paint, in document pixels (three sigmas of the blur: the soften radius and the shadow softness are sigmas, the glow's is half its size). */
 export function effectReach(kind: string, v: Record<string, number | string>): number {
   const n = (k: string) => Math.abs(Number(v[k]) || 0);
   if (kind === 'blur') return n('radius') * 3;
   if (kind === 'glow') return n('size') * 1.5;
-  if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 1.5;
+  if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 3;
   if (kind === 'outline') return n('width') + 1;
   if (kind === 'pixelate') return n('size');
   return 0;
@@ -481,8 +499,8 @@ function lookReach(look: PosedLook): number {
   let folder = 0;
   for (const l of look.layers) {
     layer = Math.max(layer, reachOf(l.effects, look.frame));
-    const f = l.folder ? look.folders?.[l.folder] : undefined;
-    if (f) folder = Math.max(folder, reachOf(f.effects, look.frame));
+    // Every folder around the layer adds its own reach.
+    folder = Math.max(folder, folderChain(look.folders, l.folder).reduce((n, f) => n + reachOf(f.effects, look.frame), 0));
   }
   return layer + folder + 1;
 }

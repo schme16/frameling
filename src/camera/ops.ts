@@ -4,10 +4,11 @@
 import type { CameraLayer, CameraView, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
-import { cameraLayerOf, cameraMatrix, cameraViewOn, clampZoom, newCameraLayer, plainView, setCameraKey } from '../core/camera';
+import { cameraLayerOf, cameraMatrix, layerCameraMatrix, cameraViewOn, clampZoom, newCameraLayer, plainView, setCameraKey } from '../core/camera';
 import { getViewSettings, setViewSettings } from '../canvas/viewSettings';
 import type { Mat } from '../core/symbols';
 import { toast } from '../ui/toast';
+import { activeId } from '../artboards/model';
 
 export type Result = string | undefined;
 
@@ -55,7 +56,7 @@ export function currentView(s: State = store().get()): CameraView | undefined {
 export function setView(view: Partial<CameraView>, label = 'Move the camera', coalesce?: string): Result {
   const s = store().get();
   const cam = stageCamera(s.doc);
-  if (!cam) return say('Add a camera first (Animate > Add a camera).');
+  if (!cam) return say('Add a camera first (Frames and motion > Add a camera).');
   if (cam.locked) return say('The camera layer is locked. Unlock it in the timeline to move it.');
   const now = cameraViewOn(s.doc, cam, s.ui.frame) ?? plainView(s.doc);
   const next: CameraView = { ...now, ...view, zoom: clampZoom(view.zoom ?? now.zoom) };
@@ -91,8 +92,19 @@ export function setDepth(layerId: Id, depth: number, coalesce?: string): void {
   );
 }
 
+/** Is this artboard looking through its camera? Each artboard remembers its own choice (a variation sized for a post looks through its camera, the original does not). */
+export function throughCameraOf(doc: Doc, v = getViewSettings()): boolean {
+  return v.throughBy[`${doc.id}/${activeId(doc)}`] ?? v.throughCamera;
+}
+
+/** Turns looking through the camera on or off for the open artboard only (remembered for this file's artboard between sessions). */
 export function toggleThroughCamera(on?: boolean): void {
-  setViewSettings({ throughCamera: on ?? !getViewSettings().throughCamera });
+  const doc = store().get().doc;
+  const v = getViewSettings();
+  const key = `${doc.id}/${activeId(doc)}`;
+  // Set again last, so the newest choices are the ones kept.
+  const { [key]: _old, ...rest } = v.throughBy;
+  setViewSettings({ throughBy: { ...rest, [key]: on ?? !throughCameraOf(doc, v) } });
 }
 
 /** Is the canvas looking through the camera right now? */
@@ -101,7 +113,7 @@ export function lookingThrough(s: State = store().get()): boolean {
   const cam = stageCamera(s.doc);
   if (!cam || !cam.visible) return false;
   const v = getViewSettings();
-  return v.throughCamera || (s.ui.playing && v.cameraWhilePlaying);
+  return throughCameraOf(s.doc, v) || (s.ui.playing && v.cameraWhilePlaying);
 }
 
 /** The camera as the canvas should apply it now (stage to camera space, for layers on the stage), or null. */
@@ -109,6 +121,27 @@ export function canvasCamera(s: State = store().get()): { view: CameraView; matr
   if (!lookingThrough(s)) return null;
   const view = currentView(s);
   return view ? { view, matrix: cameraMatrix(s.doc, view) } : null;
+}
+
+/**
+ * The same, for the picked layer: a layer at another depth moves at its own speed, so tools aimed at it (and the pixel
+ * grid over it) go through its own matrix. Falls back to the plain camera matrix for the camera layer or no pick.
+ */
+export function canvasLayerCamera(s: State = store().get()): Mat | null {
+  const cam = canvasCamera(s);
+  if (!cam) return null;
+  const layer = findLayer(s.doc, s.ui.activeLayerId);
+  if (!layer || layer.kind === 'camera') return cam.matrix;
+  return layerCameraMatrix(s.doc, layer, cam.view) ?? [1, 0, 0, 1, 0, 0];
+}
+
+/**
+ * The camera for things aimed at, or drawn over, the picked layer: its own matrix (a layer at another depth moves at
+ * its own speed), or the plain camera for the stage tools, which work on the stage as a whole. Null with no camera.
+ * Pointer aiming, the tool overlay, the stage overlays (guides, grid, selection edge) and the grab handles all use it.
+ */
+export function overlayCamera(stageTool: boolean, s: State = store().get()): Mat | null {
+  return stageTool ? (canvasCamera(s)?.matrix ?? null) : canvasLayerCamera(s);
 }
 
 /** True when the playhead is on a camera key's first frame (where changes go to that key, not a new one). */

@@ -1,21 +1,19 @@
 // The part of exporting that talks to the desktop side: ask where to save, run the export, write the result, and say
 // how it went. The dialog and "Export again" both come through here.
 import { sceneOf } from '../core/symbols';
-import type { VideoCodec } from 'mediabunny';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
-import { notify } from '../io/notify';
-import { detectCapabilities } from './capabilities';
-import { filtersFor, planExport } from './plan';
+import { notifySaved } from '../io/notify';
+import { extensionFor, filtersFor, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
-import { audibleClips } from '../audio/clips';
-import { canMakeAac } from '../audio/export';
-import { choose } from '../core/choices';
-import type { Mp4SoundChoice } from './choices';
 import './choices';
-import { runProres } from './prores';
+import { exporterOf } from './registry';
+import { ExportProblem } from './problem';
+import type { RunContext } from './runtime';
+import type { Doc } from '../core/format';
+import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
@@ -73,7 +71,7 @@ export function saveSheetExtras(s: SheetSettings): void {
 
 export type ExportOutcome = 'done' | 'cancelled' | 'stopped';
 
-export class ExportProblem extends Error {}
+export { ExportProblem };
 
 /** Plain words for whatever went wrong. */
 export function describeError(e: unknown): string {
@@ -87,54 +85,64 @@ export function describeError(e: unknown): string {
  * Asks where to save, draws and encodes, writes the file(s) and says so with a "Show in folder" button.
  * Resolves 'cancelled' when they back out of the save dialog or press Cancel, and throws for real problems.
  */
-export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<ExportOutcome> {
+/**
+ * Where to write a file the exporter named differently than expected (an MP4 that became a MOV). Only a browser
+ * download, which has a name and no place, takes the new ending: a file the person picked keeps its own name.
+ */
+export function targetFor(target: string, madeName: string): string {
+  const ext = /\.[A-Za-z0-9]+$/.exec(madeName)?.[0];
+  if (!ext || !target.startsWith('download:/')) return target;
+  return /\.[A-Za-z0-9]+$/.test(target) ? target.replace(/\.[A-Za-z0-9]+$/, ext) : target + ext;
+}
+
+export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void, only?: Doc): Promise<ExportOutcome> {
   const api = desktop();
   if (!api) throw new ExportProblem('Exporting works in the Frameling desktop app.');
   const st = store().get();
-  // While a symbol is open, export the scene as it is saved.
-  const { doc, frame } = sceneOf(st.doc, st.ui.frame);
-  const picked = settings;
-  // MP4 with sound, on a computer that can only make Opus sound and has no ffmpeg to fix it: ask (once) what to do.
-  if (settings.format === 'mp4' && audibleClips(doc.audio).length && !(await canMakeAac()) && !(await api.media?.aacAvailable().catch(() => false))) {
-    if ((await choose<Mp4SoundChoice>('export.mp4Sound')) === 'webm') settings = { ...settings, format: 'webm' };
+  // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
+  if (!only && exportsSeveral(store().rootDoc(), settings)) {
+    try {
+      return await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+    } catch (e) {
+      throw e instanceof ArtboardExportProblem ? new ExportProblem(e.message) : e;
+    }
   }
+  // While a symbol is open, export the scene as it is saved.
+  const { doc, frame } = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
+  const picked = settings;
+  const def = exporterOf(settings.format);
+  if (!def) throw new ExportProblem('That kind of export is turned off. Turn it on in Preferences > Features.');
+  // A format may need to settle something first (an MP4 whose sound would not play everywhere: ask what to do).
+  if (def.settle) settings = await def.settle(doc, settings);
   const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);
+  const made = exporterOf(settings.format) ?? def;
 
   // Ask where first, so nobody waits for a long render just to cancel at the end.
   let target: string | null;
-  if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet', suggestedName: plan.name });
-  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${info.ext}`, filters: filtersFor(settings.format), title: `Export ${info.title}` });
+  if (made.folderTitle) target = await api.files.pickExportFolder({ title: made.folderTitle, suggestedName: plan.name });
+  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${extensionFor(settings)}`, filters: filtersFor(settings.format, settings), title: `Export ${info.title}` });
   if (!target) return 'cancelled';
 
-  let videoCodec: VideoCodec | null = null;
-  let videoAlpha = false;
-  if (settings.format === 'mp4' || settings.format === 'webm') {
-    const caps = await detectCapabilities(plan.width, plan.height);
-    const c = caps[settings.format];
-    if (!c.ok) throw new ExportProblem(c.reason ?? "This computer can't make that kind of video.");
-    videoCodec = c.codec;
-    videoAlpha = c.alpha;
-    // Asked for see-through and the usual codec cannot: use the one that can.
-    if (settings.format === 'webm' && settings.transparent && c.alphaCodec) videoCodec = c.alphaCodec;
-  }
+  // Whether this computer can make it, and what it needs (the video codec).
+  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, settings) : {};
 
-  if (settings.format === 'prores') {
+  if (made.direct) {
     try {
-      await runProres(doc, settings, frame, target, signal, onProgress);
+      await made.direct(doc, settings, frame, target, signal, onProgress);
     } catch (e) {
       if (isCancelled(e)) return 'cancelled';
       throw new ExportProblem(e instanceof Error ? e.message : String(e));
     }
     saveLastSettings(settings);
-    notify(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer');
+    notifySaved(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
 
   let result;
   try {
-    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app, toAac: api.media?.toAac });
+    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, ...prepared, appVersion: api.versions.app, toAac: api.media?.toAac });
   } catch (e) {
     if (isCancelled(e)) return 'cancelled';
     throw e;
@@ -142,9 +150,11 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   let shown: string;
   if (result.kind === 'file') {
-    const w = await api.files.write(target, result.bytes);
+    // A video whose sound could only be kept as it is turns out as a MOV, not the MP4 asked for (see audio/export.ts).
+    const dest = targetFor(target, result.name);
+    const w = await api.files.write(dest, result.bytes);
     if ('error' in w) throw new ExportProblem(w.error);
-    shown = target;
+    shown = dest;
   } else {
     const w = await api.files.writeMany(target, result.files);
     if (!w) return 'stopped';
@@ -153,6 +163,6 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   }
   saveLastSettings(picked);
   const note = result.kind === 'file' ? result.note : undefined;
-  notify(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  notifySaved(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }

@@ -9,6 +9,8 @@ export interface AskButton {
 }
 
 export interface Question {
+  /** A stable name for tests: the buttons get `ask.<id>.<value>` (else `ask.<value>`). */
+  id?: string;
   title: string;
   message: string;
   detail?: string;

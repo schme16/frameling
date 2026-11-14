@@ -3,14 +3,15 @@
 import { app, dialog, shell, type BrowserWindow } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { FileFilter, LibraryEntry, LibraryKind } from '../preload/api';
 import { pathKey } from './paths';
 
 /** Each kind keeps its files with one extension, so people can drop files into the folder by hand. */
-export const LIBRARY_EXT: Record<LibraryKind, string> = { plugins: '.zip', templates: '.frameling' };
+export const LIBRARY_EXT: Record<LibraryKind, string> = { plugins: '.zip', templates: '.frameling', versions: '.frameling', 'versions-index': '.json' };
 const MAX_LIBRARY_FILE = 64 * 1024 * 1024;
 
-export const isLibraryKind = (k: unknown): k is LibraryKind => k === 'plugins' || k === 'templates';
+export const isLibraryKind = (k: unknown): k is LibraryKind => k === 'plugins' || k === 'templates' || k === 'versions' || k === 'versions-index';
 
 /** Ids are file names without the extension: letters, numbers, dashes and underscores only. */
 export function libraryId(id: unknown): string | null {
@@ -80,7 +81,7 @@ export function showLibraryFolder(kind: LibraryKind): void {
 // ---------------------------------------------------------------- other files
 
 /** The kinds of file openOther may show. Anything else asked for is dropped. */
-const OPEN_EXTS = new Set(['frameling', 'flplay', 'zip', 'flplugin']);
+const OPEN_EXTS = new Set(['frameling', 'flplay', 'zip', 'flplugin', 'aseprite', 'ase', 'png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp', 'json']);
 
 export function cleanFilters(filters: unknown): FileFilter[] {
   if (!Array.isArray(filters)) return [];
@@ -185,4 +186,30 @@ export function fileFromUrl(url: string, exists: (p: string) => boolean = fs.exi
   if (ext !== '.frameling' && ext !== '.flplay') return null;
   const abs = path.resolve(p);
   return exists(abs) ? abs : null;
+}
+
+/**
+ * The file to open from a list of command line arguments: a `frameling://open?path=` link, or the first drawing,
+ * animation or Aseprite file. Launchers that pass `%U` hand over `file://` links, so those count too. Absolute path.
+ */
+export function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
+  for (const x of args) {
+    if (x.toLowerCase().startsWith(`${PROTOCOL}:`)) {
+      const f = fileFromUrl(x);
+      if (f) return f;
+    }
+  }
+  for (const x of args) {
+    if (x.startsWith('-')) continue;
+    let p = x;
+    if (/^file:\/\//i.test(x)) {
+      try {
+        p = fileURLToPath(x);
+      } catch {
+        continue;
+      }
+    }
+    if (/\.(frameling|flplay|aseprite|ase)$/i.test(p)) return path.resolve(cwd, p);
+  }
+  return null;
 }

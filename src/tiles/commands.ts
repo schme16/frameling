@@ -1,5 +1,5 @@
 import { findLayer } from '../core/doc';
-import { registerCommands, type Command } from '../core/registry';
+import type { Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { fit, isAutoFit } from '../canvas/controller';
 import { showPanel } from '../ui/dock';
@@ -25,7 +25,7 @@ function square(): boolean {
   return !!ts && ts.tileWidth === ts.tileHeight;
 }
 
-export const TILE_COMMANDS: Command[] = [
+export const tileCommands: Command[] = [
   {
     id: 'tiles.tileMode',
     label: 'Tile mode (repeat around the edges)',
@@ -37,7 +37,7 @@ export const TILE_COMMANDS: Command[] = [
     checked: () => getTileUi().tileMode,
     run: () => {
       setTileUi({ tileMode: !getTileUi().tileMode });
-      if (isAutoFit()) fit();
+      if (isAutoFit()) fit(true);
     },
   },
   {
@@ -50,6 +50,18 @@ export const TILE_COMMANDS: Command[] = [
     run: () => {
       ops.addTilemapLayer();
       showPanel('tileset');
+    },
+  },
+  {
+    id: 'tiles.gridStart',
+    label: 'Where the tile grid starts...',
+    category: 'Tiles',
+    description: 'For tiles that do not start at the stage corner: type where the first tile edge sits, or drag the handle on the canvas (it shows while the form is open, or with Alt held).',
+    help: 'tile-grid',
+    keywords: ['tile grid', 'grid start', 'grid origin', 'offset', 'tilemap', 'tile size'],
+    run: () => {
+      showPanel('tileset');
+      setTileUi({ sizeForm: true });
     },
   },
   {
@@ -180,4 +192,3 @@ export const TILE_COMMANDS: Command[] = [
   },
 ];
 
-registerCommands(TILE_COMMANDS);

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { syncDynamicCommands, isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
-import { openHelp, overlays, closePalette } from './overlays';
-import { commandEnabled, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, type PaletteHit } from './palette';
+import { openHelp, openPrefs, overlays, closePalette } from './overlays';
+import { commandEnabled, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, withSettings, type ShownHit } from './palette';
 import { toast } from './toast';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
@@ -20,12 +20,13 @@ function PaletteDialog() {
   const [query, setQuery] = useState('');
   const [at, setAt] = useState(0);
   const list = useRef<HTMLDivElement>(null);
-  const hits: PaletteHit[] = useMemo(() => {
+  const hits: ShownHit[] = useMemo(() => {
     syncDynamicCommands();
-    return rankPalette(
+    const ranked = rankPalette(
       query,
       paletteItems().filter((i) => !(i.kind === 'command' && isStaleCommand(i.id))),
     );
+    return withSettings(ranked, query);
   }, [query]);
 
   useEffect(() => setAt(0), [query]);
@@ -33,8 +34,14 @@ function PaletteDialog() {
     list.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
   }, [at, hits]);
 
-  const choose = (hit: PaletteHit | undefined) => {
+  const choose = (hit: ShownHit | undefined) => {
     if (!hit) return;
+    if (hit.item.kind === 'setting') {
+      // Preferences takes over from the palette, opened with this row already picked out.
+      closePalette();
+      openPrefs(hit.item.row.page, hit.item.row.commandId, hit.item.row.find ?? hit.item.row.label);
+      return;
+    }
     if (hit.item.kind === 'help') {
       openHelp(hit.item.id);
       return;
@@ -88,7 +95,7 @@ function PaletteDialog() {
       <div className="ui-palette-list" id="ui-palette-list" role="listbox" ref={list}>
         {hits.map((h, i) => {
           const it = h.item;
-          const enabled = it.kind === 'help' || commandEnabled(it.command);
+          const enabled = it.kind !== 'command' || commandEnabled(it.command);
           const showHead = !query.trim() && it.category !== lastCategory;
           lastCategory = it.category;
           const key = it.kind === 'command' ? effectiveKeys(it.command)[0] : '';
@@ -106,6 +113,7 @@ function PaletteDialog() {
               >
                 <span className="ui-palette-main">
                   {it.kind === 'help' && <Icon name="help" size={15} />}
+                  {it.kind === 'setting' && <Icon name="sliders" size={15} />}
                   <span className="ui-palette-label">{it.label}</span>
                   {it.description && <span className="ui-palette-desc">{it.description}</span>}
                 </span>

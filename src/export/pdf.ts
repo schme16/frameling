@@ -1,6 +1,7 @@
 /**
  * A small PDF writer for vector frames. Shapes stay vector (fills, strokes, curves), layers become PDF layers
- * (optional content, which Acrobat and Illustrator show as layers), layer opacity and blend modes become transparency
+ * (optional content, which Acrobat shows as layers, folders holding their layers; Illustrator imports a plain PDF as groups
+ * and drops the names, so the .ai also carries Illustrator's own data, see ai-native.ts), layer opacity and blend modes become transparency
  * groups, and anything PDF can't draw as vector (pixel layers, effects, masks) comes in as a picture with its alpha.
  * One page per frame. Streams are Flate compressed.
  *
@@ -8,15 +9,16 @@
  */
 import { zlibSync } from 'fflate';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import type { BlendMode, CameraView, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
+import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
-import { flattenTilemap } from '../tiles/model';
+import { flattenDrawing } from '../core/layerKinds';
 import type { RawImage } from '../io/png';
-import { posedParticles } from '../particles/draw';
-import type { Particle } from '../particles/model';
-import { textOutlines } from '../text/convert';
+import { shapeExportOf } from './shapeExport';
 import { flatPlan, type FlatUnit } from './layered';
+import { nativeData } from './ai-native';
+import { gradientKey, sortedStops } from '../core/gradient';
+import { flattenRing, lineArea } from '../geometry/merge';
 
 const PDF_BLEND: Record<BlendMode, string> = {
   normal: 'Normal',
@@ -37,6 +39,10 @@ const PDF_BLEND: Record<BlendMode, string> = {
   luminosity: 'Luminosity',
   // PDF has no add; Screen is the nearest.
   add: 'Screen',
+  // Nor Subtract or Divide: those layers go in as Normal.
+  'linear-dodge': 'Screen',
+  subtract: 'Normal',
+  divide: 'Normal',
 };
 
 export function pdfBlend(b: BlendMode | undefined): string {
@@ -44,7 +50,7 @@ export function pdfBlend(b: BlendMode | undefined): string {
 }
 
 const enc = new TextEncoder();
-const num = (v: number) => {
+export const num = (v: number) => {
   if (!Number.isFinite(v)) return '0';
   const r = Math.round(v * 1000) / 1000;
   return Object.is(r, -0) ? '0' : String(r);
@@ -80,7 +86,7 @@ export function washColor(c: { r: number; g: number; b: number; a: number }, lis
   return { r, g, b, a: c.a };
 }
 
-function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
+export function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
   const p = rawColor(c);
   return washes.length ? washColor(p) : p;
 }
@@ -104,6 +110,37 @@ interface Obj {
   body: Uint8Array | string;
 }
 
+/** A gradient's stops in order, with the ends pushed out to 0 and 1 (PDF wants the colours to run the whole way). */
+function gradientStops(gr: Gradient): Gradient['stops'] {
+  const stops = sortedStops(gr.stops);
+  if (stops[0].at > 0) stops.unshift({ at: 0, color: stops[0].color });
+  if (stops[stops.length - 1].at < 1) stops.push({ at: 1, color: stops[stops.length - 1].color });
+  return stops;
+}
+
+function gradientCoords(gr: Gradient): string {
+  const { from: a, to: b } = gr;
+  return gr.kind === 'radial' ? `${num(a.x)} ${num(a.y)} 0 ${num(a.x)} ${num(a.y)} ${num(Math.hypot(b.x - a.x, b.y - a.y))}` : `${num(a.x)} ${num(a.y)} ${num(b.x)} ${num(b.y)}`;
+}
+
+/** A PDF function running through the stops; `comp` turns a stop's colour into the function's output values. */
+function stopsFunction(stops: Gradient['stops'], comp: (c: Color) => string): string {
+  const seg = (a: Color, b: Color) => `<< /FunctionType 2 /Domain [0 1] /C0 ${comp(a)} /C1 ${comp(b)} /N 1 >>`;
+  if (stops.length <= 2) return seg(stops[0].color, stops[stops.length - 1].color);
+  const fns: string[] = [];
+  const bounds: number[] = [];
+  for (let i = 0; i < stops.length - 1; i++) {
+    fns.push(seg(stops[i].color, stops[i + 1].color));
+    if (i > 0) bounds.push(Math.max(stops[i].at, (bounds[bounds.length - 1] ?? 0) + 1e-4));
+  }
+  return `<< /FunctionType 3 /Domain [0 1] /Functions [${fns.join(' ')}] /Bounds [${bounds.map(num).join(' ')}] /Encode [${fns.map(() => '0 1').join(' ')}] >>`;
+}
+
+/** What Illustrator's own data gets in place of the outlines the PDF part draws. */
+export type LiveInfo =
+  | { kind: 'text'; text: string; font: string; weight: number; italic: boolean; size: number; color: Color; align: 'left' | 'center' | 'right'; lineHeight: number; letterSpacing: number; opacity: number; matrix: number[] }
+  | { kind: 'stroke'; paths: SubPath[]; width: number; join: 'miter' | 'round' | 'bevel'; cap: 'butt' | 'round' | 'square'; gradient: Gradient; opacity: number };
+
 /** Collects objects and writes the file with its cross-reference table. */
 export class PdfWriter {
   private objs: Obj[] = [];
@@ -111,7 +148,18 @@ export class PdfWriter {
   private gsKeys = new Map<string, string>();
   readonly gs: string[] = [];
   readonly xobjects: string[] = [];
-  readonly ocgs: { id: number; name: string }[] = [];
+  readonly ocgs: { id: number; name: string; parent: number | null; hidden: boolean }[] = [];
+  /** The layers being drawn into right now (indexes into ocgs, outermost first). */
+  private layerStack: number[] = [];
+  readonly shadings: string[] = [];
+  private shadingKeys = new Map<string, string>();
+  // What the names in the content streams stand for, so another writer (the Illustrator data in ai-native.ts) can read the same drawing.
+  readonly gsInfo = new Map<string, { fill: number; stroke: number; blend: string; fade: boolean }>();
+  readonly shadingInfo = new Map<string, Gradient>();
+  readonly formInfo = new Map<string, string>();
+  readonly imageInfo = new Map<string, RawImage>();
+  /** Text and gradient lines drawn twice for the Illustrator data: the PDF part has outlines, the data has the real thing (marked in the content as `/FrText << /I n >> BDC`). */
+  readonly liveInfo = new Map<number, LiveInfo>();
   /** The shared resources dictionary every page and form points at (written last). */
   readonly resId: number;
 
@@ -152,7 +200,53 @@ export class PdfWriter {
       name = `GS${this.gsKeys.size + 1}`;
       this.gsKeys.set(key, name);
       this.gs.push(`/${name} << /Type /ExtGState /ca ${num(fill)} /CA ${num(stroke)} /BM /${blend} >>`);
+      this.gsInfo.set(name, { fill, stroke, blend, fade: false });
     }
+    return name;
+  }
+
+  /** Notes what a marked piece of the content stands for in Illustrator's data; returns its number. */
+  live(info: LiveInfo): number {
+    const id = this.liveInfo.size + 1;
+    this.liveInfo.set(id, info);
+    return id;
+  }
+
+  /** A shading (a gradient) as a resource, shared when the same one comes up again. Returns its name. */
+  shading(gr: Gradient): string {
+    const key = gradientKey(gr);
+    let name = this.shadingKeys.get(key);
+    if (name) return name;
+    const stops = gradientStops(gr);
+    const rgb = (c: Color) => {
+      const p = parseColor(c);
+      return `[${num(p.r)} ${num(p.g)} ${num(p.b)}]`;
+    };
+    const id = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceRGB /Coords [${gradientCoords(gr)}] /Function ${stopsFunction(stops, rgb)} /Extend [true true] >>`);
+    name = `Sh${this.shadingKeys.size + 1}`;
+    this.shadingKeys.set(key, name);
+    this.shadings.push(`/${name} ${id} 0 R`);
+    this.shadingInfo.set(name, gr);
+    return name;
+  }
+
+  /**
+   * The graphics state that fades a gradient's colours by the alpha of its stops (PDF shadings have no alpha of their
+   * own): a luminosity soft mask holding the same gradient in grey, white where opaque. Null when every stop is opaque.
+   */
+  gradientAlpha(gr: Gradient): string | null {
+    const stops = gradientStops(gr);
+    if (stops.every((st) => parseColor(st.color).a >= 0.999)) return null;
+    const key = `a|${gradientKey(gr)}`;
+    let name = this.gsKeys.get(key);
+    if (name) return name;
+    const grey = (c: Color) => `[${num(parseColor(c).a)}]`;
+    const sh = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceGray /Coords [${gradientCoords(gr)}] /Function ${stopsFunction(stops, grey)} /Extend [true true] >>`);
+    const form = this.stream(`/Type /XObject /Subtype /Form /BBox [-100000 -100000 100000 100000] /Group << /S /Transparency /CS /DeviceGray >> /Resources << /Shading << /ShA ${sh} 0 R >> >>`, enc.encode('/ShA sh'));
+    name = `GS${this.gsKeys.size + 1}`;
+    this.gsKeys.set(key, name);
+    this.gs.push(`/${name} << /Type /ExtGState /SMask << /Type /Mask /S /Luminosity /G ${form} 0 R >> >>`);
+    this.gsInfo.set(name, { fill: 1, stroke: 1, blend: 'Normal', fade: true });
     return name;
   }
 
@@ -176,6 +270,7 @@ export class PdfWriter {
     const id = this.stream(`${common} /ColorSpace /DeviceRGB${smask}`, rgb);
     const name = `Im${this.xobjects.length + 1}`;
     this.xobjects.push(`/${name} ${id} 0 R`);
+    this.imageInfo.set(name, img);
     return name;
   }
 
@@ -184,33 +279,74 @@ export class PdfWriter {
     const id = this.stream(`/Type /XObject /Subtype /Form /BBox [${bbox.map(num).join(' ')}] /Group << /S /Transparency /CS /DeviceRGB${isolated ? ' /I true' : ''} >> /Resources ${this.resId} 0 R`, enc.encode(content));
     const name = `Fm${this.xobjects.length + 1}`;
     this.xobjects.push(`/${name} ${id} 0 R`);
+    this.formInfo.set(name, content);
     return name;
   }
 
-  /** A PDF layer (optional content group) by name, shared across pages. */
-  layer(name: string): string {
-    let i = this.ocgs.findIndex((o) => o.name === name);
+  /**
+   * Starts a PDF layer (optional content group), inside the one being drawn into if there is one. Layers with the same
+   * name in the same place are shared across pages. `hidden`: the layer is off when the file opens (viewers that honour layers
+   * don't show it, and Illustrator's own data in ai-native.ts lists it as a hidden layer). End it with endLayer.
+   */
+  beginLayer(name: string, hidden = false): string {
+    const parent = this.layerStack.length ? this.layerStack[this.layerStack.length - 1] : null;
+    let i = this.ocgs.findIndex((o) => o.name === name && o.parent === parent && o.hidden === hidden);
     if (i < 0) {
-      this.ocgs.push({ id: this.add(`<< /Type /OCG /Name ${pdfString(name)} >>`), name });
+      this.ocgs.push({ id: this.add(`<< /Type /OCG /Name ${pdfString(name)} >>`), name, parent, hidden });
       i = this.ocgs.length - 1;
     }
+    this.layerStack.push(i);
     return `OC${i + 1}`;
   }
 
-  finish(pages: { content: string; width: number; height: number }[], info: { title: string; creator: string }): Uint8Array {
+  endLayer(): void {
+    this.layerStack.pop();
+  }
+
+  /** The layers as nested /Order entries, top first (a layer's own layers follow it in an array). */
+  private layerOrder(parent: number | null): string {
+    const out: string[] = [];
+    for (let i = this.ocgs.length - 1; i >= 0; i--) {
+      if (this.ocgs[i].parent !== parent) continue;
+      out.push(`${this.ocgs[i].id} 0 R`);
+      if (this.ocgs.some((o) => o.parent === i)) out.push(`[${this.layerOrder(i)}]`);
+    }
+    return out.join(' ');
+  }
+
+  /**
+   * `native`: add Illustrator's own data (see ai-native.ts) so Illustrator opens the file as its own, with real layers and
+   * artboards. Every other program reads the PDF part.
+   */
+  finish(pages: { content: string; width: number; height: number }[], info: { title: string; creator: string }, native = false): Uint8Array {
     const pagesId = this.reserve();
     const kids: number[] = [];
+    let piece = '';
+    let when = '';
+    if (native) {
+      const d = new Date();
+      const p2 = (n: number) => String(n).padStart(2, '0');
+      when = `D:${d.getUTCFullYear()}${p2(d.getUTCMonth() + 1)}${p2(d.getUTCDate())}${p2(d.getUTCHours())}${p2(d.getUTCMinutes())}${p2(d.getUTCSeconds())}Z`;
+      const data = nativeData(this, pages, info.title);
+      const ids: string[] = [`/AIMetaData ${this.stream('', data.header)} 0 R`];
+      data.blocks.forEach((b, i) => ids.push(`/AIPrivateData${i + 1} ${this.stream('', b)} 0 R`));
+      const priv = this.add(`<< ${ids.join(' ')} /ContainerVersion 11 /CreatorVersion 30 /NumBlock ${data.blocks.length} /RoundtripVersion 17 >>`);
+      const pi = this.add(`<< /LastModified (${when}) /Private ${priv} 0 R >>`);
+      piece = ` /PieceInfo << /Illustrator ${pi} 0 R >> /LastModified (${when})`;
+    }
     for (const p of pages) {
       const c = this.stream('', enc.encode(p.content));
-      kids.push(this.add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${num(p.width)} ${num(p.height)}] /Resources ${this.resId} 0 R /Contents ${c} 0 R /Group << /S /Transparency /CS /DeviceRGB >> >>`));
+      kids.push(this.add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${num(p.width)} ${num(p.height)}] /Resources ${this.resId} 0 R /Contents ${c} 0 R /Group << /S /Transparency /CS /DeviceRGB >>${piece} >>`));
     }
     this.set(pagesId, `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`);
     const props = this.ocgs.map((o, i) => `/OC${i + 1} ${o.id} 0 R`).join(' ');
-    this.set(this.resId, `<< /ProcSet [/PDF /ImageC /ImageB] /ExtGState << ${this.gs.join(' ')} >> /XObject << ${this.xobjects.join(' ')} >> /Properties << ${props} >> >>`);
+    this.set(this.resId, `<< /ProcSet [/PDF /ImageC /ImageB] /ExtGState << ${this.gs.join(' ')} >> /XObject << ${this.xobjects.join(' ')} >> /Shading << ${this.shadings.join(' ')} >> /Properties << ${props} >> >>`);
     const ocgRefs = this.ocgs.map((o) => `${o.id} 0 R`).join(' ');
-    // Layers listed top first, the way layer panels show them.
-    const order = [...this.ocgs].reverse().map((o) => `${o.id} 0 R`).join(' ');
-    const ocp = this.ocgs.length ? ` /OCProperties << /OCGs [${ocgRefs}] /D << /Order [${order}] /ON [${ocgRefs}] >> >>` : '';
+    const onRefs = this.ocgs.filter((o) => !o.hidden).map((o) => `${o.id} 0 R`).join(' ');
+    const offRefs = this.ocgs.filter((o) => o.hidden).map((o) => `${o.id} 0 R`).join(' ');
+    // Layers listed top first, the way layer panels show them, folders holding their layers.
+    const order = this.layerOrder(null);
+    const ocp = this.ocgs.length ? ` /OCProperties << /OCGs [${ocgRefs}] /D << /Order [${order}] /ON [${onRefs}]${offRefs ? ` /OFF [${offRefs}]` : ''} >> >>` : '';
     const catalog = this.add(`<< /Type /Catalog /Pages ${pagesId} 0 R${ocp}${this.ocgs.length ? ' /PageMode /UseOC' : ''} >>`);
     const infoId = this.add(`<< /Title ${pdfString(info.title)} /Creator ${pdfString(info.creator)} /Producer (Frameling) >>`);
 
@@ -249,7 +385,7 @@ export class PdfWriter {
 // ---------------------------------------------------------------- drawing operators
 
 /** Builds one content stream in document coordinates (the page flips y once at the start). */
-class Content {
+export class Content {
   ops: string[] = [];
   constructor(private w: PdfWriter) {}
 
@@ -264,6 +400,26 @@ class Content {
     this.push(`${num(p.r)} ${num(p.g)} ${num(p.b)} rg`);
     if (a < 0.999) this.push(`/${this.w.state(a, 1)} gs`);
     return true;
+  }
+
+  /**
+   * Paints a gradient inside the path `path` draws (as a clip; `W*` even-odd, `W` non-zero). A gradient with see-through
+   * stops is painted inside a form that carries the soft mask: Illustrator applies the mask twice when the shading is
+   * drawn straight under it, which pulls the colour in much too fast.
+   */
+  shade(gr: Gradient, opacity: number, rule: 'W*' | 'W', path: (c: Content) => void): void {
+    if (opacity < 0.999) this.push(`/${this.w.state(opacity, 1)} gs`);
+    const fade = this.w.gradientAlpha(gr);
+    if (!fade) {
+      path(this);
+      this.push(`${rule} n /${this.w.shading(gr)} sh`);
+      return;
+    }
+    const inner = new Content(this.w);
+    path(inner);
+    inner.push(`${rule} n /${this.w.shading(gr)} sh`);
+    const form = this.w.group(inner.toString(), [-1e5, -1e5, 1e5, 1e5], true);
+    this.push(`q /${fade} gs /${form} Do Q`);
   }
 
   strokeColor(c: Color, opacity: number): boolean {
@@ -344,8 +500,10 @@ export interface PdfFrameContext {
   doc: Doc;
   frame: number;
   /** A picture of these layers alone (with their effects, clipping and masks), the stage's size at `pictureScale`. */
-  picture?: (layers: Layer[], own: boolean) => RawImage | null;
+  picture?: (layers: Layer[], own: boolean, reveal?: boolean, inside?: string[]) => RawImage | null;
   pictureScale: number;
+  /** Keep hidden layers and folders, as layers that are off (for the Illustrator data of a .ai). */
+  includeHidden?: boolean;
   /** Pixel art: pictures stay blocky when scaled (no smoothing). */
   crisp?: boolean;
   /** What the camera sees on this frame, when the drawing has one. */
@@ -357,18 +515,8 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
     if (isPosed(s)) drawInstance(cx, ctx, s);
     return;
   }
-  if (s.type === 'text') {
-    const paths = textOutlines(s);
-    if (!paths.length) return;
-    cx.push('q');
-    if (cx.fillColor(s.color, s.opacity)) {
-      cx.subPaths(paths);
-      cx.push('f*');
-    }
-    cx.push('Q');
-    return;
-  }
-  if (s.type === 'particles') return drawParticles(cx, ctx, s);
+  // Text, particles and the like draw themselves, through their registered export.
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.pdf?.(cx, ctx, s);
   cx.push('q');
   if (s.type === 'stroke') {
     if (cx.fillColor(s.color, s.opacity)) {
@@ -376,16 +524,39 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
       cx.push('f');
     }
   } else if (s.type === 'fill') {
-    if (cx.fillColor(s.color, s.opacity)) {
+    if (s.gradient) {
+      cx.shade(s.gradient, s.opacity, 'W*', (c) => c.subPaths(s.paths));
+    } else if (cx.fillColor(s.color, s.opacity)) {
       cx.subPaths(s.paths);
       cx.push('f*');
     }
   } else {
-    if (s.fill && cx.fillColor(s.fill, s.opacity)) {
+    if (s.fill && s.fillGradient) {
+      cx.push('q');
+      cx.shade(s.fillGradient, s.opacity, 'W*', (c) => c.subPaths(s.paths));
+      cx.push('Q');
+    } else if (s.fill && cx.fillColor(s.fill, s.opacity)) {
       cx.subPaths(s.paths);
       cx.push('f*');
     }
-    if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
+    if (s.stroke && s.stroke.width > 0 && s.strokeGradient) {
+      // A gradient line: the line's own outline clips the gradient (PDF can only shade areas).
+      const st = s.stroke;
+      if (ctx.includeHidden) cx.push(`/FrStroke << /I ${ctx.writer.live({ kind: 'stroke', paths: s.paths, width: st.width, join: st.join, cap: st.cap, gradient: s.strokeGradient, opacity: s.opacity })} >> BDC`);
+      cx.push('q');
+      cx.shade(s.strokeGradient, s.opacity, 'W', (c) => {
+        for (const sp of s.paths)
+          for (const poly of lineArea(flattenRing(sp), sp.closed, st.width, st.join, st.cap))
+            for (const ring of poly) {
+              if (ring.length < 3) continue;
+              c.push(`${num(ring[0][0])} ${num(ring[0][1])} m`);
+              for (let i = 1; i < ring.length; i++) c.push(`${num(ring[i][0])} ${num(ring[i][1])} l`);
+              c.push('h');
+            }
+      });
+      cx.push('Q');
+      if (ctx.includeHidden) cx.push('EMC');
+    } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
       cx.push(`${num(s.stroke.width)} w ${JOIN[s.stroke.join] ?? 1} j ${CAP[s.stroke.cap] ?? 1} J`);
       cx.subPaths(s.paths);
       cx.push('S');
@@ -394,10 +565,11 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
   cx.push('Q');
 }
 
-function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing, pixelSize: number): void {
+function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing | undefined, pixelSize: number): void {
+  if (!d || d.width < 1 || d.height < 1) return;
   const name = ctx.writer.image(washPixels({ width: d.width, height: d.height, pixels: d.pixels }), false);
-  // Images fill the unit square; the page is flipped, so flip the picture back.
-  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} 0 ${num(d.height * pixelSize)} cm /${name} Do Q`);
+  // Images fill the unit square; the page is flipped, so flip the picture back. The block sits (x, y) art pixels in.
+  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} ${num((d.x ?? 0) * pixelSize)} ${num((d.y ?? 0) * pixelSize + d.height * pixelSize)} cm /${name} Do Q`);
 }
 
 function drawDrawing(cx: Content, ctx: PdfFrameContext, d: Drawing, pixelSize: number): void {
@@ -406,7 +578,7 @@ function drawDrawing(cx: Content, ctx: PdfFrameContext, d: Drawing, pixelSize: n
 }
 
 /** Draws `inner` as one faded and blended group (or straight in when there's nothing to do). */
-function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: BlendMode | undefined, inner: (c: Content) => void): void {
+export function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: BlendMode | undefined, inner: (c: Content) => void): void {
   if (opacity >= 1 && (blend ?? 'normal') === 'normal') return inner(cx);
   if (opacity <= 0) return;
   const c = new Content(ctx.writer);
@@ -415,7 +587,7 @@ function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: Blen
   cx.push(`q /${ctx.writer.state(opacity, opacity, pdfBlend(blend))} gs /${name} Do Q`);
 }
 
-function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void {
+export function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void {
   if (s.opacity <= 0 || !s.posed.layers.length) return;
   const m = s.posed.matrix;
   const look = s.posed.look;
@@ -434,7 +606,7 @@ function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void
         for (const { pl: l, blend } of layers)
           grouped(c2, ctx, l.opacity, blend, (cc) =>
             // A tilemap inside a symbol goes in as its pixels, on the symbol's own frame.
-            l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenTilemap(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
+            l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenDrawing(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
           );
       };
       // Blends mix with the symbol's own layers only, as on the canvas.
@@ -455,86 +627,6 @@ function isolated(cx: Content, ctx: PdfFrameContext, inner: (c: Content) => void
   cx.push(`q /${name} Do Q`);
 }
 
-function particleShape(cx: Content, s: ParticlesShape, p: Particle): void {
-  const r = p.size / 2;
-  const rot = (p.rotation * Math.PI) / 180;
-  const cos = Math.cos(rot);
-  const sin = Math.sin(rot);
-  const at = `${num(cos)} ${num(sin)} ${num(-sin)} ${num(cos)} ${num(p.x)} ${num(p.y)} cm`;
-  switch (s.sprite) {
-    case 'streak': {
-      const len = Math.max(p.size * 2, Math.hypot(p.vx, p.vy) * 0.05);
-      const ang = Math.atan2(p.vy, p.vx);
-      cx.push(`${num(p.size)} w 1 J ${num(p.x)} ${num(p.y)} m ${num(p.x - Math.cos(ang) * len)} ${num(p.y - Math.sin(ang) * len)} l S`);
-      return;
-    }
-    case 'square':
-      cx.push(`q ${at} ${num(-r)} ${num(-r)} ${num(p.size)} ${num(p.size)} re f Q`);
-      return;
-    case 'confetti': {
-      const flip = Math.cos((p.rotation * Math.PI) / 90) || 0.01;
-      cx.push(`q ${at} 1 0 0 ${num(flip)} 0 0 cm ${num(-r)} ${num(-r * 0.5)} ${num(p.size)} ${num(p.size * 0.5)} re f Q`);
-      return;
-    }
-    case 'star':
-    case 'spark': {
-      const points = s.sprite === 'star' ? 5 : 4;
-      const inner = s.sprite === 'star' ? 0.45 : 0.22;
-      cx.push(`q ${at}`);
-      for (let i = 0; i < points * 2; i++) {
-        const a = (i * Math.PI) / points - Math.PI / 2;
-        const rr = i % 2 ? r * inner : r;
-        cx.push(`${num(Math.cos(a) * rr)} ${num(Math.sin(a) * rr)} ${i ? 'l' : 'm'}`);
-      }
-      cx.push('h f Q');
-      return;
-    }
-    case 'flake': {
-      cx.push(`q ${at} ${num(Math.max(0.6, p.size / 9))} w 1 J`);
-      for (let i = 0; i < 3; i++) {
-        const a = (i * Math.PI) / 3;
-        cx.push(`${num(Math.cos(a) * r)} ${num(Math.sin(a) * r)} m ${num(-Math.cos(a) * r)} ${num(-Math.sin(a) * r)} l`);
-      }
-      cx.push('S Q');
-      return;
-    }
-    case 'soft':
-      cx.circle(p.x, p.y, r * 0.7);
-      cx.push('f');
-      return;
-    default:
-      cx.circle(p.x, p.y, r);
-      cx.push('f');
-  }
-}
-
-function drawParticles(cx: Content, ctx: PdfFrameContext, s: ParticlesShape): void {
-  if (s.opacity <= 0) return;
-  const posed = s as ParticlesShape & { posedSprites?: PosedInstance[]; posedSpriteSize?: number; posedFps?: number };
-  for (const p of posedParticles(s)) {
-    const a = p.alpha * s.opacity * (s.sprite === 'soft' ? 0.6 : 1);
-    if (a <= 0.003 || p.size <= 0.01) continue;
-    if (s.sprite === 'symbol' && posed.posedSprites?.length) {
-      const k = p.size / Math.max(1, posed.posedSpriteSize ?? 1);
-      const rot = (p.rotation * Math.PI) / 180;
-      const sprite = posed.posedSprites[Math.floor(p.age * (posed.posedFps ?? 24)) % posed.posedSprites.length];
-      grouped(cx, ctx, a, undefined, (c) => {
-        c.push(`q ${num(Math.cos(rot) * k)} ${num(Math.sin(rot) * k)} ${num(-Math.sin(rot) * k)} ${num(Math.cos(rot) * k)} ${num(p.x)} ${num(p.y)} cm`);
-        drawInstance(c, ctx, sprite);
-        c.push('Q');
-      });
-      continue;
-    }
-    cx.push('q');
-    const c = parseColor(p.color);
-    const alpha = a * c.a;
-    cx.push(`${num(c.r)} ${num(c.g)} ${num(c.b)} rg ${num(c.r)} ${num(c.g)} ${num(c.b)} RG`);
-    if (alpha < 0.999) cx.push(`/${ctx.writer.state(alpha, alpha)} gs`);
-    particleShape(cx, s, p);
-    cx.push('Q');
-  }
-}
-
 function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage, crisp: boolean): void {
   const name = ctx.writer.image(img, !crisp);
   const { width: w, height: h } = ctx.doc;
@@ -543,13 +635,17 @@ function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage, crisp: bo
 
 function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
   if (u.kind === 'folder') {
+    // A folder is a layer holding its layers (Acrobat shows them nested; the Illustrator data in ai-native.ts too).
+    cx.push(`/OC /${ctx.writer.beginLayer(u.folder.name, u.hidden)} BDC`);
     grouped(cx, ctx, u.folder.opacity, u.folder.blend, (c) => {
       for (const x of u.units) drawUnit(c, ctx, x);
     });
+    cx.push('EMC');
+    ctx.writer.endLayer();
     return;
   }
   const first = u.kind === 'vector' ? u.layer : (u.own ?? u.layers[u.layers.length - 1]);
-  const oc = ctx.writer.layer(u.kind === 'vector' || u.layers.length === 1 ? first.name : u.layers.map((l) => l.name).join(' + '));
+  const oc = ctx.writer.beginLayer(u.kind === 'vector' || u.layers.length === 1 ? first.name : u.layers.map((l) => l.name).join(' + '), u.hidden);
   cx.push(`/OC /${oc} BDC`);
   if (u.kind === 'vector') {
     const l = u.layer;
@@ -563,7 +659,7 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
         if (cam) c.push('Q');
       });
   } else if (ctx.picture) {
-    const img = ctx.picture(u.layers, !!u.own);
+    const img = ctx.picture(u.layers, !!u.own, u.inHidden, u.inside);
     // Pixel and tile layers stay blocky when the picture is scaled.
     const crisp = !!ctx.crisp || u.layers.every((l) => l.kind !== 'vector');
     if (img) {
@@ -572,6 +668,7 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
     }
   }
   cx.push('EMC');
+  ctx.writer.endLayer();
 }
 
 /** One page's content for a frame: background, then every layer bottom first. */
@@ -581,11 +678,14 @@ export function pdfFrameContent(ctx: PdfFrameContext, scale: number, background:
   // Document pixels to points, with y going down like everywhere else in Frameling.
   cx.push(`${num(scale)} 0 0 ${num(-scale)} 0 ${num(h * scale)} cm`);
   if (background) {
+    cx.push(`/OC /${ctx.writer.beginLayer('Background')} BDC`);
     cx.fillColor(background, 1);
     cx.push(`0 0 ${num(w)} ${num(h)} re f`);
+    cx.push('EMC');
+    ctx.writer.endLayer();
   }
   ctx.view = cameraViewAt(ctx.doc, ctx.frame);
-  for (const u of flatPlan(ctx.doc, ctx.frame)) drawUnit(cx, ctx, u);
+  for (const u of flatPlan(ctx.doc, ctx.frame, ctx.includeHidden)) drawUnit(cx, ctx, u);
   return cx.toString();
 }
 
@@ -596,7 +696,7 @@ export interface PdfOptions {
   background: Color | null;
   title: string;
   /** Pictures of layers PDF can't draw as vector (from the renderer). */
-  picture?: (frame: number, layers: Layer[], own: boolean) => RawImage | null;
+  picture?: (frame: number, layers: Layer[], own: boolean, reveal?: boolean, inside?: string[]) => RawImage | null;
   pictureScale?: number;
   crisp?: boolean;
   creator?: string;
@@ -604,12 +704,12 @@ export interface PdfOptions {
   onPage?: (i: number) => void;
 }
 
-export function writePdf(doc: Doc, opts: PdfOptions): Uint8Array {
+export function writePdf(doc: Doc, opts: PdfOptions & { native?: boolean }): Uint8Array {
   const writer = new PdfWriter();
   const pages = opts.frames.map((frame, i) => {
-    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own) => opts.picture!(frame, ls, own) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp }, opts.scale, opts.background);
+    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own, reveal, inside) => opts.picture!(frame, ls, own, reveal, inside) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp, includeHidden: !!opts.native }, opts.scale, opts.background);
     opts.onPage?.(i);
     return { content, width: doc.width * opts.scale, height: doc.height * opts.scale };
   });
-  return writer.finish(pages, { title: opts.title, creator: opts.creator ?? 'Frameling' });
+  return writer.finish(pages, { title: opts.title, creator: opts.creator ?? 'Frameling' }, !!opts.native);
 }

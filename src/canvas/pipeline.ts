@@ -9,19 +9,24 @@
  * exports can never disagree about what a frame looks like.
  */
 import type { CameraView, Doc, Drawing, Layer } from '../core/format';
-import { layerCameraMatrix } from '../core/camera';
+import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { Mat } from '../core/symbols';
-import { poseAt, poseLive } from '../core/symbols';
+import { mul, poseAt, poseLive, rootDoc } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
 import { bindMatrixAt } from '../rig/pose';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
+import { drawLivePixels } from './livePixels';
 import type { Rect } from './view';
 import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
+import { onionBoards, onionFrames } from './onion';
+import { artboardDoc } from '../artboards/model';
+import { blitEntry, blitEntryStretched } from './bitmapBlit';
+import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
 
 export interface FrameParams {
   doc: Doc;
@@ -51,6 +56,8 @@ export interface FrameParams {
   activeLayerId?: string | null;
   /** The empty frame ghost: last drawings to show faintly where a layer has nothing (see ghost.ts). */
   ghost?: GhostItem[];
+  /** The light table: a pinned frame or drawing shown faintly under everything (see lightTable.ts). */
+  lightTable?: { items: GhostItem[]; alpha: number; tint: string | null };
 }
 
 const AROUND: [number, number][] = [
@@ -69,17 +76,28 @@ type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
 function makeCanvas(w: number, h: number): Canvas2 {
   return typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
 }
+type Ctx2 = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 const ctxOf = (c: Canvas2) => c.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 // Total bitmap memory we'll hold (in pixels, 4 bytes each), across all layers and frames.
 export const BUDGET_PIXELS = 40_000_000;
 
-interface Entry {
+export interface Entry {
   drawing: Drawing;
   pixelSize: number;
+  /** The stage size this was made for (the key). */
   w: number;
   h: number;
+  /**
+   * Where the bitmap sits on a stage-sized frame, in whole device pixels. A drawing that only covers part of the stage
+   * gets a bitmap of just that part (a layer of a few strokes is a few thousand pixels, not the whole stage), so far
+   * more of them fit in the memory budget and each is cheaper to make and blit.
+   */
+  x: number;
+  y: number;
   canvas: Canvas2;
+  /** The pixels this holds, for the budget. */
+  pixels: number;
   used: number;
   list: Entry[];
 }
@@ -97,6 +115,8 @@ export class BitmapCache {
   hits = 0;
   /** Bitmaps thrown out to stay inside the budget. */
   evictions = 0;
+  /** Make bitmaps only as big as their drawings (off only for the pixel comparison in scripts/e2e/layer-cache.cjs). */
+  crop = true;
 
   find(d: Drawing, pixelSize: number, w: number, h: number): Entry | undefined {
     const e = this.map.get(d)?.find((x) => x.pixelSize === pixelSize && x.w === w && x.h === h);
@@ -143,27 +163,79 @@ export class BitmapCache {
    * sequence of paint operations the full draw would do, minus the repeats. That's what a new brush stroke is.
    */
   build(doc: Doc, d: Drawing, pixelSize: number, w: number, h: number, from?: Entry): Entry {
-    const canvas = makeCanvas(w, h);
-    const g = ctxOf(canvas);
-    if (from && from.drawing.kind === 'vector' && d.kind === 'vector') {
-      g.drawImage(from.canvas, 0, 0);
-      g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      for (let i = from.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
-      this.appends++;
+    const grown = from && from.drawing.kind === 'vector' && d.kind === 'vector' ? from : undefined;
+    const fw = Math.trunc(w);
+    const fh = Math.trunc(h);
+    let crop: CropRect | null = null;
+    if (this.crop && d.kind === 'vector') {
+      // Only the part of the frame the drawing can touch. When it grew from an earlier bitmap, that and the new shapes.
+      const added = grown && grown.drawing.kind === 'vector' ? d.shapes.slice(grown.drawing.shapes.length) : d.shapes;
+      const c = cropFor(shapesInk(added), doc.width, doc.height, w, h);
+      if (c) crop = grown ? unionCrop({ x: grown.x, y: grown.y, w: grown.canvas.width, h: grown.canvas.height }, c) : c;
+      if (crop && crop.w * crop.h * 2 > fw * fh) crop = null;
+    }
+    let canvas: Canvas2;
+    let at = { x: 0, y: 0 };
+    if (crop) {
+      // Drawn on a whole-frame canvas all the same, so every pixel comes out exactly as it always did (shifting the
+      // drawing onto a smaller canvas, or clipping it to the part, moves float rounding and flips the odd edge pixel),
+      // reused between builds, and only the part that can hold ink is copied out.
+      const sg = this.scratchFor(fw, fh, crop);
+      sg.save();
+      if (grown) sg.drawImage(grown.canvas, grown.x, grown.y);
+      sg.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
+      this.paintInto(sg, doc, d, pixelSize, grown);
+      sg.restore();
+      canvas = makeCanvas(crop.w, crop.h);
+      ctxOf(canvas).drawImage(sg.canvas as CanvasImageSource, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+      at = { x: crop.x, y: crop.y };
     } else {
+      canvas = makeCanvas(w, h);
+      const g = ctxOf(canvas);
+      if (grown) g.drawImage(grown.canvas, grown.x, grown.y);
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      // The frame only matters to tilemaps, and those inside symbols carry their own.
-      drawDrawing(g, d, pixelSize, { doc, frame: 0 });
+      this.paintInto(g, doc, d, pixelSize, grown);
     }
     this.builds++;
     let list = this.map.get(d);
     if (!list) this.map.set(d, (list = []));
-    const e: Entry = { drawing: d, pixelSize, w, h, canvas, used: ++this.tick, list };
+    const e: Entry = { drawing: d, pixelSize, w, h, x: at.x, y: at.y, canvas, pixels: canvas.width * canvas.height, used: ++this.tick, list };
     list.push(e);
     this.all.add(e);
-    this.total += w * h;
+    this.total += e.pixels;
     this.trim(e);
     return e;
+  }
+
+  /** Draws the drawing (or only the shapes added to `grown`'s) with `g` already set to the stage's scale. */
+  private paintInto(g: Ctx2, doc: Doc, d: Drawing, pixelSize: number, grown?: Entry): void {
+    if (grown && grown.drawing.kind === 'vector' && d.kind === 'vector') {
+      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
+      this.appends++;
+    } else {
+      // The frame only matters to tilemaps, and those inside symbols carry their own.
+      drawDrawing(g, d, pixelSize, { doc, frame: 0 });
+    }
+  }
+
+  private scratch: { canvas: Canvas2; g: Ctx2; w: number; h: number; dirty: CropRect | null } | null = null;
+
+  /** The reused whole-frame canvas, empty where `crop` is (where the drawing goes). */
+  private scratchFor(w: number, h: number, crop: CropRect): Ctx2 {
+    let s = this.scratch;
+    if (!s || s.w !== w || s.h !== h) {
+      const canvas = makeCanvas(w, h);
+      s = this.scratch = { canvas, g: ctxOf(canvas), w, h, dirty: null };
+    }
+    const g = s.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    if (s.dirty) g.clearRect(s.dirty.x, s.dirty.y, s.dirty.w, s.dirty.h);
+    // Cleared with room to spare, so ink a hair outside the box (it is a generous box, not an exact one) can't linger.
+    const m = Math.max(32, Math.ceil(Math.max(crop.w, crop.h) / 2));
+    const x = Math.max(0, crop.x - m);
+    const y = Math.max(0, crop.y - m);
+    s.dirty = { x, y, w: Math.min(w, crop.x + crop.w + m) - x, h: Math.min(h, crop.y + crop.h + m) - y };
+    return g;
   }
 
   /** Drops bitmaps of other scales for a drawing (after a zoom settles). */
@@ -175,7 +247,7 @@ export class BitmapCache {
 
   private remove(e: Entry): void {
     this.all.delete(e);
-    this.total -= e.w * e.h;
+    this.total -= e.pixels;
     const i = e.list.indexOf(e);
     if (i >= 0) e.list.splice(i, 1);
   }
@@ -193,15 +265,23 @@ export class BitmapCache {
   }
 
   clear(): void {
+    this.scratch = null;
     this.all.clear();
     this.total = 0;
     this.map = new WeakMap();
   }
 }
 
+/** Ghost bitmaps kept: a few onion frames each way, the empty frame ghost and the light table, at a couple of cameras. */
+const ONION_CACHE_MAX = 12;
+
+const sameMat = (a: Mat | undefined, b: Mat | undefined): boolean => a === b || (!!a && !!b && a.every((v, i) => v === b[i]));
+
 interface OnionItem {
   drawing: Drawing;
   pixelSize: number;
+  /** The camera's matrix for this layer, when the canvas looks through it. */
+  cam?: Mat;
 }
 interface OnionEntry {
   items: OnionItem[];
@@ -227,11 +307,18 @@ export class FramePainter {
     return rect.w * rect.h <= Math.max(2_000_000, width * height * 1.25);
   }
 
-  /** How many frames ahead of the playhead fit in about half the bitmap budget (at most 48). */
+  /**
+   * How many frames ahead of the playhead fit in about half the bitmap budget (at most 48). Bitmaps are only as big as
+   * their drawings, so once some are held their average size is used instead of a whole stage.
+   */
   warmDepth(doc: Doc, rect: Rect): number {
     const layers = doc.layers.filter((l) => l.visible && l.kind === 'vector').length;
     if (!layers) return 0;
-    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * rect.w * rect.h))));
+    const { entries, pixels } = this.cache.size;
+    const whole = rect.w * rect.h;
+    // Needs a fair sample (a frame's worth), and never assumes bitmaps smaller than a 40th of the stage.
+    const each = entries >= layers ? Math.min(whole, Math.max(whole / 40, pixels / entries)) : whole;
+    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * each))));
   }
 
   /**
@@ -306,9 +393,11 @@ export class FramePainter {
     // Inside a symbol: the scene around it, dimmed, in the symbol's own space.
     if (doc.editing?.length) paintEditBackdrop(g, doc, rect);
 
-    // Through the camera the onion skin would be in the wrong place, so it's left out.
-    if (p.onion.enabled && !p.playing && !p.camera) this.paintOnion(g, p, cacheable);
-    else if (p.ghost?.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.ghost, cacheable);
+    // The light table sits under the onion skin and the ghost: it's the page you trace on. Through the camera they go
+    // through it too (each layer by its own depth), so they sit where you see them.
+    if (p.lightTable?.items.length && !p.playing && !copy) this.paintGhost(g, p, p.lightTable.items, cacheable, p.lightTable.alpha, p.lightTable.tint);
+    if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
+    else if (p.ghost?.length && !p.playing && !copy) this.paintGhost(g, p, p.ghost, cacheable);
 
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
     else for (const layer of doc.layers) {
@@ -328,7 +417,7 @@ export class FramePainter {
         // Pixels being painted on a part attached to a bone show where the part is.
         const bm = bindMatrixAt(doc, layer, p.frame);
         if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
-        g.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
+        drawLivePixels(g, lv, pixelSize);
         g.restore();
         continue;
       }
@@ -346,7 +435,7 @@ export class FramePainter {
           const old = this.cache.stale(drawing, pixelSize);
           if (old) {
             g.globalAlpha = layer.opacity;
-            g.drawImage(old.canvas, rect.x, rect.y, rect.w, rect.h);
+            blitEntryStretched(g, old, rect.x, rect.y, rect.w, rect.h);
             g.globalAlpha = 1;
             settled = false;
             continue;
@@ -359,7 +448,7 @@ export class FramePainter {
         }
         this.lastVector.set(layer.id, drawing);
         g.globalAlpha = layer.opacity;
-        g.drawImage(e.canvas, rect.x, rect.y);
+        blitEntry(g, e, rect.x, rect.y);
         g.globalAlpha = 1;
       } else {
         this.paintDirect(g, p, drawing, layer, pixelSize);
@@ -483,14 +572,24 @@ export class FramePainter {
   // ---------------------------------------------------------------- onion skin
 
   private paintOnion(g: CanvasRenderingContext2D, p: FrameParams, cacheable: boolean): void {
-    const { doc, frame, onion, rect } = p;
-    const offsets: [number, number][] = [];
-    for (let k = 1; k <= onion.before; k++) if (frame - k >= 0) offsets.push([-k, k]);
-    for (let k = 1; k <= onion.after; k++) if (frame + k < doc.length) offsets.push([k, k]);
+    const { doc, frame, onion } = p;
+    // The boards either side go on first: they're another shot, so they sit under this shot's own ghosts.
+    for (const b of onionBoards(doc, onion)) {
+      const nd = artboardDoc(rootDoc(doc), b.id);
+      // Looking through the camera, each board shows what its own camera sees, fitted into the stage.
+      const view = p.camera ? cameraViewAt(nd, b.frame) : undefined;
+      const items: OnionItem[] = [];
+      for (const layer of nd.layers) {
+        if (!layer.visible || layer.onion === false) continue;
+        const d = poseAt(nd, layer, b.frame);
+        if (!d || d.kind === 'tilemap' || d.kind === 'camera') continue;
+        const lc = layerCameraMatrix(nd, layer, view);
+        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, cam: lc ? mul(b.fit, lc) : b.fit });
+      }
+      this.paintOnionPass(g, p, items, b.side, b.dist, cacheable);
+    }
     // Furthest first, so the nearest ghost ends up on top.
-    offsets.sort((a, b) => b[1] - a[1]);
-    for (const [off, dist] of offsets) {
-      const f = frame + off;
+    for (const { frame: f, side, dist } of onionFrames(doc, frame, onion)) {
       const items: OnionItem[] = [];
       for (const layer of doc.layers) {
         if (!layer.visible || layer.onion === false) continue;
@@ -499,39 +598,49 @@ export class FramePainter {
         if (!d || d === poseAt(doc, layer, frame)) continue;
         // Tilemaps stay out of the onion skin: a level behind the character isn't a ghost of anything.
         if (d.kind === 'tilemap') continue;
-        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
+        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, cam: layerCameraMatrix(doc, layer, p.camera) });
       }
-      if (!items.length) continue;
-      const color = off < 0 ? onion.beforeColor : onion.afterColor;
-      const alpha = onion.opacity * Math.pow(0.65, dist - 1);
-      g.globalAlpha = alpha;
-      if (cacheable) {
-        const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
-        g.drawImage(c, rect.x, rect.y);
-      } else {
-        const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
-        const sg = ctxOf(sc);
-        sg.setTransform(1, 0, 0, 1, 0, 0);
-        sg.clearRect(0, 0, p.width, p.height);
-        sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
-        this.drawOnionItems(sg, items, color, onion.tint, p.width, p.height);
-        g.drawImage(sc, 0, 0);
-      }
-      g.globalAlpha = 1;
+      this.paintOnionPass(g, p, items, side, dist, cacheable);
     }
   }
 
-  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, items: GhostItem[], cacheable: boolean): void {
+  /** One onion ghost (a frame or a board): its colour and strength come from the side and how far away it is. */
+  private paintOnionPass(g: CanvasRenderingContext2D, p: FrameParams, items: OnionItem[], side: 'before' | 'after', dist: number, cacheable: boolean): void {
+    if (!items.length) return;
+    const { doc, onion, rect } = p;
+    const color = side === 'before' ? onion.beforeColor : onion.afterColor;
+    g.globalAlpha = onion.opacity * Math.pow(0.65, dist - 1);
+    // Through the camera too: the bitmap is keyed by the camera matrix and the size, so a still camera hits it.
+    if (cacheable) {
+      const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
+      g.drawImage(c, rect.x, rect.y);
+    } else {
+      const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
+      const sg = ctxOf(sc);
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.clearRect(0, 0, p.width, p.height);
+      sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      this.drawOnionItems(sg, items, color, onion.tint, p.width, p.height);
+      g.drawImage(sc, 0, 0);
+    }
+    g.globalAlpha = 1;
+  }
+
+  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, ghosts: GhostItem[], cacheable: boolean, alpha = GHOST_ALPHA, tint: string | null = null): void {
     const { doc, rect } = p;
-    g.globalAlpha = GHOST_ALPHA;
-    if (cacheable) g.drawImage(this.onionBitmap(doc, items, '', false, rect.w, rect.h), rect.x, rect.y);
+    const items: OnionItem[] = ghosts.map((it) => {
+      const layer = it.layerId ? doc.layers.find((l) => l.id === it.layerId) : undefined;
+      return { drawing: it.drawing, pixelSize: it.pixelSize, cam: layer ? layerCameraMatrix(doc, layer, p.camera) : undefined };
+    });
+    g.globalAlpha = alpha;
+    if (cacheable) g.drawImage(this.onionBitmap(doc, items, tint ?? '', !!tint, rect.w, rect.h), rect.x, rect.y);
     else {
       const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
       const sg = ctxOf(sc);
       sg.setTransform(1, 0, 0, 1, 0, 0);
       sg.clearRect(0, 0, p.width, p.height);
       sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
-      this.drawOnionItems(sg, items, '', false, p.width, p.height);
+      this.drawOnionItems(sg, items, tint ?? '', !!tint, p.width, p.height);
       g.drawImage(sc, 0, 0);
     }
     g.globalAlpha = 1;
@@ -543,11 +652,18 @@ export class FramePainter {
    */
   private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: OnionItem[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
     for (const it of items) {
-      if (doc && it.drawing.kind === 'vector') {
+      // A layer moved by the camera can't use its stage-sized layer bitmap: it's drawn through the matrix (once, into
+      // the ghost bitmap, which is what gets cached).
+      if (doc && !it.cam && it.drawing.kind === 'vector') {
         const e = this.cache.find(it.drawing, it.pixelSize, w, h) ?? this.cache.build(doc, it.drawing, it.pixelSize, w, h);
         g.save();
         g.setTransform(1, 0, 0, 1, 0, 0);
-        g.drawImage(e.canvas, 0, 0);
+        blitEntry(g, e, 0, 0);
+        g.restore();
+      } else if (it.cam) {
+        g.save();
+        g.transform(it.cam[0], it.cam[1], it.cam[2], it.cam[3], it.cam[4], it.cam[5]);
+        drawDrawing(g, it.drawing, it.pixelSize);
         g.restore();
       } else drawDrawing(g, it.drawing, it.pixelSize);
     }
@@ -563,7 +679,7 @@ export class FramePainter {
 
   private onionBitmap(doc: Doc, items: OnionItem[], color: string, tint: boolean, w: number, h: number): Canvas2 {
     const same = (e: OnionEntry) =>
-      e.w === w && e.h === h && e.color === color && e.tint === tint && e.items.length === items.length && e.items.every((x, i) => x.drawing === items[i].drawing && x.pixelSize === items[i].pixelSize);
+      e.w === w && e.h === h && e.color === color && e.tint === tint && e.items.length === items.length && e.items.every((x, i) => x.drawing === items[i].drawing && x.pixelSize === items[i].pixelSize && sameMat(x.cam, items[i].cam));
     const hit = this.onionCache.find(same);
     if (hit) {
       // Most recent last.
@@ -576,7 +692,7 @@ export class FramePainter {
     g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
     this.drawOnionItems(g, items, color, tint, w, h, doc);
     this.onionCache.push({ items, color, tint, w, h, canvas });
-    if (this.onionCache.length > 8) this.onionCache.shift();
+    if (this.onionCache.length > ONION_CACHE_MAX) this.onionCache.shift();
     return canvas;
   }
 

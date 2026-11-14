@@ -8,13 +8,16 @@
  * - Posing: `poseAt` is what a layer shows at a frame once instances know which of their own frames to show and
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
-import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
-import { ease } from './ease';
-import { celAt, uid } from './doc';
-import { isAnimatedText } from '../text/model';
-import { poseParticles } from '../particles/draw';
+import type { Artboard, Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import { folderChain } from './folders';
+import { layersWithCels } from './sharedLayers';
+import { tweenEase } from './ease';
+import { locate, tableOf } from './motionPath';
+import { celAt, peek, uid } from './doc';
+import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
-import { boundDrawing, type PosedMesh } from '../rig/pose';
+import { trimPixels } from './pixelBounds';
+import { bindLayer, type PosedMesh } from './layerKinds';
 
 // ---------------------------------------------------------------- matrices
 
@@ -111,7 +114,18 @@ export function allLayerLists(doc: Doc): Layer[][] {
   const out: Layer[][] = [doc.layers];
   for (const f of doc.editing ?? []) out.push(f.layers);
   for (const s of Object.values(doc.symbols ?? {})) out.push(s.layers);
+  for (const a of doc.artboards ?? []) if (a.content) out.push(boardLayers(doc, a));
   return out;
+}
+
+/**
+ * The layers an artboard has, whether it is open or not (read only). The open one's are the document's own. With shared
+ * layers a closed artboard's are the document's stack holding that artboard's cels.
+ */
+export function boardLayers(doc: Doc, a: Artboard): Layer[] {
+  const c = a.content;
+  if (!c) return doc.layers;
+  return c.cels ? layersWithCels(peek(rootDoc(doc).layers), c.cels) : c.layers;
 }
 
 // ---------------------------------------------------------------- editing in place
@@ -216,6 +230,60 @@ export function makeSymbol(doc: Doc, drawingId: Id, shapeIds: Id[], origin: { x:
   return { symbolId, instanceId: inst.id };
 }
 
+/** True when the layer has a pixel drawing with something in it showing at `frame`. */
+export function pixelKeyAt(doc: Doc, layerId: Id, frame: number): boolean {
+  const l = doc.layers.find((x) => x.id === layerId);
+  const cel = l?.kind === 'pixel' ? celAt(l, frame) : undefined;
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  return d?.kind === 'pixel' && d.width > 0 && d.height > 0;
+}
+
+/**
+ * Turns the pixel drawing showing on a pixel layer at `frame` into a symbol (on a draft). The symbol keeps a pixel
+ * layer of the same pixel size, so the art stays pixels and is drawn the way the pixel layer drew it. Symbols are
+ * placed by instances, which live on vector layers, so the instance goes on a vector layer that holds the same frames:
+ * the pixel layer itself when this was its only drawing (it becomes that vector layer, same place in the stack and
+ * same look), otherwise a new vector layer just above it. Nothing moves on screen. Returns undefined when there is
+ * nothing to take.
+ */
+export function makePixelSymbol(doc: Doc, layerId: Id, frame: number, name?: string): { symbolId: Id; instanceId: Id; layerId: Id } | undefined {
+  const at = doc.layers.findIndex((x) => x.id === layerId);
+  const layer = doc.layers[at];
+  if (!layer || layer.kind !== 'pixel') return undefined;
+  const cel = celAt(layer, frame);
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  if (!cel || d?.kind !== 'pixel' || d.width <= 0 || d.height <= 0) return undefined;
+  const ps = layer.pixelSize;
+  // Only the painted part goes in, so the symbol's middle (what it turns and scales around) is the art's own middle.
+  const t = trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0);
+  if (t.width <= 0 || t.height <= 0) return undefined;
+  const origin = { x: (t.x + t.width / 2) * ps, y: (t.y + t.height / 2) * ps };
+  // The drawing moves into the symbol, unless another frame shows it too (then the symbol gets its own copy).
+  const shared = allLayerLists(doc).some((list) => list.some((l) => l.cels.some((c) => c !== cel && c.drawingId === d.id)));
+  const innerId = shared ? uid('p') : d.id;
+  doc.drawings[innerId] = { id: innerId, kind: 'pixel', ...(t.x ? { x: t.x } : {}), ...(t.y ? { y: t.y } : {}), width: t.width, height: t.height, pixels: new Uint8ClampedArray(t.pixels) };
+  const inner: Layer = { id: uid('l'), name: 'Layer 1', kind: 'pixel', visible: true, locked: false, opacity: 1, pixelSize: ps, ...(layer.paletteLock ? { paletteLock: true } : {}), cels: [{ id: uid('c'), start: 0, length: 1, drawingId: innerId }] };
+  const symbolId = uid('y');
+  (doc.symbols ??= {})[symbolId] = { id: symbolId, name: name ?? freeSymbolName(doc), layers: [inner], length: 1, origin };
+  const inst = newInstance(symbolId, origin);
+  const held: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [inst] };
+  doc.drawings[held.id] = held;
+  const heldCel: Cel = { id: uid('c'), start: cel.start, length: cel.length, drawingId: held.id };
+  const rest = layer.cels.filter((c) => c !== cel);
+  const keepPixels = rest.length > 0 || !!layer.slices?.length;
+  if (keepPixels) {
+    layer.cels = rest;
+    const { id: _id, kind: _k, pixelSize: _p, paletteLock: _l, slices: _s, cels: _c, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+    const above: Layer = { ...look, id: uid('l'), name: `${layer.name} symbol`, kind: 'vector', cels: [heldCel] } as Layer;
+    doc.layers.splice(at + 1, 0, above);
+    return { symbolId, instanceId: inst.id, layerId: above.id };
+  }
+  // Only drawing on its layer: the layer becomes the vector layer, in the same place with the same look.
+  const { pixelSize: _p, paletteLock: _l, slices: _s, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+  doc.layers[at] = { ...look, kind: 'vector', cels: [heldCel] } as Layer;
+  return { symbolId, instanceId: inst.id, layerId };
+}
+
 function plainShapes(shapes: Shape[]): Shape[] {
   // Drafts can't be structured-cloned; JSON is fine for shapes (plain data).
   return JSON.parse(JSON.stringify(shapes));
@@ -308,9 +376,19 @@ export function nextKey(layer: Layer, cel: Cel): Cel | undefined {
 /** The instances of `to` that pair with those of `from`: same symbol in the same order, else just the same order. */
 export function pairInstances(from: InstanceShape[], to: InstanceShape[]): (InstanceShape | undefined)[] {
   const used = new Set<InstanceShape>();
+  // The instances of `to` by symbol, in order, and how many of each symbol `from` has used so far (one pass, not a
+  // rescan of both lists for every instance: a scene with a hundred instances made this the cost of every frame).
+  const bySymbol = new Map<string, InstanceShape[]>();
+  for (const x of to) {
+    const list = bySymbol.get(x.symbolId);
+    if (list) list.push(x);
+    else bySymbol.set(x.symbolId, [x]);
+  }
+  const seen = new Map<string, number>();
   return from.map((a, i) => {
-    const sameSym = from.slice(0, i).filter((x) => x.symbolId === a.symbolId).length;
-    const cand = to.filter((x) => x.symbolId === a.symbolId)[sameSym];
+    const sameSym = seen.get(a.symbolId) ?? 0;
+    seen.set(a.symbolId, sameSym + 1);
+    const cand = bySymbol.get(a.symbolId)?.[sameSym];
     const pick = cand && !used.has(cand) ? cand : to[i] && !used.has(to[i]) ? to[i] : undefined;
     if (pick) used.add(pick);
     return pick;
@@ -331,61 +409,12 @@ export function mixColor(a: string, b: string, t: number): string {
   return '#' + x.map((v, i) => Math.round(lerp(v, y[i], Math.max(0, Math.min(1, t)))).toString(16).padStart(2, '0')).join('');
 }
 
-// Motion paths are flattened once into a polyline with running lengths.
-interface PathTable {
-  pts: { x: number; y: number }[];
-  acc: number[];
-  total: number;
-}
-const pathTables = new WeakMap<MotionPath, PathTable>();
-
-function flattenPath(points: PathPoint[]): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  if (!points.length) return out;
-  out.push({ x: points[0].x, y: points[0].y });
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const q = points[i];
-    if (q.c1 && q.c2) {
-      for (let k = 1; k <= 16; k++) {
-        const t = k / 16;
-        const u = 1 - t;
-        out.push({
-          x: u * u * u * a.x + 3 * u * u * t * q.c1.x + 3 * u * t * t * q.c2.x + t * t * t * q.x,
-          y: u * u * u * a.y + 3 * u * u * t * q.c1.y + 3 * u * t * t * q.c2.y + t * t * t * q.y,
-        });
-      }
-    } else out.push({ x: q.x, y: q.y });
-  }
-  return out;
-}
-
-function pathTable(p: MotionPath): PathTable {
-  let t = pathTables.get(p);
-  if (!t) {
-    const pts = flattenPath(p.points);
-    const acc = [0];
-    for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-    t = { pts, acc, total: acc[acc.length - 1] ?? 0 };
-    pathTables.set(p, t);
-  }
-  return t;
-}
-
 /** Position and heading (degrees) at `t` (0..1, by distance along the line; past the ends it keeps going straight). */
 export function pointOnPath(p: MotionPath, t: number): { x: number; y: number; angle: number } {
-  const tab = pathTable(p);
-  const { pts, acc, total } = tab;
-  if (pts.length < 2 || !total) return { x: pts[0]?.x ?? 0, y: pts[0]?.y ?? 0, angle: 0 };
-  const s = t * total;
-  let i = 1;
-  if (s >= total) i = pts.length - 1;
-  else while (i < pts.length - 1 && acc[i] < s) i++;
-  const a = pts[i - 1];
-  const b = pts[i];
-  const seg = acc[i] - acc[i - 1] || 1;
-  const u = (s - acc[i - 1]) / seg;
-  return { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), angle: Math.atan2(b.y - a.y, b.x - a.x) / RAD };
+  const tab = tableOf(p);
+  const at = locate(tab, t * tab.total);
+  if (!at) return { x: p.points[0]?.x ?? 0, y: p.points[0]?.y ?? 0, angle: 0 };
+  return { x: at.x, y: at.y, angle: at.angle };
 }
 
 /** A position and turn `t` (eased) of the way between two, with the tween's extra spins and motion path applied. */
@@ -395,7 +424,7 @@ export function tweenTransform(ta: Transform2D, tb: Transform2D, tw: Tween, t: n
     y: lerp(ta.y, tb.y, t),
     scaleX: lerp(ta.scaleX, tb.scaleX, t),
     scaleY: lerp(ta.scaleY, tb.scaleY, t),
-    rotation: lerp(ta.rotation, tb.rotation, t) + (tw.spin ?? 0) * 360 * t,
+    rotation: lerp(ta.rotation, tb.rotation, t) + ((tw.spin ?? 0) + (tw.facing ?? 0)) * 360 * t,
     skew: lerp(ta.skew, tb.skew, t),
   };
   if (tw.path && tw.path.points.length > 1) {
@@ -429,7 +458,7 @@ export function tweenProgress(layer: Layer, cel: Cel, frame: number): { t: numbe
   const next = nextKey(layer, cel);
   if (!next) return undefined;
   const raw = (frame - cel.start) / cel.length;
-  return { t: ease(cel.tween.ease, raw), next };
+  return { t: tweenEase(cel.tween, raw), next };
 }
 
 // ---------------------------------------------------------------- posing
@@ -524,7 +553,7 @@ export const poseStats = { built: 0 };
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseCel(doc, layer, frame, depth);
-  return d && layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+  return d && layer.bind ? bindLayer(doc, layer, frame, d) : d;
 }
 
 function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
@@ -619,7 +648,7 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   const look = layersHaveLook(c.layers) ? { frame: inner, layers: c.layers, folders: doc.folders, drawings: new Map<Id, PosedLayer>() } : undefined;
   for (const l of c.layers) {
     // Reference layers and hidden folders never show. Masks only cut (through `look`), so `layers` leaves them out.
-    if (!l.visible || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
+    if (!l.visible || l.reference || (l.folder && folderChain(doc.folders, l.folder).some((f) => !f.visible))) continue;
     if (l.mask && !look) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
     if (!dr) continue;
@@ -689,19 +718,19 @@ export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   const d = poseLiveCel(doc, layer, frame, live);
-  return layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+  return layer.bind ? bindLayer(doc, layer, frame, d) : d;
 }
 
 function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   if (live.kind !== 'vector' || (!hasInstances(live) && !hasMoving(live))) return live;
   const posed = poseCel(doc, layer, frame, 0);
   const byId = new Map<Id, Shape>();
-  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || s.type === 'text' || s.type === 'particles') byId.set(s.id, s);
+  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || kindOf(s)) byId.set(s.id, s);
   const local = frame - (celAt(layer, frame)?.start ?? frame);
   return {
     ...live,
     shapes: live.shapes.map((s) => {
-      if (s.type === 'text' || s.type === 'particles') return poseMovingShape(doc, s, local);
+      if (kindOf(s)) return poseMovingShape(doc, s, local);
       if (!isInstance(s)) return s;
       const p = byId.get(s.id) as PosedInstance | undefined;
       if (!p || !isPosed(p)) return poseInstance(doc, s, 0);
@@ -720,20 +749,26 @@ export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
   return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
 }
 
-// ---------------------------------------------------------------- text and particles
+// ---------------------------------------------------------------- moving shapes (text, particles)
 
 /** Whether a drawing has shapes that change by themselves from frame to frame (animated text, particles). */
 export function hasMoving(d: Drawing | undefined): boolean {
-  return !!d && d.kind === 'vector' && d.shapes.some((s) => s.type === 'particles' || (s.type === 'text' && isAnimatedText(s)));
+  return !!d && d.kind === 'vector' && d.shapes.some((s) => !!kindOf(s)?.moving?.(s));
 }
 
-/** A text or particle shape posed `local` frames after its key began; anything else as it is. */
+/** A shape of a registered kind (text, particles) posed `local` frames after its key began; anything else as it is. */
 export function poseMovingShape(doc: Doc, s: Shape, local: number, depth = 0): Shape {
-  if (s.type === 'text') return isAnimatedText(s) ? ({ ...s, posedFrame: local } as Shape) : s;
-  if (s.type !== 'particles') return s;
-  const c = s.sprite === 'symbol' && s.symbolId && depth < MAX_DEPTH ? symbolContent(doc, s.symbolId) : undefined;
-  const at: InstanceShape | null = c ? { id: `${s.id}-sprite`, type: 'instance', symbolId: s.symbolId!, transform: identityTransform(0, 0), opacity: 1, play: 'loop', firstFrame: 0 } : null;
-  return poseParticles(doc, s, local, (f) => (at ? poseInstance(doc, at, f, depth + 1) : null), c?.length ?? 1);
+  const kind = kindOf(s);
+  if (!kind?.pose) return s;
+  const env: PoseEnv = {
+    symbol(id) {
+      const c = depth < MAX_DEPTH ? symbolContent(doc, id) : undefined;
+      if (!c) return null;
+      const at: InstanceShape = { id: `${s.id}-sprite`, type: 'instance', symbolId: id, transform: identityTransform(0, 0), opacity: 1, play: 'loop', firstFrame: 0 };
+      return { length: c.length, at: (f) => poseInstance(doc, at, f, depth + 1) };
+    },
+  };
+  return kind.pose(doc, s, local, env);
 }
 
 /** A drawing with moving shapes but no instances, posed and cached per frame like instances are. */

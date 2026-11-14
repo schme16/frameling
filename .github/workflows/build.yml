@@ -1,7 +1,8 @@
 name: Build desktop apps
 
-# Builds Frameling for Windows, macOS and Linux, and the web version, whenever a pull request targets main, and on demand.
-# The installers are attached to the run as artifacts. They are unsigned until signing is set up.
+# Builds Frameling for Windows, macOS and Linux whenever a pull request targets main, and on demand.
+# The installers are attached to the run as artifacts. Windows is signed with a self-signed certificate and macOS is
+# ad-hoc signed, so both need allowing once on first run (see the 'Installing Frameling' help topic).
 on:
   pull_request:
     branches: [main]
@@ -41,7 +42,14 @@ jobs:
         run: npx electron-builder ${{ matrix.args }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # electron-builder skips signing on a pull request build unless this is set, and a pull request into main
+          # is exactly where the signing is meant to be tested. Secrets never reach a build from someone's fork.
+          CSC_FOR_PULL_REQUEST: 'true'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Windows: signed with Frameling's self-signed code-signing certificate when these secrets are set (an
+          # unsigned build otherwise). macOS: ad-hoc signed by build/adhoc-sign.cjs, like Godot. Linux needs neither.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: frameling-${{ matrix.name }}
@@ -49,25 +57,5 @@ jobs:
             release/*.AppImage
             release/*.exe
             release/*.dmg
-          if-no-files-found: error
-          retention-days: 14
-
-  web:
-    # The web build: static files for any web server, no installer. Uploaded for checking only; nothing is deployed.
-    name: Web
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build:web
-      - uses: actions/upload-artifact@v4
-        with:
-          name: frameling-web
-          path: dist/web/
           if-no-files-found: error
           retention-days: 14

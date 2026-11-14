@@ -1,23 +1,56 @@
-// Builds brand/dialogue/index.html: every Quill line with where it shows, its screenshot and a box to edit it.
-// The page is static (opens straight from disk), so the lines are baked in. Run after changing lines.json or the
-// shots: `npm run dialogue:page` (dialogue:shots runs it too).
+// Builds the dialogue review page: every Quill line with where it shows, its screenshot and a box to edit it.
+//
+//   npm run dialogue:page      brand/dialogue/index.html, opened straight from disk (pictures beside it)
+//   npm run dialogue:publish   the same page with the pictures inside it, put on the board as the `quill-dialogue` doc
+//   node scripts/dialogue/page.mjs --board    only write the board copy (brand/dialogue/quill-dialogue.board.html)
+//
+// The lines are baked in as a fallback. When the page opens it reads the live list from the repo, so the copy on the
+// board never goes stale; see page-client.js for what it does from there. The logic that is shared with
+// `dialogue:apply` (placeholders, the lines.json row shape, the board calls) lives in lines-tools.mjs and is copied in whole.
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '../..');
-const OUT = path.join(ROOT, 'brand/dialogue/index.html');
+const DIR = path.join(ROOT, 'brand/dialogue');
+const args = process.argv.slice(2);
+const forBoard = args.includes('--board') || args.includes('--put');
+const outArg = args.indexOf('--out');
+const OUT = outArg >= 0 ? path.resolve(args[outArg + 1]) : path.join(DIR, forBoard ? 'quill-dialogue.board.html' : 'index.html');
 const lines = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/ui/mascot/lines.json'), 'utf8'));
-const manifestFile = path.join(ROOT, 'brand/dialogue/shots/manifest.json');
+const manifestFile = path.join(DIR, 'shots/manifest.json');
 const manifest = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')) : {};
+
+// On the board there are no files beside the page, so each picture goes inside it (as a small WebP when ImageMagick is there).
+const cache = new Map();
+function picture(rel) {
+  if (!rel || !forBoard) return rel ?? null;
+  if (cache.has(rel)) return cache.get(rel);
+  const file = path.join(DIR, rel);
+  let uri = null;
+  if (fs.existsSync(file)) {
+    try {
+      const webp = execFileSync('convert', [file, '-quality', '82', 'webp:-'], { maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+      uri = `data:image/webp;base64,${webp.toString('base64')}`;
+    } catch {
+      uri = `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`;
+    }
+  }
+  cache.set(rel, uri);
+  return uri;
+}
 
 const entries = Object.entries(lines)
   .filter(([id]) => !id.startsWith('$'))
-  .map(([id, e]) => ({ id, text: e.text, where: e.where, vars: e.vars ?? [], shot: manifest[id]?.file ?? null, also: manifest[id]?.also ?? null, note: manifest[id]?.note ?? '' }));
+  .map(([id, e]) => ({ id, text: e.text, where: e.where, vars: e.vars ?? [], shot: picture(manifest[id]?.file), also: picture(manifest[id]?.also), note: manifest[id]?.note ?? '' }));
 
+const builtAt = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long' });
 // Keeps a stray </script> in a line from ending the data block.
-const data = JSON.stringify(entries).replace(/</g, '\\u003c');
+const data = JSON.stringify({ builtAt, entries }).replace(/</g, '\\u003c');
+const tools = fs.readFileSync(path.join(here, 'lines-tools.mjs'), 'utf8').replace(/^export /gm, '');
+const client = fs.readFileSync(path.join(here, 'page-client.js'), 'utf8');
 
 const html = `<!doctype html>
 <html lang="en">
@@ -73,6 +106,26 @@ textarea { width: 100%; min-height: 64px; resize: vertical; padding: 10px; borde
 .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .toast.is-on { opacity: 1; }
 @media (max-width: 760px) { .line { grid-template-columns: minmax(0, 1fr); } }
+h2.group { margin: 12px 0 -4px; font-size: 15px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+h2.group span { font-weight: 400; font-size: 13px; }
+h2.group.is-hidden { display: none; }
+.chip { font-size: 13px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--muted); white-space: nowrap; }
+.chip.is-ok { border-color: #3f9b6a; color: var(--ink); }
+.chip.is-ok::before { content: "\\2713 "; color: #3f9b6a; }
+.chip.is-warn { border-color: var(--gold); color: var(--ink); }
+.chip.is-busy { color: var(--ink); }
+.line.is-bad { border-color: var(--bad); }
+.soft { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.was { color: var(--muted); font-size: 13px; margin-top: 6px; }
+details { margin-top: 8px; font-size: 13px; }
+summary { cursor: pointer; color: var(--muted); }
+details pre { margin: 6px 0 0; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--ink); }
+.guide { max-width: 1200px; margin: 10px auto 0; padding: 0 16px; font-size: 14px; }
+.guide summary { color: var(--ink); font-weight: 600; }
+.guide ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); }
+.guide code, .heldrow code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+#held { max-width: 1200px; margin: 12px auto 0; padding: 12px 16px; border: 1px solid var(--gold); border-radius: 12px; background: var(--changed); font-size: 14px; }
+.heldrow { margin: 6px 0; }
 </style>
 </head>
 <body>
@@ -80,127 +133,45 @@ textarea { width: 100%; min-height: 64px; resize: vertical; padding: 10px; borde
   <div class="bar">
     <h1>Quill's lines</h1>
     <span class="count" id="count"></span>
+    <span class="chip" id="source">Reading the live lines</span>
+    <span class="chip" id="sync"></span>
     <span class="grow"></span>
     <input type="search" id="filter" placeholder="Find a line" aria-label="Find a line">
     <label class="count"><input type="checkbox" id="onlyChanged"> Only changed</label>
     <button type="button" id="copyAll">Copy all</button>
     <button type="button" id="copyChanged">Copy my changes</button>
-    <button type="button" class="primary" id="download">Download my changes</button>
+    <button type="button" id="download">Download my changes</button>
+    <button type="button" class="primary" id="raise">Put these in the app</button>
   </div>
 </header>
-<p class="intro">Edit any line, then <b>Download my changes</b> and run <code>npm run dialogue:apply &lt;file&gt;</code> in the Frameling folder.
-Words in <b>{curly}</b> brackets are filled in by the app, so keep them. Where a line is a list, put one item per line in the box (each is a bubble, or one of a set the app picks from).
-Your edits stay in this browser until you reset them. Click a picture to see it full size.</p>
+<p class="intro">Write over any line and it's kept as you go. When you're happy, <b>Put these in the app</b> raises a task on the board and Claude merges your words into <code>lines.json</code>.
+Words in <b>{curly}</b> brackets are filled in by the app (a name, a theme), so keep them exactly. Where a line is a list, put one item per row. Click a picture to see it full size.</p>
+<details class="guide"><summary>What happens to the words I write</summary>
+<ul>
+<li><b>One box, one line.</b> A single line stays a single line, and a line break you type inside it is kept as a break. Nothing else is touched.</li>
+<li><b>A list is one row per item.</b> Each row is a bubble shown in turn, or one of a set the app picks from (the note under the name says which). Blank rows and spaces at the ends are dropped. Adding a row adds a bubble; a single line can't become a list, since that needs a code change.</li>
+<li><b>{Curly} words must match.</b> The app swaps them for a name or a theme. If one is lost, added or misspelled, the line turns red and isn't sent, so the app never says "{name}" out loud. In a list, each word only has to turn up once across the rows.</li>
+<li><b>Only the words change.</b> Where it shows and which {curly} words it takes stay as the app has them. A brand new line needs a code change and a picture, so ask for it as a task instead.</li>
+<li><b>Open a changed line</b> and <i>What this becomes in lines.json</i> shows the exact row that gets written.</li>
+<li><b>Safe if anything goes wrong.</b> Edits are kept in this browser and on the board. If the board can't be reached they stay in the browser, and <b>Download my changes</b> gives the file that <code>npm run dialogue:apply</code> takes.</li>
+</ul></details>
+<div id="held" hidden></div>
 <main id="list"></main>
 <div class="toast" id="toast" role="status"></div>
+<script type="application/json" id="baked">${data}</script>
 <script>
-const LINES = ${data};
-const KEY = 'quill-lines-draft';
-let draft = {};
-try { draft = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { draft = {}; }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(draft)); } catch {} };
-const asText = (t) => (Array.isArray(t) ? t.join('\\n') : t);
-const fromBox = (e, v) => (Array.isArray(e.text) ? v.split('\\n').map((s) => s.trim()).filter(Boolean) : v.trim());
-const vars = (t) => [...new Set((Array.isArray(t) ? t : [t]).flatMap((s) => [...s.matchAll(/\\{(\\w+)\\}/g)].map((m) => m[1])))].sort();
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const list = document.getElementById('list');
-
-for (const e of LINES) {
-  const el = document.createElement('section');
-  el.className = 'line';
-  el.dataset.id = e.id;
-  const isList = Array.isArray(e.text);
-  el.innerHTML = \`
-    <div class="meta">
-      <div class="id">\${esc(e.id)}\${isList ? '<span class="tag">list</span>' : ''}</div>
-      <p class="where">\${esc(e.where)}</p>
-      \${e.note ? \`<p class="note">Picture: \${esc(e.note)}</p>\` : ''}
-      \${e.vars.length ? \`<div class="vars">Keep: \${e.vars.map((v) => \`<b>{\${esc(v)}}</b>\`).join(' ')}</div>\` : ''}
-      <textarea aria-label="Text for \${esc(e.id)}" rows="\${Math.min(14, Math.max(3, (isList ? e.text : [e.text]).reduce((n, t) => n + Math.ceil(t.length / 60), 0) + 1))}"></textarea>
-      \${isList ? '<div class="hint">One per line.</div>' : ''}
-      <div class="warn" hidden></div>
-      <div class="row"><button type="button" class="reset" hidden>Put back the original</button></div>
-    </div>
-    <div class="shot">\${e.shot ? \`<a href="\${esc(e.shot)}" target="_blank" rel="noopener"><img src="\${esc(e.shot)}" alt="Where \${esc(e.id)} shows" loading="lazy"></a>\` : '<span class="none">No picture yet</span>'}\${e.also ? \`<a href="\${esc(e.also)}" target="_blank" rel="noopener"><img src="\${esc(e.also)}" alt="Also \${esc(e.id)}" loading="lazy"></a>\` : ''}</div>\`;
-  const box = el.querySelector('textarea');
-  const warn = el.querySelector('.warn');
-  const reset = el.querySelector('.reset');
-  box.value = e.id in draft ? asText(draft[e.id]) : asText(e.text);
-  const update = () => {
-    const v = fromBox(e, box.value);
-    const changed = JSON.stringify(v) !== JSON.stringify(e.text);
-    if (changed) draft[e.id] = v; else delete draft[e.id];
-    el.classList.toggle('is-changed', changed);
-    reset.hidden = !changed;
-    const got = vars(v), want = [...e.vars].sort();
-    const bad = JSON.stringify(got) !== JSON.stringify(want);
-    const empty = Array.isArray(v) ? !v.length : !v;
-    warn.hidden = !(bad || empty);
-    warn.textContent = empty ? "This one can't be empty." : bad ? \`Needs exactly: \${want.length ? want.map((x) => '{' + x + '}').join(' ') : 'no {curly} words'}. Has: \${got.length ? got.map((x) => '{' + x + '}').join(' ') : 'none'}.\` : '';
-    save();
-    tally();
-  };
-  box.addEventListener('input', update);
-  reset.addEventListener('click', () => { box.value = asText(e.text); update(); });
-  list.appendChild(el);
-  update();
-}
-
-function tally() {
-  const n = Object.keys(draft).length;
-  document.getElementById('count').textContent = \`\${LINES.length} lines, \${n} changed\`;
-  document.getElementById('download').disabled = !n;
-  document.getElementById('copyChanged').disabled = !n;
-  applyFilter();
-}
-
-function applyFilter() {
-  const q = document.getElementById('filter').value.trim().toLowerCase();
-  const only = document.getElementById('onlyChanged').checked;
-  for (const el of list.children) {
-    const e = LINES.find((x) => x.id === el.dataset.id);
-    const hay = (e.id + ' ' + e.where + ' ' + asText(e.text) + ' ' + el.querySelector('textarea').value).toLowerCase();
-    el.classList.toggle('is-hidden', (q && !hay.includes(q)) || (only && !(e.id in draft)));
-  }
-}
-document.getElementById('filter').addEventListener('input', applyFilter);
-document.getElementById('onlyChanged').addEventListener('change', applyFilter);
-
-function say(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('is-on');
-  clearTimeout(say.t);
-  say.t = setTimeout(() => t.classList.remove('is-on'), 2200);
-}
-async function copy(text, what) {
-  try { await navigator.clipboard.writeText(text); say(what + ' copied'); }
-  catch {
-    const a = document.createElement('textarea'); a.value = text; document.body.appendChild(a); a.select();
-    try { document.execCommand('copy'); say(what + ' copied'); } catch { say("Couldn't copy here"); }
-    a.remove();
-  }
-}
-const changes = () => JSON.stringify(draft, null, 2) + '\\n';
-document.getElementById('copyChanged').addEventListener('click', () => copy(changes(), 'Changes'));
-document.getElementById('copyAll').addEventListener('click', () => {
-  const all = {};
-  for (const e of LINES) all[e.id] = e.id in draft ? draft[e.id] : e.text;
-  copy(JSON.stringify(all, null, 2) + '\\n', 'Every line');
-});
-document.getElementById('download').addEventListener('click', () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([changes()], { type: 'application/json' }));
-  const d = new Date();
-  a.download = \`quill-lines-\${d.getFullYear()}-\${String(d.getMonth() + 1).padStart(2, '0')}-\${String(d.getDate()).padStart(2, '0')}.json\`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-});
+${tools}
+${client}
 </script>
 </body>
 </html>
 `;
 
 fs.writeFileSync(OUT, html);
-console.log(`Wrote ${path.relative(ROOT, OUT)} with ${entries.length} lines (${entries.filter((e) => e.shot).length} with pictures).`);
+console.log(`Wrote ${path.relative(process.cwd(), OUT)} with ${entries.length} lines (${entries.filter((e) => e.shot).length} with pictures, ${Math.round(html.length / 1024)} KB).`);
+
+if (args.includes('--put')) {
+  // Goes to the board as an ordinary doc update. pb must be signed in (pb login); no key is involved.
+  const out = execFileSync('pb', ['doc', 'put', OUT, '--id', 'quill-dialogue', '--title', "Quill's dialogue: edit every line", '--format', 'html', '--note', 'Live page: reads the master list, saves as you go, raises the merge task'], { cwd: ROOT, encoding: 'utf8' });
+  console.log(out.trim());
+}

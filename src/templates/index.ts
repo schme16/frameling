@@ -123,7 +123,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'lip-sync',
     name: 'Lip sync mouth chart',
-    blurb: 'A face with a mouth that has the ten standard talking shapes, with a little "hello" already on it. Try it: File > Import sound, then Animate > Auto lip sync, and fix any mouth in the Lip sync panel.',
+    blurb: 'A face with a mouth that has the ten standard talking shapes, with a little "hello" already on it. Try it: File > Import sound, then Frames and motion > Auto lip sync, and fix any mouth in the Lip sync panel.',
     kind: 'vector',
     thumbnail: () => 11,
     make: makeLipSync,
@@ -208,7 +208,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'blank-pixel',
     name: 'Blank pixel',
-    blurb: 'A 32x32 pixel grid at 12 fps, each pixel 8 screen pixels wide. Try it: draw a 2-frame blink, then press play.',
+    blurb: 'A 32x32 pixel grid at 12 fps with 4 frames to animate, each pixel 8 screen pixels wide. Try it: draw a 2-frame blink, then press play.',
     kind: 'pixel',
     make: makeBlankPixel,
   },

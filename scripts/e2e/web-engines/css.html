@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>CSS check</title>
+<style>html,body{margin:0;background:#808080;overflow:hidden}#box{position:absolute;left:0;top:0}</style></head>
+<body><div id="box"></div>
+<script src="/harness/common.js"></script>
+<script>
+// A bare page for the exported CSS: one div with the classes the help topic gives, stopped at an exact moment of its
+// animation. The check script screenshots it and hands the picture back to compare() against Frameling's frame.
+(function () {
+  let link;
+  let el;
+  window.cssSetup = async function (url) {
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    const loaded = new Promise((res, rej) => { link.onload = res; link.onerror = () => rej(new Error('the CSS file did not load')); });
+    document.head.appendChild(link);
+    await loaded;
+  };
+  /** Shows a div with these classes and, if it animates, stops it `ms` into its run. Returns its size and how it is set to play. */
+  window.cssShow = async function (classes, ms, zoom) {
+    const box = document.getElementById('box');
+    box.textContent = '';
+    el = document.createElement('div');
+    el.className = classes;
+    if (zoom && zoom !== 1) el.style.zoom = String(zoom);
+    box.appendChild(el);
+    // Make sure the picture has arrived before anyone takes a screenshot.
+    const bg = getComputedStyle(el).backgroundImage;
+    const m = /url\("?([^")]+)"?\)/.exec(bg);
+    if (m) await WE.loadImage(m[1]);
+    const rect = el.getBoundingClientRect();
+    const out = { x: 0, y: 0, w: Math.round(rect.width), h: Math.round(rect.height), animations: [] };
+    for (const a of el.getAnimations()) {
+      a.pause();
+      if (ms !== null && ms !== undefined) a.currentTime = ms;
+      const t = a.effect.getComputedTiming();
+      out.animations.push({ name: a.animationName, duration: t.duration, iterations: t.iterations, fill: t.fill, easing: t.easing });
+    }
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return out;
+  };
+  window.cssCompare = async function (dataUrl, w, h, refUrl) {
+    const img = await WE.loadImage(dataUrl);
+    // A screenshot may be scaled by the display; only the same size is compared.
+    return WE.compare(img, img.naturalWidth, img.naturalHeight, refUrl);
+  };
+  // For the exported preview page: what its animations are.
+  window.cssTimings = () => document.getAnimations().map((a) => {
+    const t = a.effect.getComputedTiming();
+    return { name: a.animationName, duration: t.duration, iterations: t.iterations, fill: t.fill, easing: t.easing };
+  });
+})();
+</script></body></html>

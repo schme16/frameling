@@ -184,67 +184,184 @@ export function decodePng(bytes: Uint8Array): RawImage {
   const height = u32(head, 4);
   const depth = head[8];
   const ctype = head[9];
-  if (head[12] !== 0) throw new Error('Interlaced PNG pictures are not supported');
-  if (depth !== 8 || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
+  const okDepth = ctype === 3 ? [1, 2, 4, 8].includes(depth) : ctype === 0 ? [1, 2, 4, 8, 16].includes(depth) : depth === 8 || depth === 16;
+  if (!okDepth || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
   if (width < 1 || height < 1 || width * height > 1 << 28) throw new Error('The PNG picture has an odd size');
   const idat = join(chunks.filter((c) => c.type === 'IDAT').map((c) => c.data));
-  const bpp = CHANNELS[ctype];
-  const stride = width * bpp;
-  const raw = unzlibSync(idat);
-  if (raw.length < (stride + 1) * height) throw new Error('The PNG picture is cut short');
+  return decodePngData({ width, height, depth, ctype, interlaced: head[12] === 1 }, idat, chunks.find((c) => c.type === 'PLTE')?.data, chunks.find((c) => c.type === 'tRNS')?.data);
+}
 
-  // Undo the row filters in place.
-  const rows = new Uint8Array(stride * height);
-  for (let y = 0; y < height; y++) {
-    const f = raw[y * (stride + 1)];
-    const src = y * (stride + 1) + 1;
+/** The picture kind of a PNG (its IHDR), for reading picture data that is not in the IDAT chunks (APNG frames). */
+export interface PngKind {
+  width: number;
+  height: number;
+  depth: number;
+  ctype: number;
+  /** Adam7 interlacing: the picture comes in seven smaller pictures that fill in over each other. */
+  interlaced?: boolean;
+}
+
+/** Adam7: the first column, first row, column step and row step of each of the seven passes. */
+const ADAM7 = [
+  [0, 0, 8, 8],
+  [4, 0, 8, 8],
+  [0, 4, 4, 8],
+  [2, 0, 4, 4],
+  [0, 2, 2, 4],
+  [1, 0, 2, 2],
+  [0, 1, 1, 2],
+] as const;
+
+/** Undoes the row filters of `h` rows (each `stride` bytes after a filter byte) that start at `from` in `raw`. */
+export function unfilter(raw: Uint8Array, from: number, stride: number, bpp: number, h: number): Uint8Array {
+  const rows = new Uint8Array(stride * h);
+  // One tight loop per filter type (the type is picked per row), with the first row and the first pixel split off so the
+  // loops have no edge checks. A big drawing has millions of bytes to go through here when a file opens.
+  const lead = Math.min(bpp, stride);
+  for (let y = 0; y < h; y++) {
+    const f = raw[from + y * (stride + 1)];
+    const src = from + y * (stride + 1) + 1;
     const dst = y * stride;
     const prev = dst - stride;
-    for (let i = 0; i < stride; i++) {
-      const x = raw[src + i];
-      const a = i >= bpp ? rows[dst + i - bpp] : 0;
-      const b = y > 0 ? rows[prev + i] : 0;
-      const c = y > 0 && i >= bpp ? rows[prev + i - bpp] : 0;
-      let v: number;
-      switch (f) {
-        case 0: v = x; break;
-        case 1: v = x + a; break;
-        case 2: v = x + b; break;
-        case 3: v = x + ((a + b) >> 1); break;
-        case 4: v = x + paeth(a, b, c); break;
-        default: throw new Error('The PNG picture is damaged');
-      }
-      rows[dst + i] = v & 255;
+    switch (f) {
+      case 0:
+        rows.set(raw.subarray(src, src + stride), dst);
+        break;
+      case 1:
+        for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+        for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + rows[dst + i - bpp];
+        break;
+      case 2:
+        if (y === 0) rows.set(raw.subarray(src, src + stride), dst);
+        else for (let i = 0; i < stride; i++) rows[dst + i] = raw[src + i] + rows[prev + i];
+        break;
+      case 3:
+        if (y === 0) {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + (rows[dst + i - bpp] >> 1);
+        } else {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i] + (rows[prev + i] >> 1);
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + ((rows[dst + i - bpp] + rows[prev + i]) >> 1);
+        }
+        break;
+      case 4:
+        if (y === 0) {
+          // With nothing above, the Paeth guess is the pixel to the left.
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + rows[dst + i - bpp];
+        } else {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i] + rows[prev + i];
+          for (let i = bpp; i < stride; i++) {
+            const a = rows[dst + i - bpp];
+            const b = rows[prev + i];
+            const c = rows[prev + i - bpp];
+            const pa = b > c ? b - c : c - b;
+            const pb = a > c ? a - c : c - a;
+            const pc = a + b - c - c;
+            const pcAbs = pc < 0 ? -pc : pc;
+            rows[dst + i] = raw[src + i] + (pa <= pb && pa <= pcAbs ? a : pb <= pcAbs ? b : c);
+          }
+        }
+        break;
+      default:
+        throw new Error('The PNG picture is damaged');
     }
+  }
+  return rows;
+}
+
+/** The rows of an Adam7 picture laid out as one ordinary picture: every pass's pixels go to where they belong. */
+function deinterlace(raw: Uint8Array, width: number, height: number, depth: number, channels: number, bpp: number): Uint8Array {
+  const bits = depth * channels;
+  const stride = Math.ceil((width * bits) / 8);
+  const out = new Uint8Array(stride * height);
+  let at = 0;
+  for (const [x0, y0, dx, dy] of ADAM7) {
+    const pw = Math.ceil((width - x0) / dx);
+    const ph = Math.ceil((height - y0) / dy);
+    // A pass with no pixels has no rows at all, not even filter bytes.
+    if (pw <= 0 || ph <= 0) continue;
+    const pstride = Math.ceil((pw * bits) / 8);
+    if (raw.length < at + (pstride + 1) * ph) throw new Error('The PNG picture is cut short');
+    const rows = unfilter(raw, at, pstride, bpp, ph);
+    at += (pstride + 1) * ph;
+    for (let j = 0; j < ph; j++) {
+      const oy = (y0 + j * dy) * stride;
+      for (let i = 0; i < pw; i++) {
+        const ox = x0 + i * dx;
+        if (bits >= 8) {
+          const n = bits >> 3;
+          for (let k = 0; k < n; k++) out[oy + ox * n + k] = rows[j * pstride + i * n + k];
+        } else {
+          // Several pixels share a byte: copy one pixel's bits.
+          const from = i * bits;
+          const to = ox * bits;
+          const v = (rows[j * pstride + (from >> 3)] >> (8 - bits - (from & 7))) & ((1 << bits) - 1);
+          out[oy + (to >> 3)] |= v << (8 - bits - (to & 7));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Turns the joined, still-compressed picture data of a width x height block of the given kind into RGBA. */
+export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array, trns?: Uint8Array): RawImage {
+  const { width, height, depth, ctype } = kind;
+  const channels = CHANNELS[ctype];
+  // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
+  const stride = Math.ceil((width * channels * depth) / 8);
+  const bpp = Math.max(1, (channels * depth) >> 3);
+  // The size of the unpacked rows is known, so the inflater gets a buffer that size and never has to grow its own.
+  const raw = unzlibSync(idat, kind.interlaced ? undefined : { out: new Uint8Array((stride + 1) * height) });
+  // Undo the row filters (of each of the seven smaller pictures first, for an interlaced one).
+  let rows: Uint8Array;
+  if (kind.interlaced) rows = deinterlace(raw, width, height, depth, channels, bpp);
+  else {
+    if (raw.length < (stride + 1) * height) throw new Error('The PNG picture is cut short');
+    rows = unfilter(raw, 0, stride, bpp, height);
   }
 
   const pixels = new Uint8ClampedArray(width * height * 4);
-  if (ctype === 6) {
+  if (ctype === 6 && depth === 8) {
     pixels.set(rows);
     return { width, height, pixels };
   }
-  const plte = chunks.find((c) => c.type === 'PLTE')?.data;
-  const trns = chunks.find((c) => c.type === 'tRNS')?.data;
-  for (let i = 0, n = width * height; i < n; i++) {
-    const o = i * 4;
-    if (ctype === 2) {
-      pixels[o] = rows[i * 3];
-      pixels[o + 1] = rows[i * 3 + 1];
-      pixels[o + 2] = rows[i * 3 + 2];
-      pixels[o + 3] = 255;
-    } else if (ctype === 0) {
-      pixels[o] = pixels[o + 1] = pixels[o + 2] = rows[i];
-      pixels[o + 3] = 255;
-    } else if (ctype === 4) {
-      pixels[o] = pixels[o + 1] = pixels[o + 2] = rows[i * 2];
-      pixels[o + 3] = rows[i * 2 + 1];
-    } else {
-      if (!plte) throw new Error('The PNG picture has no colours');
-      const p = rows[i];
-      pixels[o] = plte[p * 3];
-      pixels[o + 1] = plte[p * 3 + 1];
-      pixels[o + 2] = plte[p * 3 + 2];
-      pixels[o + 3] = trns && p < trns.length ? trns[p] : 255;
+  if (ctype === 3 && !plte) throw new Error('The PNG picture has no colours');
+  // The sample at `i` of a row, as its full value (up to 16 bits).
+  const sample = (y: number, i: number): number => {
+    const row = y * stride;
+    if (depth === 8) return rows[row + i];
+    if (depth === 16) return (rows[row + i * 2] << 8) | rows[row + i * 2 + 1];
+    const bit = i * depth;
+    return (rows[row + (bit >> 3)] >> (8 - depth - (bit & 7))) & ((1 << depth) - 1);
+  };
+  const to8 = (v: number): number => (depth === 16 ? v >> 8 : depth === 8 ? v : Math.round((v * 255) / ((1 << depth) - 1)));
+  // A "transparent colour" from tRNS for grey and RGB pictures.
+  const key = trns && (ctype === 0 || ctype === 2) ? Array.from({ length: channels }, (_, k) => (trns[k * 2] << 8) | trns[k * 2 + 1]) : null;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * 4;
+      const at = x * channels;
+      if (ctype === 3) {
+        const p = sample(y, x);
+        pixels[o] = plte![p * 3];
+        pixels[o + 1] = plte![p * 3 + 1];
+        pixels[o + 2] = plte![p * 3 + 2];
+        pixels[o + 3] = trns && p < trns.length ? trns[p] : 255;
+      } else if (ctype === 0 || ctype === 4) {
+        const g = sample(y, at);
+        pixels[o] = pixels[o + 1] = pixels[o + 2] = to8(g);
+        pixels[o + 3] = ctype === 4 ? to8(sample(y, at + 1)) : key && g === key[0] ? 0 : 255;
+      } else {
+        const r = sample(y, at);
+        const g = sample(y, at + 1);
+        const b = sample(y, at + 2);
+        pixels[o] = to8(r);
+        pixels[o + 1] = to8(g);
+        pixels[o + 2] = to8(b);
+        pixels[o + 3] = ctype === 6 ? to8(sample(y, at + 3)) : key && r === key[0] && g === key[1] && b === key[2] ? 0 : 255;
+      }
     }
   }
   return { width, height, pixels };

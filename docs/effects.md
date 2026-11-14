@@ -37,7 +37,9 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
   the base hides them. With no base under them they draw as usual.
 - A mask layer cuts out everything under it in the same level. At the stage level that's every layer under it, never
   the stage colour.
-- Folders are one level deep. A folder with normal blend, full opacity, no effects and no masks inside is "pass
+- Folders can hold folders, up to 8 levels deep (`src/core/folders.ts`). Each level is composed on its own: the inner
+  folder is drawn into the outer one with its own opacity, blend and effects, then the outer folder's look applies to the
+  lot. A folder with normal blend, full opacity, no effects and no masks inside is "pass
   through" (its layers draw straight onto the stage); otherwise it's drawn as one picture first.
 
 Making a mask from the Effects menu or panel puts the mask and the layer under it (or every layer under it, asked the
@@ -181,9 +183,20 @@ this document will become pictures or be left out. The Export window shows both 
   opacity, masks and clipping as alpha track mattes (the matte a precomp right above a precomp of what it cuts), folders
   that isolate as precomps. Every precomp over the stage carries its own camera nulls under an offset null. Soften and
   Shadow are Lottie's Gaussian Blur (blurriness = radius / 0.3) and Drop Shadow (softness x2, direction from x/y), which
-  lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. Other
-  effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a PNG per different
-  frame, cropped, at 2x. Symbol tint recolours the precomp (a precomp per symbol and tint; the sum is linear, so
+  lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. With a camera that zooms or turns, effects go on a precomp over the stage rather than on the layer hung off the camera, so a shadow's distance and softness stay in stage pixels (`cameraBendsEffects`). Other
+  effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a picture per
+  different frame, cropped to alpha above 2, at 2x. Frames that come out the same, or within 3 of 255 in every channel,
+  share one image (`PictureBank`), wherever it sits, and a picture held over frames is one layer. `PICTURE_LOOKS`
+  (export option "Pictures from effects"): balanced (default) WebP q0.9 at 2x, sharp PNG at 2x, small WebP q0.8 at 1x;
+  WebP comes from `canvas.toDataURL` and falls back to PNG when the page can't make it or it isn't smaller. lottie-web
+  registers only Tint, Fill, Stroke, Tritone, Levels, Drop Shadow, Matte3, Gaussian Blur and Transform effects, so
+  Glow, Adjust, Outline and Pixelate have no native Lottie form and stay pictures. A layer, folder or symbol copy that
+  fades and paints two or more things goes in at full opacity under an alpha matte (a see-through stage-sized rectangle
+  carrying the fade, `fadeAsWhole`), because lottie-web's canvas player multiplies opacity into every shape it draws but
+  draws a matted layer into its own buffer first; the SVG renderer and the native players fade the group either way.
+  Skipped when the layer has a blend mode (a matte drops it in the canvas player), a matte, an effect, or when a list has
+  more than 16 candidates (a particle burst). `lottieSizes` (`lottie-size.ts`) splits a file into pictures, keyframes,
+  shapes and the rest. Symbol tint recolours the precomp (a precomp per symbol and tint; the sum is linear, so
   recolouring each shape equals washing the group). Text is traced once per letter, font and size (`sprites.ts`
   `glyphOutline`, the Convert to shapes tracer) and each letter is a group with its own transform, so text animators
   are transform keys. Picked over Lottie text layers because those need the font in every player and players differ a
@@ -205,7 +218,9 @@ this document will become pictures or be left out. The Export window shows both 
   makes the layer a picture for effects, clipping and masks (`drawingHasLook`). PDF recolours shapes and pixels for a
   copy's tint, innermost wash first.
 - `scripts/e2e/vector-check.cjs` checks all of it against `renderFrame` in Chromium, now also through lottie-web's SVG
-  renderer (effects only play there; a Lottie frame passes when either renderer matches).
+  renderer (effects only play there; a Lottie frame passes when either renderer matches). It prints RMSE per document
+  for both lottie-web players and the size split; every built-in template runs as `tpl:<id>` (reported, not gated).
+  `scripts/e2e/lottie-bake.cjs` compares the picture looks (size and RMSE).
 
 ## Later, and how it fits
 

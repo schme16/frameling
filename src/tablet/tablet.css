@@ -1,0 +1,227 @@
+/* Pen and tablet: the curve editor, the test pad and the pen section of tool options. Theme tokens only. */
+.tb-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line-soft);
+}
+.tb-curve {
+  position: relative;
+  flex: none;
+}
+.tb-curve svg {
+  display: block;
+}
+.tb-curve-box {
+  fill: var(--panel-2);
+  stroke: var(--line);
+}
+.tb-curve-grid line {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+}
+.tb-curve-straight {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.tb-curve-arm {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.tb-curve-line {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.tb-curve-live {
+  fill: var(--text);
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+.tb-curve-handle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--accent);
+  cursor: grab;
+  touch-action: none;
+}
+.tb-curve-handle:active {
+  cursor: grabbing;
+}
+.tb-curve-handle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.tb-page {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tb-curve-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.tb-curve-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+  flex: 1;
+}
+.tb-pad-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tb-pad {
+  width: 100%;
+  height: 150px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  border: 1px dashed var(--line);
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+}
+.tb-read {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  min-height: 1.4em;
+}
+.tb-read b {
+  color: var(--text);
+  font-weight: 600;
+}
+.tb-note {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  color: var(--muted);
+}
+.tb-pad-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tb-curve-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 200px;
+  flex: none;
+}
+.tb-curve-note {
+  max-width: 200px;
+}
+.tb-clear:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tb-clear:disabled:hover {
+  background: var(--raised);
+}
+.tb-clear {
+  padding: 4px 12px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+  cursor: pointer;
+}
+.tb-clear:hover {
+  background: var(--hover-bg);
+}
+.tb-tools {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+.tb-tools th,
+.tb-tools td {
+  text-align: left;
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text);
+}
+.tb-tools th {
+  color: var(--muted);
+  font-weight: 600;
+}
+.tb-tools input[type='range'] {
+  width: 120px;
+}
+
+/* The pen check with Quill. While he's only asking, the sheet is as tall as his question and the three buttons;
+   the full 640 is for the nine steps, the pad and the readings once the check is running. */
+.ui-modal-lg.tb-check-asking {
+  height: auto;
+}
+.tb-check-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+.tb-check-bubble p {
+  margin: 0;
+}
+.tb-check-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tb-check-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 4px 12px;
+  font-size: var(--fs-small);
+}
+.tb-check-steps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: var(--radius-small);
+  color: var(--muted);
+}
+.tb-check-steps li[data-state='now'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tb-check-steps li[data-state='done'] {
+  color: var(--text);
+}
+.tb-check-status {
+  font-weight: 600;
+}
+.tb-check-pad {
+  height: 180px;
+}
+
+/* The Next button in the pen check: the one to press when a step is ticked off. */
+.tb-clear.tb-go {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+  font-weight: 700;
+}
+.tb-clear.tb-go:hover {
+  filter: brightness(1.05);
+}

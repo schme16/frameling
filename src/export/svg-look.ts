@@ -8,12 +8,12 @@
  * offsets the same way the canvas does it. Pixelate has no SVG equivalent and is left out (the export says so).
  * Effect settings that change over time are SMIL <animate>s switching once per frame.
  */
-import type { Doc, Layer, LayerEffect } from '../core/format';
+import type { Doc, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { buildPlan, type PlanNode, type PlanStep } from '../effects/plan';
 import type { PosedLayer, PosedLook } from '../core/symbols';
 import { effectInfo, isNoop, valuesAt } from '../effects/model';
 import { outlineOffsets } from '../effects/apply';
-import { splitColor, esc } from './svg';
+import { splitColor, esc, layerId } from './svg';
 
 const n4 = (v: number) => {
   const r = Math.round(v * 10000) / 10000;
@@ -32,6 +32,8 @@ export interface SvgLookHost {
   body(layer: Layer): string;
   defs: string[];
   notes: Set<string>;
+  /** The ids already taken in the file: folders add theirs (the folder's name, made safe), so every group is named. */
+  ids?: Set<string>;
 }
 
 let uidN = 0;
@@ -76,8 +78,8 @@ export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefi
       prev = out;
     } else if (e.kind === 'shadow') {
       const [b, o, f, c, out] = [res(), res(), res(), res(), res()];
-      // The canvas's drop-shadow(x y b): a blur of b / 2.
-      parts.push(prim(host, 'feGaussianBlur', ` in="${prev}" result="${b}"`, { stdDeviation: num('softness').map((v) => v / 2) }));
+      // Chromium's canvas drop-shadow(x y b) blurs with a sigma of b itself (measured, see test/export/shadow-sigma.test.ts), not the CSS spec's b / 2.
+      parts.push(prim(host, 'feGaussianBlur', ` in="${prev}" result="${b}"`, { stdDeviation: num('softness') }));
       parts.push(prim(host, 'feOffset', ` in="${b}" result="${o}"`, { dx: num('x'), dy: num('y') }));
       parts.push(prim(host, 'feFlood', ` flood-color="${col.color}" result="${f}"`, { 'flood-opacity': num('opacity').map((v) => Math.min(1, v * col.alpha)) }));
       parts.push(`<feComposite in="${f}" in2="${o}" operator="in" result="${c}"/>`);
@@ -153,7 +155,8 @@ function maskOf(host: SvgLookHost, content: string, hide: boolean): string {
   return id;
 }
 
-const blendCss = (b: string | undefined) => (b && b !== 'normal' ? `mix-blend-mode:${b === 'add' ? 'plus-lighter' : b}` : '');
+// CSS has no Subtract or Divide: those layers stay Normal in SVG.
+const blendCss = (b: string | undefined) => (b && b !== 'normal' && b !== 'subtract' && b !== 'divide' ? `mix-blend-mode:${b === 'add' || b === 'linear-dodge' ? 'plus-lighter' : b}` : '');
 
 /** A group with a look: opacity, blend mode and a filter (attributes only where they do something). */
 function lookGroup(inner: string, look: { opacity?: number; blend?: string; filter?: string; mask?: string; id?: string }): string {
@@ -179,7 +182,24 @@ function picture(host: SvgLookHost, node: PlanNode): string {
   return lookGroup(inner, { filter: effectsFilter(host, look.effects, nodeName(node)) });
 }
 
+/** A folder's own group, named for other programs: an id from its name and, for Inkscape, the name as it was written. */
+function named(host: SvgLookHost, folder: LayerFolder, inner: string): string {
+  if (!inner) return '';
+  const id = layerId(folder.name, host.ids ?? (host.ids = new Set()), 'folder');
+  return `<g id="${esc(id)}" inkscape:label="${esc(folder.name)}">${inner}</g>`;
+}
+
 function step(host: SvgLookHost, node: PlanNode, clips: Layer[]): string {
+  if (node.type === 'folder') {
+    // The folder's group goes round everything it draws (a folder that changes nothing is a plain group).
+    const id = node.folder;
+    const out = stepInner(host, node, clips);
+    return named(host, id, out);
+  }
+  return stepInner(host, node, clips);
+}
+
+function stepInner(host: SvgLookHost, node: PlanNode, clips: Layer[]): string {
   const look = node.type === 'layer' ? node.layer : node.folder;
   if (look.opacity <= 0) return '';
   if (node.type === 'folder' && !node.isolate && !clips.length) return level(host, node.steps);

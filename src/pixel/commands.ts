@@ -7,9 +7,11 @@ import { registerChoice, withChoice } from '../core/choices';
 import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
+import { paletteScope, recolourOpenVariation, setVariationPalette, sharedEditNote } from '../artboards/variations';
 import { parseHex } from '../canvas/colors';
 import { hint } from '../canvas/controller';
-import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
+import { activeDrawing, activeGrid, activeLayer, EDIT_HINTS, setActivePixels } from '../tools/edit';
+import { gridPixels } from '../core/pixelBounds';
 import { docPalette, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
 import { getPixelSettings, setPixelSettings, type SymmetryMode } from './settings';
 import { activePixelLayer } from './tools';
@@ -21,7 +23,14 @@ import { applyInSelection, type PixelOp, type SelectionKind } from '../select/op
 
 /** Replaces the document palette (one undo step; `coalesce` merges a burst of edits). */
 export function setDocPalette(p: DocPalette, label = 'Change palette', coalesce?: string): void {
-  store().update(label, (d) => void (d.palette = p as Draft<DocPalette>), coalesce ? { coalesce } : {});
+  store().update(
+    label,
+    (d) => {
+      // A variation keeps its own colourway; anywhere else the palette is the document's.
+      if (!setVariationPalette(d as Doc, p)) d.palette = p as Draft<DocPalette>;
+    },
+    coalesce ? { coalesce } : {},
+  );
 }
 
 export type RecolourChoice = 'recolour' | 'palette-only';
@@ -40,13 +49,13 @@ registerChoice<RecolourChoice>({
 });
 
 /** Every pixel of `from` turned into `to`, on every pixel drawing in the document. Pure, for tests. */
-export function recolourDoc(doc: Draft<Doc>, from: string, to: string): number {
+export function recolourDoc(doc: Draft<Doc>, from: string, to: string, scope: (id: string) => boolean = () => true): number {
   const a = parseHex(from);
   const b = parseHex(to);
   if (!a || !b) return 0;
   let n = 0;
   for (const d of Object.values(doc.drawings)) {
-    if (d.kind !== 'pixel') continue;
+    if (d.kind !== 'pixel' || !scope(d.id)) continue;
     const out = remapColor(d.pixels as Uint8ClampedArray, [a[0], a[1], a[2]], [b[0], b[1], b[2]]);
     if (out) {
       (d as Draft<PixelDrawing>).pixels = out;
@@ -64,12 +73,17 @@ export function changePaletteColor(index: number, color: string): void {
   if (!old || old.toLowerCase() === color.toLowerCase()) return;
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
   const [r, g, b] = rgb3(old);
-  const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && usesColor(d.pixels, r, g, b));
+  const scope = paletteScope(doc, old);
+  const inVariation = !!sharedEditNote(doc, 'palette');
+  const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && scope(d.id) && usesColor(d.pixels, r, g, b));
   const apply = (recolour: boolean) =>
     store().update('Change palette colour', (d) => {
-      d.palette = next as Draft<DocPalette>;
-      if (recolour) recolourDoc(d, old, color);
+      if (!setVariationPalette(d as Doc, next)) d.palette = next as Draft<DocPalette>;
+      // In a variation the new colour is its colourway: pixels and vector shapes of that colour on the stage follow.
+      if (recolourOpenVariation(d as Doc, [{ from: old, to: color }])) return;
+      if (recolour) recolourDoc(d, old, color, scope);
     });
+  if (inVariation) return apply(true);
   if (!usesOld) return apply(false);
   withChoice<RecolourChoice>('palette.recolour', (v) => apply(v === 'recolour'));
 }
@@ -110,10 +124,10 @@ export function editPixels(label: string, op: PixelOp, kind: SelectionKind = 'cl
     hint('There is nothing drawn on this frame yet.');
     return false;
   }
-  const res = pixelsAfter(d, op, kind);
+  const g = activeGrid()!;
+  const res = pixelsAfter({ width: g.width, height: g.height, pixels: gridPixels(d, g.width, g.height) }, op, kind);
   if (!res) return false;
-  const out = res.pixels;
-  const r = editActiveDrawing(label, 'pixel', (dr) => void (dr.pixels = out));
+  const r = setActivePixels(label, res.pixels);
   if (r !== 'ok') hint(EDIT_HINTS[r]);
   else if (res.mask) setPixelSelection(res.mask);
   return r === 'ok';
@@ -286,10 +300,10 @@ registerCommands([
   {
     id: 'pixel.mirror',
     label: 'Mirror drawing (off, left-right, up-down, both)',
-    category: 'Pixel',
+    category: 'Draw',
     keys: ['Shift+M'],
-    description: 'Draw on one side and it appears on the other too. Press again to change direction.',
-    help: 'pixel-mirror',
+    description: 'Draw on one side and it appears on the other too, on pixel and vector layers. Press again to change direction.',
+    help: 'mirror-drawing',
     keywords: ['symmetry', 'mirror', 'symmetrical', 'kaleidoscope'],
     checked: () => getPixelSettings().symmetry !== 'off',
     run: cycleMirror,

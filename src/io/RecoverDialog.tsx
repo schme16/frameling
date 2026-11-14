@@ -36,7 +36,7 @@ function RecoverDialog({ close }: { close: () => void }) {
       <div className="io-body">
         <p className="io-muted">Drawings you chose not to save are kept here for 7 days, in case you change your mind.</p>
         {items === null ? null : items.length === 0 ? (
-          <QuillEmpty anim="idle" className="io-empty">{line('empty.recover')}</QuillEmpty>
+          <QuillEmpty anim="idle" className="io-empty" whenHidden="Nothing to recover. Work you leave unsaved shows up here for a week.">{line('empty.recover')}</QuillEmpty>
         ) : (
           <ul className="io-recover">
             {items.map((k, i) => (
@@ -47,10 +47,10 @@ function RecoverDialog({ close }: { close: () => void }) {
                   <small>Last changed {when(k.savedAt)}</small>
                   <small>Kept until {new Date(k.keptAt + 7 * 24 * 3600 * 1000).toLocaleDateString()}</small>
                 </span>
-                <button type="button" className="io-btn io-primary" data-autofocus={i === 0 ? '' : undefined} onClick={() => void open(k)}>
+                <button type="button" className="io-btn io-primary" data-testid={`recover.open.${k.id}`} data-autofocus={i === 0 ? '' : undefined} onClick={() => void open(k)}>
                   Open
                 </button>
-                <button type="button" className="io-btn" aria-label={`Delete the kept copy of ${k.name}`} onClick={() => void drop(k)}>
+                <button type="button" className="io-btn" data-testid={`recover.delete.${k.id}`} aria-label={`Delete the kept copy of ${k.name}`} onClick={() => void drop(k)}>
                   Delete
                 </button>
               </li>
@@ -59,7 +59,7 @@ function RecoverDialog({ close }: { close: () => void }) {
         )}
       </div>
       <div className="io-foot">
-        <button type="button" className="io-btn io-primary" onClick={close}>
+        <button type="button" className="io-btn io-primary" data-testid="recover.close" onClick={close}>
           Close
         </button>
       </div>

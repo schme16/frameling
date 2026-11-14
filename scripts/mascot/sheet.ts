@@ -1,6 +1,7 @@
 // The mascot's source is a Frameling document (brand/mascot/mascot.frameling). These pure functions turn that
 // document into the sprite sheet and frame list the app plays, and the icon document into the icon pictures.
 // No DOM and no fs here: scripts/build-mascot.mjs does the disk, test/io/mascot-source.test.ts checks the maths.
+import { gridPixels } from '../../src/core/pixelBounds';
 import { celAt } from '../../src/core/doc';
 import type { Cel, Clip, Doc, Layer, PixelDrawing, PixelLayer, Swatch } from '../../src/core/format';
 import { FORMAT_VERSION } from '../../src/core/format';
@@ -95,6 +96,13 @@ function sourceLayers(doc: Doc, warnings: string[]): PixelLayer[] {
   return out;
 }
 
+/** A pixel drawing as the whole art grid of its layer (drawings hold only their painted part). */
+function grid(doc: Doc, l: PixelLayer, d: PixelDrawing): RawImage {
+  const width = Math.ceil(doc.width / l.pixelSize);
+  const height = Math.ceil(doc.height / l.pixelSize);
+  return { width, height, pixels: gridPixels(d, width, height) };
+}
+
 /** One frame of the document, all source layers flattened, at the document's size. */
 function flatten(doc: Doc, layers: PixelLayer[], cels: (Cel | undefined)[]): RawImage {
   const img = blankImage(doc.width, doc.height);
@@ -102,7 +110,7 @@ function flatten(doc: Doc, layers: PixelLayer[], cels: (Cel | undefined)[]): Raw
     const cel = cels[i];
     const d = cel ? (doc.drawings[cel.drawingId] as PixelDrawing | undefined) : undefined;
     if (!d || d.kind !== 'pixel') return;
-    let art: RawImage = scaleNearest(d, l.pixelSize);
+    let art: RawImage = scaleNearest(grid(doc, l, d), l.pixelSize);
     if (art.width !== doc.width || art.height !== doc.height) {
       const fit = blankImage(doc.width, doc.height);
       paste(fit, crop(art, 0, 0, Math.min(art.width, doc.width), Math.min(art.height, doc.height)), 0, 0);
@@ -173,7 +181,7 @@ const id = (p: string) => `${p}${(++n).toString(36)}`;
 
 function baseDoc(name: string, width: number, height: number, fps: number, swatches: Swatch[]): Doc {
   n = 0;
-  return { format: 'frameling', version: FORMAT_VERSION, id: 'mascot-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, width, height, fps, length: 1, background: null, layers: [], drawings: {}, clips: [], markers: [], swatches };
+  return { format: 'frameling', version: FORMAT_VERSION, lineage: true, id: 'mascot-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, width, height, fps, length: 1, background: null, layers: [], drawings: {}, clips: [], markers: [], swatches };
 }
 
 /**
@@ -235,7 +243,7 @@ export function clipArt(doc: Doc, clipName: string): RawImage {
     if (!l.visible || l.kind !== 'pixel') continue;
     const cel = celAt(l, clip.start);
     const d = cel && doc.drawings[cel.drawingId];
-    if (d && d.kind === 'pixel') return { width: d.width, height: d.height, pixels: d.pixels };
+    if (d && d.kind === 'pixel') return grid(doc, l, d);
   }
   throw new Error(`Nothing is drawn at the start of the "${clipName}" clip.`);
 }

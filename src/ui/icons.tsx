@@ -5,12 +5,27 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // the "more" button: three dots. Drawn, not a text glyph, so the first paint needn't hunt the system for a font that has one.
+  more: (
+    <>
+      {dot(5, 12, 1.8)}
+      {dot(12, 12, 1.8)}
+      {dot(19, 12, 1.8)}
+    </>
+  ),
   // plugins and templates
   plugin: <path d="M9 4.5a2 2 0 0 1 4 0V7h4a1 1 0 0 1 1 1v3.5h-1.5a2 2 0 0 0 0 4H18V19a1 1 0 0 1-1 1h-3.5v-1.5a2 2 0 0 0-4 0V20H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V8a1 1 0 0 1 1-1h3z" />,
   template: (
     <>
       <rect x="4" y="4" width="16" height="16" rx="2.5" />
       <path d="M4 9h16M9 9v11" />
+    </>
+  ),
+  // artboards: a page with crop marks at two corners
+  artboard: (
+    <>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+      <path d="M6 2v2.5M2 6h2.5M18 22v-2.5M22 18h-2.5" />
     </>
   ),
   // symbols and tweens
@@ -134,6 +149,34 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M6.5 17.5L17.5 6.5" />
       <circle cx="5" cy="19" r="1.8" fill="currentColor" />
       <circle cx="19" cy="5" r="1.8" fill="currentColor" />
+    </>
+  ),
+  // Drawing tools added with the pen: pen nib, points on a curve, polygon, star, gradient
+  pen: (
+    <>
+      <path d="M12 3.5l5.2 7.6-2.4 7.4H9.2l-2.4-7.4z" />
+      <path d="M12 3.5v7.2" />
+      <circle cx="12" cy="12.2" r="1.4" />
+      <path d="M8.8 21h6.4" />
+    </>
+  ),
+  points: (
+    <>
+      <path d="M4.5 17.5C7 8 15 6 19.5 9" />
+      <rect x="2.8" y="15.8" width="3.4" height="3.4" rx="0.6" fill="currentColor" />
+      <rect x="10.3" y="8.3" width="3.4" height="3.4" rx="0.6" />
+      <path d="M7.4 12.6l9-3.8" />
+      <circle cx="17.6" cy="7.6" r="1.3" fill="currentColor" />
+    </>
+  ),
+  polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
+  pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
+  gradient: (
+    <>
+      <rect x="3.8" y="5" width="16.4" height="14" rx="3" />
+      <path d="M8 5v14" opacity="0.85" />
+      <path d="M11.5 5v14" opacity="0.6" />
+      <path d="M15 5v14" opacity="0.35" />
     </>
   ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
@@ -290,6 +333,13 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   loop: <path d="M17 3.8l3 3.2-3 3.2M20 7H8a4 4 0 0 0-4 4v.8M7 20.2L4 17l3-3.2M4 17h12a4 4 0 0 0 4-4v-.8" />,
+  pingpong: <path d="M16 5l4 3.5-4 3.5M20 8.5H6M8 12l-4 3.5L8 19M4 15.5h14" />,
+  range: (
+    <>
+      <path d="M7 5H4.5v14H7M17 5h2.5v14H17" />
+      <path d="M10 9.5l4 2.5-4 2.5z" fill="currentColor" />
+    </>
+  ),
   // small actions
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
@@ -347,6 +397,13 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M13.5 7.3l.5-.5a4 4 0 0 1 5.7 5.7l-1.7 1.7" />
       <path d="M10.5 16.7l-.5.5a4 4 0 0 1-5.7-5.7l1.7-1.7" />
       <path d="M4 4l2 2M20 20l-2-2" />
+    </>
+  ),
+  // snapping: a horseshoe magnet with striped tips
+  magnet: (
+    <>
+      <path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z" />
+      <path d="M6 8h4M14 8h4" />
     </>
   ),
   ruler: (
@@ -493,6 +550,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   moon: <path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z" />,
+  // a window floating over another, and a panel docked along the bottom of one
+  float: (
+    <>
+      <rect x="3.5" y="9" width="11.5" height="10" rx="2.2" />
+      <path d="M9 9V7.2a2.2 2.2 0 0 1 2.2-2.2h7.1a2.2 2.2 0 0 1 2.2 2.2v6.6a2.2 2.2 0 0 1-2.2 2.2H15" />
+    </>
+  ),
+  dock: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.6" />
+      <path d="M3.5 14.5h17" />
+    </>
+  ),
   workspace: (
     <>
       <rect x="3.5" y="4" width="17" height="16" rx="3" />
@@ -515,6 +585,23 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="10.5" y="10.5" width="3" height="3" fill="currentColor" stroke="none" />
       <rect x="7" y="14" width="3" height="3" fill="currentColor" stroke="none" />
       <rect x="14" y="14" width="3" height="3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  slice: (
+    <>
+      <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
+      <path d="M9 4v16M15 4v16M4 9h16M4 15h16" strokeDasharray="1.6 2.2" />
+      <rect x="9.5" y="9.5" width="5" height="5" fill="currentColor" stroke="none" />
+    </>
+  ),
+  spray: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <rect x="6.5" y="9" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="11" y="6.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="14.5" y="10.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="9.5" y="13.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="15" y="15" width="2.5" height="2.5" fill="currentColor" stroke="none" />
     </>
   ),
   mirror: (

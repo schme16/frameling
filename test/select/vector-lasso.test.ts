@@ -11,9 +11,10 @@ import { addShapes, box, ctx, drag, ptr, vectorStore } from '../tools/helpers';
 const sel = () => store().get().ui.selection;
 
 beforeEach(() => {
-  setSelectSettings({ ...DEFAULT_SELECT_SETTINGS, mode: 'lasso' });
+  setSelectSettings({ ...DEFAULT_SELECT_SETTINGS });
   vectorStore();
-  store().setUi({ tool: 'select' });
+  // The way of picking is the tool you chose, so these tests pick the Lasso tool.
+  store().setUi({ tool: 'select-lasso' });
 });
 
 describe('lasso on vector layers', () => {

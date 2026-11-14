@@ -5,8 +5,11 @@
  *
  * Blur, colour adjust and shadow use the canvas `filter` (fast, done on the GPU in Electron). Glow is a blurred,
  * tinted copy underneath. Outline stamps a tinted copy around a circle underneath. Pixelate shrinks and grows back.
+ * Where the canvas has no working `filter` (Safari), blur, adjust, shadow and glow use the JS blur in softBlur.ts.
  */
 import type { EffectKind } from '../core/format';
+import { canFallback, nativeFilterWorks } from './filterSupport';
+import { adjustPixels, blurPixels, MIN_SIGMA } from './softBlur';
 
 export type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
 export type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -53,9 +56,40 @@ export class BufferPool {
   }
 }
 
-/** True where the canvas understands `filter` (every Electron; not some test fakes). */
+/** True where the canvas `filter` really works (Chromium and Electron; not Safari or some test fakes). */
 export function canFilter(g: Ctx): boolean {
-  return 'filter' in g;
+  return nativeFilterWorks(g);
+}
+
+/** Draws the blurred ink of `src` (black, alpha only when `alphaOnly`) onto the cleared `out`, using the JS blur. */
+function softBlurInto(out: Canvas2, src: Canvas2, sigma: number, alphaOnly: boolean): void {
+  const g = ctx2(out);
+  const pixels = ctx2(src).getImageData(0, 0, src.width, src.height);
+  const r = blurPixels(pixels, sigma, alphaOnly ? 'alpha' : 'rgba');
+  if (!r) return;
+  const img = g.createImageData(r.width, r.height);
+  img.data.set(r.data);
+  g.putImageData(img, r.x, r.y);
+}
+
+/** The colour adjust done in JS: reads the picture, changes it, puts it on the cleared `out`. */
+function softAdjustInto(out: Canvas2, src: Canvas2, v: Record<string, number | string>): void {
+  const img = ctx2(src).getImageData(0, 0, src.width, src.height);
+  adjustPixels(img, { hue: Number(v.hue), saturation: Number(v.saturation), brightness: Number(v.brightness), contrast: Number(v.contrast) });
+  ctx2(out).putImageData(img, 0, 0);
+}
+
+/** A copy of `src`'s silhouette in `color`, softened by `sigma`, on a canvas from the pool (JS fallback for shadow and glow). */
+function softSilhouette(src: Canvas2, sigma: number, color: string, pool: BufferPool): Canvas2 {
+  const sil = pool.get();
+  if (sigma < MIN_SIGMA) ctx2(sil).drawImage(src as CanvasImageSource, 0, 0);
+  else softBlurInto(sil, src, sigma, true);
+  const g = ctx2(sil);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = color;
+  g.fillRect(0, 0, sil.width, sil.height);
+  g.globalCompositeOperation = 'source-over';
+  return sil;
 }
 
 function hexToRgba(hex: string, alpha = 1): string {
@@ -98,10 +132,39 @@ export function outlineOffsets(r: number): [number, number][] {
 export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, number | string>, scale: number, origin: { x: number; y: number }, pool: BufferPool): Canvas2 {
   const n = (k: string) => Number(v[k]);
   const filter = filterFor(kind, v, scale);
+  const native = canFilter(ctx2(src));
+  const soft = !native && canFallback(ctx2(src));
+  if (filter && soft) {
+    if (kind === 'adjust') {
+      const out = pool.get();
+      softAdjustInto(out, src, v);
+      pool.put(src);
+      return out;
+    }
+    if (kind === 'blur') {
+      const sigma = n('radius') * scale;
+      if (sigma < MIN_SIGMA) return src;
+      const out = pool.get();
+      softBlurInto(out, src, sigma, false);
+      pool.put(src);
+      return out;
+    }
+    if (kind === 'shadow') {
+      // Chromium's canvas drop-shadow uses the softness itself as the blur's sigma (measured), unlike the glow's size / 2.
+      const sil = softSilhouette(src, n('softness') * scale, hexToRgba(String(v.color), n('opacity')), pool);
+      const out = pool.get();
+      const g = ctx2(out);
+      g.drawImage(sil as CanvasImageSource, n('x') * scale, n('y') * scale);
+      g.drawImage(src as CanvasImageSource, 0, 0);
+      pool.put(sil);
+      pool.put(src);
+      return out;
+    }
+  }
   if (filter) {
     const out = pool.get();
     const g = ctx2(out);
-    if (!canFilter(g)) {
+    if (!native) {
       pool.put(out);
       return src;
     }
@@ -112,15 +175,20 @@ export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, nu
     return out;
   }
   if (kind === 'glow') {
-    const glow = pool.get();
-    const gg = ctx2(glow);
-    if (canFilter(gg)) gg.filter = `blur(${+((n('size') * scale) / 2).toFixed(3)}px)`;
-    gg.drawImage(src, 0, 0);
-    gg.filter = 'none';
-    gg.globalCompositeOperation = 'source-in';
-    gg.fillStyle = String(v.color);
-    gg.fillRect(0, 0, glow.width, glow.height);
-    gg.globalCompositeOperation = 'source-over';
+    let glow: Canvas2;
+    if (soft) {
+      glow = softSilhouette(src, (n('size') * scale) / 2, String(v.color), pool);
+    } else {
+      glow = pool.get();
+      const gg = ctx2(glow);
+      if (native) gg.filter = `blur(${+((n('size') * scale) / 2).toFixed(3)}px)`;
+      gg.drawImage(src, 0, 0);
+      gg.filter = 'none';
+      gg.globalCompositeOperation = 'source-in';
+      gg.fillStyle = String(v.color);
+      gg.fillRect(0, 0, glow.width, glow.height);
+      gg.globalCompositeOperation = 'source-over';
+    }
     const out = pool.get();
     const g = ctx2(out);
     // Strength above 1 stacks the glow, so it gets denser, not just wider.

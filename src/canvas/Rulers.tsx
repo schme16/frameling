@@ -8,9 +8,9 @@ import { docDpi, pxTo, roundIn, showNumber, toPx, UNITS, unitInfo } from '../cor
 import { getPrefs, setPrefs, subscribePrefs, usePrefs } from '../ui/prefs';
 import { cancelGuideDrag, endGuideDrag, getGuideDrag, moveGuideDrag, startGuideDrag } from './guides';
 import { RULER, rulerTicks } from './rulerTicks';
-import { nearest, SNAP_PX } from './snap';
+import { nearest} from './snap';
 import { cssVar, subscribeTheme } from './theme';
-import { getViewSettings, subscribeViewSettings } from './viewSettings';
+import { getViewSettings, snapPx, subscribeViewSettings } from './viewSettings';
 
 /** The ruler look: 'solid' (a panel strip, the default) or 'glass' (see-through over the canvas). For the A/B. */
 let look: 'solid' | 'glass' = 'solid';
@@ -195,7 +195,7 @@ export function Rulers({ root }: { root: React.RefObject<HTMLDivElement | null> 
       const s = toStage(pt);
       let v = tidy(axis === 'x' ? s.x : s.y);
       // The page's edges and middle pull the guide onto them.
-      const edge = nearest(v, axis === 'x' ? [0, doc.width / 2, doc.width] : [0, doc.height / 2, doc.height], SNAP_PX / ui.zoom);
+      const edge = nearest(v, axis === 'x' ? [0, doc.width / 2, doc.width] : [0, doc.height / 2, doc.height], snapPx() / ui.zoom);
       if (edge !== null) v = edge;
       return v;
     };

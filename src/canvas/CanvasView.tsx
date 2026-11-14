@@ -7,6 +7,8 @@ import { TileEditBanner } from '../tiles/TileEditBanner';
 import { Rulers } from './Rulers';
 import { useViewSettings } from './viewSettings';
 import { onTextDoubleClick, TextEditor } from '../text/TextEditor';
+import { ArtboardsUnderlay } from '../artboards/Underlay';
+import { SnapChip } from './SnapOptions';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -34,6 +36,9 @@ export function CanvasView() {
 
   return (
     <div className={`cv-root${rulers ? ' has-rulers' : ''}`} ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={(e) => void (onTextDoubleClick(e) || onCanvasDoubleClick(e))} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
+      {/* The theme's texture, if it has one and textures are on: a layer of its own behind everything (canvas.css). */}
+      <div className="cv-surround" aria-hidden="true" />
+      <ArtboardsUnderlay />
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />
       <canvas className="cv-layer cv-overlay" ref={overlayRef} />
@@ -41,6 +46,7 @@ export function CanvasView() {
       <EditBar />
       <TileEditBanner />
       {rulers && <Rulers root={rootRef} />}
+      <SnapChip />
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

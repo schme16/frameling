@@ -4,6 +4,7 @@
  * A view is a zoom (screen pixels per document pixel, 1 = 100%) and a pan (where the stage's top-left corner sits,
  * in screen pixels from the top-left of the canvas area).
  */
+import type { ZoomStep } from './input';
 
 export interface View {
   zoom: number;
@@ -76,6 +77,17 @@ export function fitView(vw: number, vh: number, dw: number, dh: number, padding 
   return centerView({ zoom, panX: 0, panY: 0 }, vw, vh, dw, dh);
 }
 
+/**
+ * The view that shows a box of the document whole, centred, with margins. `above` is room in screen pixels kept over
+ * the box (for the names written above artboards). The zoom is not rounded: this is for several boards at once.
+ */
+export function fitRectView(r: Rect, vw: number, vh: number, padding = 48, above = 0): View {
+  const availW = Math.max(16, vw - padding * 2);
+  const availH = Math.max(16, vh - padding * 2 - above);
+  const zoom = clampZoom(Math.min(availW / Math.max(1, r.w), availH / Math.max(1, r.h)));
+  return { zoom, panX: vw / 2 - (r.x + r.w / 2) * zoom, panY: (vh + above) / 2 - (r.y + r.h / 2) * zoom };
+}
+
 /** The same zoom, with the stage centred in the canvas area. */
 export function centerView(v: View, vw: number, vh: number, dw: number, dh: number): View {
   return { zoom: v.zoom, panX: (vw - dw * v.zoom) / 2, panY: (vh - dh * v.zoom) / 2 };
@@ -100,11 +112,17 @@ export function clampPan(v: View, vw: number, vh: number, dw: number, dh: number
   };
 }
 
-/** Wheel zoom: how much one wheel event changes the zoom. Trackpad pinches send small deltas, mouse wheels big ones. */
-export function wheelZoomFactor(deltaY: number, deltaMode: number): number {
+/** How much smaller or bigger a careful or a sweeping wheel step is than the usual one. */
+export const ZOOM_STEP_SCALE: Record<ZoomStep, number> = { fine: 0.4, normal: 1, coarse: 2.2 };
+
+/**
+ * Wheel zoom: how much one wheel event changes the zoom. Trackpad pinches send small deltas, mouse wheels big ones,
+ * and a pinch keeps its own size however the keys are held (it is already as fine as a finger can be).
+ */
+export function wheelZoomFactor(deltaY: number, deltaMode: number, step: ZoomStep = 'normal'): number {
   const px = deltaMode === 1 ? deltaY * 16 : deltaMode === 2 ? deltaY * 400 : deltaY;
   const pinch = deltaMode === 0 && Math.abs(deltaY) < 40;
-  return Math.exp(-px * (pinch ? 0.01 : 0.0022));
+  return Math.exp(-px * (pinch ? 0.01 : 0.0022 * ZOOM_STEP_SCALE[step]));
 }
 
 /** Where the stage lands on the device-pixel canvas: whole pixels, so edges are crisp. */

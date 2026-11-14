@@ -7,10 +7,11 @@
  * set) are left alone.
  */
 import polygonClipping, { type MultiPolygon, type Pair, type Polygon } from 'polygon-clipping';
-import type { Color, FillShape, Id, PathShape, Shape, SubPath } from '../core/format';
+import type { Color, FillShape, Gradient, Id, PathShape, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { uid } from '../core/doc';
 import { rdp } from './bezier';
+import { gradientKey } from '../core/gradient';
 
 export type Geom = MultiPolygon;
 export interface Box {
@@ -192,6 +193,7 @@ export interface Part {
   color: Color;
   opacity: number;
   geom: Geom;
+  gradient?: Gradient;
 }
 
 const outlineCache = new WeakMap<Shape, Part[]>();
@@ -201,18 +203,18 @@ export function shapeParts(s: Shape): Part[] {
   let parts = outlineCache.get(s);
   if (parts) return parts;
   parts = [];
-  if (s.type === 'fill') parts.push({ color: s.color, opacity: s.opacity, geom: areaOfPaths(s.paths) });
+  if (s.type === 'fill') parts.push({ color: s.color, opacity: s.opacity, geom: areaOfPaths(s.paths), ...(s.gradient ? { gradient: s.gradient } : {}) });
   else if (s.type === 'stroke') {
     const o = strokeOutline(s);
     const ring: Pair[] = o.map((p) => [q(p[0]), q(p[1])]);
     parts.push({ color: s.color, opacity: s.opacity, geom: ring.length >= 3 ? (union([[ring]]) ?? []) : [] });
   } else {
     const p = s as PathShape;
-    if (p.fill) parts.push({ color: p.fill, opacity: p.opacity, geom: areaOfPaths(p.paths.map((sp) => ({ ...sp, closed: true }))) });
+    if (p.fill) parts.push({ color: p.fill, opacity: p.opacity, geom: areaOfPaths(p.paths.map((sp) => ({ ...sp, closed: true }))), ...(p.fillGradient ? { gradient: p.fillGradient } : {}) });
     if (p.stroke && p.stroke.width > 0) {
       const lines = p.paths.map((sp) => lineArea(flattenRing(sp), sp.closed, p.stroke!.width, p.stroke!.join, p.stroke!.cap)).filter((g) => g.length);
       const g = lines.length > 1 ? union(lines[0], ...lines.slice(1)) : lines[0];
-      if (g?.length) parts.push({ color: p.stroke.color, opacity: p.opacity, geom: g });
+      if (g?.length) parts.push({ color: p.stroke.color, opacity: p.opacity, geom: g, ...(p.strokeGradient ? { gradient: p.strokeGradient } : {}) });
     }
   }
   parts = parts.filter((x) => x.geom.length && x.opacity > 0);
@@ -280,7 +282,7 @@ function simplifyRing(r: Pair[]): Pair[] {
 }
 
 /** One FillShape per separate piece. The first piece can keep an existing id, so selections hold on to it. */
-export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id): FillShape[] {
+export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id, gradient?: Gradient): FillShape[] {
   const out: FillShape[] = [];
   for (const poly of g) {
     if (!poly.length || Math.abs(ringArea(poly[0])) < MIN_AREA) continue;
@@ -293,8 +295,9 @@ export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id)
     if (!paths.length) continue;
     const id = out.length === 0 && keepId ? keepId : uid('f');
     const shape: FillShape = { id, type: 'fill', paths, color, opacity };
+    if (gradient) shape.gradient = gradient;
     // The exact polygon is already known, so measuring the new shape later costs nothing.
-    outlineCache.set(shape, [{ color, opacity, geom: [poly] }]);
+    outlineCache.set(shape, [{ color, opacity, geom: [poly], ...(gradient ? { gradient } : {}) }]);
     out.push(shape);
   }
   return out;
@@ -305,7 +308,8 @@ export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id)
 /** Shapes that take part in merging: anything not in a group. */
 export const mergeable = (s: Shape): boolean => !s.group && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
 
-const keyOf = (color: Color, opacity: number) => `${color.toLowerCase()}@${opacity}`;
+// A gradient is its own paint: it only joins the very same gradient.
+const keyOf = (color: Color, opacity: number, gradient?: Gradient) => `${color.toLowerCase()}@${opacity}${gradient ? '/' + gradientKey(gradient) : ''}`;
 
 /** A shape as non-overlapping fills (a path's outline cuts its own fill when they differ in colour). */
 export function explode(s: Shape): FillShape[] {
@@ -348,11 +352,11 @@ function mergePart(list: Shape[], part: Part, opts: MergeOptions, added: Set<Id>
   const box = geomBox(part.geom);
   if (!box) return list;
   list = explodeNear(list, box);
-  const key = keyOf(part.color, part.opacity);
+  const key = keyOf(part.color, part.opacity, part.gradient);
   let g: Geom = part.geom;
 
   if (opts.under) {
-    const others = list.filter((s) => mergeable(s) && s.type === 'fill' && keyOf(s.color, s.opacity) !== key && overlaps(shapeBox(s), box)).map((s) => shapeParts(s)[0]?.geom ?? []);
+    const others = list.filter((s) => mergeable(s) && s.type === 'fill' && keyOf(s.color, s.opacity, s.gradient) !== key && overlaps(shapeBox(s), box)).map((s) => shapeParts(s)[0]?.geom ?? []);
     if (others.length) g = difference(g, ...others) ?? g;
     if (!g.length) return list;
   }
@@ -367,7 +371,7 @@ function mergePart(list: Shape[], part: Part, opts: MergeOptions, added: Set<Id>
       continue;
     }
     const sg = shapeParts(s)[0]?.geom ?? [];
-    if (keyOf(s.color, s.opacity) === key) {
+    if (keyOf(s.color, s.opacity, s.gradient) === key) {
       // Joins only if it touches: the union then has fewer pieces than the two had apart.
       const u = union(acc, sg);
       if (u && u.length < acc.length + sg.length) {
@@ -394,9 +398,9 @@ function mergePart(list: Shape[], part: Part, opts: MergeOptions, added: Set<Id>
       out.push(s);
       continue;
     }
-    out.push(...geomToFills(left, s.color, s.opacity, s.id));
+    out.push(...geomToFills(left, s.color, s.opacity, s.id, s.gradient));
   }
-  const fills = geomToFills(acc, part.color, part.opacity, keep);
+  const fills = geomToFills(acc, part.color, part.opacity, keep, part.gradient);
   for (const f of fills) added.add(f.id);
   const at = slot >= 0 ? slot : opts.at !== undefined ? Math.min(Math.max(0, opts.at), out.length) : opts.under ? 0 : out.length;
   // `at` was an index into the list before cut pieces came and went; clamp keeps it in range.
@@ -451,9 +455,101 @@ export function eraseArea(shapes: readonly Shape[], area: Geom): { shapes: Shape
       continue;
     }
     changed = true;
-    out.push(...geomToFills(left, s.color, s.opacity, s.id));
+    out.push(...geomToFills(left, s.color, s.opacity, s.id, s.gradient));
   }
   return { shapes: out, changed };
+}
+
+/** Shapes that can be rubbed out in part: lines, fills and outlined shapes (grouped ones too). Symbols, text and particles cannot. */
+export const rubbable = (s: Shape): boolean => s.type === 'stroke' || s.type === 'fill' || s.type === 'path';
+
+const looseCache = new WeakMap<Shape, Box | null>();
+
+/**
+ * A box that surely holds everything the shape paints, worked out from its raw points alone (no outline, no clipping),
+ * so a busy layer is not flattened just to find out which shapes are nowhere near the eraser. Generous on purpose.
+ */
+function looseBox(s: Shape): Box | null {
+  if (looseCache.has(s)) return looseCache.get(s)!;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  const add = (x: number, y: number) => {
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  };
+  let pad = 0;
+  if (s.type === 'stroke') {
+    for (const p of s.points) add(p.x, p.y);
+    pad = s.brush.size * 2 + 4;
+  } else if (s.type === 'fill' || s.type === 'path') {
+    for (const sp of s.paths)
+      for (const p of sp.points) {
+        add(p.x, p.y);
+        if (p.c1) add(p.c1.x, p.c1.y);
+        if (p.c2) add(p.c2.x, p.c2.y);
+      }
+    // A miter join can reach well past the line's width.
+    if (s.type === 'path' && s.stroke) pad = s.stroke.width * 6 + 4;
+  }
+  const b = x0 === Infinity ? null : { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+  looseCache.set(s, b);
+  return b;
+}
+
+/**
+ * The eraser in object drawing: takes `area` out of the lines and shapes it touches and leaves every other shape
+ * exactly as it was (the same object). A shape the area cuts becomes plain fills, one per separate piece, back to
+ * front as before, so a brush stroke cut in half is two shapes. The first piece keeps the shape's id; the others get
+ * new ids. Every piece carries the shape's lineage (`origin`) and group, so selections and keys still find it.
+ * A shape rubbed away entirely is gone. Shapes the area only brushes by their box are never touched.
+ */
+export function eraseBits(shapes: readonly Shape[], area: Geom): { shapes: Shape[]; changed: boolean } {
+  const box = geomBox(area);
+  if (!box) return { shapes: shapes.slice(), changed: false };
+  let changed = false;
+  const out: Shape[] = [];
+  for (const s of shapes) {
+    if (!rubbable(s) || !overlaps(looseBox(s), box) || !overlaps(shapeBox(s), box)) {
+      out.push(s);
+      continue;
+    }
+    const parts = shapeParts(s);
+    const cut = parts.map((p) => (overlaps(geomBox(p.geom), box) ? intersection(p.geom, area) : []));
+    // A failed clip (null) counts as a miss, so the shape stays as it is.
+    if (!cut.some((c) => c && c.length)) {
+      out.push(s);
+      continue;
+    }
+    const lineage = s.origin ?? s.id;
+    let first = true;
+    let pieces = 0;
+    parts.forEach((p, i) => {
+      const hit = cut[i] && cut[i]!.length;
+      const left = hit ? difference(p.geom, area) : p.geom;
+      if (left === null) {
+        // Could not cut this part: keep it whole rather than losing it.
+        pieces += pushPieces(out, p.geom, p, s, lineage, first);
+      } else pieces += pushPieces(out, left, p, s, lineage, first);
+      if (pieces) first = false;
+    });
+    changed = true;
+  }
+  return { shapes: out, changed };
+}
+
+function pushPieces(out: Shape[], g: Geom, p: Part, from: Shape, lineage: Id, first: boolean): number {
+  const fills = geomToFills(g, p.color, p.opacity, first ? from.id : undefined, p.gradient);
+  fills.forEach((f, i) => {
+    // The piece that keeps the id also keeps what the shape had: its lineage, group and where it sat.
+    if (from.origin || !(first && i === 0)) f.origin = lineage;
+    if (from.group) f.group = from.group;
+  });
+  out.push(...fills);
+  return fills.length;
 }
 
 /**
@@ -489,8 +585,8 @@ export function cutOut(shapes: readonly Shape[], selected: ReadonlySet<Id>, area
         lifted.push(f.id);
         continue;
       }
-      out.push(...geomToFills(outside, f.color, f.opacity, f.id));
-      const pieces = geomToFills(inside, f.color, f.opacity);
+      out.push(...geomToFills(outside, f.color, f.opacity, f.id, f.gradient));
+      const pieces = geomToFills(inside, f.color, f.opacity, undefined, f.gradient);
       out.push(...pieces);
       lifted.push(...pieces.map((p) => p.id));
     }

@@ -17,6 +17,8 @@ export interface FakeWorker {
   transport: Transport;
   self: Record<string, any>;
   close(): void;
+  /** The worker stops hearing anything, like one stuck in a loop. */
+  freeze(): void;
 }
 
 const open: MessagePort[] = [];
@@ -37,8 +39,9 @@ export function runPlugin(code: string, opts: { id?: string; network?: boolean }
   open.push(ch.port1, ch.port2);
   let handler: ((m: unknown) => void) | null = null;
   ch.port1.onmessage = (e) => handler?.(e.data);
+  let frozen = false;
   const transport: Transport = {
-    post: (m, t) => ch.port1.postMessage(m, (t ?? []) as Transferable[]),
+    post: (m, t) => void (!frozen && ch.port1.postMessage(m, (t ?? []) as Transferable[])),
     onMessage: (fn) => void (handler = fn),
     close: () => {
       ch.port1.close();
@@ -46,7 +49,7 @@ export function runPlugin(code: string, opts: { id?: string; network?: boolean }
     },
   };
   self.onmessage({ data: { t: 'boot', code, plugin: { id: opts.id ?? 'test', name: 'Test', version: '1' }, network: !!opts.network }, ports: [ch.port2] });
-  return { transport, self, close: transport.close };
+  return { transport, self, close: transport.close, freeze: () => void (frozen = true) };
 }
 
 /** Lets messages cross the port (a few turns of the event loop). */

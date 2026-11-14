@@ -10,8 +10,16 @@ import { writePdf } from './pdf';
 import { writePsd, type PsdLayer } from './psd';
 
 /** A picture of some layers on their own, at `scale`. `plain` takes the layer's blend and opacity off (PSD keeps them itself). */
-export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean): RawImage {
+export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean, reveal = false, inside?: string[]): RawImage {
   const ids = new Set(layers.map((l) => l.id));
+  // `inside`: folders the picture sits in as a group of its own (they fade and blend it themselves), so it leaves them out.
+  if (inside?.length && doc.folders) {
+    const folders = { ...doc.folders };
+    for (const id of inside) if (folders[id]) folders[id] = { ...folders[id], visible: true, opacity: 1, blend: undefined, effects: undefined };
+    doc = { ...doc, folders };
+  }
+  // `reveal`: the layers sit in a folder that is switched off, and the picture is of what is in it.
+  if (reveal && doc.folders) doc = { ...doc, folders: Object.fromEntries(Object.entries(doc.folders).map(([k, f]) => [k, { ...f, visible: true }])) };
   // The camera layer stays, so a picture sees what the camera sees, like the merged frame does.
   const d: Doc = plain && layers.length === 1 ? soloDoc(doc, layers[0]) : doc;
   return drawPicture(d, frame, scale, crisp, plain && layers.length === 1, (l) => ids.has(l.id));
@@ -57,7 +65,7 @@ export function psdFile(doc: Doc, frame: number, scale: number, background: Back
 }
 
 /** A PDF (or a PDF-compatible .ai) with a page per frame. */
-export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: boolean, crisp: boolean, onPage: (i: number) => void, ai = false): Uint8Array {
+export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: boolean, crisp: boolean, onPage: (i: number) => void, ai = false, native = false): Uint8Array {
   // Pictures of flattened layers are drawn at twice the page size (at least the stage size), so they print sharp.
   const pictureScale = Math.min(4, Math.max(1, scale * 2), 8192 / Math.max(doc.width, doc.height));
   return writePdf(doc, {
@@ -66,9 +74,10 @@ export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: 
     background: transparent ? null : (doc.background ?? '#ffffff'),
     title: doc.name || 'Untitled',
     creator: ai ? 'Frameling (PDF compatible Illustrator file)' : 'Frameling',
-    picture: (frame, layers, own) => layersPicture(doc, frame, layers, pictureScale, own, crisp),
+    picture: (frame, layers, own, reveal, inside) => layersPicture(doc, frame, layers, pictureScale, own, crisp, reveal, inside),
     pictureScale,
     crisp,
     onPage,
+    native,
   });
 }

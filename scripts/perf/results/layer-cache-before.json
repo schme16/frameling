@@ -1,0 +1,280 @@
+{
+ "label": "sweep",
+ "when": "2026-11-13T05:43:22.024Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 158.1,
+   "runs": [
+    182,
+    158.1,
+    157.6
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 13.17,
+   "topSelf": [
+    [
+     "(program) :0",
+     119.2
+    ],
+    [
+     "restore :0",
+     16.9
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "lp index-C-Y36zSy.js:11",
+     2
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:65",
+     1.9
+    ],
+    [
+     "ap index-C-Y36zSy.js:11",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     119.2
+    ],
+    [
+     "frame index-C-Y36zSy.js:58",
+     21.6
+    ],
+    [
+     "drawMain index-C-Y36zSy.js:58",
+     20.8
+    ],
+    [
+     "paint index-C-Y36zSy.js:58",
+     20.5
+    ],
+    [
+     "paintStage index-C-Y36zSy.js:58",
+     20.3
+    ],
+    [
+     "jae index-C-Y36zSy.js:58",
+     20
+    ],
+    [
+     "Gg index-C-Y36zSy.js:58",
+     19.9
+    ],
+    [
+     "Ug index-C-Y36zSy.js:58",
+     19.9
+    ],
+    [
+     "Bg index-C-Y36zSy.js:58",
+     19.9
+    ],
+    [
+     "zg index-C-Y36zSy.js:58",
+     19.9
+    ],
+    [
+     "l index-C-Y36zSy.js:58",
+     17.7
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     17.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 1264.1,
+   "runs": [
+    1264.1,
+    1261.4,
+    1277.4
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 15.8,
+   "topSelf": [
+    [
+     "setTransform :0",
+     646.1
+    ],
+    [
+     "(program) :0",
+     263.1
+    ],
+    [
+     "(garbage collector) :0",
+     152.9
+    ],
+    [
+     "drawImage :0",
+     84.5
+    ],
+    [
+     "restore :0",
+     53.9
+    ],
+    [
+     "getContext :0",
+     11.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-C-Y36zSy.js:58",
+     806.5
+    ],
+    [
+     "drawMain index-C-Y36zSy.js:58",
+     804.4
+    ],
+    [
+     "paint index-C-Y36zSy.js:58",
+     801.5
+    ],
+    [
+     "paintStage index-C-Y36zSy.js:58",
+     801.3
+    ],
+    [
+     "jae index-C-Y36zSy.js:58",
+     801
+    ],
+    [
+     "zg index-C-Y36zSy.js:58",
+     800.5
+    ],
+    [
+     "Gg index-C-Y36zSy.js:58",
+     800.4
+    ],
+    [
+     "Ug index-C-Y36zSy.js:58",
+     800.4
+    ],
+    [
+     "Bg index-C-Y36zSy.js:58",
+     800.4
+    ],
+    [
+     "l index-C-Y36zSy.js:58",
+     794.9
+    ],
+    [
+     "build index-C-Y36zSy.js:58",
+     670.3
+    ],
+    [
+     "vectorBitmap index-C-Y36zSy.js:58",
+     652.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 551.2,
+   "runs": [
+    558.6,
+    551.2,
+    521.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 91.86,
+   "topSelf": [
+    [
+     "(program) :0",
+     284.3
+    ],
+    [
+     "setTransform :0",
+     94.6
+    ],
+    [
+     "(garbage collector) :0",
+     33.9
+    ],
+    [
+     "drawImage :0",
+     29.4
+    ],
+    [
+     "scale :0",
+     7.4
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:65",
+     6.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     284.3
+    ],
+    [
+     "frame index-C-Y36zSy.js:58",
+     115.4
+    ],
+    [
+     "paint index-C-Y36zSy.js:58",
+     112.5
+    ],
+    [
+     "drawMain index-C-Y36zSy.js:58",
+     111.5
+    ],
+    [
+     "Bg index-C-Y36zSy.js:58",
+     109.2
+    ],
+    [
+     "zg index-C-Y36zSy.js:58",
+     109.2
+    ],
+    [
+     "Gg index-C-Y36zSy.js:58",
+     109.2
+    ],
+    [
+     "Ug index-C-Y36zSy.js:58",
+     109.2
+    ],
+    [
+     "paintStage index-C-Y36zSy.js:58",
+     107.7
+    ],
+    [
+     "jae index-C-Y36zSy.js:58",
+     107.6
+    ],
+    [
+     "l index-C-Y36zSy.js:58",
+     106.6
+    ],
+    [
+     "setTransform :0",
+     94.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  }
+ ]
+}

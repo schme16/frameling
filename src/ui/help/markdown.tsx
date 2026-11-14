@@ -193,7 +193,7 @@ function renderInline(list: Inline[], onHelp: (topic: string, anchor?: string) =
           return (
             <a
               key={i}
-              href={`#${h.topic}`}
+              href={n.href}
               className="ui-md-link"
               onClick={(e) => {
                 e.preventDefault();

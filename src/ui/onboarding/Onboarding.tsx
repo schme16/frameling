@@ -10,6 +10,7 @@ import { askAboutUnsavedChanges } from '../../io/document';
 import { applyWorkspace, showPanel } from '../dock';
 import { Icon } from '../icons';
 import { line, lineParts, lines } from '../mascot/lines';
+import { playCue } from '../sounds';
 import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
 import { Modal } from '../Modal';
 import { closeOnboarding, openHelp, openSheet, overlays } from '../overlays';
@@ -19,7 +20,10 @@ import { getQuest, questProgress, startQuest } from '../quests';
 import { BUILT_IN_THEMES, type Theme } from '../themes/builtIn';
 import { ThemePreview } from '../themes/ThemePreview';
 import { toast } from '../toast';
-import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, planFor, reduceFlow, sillyName, startFlow, STEPS, stepIndex, strawberryFor, type FlowState, type StepId } from './flow';
+import { getFeature, isFeatureOn } from '../../features/host';
+import { offerTurnOnForWish } from '../../features/prompt';
+import { useFeaturesVersion } from '../../features/use';
+import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, pickedButOff, planFor, reduceFlow, sillyName, startFlow, STEPS, stepIndex, strawberryFor, type FlowState, type StepId } from './flow';
 import './onboarding.css';
 
 /** True while this is the automatic first-run showing (a skip then still opens the welcome sheet). */
@@ -50,7 +54,8 @@ function Flow() {
   const [beat, setBeat] = useState(0);
   const p = usePrefs((x) => x);
   const themes = useMemo(() => [...BUILT_IN_THEMES, ...p.customThemes], [p.customThemes]);
-  const plan = planFor(s.interests, questProgress.get().completed);
+  useFeaturesVersion();
+  const plan = planFor(s.interests.filter(interestAvailable), questProgress.get().completed);
 
   // Quill nods off when a step sits untouched, and wakes up a bit embarrassed.
   const lastPoke = useRef(Date.now());
@@ -72,6 +77,7 @@ function Flow() {
   }, [s.step]);
   const quillSwitched = (on: boolean) => {
     setPrefs({ showQuill: on });
+    if (!on) playCue('goodbye');
     setMood((m) => ({ kind: on ? 'back' : 'bye', n: (m?.n ?? 0) + 1, playing: true }));
   };
 
@@ -97,6 +103,12 @@ function Flow() {
     if (plan.panel) showPanel(plan.panel);
     const name = s.name.trim() || 'Untitled';
     end('done');
+    // A blank pixel grid is Quill's pixel chooser: one picture, an animation, frames on boards or sprites on a sheet.
+    if (go === 'blank' && plan.blank === 'blank-pixel') {
+      const { openPixelChooser } = await import('../../pixel/Chooser');
+      openPixelChooser();
+      return;
+    }
     if (go === 'template' || (go === 'blank' && plan.blank)) {
       const { findTemplate } = await import('../../templates');
       const t = findTemplate(go === 'blank' && plan.blank ? plan.blank : plan.template);
@@ -194,12 +206,12 @@ function Flow() {
         </span>
         <span className="ob-foot-end">
           {i > 0 && (
-            <button type="button" className="ui-btn" onClick={() => dispatch({ type: 'back' })}>
+            <button type="button" className="ui-btn" data-testid="onboarding.back" onClick={() => dispatch({ type: 'back' })}>
               Back
             </button>
           )}
           {!last && (
-            <button type="button" className="ui-btn ui-btn-primary ob-next" onClick={() => dispatch({ type: 'next' })}>
+            <button type="button" className="ui-btn ui-btn-primary ob-next" data-testid="onboarding.next" onClick={() => dispatch({ type: 'next' })}>
               {s.step === 'hello' ? "Let's go!" : 'Next'}
               <Icon name="next" size={14} />
             </button>
@@ -308,12 +320,31 @@ function Hello() {
   );
 }
 
+/** Making tile levels needs the Tiles feature; without it the card and the plan for it are left out. */
+const interestAvailable = (id: string): boolean => id !== 'tiles' || isFeatureOn('tiles');
+
+/** Said when Tiles and levels was picked but the Tiles feature is off: why it is missing from the plan, and a way to fix it. */
+function TilesOffNote({ s }: { s: FlowState }) {
+  if (!pickedButOff(s.interests, isFeatureOn).includes('tiles')) return null;
+  const feature = getFeature('tiles');
+  return (
+    <p className="ob-off-note" role="status">
+      <span>{line('onboarding.tilesOff.note')}</span>
+      {feature && (
+        <button type="button" className="ob-read" onClick={() => void offerTurnOnForWish(feature, line('onboarding.tilesOff.why'))}>
+          {line('onboarding.tilesOff.button')}
+        </button>
+      )}
+    </p>
+  );
+}
+
 function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[number]['id']) => void }) {
   return (
     <>
       <p className="ob-lead">{line('onboarding.make.lead')}</p>
       <div className="ob-cards" role="group" aria-label="What would you like to make?">
-        {INTERESTS.map((x, n) => {
+        {INTERESTS.filter((x) => interestAvailable(x.id)).map((x, n) => {
           const on = s.interests.includes(x.id);
           return (
             <button key={x.id} type="button" aria-pressed={on} className={`ob-card${on ? ' is-chosen' : ''}`} style={{ animationDelay: `${n * 60}ms` }} onClick={() => toggle(x.id)}>
@@ -326,6 +357,7 @@ function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[numb
           );
         })}
       </div>
+      <TilesOffNote s={s} />
     </>
   );
 }
@@ -518,6 +550,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
       <p className="ob-lead">
         {lineParts('onboarding.done.lead', { workspace: <strong key="ws">{ws}</strong>, name: <strong key="name">{s.name.trim() || line('onboarding.done.leadNoName')}</strong> })}
       </p>
+      <TilesOffNote s={s} />
       <div className="ob-go-list">
         {quest && (
           <button type="button" className="ob-go is-main" onClick={() => go('quest')}>

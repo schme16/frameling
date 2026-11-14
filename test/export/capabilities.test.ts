@@ -93,6 +93,18 @@ describe('WebM codec preference', () => {
     expect((await m.detectCapabilities(320, 240)).webm.codec).toBe('vp9');
   });
 
+  it('says what this computer cannot do, in plain words', async () => {
+    can.plain = new Set();
+    let m = await load();
+    const c = await m.detectCapabilities(320, 240);
+    expect(c.mp4.reason).toMatch(/^This computer can't make H\.264/);
+    expect(c.webm.reason).toMatch(/^This computer can't make WebM/);
+    m = await load();
+    delete (globalThis as any).VideoEncoder;
+    const none = await m.detectCapabilities(1, 1);
+    expect(none.mp4.reason).toMatch(/^This computer's video encoder isn't available/);
+  });
+
   it('is not tripped by the unused imports', () => {
     expect([_resetChoicesForTests, getChoiceDef, registerChoice, setChoice].every((f) => typeof f === 'function')).toBe(true);
   });

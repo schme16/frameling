@@ -5,7 +5,7 @@
  *
  * Changing a colour while shapes are selected also recolours them (one undo step per drag).
  *
- * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (the theme's
+ * Keys: X brings the other box to the front, Shift+X swaps the two colours (and gradients), Shift+D goes back to the defaults (the theme's
  * fill, black stroke; plain D is "copy drawing to next frame" in the timeline), / sets the box in front to none.
  */
 import type { Color } from '../core/format';
@@ -13,6 +13,8 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
+import { applyGradientToSelection, getGradientWells, swapGradientWells } from './gradient-wells';
+import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
 /** The fill used when there's no theme to ask (tests, before the page styles load). */
@@ -55,11 +57,18 @@ export const DEFAULT_STROKE: Color = '#1d1b26';
 
 /** The colour in the box that's in front, or null when it's set to none. */
 export function activeColor(ui: UiState = store().get().ui): Color | null {
+  // Paint and Back (the Pixel workspace): the colour you set and pick is always Paint.
+  if (paintWellsOn()) return ui.color;
   return ui.activeWell === 'fill' ? ui.fillColor : ui.strokeOn ? ui.color : null;
 }
 
 /** The fill shapes and shapes should use (null = none). */
 export function shapeColors(ui: UiState = store().get().ui): { fill: Color | null; stroke: Color | null } {
+  // Paint and Back: shapes are drawn in Paint, and filled in Paint when "Filled" is on.
+  if (paintWellsOn()) {
+    const f = shapesFilled();
+    return { fill: f === 'back' ? ui.fillColor : f ? ui.color : null, stroke: ui.color };
+  }
   return { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null };
 }
 
@@ -98,6 +107,10 @@ function applyToSelection(which: 'fill' | 'stroke'): void {
 /** Sets the colour of the box in front (and turns "none" off for it). */
 export function setActiveColor(c: Color): void {
   const ui = store().get().ui;
+  if (paintWellsOn()) {
+    if (ui.color !== c || !ui.strokeOn) store().setUi({ color: c, strokeOn: true });
+    return;
+  }
   if (ui.activeWell === 'fill') {
     if (ui.fillColor === c) return;
     store().setUi({ fillColor: c });
@@ -114,17 +127,40 @@ export function setActiveWell(w: 'fill' | 'stroke'): void {
 
 /** X: bring the other box to the front. */
 export function toggleWell(): void {
+  if (paintWellsOn()) {
+    swapPaintBack();
+    return;
+  }
   setActiveWell(store().get().ui.activeWell === 'fill' ? 'stroke' : 'fill');
 }
 
-/** Shift+X: swap the fill and stroke colours. */
+/** Shift+X: swap the fill and stroke colours, gradients included. */
 export function swapColors(): void {
+  if (paintWellsOn()) {
+    swapPaintBack();
+    return;
+  }
   const ui = store().get().ui;
   const fill = ui.strokeOn ? ui.color : null;
   const stroke = ui.fillColor;
+  const g = getGradientWells();
+  const hadGradient = !!(g.fill || g.stroke);
+  swapGradientWells();
   store().setUi({ fillColor: fill, color: stroke ?? ui.color, strokeOn: stroke !== null });
   applyToSelection('fill');
   applyToSelection('stroke');
+  if (hadGradient) {
+    applyGradientToSelection('fill');
+    applyGradientToSelection('stroke');
+  }
+}
+
+/** Paint and Back trade places (X in the Pixel workspace). With no Back colour there is nothing to swap with. */
+export function swapPaintBack(): boolean {
+  const ui = store().get().ui;
+  if (!ui.fillColor) return false;
+  store().setUi({ color: ui.fillColor, fillColor: ui.color, strokeOn: true });
+  return true;
 }
 
 /** Shift+D: the theme's fill colour and a black stroke. */
@@ -193,22 +229,4 @@ registerHelp({
   media: 'fill-and-stroke-boxes.png',
   summary: 'Two colour boxes: the fill for insides and the paint bucket, the stroke for lines and outlines.',
   keywords: ['fill', 'stroke', 'outline', 'colour', 'color', 'none', 'swap', 'default'],
-  body: `The Colours panel has two boxes. The **fill** box (the solid square) colours the inside of shapes and is what the **paint bucket** pours. The **stroke** box (the square with a hole) colours **lines**: the brush, the pencil, pixel lines and the outline of shapes.
-
-Click a box to bring it to the front. The picker, the swatches and the eyedropper change whichever box is in front. Picking a tool brings its box forward for you: the paint bucket brings the fill, and the brush, pencil and line bring the stroke, so the colour you click next is the one you paint with.
-
-## Shapes
-
-Rectangles and ellipses use both: the fill inside and the stroke round the edge. Want just an outline? Set the fill to **none**. Just a solid shape? Set the stroke to none.
-
-## Quick keys
-
-- **X** brings the other box to the front.
-- **Shift+X** swaps the two colours.
-- **Shift+D** goes back to the default colours: a black stroke, and a fill in your theme's highlight colour (gold in most themes, aqua or lavender in others). New shapes start with that fill too, so they show up on white paper.
-- **/** sets the box in front to none.
-
-## Changing shapes you've already drawn
-
-Select shapes with the Select tool (**V**), then pick a colour. The box in front decides whether you change their fill or their outline.`,
 });

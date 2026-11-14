@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { fft, frameFeatures, guessMouths, holdAtLeast, vowelFor } from '../../src/lipsync/analysis';
+import { expectedFromText } from '../../src/lipsync/dict';
+import { guessMouths, guessMouthsAsync, holdAtLeast, poolSteps, smoothPath } from '../../src/lipsync/analysis';
+import { fft, hopFeatures, levinson, stepFeatures, FEATURE_COUNT } from '../../src/lipsync/dsp';
 import type { Mouth } from '../../src/lipsync/chart';
 
 const RATE = 44100;
@@ -35,7 +38,7 @@ const add = (...x: Float32Array[]) => {
   return out;
 };
 
-const OPEN = new Set<Mouth>(['A', 'E', 'O', 'U']);
+const OPEN = new Set<Mouth>(['A', 'E', 'O', 'U', 'WQ']);
 
 describe('fft', () => {
   it('puts a pure tone in the right bin', () => {
@@ -75,39 +78,6 @@ describe('guessMouths', () => {
     expect(m[47]).toBe('rest');
   });
 
-  it('tells the vowels apart roughly: wide A, smiling E, round O, small U', () => {
-    const pick = (f1: number, f2: number) => {
-      const m = guessMouths(vowel(1, 0, 1, f1, f2), RATE, FPS, 24);
-      const counts = new Map<Mouth, number>();
-      for (const x of m.slice(2, 22)) counts.set(x, (counts.get(x) ?? 0) + 1);
-      return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    };
-    expect(pick(750, 1200)).toBe('A');
-    expect(pick(420, 2200)).toBe('E');
-    expect(pick(500, 900)).toBe('O');
-    expect(pick(320, 800)).toBe('U');
-  });
-
-  it('gives a consonant mouth for a burst of hiss', () => {
-    const s = noise(2, 0.5, 1.0);
-    const m = guessMouths(s, RATE, FPS, 48);
-    const mid = m.slice(14, 22);
-    expect(mid.every((x) => x === 'etc' || x === 'FV')).toBe(true);
-    expect(mid).toContain('etc');
-  });
-
-  it('closes the lips for a short gap between words, and rests for a long one', () => {
-    const word = (a: number, b: number) => vowel(3, a, b, 700, 1200);
-    // Gap of 1 frame (0.042 s) after frame 10, and a 12 frame gap later.
-    const short = 10 / FPS + 0.5;
-    const s = add(word(0, 10 / FPS), word(11 / FPS, 2), word(2.5, 3));
-    const m = guessMouths(s, RATE, FPS, 72);
-    expect(m[10]).toBe('MBP');
-    expect(m[12]).not.toBe('rest');
-    expect(m.slice(52, 60).every((x) => x === 'rest')).toBe(true);
-    expect(short).toBeGreaterThan(0);
-  });
-
   it('keeps every mouth for at least the minimum hold (lips-closed beats excepted)', () => {
     // A mix of everything, to give it plenty of reasons to flicker.
     const s = add(vowel(3, 0.1, 0.6, 700, 1200), noise(3, 0.6, 0.8), vowel(3, 0.8, 1.2, 420, 2200), vowel(3, 1.25, 1.7, 320, 800), noise(3, 1.9, 2.2, 0.1));
@@ -141,13 +111,150 @@ describe('holdAtLeast', () => {
   });
 });
 
-describe('frameFeatures', () => {
-  it('is silent for nothing and tiny slices', () => {
-    expect(frameFeatures(new Float32Array(2000), RATE).rms).toBe(0);
-    expect(frameFeatures(new Float32Array(10).fill(0.5), RATE).rms).toBe(0);
+// ---- real speech with known timing ----
+
+interface Phoneme {
+  mouth: Mouth;
+  start: number;
+  end: number;
+}
+function fixture(name: string): { samples: Float32Array; rate: number; text: string; phonemes: Phoneme[] } {
+  const b = readFileSync(new URL(`./fixtures/${name}.wav`, import.meta.url));
+  const rate = b.readUInt32LE(24);
+  const n = (b.length - 44) / 2;
+  const samples = new Float32Array(n);
+  for (let i = 0; i < n; i++) samples[i] = b.readInt16LE(44 + i * 2) / 32768;
+  const meta = JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8')) as { text: string; phonemes: Phoneme[] };
+  return { samples, rate, ...meta };
+}
+const WEIGHT: Partial<Record<Mouth, number>> = { MBP: 1.8, FV: 1.4 };
+function truthFrames(ph: Phoneme[], fps: number, frames: number): Mouth[] {
+  return Array.from({ length: frames }, (_, f) => {
+    const score = new Map<Mouth, number>();
+    for (const p of ph) {
+      const o = Math.min((f + 1) / fps, p.end) - Math.max(f / fps, p.start);
+      if (o > 0) score.set(p.mouth, (score.get(p.mouth) ?? 0) + o * (WEIGHT[p.mouth] ?? 1));
+    }
+    return [...score.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'rest';
   });
-  it('reads the vowel resonances', () => {
-    const f = frameFeatures(vowel(1, 0, 1, 750, 1200).subarray(0, 1837), RATE);
-    expect(vowelFor(f)).toBe('A');
+}
+const accuracy = (a: Mouth[], b: Mouth[]) => a.filter((m, i) => m === b[i]).length / a.length;
+
+describe.each(['moon-slt', 'moon-espeak'])('a spoken line (%s)', (name) => {
+  const f = fixture(name);
+  // Play it at the rate a recording is usually decoded at.
+  const frames = Math.ceil((f.samples.length / f.rate) * FPS);
+  const truth = truthFrames(f.phonemes, FPS, frames);
+
+  it('puts most frames on the right mouth (the old guesser managed about one in three)', () => {
+    const guess = guessMouths(f.samples, f.rate, FPS, frames);
+    expect(accuracy(guess, truth)).toBeGreaterThan(0.65);
+  });
+
+  it('knows when the voice starts and stops, and rests either side', () => {
+    const guess = guessMouths(f.samples, f.rate, FPS, frames);
+    const firstTrue = truth.findIndex((m) => m !== 'rest');
+    const firstGuess = guess.findIndex((m) => m !== 'rest');
+    expect(Math.abs(firstGuess - firstTrue)).toBeLessThanOrEqual(1);
+    const speechAgree = guess.filter((m, i) => (m === 'rest') === (truth[i] === 'rest')).length / frames;
+    expect(speechAgree).toBeGreaterThan(0.9);
+  });
+
+  it('does not flicker: no mouth but a lip closure lasts under two frames', () => {
+    const guess = guessMouths(f.samples, f.rate, FPS, frames);
+    let i = 0;
+    while (i < guess.length) {
+      let j = i;
+      while (j + 1 < guess.length && guess[j + 1] === guess[i]) j++;
+      if (guess[i] !== 'MBP' && i > 0 && j < guess.length - 1) expect(j - i + 1).toBeGreaterThanOrEqual(2);
+      i = j + 1;
+    }
+  });
+
+  it('is at least as good when the words are typed in', async () => {
+    const plain = accuracy(guessMouths(f.samples, f.rate, FPS, frames), truth);
+    const typed = accuracy(guessMouths(f.samples, f.rate, FPS, frames, { text: f.text, expected: await expectedFromText(f.text) }), truth);
+    expect(typed).toBeGreaterThan(plain - 0.1);
+    expect(typed).toBeGreaterThan(0.6);
+  });
+
+  it('gives the same answer the page-friendly way', async () => {
+    const a = guessMouths(f.samples, f.rate, FPS, frames);
+    const b = await guessMouthsAsync(f.samples, f.rate, FPS, frames);
+    expect(b).toEqual(a);
+  });
+
+  it('copes with the recording at another sample rate', () => {
+    // Nearest-sample resample to 44.1 kHz, as a stand-in for a recording made at that rate.
+    const to = 44100;
+    const up = new Float32Array(Math.floor((f.samples.length * to) / f.rate));
+    for (let i = 0; i < up.length; i++) up[i] = f.samples[Math.min(f.samples.length - 1, Math.floor((i * f.rate) / to))];
+    expect(accuracy(guessMouths(up, to, FPS, frames), truth)).toBeGreaterThan(0.6);
+  });
+});
+
+describe('dsp', () => {
+  it('finds the filter of a decaying signal with levinson', () => {
+    // Autocorrelation of an AR(1) process x[n] = 0.7 x[n-1] + noise is 0.7^k.
+    const r = [1, 0.7, 0.49, 0.343];
+    const a = levinson(r, 3)!;
+    expect(a[1]).toBeCloseTo(-0.7, 6);
+    expect(Math.abs(a[2])).toBeLessThan(1e-9);
+    expect(levinson([0, 0, 0], 2)).toBeNull();
+  });
+
+  it('measures the vowel resonances of a buzz shaped by two formants', () => {
+    const s = vowel(1, 0, 1, 700, 1500).subarray(0, 1323);
+    const h = hopFeatures(s, RATE)!;
+    expect(h.f1).toBeGreaterThan(560);
+    expect(h.f1).toBeLessThan(860);
+    expect(h.f2).toBeGreaterThan(1250);
+    expect(h.f2).toBeLessThan(1800);
+    expect(h.voicing).toBeGreaterThan(0.6);
+  });
+
+  it('finds noise unvoiced and bright', () => {
+    const h = hopFeatures(noise(1, 0, 1).subarray(0, 1323), RATE)!;
+    const v = hopFeatures(vowel(1, 0, 1, 700, 1500).subarray(0, 1323), RATE)!;
+    expect(h.voicing).toBeLessThan(0.4);
+    expect(h.centroid).toBeGreaterThan(v.centroid);
+  });
+
+  it('gives one row of the same width for every 10 ms', () => {
+    const rows = stepFeatures(vowel(1, 0.2, 0.8, 700, 1200), RATE);
+    expect(rows).toHaveLength(100);
+    expect(rows.every((r) => r.length === FEATURE_COUNT)).toBe(true);
+    expect(rows.every((r) => Array.from(r).every(Number.isFinite))).toBe(true);
+  });
+});
+
+describe('smoothPath and poolSteps', () => {
+  const row = (...p: number[]) => Float32Array.from(p);
+  it('smooths a one frame wobble away, but a clear change stays', () => {
+    const odds = [row(0.9, 0.1), row(0.9, 0.1), row(0.4, 0.6), row(0.9, 0.1), row(0.9, 0.1), row(0.1, 0.9), row(0.1, 0.9), row(0.1, 0.9)];
+    expect(smoothPath(odds, 1.5)).toEqual([0, 0, 0, 0, 0, 1, 1, 1]);
+    expect(smoothPath(odds, 0)[2]).toBe(1);
+  });
+  it('never makes a run shorter than the hold, except the free mouth', () => {
+    const odds = [row(0.9, 0.1, 0), row(0.2, 0.8, 0), row(0.9, 0.1, 0), row(0.9, 0.1, 0), row(0.1, 0.1, 0.8), row(0.9, 0.1, 0), row(0.9, 0.1, 0), row(0.9, 0.1, 0)];
+    const path = smoothPath(odds, 0.1, 2, 2);
+    expect(path[4]).toBe(2);
+    expect(path.slice(0, 4).every((c, i, a) => i === 0 || c === a[i - 1] || i >= 2)).toBe(true);
+    let i = 0;
+    while (i < path.length) {
+      let j = i;
+      while (j + 1 < path.length && path[j + 1] === path[i]) j++;
+      if (path[i] !== 2 && i > 0 && j < path.length - 1) expect(j - i + 1).toBeGreaterThanOrEqual(2);
+      i = j + 1;
+    }
+  });
+  it('pools the steps inside each frame, and boosts a short closure', () => {
+    // 100 steps a second, 10 fps: ten steps a frame.
+    const steps = Array.from({ length: 20 }, (_, h) => (h >= 5 && h < 8 ? row(0.1, 0.9) : row(0.9, 0.1)));
+    const plain = poolSteps(steps, 10, 2, {}, ['A', 'MBP']);
+    expect(plain[0][0]).toBeGreaterThan(plain[0][1]);
+    const boosted = poolSteps(steps, 10, 2, { MBP: 3 }, ['A', 'MBP']);
+    expect(boosted[0][1]).toBeGreaterThan(plain[0][1]);
+    expect(plain.every((r) => Math.abs(r[0] + r[1] - 1) < 1e-5)).toBe(true);
   });
 });

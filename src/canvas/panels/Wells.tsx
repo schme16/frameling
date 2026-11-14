@@ -4,14 +4,20 @@
 import { useStore } from '../../core/store';
 import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../tools/wells';
 import { Icon } from '../../ui/icons';
+import { useGradientWells } from '../../tools/gradient-wells';
+import { gradientCss } from '../../core/gradient';
+import { usePaintWells } from '../../tools/pixelWells';
+import { PaintWells } from '../../pixel/PaintWells';
 
 function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string | null; front: boolean }) {
   const label = which === 'fill' ? 'Fill colour' : 'Stroke colour';
+  const g = useGradientWells((s) => (color ? s[which] : null));
+  const style = color ? ({ '--well': color, ...(g ? { '--wellg': gradientCss(g, g.angle) } : {}) } as React.CSSProperties) : undefined;
   return (
     <button
       type="button"
-      className={`cv-well cv-well-${which}${front ? ' is-front' : ''}${color ? '' : ' is-none'}`}
-      style={color ? ({ '--well': color } as React.CSSProperties) : undefined}
+      className={`cv-well cv-well-${which}${front ? ' is-front' : ''}${color ? '' : ' is-none'}${g ? ' has-grad' : ''}`}
+      style={style}
       aria-pressed={front}
       aria-label={`${label}: ${color ?? 'none'}${front ? ' (in front)' : ''}`}
       title={`${label}: ${color ?? 'none'}. Click to bring it to the front (X).`}
@@ -24,6 +30,9 @@ export function Wells() {
   const fill = useStore((s) => s.ui.fillColor);
   const stroke = useStore((s) => (s.ui.strokeOn ? s.ui.color : null));
   const active = useStore((s) => s.ui.activeWell);
+  // The Pixel workspace has Paint and Back instead.
+  const paintWells = usePaintWells();
+  if (paintWells) return <PaintWells />;
   return (
     <div className="cv-wells" data-quest="color-wells">
       <div className="cv-wells-stack">

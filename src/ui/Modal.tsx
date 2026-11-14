@@ -1,6 +1,7 @@
 // A dialog shell: dim backdrop, focus kept inside, Esc closes, focus goes back to where it was.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './icons';
+import { pressedBackdrop } from './backdropClick';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -12,6 +13,8 @@ export function Modal({
   size = 'md',
   hideHeader = false,
   initialFocus,
+  describedBy,
+  backdropDoesNothing = false,
 }: {
   title: string;
   onClose: () => void;
@@ -21,6 +24,13 @@ export function Modal({
   hideHeader?: boolean;
   /** CSS selector inside the dialog to focus first (else the dialog itself, so no tooltip pops up on open). */
   initialFocus?: string;
+  /** The id of the text inside that says what the dialog is about, so a screen reader reads it out on opening. */
+  describedBy?: string;
+  /**
+   * A press on the dim area does nothing at all, and never asks what it should do. For a dialog where a stray press
+   * could cost work (the save question), where a question about a stray press would be a question inside a question.
+   */
+  backdropDoesNothing?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -63,10 +73,10 @@ export function Modal({
     <div
       className="ui-backdrop"
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) closeRef.current();
+        if (e.target === e.currentTarget && !backdropDoesNothing) pressedBackdrop(e.clientX, e.clientY, ref.current, () => closeRef.current());
       }}
     >
-      <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKey}>
+      <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} aria-describedby={describedBy} tabIndex={-1} onKeyDown={onKey}>
         {!hideHeader && (
           <div className="ui-modal-head">
             <h2>{title}</h2>

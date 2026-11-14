@@ -27,6 +27,11 @@ describe('built-in themes', () => {
     expect(new Set(BUILT_IN_THEMES.map((t) => t.id)).size).toBe(BUILT_IN_THEMES.length);
     expect(new Set(BUILT_IN_THEMES.map((t) => t.name)).size).toBe(BUILT_IN_THEMES.length);
     for (const id of ['midnight-sketchbook', 'paper-and-honey', 'moonlit-pond', 'studio-white', 'strawberry-milk']) expect(getBuiltIn(id)).toBeTruthy();
+    // Every pair the user asked for has a dark and a light side.
+    for (const [dark, light] of [['gumdrop-night', 'gumdrop-day'], ['batwing', 'bat-nap'], ['mocha-kitten', 'latte-kitten'], ['retro-groove-night', 'retro-groove-day'], ['puppy-socks', 'kitty-socks']]) {
+      expect(getBuiltIn(dark)?.mode, dark).toBe('dark');
+      expect(getBuiltIn(light)?.mode, light).toBe('light');
+    }
   });
 
   it('covers every colour token with a valid value', () => {
@@ -78,7 +83,45 @@ describe('built-in themes', () => {
     expect(surroundFor({ id: 'custom-1', basedOn: 'glacier-grid' })).toBe('camo');
     expect(surroundFor({ id: 'lavender-hum' })).toBeNull();
     expect(surroundFor({ id: 'strawberry' })).toBe('seeds');
+    expect(surroundFor({ id: 'kitty-socks' })).toBe('socks');
+    expect(surroundFor({ id: 'custom-2', basedOn: 'puppy-socks' })).toBe('socks');
     expect(surroundFor({ id: DEFAULT_DARK })).toBeNull();
+  });
+
+  it('textures go on the root as data-surround, and the Textures preference takes them off', () => {
+    expect(DEFAULT_PREFS.showTextures).toBe(true);
+    expect(migratePrefs({}).showTextures).toBe(true);
+    expect(migratePrefs({ showTextures: false }).showTextures).toBe(false);
+    setPrefs({ theme: 'light', lightTheme: 'strawberry' });
+    expect(root().dataset.surround).toBe('seeds');
+    setPrefs({ showTextures: false });
+    expect(root().dataset.surround).toBeUndefined();
+    setPrefs({ showTextures: true });
+    expect(root().dataset.surround).toBe('seeds');
+    // A theme with no pattern never gets the attribute either way.
+    setPrefs({ lightTheme: DEFAULT_LIGHT });
+    expect(root().dataset.surround).toBeUndefined();
+  });
+
+  it('seeds are fainter and paler on dark than on light, and only light themes outline them', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/canvas/canvas.css'), 'utf8');
+    const strengths = (block: string) => [...block.matchAll(/--seed-[ab]: color-mix\(in srgb, var\(--seed-ink\) (\d+)%/g)].map((m) => Number(m[1]));
+    const yellow = (block: string) => Number(/--seed-ink: color-mix\(in srgb, var\(--chosen-bg\) (\d+)%/.exec(block)?.[1] ?? NaN);
+    const i = css.indexOf("[data-surround='seeds'] .cv-surround {");
+    const darkBlock = css.slice(i, css.indexOf('}', i));
+    const dark = strengths(darkBlock);
+    const j = css.indexOf(":root[data-theme='light'][data-surround='seeds'] .cv-surround {");
+    const light = css.slice(j, css.indexOf('}', j));
+    expect(dark).toHaveLength(2);
+    for (const [k, v] of strengths(light).entries()) expect(v).toBeGreaterThan(dark[k]!);
+    // Dark seeds are lifted towards the cream text colour, so they don't go brown on the berry; light ones stay yellow.
+    expect(darkBlock).toContain('var(--text)');
+    expect(yellow(darkBlock)).toBeLessThan(50);
+    expect(yellow(light)).toBeGreaterThan(50);
+    expect(light).toContain('--seed-outline: drop-shadow(');
+    // The outline sits on .cv-surround itself: on one element a filter runs before the mask and would be cut away.
+    expect(css).toContain('filter: var(--seed-outline, none);');
+    expect(css).not.toMatch(/\.cv-surround::(before|after) \{[^}]*filter:/);
   });
 
   it('dark themes are dark and light themes are light', () => {
@@ -200,6 +243,22 @@ describe('deriving tokens', () => {
     expect(next.cel).not.toBe(t.cel);
     expect(next['hover-bg']).toBe('#123456');
     expect(deriveTokens(t, 'dark', ['text'])['line-soft']).toBe(t['line-soft']);
+  });
+  it('the soft warning tint follows the panel and peach, and text reads on it in every built-in theme', () => {
+    for (const t of BUILT_IN_THEMES) {
+      expect(isHex(t.tokens['peach-soft']), t.id).toBe(true);
+      expect(contrast(t.tokens.text, t.tokens['peach-soft']), t.id).toBeGreaterThanOrEqual(4.5);
+      // A tint, not the gold chosen colour: it stays close to the panel it sits on.
+      expect(contrast(t.tokens['peach-soft'], t.tokens.panel), t.id).toBeLessThan(1.5);
+    }
+    const t = getBuiltIn(DEFAULT_DARK)!.tokens;
+    const next = deriveTokens({ ...t, panel: '#102030' }, 'dark', ['panel']);
+    expect(next['peach-soft']).toBe(mix(t.peach, '#102030', 0.14));
+    expect(deriveTokens(t, 'dark', ['text'])['peach-soft']).toBe(t['peach-soft']);
+    // A custom theme saved before the tint existed gets one worked out.
+    const old: Record<string, unknown> = { ...t };
+    delete old['peach-soft'];
+    expect(completeTokens(old, 'dark')['peach-soft']).toBe(t['peach-soft']);
   });
   it('every editor control is a real core token', () => {
     for (const c of EDITOR_CONTROLS) expect((CORE_TOKENS as readonly string[]).includes(c.token), c.token).toBe(true);

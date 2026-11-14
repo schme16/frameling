@@ -7,11 +7,16 @@
  * gives a friendly sentence for a toast.
  */
 import type { Draft } from 'immer';
-import type { Doc, Id } from '../core/format';
+import type { ClipDirection, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import * as core from './edit-core';
 import type { Clash } from './edit-core';
+import { shiftInOut } from './inout';
+import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
+import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/choices';
+import type { TidyEndChoice } from './choices';
+import './choices';
 
 export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change';
 export interface Outcome {
@@ -37,6 +42,61 @@ export function whyNot(o: Outcome): string {
 const ok = (id?: Id): Outcome => ({ ok: true, id });
 const no = (reason: Reason): Outcome => ({ ok: false, reason });
 
+// ---------------------------------------------------------------- the end of the animation
+
+/**
+ * Inside an edit: if you've said "take them off", the empty frames go in the same undo step. Where the question
+ * can't be put at all (a script, an automated run), the default answer stands and folds in the same way, so the edit
+ * is still one undo step. Only the main timeline.
+ */
+export function foldTail(d: Draft<Doc>): void {
+  if (d.editing) return;
+  const answer = rememberedChoice('timeline.tidyEnd') ?? (canAsk('timeline.tidyEnd') ? undefined : currentChoice('timeline.tidyEnd'));
+  if (answer === 'tidy') tidyEndCore(d as Doc);
+}
+
+/** After the end moved in, the playhead stays on a frame that is still there. */
+export function keepPlayheadIn(): void {
+  const { doc, ui } = store().get();
+  if (ui.frame > doc.length - 1) store().setUi({ frame: Math.max(0, doc.length - 1) });
+}
+
+/** After an edit that pulled the last thing in (it ended at frame `was`, now earlier) and left empty frames: take them off and say so, until you've chosen otherwise. */
+export function offerTidyEnd(was = 0): void {
+  const doc = store().get().doc;
+  if (doc.editing || fitLength(doc) >= was || !emptyTail(doc)) return;
+  // Only empty frames go, and Undo brings them back, so it just happens and a toast says so (with a Change button).
+  withChoice<TidyEndChoice>(
+    'timeline.tidyEnd',
+    (v) => {
+      if (v === 'tidy') tidyEnd();
+    },
+    { gently: true },
+  );
+}
+
+/**
+ * A store update that watches the end of the animation: if the edit pulls the last drawing, marker or clip in and
+ * leaves empty frames on the end, they go in the same undo step when you've said so, and otherwise you're asked
+ * (once). Opening a file never does this, and neither does an edit that leaves the end alone.
+ */
+function update(label: string, recipe: (d: Draft<Doc>) => void, opts?: { coalesce?: string }): void {
+  const was = fitLength(store().get().doc);
+  store().update(label, (d) => {
+    recipe(d);
+    if (fitLength(d as Doc) < was) foldTail(d);
+  }, opts);
+  keepPlayheadIn();
+  offerTidyEnd(was);
+}
+
+/** Takes the empty frames off the end now, whatever you've chosen to do after edits. */
+export function tidyEnd(): Outcome {
+  const o = simple('Take the empty frames off the end', (d) => !d.editing && tidyEndCore(d as Doc));
+  keepPlayheadIn();
+  return o;
+}
+
 /** The layer edits go to when none is named: the active one, or the top one. */
 export function currentLayerId(): Id | null {
   const { doc, ui } = store().get();
@@ -56,7 +116,7 @@ function edit(label: string, layerId: Id | undefined, run: (doc: Draft<Doc>, lay
   if (layer.locked) return no('locked');
   let result: Id | boolean | null = null;
   const before = store().get().doc;
-  store().update(label, (d) => void (result = run(d, id)), opts);
+  update(label, (d) => void (result = run(d, id)), opts);
   if (!result) return no('nothing-here');
   // A recipe that said yes but left the doc alone (same length, say) changed nothing.
   if (store().get().doc === before) return no('no-change');
@@ -104,13 +164,22 @@ export function deleteKey(layerId?: Id, frame?: number): Outcome {
 export function insertFrame(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit('Add a frame', t.layerId, (d) => core.insertFrame(d, t.layerId, t.frame));
+  // With one layer, a frame on it is a frame of the whole animation, so the play range moves too.
+  return edit('Add a frame', t.layerId, (d) => {
+    const done = core.insertFrame(d, t.layerId, t.frame);
+    if (done && d.layers.length === 1) shiftInOut(d, t.frame, 1);
+    return done;
+  });
 }
 
 export function removeFrame(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit('Remove a frame', t.layerId, (d) => core.removeFrame(d, t.layerId, t.frame));
+  return edit('Remove a frame', t.layerId, (d) => {
+    const done = core.removeFrame(d, t.layerId, t.frame);
+    if (done && d.layers.length === 1) shiftInOut(d, t.frame, -1);
+    return done;
+  });
 }
 
 /** Adds a frame at the playhead on every unlocked layer, in one undo step (like adding a page to the whole flipbook). */
@@ -119,6 +188,7 @@ export function insertFrameAll(frame?: number): Outcome {
   let any = false;
   store().update('Add a frame (all layers)', (d) => {
     for (const l of d.layers) if (!l.locked && core.insertFrame(d, l.id, at)) any = true;
+    if (any) shiftInOut(d, at, 1);
   });
   return any ? ok() : no('nothing-here');
 }
@@ -128,8 +198,9 @@ export function removeFrameAll(frame?: number): Outcome {
   const at = frame ?? store().get().ui.frame;
   let any = false;
   const before = store().get().doc;
-  store().update('Remove a frame (all layers)', (d) => {
+  update('Remove a frame (all layers)', (d) => {
     for (const l of d.layers) if (!l.locked && core.removeFrame(d, l.id, at)) any = true;
+    if (any) shiftInOut(d, at, -1);
   });
   if (!any || store().get().doc === before) return no('nothing-here');
   return ok();
@@ -178,7 +249,7 @@ export function deleteLayer(layerId?: Id): Outcome {
   const id = layerId ?? currentLayerId();
   if (!id || !findLayer(store().get().doc, id)) return no('no-layer');
   let next: Id | null = null;
-  store().update('Delete layer', (d) => void (next = core.deleteLayer(d, id)?.next ?? null));
+  update('Delete layer', (d) => void (next = core.deleteLayer(d, id)?.next ?? null));
   if (!next) return no('last-layer');
   if (store().get().ui.activeLayerId === id) store().setUi({ activeLayerId: next });
   return ok();
@@ -271,6 +342,12 @@ export function setClipRange(id: Id, a: number, b: number): Outcome {
 }
 export function setClipLoop(id: Id, loop: boolean): Outcome {
   return simple(loop ? 'Make clip loop' : 'Make clip play once', (d) => core.setClipLoop(d, id, loop));
+}
+export function setClipDirection(id: Id, direction: ClipDirection): Outcome {
+  return simple('Change how a clip plays', (d) => core.setClipDirection(d, id, direction));
+}
+export function setClipRepeat(id: Id, repeat: 'forever' | number): Outcome {
+  return simple('Change how often a clip plays', (d) => core.setClipRepeat(d, id, repeat));
 }
 export function removeClip(id: Id): Outcome {
   return simple('Delete clip', (d) => core.removeClip(d, id));

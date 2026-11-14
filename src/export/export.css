@@ -63,8 +63,11 @@
   transition: background 0.12s var(--ease), transform 0.12s var(--ease-bounce);
 }
 .ex-card:hover:not(:disabled) {
-  background: var(--hover-bg);
   transform: translateY(-1px);
+}
+/* The chosen card keeps its chosen colours under the mouse (the hover colour is for the ones you could pick). */
+.ex-card:hover:not(:disabled):not(.ex-chosen) {
+  background: var(--hover-bg);
 }
 .ex-card:focus-visible {
   outline: 2px solid var(--focus);
@@ -138,7 +141,7 @@
   padding: 5px 12px;
   cursor: pointer;
 }
-.ex-seg button:hover:not(:disabled) {
+.ex-seg button:hover:not(:disabled):not(.ex-on) {
   background: var(--hover-bg);
 }
 .ex-seg button:focus-visible {
@@ -200,6 +203,9 @@
 }
 .ex-note.ex-warn {
   color: var(--text);
+}
+.ex-bones-look .ex-note + .ex-note {
+  margin-top: 4px;
 }
 .ex-sub {
   margin: 6px 0 0;

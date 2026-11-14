@@ -1,5 +1,5 @@
 // The Text tool [T]: click to type new text, click text to type into it.
-import { registerTool, type Tool } from '../core/registry';
+import type { Tool } from '../core/registry';
 import { store } from '../core/store';
 import { topShapeAt } from '../canvas/geometry';
 import { currentKey } from '../symbols/ops';
@@ -9,6 +9,8 @@ import { editingText, editText, startNewText, stopEditingText } from './TextEdit
 
 export const textTool: Tool = {
   id: 'text',
+  group: 'shapes',
+  groupAt: 6,
   label: 'Text',
   icon: 'text',
   key: 't',
@@ -32,5 +34,3 @@ export const textTool: Tool = {
     stopEditingText();
   },
 };
-
-registerTool(textTool);

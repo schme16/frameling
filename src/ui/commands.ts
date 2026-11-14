@@ -1,10 +1,11 @@
 // The commands the shell owns: new document, view (panels, workspaces, theme, palette, preferences) and help.
 import { getHelp, registerCommands } from '../core/registry';
 import { contextualHelpId } from './help/context';
-import { resetLayout } from './dock';
+import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { suggestForThisScreen } from './screenSize';
 import { BUILT_IN_THEMES } from './themes/builtIn';
 import { selectTheme, themeById } from './themes/library';
 
@@ -63,6 +64,36 @@ registerCommands([
     run: () => openPrefs('general'),
   },
   {
+    id: 'view.searchSettings',
+    label: 'Search settings...',
+    category: 'View',
+    description: 'Open Preferences with the search box ready: find a setting by what you call it, or what another app does.',
+    help: 'preferences-search',
+    keywords: ['find setting', 'search preferences', 'filter settings', 'where is the setting', 'options'],
+    global: true,
+    run: () => openPrefs('general'),
+  },
+  {
+    id: 'view.interfaceSize',
+    label: 'Suggest an interface size for this screen',
+    category: 'View',
+    description: 'Quill looks at this screen and offers a bigger or smaller interface if it would read better.',
+    help: 'interface-size',
+    keywords: ['interface size', 'bigger', 'smaller', '4k', 'tablet', 'dense', 'tiny', 'small text', 'dpi', 'display'],
+    global: true,
+    run: () => void suggestForThisScreen(),
+  },
+  {
+    id: 'view.features',
+    label: 'Features...',
+    category: 'View',
+    description: 'Turn parts of Frameling on or off, like Lip sync.',
+    help: 'features',
+    keywords: ['turn off', 'turn on', 'switch', 'optional', 'simple', 'hide', 'lip sync', 'particles', 'text', 'tiles'],
+    global: true,
+    run: () => openPrefs('features'),
+  },
+  {
     id: 'view.toggleTheme',
     label: 'Switch dark or light',
     category: 'View',
@@ -108,16 +139,27 @@ registerCommands([
     run: () => setPrefs({ look: getPrefs().look === 'cosy' ? 'crisp' : 'cosy' }),
   },
   {
+    id: 'view.toggleTextures',
+    label: 'Textures on or off',
+    category: 'View',
+    description: "The faint pattern some themes scatter round the page: strawberry seeds, camo, sock stripes and paws.",
+    help: 'themes',
+    keywords: ['texture', 'textures', 'pattern', 'seeds', 'camo', 'socks', 'paws', 'background', 'plain'],
+    checked: () => getPrefs().showTextures,
+    run: () => {
+      const on = !getPrefs().showTextures;
+      setPrefs({ showTextures: on });
+      toast(on ? 'Textures are on.' : 'Textures are off.', { kind: 'info' });
+    },
+  },
+  {
     id: 'view.resetLayout',
     label: 'Reset layout',
     category: 'View',
     description: 'Put the panels back where this workspace started.',
     help: 'workspaces',
     keywords: ['panels', 'restore', 'default'],
-    run: () => {
-      resetLayout();
-      toast('Panels are back where they started.', { kind: 'success' });
-    },
+    run: () => resetLayoutAndAsk(),
   },
   {
     id: 'view.saveWorkspace',

@@ -2,8 +2,9 @@
  * The camera on the canvas: its frame (what the camera sees) drawn over the stage, and the Camera tool that pans,
  * zooms and turns it. Looking through the camera, the tool drags the scene instead (Shift zooms, Alt turns).
  */
+import { angleSteps } from '../canvas/guides';
 import type { CameraView } from '../core/format';
-import { registerTool, type Tool, type ToolPointer } from '../core/registry';
+import type { Tool, ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { cameraFrameCorners, cameraMatrix } from '../core/camera';
 import { applyMat, invert, type Mat } from '../core/symbols';
@@ -122,7 +123,8 @@ export function drawCameraFrame(g: CanvasRenderingContext2D, doc: { width: numbe
   g.restore();
 }
 
-registerDecoration((g, ctx) => {
+/** The purple frame on the canvas that shows what the camera sees. Registered when the feature turns on (see index.ts). */
+export const registerCameraFrame = (): void => registerDecoration((g, ctx) => {
   const s = store().get();
   if (s.ui.playing || s.doc.editing?.length || lookingThrough(s)) return;
   const cam = stageCamera(s.doc);
@@ -153,6 +155,8 @@ function angleDeg(a: P, b: P): number {
 
 export const cameraTool: Tool = {
   id: 'camera',
+  group: 'view',
+  groupAt: 2,
   label: 'Camera',
   icon: 'camera',
   layers: ['camera'],
@@ -163,7 +167,7 @@ export const cameraTool: Tool = {
     const s = store().get();
     const cam = stageCamera(s.doc);
     if (!cam) {
-      ctx.hint('Add a camera first (Animate > Add a camera).');
+      ctx.hint('Add a camera first (Frames and motion > Add a camera).');
       return;
     }
     if (cam.locked) {
@@ -202,7 +206,7 @@ export const cameraTool: Tool = {
     } else {
       const c = { x: v.x, y: v.y };
       const turn = angleDeg(c, e) - angleDeg(c, d.start);
-      setView({ rotation: snap(v.rotation + turn, e.shift) }, 'Turn the camera', d.key);
+      setView({ rotation: snap(v.rotation + turn, e.shift && angleSteps()) }, 'Turn the camera', d.key);
     }
     ctx.requestOverlay();
   },
@@ -228,8 +232,6 @@ function snap(deg: number, on: boolean): number {
   const r = Math.round(deg * 10) / 10;
   return on ? Math.round(deg / 15) * 15 : r;
 }
-
-registerTool(cameraTool);
 
 /** For the A/B pictures and tests: the frame's corners for a view. */
 export { cameraFrameCorners, cameraMatrix };

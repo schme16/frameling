@@ -2,6 +2,7 @@
  * Symbol and tween actions, each one undo step. They read the store, refuse with a friendly line when they can't
  * (returned as a string so callers can toast or hint it), and otherwise change the document.
  */
+import { sharedEditNote } from '../artboards/variations';
 import type { Draft } from 'immer';
 import type { Cel, Doc, Easing, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, ShapeHint, Tween, VectorDrawing } from '../core/format';
 import { currentChoice, registerChoice, withChoice } from '../core/choices';
@@ -17,9 +18,11 @@ import {
   identityTransform,
   instanceAt,
   isInstance,
+  makePixelSymbol,
   makeSymbol,
   newInstance,
   nextKey,
+  pixelKeyAt,
   symbolContent,
   symbolFrame,
   symbolsInside,
@@ -93,7 +96,8 @@ export function editPath(doc: Doc): { id: Id | null; name: string }[] {
 export function makeSymbolFromSelection(name?: string): Result {
   const { layer, problem } = activeLayer();
   if (problem || !layer) return say(EDIT_HINTS[problem ?? 'no-layer']);
-  if (layer.kind !== 'vector') return say('Symbols are made from drawing layers. Pick a vector layer first.');
+  if (layer.kind === 'pixel') return makeSymbolFromPixels(layer.id);
+  if (layer.kind !== 'vector') return say('Symbols are made from drawing layers. Pick a vector or pixel layer first.');
   const k = currentKey();
   if (!k || !k.drawing.shapes.length) return say('Draw something first, then make it into a symbol.');
   const sel = new Set(store().get().ui.selection);
@@ -112,6 +116,31 @@ export function makeSymbolFromSelection(name?: string): Result {
   store().setUi({ selection: [made.instanceId], tool: 'select' });
   const symName = store().get().doc.symbols?.[made.symbolId]?.name ?? 'symbol';
   toast(`Made "${symName}". Double-click it to draw inside, or find it in the Library.`, { kind: 'success' });
+  return undefined;
+}
+
+/**
+ * Turns the pixel drawing at the playhead into a symbol. The picture stays where it is and stays pixels; it sits on a
+ * vector layer now (instances live there), which is the same layer when this was its only drawing.
+ */
+export function makeSymbolFromPixels(layerId?: Id, name?: string): Result {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, layerId ?? ui.activeLayerId);
+  if (!layer || layer.kind !== 'pixel') return say('Pick a pixel layer with a drawing on it first.');
+  if (layer.locked) return say(EDIT_HINTS.locked);
+  if (!pixelKeyAt(doc, layer.id, ui.frame)) return say('Draw something first, then make it into a symbol.');
+  const shared = sharedEditNote(doc, 'symbols');
+  if (shared) return say(shared);
+  let made: { symbolId: Id; instanceId: Id; layerId: Id } | undefined;
+  store().update('Make a symbol', (d) => {
+    made = makePixelSymbol(d as Doc, layer.id, ui.frame, name);
+  });
+  if (!made) return undefined;
+  store().setUi({ activeLayerId: made.layerId, selection: [made.instanceId], tool: 'select' });
+  const now = store().get().doc;
+  const symName = now.symbols?.[made.symbolId]?.name ?? 'symbol';
+  const same = made.layerId === layer.id;
+  toast(`Made "${symName}" from your pixel art. ${same ? 'This layer now holds the symbol' : 'It sits on a new layer just above'}, so you can move, turn, fade and tween it. Double-click it to keep drawing in pixels.`, { kind: 'success' });
   return undefined;
 }
 
@@ -140,6 +169,8 @@ export function editSymbol(id: Id): Result {
 function open(symbolId: Id, at: { instanceId?: Id; matrix: [number, number, number, number, number, number] }, frame: number): Result {
   const { doc, ui } = store().get();
   if (doc.editing?.some((f) => f.symbolId === symbolId)) return say("You're already inside that symbol.");
+  const shared = sharedEditNote(doc, 'symbols');
+  if (shared) return say(shared);
   const name = doc.symbols?.[symbolId]?.name ?? 'symbol';
   let ok = false;
   store().update(`Edit "${name}"`, (d) => {
@@ -191,8 +222,27 @@ export function placeInstance(symbolId: Id, at?: { x: number; y: number }): Resu
   if (wouldNestInItself(doc, symbolId)) return say("A symbol can't go inside itself.");
   const { layer, problem } = activeLayer();
   if (problem || !layer) return say(EDIT_HINTS[problem ?? 'no-layer']);
-  if (layer.kind !== 'vector') return say('Symbols go on drawing layers. Pick a vector layer first.');
+  if (layer.kind !== 'vector' && layer.kind !== 'pixel') return say('Symbols go on drawing layers. Pick a vector or pixel layer first.');
   const inst = newInstance(symbolId, at ?? c.def.origin);
+  if (layer.kind === 'pixel') {
+    // A pixel layer holds pixels, not symbols: the copy goes on a new vector layer just above it.
+    if (layer.locked) return say(EDIT_HINTS.locked);
+    const frame = store().get().ui.frame;
+    const newId = uid('l');
+    store().update(`Place "${c.def.name}"`, (d) => {
+      const i = d.layers.findIndex((x) => x.id === layer.id);
+      const drawing: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [inst] };
+      d.drawings[drawing.id] = drawing;
+      // It lasts as long as the pixel drawing under it does, or to the end of the animation on an empty frame.
+      const under = celAt(d.layers[i] as Layer, frame);
+      const start = under?.start ?? frame;
+      const len = under?.length ?? Math.max(1, d.length - frame);
+      d.layers.splice(i + 1, 0, { id: newId, name: c.def.name, kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: uid('c'), start, length: len, drawingId: drawing.id }] });
+    });
+    store().setUi({ activeLayerId: newId, selection: [inst.id], tool: 'select' });
+    toast(`Put "${c.def.name}" on a new layer above, since pixel layers hold pixels and symbols go on their own layer.`, { kind: 'success' });
+    return undefined;
+  }
   editActiveDrawing(`Place "${c.def.name}"`, 'vector', (d) => {
     d.shapes.push(inst);
   });
@@ -292,26 +342,35 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
   if (!layer) return say(EDIT_HINTS['no-layer']);
   if (layer.locked) return say(EDIT_HINTS.locked);
   const camera = layer.kind === 'camera';
-  if (layer.kind !== 'vector' && !camera) return say('In-betweens work on drawing layers, not pixel layers.');
+  const pixel = layer.kind === 'pixel';
+  if (layer.kind !== 'vector' && !camera && !pixel) return say('In-betweens work on drawing layers.');
+  if (pixel && kind === 'shape') return say('A morph reshapes outlines, which pixels do not have. Make in-betweens instead and the pixel art moves, turns and fades.');
   if (camera) kind = 'classic';
   const cel = celAt(layer, f);
   if (!cel) return say('Pick a frame with a drawing on it, then make in-betweens from there.');
   const d0 = doc.drawings[cel.drawingId];
-  if (!camera && (d0?.kind !== 'vector' || !d0.shapes.length)) return say('Draw something first: in-betweens move a drawing from one key to the next.');
-  const hasNext = !!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length);
+  if (!camera && !(d0?.kind === 'vector' && d0.shapes.length) && !(pixel && pixelKeyAt(doc, layer.id, f))) return say('Draw something first: in-betweens move a drawing from one key to the next.');
+  const hasNext = !pixel && (!!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length));
   // A lone one-frame drawing has no room to move: hold it for about a second first, so the tween just works.
   const room = !hasNext && f === cel.start && cel.length < 2 ? Math.max(2, Math.min(doc.fps, 48)) : 0;
 
   let endFrame = -1;
   let wrapped = false;
+  let layerNow: Id = layer.id;
   store().update('Make in-betweens', (dd) => {
-    const l = dd.layers.find((x) => x.id === layer.id)!;
-    const a = l.cels.find((c) => c.id === cel.id)!;
+    // Pixel art moves as a symbol, so the key becomes one first (on a vector layer in the same place).
+    if (pixel) {
+      const lifted = makePixelSymbol(dd as Doc, layer.id, f);
+      if (!lifted) return;
+      layerNow = lifted.layerId;
+    }
+    const l = dd.layers.find((x) => x.id === layerNow)!;
+    const a = pixel ? celAt(l as Layer, f)! : l.cels.find((c) => c.id === cel.id)!;
     if (room) {
       a.length = room;
       dd.length = Math.max(dd.length, a.start + room);
     }
-    const before = Object.keys(dd.symbols ?? {}).length;
+    const before = Object.keys(dd.symbols ?? {}).length - (pixel ? 1 : 0);
     // A morph changes the shapes themselves, so they stay plain shapes.
     if (kind === 'classic') wrapIfPlain(dd, a.drawingId, 'Moving part');
     let b = nextKey(l as Layer, a as Cel);
@@ -340,16 +399,16 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
     }
     if (kind === 'classic') wrapIfPlain(dd, b.drawingId, 'Moving part');
     wrapped = Object.keys(dd.symbols ?? {}).length > before;
-    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
+    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.slice ? { slice: a.tween.slice } : {}), ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.facing ? { facing: a.tween.facing } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
     endFrame = b.start;
   });
   if (endFrame < 0) return undefined;
   const now = store().get().doc;
-  const endCel = celAt(findLayer(now, layer.id)!, endFrame);
+  const endCel = celAt(findLayer(now, layerNow)!, endFrame);
   const endDrawing = endCel ? now.drawings[endCel.drawingId] : undefined;
   const first = endDrawing?.kind === 'vector' ? endDrawing.shapes.find(isInstance) : undefined;
   if (camera) {
-    store().setUi({ frame: endFrame, activeLayerId: layer.id, selection: [], playing: false });
+    store().setUi({ frame: endFrame, activeLayerId: layerNow, selection: [], playing: false });
     toast(`Added camera in-betweens. Now move the camera frame here on frame ${endFrame + 1}, then press play.`, { kind: 'success' });
     return undefined;
   }
@@ -358,7 +417,7 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
     toast(`Added a morph. Now change the drawing here on frame ${endFrame + 1} (reshape it, recolour it or draw something new), then press play.`, { kind: 'success' });
     return undefined;
   }
-  store().setUi({ frame: endFrame, activeLayerId: layer.id, selection: first ? [first.id] : [], tool: 'select', playing: false });
+  store().setUi({ frame: endFrame, activeLayerId: layerNow, selection: first ? [first.id] : [], tool: 'select', playing: false });
   toast(`${wrapped ? 'Made it a symbol and added' : 'Added'} in-betweens. Now move or turn it here on frame ${endFrame + 1}, then press play.`, { kind: 'success' });
   return undefined;
 }
@@ -442,7 +501,7 @@ export function hintTarget(): { layer: Layer; cel: Cel; next: Cel; end: 'from' |
 /** Adds a hint (a, b, c...) at a point, on both keys at once; drag its end-key twin into place afterwards. */
 export function addShapeHint(at: { x: number; y: number }): Result {
   const t = hintTarget();
-  if (!t) return say('Shape hints go on a morph. Make one first (Animate > Morph between shapes), then add hints on its first or last key.');
+  if (!t) return say('Shape hints go on a morph. Make one first (Frames and motion > Morph between shapes), then add hints on its first or last key.');
   if ((t.cel.tween?.hints?.length ?? 0) >= 26) return say('That is the most hints a morph can have (26).');
   const id = uid('h');
   return updateHints('Add a shape hint', t, (hs) => void hs.push({ id, from: { ...at }, to: { ...at } }));
@@ -514,6 +573,8 @@ export function updateTween(label: string, fn: (t: Draft<Tween>) => void, opts: 
 export function setEase(e: Easing, coalesce?: string): Result {
   return updateTween(`Easing: ${easeLabel(e)}`, (t) => {
     t.ease = (Array.isArray(e) ? [...e] : e) as Easing;
+    // A picked easing is for the whole span, not for what was left of an older curve.
+    delete t.slice;
   }, { coalesce });
 }
 
@@ -566,12 +627,14 @@ export function setMotionPath(points: PathPoint[]): Result {
   if (points.length < 2) return say('Draw a longer line for it to follow.');
   return updateTween('Follow a path', (t) => {
     t.path = { points: points.map((p) => ({ ...p })), orient: t.path?.orient ?? false } as MotionPath;
+    delete t.facing;
   });
 }
 
 export function clearMotionPath(): Result {
   return updateTween('Stop following the path', (t) => {
     delete t.path;
+    delete t.facing;
   });
 }
 

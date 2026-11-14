@@ -63,10 +63,21 @@
   box-shadow: var(--shadow);
   animation: qb-rise 0.3s var(--ease-bounce);
 }
-.qb-left {
+.qb-bl {
   left: 12px;
 }
-.qb-right {
+.qb-br {
+  right: 12px;
+}
+.qb-tl,
+.qb-tr {
+  top: 52px;
+  bottom: auto;
+}
+.qb-tl {
+  left: 12px;
+}
+.qb-tr {
   right: 12px;
 }
 @keyframes qb-rise {
@@ -481,4 +492,28 @@
 }
 :root[data-motion='reduce'] .qc-confetti {
   display: none;
+}
+
+/* The Great work card: the step you just did, and a Next button. The next step waits behind it. */
+.qb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: qb-card 0.2s var(--ease) both;
+}
+.qb-great {
+  color: var(--ok);
+}
+@keyframes qb-card {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:root[data-motion='reduce'] .qb-card {
+  animation-duration: 0.01ms;
 }

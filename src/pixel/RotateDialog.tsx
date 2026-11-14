@@ -1,14 +1,14 @@
 // "Turn by any angle": a small dialog with a slider and a live, crisp preview of the turned drawing.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PixelDrawing } from '../core/format';
 import { mountModal, Modal } from '../io/mount';
-import { activeDrawing } from '../tools/edit';
+import { activeDrawing, activeGrid } from '../tools/edit';
+import { gridPixels } from '../core/pixelBounds';
 import { editPixels, pixelsAfter } from './commands';
-import { contentBounds, rotateSmooth } from './transform';
+import { contentBounds, rotateSmooth, type Img } from './transform';
 import { hint } from '../canvas/controller';
 import './pixel.css';
 
-function Preview({ d, pixels }: { d: PixelDrawing; pixels: Uint8ClampedArray }) {
+function Preview({ d, pixels }: { d: Img; pixels: Uint8ClampedArray }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -21,7 +21,7 @@ function Preview({ d, pixels }: { d: PixelDrawing; pixels: Uint8ClampedArray }) 
   return <canvas ref={ref} className="px-rotate-preview" role="img" aria-label="Preview of the turned drawing" />;
 }
 
-function RotateDialog({ d, close }: { d: PixelDrawing; close: () => void }) {
+function RotateDialog({ d, close }: { d: Img; close: () => void }) {
   const [angle, setAngle] = useState(15);
   const turned = useMemo(() => pixelsAfter(d, (img, box) => rotateSmooth(img, angle, box), 'transform')?.pixels ?? d.pixels, [d, angle]);
   const apply = () => {
@@ -60,9 +60,11 @@ function RotateDialog({ d, close }: { d: PixelDrawing; close: () => void }) {
 
 export function openRotateDialog(): void {
   const d = activeDrawing();
-  if (!d || d.kind !== 'pixel' || !contentBounds(d)) {
+  const g = activeGrid();
+  const img = d && d.kind === 'pixel' && g ? { width: g.width, height: g.height, pixels: gridPixels(d, g.width, g.height) } : null;
+  if (!img || !contentBounds(img)) {
     hint('There is nothing drawn on this frame to turn. Pick a pixel layer with a drawing first.');
     return;
   }
-  mountModal((close) => <RotateDialog d={d} close={close} />);
+  mountModal((close) => <RotateDialog d={img} close={close} />);
 }

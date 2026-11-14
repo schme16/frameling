@@ -1,20 +1,43 @@
 // Preferences > Plugins: what's installed, what each may do, on and off, remove, and install new ones.
+import { useEffect, useState } from 'react';
+import { desktop } from '../io/desktop';
 import { Icon } from '../ui/icons';
-import { openHelp } from '../ui/overlays';
+import { usePrefs } from '../ui/prefs';
+import { openHelp, openPrefs } from '../ui/overlays';
 import { QuillEmpty } from '../ui/mascot';
 import { library } from '../platform/library';
 import { PERMISSIONS } from './manifest';
-import { plugins, removePlugin, setEnabled } from './manager';
+import { diagnosticsOn, pluginDiag, plugins, refreshDiag, removePlugin, setEnabled, setPower } from './manager';
+import { diagLine } from './diagnostics';
+import { elevatedIn } from './powers';
 import { installFromFile, installFromFolder, canInstallFolder } from './install';
 
 const STATUS: Record<string, string> = { starting: 'Starting', on: 'On', problem: 'Problem', off: 'Off' };
 
+/** One plugin's numbers, refreshed while the page is open. */
+function DiagLine({ id }: { id: string }) {
+  const d = pluginDiag.use((x) => x[id]);
+  if (!d) return null;
+  return (
+    <p className="plugin-item-by plugin-item-diag" aria-label="How it is doing">
+      {diagLine(d)}
+    </p>
+  );
+}
+
 export function PluginsPage() {
   const list = plugins.use((p) => p);
+  const measuring = usePrefs((p) => p.pluginDiagnostics);
+  useEffect(() => {
+    if (!diagnosticsOn()) return undefined;
+    void refreshDiag();
+    const t = setInterval(() => void refreshDiag(), 1500);
+    return () => clearInterval(t);
+  }, [measuring]);
   return (
     <div className="plugin-page" data-help="plugins">
       <h3>Plugins</h3>
-      <p className="ui-pref-intro">Plugins add commands, ways to export and panels. Each one runs in its own sandbox, away from your files, and can only do what it asked for when you installed it.</p>
+      <p className="ui-pref-intro">Plugins add commands, ways to export, panels and, if you allow it, tools, shapes and guides on your canvas. Each one runs in its own sandbox, away from your files, and can only do what you allowed. Each power has its own switch below.</p>
       <div className="plugin-page-actions">
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => void installFromFile()}>
           <Icon name="plus" size={14} />
@@ -36,6 +59,12 @@ export function PluginsPage() {
           <Icon name="help" size={14} /> How plugins work
         </button>
       </div>
+      <p className="plugin-item-by">
+        Want to see how much memory and time your plugins use?{' '}
+        <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openPrefs('diagnostics')}>
+          Plugin measuring is in Preferences, Diagnostics
+        </button>
+      </p>
       {!list.length && (
         <QuillEmpty size={64} className="plugin-empty">
           No plugins yet. A plugin is a .zip file with a manifest.json and one script inside. Pick "Install from file..." to add one.
@@ -61,9 +90,21 @@ export function PluginsPage() {
               </div>
               {m.description && <p className="plugin-item-desc">{m.description}</p>}
               {m.author && <p className="plugin-item-by">By {m.author}</p>}
+              {m.permissions.includes('network') && (
+                <div className="plugin-powers">
+                  <div className="plugin-power">
+                    <button type="button" role="switch" aria-checked={p.granted.includes('network')} aria-label={`${m.name}: use the internet`} className={`ui-switch${p.granted.includes('network') ? ' is-on' : ''}`} onClick={() => void setPower(m.id, 'network', !p.granted.includes('network'))}>
+                      <span className="ui-switch-knob" />
+                    </button>
+                    <span>
+                      <strong>{PERMISSIONS.network.label}</strong> <span className="plugin-item-by">{p.granted.includes('network') ? `Allowed: ${m.network.join(', ')}` : 'Off'}</span>
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="plugin-perms" aria-label="What it may do">
                 {m.permissions.length === 0 && <span className="plugin-perm">Commands only</span>}
-                {m.permissions.map((perm) => {
+                {m.permissions.filter((perm) => perm !== 'network' && !elevatedIn(m).includes(perm)).map((perm) => {
                   const allowed = p.granted.includes(perm);
                   return (
                     <span key={perm} className={`plugin-perm${perm === 'network' ? ' is-network' : ''}${allowed ? '' : ' is-denied'}`} data-tip={PERMISSIONS[perm].label} data-tip-desc={`${PERMISSIONS[perm].detail}${perm === 'network' ? ` Sites: ${m.network.join(', ')}.` : ''}${allowed ? '' : ' You said no to this.'}`}>
@@ -73,6 +114,25 @@ export function PluginsPage() {
                   );
                 })}
               </div>
+              {elevatedIn(m).length > 0 && (
+                <div className="plugin-powers" role="group" aria-label={`What ${m.name} may do`}>
+                  {elevatedIn(m).map((perm) => {
+                    const allowed = p.granted.includes(perm);
+                    return (
+                      <div key={perm} className="plugin-power">
+                        <button type="button" role="switch" aria-checked={allowed} aria-label={`${m.name}: ${PERMISSIONS[perm].label}`} className={`ui-switch${allowed ? ' is-on' : ''}`} onClick={() => void setPower(m.id, perm, !allowed)}>
+                          <span className="ui-switch-knob" />
+                        </button>
+                        <span>
+                          <strong>{PERMISSIONS[perm].label}</strong> <span className="plugin-item-by">{allowed ? 'Allowed' : 'Off: the parts that need it do not run'}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {p.grantedFor && <span className="plugin-item-by">Allowed for version {p.grantedFor}. A newer version that asks for more will ask again.</span>}
+                </div>
+              )}
+              {measuring && p.enabled && p.status === 'on' && <DiagLine id={m.id} />}
               {p.problem && (
                 <p className="plugin-item-problem" role="status">
                   <Icon name="warning" size={14} /> {p.problem}

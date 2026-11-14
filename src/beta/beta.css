@@ -1,0 +1,72 @@
+/* The beta report panel in Preferences > Diagnostics. */
+.bt-beta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.bt-field textarea,
+.bt-field input {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+/* What will be sent, shown in full. Scrolls rather than pushing the page about. */
+.bt-preview {
+  max-height: 260px;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* The dazed Quill after a crash. */
+.ui-backdrop:has(.bt-crash) {
+  z-index: 950;
+}
+.bt-crash-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 20px 14px;
+}
+.bt-crash-says .quill-bubble p {
+  margin: 0 0 6px;
+}
+.bt-crash-says .quill-bubble p:last-child {
+  margin-bottom: 0;
+}
+.bt-crash-read summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.bt-crash-read .bt-preview {
+  max-height: 180px;
+  margin-top: 6px;
+}
+.bt-crash-body .ui-choice-remember {
+  margin: 0;
+}
+.bt-crash-foot {
+  padding: 0 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

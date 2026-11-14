@@ -1,8 +1,23 @@
-// Edit in Frameling: open the drawing inside an Interactives package, and save it back there.
-import { registerCommands, registerHelpTopics } from '../core/registry';
-import { currentLink, openPlayable, toggleUpdate, updatePlayable } from './roundtrip';
+// Edit in Frameling: open the drawing inside an Interactives package, and save it back there. A feature that can be
+// turned off (Preferences > Features). Its export sits with the other exports in the dialog, and goes away with the feature.
+import type { Command, HelpTopic } from '../core/registry';
+import { openExportDialog } from '../export/open';
+import { defineFeature } from '../features/feature';
+import { interactivesEnabled } from '../features/flags';
+import { interactivesExporter } from './exporter';
+import { currentLink, interactivesChoices, isPlayablePath, openPlayable, registerRoundTrip, toggleUpdate, updatePlayable } from './roundtrip';
 
-registerCommands([
+const commands: Command[] = [
+  {
+    id: 'file.exportInteractives',
+    label: 'Export for Interactives...',
+    category: 'File',
+    description: 'Make one file to drop onto an Interactives page, with your clips and markers in it.',
+    help: 'export-interactives',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'web', 'course', 'layer'],
+    global: true,
+    run: () => openExportDialog('interactives'),
+  },
   {
     id: 'file.openPlayable',
     label: 'Open Interactives file...',
@@ -37,9 +52,17 @@ registerCommands([
       if (l) await updatePlayable(l);
     },
   },
-]);
+];
 
-registerHelpTopics([
+const help: HelpTopic[] = [
+  {
+    id: 'export-interactives',
+    title: 'Using animations in Interactives',
+    section: 'Exporting',
+    media: 'export-interactives.png',
+    summary: 'Make one file to drop onto an Interactives page, then play your clips with clicks, timelines and scripts.',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'course', 'web', 'layer', 'clips', 'markers', 'atlas'],
+  },
   {
     id: 'edit-in-frameling',
     title: 'Edit in Frameling (Interactives round trip)',
@@ -47,27 +70,22 @@ registerHelpTopics([
     summary: 'Open an Interactives file (.flplay) to change its drawing, and Save puts the changes straight back into it.',
     keywords: ['interactives', 'flplay', 'round trip', 'edit in frameling', 'update', 'sync', 'package'],
     media: 'edit-in-frameling.png',
-    body: `When you export for Interactives with **Include the editable drawing** ticked (it's on unless you turn it off), the **.flplay** file carries your Frameling drawing inside it. So you can always come back and change it.
-
-## Change an animation that's already in Interactives
-
-1. Choose **File > Open Interactives file...** and pick the .flplay. (In the desktop app you can also double-click a .flplay file.)
-2. Frameling opens the drawing that's inside it.
-3. Draw, re-time, add frames: anything you like.
-4. Press **Save** (Ctrl+S). Frameling puts your changes back into the same .flplay, at the same size as before.
-
-The first time you save, Frameling asks whether to **just update the Interactives file** or **also keep a .frameling file**. Either is fine; the drawing is safe inside the .flplay. You can change your answer in **Preferences > Behaviour**.
-
-## Turn the updating off
-
-**File > Update the Interactives file when saving** is ticked for drawings that came from a .flplay. Untick it to work on a copy without touching the Interactives file; Frameling remembers this for each drawing. **File > Update the Interactives file now** puts the changes in without saving anything else.
-
-## If there's nothing to edit
-
-A .flplay exported without the editable drawing only has the finished pictures, so Frameling can't open it for editing. Export it again from the original drawing with **Include the editable drawing** ticked.
-
-## From Interactives
-
-Other apps on your computer can ask Frameling to open a file with a **frameling://open?path=...** link (the desktop app sets this up when it's installed). That's how an "Edit in Frameling" button in Interactives can work.`,
   },
-]);
+];
+
+export const interactivesFeature = defineFeature({
+  id: 'interactives',
+  name: 'Interactives',
+  about: 'Export for Interactives (.flplay), open one to change the drawing inside it, and save your changes back into it.',
+  optional: true,
+  // Off for everyone for now: see flag.ts. Hidden means nothing is registered or listed, and the code stays.
+  hidden: () => !interactivesEnabled(),
+  commands,
+  help,
+  exporters: [interactivesExporter],
+  choices: interactivesChoices,
+  opens: isPlayablePath,
+  // A drawing that came out of an Interactives file carries a small marker (see export/run.ts).
+  usedBy: (doc) => !!doc.ext?.interactives,
+  activate: registerRoundTrip,
+});

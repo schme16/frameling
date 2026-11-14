@@ -8,8 +8,7 @@ import { freshPage } from '../quests/actions';
 import { showPanel } from '../ui/dock';
 import { makeCameraPan } from '../templates/camera-pan';
 import { lookingThrough, setDepth, setView, stageCamera } from './ops';
-// The steps run these commands, so they must be registered wherever the quest is.
-import './commands';
+// The steps run the camera commands, which are registered while the Camera feature is on (the lesson is hidden when it is off).
 import '../symbols/commands';
 
 /** The Camera and parallax example with its camera and distances taken out: the page the quest starts on. */
@@ -56,6 +55,7 @@ export const CAMERA_QUEST: Quest = {
   minutes: 3,
   icon: 'camera',
   badge: { id: 'director', name: 'Director', icon: 'camera', color: '--sky' },
+  features: ['camera'],
   requires: ['first-animation'],
   finish: "That's a real camera move with parallax. Exports always see what the camera sees.",
   prepare: () => (isValley(store().get()) && !camOf(store().get()) ? true : freshPage(makeValleyScene)),
@@ -63,7 +63,7 @@ export const CAMERA_QUEST: Quest = {
   steps: [
     {
       id: 'add',
-      say: 'Add a camera: Animate > Add a camera.',
+      say: 'Add a camera: Frames and motion > Add a camera.',
       why: 'The camera is a layer of its own. Its frame shows what an export will show.',
       target: SEL.panel,
       enter: () => showPanel('camera'),

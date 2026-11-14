@@ -5,7 +5,7 @@
  * Nothing here knows about the store or the DOM, so it runs in tests and in exports. Functions that change a document
  * take the doc (a draft inside `store().update`, or a plain object) and change it in place.
  */
-import { DEFAULT_TILE_SIZE, newPixelDrawing } from '../core/doc';
+import { DEFAULT_TILE_SIZE, newPixelDrawing, tileOrigin, tilemapGrid } from '../core/doc';
 import type { Doc, Id, PixelDrawing, Tile, TilemapDrawing, TilemapLayer, Tileset } from '../core/format';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, TILE_KEY_MASK } from '../core/format';
 
@@ -213,6 +213,43 @@ export function setTileSize(doc: Doc, w: number, h: number): boolean {
   }
   ts.tileWidth = W;
   ts.tileHeight = H;
+  // A grid start has to stay inside the first tile.
+  if ((ts.gridX ?? 0) >= W) delete ts.gridX;
+  if ((ts.gridY ?? 0) >= H) delete ts.gridY;
+  return true;
+}
+
+/** A grid start made to fit: a whole number from 0 up to the tile size minus 1. */
+export const clampGrid = (v: number, tile: number): number => Math.max(0, Math.min(tile - 1, Math.round(v) || 0));
+
+/**
+ * Sets where a tile edge sits from the stage's top-left corner (0 = the tiles start at the corner). The tiles already
+ * on a map move with the grid, and maps grow to still cover the stage. Returns false when nothing changed.
+ */
+export function setTileGrid(doc: Doc, x: number, y: number): boolean {
+  const ts = ensureTileset(doc);
+  const gx = clampGrid(x, ts.tileWidth);
+  const gy = clampGrid(y, ts.tileHeight);
+  if (gx === (ts.gridX ?? 0) && gy === (ts.gridY ?? 0)) return false;
+  if (gx) ts.gridX = gx;
+  else delete ts.gridX;
+  if (gy) ts.gridY = gy;
+  else delete ts.gridY;
+  for (const layer of doc.layers) {
+    if (layer.kind !== 'tilemap') continue;
+    const g = tilemapGrid(doc, layer);
+    for (const cel of layer.cels) {
+      const d = doc.drawings[cel.drawingId];
+      if (!d || d.kind !== 'tilemap' || (d.columns >= g.columns && d.rows >= g.rows)) continue;
+      const columns = Math.max(d.columns, g.columns);
+      const rows = Math.max(d.rows, g.rows);
+      const cells = new Uint32Array(columns * rows);
+      for (let r = 0; r < d.rows; r++) cells.set(d.cells.subarray(r * d.columns, (r + 1) * d.columns), r * columns);
+      d.columns = columns;
+      d.rows = rows;
+      d.cells = cells;
+    }
+  }
   return true;
 }
 
@@ -222,7 +259,8 @@ export function setTileSize(doc: Doc, w: number, h: number): boolean {
 export function docToCell(doc: Doc, layer: TilemapLayer, x: number, y: number): { x: number; y: number } {
   const tw = (doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
   const th = (doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
-  return { x: Math.floor(x / tw), y: Math.floor(y / th) };
+  const o = tileOrigin(doc, layer.pixelSize);
+  return { x: Math.floor((x - o.x) / tw), y: Math.floor((y - o.y) / th) };
 }
 
 export function inMap(d: Pick<TilemapDrawing, 'columns' | 'rows'>, x: number, y: number): boolean {
@@ -346,11 +384,15 @@ export function blitTile(src: PixelDrawing, flags: number, dst: Uint8ClampedArra
   }
 }
 
-/** A tilemap as one pixel drawing (columns x tile width by rows x tile height), at a document frame. */
+/**
+ * A tilemap as one pixel drawing (columns x tile width by rows x tile height), at a document frame. It starts at the
+ * stage's corner: when the tile grid starts off the corner, the part of the first slots outside the stage is cut.
+ */
 export function flattenTilemap(doc: Doc, d: TilemapDrawing, frame = 0): PixelDrawing {
   const tw = doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE;
   const th = doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE;
-  const out = newPixelDrawing(d.columns * tw, d.rows * th);
+  const o = tileOrigin(doc);
+  const out = newPixelDrawing(Math.max(1, d.columns * tw + o.x), Math.max(1, d.rows * th + o.y));
   out.id = d.id + '-flat';
   const tiles = new Map<number, PixelDrawing | undefined>();
   for (let y = 0; y < d.rows; y++) {
@@ -363,7 +405,7 @@ export function flattenTilemap(doc: Doc, d: TilemapDrawing, frame = 0): PixelDra
         tiles.set(k, t ? tileDrawingAt(doc, t, frame) : undefined);
       }
       const src = tiles.get(k);
-      if (src) blitTile(src, cellFlags(v), out.pixels, out.width, out.height, x * tw, y * th);
+      if (src) blitTile(src, cellFlags(v), out.pixels, out.width, out.height, o.x + x * tw, o.y + y * th);
     }
   }
   return out;

@@ -1,8 +1,9 @@
+import { FORMAT_VERSION } from '../../src/core/format';
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing } from '../../src/core/doc';
 import type { Doc } from '../../src/core/format';
-import { FileProblem, loadFile, saveFile } from '../../src/io/file';
+import { FileProblem, loadFile, saveFile, saveFileAsync } from '../../src/io/file';
 
 function sampleDoc(): Doc {
   const doc = newDoc({ name: 'Round trip', width: 64, height: 48, fps: 8, length: 6, background: null });
@@ -41,6 +42,15 @@ function sampleDoc(): Doc {
 }
 
 describe('.frameling file', () => {
+  it('keeps the part of the easing curve a cut tween plays, and ignores a nonsense one', () => {
+    const doc = sampleDoc();
+    doc.layers[0].cels[0].tween = { ease: 'easeInOut', slice: [0.25, 0.5] };
+    const back = loadFile(saveFile(doc, '1.2.3')).doc;
+    expect(back.layers[0].cels[0].tween).toEqual({ ease: 'easeInOut', slice: [0.25, 0.5] });
+    doc.layers[0].cels[0].tween = { ease: 'easeInOut', slice: [0.9, 0.2] };
+    expect(loadFile(saveFile(doc, '1.2.3')).doc.layers[0].cels[0].tween).toEqual({ ease: 'easeInOut' });
+  });
+
   it('saves and loads back to an identical document', () => {
     const doc = sampleDoc();
     const { doc: back, warnings } = loadFile(saveFile(doc, '1.2.3'));
@@ -53,7 +63,7 @@ describe('.frameling file', () => {
     const bytes = saveFile(doc, '9.9.9', new Date('2026-01-02T03:04:05Z'));
     expect([bytes[0], bytes[1]]).toEqual([0x50, 0x4b]);
     const loaded = loadFile(bytes);
-    expect(loaded.manifest).toMatchObject({ format: 'frameling', version: 1, app: '9.9.9', created: '2026-01-02T03:04:05.000Z', name: 'Round trip' });
+    expect(loaded.manifest).toMatchObject({ format: 'frameling', version: FORMAT_VERSION, app: '9.9.9', created: '2026-01-02T03:04:05.000Z', name: 'Round trip' });
     const pixelId = Object.values(doc.drawings).find((d) => d.kind === 'pixel')!.id;
     // The pixels live as a png, named in doc.json.
     const text = new TextDecoder('latin1').decode(bytes);
@@ -95,5 +105,18 @@ describe('.frameling file', () => {
     const { doc: back, warnings } = loadFile(saveFile(doc));
     expect(back.layers[0].cels.map((c) => c.id)).toEqual(['c1']);
     expect(warnings.length).toBe(1);
+  });
+});
+
+describe('saveFileAsync', () => {
+  it('writes a file that opens as the same document, and leaves the pixel bytes it was given usable', async () => {
+    const doc = sampleDoc();
+    const now = new Date('2026-01-01T00:00:00Z');
+    const bytes = await saveFileAsync(doc, 'test', now);
+    const sync = loadFile(saveFile(doc, 'test', now)).doc;
+    const back = loadFile(bytes).doc;
+    expect(back).toEqual(sync);
+    // A second save (the encoded pictures are cached by pixel array) still works: nothing was handed over to the worker.
+    expect(loadFile(await saveFileAsync(doc, 'test', now)).doc).toEqual(sync);
   });
 });

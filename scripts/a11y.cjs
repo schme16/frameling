@@ -3,15 +3,18 @@
 // back where it was).
 //
 //   npm run a11y                       (builds first)
-//   npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name]
+//   npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 //
 // --themes also runs axe's colour contrast rule on the main window and a few panels in every built-in theme.
 // Exits 1 when anything serious (axe "serious" or "critical", or a keyboard failure) is found. A11Y_SHOW=1 shows
-// the window. Needs `npm run build` first; it uses dist/ and never touches your settings (fresh profile per run).
+// the window. --theme runs everything in the default dark or light theme (the system's choice otherwise), and --shots
+// saves a picture of each dialog as it is checked. Needs `npm run build` first; it uses dist/ and never touches your
+// settings (fresh profile per run).
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { installIpcStubs } = require('./ipc-stubs.cjs');
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -21,7 +24,21 @@ const opt = (n) => {
 };
 const only = opt('--only')?.split(',');
 const jsonOut = opt('--json');
+const forceTheme = opt('--theme');
+const shotsDir = opt('--shots');
+if (shotsDir) fs.mkdirSync(shotsDir, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Any failure ends the run with exit code 2. Without this an error inside the async run below was only a warning, the
+// window stayed open and the process never exited (which is how `npm run a11y` seemed to hang). A watchdog ends a run
+// that stops answering for any other reason; A11Y_TIMEOUT is in minutes.
+const fail = (why) => {
+  console.error(`a11y run failed: ${why?.stack ?? why}`);
+  app.exit(2);
+};
+process.on('unhandledRejection', fail);
+process.on('uncaughtException', fail);
+setTimeout(() => fail(new Error('timed out')), Number(process.env.A11Y_TIMEOUT || 30) * 60_000).unref();
 
 let axeSource;
 try {
@@ -39,6 +56,13 @@ app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-a11y-')
 // the whole page). `dialog: true` also checks focus moved in, Tab stays in, Escape closes and focus comes back.
 const tpl = (id) => `__frameling.template(${JSON.stringify(id)});`;
 const run = (id) => `__frameling.run(${JSON.stringify(id)});`;
+// Version 2 plugins from the repo, for the dialogs that need one installed first.
+const pluginFiles = (n) => Object.fromEntries(['manifest.json', 'main.js'].map((f) => [f, fs.readFileSync(path.join(__dirname, '../plugins/examples', n, f), 'utf8')]));
+const installPlugin = (n) => `window.__framelingPlugins.install(${JSON.stringify(pluginFiles(n))}); true`;
+const waitMs = (ms) => `await new Promise((r) => setTimeout(r, ${ms})); true`;
+const approve = (all) => `${all ? `document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click());` : ''} document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`;
+// The picture import dialog, on a sprite sheet and on an animated GIF (the help pictures' samples).
+const picture = (file) => `void __framelingPicture.open(${JSON.stringify(Array.from(fs.readFileSync(path.join(__dirname, 'docs/help/assets', file))))}, ${JSON.stringify(file)}); true`;
 const DIALOGS = [
   ['palette', run('view.commandPalette')],
   ['help', run('help.contents')],
@@ -53,13 +77,26 @@ const DIALOGS = [
   ['prefs-themes', `__frameling.overlays.openPrefs('themes')`],
   ['prefs-behaviour', `__frameling.overlays.openPrefs('behaviour')`],
   ['prefs-keyboard', `__frameling.overlays.openPrefs('keyboard')`],
+  ['prefs-snapping', `__frameling.overlays.openPrefs('snapping')`],
   ['prefs-workspaces', `__frameling.overlays.openPrefs('workspaces')`],
   ['prefs-plugins', `__frameling.overlays.openPrefs('plugins')`],
+  // The question a version 2 plugin asks (each power off to start with), the Export dialog with a plugin's own options, and
+  // Preferences with a plugin that has its powers switched on and off.
+  ['plugin-permissions', installPlugin('star-kit')],
+  ['plugin-export-options', [installPlugin('export-report'), approve(false), waitMs(1500), run('plugin.export-report.export.report')]],
+  ['prefs-plugins-powers', [installPlugin('star-kit'), approve(true), waitMs(1500), `__frameling.overlays.openPrefs('plugins')`]],
+  ['prefs-features', `__frameling.overlays.openPrefs('features')`],
+  ['prefs-pen', `__frameling.overlays.openPrefs('pen')`],
+  ['prefs-diagnostics', `__frameling.overlays.openPrefs('diagnostics')`],
+  ['pen-check-offer', `__frameling.overlays.state.set((o) => ({ ...o, penCheck: 'offer' }))`],
+  ['pen-check', run('pen.check')],
   ['canvas-size', run('document.settings')],
   ['export', run('file.export')],
-  ['export-tileset', tpl('tileset') + run('tiles.export')],
-  ['rotate', tpl('hero-sprites') + run('pixel.rotate')],
-  ['lipsync-name', tpl('lip-sync') + run('lipsync.nameFrames')],
+  ['export-tileset', [tpl('tileset'), run('tiles.export')]],
+  ['rotate', [tpl('hero-sprites'), run('pixel.rotate')]],
+  ['import-picture', [tpl('hero-sprites'), picture('slime-sheet.png')]],
+  ['import-picture-gif', [tpl('hero-sprites'), picture('slime-bounce.gif')]],
+  ['lipsync-name', [tpl('lip-sync'), run('lipsync.nameFrames')]],
   ['save-template', run('file.saveAsTemplate')],
   ['recent', run('file.openRecent')],
   ['recover', run('file.recover')],
@@ -69,7 +106,8 @@ const DIALOGS = [
 const DOCS = { default: 'bouncing-ball', text: 'bouncing-logo', effects: 'bouncing-logo', rig: 'puppet', 'lip-sync': 'lip-sync', particles: 'sparkle-fx', tileset: 'tileset', palette: 'blank-pixel', 'symbol-props': 'bouncing-logo', camera: 'camera-parallax', 'clip-flow': 'hero-sprites', library: 'bouncing-logo' };
 
 async function makeWindow() {
-  const show = process.env.A11Y_SHOW === '1';
+  // --shots needs a window on the (virtual) screen: an off-screen one gives no frames to capture under xvfb.
+  const show = process.env.A11Y_SHOW === '1' || !!shotsDir;
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -103,7 +141,12 @@ async function load(win) {
   await win.webContents.executeJavaScript(axeSource + ';true');
 }
 
-const js = (win, code) => win.webContents.executeJavaScript(`(async () => { ${code} })()`);
+// A page call that never answers fails after 20 seconds instead of hanging the whole run.
+const js = (win, code) =>
+  Promise.race([
+    win.webContents.executeJavaScript(`(async () => { ${code} })()`),
+    new Promise((_, no) => setTimeout(() => no(new Error('page call timed out: ' + code.trim().slice(0, 120))), 20000)),
+  ]);
 
 async function key(win, keyCode, modifiers = []) {
   if (!win.webContents.isFocused()) win.webContents.focus();
@@ -118,12 +161,23 @@ async function key(win, keyCode, modifiers = []) {
 async function reset(win, doc = 'bouncing-ball') {
   await js(win, `
     const f = __frameling;
-    f.overlays.state.set((o) => ({ ...o, palette: false, prefs: null, help: null, sheet: null, about: false, onboarding: false }));
+    f.overlays.state.set((o) => ({ ...o, palette: false, prefs: null, help: null, sheet: null, about: false, onboarding: false, penCheck: undefined }));
     f.template(${JSON.stringify(doc)});
     f.store().setUi({ tool: 'select' });
     document.activeElement?.blur?.();
   `);
   await sleep(150);
+  // A question left over from the last scenario (a pixel template asks one) must not land on top of this one.
+  await dismissChoice(win);
+}
+
+// Some templates ask a first-time question ("Opening pixel art"). That is the app working, not the dialog under
+// test, so answer it (Escape takes the suggested answer) before the real scenario is judged.
+async function dismissChoice(win) {
+  if (!(await js(win, `return !!document.querySelector('.ui-choice')`))) return;
+  await js(win, `document.querySelector('.ui-choice')?.focus()`);
+  await key(win, 'Escape');
+  await sleep(200);
 }
 
 // Things axe can't know: a button that looks chosen (data-on, is-on, is-chosen) but doesn't say so to a screen reader.
@@ -172,7 +226,13 @@ const FOCUS_PROBE = `
   const after = getComputedStyle(el, '::after').backgroundColor;
   // In a drawing (SVG), the ring is the shape's outline turning the focus colour.
   const strokes = el instanceof SVGElement ? [el, ...el.querySelectorAll('rect, circle, path, line')].map((x) => getComputedStyle(x).stroke) : [];
-  const ring = has(cs) || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny || strokes.includes(focusColour);
+  // A wide area (the timeline grid) can be ringed on the scroller round it: an outline on an ancestor close by.
+  let outer = false;
+  for (let a = el.parentElement, n = 0; a && n < 3; a = a.parentElement, n++) {
+    const c = getComputedStyle(a);
+    if (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0) outer = true;
+  }
+  const ring = has(cs) || outer || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny || strokes.includes(focusColour);
   const name = el.getAttribute('aria-label') || el.getAttribute('title') || (el.textContent || '').trim().slice(0, 30) || el.tagName;
   const r = el.getBoundingClientRect();
   if (!el.dataset.a11yStop) el.dataset.a11yStop = String((window.__a11yN = (window.__a11yN || 0) + 1));
@@ -244,25 +304,25 @@ const add = (name, res) => {
 const want = (name) => !only || only.some((o) => name.startsWith(o));
 
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
-  ipcMain.handle('files:read', () => ({ error: 'No such file.' }));
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
-  for (const ch of ['app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
-  const lib = new Map();
-  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
-  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
-  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
-  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
+  installIpcStubs(ipcMain);
 
   const win = await makeWindow();
   await load(win);
   // Skip the first-run sheets for the checks of everything else (they get their own scenarios).
-  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true });`);
+  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true${forceTheme ? `, theme: ${JSON.stringify(forceTheme)}` : ''} });`);
   await load(win);
   await reset(win);
 
   if (want('main')) add('main window', await axe(win));
+
+  // Panels stacked in groups on the right (under the Properties rail) and along the bottom, and a window over the canvas.
+  if (want('stacked groups')) {
+    await js(win, `__frameling.dock.placePanel('preview', { zone: 'right', group: 0, split: 'after' }); __frameling.dock.placePanel('library', { zone: 'bottom', group: 0, split: 'after' }); __frameling.dock.floatPanel('help', { x: 300, y: 200 })`);
+    await sleep(500);
+    add('stacked groups and a window', await axe(win));
+    await js(win, `__frameling.dock.resetLayout()`);
+    await sleep(300);
+  }
 
   // Every panel, in a document that gives it something to show.
   const panels = await js(win, `return __frameling.panels()`);
@@ -270,6 +330,8 @@ app.whenReady().then(async () => {
     const name = `panel ${id}`;
     if (!want(name)) continue;
     await reset(win, DOCS[id] ?? DOCS.default);
+    // The timeline is checked with folders inside folders, the deepest case of its tree.
+    if (id === 'timeline') await js(win, `__frameling.store().update('Folders in folders', (d) => { d.folders = { fOut: { id: 'fOut', name: 'Scene', visible: true, opacity: 1 }, fIn: { id: 'fIn', name: 'Inner', visible: true, opacity: 1, parent: 'fOut' } }; d.layers.forEach((l, i) => { l.folder = i === 0 ? 'fOut' : 'fIn'; }); });`);
     await js(win, `__frameling.showPanel(${JSON.stringify(id)})`);
     await sleep(250);
     add(name, await axe(win, `#ui-panel-${id}`));
@@ -282,6 +344,14 @@ app.whenReady().then(async () => {
       report.keyboard.push({ name, ...k });
       if (k.problems.length) console.log(`   keys x ${k.problems.join('; ')}`);
     }
+  }
+
+  // The Artboards panel with a variation open (size cuts, differences list, reset buttons).
+  if (want('panel artboards (variation open)')) {
+    await reset(win);
+    await js(win, `__framelingArtboards.load('variations'); __frameling.showPanel('artboards'); __framelingArtboards.ops.goToArtboard(__frameling.store().get().doc.artboards[1].id, true)`);
+    await sleep(400);
+    add('panel artboards (variation open)', await axe(win, '.ab-panel'));
   }
 
   // Every tool's options.
@@ -303,13 +373,24 @@ app.whenReady().then(async () => {
     await reset(win);
     // Start from a real button, so we can see focus come back to it.
     await js(win, `const b = document.querySelector('.ui-topbar button, header button, button'); b?.focus(); window.__a11yFrom = b;`);
-    await js(win, setup);
+    // A list of steps runs one at a time, answering a first-time question between them.
+    for (const step of Array.isArray(setup) ? setup : [setup]) {
+      await js(win, step);
+      await sleep(300);
+      await dismissChoice(win);
+    }
     // Long enough for the pop-in animations, so axe doesn't judge half-faded words.
     await sleep(1200);
     const has = await js(win, `return !!document.querySelector('[role=dialog]')`);
     if (!has) {
       add(name, { missing: true, violations: [] });
       continue;
+    }
+    if (shotsDir) {
+      // A picture that never comes back (no frame under xvfb with the window off-screen) must not stall the run.
+      const img = await Promise.race([win.webContents.capturePage(), sleep(8000).then(() => null)]);
+      if (img) fs.writeFileSync(path.join(shotsDir, `${name.replace(/\W+/g, '-')}.png`), img.toPNG());
+      else console.log(`   no picture of ${name}`);
     }
     add(name, await axe(win, '[role=dialog]'));
     const k = await dialogKeys(win);
@@ -324,41 +405,78 @@ app.whenReady().then(async () => {
     console.log(`   keys ${k.problems.length ? 'x ' + k.problems.join('; ') : 'ok'} (${k.stops} tab stops)`);
   }
 
-  // Little popups opened from a button with the keyboard: focus goes in, Escape closes, focus comes back.
+  // Little popups opened from a button with the keyboard: focus goes in, Escape closes, focus comes back, and Tab
+  // (or Shift+Tab) out of one closes it and lands on another control, not back on the opener. Every one sets up
+  // its own state (panel, document, preference), so `--only "popup name"` works alone.
+  //   open: 'enter' presses Enter on the opener, 'menu' presses Shift+F10 on it, 'context' sends a context menu event
+  //   to it (what a right-click does).
   const POPUPS = [
-    ['blend modes', 'effects', 'bouncing-logo', '.fx-blend-btn', '.tl-floating'],
-    ['layer options', 'timeline', 'bouncing-ball', '.tl-more', '.tl-floating'],
+    { n: 'blend modes', panel: 'effects', doc: 'bouncing-logo', opener: '.fx-blend-btn', pop: '.tl-floating', open: 'enter' },
+    { n: 'layer options', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-more', pop: '.tl-floating', open: 'enter' },
+    { n: 'hold for', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-hold-menu', pop: '.tl-floating', open: 'enter' },
+    { n: 'onion skin', panel: 'timeline', doc: 'bouncing-ball', opener: '[data-testid="timeline.onionSettings"]', pop: '.tl-floating', open: 'enter' },
+    { n: 'all panels', panel: null, doc: 'bouncing-ball', opener: '[data-panels-button]', pop: '.rd-picker', open: 'enter' },
+    { n: 'tool group', panel: null, doc: 'bouncing-ball', prefs: { toolRail: 'stacked' }, opener: 'button[data-tool-group]', pop: '.ui-tool-fly', open: 'menu' },
+    { n: 'swatch menu', panel: 'colors', doc: 'bouncing-ball', opener: '.cv-swatch:not(.cv-swatch-add)', pop: '.cv-menu', open: 'context' },
+    { n: 'snapping options', panel: null, doc: 'bouncing-ball', opener: '[data-snap-button]', pop: '.sn-pop', open: 'enter' },
+    { n: 'palette colour', panel: 'palette', doc: 'blank-pixel', opener: '.px-chip', pop: '.px-menu', open: 'context' },
   ];
-  for (const [n, panel, doc, opener, pop] of POPUPS) {
-    const name = `popup ${n}`;
+  const popOpen = (pop) => js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
+  // Open it from the opener the way a person at the keyboard would. Returns false when it did not open.
+  const openPopup = async (o) => {
+    await js(win, `const b = document.querySelector(${JSON.stringify(o.opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
+    if (o.open === 'enter') {
+      // Step off and back with the keyboard, so it has keyboard focus the way a person reaching it with Tab would.
+      await key(win, 'Tab', ['shift']);
+      await key(win, 'Tab');
+      await js(win, `if (document.activeElement !== window.__a11yFrom) window.__a11yFrom?.focus()`);
+      await key(win, 'Return');
+    } else if (o.open === 'menu') await key(win, 'F10', ['shift']);
+    else await js(win, `const b = window.__a11yFrom; const r = b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 4, clientY: r.bottom - 4 }))`);
+    await sleep(300);
+    return (await popOpen(o.pop)).open;
+  };
+  for (const o of POPUPS) {
+    const name = `popup ${o.n}`;
     if (!want(name)) continue;
-    await reset(win, doc);
-    await js(win, `__frameling.showPanel(${JSON.stringify(panel)}); __frameling.run('select.all')`);
-    await sleep(250);
-    const found = await js(win, `const b = document.querySelector(${JSON.stringify(opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
-    if (!found) {
+    await reset(win, o.doc);
+    await js(win, `__frameling.prefs.set(${JSON.stringify(o.prefs ?? { toolRail: 'two' })}); ${o.panel ? `__frameling.showPanel(${JSON.stringify(o.panel)});` : ''} __frameling.run('select.all')`);
+    for (let i = 0; i < 20 && !(await js(win, `return !!document.querySelector(${JSON.stringify(o.opener)})`)); i++) await sleep(150);
+    if (!(await js(win, `return !!document.querySelector(${JSON.stringify(o.opener)})`))) {
       report.keyboard.push({ name, problems: [], stops: 0, missing: true });
       console.log(`${name}: opener not found`);
       continue;
     }
-    // Step off and back with the keyboard, so it has keyboard focus the way a person reaching it with Tab would.
-    await key(win, 'Tab', ['shift']);
-    await key(win, 'Tab');
-    await js(win, `if (document.activeElement !== window.__a11yFrom) window.__a11yFrom?.focus()`);
-    await key(win, 'Return');
-    await sleep(300);
     const problems = [];
-    const open = await js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
-    if (!open.open) problems.push('Enter did not open it');
+    if (!(await openPopup(o))) problems.push('it did not open');
     else {
-      if (!open.inside) problems.push('focus did not move into it');
-      add(name, await axe(win, pop));
+      const open = await popOpen(o.pop);
+      if (!open.inside) problems.push('focus did not move into it ' + (await js(win, `return (document.activeElement?.outerHTML || '').slice(0,150)`)));
+      add(name, await axe(win, o.pop));
       await key(win, 'Escape');
       await sleep(200);
-      const after = await js(win, `return { open: !!document.querySelector(${JSON.stringify(pop)}), back: document.activeElement === window.__a11yFrom }`);
+      const after = await js(win, `return { open: !!document.querySelector(${JSON.stringify(o.pop)}), back: document.activeElement === window.__a11yFrom }`);
       if (after.open) problems.push('Escape did not close it');
-      else if (!after.back) problems.push('focus did not come back');
+      else if (!after.back) problems.push('focus did not come back (now on ' + (await js(win, `return document.activeElement?.tagName + '.' + document.activeElement?.className`)) + ')');
+      // Tab forward from its last control, then Shift+Tab back from its first, then focus sent elsewhere: each closes it.
+      for (const how of ['Tab', 'Shift+Tab', 'focus elsewhere']) {
+        if (!(await openPopup(o))) {
+          problems.push(`it did not open again for ${how}`);
+          continue;
+        }
+        const end = how === 'Shift+Tab' ? 'first' : 'last';
+        await js(win, `const p = document.querySelector(${JSON.stringify(o.pop)}); const t = [...p.querySelectorAll('input, button, select, textarea, [href], [tabindex]')].filter((x) => x.tabIndex >= 0 && !x.disabled && x.getClientRects().length); t[${end === 'first' ? '0' : 't.length - 1'}]?.focus()`);
+        if (how === 'focus elsewhere') await js(win, `[...document.querySelectorAll('button')].find((b) => !document.querySelector(${JSON.stringify(o.pop)}).contains(b) && b !== window.__a11yFrom && b.tabIndex >= 0 && b.getClientRects().length)?.focus()`);
+        else await key(win, 'Tab', how === 'Shift+Tab' ? ['shift'] : []);
+        await sleep(200);
+        const now = await js(win, `const a = document.activeElement; return { open: !!document.querySelector(${JSON.stringify(o.pop)}), opener: a === window.__a11yFrom, none: !a || a === document.body, where: a?.tagName + '.' + (a?.className || '') }`);
+        if (now.open) problems.push(`${how} did not close it`);
+        else if (how !== 'focus elsewhere' && now.opener) problems.push(`${how} went back to the opener`);
+        else if (now.none) problems.push(`${how} lost focus`);
+        await js(win, `__frameling.overlays?.state; document.activeElement?.blur?.()`);
+      }
     }
+    await js(win, `__frameling.prefs.set({ toolRail: 'two' })`);
     report.keyboard.push({ name, problems, stops: 0 });
     console.log(`   keys ${problems.length ? 'x ' + problems.join('; ') : 'ok'}`);
   }
@@ -406,4 +524,4 @@ app.whenReady().then(async () => {
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2));
   win.destroy();
   app.exit(serious || keyProblems ? 1 : 0);
-});
+}).catch(fail);

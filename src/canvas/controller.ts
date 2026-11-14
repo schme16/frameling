@@ -3,7 +3,8 @@
  * position, hints, and the commands that move the view. Tools and commands import this instead of reaching into the
  * canvas component, so they work (and test) without any DOM.
  */
-import type { Drawing, Id } from '../core/format';
+import { ownedUndo } from '../core/owners';
+import type { Drawing, Id, PixelDrawing } from '../core/format';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { tileModeOn } from '../tiles/state';
@@ -84,9 +85,27 @@ function artPixel(): number {
   return px;
 }
 
-/** Fit the whole stage in the window. */
-export function fit(): void {
+/**
+ * Something that knows a better "whole picture" than the one page (the artboards: every board at once). It gets the
+ * canvas size and answers a view, or null to use the plain page.
+ */
+let fitHook: ((vp: Viewport) => View | null) | null = null;
+export function setFitHook(fn: ((vp: Viewport) => View | null) | null): void {
+  fitHook = fn;
+}
+
+/**
+ * Fit the whole stage in the window. When the fit is automatic (a document opening, the window or a panel changing
+ * size) and the file has several artboards, all of them are fitted; the Fit command itself fits the open page.
+ */
+export function fit(auto = false): void {
   const { doc } = store().get();
+  const all = auto && !tileModeOn() ? fitHook?.(viewport) : null;
+  if (all) {
+    setView(all, false);
+    autoFit = true;
+    return;
+  }
   // In tile mode the stage has a copy on every side, so fit all nine.
   const k = tileModeOn() ? 3 : 1;
   const v = fitView(viewport.w, viewport.h, doc.width * k, doc.height * k, 48, artPixel());
@@ -124,7 +143,22 @@ export function stageRect(): Rect {
  */
 export type Live =
   | { layerId: Id; kind: 'vector'; drawing: Drawing }
-  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; width: number; height: number }
+  | {
+      layerId: Id;
+      kind: 'pixel';
+      canvas: CanvasImageSource;
+      /** Where the canvas sits on the art grid (art pixels; 0 when it covers the grid). */
+      x?: number;
+      y?: number;
+      width: number;
+      height: number;
+      /**
+       * A stroke in progress: the canvas holds only these tiles (art pixel rectangles); everywhere else the layer shows
+       * `base`, the drawing as it was (none when it started empty). `fill` makes the canvas the whole picture instead,
+       * when a screen needs that (see livePixels.ts). Missing = the canvas is the whole picture.
+       */
+      sparse?: { base: PixelDrawing | null; tiles: readonly { x: number; y: number; w: number; h: number }[]; fill: () => void };
+    }
   | { layerId: Id; kind: 'tilemap'; drawing: Drawing };
 
 let live: Live | null = null;
@@ -173,28 +207,78 @@ export function setCursor(c: string | null): void {
 
 // ---------------------------------------------------------------- overlays that aren't a tool's
 
-/** Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants). */
-export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number) => void;
+/**
+ * Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants).
+ * `page` is where the page (the picture you see) falls in the space being drawn in: its four corners, which are the
+ * page's own corners unless the picked layer sits behind a moving camera.
+ */
+export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number, page: Pt[]) => void;
 const stageOverlays: StageOverlay[] = [];
 
 export function addStageOverlay(fn: StageOverlay): void {
-  if (!stageOverlays.includes(fn)) stageOverlays.push(fn);
+  if (stageOverlays.includes(fn)) return;
+  stageOverlays.push(fn);
+  ownedUndo(() => {
+    const i = stageOverlays.indexOf(fn);
+    if (i >= 0) stageOverlays.splice(i, 1);
+  });
 }
 export function getStageOverlays(): readonly StageOverlay[] {
   return stageOverlays;
 }
 
+// ---------------------------------------------------------------- handles on the canvas that aren't a tool's
+
+/**
+ * Something on the canvas you can grab whatever tool is picked (a vanishing point). `hit` is asked on hover and on
+ * press, in stage pixels; the first one that says yes gets the drag instead of the tool.
+ */
+export interface CanvasGrab {
+  hit(p: Pt, zoom: number): boolean;
+  cursor?: string;
+  down(p: Pt): void;
+  move(p: Pt, shift: boolean): void;
+  up(p: Pt): void;
+  cancel?(): void;
+}
+const grabs: CanvasGrab[] = [];
+
+export function addCanvasGrab(g: CanvasGrab): void {
+  if (grabs.includes(g)) return;
+  grabs.push(g);
+  ownedUndo(() => {
+    const i = grabs.indexOf(g);
+    if (i >= 0) grabs.splice(i, 1);
+  });
+}
+export function grabAt(p: Pt, zoom: number): CanvasGrab | null {
+  return grabs.find((g) => g.hit(p, zoom)) ?? null;
+}
+
 // ---------------------------------------------------------------- pointer extras
 
 let hover: Pt | null = null;
+let hoverPen: HoverPen | null = null;
 let predicted: Pt[] = [];
+
+/** What a pen hovering over the canvas reports, for the cursor: how it leans, and whether the eraser end is the one near. */
+export interface HoverPen {
+  tiltX?: number;
+  tiltY?: number;
+  eraser: boolean;
+}
 
 /** Where the pointer is over the canvas (document pixels), or null when it's elsewhere. */
 export function getHover(): Pt | null {
   return hover;
 }
-export function setHover(p: Pt | null): void {
+export function setHover(p: Pt | null, pen: HoverPen | null = null): void {
   hover = p;
+  hoverPen = p ? pen : null;
+}
+/** Set while a pen (not a mouse or finger) is hovering over the canvas. */
+export function getHoverPen(): HoverPen | null {
+  return hoverPen;
 }
 
 /** The pen's predicted next points. Only for drawing the live preview further ahead, never committed. */
@@ -203,4 +287,22 @@ export function getPredicted(): Pt[] {
 }
 export function setPredicted(p: Pt[]): void {
   predicted = p;
+}
+
+// ---------------------------------------------------------------- before a tool starts
+
+/** Runs before a tool gets a press, with the document point and the tool's id (artboards open the one clicked). */
+export type PointerDownHook = (p: Pt, tool: string) => void;
+const downHooks: PointerDownHook[] = [];
+
+export function addPointerDownHook(fn: PointerDownHook): void {
+  if (downHooks.includes(fn)) return;
+  downHooks.push(fn);
+  ownedUndo(() => {
+    const i = downHooks.indexOf(fn);
+    if (i >= 0) downHooks.splice(i, 1);
+  });
+}
+export function runPointerDownHooks(p: Pt, tool: string): void {
+  for (const fn of downHooks) fn(p, tool);
 }

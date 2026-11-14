@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { hostPage, makeFrame, SANDBOX_FLAGS } from '../../src/plugins/sandbox';
+import { hostPage, makeFrame, SANDBOX_FLAGS, startFailure } from '../../src/plugins/sandbox';
 
 const pub = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 const csp = (file: string) => /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(readFileSync(path.join(pub, file), 'utf8'))![1];
@@ -15,6 +15,8 @@ describe('plugin sandbox', () => {
     const f = makeFrame(document, []);
     expect(f.getAttribute('sandbox')).toBe('allow-scripts');
     expect(f.src).toMatch(/plugin-host\.html$/);
+    expect(makeFrame(document, [], 'my-plugin').src).toMatch(/plugin-host\.html\?plugin=my-plugin$/);
+    expect(makeFrame(document, [], 'Bad Id/..').src).toMatch(/plugin-host\.html$/);
     expect(makeFrame(document, ['https://a.example.com']).src).toMatch(/plugin-host-net\.html$/);
     expect(hostPage([])).toBe('plugin-host.html');
   });
@@ -42,5 +44,9 @@ describe('plugin sandbox', () => {
       expect(page).toContain('e.source !== window.parent');
       expect(page).not.toMatch(/eval\(|new Function|innerHTML|document\.write/);
     }
+  });
+
+  it('says why a sandbox did not start, in plain words', () => {
+    expect(startFailure()).toBe("The plugin's sandbox did not start.");
   });
 });

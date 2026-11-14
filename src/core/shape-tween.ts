@@ -14,7 +14,8 @@
  *   blend. A spare one fades out (or in). Things that can't blend (the words, how many particles) are listed by
  *   `morphNotes` so the panel can say so.
  */
-import type { Color, FillShape, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
+import { blendGradient } from './gradient';
+import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
 import { strokeOutline } from './render';
 
 type P = { x: number; y: number };
@@ -41,6 +42,8 @@ interface Style {
   /** Which kind of shape it came from, so a pair of fills stays a fill. */
   type: 'fill' | 'path';
   group?: string;
+  fillGradient?: Gradient;
+  strokeGradient?: Gradient;
 }
 
 type Plan =
@@ -469,8 +472,8 @@ function strokeAsFill(s: StrokeShape): FillShape {
 }
 
 function styleOf(s: FillShape | PathShape): Style {
-  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group };
-  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group };
+  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group, fillGradient: s.gradient };
+  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group, fillGradient: s.fillGradient, strokeGradient: s.strokeGradient };
 }
 
 // ---------------------------------------------------------------- plans
@@ -704,7 +707,8 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
     const opacity = Math.max(0, Math.min(1, lerp(p.a.opacity, p.b.opacity, t)));
     const group = p.a.group ? { group: p.a.group } : {};
     if (p.a.type === 'fill' && p.b.type === 'fill') {
-      out.push({ id: p.id, type: 'fill', ...group, paths, color: mixColors(p.a.fill, p.b.fill, t) ?? p.a.fill ?? '#000000', opacity });
+      const gradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
+      out.push({ id: p.id, type: 'fill', ...group, paths, color: mixColors(p.a.fill, p.b.fill, t) ?? p.a.fill ?? '#000000', opacity, ...(gradient ? { gradient } : {}) });
       continue;
     }
     const sa = p.a.stroke;
@@ -716,7 +720,9 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
       const width = lerp(sa?.width ?? 0, sb?.width ?? 0, t);
       if (color && width > 0.01) stroke = { ...base, color, width };
     }
-    out.push({ id: p.id, type: 'path', ...group, paths, fill: mixColors(p.a.fill, p.b.fill, t), stroke, opacity });
+    const fillGradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
+    const strokeGradient = blendGradient(p.a.strokeGradient, p.b.strokeGradient, t);
+    out.push({ id: p.id, type: 'path', ...group, paths, fill: mixColors(p.a.fill, p.b.fill, t), stroke, opacity, ...(fillGradient ? { fillGradient } : {}), ...(strokeGradient ? { strokeGradient } : {}) });
   }
   return out;
 }

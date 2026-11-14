@@ -5,8 +5,8 @@ import { decodePng } from '../../src/io/png';
 import { packInto, packSheet, packShelves } from '../../src/export/pack';
 import { buildAnimations, buildCells, composeSheet, layoutCells, layoutPacked } from '../../src/export/sheet';
 import {
-  animationCellNames, buildSheetFiles, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
-  UNITY_SCRIPT, UNITY_SCRIPT_NAME, type SheetData,
+  animationCellNames, buildSheetFiles, cssIds, cssPreviewPage, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
+  UNITY_ASMDEF, UNITY_ASMDEF_NAME, UNITY_SCRIPT, UNITY_SCRIPT_NAME, type SheetData,
 } from '../../src/export/engines';
 import { artScale } from '../../src/export/plan';
 import { DEFAULT_SHEET, normalizeSheet, type SheetSettings } from '../../src/export/types';
@@ -164,6 +164,66 @@ describe('engine data files', () => {
     expect(UNITY_SCRIPT_NAME).toBe('FramelingSheetImporter.cs');
   });
 
+  it('the Unity importer warns in the Console about another copy of itself, naming the file to delete', () => {
+    expect(UNITY_SCRIPT).toContain('[InitializeOnLoadMethod]');
+    expect(UNITY_SCRIPT).toContain('AssetDatabase.FindAssets("FramelingSheetImporter t:MonoScript")');
+    expect(UNITY_SCRIPT).toContain('Debug.LogWarning("Frameling: another copy of FramelingSheetImporter is in this project');
+    expect(UNITY_SCRIPT).toContain('"Delete the older file " + other');
+    // Once per session, and the script is still wrapped so it compiles anywhere.
+    expect(UNITY_SCRIPT).toContain('SessionState.GetBool("Frameling.OtherImporterChecked"');
+    expect(UNITY_SCRIPT.trimEnd().endsWith('#endif')).toBe(true);
+    expect(UNITY_SCRIPT).not.toContain('${');
+  });
+
+  it('Unity script: fits the texture size to the sheet and ends clips where Unity does (verified in Unity 6.6 by scripts/e2e)', () => {
+    // Unity shrinks sheets bigger than the max texture size, so the script raises it to cover the sheet.
+    expect(UNITY_SCRIPT).toContain('importer.maxTextureSize = size');
+    expect(UNITY_SCRIPT).toContain('size < 16384');
+    // Unity ends a clip one frame after its last key, so no key goes at the very end, and only a last frame held
+    // for several frames gets a key on its final tick.
+    expect(UNITY_SCRIPT).toContain('if (lastHold > 1) keys.Add(new ObjectReferenceKeyframe { time = t - 1f / a.fps');
+    expect(UNITY_SCRIPT).not.toContain('time = t, value = keys[');
+  });
+
+  it('Unity script: compiles without the 2D Sprite package (guarded by a define from the asmdef, with the older cutting API as fallback)', () => {
+    // The package namespace only appears inside the define, so a project without the package never sees it.
+    const lines = UNITY_SCRIPT.split('\n');
+    const usingAt = lines.findIndex((l) => l.includes('using UnityEditor.U2D.Sprites;'));
+    expect(usingAt).toBeGreaterThan(0);
+    expect(lines[usingAt - 1]).toBe('#if FRAMELING_2D_SPRITE');
+    expect(lines[usingAt + 1]).toBe('#endif');
+    // Every use of the package types sits before the #else, so the fallback path has none of them.
+    const elseAt = UNITY_SCRIPT.indexOf('#else');
+    const endAt = UNITY_SCRIPT.indexOf('#endif', elseAt);
+    expect(elseAt).toBeGreaterThan(0);
+    for (const k of ['SpriteDataProviderFactories', 'ISpriteNameFileIdDataProvider', 'SpriteRect', 'SpriteNameFileIdPair']) {
+      const first = UNITY_SCRIPT.indexOf(k, UNITY_SCRIPT.indexOf('#if FRAMELING_2D_SPRITE\n    static'));
+      expect(first).toBeGreaterThan(0);
+      expect(first).toBeLessThan(elseAt);
+      expect(UNITY_SCRIPT.indexOf(k, elseAt)).toBe(-1);
+    }
+    const fallback = UNITY_SCRIPT.slice(elseAt, endAt);
+    expect(fallback).toContain('importer.spritesheet =');
+    expect(fallback).toContain('new SpriteMetaData');
+    expect(fallback).toContain('SpriteAlignment.Custom');
+    expect(fallback).toContain('pivotX');
+    // The whole file is still wrapped so it only builds in the editor, and the clips code does not need the package.
+    expect(UNITY_SCRIPT).toContain('#if UNITY_EDITOR');
+    expect(UNITY_SCRIPT.split('#if').length).toBe(UNITY_SCRIPT.split('#endif').length);
+  });
+
+  it('Unity asmdef: editor only, defines FRAMELING_2D_SPRITE when the 2D Sprite package is installed', () => {
+    expect(UNITY_ASMDEF_NAME).toBe('FramelingSheetImporter.asmdef');
+    const a = JSON.parse(UNITY_ASMDEF);
+    expect(a.name).toBe('Frameling.SheetImporter');
+    expect(a.includePlatforms).toEqual(['Editor']);
+    expect(a.references).toContain('Unity.2D.Sprite.Editor');
+    expect(a.versionDefines).toEqual([{ name: 'com.unity.2d.sprite', expression: '1.0.0', define: 'FRAMELING_2D_SPRITE' }]);
+    // A missing package must not stop the assembly from building.
+    expect(a.defineConstraints).toEqual([]);
+    expect(UNITY_SCRIPT).toContain(a.versionDefines[0].define);
+  });
+
   it('CSS: a class per frame and keyframes where held frames last their full time', () => {
     const d = sampleData();
     const css = cssSprites(d, { prefix: 'Hero Run', pixelArt: true, separate: false });
@@ -180,6 +240,47 @@ describe('engine data files', () => {
     const run = css.slice(css.indexOf('@keyframes hero-run-run'));
     expect(run.match(/\d+(\.\d+)?%/g)).toEqual(['0%', '50%', '100%']);
     expect(run).toContain('50% { background-position: -16px 0; }');
+  });
+});
+
+describe('CSS class names', () => {
+  it('cssIds keeps names that would clash apart', () => {
+    expect(cssIds(['Idle', 'idle', 'Run Fast!', 'run-fast'])).toEqual(['idle', 'idle-2', 'run-fast', 'run-fast-2']);
+    // Names with no letters or digits all become "sprite", then get numbers.
+    expect(cssIds(['\u65e5\u672c', '\u65e5\u672c\u8a9e', '!!'])).toEqual(['sprite', 'sprite-2', 'sprite-3']);
+    expect(cssIds(['a'], ['a', 'a-2'])).toEqual(['a-3']);
+  });
+
+  it('gives two clips that differ only by case their own class and keyframes', () => {
+    const d = sampleData();
+    d.animations = [
+      { name: 'Idle', fps: 10, loop: true, frames: [0, 1] },
+      { name: 'idle', fps: 10, loop: true, frames: [2, 3] },
+    ];
+    const css = cssSprites(d, { prefix: 'hero', pixelArt: false, separate: false });
+    const names = [...css.matchAll(/@keyframes (\S+)/g)].map((m) => m[1]);
+    expect(names).toEqual(['hero-idle', 'hero-idle-2']);
+    expect(css).toContain('animation: hero-idle-2 ');
+    const page = cssPreviewPage(d, { prefix: 'hero', css: 'hero.css', title: 'Hero', pixelArt: false, separate: false });
+    expect(page).toContain('class="hero hero-idle"');
+    expect(page).toContain('class="hero hero-idle-2"');
+  });
+
+  it('an animation never takes the class of a frame', () => {
+    const d = sampleData();
+    // The first cell is "idle_0", whose class is hero-frame-idle-0; a clip called "frame idle 0" would match it.
+    d.animations = [{ name: 'frame idle 0', fps: 10, loop: true, frames: [0, 1] }];
+    const css = cssSprites(d, { prefix: 'hero', pixelArt: false, separate: false });
+    expect(css).toContain('@keyframes hero-frame-idle-0-2 ');
+  });
+
+  it('puts sprite- in front of a name that starts with a digit, which CSS cannot take', () => {
+    const d = sampleData();
+    const css = cssSprites(d, { prefix: '2D Hero!', pixelArt: false, separate: false });
+    expect(css).toContain('.sprite-2d-hero {');
+    expect(css).toContain('<div class="sprite-2d-hero sprite-2d-hero-idle">');
+    expect(css).not.toMatch(/^\.\d/m);
+    expect(css).toContain('@keyframes sprite-2d-hero-idle');
   });
 });
 
@@ -209,7 +310,7 @@ describe('the files each engine gets', () => {
     expect(names(job({ engine: 'godot', godotScene: false, json: true }, four()))).toEqual(['hero-run.json', 'hero-run.png', 'hero-run.tres']);
     expect(names(job({ engine: 'phaser' }, four()))).toEqual(['hero-run-anims.json', 'hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'pixi' }, four()))).toEqual(['hero-run.json', 'hero-run.png']);
-    expect(names(job({ engine: 'unity' }, four()))).toEqual(['FramelingSheetImporter.cs', 'hero-run.json', 'hero-run.png']);
+    expect(names(job({ engine: 'unity' }, four()))).toEqual(['FramelingSheetImporter.asmdef', 'FramelingSheetImporter.cs', 'hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'unity', unityScript: false }, four()))).toEqual(['hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'css', json: false }, four()))).toEqual(['hero-run.css', 'hero-run.html', 'hero-run.png']);
   });
@@ -238,6 +339,18 @@ describe('the files each engine gets', () => {
     expect(Object.keys(hash.frames)).toEqual(['idle_0', 'run_0', 'run_1']);
     expect(hash.animations.idle.frames).toEqual(['idle_0', 'idle_0']);
     expect(hash.frames.idle_0.duration).toBe(200);
+  });
+
+  it('Unity with separate sprites: a json with every sprite and no animations, so no clips are made', () => {
+    const icons = [solid(8, 8, 1), solid(8, 8, 1)];
+    const doc = { name: 'Icons', clips: [], markers: [{ id: 'm', name: 'heart', frame: 0 }], fps: 10 };
+    const r = job({ engine: 'unity', content: 'separate', trim: true }, icons, { doc, name: 'Icons' });
+    const u = JSON.parse(fileText(r, 'icons.json'));
+    expect(u.format).toBe('frameling-unity');
+    expect(u.frames.map((f: { name: string }) => f.name)).toEqual(['heart', 'frame_2']);
+    expect(u.animations).toEqual([]);
+    // The script skips clip making when there is nothing to make.
+    expect(UNITY_SCRIPT).toContain('data.animations.Length == 0) continue;');
   });
 
   it('separate sprites: one atlas with a name per frame and no animations, or one PNG each', () => {

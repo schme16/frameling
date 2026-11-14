@@ -3,7 +3,8 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { getPrefs, resetPrefs, setPrefs, effectiveTheme } from '../../src/ui/prefs';
 import { clearToasts, dismissToast, toast, toasts } from '../../src/ui/toast';
 import { docFromCustom, docFromPreset, PRESETS } from '../../src/ui/presets';
-import { allQuests, getQuest, questProgress, startQuest } from '../../src/ui/quests';
+import { allQuests, getQuest, loadQuests, questProgress, startQuest } from '../../src/ui/quests';
+import { getFullQuest } from '../../src/quests/registry';
 import { tipFor } from '../../src/ui/Tooltips';
 import { registerCommand } from '../../src/core/registry';
 import { helpIdFor } from '../../src/ui/help/context';
@@ -87,8 +88,10 @@ describe('new drawing presets', () => {
 });
 
 describe('quests', () => {
-  it('has the first-animation stub and can start it', () => {
-    expect(getQuest('first-animation')?.steps.length).toBeGreaterThan(2);
+  it('has the first-animation quest and can start it', async () => {
+    expect(getQuest('first-animation')?.title).toBeTruthy();
+    await loadQuests();
+    expect(getFullQuest('first-animation')?.steps.length).toBeGreaterThan(2);
     expect(allQuests().length).toBeGreaterThan(0);
     expect(startQuest('first-animation')).toBe(true);
     expect(questProgress.get().active).toBe('first-animation');

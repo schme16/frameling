@@ -6,8 +6,10 @@
 import type { Doc, Layer } from '../core/format';
 import { poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
+import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
+import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
 import { compositePlan } from './composite';
@@ -31,17 +33,14 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const d = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
       lg.save();
       lg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
-      if (lv?.kind === 'pixel') {
-        lg.imageSmoothingEnabled = false;
-        lg.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
-      } else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
+      if (lv?.kind === 'pixel') drawLivePixels(lg, lv, pixelSize);
+      else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
       lg.restore();
       return;
     }
     if (lv?.kind === 'pixel') {
       lg.save();
-      lg.imageSmoothingEnabled = false;
-      lg.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
+      drawLivePixels(lg, lv, pixelSize);
       lg.restore();
       return;
     }
@@ -54,10 +53,10 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const stale = p.zooming && !fresh ? painter.cache.stale(drawing, pixelSize) : undefined;
       if (stale) {
         settled = false;
-        lg.drawImage(stale.canvas, rect.x, rect.y, rect.w, rect.h);
+        blitEntryStretched(lg, stale, rect.x, rect.y, rect.w, rect.h);
       } else {
         const e = fresh ?? painter.vectorBitmap(doc, layer.id, drawing, pixelSize, rect.w, rect.h);
-        lg.drawImage(e.canvas, rect.x, rect.y);
+        blitEntry(lg, e, rect.x, rect.y);
       }
       lg.restore();
       return;

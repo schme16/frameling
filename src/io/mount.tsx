@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactElement, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './io.css';
+import { pressedBackdrop } from '../ui/backdropClick';
 
 /** Puts a dialog on screen, outside the app's own tree, and hands it a function that closes it again. */
 export function mountModal(render: (close: () => void) => ReactElement): () => void {
@@ -33,7 +34,7 @@ export function Modal({ title, onClose, children, wide = false, canClose = true,
     (first ?? el).focus();
   }, []);
   return (
-    <div className="io-backdrop" onMouseDown={(e) => e.target === e.currentTarget && canClose && onClose()}>
+    <div className="io-backdrop" onMouseDown={(e) => e.target === e.currentTarget && canClose && pressedBackdrop(e.clientX, e.clientY, ref.current, onClose)}>
       <div
         ref={ref}
         className={`io-modal${wide ? ' io-wide' : ''} ${className}`}

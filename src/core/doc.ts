@@ -39,6 +39,7 @@ export function newDoc(opts: Partial<Pick<Doc, 'name' | 'width' | 'height' | 'fp
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
+    lineage: true,
     id: uid('d'),
     name: opts.name ?? 'Untitled',
     width: opts.width ?? 1280,
@@ -76,7 +77,20 @@ export const DEFAULT_TILE_SIZE = 16;
 export function tilemapGrid(doc: Doc, layer: TilemapLayer): { columns: number; rows: number } {
   const tw = (doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
   const th = (doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
-  return { columns: Math.max(1, Math.ceil(doc.width / tw)), rows: Math.max(1, Math.ceil(doc.height / th)) };
+  const o = tileOrigin(doc, layer.pixelSize);
+  return { columns: Math.max(1, Math.ceil((doc.width - o.x) / tw)), rows: Math.max(1, Math.ceil((doc.height - o.y) / th)) };
+}
+
+/**
+ * Where the first slot of a map starts, in document pixels: 0 or a little left of and above the stage, so the slots
+ * still cover its top-left corner when the tile grid does not start there (Tileset.gridX / gridY).
+ */
+export function tileOrigin(doc: Doc, pixelSize = 1): { x: number; y: number } {
+  const ts = doc.tileset;
+  if (!ts) return { x: 0, y: 0 };
+  const gx = ts.gridX ?? 0;
+  const gy = ts.gridY ?? 0;
+  return { x: (gx > 0 ? gx - ts.tileWidth : 0) * pixelSize, y: (gy > 0 ? gy - ts.tileHeight : 0) * pixelSize };
 }
 
 export function newTilemapDrawing(columns: number, rows: number): TilemapDrawing {
@@ -96,11 +110,15 @@ export function newPixelDrawing(width: number, height: number): PixelDrawing {
   return { id: uid('p'), kind: 'pixel', width, height, pixels: new Uint8ClampedArray(width * height * 4) };
 }
 
+/** A pixel drawing with nothing painted: no block at all (0 x 0), so it costs no memory. */
+export function newBlankPixelDrawing(): PixelDrawing {
+  return { id: uid('p'), kind: 'pixel', width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
+}
+
 /** A fresh, empty drawing of the right kind for a layer. */
 export function newDrawingFor(doc: Doc, layer: Layer): Drawing {
   if (layer.kind === 'pixel') {
-    const g = pixelGrid(doc, layer);
-    return newPixelDrawing(g.width, g.height);
+    return newBlankPixelDrawing();
   }
   if (layer.kind === 'tilemap') {
     const g = tilemapGrid(doc, layer);
@@ -142,12 +160,59 @@ export function contentLength(doc: Doc): number {
   return n;
 }
 
-/** Removes drawings no cel (and no tile) points at. */
+// immer keeps its bookkeeping on a draft under this well-known symbol: the untouched `base_` and, once something under
+// it was read or changed, a `copy_`. Reading those directly gives the current values without a proxy per object.
+const IMMER_STATE = Symbol.for('immer-state');
+
+/**
+ * The plain object or array a draft stands for right now, read without drafting anything under it. Anything that is
+ * not a draft (or whose immer bookkeeping looks different from what we expect) comes back as it is. Read only.
+ */
+export function peek<T>(x: T): T {
+  if (typeof x !== 'object' || x === null) return x;
+  const s = (x as any)[IMMER_STATE];
+  if (!s || typeof s !== 'object') return x;
+  const v = s.copy_ ?? s.base_;
+  return v && typeof v === 'object' ? (v as T) : x;
+}
+
+/**
+ * Removes drawings no cel (and no tile) points at. Works on a plain document or an immer draft; on a draft it reads
+ * through `peek`, so a big document does not get a proxy for every cel just to be searched.
+ */
 export function pruneDrawings(doc: Doc): void {
   const used = new Set<string>();
+  const useLayers = (layers: readonly Layer[] | undefined) => {
+    for (const l of peek(layers) ?? []) for (const c of peek(peek(l).cels)) used.add(peek(c).drawingId);
+  };
   // Symbols' layers (and layers set aside while one is open) use the same drawings.
-  const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
-  for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
-  for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
-  for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];
+  for (const f of peek(doc.editing) ?? []) useLayers(peek(f).layers);
+  useLayers(doc.layers);
+  for (const s of Object.values(peek(doc.symbols) ?? {})) useLayers(peek(s).layers);
+  for (const a0 of peek(doc.artboards) ?? []) {
+    const a = peek(a0);
+    // Artboards that aren't open keep their layers aside.
+    if (a.content) {
+      const content = peek(a.content);
+      useLayers(content.layers);
+      // Shared layers: what this artboard drew on each layer of the document's stack.
+      for (const cels of Object.values(peek(content.cels) ?? {})) for (const c of peek(cels)) used.add(peek(c).drawingId);
+    }
+    // A variation that is open has its added keys' drawings only in its overrides (its stage points at its own copies).
+    const ls = peek(peek(a.overrides)?.layers);
+    if (!ls) continue;
+    for (const l of peek(ls.added) ?? []) for (const c of peek(peek(l).cels)) used.add(peek(c).drawingId);
+    for (const it0 of Object.values(peek(ls.items) ?? {})) {
+      const it = peek(it0);
+      const sub = peek(it.sub);
+      for (const c of peek(sub?.added) ?? []) used.add(peek(c).drawingId);
+      // A key of the original that now shows another drawing is a patch of its drawingId.
+      for (const c of Object.values(peek(sub?.items) ?? {})) {
+        const id = peek(peek(peek(c).patch)?.set)?.drawingId;
+        if (typeof id === 'string') used.add(id);
+      }
+    }
+  }
+  for (const t of peek(doc.tileset)?.tiles ?? []) for (const f of peek(peek(t).frames)) used.add(peek(f).drawingId);
+  for (const id of Object.keys(peek(doc.drawings))) if (!used.has(id)) delete doc.drawings[id];
 }

@@ -127,6 +127,113 @@ const GROUPS = {
     { wait: 1400 },
     { shot: ['quests.panel.allDone'], crop: '.qp-head, .qp-quill, .qp-card:first-child', pad: 12 },
   ],
+  // Quill in the pixel flow: the chooser, the keys question, the moments, the change dialog and the sheet sentence.
+  pixel: (() => {
+    const P = '__framelingPixel';
+    const A = '__framelingArtboards';
+    const say = (id, vars) => ({ js: `${P}.say(${JSON.stringify(id)}, ${JSON.stringify(vars ?? {})})` });
+    const pick = (way) => ({ js: `document.querySelector('.px-way-card[data-way="${way}"]')?.click()` });
+    const toastShot = (id, note) => [{ wait: 700 }, { shot: [id], crop: TOAST, pad: 60, ...(note ? { note } : {}) }, { js: `document.querySelectorAll('.ui-toast-x').forEach((b) => b.click())` }, { wait: 300 }];
+    const sheetSays = (ids, note) => ({ shot: ids, crop: '.px-sheet-says', pad: 20, ...(note ? { note } : {}) });
+    const openExport = [{ js: `__frameling.run('file.export')` }, { wait: 1200 }];
+    const closeExport = [{ key: 'Escape' }, { wait: 500 }];
+    return [
+      { js: `${P}.ask(true)` },
+      // New pixel art from Draw would ask whether the workspace follows: answered already, so the shots below stay on their own question.
+      { js: `${A}.setChoice('workspace.follow', 'always')` },
+      // The chooser
+      { js: `${P}.openChooser()` },
+      { wait: 1200 },
+      { shot: ['pixel.chooser.title', 'pixel.chooser.lead', 'pixel.chooser.unsure'], crop: '.io-modal', pad: 10 },
+      pick('picture'), { wait: 500 }, { shot: ['pixel.chooser.picture'], crop: '.io-modal', pad: 10 },
+      pick('animation'), { wait: 500 }, { shot: ['pixel.chooser.animation'], crop: '.io-modal', pad: 10 },
+      pick('boards'), { wait: 500 }, { shot: ['pixel.chooser.boards'], crop: '.io-modal', pad: 10 },
+      pick('sheet'), { wait: 500 }, { shot: ['pixel.chooser.sheet'], crop: '.io-modal', pad: 10 },
+      { js: `[...document.querySelectorAll('.io-foot .io-primary')].find((b) => b.textContent === 'Start')?.click()` },
+      ...toastShot('pixel.chooser.ready'),
+      // The keys question and its answers (a pixel file just opened, so it asks)
+      { js: `__frameling.dock.applyWorkspace('pixel')` },
+      { wait: 600 },
+      { js: `${P}.newSprite('picture', 32)` },
+      { wait: 1200 },
+      { shot: ['pixel.keys.ask'], crop: '.ui-choice', pad: 14 },
+      { js: `document.querySelector('.ui-choice-opt')?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()` },
+      ...toastShot('pixel.keys.aseprite'),
+      { js: `${A}.setChoice('pixel.keys', undefined); __frameling.prefs.set({ keymapSet: 'frameling' })` },
+      { wait: 400 },
+      { js: `${P}.askKeys()` },
+      { wait: 900 },
+      { js: `document.querySelectorAll('.ui-choice-opt')[1]?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()` },
+      ...toastShot('pixel.keys.frameling'),
+      // Moments
+      { js: `${P}.newSprite('animation', 32)` },
+      ...toastShot('pixel.empty', 'Shown for a brand new empty sprite, once ever. (Shown again here so the review has a picture.)'),
+      say('pixel.altPick'), ...toastShot('pixel.altPick'),
+      say('pixel.perfect'), ...toastShot('pixel.perfect'),
+      { js: `${P}.newSprite('picture', 32)` },
+      { wait: 600 },
+      { js: `__frameling.store().update('Add a frame', (d) => { d.length = 2; })` },
+      ...toastShot('pixel.frame2'),
+      { js: `${A}.ops.newArtboard()` },
+      { wait: 800 },
+      { shot: ['pixel.twoBoards.ask'], crop: '.ui-choice', pad: 14 },
+      { js: `document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()` },
+      { wait: 600 },
+      say('pixel.ase.open'), ...toastShot('pixel.ase.open'),
+      say('pixel.sheet.baked', { engine: 'Godot' }), ...toastShot('pixel.sheet.baked', 'Godot here; it names Unity, Phaser or PixiJS too, and "your engine" for the others.'),
+      say('pixel.sheet.many'), ...toastShot('pixel.sheet.many'),
+      // The layout, Make it move, and the change dialog
+      { js: `${P}.newSprite('picture', 32)` },
+      { wait: 1200 },
+      { shot: ['pixel.folded'], crop: '.px-picture-strip', pad: 24 },
+      { js: `document.querySelector('.px-picture-strip .io-primary')?.click()` },
+      ...toastShot('pixel.makeItMove'),
+      { js: `${P}.openChangeWay()` },
+      { wait: 900 },
+      { shot: ['pixel.way.change'], crop: '.px-changeway', pad: 10 },
+      { js: `document.querySelector('.px-changeway .io-foot .io-btn')?.click()` },
+      { wait: 400 },
+      { js: `__frameling.showPanel('preview')` },
+      { js: `__frameling.template('hero-sprites')` },
+      { wait: 1200 },
+      { js: `document.querySelectorAll('.px-preview-zoom [role="radio"]')[1]?.click()` },
+      { wait: 1200 },
+      { shot: ['pixel.scale.hover'], crop: '.px-preview-stage', pad: 16, note: 'The words are the tooltip when you hover Quill. The picture shows him standing next to the sprite at the same scale.' },
+      // Export: Quill's sentence for each way
+      { js: `${P}.newSprite('picture', 32)` },
+      { wait: 600 },
+      ...openExport,
+      sheetSays(['pixel.sheet.picture']),
+      ...closeExport,
+      { js: `${P}.newSprite('animation', 32)` },
+      { wait: 600 },
+      ...openExport,
+      sheetSays(['pixel.sheet.animation']),
+      ...closeExport,
+      { js: `${P}.newSprite('boards', 32)` },
+      { wait: 600 },
+      ...openExport,
+      sheetSays(['pixel.sheet.boards']),
+      { js: `${A}.setExport({ mode: 'each' })` },
+      { wait: 500 },
+      sheetSays(['pixel.sheet.each']),
+      { js: `${A}.setExport({ mode: 'one' })` },
+      { wait: 500 },
+      sheetSays(['pixel.sheet.one'], 'Only the open board goes on the sheet.'),
+      ...closeExport,
+      { js: `${P}.newSprite('sheet', 32)` },
+      { wait: 600 },
+      ...openExport,
+      sheetSays(['pixel.sheet.cast']),
+      ...closeExport,
+      // Quests
+      { js: `__frameling.quests.start('one-tiny-picture')` },
+      { wait: 1500 },
+      { js: `__frameling.quests.praise(true)` },
+      { wait: 300 },
+      { shot: ['pixel.quest.praise'], crop: '.qb', pad: 30, note: 'The one-word cheer over the quest bar in pixel quests. It takes turns through the list.' },
+    ];
+  })(),
   welcome: [
     run('help.welcome'),
     { wait: 3000 },
@@ -138,7 +245,92 @@ const GROUPS = {
     { wait: 3000 },
     { shot: ['welcome.new'], crop: '.ui-welcome-head', pad: 24 },
   ],
+  workspaces: [
+    // A rearranged tool strip, then Reset layout: Quill asks about the tools.
+    { js: `__frameling.dock.setToolGroups([{ id: 'mine', tools: __frameling.tools().reverse() }])` },
+    { wait: 600 },
+    run('view.resetLayout'),
+    { wait: 900 },
+    { shot: ['workspaces.resetTools'], crop: TOAST, pad: 60 },
+    // The note about where the old single tool arrangement went: an older saved layout, then a restart.
+    { js: `(() => { const k = 'frameling.dock.v1'; const d = JSON.parse(localStorage.getItem(k)); delete d.rails; d.layout.tools.groups = [{ id: 'mine', tools: __frameling.tools().reverse() }]; localStorage.setItem(k, JSON.stringify(d)); localStorage.removeItem('frameling.dock.railNote.v1'); })()` },
+    { reload: true },
+    { js: `__frameling.overlays.closeSheet()` },
+    { wait: 1500 },
+    { shot: ['workspaces.railKept'], crop: TOAST, pad: 60 },
+  ],
+  // After a crash: the dazed Quill, in a build that can send (a pretend crash) and in one that can't.
+  crash: [
+    { js: `__frameling.crashOffer('ask')` },
+    { wait: 1400 },
+    { shot: ['crash.offer'], crop: '.bt-crash', pad: 12 },
+    { js: `document.querySelector('[data-testid="crash.no"]').click()` },
+    { wait: 400 },
+    { js: `__frameling.crashOffer('tell')` },
+    { wait: 1400 },
+    { shot: ['crash.told'], crop: '.bt-crash', pad: 12 },
+    { js: `document.querySelector('[data-testid="crash.ok"]').click()` },
+    { wait: 300 },
+    // crash.sent only shows once a send works, which a build with no key can't do; it is the same dialog with him cheering.
+  ],
+  // Quill asking whether to save: a saved drawing, and one that has never been saved.
+  save: [
+    { js: `__frameling.saveQuestion(false)` },
+    { wait: 1400 },
+    { shot: ['save.ask'], crop: '.sq', pad: 12 },
+    { js: `document.querySelector('[data-testid="save.cancel"]').click()` },
+    { wait: 300 },
+    { js: `__frameling.saveQuestion(true)` },
+    { wait: 1400 },
+    { shot: ['save.ask.never'], crop: '.sq', pad: 12 },
+    { js: `document.querySelector('[data-testid="save.cancel"]').click()` },
+    { wait: 300 },
+  ],
   about: [run('help.about'), { wait: 3000 }, { shot: ['about.quill'], crop: '.ui-about', pad: 0 }],
+  // Quill's corner and his things: a stroke, a colour, a drawing given, and the moment you get closer.
+  pet: [
+    { js: `__frameling.template('bouncing-ball')` },
+    { wait: 1200 },
+    { js: `__frameling.showPanel('quill-pet')` },
+    { wait: 1200 },
+    { shot: ['pet.hello'], crop: '.qp-says', pad: 16 },
+    { click: '.qp-pat' },
+    { wait: 900 },
+    { shot: ['pet.petted'], crop: '.qp-says', pad: 16, note: 'One of the set, picked at random.' },
+    { js: `__frameling.store().setUi({ color: '#ff6f91' })` },
+    { wait: 400 },
+    { click: '.qp-feed' },
+    { wait: 900 },
+    { shot: ['pet.fed'], crop: '.qp-says', pad: 16, note: 'One of the set.' },
+    { js: `__frameling.showPanel('quill-things')` },
+    { wait: 900 },
+    { click: '.qp-give' },
+    { wait: 1200 },
+    { shot: ['pet.given'], crop: '.qt-panel', pad: 8, note: 'One of the set.' },
+    { click: '.qp-thing' },
+    { wait: 900 },
+    { shot: ['pet.thing'], crop: '.qt-panel', pad: 8 },
+    { js: `for (let i = 0; i < 4; i++) __framelingQuillPet.tell({ kind: 'quest' })` },
+    { wait: 1200 },
+    { shot: ['pet.closer'], crop: TOAST, pad: 8, note: 'The toast when you reach a new step with him.' },
+    { js: `__framelingQuillPet.set({ ...__framelingQuillPet.get(), lastDay: '2026-01-01' }); __frameling.showPanel('quill-pet')` },
+    { wait: 1400 },
+    { shot: ['pet.hello.again'], crop: '.qp-says', pad: 16, note: 'Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you.' },
+  ],
+  // The empty page and the tip after the first drawing. The page line is quiet in the harness unless asked for.
+  nudge: [
+    { js: `window.__framelingAsk = true; __frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },
+    { wait: 900 },
+    { shot: ['nudge.page'], crop: '.cv-overlay', pad: 0 },
+    { js: `__frameling.store().setUi({ tool: 'select' })` },
+    { wait: 500 },
+    { shot: ['nudge.page.other'], crop: '.cv-overlay', pad: 0 },
+    { js: `__frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },
+    { wait: 500 },
+    { js: `__frameling.store().update('Draw', (d) => { const id = 'nd1'; d.drawings[id] = { id, kind: 'vector', shapes: [{ id: 'sh1', type: 'path', paths: [{ closed: false, points: [{ x: 300, y: 400 }, { x: 600, y: 200 }, { x: 900, y: 400 }] }], fill: null, stroke: { color: '#1d1b26', width: 8, join: 'round', cap: 'round' }, opacity: 1 }] }; d.layers[0].cels.push({ id: 'nc1', start: 0, length: d.length, drawingId: id }); })` },
+    { wait: 2200 },
+    { shot: ['nudge.drawn'], crop: TOAST, pad: 60 },
+  ],
   empty: [
     { js: `__frameling.overlays.openHelp(undefined, undefined, 'zzqxwv')` },
     { wait: 900 },
@@ -203,7 +395,7 @@ app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
   ipcMain.handle('files:read', () => ({ error: 'No such file.' }));
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
+  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   fs.mkdirSync(OUT, { recursive: true });
@@ -244,6 +436,11 @@ app.whenReady().then(async () => {
       try {
         if (s.js) await win.webContents.executeJavaScript(s.js);
         else if (s.wait) await sleep(s.wait);
+        else if (s.reload) {
+          // A restart of the app: same storage, fresh page.
+          await win.loadFile(path.join(ROOT, 'dist/renderer/index.html'), { query: { debug: '1' } });
+          await sleep(1200);
+        }
         else if (s.click) await clickAt(win, s.click);
         else if (s.key) {
           win.webContents.sendInputEvent({ type: 'keyDown', keyCode: s.key });

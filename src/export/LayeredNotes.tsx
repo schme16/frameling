@@ -1,10 +1,9 @@
 // What the PSD, PDF, Illustrator and ProRes exports keep, in a sentence or two, with a link to the full help.
 import type { Doc } from '../core/format';
 import { openHelp } from '../ui/overlays';
-import { flatPlan } from './layered';
-import type { FormatId } from './types';
+import { flatPlan, pictureCount } from './layered';
 
-const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: string; link: string }>> = {
+const NOTES: Partial<Record<string, { legend: string; text: string; help: string; link: string }>> = {
   psd: {
     legend: 'For Photoshop',
     text: 'Every layer becomes a Photoshop layer with its name, blend mode, opacity and visibility. Folders become groups and clipped layers stay clipped. Effects are baked into the pixels.',
@@ -19,7 +18,7 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
   },
   ai: {
     legend: 'For Illustrator',
-    text: 'A PDF-compatible Illustrator file. Illustrator opens it with every shape editable and your layers as Illustrator layers.',
+    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, gradients as gradients and your text as live text (it needs the text\'s font installed, or it shows another one). Hidden layers and folders come in hidden. Other programs read it as a PDF, with letter outlines and without the hidden layers.',
     help: 'export-illustrator',
     link: 'How to open it',
   },
@@ -31,10 +30,10 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
   },
 };
 
-export function LayeredNotes({ format, doc }: { format: FormatId; doc: Doc }) {
+export function LayeredNotes({ format, doc }: { format: string; doc: Doc }) {
   const n = NOTES[format];
   if (!n) return null;
-  const pictures = format === 'pdf' || format === 'ai' ? flatPlan(doc).filter((u) => u.kind === 'picture').length : 0;
+  const pictures = format === 'pdf' || format === 'ai' ? pictureCount(flatPlan(doc, 0, format === 'ai')) : 0;
   return (
     <fieldset>
       <legend>{n.legend}</legend>

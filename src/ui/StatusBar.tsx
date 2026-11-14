@@ -9,6 +9,9 @@ import { TIPS, tipText } from './tips';
 import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
+import { SnapButton } from '../canvas/SnapOptions';
+import { artSizeOf, artZoomPercent } from '../pixel/units';
+import { dock, inPixelWorkspace, showPanel } from './dock';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
@@ -33,6 +36,10 @@ export function StatusBar() {
     const b = shapesBounds(d.shapes.filter((x) => ids.has(x.id)));
     return b ? formatSize(b.w, b.h, units, docDpi(s.doc)) : '';
   });
+  // In the Pixel workspace, sizes and zoom are in art pixels: 32 x 32 and 800%, not the stage's own units.
+  const wsId = dock.use((d) => d.workspaceId);
+  const pixelWs = !!wsId && inPixelWorkspace() && pixel > 0;
+  const art = artSizeOf(w, h, pixel);
   const showTips = usePrefs((p) => p.showTips);
   const [tip, setTip] = useState(() => Math.floor(Math.random() * TIPS.length));
   const [fade, setFade] = useState(false);
@@ -54,32 +61,35 @@ export function StatusBar() {
   };
 
   const zoomCmd = getCommand('view.zoom100') ?? getCommand('view.zoomFit');
+  // Every chip opens the thing it is telling you about, with that field ready to type in.
+  const openSettings = (field: 'size' | 'fps') => void import('../canvas/DocumentSettings').then((m) => m.openDocumentSettings(field));
 
   return (
     <footer className="ui-status" data-help="status-bar">
       <button type="button" className="ui-status-item ui-status-btn" data-tip="Zoom" data-tip-desc={zoomCmd ? 'Press to jump back to a good size.' : 'How big the canvas looks.'} onClick={() => zoomCmd && runCommand(zoomCmd)}>
         <Icon name="zoom" size={14} />
-        {Math.round(zoom * 100)}%
+        {pixelWs ? artZoomPercent(zoom, pixel) : Math.round(zoom * 100)}%
       </button>
-      <span className="ui-status-item" data-tip="Drawing size" data-tip-desc={units === 'px' ? undefined : `${w} x ${h} px at ${dpi} DPI. Change units in Preferences.`}>
+      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('size')} data-tip="Drawing size" data-tip-desc={pixelWs ? `Pixels in your sprite. Each one is drawn ${pixel} times bigger on the page. Press to change the page size.` : `Press to change the page size.${units === 'px' ? '' : ` It is ${w} x ${h} px at ${dpi} DPI; change units in Preferences.`}`}>
         <Icon name={pixel ? 'pixel' : 'image'} size={14} />
-        {units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}
-        {pixel ? ` (${Math.ceil(w / pixel)} x ${Math.ceil(h / pixel)} pixels)` : ''}
-      </span>
+        {pixelWs ? `${art.w} x ${art.h} pixels` : units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}
+        {pixel && !pixelWs ? ` (${art.w} x ${art.h} pixels)` : ''}
+      </button>
       {selSize && (
         <span className="ui-status-item" data-tip="Selection size" data-tip-desc="How big the selected shapes are, outlines included.">
           <Icon name="select" size={14} />
           {selSize}
         </span>
       )}
-      <span className="ui-status-item" data-tip="Frames per second">
+      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc="Press to change how many drawings show each second.">
         <Icon name="film" size={14} />
         {fps} fps
-      </span>
-      <span className="ui-status-item" data-tip="Current frame">
+      </button>
+      <button type="button" className="ui-status-item ui-status-btn" onClick={() => showPanel('timeline')} data-tip="Current frame" data-tip-desc="Press to bring the Timeline out in front.">
         <Icon name="timeline" size={14} />
         Frame {frame + 1} of {length}
-      </span>
+      </button>
+      <SnapButton />
       <span className="ui-status-spacer" />
       {showTips && (
         <button type="button" className={`ui-status-tip${fade ? ' is-fading' : ''}`} onClick={next} data-tip="Show another tip" aria-label={`Tip: ${tipText(TIPS[tip])}. Press for another.`}>

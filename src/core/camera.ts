@@ -5,10 +5,12 @@
  * playback view: `cameraMatrix` turns stage space into what the camera sees (the output frame is the stage size).
  * Layers with a `depth` move less (further away) or more (closer) for parallax.
  */
-import type { CameraDrawing, CameraLayer, CameraView, Doc, Id, Layer } from './format';
+import type { CameraDrawing, CameraLayer, CameraView, Cel, Doc, Id, Layer } from './format';
 import { celAt, uid } from './doc';
-import { ease } from './ease';
+import { tweenEase } from './ease';
 import { invert, mul, pointOnPath, type Mat, IDENTITY_MAT } from './symbols';
+import { cutProblem, cutTween } from './tweenCut';
+import { current, isDraft } from 'immer';
 
 const RAD = Math.PI / 180;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -58,6 +60,7 @@ export function mixViews(a: CameraView, b: CameraView, t: number, spin = 0): Cam
     y: lerp(a.y, b.y, t),
     zoom: za * Math.pow(zb / za, t),
     rotation: lerp(a.rotation, b.rotation, t) + spin * 360 * t,
+    ...(a.fit ? { fit: a.fit } : {}),
   };
 }
 
@@ -72,8 +75,8 @@ export function cameraViewOn(doc: Doc, layer: Layer, frame: number): CameraView 
   const next = layer.cels[i + 1];
   const nd = next && next.start === cel.start + cel.length ? doc.drawings[next.drawingId] : undefined;
   if (nd?.kind !== 'camera') return d.view;
-  const t = ease(tw.ease, (frame - cel.start) / cel.length);
-  const v = mixViews(d.view, nd.view, t, tw.spin ?? 0);
+  const t = tweenEase(tw, (frame - cel.start) / cel.length);
+  const v = mixViews(d.view, nd.view, t, (tw.spin ?? 0) + (tw.facing ?? 0));
   if (tw.path && tw.path.points.length > 1) {
     // Same as a symbol's motion path: follow the line, bent so it still starts and ends on the two keys.
     const p0 = pointOnPath(tw.path, 0);
@@ -104,14 +107,32 @@ export function parallaxFactor(depth: number | undefined): number {
 export function cameraMatrix(doc: Pick<Doc, 'width' | 'height'>, view: CameraView, factor = 1): Mat {
   const cx = doc.width / 2;
   const cy = doc.height / 2;
-  const z = Math.pow(clampZoom(view.zoom), factor);
-  const px = cx + (view.x - cx) * factor;
-  const py = cy + (view.y - cy) * factor;
+  const z = depthScale(view, factor);
+  const a = depthAnchor(doc, view, factor);
   const r = -view.rotation * RAD;
   const c = Math.cos(r) * z;
   const s = Math.sin(r) * z;
   // translate(cx, cy) * scale(z) * rotate(r) * translate(-px, -py)
-  return [c, s, -s, c, cx - (c * px - s * py), cy - (s * px + c * py)];
+  return [c, s, -s, c, cx - (c * a.x - s * a.y), cy - (s * a.x + c * a.y)];
+}
+
+/**
+ * How much a layer `factor` along zooms (the whole view's zoom, as a scale). A view made by fitting a shot into a
+ * picture (view.fit) zooms the shot's own zoom by the factor and applies the fit after, so a far layer is the same
+ * size as the plain fit makes it.
+ */
+export function depthScale(view: CameraView, factor = 1): number {
+  const zoom = clampZoom(view.zoom);
+  const k = view.fit?.k;
+  return k && k > 0 ? k * Math.pow(zoom / k, factor) : Math.pow(zoom, factor);
+}
+
+/** The stage point a layer `factor` along keeps in the middle of the picture (pan scales with the factor). */
+export function depthAnchor(doc: Pick<Doc, 'width' | 'height'>, view: CameraView, factor = 1): { x: number; y: number } {
+  // A fitted view pans within the shot's own frame, whose middle is what the fit puts in the middle of the picture.
+  const cx = (view.fit ? view.fit.w : doc.width) / 2;
+  const cy = (view.fit ? view.fit.h : doc.height) / 2;
+  return { x: cx + (view.x - cx) * factor, y: cy + (view.y - cy) * factor };
 }
 
 /** Camera space back to stage space. */
@@ -124,6 +145,20 @@ export function layerCameraMatrix(doc: Doc, layer: Layer, view: CameraView | und
   if (!view) return undefined;
   const m = cameraMatrix(doc, view, parallaxFactor(layer.depth));
   return isIdentity(m) ? undefined : m;
+}
+
+/** How much a matrix scales lengths (the square root of its area factor). */
+export function matrixScale(m: readonly number[]): number {
+  return Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+}
+
+/**
+ * What to multiply a size by so it comes out that size in what you see: a camera zoomed in 2x shows stage lengths twice
+ * as big, so a size of 10 is 5 on the stage. 1 when there's no camera (or it's a degenerate one).
+ */
+export function sizeThroughCamera(m: readonly number[] | undefined): number {
+  const k = m ? matrixScale(m) : 1;
+  return k > 1e-6 ? 1 / k : 1;
 }
 
 export function isIdentity(m: readonly number[]): boolean {
@@ -166,10 +201,27 @@ export function setCameraKey(doc: Doc, layer: CameraLayer, frame: number, view: 
   doc.drawings[nd.id] = nd;
   if (cel) {
     const end = cel.start + cel.length;
+    const next = layer.cels.find((c) => c.start === end);
+    const nextView = next ? doc.drawings[next.drawingId] : undefined;
+    const length = cel.length;
     cel.length = frame - cel.start;
-    const c = { id: uid('c'), start: frame, length: end - frame, drawingId: nd.id, ...(cel.tween ? { tween: { ...structuredClone(stripPath(cel.tween)) } } : {}) };
-    // The path belonged to the whole old stretch; neither half can keep it sensibly.
-    if (cel.tween?.path) delete cel.tween.path;
+    const c: Cel = { id: uid('c'), start: frame, length: end - frame, drawingId: nd.id };
+    const at = cel.length / length;
+    // On a draft, work from a plain copy of the tween.
+    const tw = cel.tween && isDraft(cel.tween) ? current(cel.tween) : cel.tween;
+    if (tw && nextView?.kind === 'camera' && !cutProblem(tw, at, length)) {
+      // Cut the glide at this frame: each half plays its part of the easing and takes its share of the spin and its
+      // piece of the motion path, so the motion before and after stays as it was. The new key then takes the view.
+      const halves = cutTween(tw, at, false);
+      // Whole turns of spin already done are taken off the key (they look the same), as the halves share them.
+      nd.view.rotation -= halves.turns * 360;
+      cel.tween = halves.first;
+      c.tween = halves.second;
+    } else if (tw) {
+      // A glide that can't be cut here (easing runs back over the path): neither half can keep the path.
+      c.tween = structuredClone(stripPath(tw));
+      if (cel.tween?.path) delete cel.tween.path;
+    }
     layer.cels.push(c);
   } else {
     const after = layer.cels.find((c) => c.start > frame);

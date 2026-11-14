@@ -41,7 +41,7 @@ export function drawingsSize(ds: Drawing[]): number {
     y1 = Math.max(y1, y + r);
   };
   for (const d of ds) {
-    if (d.kind === 'pixel') pt(0, 0), pt(d.width, d.height);
+    if (d.kind === 'pixel') d.width > 0 && d.height > 0 && (pt(d.x ?? 0, d.y ?? 0), pt((d.x ?? 0) + d.width, (d.y ?? 0) + d.height));
     else if (d.kind === 'vector')
       for (const s of d.shapes) {
         if (s.type === 'stroke') for (const p of s.points) pt(p.x, p.y, s.brush.size / 2);

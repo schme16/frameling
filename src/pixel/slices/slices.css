@@ -1,0 +1,166 @@
+/* The Slices panel. Theme tokens only. */
+.sl-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+.sl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sl-item {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+}
+.sl-item.open {
+  border-color: var(--line);
+}
+.sl-head {
+  display: flex;
+  align-items: center;
+}
+.sl-pick {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+.sl-pick b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sl-size {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+.sl-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.sl-del {
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.sl-del:hover {
+  color: var(--text);
+}
+.sl-pick:focus-visible,
+.sl-del:focus-visible,
+.sl-name input:focus-visible,
+.sl-num input:focus-visible,
+.sl-check input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.sl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 8px 10px;
+}
+.sl-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.sl-name input[type='text'],
+.sl-num input {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 4px 6px;
+  min-width: 0;
+}
+.sl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sl-num {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.sl-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+/* Slices grouped by board and layer. */
+.sl-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sl-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.sl-group-head b {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sl-group-note {
+  font-size: var(--fs-small);
+}
+.sl-open {
+  margin-left: auto;
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.sl-open:hover {
+  border-color: var(--focus);
+}
+.sl-open:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

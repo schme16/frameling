@@ -125,6 +125,17 @@
   background: color-mix(in srgb, var(--sky) 25%, var(--panel-2));
   border: 1px solid color-mix(in srgb, var(--sky) 55%, transparent);
 }
+.tl-lighttable {
+  padding-left: 2px;
+}
+.tl-lighttable .tl-btn {
+  gap: 4px;
+  width: auto;
+  padding: 0 6px;
+}
+.tl-lighttable input[type='range'] {
+  width: 64px;
+}
 .tl-zoom {
   display: inline-flex;
   align-items: center;
@@ -174,6 +185,11 @@
 .tl-hold-item.is-on span {
   color: inherit;
 }
+.tl-hold-menu strong {
+  display: inline-block;
+  min-width: 4ch;
+  text-align: left;
+}
 .tl-hold-pop {
   width: 200px;
 }
@@ -184,9 +200,6 @@
   .tl-hold-menu {
     display: inline-flex;
   }
-  .tl-btn-frame .tl-btn-text {
-    display: none;
-  }
   .tl-zoom input {
     width: 64px;
   }
@@ -196,13 +209,13 @@
   .tl-header {
     column-gap: 6px;
   }
+  /* The "for" in "Hold for 1" goes when the bar is tight. */
   .tl-long {
     display: none;
   }
   .tl-zoom input {
     width: 48px;
   }
-  .tl-zoom svg,
   .tl-header > .tl-sep:nth-of-type(2) {
     display: none;
   }
@@ -220,7 +233,8 @@
   position: relative;
   background: var(--panel-2);
 }
-.tl-body[data-dragging] {
+.tl-body[data-dragging],
+.tl-body.is-panning {
   cursor: grabbing;
 }
 /* Sticky parts need a parent as wide as the content, or they let go when you scroll past the visible width. */
@@ -259,8 +273,49 @@
 }
 .tl-layer-tools-title {
   flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   color: var(--muted);
   font-weight: 700;
+}
+.tl-layer-new,
+.tl-layer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tl-layer-new-label {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* In the panel the duplicate and delete buttons follow the two add buttons, and wrap under them when the panel is narrow. */
+.in-panel .tl-layer-actions {
+  margin-left: 4px;
+}
+.tl-shared-chip {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tl-shared-note {
+  flex: 0 0 100%;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.tl-shared-note b {
+  color: var(--text);
 }
 .tl-layer-tools .tl-btn {
   height: 24px;
@@ -477,6 +532,37 @@
   width: 8px;
 }
 
+/* The play range (in and out): frames outside it are dimmed, with a bracket at each end to drag. */
+.tl-io-dim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  pointer-events: none;
+}
+.tl-io {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 8px;
+  padding: 0;
+  border: 2px solid var(--mint, #4fd1a5);
+  background: transparent;
+  cursor: ew-resize;
+  z-index: 2;
+}
+.tl-io-in {
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+}
+.tl-io-out {
+  border-left: 0;
+  border-radius: 0 3px 3px 0;
+}
+.tl-io:hover {
+  background: color-mix(in srgb, var(--mint, #4fd1a5) 30%, transparent);
+}
+
 .tl-marks,
 .tl-clips {
   position: relative;
@@ -535,7 +621,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 5px;
+  /* Never wider than its frames, so neighbours don't overlap: short ones show an icon, then just the colour (see clipLayout.ts). */
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--sky) 60%, transparent);
   border-radius: var(--radius-small);
@@ -543,10 +630,30 @@
   font-size: 11px;
   cursor: pointer;
 }
+.tl-clip[data-mode='icon'] {
+  justify-content: center;
+  padding: 0 2px;
+}
+.tl-clip[data-mode='bar'] {
+  padding: 0;
+  border-radius: 2px;
+}
+.tl-clip:focus-visible {
+  outline: 2px solid var(--focus, var(--sunny-deep));
+  outline-offset: 1px;
+  z-index: 3;
+}
+/* While its name is being typed the box needs its room, over the neighbours for a moment. */
+.tl-clip.is-editing {
+  overflow: visible;
+  min-width: 110px;
+  z-index: 4;
+}
 .tl-clip:hover {
   background: color-mix(in srgb, var(--sky) 40%, var(--panel));
 }
 .tl-clip.is-picked {
+  z-index: 2;
   background: var(--chosen-bg);
   border-color: var(--sunny-deep);
   color: var(--chosen-fg);
@@ -554,6 +661,24 @@
 .tl-clip-loop {
   flex: none;
   opacity: 0.8;
+}
+.tl-clip-back {
+  transform: scaleX(-1);
+}
+.tl-clip-times {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.tl-menu-times {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.tl-menu-times input {
+  width: 4.5em;
 }
 .tl-clip-edge {
   position: absolute;
@@ -865,4 +990,209 @@
 /* Per-layer onion skin switch: faded when the layer is left out. */
 .tl-layer-onion.is-off {
   opacity: 0.35;
+}
+
+/* The offer to make in-betweens on a clicked span between two keys. Small, and out of the way of the cels. */
+.tl-offer {
+  position: absolute;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 3px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.22);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  animation: tl-offer-in 140ms var(--ease);
+}
+.tl-offer-text {
+  color: var(--muted);
+  margin-right: 2px;
+}
+.tl-offer-btn,
+.tl-offer-x {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+.tl-offer-btn:hover,
+.tl-offer-btn:focus-visible {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tl-offer-x {
+  padding: 0 5px;
+  color: var(--muted);
+}
+.tl-offer-x:hover,
+.tl-offer-x:focus-visible {
+  color: var(--text);
+}
+@keyframes tl-offer-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-offer {
+    animation: none;
+  }
+}
+
+/* The header stays on one row: chips and labels fold to short forms as the timeline gets narrower. */
+.tl-header {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.tl-header > * {
+  flex-shrink: 0;
+}
+.tl-chip-short {
+  display: none;
+}
+@container tl (max-width: 1240px) {
+  .tl-range .tl-chip-long {
+    display: none;
+  }
+  .tl-range .tl-chip-short {
+    display: inline;
+  }
+  .tl-lighttable input[type='range'] {
+    width: 44px;
+  }
+}
+@container tl (max-width: 1040px) {
+  .tl-counter-time {
+    display: none;
+  }
+  .tl-counter {
+    min-width: 0;
+  }
+  .tl-fps span {
+    display: none;
+  }
+}
+@container tl (max-width: 960px) {
+  .tl-zoom input {
+    width: 40px;
+  }
+}
+@container tl (max-width: 860px) {
+  .tl-lighttable input[type='range'],
+  .tl-header > .tl-sep {
+    display: none;
+  }
+  .tl-header {
+    column-gap: 4px;
+  }
+  .tl-counter-frame {
+    font-size: 11px;
+  }
+}
+.tl-layer-name > small {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.tl-overflow {
+  display: none;
+}
+/*
+ * Folding: Header.tsx measures the real width and lists what it folded in data-folded (rarest first). The "more" button
+ * shows only while something is folded.
+ */
+.tl-overflow {
+  position: relative;
+}
+.tl-overflow-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+.tl-header[data-folded]:not([data-folded='']) .tl-overflow {
+  display: inline-flex;
+}
+/* The words beside icons go first (Header.tsx lists the dropped ones in data-bare), then buttons fold into "more". */
+.tl-header[data-bare~='onion'] [data-word='onion'],
+.tl-header[data-bare~='frame'] [data-word='frame'],
+.tl-header[data-bare~='copy'] [data-word='copy'],
+.tl-header[data-bare~='new'] [data-word='new'],
+.tl-header[data-folded~='pingpong'] [data-step='pingpong'],
+.tl-header[data-folded~='sound'] [data-step='sound'],
+.tl-header[data-folded~='clean'] [data-step='clean'],
+.tl-header[data-folded~='fit'] [data-step='fit'],
+.tl-header[data-folded~='edit'] [data-step='edit'],
+.tl-header[data-folded~='hold'] [data-step='hold'],
+.tl-header[data-folded~='onion'] [data-step='onion'],
+.tl-header[data-folded~='zoom'] [data-step='zoom'],
+.tl-header[data-folded~='onion'][data-folded~='hold'] [data-sep='2'],
+.tl-header[data-folded~='onion'][data-folded~='hold'][data-folded~='edit'] [data-sep='1'] {
+  display: none;
+}
+
+/* Little text marks drawn by CSS, so a row's text is just its name (the row's label says the rest). */
+.tl-glyph::before {
+  content: attr(data-glyph);
+}
+
+/* The Plays and Repeat fields of a clip (the Clip section of Properties, and the clip flow panel). */
+.fl-trigger-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.fl-trigger-name input {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+  font: inherit;
+}
+.tl-clip-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------- the Layers panel (src/timeline/LayersPanel.tsx) */
+
+.lp-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.lp-panel .tl-layer-tools.in-panel {
+  flex: none;
+  height: auto;
+  border-bottom: 1px solid var(--line);
+}
+.lp-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+/* In the panel the rows fill the width, with no timeline column to keep to. */
+.lp-list .tl-layers {
+  width: 100%;
 }

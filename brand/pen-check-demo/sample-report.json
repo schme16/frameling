@@ -1,0 +1,4367 @@
+{
+  "kind": "frameling-tablet-report",
+  "version": 2,
+  "createdAt": "2026-11-12T13:13:49.108Z",
+  "app": {
+    "version": "45.3.0",
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96"
+  },
+  "system": {
+    "platform": "linux",
+    "session": {
+      "type": "x11",
+      "desktop": "zorin:GNOME",
+      "wayland": false,
+      "x11": true,
+      "ozone": "x11"
+    },
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.96 Electron/45.3.0 Safari/537.36",
+    "devicePixelRatio": 1,
+    "screen": {
+      "width": 1600,
+      "height": 1000
+    },
+    "maxTouchPoints": 0
+  },
+  "support": {
+    "pointerEvents": true,
+    "coalesced": true,
+    "predicted": true,
+    "altitudeAzimuth": true
+  },
+  "devices": {
+    "pointerTypes": {
+      "pen": 744
+    },
+    "pointerIds": 4,
+    "persistentIds": 0,
+    "hid": {
+      "available": true,
+      "devices": []
+    },
+    "note": "Browsers do not say which tablet is plugged in. HID devices are listed only when already allowed."
+  },
+  "settings": {
+    "pen": {
+      "curve": {
+        "x1": 0.3333333333333333,
+        "y1": 0.3333333333333333,
+        "x2": 0.6666666666666666,
+        "y2": 0.6666666666666666
+      },
+      "min": 0,
+      "max": 1,
+      "tiltAmount": 60,
+      "eraserEnd": true,
+      "barrel1": "eyedropper",
+      "barrel2": "pan"
+    },
+    "touch": {
+      "oneFinger": "draw",
+      "twoFingers": true,
+      "palmRejection": true
+    },
+    "tools": {
+      "brush": {
+        "size": false,
+        "opacity": false,
+        "flow": false,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      },
+      "pencil": {
+        "size": false,
+        "opacity": false,
+        "flow": false,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      },
+      "eraser": {
+        "size": false,
+        "opacity": false,
+        "flow": false,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      },
+      "spray": {
+        "size": false,
+        "opacity": false,
+        "flow": true,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      },
+      "shade": {
+        "size": false,
+        "opacity": false,
+        "flow": false,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      },
+      "dither": {
+        "size": false,
+        "opacity": false,
+        "flow": false,
+        "tilt": false,
+        "stabilizer": 0,
+        "stabMode": "string"
+      }
+    },
+    "seen": false
+  },
+  "pressure": {
+    "min": 0,
+    "max": 1,
+    "distinctValues": 72,
+    "histogram": [
+      38,
+      12,
+      7,
+      6,
+      4,
+      177,
+      226,
+      3,
+      3,
+      3
+    ],
+    "curve": [
+      [
+        0,
+        0
+      ],
+      [
+        0.1,
+        0.1
+      ],
+      [
+        0.2,
+        0.2
+      ],
+      [
+        0.3,
+        0.3
+      ],
+      [
+        0.4,
+        0.4
+      ],
+      [
+        0.5,
+        0.5
+      ],
+      [
+        0.6,
+        0.6
+      ],
+      [
+        0.7,
+        0.7
+      ],
+      [
+        0.8,
+        0.8
+      ],
+      [
+        0.9,
+        0.9
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "tangential": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "tilt": {
+    "tiltX": {
+      "min": -52,
+      "max": 52
+    },
+    "tiltY": {
+      "min": 0,
+      "max": 18
+    },
+    "altitude": {
+      "min": 0.648,
+      "max": 1.571
+    },
+    "azimuth": {
+      "min": 0,
+      "max": 3.142
+    }
+  },
+  "twist": {
+    "min": 0,
+    "max": 220
+  },
+  "contactSize": {
+    "min": 1,
+    "max": 1
+  },
+  "buttons": {
+    "eventCodes": {
+      "pointermove:-1": 728,
+      "pointerdown:0": 7,
+      "pointerup:0": 7,
+      "pointerdown:5": 1,
+      "pointerup:5": 1
+    },
+    "buttonsBitmasks": {
+      "0": 273,
+      "1": 372,
+      "3": 27,
+      "5": 27,
+      "33": 45
+    },
+    "eraserDetected": true,
+    "eraserBy": "bit",
+    "barrel1Detected": true,
+    "barrel2Detected": true,
+    "rawBarrelBits": [
+      2,
+      4
+    ],
+    "barrelsSwapped": true
+  },
+  "rate": {
+    "moveEvents": 463,
+    "coalescedSamples": 463,
+    "maxCoalescedPerEvent": 1,
+    "scribbleSeconds": 3.458,
+    "moveEventsPerSecond": 133.9,
+    "samplesPerSecond": 133.9,
+    "medianSampleGapMs": 36.8,
+    "estimatedHz": 27
+  },
+  "predicted": {
+    "askedOnMoves": 728,
+    "moveEventsWithPredicted": 0,
+    "maxPredictedPerEvent": 0
+  },
+  "keys": {
+    "count": 1,
+    "wheelEvents": 0,
+    "seen": [
+      {
+        "key": "F13",
+        "code": "F13"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "hover",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 6,
+        "hover": 6,
+        "contact": 0,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": null,
+          "max": null
+        },
+        "tiltX": {
+          "min": 0,
+          "max": 0
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 0
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 6
+        },
+        "eventCodes": {},
+        "pointerIds": [
+          2
+        ],
+        "pointerIdChanges": 0,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "pressure",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 141,
+        "hover": 75,
+        "contact": 66,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0.03999999910593033,
+          "max": 0.6649244427680969
+        },
+        "tiltX": {
+          "min": 0,
+          "max": 0
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 0
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 75,
+          "1": 66
+        },
+        "eventCodes": {
+          "pointerdown:0": 1
+        },
+        "pointerIds": [
+          2
+        ],
+        "pointerIdChanges": 0,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "tilt",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 86,
+        "hover": 34,
+        "contact": 52,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 1
+        },
+        "tiltX": {
+          "min": -52,
+          "max": 17
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 18
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 36,
+          "1": 50
+        },
+        "eventCodes": {
+          "pointerup:0": 2,
+          "pointerdown:0": 2
+        },
+        "pointerIds": [
+          2
+        ],
+        "pointerIdChanges": 0,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "twist",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 95,
+        "hover": 17,
+        "contact": 78,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.6000000238418579
+        },
+        "tiltX": {
+          "min": 22,
+          "max": 52
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 18
+        },
+        "twist": {
+          "min": 0,
+          "max": 48
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 18,
+          "1": 77
+        },
+        "eventCodes": {
+          "pointerup:0": 1,
+          "pointerdown:0": 1
+        },
+        "pointerIds": [
+          2
+        ],
+        "pointerIdChanges": 0,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "eraser",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 110,
+        "hover": 80,
+        "contact": 30,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.6000000238418579
+        },
+        "tiltX": {
+          "min": 0,
+          "max": 22
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 4
+        },
+        "twist": {
+          "min": 0,
+          "max": 220
+        },
+        "eraser": 1,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 81,
+          "1": 28,
+          "33": 1
+        },
+        "eventCodes": {
+          "pointerup:0": 1,
+          "pointerdown:5": 1
+        },
+        "pointerIds": [
+          2,
+          41
+        ],
+        "pointerIdChanges": 1,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "barrel1",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 47,
+        "hover": 1,
+        "contact": 46,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.550000011920929
+        },
+        "tiltX": {
+          "min": 8,
+          "max": 8
+        },
+        "tiltY": {
+          "min": 4,
+          "max": 4
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 45,
+        "eraserGuess": 0,
+        "barrel1": 1,
+        "barrel2": 0,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 1
+        },
+        "buttonsMasks": {
+          "0": 2,
+          "5": 1,
+          "33": 44
+        },
+        "eventCodes": {
+          "pointerup:5": 1,
+          "pointerdown:0": 1
+        },
+        "pointerIds": [
+          41,
+          42
+        ],
+        "pointerIdChanges": 1,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "barrel2",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 29,
+        "hover": 1,
+        "contact": 28,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.550000011920929
+        },
+        "tiltX": {
+          "min": 8,
+          "max": 8
+        },
+        "tiltY": {
+          "min": 4,
+          "max": 4
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 26,
+        "barrel2": 1,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 1,
+          "bit4": 26
+        },
+        "buttonsMasks": {
+          "0": 2,
+          "3": 1,
+          "5": 26
+        },
+        "eventCodes": {
+          "pointerup:0": 1,
+          "pointerdown:0": 1
+        },
+        "pointerIds": [
+          42,
+          43
+        ],
+        "pointerIdChanges": 1,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "scribble",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 47,
+        "hover": 17,
+        "contact": 30,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.699999988079071
+        },
+        "tiltX": {
+          "min": 8,
+          "max": 8
+        },
+        "tiltY": {
+          "min": 4,
+          "max": 6
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 26,
+        "keys": 0,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 26,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 18,
+          "1": 3,
+          "3": 26
+        },
+        "eventCodes": {
+          "pointerup:0": 1,
+          "pointerdown:0": 1
+        },
+        "pointerIds": [
+          43,
+          2
+        ],
+        "pointerIdChanges": 1,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    },
+    {
+      "id": "keys",
+      "status": "done",
+      "session": {
+        "type": "x11",
+        "window": "x11"
+      },
+      "seen": {
+        "penEvents": 183,
+        "hover": 34,
+        "contact": 149,
+        "otherPointerEvents": 0,
+        "pressure": {
+          "min": 0,
+          "max": 0.699999988079071
+        },
+        "tiltX": {
+          "min": -12,
+          "max": 8
+        },
+        "tiltY": {
+          "min": 0,
+          "max": 6
+        },
+        "twist": {
+          "min": 0,
+          "max": 0
+        },
+        "eraser": 0,
+        "eraserGuess": 0,
+        "barrel1": 0,
+        "barrel2": 0,
+        "keys": 1,
+        "wheels": 0,
+        "rawBitCounts": {
+          "bit2": 0,
+          "bit4": 0
+        },
+        "buttonsMasks": {
+          "0": 35,
+          "1": 148
+        },
+        "eventCodes": {
+          "pointerup:0": 1
+        },
+        "pointerIds": [
+          2
+        ],
+        "pointerIdChanges": 0,
+        "persistentDeviceIds": [],
+        "persistentDeviceIdChanges": 0
+      }
+    }
+  ],
+  "hints": [],
+  "trace": {
+    "columns": [
+      "ms",
+      "type",
+      "x",
+      "y",
+      "pressure",
+      "tiltX",
+      "tiltY",
+      "twist",
+      "button",
+      "buttons"
+    ],
+    "samples": [
+      [
+        0,
+        "pointermove",
+        498,
+        442,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        60,
+        "pointermove",
+        495,
+        442,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        98,
+        "pointermove",
+        490,
+        441,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        145,
+        "pointermove",
+        483,
+        439,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        187,
+        "pointermove",
+        474,
+        438,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        222,
+        "pointermove",
+        464,
+        436,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        257,
+        "pointermove",
+        454,
+        434,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        313,
+        "pointermove",
+        442,
+        432,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        366,
+        "pointermove",
+        429,
+        429,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        403,
+        "pointermove",
+        416,
+        427,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        434,
+        "pointermove",
+        403,
+        425,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        481,
+        "pointermove",
+        389,
+        422,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        521,
+        "pointermove",
+        376,
+        420,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        561,
+        "pointermove",
+        363,
+        417,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        602,
+        "pointermove",
+        351,
+        415,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        640,
+        "pointermove",
+        339,
+        413,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        673,
+        "pointermove",
+        328,
+        410,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        705,
+        "pointermove",
+        318,
+        409,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        745,
+        "pointermove",
+        310,
+        407,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        810,
+        "pointermove",
+        303,
+        406,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        870,
+        "pointermove",
+        297,
+        405,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        901,
+        "pointermove",
+        294,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        932,
+        "pointermove",
+        293,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        985,
+        "pointermove",
+        293,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1043,
+        "pointermove",
+        310,
+        412,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1074,
+        "pointermove",
+        328,
+        420,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1121,
+        "pointermove",
+        345,
+        427,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1153,
+        "pointermove",
+        363,
+        434,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1185,
+        "pointermove",
+        380,
+        440,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1224,
+        "pointermove",
+        397,
+        445,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1258,
+        "pointermove",
+        415,
+        449,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1290,
+        "pointermove",
+        432,
+        452,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1356,
+        "pointermove",
+        450,
+        454,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1387,
+        "pointermove",
+        467,
+        455,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1450,
+        "pointermove",
+        484,
+        454,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1481,
+        "pointermove",
+        502,
+        452,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1533,
+        "pointermove",
+        519,
+        449,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1604,
+        "pointermove",
+        537,
+        445,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1639,
+        "pointermove",
+        554,
+        440,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1670,
+        "pointermove",
+        571,
+        434,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1719,
+        "pointermove",
+        589,
+        427,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1750,
+        "pointermove",
+        606,
+        420,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1790,
+        "pointermove",
+        624,
+        412,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1821,
+        "pointermove",
+        641,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1884,
+        "pointermove",
+        658,
+        396,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1919,
+        "pointermove",
+        676,
+        388,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1951,
+        "pointermove",
+        693,
+        381,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        1983,
+        "pointermove",
+        711,
+        374,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2027,
+        "pointermove",
+        728,
+        368,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2059,
+        "pointermove",
+        745,
+        363,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2105,
+        "pointermove",
+        763,
+        359,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2136,
+        "pointermove",
+        780,
+        356,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2179,
+        "pointermove",
+        798,
+        354,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2211,
+        "pointermove",
+        815,
+        353,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2253,
+        "pointermove",
+        832,
+        354,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2286,
+        "pointermove",
+        850,
+        356,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2325,
+        "pointermove",
+        867,
+        359,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2363,
+        "pointermove",
+        885,
+        363,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2425,
+        "pointermove",
+        902,
+        368,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2458,
+        "pointermove",
+        919,
+        374,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2492,
+        "pointermove",
+        937,
+        381,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2538,
+        "pointermove",
+        954,
+        388,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2573,
+        "pointermove",
+        972,
+        396,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        2612,
+        "pointermove",
+        989,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4155,
+        "pointermove",
+        982,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4191,
+        "pointermove",
+        962,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4223,
+        "pointermove",
+        930,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4253,
+        "pointermove",
+        889,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4301,
+        "pointermove",
+        840,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4332,
+        "pointermove",
+        785,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4385,
+        "pointermove",
+        726,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4423,
+        "pointermove",
+        664,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4488,
+        "pointermove",
+        601,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4518,
+        "pointermove",
+        539,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4554,
+        "pointermove",
+        479,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4588,
+        "pointermove",
+        424,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4621,
+        "pointermove",
+        376,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4657,
+        "pointermove",
+        334,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4693,
+        "pointermove",
+        303,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4726,
+        "pointermove",
+        283,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4775,
+        "pointermove",
+        276,
+        404,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        4960,
+        "pointerdown",
+        276,
+        404,
+        0.04,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        4962,
+        "pointermove",
+        285,
+        405,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5023,
+        "pointermove",
+        295,
+        407,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5077,
+        "pointermove",
+        305,
+        408,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5109,
+        "pointermove",
+        315,
+        410,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5174,
+        "pointermove",
+        324,
+        411,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5205,
+        "pointermove",
+        334,
+        413,
+        0.04,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5237,
+        "pointermove",
+        344,
+        414,
+        0.041,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5303,
+        "pointermove",
+        354,
+        415,
+        0.041,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5338,
+        "pointermove",
+        363,
+        416,
+        0.042,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5380,
+        "pointermove",
+        373,
+        418,
+        0.042,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5414,
+        "pointermove",
+        383,
+        419,
+        0.043,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5455,
+        "pointermove",
+        393,
+        420,
+        0.044,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5517,
+        "pointermove",
+        402,
+        421,
+        0.045,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5573,
+        "pointermove",
+        412,
+        422,
+        0.046,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5632,
+        "pointermove",
+        422,
+        422,
+        0.048,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5696,
+        "pointermove",
+        432,
+        423,
+        0.049,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5745,
+        "pointermove",
+        441,
+        424,
+        0.051,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5805,
+        "pointermove",
+        451,
+        424,
+        0.053,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5839,
+        "pointermove",
+        461,
+        425,
+        0.056,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5883,
+        "pointermove",
+        470,
+        425,
+        0.058,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        5956,
+        "pointermove",
+        480,
+        426,
+        0.061,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6024,
+        "pointermove",
+        490,
+        426,
+        0.064,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6090,
+        "pointermove",
+        500,
+        426,
+        0.068,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6123,
+        "pointermove",
+        509,
+        426,
+        0.071,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6176,
+        "pointermove",
+        519,
+        426,
+        0.076,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6233,
+        "pointermove",
+        529,
+        426,
+        0.08,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6285,
+        "pointermove",
+        539,
+        425,
+        0.085,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6338,
+        "pointermove",
+        548,
+        425,
+        0.09,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6431,
+        "pointermove",
+        558,
+        424,
+        0.095,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6503,
+        "pointermove",
+        568,
+        424,
+        0.101,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6564,
+        "pointermove",
+        578,
+        423,
+        0.108,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6603,
+        "pointermove",
+        587,
+        422,
+        0.115,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6641,
+        "pointermove",
+        597,
+        422,
+        0.122,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6708,
+        "pointermove",
+        607,
+        421,
+        0.129,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6764,
+        "pointermove",
+        617,
+        420,
+        0.138,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6818,
+        "pointermove",
+        626,
+        419,
+        0.146,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6885,
+        "pointermove",
+        636,
+        418,
+        0.155,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6942,
+        "pointermove",
+        646,
+        416,
+        0.165,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        6996,
+        "pointermove",
+        656,
+        415,
+        0.175,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7049,
+        "pointermove",
+        665,
+        414,
+        0.186,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7110,
+        "pointermove",
+        675,
+        413,
+        0.197,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7167,
+        "pointermove",
+        685,
+        411,
+        0.209,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7201,
+        "pointermove",
+        695,
+        410,
+        0.221,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7250,
+        "pointermove",
+        704,
+        409,
+        0.234,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7324,
+        "pointermove",
+        714,
+        407,
+        0.247,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7400,
+        "pointermove",
+        724,
+        406,
+        0.261,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7477,
+        "pointermove",
+        734,
+        404,
+        0.276,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7512,
+        "pointermove",
+        743,
+        403,
+        0.292,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7554,
+        "pointermove",
+        753,
+        401,
+        0.308,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7624,
+        "pointermove",
+        763,
+        400,
+        0.324,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7696,
+        "pointermove",
+        773,
+        398,
+        0.342,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7730,
+        "pointermove",
+        782,
+        397,
+        0.36,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7770,
+        "pointermove",
+        792,
+        396,
+        0.379,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7824,
+        "pointermove",
+        802,
+        394,
+        0.398,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7881,
+        "pointermove",
+        812,
+        393,
+        0.419,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7935,
+        "pointermove",
+        821,
+        392,
+        0.44,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        7990,
+        "pointermove",
+        831,
+        391,
+        0.461,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8049,
+        "pointermove",
+        841,
+        390,
+        0.484,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8135,
+        "pointermove",
+        850,
+        388,
+        0.507,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8191,
+        "pointermove",
+        860,
+        387,
+        0.532,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8248,
+        "pointermove",
+        870,
+        387,
+        0.557,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8301,
+        "pointermove",
+        880,
+        386,
+        0.582,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8360,
+        "pointermove",
+        889,
+        385,
+        0.609,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8391,
+        "pointermove",
+        899,
+        384,
+        0.637,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8450,
+        "pointermove",
+        909,
+        384,
+        0.665,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8511,
+        "pointermove",
+        919,
+        383,
+        0.694,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8565,
+        "pointermove",
+        928,
+        383,
+        0.724,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8620,
+        "pointermove",
+        938,
+        383,
+        0.756,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8673,
+        "pointermove",
+        948,
+        382,
+        0.788,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8728,
+        "pointermove",
+        958,
+        382,
+        0.821,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8791,
+        "pointermove",
+        967,
+        382,
+        0.854,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8850,
+        "pointermove",
+        977,
+        382,
+        0.889,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        8924,
+        "pointermove",
+        987,
+        382,
+        0.925,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        9000,
+        "pointermove",
+        997,
+        383,
+        0.962,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        9064,
+        "pointermove",
+        1006,
+        383,
+        1,
+        0,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        9119,
+        "pointerup",
+        1006,
+        383,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        10772,
+        "pointermove",
+        999,
+        383,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        10823,
+        "pointermove",
+        979,
+        382,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        10881,
+        "pointermove",
+        948,
+        382,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        10913,
+        "pointermove",
+        906,
+        381,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        10963,
+        "pointermove",
+        858,
+        380,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        10998,
+        "pointermove",
+        803,
+        379,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11058,
+        "pointermove",
+        743,
+        377,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11088,
+        "pointermove",
+        681,
+        376,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11140,
+        "pointermove",
+        618,
+        375,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11170,
+        "pointermove",
+        556,
+        373,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11200,
+        "pointermove",
+        497,
+        372,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11248,
+        "pointermove",
+        442,
+        371,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11284,
+        "pointermove",
+        393,
+        370,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11316,
+        "pointermove",
+        352,
+        369,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11346,
+        "pointermove",
+        320,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11401,
+        "pointermove",
+        300,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11431,
+        "pointermove",
+        293,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        11630,
+        "pointerdown",
+        293,
+        368,
+        0.55,
+        0,
+        18,
+        0,
+        0,
+        1
+      ],
+      [
+        11631,
+        "pointermove",
+        302,
+        375,
+        0.55,
+        -9,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11701,
+        "pointermove",
+        310,
+        380,
+        0.55,
+        -17,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11763,
+        "pointermove",
+        319,
+        384,
+        0.55,
+        -26,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11819,
+        "pointermove",
+        328,
+        386,
+        0.55,
+        -35,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11876,
+        "pointermove",
+        337,
+        385,
+        0.55,
+        -43,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11934,
+        "pointermove",
+        345,
+        381,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        11990,
+        "pointermove",
+        354,
+        375,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12049,
+        "pointermove",
+        363,
+        368,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12109,
+        "pointermove",
+        371,
+        361,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12150,
+        "pointermove",
+        380,
+        355,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12207,
+        "pointermove",
+        389,
+        351,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12282,
+        "pointermove",
+        397,
+        349,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12324,
+        "pointermove",
+        406,
+        350,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12370,
+        "pointermove",
+        415,
+        354,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12411,
+        "pointermove",
+        424,
+        360,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12465,
+        "pointermove",
+        432,
+        366,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12524,
+        "pointermove",
+        441,
+        373,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12565,
+        "pointermove",
+        450,
+        380,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12633,
+        "pointermove",
+        458,
+        384,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12700,
+        "pointermove",
+        467,
+        386,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12746,
+        "pointermove",
+        476,
+        385,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12820,
+        "pointermove",
+        484,
+        382,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12862,
+        "pointermove",
+        493,
+        376,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12938,
+        "pointermove",
+        502,
+        369,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        12985,
+        "pointermove",
+        511,
+        362,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13040,
+        "pointermove",
+        519,
+        356,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13081,
+        "pointermove",
+        528,
+        352,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13130,
+        "pointermove",
+        537,
+        350,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13189,
+        "pointermove",
+        545,
+        350,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13230,
+        "pointermove",
+        554,
+        353,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13286,
+        "pointermove",
+        563,
+        359,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13331,
+        "pointermove",
+        571,
+        365,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13406,
+        "pointermove",
+        580,
+        372,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13451,
+        "pointermove",
+        589,
+        379,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13529,
+        "pointermove",
+        598,
+        383,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13590,
+        "pointermove",
+        606,
+        386,
+        0.55,
+        -52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        13631,
+        "pointerup",
+        606,
+        386,
+        0,
+        -52,
+        18,
+        0,
+        0,
+        0
+      ],
+      [
+        13882,
+        "pointermove",
+        607,
+        385,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        13946,
+        "pointermove",
+        609,
+        385,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        13987,
+        "pointermove",
+        612,
+        384,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14048,
+        "pointermove",
+        616,
+        383,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14078,
+        "pointermove",
+        621,
+        382,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14127,
+        "pointermove",
+        626,
+        380,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14181,
+        "pointermove",
+        632,
+        379,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14211,
+        "pointermove",
+        638,
+        377,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14258,
+        "pointermove",
+        644,
+        376,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14299,
+        "pointermove",
+        650,
+        374,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14338,
+        "pointermove",
+        656,
+        373,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14371,
+        "pointermove",
+        661,
+        371,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14409,
+        "pointermove",
+        666,
+        370,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14450,
+        "pointermove",
+        670,
+        369,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14489,
+        "pointermove",
+        673,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14523,
+        "pointermove",
+        675,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14581,
+        "pointermove",
+        676,
+        368,
+        0,
+        0,
+        18,
+        0,
+        -1,
+        0
+      ],
+      [
+        14779,
+        "pointerdown",
+        676,
+        368,
+        0.55,
+        0,
+        18,
+        0,
+        0,
+        1
+      ],
+      [
+        14781,
+        "pointermove",
+        685,
+        375,
+        0.55,
+        9,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        14857,
+        "pointermove",
+        693,
+        380,
+        0.55,
+        17,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        14904,
+        "pointermove",
+        702,
+        384,
+        0.55,
+        26,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        14971,
+        "pointermove",
+        711,
+        386,
+        0.55,
+        35,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15020,
+        "pointermove",
+        719,
+        385,
+        0.55,
+        43,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15077,
+        "pointermove",
+        728,
+        381,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15126,
+        "pointermove",
+        737,
+        375,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15182,
+        "pointermove",
+        745,
+        368,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15235,
+        "pointermove",
+        754,
+        361,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15285,
+        "pointermove",
+        763,
+        355,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15344,
+        "pointermove",
+        772,
+        351,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15395,
+        "pointermove",
+        780,
+        349,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15455,
+        "pointermove",
+        789,
+        350,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15504,
+        "pointermove",
+        798,
+        354,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15569,
+        "pointermove",
+        806,
+        360,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15612,
+        "pointermove",
+        815,
+        366,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15678,
+        "pointermove",
+        824,
+        373,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15722,
+        "pointermove",
+        832,
+        380,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15763,
+        "pointermove",
+        841,
+        384,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15826,
+        "pointermove",
+        850,
+        386,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15866,
+        "pointermove",
+        859,
+        385,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15907,
+        "pointermove",
+        867,
+        382,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        15949,
+        "pointermove",
+        876,
+        376,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16000,
+        "pointermove",
+        885,
+        369,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16041,
+        "pointermove",
+        893,
+        362,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16089,
+        "pointermove",
+        902,
+        356,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16146,
+        "pointermove",
+        911,
+        352,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16200,
+        "pointermove",
+        919,
+        350,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16252,
+        "pointermove",
+        928,
+        350,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16304,
+        "pointermove",
+        937,
+        353,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16359,
+        "pointermove",
+        946,
+        359,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16399,
+        "pointermove",
+        954,
+        365,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16443,
+        "pointermove",
+        963,
+        372,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16504,
+        "pointermove",
+        972,
+        379,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16545,
+        "pointermove",
+        980,
+        383,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16588,
+        "pointermove",
+        989,
+        386,
+        0.55,
+        52,
+        18,
+        0,
+        -1,
+        1
+      ],
+      [
+        16629,
+        "pointerup",
+        989,
+        386,
+        0,
+        52,
+        18,
+        0,
+        0,
+        0
+      ],
+      [
+        18284,
+        "pointermove",
+        982,
+        386,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18316,
+        "pointermove",
+        962,
+        388,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18358,
+        "pointermove",
+        932,
+        390,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18405,
+        "pointermove",
+        892,
+        394,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18438,
+        "pointermove",
+        844,
+        398,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18468,
+        "pointermove",
+        790,
+        402,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18498,
+        "pointermove",
+        732,
+        407,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18528,
+        "pointermove",
+        672,
+        412,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18582,
+        "pointermove",
+        610,
+        417,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18632,
+        "pointermove",
+        550,
+        422,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18693,
+        "pointermove",
+        492,
+        427,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18745,
+        "pointermove",
+        438,
+        432,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18799,
+        "pointermove",
+        390,
+        436,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18833,
+        "pointermove",
+        350,
+        439,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18863,
+        "pointermove",
+        320,
+        442,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18915,
+        "pointermove",
+        300,
+        443,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        18964,
+        "pointermove",
+        293,
+        444,
+        0,
+        22,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        19144,
+        "pointerdown",
+        293,
+        444,
+        0.6,
+        22,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        19145,
+        "pointermove",
+        303,
+        446,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19196,
+        "pointermove",
+        313,
+        448,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19250,
+        "pointermove",
+        323,
+        450,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19304,
+        "pointermove",
+        333,
+        451,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19360,
+        "pointermove",
+        343,
+        453,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19411,
+        "pointermove",
+        353,
+        454,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19474,
+        "pointermove",
+        363,
+        455,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19512,
+        "pointermove",
+        373,
+        457,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19557,
+        "pointermove",
+        382,
+        457,
+        0.6,
+        22,
+        0,
+        0,
+        -1,
+        1
+      ],
+      [
+        19593,
+        "pointermove",
+        392,
+        458,
+        0.6,
+        22,
+        0,
+        1,
+        -1,
+        1
+      ],
+      [
+        19629,
+        "pointermove",
+        402,
+        458,
+        0.6,
+        22,
+        0,
+        1,
+        -1,
+        1
+      ],
+      [
+        19706,
+        "pointermove",
+        412,
+        459,
+        0.6,
+        22,
+        0,
+        1,
+        -1,
+        1
+      ],
+      [
+        19764,
+        "pointermove",
+        422,
+        459,
+        0.6,
+        22,
+        0,
+        1,
+        -1,
+        1
+      ],
+      [
+        19817,
+        "pointermove",
+        432,
+        458,
+        0.6,
+        22,
+        0,
+        2,
+        -1,
+        1
+      ]
+    ]
+  }
+}

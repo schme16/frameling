@@ -5,7 +5,7 @@ import type { AudioClip } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
 import { audibleClips, clipEnd, clipFrames, clipGain, clipOffset, mimeFor, soundName } from '../../src/audio/clips';
 import { planVoices } from '../../src/audio/engine';
-import { frameSlice, audioCodecOrder } from '../../src/audio/export';
+import { frameSlice, audioCodecOrder, needsMov, noSoundNote, uncompressedSoundNote } from '../../src/audio/export';
 import { planMix } from '../../src/audio/mix';
 import { moveClip, pickedClip, removeClip, renameClip, setMuted, setVolume } from '../../src/audio/ops';
 import { pickSound } from '../../src/audio/state';
@@ -89,9 +89,21 @@ describe('mixing for export', () => {
     expect(covered).toBe(total);
     expect(frameSlice(47, 48, 24, rate, total + 100)[1]).toBe(total + 100);
   });
-  it('prefers AAC then Opus for MP4, Opus for WebM', () => {
-    expect(audioCodecOrder(true)).toEqual(['aac', 'opus']);
+  it('prefers AAC then Opus for MP4, with plain sound last so older Safari (no audio encoder) still keeps it; Opus for WebM', () => {
+    expect(audioCodecOrder(true)).toEqual(['aac', 'opus', 'pcm-s16']);
     expect(audioCodecOrder(false)[0]).toBe('opus');
+    // A WebM never gets plain sound: browsers do not play it there.
+    expect(audioCodecOrder(false).some((x) => x.startsWith('pcm'))).toBe(false);
+  });
+  it('writes sound carried as it is into a MOV, and compressed sound into the MP4 or WebM', () => {
+    expect(needsMov('pcm-s16')).toBe(true);
+    for (const c of ['aac', 'opus', 'vorbis', undefined] as const) expect(needsMov(c)).toBe(false);
+  });
+  it('says what happened to the sound in plain words, without dashes', () => {
+    expect(noSoundNote(true)).toMatch(/no sound/);
+    expect(noSoundNote(false)).toMatch(/WebM.*MP4 keeps its sound/);
+    expect(uncompressedSoundNote()).toMatch(/MOV file.*sound as it is.*bigger/);
+    for (const t of [noSoundNote(true), noSoundNote(false), uncompressedSoundNote()]) expect(t).not.toMatch(/[\u2013\u2014]/);
   });
 });
 

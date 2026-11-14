@@ -7,6 +7,8 @@ import { useStore } from '../core/store';
 import { findLayer } from '../core/doc';
 import '../geometry/fill.css';
 import { DrawModeToggle } from './options/DrawModeToggle';
+import { Slider } from '../canvas/controls';
+import { usePixelSettings } from '../pixel/settings';
 
 export type GapPreset = 'none' | 'small' | 'medium' | 'large';
 
@@ -17,8 +19,15 @@ export interface FillOptions {
   onTop: boolean;
   /** Recolour every pixel of the clicked colour, not just the connected area (pixel layers). */
   allOfColour: boolean;
-  /** See lines on every visible vector layer, not just the selected one (paint on its own layer under the line art). */
+  /** See lines on every visible layer, not just the selected one (paint on its own layer under the line art). */
   allLayers: boolean;
+  /** Pixel layers: how alike a colour has to be to count as the clicked one, 0 (exact) to 100 percent. */
+  tolerance: number;
+}
+
+/** A Colour match percentage as a per channel difference, 0 to 255, the same scale the Magic wand uses. */
+export function toleranceBytes(percent: number): number {
+  return (Math.max(0, Math.min(100, percent)) / 100) * 255;
 }
 
 /**
@@ -41,7 +50,7 @@ export function gapWidth(preset: GapPreset, brushSize: number): number {
   return Math.round(base * k);
 }
 
-let state: FillOptions = { gap: 'small', onTop: false, allOfColour: false, allLayers: false };
+let state: FillOptions = { gap: 'small', onTop: false, allOfColour: false, allLayers: false, tolerance: 0 };
 const listeners = new Set<() => void>();
 
 export function getFillOptions(): FillOptions {
@@ -74,11 +83,30 @@ export function FillOptionsPanel(): ReactNode {
   const o = useFillOptions();
   const kind = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? 'vector');
   const pixel = kind === 'pixel';
+  const mirrorOn = usePixelSettings((s) => s.symmetry !== 'off');
   return h(
     'div',
     { className: 'fl-fill-options' },
     pixel
-      ? check('Fill all of this colour', 'Recolour every pixel with the colour you click, even where it is not joined up', o.allOfColour, (v) => setFillOptions({ allOfColour: v }))
+      ? [
+          check(
+            'Use lines from all layers',
+            'Fill areas closed in by whatever is drawn on any other visible layer. Handy for keeping colour on its own layer under your line art.',
+            o.allLayers,
+            (v) => setFillOptions({ allLayers: v }),
+          ),
+          h(Slider, {
+            key: 'match',
+            label: 'Colour match',
+            value: o.tolerance,
+            min: 0,
+            max: 100,
+            format: (v: number) => (v === 0 ? 'Exact colour' : `Close colours (${v}%)`),
+            onChange: (v: number) => setFillOptions({ tolerance: v }),
+            hint: 'How alike a colour has to be to get filled too. Exact fills only the very same colour (tolerance).',
+          }),
+          check('Fill all of this colour', 'Recolour every pixel with the colour you click, even where it is not joined up', o.allOfColour, (v) => setFillOptions({ allOfColour: v })),
+        ]
       : [
           h(DrawModeToggle, { key: 'mode' }),
           h(
@@ -113,6 +141,7 @@ export function FillOptionsPanel(): ReactNode {
             o.allLayers,
             (v) => setFillOptions({ allLayers: v }),
           ),
+          mirrorOn && h('div', { className: 'fl-fill-note', key: 'mirror' }, "Mirror drawing doesn't reach the bucket. It fills just where you click."),
         ],
   );
 }

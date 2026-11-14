@@ -6,14 +6,15 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/quests';
-import { allHelp, getCommand, getPanel, registerCommand } from '../../src/core/registry';
+import '../../src/quests/boot';
+import { allHelp, getCommand, getPanel, helpBody, loadHelpBodies, registerCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { celebrate, dismissCelebration, feedback } from '../../src/quests/feedback';
 import { Celebration } from '../../src/quests/Celebration';
 import { QuestBar } from '../../src/quests/QuestBar';
 import { QuestsPanel } from '../../src/quests/QuestsPanel';
 import { Spotlight } from '../../src/quests/Spotlight';
-import { allQuests, getQuest, questProgress, registerQuest, startQuest } from '../../src/quests/registry';
+import { allQuests, getFullQuest, getQuest, questProgress, registerQuest, startQuest } from '../../src/quests/registry';
 import { engine, playQuest, putDownQuest, resumeQuest } from '../../src/quests/runtime';
 import { QUESTS_KEY } from '../../src/quests/engine';
 import { resolveTarget } from '../../src/quests/target';
@@ -69,13 +70,14 @@ const text = () => host.textContent ?? '';
 const button = (label: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(label)) as HTMLButtonElement;
 
 describe('how quests are wired in', () => {
-  it('registers the panel, the commands and the help topic', () => {
+  it('registers the panel, the commands and the help topic', async () => {
+    await loadHelpBodies();
     expect(getPanel('quests')).toMatchObject({ zone: 'right', title: 'Quests' });
     for (const id of ['quests.open', 'quests.resume']) expect(getCommand(id)).toBeTruthy();
     const topic = allHelp().filter((t) => t.id === 'quests');
     expect(topic).toHaveLength(1);
-    expect(topic[0].body).toContain('Show me');
-    expect(topic[0].body).not.toMatch(/—/);
+    expect(helpBody(topic[0])).toContain('Show me');
+    expect(helpBody(topic[0])).not.toMatch(/—/);
   });
 
   it('keeps the names the UI shell and welcome sheet import', async () => {
@@ -151,7 +153,7 @@ describe('finishing, celebrating and resuming', () => {
   });
 
   it('offers the next open quest on the card and Esc puts it away', () => {
-    const q = getQuest('first-animation')!;
+    const q = getFullQuest('first-animation')!;
     act(() => questProgress.set((p) => ({ ...p, completed: ['first-animation'] })));
     celebrate(q, q.badge!, true);
     mount(<Celebration />);
@@ -173,7 +175,7 @@ describe('finishing, celebrating and resuming', () => {
   });
 
   it('starts a quest that does not suit the open drawing again from the top', () => {
-    const bb = getQuest('bouncing-ball')!;
+    const bb = getFullQuest('bouncing-ball')!;
     engine.start('bouncing-ball', { step: 3 });
     putDownQuest();
     resetStore(vectorDoc());
@@ -199,6 +201,9 @@ describe('the quest bar', () => {
     expect(host.querySelectorAll('.qb-dots i')).toHaveLength(2);
     act(() => button('Show me').click());
     expect(body).toHaveBeenCalledOnce();
+    // The Great work card holds the next step back until you press Next.
+    expect(text()).toContain("That's step 1 of 2 done.");
+    act(() => button('Next').click());
     expect(text()).toContain('Step 2 of 2');
     expect(host.querySelector('.qb-dots i.is-done')).toBeTruthy();
     act(() => button('Not now').click());
@@ -274,9 +279,9 @@ describe('the Quests panel', () => {
   it('lists every quest, with the later ones locked until the first is done', () => {
     mount(<QuestsPanel />);
     expect(host.querySelectorAll('.qp-card')).toHaveLength(allQuests().length);
-    expect(text()).toContain('0 of 14 badges');
+    expect(text()).toContain('0 of 17 badges');
     // Your first animation, Pixel pal and Tiles start open (they're the first quests for different people).
-    expect(host.querySelectorAll('.qp-card.is-locked').length).toBe(allQuests().length - 3);
+    expect(host.querySelectorAll('.qp-card.is-locked').length).toBe(allQuests().length - 6);
     expect(text()).toContain('Locked. Do "Your first animation in 60 seconds" first.');
     expect(button('Try it anyway')).toBeTruthy();
   });
@@ -287,7 +292,7 @@ describe('the Quests panel', () => {
     expect(host.querySelectorAll('.qp-card.is-locked')).toHaveLength(0);
     expect(host.querySelector('.qp-card.is-done')?.textContent).toContain('Flipbooker');
     expect(host.querySelectorAll('.qm:not(.qm-empty)')).toHaveLength(1);
-    expect(text()).toContain('1 of 14 badges');
+    expect(text()).toContain('1 of 17 badges');
   });
 
   it('groups quests under headings with done counts', () => {

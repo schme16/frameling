@@ -1,0 +1,488 @@
+/* The detailed timeline (the default). The clean one is timeline.css on its own. Tokens only; every class tl-. */
+
+/* ---------------------------------------------------------------- colour labels (also used by the menu swatches) */
+
+.tl-lc-vector { --lc: var(--cel-key); }
+.tl-lc-pixel { --lc: var(--mint); }
+.tl-lc-camera { --lc: var(--sky); }
+.tl-lc-tilemap { --lc: var(--peach); }
+.tl-lc-bones { --lc: var(--sunny-deep); }
+.tl-lc-red { --lc: var(--rose); }
+.tl-lc-orange { --lc: var(--peach); }
+.tl-lc-yellow { --lc: var(--sunny); }
+.tl-lc-green { --lc: var(--mint); }
+.tl-lc-teal { --lc: color-mix(in srgb, var(--mint) 50%, var(--sky)); }
+.tl-lc-blue { --lc: var(--sky); }
+.tl-lc-purple { --lc: var(--grape); }
+.tl-lc-pink { --lc: color-mix(in srgb, var(--rose) 55%, var(--grape)); }
+
+.tl-menu-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+  background: var(--lc);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+}
+
+/* ---------------------------------------------------------------- layer column */
+
+.tl-layer.is-detailed {
+  gap: 2px;
+  padding-left: 7px;
+}
+.tl-layer.is-detailed::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--lc);
+}
+.tl-layer.is-detailed.is-active {
+  box-shadow: none;
+  background: color-mix(in srgb, var(--lc) 14%, var(--panel));
+}
+.tl-layer.is-detailed.is-active .tl-layer-name {
+  font-weight: 700;
+}
+.tl-layer.is-detailed .tl-grip {
+  display: none;
+}
+.tl-layer.is-detailed .tl-kind {
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--lc) 26%, transparent);
+}
+.tl-layer.is-detailed .tl-icon-btn {
+  width: 21px;
+  height: 21px;
+}
+.tl-twisty,
+.tl-twisty-gap {
+  flex: none;
+  width: 16px;
+  height: 20px;
+}
+.tl-twisty {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-twisty:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+.tl-solo {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.55;
+}
+.tl-layer:hover .tl-solo,
+.tl-layer:focus-within .tl-solo {
+  opacity: 1;
+}
+.tl-solo.is-on {
+  opacity: 1;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+
+/* A property row's name, tucked under its layer. */
+.tl-prop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 0 8px 0 40px;
+  border-bottom: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--lc) 5%, var(--panel));
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.tl-prop::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: color-mix(in srgb, var(--lc) 45%, transparent);
+}
+.tl-prop::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 0;
+  bottom: 50%;
+  width: 8px;
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.tl-prop:not(.is-last) .tl-prop-name::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  bottom: 0;
+  border-left: 1px solid var(--line);
+}
+.tl-prop:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--lc) 10%, var(--panel));
+}
+.tl-prop-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-prop-count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- ruler: seconds on top, frames under */
+
+.tl-ruler.is-detailed .tl-num {
+  top: auto;
+  bottom: 7px;
+  font-size: 10px;
+}
+.tl-ruler.is-detailed .tl-sec {
+  height: 100%;
+  width: 1px;
+  background: color-mix(in srgb, var(--sunny-deep) 70%, transparent);
+}
+.tl-secbands {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 13px;
+  pointer-events: none;
+}
+.tl-secband {
+  position: absolute;
+  top: 0;
+  height: 13px;
+  box-sizing: border-box;
+  padding-left: 4px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tl-secband.is-odd {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.tl-body.is-detailed .tl-marker {
+  top: 1px;
+  height: 15px;
+  border-left-width: 0;
+  padding-left: 2px;
+  clip-path: none;
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+}
+.tl-body.is-detailed .tl-marker::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: -3px;
+  width: 2px;
+  background: var(--peach);
+}
+.tl-body.is-detailed .tl-clip {
+  top: 1px;
+  height: 15px;
+}
+.tl-body.is-detailed .tl-lane-empty {
+  font-size: 10px;
+}
+/* Each marker carries a faint line down through the rows, so you can line keys up with it. */
+.tl-mline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed color-mix(in srgb, var(--peach) 70%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ---------------------------------------------------------------- rows: grid, keys, holds, tweens */
+
+.tl-body.is-detailed .tl-row {
+  /* Frames, every fifth frame, and seconds, from faint to strong. */
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--sunny-deep) 45%, transparent) 1px, transparent 0),
+    linear-gradient(to right, transparent calc(100% - 1px), var(--line) 0),
+    linear-gradient(to right, transparent calc(100% - 1px), color-mix(in srgb, var(--line-soft) 70%, transparent) 0);
+  background-size: var(--fps-w) 100%, calc(var(--cw) * 5) 100%, var(--cw) 100%;
+}
+.tl-body.is-detailed .tl-row.is-active {
+  background-color: color-mix(in srgb, var(--lc, var(--sunny)) 8%, var(--panel-2));
+}
+.tl-prow {
+  background-color: color-mix(in srgb, var(--panel) 55%, var(--panel-2));
+}
+
+.tl-dcel.tl-cel {
+  top: 4px;
+  bottom: 4px;
+  overflow: visible;
+  border-radius: 3px;
+  background-color: color-mix(in srgb, var(--lc) 26%, var(--panel-2));
+  background-image: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lc) 40%, transparent);
+}
+.tl-dcel.tl-cel:hover {
+  box-shadow: inset 0 0 0 1px var(--lc);
+}
+/* Carried on by itself until the next drawing: stripes, so a hold you chose still stands out. */
+.tl-dcel.is-auto {
+  background-color: transparent;
+  background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--lc) 22%, transparent) 0 4px, transparent 4px 8px);
+}
+.tl-dcel.is-tween {
+  background-color: color-mix(in srgb, var(--grape) 20%, var(--panel-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--grape) 45%, transparent);
+}
+.tl-dcel.is-shape {
+  background-color: color-mix(in srgb, var(--mint) 20%, var(--panel-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mint) 50%, transparent);
+}
+.tl-dkey-cell {
+  position: absolute;
+  left: 0;
+  top: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--lc) 78%, var(--panel-2));
+  cursor: ew-resize;
+}
+.tl-dkey {
+  width: clamp(5px, calc(var(--cw) * 0.42), 10px);
+  height: clamp(5px, calc(var(--cw) * 0.42), 10px);
+  transform: rotate(45deg);
+  box-sizing: border-box;
+  border: 1.5px solid color-mix(in srgb, var(--lc) 40%, #000);
+  background: #fff;
+  pointer-events: none;
+}
+.tl-dkey.is-picked {
+  background: var(--chosen-bg);
+  border-color: var(--chosen-fg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 55%, transparent);
+}
+.tl-dkey-cell.is-picked {
+  box-shadow: 0 0 0 2px var(--chosen-bg);
+  z-index: 1;
+}
+/* Where a hold ends: a small hollow box, like the end of an exposure. */
+.tl-dend {
+  position: absolute;
+  right: 2px;
+  top: 4px;
+  bottom: 4px;
+  max-width: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid color-mix(in srgb, var(--lc) 70%, var(--text));
+  border-radius: 2px;
+  background: var(--panel-2);
+  pointer-events: none;
+}
+.tl-dcel.is-auto .tl-dend {
+  border-style: dashed;
+}
+/* In-betweens: an arrow from this key to the next, with the easing drawn over it. */
+.tl-dspan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  --arrow: var(--grape);
+}
+.tl-dcel.is-shape .tl-dspan {
+  --arrow: color-mix(in srgb, var(--mint) 75%, var(--text));
+}
+.tl-dspan::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 8px;
+  top: 50%;
+  border-top: 1.5px solid color-mix(in srgb, var(--arrow) 55%, transparent);
+}
+.tl-dspan::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: calc(50% - 4px);
+  border: 4px solid transparent;
+  border-left: 6px solid var(--arrow);
+  border-right: 0;
+}
+.tl-dspan .tl-ease {
+  position: absolute;
+  left: 4px;
+  top: calc(50% - 6px);
+}
+.tl-ease polyline {
+  fill: none;
+  stroke: var(--arrow, var(--lc));
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.tl-dcel.is-broken::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--cw) + 3px);
+  right: 8px;
+  top: 50%;
+  border-top: 1.5px dashed color-mix(in srgb, var(--grape) 60%, transparent);
+}
+
+/* Effect keys on a folded layer: small diamonds along the bottom edge. */
+.tl-fxdot {
+  position: absolute;
+  bottom: 0;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  transform: rotate(45deg);
+  background: var(--sunny-deep);
+  border: 1px solid color-mix(in srgb, var(--sunny-deep) 50%, #000);
+  cursor: ew-resize;
+  z-index: 1;
+}
+.tl-fxdot.is-picked {
+  background: var(--chosen-bg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 55%, transparent);
+}
+
+/* Property rows: diamonds, joined by a line where the value changes smoothly. */
+.tl-pkey {
+  position: absolute;
+  top: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  box-sizing: border-box;
+  transform: rotate(45deg);
+  background: var(--lc);
+  border: 1.5px solid color-mix(in srgb, var(--lc) 45%, #000);
+  cursor: ew-resize;
+  z-index: 1;
+}
+.tl-pkey:hover {
+  transform: rotate(45deg) scale(1.2);
+}
+.tl-pkey.is-picked {
+  background: var(--chosen-bg);
+  border-color: var(--chosen-fg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 55%, transparent);
+}
+.tl-pspan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  --arrow: var(--lc);
+}
+.tl-pspan::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 1px);
+  height: 2px;
+  background: color-mix(in srgb, var(--lc) 45%, transparent);
+}
+.tl-pspan.is-even::before {
+  background: none;
+  border-top: 2px dotted color-mix(in srgb, var(--lc) 60%, transparent);
+}
+.tl-pspan .tl-ease {
+  position: absolute;
+  left: 7px;
+  top: calc(50% - 5px);
+  opacity: 0.9;
+}
+
+/* Dragging keys: the picked ones fade where they were, a ghost shows where they'll land. */
+.tl-body[data-dragging='keys'] :is(.tl-dkey.is-picked, .tl-pkey.is-picked, .tl-fxdot.is-picked) {
+  opacity: 0.35;
+}
+.tl-ghost-key {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  box-sizing: border-box;
+  transform: rotate(45deg);
+  background: var(--chosen-bg);
+  border: 1.5px solid var(--chosen-fg);
+  pointer-events: none;
+  z-index: 6;
+}
+.tl-ghost-key.is-small {
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+}
+.tl-ghost-tag {
+  position: absolute;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--panel);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 7;
+}
+.tl-box {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.tl-main:focus {
+  outline: none;
+}
+.tl-main:focus-visible .tl-cursor {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+/* The grid is wider than the panel, so the ring goes round the visible part (the scroller), inside its edge. */
+.tl-body:has(.tl-main:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.tl-body.is-detailed .tl-cursor {
+  border-radius: 3px;
+}

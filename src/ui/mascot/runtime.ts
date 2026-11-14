@@ -62,6 +62,9 @@ let watching = false;
 
 export const isSleepy = (): boolean => sleepy;
 
+/** Milliseconds since anyone touched anything. Read by the pet feature to work out how Quill's feeling. */
+export const sinceInput = (): number => (typeof performance === 'undefined' ? 0 : performance.now() - lastInput);
+
 function setSleepy(v: boolean): void {
   if (v === sleepy) return;
   sleepy = v;

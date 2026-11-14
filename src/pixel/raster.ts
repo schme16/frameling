@@ -160,3 +160,96 @@ export function dragBox(a: PxPt, b: PxPt, shift: boolean, alt: boolean): [PxPt, 
   if (alt) return [{ x: a.x - dx, y: a.y - dy }, { x: a.x + dx, y: a.y + dy }];
   return [a, { x: a.x + dx, y: a.y + dy }];
 }
+
+/**
+ * A straight-sided shape as clean pixels. `pts` are corners in pixel units (cell x spans x to x + 1). The fill takes
+ * every cell whose middle is inside (even-odd, so a star's middle stays filled); the edge joins the corners' cells
+ * with plain lines. Either can be left out.
+ */
+export function plotPolygon(pts: { x: number; y: number }[], closed: boolean, edge: Plot | null, fill?: Plot): void {
+  const n = pts.length;
+  if (!n) return;
+  if (fill && closed && n >= 3) {
+    let y0 = Infinity;
+    let y1 = -Infinity;
+    for (const p of pts) {
+      y0 = Math.min(y0, p.y);
+      y1 = Math.max(y1, p.y);
+    }
+    const xs: number[] = [];
+    for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) {
+      const cy = y + 0.5;
+      xs.length = 0;
+      for (let i = 0; i < n; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % n];
+        if (a.y <= cy === b.y <= cy) continue;
+        xs.push(a.x + ((cy - a.y) / (b.y - a.y)) * (b.x - a.x));
+      }
+      xs.sort((p, q) => p - q);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        // Cells whose middles fall between the two crossings.
+        for (let x = Math.ceil(xs[k] - 0.5); x + 0.5 < xs[k + 1]; x++) fill(x, y);
+      }
+    }
+  }
+  if (!edge) return;
+  const cell = (p: { x: number; y: number }) => ({ x: Math.floor(p.x), y: Math.floor(p.y) });
+  if (n === 1) {
+    const c = cell(pts[0]);
+    edge(c.x, c.y);
+    return;
+  }
+  const segs = closed ? n : n - 1;
+  for (let i = 0; i < segs; i++) {
+    const a = cell(pts[i]);
+    const b = cell(pts[(i + 1) % n]);
+    plotLine(a.x, a.y, b.x, b.y, edge);
+  }
+}
+
+/** The cells a closed outline (in pixel units) covers: every cell whose middle is inside. Rows run top to bottom. */
+export function coveredCells(pts: { x: number; y: number }[]): PxPt[] {
+  const out: PxPt[] = [];
+  plotPolygon(pts, true, null, (x, y) => void out.push({ x, y }));
+  return out;
+}
+
+/**
+ * The cells of a covered area that lie within `depth` cells of its edge: a cell is in the ring when it is that many
+ * steps (up, down, left or right) from a cell outside the area. Flat edges get exactly `depth` rows, a slanted edge
+ * stays one clean 8-connected line at depth 1, and an area too small for the ring is all ring.
+ */
+export function edgeRing(cells: PxPt[], depth: number): PxPt[] {
+  if (!cells.length) return [];
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const c of cells) {
+    x0 = Math.min(x0, c.x);
+    y0 = Math.min(y0, c.y);
+    x1 = Math.max(x1, c.x);
+    y1 = Math.max(y1, c.y);
+  }
+  // One empty cell all round, so the outside is always next to the edge.
+  const w = x1 - x0 + 3;
+  const h = y1 - y0 + 3;
+  const far = w + h + 1;
+  const d = new Int32Array(w * h);
+  d.fill(0);
+  for (const c of cells) d[(c.y - y0 + 1) * w + (c.x - x0 + 1)] = far;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (d[i]) d[i] = Math.min(d[i], d[i - 1] + 1, d[i - w] + 1);
+    }
+  }
+  for (let y = h - 2; y >= 1; y--) {
+    for (let x = w - 2; x >= 1; x--) {
+      const i = y * w + x;
+      if (d[i]) d[i] = Math.min(d[i], d[i + 1] + 1, d[i + w] + 1);
+    }
+  }
+  return cells.filter((c) => d[(c.y - y0 + 1) * w + (c.x - x0 + 1)] <= depth);
+}

@@ -4,9 +4,12 @@ import { lazyPanel } from '../core/lazy';
 import { registerPanel } from '../core/registry';
 import './ui.css';
 import './commands';
+import './rightCommands';
+import './dockCommands';
 import './helpTopics';
 import './quests';
 import './onboarding';
+import './sounds/commands';
 import { applyPrefs } from './prefs';
 
 // Apply the saved theme and look straight away, before anything paints.

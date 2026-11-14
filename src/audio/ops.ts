@@ -12,6 +12,7 @@ import { ensureLength, MAX_LENGTH } from '../timeline/edit-core';
 import type { LongSoundChoice } from './choices';
 import { clipEnd, mimeFor, SOUND_ACCEPT, soundName } from './clips';
 import { audioSupported, decodeClip } from './decode';
+import { soundProblem } from './problem';
 import { soundUi } from './state';
 
 export function findClip(id: Id): AudioClip | undefined {
@@ -27,7 +28,7 @@ export async function addSound(bytes: Uint8Array, name: string, mime: string, st
   const clip: AudioClip = { id: uid('au'), name: soundName(name), start, data: bytes, mime };
   const buffer = await decodeClip(clip);
   if (!buffer || !buffer.duration) {
-    notify("That file couldn't be read as a sound. WAV, MP3, OGG, M4A and FLAC files work.", 'warn');
+    notify(soundProblem(bytes), 'warn');
     return null;
   }
   clip.duration = buffer.duration;

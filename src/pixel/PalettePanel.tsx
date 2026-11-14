@@ -10,11 +10,16 @@ import { noteColorUsed } from '../tools/recent';
 import { STARTER_PALETTES } from './builtin';
 import { changePaletteColor, reduceActiveToPalette, setDocPalette, togglePaletteLock } from './commands';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
-import { colorUse, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, toggleRampStart } from './palette';
+import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
 import { usePopover } from '../ui/popover';
+import { dock, inPixelWorkspace } from '../ui/dock';
+import { paletteIndexOf } from './bar';
+import { sharedEditNote, variationPalette } from '../artboards/variations';
+import { PaintWells } from './PaintWells';
+import { usePaintWells } from '../tools/pixelWells';
 
 interface Menu {
   index: number;
@@ -52,6 +57,7 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
   const ref = useRef<HTMLDivElement>(null);
   const color = palette.colors[menu.index];
   const front = useStore((s) => activeColor(s.ui) ?? s.ui.color);
+  const wells = usePaintWells();
   useEffect(() => {
     const away = (e: Event) => ref.current && !ref.current.contains(e.target as Node) && onClose();
     window.addEventListener('pointerdown', away, true);
@@ -80,11 +86,11 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
         <span className="px-menu-chip" style={{ backgroundColor: color }} />
         <span>{color}</span>
       </div>
-      {item('Use for lines (stroke)', () => {
+      {item(wells ? 'Paint with this' : 'Use for lines (stroke)', () => {
         store().setUi({ color, strokeOn: true });
         noteColorUsed(color);
       })}
-      {item('Use for the bucket (fill)', () => {
+      {item(wells ? 'Use as the Back colour' : 'Use for the bucket (fill)', () => {
         store().setUi({ fillColor: color });
         noteColorUsed(color);
       })}
@@ -96,12 +102,17 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
   );
 }
 
+/** Drawings bigger than this many pixels have their colour use counted in slices, off the edit's own turn. */
+const SLOW_PIXELS = 1 << 20;
+const SLICE_PIXELS = 1 << 20;
+
 export function PalettePanel() {
   const doc = useStore((s) => s.doc);
   const palette = docPalette(doc);
   const stroke = useStore((s) => s.ui.color);
   const fill = useStore((s) => s.ui.fillColor);
   const front = useStore((s) => activeColor(s.ui) ?? s.ui.color);
+  const wells = usePaintWells();
   const layer = useActivePixelLayer();
   const frame = useStore((s) => s.ui.frame);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -116,13 +127,44 @@ export function PalettePanel() {
     const d = cel ? doc.drawings[cel.drawingId] : undefined;
     return d?.kind === 'pixel' ? d : null;
   })() : null;
-  const used = useMemo(() => {
+  const slowDrawing = !!drawing && drawing.pixels.length > SLOW_PIXELS * 4;
+  // Counts are kept per pixel array, so stepping back to a frame already counted costs nothing.
+  const quick = useMemo(() => (drawing && !slowDrawing ? colorUseOf(drawing.pixels, palette.colors) : new Uint32Array(palette.colors.length)), [drawing, slowDrawing, palette.colors]);
+  // A big drawing is counted a slice at a time after the edit, so letting go of the pen never waits for it. The dots
+  // keep the last count until the new one is ready.
+  const [counted, setCounted] = useState<Uint32Array | null>(null);
+  useEffect(() => {
+    if (!drawing || !slowDrawing) return;
+    const px = drawing.pixels;
+    const known = cachedColorUse(px, palette.colors);
+    if (known) {
+      setCounted(known);
+      return;
+    }
+    const rgb = paletteRgb(palette.colors);
     const counts = new Uint32Array(palette.colors.length);
-    if (drawing) colorUse(drawing.pixels, paletteRgb(palette.colors), counts);
-    return counts;
-  }, [drawing, palette.colors]);
+    const total = px.length >> 2;
+    let at = 0;
+    let timer = 0;
+    const step = () => {
+      const to = Math.min(total, at + SLICE_PIXELS);
+      colorUseRange(px, rgb, counts, at, to);
+      at = to;
+      if (at < total) timer = window.setTimeout(step, 0);
+      else {
+        rememberColorUse(px, palette.colors, counts);
+        setCounted(counts);
+      }
+    };
+    timer = window.setTimeout(step, 30);
+    return () => window.clearTimeout(timer);
+  }, [drawing, slowDrawing, palette.colors]);
+  const used = slowDrawing ? (counted ?? quick) : quick;
 
   const has = palette.colors.some((c) => same(c, front));
+  // Bigger colours in the Pixel workspace, where this panel is the main colour picker.
+  const big = !!dock.use((d) => d.workspaceId) && inPixelWorkspace();
+  const at = layer?.paletteLock ? paletteIndexOf(palette, front) : null;
   const onDrop = (to: number) => (e: DragEvent) => {
     e.preventDefault();
     if (drag !== null && drag !== to) setDocPalette(moveColor(palette, drag, to), 'Move palette colour');
@@ -136,7 +178,8 @@ export function PalettePanel() {
   };
 
   return (
-    <div className="cv-panel px-palette" data-help="palette">
+    <div className={`cv-panel px-palette${big ? ' is-big' : ''}`} data-help="palette">
+      {wells && <PaintWells />}
       <div className="px-palette-top">
         <input className="cv-hex-input px-palette-name" value={name} aria-label="Palette name" spellCheck={false} onChange={(e) => setName(e.target.value)} onBlur={renameTo} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
         <span className="px-palette-count" title="Colours in this palette">
@@ -147,8 +190,10 @@ export function PalettePanel() {
       <div className="px-ramps" role="list" aria-label="Palette colours, in ramps">
         {ramps(palette).map(([s, e]) => (
           <div className="px-ramp" role="listitem" key={s}>
+            {palette.rampNames?.[s] && <span className="px-ramp-name">{palette.rampNames[s]}</span>}
             {palette.colors.slice(s, e).map((c, k) => {
               const i = s + k;
+              const nm = palette.names?.[i];
               return (
                 <button
                   key={i}
@@ -159,8 +204,8 @@ export function PalettePanel() {
                   data-on={same(c, front)}
                   aria-pressed={same(c, front)}
                   data-over={over === i}
-                  title={`${c}. Click to paint with it, double-click to change it, right-click for more.`}
-                  aria-label={`Palette colour ${i + 1}, ${c}${same(c, stroke) ? ', the stroke colour' : ''}${same(c, fill) ? ', the fill colour' : ''}`}
+                  title={`${nm ? `${nm}, ` : ''}${c}. Click to paint with it, double-click to change it, right-click for more.`}
+                  aria-label={`Palette colour ${i + 1}, ${nm ? `${nm}, ` : ''}${c}${same(c, stroke) ? (wells ? ', the Paint colour' : ', the stroke colour') : ''}${same(c, fill) ? (wells ? ', the Back colour' : ', the fill colour') : ''}`}
                   onClick={() => {
                     setActiveColor(c);
                     noteColorUsed(c);
@@ -186,8 +231,8 @@ export function PalettePanel() {
                     setOver(null);
                   }}
                 >
-                  {same(c, stroke) && <span className="px-chip-mark px-chip-s" aria-hidden="true">S</span>}
-                  {same(c, fill) && <span className="px-chip-mark px-chip-f" aria-hidden="true">F</span>}
+                  {same(c, stroke) && <span className="px-chip-mark px-chip-s" aria-hidden="true">{wells ? 'P' : 'S'}</span>}
+                  {same(c, fill) && <span className="px-chip-mark px-chip-f" aria-hidden="true">{wells ? 'B' : 'F'}</span>}
                   {used[i] > 0 && <span className="px-chip-used" aria-hidden="true" />}
                 </button>
               );
@@ -195,6 +240,13 @@ export function PalettePanel() {
           </div>
         ))}
       </div>
+
+      {at && (
+        <div className="px-palette-current" role="status">
+          <span className="px-bar-chip" style={{ backgroundColor: palette.colors[at.index] }} aria-hidden="true" />
+          {at.exact ? `Painting with colour ${at.index + 1} (index ${at.index})` : `Snaps to colour ${at.index + 1} (index ${at.index})`}
+        </div>
+      )}
 
       <div className="px-row">
         <ActionButton disabled={has || palette.colors.length >= 256} title={has ? 'The current colour is already in the palette' : 'Add the current colour to the end of the palette'} onClick={() => setDocPalette(insertColor(palette, front), 'Add palette colour')}>
@@ -230,7 +282,7 @@ export function PalettePanel() {
             </option>
           ))}
         </select>
-        <ActionButton onClick={() => void importPalette()} title="Load a .gpl, .hex or .pal palette, or take the colours from a picture">
+        <ActionButton onClick={() => void importPalette()} title="Load a .gpl, .hex, .pal or Adobe .ase palette, or take the colours from a picture">
           Load...
         </ActionButton>
         <select
@@ -249,6 +301,9 @@ export function PalettePanel() {
         <ActionButton disabled={!drawing} onClick={paletteFromDrawing} title="Make a palette from the colours in the drawing on this frame">
           From drawing
         </ActionButton>
+        <ActionButton onClick={() => void import('./import/run').then((m) => m.pickPictureForPalette())} title="Add the colours of a PNG, GIF or sprite sheet to the palette, or use them in its place">
+          From a picture...
+        </ActionButton>
       </div>
 
       {layer ? (
@@ -261,7 +316,8 @@ export function PalettePanel() {
       ) : (
         <p className="cv-tip">The palette lock and shading work on pixel layers. Pick or add a pixel layer to use them.</p>
       )}
-      {!doc.palette && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
+      {sharedEditNote(doc, 'palette') && <p className="cv-tip">This is a variation. Change a colour here and only this variation changes; the rest follows the original. The list of colours itself belongs to the original.</p>}
+      {!doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
 
       {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} />}
     </div>

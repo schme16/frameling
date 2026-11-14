@@ -7,8 +7,9 @@
  * Frames are 0-based in the data. The panel shows them 1-based.
  */
 import { current, isDraft } from 'immer';
-import type { Cel, Clip, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
+import type { Cel, Clip, ClipDirection, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
 import { currentChoice } from '../core/choices';
+import { cleanRepeat, clipDirection } from '../core/clipPlay';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { stepLayerThroughFolders, tidyFolders } from '../effects/edit';
 
@@ -24,14 +25,18 @@ function plain<T>(x: T): T {
   return isDraft(x) ? (current(x as never) as T) : x;
 }
 
-/** A deep copy of a drawing under a new id (shapes get new ids too, pixels get their own buffer). */
+/** A deep copy of a drawing under a new id (shapes get new ids too but keep their `origin`, pixels get their own buffer). */
 export function cloneDrawing(d: Drawing): Drawing {
   const src = plain(d);
   if (src.kind === 'pixel') return { ...src, id: uid('p'), pixels: new Uint8ClampedArray(src.pixels) };
   if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
   if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
-  for (const s of shapes) s.id = uid('s');
+  // Each copy remembers the shape it came from, so a selection can follow it from key to key.
+  for (const s of shapes) {
+    s.origin = s.origin ?? s.id;
+    s.id = uid('s');
+  }
   // A bones layer's key keeps its pose.
   return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }
@@ -374,6 +379,8 @@ export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0 || doc.layers.length <= 1) return null;
   doc.layers.splice(i, 1);
+  // One stack for every board: the layer goes from all of them, with what they drew on it.
+  if (sharedBoards(doc)) for (const a of doc.artboards!) if (a.content?.cels) delete a.content.cels[layerId];
   pruneDrawings(doc);
   return { next: doc.layers[Math.min(i, doc.layers.length - 1)].id };
 }
@@ -399,8 +406,29 @@ export function duplicateLayer(doc: Doc, layerId: Id): Id | null {
     c.drawingId = to;
   }
   doc.layers.splice(i + 1, 0, copy);
+  // One stack for every board: each board gets its own copy of what it drew on the layer, drawings copied too.
+  if (sharedBoards(doc)) {
+    for (const a of doc.artboards!) {
+      const cels = a.content?.cels?.[layerId];
+      if (!cels?.length) continue;
+      const mine = new Map<Id, Id>();
+      a.content!.cels![copy.id] = plain(cels).map((c: Cel) => {
+        let to = mine.get(c.drawingId);
+        if (!to && doc.drawings[c.drawingId]) {
+          const d = cloneDrawing(doc.drawings[c.drawingId]);
+          doc.drawings[d.id] = d;
+          to = d.id;
+          mine.set(c.drawingId, to);
+        }
+        return { ...c, id: uid('c'), drawingId: to ?? c.drawingId };
+      });
+    }
+  }
   return copy.id;
 }
+
+/** True when the boards share one layer stack and the stack on show is the document's (not a symbol's). */
+const sharedBoards = (doc: Doc): boolean => !!doc.sharedLayers && !doc.editing?.length && !!doc.artboards?.length;
 
 export function renameLayer(doc: Doc, layerId: Id, name: string): boolean {
   const l = findLayer(doc, layerId);
@@ -521,6 +549,33 @@ export function setClipLoop(doc: Doc, id: Id, loop: boolean): boolean {
   const c = doc.clips.find((x) => x.id === id);
   if (!c || c.loop === loop) return false;
   c.loop = loop;
+  return true;
+}
+
+/** Sets which way a clip plays. Forward is the default, so it is stored as no value. */
+export function setClipDirection(doc: Doc, id: Id, direction: ClipDirection): boolean {
+  const c = doc.clips.find((x) => x.id === id);
+  if (!c || clipDirection(c) === direction) return false;
+  if (direction === 'forward') delete c.direction;
+  else c.direction = direction;
+  return true;
+}
+
+/** Sets how often a clip plays: 'forever', or a number of times (1 = once, then it holds its last frame). */
+export function setClipRepeat(doc: Doc, id: Id, repeat: 'forever' | number): boolean {
+  const c = doc.clips.find((x) => x.id === id);
+  if (!c) return false;
+  if (repeat === 'forever') {
+    if (c.loop) return false;
+    c.loop = true;
+    return true;
+  }
+  const n = cleanRepeat(repeat);
+  if (n === undefined) return false;
+  if (!c.loop && (c.repeat ?? 1) === n) return false;
+  c.loop = false;
+  if (n === 1) delete c.repeat;
+  else c.repeat = n;
   return true;
 }
 

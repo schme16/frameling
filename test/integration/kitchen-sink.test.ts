@@ -6,7 +6,7 @@ import type { Doc, VectorDrawing, VectorLayer } from '../../src/core/format';
 import { renderFrame } from '../../src/core/render';
 import { resetStore, store } from '../../src/core/store';
 import { rootDoc } from '../../src/core/symbols';
-import { clearTilemapCache, tilemapStats } from '../../src/core/tilemap';
+import { clearTilemapCache, tilemapStats } from '../../src/tiles/map';
 import { kitchenSinkDoc } from '../../src/export/kitchenSink';
 import { frameToSvg } from '../../src/export/svg';
 import { loadFile, saveFile } from '../../src/io/file';
@@ -34,7 +34,8 @@ describe('kitchen sink document', () => {
     expect(d.symbols!.ball.layers.some((l) => l.kind === 'tilemap')).toBe(true);
     expect(d.tileset!.tiles.some((t) => t.frames.length > 1)).toBe(true);
     expect(d.audio).toHaveLength(1);
-    expect(Object.keys(d.folders ?? {})).toHaveLength(1);
+    expect(Object.keys(d.folders ?? {})).toHaveLength(2);
+    expect(d.folders!.f2.parent).toBe('f1');
   });
 
   it('saves and opens without losing anything', () => {

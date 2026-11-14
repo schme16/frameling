@@ -10,12 +10,53 @@ import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Dr
 import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
+import { existingSelection, followSelection, type FollowMemory } from './followSelection';
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
-setAutoFreeze(false);
+// Under test and in the harnesses (?debug, unless &nofreeze) it is turned on instead, so a write in place into a
+// committed document throws where it happens. The save keeps drawings' text between saves and relies on there being none.
+const strict = import.meta.env?.MODE === 'test' || (typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && !/[?&]nofreeze\b/.test(location.search));
+setAutoFreeze(strict);
 
 export type ToolId = string;
+
+/**
+ * Something that keeps the document consistent after a change (a variation following its original, say): given the
+ * document a change made, it returns a recipe for what else to change, or null. Its changes join the same undo step.
+ */
+export type Settler = (doc: Doc, ctx?: SettleContext) => ((draft: Draft<Doc>) => void) | null;
+/** What a change did, for a settler that only wants to look at what it touched. */
+export interface SettleContext {
+  /** The patches of the change itself (not of earlier settlers). */
+  patches: Patch[];
+  /** The document before the change. */
+  before: Doc;
+}
+const settlers: Settler[] = [];
+export function registerSettler(fn: Settler): void {
+  if (!settlers.includes(fn)) settlers.push(fn);
+}
+
+/**
+ * Something that refuses a change that would be lost or would reach where it should not (editing what a variation
+ * shares with its original): given the document before and after, it returns a plain sentence to say why, or null.
+ * A refused change is dropped whole (nothing is recorded) and the sentence goes to the blocked handler.
+ */
+export type Guard = (before: Doc, next: Doc, patches: Patch[]) => string | null;
+const guards: Guard[] = [];
+let blockedHandler: (message: string) => void = () => {};
+export function registerGuard(fn: Guard): void {
+  if (!guards.includes(fn)) guards.push(fn);
+}
+/** Where a refused change's sentence goes (the app shows it as a note). */
+export function onBlocked(fn: (message: string) => void): void {
+  blockedHandler = fn;
+}
+/** Says a refusal's sentence the same way (for a change that is let through as nothing, not as a patch). */
+export function reportBlocked(message: string): void {
+  blockedHandler(message);
+}
 
 export interface OnionSettings {
   enabled: boolean;
@@ -27,6 +68,10 @@ export interface OnionSettings {
   afterColor: Color;
   /** Tint the onion frames (true) or show them in their own colours (false). */
   tint: boolean;
+  /** Count keys instead of frames, so held frames are skipped (missing = no). */
+  keysOnly?: boolean;
+  /** Also ghost the artboards either side of the open one, like frames (missing = no). */
+  boards?: boolean;
 }
 
 export interface UiState {
@@ -46,7 +91,14 @@ export interface UiState {
   brush: BrushSettings;
   playing: boolean;
   loopPlayback: boolean;
+  /** Play forward then backward (ping-pong) instead of jumping back to the start (missing = no). */
+  pingPong?: boolean;
   onion: OnionSettings;
+  /**
+   * The light table: a frame (or one layer's drawing on it) shown faintly on every frame, to trace over. Not the
+   * onion skin: it stays put while you move around. Missing or null = off.
+   */
+  lightTable?: { frame: number; layerId?: Id; opacity: number } | null;
   /** Viewport: zoom (1 = 100%) and pan (screen pixels of the stage's top-left). */
   zoom: number;
   panX: number;
@@ -70,6 +122,8 @@ interface HistoryEntry {
   label: string;
   coalesce?: string;
   at: number;
+  /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
+  weight: number;
 }
 
 type Listener = () => void;
@@ -82,15 +136,56 @@ interface Nested {
   redo: HistoryEntry[];
   /** View and selection to go back to. */
   ui: Pick<UiState, 'frame' | 'activeLayerId' | 'selection' | 'zoom' | 'panX' | 'panY'>;
+  /** The selection memory of the open document, handed back when the nested one closes. */
+  follow: FollowMemory | null;
   /** The open document with the nested one's changes in it (pure: returns a new doc, or `parent` if nothing changed). */
   merge: (parent: Doc, nested: Doc) => Doc;
 }
 
-const HISTORY_LIMIT = 300;
+/** How many undo steps to keep when nobody has said otherwise: generous, and changeable in Preferences. */
+export const DEFAULT_HISTORY_STEPS = 300;
+/** The most and least you can set it to. */
+export const HISTORY_STEPS_RANGE = { min: 20, max: 2000 };
+/**
+ * However many steps you ask for, the history stops growing past this much memory (a few hundred pixel-art steps can
+ * each hold a whole layer). The newest steps always stay: at least this many, whatever they weigh.
+ */
+export const HISTORY_BYTES = 192 * 1024 * 1024;
+const ALWAYS_KEEP = 10;
+
+let historySteps = DEFAULT_HISTORY_STEPS;
+
+/** Preferences says how many steps to keep. Lowering it drops the oldest ones straight away. */
+export function setHistorySteps(n: number): void {
+  historySteps = Math.round(Math.min(HISTORY_STEPS_RANGE.max, Math.max(HISTORY_STEPS_RANGE.min, n)));
+  current?.trimHistory();
+}
+
+export function historyStepsNow(): number {
+  return historySteps;
+}
+
+/** Roughly how much memory a patch value holds. Typed arrays and strings are what actually get big. */
+export function weighValue(v: unknown, depth = 0): number {
+  if (v === null || v === undefined || depth > 6) return 8;
+  if (ArrayBuffer.isView(v)) return (v as ArrayBufferView).byteLength;
+  if (typeof v === 'string') return v.length * 2;
+  if (typeof v !== 'object') return 8;
+  if (Array.isArray(v)) {
+    let n = 16;
+    for (const x of v) n += weighValue(x, depth + 1);
+    return n;
+  }
+  let n = 16;
+  for (const x of Object.values(v as Record<string, unknown>)) n += weighValue(x, depth + 1);
+  return n;
+}
+
+const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
 
-function initialUi(doc: Doc): UiState {
+export function initialUi(doc: Doc): UiState {
   return {
     frame: 0,
     activeLayerId: doc.layers[doc.layers.length - 1]?.id ?? null,
@@ -119,6 +214,10 @@ export class Store {
   private redoStack: HistoryEntry[] = [];
   private nested: Nested | null = null;
   private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
+  /** What the selection stands for while it follows across keys (see followSelection). */
+  private follow: FollowMemory | null = null;
+  /** How many times a whole document has been put in (new or opened), so the canvas can refit even when it is the same file again. */
+  loads = 0;
 
   constructor(doc: Doc = newDoc()) {
     this.state = { doc, ui: initialUi(doc) };
@@ -133,6 +232,14 @@ export class Store {
     return () => this.listeners.delete(fn);
   };
 
+  private loadListeners = new Set<() => void>();
+
+  /** Called whenever a whole document is loaded (new, opened, an example), but not for edits. */
+  onLoad = (fn: () => void): (() => void) => {
+    this.loadListeners.add(fn);
+    return () => this.loadListeners.delete(fn);
+  };
+
   private emit() {
     for (const fn of this.listeners) fn();
   }
@@ -142,18 +249,34 @@ export class Store {
    * key within a moment of each other merge into one undo step.
    */
   update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string } = {}): void {
-    const [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
+    let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
+    const before = this.state.doc;
+    for (const guard of guards) {
+      const why = guard(before, next, patches);
+      if (why) return blockedHandler(why);
+    }
+    const own = patches;
+    for (const settle of settlers) {
+      const fix = settle(next, { patches: own, before });
+      if (!fix) continue;
+      const [n2, p2, i2] = produceWithPatches(next, fix);
+      if (!p2.length) continue;
+      next = n2;
+      patches = [...patches, ...p2];
+      inverse = [...i2, ...inverse];
+    }
     const now = Date.now();
     const last = this.undoStack[this.undoStack.length - 1];
     if (opts.coalesce && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
       last.patches.push(...patches);
       last.inverse.unshift(...inverse);
       last.at = now;
+      last.weight += weighPatches(patches) + weighPatches(inverse);
     } else {
-      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now });
-      if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
+      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse) });
     }
+    this.trimHistory();
     this.redoStack = [];
     this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
     this.emit();
@@ -162,7 +285,17 @@ export class Store {
   /** Changes UI state (no undo). */
   setUi(patch: Partial<UiState> | ((ui: UiState) => Partial<UiState>)): void {
     const p = typeof patch === 'function' ? patch(this.state.ui) : patch;
-    this.state = { ...this.state, ui: { ...this.state.ui, ...p } };
+    const was = this.state.ui;
+    let ui = { ...was, ...p };
+    // Moving the playhead (or playing) keeps the selection on the same shapes in the next key.
+    if (p.frame !== undefined && p.frame !== was.frame && !('selection' in p) && ui.activeLayerId === was.activeLayerId) {
+      const kept = followSelection(this.state.doc, ui.activeLayerId, was.selection, was.frame, p.frame, this.follow);
+      if (kept) {
+        ui = { ...ui, selection: kept.selection };
+        this.follow = kept.memory;
+      }
+    }
+    this.state = { ...this.state, ui };
     this.emit();
   }
 
@@ -174,6 +307,18 @@ export class Store {
   }
   undoLabel(): string | null {
     return this.undoStack[this.undoStack.length - 1]?.label ?? null;
+  }
+
+  /** Drops the oldest steps until the history is within the number you asked for, and within its memory budget. */
+  trimHistory(): void {
+    while (this.undoStack.length > historySteps) this.undoStack.shift();
+    let weight = this.undoStack.reduce((n, e) => n + e.weight, 0);
+    while (this.undoStack.length > ALWAYS_KEEP && weight > HISTORY_BYTES) weight -= this.undoStack.shift()!.weight;
+  }
+
+  /** How much memory the undo history is holding, roughly, in bytes. */
+  historyWeight(): number {
+    return this.undoStack.reduce((n, e) => n + e.weight, 0);
   }
   redoLabel(): string | null {
     return this.redoStack[this.redoStack.length - 1]?.label ?? null;
@@ -188,15 +333,21 @@ export class Store {
     const e = this.undoStack.pop();
     if (!e) return;
     this.redoStack.push(e);
-    this.state = { doc: applyPatches(this.state.doc, e.inverse), ui: { ...this.state.ui, dirty: true, selection: [] } };
-    this.emit();
+    this.afterHistory(applyPatches(this.state.doc, e.inverse));
   }
 
   redo(): void {
     const e = this.redoStack.pop();
     if (!e) return;
     this.undoStack.push({ ...e, coalesce: undefined });
-    this.state = { doc: applyPatches(this.state.doc, e.patches), ui: { ...this.state.ui, dirty: true, selection: [] } };
+    this.afterHistory(applyPatches(this.state.doc, e.patches));
+  }
+
+  /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */
+  private afterHistory(doc: Doc): void {
+    const ui = this.state.ui;
+    const keep = existingSelection(doc, ui.activeLayerId, ui.frame, ui.selection);
+    this.state = { doc, ui: { ...ui, dirty: true, selection: keep.length === ui.selection.length ? ui.selection : keep } };
     this.emit();
   }
 
@@ -213,10 +364,12 @@ export class Store {
       undo: this.undoStack,
       redo: this.redoStack,
       ui: { frame: u.frame, activeLayerId: u.activeLayerId, selection: u.selection, zoom: u.zoom, panX: u.panX, panY: u.panY },
+      follow: this.follow,
       merge: opts.merge,
     };
     this.undoStack = [];
     this.redoStack = [];
+    this.follow = null;
     this.state = { doc, ui: { ...u, frame: 0, selection: [], activeLayerId: doc.layers[doc.layers.length - 1]?.id ?? null, playing: false, ...opts.ui } };
     this.emit();
   }
@@ -230,6 +383,7 @@ export class Store {
     this.merged = null;
     this.undoStack = n.undo;
     this.redoStack = n.redo;
+    this.follow = n.follow;
     this.state = { doc: n.parent, ui: { ...this.state.ui, ...n.ui, playing: false } };
     this.emit();
     return child;
@@ -255,10 +409,22 @@ export class Store {
   load(doc: Doc, filePath: string | null = null): void {
     this.nested = null;
     this.merged = null;
+    this.follow = null;
     this.undoStack = [];
     this.redoStack = [];
+    this.loads++;
     const u = this.state.ui;
-    this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool } };
+    this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool, loopPlayback: u.loopPlayback, pingPong: u.pingPong, onion: u.onion } };
+    this.emit();
+    for (const fn of this.loadListeners) fn();
+  }
+
+  /** Gives the open document a new id (no undo step), for a Save as copy that starts its own version history. */
+  setDocId(id: string): void {
+    if (this.nested) {
+      this.nested.parent = { ...this.nested.parent, id };
+      this.merged = null;
+    } else this.state = { ...this.state, doc: { ...this.state.doc, id } };
     this.emit();
   }
 

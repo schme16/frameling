@@ -1,6 +1,7 @@
 // Sprite sheets: trimming, packing frames into a grid, the JSON atlas, and the Godot files. Pure maths and text, so
 // it is all tested without a canvas.
-import type { Clip } from '../core/format';
+import type { Clip, ClipDirection } from '../core/format';
+import { bakeFrames, clipDirection, clipPlays, isBackAndForth, stillPositions } from '../core/clipPlay';
 import type { RawImage } from '../io/png';
 import { slug } from './plan';
 import { packSheet } from './pack';
@@ -209,8 +210,43 @@ export interface Animation {
   name: string;
   fps: number;
   loop: boolean;
-  /** Document frames, as indexes into the exported range. */
+  /**
+   * Document frames in the order they play, as indexes into the exported range: the clip's direction and repeat
+   * are already in it (one pass when it loops, every pass when it plays N times), so a player that knows nothing
+   * about directions just plays the list.
+   */
   frames: number[];
+  /** What the clip says (missing = forward, once), for engines that can say it themselves. */
+  direction?: ClipDirection;
+  /** How many times it plays when it does not loop. */
+  repeat?: number;
+  /** One pass, in the order it plays (missing = `frames`). Phaser repeats this itself. */
+  pass?: number[];
+  /** The clip's frames in the order it was made (missing = `frames`), which is what names its pictures. */
+  clip?: number[];
+  /**
+   * For a back and forth clip an engine could bounce by itself: `leg` is one direction of it (the way it starts),
+   * `trips` how many times it goes there and back (Infinity when it loops). Missing when it cannot (an odd count of
+   * directions ends half way round a trip). Engines use it only when asked to (the "Back-and-forth clips in game engines"
+   * preference); `frames` already holds the baked order for everyone else.
+   */
+  bounce?: { leg: number[]; trips: number };
+}
+
+/** Puts a clip's frames in order and says what is left to say: only what differs from forward, once, is added. */
+export function playing(frames: number[], c: { loop: boolean; direction?: ClipDirection; repeat?: number } | undefined): Pick<Animation, 'frames' | 'direction' | 'repeat' | 'pass' | 'clip' | 'bounce'> {
+  if (!c) return { frames };
+  const dir = clipDirection(c);
+  const plays = clipPlays(c);
+  if (dir === 'forward' && (plays === 1 || plays === Infinity)) return { frames };
+  const out: Pick<Animation, 'frames' | 'direction' | 'repeat' | 'pass' | 'clip' | 'bounce'> = { frames: bakeFrames(frames, dir, plays), clip: frames };
+  if (isBackAndForth(dir) && frames.length > 1 && (plays === Infinity || (plays > 1 && plays % 2 === 0))) {
+    out.bounce = { leg: stillPositions(frames.length, dir).map((p) => frames[p]), trips: plays === Infinity ? Infinity : plays / 2 };
+  }
+  if (dir !== 'forward') out.direction = dir;
+  if (plays !== Infinity && plays > 1) out.repeat = plays;
+  if (plays !== Infinity) out.pass = bakeFrames(frames, dir, Infinity);
+  return out;
 }
 
 /**
@@ -233,10 +269,10 @@ export function buildAnimations(opts: { clips: Clip[]; rangeStart: number; range
   };
   if (!opts.whole) {
     const clip = opts.clips.find((c) => c.id === opts.onlyClipId);
-    return [{ name: unique(clip?.name ?? 'default'), fps: opts.fps, loop: clip?.loop ?? true, frames: Array.from({ length: n }, (_, i) => i) }];
+    return [{ name: unique(clip?.name ?? 'default'), fps: opts.fps, loop: clip?.loop ?? true, ...playing(Array.from({ length: n }, (_, i) => i), clip) }];
   }
   const out = opts.clips
-    .map((c) => ({ name: unique(c.name), fps: opts.fps, loop: c.loop, frames: clipFrames(c) }))
+    .map((c) => ({ name: unique(c.name), fps: opts.fps, loop: c.loop, ...playing(clipFrames(c), c) }))
     .filter((a) => a.frames.length);
   if (out.length) return out;
   return [{ name: unique('default'), fps: opts.fps, loop: true, frames: Array.from({ length: n }, (_, i) => i) }];
@@ -282,6 +318,9 @@ export function atlasFrame(c: Cell, at: { x: number; y: number }) {
   };
 }
 
+/** The direction and repeat count a clip has, when it has them. `frames` already follows them. */
+const extras = (a: Animation): { direction?: ClipDirection; repeat?: number } => ({ ...(a.direction ? { direction: a.direction } : {}), ...(a.repeat ? { repeat: a.repeat } : {}) });
+
 /** A generic atlas any engine or script can read: where each frame is on the picture, and how the animations use them. */
 export function buildAtlas(a: AtlasInput) {
   const meta = { app: 'Frameling', format: 'frameling-atlas', version: 1, image: a.image, size: { w: a.layout.width, h: a.layout.height }, scale: a.scale, fps: a.fps, frameCount: a.frameCount };
@@ -291,7 +330,7 @@ export function buildAtlas(a: AtlasInput) {
     return {
       meta,
       frames: Object.fromEntries(a.cells.map((c, i) => [names[i], { ...atlasFrame(c, a.layout.positions[i]), duration: duration(c) }])),
-      animations: Object.fromEntries(a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, frames: an.frames.map((f) => names[a.cellOfFrame[f]]) }])),
+      animations: Object.fromEntries(a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, ...extras(an), frames: an.frames.map((f) => names[a.cellOfFrame[f]]) }])),
     };
   }
   return {
@@ -303,7 +342,7 @@ export function buildAtlas(a: AtlasInput) {
       duration: duration(c),
     })),
     animations: Object.fromEntries(
-      a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, frames: an.frames.map((f) => a.cellOfFrame[f]) }]),
+      a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, ...extras(an), frames: an.frames.map((f) => a.cellOfFrame[f]) }]),
     ),
   };
 }
@@ -331,12 +370,19 @@ export interface GodotInput {
   cells: Cell[];
   cellOfFrame: number[];
   animations: Animation[];
+  /** Let Godot bounce a back and forth clip that loops itself (loop mode 2): one direction is listed and the ends show twice in Godot. */
+  nativeBounce?: boolean;
 }
+
+/** An animation as the engine plays it: with its own bounce, just one direction of a looping back and forth clip. */
+export const withNativeBounce = (a: Animation, on: boolean | undefined): { anim: Animation; bounces: boolean } =>
+  on && a.loop && a.bounce?.trips === Infinity ? { anim: { ...a, frames: a.bounce.leg }, bounces: true } : { anim: a, bounces: false };
 
 /** A Godot 4 SpriteFrames resource: every frame is an AtlasTexture cut from the sheet, every animation lists them. */
 export function godotSpriteFrames(g: GodotInput): string {
+  const chosen = g.animations.map((a) => withNativeBounce(a, g.nativeBounce));
   // Only cells some animation actually shows need a texture.
-  const runs = g.animations.map((a) => animationRuns(a, g.cellOfFrame));
+  const runs = chosen.map((c) => animationRuns(c.anim, g.cellOfFrame));
   const used = [...new Set(runs.flat().map((r) => r.cell))].sort((a, b) => a - b);
   const subId = (cell: number) => `AtlasTexture_${cell}`;
   const out: string[] = [];
@@ -353,9 +399,9 @@ export function godotSpriteFrames(g: GodotInput): string {
     out.push('filter_clip = true', '');
   }
   out.push('[resource]');
-  const anims = g.animations.map((a, ai) => {
+  const anims = chosen.map(({ anim: a, bounces }, ai) => {
     const frames = runs[ai].map((r) => `{\n"duration": ${gdFloat(r.frames)},\n"texture": SubResource("${subId(r.cell)}")\n}`).join(', ');
-    return `{\n"frames": [${frames}],\n"loop": ${a.loop},\n"name": &${gdString(a.name)},\n"speed": ${gdFloat(a.fps)}\n}`;
+    return `{\n"frames": [${frames}],\n"loop": ${bounces ? 2 : a.loop},\n"name": &${gdString(a.name)},\n"speed": ${gdFloat(a.fps)}\n}`;
   });
   out.push(`animations = [${anims.join(', ')}]`, '');
   return out.join('\n');

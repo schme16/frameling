@@ -1,0 +1,283 @@
+{
+ "label": "sweep",
+ "when": "2026-11-13T05:43:58.554Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 125.2,
+   "runs": [
+    170.1,
+    125.2,
+    121.6
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 10.43,
+   "topSelf": [
+    [
+     "(program) :0",
+     106.2
+    ],
+    [
+     "(garbage collector) :0",
+     5.3
+    ],
+    [
+     "(anon) index-DG15snJg.js:65",
+     3
+    ],
+    [
+     "lp index-DG15snJg.js:11",
+     1.8
+    ],
+    [
+     "ap index-DG15snJg.js:11",
+     1.7
+    ],
+    [
+     "$d index-DG15snJg.js:10",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     106.2
+    ],
+    [
+     "(anon) index-DG15snJg.js:10",
+     17.7
+    ],
+    [
+     "Mf index-DG15snJg.js:10",
+     16.6
+    ],
+    [
+     "Ff index-DG15snJg.js:10",
+     16.5
+    ],
+    [
+     "Af index-DG15snJg.js:10",
+     16.5
+    ],
+    [
+     "Bd index-DG15snJg.js:10",
+     16.4
+    ],
+    [
+     "Qd index-DG15snJg.js:10",
+     10.1
+    ],
+    [
+     "$d index-DG15snJg.js:10",
+     10.1
+    ],
+    [
+     "fl index-DG15snJg.js:10",
+     8.7
+    ],
+    [
+     "Vd index-DG15snJg.js:10",
+     6.3
+    ],
+    [
+     "cf index-DG15snJg.js:10",
+     6.2
+    ],
+    [
+     "lf index-DG15snJg.js:10",
+     6.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 994.2,
+   "runs": [
+    1020,
+    994.2,
+    962.5
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 12.43,
+   "topSelf": [
+    [
+     "(program) :0",
+     478.7
+    ],
+    [
+     "drawImage :0",
+     410.4
+    ],
+    [
+     "I index-DG15snJg.js:3",
+     9
+    ],
+    [
+     "getContext :0",
+     7.6
+    ],
+    [
+     "Xv index-DG15snJg.js:58",
+     5.1
+    ],
+    [
+     "save :0",
+     3.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     478.7
+    ],
+    [
+     "t index-DG15snJg.js:58",
+     452.1
+    ],
+    [
+     "warm index-DG15snJg.js:58",
+     450.3
+    ],
+    [
+     "build index-DG15snJg.js:58",
+     432.7
+    ],
+    [
+     "drawImage :0",
+     410.4
+    ],
+    [
+     "(anon) index-DG15snJg.js:10",
+     33.7
+    ],
+    [
+     "frame index-DG15snJg.js:58",
+     23
+    ],
+    [
+     "drawMain index-DG15snJg.js:58",
+     20.7
+    ],
+    [
+     "wh index-DG15snJg.js:11",
+     19.7
+    ],
+    [
+     "Ch index-DG15snJg.js:11",
+     19.6
+    ],
+    [
+     "Xf index-DG15snJg.js:10",
+     18.9
+    ],
+    [
+     "On index-DG15snJg.js:10",
+     18.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 424.5,
+   "runs": [
+    424.5,
+    431.6,
+    382.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 70.74,
+   "topSelf": [
+    [
+     "(program) :0",
+     267.7
+    ],
+    [
+     "drawImage :0",
+     32.5
+    ],
+    [
+     "setTransform :0",
+     12.7
+    ],
+    [
+     "scale :0",
+     7.6
+    ],
+    [
+     "(garbage collector) :0",
+     7.4
+    ],
+    [
+     "getBoundingClientRect :0",
+     6.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     267.7
+    ],
+    [
+     "Bd index-DG15snJg.js:10",
+     72.9
+    ],
+    [
+     "(anon) index-DG15snJg.js:10",
+     45
+    ],
+    [
+     "lf index-DG15snJg.js:10",
+     42.8
+    ],
+    [
+     "cf index-DG15snJg.js:10",
+     42.8
+    ],
+    [
+     "Vd index-DG15snJg.js:10",
+     42.8
+    ],
+    [
+     "Mf index-DG15snJg.js:10",
+     40.8
+    ],
+    [
+     "Ff index-DG15snJg.js:10",
+     40.6
+    ],
+    [
+     "Af index-DG15snJg.js:10",
+     40.6
+    ],
+    [
+     "D index-DG15snJg.js:3",
+     34.2
+    ],
+    [
+     "drawImage :0",
+     32.5
+    ],
+    [
+     "Pf index-DG15snJg.js:10",
+     32.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

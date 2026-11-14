@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
-import { TILE_FLIP_X, type PixelDrawing, type TilemapLayer } from '../../src/core/format';
+import { TILE_FLIP_X, type PixelDrawing, type PixelLayer, type TilemapLayer } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
 import { buildTileAtlas, DEFAULT_TILESET_EXPORT, godotTileMapData, godotTileScene, layoutTiles, mapsAt, tiledMap, tiledTileset, tilesetFiles, tilesetJson } from '../../src/tiles/export';
 import { addTile, ensureTileset, findTile, makeCell } from '../../src/tiles/model';
@@ -8,6 +8,7 @@ import { editingTileKey, editTile, finishTileEdit } from '../../src/tiles/tileEd
 import { getTileUi, setTileUi } from '../../src/tiles/state';
 import { makeTileset } from '../../src/templates/tileset';
 import { sampleTileDoc } from './helpers';
+import { PixelSession } from '../../src/tools/pixelSession';
 
 describe('tileset export', () => {
   it('keeps an animated tile on one row', () => {
@@ -99,6 +100,30 @@ describe('editing a tile', () => {
     expect(s.undoLabel()).toBe('Edit tile "A"');
     s.undo();
     expect((s.get().doc.drawings[t.frames[0].drawingId] as PixelDrawing).pixels[0]).toBe(0);
+  });
+
+  it('keeps a painted tile a whole tile, though the painting keeps only the painted part', () => {
+    const doc = newDoc({ width: 32, height: 32, pixel: { pixelSize: 1 } });
+    ensureTileset(doc, 4, 4);
+    const t = addTile(doc, { name: 'P' });
+    const s = resetStore(doc);
+    editTile(t.key);
+    const sub = s.get().doc;
+    const session = new PixelSession(sub, sub.layers[0] as PixelLayer, 0);
+    session.set(1, 2, [255, 0, 0, 255]);
+    expect(session.commit('Paint')).toBe('ok');
+    // In the tile's own document the drawing is just the one pixel...
+    const held = s.get().doc.drawings[s.get().doc.layers[0].cels[0].drawingId] as PixelDrawing;
+    expect([held.x, held.y, held.width, held.height]).toEqual([1, 2, 1, 1]);
+    // ...and it goes back into the tileset as the whole 4 x 4 tile, in the same frame.
+    const root = s.rootDoc();
+    const frame = root.drawings[findTile(root.tileset, t.key)!.frames[0].drawingId] as PixelDrawing;
+    expect([frame.x, frame.y, frame.width, frame.height]).toEqual([undefined, undefined, 4, 4]);
+    expect([...frame.pixels.slice((2 * 4 + 1) * 4, (2 * 4 + 1) * 4 + 4)]).toEqual([255, 0, 0, 255]);
+    finishTileEdit();
+    const back = s.get().doc;
+    expect(findTile(back.tileset, t.key)!.frames).toHaveLength(1);
+    expect((back.drawings[findTile(back.tileset, t.key)!.frames[0].drawingId] as PixelDrawing).pixels.length).toBe(4 * 4 * 4);
   });
 
   it('turns extra keys on the timeline into animation frames', () => {

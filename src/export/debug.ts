@@ -1,10 +1,12 @@
 // With ?debug in the page address, expose the export machinery so scripts/e2e/export.cjs can drive it in the real app.
+import { trimmedDrawing } from '../core/pixelBounds';
 // exportDocument is the very function the dialog's Export button calls, so this runs the same path a person does.
 // Never on in normal use.
 import { rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
-import type { Doc } from '../core/format';
+import type { ClipDirection, Doc } from '../core/format';
 import { store } from '../core/store';
+import { setChoice } from '../core/choices';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
 import { runExport } from './run';
@@ -44,7 +46,8 @@ function stressDoc(): Doc {
   const px = newPixelDrawing(20, 16);
   for (let i = 0; i < 20; i++) px.pixels.set([155, 123, 255, 255], (8 * 20 + i) * 4);
   px.pixels.set([255, 201, 74, 255], (3 * 20 + 3) * 4);
-  doc.drawings[px.id] = px;
+  // Stored trimmed, the way painting and saving leave pixel drawings, so a save and open gives back the same object.
+  doc.drawings[px.id] = trimmedDrawing(px);
   lp.cels = [{ id: 'c2', start: 0, length: 3, drawingId: px.id }];
   doc.layers = [lv, lp];
   return doc;
@@ -56,6 +59,8 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     templates: async () => (await import('../templates')).TEMPLATES.map((t) => t.id),
     load: async (id: string) => store().load((await import('../templates')).findTemplate(id)!.make(), null),
     loadStress: () => store().load(stressDoc(), null),
+    // A symbol with bones, a camera, a far layer and an Add glow, for the Godot bones checks.
+    loadBonesExtras: async (camera = true, extra: Record<string, unknown> = {}) => store().load((await import('./bonesExtrasDoc')).bonesExtrasDoc({ ...(camera ? { camera: { a: { x: 180, y: 135, zoom: 1, rotation: 0 }, b: { x: 215, y: 150, zoom: 1.4, rotation: 6 } } } : {}), ...extra }), null),
     // Every feature at once (symbols, tweens, effects, folders, masks, tiles, bones, sound): see kitchenSink.ts.
     loadKitchenSink: async () => store().load((await import('./kitchenSink')).kitchenSinkDoc(), null),
     loadKitchenSinkPerf: async (frames?: number) => store().load((await import('./kitchenSink')).kitchenSinkPerfDoc(frames), null),
@@ -63,7 +68,12 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
-    addClip: (name: string, start: number, end: number) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop: true })),
+    addClip: (name: string, start: number, end: number, loop = true, direction?: ClipDirection, repeat?: number) =>
+      store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop, ...(direction ? { direction } : {}), ...(repeat ? { repeat } : {}) })),
+    /** Sets (or with undefined, forgets) a remembered choice, like the one in Preferences > Behaviour. */
+    setChoice: (id: string, value: string | undefined) => setChoice(id, value),
+    clearClips: () => store().update('Clear clips', (d) => void (d.clips = [])),
+    rename: (name: string) => store().update('Rename', (d) => void (d.name = name)),
     setFrame: (n: number) => store().setUi({ frame: n }),
     /** Makes the export's bytes without saving them anywhere (the perf soak test). Returns the size and time. */
     encode: async (s: ExportSettings) => {
@@ -83,7 +93,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
         const outcome = await exportDocument(s, ac.signal, (p) => progress.push(p));
         return { outcome, ms: Math.round(performance.now() - t0), progress: progress.length };
       } catch (e) {
-        return { error: e instanceof Error ? e.message : String(e), ms: Math.round(performance.now() - t0), progress: progress.length };
+        return { error: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? String(e.stack).split('\n').slice(0, 6).join(' / ') : '', ms: Math.round(performance.now() - t0), progress: progress.length };
       }
     },
   };

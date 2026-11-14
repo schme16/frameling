@@ -2,9 +2,11 @@
 // lottie-web from the Lottie export, and lays the animated SVG out so the driver can capture it at any frame.
 // Bundled by esbuild into one script (see vector-check.cjs).
 import { makePuppet } from '../../src/templates/puppet';
+import { bonesRigs } from '../../src/export/godot-bones';
+import { gridMesh, skinMesh } from '../../src/rig/math';
 import lottie from 'lottie-web/build/player/lottie_canvas';
 import lottieSvg from 'lottie-web/build/player/lottie_svg';
-import type { Doc, InstanceShape, LayerEffect } from '../../src/core/format';
+import type { Doc, InstanceShape, LayerEffect, VectorDrawing } from '../../src/core/format';
 import { newTextShape, newAnimator } from '../../src/text/model';
 import { newParticles } from '../../src/particles/model';
 import { defaultValues } from '../../src/effects/model';
@@ -17,6 +19,10 @@ import { animatedSvg } from '../../src/export/svg-anim';
 import { makeBouncingLogo } from '../../src/templates/bouncing-logo';
 import { makeBouncingBall } from '../../src/templates/bouncing-ball';
 import { makeMorph } from '../../src/templates/morph';
+import { TEMPLATES } from '../../src/templates';
+import { dotLottieBytes } from '../../src/export/dotlottie';
+import { strToU8, zipSync } from 'fflate';
+import { lottieSizes } from '../../src/export/lottie-size';
 import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
 
@@ -113,8 +119,11 @@ function particlesDoc(): Doc {
   const star = { ...newParticles(uid('s'), 'sparkle', { x: 120, y: 120 }), burst: 24 };
   const conf = { ...newParticles(uid('s'), 'confetti', { x: 280, y: 200 }), burst: 30 };
   const smoke = { ...newParticles(uid('s'), 'smoke', { x: 200, y: 280 }), rate: 6 };
+  // Rain is drawn as streaks, snow as flakes.
+  const rain = { ...newParticles(uid('s'), 'rain', { x: 200, y: 10 }), width: 400, rate: 40 };
+  const snow = { ...newParticles(uid('s'), 'snow', { x: 200, y: 10 }), width: 400, rate: 12 };
   const d = vectorDrawing(doc, []);
-  d.shapes = [smoke, star, conf];
+  d.shapes = [smoke, star, conf, rain, snow];
   hold(l, d.id, 0, 24);
   return doc;
 }
@@ -129,6 +138,33 @@ function symbolParticlesDoc(): Doc {
   const d = vectorDrawing(doc, []);
   d.shapes = [p];
   hold(l, d.id, 0, 18);
+  return doc;
+}
+
+/** Symbol sprites with drag sideways and gravity down: x and y keep different timing (separated position on layers). */
+function symbolGravityDoc(): Doc {
+  const doc = newDoc({ name: 'Symbol gravity', width: 400, height: 300, length: 36, fps: 12 });
+  doc.layers = [];
+  const l = addVectorLayer(doc, 'Coins');
+  const k = vectorDrawing(doc, [fill([ellipsePath(20, 20, 10, 10)], '#ffc94a'), fill([rectPath(16, 16, 8, 8)], '#ff6f91')]);
+  const sym = makeSymbol(doc, k.id, k.shapes.map((s) => s.id), { x: 20, y: 20 }, 'Coin');
+  const p = { ...newParticles(uid('s'), 'sparkle', { x: 60, y: 60 }), burst: 12, life: 3, speed: 260, direction: -20, spread: 30, drag: 2.5, gravity: 420, variance: 0.2, sprite: 'symbol' as const, symbolId: sym!.symbolId };
+  const d = vectorDrawing(doc, []);
+  d.shapes = [p];
+  hold(l, d.id, 0, 36);
+  return doc;
+}
+
+/** The puppet with a squashed chest, a stretched thigh and a skinned body: parts that bend, not only turn. */
+function puppetSkinDoc(): Doc {
+  const doc = makePuppet();
+  const rig = bonesRigs(doc)[0];
+  const chest = rig.rig.bones.find((b) => b.name === 'Chest')!.id;
+  const thigh = rig.rig.bones.find((b) => b.name === 'Left thigh')!.id;
+  const d1 = doc.drawings[rig.cels[1].drawingId] as VectorDrawing;
+  d1.pose = { ...d1.pose!, [chest]: { ...d1.pose![chest], s: 0.8 }, [thigh]: { ...d1.pose![thigh], s: 1.25 } };
+  const body = doc.layers.find((l) => l.name === 'Body')!;
+  body.bind = { rig: rig.id, bone: chest, mesh: skinMesh(rig.rig, gridMesh({ x: 320, y: 178, w: 80, h: 150 }, 6)) };
   return doc;
 }
 
@@ -261,10 +297,72 @@ function symbolLooksDoc(): Doc {
   return doc;
 }
 
+/** Faded groups: a layer, a folder and a symbol copy with overlapping shapes, each faded as a whole. */
+function overlapDoc(): Doc {
+  const doc = newDoc({ name: 'Overlap fades', width: 400, height: 300, length: 12, fps: 12 });
+  doc.layers = [];
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 400, 300)], '#f4efe6')]).id, 0, 12);
+  const lay = addVectorLayer(doc, 'Faded layer');
+  lay.opacity = 0.5;
+  hold(lay, vectorDrawing(doc, [fill([ellipsePath(70, 70, 50, 50)], '#ff6f91'), fill([ellipsePath(110, 90, 50, 50)], '#5ab8ff'), fill([rectPath(60, 100, 80, 40)], '#4fd1a5')]).id, 0, 12);
+  doc.folders = { f1: { id: 'f1', name: 'Faded folder', visible: true, opacity: 0.5 } };
+  const a = addVectorLayer(doc, 'In A');
+  a.folder = 'f1';
+  hold(a, vectorDrawing(doc, [fill([ellipsePath(250, 70, 50, 50)], '#ff6f91')]).id, 0, 12);
+  const b = addVectorLayer(doc, 'In B');
+  b.folder = 'f1';
+  hold(b, vectorDrawing(doc, [fill([ellipsePath(290, 90, 50, 50)], '#5ab8ff')]).id, 0, 12);
+  const sym = vectorDrawing(doc, [fill([ellipsePath(0, 0, 40, 40)], '#9b7bff'), fill([ellipsePath(30, 20, 40, 40)], '#ffc94a')]);
+  doc.symbols = { sy: { id: 'sy', name: 'Pair', layers: [], length: 1, origin: { x: 0, y: 0 } } };
+  const sl = addVectorLayer(doc, 'Pair inner');
+  hold(sl, sym.id, 0, 1);
+  doc.symbols.sy.layers = [sl];
+  doc.layers = doc.layers.filter((l) => l.id !== sl.id);
+  const copies = addVectorLayer(doc, 'Copies');
+  const k = vectorDrawing(doc, []);
+  const mk = (x: number, y: number, opacity: number): InstanceShape => ({ id: uid('s'), type: 'instance', symbolId: 'sy', transform: { x, y, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity }) as InstanceShape;
+  k.shapes = [mk(100, 220, 0.5), mk(280, 220, 0.4)];
+  hold(copies, k.id, 0, 12);
+  const fadeIn = addVectorLayer(doc, 'Fade in');
+  const fk = [vectorDrawing(doc, [fill([ellipsePath(200, 160, 30, 30)], '#1d1b26'), fill([ellipsePath(215, 160, 30, 30)], '#ff6f91')])];
+  hold(fadeIn, fk[0].id, 0, 12);
+  fadeIn.opacity = 0.35;
+  return doc;
+}
+
+/** Big baked effects: moving things with Glow and Outline over many frames, a still one, a Pixelate layer, a folder. */
+function heavyEffectsDoc(): Doc {
+  const doc = newDoc({ name: 'Heavy effects', width: 480, height: 270, length: 36, fps: 12 });
+  doc.layers = [];
+  const fx = (kind: LayerEffect['kind'], values: Record<string, number | string>): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 480, 270)], '#1d1b26')]).id, 0, 36);
+  const glow = addVectorLayer(doc, 'Moving glow');
+  glow.effects = [fx('glow', { size: 18 })];
+  for (let f = 0; f < 36; f++) hold(glow, vectorDrawing(doc, [fill([ellipsePath(60 + f * 10, 80 + Math.sin(f / 4) * 30, 24, 24)], '#ffc94a')]).id, f, 1);
+  const still = addVectorLayer(doc, 'Still glow');
+  still.effects = [fx('glow', { size: 14 })];
+  hold(still, vectorDrawing(doc, [fill([ellipsePath(120, 200, 30, 30)], '#5ab8ff')]).id, 0, 36);
+  const out = addVectorLayer(doc, 'Outlined');
+  out.effects = [fx('outline', { width: 5 })];
+  for (let f = 0; f < 36; f++) hold(out, vectorDrawing(doc, [fill([rectPath(300 + Math.cos(f / 5) * 40, 170, 50, 50)], '#ff6f91')]).id, f, 1);
+  doc.folders = { f1: { id: 'f1', name: 'Tinted group', visible: true, opacity: 1, effects: [fx('adjust', { hue: 60 })] } };
+  for (const [i, c] of ['#9b7bff', '#4fd1a5'].entries()) {
+    const l = addVectorLayer(doc, 'Grouped ' + i);
+    l.folder = 'f1';
+    hold(l, vectorDrawing(doc, [fill([ellipsePath(240 + i * 30, 200, 35, 35)], c)]).id, 0, 36);
+  }
+  return doc;
+}
+
 const DOCS: Record<string, () => Doc> = {
+  overlap: overlapDoc,
+  'heavy-effects': heavyEffectsDoc,
   text: textDoc,
   particles: particlesDoc,
   'symbol-particles': symbolParticlesDoc,
+  'symbol-gravity': symbolGravityDoc,
   tint: tintDoc,
   blend: blendDoc,
   masks: maskDoc,
@@ -279,7 +377,9 @@ const DOCS: Record<string, () => Doc> = {
   'morph-template': makeMorph,
   'camera-pan-template': makeCameraPan,
   'puppet-template': makePuppet,
+  'puppet-skin': puppetSkinDoc,
 };
+for (const t of TEMPLATES) DOCS['tpl:' + t.id] = t.make;
 
 let doc: Doc;
 let anim: ReturnType<typeof lottie.loadAnimation> | null = null;
@@ -301,19 +401,23 @@ function frameling(frame: number): Uint8ClampedArray {
   return pixelsOf(c);
 }
 
-export function compare(a: Uint8ClampedArray, b: Uint8ClampedArray, tol = 48): { mean: number; off: number } {
+export function compare(a: Uint8ClampedArray, b: Uint8ClampedArray, tol = 48): { mean: number; off: number; rmse: number } {
   let sum = 0;
+  let sq2 = 0;
   let off = 0;
+  // Both over white, so a see-through stage compares the same whether a player paints a white page behind it or not.
+  const over = (p: Uint8ClampedArray, i: number, k: number) => (p[i + k] * p[i + 3]) / 255 + 255 - p[i + 3];
   for (let i = 0; i < a.length; i += 4) {
     let m = 0;
     for (let k = 0; k < 3; k++) {
-      const d = Math.abs(a[i + k] - b[i + k]);
+      const d = Math.abs(over(a, i, k) - over(b, i, k));
       sum += d;
+      sq2 += d * d;
       m = Math.max(m, d);
     }
     if (m > tol) off++;
   }
-  return { mean: sum / ((a.length / 4) * 3), off: (off / (a.length / 4)) * 100 };
+  return { mean: sum / ((a.length / 4) * 3), off: (off / (a.length / 4)) * 100, rmse: Math.sqrt(sq2 / ((a.length / 4) * 3)) };
 }
 
 const api = {
@@ -323,6 +427,8 @@ const api = {
     anim?.destroy();
     holder.innerHTML = '';
     const data = docToLottie(doc);
+    // lottie-web adds fields to the data it plays, so the file size is taken first.
+    const lottieBytes = JSON.stringify(data).length;
     const canvas = document.createElement('canvas');
     canvas.width = doc.width;
     canvas.height = doc.height;
@@ -340,7 +446,54 @@ const api = {
     await new Promise<void>((r) => (animSvg!.isLoaded ? r() : animSvg!.addEventListener('DOMLoaded', () => r())));
     await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
-    return { length: doc.length, width: doc.width, height: doc.height, lottieBytes: JSON.stringify(data).length, svgBytes: svgHolder.innerHTML.length };
+    return { length: doc.length, width: doc.width, height: doc.height, lottieBytes, svgBytes: svgHolder.innerHTML.length };
+  },
+  /** The Lottie file of the loaded document, to look at. */
+  json() {
+    return JSON.stringify(docToLottie(doc));
+  },
+  /** Where the bytes of this document's Lottie file go. */
+  sizes() {
+    return lottieSizes(docToLottie(doc));
+  },
+  /** Bakes the loaded document several ways: file size and the mean RMSE against Frameling over some frames (lottie-web canvas). */
+  async variants(list: { label: string; opts: Record<string, unknown> }[]) {
+    const out: { label: string; bytes: number; baked: number; rmse: number; ms: number }[] = [];
+    const frames = [...new Set([0, 1, 2, 3].map((k) => Math.floor((doc.length - 1) * (k / 3))))];
+    for (const v of list) {
+      const t0 = performance.now();
+      const data = docToLottie(doc, v.opts);
+      const ms = performance.now() - t0;
+      const canvas = document.createElement('canvas');
+      canvas.width = doc.width;
+      canvas.height = doc.height;
+      const holder2 = document.createElement('div');
+      holder2.appendChild(canvas);
+      const a = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: data, rendererSettings: { context: canvas.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'none' } as never });
+      await new Promise<void>((r) => (a.isLoaded ? r() : a.addEventListener('DOMLoaded', () => r())));
+      await new Promise((r) => setTimeout(r, 400));
+      let sum = 0;
+      for (const f of frames) {
+        a.goToAndStop(f, true);
+        sum += compare(frameling(f), pixelsOf(canvas)).rmse;
+      }
+      a.destroy();
+      out.push({ label: v.label, bytes: JSON.stringify(data).length, baked: lottieSizes(data).baked, rmse: sum / frames.length, ms });
+    }
+    return out;
+  },
+  /** One frame of the loaded document baked with `opts`, drawn by lottie-web's canvas player at `zoom` times the stage size. */
+  async pictureAt(opts: Record<string, unknown>, frame: number, zoom: number) {
+    const canvas = document.createElement('canvas');
+    canvas.width = doc.width * zoom;
+    canvas.height = doc.height * zoom;
+    const a = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: docToLottie(doc, opts), rendererSettings: { context: canvas.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' } as never });
+    await new Promise<void>((r) => (a.isLoaded ? r() : a.addEventListener('DOMLoaded', () => r())));
+    await new Promise((r) => setTimeout(r, 400));
+    a.goToAndStop(frame, true);
+    const url = canvas.toDataURL('image/png');
+    a.destroy();
+    return url;
   },
   lottieAt(frame: number) {
     try {
@@ -386,6 +539,153 @@ const api = {
     }
     const r = svgHolder.querySelector('svg')!.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
+  },
+  /**
+   * Plays the loaded document as plain JSON and as a .lottie in the dotLottie web player (ThorVG, from `base`/index.js)
+   * and compares frames with Frameling's own and with each other. Pictures and everything else go through the zip.
+   */
+  async dotLottie(base: string, frames: number[], version: 1 | 2 = 2) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const data = docToLottie(doc);
+    const lottie = dotLottieBytes(docToLottie(doc), { version });
+    const play = async (src: string | ArrayBuffer) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = doc.width;
+      canvas.height = doc.height;
+      document.body.appendChild(canvas);
+      const player = new mod.DotLottie({ canvas, data: src, autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
+      await new Promise<void>((res, rej) => {
+        player.addEventListener('load', () => res());
+        player.addEventListener('loadError', (e: unknown) => rej(new Error('load error ' + JSON.stringify(e))));
+        setTimeout(() => rej(new Error('player did not load')), 15000);
+      });
+      // Pictures decode on their own time.
+      await new Promise((r) => setTimeout(r, 500));
+      const out: Uint8ClampedArray[] = [];
+      for (const f of frames) {
+        player.setFrame(f);
+        await new Promise((r) => setTimeout(r, 150));
+        out.push(new Uint8ClampedArray(pixelsOf(canvas)));
+      }
+      const total = player.totalFrames;
+      player.destroy();
+      canvas.remove();
+      return { out, total };
+    };
+    const a = await play(JSON.stringify(data));
+    const b = await play(lottie.buffer.slice(lottie.byteOffset, lottie.byteOffset + lottie.byteLength) as ArrayBuffer);
+    let rJson = 0;
+    let rLottie = 0;
+    let between = 0;
+    let ink = 0;
+    frames.forEach((f, i) => {
+      const fl = frameling(f);
+      rJson += compare(fl, a.out[i]).rmse;
+      rLottie += compare(fl, b.out[i]).rmse;
+      between += compare(a.out[i], b.out[i]).rmse;
+      // Something was drawn: not all one colour.
+      const px = b.out[i];
+      for (let k = 4; k < px.length; k += 4) if (px[k] !== px[0] || px[k + 1] !== px[1] || px[k + 2] !== px[2]) ink++;
+    });
+    return { jsonBytes: JSON.stringify(data).length, lottieBytes: lottie.length, total: a.total, rJson: rJson / frames.length, rLottie: rLottie / frames.length, between: between / frames.length, ink };
+  },
+  /**
+   * Plays a half-second dotLottie (layout 2) the way a site starts a file's state machine, and says whether it kept
+   * playing (looped) or stopped on its last frame. (The web player ignores layout 1's manifest fields: the page decides.)
+   */
+  async dotLottieLoop(base: string, loop: boolean) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const d = newDoc({ name: 'Loop', width: 100, height: 100, length: 12, fps: 24 });
+    d.layers = [];
+    const l = addVectorLayer(d, 'Dot');
+    // Something moves, or the player has nothing to advance.
+    for (let k = 0; k < 12; k++) hold(l, vectorDrawing(d, [fill([ellipsePath(20 + k * 5, 50, 10, 10)], '#ff6f91')]).id, k, 1);
+    const bytes = dotLottieBytes(docToLottie(d), { version: 2, loop });
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    document.body.appendChild(canvas);
+    const player = new mod.DotLottie({ canvas, data: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+    await new Promise<void>((res, rej) => {
+      player.addEventListener('load', () => res());
+      player.addEventListener('loadError', () => rej(new Error('load error')));
+      setTimeout(() => rej(new Error('player did not load')), 15000);
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    const ok = player.stateMachineLoad(loop ? 'loop' : 'once') && player.stateMachineStart();
+    let wraps = 0;
+    let last = -1;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 2500) {
+      await new Promise((r) => setTimeout(r, 25));
+      if (player.currentFrame < last - 3) wraps++;
+      last = player.currentFrame;
+    }
+    const out = { started: !!ok, playing: player.isPlaying, wraps, frame: player.currentFrame, total: player.totalFrames };
+    player.destroy();
+    canvas.remove();
+    return out;
+  },
+  /**
+   * A clip that plays in another order (backward, back and forth, twice) as the baked Lottie: each moment's picture in
+   * lottie-web, in the dotLottie web player from the JSON and from the .lottie, against Frameling's own frame for that
+   * moment. `order` is the positions of the clip (frames 3 to 5 of 12) in the order they play.
+   */
+  async clipPasses(base: string, order: number[]) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const d = newDoc({ name: 'Passes', width: 120, height: 80, length: 12, fps: 24 });
+    d.layers = [];
+    const l = addVectorLayer(d, 'Dot');
+    for (let k = 0; k < 12; k++) hold(l, vectorDrawing(d, [fill([ellipsePath(15 + k * 8, 40, 9, 9)], k % 2 ? '#ff6f91' : '#5ab8ff')]).id, k, 1);
+    doc = d;
+    const start = 3;
+    const data = docToLottie(d, { range: { start, end: start + 2 }, order });
+    const bytes = dotLottieBytes(docToLottie(d, { range: { start, end: start + 2 }, order }), { version: 2, loop: false });
+    const mk = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = d.width;
+      canvas.height = d.height;
+      document.body.appendChild(canvas);
+      return canvas;
+    };
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const rmse = (m: number, px: Uint8ClampedArray) => compare(frameling(start + order[m]), px).rmse;
+    // lottie-web
+    const cw = mk();
+    const web = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: JSON.parse(JSON.stringify(data)), rendererSettings: { context: cw.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'none' } as never });
+    await new Promise<void>((r) => (web.isLoaded ? r() : web.addEventListener('DOMLoaded', () => r())));
+    const inWeb: number[] = [];
+    for (let m = 0; m < order.length; m++) {
+      web.goToAndStop(m, true);
+      await wait(30);
+      inWeb.push(rmse(m, pixelsOf(cw)));
+    }
+    // the dotLottie player, from the JSON and from the zip
+    const inPlayer = async (src: string | ArrayBuffer) => {
+      const canvas = mk();
+      const player = new mod.DotLottie({ canvas, data: src, autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
+      await new Promise<void>((res, rej) => {
+        player.addEventListener('load', () => res());
+        player.addEventListener('loadError', () => rej(new Error('load error')));
+        setTimeout(() => rej(new Error('player did not load')), 15000);
+      });
+      await wait(300);
+      const out: number[] = [];
+      for (let m = 0; m < order.length; m++) {
+        player.setFrame(m);
+        await wait(120);
+        out.push(rmse(m, pixelsOf(canvas)));
+      }
+      const total = player.totalFrames;
+      player.destroy();
+      return { out, total };
+    };
+    const json = await inPlayer(JSON.stringify(data));
+    const zip = await inPlayer(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
+    return { web: inWeb, json: json.out, zip: zip.out, total: json.total };
   },
   svgCompare(frame: number, rgba: number[]) {
     return compare(frameling(frame), new Uint8ClampedArray(rgba));

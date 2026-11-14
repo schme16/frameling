@@ -6,13 +6,15 @@ import { shapeColors } from './wells';
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
-import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
-import { addShapes } from './merge-mode';
-import { clearSnap, snapPt } from '../canvas/guides';
+import { addDrawn, drawWithMirror } from './mirror';
+import { clearSnap, snapLineEnd, snapPt, vanishingPoints } from '../canvas/guides';
+import { choosePlane, planeMap, projectedEllipse, projectSubPath } from '../canvas/perspectivePlane';
+import { viewSizeFactor } from './view-size';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
+import { withWellGradients } from './gradient-wells';
 import { getToolSettings, type ToolSettings } from './settings';
 import { canEdit, reportEdit } from './util';
 import { activePixelLayer, makePixelShape } from '../pixel/tools';
@@ -21,8 +23,8 @@ import { byLayerKind, PixelShapeOptions } from '../pixel/ToolOptions';
 /** The control point distance that makes a quarter of a circle out of a cubic bezier. */
 const KAPPA = 0.5522847498307936;
 
-/** The box a drag makes. Shift makes it square, Alt grows it from the starting point. */
-export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
+/** The two opposite corners a drag makes. Shift makes the box square, Alt grows it from the starting point. */
+export function dragCorners(a: Pt, b: Pt, shift: boolean, alt: boolean): [Pt, Pt] {
   let dx = b.x - a.x;
   let dy = b.y - a.y;
   if (shift) {
@@ -30,11 +32,13 @@ export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
     dx = (dx < 0 ? -1 : 1) * m;
     dy = (dy < 0 ? -1 : 1) * m;
   }
-  const x0 = alt ? a.x - dx : a.x;
-  const y0 = alt ? a.y - dy : a.y;
-  const x1 = a.x + dx;
-  const y1 = a.y + dy;
-  return { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
+  return [alt ? { x: a.x - dx, y: a.y - dy } : { x: a.x, y: a.y }, { x: a.x + dx, y: a.y + dy }];
+}
+
+/** The box a drag makes. Shift makes it square, Alt grows it from the starting point. */
+export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
+  const [p, q] = dragCorners(a, b, shift, alt);
+  return { x: Math.min(p.x, q.x), y: Math.min(p.y, q.y), w: Math.abs(q.x - p.x), h: Math.abs(q.y - p.y) };
 }
 
 /** The two ends of a line drag. Shift snaps to 45 degree steps, Alt makes the start the middle. */
@@ -107,6 +111,7 @@ export function makeShape(
   mod: { shift: boolean; alt: boolean },
   colors: { fill: string | null; stroke: string | null; line: string },
   s: ToolSettings,
+  persp?: { vps: Pt[] },
 ): PathShape | null {
   const color = colors.line;
   if (kind === 'line') {
@@ -124,10 +129,19 @@ export function makeShape(
   const r = dragRect(a, b, mod.shift, mod.alt);
   if (r.w < 1 || r.h < 1) return null;
   if (!colors.fill && !colors.stroke) return null;
+  // With perspective guides showing, a rectangle or ellipse follows the plane it's drawn on.
+  let path = kind === 'rect' ? rectSubPath(r, s.cornerRadius) : ellipseSubPath(r);
+  const plane = persp && choosePlane(s.perspectivePlane, persp.vps, r);
+  if (plane) {
+    const [p, q] = dragCorners(a, b, mod.shift, mod.alt);
+    const m = planeMap(p, q, plane);
+    const warped = m && (kind === 'rect' ? projectSubPath(path, m.map) : projectedEllipse(r, m.map));
+    if (warped) path = warped;
+  }
   return {
     id: uid('sh'),
     type: 'path',
-    paths: [kind === 'rect' ? rectSubPath(r, s.cornerRadius) : ellipseSubPath(r)],
+    paths: [path],
     fill: colors.fill,
     stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
     opacity: 1,
@@ -141,15 +155,31 @@ interface Drag {
 
 function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: string, key: string, order: number, help: string, what: string): Tool {
   let drag: Drag | null = null;
+  // Where a pixel shape drag started, for pulling a line's end onto the perspective directions.
+  let pixStart: Pt | null = null;
   // On a pixel layer the shape is painted as clean pixels instead (src/pixel/tools.ts).
   const pix = makePixelShape(kind, label);
   const build = (): PathShape | null => {
     if (!drag) return null;
     const ui = store().get().ui;
-    return makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    // Sizes are in what-you-see terms, so through a zoomed camera they're smaller on the stage.
+    const f = viewSizeFactor();
+    const t = getToolSettings();
+    const s = makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, f === 1 ? t : { ...t, shapeStroke: t.shapeStroke * f, cornerRadius: t.cornerRadius * f }, { vps: vanishingPoints(drag.cur.mod) });
+    return s && withWellGradients(s);
   };
+  // Where the drag ends: a line's end can follow the perspective guides (and Shift picks from their directions too).
+  const endAt = (start: Pt, e: ToolPointer, ctx: ToolContext): ToolPointer => {
+    if (kind !== 'line') return { ...e, ...snapPt(e, ctx.zoom, e.mod, false, start) };
+    const s = snapLineEnd(start, e, ctx.zoom, e.mod, e.shift);
+    return { ...e, ...s.pt, shift: s.constrained ? false : e.shift };
+  };
+  // A pixel line follows the perspective directions too. Cells already are the snapping, so nothing else is pulled.
+  const pixEnd = (e: ToolPointer, ctx: ToolContext): ToolPointer => (kind === 'line' && pixStart && vanishingPoints(e.mod).length ? endAt(pixStart, e, ctx) : e);
   return {
     id: kind,
+    group: 'shapes',
+    groupAt: kind === 'line' ? 0 : kind === 'rect' ? 1 : 2,
     label,
     icon,
     key,
@@ -161,7 +191,9 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     down(e: ToolPointer, ctx: ToolContext) {
       const px = activePixelLayer();
       if (px) {
-        if (canEdit(ctx, 'pixel', what)) pix.down(e, ctx, px);
+        if (!canEdit(ctx, 'pixel', what)) return;
+        pixStart = { x: e.x, y: e.y };
+        pix.down(e, ctx, px);
         return;
       }
       if (!canEdit(ctx, 'vector', what)) return;
@@ -174,18 +206,23 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
       clearSnap();
     },
     move(e, ctx) {
-      if (pix.active()) return pix.move(e);
-      if (drag) drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      if (pix.active()) return pix.move(pixEnd(e, ctx));
+      if (drag) drag.cur = endAt(drag.start, e, ctx);
     },
     up(e, ctx) {
-      if (pix.active()) return pix.up(e, ctx);
+      if (pix.active()) {
+        const end = pixEnd(e, ctx);
+        pixStart = null;
+        clearSnap();
+        return pix.up(end, ctx);
+      }
       if (!drag) return;
-      drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      drag.cur = endAt(drag.start, e, ctx);
       clearSnap();
       const shape = build();
       drag = null;
       if (shape) {
-        const r = addShapes(`Draw ${label.toLowerCase()}`, [shape]).result;
+        const r = addDrawn(`Draw ${label.toLowerCase()}`, [shape]).result;
         if (r === 'ok') {
           if (shape.fill) noteColorUsed(shape.fill);
           if (shape.stroke) noteColorUsed(shape.stroke.color);
@@ -195,6 +232,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     cancel(ctx) {
       drag = null;
+      pixStart = null;
       clearSnap();
       pix.cancel();
       ctx.requestOverlay();
@@ -202,7 +240,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     overlay(g, ctx) {
       if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
       const s = build();
-      if (s) drawShape(g, s);
+      if (s) drawWithMirror(g, s);
     },
   };
 }

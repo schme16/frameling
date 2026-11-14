@@ -16,10 +16,36 @@ export const CORE_TOKENS = [
 
 export const BRAND_TOKENS = ['peach', 'rose', 'grape', 'sky', 'mint'] as const;
 
-export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small'] as const;
+/** One colour per thing a snap can land on: the line on the canvas and the dot in the "Snapped to" note. Same order as the snapping options. */
+export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-grid', 'snap-shapes', 'snap-spacing', 'snap-perspective', 'snap-plugins', 'snap-cells', 'snap-angles', 'snap-artboards'] as const;
+
+/**
+ * What the snap colours start as (the same values canvas.css holds as a fallback). The dark set reads 3:1 on white and
+ * on every dark theme's surfaces, the light set on every light theme's, so any built-in theme can use its mode's set.
+ */
+export const SNAP_DEFAULTS: Record<ThemeMode, ThemeTokens> = {
+  dark: {
+    'snap-page': '#0e9a8c', 'snap-centre': '#4d88e8', 'snap-guides': '#d757c2', 'snap-grid': '#798aa5', 'snap-shapes': '#e45b72',
+    'snap-spacing': '#d1700a', 'snap-perspective': '#9873ef', 'snap-plugins': '#1a9cc8', 'snap-cells': '#798aa5', 'snap-angles': '#aa8400', 'snap-artboards': '#2f9d44',
+  },
+  light: {
+    'snap-page': '#00695f', 'snap-centre': '#1c4fb8', 'snap-guides': '#9c1488', 'snap-grid': '#4a5870', 'snap-shapes': '#b01f3e',
+    'snap-spacing': '#9a4a00', 'snap-perspective': '#5a30b8', 'snap-plugins': '#0b6a8c', 'snap-cells': '#4a5870', 'snap-angles': '#6b5000', 'snap-artboards': '#1a6b2a',
+  },
+};
+
+/** When a theme changes between dark and light, snap colours still on the old mode's default move to the new mode's. */
+export function switchSnapMode(tokens: ThemeTokens, from: ThemeMode, to: ThemeMode): ThemeTokens {
+  if (from === to) return tokens;
+  const out = { ...tokens };
+  for (const name of SNAP_TOKENS) if (out[name]?.toLowerCase() === SNAP_DEFAULTS[from][name].toLowerCase()) out[name] = SNAP_DEFAULTS[to][name];
+  return out;
+}
+
+export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'peach-soft', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small'] as const;
 
 /** Every token a theme has a value for. */
-export const ALL_TOKENS: readonly string[] = [...CORE_TOKENS, ...BRAND_TOKENS, ...DERIVED_TOKENS];
+export const ALL_TOKENS: readonly string[] = [...CORE_TOKENS, ...BRAND_TOKENS, ...SNAP_TOKENS, ...DERIVED_TOKENS];
 
 /** Tokens that hold a plain colour (everything but the shadows). */
 export const COLOUR_TOKENS: readonly string[] = ALL_TOKENS.filter((t) => !isShadowToken(t));
@@ -45,6 +71,8 @@ export const DERIVED: Record<string, { deps: string[]; make: Deriver }> = {
     deps: ['raised', 'line', 'panel-2'],
     make: (t, m) => (m === 'dark' ? mix(t.raised, t.line, 0.7) : mix(t['panel-2'], t.line, 0.5)),
   },
+  // A faint warm tint of the panel, behind a warning. Text stays the theme's own text colour on it.
+  'peach-soft': { deps: ['peach', 'panel'], make: (t) => mix(t.peach, t.panel, 0.14) },
   cel: { deps: ['cel-key', 'panel-2'], make: (t, m) => mix(t['cel-key'], t['panel-2'], m === 'dark' ? 0.55 : 0.45) },
   'cel-hold': { deps: ['cel-key', 'panel-2'], make: (t, m) => mix(t['cel-key'], t['panel-2'], m === 'dark' ? 0.3 : 0.22) },
   sunny: { deps: ['chosen-bg'], make: (t) => t['chosen-bg'] },
@@ -97,6 +125,7 @@ export const EDITOR_GROUPS: EditorGroup[] = [
   { id: 'timeline', label: 'Timeline', hint: 'Frames and the playhead.' },
   { id: 'canvas', label: 'Canvas surround', hint: 'The area around your drawing.' },
   { id: 'messages', label: 'Messages', hint: 'Warnings and good news.' },
+  { id: 'snapping', label: 'Snapping', hint: 'The line you see, and the dot in the "Snapped to" note, when a shape lands on something. One colour for each.' },
 ];
 
 export const EDITOR_CONTROLS: EditorControl[] = [
@@ -119,7 +148,25 @@ export const EDITOR_CONTROLS: EditorControl[] = [
   { token: 'ok', label: 'Good news', hint: 'Things that worked.', group: 'messages' },
 ];
 
+/** The snap colours, in the editor's Snapping group (they are not "core": a theme does not need to change them). */
+export const SNAP_CONTROLS: EditorControl[] = [
+  { token: 'snap-page', label: 'Page edges', hint: 'The border of the page.', group: 'snapping' },
+  { token: 'snap-centre', label: 'Page middle', hint: 'The middle of the page, across and down.', group: 'snapping' },
+  { token: 'snap-guides', label: 'Guides', hint: 'Guide lines from the rulers.', group: 'snapping' },
+  { token: 'snap-grid', label: 'Grid', hint: 'The square or isometric grid.', group: 'snapping' },
+  { token: 'snap-shapes', label: 'Other shapes', hint: 'Edges and middles of other shapes.', group: 'snapping' },
+  { token: 'snap-spacing', label: 'Equal gaps', hint: 'The bars and sizes of a gap. The number on them is black or white to suit.', group: 'snapping' },
+  { token: 'snap-perspective', label: 'Perspective lines', hint: 'Lines that follow a vanishing point.', group: 'snapping' },
+  { token: 'snap-plugins', label: 'Plugin guides', hint: 'Lines and boxes a plugin draws as a guide.', group: 'snapping' },
+  { token: 'snap-cells', label: 'Pixel cells', hint: 'Whole pixels on a pixel layer.', group: 'snapping' },
+  { token: 'snap-angles', label: 'Angle steps', hint: 'Shift turns lines to neat angles.', group: 'snapping' },
+  { token: 'snap-artboards', label: 'Other artboards', hint: 'The edges and middles of other artboards.', group: 'snapping' },
+];
+
 /** A plain name for a token, for messages. */
 export function tokenLabel(token: string): string {
-  return EDITOR_CONTROLS.find((c) => c.token === token)?.label ?? token;
+  const c = EDITOR_CONTROLS.find((x) => x.token === token);
+  if (c) return c.label;
+  const sn = SNAP_CONTROLS.find((x) => x.token === token);
+  return sn ? `${sn.label} snap colour` : token;
 }

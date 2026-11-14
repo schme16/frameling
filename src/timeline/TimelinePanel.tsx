@@ -1,4 +1,5 @@
 import './timeline.css';
+import './timeline-detail.css';
 import { Header } from './Header';
 import { TimelineBody } from './Grid';
 

@@ -14,7 +14,8 @@ import type { Id, PixelDrawing, PixelLayer } from '../core/format';
 import { celAt, findLayer, pixelGrid } from '../core/doc';
 import { store, type Store } from '../core/store';
 import { hint, requestOverlay, setLive } from '../canvas/controller';
-import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
+import { activeLayer, setActivePixels, EDIT_HINTS } from '../tools/edit';
+import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { clearPixels, extractPixels, maskEmpty, overlayPixels, shiftMask, type Mask } from './mask';
 import { reducedMotion } from '../ui/prefs';
 
@@ -154,7 +155,7 @@ export function liftSelection(copy = false, label = copy ? 'Copy pixels' : 'Move
     return false;
   }
   const d = activePixelDrawing();
-  const pixels = d?.pixels ?? new Uint8ClampedArray(a.width * a.height * 4);
+  const pixels = d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
   float = {
     layerId: a.layer.id,
     frame: store().get().ui.frame,
@@ -195,7 +196,7 @@ export function floatPixels(src: Uint8ClampedArray, mask: Mask, label = 'Paste')
     from: d?.pixels ?? null,
     width: a.width,
     height: a.height,
-    base: d?.pixels ?? new Uint8ClampedArray(a.width * a.height * 4),
+    base: d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4),
     src,
     mask,
     dx: 0,
@@ -265,7 +266,7 @@ export function dropFloating(): void {
 function writeBack(f: Floating, pixels: Uint8ClampedArray): void {
   const { doc, ui } = store().get();
   if (ui.activeLayerId === f.layerId && ui.frame === f.frame) {
-    const r = editActiveDrawing(f.label, 'pixel', (d) => void (d.pixels = pixels));
+    const r = setActivePixels(f.label, pixels);
     if (r !== 'ok') hint(EDIT_HINTS[r]);
     return;
   }
@@ -274,7 +275,7 @@ function writeBack(f: Floating, pixels: Uint8ClampedArray): void {
   if (d && d.kind === 'pixel' && d.pixels === f.from) {
     store().update(f.label, (doc2) => {
       const dd = doc2.drawings[f.drawingId!];
-      if (dd && dd.kind === 'pixel') dd.pixels = pixels;
+      if (dd && dd.kind === 'pixel') setGridPixels(dd, pixels, f.width, f.height);
     });
     return;
   }

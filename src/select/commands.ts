@@ -3,6 +3,7 @@
  * Delete, Duplicate, the arrow key nudges, Undo) are taken over here so they do the pixel thing when a pixel layer is active,
  * and what they always did otherwise. Plus Invert selection and the Lasso and Magic wand shortcuts.
  */
+import { gridPixels } from '../core/pixelBounds';
 import { getCommand, registerCommand, registerCommands, type Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { hint } from '../canvas/controller';
@@ -25,7 +26,7 @@ import {
   setPixelSelection,
 } from './pixel-state';
 import { cancelOpenPixelLasso, pixelLassoIsOpen } from './pixel-tool';
-import { setSelectSettings, type SelectMode } from './settings';
+import { isPixelSelectTool, toolFor, type SelectMode } from './ways';
 
 const onPixel = (): boolean => !!activePixelGrid();
 const hasSel = (): boolean => !!pixelSelection();
@@ -58,7 +59,7 @@ export function copyPixels(): boolean {
   const m = pixelSelection();
   if (!m) return false;
   const d = activePixelDrawing();
-  const pixels = d ? extractPixels(d.pixels, m) : new Uint8ClampedArray(m.width * m.height * 4);
+  const pixels = d ? extractPixels(gridPixels(d, m.width, m.height), m) : new Uint8ClampedArray(m.width * m.height * 4);
   clip = { width: m.width, height: m.height, pixels, mask: m };
   return true;
 }
@@ -87,7 +88,7 @@ export function pastePixels(): boolean {
     hint('What you copied would land off the edge of this layer.');
     return false;
   }
-  if (store().get().ui.tool !== PIXEL_SELECT_TOOL) store().setUi({ tool: PIXEL_SELECT_TOOL });
+  if (!isPixelSelectTool(store().get().ui.tool)) store().setUi({ tool: PIXEL_SELECT_TOOL });
   return floatPixels(pixels, mask);
 }
 
@@ -161,12 +162,15 @@ install();
 
 // ---------------------------------------------------------------- new commands
 
+/** Picks the tool for a way, on whichever kind of layer you are on. */
 function pickWith(mode: SelectMode): void {
-  if (mode === 'wand' && !onPixel()) return hint('The magic wand picks pixels by colour, so it works on pixel layers.');
-  setSelectSettings({ mode });
-  store().setUi({ tool: onPixel() ? PIXEL_SELECT_TOOL : 'select' });
+  const tool = toolFor(mode, onPixel());
+  if (!tool) return hint('The magic wand picks pixels by colour, so it works on pixel layers.');
+  store().setUi({ tool });
 }
 
+// The four ways of picking are tools with their own commands now (tools.select-lasso and so on), so these older
+// "pick the way" commands stay only for keys that name them (the Aseprite set's Q) and are kept out of the lists.
 const commands: Command[] = [
   {
     id: 'select.invert',
@@ -187,6 +191,7 @@ const commands: Command[] = [
   },
   {
     id: 'select.box',
+    hidden: true,
     label: 'Select with a box',
     category: 'Tools',
     description: 'The Select tool, picking with a rectangle (marquee).',
@@ -196,19 +201,29 @@ const commands: Command[] = [
   },
   {
     id: 'select.lasso',
+    hidden: true,
     label: 'Lasso',
     category: 'Tools',
-    keys: ['Shift+L'],
     description: 'The Select tool, drawing round what you want. Hold Alt as you let go for straight sides.',
     help: 'pixel-select',
     keywords: ['lasso', 'freehand selection', 'polygon lasso', 'draw round'],
     run: () => pickWith('lasso'),
   },
   {
+    id: 'select.magnetic',
+    hidden: true,
+    label: 'Magnetic lasso',
+    category: 'Tools',
+    description: 'The Select tool, tracing roughly round something and clinging to its edge. Click to place a point, Backspace takes one back, Enter closes it.',
+    help: 'select-magnetic',
+    keywords: ['magnetic', 'magnet', 'edge', 'snap', 'cling', 'follow edge', 'smart select', 'intelligent scissors', 'cut out', 'trace', 'outline'],
+    run: () => pickWith('magnetic'),
+  },
+  {
     id: 'select.wand',
+    hidden: true,
     label: 'Magic wand',
     category: 'Tools',
-    keys: ['W'],
     description: 'The Select tool on a pixel layer, picking every pixel of the colour you click.',
     help: 'pixel-select',
     keywords: ['magic wand', 'select colour', 'select color', 'by colour', 'tolerance'],

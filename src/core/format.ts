@@ -8,17 +8,30 @@
  * `fps`; frame 0 is the first frame.
  */
 
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 3;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
 export type Color = string;
+
+/**
+ * Room for data that belongs to a feature or plugin Frameling does not know about (or has turned off): `ext[featureId]`
+ * holds that feature's own plain JSON. The file reader keeps it exactly as written and the writer puts it back, so
+ * nothing is lost when the owner is missing. Plain data only (no functions, no class instances); capped in size and depth on load.
+ */
+export type Ext = Record<string, unknown>;
 
 export interface Doc {
   format: 'frameling';
   version: number;
   id: Id;
   name: string;
+  /**
+   * True when every shape in this document carries lineage (`origin`) from the start, so keys that look alike but have
+   * no shared lineage are unrelated. Set on documents made by this version; missing in older files, where the selection
+   * still follows by position (see src/core/followSelection.ts). Kept on saving, never added to an old document.
+   */
+  lineage?: true;
   /** Stage size in document pixels. */
   width: number;
   height: number;
@@ -59,6 +72,169 @@ export interface Doc {
   audio?: AudioClip[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
+  inOut?: { start: number; end: number };
+  /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
+  perspective?: { points: { x: number; y: number }[] };
+  /**
+   * Artboards: several named canvases in one document, each with its own size, background, layers and timeline (a
+   * sprite, a shot). The open one's content is the document's own fields (`width` to `perspective`); the others keep theirs
+   * in `Artboard.content`. Palette, swatches, symbols, tiles and fps are shared. Missing = the document is one artboard.
+   * See src/artboards.
+   */
+  artboards?: Artboard[];
+  /** The id of the open artboard (missing = the first). */
+  activeArtboard?: Id;
+  /**
+   * One layer stack for every artboard (frames on boards): `layers` is that stack, and each artboard keeps only what it
+   * has drawn on each layer, in `ArtboardContent.cels`. Missing = every artboard has layers of its own, as in old files.
+   * Never on a document with variations. See src/core/sharedLayers.ts.
+   */
+  sharedLayers?: true;
+  /** How a pixel sprite is built (missing = worked out from the document, see src/pixel/way.ts). */
+  sprite?: SpriteInfo;
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
+}
+
+/**
+ * The four ways to build a sprite: one picture, an animation (frames on the timeline), frames on boards (one artboard per
+ * frame) or sprites on a sheet (one artboard per sprite).
+ */
+export type SpriteWay = 'picture' | 'animation' | 'boards' | 'sheet';
+
+/** What a document says about the sprite in it. */
+export interface SpriteInfo {
+  way: SpriteWay;
+}
+
+/** One artboard (see Doc.artboards). */
+export interface Artboard {
+  id: Id;
+  name: string;
+  /** Top-left corner on the pasteboard, in document pixels. Content inside is measured from here. */
+  x: number;
+  y: number;
+  /** The file name exports use (missing = the name). */
+  exportName?: string;
+  /** What it holds while another artboard is open. Missing on the open one. */
+  content?: ArtboardContent;
+  /**
+   * A variation (a linked copy): the id of the artboard it follows. It stores only `overrides`; everything else comes
+   * from that artboard. In memory `content` is its resolved copy while another artboard is open; in a file only the
+   * overrides are written. Never a variation itself. See src/artboards/variations.ts.
+   */
+  variationOf?: Id;
+  /** What a variation changes from its original (missing or empty = nothing yet). */
+  overrides?: VariationOverrides;
+  /**
+   * A variation with a size of its own: how Frameling framed the original in it (`mode`) and what the framing camera
+   * looked like when it did (`sig`). While the camera still matches, resizing the original frames it again by itself;
+   * once the person has moved the camera it no longer matches and the framing is left alone. Missing = never framed.
+   */
+  framing?: { mode: 'bars' | 'fill'; sig: string };
+}
+
+/** Changes to a plain object: `set` gives new values for properties, `del` names properties taken away. */
+export interface Patch {
+  set?: Record<string, unknown>;
+  del?: string[];
+}
+
+/** Changes to a list of things with ids (layers, keys, shapes). Items not named follow the original. */
+export interface ListOverride<T, S = never> {
+  /** Items of the original that changed: their own properties (`patch`) and anything inside them (`sub`). */
+  items?: Record<Id, { patch?: Patch; sub?: S }>;
+  /** Ids of original items this variation leaves out. */
+  removed?: Id[];
+  /** Items made in the variation, in order. */
+  added?: T[];
+  /** The whole order, only when it is not "the original's, then the added ones". */
+  order?: Id[];
+}
+
+/** What a variation changes in one drawing of its original (keyed by the original's drawing id). */
+export interface DrawingOverride {
+  /** The variation has its own copy (pixels, tiles): stored in `doc.drawings` as `<id>~<artboard id>`. */
+  replaced?: true;
+  /** Changes to the drawing's own properties (a bones pose, and so on). */
+  patch?: Patch;
+  /** Changes to its shapes, by shape id (a recolour is a patch of `fill` on each shape). */
+  shapes?: ListOverride<Shape>;
+  /** Changes to a camera key's view. */
+  view?: Patch;
+  /** Only while a file is being read: what a redrawn drawing changes from the original's (see `DrawingDiff`). Applied, then dropped. */
+  diff?: DrawingDiff;
+}
+
+/**
+ * A redrawn pixel or tile drawing as a file stores it: only the part that differs from the original's drawing.
+ * In memory the variation has the whole drawing (in `doc.drawings`), so tools work on it unchanged.
+ */
+export interface DiffRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pixels: string | Uint8ClampedArray;
+}
+
+export interface DrawingDiff {
+  /** Pixels: the changed rectangle. In a file `pixels` names a PNG entry of just that rectangle; once read it holds its RGBA bytes. */
+  rect?: DiffRect;
+  /** Pixels, when the change is in several places far apart: one small rectangle each (a file with one change uses `rect`). */
+  rects?: DiffRect[];
+  /** Tiles: the changed slots as pairs of slot number and new value. */
+  cells?: number[];
+}
+
+/** Everything a variation changes. Anything not named here follows the original. */
+export interface VariationOverrides {
+  /** Size, stage colour, length, clips, markers, flow, guides, in and out points, perspective. */
+  stage?: Patch;
+  /** Layers by id; inside each, its keys by id. */
+  layers?: ListOverride<Layer, ListOverride<Cel>>;
+  /** Drawings of the original that changed, by the original's drawing id. */
+  drawings?: Record<Id, DrawingOverride>;
+  /** Sound clips by id: volume, mute, start and name changes, clips left out, clips added. */
+  audio?: ListOverride<AudioClip>;
+  /** The palette colours this variation changed (a colourway for pixel art). Every other colour follows the original. */
+  palette?: PaletteOverride;
+}
+
+/** One palette colour a variation made its own: `from` is the colour in the original's palette, `to` what this variation has instead. */
+export interface PaletteColourChange {
+  from: Color;
+  to: Color;
+}
+
+/**
+ * A variation's colourway: only the colours it changed. Colours the original adds, removes or moves flow through; the
+ * pixels of the original that have a changed colour are shown in the new one. `legacy` is an older file's whole palette,
+ * turned into changes once the original's palette is known (it is never written).
+ */
+export interface PaletteOverride {
+  changes: PaletteColourChange[];
+  legacy?: DocPalette;
+}
+
+/** The part of a document each artboard has its own copy of. */
+export interface ArtboardContent {
+  width: number;
+  height: number;
+  background: Color | null;
+  length: number;
+  /** The artboard's own layers. Empty when the document shares one stack (`Doc.sharedLayers`): see `cels`. */
+  layers: Layer[];
+  /** With shared layers: this artboard's cels on each layer of the document's stack, by layer id (missing = nothing drawn). */
+  cels?: Record<Id, Cel[]>;
+  clips: Clip[];
+  markers: Marker[];
+  flow?: ClipFlow;
+  audio?: AudioClip[];
+  guides?: Guide[];
+  inOut?: Doc['inOut'];
+  perspective?: Doc['perspective'];
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */
@@ -69,6 +245,10 @@ export interface Guide {
   at: number;
 }
 
+/** Colour labels a layer can wear on the timeline. */
+export const LAYER_LABELS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
+export type LayerLabel = (typeof LAYER_LABELS)[number];
+
 export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
 
 export interface BaseLayer {
@@ -78,6 +258,8 @@ export interface BaseLayer {
   locked: boolean;
   /** 0 to 1. */
   opacity: number;
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Show this layer's frames around the current one in the onion skin (missing = yes). */
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
@@ -99,6 +281,8 @@ export interface BaseLayer {
    * half as much when the camera pans; negative values are closer and move more (above -0.9).
    */
   depth?: number;
+  /** A colour label for the timeline, to tell layers apart at a glance (missing = the kind's own colour). */
+  label?: LayerLabel;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -125,6 +309,45 @@ export interface PixelLayer extends BaseLayer {
   pixelSize: number;
   /** Palette lock: everything painted on this layer snaps to the nearest palette colour (missing = off). */
   paletteLock?: boolean;
+  /** Named rectangles cut out of the sprite (a button, a tile, a frame with a pivot). Missing = none. See `Slice`. */
+  slices?: Slice[];
+}
+
+/**
+ * A named rectangle on a pixel layer, in the layer's art pixels (0, 0 is the top left of the layer). Engines get it as
+ * a region (Godot AtlasTexture, Unity sprite rect, Phaser and Pixi frames); with a `center` it is a 9-patch (the border
+ * is what stays the same size when the picture is stretched); with a `pivot` it is where the sprite turns and sits.
+ */
+export interface Slice {
+  id: Id;
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** The stretchy middle of a 9-patch, in the same coordinates (inside the slice). Missing = not a 9-patch. */
+  center?: { x: number; y: number; w: number; h: number };
+  /** The pivot, a point on the pixel grid in the same coordinates (it may sit outside the rectangle; 0, 0 is the layer's top left corner). Missing = the engine's default. */
+  pivot?: { x: number; y: number };
+  /** The colour it is drawn in on the canvas (missing = a colour picked from its name). */
+  color?: Color;
+  /**
+   * For a slice that moves or changes between frames (Aseprite keys): the rectangle, middle and pivot from each listed
+   * frame on, in timeline frames, sorted. The slice's own x, y, w, h, center and pivot always match the first key, so
+   * anything that does not know about keys still sees the first position. Missing = the same on every frame.
+   */
+  keys?: SliceKey[];
+}
+
+/** One frame's look of a slice: its rectangle (and 9-patch middle and pivot) from `frame` until the next key. */
+export interface SliceKey {
+  frame: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  center?: { x: number; y: number; w: number; h: number };
+  pivot?: { x: number; y: number };
 }
 
 /**
@@ -175,32 +398,61 @@ export interface CameraView {
   y: number;
   zoom: number;
   rotation: number;
+  /**
+   * Only on the camera of a film joined from shots of different sizes (never saved by the editor): this view was
+   * scaled by `k` to fit a shot of `w` x `h` into the picture. `zoom` already includes `k`; layers at another depth
+   * zoom the shot's own zoom by their factor and the fit comes after, so they line up with the plain fit.
+   */
+  fit?: { k: number; w: number; h: number };
 }
 
 /** One key of a camera layer. */
 export interface CameraDrawing {
   id: Id;
   kind: 'camera';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   view: CameraView;
 }
 
 export interface VectorDrawing {
   id: Id;
   kind: 'vector';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Painted in order: index 0 is at the back. */
   shapes: Shape[];
   /** On a bones layer: how each bone is turned and moved at this key (bones not listed are at rest). */
   pose?: Pose;
+  /**
+   * Shapes of a type this Frameling does not know (from a newer version or a plugin), kept as read so saving never drops
+   * them. `at` is how many known shapes came before it. Never drawn or edited.
+   */
+  kept?: KeptShape[];
+}
+
+/** A shape of an unknown type, held untouched. See `VectorDrawing.kept`. */
+export interface KeptShape {
+  at: number;
+  shape: Record<string, unknown>;
 }
 
 /**
- * A pixel drawing: an RGBA grid the size of the layer's art grid (`ceil(doc.width / pixelSize)` by
- * `ceil(doc.height / pixelSize)`). In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
+ * A pixel drawing: RGBA pixels placed on the layer's art grid (`ceil(doc.width / pixelSize)` by
+ * `ceil(doc.height / pixelSize)`). `width` x `height` is the block that is held, at (`x`, `y`) art pixels from the
+ * grid's top-left (missing = 0). Older drawings (and tile frames) are the whole grid at (0, 0); newer ones hold only
+ * the painted part, and a blank one is 0 x 0. Use `gridPixels` (core/pixelBounds.ts) for the whole grid.
+ * In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
  * Edits replace the array (never mutate it in place), so undo and caches can compare by reference.
  */
 export interface PixelDrawing {
   id: Id;
   kind: 'pixel';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
+  /** Where the held block starts on the art grid (missing = 0). */
+  x?: number;
+  y?: number;
   width: number;
   height: number;
   pixels: Uint8ClampedArray;
@@ -214,6 +466,8 @@ export interface PixelDrawing {
 export interface TilemapDrawing {
   id: Id;
   kind: 'tilemap';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   columns: number;
   rows: number;
   cells: Uint32Array;
@@ -233,6 +487,13 @@ export interface Tileset {
   /** Tile size in art pixels. */
   tileWidth: number;
   tileHeight: number;
+  /**
+   * Where a tile edge sits across and down the stage, in art pixels from its top-left corner (0 up to the tile size
+   * minus 1; missing = 0, the tiles start at the corner). Opening an Aseprite drawing whose tile grid does not start at
+   * the corner sets it.
+   */
+  gridX?: number;
+  gridY?: number;
   /** In the order the Tileset panel and exports show them. */
   tiles: Tile[];
   /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */
@@ -282,11 +543,17 @@ export interface BrushSettings {
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
 export interface StrokeShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'stroke';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   points: StrokePoint[];
   brush: BrushSettings;
+  /** The widths came from a real pen, so they are never made up from how fast the line was drawn (missing = work it out). */
+  realPressure?: boolean;
   color: Color;
   opacity: number;
 }
@@ -310,24 +577,54 @@ export interface SubPath {
  */
 export interface FillShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'fill';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   paths: SubPath[];
   color: Color;
   opacity: number;
+  /** Paints with this instead of `color` when set (`color` stays as its first stop, for anything that wants one colour). */
+  gradient?: Gradient;
+}
+
+/** One colour along a gradient, `at` from 0 (start) to 1 (end). */
+export interface GradientStop {
+  at: number;
+  color: Color;
+}
+
+/**
+ * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`. Both
+ * are in document pixels, the same space as the shape's points, so moving the shape moves its gradient too.
+ */
+export interface Gradient {
+  kind: 'linear' | 'radial';
+  stops: GradientStop[];
+  from: { x: number; y: number };
+  to: { x: number; y: number };
 }
 
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
 export interface PathShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'path';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   paths: SubPath[];
   fill: Color | null;
   stroke: { color: Color; width: number; join: 'round' | 'miter' | 'bevel'; cap: 'round' | 'butt' | 'square' } | null;
   opacity: number;
+  /** Gradients for the inside and the outline, used instead of the plain colours when set. */
+  fillGradient?: Gradient;
+  strokeGradient?: Gradient;
 }
 
 export interface Clip {
@@ -336,8 +633,19 @@ export interface Clip {
   /** First and last frame, inclusive. */
   start: number;
   end: number;
+  /** Repeats forever. When false it plays `repeat` times (once when `repeat` is missing) and holds its last frame. */
   loop: boolean;
+  /** Which way it plays (missing = forward). See `ClipDirection` and src/core/clipPlay.ts. */
+  direction?: ClipDirection;
+  /** How many times it plays when `loop` is false: a whole number from 1 (missing = 1). Ignored when `loop` is true. */
+  repeat?: number;
 }
+
+/**
+ * Forward, backward (`reverse`), back and forth (`pingpong`: the end frames show once per turn) and back and forth
+ * starting from the end (`pingpong-reverse`).
+ */
+export type ClipDirection = 'forward' | 'reverse' | 'pingpong' | 'pingpong-reverse';
 
 export interface Marker {
   id: Id;
@@ -360,6 +668,10 @@ export interface DocPalette {
   name: string;
   colors: Color[];
   ramps?: number[];
+  /** A name for each colour, in the same order as `colors` ('' = none). Missing = no names. */
+  names?: string[];
+  /** A name for a ramp, by the index of its first colour (0 for the first ramp), like the groups of a swatch file. */
+  rampNames?: Record<number, string>;
 }
 
 // ---------------------------------------------------------------- blend modes, effects and folders
@@ -382,7 +694,13 @@ export type BlendMode =
   | 'saturation'
   | 'color'
   | 'luminosity'
-  | 'add';
+  | 'add'
+  /** Adding colours with the plain blend (Aseprite's Addition, Photoshop's Linear Dodge). Done pixel by pixel. */
+  | 'linear-dodge'
+  /** Taking the colours away from what is under (Aseprite's Subtract). Done pixel by pixel, not by the canvas. */
+  | 'subtract'
+  /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
+  | 'divide';
 
 export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
 
@@ -405,7 +723,10 @@ export interface EffectKey {
   values: Record<string, number>;
 }
 
-/** A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. */
+/**
+ * A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. Folders
+ * can sit in folders (`parent`); a folder's layers, and those of the folders inside it, sit next to each other.
+ */
 export interface LayerFolder {
   id: Id;
   name: string;
@@ -414,6 +735,8 @@ export interface LayerFolder {
   opacity: number;
   blend?: BlendMode;
   effects?: LayerEffect[];
+  /** The folder this one sits in (a key of `doc.folders`), up to 8 levels deep. Missing = on the stage. */
+  parent?: Id;
 }
 
 // ---------------------------------------------------------------- symbols and tweens
@@ -452,8 +775,12 @@ export type PlayMode = 'loop' | 'once' | 'single';
 /** A placed copy of a symbol. Lives in a vector drawing like any shape, so select, move and arrange work on it. */
 export interface InstanceShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'instance';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   symbolId: Id;
   transform: Transform2D;
   opacity: number;
@@ -477,8 +804,18 @@ export interface Tween {
   /** 'shape' morphs the outlines, colours and strokes of one key's drawing into the next one's (shape tween). */
   kind?: 'classic' | 'shape';
   ease: Easing;
+  /**
+   * Which part of the easing curve this span plays, as [from, to] within 0..1 (missing = all of it). A span cut in two
+   * keeps the motion exactly as it was: each half plays its own part of the one curve.
+   */
+  slice?: [number, number];
   /** Extra whole turns on the way (positive clockwise). */
   spin?: number;
+  /**
+   * A fraction of a turn that keeps a cut motion path facing the way it did before the cut (turn-to-face paths only). It
+   * belongs to the path: whoever sets, clears or turns off the path clears it, and the Extra spins field never shows it.
+   */
+  facing?: number;
   /** Follow this line on the way (stage coordinates of the layer). */
   path?: MotionPath;
   /** Shape tweens only: paired markers saying which point of the start drawing becomes which of the end one. */
@@ -553,8 +890,12 @@ export interface TextAnimator {
  */
 export interface TextShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'text';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   text: string;
   /** Font family name ('Nunito', 'Inter', or a font on this computer). */
   font: string;
@@ -583,8 +924,12 @@ export type ParticleSprite = 'dot' | 'soft' | 'square' | 'star' | 'spark' | 'str
  */
 export interface ParticlesShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'particles';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Where the emitter sits and how it is turned and stretched (origin = its centre). */
   transform: Transform2D;
   /** Where particles start: one point, along a line (`width` long) or inside a box (`width` x `height`). */

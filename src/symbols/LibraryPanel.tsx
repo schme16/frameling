@@ -6,6 +6,7 @@ import { store, useStore } from '../core/store';
 import { newInstance, poseInstance, symbolContent, symbolUsage } from '../core/symbols';
 import { drawInstance } from '../core/render';
 import { symbolBounds } from '../canvas/geometry';
+import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { ActionButton, Tip } from '../canvas/controls';
 import { Icon } from '../ui/icons';
 import { InlineName } from '../timeline/Menu';
@@ -36,6 +37,7 @@ export function SymbolThumb({ doc, id, size = 44, frame = 0, className = 'sy-thu
     g.setTransform(k * dpr, 0, 0, k * dpr, (size / 2 - (b.x + b.w / 2) * k) * dpr, (size / 2 - (b.y + b.h / 2) * k) * dpr);
     const inst = { ...newInstance(id, c.def.origin), play: 'single' as const };
     drawInstance(g, poseInstance(doc, inst, frame), { doc, frame });
+    paintThumbBackdrop(cv);
   });
   return <canvas ref={ref} className={className} style={{ width: size, height: size }} aria-hidden="true" />;
 }

@@ -1,7 +1,8 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDoc, newVectorDrawing, newPixelDrawing, uid } from '../../src/core/doc';
 import type { Doc, FillShape, Shape, VectorDrawing, PixelDrawing } from '../../src/core/format';
-import { getHelp, getTool, type ToolContext, type ToolPointer } from '../../src/core/registry';
+import { getHelp, getTool, helpBody, loadHelpBodies, type ToolContext, type ToolPointer } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { EDIT_HINTS } from '../../src/tools/edit';
 import { FILL_HINTS, indexBelowLines } from '../../src/tools/fill';
@@ -30,13 +31,14 @@ const ring = (cx = 300, cy = 300, r = 100) => stroke(arc(cx, cy, r, 0, Math.PI *
 beforeEach(() => setFillOptions({ gap: 'small', onTop: false, allOfColour: false }));
 
 describe('paint bucket tool', () => {
-  it('registers with the key, icon, both layer kinds and help', () => {
+  it('registers with the key, icon, both layer kinds and help', async () => {
+    await loadHelpBodies();
     const t = tool();
     expect(t.key).toBe('g');
     expect(t.icon).toBe('fill');
     expect(t.layers).toEqual(['vector', 'pixel']);
     expect(t.options).toBeTypeOf('function');
-    expect(getHelp('fill')?.body).toContain('Close gaps');
+    expect(helpBody(getHelp('fill')!)).toContain('Close gaps');
     expect(getHelp('fill-gaps')?.title).toBe('Closing gaps');
     expect(t.help).toBe('fill');
   });
@@ -144,7 +146,7 @@ describe('paint bucket tool', () => {
       const s = resetStore(doc);
       const hints: string[] = [];
       const ctx: ToolContext = { zoom: 1, requestOverlay: () => {}, hint: (m) => void hints.push(m) };
-      return { s, hints, ctx, drawing: () => store().get().doc.drawings[d.id] as PixelDrawing, before: d.pixels };
+      return { s, hints, ctx, drawing: () => asGrid(store().get().doc.drawings[d.id] as PixelDrawing), before: d.pixels };
     }
     it('fills the joined-up area only, with a new array', () => {
       const t = pixelSetup();

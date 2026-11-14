@@ -4,13 +4,22 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
+import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
+import { registerBetaIpc } from './beta';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
+import { describeDisplay } from './display';
+import type { LastCrash } from './crashMarker';
+import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
+import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
+import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
+// File > Open also takes Aseprite files and pictures (PNG, GIF, sprite sheets), which open as a new drawing.
+const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files and pictures', extensions: ['frameling', 'aseprite', 'ase', 'png', 'apng', 'gif'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
 
 export interface IpcHooks {
@@ -20,6 +29,11 @@ export interface IpcHooks {
   setDocumentState(s: DocumentState): void;
   saveBeforeCloseDone(ok: boolean): void;
   keepUnsavedDone(): void;
+  /** The notes of the last crash found, and whether Quill has offered them. */
+  lastCrash(): LastCrash | null;
+  crashOffered(): void;
+  closeQuestionShown(id: number): void;
+  closeQuestionAnswer(id: number, answer: unknown): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -80,7 +94,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   handle('files:open', async () => {
     const win = hooks.window();
-    const r = await dialog.showOpenDialog(win!, { title: 'Open a drawing', defaultPath: lastDir(), properties: ['openFile'], filters: FILTERS });
+    const r = await dialog.showOpenDialog(win!, { title: 'Open a drawing', defaultPath: lastDir(), properties: ['openFile'], filters: OPEN_FILTERS });
     if (r.canceled || !r.filePaths[0]) return null;
     rememberDir(r.filePaths[0]);
     return readFile(r.filePaths[0]);
@@ -90,7 +104,7 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof p !== 'string') return { error: 'That is not a file path.' };
     // Opened by double-click, a recent entry or a drop: anything that ends in .frameling, or that was picked before.
     const ext = path.extname(p).toLowerCase();
-    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay') return { error: 'Frameling only opens .frameling and .flplay files.' };
+    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay' && ext !== '.aseprite' && ext !== '.ase') return { error: INTERACTIVES_ENABLED ? 'Frameling only opens .frameling, .flplay and Aseprite files.' : 'Frameling only opens .frameling and Aseprite files.' };
     return readFile(p);
   });
 
@@ -229,27 +243,37 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
+  handle('app:lastCrash', () => hooks.lastCrash());
+  handle('app:display', () => {
+    const w = hooks.window();
+    return w ? describeDisplay(w) : null;
+  });
 
-  handle('app:askSaveChanges', async (_e, name: string): Promise<SaveChoice> => {
-    const r = await dialog.showMessageBox(hooks.window()!, {
-      type: 'question',
-      message: `Save changes to "${String(name).slice(0, 80)}"?`,
-      detail: `If you don't save, your latest changes will be lost.`,
-      buttons: ['Save', `Don't save`, 'Cancel'],
-      defaultId: 0,
-      cancelId: 2,
-      noLink: true,
-    });
-    return r.response === 0 ? 'save' : r.response === 1 ? 'discard' : 'cancel';
+  handle('app:askSaveChanges', async (_e, name: string, neverSaved?: boolean): Promise<SaveChoice> => {
+    const q = saveChangesQuestion(name, neverSaved === true);
+    const r = await dialog.showMessageBox(hooks.window()!, { type: 'question', message: q.message, detail: q.detail, buttons: q.buttons, defaultId: 0, cancelId: 2, noLink: true });
+    return choiceAt(r.response);
   });
 
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null });
   });
+  ipcMain.on('app:crashOffered', (e) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.crashOffered();
+  });
   ipcMain.on('app:keepUnsavedDone', (e) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.keepUnsavedDone();
+  });
+  ipcMain.on('app:closeQuestionShown', (e, id: number) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.closeQuestionShown(id);
+  });
+  ipcMain.on('app:closeQuestionAnswer', (e, id: number, answer: unknown) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.closeQuestionAnswer(id, answer);
   });
   ipcMain.on('app:saveBeforeCloseDone', (e, ok: boolean) => {
     if (e.sender !== hooks.window()?.webContents) return;
@@ -258,6 +282,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
+  registerBetaIpc(handle);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {
@@ -299,6 +324,19 @@ export function registerIpc(hooks: IpcHooks): void {
   handle('library:showFolder', (_e, kind: unknown) => {
     if (isLibraryKind(kind)) showLibraryFolder(kind);
   });
+
+  // For the plugin watchdog: how much memory each plugin's sandbox holds (plugin id to bytes). Nothing about the plugins' contents.
+  handle('fonts:psNames', (_e, wants: FontWant[]) => (Array.isArray(wants) ? psNamesFor(wants.slice(0, 500)) : []));
+  handle('plugins:memory', () => {
+    const wc = hooks.window()?.webContents;
+    if (!wc) return {};
+    const frames = wc.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
+    const procs = app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize }));
+    return pluginMemory(frames, procs, process.pid);
+  });
+  // Whether this run has a process per plugin sandbox, and the choice for the next start ("Measure plugins' memory and speed").
+  handle('plugins:isolated', () => app.commandLine.getSwitchValue('enable-features').split(',').includes(PLUGIN_PROCESS_FEATURE));
+  handle('plugins:setDiagnostics', (_e, on: unknown) => wantIsolation(app.getPath('userData'), on === true));
 
   app.on('will-quit', () => {
     granted.clear();

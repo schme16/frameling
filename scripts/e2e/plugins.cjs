@@ -2,15 +2,16 @@
 // storage, the frame has no way into the app, and both example plugins install, run, edit with undo, and export.
 //
 //   npm run build
-//   xvfb-run -a npx electron scripts/e2e/plugins.cjs
+//   xvfb-run -a npx electron scripts/e2e/plugins.cjs                    (measuring off: the default; plugins share a process)
+//   PLUGINS_DIAG=1 xvfb-run -a npx electron scripts/e2e/plugins.cjs     (measuring on: a process per plugin, memory and speed shown)
 //
-// The web build: `npm run build:web && npm run preview:web`, then PLUGINS_URL=http://localhost:5198/ the same command
 // (no desktop bridge: the page builds its own, and plugins are kept in IndexedDB).
 //
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const root = path.join(__dirname, '../..');
@@ -35,10 +36,19 @@ onmessage = async (e) => {
   try { await new Promise((ok, bad) => { const q = indexedDB.open('x'); q.onsuccess = ok; q.onerror = () => bad(q.error); }); r.indexedDB = 'opened'; } catch (err) { r.indexedDB = 'blocked'; }
   r.document = typeof document;
   r.parent = typeof parent;
+  r.crossOriginIsolated = self.crossOriginIsolated;
+  r.uaMemory = typeof performance.measureUserAgentSpecificMemory;
   await new Promise((ok) => setTimeout(ok, 300));
   r.violations = violations;
   port.postMessage(r);
 };`;
+
+const bundled = require('esbuild').buildSync({ entryPoints: [path.join(root, 'src/main/pluginMemory.ts')], bundle: true, format: 'cjs', platform: 'node', write: false }).outputFiles[0].text;
+const { pluginMemory, PLUGIN_PROCESS_FEATURE } = (() => {
+  const m = { exports: {} };
+  new Function('module', 'exports', 'require', bundled)(m, m.exports, require);
+  return m.exports;
+})();
 
 const failures = [];
 const check = (name, ok, got) => {
@@ -46,13 +56,25 @@ const check = (name, ok, got) => {
   if (!ok) failures.push(name);
 };
 
+// "Measure plugins' memory and speed": on, the real app starts with this switch (src/main/main.ts) so each plugin's sandbox
+// has a process of its own. Off (the default), nothing is set and the plugins share one.
+const DIAG = !!process.env.PLUGINS_DIAG;
+if (DIAG) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+console.log(`measuring ${DIAG ? 'on' : 'off'}`);
+
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'library:read']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
-  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
+  // The real memory lookup (src/main/pluginMemory.ts) over the real window's frames and process metrics.
+  let theWindow = null;
+  installIpcStubs(ipcMain, {
+    'plugins:memory': () => {
+      const frames = theWindow.webContents.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
+      return pluginMemory(frames, app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize })), process.pid);
+    },
+    'plugins:isolated': () => DIAG,
+  });
   const web = process.env.PLUGINS_URL;
   const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { ...(web ? {} : { preload: path.join(root, 'dist/preload/preload.cjs') }), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
+  theWindow = win;
   const errors = [];
   win.webContents.on('console-message', (e) => {
     if (e.level === 'error' || e.level === 3) errors.push(String(e.message ?? e));
@@ -61,6 +83,13 @@ app.whenReady().then(async () => {
   else await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
   await sleep(800);
   const js = (code) => win.webContents.executeJavaScript(code);
+  {
+    // The preference is saved in the page (and kept between runs); set it for this mode and reload so the app starts with it.
+    await js(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ pluginDiagnostics: ${DIAG} })); true`);
+    if (web) await win.loadURL(`${web}${web.includes('?') ? '&' : '?'}debug=1`);
+    else await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
+    await sleep(800);
+  }
 
   // ------------------------------------------------ the sandbox page itself
   for (const [page, net] of [['plugin-host.html', []], ['plugin-host-net.html', ['https://allowed.example.com']]]) {
@@ -88,6 +117,8 @@ app.whenReady().then(async () => {
     check(`${tag}: importScripts from the web blocked`, r.importScripts === 'blocked', r.importScripts);
     check(`${tag}: no storage`, r.indexedDB === 'blocked', r.indexedDB);
     check(`${tag}: no DOM, no parent in the worker`, r.document === 'undefined' && r.parent === 'undefined', r);
+    // Why memory is not measured inside the worker: the sandbox page cannot be cross-origin isolated, so the browser's own measuring call is not there.
+    check(`${tag}: not cross-origin isolated, no in-worker memory measuring`, r.crossOriginIsolated === false && r.uaMemory === 'undefined', { coi: r.crossOriginIsolated, uaMemory: r.uaMemory });
     check(`${tag}: the policy reported the blocked requests`, Array.isArray(r.violations) && r.violations.some((v) => String(v).includes('example.com')), r.violations);
     if (net.length) check(`${tag}: the listed site is not blocked by the policy`, !r.violations.some((v) => String(v).includes('allowed.example.com')), r.violations);
     else check(`${tag}: even the listed site is blocked`, r.violations.some((v) => String(v).includes('allowed.example.com')), r.violations);
@@ -129,6 +160,138 @@ app.whenReady().then(async () => {
   })()`);
   check('contact sheet PNG made in the sandbox', out.png[0][2] === 'PNG' && out.png[0][1] > 500, out);
   check('contact sheet PDF made in the sandbox', out.pdf[2] === '%PDF-1.4' && out.pdf[1] > 300, out);
+  // ------------------------------------------------ version 2: powers in the real sandbox
+  // The dialog starts every power off; switch them all on, as a person who trusts the plugin would.
+  const installAll = async (name) => {
+    await js(`window.__framelingPlugins.install(${JSON.stringify(example(name))}); true`);
+    await sleep(300);
+    const switches = await js(`[...document.querySelectorAll('.plugin-approve [role=switch]')].map((b) => b.getAttribute('aria-checked'))`);
+    check(`${name}: every power in the dialog starts off`, switches.every((v) => v === 'false'), switches);
+    await js(`document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click()); true`);
+    await sleep(100);
+    await js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`);
+    await sleep(1500);
+  };
+  await installAll('star-kit');
+  await installAll('drawing-guides');
+  await installAll('layer-fader');
+  await install('export-report');
+  const v2 = await js(`window.__framelingPlugins.list()`);
+  check('version 2 examples installed and on', ['star-kit', 'drawing-guides', 'layer-fader', 'export-report'].every((id) => v2.find((p) => p.id === id)?.status === 'on'), v2);
+  check('plugin tools are in the toolbox', await js(`['plugin.star-kit.tool.stamp', 'plugin.layer-fader.tool.fade'].every((id) => window.__frameling.tools().includes(id))`), await js(`window.__frameling.tools()`));
+  const stamped = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('star-kit');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    s.setUi({ activeLayerId: layer.id, frame: 0 });
+    const ev = { type: 'down', x: 300, y: 200, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 };
+    const hint = await rt.toolEvent('stamp', ev);
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    const mine = d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']);
+    return { hint, count: mine.length, kind: mine[0] && mine[0].ext['plugin.star-kit'].kind, props: mine[0] && mine[0].ext['plugin.star-kit'].props, undo: s.undoLabel() };
+  })()`);
+  check('a tool placed a star in the real sandbox', stamped.count === 1 && stamped.kind === 'star' && stamped.props?.points === 5 && /Star/.test(stamped.undo || ''), stamped);
+  // The star the tool just stamped shows a round handle; dragging it (the tool hears a move with the handle's id) resizes that star.
+  const resized = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('star-kit');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const ev = (type, x, extra) => ({ type, x, y: 200, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1, ...extra });
+    await rt.toolEvent('stamp', ev('move', 380, { handle: 'size' }));
+    await rt.toolEvent('stamp', ev('key', 0, { key: 'bigger' }));
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    const mine = d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']);
+    return { count: mine.length, size: mine[0] && mine[0].ext['plugin.star-kit'].props.size, insts: new Set(mine.map((x) => x.ext['plugin.star-kit'].inst)).size };
+  })()`);
+  check('dragging the handle then a named key resize the stamped star (80, then 20% bigger)', resized.insts === 1 && Math.abs(resized.size - 96) < 0.01, resized);
+  // The Plugin shape section shows its form when that star is picked.
+  const section = await js(`(async () => {
+    const f = window.__frameling;
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    s.setUi({ activeLayerId: layer.id, frame: 0, selection: d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']).map((x) => x.id) });
+    f.showPanel('plugin-shape');
+    await new Promise((r) => setTimeout(r, 600));
+    const el = document.querySelector('.plugin-shape');
+    return el ? el.innerText : null;
+  })()`);
+  check('Properties shows the Plugin shape section with Change settings', !!section && /made by Star kit/.test(section) && /Change settings/.test(section) && /Points/.test(section), section);
+  const faded = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('layer-fader');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    s.setUi({ activeLayerId: layer.id });
+    const ev = (type, y) => ({ type, x: 100, y, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 });
+    await rt.toolEvent('fade', ev('down', 300));
+    await rt.toolEvent('fade', ev('move', 360));
+    await rt.toolEvent('fade', ev('up', 360));
+    return { opacity: s.get().doc.layers.find((l) => l.id === layer.id).opacity, undo: s.undoLabel() };
+  })()`);
+  check('a tool changed the layer in one undo step', Math.abs(faded.opacity - 0.8) < 0.01 && faded.undo === 'Layer fader: Fade layer', faded);
+  const report = await js(`(async () => {
+    const rt = window.__framelingPlugins.runtime('export-report');
+    const info = { name: 'Probe', fps: 12, width: 8, height: 8, scale: 1, frameNumbers: [0, 1, 2, 3], clips: [], markers: [{ name: 'Hit', frame: 2 }] };
+    const frames = () => [0, 1, 2, 3].map(() => ({ width: 8, height: 8, data: new Uint8ClampedArray(8 * 8 * 4) }));
+    const files = await rt.runExport('report', frames(), info, undefined, { title: 'Hello', every: 2, style: 'times', markers: true, evil: 1 });
+    return new TextDecoder().decode(files[0].bytes);
+  })()`);
+  check('an exporter got its options in the real sandbox', report.startsWith('Hello\n=====') && report.includes('0.000 s') && report.includes('0.167 s') && report.includes('- Hit (frame 3)'), report);
+  const evented = await js(`(async () => {
+    window.__frameling.store().setUi({ frame: 5 });
+    await new Promise((r) => setTimeout(r, 400));
+    return window.__framelingPlugins.list().filter((p) => p.problem).length;
+  })()`);
+  check('events reach plugins without trouble', evented === 0, evented);
+  {
+    const m = app.getAppMetrics().filter((p) => p.type === 'Tab' || p.type === 'Renderer');
+    console.log(`info: ${m.length} renderer processes, ${Math.round(m.reduce((a, p) => a + p.memory.workingSetSize, 0) / 1024)} MB held, with all the example plugins running`);
+  }
+  // ------------------------------------------------ the watchdog: a frozen plugin and a memory hog, with short limits
+  await install('runaway-test');
+  await js(`Object.assign(window.__framelingPlugins.watchdog, { pingEveryMs: 200, stuckMs: 2500, busyStuckMs: 3000, memoryEveryMs: 300, memoryCapBytes: 450 * 1024 * 1024 }); true`);
+  const status = () => js(`window.__framelingPlugins.list().find((p) => p.id === 'runaway-test')`);
+  check('runaway test is on to begin with', (await status()).status === 'on', await status());
+  await js(`window.__frameling.run('plugin.runaway-test.freeze'); true`);
+  let st = await status();
+  for (let i = 0; i < 40 && st.status !== 'off'; i++) {
+    await sleep(250);
+    st = await status();
+  }
+  check('a frozen plugin is turned off by the heartbeat', st.status === 'off' && st.enabled === false && /stopped responding/.test(st.problem || ''), st);
+  check('the toast says so, with a way back', await js(`[...document.querySelectorAll('[role=status], [role=alert], .toast')].some((e) => /stopped responding/.test(e.textContent) && /Turn it on/.test(e.textContent))`), await js(`document.body.innerText.slice(-300)`));
+  await js(`window.__framelingPlugins.setEnabled('runaway-test', true); true`);
+  await sleep(1500);
+  check('turning it back on works', (await status()).status === 'on', await status());
+  await js(`window.__frameling.run('plugin.runaway-test.hog'); true`);
+  st = await status();
+  if (DIAG) {
+    for (let i = 0; i < 60 && st.status !== 'off'; i++) {
+      await sleep(250);
+      st = await status();
+    }
+    check('measuring on: a plugin using lots of memory is turned off', st.status === 'off' && /lot of memory/.test(st.problem || ''), st);
+  } else {
+    // Nobody can measure a plugin's own memory without its own process, so there is no cap: it keeps running.
+    await sleep(6000);
+    st = await status();
+    check('measuring off: no memory cap, the plugin is left on', st.status === 'on' && st.enabled === true, st);
+    check('measuring off: nothing is measured', (await js(`window.__framelingPlugins.diag().then((d) => Object.keys(d).length)`)) === 0);
+    const mem = await js(`window.frameling.plugins.memory()`);
+    check('measuring off: no plugin has a process to itself', Object.keys(mem).length === 0, mem);
+  }
+  if (DIAG) {
+    // The numbers the Plugins page shows, for a plugin that behaves.
+    const d = await js(`window.__framelingPlugins.diag()`);
+    const mine = d['flip-every-other-frame'];
+    check('measuring on: a plugin has numbers (speed and memory)', !!mine && mine.latencyMs !== null && typeof mine.memoryBytes === 'number' && mine.memoryBytes > 20 * 1024 * 1024, d);
+    const mem = await js(`window.frameling.plugins.memory()`);
+    check('measuring on: a plugin has a process to itself', typeof mem['flip-every-other-frame'] === 'number', mem);
+    console.log('numbers', JSON.stringify(d));
+  }
   const pluginErrors = errors.filter((e) => /plugin/i.test(e));
   check('no plugin errors in the console', pluginErrors.length === 0, pluginErrors);
 

@@ -14,10 +14,11 @@ Options:
 | | |
 |---|---|
 | `--out file.json` | where to write the results (printed to the console when left out) |
-| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `memory`, `soak` (`soak` only runs when named) |
+| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `pixelblend`, `pixellive`, `templates`, `zoompan`, `onioncam`, `memory`, `soak` (`soak` only runs when named) |
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |
+| `PERF_SOFTWARE_GL=1` | software WebGL (SwiftShader) for machines with no GPU, e.g. under xvfb, so the WebGL paths run (numbers are then software numbers) |
 | `PERF_SHOW=1` | put the window on screen, to watch it |
 
 A full run takes about two minutes. Don't run other Electron work at the same time, it skews the numbers. Compare
@@ -32,24 +33,41 @@ file and anything it preloads, from `index.html`).
 
 ```bash
 npm run build && node scripts/perf/startup.cjs --out scripts/perf/results/startup-desktop.json
-npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --web --out scripts/perf/results/startup-web.json
 ```
 
 - The desktop run starts the real main process (`dist/main/main.cjs`) through `launch.cjs`, which parks windows
-  off-screen. Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
-- `--web` serves `dist/web` from a sub-path (`/some/sub/path/frameling/`), then stops the server and opens the app
-  again offline, and opens Export, Preferences, Themes and Help, so the lazily loaded chunks have to come from the
-  service worker's copy.
+  off-screen on a real desktop and keeps them on-screen under xvfb (`display.cjs`; `PERF_ONSCREEN=1` or `0` forces it). Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
 - The first launch has a fresh profile; the median is of the launches after it. `--cpu 4` (the default) also reloads
-  each page with the CPU slowed down four times; that number is only dependable for the desktop run, as Chromium drops
-  the throttling when a service worker takes the reload.
+  each page with the CPU slowed down four times.
 
 What loads later is in `src/core/lazy.ts`: the Export dialog and every exporter, the big sheets and dialogs, and most
 dock panels load on first use, and in idle time a moment after start-up so the first click doesn't wait either.
 
+## Where start-up time goes
+
+Three small tools, all for the built app (run them under xvfb, never on the desktop):
+
+- `node scripts/perf/bundle.mjs [--top 40] [--folder src/ui/]` builds the renderer into a temp folder and lists what the
+  initial chunk holds: by source folder, by module, and by "loads only because of one importer" (the bytes that would
+  leave the initial chunk if every static import of that module became a dynamic one). Start here when choosing what to make lazy.
+- `npx vite build --sourcemap --minify false && node scripts/build-main.mjs`, then
+  `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startprofile.cjs [--top 30] [--until 260]` profiles the first
+  load of a fresh launch (V8 CPU profile, mapped back to source files with the source map).
+- `STARTUP_TRACE=/tmp/st.json` in front of `electron scripts/perf/launch.cjs app` (with `STARTUP_USER_DATA=<folder>`) records a
+  Chromium trace of the first load; `node scripts/perf/tracesum.cjs /tmp/st.json` lists main-thread work from the
+  first request to the `frameling:interactive` mark (script eval, layout, style, frames). `PERF_DIST=<folder>` points
+  `launch.cjs` (and so `startup.cjs`) at another build's `dist/`, so two builds can be timed one after the other.
+
+Things that were found this way: the first layout of the page is cold (system font fallback lookups are slow on a
+machine with thousands of fonts), so a text glyph the page font lacks (the old "more" dots) cost about 20 ms until it
+became a drawn icon; the main thread waits for the whole entry script to be parsed in the background (about 20 ms per
+MB), so every 100 kB kept out of the initial chunk is worth about 2 ms. Moving to a custom scheme to get V8's code
+cache would change the page's origin and lose everyone's saved preferences (localStorage), so it is not done.
+
 ## The hidden window
 
-The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop. It is not
+The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop (`startup.cjs` keeps it on-screen under xvfb, where an off-screen window is never
+drawn). It is not
 truly hidden on purpose: with this app a hidden Electron window only gets one `requestAnimationFrame` a second, so
 there is nothing to measure (`PERF_HIDDEN=1` shows that). Frames come at the display's refresh rate; the results
 record it as `env.idleRafMs` (6.06 ms means a 165 Hz display), so remember it when reading frame deltas.
@@ -64,6 +82,7 @@ The page is opened with `?debug&perf`. `?perf` switches on `src/canvas/perf.ts`,
 | `draw` | A 2,000 point stroke at about 250 Hz, on an empty document and on one with 300 strokes. Then a 240 point stroke at one event per frame. | `latency*`: pointer event timestamp to the end of the overlay draw that shows it. `overlayDrawMs`: the JS time of that draw. `rafDelta`: frame to frame. `mainDrawMsMax`: the repaint when the pen lifts. |
 | `playback` | 600 frames, 5 layers of 50 strokes each (150,000 strokes), 24 fps for 8 s, onion skin off and on. Then a second lap, and 60 scrubbed frames with onion skin on. | `paintIntervalMs` (should sit on 41.7), `latePaints` (more than 1.5 frames late), `framesSkipped`, `paintMs`, long tasks, `bitmapBuilds`. |
 | `rigfx` | The kitchen sink (`src/export/kitchenSink.ts`) stretched to 300 frames at 24 fps: ten layers, effects on several, a folder with a mask and a clipped layer, tiles, a tweening symbol with tiles inside, an arm bending a mesh layer, sound. Played 8 s twice. | `paintIntervalMs`, `latePaints`, `framesSkipped`, `paintMs`, long tasks |
+| `pixelblend` | One 1920x1080 frame (a backdrop and three layers on Linear dodge, Subtract, Divide) rendered by the single renderer, with the GPU blend path off (pixel by pixel on the CPU) and on. Needs `window.__framelingEffects`. | `cpu.frameMs`, `gpu.frameMs`, `speedup` |
 | `templates` | Every starter template: `make()`, then `store.load`, to the first canvas paint. Median of three. | `makeMs`, `firstPaintMs`, `presentedMs` |
 | `zoompan` | 180 ctrl+wheel ticks in and out, then a middle-button pan circle, on a 300 stroke document and a 5 layer one. | `rafDelta`, `mainDrawMs`, `bitmapBuilds` |
 | `memory` | 200 strokes drawn, 100 undone. JS heap after a forced GC at the start, after the strokes and after the undos. | `growthMB` |
@@ -100,3 +119,55 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
 - **Live stroke** (`overlayDrawMs`): still redrawn from all its points on every frame, on purpose, so the preview is
   exactly the outline the finished stroke gets. It stays well under a millisecond at 2,000 points on a fast CPU and
   about 1.3 ms with the CPU throttled 4x, so it was left alone.
+
+## Pen-up cost
+
+`penup.cjs` draws a stroke on a big pixel drawing and times the release (mouse-up to the next task), with `--profile out.cpuprofile` printing the top functions of the release (self and inclusive). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/perf/penup.cjs --size 4096 --laps 6`.
+
+## Everyday actions: sweep.cjs
+
+`sweep.cjs` measures what people do all day, on documents that are big enough to show hidden costs, with real mouse and
+key events and a Chrome DevTools CPU profile around each action. It prints a table of main-thread time and, under each
+result, the hottest functions. Use it when something feels slow, and after a change that touches the store, the
+timeline, a panel or file reading and writing.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/sweep.cjs --reps 3 --top 6 --out scripts/perf/results/sweep.json
+node scripts/perf/compare-sweep.cjs before.json after.json
+```
+
+For readable function names in the profile, build an unminified renderer and point the sweep at it (the page's numbers
+barely change): `npx vite build --minify false --outDir /tmp/dev-renderer` then `PERF_RENDERER=/tmp/dev-renderer`.
+
+Documents (`--docs a,b`): `bouncing-ball`, `puppet`, `walk-cycle`, `hero-sprites` (built-in templates), `stress-vector`
+(40 layers in nested folders, 240 keys each, three shapes per key), `stress-pixel` (2000 x 2000 stage, 100 frames of an
+800 x 800 painted block), `variations` (a drawing with four variations), `stress-symbols` (60 symbols, 120 instances on the
+stage).
+
+Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
+`select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
+`undo-redo`, `switch-artboard`, `export-dialog` (warm), `save-file` (the path Save uses), `open-file`, `autosave`,
+`workspaces`. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
+leaves the document as it found it (the history is rewound), and an action that was meant to edit and did not
+fails loudly, so a harness that stopped driving the app never prints a good-looking number.
+
+Other options: `--reps N` (measured repeats, after one unmeasured warm-up; the table shows the median), `--top N`,
+`--out file.json`, `--profile-dir dir` (one `.cpuprofile` per document and action, to open in Chrome DevTools),
+`--trace` (also records a Chromium trace and prints the page's own time by kind: style recalculation, layout, paint),
+`--label`.
+
+Reading the table: `busy` is main-thread time with the page doing anything (script, layout, paint set-up, GC), idle time
+left out, summed over the whole action including the frames it makes and the work it queues for later (look-ahead
+frames). `per unit` divides by the action's units (mouse moves, undo steps, ...). Under xvfb the canvas is drawn in
+software, so `setTransform` and `drawImage` (where Chrome does the drawing) and `(program)` (native work no script
+called) are large and not the app's script; compare them between runs rather than chasing them, and look at the app's own functions.
+Numbers move 20 to 30 percent from run to run on small actions; run twice before believing a small difference.
+
+
+The second sweep round (`results/sweep-after-2.json`, compare it with `sweep-after.json` using `compare-sweep.cjs`) moved the
+rest of file saving and opening off the page's thread: `save-file` and `autosave` hand a finished `doc.json` (kept per drawing
+between saves) to a worker, and `open-file` of a pixel document decodes its pictures on workers (the harness calls
+`openBytesAsync`, the path File > Open takes; `openBytes` is the plain synchronous reader, kept for older builds).
+
+`open-file` of a big vector document (`stress-vector`, a 36 MB `doc.json`) reads and parses that JSON on a worker and hands the parsed object across (`readDocJsonInWorker`, only for a `doc.json` over 1 MB): the page's time drops from about 340 ms to about 195 ms, and the open itself takes about 250 ms longer by the clock (the hand-over is not free), with the page free to draw meanwhile.

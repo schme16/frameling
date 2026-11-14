@@ -156,8 +156,10 @@ describe('templates', () => {
             for (const c of layer.cels) {
               const d = doc.drawings[c.drawingId];
               if (d.kind !== 'pixel') throw new Error('not pixel');
-              expect([d.width, d.height]).toEqual([grid.width, grid.height]);
-              expect(d.pixels.length).toBe(grid.width * grid.height * 4);
+              // A drawing holds only its painted part, which lies inside the grid.
+              expect(d.pixels.length).toBe(d.width * d.height * 4);
+              expect((d.x ?? 0) + d.width).toBeLessThanOrEqual(grid.width);
+              expect((d.y ?? 0) + d.height).toBeLessThanOrEqual(grid.height);
               if (!t.id.startsWith('blank')) expect(d.pixels.some((v) => v > 0)).toBe(true);
             }
           }

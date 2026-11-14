@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -7,6 +8,7 @@ import { eraserTool } from '../../src/tools/eraser';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
 import { getPx } from '../../src/canvas/pixels';
+import { setChoice } from '../../src/core/choices';
 import { addShapes, ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from './helpers';
 
 const wave: [number, number][] = [[10, 10], [30, 18], [60, 40], [90, 38], [120, 20]];
@@ -100,7 +102,7 @@ describe('pencil', () => {
     expect(st.brush.taperEnd).toBe(0);
   });
 
-  it('is the one pixel pencil on a pixel layer', () => {
+  it('is the one sized pencil on a pixel layer', () => {
     expect(pencilTool.layers).toEqual(['vector', 'pixel']);
     pixelStore();
     setToolSettings({ pixelBrushSize: 5 });
@@ -108,11 +110,12 @@ describe('pencil', () => {
     drag(pencilTool, c, [[4, 4], [12, 4]]);
     expect(c.hint).not.toHaveBeenCalled();
     const { doc } = store().get();
-    const d = Object.values(doc.drawings)[0] as PixelDrawing;
-    // One pixel high whatever the brush size: row 1 stays clear.
+    const d = asGrid(Object.values(doc.drawings)[0] as PixelDrawing);
+    // Size 5 round row 0: rows 1 and 2 are painted (as far as the edge goes), row 3 is not.
     expect(getPx(d.pixels, d.width, 0, 0)[3]).toBe(255);
-    expect(getPx(d.pixels, d.width, 1, 0)[3]).toBe(255);
-    expect(getPx(d.pixels, d.width, 0, 1)[3]).toBe(0);
+    expect(getPx(d.pixels, d.width, 1, 1)[3]).toBe(255);
+    expect(getPx(d.pixels, d.width, 1, 2)[3]).toBe(255);
+    expect(getPx(d.pixels, d.width, 1, 3)[3]).toBe(0);
   });
 });
 
@@ -121,7 +124,7 @@ const at = (px: number, py: number): [number, number] => [px * 8 + 4, py * 8 + 4
 const pixelsNow = () => {
   const { doc } = store().get();
   const cel = doc.layers[0].cels[0];
-  return cel ? (doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
+  return cel ? asGrid(doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
 };
 
 describe('brush on a pixel layer', () => {
@@ -138,14 +141,18 @@ describe('brush on a pixel layer', () => {
 
   it('is one undo step, and never edits the old array in place', () => {
     const s = pixelStore();
+    // The drawing itself (not the whole-grid view of it), so arrays can be compared by identity.
+    const raw = () => s.get().doc.drawings[s.get().doc.layers[0].cels[0].drawingId] as PixelDrawing;
     drag(brushTool, ctx(), [at(0, 0), at(2, 0)]);
-    const first = pixelsNow()!.pixels;
+    const first = raw().pixels;
+    const firstCopy = [...first];
     drag(brushTool, ctx(), [at(0, 3), at(2, 3)]);
-    const second = pixelsNow()!.pixels;
+    const second = raw().pixels;
     expect(second).not.toBe(first);
-    expect(getPx(first, 8, 0, 3)).toEqual([0, 0, 0, 0]);
+    expect([...first]).toEqual(firstCopy);
+    expect(getPx(asGrid(raw()).pixels, 8, 0, 3)[3]).toBe(255);
     s.undo();
-    expect(pixelsNow()!.pixels).toBe(first);
+    expect(raw().pixels).toBe(first);
   });
 
   it('removes the L-shaped corner doubles with pixel perfect on, and keeps them off', () => {
@@ -217,6 +224,9 @@ describe('brush on a pixel layer', () => {
 });
 
 describe('eraser', () => {
+  // These are about erasing whole lines; rubbing out just the bit is in erase-bits.test.ts.
+  beforeEach(() => setChoice('eraser.vectorWay', 'whole'));
+
   it('clears pixels on a pixel layer', () => {
     const s = pixelStore();
     s.setUi({ color: '#ff0000' });

@@ -1,0 +1,1 @@
+A (built, default): the right side keeps Properties and the rail in its first group; any group stacked under it is a plain tab group across the full width, with its own tab bar. B (mock, DOM edited from A, light only): one rail down the whole side lists every group's panels, and each group has a heading instead of a tab bar.

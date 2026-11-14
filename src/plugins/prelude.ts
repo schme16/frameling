@@ -14,7 +14,11 @@ var pending = new Map();
 var commands = new Map();
 var exporters = new Map();
 var panels = new Map();
+var tools = new Map();
+var shapeKinds = new Map();
+var listeners = new Map();
 var info = null;
+var lastProgress = 0;
 
 function send(msg, transfer) {
   if (port) port.postMessage(msg, transfer || []);
@@ -57,8 +61,19 @@ async function serve(method, a) {
   if (method === 'export') {
     var ex = exporters.get(a && a.id);
     if (!ex) throw new Error('This plugin has no exporter "' + (a && a.id) + '".');
-    var files = await ex(a.frames, a.info);
+    var files = await ex(a.frames, a.info, a.options || {});
     return Array.isArray(files) ? files : files ? [files] : [];
+  }
+  if (method === 'toolEvent') {
+    var tool = tools.get(a && a.toolId);
+    if (!tool) return null;
+    var out = await tool(a.event);
+    return out && typeof out === 'object' ? { ops: out.ops, label: out.label, overlay: out.overlay, hint: out.hint } : null;
+  }
+  if (method === 'shapeDraw') {
+    var draw = shapeKinds.get(a && a.kind);
+    if (!draw) throw new Error('This plugin has no kind of shape "' + (a && a.kind) + '".');
+    return (await draw(a.props || {})) || [];
   }
   if (method === 'panelEvent') {
     var p = panels.get(a && a.panelId);
@@ -69,6 +84,25 @@ async function serve(method, a) {
 }
 async function onMessage(m) {
   if (!m || typeof m !== 'object') return;
+  if (m.t === 'ping') {
+    // The host's heartbeat: a worker stuck in a loop can't answer it.
+    send({ t: 'pong', n: m.n });
+    return;
+  }
+  if (m.t === 'event') {
+    var fns = listeners.get(m.name);
+    if (fns) {
+      for (var i = 0; i < fns.length; i++) {
+        try {
+          await fns[i](m.payload);
+        } catch (e) {
+          send({ t: 'error', message: errText(e) });
+        }
+      }
+    }
+    send({ t: 'evAck' });
+    return;
+  }
   if (m.t === 'reply') {
     var p = pending.get(m.id);
     if (!p) return;
@@ -88,7 +122,7 @@ async function onMessage(m) {
 }
 
 var api = {
-  apiVersion: 1,
+  apiVersion: 2,
   get plugin() {
     return info;
   },
@@ -120,7 +154,7 @@ var api = {
       needId(def, 'An exporter');
       if (typeof run !== 'function') throw new Error('An exporter needs a function that makes the files.');
       exporters.set(def.id, run);
-      send({ t: 'register', kind: 'exporter', def: { id: def.id, label: def.label, description: def.description, extension: def.extension, multiple: def.multiple, transparent: def.transparent } });
+      send({ t: 'register', kind: 'exporter', def: { id: def.id, label: def.label, description: def.description, extension: def.extension, multiple: def.multiple, transparent: def.transparent, options: def.options } });
     },
   },
   panels: {
@@ -135,9 +169,83 @@ var api = {
       };
     },
   },
+  // Tells Frameling how far a long command or export has got, so it is not mistaken for a plugin that is stuck. It is
+  // posted straight away, so it works from inside a long loop too. Calls come through at most ten times a second.
+  progress: function (done, total) {
+    var now = Date.now();
+    done = Number(done);
+    total = Number(total);
+    if (!isFinite(done) || !isFinite(total)) return;
+    if (now - lastProgress < 100 && done < total) return;
+    lastProgress = now;
+    send({ t: 'progress', done: done, total: total });
+  },
   ui: {
     notify: function (message, kind) {
       return call('ui.notify', { message: String(message), kind: kind });
+    },
+  },
+  // Version 2. Which of its powers the person allowed (it can ask for more than it was given).
+  permissions: function () {
+    return call('permissions').then(function (r) {
+      return r.granted;
+    });
+  },
+  events: {
+    on: function (name, fn) {
+      if (typeof fn !== 'function') throw new Error('events.on needs a function.');
+      var list = listeners.get(name);
+      if (!list) {
+        list = [];
+        listeners.set(name, list);
+        send({ t: 'subscribe', event: String(name) });
+      }
+      list.push(fn);
+    },
+    off: function (name, fn) {
+      var list = listeners.get(name);
+      if (!list) return;
+      var i = list.indexOf(fn);
+      if (i >= 0) list.splice(i, 1);
+      if (!list.length) {
+        listeners.delete(name);
+        send({ t: 'unsubscribe', event: String(name) });
+      }
+    },
+  },
+  tools: {
+    register: function (def, onEvent) {
+      needId(def, 'A tool');
+      if (typeof onEvent !== 'function') throw new Error('A tool needs a function that hears the pointer.');
+      tools.set(def.id, onEvent);
+      send({ t: 'register', kind: 'tool', def: { id: def.id, label: def.label, icon: def.icon, layers: def.layers, snap: def.snap, keys: def.keys } });
+    },
+  },
+  canvas: {
+    // A guide drawn on top of the canvas: a list of lines, boxes, ellipses, polygons, paths and text. null takes it away.
+    overlay: function (list) {
+      send({ t: 'overlay', list: Array.isArray(list) ? list : [] });
+    },
+  },
+  shapes: {
+    register: function (def, draw) {
+      if (!def || typeof def.kind !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(def.kind)) throw new Error('A kind of shape needs a kind made of letters, numbers, dashes or underscores.');
+      if (typeof draw !== 'function') throw new Error('A kind of shape needs a function that draws it from its settings.');
+      shapeKinds.set(def.kind, draw);
+      send({ t: 'register', kind: 'shape', def: { id: def.kind, label: def.label, options: def.options } });
+    },
+    place: function (kind, props, at) {
+      return call('shapes.place', { kind: String(kind), props: props || {}, x: at && at.x, y: at && at.y });
+    },
+    update: function (inst, kind, props, drawingId) {
+      return call('shapes.update', { inst: String(inst), kind: String(kind), props: props || {}, drawingId: drawingId });
+    },
+  },
+  files: {
+    // Asks the person to pick a file, and reads only that one. Resolves { name, bytes } or null if they cancel.
+    pick: function (opts) {
+      opts = opts || {};
+      return call('files.pick', { extensions: opts.extensions, title: opts.title });
     },
   },
 };

@@ -4,7 +4,10 @@
  */
 import type { WheelMode } from './choices';
 
-export type WheelIntent = { kind: 'zoom'; factorDelta: number } | { kind: 'pan'; dx: number; dy: number };
+/** How big a bite one wheel notch takes out of the zoom. */
+export type ZoomStep = 'fine' | 'normal' | 'coarse';
+
+export type WheelIntent = { kind: 'zoom'; factorDelta: number; step: ZoomStep } | { kind: 'pan'; dx: number; dy: number };
 
 export interface WheelLike {
   deltaX: number;
@@ -13,6 +16,19 @@ export interface WheelLike {
   ctrlKey: boolean;
   metaKey: boolean;
   shiftKey: boolean;
+  altKey?: boolean;
+}
+
+/**
+ * Three sizes of zoom step. **Alt** always takes small careful steps. A **Ctrl** that isn't needed to zoom in the
+ * first place takes big ones: with the wheel set to zoom that is plain Ctrl, and with it set to scroll (where Ctrl is
+ * what starts the zoom) it is Ctrl and Shift. A trackpad pinch is left alone, since its own steps are already small.
+ */
+export function zoomStep(e: WheelLike, mode: WheelMode): ZoomStep {
+  if (e.altKey) return 'fine';
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && (mode === 'zoom' || e.shiftKey)) return 'coarse';
+  return 'normal';
 }
 
 /**
@@ -24,10 +40,10 @@ export function wheelIntent(e: WheelLike, mode: WheelMode): WheelIntent {
   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   let dx = e.deltaX * scale;
   let dy = e.deltaY * scale;
-  if (e.ctrlKey || e.metaKey) return { kind: 'zoom', factorDelta: e.deltaY };
+  if (e.ctrlKey || e.metaKey) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode) };
   if (e.shiftKey && dx === 0) [dx, dy] = [dy, 0];
   const sideways = e.shiftKey || dx !== 0;
-  if (mode === 'zoom' && !sideways) return { kind: 'zoom', factorDelta: e.deltaY };
+  if (mode === 'zoom' && !sideways) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode) };
   return { kind: 'pan', dx, dy };
 }
 

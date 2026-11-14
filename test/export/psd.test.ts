@@ -43,6 +43,7 @@ describe('PSD writer', () => {
   it('maps every blend mode to a Photoshop key', () => {
     expect(blendKey('multiply')).toBe('mul ');
     expect(blendKey('add')).toBe('lddg');
+    expect([blendKey('subtract'), blendKey('divide')]).toEqual(['fsub', 'fdiv']);
     expect(blendKey('pass')).toBe('pass');
     expect(blendKey(undefined)).toBe('norm');
   });

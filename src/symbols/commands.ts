@@ -4,7 +4,10 @@ import { getCommand, registerCommands, registerPanel } from '../core/registry';
 import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
 import { EASE_PRESETS } from '../core/ease';
+import { pixelKeyAt } from '../core/symbols';
 import { toast } from '../ui/toast';
+import { MOTIONS } from '../core/motions';
+import { canMotion, makeMotion } from './motion-ops';
 import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
 registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 30, help: 'symbols' });
@@ -19,6 +22,7 @@ const cameraKeyHere = (s: State) => {
   const l = findLayer(s.doc, s.ui.activeLayerId);
   return l?.kind === 'camera' && !!celAt(l, s.ui.frame);
 };
+const pixelKeyHere = (s: State) => !!s.ui.activeLayerId && pixelKeyAt(s.doc, s.ui.activeLayerId, s.ui.frame);
 const showPanel = (id: string) => void getCommand(`view.panel.${id}`)?.run();
 
 registerCommands([
@@ -27,7 +31,7 @@ registerCommands([
     label: 'Make a reusable symbol',
     category: 'Draw',
     keys: ['F8'],
-    description: 'Turns the selection (or the whole drawing) into a symbol you can place again and again.',
+    description: 'Turns the selection (or the whole drawing, vector or pixel art) into a symbol you can place again and again.',
     keywords: ['convert to symbol', 'symbol', 'component', 'movie clip', 'graphic', 'reuse', 'library', 'group'],
     help: 'symbols',
     run: () => void makeSymbolFromSelection(),
@@ -104,7 +108,7 @@ registerCommands([
     description: 'Makes the drawing glide, grow, turn or fade from this key to the next. Frameling draws the frames between.',
     keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'in-between', 'interpolate', 'move', 'animate'],
     help: 'tweens',
-    enabled: (s) => (!!currentKey() || cameraKeyHere(s)) && !tweenHere(s),
+    enabled: (s) => (!!currentKey() || cameraKeyHere(s) || pixelKeyHere(s)) && !tweenHere(s),
     run: () => makeTweenAsking(),
   },
   {
@@ -180,3 +184,17 @@ registerCommands([
     run: () => void setEase(p.id),
   })),
 ]);
+
+// One-click motions: Make it bounce, wobble, float...
+registerCommands(
+  MOTIONS.map((m) => ({
+    id: `motion.${m.id}`,
+    label: `Make it ${m.label.toLowerCase()}`,
+    category: 'Animate',
+    description: `${m.description} Adds keys with in-betweens from the playhead, on the selection or the whole drawing.`,
+    keywords: ['one-click motion', 'animate preset', 'preset', 'motion', 'effect', m.label.toLowerCase(), m.id],
+    help: 'one-click-motions',
+    enabled: (s: State) => canMotion(s.doc),
+    run: () => makeMotion(m.id),
+  })),
+);

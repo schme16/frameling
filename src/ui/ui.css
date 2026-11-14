@@ -267,6 +267,10 @@ kbd {
   box-shadow: var(--shadow);
   animation: ui-drop 0.14s var(--ui-pop);
   transform-origin: top left;
+  /* Never taller than the window: a long menu scrolls (wheel, arrows, Home, End, Page keys). */
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .ui-menu-item {
   display: flex;
@@ -363,6 +367,83 @@ kbd {
   gap: 2px;
 }
 
+/* The workspace switcher: small tabs like the segmented control, or one chip with the name. */
+.ws-switch {
+  position: relative;
+  margin-right: 8px;
+}
+.ws-tabs {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+}
+:root[data-look='crisp'] .ws-tabs {
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+.ws-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 11px;
+  white-space: nowrap;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+:root[data-look='crisp'] .ws-tab {
+  border-radius: calc(var(--radius-small) - 1px);
+}
+.ws-tab:hover,
+.ws-tab.is-open {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.ws-tab.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ws-tab.ws-more {
+  padding: 0 6px;
+}
+.ws-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+}
+:root[data-look='crisp'] .ws-chip {
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+.ws-chip:hover,
+.ws-chip.is-open {
+  background: var(--hover-bg);
+}
+.ws-chip-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-list {
+  position: fixed;
+  left: auto;
+  width: 300px;
+  min-width: 0;
+}
+
 /* ------------------------------------------------------------ body */
 
 .ui-body {
@@ -396,8 +477,11 @@ kbd {
 
 /* Tool strip */
 .ui-tools {
+  /* The size of a tool button: Change the tools sets it (small, medium, large). The rail is two buttons wide. */
+  --tool: 38px;
+  --tool-pad: 18px;
   flex: none;
-  width: 50px;
+  width: calc(var(--tool) * 2 + var(--tool-pad));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -411,15 +495,33 @@ kbd {
   scrollbar-width: none;
 }
 :root[data-look='crisp'] .ui-tools {
-  width: 44px;
+  --tool: 34px;
+  --tool-pad: 14px;
   padding: 6px 0;
   gap: 2px;
 }
+.ui-tools.is-size-small {
+  --tool: 30px;
+  --tool-pad: 14px;
+}
+:root[data-look='crisp'] .ui-tools.is-size-small {
+  --tool: 28px;
+  --tool-pad: 12px;
+}
+.ui-tools.is-size-large {
+  --tool: 46px;
+  --tool-pad: 20px;
+}
+:root[data-look='crisp'] .ui-tools.is-size-large {
+  --tool: 42px;
+  --tool-pad: 16px;
+}
 .ui-tool {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--tool);
+  height: var(--tool);
   padding: 0;
   border: 0;
   border-radius: calc(var(--radius) - 2px);
@@ -428,8 +530,6 @@ kbd {
   transition: background 0.12s var(--ease), color 0.12s var(--ease), transform 0.22s var(--ui-pop);
 }
 :root[data-look='crisp'] .ui-tool {
-  width: 34px;
-  height: 34px;
   border-radius: var(--radius-small);
 }
 .ui-tool:hover {
@@ -448,9 +548,478 @@ kbd {
 .ui-tool:active {
   transform: scale(0.92);
 }
+/* A tool that doesn't work on this kind of layer keeps its place, greyed out. It still answers a hover or a press. */
+.ui-tool.is-off {
+  color: var(--faint);
+  opacity: 0.45;
+  cursor: default;
+}
+.ui-tool.is-off:hover {
+  background: transparent;
+  color: var(--faint);
+  transform: none;
+}
+.ui-tool.is-off:active {
+  transform: none;
+}
+.ui-tool-fly-item.is-off {
+  opacity: 0.45;
+  cursor: default;
+}
 .ui-tools-empty {
   color: var(--faint);
   padding-top: 8px;
+}
+
+/* Groups: two tools across (more on a wider rail), a thin gap between groups. */
+.ui-tool-groups {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.ui-tools.is-sideways .ui-tool-groups {
+  width: auto;
+}
+.ui-tool-group {
+  display: grid;
+  /* Two across, or as many as the width the rail was pulled to fits (ToolStrip sets --tool-cols). */
+  grid-template-columns: repeat(var(--tool-cols, 2), auto);
+  gap: 4px;
+  padding: 2px;
+  border-radius: calc(var(--radius) - 1px);
+}
+:root[data-look='crisp'] .ui-tool-group {
+  gap: 2px;
+}
+.ui-tool-gap {
+  position: relative;
+  width: 100%;
+  height: 9px;
+  flex: none;
+}
+.ui-tool-gap::before {
+  content: '';
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 4px;
+  height: 1px;
+  background: var(--line);
+  transition: background 0.12s var(--ease), top 0.12s var(--ease), height 0.12s var(--ease);
+}
+.ui-tools.is-arranging .ui-tool-gap {
+  height: 16px;
+}
+.ui-tools.is-arranging .ui-tool-gap::before {
+  top: 7px;
+  background: color-mix(in srgb, var(--sunny) 45%, var(--line));
+}
+.ui-tool-gap.is-drop::before {
+  top: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sunny-deep, var(--sunny));
+}
+.ui-tool-gap.is-end {
+  height: 22px;
+}
+.ui-tool-group.is-drop {
+  outline: 2px dashed var(--sunny-deep, var(--sunny));
+  outline-offset: 0;
+}
+/* A tool being carried, where it will land, and the copy that follows the pointer. */
+.ui-tool.is-lifted {
+  opacity: 0.35;
+}
+.ui-tool.is-drop-before::after,
+.ui-tool.is-drop-after::after {
+  content: '';
+  position: absolute;
+  background: var(--sunny-deep, var(--sunny));
+  border-radius: 2px;
+}
+.ui-tool.is-drop-before::after {
+  left: -4px;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+}
+.ui-tool.is-drop-after::after {
+  right: -4px;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+}
+.ui-tools.is-sideways .ui-tool.is-drop-before::after,
+.ui-tools.is-sideways .ui-tool.is-drop-after::after {
+  left: 3px;
+  right: 3px;
+  width: auto;
+  height: 3px;
+  top: auto;
+  bottom: auto;
+}
+.ui-tools.is-sideways .ui-tool.is-drop-before::after {
+  top: -4px;
+}
+.ui-tools.is-sideways .ui-tool.is-drop-after::after {
+  bottom: -4px;
+}
+.ui-tool-ghost {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin: 4px 0 0 8px;
+  border-radius: var(--radius);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+/* Stacked: one button per group, a corner mark when there is more to find in it. */
+.ui-tools.is-stacked {
+  width: calc(var(--tool) + 12px);
+}
+:root[data-look='crisp'] .ui-tools.is-stacked {
+  width: calc(var(--tool) + 10px);
+}
+.ui-tools.is-stacked .ui-tool-gap {
+  height: 7px;
+}
+.ui-tools.is-stacked.is-arranging .ui-tool-gap {
+  height: 14px;
+}
+.ui-tool.has-more::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-bottom: 6px solid currentColor;
+  opacity: 0.55;
+}
+.ui-tool.is-drop-group {
+  outline: 2px dashed var(--sunny-deep, var(--sunny));
+  outline-offset: -1px;
+}
+.ui-tool-fly {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: ui-drop 0.14s var(--ui-pop);
+}
+.ui-tool-fly-head {
+  padding: 2px 10px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tool-fly-rename {
+  margin-top: 2px;
+  color: var(--muted);
+  border-top: 1px solid var(--line-soft);
+  border-radius: 0 0 calc(var(--radius) - 3px) calc(var(--radius) - 3px);
+}
+.ui-tool-fly-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: calc(var(--radius) - 3px);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-weight: 700;
+}
+.ui-tool-fly-item:hover {
+  background: var(--hover-bg);
+}
+.ui-tool-fly-item.is-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+
+/* Group names above the groups (Group names: Show), and the same row when the tools are being changed. */
+.ui-tool-head {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 3px 8px 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ui-tool-head.is-edit {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 1px 6px;
+}
+.ui-tool-head-name {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+.ui-tool-head-name:hover,
+.ui-tool-head-name:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-head-name.is-empty {
+  color: var(--faint);
+  font-style: italic;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ui-tool-fold {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+}
+.ui-tool-fold:hover:not(:disabled),
+.ui-tool-fold:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-fold.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ui-tool-fold:disabled {
+  opacity: 0.4;
+}
+/* While the tools are being changed: a + on every divider says a group can start here. */
+.ui-tools.is-editing {
+  outline: 2px solid color-mix(in srgb, var(--sunny) 70%, transparent);
+  outline-offset: -2px;
+}
+.ui-tools.is-editing .ui-tool-gap {
+  height: 16px;
+}
+.ui-tools.is-editing .ui-tool-gap::before {
+  top: 7px;
+  background: color-mix(in srgb, var(--sunny) 55%, var(--line));
+}
+.ui-tools.is-editing .ui-tool-gap::after {
+  content: '+';
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sunny-deep, var(--sunny));
+  color: var(--chosen-fg, #2b2100);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+.ui-tools.is-editing .ui-tool-gap.is-end {
+  height: 22px;
+}
+.ui-tools.is-editing .ui-tool-gap.is-drop::before {
+  top: 6px;
+  height: 4px;
+}
+.ui-tools.is-editing .ui-tool {
+  cursor: pointer;
+}
+/* Tools put away leave a quiet chip at the foot of the rail. */
+.ui-tools-away {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--faint);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tools-away:hover,
+.ui-tools-away:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
+/* Change the tools: the panel beside the rail. */
+.ui-tb-panel {
+  position: fixed;
+  z-index: 52;
+  width: 292px;
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  animation: ui-drop 0.14s var(--ui-pop);
+}
+.ui-tb-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.ui-tb-hint,
+.ui-tb-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.ui-tb-note {
+  margin-top: 4px;
+}
+.ui-tb-head {
+  margin: 12px 0 6px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tb-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px;
+  border: 1.5px dashed var(--line);
+  border-radius: calc(var(--radius) - 2px);
+}
+.ui-tb-shelf.is-drop {
+  border-color: var(--sunny-deep, var(--sunny));
+  background: color-mix(in srgb, var(--sunny) 14%, transparent);
+}
+.ui-tb-away {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--muted);
+}
+.ui-tb-away:hover,
+.ui-tb-away:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tb-away.is-lifted {
+  opacity: 0.35;
+}
+.ui-tb-empty {
+  padding: 0 6px;
+  color: var(--faint);
+  font-size: var(--fs-small);
+}
+.ui-tb-link {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.ui-tb-segs {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.ui-tb-seg {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+.ui-tb-seg:hover {
+  color: var(--text);
+}
+.ui-tb-seg.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ui-tb-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ui-tb-back,
+.ui-tb-done {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+}
+.ui-tb-back:disabled {
+  opacity: 0.45;
+}
+.ui-tb-back:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.ui-tb-done {
+  border-color: transparent;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
 }
 
 /* ------------------------------------------------------------ dock zones */
@@ -475,9 +1044,123 @@ kbd {
 .ui-zone-bottom.is-collapsed {
   height: auto;
 }
-.ui-zone.is-target {
+.ui-zone.is-target,
+.ui-group.is-target {
   outline: 2px dashed var(--sunny);
   outline-offset: -4px;
+}
+/* Stacked tab groups: a box per group, a splitter between. The first group of a zone alone looks like the zone itself. */
+.ui-stack {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.ui-stack-y {
+  flex-direction: column;
+}
+.ui-stack-x {
+  flex-direction: row;
+}
+.ui-group {
+  position: relative;
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ui-group-split {
+  position: relative;
+  flex: none;
+  z-index: 4;
+  touch-action: none;
+  background: var(--line-soft);
+}
+.ui-group-split-h {
+  height: 1px;
+  margin: 3px 0;
+  cursor: row-resize;
+}
+.ui-group-split-v {
+  width: 1px;
+  margin: 0 3px;
+  cursor: col-resize;
+}
+/* A wider strip to grab, with the grip drawn in the middle on hover and keyboard focus. */
+.ui-group-split::before {
+  content: '';
+  position: absolute;
+}
+.ui-group-split-h::before {
+  inset: -4px 0;
+}
+.ui-group-split-v::before {
+  inset: 0 -4px;
+}
+.ui-group-split::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.12s var(--ease);
+}
+.ui-group-split-h::after {
+  height: 3px;
+  width: 44px;
+}
+.ui-group-split-v::after {
+  width: 3px;
+  height: 44px;
+}
+.ui-group-split:hover::after,
+body.ui-resizing .ui-group-split:active::after {
+  background: var(--sunny);
+}
+.ui-group-split:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ui-group-split:focus-visible::after {
+  background: var(--focus);
+}
+/* Dropping on a group's edge makes a new group there: the half it would take is lit. */
+.ui-group.is-split-before::after,
+.ui-group.is-split-after::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--sunny) 28%, transparent);
+  border: 2px solid var(--sunny);
+  border-radius: var(--radius-small);
+  z-index: 6;
+}
+.ui-stack-y > .ui-group.is-split-before::after {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 50%;
+}
+.ui-stack-y > .ui-group.is-split-after::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+}
+.ui-stack-x > .ui-group.is-split-before::after {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+}
+.ui-stack-x > .ui-group.is-split-after::after {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 50%;
 }
 .ui-zone-empty {
   align-items: center;
@@ -718,12 +1401,17 @@ kbd {
   border-radius: 0;
 }
 .ui-splitter:hover::after,
-.ui-splitter:focus-visible::after,
 body.ui-resizing .ui-splitter:active::after {
   background: var(--sunny);
 }
+/* Keyboard focus: the whole strip is ringed in the focus colour and the grip fills with it, in every theme and both looks. */
 .ui-splitter:focus-visible {
-  outline: none;
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+  border-radius: 3px;
+}
+.ui-splitter:focus-visible::after {
+  background: var(--focus);
 }
 body.ui-resizing {
   cursor: grabbing;
@@ -1250,6 +1938,18 @@ body.ui-resizing * {
   margin: 2px 0 0;
   color: var(--muted);
 }
+.ui-quest-pinned {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  margin-top: 4px;
+  padding: 8px 14px;
+  box-shadow: var(--shadow);
+}
+.ui-quest-pinned .ui-quest-icon {
+  width: 32px;
+  height: 32px;
+}
 .ui-quest-icon {
   display: grid;
   place-items: center;
@@ -1353,7 +2053,9 @@ body.ui-resizing * {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: 8px 24px 24px;
+  padding: 8px 18px 24px;
+  /* Clear of the modal's rounded corners, so the scrollbar is a whole bar and not a cut-off one. */
+  margin: 0 5px 5px 0;
 }
 .ui-prefs-page h3 {
   margin: 12px 0 10px;
@@ -1382,8 +2084,17 @@ body.ui-resizing * {
   font-size: var(--fs-small);
   line-height: 1.35;
 }
+.ui-pref-text .ui-pref-note {
+  color: var(--text);
+}
+.ui-switch.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ui-segmented {
   display: inline-flex;
+  /* Never squashed by a long description beside it: the words on the buttons stay on one line. */
+  flex: none;
   padding: 3px;
   gap: 2px;
   border: 1px solid var(--line);
@@ -1398,6 +2109,7 @@ body.ui-resizing * {
   align-items: center;
   gap: 6px;
   height: 26px;
+  white-space: nowrap;
   padding: 0 12px;
   border: 0;
   border-radius: var(--radius-pill);
@@ -1571,7 +2283,8 @@ body.ui-resizing * {
 }
 .ui-ws.is-chosen {
   border-color: var(--sunny);
-  background: color-mix(in srgb, var(--sunny) 12%, var(--raised));
+  /* A light tint, so the softer text inside still reads on it (12% was 4.47:1 in Midnight Sketchbook). */
+  background: color-mix(in srgb, var(--sunny) 8%, var(--raised));
 }
 .ui-ws-name {
   font-weight: 700;
@@ -1759,8 +2472,27 @@ body.ui-resizing * {
   font-size: var(--fs-small);
   line-height: 1.4;
 }
+.ui-help-off {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
 .ui-help-empty {
   padding: 16px;
+  color: var(--muted);
+}
+.ui-help-loading {
+  margin: 0;
+  padding: 16px;
+  min-height: 3em;
   color: var(--muted);
 }
 .ui-help-home {
@@ -2223,6 +2955,17 @@ body.ui-resizing * {
   color: var(--muted);
   font-size: var(--fs-small);
 }
+.ui-choice-usual {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 20px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
 .ui-choice-foot {
   display: flex;
   align-items: center;
@@ -2477,6 +3220,7 @@ body.ui-resizing * {
   gap: 12px;
 }
 .th-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2513,6 +3257,42 @@ body.ui-resizing * {
   gap: 6px;
   padding: 0 2px;
 }
+.th-card-badges {
+  /* A folded corner on the card, curved like a page turned over, with the sun or the moon sitting on it. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1px;
+  width: 54px;
+  height: 54px;
+  /* The icon sits where the fold is widest, not at its point. */
+  padding: 7px 0 0 7px;
+  border-top-left-radius: var(--radius-small);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  clip-path: polygon(100% 0%, 98.2% 10.5%, 95.4% 20.8%, 91.5% 30.9%, 86.7% 40.7%, 81% 50.1%, 74.4% 58.8%, 67% 67%, 58.8% 74.4%, 50.1% 81%, 40.7% 86.7%, 30.9% 91.5%, 20.8% 95.4%, 10.5% 98.2%, 0% 100%, 0% 0%);
+}
+.th-card-badges.is-both {
+  width: 64px;
+  height: 64px;
+}
+.th-card-badge {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+.th-card-badge svg {
+  width: 19px;
+  height: 19px;
+}
+.th-card-pick {
+  position: relative;
+}
 .th-card-tick {
   display: grid;
   place-items: center;
@@ -2522,18 +3302,112 @@ body.ui-resizing * {
   background: var(--chosen-bg);
   color: var(--chosen-fg);
 }
-.th-card-desc {
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: var(--fs-small);
-  line-height: 1.35;
-  min-height: 4em;
-}
 .th-card-actions {
+  /* The buttons lie over the foot of the card and swoop up when you point at it (or tab into it), so the card is
+     the same size whether they are showing or not and the grid never shifts. */
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 0 2px 2px;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius-small);
+  background: linear-gradient(to top, var(--panel-2) 72%, transparent);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 0.18s var(--ease),
+    transform 0.22s var(--ui-pop);
+}
+/* Only while you are pointing at the card or tabbing through it: at rest the name is never covered, and the one in
+   use is told apart by its badge and its gold edge. */
+.th-card:hover .th-card-actions,
+.th-card:focus-within .th-card-actions {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+:root[data-motion='reduce'] .th-card-actions {
+  transition: none;
+}
+
+/* The two themes you are using, in one card split corner to corner by a squiggle. */
+.th-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 16px;
+  padding: 10px;
+  border: 2px solid var(--chosen-bg);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.th-current-art {
+  position: relative;
+  flex: none;
+  width: 190px;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+.th-current-half {
+  /* Each half is a full app preview, cut along the wave. It must be exactly the size of the card's art box: a half
+     even a few pixels taller would spread its clip over a bigger box than the inked line is drawn in, and the two
+     would stop lining up. */
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  border: 0;
+  border-radius: 0;
+  padding: 7px;
+  gap: 4px;
+  font-size: 9px;
+}
+.th-current-half.is-dark {
+  /* The wave, cut from the top right corner to the bottom left one. Each half is clipped to its own side, so the
+     line really is where one theme stops and the other starts. */
+  clip-path: polygon(100% 0%, 97.8% 3.4%, 95.8% 7%, 93.6% 10.3%, 90.9% 13.1%, 87.4% 15.2%, 83.3% 16.7%, 79.1% 18%, 75.1% 19.5%, 71.7% 21.7%, 69.3% 24.8%, 67.7% 28.8%, 66.7% 33.3%, 65.7% 38%, 64.4% 42.2%, 62.2% 45.5%, 58.9% 47.8%, 54.7% 49.2%, 50% 50%, 45.3% 50.8%, 41.1% 52.2%, 37.8% 54.5%, 35.6% 57.8%, 34.3% 62%, 33.3% 66.7%, 32.3% 71.2%, 30.7% 75.2%, 28.3% 78.3%, 24.9% 80.5%, 20.9% 82%, 16.7% 83.3%, 12.6% 84.8%, 9.1% 86.9%, 6.4% 89.7%, 4.2% 93%, 2.2% 96.6%, 0% 100%, 100% 100%);
+}
+.th-current-half:not(.is-dark) {
+  clip-path: polygon(100% 0%, 97.8% 3.4%, 95.8% 7%, 93.6% 10.3%, 90.9% 13.1%, 87.4% 15.2%, 83.3% 16.7%, 79.1% 18%, 75.1% 19.5%, 71.7% 21.7%, 69.3% 24.8%, 67.7% 28.8%, 66.7% 33.3%, 65.7% 38%, 64.4% 42.2%, 62.2% 45.5%, 58.9% 47.8%, 54.7% 49.2%, 50% 50%, 45.3% 50.8%, 41.1% 52.2%, 37.8% 54.5%, 35.6% 57.8%, 34.3% 62%, 33.3% 66.7%, 32.3% 71.2%, 30.7% 75.2%, 28.3% 78.3%, 24.9% 80.5%, 20.9% 82%, 16.7% 83.3%, 12.6% 84.8%, 9.1% 86.9%, 6.4% 89.7%, 4.2% 93%, 2.2% 96.6%, 0% 100%, 0% 0%);
+}
+.th-current-half .th-prev-stage {
+  /* In this card the paper takes a little of the theme's own colour, so the cut along the wave can be seen even
+     where both themes would otherwise draw the same white page. The gallery cards keep their true white paper. */
+  background: color-mix(in srgb, var(--panel) 80%, #ffffff);
+}
+.th-current-line {
+  /* The ink line along the join, drawn over both halves so the squiggle reads as one pen stroke. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.th-current-line polyline {
+  stroke: #110f18;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.th-current-words {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.th-current-words span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
 }
 .th-footer {
   display: flex;
@@ -2816,7 +3690,508 @@ body.ui-resizing * {
   background: var(--hover-bg);
 }
 .ui-submenu {
-  top: -7px;
-  left: calc(100% + 2px);
+  position: fixed;
+  max-height: calc(100vh - 16px);
   transform-origin: top left;
+}
+.ui-menu-heading {
+  margin: 8px 6px 2px;
+  padding: 0 4px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.ui-menu > .ui-menu-heading:first-child {
+  margin-top: 2px;
+}
+
+/* Preferences: the sound volume slider with its Try button. */
+.ui-pref-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ui-pref-volume input[type='range'] {
+  width: 140px;
+}
+
+/* Preferences > Keyboard: the shortcut set picker, styled like the Behaviour page's choices. */
+.ui-keyset {
+  max-width: 280px;
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ dock: top zone, floating windows, drag bands */
+
+.ui-zone-top.is-collapsed {
+  height: auto;
+}
+.ui-zone.is-over,
+.ui-group.is-over {
+  outline: 2px solid var(--sunny);
+  outline-offset: -3px;
+}
+
+/* The tool rail on the top or bottom edge, or floating over the canvas. */
+.ui-tools-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 16px;
+  margin: -4px 0 -2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  cursor: grab;
+}
+.ui-tools-grip:hover,
+.ui-tools-grip:focus-visible {
+  color: var(--text);
+}
+.ui-tools-grip .ui-icon {
+  transform: rotate(90deg);
+}
+.ui-tools.is-sideways {
+  flex-direction: row;
+  width: auto;
+  height: calc(var(--tool) * 2 + var(--tool-pad));
+  padding: 0 8px 0 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+:root[data-look='crisp'] .ui-tools.is-sideways {
+  width: auto;
+  padding: 0 6px 0 2px;
+}
+.ui-tools.is-sideways .ui-tool-groups {
+  flex-direction: row;
+  align-items: center;
+}
+.ui-tools.is-sideways .ui-tool-group {
+  grid-template-columns: none;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+}
+.ui-tools.is-sideways .ui-tool-gap {
+  width: 9px;
+  height: 80%;
+}
+.ui-tools.is-sideways .ui-tool-gap::before {
+  top: 14%;
+  bottom: 14%;
+  left: 4px;
+  right: auto;
+  width: 1px;
+  height: auto;
+}
+.ui-tools.is-sideways.is-arranging .ui-tool-gap {
+  width: 16px;
+  height: 80%;
+}
+.ui-tools.is-sideways.is-arranging .ui-tool-gap::before {
+  top: 14%;
+  left: 7px;
+}
+.ui-tools.is-sideways .ui-tool-gap.is-drop::before {
+  top: 14%;
+  left: 6px;
+  width: 4px;
+  height: auto;
+}
+.ui-tools.is-sideways .ui-tool-gap.is-end {
+  width: 22px;
+  height: 80%;
+}
+.ui-tools.is-sideways.is-stacked {
+  height: calc(var(--tool) + 12px);
+}
+:root[data-look='crisp'] .ui-tools.is-sideways.is-stacked {
+  height: calc(var(--tool) + 10px);
+}
+.ui-tools.is-sideways.is-stacked .ui-tool-gap,
+.ui-tools.is-sideways.is-stacked.is-arranging .ui-tool-gap {
+  width: 9px;
+  height: 80%;
+}
+.ui-tools.is-sideways .ui-tools-grip {
+  width: 16px;
+  height: 100%;
+  margin: 0 -2px 0 0;
+}
+.ui-tools.is-sideways .ui-tools-grip .ui-icon {
+  transform: none;
+}
+.ui-float-tools {
+  position: fixed;
+  z-index: 34;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.ui-float-tools .ui-tools {
+  border-color: color-mix(in srgb, var(--sunny) 45%, var(--line));
+  box-shadow: none;
+}
+
+/* Floating windows. */
+.ui-float {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
+}
+.ui-float.is-front {
+  border-color: color-mix(in srgb, var(--sunny) 50%, var(--line));
+  box-shadow: var(--shadow);
+}
+.ui-float.is-over,
+.ui-float:has(.is-over) {
+  outline: 2px solid var(--sunny);
+  outline-offset: -3px;
+}
+.ui-float-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.ui-float-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 0 4px 0 2px;
+  cursor: grab;
+}
+.ui-float-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--faint);
+  cursor: grab;
+}
+.ui-float-grip:hover,
+.ui-float-grip:focus-visible {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.ui-float-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  cursor: default;
+}
+.ui-float-fill {
+  flex: 1;
+}
+.ui-float-btns {
+  flex: none;
+  display: flex;
+  gap: 0;
+}
+.ui-float-btns .ui-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.ui-float-row {
+  padding: 0 4px;
+  border-top: 1px solid var(--line-soft);
+}
+.ui-float-tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  padding-top: 3px;
+}
+.ui-float-compact .ui-float-tabs {
+  flex: 1;
+  align-self: flex-end;
+}
+.ui-float-compact .ui-float-bar {
+  align-items: flex-end;
+  padding-top: 3px;
+}
+.ui-float-compact .ui-float-grip,
+.ui-float-compact .ui-float-btns {
+  align-self: center;
+}
+.ui-float-body {
+  flex: 1;
+  min-height: 0;
+}
+.ui-float-rz {
+  position: absolute;
+  z-index: 2;
+}
+.ui-float-rz-n,
+.ui-float-rz-s {
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  cursor: ns-resize;
+}
+.ui-float-rz-n {
+  top: 0;
+}
+.ui-float-rz-s {
+  bottom: 0;
+}
+.ui-float-rz-e,
+.ui-float-rz-w {
+  top: 10px;
+  bottom: 10px;
+  width: 6px;
+  cursor: ew-resize;
+}
+.ui-float-rz-e {
+  right: 0;
+}
+.ui-float-rz-w {
+  left: 0;
+}
+.ui-float-rz-ne,
+.ui-float-rz-nw,
+.ui-float-rz-se,
+.ui-float-rz-sw {
+  width: 12px;
+  height: 12px;
+}
+.ui-float-rz-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+.ui-float-rz-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+.ui-float-rz-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+.ui-float-rz-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+/* While dragging: the bands to dock on, the ghost of a new window, and the label by the pointer. */
+body.dock-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+body.dock-dragging * {
+  cursor: grabbing !important;
+}
+.dock-edge {
+  position: fixed;
+  z-index: 18;
+  display: grid;
+  place-items: center;
+  border: 2px dashed color-mix(in srgb, var(--sunny) 70%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 12%, transparent);
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  text-align: center;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.dock-edge-left span,
+.dock-edge-right span {
+  writing-mode: vertical-rl;
+}
+.dock-edge-left span {
+  transform: rotate(180deg);
+}
+.dock-edge.is-over {
+  border-style: solid;
+  border-color: var(--sunny);
+  background: color-mix(in srgb, var(--sunny) 34%, transparent);
+}
+.dock-ghost {
+  position: fixed;
+  z-index: 19;
+  width: 380px;
+  height: 320px;
+  max-width: 60vw;
+  max-height: 60vh;
+  border: 2px dashed var(--sunny);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 10%, transparent);
+  pointer-events: none;
+}
+.dock-chip {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 320px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dock-chip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dock-chip span {
+  color: var(--muted);
+}
+
+/* The dock's right-click menu and the name box. */
+.ui-dock-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 230px;
+}
+.ui-dock-menu-head {
+  padding: 4px 10px 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.ui-menu-item.is-danger {
+  color: var(--danger, #d94c4c);
+}
+.ui-dock-rename {
+  position: fixed;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: var(--shadow);
+}
+.ui-dock-rename label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
+.ui-dock-rename-row {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Preferences > Workspaces */
+.ui-ws {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.ui-ws-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 3px 0;
+}
+.ui-ws-text .ui-tag {
+  margin-left: 8px;
+}
+.ui-ws-about {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.ui-ws-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+}
+.ui-ws-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 18px 0 8px;
+  font-size: var(--fs-small);
+}
+.ui-ws-head span {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ui-ws-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ui-ws-paste textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-small);
+}
+.ui-float-compact .ui-float-fill {
+  display: none;
+}
+
+/* No tooltips while something is being carried (a tool, a tab). */
+body.dock-dragging .ui-tip {
+  display: none;
+}
+
+/* Quill beside a question he asks (ChoiceDialog.tsx). */
+.ui-choice-quill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ui-choice-quill .ui-choice-q {
+  margin: 0;
+}
+
+/* A menu row's tip sits beside the menu and takes no pointer, so walking to a submenu never crosses it. */
+.ui-tip.is-aside {
+  pointer-events: none;
+}
+
+/* The number beside a slider in Preferences (undo steps). */
+.ui-pref-value {
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }

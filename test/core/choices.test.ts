@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { _resetChoicesForTests, choose, currentChoice, registerChoice, rememberedChoice, setChoice, setChoiceAsker } from '../../src/core/choices';
+import { _resetChoicesForTests, choose, currentChoice, registerChoice, rememberedChoice, setChoice, setChoiceAsker, setChoiceDeferral, withChoice } from '../../src/core/choices';
 
 const def = {
   id: 't.n',
@@ -52,5 +52,27 @@ describe('choices', () => {
     setChoice('t.n', 'copy');
     setChoice('t.n', undefined);
     expect(rememberedChoice('t.n')).toBeUndefined();
+  });
+
+  it('does not ask while a lesson plays: takes the default, remembers nothing, asks after', async () => {
+    let asked = 0;
+    let lesson = true;
+    setChoiceAsker(async () => (asked++, { value: 'copy', remember: true }));
+    setChoiceDeferral(() => lesson);
+    const seen: string[] = [];
+    withChoice('t.n', (v) => seen.push(v));
+    expect(seen).toEqual(['blank']);
+    expect(await choose('t.n')).toBe('blank');
+    expect(asked).toBe(0);
+    expect(rememberedChoice('t.n')).toBeUndefined();
+    lesson = false;
+    expect(await choose('t.n')).toBe('copy');
+    expect(asked).toBe(1);
+  });
+
+  it('a remembered answer still wins during a lesson', async () => {
+    setChoice('t.n', 'copy');
+    setChoiceDeferral(() => true);
+    expect(await choose('t.n')).toBe('copy');
   });
 });

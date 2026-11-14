@@ -3,20 +3,23 @@
 import { useSyncExternalStore } from 'react';
 import type { SelectOp } from './mask';
 
-/** Box (a rectangle), lasso (draw round it) or magic wand (click a colour, pixel layers only). */
-export type SelectMode = 'box' | 'lasso' | 'wand';
+export type { SelectMode } from './ways';
 
 export interface SelectSettings {
-  mode: SelectMode;
   /** What a new selection does when no key is held (Shift always adds, Alt always takes away). */
   op: Exclude<SelectOp, 'intersect'>;
   /** Magic wand: how close a colour has to be, 0 to 100 (percent). */
   tolerance: number;
   /** Magic wand: only pixels touching the one clicked (true), or that colour everywhere (false). */
   contiguous: boolean;
+  /** Magnetic lasso: how strongly it clings to an edge, 1 (only right beside it) to 10 (from a good way off). */
+  cling: number;
 }
 
-export const DEFAULT_SELECT_SETTINGS: SelectSettings = { mode: 'box', op: 'replace', tolerance: 0, contiguous: true };
+export const DEFAULT_SELECT_SETTINGS: SelectSettings = { op: 'replace', tolerance: 0, contiguous: true, cling: 5 };
+
+/** How far from an edge (screen pixels) the magnetic lasso still clings to it, for a cling setting of 1 to 10. */
+export const clingReach = (cling: number): number => 3 + Math.max(1, Math.min(10, Math.round(cling))) * 3;
 
 const KEY = 'frameling.selectSettings';
 let state: SelectSettings = { ...DEFAULT_SELECT_SETTINGS };

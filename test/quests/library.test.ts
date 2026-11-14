@@ -4,7 +4,18 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/export';
-import '../../src/tiles';
+import { rigFeature } from '../../src/rig';
+import { tilesFeature } from '../../src/tiles';
+import '../../src/artboards';
+import '../../src/pixel';
+import { cameraFeature } from '../../src/camera';
+import { particlesFeature } from '../../src/particles';
+import { textFeature } from '../../src/text';
+import { registerFeatures } from '../../src/features/host';
+
+// The lessons run commands that the optional features add.
+registerFeatures([cameraFeature, particlesFeature, rigFeature, textFeature, tilesFeature]);
+import { PIXEL_WAY_QUESTS } from '../../src/pixel/quests-ways';
 import { getCommand } from '../../src/core/registry';
 import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { resetStore } from '../../src/core/store';
@@ -18,7 +29,7 @@ import { readProbe } from '../../src/quests/probe';
 import { allQuests, isUnlocked } from '../../src/quests/registry';
 import { FRESH_PROGRESS, NO_PROBE, type Quest, type StepCtx } from '../../src/quests/types';
 import { PRESETS, docFromPreset } from '../../src/ui/presets';
-import { TILES_QUEST, ensureTilePage, paintsAcrossEdge, stampedTiles } from '../../src/tiles/quest';
+import { TILES_QUEST, drawDemoWave, ensureTilePage, onWholeGrid, paintsAcrossEdge, stampedTiles } from '../../src/tiles/quest';
 import { editingTileKey, finishTileEdit } from '../../src/tiles/tileEdit';
 import { newDoc, newPixelDrawing, newTilemapDrawing, newTilemapLayer } from '../../src/core/doc';
 import { makeCell } from '../../src/tiles/model';
@@ -44,9 +55,9 @@ async function playThrough(q: Quest, r: ReturnType<typeof rig>) {
 
 describe('the quests', () => {
   it('are registered, in order, with unique ids, steps and badges', () => {
-    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'tiles', 'first-tween', 'share-it', 'bones-and-pose', 'make-it-glow', 'particle-party', 'say-it-with-text', 'camera-move']);
-    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(13);
-    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Level Builder', 'Smooth Mover', 'Showtime', 'Puppeteer', 'Lamplighter', 'Confetti Cannon', 'Wordsmith', 'Director']);
+    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'tiles', 'first-tween', 'share-it', 'bones-and-pose', 'make-it-glow', 'particle-party', 'say-it-with-text', 'camera-move', 'one-tiny-picture', 'board-by-board', 'cast-on-a-sheet']);
+    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(16);
+    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Level Builder', 'Smooth Mover', 'Showtime', 'Puppeteer', 'Lamplighter', 'Confetti Cannon', 'Wordsmith', 'Director', 'Icon Maker', 'Storyboarder', 'Sheet Master']);
     for (const q of QUESTS) {
       expect(new Set(q.steps.map((s) => s.id)).size).toBe(q.steps.length);
       for (const s of q.steps) {
@@ -70,7 +81,7 @@ describe('the quests', () => {
   it('the first quests are open from the start (Pixel pal is a sprite person\'s first), the others wait', () => {
     const p = { ...FRESH_PROGRESS };
     expect(isUnlocked(FIRST_ANIMATION, p)).toBe(true);
-    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(q.id === 'pixel-pal' || q.id === 'tiles');
+    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(q.id === 'pixel-pal' || q.id === 'tiles' || PIXEL_WAY_QUESTS.includes(q));
     for (const q of QUESTS.slice(1)) expect(isUnlocked(q, { ...p, completed: ['first-animation'] })).toBe(true);
   });
 });
@@ -347,6 +358,45 @@ describe('Tiles', () => {
     expect(paintsAcrossEdge(v)).toBe(true);
     v.pixels.fill(255);
     expect(paintsAcrossEdge(v)).toBe(false);
+  });
+
+  it('edge: a drawing holding only its painted block is judged on the whole tile', () => {
+    const doc = newDoc({ width: 16, height: 16, pixel: { pixelSize: 1 } });
+    const layer = doc.layers.find((l) => l.kind === 'pixel')!;
+    if (layer.kind !== 'pixel') throw new Error('pixel layer needed');
+    // Paint at both ends of a 6 x 1 block that sits well inside the tile: it never reaches either edge.
+    const d = newPixelDrawing(6, 1);
+    d.x = 5;
+    d.y = 8;
+    d.pixels.set([0, 0, 0, 255], 0);
+    d.pixels.set([0, 0, 0, 255], 5 * 4);
+    expect(paintsAcrossEdge(d)).toBe(true);
+    expect(paintsAcrossEdge(onWholeGrid(doc, layer, d))).toBe(false);
+    // Paint on both edges of the tile does count.
+    const across = newPixelDrawing(16, 1);
+    across.y = 8;
+    across.pixels.set([0, 0, 0, 255], 0);
+    across.pixels.set([0, 0, 0, 255], 15 * 4);
+    expect(paintsAcrossEdge(onWholeGrid(doc, layer, across))).toBe(true);
+  });
+
+  it('show me the wave: paints right across the tile even when the drawing holds only a small block', () => {
+    const doc = newDoc({ width: 16, height: 16, pixel: { pixelSize: 1 } });
+    const layer = doc.layers.find((l) => l.kind === 'pixel')!;
+    if (layer.kind !== 'pixel') throw new Error('pixel layer needed');
+    const id = putPixels(doc, layer, 0, [[5, 5]]);
+    const st = resetStore(doc);
+    const small = st.get().doc.drawings[id] as ReturnType<typeof newPixelDrawing>;
+    small.x = 5;
+    small.y = 5;
+    small.width = 1;
+    small.height = 1;
+    small.pixels = small.pixels.slice(0, 4);
+    st.setUi({ activeLayerId: layer.id });
+    expect(drawDemoWave()).toBe(true);
+    const out = st.get().doc.drawings[id] as ReturnType<typeof newPixelDrawing>;
+    expect(out.width).toBe(16);
+    expect(paintsAcrossEdge(onWholeGrid(st.get().doc, layer, out))).toBe(true);
   });
 
   it('stamp: counts tiles on the tilemap layer', () => {

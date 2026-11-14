@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -25,7 +26,7 @@ const drawing = () => {
   const { doc, ui } = store().get();
   const layer = doc.layers[0];
   const cel = layer.cels.find((c) => ui.frame >= c.start && ui.frame < c.start + c.length);
-  return cel ? (doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
+  return cel ? asGrid(doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
 };
 const hex = (x: number, y: number) => {
   const d = drawing();
@@ -88,7 +89,7 @@ describe('picking pixels', () => {
   });
 
   it('the lasso picks what it goes round', () => {
-    setSelectSettings({ mode: 'lasso' });
+    store().setUi({ tool: 'pixel-select-lasso' });
     drag(pixelSelectTool, ctx(), [
       [0, 0],
       [32, 0],
@@ -99,7 +100,7 @@ describe('picking pixels', () => {
   });
 
   it('the lasso can have straight sides with Alt+clicks', () => {
-    setSelectSettings({ mode: 'lasso' });
+    store().setUi({ tool: 'pixel-select-lasso' });
     const c = ctx();
     pixelSelectTool.down!(ptrAt(0, 0), c);
     pixelSelectTool.up!({ ...ptrAt(0, 0), alt: true }, c);
@@ -115,7 +116,7 @@ describe('picking pixels', () => {
   });
 
   it('the magic wand picks a colour', () => {
-    setSelectSettings({ mode: 'wand' });
+    store().setUi({ tool: 'pixel-select-wand' });
     drag(pixelSelectTool, ctx(), [at(1, 1), at(1, 1)]);
     expect(maskCount(pixelSelection()!)).toBe(2);
     setSelectSettings({ contiguous: false });

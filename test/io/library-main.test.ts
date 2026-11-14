@@ -39,7 +39,8 @@ describe('the desktop library', () => {
   it('opens only the kinds of file it expects', () => {
     expect(cleanFilters([{ name: 'P', extensions: ['zip', 'exe'] }, { name: 'X', extensions: ['sh'] }, 'junk'])).toEqual([{ name: 'P', extensions: ['zip'] }]);
     expect(canOpenOther('/a/b.flplay')).toBe(true);
-    expect(canOpenOther('/a/b.png')).toBe(false);
+    expect(canOpenOther('/a/b.png')).toBe(true);
+    expect(canOpenOther('/a/b.exe')).toBe(false);
   });
 
   it('reads a small plugin folder and refuses a big one', () => {

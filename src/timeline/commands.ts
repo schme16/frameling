@@ -1,13 +1,22 @@
 import { withChoice } from '../core/choices';
+import { frameScopeMatters, holdLongerMatters, newKeyMatters } from './matters';
 import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } from './choices';
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
-import { findLayer } from '../core/doc';
+import { celAt, findLayer } from '../core/doc';
+import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
+import { playCue } from '../ui/sounds';
+
+// A soft page-flip when stepping by hand. Never while playing (stepping then just moves the playhead).
+const tick = () => void (store().get().ui.playing || playCue('tick'));
 import * as ops from './ops';
 import * as pb from './playback';
-import { setTl } from './state';
+import { setTl, tl } from './state';
+import type { Clip, ClipDirection } from '../core/format';
+import { clipDirection, clipPlays } from '../core/clipPlay';
+import { ix } from '../features/flags';
 
 /** Runs an op and, when it was refused for a reason worth knowing, says so gently. */
 export function say(o: ops.Outcome): ops.Outcome {
@@ -23,19 +32,76 @@ const exposure = (n: number) => ({
   description: `Show this drawing for ${n} frame${n === 1 ? '' : 's'} before the next one.`,
   help: 'timeline-frames',
   keywords: ['exposure', 'hold', 'twos', 'threes', 'ones', 'duration'],
-  run: () => withChoice<HoldChoice>('timeline.holdLonger', (c) => void say(ops.setExposure(n, undefined, undefined, clashFor(c)))),
+  run: () => {
+    const { doc, ui } = store().get();
+    const layer = findLayer(doc, ops.currentLayerId());
+    const cel = layer && celAt(layer, ui.frame);
+    // Nothing after the drawing to run into: both answers give the same animation, so nothing is asked.
+    const matters = !!layer && !!cel && holdLongerMatters(layer.cels, cel.id, cel.start, n);
+    withChoice<HoldChoice>('timeline.holdLonger', (c) => void say(ops.setExposure(n, undefined, undefined, clashFor(c))), { matters, gently: true });
+  },
 });
 
 /** Adds or removes a frame on every layer or just this one, per the remembered choice (`other` flips it, for Alt). */
 function frameEdit(kind: 'insert' | 'remove', other: boolean) {
-  withChoice<FrameScopeChoice>('timeline.frameScope', (scope) => {
-    const all = (scope === 'all') !== other;
-    if (kind === 'insert') say(all ? ops.insertFrameAll() : ops.insertFrame());
-    else say(all ? ops.removeFrameAll() : ops.removeFrame());
-  });
+  withChoice<FrameScopeChoice>(
+    'timeline.frameScope',
+    (scope) => {
+      const all = (scope === 'all') !== other;
+      if (kind === 'insert') say(all ? ops.insertFrameAll() : ops.insertFrame());
+      else say(all ? ops.removeFrameAll() : ops.removeFrame());
+    },
+    // With one layer both answers do the same. Adding a frame is undone in a click, so it just happens and says so;
+    // taking one off every layer can remove drawings from the others, so that one still stops and asks.
+    { matters: frameScopeMatters(store().get().doc), gently: kind === 'insert' && !other },
+  );
 }
 
+// How the picked clip plays: one command per way, ticked for the one it uses now.
+type WithClips = { doc: { clips: Clip[] } };
+const pickedClip = (s: WithClips) => s.doc.clips.find((c) => c.id === tl().clipId);
+const directionCommand = (id: string, direction: ClipDirection, label: string, description: string, keywords: string[]) => ({
+  id,
+  label,
+  category: 'Timeline',
+  description,
+  help: 'timeline-clip-play',
+  keywords: ['clip', 'direction', 'play', ...keywords],
+  enabled: (s: WithClips) => !!pickedClip(s),
+  checked: (s: WithClips) => {
+    const c = pickedClip(s);
+    return !!c && clipDirection(c) === direction;
+  },
+  run: () => {
+    const c = pickedClip(store().get());
+    if (c) say(ops.setClipDirection(c.id, direction));
+  },
+});
+const repeatCommand = (id: string, repeat: 'forever' | number, label: string, description: string, keywords: string[]) => ({
+  id,
+  label,
+  category: 'Timeline',
+  description,
+  help: 'timeline-clip-play',
+  keywords: ['clip', 'repeat', 'play', ...keywords],
+  enabled: (s: WithClips) => !!pickedClip(s),
+  checked: (s: WithClips) => {
+    const c = pickedClip(s);
+    return !!c && clipPlays(c) === (repeat === 'forever' ? Infinity : repeat);
+  },
+  run: () => {
+    const c = pickedClip(store().get());
+    if (c) say(ops.setClipRepeat(c.id, repeat));
+  },
+});
+
 registerCommands([
+  directionCommand('timeline.clipForward', 'forward', 'Clip plays forward', 'The clip you picked plays from its first frame to its last.', ['normal']),
+  directionCommand('timeline.clipBackward', 'reverse', 'Clip plays backward', 'The clip you picked plays from its last frame back to its first.', ['reverse', 'rewind']),
+  directionCommand('timeline.clipBackAndForth', 'pingpong', 'Clip plays back and forth', 'The clip you picked plays to its end and back again, showing each end once.', ['ping pong', 'pingpong', 'boomerang', 'yoyo', 'bounce']),
+  directionCommand('timeline.clipBackAndForthEnd', 'pingpong-reverse', 'Clip plays back and forth, backward first', 'Like back and forth, but it starts from the last frame and goes backward first.', ['ping pong', 'pingpong', 'reverse']),
+  repeatCommand('timeline.clipForever', 'forever', 'Clip repeats forever (loops)', 'The clip you picked starts again each time it finishes. Games and sprite sheets read this too.', ['loop', 'forever']),
+  repeatCommand('timeline.clipOnce', 1, 'Clip plays once, then holds the last frame', 'The clip you picked plays one time and stays on its last frame. Right-click a clip to repeat it a number of times.', ['once', 'one shot', 'no loop']),
   {
     id: 'timeline.play',
     label: 'Play or pause',
@@ -47,8 +113,8 @@ registerCommands([
     checked: (s) => s.ui.playing,
     run: () => pb.togglePlay(),
   },
-  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => pb.stepFrame(-1) },
-  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => pb.stepFrame(1) },
+  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(-1), tick()) },
+  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(1), tick()) },
   {
     id: 'timeline.prevKey',
     label: 'Previous drawing (key)',
@@ -92,6 +158,27 @@ registerCommands([
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, enabled: !ui.onion.enabled } })),
   },
   {
+    id: 'timeline.onionKeysOnly',
+    label: 'Onion skin shows only keys (skip held frames)',
+    category: 'Timeline',
+    description: 'Count drawings instead of frames, so a drawing held on twos shows once, and you see the poses before and after.',
+    help: 'timeline-onion',
+    keywords: ['onion skin', 'keys only', 'keyframes', 'skip holds', 'drawings only'],
+    checked: (s) => !!s.ui.onion.keysOnly,
+    run: () => store().setUi((ui) => ({ onion: { ...ui.onion, keysOnly: !ui.onion.keysOnly, enabled: ui.onion.keysOnly ? ui.onion.enabled : true } })),
+  },
+  {
+    id: 'timeline.onionBoards',
+    label: 'Onion skin shows the boards either side',
+    category: 'Timeline',
+    description: 'With several artboards, ghost the board before and the board after as well, so a storyboard lines up like frames do.',
+    help: 'timeline-onion',
+    keywords: ['onion skin', 'boards', 'artboards', 'storyboard', 'shots', 'scenes', 'neighbouring'],
+    enabled: (s) => hasArtboards(s.doc),
+    checked: (s) => !!s.ui.onion.boards,
+    run: () => store().setUi((ui) => ({ onion: { ...ui.onion, boards: !ui.onion.boards, enabled: ui.onion.boards ? ui.onion.enabled : true } })),
+  },
+  {
     id: 'timeline.newKey',
     label: 'New drawing here (new key)',
     category: 'Timeline',
@@ -99,7 +186,13 @@ registerCommands([
     description: 'Start a new drawing on this frame, blank or as a copy (your choice in Preferences, Behaviour). A held drawing is split in two.',
     help: 'timeline-frames',
     keywords: ['keyframe', 'blank', 'new frame', 'empty', 'copy'],
-    run: () => withChoice<NewKeyChoice>('timeline.newKey', (c) => void say(ops.newBlankKey(undefined, undefined, c === 'copy'))),
+    run: () => {
+      const { doc, ui } = store().get();
+      const layerId = ops.currentLayerId();
+      // On an empty frame or a drawing with nothing in it, a copy is a blank page: nothing is asked.
+      const matters = !layerId || newKeyMatters(doc, layerId, ui.frame);
+      withChoice<NewKeyChoice>('timeline.newKey', (c) => void say(ops.newBlankKey(undefined, undefined, c === 'copy')), { matters, gently: true });
+    },
   },
   {
     id: 'timeline.duplicateKey',
@@ -153,6 +246,18 @@ registerCommands([
     help: 'timeline-frames',
     run: () => frameEdit('remove', true),
   },
+  {
+    id: 'timeline.tidyEnd',
+    label: 'Tidy the end',
+    category: 'Timeline',
+    description: 'Take the empty frames off the end of the animation. It stops at your last drawing, marker or clip, so nothing is lost.',
+    help: 'timeline-tidy-end',
+    keywords: ['shorten', 'trim', 'length', 'empty frames', 'dead tail', 'end'],
+    run: () => {
+      const o = ops.tidyEnd();
+      if (!o.ok) toast('The end is already tidy: nothing empty to take off.');
+    },
+  },
   exposure(1),
   exposure(2),
   exposure(3),
@@ -161,7 +266,7 @@ registerCommands([
     id: 'timeline.addMarker',
     label: 'Add a marker here',
     category: 'Timeline',
-    description: 'Name this moment (a footstep, a hit). Games and Interactives get it as an event.',
+    description: ix('Name this moment (a footstep, a hit). Games and Interactives get it as an event.', 'Name this moment (a footstep, a hit). Games get it as an event.'),
     help: 'timeline-markers',
     keywords: ['event', 'flag', 'note'],
     run: () => {

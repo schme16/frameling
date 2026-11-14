@@ -41,6 +41,8 @@ export interface QuestStep {
   say: string;
   /** An extra line saying why, shown quietly under the instruction. */
   why?: string;
+  /** What you just did, for the Great work card ("You drew your first line."). Falls back to the step's own words. */
+  did?: string;
   /** The thing to ring while this step is on. */
   target?: QuestTarget;
   /** Becomes true when the step is done. A step without one is finished by its Next button. */
@@ -79,6 +81,8 @@ export interface Quest {
   /** Said when the last step is done. */
   finish?: string;
   badge?: Badge;
+  /** Feature ids (src/features) it needs. Turning one off puts the quest down politely if it is being played. */
+  features?: string[];
   /** Quests to do first. The panel shows the quest as locked until they're done (with a way round it). */
   requires?: string[];
   /** The Quests panel heading it sits under (src/quests/groups.ts). Looked up by id when left out. */
@@ -88,6 +92,12 @@ export interface Quest {
   /** Is the open document suitable for picking this quest up half way? */
   ready?: (s: State) => boolean;
 }
+
+/**
+ * What the start-up knows of a quest, for cards and lists: the full `Quest` minus its steps and checks, which load on
+ * demand (catalog.ts is this, library.ts is the whole thing).
+ */
+export type QuestInfo = Omit<Quest, 'steps' | 'prepare' | 'ready' | 'finish'>;
 
 export interface QuestProgress {
   /** The quest being played right now, or null. */

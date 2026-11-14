@@ -2,11 +2,11 @@
 // src/renderer/App.tsx: two frames after the app mounted, so the canvas has drawn and the page is free for input).
 //
 //   node scripts/perf/startup.cjs                 desktop app (dist/main + dist/renderer), 7 launches
-//   node scripts/perf/startup.cjs --web           web build (dist/web) served from a sub-path, plus an offline reload
 //   node scripts/perf/startup.cjs --runs 11 --out scripts/perf/results/startup.json
 //
 // Each launch is a fresh Electron process. The first launch uses a brand new profile (first run: no code cache, Quill's
-// hello); the rest reuse it, like someone opening the app again. Windows are parked off-screen (launch.cjs).
+// hello); the rest reuse it, like someone opening the app again. Windows are parked off-screen on a real desktop and kept on-screen under xvfb
+// (launch.cjs, display.cjs); PERF_ONSCREEN=1 or 0 overrides.
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -18,35 +18,12 @@ const opt = (n, d) => {
   const i = args.indexOf('--' + n);
   return i >= 0 ? args[i + 1] : d;
 };
-const web = args.includes('--web');
 const runs = Number(opt('runs', 7));
 const cpu = Number(opt('cpu', 4));
 const outFile = opt('out', null);
 const root = path.join(__dirname, '../..');
 const electronBin = require(path.join(root, 'node_modules/electron'));
-const SUB = '/some/sub/path/frameling/';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// A tiny static server for dist/web under a sub-path, so relative chunk paths are really exercised.
-function serve(dir) {
-  const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' };
-  const log = [];
-  const server = http.createServer((req, res) => {
-    const u = new URL(req.url, 'http://x');
-    log.push(u.pathname);
-    if (!u.pathname.startsWith(SUB)) {
-      res.writeHead(404).end();
-      return;
-    }
-    let f = path.join(dir, decodeURIComponent(u.pathname.slice(SUB.length)));
-    if (f.endsWith(path.sep) || f === dir) f = path.join(f, 'index.html');
-    fs.readFile(f, (err, data) => {
-      if (err) return res.writeHead(404).end();
-      res.writeHead(200, { 'content-type': types[path.extname(f)] ?? 'application/octet-stream' }).end(data);
-    });
-  });
-  return new Promise((r) => server.listen(0, '127.0.0.1', () => r({ server, port: server.address().port, log })));
-}
 
 // Minimal Chrome DevTools Protocol client over the global WebSocket.
 async function cdp(port, timeout = 20000) {
@@ -165,25 +142,19 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 async function main() {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-startup-'));
   let port = 9400 + Math.floor(Math.random() * 400);
-  let srv = null;
-  let url = null;
-  if (web) {
-    srv = await serve(path.join(root, 'dist/web'));
-    url = `http://127.0.0.1:${srv.port}${SUB}`;
-  }
   const results = [];
   try {
     for (let i = 0; i < runs; i++) {
-      const { r, c, child } = await launch(web ? 'url' : 'app', profile, url, port++);
+      const { r, c, child } = await launch('app', profile, null, port++);
       results.push(r);
       console.log(`${i === 0 ? 'first' : 'again'}  from launch ${r.fromSpawnMs} ms  page ${r.pageMs} ms  page at ${cpu}x slower CPU ${r.throttledPageMs ?? '-'} ms`);
-      // Let the first run settle (service worker install, code cache written) before the next launch.
-      if (i === 0) await sleep(web ? 3000 : 1500);
+      // Let the first run settle (code cache written) before the next launch.
+      if (i === 0) await sleep(1500);
       c.close();
       await stop(child);
     }
     let lazyCheck = null;
-    if (!web) {
+    {
       // Every lazily loaded chunk, imported from file:// in the real app (sandboxed renderer, the app's own page).
       const chunks = fs.readdirSync(path.join(root, 'dist/renderer/assets')).filter((f) => f.endsWith('.js') && !summaryInitial().includes(f));
       const { c, child } = await launch('app', profile, null, port++);
@@ -196,39 +167,17 @@ async function main() {
       c.close();
       await stop(child);
     }
-    let offline = null;
-    if (web) {
-      // Offline: the service worker installed on the first run, so stop the server and open the app again, then open
-      // a few lazily loaded parts and check none of them failed.
-      await new Promise((r) => srv.server.close(r));
-      srv.server.closeAllConnections?.();
-      const { r, c, child } = await launch('url', profile, url + '?debug', port++);
-      const lazy = await c.evaluate(`(async () => {
-        const f = window.__frameling;
-        const errors = [];
-        window.addEventListener('error', (e) => errors.push(String(e.message)));
-        window.addEventListener('unhandledrejection', (e) => errors.push(String(e.reason)));
-        const before = performance.getEntriesByType('resource').length;
-        for (const id of ['file.export', 'view.preferences', 'view.themes', 'help.contents']) { try { await f.run(id); } catch (e) { errors.push(id + ': ' + e); } await new Promise((r) => setTimeout(r, 400)); }
-        return { errors, loaded: performance.getEntriesByType('resource').slice(before).map((x) => x.name.split('/').pop()).filter((n) => n.endsWith('.js')) };
-      })()`);
-      offline = { pageMs: r.pageMs, lazy };
-      console.log(`offline  page ${r.pageMs} ms, lazy chunks loaded offline: ${lazy.loaded.join(', ') || 'none'}; errors: ${lazy.errors.join('; ') || 'none'}`);
-      c.close();
-      await stop(child);
-    }
     const again = results.slice(1);
     const summary = {
-      label: opt('label', web ? 'web' : 'desktop'),
-      mode: web ? 'web' : 'desktop',
+      label: opt('label', 'desktop'),
+      mode: 'desktop',
       cpu: os.cpus()[0]?.model,
       firstLaunchMs: results[0].fromSpawnMs,
       medianFromLaunchMs: median(again.map((r) => r.fromSpawnMs)),
       medianPageMs: median(again.map((r) => r.pageMs)),
       cpuSlowdown: cpu,
       medianThrottledPageMs: median(again.map((r) => r.throttledPageMs ?? 0)),
-      initialJs: initialJs(web ? 'dist/web' : 'dist/renderer'),
-      offline,
+      initialJs: initialJs('dist/renderer'),
       lazyCheck,
       runs: results,
     };
@@ -236,7 +185,6 @@ async function main() {
     console.log(`initial JS: ${summary.initialJs.kB} kB (${summary.initialJs.gzipKB} kB gzip) in ${summary.initialJs.files.length} files`);
     if (outFile) fs.writeFileSync(outFile, JSON.stringify(summary, null, 2));
   } finally {
-    srv?.server.close();
     fs.rmSync(profile, { recursive: true, force: true });
   }
 }

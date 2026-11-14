@@ -1,0 +1,351 @@
+/* Artboards: the panel, the tool's options, the export row and the Play all window. */
+.ab-underlay {
+  z-index: 0;
+}
+.ab-item {
+  cursor: pointer;
+}
+.ab-item.ab-open {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: var(--chosen-bg);
+}
+.ab-item.ab-open .sy-item-meta,
+.ab-item.ab-open .sy-icon-btn {
+  color: var(--chosen-fg);
+}
+.ab-item.ab-over {
+  box-shadow: 0 -3px 0 var(--focus);
+}
+.ab-name {
+  cursor: text;
+}
+.ab-item .sy-item-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ab-item .sy-icon-btn {
+  width: 22px;
+  height: 24px;
+}
+.ab-item .sy-item-actions {
+  gap: 0;
+}
+.ab-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ab-field {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+}
+.ab-field input {
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.ab-bg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+}
+.ab-bg > span {
+  width: 72px;
+}
+.ab-bg input[type='color'] {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: none;
+}
+.ab-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ab-tool-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ab-export-modes {
+  flex-wrap: wrap;
+}
+.ab-export-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 6px;
+  max-height: 120px;
+  overflow: auto;
+}
+.ab-export-fit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ab-player-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ab-player-canvas {
+  width: 100%;
+  height: min(58vh, 480px);
+  display: block;
+  border-radius: 8px;
+  background: var(--canvas-bg);
+}
+.ab-player-strip {
+  display: flex;
+  gap: 3px;
+}
+.ab-shot {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  text-align: left;
+}
+.ab-shot span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ab-shot-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: var(--chosen-bg);
+}
+.ab-player-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ab-player-foot .io-muted {
+  margin-right: auto;
+  white-space: nowrap;
+}
+.ab-player-look {
+  display: grid;
+  gap: 8px;
+  padding: 0 20px;
+}
+.ab-player-look .ab-pic-label {
+  min-width: 6.5em;
+}
+.ab-item:not(:hover):not(:focus-within) .ab-move {
+  display: none;
+}
+.ab-pic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ab-pic-label {
+  font-weight: 700;
+  color: var(--muted);
+}
+.ab-pic-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ab-pic-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ab-pic-side input {
+  width: 5.5em;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+}
+.ab-pic-side input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Variations: the badge, the size cuts and the list of differences. */
+.ab-item.ab-var {
+  margin-left: 10px;
+}
+.ab-item.ab-var .sy-item-meta {
+  white-space: normal;
+}
+.ab-size {
+  white-space: nowrap;
+}
+.ab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  line-height: 15px;
+  vertical-align: 1px;
+}
+.ab-var-note {
+  margin: 0 0 8px;
+  font-size: var(--fs-small);
+  color: var(--text);
+}
+.ab-var-note svg {
+  vertical-align: -2px;
+}
+.ab-linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--focus);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ab-var-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: var(--fs-small);
+}
+.ab-var-label {
+  width: 52px;
+  flex: none;
+}
+.ab-var-head {
+  margin: 10px 0 4px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.ab-diffs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+.ab-diff-title {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.ab-diffs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ab-diff {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+.ab-diff-go,
+.ab-diff-reset {
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.ab-diff-go {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.ab-diff-go:disabled {
+  cursor: default;
+}
+.ab-diff-go:not(:disabled):hover,
+.ab-diff-reset:hover {
+  border-color: var(--focus);
+}
+.ab-diff-reset {
+  flex: none;
+}
+.ab-export-family {
+  margin: 6px 0;
+}
+.ab-export-family .ex-on {
+  border-color: var(--focus);
+}
+
+.ab-diff-chips {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  align-self: center;
+}
+.ab-diff-chips i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--line-soft);
+}
+
+/* Recolour this variation: one row per colour. */
+.ab-recolour-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+.ab-recolour-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.ab-recolour-row[data-changed='true'] {
+  background: rgba(127, 127, 127, 0.12);
+}
+.ab-recolour-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--line-soft);
+  flex: none;
+}
+.ab-recolour-code {
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+}

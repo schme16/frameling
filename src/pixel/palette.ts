@@ -9,10 +9,11 @@
 import type { Doc, DocPalette } from '../core/format';
 import { parseHex } from '../canvas/colors';
 import { STARTER_PALETTES } from './builtin';
+import { variationPalette } from '../artboards/variations';
 
-/** The palette a document uses: its own, or the first starter palette when it has none yet. */
+/** The palette a document uses: its own (an open variation's colourway first), or the first starter palette when it has none yet. */
 export function docPalette(doc: Doc): DocPalette {
-  return doc.palette ?? STARTER_PALETTES[0].palette;
+  return variationPalette(doc) ?? doc.palette ?? STARTER_PALETTES[0].palette;
 }
 
 /** A palette as packed RGB bytes (three per colour) for fast lookups. Cached per colour list. */
@@ -159,14 +160,84 @@ export function usesColor(pixels: Uint8ClampedArray, r: number, g: number, b: nu
 
 /** How many opaque pixels use each palette colour (exact matches), for the panel's "in use" dots. */
 export function colorUse(pixels: Uint8ClampedArray, rgb: Uint8Array, counts: Uint32Array): void {
+  colorUseRange(pixels, rgb, counts, 0, pixels.length >> 2);
+}
+
+/** Counts already made, by pixel array. Edits replace the array, so a hit is always about these exact pixels. */
+const useCache = new WeakMap<Uint8ClampedArray, { colors: readonly string[]; counts: Uint32Array }>();
+
+/** The count `colorUse` would make for these pixels and palette, if it was made before (frames you come back to cost nothing). */
+export function cachedColorUse(pixels: Uint8ClampedArray, colors: readonly string[]): Uint32Array | null {
+  const hit = useCache.get(pixels);
+  return hit && hit.colors === colors ? hit.counts : null;
+}
+
+export function rememberColorUse(pixels: Uint8ClampedArray, colors: readonly string[], counts: Uint32Array): void {
+  useCache.set(pixels, { colors, counts });
+}
+
+/** `colorUse` for a palette's colour list, answered from the cache when these pixels were counted with this very list. */
+export function colorUseOf(pixels: Uint8ClampedArray, colors: readonly string[]): Uint32Array {
+  const hit = cachedColorUse(pixels, colors);
+  if (hit) return hit;
+  const counts = new Uint32Array(colors.length);
+  colorUse(pixels, paletteRgb(colors), counts);
+  rememberColorUse(pixels, colors, counts);
+  return counts;
+}
+
+/**
+ * The same count over pixels [from, to) only, so a big drawing can be counted a slice at a time without holding the
+ * page. Reads the block as 32-bit pixels and looks each colour up in a small hash of the palette (the first of equal
+ * colours wins, as in exactIndex), so a 16 million pixel drawing takes tens of milliseconds, not hundreds.
+ */
+export function colorUseRange(pixels: Uint8ClampedArray, rgb: Uint8Array, counts: Uint32Array, from: number, to: number): void {
+  const n = rgb.length / 3;
+  let cap = 16;
+  while (cap < n * 2) cap <<= 1;
+  const keys = new Int32Array(cap).fill(-1);
+  const vals = new Int32Array(cap);
+  const mask = cap - 1;
+  const hash = (k: number) => Math.imul(k, 0x9e3779b1) >>> 0;
+  for (let i = n - 1; i >= 0; i--) {
+    const k = rgb[i * 3] | (rgb[i * 3 + 1] << 8) | (rgb[i * 3 + 2] << 16);
+    let h = hash(k) & mask;
+    while (keys[h] !== -1 && keys[h] !== k) h = (h + 1) & mask;
+    keys[h] = k;
+    vals[h] = i;
+  }
+  const lookup = (k: number) => {
+    let h = hash(k) & mask;
+    while (keys[h] !== -1) {
+      if (keys[h] === k) return vals[h];
+      h = (h + 1) & mask;
+    }
+    return -1;
+  };
+  const le = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
   let lastKey = -1;
   let lastIdx = -1;
-  for (let i = 0; i < pixels.length; i += 4) {
-    if (pixels[i + 3] === 0) continue;
-    const k = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
+  if (le && pixels.byteOffset % 4 === 0) {
+    const px = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.length >> 2);
+    for (let i = from; i < to; i++) {
+      const v = px[i];
+      if (v >>> 24 === 0) continue;
+      const k = v & 0xffffff;
+      if (k !== lastKey) {
+        lastKey = k;
+        lastIdx = lookup(k);
+      }
+      if (lastIdx >= 0) counts[lastIdx]++;
+    }
+    return;
+  }
+  for (let i = from; i < to; i++) {
+    const o = i * 4;
+    if (pixels[o + 3] === 0) continue;
+    const k = pixels[o] | (pixels[o + 1] << 8) | (pixels[o + 2] << 16);
     if (k !== lastKey) {
       lastKey = k;
-      lastIdx = exactIndex(rgb, pixels[i], pixels[i + 1], pixels[i + 2]);
+      lastIdx = lookup(k);
     }
     if (lastIdx >= 0) counts[lastIdx]++;
   }
@@ -179,7 +250,8 @@ export function insertColor(p: DocPalette, color: string, at = p.colors.length -
   const i = Math.max(0, Math.min(p.colors.length, at + 1));
   const colors = [...p.colors.slice(0, i), color, ...p.colors.slice(i)];
   const r = (p.ramps ?? []).map((s) => (s >= i && s > 0 ? s + 1 : s));
-  return withRamps({ ...p, colors }, r);
+  const names = p.names ? [...p.names.slice(0, i), '', ...p.names.slice(i)] : undefined;
+  return withRamps(withNames(p, { colors }, names, (s) => (s >= i && s > 0 ? s + 1 : s)), r);
 }
 
 /** Removes the colour at `index`. */
@@ -187,7 +259,8 @@ export function removeColor(p: DocPalette, index: number): DocPalette {
   if (index < 0 || index >= p.colors.length) return p;
   const colors = p.colors.filter((_, i) => i !== index);
   const r = (p.ramps ?? []).map((s) => (s > index ? s - 1 : s));
-  return withRamps({ ...p, colors }, r);
+  const names = p.names?.filter((_, i) => i !== index);
+  return withRamps(withNames(p, { colors }, names, (s) => (s > index ? s - 1 : s)), r);
 }
 
 /** Moves a colour from one place to another. Ramp starts stay where they are (the colours flow through them). */
@@ -196,16 +269,26 @@ export function moveColor(p: DocPalette, from: number, to: number): DocPalette {
   const colors = [...p.colors];
   const [c] = colors.splice(from, 1);
   colors.splice(Math.max(0, Math.min(colors.length, to)), 0, c);
-  return { ...p, colors };
+  let names = p.names;
+  if (names) {
+    names = [...names];
+    while (names.length < p.colors.length) names.push('');
+    const [nm] = names.splice(from, 1);
+    names.splice(Math.max(0, Math.min(names.length, to)), 0, nm);
+  }
+  return { ...p, colors, ...(names ? { names } : {}) };
 }
 
 /** Starts a new ramp at `index` (or joins it to the ramp before, when one already starts there). */
 export function toggleRampStart(p: DocPalette, index: number): DocPalette {
   if (index <= 0 || index >= p.colors.length) return p;
   const r = new Set(p.ramps ?? []);
-  if (r.has(index)) r.delete(index);
+  const had = r.has(index);
+  if (had) r.delete(index);
   else r.add(index);
-  return withRamps(p, [...r]);
+  const out = withRamps(p, [...r]);
+  if (had && out.rampNames?.[index] !== undefined) return withRampNames(out, Object.fromEntries(Object.entries(out.rampNames).filter(([k]) => +k !== index)));
+  return out;
 }
 
 /** Builds a ramp of `steps` colours from dark to light through a base colour, for "Add ramp". */
@@ -223,6 +306,20 @@ export function makeRamp(base: string, steps = 5): string[] {
     out.push('#' + [r, g, b].map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join(''));
   }
   return out;
+}
+
+/** `p` with new colours, and its names (a same-length list, or none) and ramp names moved to match. */
+function withNames(p: DocPalette, change: { colors: string[] }, names: string[] | undefined, move: (start: number) => number): DocPalette {
+  const { names: _n, rampNames: _r, ...rest } = p;
+  const out: DocPalette = { ...rest, colors: change.colors };
+  if (names?.some(Boolean)) out.names = names;
+  if (p.rampNames) out.rampNames = Object.fromEntries(Object.entries(p.rampNames).map(([k, v]) => [move(+k), v]));
+  return withRampNames(out, out.rampNames);
+}
+
+function withRampNames(p: DocPalette, names: Record<number, string> | undefined): DocPalette {
+  const { rampNames: _r, ...rest } = p;
+  return names && Object.keys(names).length ? { ...rest, rampNames: names } : rest;
 }
 
 function withRamps(p: DocPalette, r: number[]): DocPalette {

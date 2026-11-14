@@ -4,6 +4,7 @@
  * an animated one, a skeleton with a rigid part and a bending part, and a sound). Not a template people see: tests and
  * scripts/e2e/export.cjs load it to check that saving, opening, undo and every export cope with all of it together.
  */
+import { trimmedDrawing } from '../core/pixelBounds';
 import { newDoc, newPixelDrawing, newTilemapDrawing, newTilemapLayer, uid } from '../core/doc';
 import type { AudioClip, Doc, InstanceShape, LayerEffect, PixelDrawing, VectorLayer } from '../core/format';
 import { defaultValues } from '../effects/model';
@@ -74,13 +75,15 @@ export function kitchenSinkDoc(): Doc {
   rays.folder = 'f1';
   rays.clipToBelow = true;
   hold(rays, vectorDrawing(doc, [stroke([[230, 20], [290, 60]], PEACH, 8)]).id, 0, 24);
+  // ...with a folder inside it, holding the clouds
+  doc.folders.f2 = { id: 'f2', name: 'Cloud bank', visible: true, opacity: 0.85, parent: 'f1' };
   const clouds = addPixelLayer(doc, 'Clouds', 4);
-  clouds.folder = 'f1';
+  clouds.folder = 'f2';
   clouds.blend = 'multiply';
   clouds.effects = [fx('blur', { radius: 2 })];
   const cd = newPixelDrawing(80, 48);
   for (let y = 4; y < 10; y++) for (let x = 10 + y; x < 40; x++) cd.pixels.set([200, 210, 240, 255], (y * 80 + x) * 4);
-  doc.drawings[cd.id] = cd;
+  doc.drawings[cd.id] = trimmedDrawing(cd);
   hold(clouds, cd.id, 0, 24);
   const mask = addVectorLayer(doc, 'Window (mask)');
   mask.folder = 'f1';
@@ -179,7 +182,7 @@ export function kitchenSinkPerfDoc(frames = 300): Doc {
   const glowPx = addPixelLayer(doc, 'Sparkles', 4);
   const g = newPixelDrawing(80, 48);
   for (let k = 0; k < 40; k++) g.pixels.set([255, 220, 120, 255], ((k * 7) % 48) * 80 * 4 + ((k * 13) % 80) * 4);
-  doc.drawings[g.id] = g;
+  doc.drawings[g.id] = trimmedDrawing(g);
   hold(glowPx, g.id, 0, frames);
   glowPx.effects = [fx('glow', { size: 6, color: SUNNY })];
   // Under the bones layer, which stays on top.

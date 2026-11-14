@@ -1,5 +1,7 @@
+import { gridPixels } from '../../src/core/pixelBounds';
+import type { PixelDrawing } from '../../src/core/format';
 import { describe, expect, it } from 'vitest';
-import { newDoc, newPixelDrawing, newVectorDrawing } from '../../src/core/doc';
+import { newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing } from '../../src/core/doc';
 import type { Doc, StrokeShape } from '../../src/core/format';
 import { Store } from '../../src/core/store';
 import { applyOps, OpProblem } from '../../src/plugins/ops';
@@ -27,9 +29,10 @@ describe('plugin ops', () => {
     ]);
     const v = s.get().doc.drawings.dv as { shapes: StrokeShape[] };
     expect(v.shapes[0].points.map((q) => q.x)).toEqual([90, 80]);
-    const p = s.get().doc.drawings.dp as { pixels: Uint8ClampedArray };
-    expect(p.pixels[0]).toBe(0);
-    expect(p.pixels[12]).toBe(255);
+    // The drawing is on no layer here, so it is flipped across the block it holds (4 x 2).
+    const p = gridPixels(s.get().doc.drawings.dp as PixelDrawing, 4, 2);
+    expect(p[0]).toBe(0);
+    expect(p[12]).toBe(255);
     expect(s.undoLabel()).toBe('Plugin');
     s.undo();
     expect((s.get().doc.drawings.dv as { shapes: StrokeShape[] }).shapes[0].points[0].x).toBe(10);
@@ -78,6 +81,65 @@ describe('plugin ops', () => {
     expect(d.markers.at(-1)).toMatchObject({ name: 'Hit', frame: 0 });
     expect(d.clips.at(-1)).toMatchObject({ name: 'Idle', start: 0, end: 0, loop: true });
     expect(d.swatches.at(-1)).toMatchObject({ name: 'Teal', color: '#00aaaa' });
+    expect(d.clips.at(-1)).not.toHaveProperty('direction');
+    expect(d.clips.at(-1)).not.toHaveProperty('repeat');
     expect((d.drawings.dv as { shapes: StrokeShape[] }).shapes[0]).toMatchObject({ color: '#00ff00', opacity: 0.5 });
+  });
+
+  it('cuts a pixel block that reaches past the art grid, and keeps one that fits', () => {
+    const s = setup();
+    // A 100 x 50 stage with 10-pixel art cells is a 10 x 5 grid.
+    s.update('Layer', (d) => {
+      const l = newPixelLayer('P', 10);
+      l.cels = [{ id: 'cp', start: 0, length: 1, drawingId: 'dp' }];
+      d.layers.push(l as never);
+    });
+    const red = [255, 0, 0, 255];
+    // 4 x 3 block at (8, 3): only columns 8 and 9 and rows 3 and 4 are on the grid.
+    edit(s, [{ op: 'setPixels', drawingId: 'dp', x: 8, y: 3, width: 4, height: 3, pixels: Array.from({ length: 12 }, () => red).flat() }]);
+    const d = s.get().doc.drawings.dp as PixelDrawing;
+    expect([d.x, d.y, d.width, d.height]).toEqual([8, 3, 2, 2]);
+    expect(d.pixels.length).toBe(2 * 2 * 4);
+    edit(s, [{ op: 'setPixels', drawingId: 'dp', x: 1, y: 1, width: 2, height: 2, pixels: new Array(16).fill(9) }]);
+    const e = s.get().doc.drawings.dp as PixelDrawing;
+    expect([e.x, e.y, e.width, e.height]).toEqual([1, 1, 2, 2]);
+  });
+
+  it('addClip sets how the clip plays: direction and repeat, checked, and older calls stay as they were', () => {
+    const s = setup();
+    edit(s, [
+      { op: 'addClip', name: 'Back', start: 0, end: 0, direction: 'reverse' },
+      { op: 'addClip', name: 'Twice', start: 0, end: 0, repeat: 2 },
+      { op: 'addClip', name: 'Once', start: 0, end: 0, loop: false },
+      { op: 'addClip', name: 'Ping', start: 0, end: 0, loop: false, repeat: 3, direction: 'pingpong' },
+      { op: 'addClip', name: 'Forever', start: 0, end: 0, loop: true, repeat: 5, direction: 'forward' },
+    ]);
+    const c = s.get().doc.clips.slice(-5);
+    expect(c[0]).toMatchObject({ name: 'Back', loop: true, direction: 'reverse' });
+    expect(c[0]).not.toHaveProperty('repeat');
+    expect(c[1]).toMatchObject({ name: 'Twice', loop: false, repeat: 2 });
+    expect(c[2]).toMatchObject({ name: 'Once', loop: false });
+    expect(c[2]).not.toHaveProperty('repeat');
+    expect(c[3]).toMatchObject({ name: 'Ping', loop: false, repeat: 3, direction: 'pingpong' });
+    expect(c[4]).toMatchObject({ name: 'Forever', loop: true });
+    expect(c[4]).not.toHaveProperty('repeat');
+    expect(c[4]).not.toHaveProperty('direction');
+    const before = s.get().doc.clips.length;
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, direction: 'sideways' }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, repeat: 0 }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, repeat: 'twice' }])).toThrow(/repeat/);
+    expect(s.get().doc.clips.length).toBe(before);
+  });
+});
+
+describe('plugin ops: frame numbers are checked after rounding', () => {
+  it('refuses a marker or a clip that would round to a frame past the end', () => {
+    const s = setup();
+    const n = s.get().doc.length;
+    expect(() => edit(s, [{ op: 'addMarker', frame: n - 0.4, name: 'x' }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: n - 0.4 }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addMarker', frame: -0.4, name: 'x' }])).not.toThrow();
+    expect(s.get().doc.markers.at(-1)?.frame).toBe(0);
+    expect(s.get().doc.markers.every((m) => m.frame < n)).toBe(true);
   });
 });

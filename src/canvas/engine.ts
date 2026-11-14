@@ -7,26 +7,41 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import { altPicks, eyedropperTool, tempEyedropperTool } from '../tools/eyedropper';
+import { paintWellsOn, rightPaints } from '../tools/pixelWells';
+import { swapPaintBack } from '../tools/wells';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
+import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
 import { pressesControl, SpaceTap, wheelIntent } from './input';
+import { attachPinch } from './pinch';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
+import { anyOverlayOpen } from '../ui/overlays';
+import { controlWantsKey } from '../ui/keyboard';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
-import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
-import { cameraFrameCorners } from '../core/camera';
-import { invert, applyMat } from '../core/symbols';
+import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
+import { cameraFrameCorners, matrixScale } from '../core/camera';
+import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
-import { overlayMatrix, toLayerSpace } from '../rig/pose';
+import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
+import { meaningOfPress } from '../tablet/buttons';
+import { penFields } from '../tablet/input';
+import { penTools } from '../tablet/tool';
+import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
+import { Stabilizer } from '../tablet/stabilizer';
+import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
+import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
+import { noticePen, setStrokeProbe } from '../tablet/check/state';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -37,7 +52,9 @@ export interface EngineElements {
 
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
-  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null };
+  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
+  | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab }
+  | { kind: 'pinch'; pointerId: number; ids: [number, number]; start: PinchStart };
 
 /** Spare time per tick that playback may spend rasterising upcoming frames, in ms. */
 export const WARM_SLICE_MS = 5;
@@ -73,13 +90,30 @@ export class CanvasEngine {
   private altDown = false;
   private inside = false;
   private cursorOverride: string | null = null;
+  /** The cursor for a canvas handle under the pointer (a vanishing point), or null. */
+  private grabHover: string | null = null;
   private lastPtr: ToolPointer | null = null;
+  /** Fingers on the screen now (client positions), for two finger pan and zoom. */
+  private touches = new Map<number, { x: number; y: number }>();
+  /** Whether a pen is near the screen, so fingers and palms can be ignored. */
+  private pen = new PenTracker();
+  /** The time of the last pen event (the pen tracker's clock), for when a lost release has no event to take it from. */
+  private penTime = 0;
+  /** The open gesture's pen has reported real pressure: from then on a pressure of 0 means the tip has lifted. */
+  private penPressed = false;
+  /** Where a handle drag last was, for ending it when its release never came. */
+  private grabPt: Pt | null = null;
+  /** The pen's eraser end is the one hovering, so the eraser's ring shows. */
+  private hoverEraser = false;
+  /** Steadies the stroke in progress (pull string or average), when the tool has the stabilizer on. */
+  private stab: Stabilizer | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
   private idleHandle = 0;
   private settleTimer = 0;
   private prev: State;
   private docId: string;
+  private loads: number;
   private bounds = { left: 0, top: 0 };
   private cleanups: (() => void)[] = [];
   private lastDpr = 0;
@@ -94,6 +128,7 @@ export class CanvasEngine {
     this.prev = store().get();
     if (perf) perf.painter = this.painter;
     this.docId = this.prev.doc.id;
+    this.loads = store().loads;
     const self = this;
     this.ctx = {
       get zoom() {
@@ -121,19 +156,28 @@ export class CanvasEngine {
     this.listen(root, 'pointermove', this.onPointerMove as EventListener);
     this.listen(root, 'pointerup', this.onPointerUp as EventListener);
     this.listen(root, 'pointercancel', this.onPointerCancel as EventListener);
+    this.listen(root, 'lostpointercapture', this.onLostCapture as EventListener);
     this.listen(root, 'pointerenter', () => ((this.inside = true), this.updateCursor()));
-    this.listen(root, 'pointerleave', () => {
+    this.listen(root, 'pointerleave', ((e: PointerEvent) => {
+      if (e.pointerType === 'pen') {
+        this.pen.left(e.timeStamp);
+        this.hoverEraser = false;
+      }
       this.inside = false;
       if (!this.gesture) {
         ctl.setHover(null);
         this.invalidate(false, true);
       }
-    });
+    }) as EventListener);
     this.listen(root, 'contextmenu', (e) => e.preventDefault());
     this.listen(root, 'wheel', this.onWheel as EventListener, { passive: false });
+    // Safari reports a trackpad pinch as gesture events, not ctrl+wheel (and would zoom the page).
+    const unpinch = attachPinch(root, this.onPinch);
+    if (unpinch) this.cleanups.push(unpinch);
     this.listen(window, 'keydown', this.onKeyDown as EventListener, { capture: true });
     this.listen(window, 'keyup', this.onKeyUp as EventListener, { capture: true });
     this.listen(window, 'blur', () => {
+      this.endLostPointers();
       this.spaceDown = false;
       this.spaceTap.reset();
       this.altDown = false;
@@ -150,13 +194,15 @@ export class CanvasEngine {
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
-    ctl.fit();
+    ctl.fit(true);
+    setStrokeProbe(() => !!this.gesture);
     return () => this.destroy();
   }
 
   destroy(): void {
     this.cancelGesture();
     for (const c of this.cleanups.splice(0)) c();
+    setStrokeProbe(null);
     ctl.setSink(null);
     ctl.setLive(null);
     cancelAnimationFrame(this.raf);
@@ -187,7 +233,7 @@ export class CanvasEngine {
       this.painter.clear();
     }
     ctl.setViewport({ w, h, dpr });
-    if (ctl.isAutoFit()) ctl.fit();
+    if (ctl.isAutoFit()) ctl.fit(true);
     this.invalidate(true, true);
   };
 
@@ -240,7 +286,7 @@ export class CanvasEngine {
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     const depth = this.painter.warmDepth(doc, rect);
     if (!depth) return;
-    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback);
+    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback, undefined, !!ui.pingPong);
     if (!frames.length) return;
     const done = this.painter.warm(doc, frames, rect, this.els.main.width, this.els.main.height, start + WARM_SLICE_MS);
     if (!done) this.keepWarming();
@@ -278,15 +324,17 @@ export class CanvasEngine {
     const p = this.prev;
     this.prev = s;
     if (s === p) return;
-    if (s.doc.id !== this.docId) {
+    // A new or opened document gets its whole page in view, even when it is the same file as before.
+    if (s.doc.id !== this.docId || store().loads !== this.loads) {
       this.docId = s.doc.id;
+      this.loads = store().loads;
       this.painter.clear();
       ctl.setLive(null);
-      ctl.fit();
+      ctl.fit(true);
     }
     const u = s.ui;
     const q = p.ui;
-    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing || maskFocusChanged(s, p)) {
+    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.lightTable !== q.lightTable || u.playing !== q.playing || maskFocusChanged(s, p)) {
       if (u.zoom !== q.zoom) this.zoomingUntil = performance.now() + 160;
       this.invalidate(true, true);
     } else {
@@ -294,6 +342,7 @@ export class CanvasEngine {
     }
     if (u.tool !== q.tool) {
       if (this.gesture?.kind === 'tool' && !this.selfSwitch) this.cancelGesture();
+      if (!this.selfSwitch) getTool(q.tool)?.leave?.(this.ctx);
       this.updateCursor();
     }
   };
@@ -313,6 +362,7 @@ export class CanvasEngine {
     this.els.stage.classList.toggle('cv-checker', !doc.background);
 
     const zooming = performance.now() < this.zoomingUntil;
+    const lt = ui.playing ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
     const settled = this.painter.paint(this.mg, {
       doc,
       frame: ui.frame,
@@ -328,7 +378,8 @@ export class CanvasEngine {
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
-      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame) : undefined,
+      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
+      lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -361,19 +412,28 @@ export class CanvasEngine {
     drawDecorations(g, this.ctx);
     g.restore();
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
+    // What is aimed at, and drawn over, the picked layer goes through that layer's own camera speed (a layer at another
+    // depth): the tool's marks, guides, grid, the selection edge and the handles. The page frame stays with the plain camera.
+    const lc = cam ? overlayCamera(STAGE_TOOLS.has(tool?.id ?? ui.tool)) : null;
+    const layerSpace = (m: Mat | null = lc) => {
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      if (m) g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    };
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
-      stageSpace();
+      layerSpace();
       const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
       if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
+      if (mirrorsOnVector(tool.id)) drawVectorMirrorLines(g, ui.zoom);
       tool.overlay(g, this.ctx);
       g.restore();
     }
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      stageSpace();
-      for (const fn of extra) fn(g, ui.zoom);
+      layerSpace(lc);
+      const page = pageCorners(doc.width, doc.height, lc);
+      for (const fn of extra) fn(g, ui.zoom, page);
       g.restore();
     }
   }
@@ -383,9 +443,14 @@ export class CanvasEngine {
     const { layer } = activeLayer();
     if (!layer || layer.kind !== 'pixel' || layer.pixelSize * zoom < GRID_MIN_CELL) return;
     const { doc } = store().get();
-    const cell = layer.pixelSize * zoom * dpr;
     const cols = Math.ceil(doc.width / layer.pixelSize);
     const rows = Math.ceil(doc.height / layer.pixelSize);
+    const lc = canvasLayerCamera();
+    if (lc) {
+      this.drawPixelGridThroughCamera(g, rect, layer.pixelSize, cols, rows, lc, zoom);
+      return;
+    }
+    const cell = layer.pixelSize * zoom * dpr;
     const W = this.els.overlay.width;
     const H = this.els.overlay.height;
     const i0 = Math.max(0, Math.floor(-rect.x / cell));
@@ -415,15 +480,45 @@ export class CanvasEngine {
     g.restore();
   }
 
+  /** The pixel grid when looking through the camera: its lines turn and scale with the picture, so they sit on the cells. */
+  private drawPixelGridThroughCamera(g: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }, ps: number, cols: number, rows: number, m: Mat, zoom: number): void {
+    const scale = matrixScale(m);
+    if (ps * zoom * scale < GRID_MIN_CELL) return;
+    const { doc } = store().get();
+    g.save();
+    g.beginPath();
+    g.rect(rect.x, rect.y, rect.w, rect.h);
+    g.clip();
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    g.beginPath();
+    for (let i = 0; i <= cols; i++) {
+      g.moveTo(i * ps, 0);
+      g.lineTo(i * ps, rows * ps);
+    }
+    for (let j = 0; j <= rows; j++) {
+      g.moveTo(0, j * ps);
+      g.lineTo(cols * ps, j * ps);
+    }
+    g.globalAlpha = 0.4;
+    g.strokeStyle = cssVar('--faint', '#7d7591');
+    // One device pixel wide whatever the zoom.
+    g.lineWidth = 1 / ((rect.w / doc.width) * scale);
+    g.stroke();
+    g.restore();
+  }
+
   // ---------------------------------------------------------------- cursor
 
   private currentTool(): Tool | undefined {
-    return getTool(store().get().ui.tool);
+    return getTool(this.hoverEraser ? 'eraser' : store().get().ui.tool);
   }
 
   private updateCursor(): void {
     let c: string;
     if (this.gesture?.kind === 'pan') c = 'grabbing';
+    else if (this.gesture?.kind === 'grab') c = 'grabbing';
+    else if (this.grabHover && !this.spaceDown) c = this.grabHover;
     else if (this.spaceDown && this.inside) c = 'grab';
     else if (this.cursorOverride) c = this.cursorOverride;
     else {
@@ -443,12 +538,18 @@ export class CanvasEngine {
     this.bounds.top = r.top;
   }
 
-  private toDocPoint(e: { clientX: number; clientY: number }): Pt {
+  /** The screen point in stage space. `forTool`: through the picked layer's own camera speed (a layer at another depth). */
+  private toDocPoint(e: { clientX: number; clientY: number }, forTool = false): Pt {
     const { zoom, panX, panY } = store().get().ui;
     const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
     // Through the camera, the screen shows camera space: tools still work in stage space.
-    const cam = canvasCamera()?.matrix;
+    const cam = forTool ? overlayCamera(this.stageToolNow()) : canvasCamera()?.matrix;
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
+  }
+
+  /** Bone, pose, hand and the like work on the stage as a whole, not on the picked layer's art. */
+  private stageToolNow(): boolean {
+    return STAGE_TOOLS.has(this.gesture?.kind === 'tool' ? this.gesture.tool.id : store().get().ui.tool);
   }
 
   /** On a layer attached to a bone, tools work on the part's own art where it is at rest. */
@@ -458,13 +559,11 @@ export class CanvasEngine {
   }
 
   private toPointer(e: PointerEvent): ToolPointer {
-    const p = this.toLayerPoint(this.toDocPoint(e));
-    const pen = e.pointerType === 'pen';
+    const p = this.toLayerPoint(this.toDocPoint(e, true));
     return {
       x: p.x,
       y: p.y,
-      pressure: pen ? e.pressure || 0.5 : 0.5,
-      hasPressure: pen,
+      ...penFields(e, getPen().pen),
       shift: e.shiftKey,
       alt: e.altKey,
       mod: e.ctrlKey || e.metaKey,
@@ -474,38 +573,129 @@ export class CanvasEngine {
     };
   }
 
+  /** Holds on to a pointer so its moves and its release come here. A pointer that is already gone just isn't held. */
+  private capture(id: number): void {
+    try {
+      this.els.root.setPointerCapture(id);
+    } catch {
+      // not an active pointer any more
+    }
+  }
+
+  /** A finger went down. True when the canvas has dealt with it (ignored, panning, or part of a pinch). */
+  private touchDown(e: PointerEvent): boolean {
+    if (this.pen.rejectsTouch(e.timeStamp)) return true;
+    const t = getPen().touch;
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = this.gesture;
+    const touchGesture = !!g && this.touches.has(g.pointerId);
+    if (t.twoFingers && this.touches.size === 2 && (!g || touchGesture)) {
+      // The first finger may have started a stroke: a second one means this is a pan or zoom, so take it back.
+      if (g) this.cancelGesture();
+      this.refreshBounds();
+      const [i, j] = [...this.touches.keys()];
+      const rel = (k: number) => ({ x: this.touches.get(k)!.x - this.bounds.left, y: this.touches.get(k)!.y - this.bounds.top });
+      const ui = store().get().ui;
+      this.capture(i);
+      this.capture(j);
+      e.preventDefault();
+      this.gesture = { kind: 'pinch', pointerId: i, ids: [i, j], start: { a: rel(i), b: rel(j), view: { zoom: ui.zoom, panX: ui.panX, panY: ui.panY } } };
+      this.updateCursor();
+      return true;
+    }
+    if (g || this.touches.size > 1) return true;
+    if (t.oneFinger === 'off') return true;
+    if (t.oneFinger === 'pan') {
+      const ui = store().get().ui;
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'pan', pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, panX: ui.panX, panY: ui.panY };
+      this.updateCursor();
+      return true;
+    }
+    return false;
+  }
+
+  /** The two fingers of a pinch have moved. */
+  private pinchMove(g: Extract<Gesture, { kind: 'pinch' }>): void {
+    const a = this.touches.get(g.ids[0]);
+    const b = this.touches.get(g.ids[1]);
+    if (!a || !b) return;
+    this.refreshBounds();
+    const rel = (p: { x: number; y: number }) => ({ x: p.x - this.bounds.left, y: p.y - this.bounds.top });
+    ctl.setView(pinchView(g.start, rel(a), rel(b)), true);
+  }
+
   private onPointerDown = (e: PointerEvent): void => {
-    if (this.gesture) return;
+    if (e.pointerType === 'pen') {
+      markPenSeen();
+      penTools.observe(e);
+      this.penTime = e.timeStamp;
+      this.pen.down(e.timeStamp);
+    }
     // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
     // pointer here would send the release to the canvas and the click would never happen.
     if (pressesControl(e.target)) return;
+    if (e.pointerType === 'touch' && this.touchDown(e)) return;
+    if (this.gesture) return;
+    this.penPressed = e.pointerType === 'pen' && e.pressure > 0;
     this.spaceTap.spoil();
     this.refreshBounds();
     const active = document.activeElement as HTMLElement | null;
     if (active && isTyping(active)) active.blur();
     const ui = store().get().ui;
 
-    const penEraser = e.pointerType === 'pen' && (e.button === 5 || (e.buttons & 32) !== 0);
-    const wantPan = e.button === 1 || (e.button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser);
+    // A pen's presses are read through its settings: the eraser end, and what each barrel button does.
+    // (Under X11 the eraser end can arrive as a plain pen touch from a second device: see tablet/tool.ts.)
+    const meaning = e.pointerType === 'pen' ? meaningOfPress(e, getPen().pen, { eraser: penTools.isEraser(e) }) : null;
+    const button = meaning ? meaning.button : e.button;
+    const penEraser = !!meaning?.eraser;
+    const pick = !!meaning?.pick;
+    const wantPan = button === 1 || (button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser && !pick);
     if (wantPan) {
       e.preventDefault();
-      this.els.root.setPointerCapture(e.pointerId);
+      this.capture(e.pointerId);
       this.gesture = { kind: 'pan', pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, panX: ui.panX, panY: ui.panY };
       this.updateCursor();
       return;
     }
-    if (e.button !== 0 && !penEraser) return;
+    // A right-click paints with Back in the Pixel workspace (the press below checks the tool and the layer).
+    const rightClick = button === 2 && !penEraser && paintWellsOn();
+    if (button !== 0 && !penEraser && !rightClick) return;
+    // A press on another artboard opens it first, so the tool works there.
+    ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
-    const tool = penEraser ? getTool('eraser') : getTool(ui.tool);
+    // Handles that work with any tool (vanishing points) come before the tool.
+    const grab = !penEraser && !pick && !ui.playing ? ctl.grabAt(this.toDocPoint(e, true), ui.zoom) : null;
+    if (grab) {
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'grab', pointerId: e.pointerId, grab };
+      this.grabPt = this.toDocPoint(e, true);
+      grab.down(this.grabPt);
+      this.updateCursor();
+      this.invalidate(false, true);
+      return;
+    }
+
+    // A barrel button set to "Pick a colour" picks for as long as it is held, like holding the eyedropper's key.
+    let tool = penEraser ? getTool('eraser') : pick ? eyedropperTool : getTool(ui.tool);
     if (!tool) return;
     const layer = activeLayer().layer;
+    // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
+    if (!penEraser && !pick && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
+    if (rightClick && (tool === tempEyedropperTool || !rightPaints(tool.id, layer?.kind, 2))) return;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
       this.ctx.hint(`${tool.label} works on ${kinds} layers. Pick one in the timeline first.`);
       return;
     }
+    if (rightClick && !store().get().ui.fillColor) {
+      this.ctx.hint('Back is set to none, so there is nothing to right-click paint with. Pick a Back colour first.');
+      return;
+    }
     e.preventDefault();
-    this.els.root.setPointerCapture(e.pointerId);
+    this.capture(e.pointerId);
     let restoreTool: string | null = null;
     if (penEraser && ui.tool !== 'eraser') {
       restoreTool = ui.tool;
@@ -513,25 +703,57 @@ export class CanvasEngine {
       store().setUi({ tool: 'eraser' });
       this.selfSwitch = false;
     }
-    this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool };
+    // Back stands in for Paint for this one stroke, and goes back when it ends.
+    const swapped = rightClick ? swapPaintBack() : false;
+    this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool, swapped };
     const ptr = this.toPointer(e);
     this.lastPtr = ptr;
+    this.stab = null;
+    const tp = PEN_TOOLS.includes(tool.id as PenTool) && !pick && !rightClick ? getPen().tools[tool.id as PenTool] : null;
+    if (tp && tp.stabilizer > 0) {
+      this.stab = new Stabilizer(tp.stabMode, tp.stabilizer, ui.zoom);
+      this.stab.start({ x: ptr.x, y: ptr.y, pressure: ptr.pressure });
+    }
     ctl.setHover(null);
     tool.down?.(ptr, this.ctx);
     this.invalidate(false, true);
   };
 
   private onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (e.pointerType === 'pen') {
+      penTools.observe(e);
+      this.penTime = e.timeStamp;
+      this.pen.seen(e.timeStamp);
+      // A pen that is only hovering is not touching, whatever happened to its last release.
+      if (e.buttons === 0) this.pen.up(e.timeStamp);
+    }
     const g = this.gesture;
+    if (g?.kind === 'pinch') {
+      this.pinchMove(g);
+      return;
+    }
+    if (g && e.pointerId === g.pointerId && this.releaseWentMissing(g, e)) {
+      // The release never came (a button let go outside the window, a tip lifted with a barrel button held): end the
+      // stroke where it last was, as a normal release would, then take this move as a hover.
+      this.finishGesture(g, null);
+      this.onPointerMove(e);
+      return;
+    }
     if (!g) {
       if (e.buttons !== 0 && e.pointerType !== 'pen') return;
+      if (e.pointerType === 'touch') return;
       this.inside = true;
+      this.hoverEraser = e.pointerType === 'pen' && getPen().pen.eraserEnd && ((e.buttons & 32) !== 0 || penTools.isEraser(e));
+      if (e.pointerType === 'pen') noticePen();
       this.refreshBounds();
       this.altDown = e.altKey;
       const ui = store().get().ui;
       if (ui.playing) return;
       const ptr = this.toPointer(e);
-      ctl.setHover({ x: ptr.x, y: ptr.y });
+      ctl.setHover({ x: ptr.x, y: ptr.y }, e.pointerType === 'pen' ? { tiltX: ptr.tiltX, tiltY: ptr.tiltY, eraser: this.hoverEraser } : null);
+      const hg = ctl.grabAt(this.toDocPoint(e, true), ui.zoom);
+      this.grabHover = hg ? (hg.cursor ?? 'move') : null;
       const tool = this.currentTool();
       tool?.hover?.(ptr, this.ctx);
       this.updateCursor();
@@ -539,6 +761,12 @@ export class CanvasEngine {
       return;
     }
     if (e.pointerId !== g.pointerId) return;
+    if (g.kind === 'grab') {
+      this.grabPt = this.toDocPoint(e, true);
+      g.grab.move(this.grabPt, e.shiftKey);
+      this.invalidate(false, true);
+      return;
+    }
     if (g.kind === 'pan') {
       ctl.setView(
         { zoom: store().get().ui.zoom, panX: g.panX + (e.clientX - g.startX), panY: g.panY + (e.clientY - g.startY) },
@@ -551,35 +779,126 @@ export class CanvasEngine {
     const events = list.length ? list : [e];
     let ptr = this.lastPtr!;
     for (const ce of events) {
-      ptr = this.toPointer(ce);
+      ptr = this.steady(this.toPointer(ce));
       g.tool.move?.(ptr, this.ctx);
     }
     this.lastPtr = ptr;
-    const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
-    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe))));
+    // The pen's predicted path draws ahead of the line for less lag, but not when the stabilizer holds the brush back.
+    const pred = !this.stab && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
+    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe, true))));
     this.invalidate(false, true);
   };
 
+  /** The pointer sample as the stabilizer's brush sees it (unchanged when the stabilizer is off). */
+  private steady(p: ToolPointer): ToolPointer {
+    if (!this.stab) return p;
+    const s = this.stab.push({ x: p.x, y: p.y, pressure: p.pressure });
+    return { ...p, x: s.x, y: s.y, pressure: s.pressure };
+  }
+
   private onPointerUp = (e: PointerEvent): void => {
+    if (e.pointerType === 'pen') {
+      this.penTime = e.timeStamp;
+      this.pen.up(e.timeStamp);
+      noticePen();
+    }
+    if (e.pointerType === 'touch') this.touches.delete(e.pointerId);
     const g = this.gesture;
-    if (!g || e.pointerId !== g.pointerId) return;
-    if (this.els.root.hasPointerCapture(e.pointerId)) this.els.root.releasePointerCapture(e.pointerId);
+    if (g?.kind === 'pinch' && g.ids.includes(e.pointerId)) {
+      this.endPinch(g);
+      return;
+    }
+    if (!g || g.kind === 'pinch' || e.pointerId !== g.pointerId) return;
+    this.finishGesture(g, e);
+  };
+
+  /**
+   * Ends the open gesture the way a release does, so what was drawn is kept. `e` is the release; without one (the
+   * release never came) the stroke ends where the last sample was.
+   */
+  private finishGesture(g: Exclude<Gesture, { kind: 'pinch' }>, e: PointerEvent | null): void {
+    if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
     this.gesture = null;
     if (g.kind === 'tool') {
       ctl.setPredicted([]);
-      g.tool.up?.(this.toPointer(e), this.ctx);
+      // A lifted pen reports no pressure, so the last real sample's pen fields stand for it.
+      const last = this.lastPtr;
+      const raw = e ? this.toPointer(e) : last;
+      const up = raw && last && (!e || e.pointerType === 'pen') ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
+      if (up) {
+        if (this.stab) {
+          // The brush walks the rest of the way to where the pen lifted.
+          const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
+          for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+        }
+        g.tool.up?.(up, this.ctx);
+      } else g.tool.cancel?.(this.ctx);
+      this.stab = null;
       this.restoreTool(g);
+    } else if (g.kind === 'grab') {
+      const at = e ? this.toDocPoint(e, true) : this.grabPt;
+      if (at) g.grab.up(at);
+      else g.grab.cancel?.();
     }
     this.lastPtr = null;
+    this.grabPt = null;
     this.updateCursor();
     this.invalidate(false, true);
+  }
+
+  /** A move with no release before it: the button is no longer down, or a pen's tip has lifted but a barrel button is held. */
+  private releaseWentMissing(g: Exclude<Gesture, { kind: 'pinch' }>, e: PointerEvent): boolean {
+    if (e.pointerType === 'pen' && e.pressure > 0) this.penPressed = true;
+    if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return false;
+    // A tool that is drawn by hovering carries on with no button and no pressure.
+    if (g.kind === 'tool' && g.tool.hoverDrag) return false;
+    if (e.buttons === 0) return true;
+    // Pressure 0 only counts once this stroke has had some (the first sample of a press may read 0).
+    return e.pointerType === 'pen' && e.pressure === 0 && this.penPressed;
+  }
+
+  /** The pointer's capture went away with no release (the page lost it): the gesture it held is over. */
+  private onLostCapture = (e: PointerEvent): void => {
+    const g = this.gesture;
+    if (!g) return;
+    if (g.kind === 'pinch') {
+      if (g.ids.includes(e.pointerId)) this.endPinch(g);
+      return;
+    }
+    if (e.pointerId !== g.pointerId) return;
+    if (e.pointerType === 'pen') this.pen.up(this.penTime);
+    this.finishGesture(g, null);
   };
 
+  /** The window lost focus mid-gesture: a release may never be seen, so end whatever is held and forget fingers and the pen. */
+  private endLostPointers(): void {
+    const g = this.gesture;
+    this.touches.clear();
+    this.pen.up(this.penTime);
+    if (!g) return;
+    if (g.kind === 'pinch') this.endPinch(g);
+    else this.finishGesture(g, null);
+  }
+
+  private endPinch(g: Extract<Gesture, { kind: 'pinch' }>): void {
+    for (const id of g.ids) if (this.els.root.hasPointerCapture?.(id)) this.els.root.releasePointerCapture(id);
+    this.gesture = null;
+    this.updateCursor();
+  }
+
   private onPointerCancel = (e: PointerEvent): void => {
-    if (this.gesture && e.pointerId === this.gesture.pointerId) this.cancelGesture();
+    if (e.pointerType === 'touch') this.touches.delete(e.pointerId);
+    if (e.pointerType === 'pen') {
+      this.penTime = e.timeStamp;
+      this.pen.up(e.timeStamp);
+    }
+    const g = this.gesture;
+    if (g?.kind === 'pinch' && g.ids.includes(e.pointerId)) this.endPinch(g);
+    else if (g && e.pointerId === g.pointerId) this.cancelGesture();
   };
 
   private restoreTool(g: Gesture): void {
+    if (g.kind === 'tool' && g.swapped) swapPaintBack();
     if (g.kind === 'tool' && g.restoreTool) {
       this.selfSwitch = true;
       store().setUi({ tool: g.restoreTool });
@@ -591,7 +910,9 @@ export class CanvasEngine {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
+    this.stab = null;
     if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
+    if (g.kind === 'grab') g.grab.cancel?.();
     if (g.kind === 'tool') {
       g.tool.cancel?.(this.ctx);
       ctl.setPredicted([]);
@@ -612,8 +933,14 @@ export class CanvasEngine {
     const sy = e.clientY - this.bounds.top;
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
     const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
-    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode), sx, sy));
+    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode, intent.step), sx, sy));
     else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
+  };
+
+  private onPinch = (factor: number, clientX: number, clientY: number): void => {
+    this.refreshBounds();
+    const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
+    ctl.setView(zoomAbout(v, v.zoom * factor, clientX - this.bounds.left, clientY - this.bounds.top));
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -637,6 +964,17 @@ export class CanvasEngine {
       return;
     }
     if (this.spaceDown && !['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) this.spaceTap.spoil();
+    // The chosen tool gets first go at a key between gestures (Enter finishes a pen path), unless a focused control
+    // wants it.
+    if (!this.gesture && !this.spaceDown && !controlWantsKey(e.target, e) && !anyOverlayOpen()) {
+      const tool = this.currentTool();
+      if (tool?.onKey?.(e, this.ctx)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.invalidate(false, true);
+        return;
+      }
+    }
     this.modifiersChanged(e);
   };
 
@@ -673,6 +1011,17 @@ export class CanvasEngine {
     this.invalidate(false, true);
     this.updateCursor();
   }
+}
+
+/** The page's four corners in the space a camera matrix leads to (the page's own corners with no matrix). */
+function pageCorners(w: number, h: number, m: Mat | null): Pt[] {
+  const inv = m ? invert(m) : null;
+  return [
+    { x: 0, y: 0 },
+    { x: w, y: 0 },
+    { x: w, y: h },
+    { x: 0, y: h },
+  ].map((p) => (inv ? applyMat(inv, p.x, p.y) : p));
 }
 
 /** The camera's view on the playhead's frame, as stage-space corners (for the pasteboard), when it's on. */

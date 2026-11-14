@@ -23,7 +23,7 @@ export interface QuillProps {
   force?: boolean;
 }
 
-/** True when Quill should show. Bubbles use it to keep their text when he's hidden. */
+/** True when Quill should show. Bubbles use it to drop his chatter when he's hidden. */
 export const useShowQuill = (): boolean => usePrefs((p) => p.showQuill);
 
 /** True when a Quill would actually be drawn: turned on (or forced, for his goodbye), and the art has loaded. */
@@ -69,11 +69,22 @@ export interface QuillSaysProps extends QuillProps {
   side?: 'left' | 'top';
   /** The bubble's own class, for placing it. */
   bubbleClassName?: string;
+  /**
+   * What shows when Show Quill is off. Left out: the words stay, as a plain note (things people need, like a quest step
+   * or an error). null: nothing, for chatter. Anything else: shown instead, for a plain version of a chatty line.
+   */
+  whenHidden?: ReactNode;
 }
 
-/** Quill with a speech bubble. With Quill turned off in Preferences the bubble still shows, without the tail. */
-export function QuillSays({ children, side = 'left', bubbleClassName = '', className = '', ...quill }: QuillSaysProps) {
+/**
+ * Quill with a speech bubble. With Quill turned off in Preferences his chatter goes too (`whenHidden` null or a plain
+ * version); words people need stay as a plain note without the bubble.
+ */
+export function QuillSays({ children, side = 'left', bubbleClassName = '', className = '', whenHidden, ...quill }: QuillSaysProps) {
   const withQuill = useQuillShown();
+  const on = useShowQuill();
+  if (!on && whenHidden === null) return null;
+  if (!on && whenHidden !== undefined) children = whenHidden;
   return (
     <div className={`quill-says quill-says-${side}${withQuill ? '' : ' is-alone'}${className ? ` ${className}` : ''}`}>
       {withQuill && <Quill {...quill} />}
@@ -82,12 +93,16 @@ export function QuillSays({ children, side = 'left', bubbleClassName = '', class
   );
 }
 
-/** An empty spot with Quill and a friendly line, like a search with no results. Without Quill it's just the line. */
-export function QuillEmpty({ children, anim = 'idle', then, size = 64, className = '' }: Pick<QuillProps, 'anim' | 'then' | 'size' | 'className'> & { children: ReactNode }) {
+/**
+ * An empty spot with Quill and a friendly line, like a search with no results. Without Quill it's just the line, or
+ * `whenHidden` (a plain version) when his line is chatty.
+ */
+export function QuillEmpty({ children, anim = 'idle', then, size = 64, className = '', whenHidden }: Pick<QuillProps, 'anim' | 'then' | 'size' | 'className'> & { children: ReactNode; whenHidden?: ReactNode }) {
+  const on = useShowQuill();
   return (
     <div className={`quill-empty${className ? ` ${className}` : ''}`}>
       <Quill anim={anim} then={then} size={size} />
-      <p>{children}</p>
+      <p>{!on && whenHidden !== undefined ? whenHidden : children}</p>
     </div>
   );
 }

@@ -1,12 +1,13 @@
 /**
  * Select [V] on a pixel layer: pick pixels with a box, a lasso or the magic wand, then drag them to move them.
  * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something
- * is selected, painting stays inside it, and the Pixel menu's flips, turns and outlines work on just that part.
+ * is selected, painting stays inside it, and the Pixel tools menu's flips, turns and outlines work on just that part.
  */
+import { gridPixels } from '../core/pixelBounds';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { currentChoice, registerChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
-import { addStageOverlay, setCursor } from '../canvas/controller';
+import { addStageOverlay, requestOverlay, setCursor } from '../canvas/controller';
 import type { Pt } from '../canvas/geometry';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { combineMasks, maskEdges, maskHas, polygonMask, rectMask, wandMask, type Mask, type SelectOp } from './mask';
@@ -22,7 +23,10 @@ import {
   pixelSelection,
   setPixelSelection,
 } from './pixel-state';
-import { getSelectSettings } from './settings';
+import { clingReach, getSelectSettings } from './settings';
+import { MagneticTrace, PixelEdges, pixelSource } from './magnetic';
+import { modeOfTool, WAYS } from './ways';
+import { store } from '../core/store';
 import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
 import { reducedMotion } from '../ui/prefs';
@@ -32,7 +36,7 @@ const DRAG_PX = 3;
 
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
-  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean }
+  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace }
   | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
@@ -72,10 +76,16 @@ function apply(m: Mask, op: SelectOp): void {
 
 function down(e: ToolPointer, ctx: ToolContext): void {
   if (g?.kind === 'lasso' && g.open) {
-    g.open = false;
     g.cur = e;
-    if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso(ctx);
+    // Back on the first corner closes it, whichever way it was started.
+    if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso();
+    if (g.mag) {
+      g.mag.place(e, reachOf(ctx), ctx.zoom);
+      return;
+    }
     g.pts.push({ x: e.x, y: e.y });
+    // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
+    g.open = !!g.poly;
     return;
   }
   g = null;
@@ -84,7 +94,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const size = a.layer.pixelSize;
   const cell = cellOf(e, size);
   const sel = pixelSelection();
-  const mode = getSelectSettings().mode;
+  const mode = modeOfTool(store().get().ui.tool);
   // Inside the selection with no keys held: drag the pixels. With Alt: drag a copy.
   const copy = altCopies(e);
   if (sel && !e.shift && (!e.alt || copy) && maskHas(sel, cell.x, cell.y)) {
@@ -97,14 +107,22 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (mode === 'wand') {
     if (isFloating()) dropFloating();
     const d = activePixelDrawing();
-    const pixels = d?.pixels ?? new Uint8ClampedArray(a.width * a.height * 4);
+    const pixels = d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
     const s = getSelectSettings();
     apply(wandMask(pixels, a.width, a.height, cell.x, cell.y, { tolerance: (s.tolerance / 100) * 255, contiguous: s.contiguous }), op);
     ctx.requestOverlay();
     return;
   }
   if (isFloating()) dropFloating();
-  if (mode === 'lasso') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: false };
+  if (mode === 'magnetic') {
+    // The pixels as they are now: the edges to cling to are where their colour changes.
+    const d = activePixelDrawing();
+    const pixels = d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
+    const mag = new MagneticTrace(pixelSource(new PixelEdges(pixels, a.width, a.height), size));
+    mag.begin(e, reachOf(ctx));
+    g = { kind: 'lasso', op, pts: mag.pts, cur: e, size, open: true, poly: true, mag };
+  } else if (mode === 'polygon') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: true, poly: true };
+  else if (mode === 'lasso') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: false };
   else g = { kind: 'box', op, start: { x: e.x, y: e.y }, cur: e, size };
 }
 
@@ -113,7 +131,8 @@ function move(e: ToolPointer, ctx: ToolContext): void {
   if (g.kind === 'box') g.cur = e;
   else if (g.kind === 'lasso') {
     g.cur = e;
-    if (!g.open) lassoPoint(g.pts, e, ctx.zoom);
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
+    else if (!g.open) lassoPoint(g.pts, e, ctx.zoom);
   } else {
     const c = cellOf(e, g.size);
     const dx = c.x - g.startCell.x;
@@ -153,6 +172,11 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   }
   if (s.kind === 'lasso') {
     s.cur = e;
+    // A polygon is built from clicks, so letting go of one does nothing at all.
+    if (s.poly) {
+      ctx.requestOverlay();
+      return;
+    }
     lassoPoint(s.pts, e, ctx.zoom);
     if (e.alt && s.op !== 'subtract') {
       // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
@@ -160,7 +184,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
       ctx.requestOverlay();
       return;
     }
-    return finishLasso(ctx);
+    return finishLasso();
   }
   g = null;
   const a = activePixelGrid();
@@ -178,27 +202,55 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
-function finishLasso(ctx: ToolContext): void {
+function finishLasso(): void {
   const s = g;
   g = null;
   if (!s || s.kind !== 'lasso') return;
   const a = activePixelGrid();
   if (!a) return;
-  const pts = s.pts.map((p) => ({ x: p.x / s.size, y: p.y / s.size }));
+  const pts = (s.mag ? s.mag.outline() : s.pts).map((p) => ({ x: p.x / s.size, y: p.y / s.size }));
   if (pts.length < 3) {
     if (s.op === 'replace') setPixelSelection(null);
   } else apply(polygonMask(a.width, a.height, pts), s.op);
-  ctx.requestOverlay();
+  requestOverlay();
 }
 
-/** True while a lasso is waiting for its next Alt+click corner. */
+/** True while a lasso or polygon is waiting for its next corner. */
 export const pixelLassoIsOpen = (): boolean => g?.kind === 'lasso' && g.open;
 
-/** Lets go of a lasso left open between Alt+clicks. True when there was one. */
+/** Lets go of a lasso or polygon left open, without picking anything. True when there was one. */
 export function cancelOpenPixelLasso(): boolean {
   if (g?.kind !== 'lasso' || !g.open) return false;
   g = null;
   return true;
+}
+
+/** Closes a lasso or polygon left open and picks what it covers. True when there was one. */
+export function closeOpenPixelLasso(): boolean {
+  if (g?.kind !== 'lasso' || !g.open) return false;
+  finishLasso();
+  return true;
+}
+
+/** How far (document pixels) the magnetic lasso reaches for an edge, from the cling setting. */
+const reachOf = (ctx: ToolContext): number => clingReach(getSelectSettings().cling) / ctx.zoom;
+
+/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
+export function backOpenPixelLasso(ctx?: ToolContext): boolean {
+  if (g?.kind !== 'lasso' || !g.open || !g.poly) return false;
+  if (g.mag) {
+    if (!g.mag.back()) g = null;
+    else if (ctx) g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
+  } else if (g.pts.length > 1) g.pts.pop();
+  else g = null;
+  return true;
+}
+
+/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. Backspace takes a corner back. */
+function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {
+  if (e.key === 'Backspace') return backOpenPixelLasso(ctx);
+  if (e.key !== 'Enter' || !pixelLassoIsOpen()) return false;
+  return closeOpenPixelLasso();
 }
 
 function cancel(ctx: ToolContext): void {
@@ -208,9 +260,10 @@ function cancel(ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
-function hover(e: ToolPointer): void {
+function hover(e: ToolPointer, ctx: ToolContext): void {
   if (g?.kind === 'lasso' && g.open) {
     g.cur = e;
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
     return setCursor('crosshair');
   }
   const a = activePixelGrid();
@@ -224,7 +277,11 @@ function hover(e: ToolPointer): void {
 
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const ink = cssVar('--grape', '#9b7bff');
-  if (g?.kind === 'lasso') drawLasso(gx, g.pts, g.open ? g.cur : null, ctx.zoom, ink);
+  if (g?.kind === 'lasso') {
+    // The magnetic lasso shows the stretch along the edge it is clinging to, where the others show a straight line.
+    const rubber = g.open ? (g.mag ? (g.mag.target ? g.mag.tail : [g.cur]) : g.cur) : null;
+    drawLasso(gx, g.pts, rubber, ctx.zoom, ink, g.mag?.target);
+  }
   else if (g?.kind === 'box') {
     // The box snaps to whole pixels, so it shows exactly what will be picked.
     const s = g.size;
@@ -251,13 +308,17 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   }
 }
 
-export const pixelSelectTool: Tool = {
-  id: PIXEL_SELECT_TOOL,
-  label: 'Select',
-  icon: 'select',
-  key: 'v',
+/** One tool per way of picking, all sharing these handlers. The way comes from which one you chose. */
+export const pixelSelectTools: Tool[] = WAYS.map((w) => ({
+  id: w.pixel,
+  group: 'select',
+  groupAt: w.at,
+  slot: `select.${w.mode}`,
+  label: w.label,
+  icon: w.icon,
+  key: w.key,
   layers: ['pixel'],
-  order: 5,
+  order: 5 + w.at,
   help: 'pixel-select',
   cursor: 'crosshair',
   options: PixelSelectOptions,
@@ -267,9 +328,13 @@ export const pixelSelectTool: Tool = {
   hover,
   cancel,
   overlay,
-};
+  onKey: polygonKey,
+}));
 
-registerTool(pixelSelectTool);
+/** The box one, which is what Select has always meant. */
+export const pixelSelectTool = pixelSelectTools[0];
+
+for (const t of pixelSelectTools) registerTool(t);
 
 // ---------------------------------------------------------------- marching ants, whatever tool is picked
 

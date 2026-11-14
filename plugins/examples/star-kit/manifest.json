@@ -1,0 +1,10 @@
+{
+  "id": "star-kit",
+  "name": "Star kit",
+  "version": "1.0.0",
+  "description": "A star shape you can change afterwards, and a Star stamp tool that adds one wherever you click.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["document.read", "tools", "shapes", "panels"],
+  "apiVersion": 2
+}

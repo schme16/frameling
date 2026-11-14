@@ -69,6 +69,17 @@ export function pixelLine(x0: number, y0: number, x1: number, y1: number, perfec
   return perfect ? pixelPerfect(line) : line;
 }
 
+/**
+ * A pixel brush size (in art pixels, as the slider says) through a camera: `factor` is stage length per unit of size
+ * (sizeThroughCamera). Whole pixels only, so it's rounded to the nearest (halves go up) and never below one pixel: a
+ * 4 pixel brush is 2 through a camera zoomed in 2x, 8 through one zoomed out to half, and a 1 pixel brush stays 1.
+ */
+export function pixelSizeThroughCamera(size: number, factor: number): number {
+  const n = Math.max(1, Math.round(size));
+  if (!(factor > 0) || factor === 1) return n;
+  return Math.max(1, Math.round(n * factor));
+}
+
 export type PixelShape = 'square' | 'round';
 
 /** The pixels a brush covers around its centre pixel, as offsets. Even sizes lean up and left, like most pixel tools. */

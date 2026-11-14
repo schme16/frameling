@@ -1,12 +1,9 @@
 // Clip flow commands and its panel.
-import { lazyPanel } from '../core/lazy';
-import { registerCommands, registerPanel } from '../core/registry';
+import type { Command } from '../core/registry';
 import { showPanel } from '../ui/dock';
 import { startTrying, stopTrying, tryingClip } from './ops';
 
-registerPanel({ id: 'clip-flow', title: 'Clip flow', icon: 'flow', component: lazyPanel(() => import('./FlowPanel').then((m) => m.FlowPanel)), zone: 'right', order: 38, help: 'clip-flow' });
-
-registerCommands([
+export const flowCommands: Command[] = [
   {
     id: 'flow.open',
     label: 'Clip flow (state machine)...',
@@ -27,4 +24,4 @@ registerCommands([
     checked: () => !!tryingClip(),
     run: () => (tryingClip() ? stopTrying() : startTrying()),
   },
-]);
+];

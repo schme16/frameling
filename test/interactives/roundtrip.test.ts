@@ -8,7 +8,7 @@ import { playablePackage } from '../../src/export/playable';
 import { getLink, readPlayable, setLink } from '../../src/interactives/link';
 import { resetStore, store } from '../../src/core/store';
 import { newDoc } from '../../src/core/doc';
-import { setChoice } from '../../src/core/choices';
+import { registerChoice, setChoice } from '../../src/core/choices';
 
 const exported: { bytes: Uint8Array }[] = [];
 vi.mock('../../src/export/run', () => ({
@@ -19,7 +19,9 @@ vi.mock('../../src/export/run', () => ({
 }));
 
 const { openPath, saveDocument } = await import('../../src/io/document');
-await import('../../src/interactives/roundtrip');
+const { registerRoundTrip, interactivesChoices } = await import('../../src/interactives/roundtrip');
+for (const c of interactivesChoices) registerChoice(c);
+registerRoundTrip();
 
 const ball = () => findTemplate('bouncing-ball')!.make();
 

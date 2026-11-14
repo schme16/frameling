@@ -3,9 +3,10 @@ import type { Doc, InstanceShape } from '../../src/core/format';
 import { newDoc, newPixelDrawing, uid } from '../../src/core/doc';
 import { makeSymbol } from '../../src/core/symbols';
 import { ease } from '../../src/core/ease';
-import { newCameraLayer, setCameraKey } from '../../src/core/camera';
+import { activeCamera, cameraViewOn, depthAnchor, depthScale, newCameraLayer, parallaxFactor, setCameraKey } from '../../src/core/camera';
 import { docToLottie, exactEase, lottieColor, lottiePath } from '../../src/export/lottie';
 import { makeBouncingLogo } from '../../src/templates/bouncing-logo';
+import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, fill, hold, rectPath, vectorDrawing } from '../../src/templates/build';
 
 /** y of a CSS-style cubic bezier at x, by bisection. */
@@ -20,6 +21,22 @@ function bezierY(e: { o: { x: number[]; y: number[] }; i: { x: number[]; y: numb
     else hi = m;
   }
   return at((lo + hi) / 2, y1, y2);
+}
+
+type Key = { t: number; s: number[]; h?: number; o?: { y: number[] }; i?: { y: number[] } };
+
+/** What a player makes of a track at frame `t` (the bezier's x handles sit at a third and two thirds, so its parameter is time). */
+function playAt(track: { a: number; k: Key[] | number | number[] }, t: number): number[] {
+  if (!track.a) return Array.isArray(track.k) ? (track.k as number[]) : [track.k as number];
+  const ks = track.k as Key[];
+  let n = 0;
+  while (n < ks.length - 2 && ks[n + 1].t <= t) n++;
+  const a = ks[n];
+  const b = ks[n + 1];
+  if (!b || a.h) return a.s;
+  const u = (t - a.t) / (b.t - a.t);
+  const g = 3 * (1 - u) * (1 - u) * u * a.o!.y[0] + 3 * (1 - u) * u * u * a.i!.y[0] + u ** 3;
+  return a.s.map((v, c) => v + (b.s[c] - v) * g);
 }
 
 function movingDoc(easeName: 'easeInOut' | 'bounceOut' | 'linear'): Doc {
@@ -133,5 +150,40 @@ describe('Lottie export', () => {
     expect(nul.nm).toContain('depth 1');
     expect(nul.ks.s.a).toBe(1);
     for (const l of lot.layers.filter((x: any) => x.ty === 0 || x.ty === 4)) expect(l.parent).toBe(nul.ind);
+  });
+
+  it('camera tracks are a few eased keys, not one per frame, and play the same', () => {
+    const doc = makeCameraPan();
+    const lot = docToLottie(doc);
+    const nuls = lot.layers.filter((l: any) => l.ty === 3);
+    expect(nuls.length).toBeGreaterThan(1);
+    const views = Array.from({ length: doc.length }, (_, f) => cameraViewOn(doc, activeCamera(doc)!, f)!);
+    for (const nul of nuls) {
+      const depth = Number(/depth (\d+)/.exec(nul.nm)?.[1] ?? 0);
+      const fac = parallaxFactor(depth);
+      // The anchor and the zoom are written as fewer than a third of the frames each.
+      expect(nul.ks.a.k.length).toBeLessThan(doc.length / 3);
+      expect(nul.ks.s.k.length).toBeLessThan(doc.length / 3);
+      const reach = Math.hypot(doc.width, doc.height) / 2;
+      views.forEach((v, f) => {
+        const an = depthAnchor(doc, v, fac);
+        const a = playAt(nul.ks.a, f);
+        // What shows on screen: the anchor times the zoom, the zoom's share at the far edge, the turn at the far edge.
+        expect(Math.hypot(a[0] - an.x, a[1] - an.y) * depthScale(v, fac)).toBeLessThan(0.25);
+        expect((Math.abs(playAt(nul.ks.s, f)[0] - depthScale(v, fac) * 100) / 100) * reach).toBeLessThan(0.25);
+        expect(((Math.abs(playAt(nul.ks.r, f)[0] + v.rotation) * Math.PI) / 180) * reach).toBeLessThan(0.25);
+      });
+    }
+  });
+
+  it('a camera that holds still stays a plain value', () => {
+    const doc = movingDoc('linear');
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    const nul = docToLottie(doc).layers.find((l: any) => l.ty === 3);
+    expect(nul.ks.a.a).toBe(0);
+    expect(nul.ks.s.a).toBe(0);
+    expect(nul.ks.r.a).toBe(0);
   });
 });

@@ -11,3 +11,4 @@
 *.frameling binary
 *.flplay binary
 *.gif binary
+*.cmd text eol=crlf

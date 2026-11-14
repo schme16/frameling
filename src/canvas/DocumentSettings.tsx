@@ -1,7 +1,7 @@
 // "Canvas size and speed": the page size (in the chosen unit), DPI, frame rate and background, in one dialog.
 // Changing the size either makes room round the artwork (canvas size, with an anchor) or scales everything with it
 // (image size). Whatever changes lands as one undo step.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import { cleanDpi, docDpi, formatSize, pxTo, roundIn, toPx, unitInfo, type Unit } from '../core/units';
@@ -10,6 +10,10 @@ import { getPrefs } from '../ui/prefs';
 import { fit, hint } from './controller';
 import { ANCHORS, anchorOffset, clampSize, hasPixelArt, MAX_SIZE, NOTE_TEXT, pixelScaleStep, resizeCanvas, scaleArtwork, scaledSize, type Anchor } from './resize';
 import { Icon } from '../ui/icons';
+import { activeId, findArtboard } from '../artboards/model';
+import { reframeVariations, setVariationSize, untouchedFramings } from '../artboards/variations';
+import { currentChoice } from '../core/choices';
+import type { FitMode } from '../artboards/fit';
 import './settings.css';
 
 type Mode = 'canvas' | 'scale';
@@ -70,7 +74,10 @@ function Preview({ doc, w, h, mode, anchor }: { doc: Doc; w: number; h: number; 
   );
 }
 
-function DocumentSettings({ close }: { close: () => void }) {
+/** Which field the dialog should open on, when something sent you here to change that one thing. */
+export type SettingsField = 'size' | 'fps';
+
+function DocumentSettings({ close, field }: { close: () => void; field?: SettingsField }) {
   const doc = store().get().doc;
   const unit = getPrefs().units;
   const [mode, setMode] = useState<Mode>('canvas');
@@ -82,8 +89,18 @@ function DocumentSettings({ close }: { close: () => void }) {
   const [fps, setFps] = useState(doc.fps);
   const [see, setSee] = useState(doc.background === null);
   const [bg, setBg] = useState(doc.background ?? '#ffffff');
+  // A variation's size is only its picture (a camera frames the art), so there is nothing to anchor.
+  const onVariation = !!doc.artboards?.some((a) => a.variationOf) && !!findArtboard(doc, activeId(doc))?.variationOf;
   const pixelArt = hasPixelArt(doc);
   const step = pixelScaleStep(doc);
+  // Sent here from the footer bar to change one thing: that field is ready to type in, already selected.
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!field) return;
+    const el = form.current?.querySelector<HTMLInputElement>(field === 'fps' ? '.ds-fps input' : 'input');
+    el?.focus();
+    el?.select();
+  }, [field]);
 
   // Scaling pixel art keeps its shape, so width and height stay linked.
   const linked = link || (mode === 'scale' && pixelArt);
@@ -101,7 +118,7 @@ function DocumentSettings({ close }: { close: () => void }) {
   const result = useMemo(() => (mode === 'scale' ? scaledSize(doc, w, h) : { w, h, k: null }), [doc, mode, w, h]);
   const sizeChanged = result.w !== doc.width || result.h !== doc.height;
   const notes: string[] = [];
-  if (sizeChanged && mode === 'canvas') {
+  if (sizeChanged && mode === 'canvas' && !onVariation) {
     if (result.w < doc.width || result.h < doc.height) notes.push(NOTE_TEXT.cropped);
     if (pixelArt) {
       const { dx, dy } = anchorOffset(doc.width, doc.height, w, h, anchor);
@@ -120,10 +137,15 @@ function DocumentSettings({ close }: { close: () => void }) {
       hint('Close the symbol you are drawing inside first, then change the page.');
       return close();
     }
-    const next = sizeChanged ? (mode === 'canvas' ? resizeCanvas(doc, w, h, anchor) : scaleArtwork(doc, w, h)).doc : doc;
+    // A variation's size is only its picture (a camera frames the art), so it goes the way dragging its edge does, and its framing stays tracked.
+    const open = sizeChanged && doc.artboards?.some((a) => a.variationOf) ? activeId(doc) : '';
+    const asVariation = !!open && !!findArtboard(doc, open)?.variationOf;
+    const next = sizeChanged && !asVariation ? (mode === 'canvas' ? resizeCanvas(doc, w, h, anchor) : scaleArtwork(doc, w, h)).doc : doc;
     const label = sizeChanged ? (mode === 'canvas' ? 'Canvas size' : 'Scale artwork') : 'Page settings';
     store().update(label, (d) => {
-      if (sizeChanged) {
+      const keep = open && !asVariation ? untouchedFramings(d as Doc, open) : [];
+      if (asVariation) setVariationSize(d as Doc, open, result.w, result.h, currentChoice<FitMode>('variations.frame'));
+      else if (sizeChanged) {
         d.width = next.width;
         d.height = next.height;
         d.layers = next.layers as typeof d.layers;
@@ -135,17 +157,19 @@ function DocumentSettings({ close }: { close: () => void }) {
       d.background = background;
       if (dpiOk === 96) delete d.dpi;
       else d.dpi = dpiOk;
+      if (keep.length) reframeVariations(d as Doc, keep);
     });
     close();
     if (sizeChanged) {
       fit();
-      hint(`The page is now ${formatSize(next.width, next.height, unit, dpiOk)}.`);
+      hint(`The page is now ${formatSize(asVariation ? result.w : next.width, asVariation ? result.h : next.height, unit, dpiOk)}.`);
     }
   };
 
   return (
     <Modal title="Canvas size and speed" onClose={close} className="ds-modal">
       <form
+        ref={form}
         className="io-body ds-body"
         onSubmit={(e) => {
           e.preventDefault();
@@ -203,15 +227,16 @@ function DocumentSettings({ close }: { close: () => void }) {
             </p>
           </div>
           <div className="ds-place">
-            <Preview doc={doc} w={result.w} h={result.h} mode={mode} anchor={anchor} />
-            {mode === 'canvas' && (
+            <Preview doc={doc} w={result.w} h={result.h} mode={onVariation ? 'scale' : mode} anchor={anchor} />
+            {mode === 'canvas' && !onVariation && (
               <div className="ds-anchor" role="radiogroup" aria-label="Where your drawing stays (anchor)">
                 {ANCHORS.map((a) => (
                   <button key={a} type="button" role="radio" aria-checked={anchor === a} data-on={anchor === a} onClick={() => setAnchor(a)} title={`Keep the drawing at the ${ANCHOR_WORDS[a]}`} aria-label={ANCHOR_WORDS[a]} />
                 ))}
               </div>
             )}
-            {mode === 'canvas' && <span className="ds-anchor-note">Drawing stays at the {ANCHOR_WORDS[anchor]} (anchor)</span>}
+            {mode === 'canvas' && !onVariation && <span className="ds-anchor-note">Drawing stays at the {ANCHOR_WORDS[anchor]} (anchor)</span>}
+            {onVariation && <span className="ds-anchor-note">A variation keeps all the art, and its camera frames it for the new size.</span>}
           </div>
         </div>
 
@@ -231,7 +256,7 @@ function DocumentSettings({ close }: { close: () => void }) {
         ))}
 
         <div className="ds-row">
-          <label className="ui-field" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
+          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
             <span>Speed (frames per second)</span>
             <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
           </label>
@@ -260,10 +285,10 @@ function DocumentSettings({ close }: { close: () => void }) {
   );
 }
 
-export function openDocumentSettings(): void {
+export function openDocumentSettings(field?: SettingsField): void {
   if (store().get().doc.editing?.length) {
     hint('Close the symbol you are drawing inside first, then change the page.');
     return;
   }
-  mountModal((close) => <DocumentSettings close={close} />);
+  mountModal((close) => <DocumentSettings close={close} field={field} />);
 }

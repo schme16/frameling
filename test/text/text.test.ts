@@ -3,9 +3,9 @@ import type { TextShape } from '../../src/core/format';
 import { newDoc, newVectorLayer, uid } from '../../src/core/doc';
 import { poseAt } from '../../src/core/symbols';
 import { activeAnimators, animatorEnd, applyAnimator, cssFont, estimateMeasure, fontFamilyCss, glyphLooks, layoutText, newAnimator, newTextShape, pieceOrder, piecesOf, PLAIN, TEXT_ANIMS } from '../../src/text/model';
-import { readTextShape } from '../../src/io/shapes-extra';
+import { readTextShape } from '../../src/text/read';
 import { loadFile, saveFile } from '../../src/io/file';
-import { textToSvg } from '../../src/export/svg-extra';
+import { textToSvg } from '../../src/text/exports';
 
 const text = (t: string, patch: Partial<TextShape> = {}) => newTextShape('t1', { x: 10, y: 50 }, { text: t, ...patch });
 

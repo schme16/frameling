@@ -66,6 +66,7 @@ export const PARTICLES_QUEST: Quest = {
   minutes: 2,
   icon: 'particles',
   badge: { id: 'confetti-cannon', name: 'Confetti Cannon', icon: 'pt-confetti', color: '--rose' },
+  features: ['particles'],
   requires: ['first-animation'],
   finish: 'Particles are worked out fresh for every frame, so they always look the same when you scrub, play or export.',
   prepare: ensureBlankVectorPage,

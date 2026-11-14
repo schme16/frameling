@@ -31,6 +31,9 @@ import {
 } from './predicates';
 import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
+import { PIXEL_WAY_QUESTS } from '../pixel/quests-ways';
+import { notePreviewFrame, previewFramesPlayed, resetPreviewFramesPlayed, setPreview } from '../pixel/preview';
+import { showPanel } from '../ui/dock';
 import { FIRST_TWEEN } from '../symbols/quest';
 import { TILES_QUEST } from '../tiles/quest';
 import { BONES_QUEST } from '../rig/quest';
@@ -42,14 +45,15 @@ import { registerQuest } from './registry';
 import type { Quest } from './types';
 
 // Selectors that already exist in other areas. If one goes missing the ring just doesn't show; the step still works.
+// The timeline ones also match the same button in the header's "more" menu, where it folds when the header is narrow.
 export const SEL = {
   canvas: '.cv-root',
   brush: '[data-command="tools.brush"]',
   fill: '[data-command="tools.fill"]',
-  copy: '.tl-header [aria-label^="Copy this drawing"]',
+  copy: ':is(.tl-header, .tl-more-menu) [aria-label^="Copy this drawing"]',
   play: '.tl-header .tl-play',
-  onion: '.tl-header [aria-label^="See the frames around"]',
-  hold: '.tl-header [aria-label="How long to hold this drawing"]',
+  onion: ':is(.tl-header, .tl-more-menu) [aria-label^="See the frames around"]',
+  hold: ':is(.tl-header, .tl-more-menu) [aria-label="How long to hold this drawing"]',
   ruler: '.tl-ruler',
   contact: '.tl-marker[title^="contact"]',
   gap: '.fl-fill-seg',
@@ -301,6 +305,26 @@ export const PIXEL_PAL: Quest = {
       show: () => void tweakPixels(),
       hint: 'Rub out a pixel with the eraser, or paint a new one.',
     },
+    {
+      id: 'preview',
+      say: 'Watch your pal play at real size in the Preview panel.',
+      why: 'Pixel art looks different small. 1x is how big it will be in a game; click the picture to pause.',
+      target: '.px-preview',
+      enter: () => {
+        resetPreviewFramesPlayed();
+        showPanel('preview');
+        setPreview({ playing: true });
+      },
+      done: (c) => previewFramesPlayed() >= 24 || c.ran.has('pixel.previewSize') || c.ran.has('pixel.previewPlay'),
+      // Show me brings it up at real size, playing, and counts as watching.
+      show: () => {
+        showPanel('preview');
+        setPreview({ playing: true, zoom: 1 });
+        for (let i = 0; i < 24; i++) notePreviewFrame();
+      },
+      hint: 'The Preview is a panel on the right. View > Panels > Preview opens it.',
+      help: 'pixel-preview',
+    },
   ],
 };
 
@@ -335,6 +359,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST, ...PIXEL_WAY_QUESTS];
 
 for (const q of QUESTS) registerQuest(q);

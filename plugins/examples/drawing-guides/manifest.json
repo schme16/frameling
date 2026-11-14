@@ -1,0 +1,11 @@
+{
+  "id": "drawing-guides",
+  "name": "Drawing guides",
+  "version": "1.0.0",
+  "description": "Shows a rule-of-thirds grid and a frame counter on top of your canvas. Nothing is added to your drawing.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["canvas", "panels"],
+  "events": ["frame.changed"],
+  "apiVersion": 2
+}

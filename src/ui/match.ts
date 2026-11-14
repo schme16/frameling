@@ -61,3 +61,23 @@ export function scoreWord(q: string, words: string[]): number {
   }
   return best;
 }
+
+/**
+ * One spelling for a word, so British and American, and one or many, find each other: colour and color, stabiliser
+ * and stabilizer, shortcuts and shortcut. Meant for both the text and the query, so it only has to agree with itself.
+ */
+export function sameSpelling(word: string): string {
+  let w = word.toLowerCase();
+  if (w === 'grey' || w === 'greys') w = w.replace('grey', 'gray');
+  w = w.replace(/^(.{2,}?)our(s|ed|ing|ful|ite|ites|less)?$/, '$1or$2');
+  w = w.replace(/^(.{2,}?)is(e|es|ed|er|ers|ing|ation|ations)$/, '$1iz$2');
+  w = w.replace(/^(.{2,}?)ys(e|es|ed|ing)$/, '$1yz$2');
+  w = w.replace(/(cent|met|fib|lit|theat)re(s?)$/, '$1er$2');
+  w = w.replace(/^(.*)(cosy|cosier)$/, '$1cozy');
+  w = w.replace(/^catalogue(s?)$/, 'catalog$1').replace(/^programme(s?)$/, 'program$1');
+  if (w.length > 3 && /[^su]s$/.test(w)) w = w.slice(0, -1);
+  return w;
+}
+
+/** The words of a text with every word in one spelling. */
+export const sameWords = (text: string): string[] => wordsOf(text).map(sameSpelling);

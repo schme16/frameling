@@ -1,11 +1,12 @@
 // Commands that depend on what else is registered: one per tool (`tools.<id>`), one per panel (`view.panel.<id>`)
 // and one per workspace. Tools and panels can register after this file loads, so this runs lazily: when the keymap
 // is built, when the palette or a menu opens, and at startup. It's cheap to call again and again.
-import { allPanels, allTools, getCommand, registerCommand, type Command } from '../core/registry';
+import { allPanels, allTools, getCommand, registerCommand, unregisterCommand, type Command } from '../core/registry';
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
 import { pickTool } from '../tools/pick';
+import { WORKSPACE_KEYS } from './switcherModel';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
 
 const mine = new Map<string, string>();
@@ -60,6 +61,15 @@ export function syncDynamicCommands(): void {
       run: () => togglePanel(p.id),
     });
   }
+  // A tool or panel that has gone (its feature turned off) takes its own command with it.
+  const tools = new Set(allTools().map((t) => `tools.${t.id}`));
+  const panels = new Set(allPanels().map((p) => `view.panel.${p.id}`));
+  for (const id of [...mine.keys()]) {
+    if ((id.startsWith('tools.') && !tools.has(id)) || (id.startsWith('view.panel.') && !panels.has(id))) {
+      unregisterCommand(id);
+      mine.delete(id);
+    }
+  }
   const live = new Set<string>();
   for (const w of listWorkspaces()) {
     const id = `view.workspace.${w.id}`;
@@ -68,7 +78,8 @@ export function syncDynamicCommands(): void {
       id,
       label: `${w.name} workspace`,
       category: 'View',
-      description: w.builtin ? `Arrange the panels for ${w.name.toLowerCase()}ing.` : 'Your saved panel layout.',
+      keys: w.builtin && WORKSPACE_KEYS[w.id] ? [WORKSPACE_KEYS[w.id]] : [],
+      description: w.about ?? (w.builtin ? `Arrange the panels for ${w.name.toLowerCase()}ing.` : 'Your saved panel layout.'),
       help: 'workspaces',
       keywords: ['layout', 'panels', 'arrange', w.name],
       checked: () => currentWorkspace()?.id === w.id,

@@ -3,61 +3,22 @@ import type { ComponentType } from 'react';
 import { findLayer } from '../core/doc';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
+import { PlaneOption } from '../tools/options/ShapeOptions';
 import { setToolSettings, useToolSettings } from '../tools/settings';
+import { setPrefs, usePrefs } from '../ui/prefs';
+import { usePaintWells } from '../tools/pixelWells';
+import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
+import { PenOptions } from '../tablet/PenOptions';
 import './pixel.css';
 
-function useLayerKind(): 'vector' | 'pixel' {
+export function useLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
 }
 
-function useGrid(): { w: number; h: number } {
-  const w = useStore((s) => {
-    const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
-    return l?.kind === 'pixel' ? Math.ceil(s.doc.width / l.pixelSize) : 0;
-  });
-  const h = useStore((s) => {
-    const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
-    return l?.kind === 'pixel' ? Math.ceil(s.doc.height / l.pixelSize) : 0;
-  });
-  return { w, h };
-}
-
-/** Mirror drawing: off, left and right, top and bottom, or all four ways, and where the mirror lines sit. */
-export function MirrorOptions() {
-  const mode = usePixelSettings((s) => s.symmetry);
-  const ax = usePixelSettings((s) => s.axisX);
-  const ay = usePixelSettings((s) => s.axisY);
-  const { w, h } = useGrid();
-  const fmt = (v: number) => (Number.isInteger(v) ? `${v}` : `${Math.floor(v)}½`);
-  return (
-    <div className="px-mirror">
-      <Choice<SymmetryMode>
-        label="Mirror drawing"
-        value={mode}
-        options={[
-          { value: 'off', label: 'Off' },
-          { value: 'h', label: 'Left and right', title: 'Whatever you draw on one side appears flipped on the other (a mirror line down the middle).' },
-          { value: 'v', label: 'Top and bottom', title: 'A mirror line across the middle.' },
-          { value: 'both', label: 'Both ways', title: 'Four ways at once, like a snowflake.' },
-        ]}
-        onChange={(v) => setPixelSettings({ symmetry: v })}
-      />
-      {mode !== 'off' && w > 0 && (
-        <>
-          {(mode === 'h' || mode === 'both') && (
-            <Slider label="Mirror line across" value={ax ?? w / 2} min={0.5} max={w - 0.5} step={0.5} format={(v) => (ax === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setPixelSettings({ axisX: v })} />
-          )}
-          {(mode === 'v' || mode === 'both') && (
-            <Slider label="Mirror line down" value={ay ?? h / 2} min={0.5} max={h - 0.5} step={0.5} format={(v) => (ay === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setPixelSettings({ axisY: v })} />
-          )}
-          {(ax !== null || ay !== null) && <ActionButton onClick={() => setPixelSettings({ axisX: null, axisY: null })}>Back to the middle</ActionButton>}
-        </>
-      )}
-    </div>
-  );
-}
+export { MirrorOptions } from '../tools/options/MirrorOptions';
+import { MirrorOptions } from '../tools/options/MirrorOptions';
 
 function PixelPerfectToggle() {
   const perfect = useToolSettings((s) => s.pixelPerfect);
@@ -72,18 +33,44 @@ function SizeSlider() {
 export function PixelPencilOptions() {
   return (
     <div className="cv-options">
+      <SizeSlider />
       <PixelPerfectToggle />
+      <PenOptions tool="shade" size />
       <MirrorOptions />
-      <Tip>The pencil always draws one pixel. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
+      <PenOptions tool="pencil" size />
+      <Tip>Size 1 is the plain pencil, and bigger sizes are the same pencil with a thicker tip. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
     </div>
   );
 }
 
+/**
+ * Outline thickness for pixel shapes. These change the same preferences as Preferences > General, so the choice is
+ * reachable right where you draw. `show` is false when a shape has no outline to thicken.
+ */
+export function PixelOutlineOptions({ show = true }: { show?: boolean }) {
+  const on = usePrefs((p) => p.pixelThickOutlines);
+  const width = usePrefs((p) => p.pixelOutlineWidth);
+  if (!show) return null;
+  return (
+    <>
+      <Toggle label="Thicker outline" checked={on} onChange={(v) => setPrefs({ pixelThickOutlines: v })} hint="Gives the outline more than one pixel. Also in Preferences." />
+      {on && <Slider label="Outline thickness" value={width} min={MIN_OUTLINE} max={MAX_OUTLINE} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setPrefs({ pixelOutlineWidth: clampOutline(v) })} />}
+    </>
+  );
+}
+
 export function PixelShapeOptions() {
+  const tool = useStore((s) => s.ui.tool);
+  const strokeOn = useStore((s) => s.ui.strokeOn);
+  const paintWells = usePaintWells();
+  const filled = usePixelSettings((s) => s.shapeFilled);
   return (
     <div className="cv-options">
+      {paintWells && tool !== 'line' && <Toggle label="Filled" checked={filled} onChange={(v) => setPixelSettings({ shapeFilled: v })} hint="Fills the inside of the shape with Paint too. Off draws just the outline." />}
+      <PlaneOption show={tool !== 'line'} />
+      <PixelOutlineOptions show={tool === 'line' || strokeOn} />
       <MirrorOptions />
-      <Tip>On a pixel layer, shapes are one pixel thick: the stroke colour round the edge and the fill colour inside (set either to none). Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
+      <Tip>{paintWells ? 'Shapes are drawn in Paint, as an outline, or filled when Filled is on.' : 'On a pixel layer, shapes have a one pixel outline unless you turn on Thicker outline: the stroke colour round the edge and the fill colour inside (set either to none).'} Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
     </div>
   );
 }
@@ -105,6 +92,18 @@ export function ShadeOptions() {
       <PixelPerfectToggle />
       <MirrorOptions />
       <Tip>Shading moves each pixel one step along its colour ramp in the Palette panel. Go over it again to go further. Pixels that aren't palette colours are left alone.</Tip>
+    </div>
+  );
+}
+
+export function SprayOptions() {
+  const size = usePixelSettings((s) => s.spraySize);
+  return (
+    <div className="cv-options">
+      <Slider label="Size" value={size} min={2} max={32} format={(v) => `${v} pixels across`} onChange={(v) => setPixelSettings({ spraySize: v })} />
+      <MirrorOptions />
+      <Tip>A sprinkle of the Paint colour. Drag slowly to build it up, or quickly to keep it light.</Tip>
+      <PenOptions tool="spray" size flow />
     </div>
   );
 }
@@ -138,6 +137,7 @@ export function DitherOptions() {
       </div>
       <Slider label="Size" value={size} min={1} max={32} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setPixelSettings({ ditherSize: v })} />
       <MirrorOptions />
+      <PenOptions tool="dither" size />
       <Tip>The dark squares above take the stroke colour, the light ones the fill colour. Set the fill to none to leave those pixels as they are.</Tip>
     </div>
   );

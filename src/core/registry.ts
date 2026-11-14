@@ -11,6 +11,7 @@
 import type { ComponentType } from 'react';
 import type { LayerKind } from './format';
 import type { State } from './store';
+import { ownedUndo } from './owners';
 
 // ---------------------------------------------------------------- commands
 
@@ -36,6 +37,8 @@ export interface Command {
   run: () => void | Promise<void>;
   /** Runs even while typing in a text field (default false). */
   global?: boolean;
+  /** Left out of the menus, the palette and the shortcut list, because a tool or command already says it. Still runs from a key or a script. */
+  hidden?: boolean;
   /** Only works on these layer kinds (tools). Two commands may share a shortcut when these never overlap. */
   layers?: LayerKind[];
 }
@@ -44,6 +47,9 @@ const commands = new Map<string, Command>();
 
 export function registerCommand(c: Command): void {
   commands.set(c.id, c);
+  ownedUndo(() => {
+    if (commands.get(c.id) === c) commands.delete(c.id);
+  });
 }
 export function registerCommands(list: Command[]): void {
   for (const c of list) registerCommand(c);
@@ -66,12 +72,16 @@ export interface HelpTopic {
   title: string;
   /** One or two plain sentences. Shown in tooltips' "Learn more" and search results. */
   summary: string;
-  /** Markdown. Can link to other topics with `[text](help:topic-id)`. */
-  body: string;
+  /**
+   * Markdown. Can link to other topics with `[text](help:topic-id)`. Left out on the built-in topics, whose words live
+   * in `*.bodies.ts` files and load when Help is first opened; read it with `helpBody()` (after `loadHelpBodies()`).
+   * A topic that brings its own (a plugin's) can still set it here.
+   */
+  body?: string;
   /** Where it sits in the help contents ("Getting started", "Drawing", "Animating", "Exporting"...). */
   section: string;
   keywords?: string[];
-  /** Optional picture or video shown at the top (path under public/help/). */
+  /** Optional picture or video shown at the top: the base name under public/help/, like `select.png`. The files are `select-dark.png` and `select-light.png`, and the help browser picks the one for the current mode. */
   media?: string;
   /** Place in its section's list, lower first (missing = 50, then by title). Lets a section open with its overview. */
   order?: number;
@@ -81,6 +91,9 @@ const topics = new Map<string, HelpTopic>();
 
 export function registerHelp(t: HelpTopic): void {
   topics.set(t.id, t);
+  ownedUndo(() => {
+    if (topics.get(t.id) === t) topics.delete(t.id);
+  });
 }
 export function registerHelpTopics(list: HelpTopic[]): void {
   for (const t of list) registerHelp(t);
@@ -92,9 +105,37 @@ export function allHelp(): HelpTopic[] {
   return [...topics.values()];
 }
 
+// The words of the built-in topics are a separate chunk (src/core/helpBodies.ts, from the `*.bodies.ts` files beside
+// each topic list). Titles, summaries, keywords and ids stay here, so menus, tooltips and the palette never wait.
+let bodies = new Map<string, string>();
+let bodiesIn = false;
+let bodiesLoading: Promise<void> | undefined;
+const bodyListeners = new Set<() => void>();
+
+/** A topic's words: the ones it carries itself, else the loaded ones, else '' while they are still on their way. */
+export function helpBody(t: HelpTopic): string {
+  return t.body ?? bodies.get(t.id) ?? '';
+}
+/** True once the words of the built-in topics are in (`helpBody` is then complete). */
+export const helpBodiesLoaded = (): boolean => bodiesIn;
+/** Fetches the words of the built-in topics, once. Anything that reads `helpBody` in bulk (search, the audit) waits for it. */
+export function loadHelpBodies(): Promise<void> {
+  bodiesLoading ??= import('./helpBodies').then((m) => {
+    bodies = new Map(Object.entries(m.allBodies));
+    bodiesIn = true;
+    for (const f of [...bodyListeners]) f();
+  });
+  return bodiesLoading;
+}
+/** Told when the words arrive (for a view that waited on them). Returns the way to stop listening. */
+export function onHelpBodies(fn: () => void): () => void {
+  bodyListeners.add(fn);
+  return () => bodyListeners.delete(fn);
+}
+
 // ---------------------------------------------------------------- panels
 
-export type DockZone = 'left' | 'right' | 'bottom';
+export type DockZone = 'left' | 'right' | 'bottom' | 'top';
 
 export interface PanelDef {
   id: string;
@@ -113,6 +154,9 @@ const panels = new Map<string, PanelDef>();
 
 export function registerPanel(p: PanelDef): void {
   panels.set(p.id, p);
+  ownedUndo(() => {
+    if (panels.get(p.id) === p) panels.delete(p.id);
+  });
 }
 export function getPanel(id: string): PanelDef | undefined {
   return panels.get(id);
@@ -143,6 +187,11 @@ export interface ToolPointer {
   pointerType: string;
   /** Milliseconds, for velocity. */
   time: number;
+  /** Pen only: how far the pen leans, in degrees from upright, left to right and top to bottom (-90 to 90). */
+  tiltX?: number;
+  tiltY?: number;
+  /** Pen only: how far the pen is turned about its own barrel, in degrees (0 to 359). */
+  twist?: number;
 }
 
 /** What a tool gets from the canvas. */
@@ -166,6 +215,18 @@ export interface Tool {
   layers: LayerKind[];
   /** Toolbar order (lower first). */
   order?: number;
+  /**
+   * Which group of the tool rail it starts in: 'draw', 'extras', 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
+   * names them). Missing means Other. People can still move it.
+   */
+  group?: string;
+  /** Its place in that group, lower first (tools with none come after, in registration order). */
+  groupAt?: number;
+  /**
+   * A slot on the tool rail shared with the same job on the other kind of layer (the Lasso and the Pixel lasso share
+   * one). Tools with the same slot get one button, and the one that works on the layer you're on is the one it picks.
+   */
+  slot?: string;
   help?: string;
   cursor?: string;
   /** Tool options shown in the Tool options panel. */
@@ -175,16 +236,29 @@ export interface Tool {
   up?(e: ToolPointer, ctx: ToolContext): void;
   /** Hover without a button pressed. */
   hover?(e: ToolPointer, ctx: ToolContext): void;
+  /** A stroke carries on with the pen hovering (no button, no pressure); otherwise a lifted pen ends the stroke. */
+  hoverDrag?: boolean;
   /** Escape pressed or tool switched mid-gesture. */
   cancel?(ctx: ToolContext): void;
   /** Draw the live preview on top of the stage, in document coordinates (the canvas sets up the transform). */
   overlay?(g: CanvasRenderingContext2D, ctx: ToolContext): void;
+  /** A key pressed between gestures while this tool is chosen. Return true to take it (before the shortcuts). */
+  onKey?(e: KeyboardEvent, ctx: ToolContext): boolean;
+  /** Another tool was picked: finish or drop anything left half done. */
+  leave?(ctx: ToolContext): void;
 }
 
 const tools = new Map<string, Tool>();
 
 export function registerTool(t: Tool): void {
   tools.set(t.id, t);
+  ownedUndo(() => {
+    if (tools.get(t.id) === t) tools.delete(t.id);
+  });
+}
+/** Takes a tool away again (its feature turned off). */
+export function unregisterTool(id: string): void {
+  tools.delete(id);
 }
 export function getTool(id: string): Tool | undefined {
   return tools.get(id);

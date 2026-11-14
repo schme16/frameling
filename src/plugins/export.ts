@@ -3,12 +3,14 @@
 import { sceneOf } from '../core/symbols';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
-import { notify } from '../io/notify';
+import { notifySaved } from '../io/notify';
 import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
 import { defaultSettings, planExport } from '../export/plan';
+import { emitPluginEvent } from './bus';
 import { runtimeOf } from './manager';
-import type { ExportFrame, PluginExporterDef } from './runtime';
+import { cleanValues, rememberValues, type OptionValues } from './options';
+import { exportClips, type ExportFrame, type PluginExporterDef } from './runtime';
 
 export interface PluginExportJob {
   pluginId: string;
@@ -20,11 +22,26 @@ export interface PluginExportChoice {
   range: 'all' | 'clip' | 'frame';
   clipId: string | null;
   scale: number;
+  /** What the exporter's own options were set to (checked against what it described; remembered for next time). */
+  options?: OptionValues;
 }
 
 export type Progress = { done: number; total: number; label: string };
 
 export async function runPluginExport(job: PluginExportJob, choice: PluginExportChoice, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<'done' | 'cancelled'> {
+  const event = { format: `plugin:${job.pluginId}:${job.def.id}`, name: job.def.label };
+  emitPluginEvent('export.started', event);
+  try {
+    const r = await exportWithPlugin(job, choice, signal, onProgress);
+    emitPluginEvent('export.finished', { ...event, ok: r === 'done', cancelled: r === 'cancelled' });
+    return r;
+  } catch (e) {
+    emitPluginEvent('export.finished', { ...event, ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'It did not work.' });
+    throw e;
+  }
+}
+
+async function exportWithPlugin(job: PluginExportJob, choice: PluginExportChoice, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<'done' | 'cancelled'> {
   const api = desktop();
   if (!api) throw new Error('Exporting needs the Frameling app.');
   const rt = runtimeOf(job.pluginId);
@@ -33,7 +50,7 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
   const { doc, frame } = sceneOf(st.doc, st.ui.frame);
   // planExport works out the range and size; 'pngseq' is just an animated format with see-through allowed.
   const settings = { ...defaultSettings(doc), format: 'pngseq' as const, range: choice.range, clipId: choice.clipId, scale: choice.scale, transparent: job.def.transparent };
-  const plan = planExport(doc, settings, frame);
+  const plan = planExport(doc, settings, frame, { bake: false });
   if (plan.problem) throw new Error(plan.problem);
 
   const target = job.def.multiple
@@ -62,12 +79,14 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
     height: plan.height,
     scale: choice.scale,
     frameNumbers,
-    clips: doc.clips.map((c) => ({ name: c.name, start: c.start, end: c.end, loop: c.loop })),
+    clips: exportClips(doc.clips),
     markers: doc.markers.map((m) => ({ name: m.name, frame: m.frame })),
   };
   let files;
   try {
-    files = await rt.runExport(job.def.id, frames, info, signal);
+    const options = cleanValues(job.def.options, choice.options);
+    rememberValues(job.pluginId, job.def.id, options);
+    files = await rt.runExport(job.def.id, frames, info, signal, options, (done, total) => onProgress({ done, total, label: `${job.pluginName} is making the files` }));
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled';
     throw e;
@@ -83,6 +102,6 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
     const w = await api.files.write(target, files[0].bytes);
     if ('error' in w) throw new Error(w.error);
   }
-  notify(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  notifySaved(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';
 }

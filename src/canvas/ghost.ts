@@ -8,6 +8,8 @@ import { poseAt } from '../core/symbols';
 export interface GhostItem {
   drawing: Drawing;
   pixelSize: number;
+  /** The layer it came from, so the canvas can move it by that layer's camera when looking through the camera. */
+  layerId?: Id;
 }
 
 // How strongly the ghost shows.
@@ -51,7 +53,7 @@ export function ghostItems(doc: Doc, frame: number, traced: ReadonlySet<Id> = tr
     if (!prev) continue;
     const d = poseAt(doc, layer, prev.start + prev.length - 1);
     if (!d || d.kind === 'tilemap' || d.kind === 'camera') continue;
-    out.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
+    out.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, layerId: layer.id });
   }
   return out;
 }

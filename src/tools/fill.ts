@@ -6,7 +6,7 @@
 import type { Doc, Drawing, FillShape, Shape } from '../core/format';
 import { drawingAt, pixelGrid, uid } from '../core/doc';
 import { tileModeOn, wrap } from '../tiles/state';
-import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { registerCommands, registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
 import { pointInPaths } from '../geometry/hit';
@@ -14,14 +14,19 @@ import { floodFillPoints, parseColor, type Rgba } from '../geometry/pixel-fill';
 import { makeMirror, mirrorPoints, snapToPalette } from '../pixel/ink';
 import { getPixelSettings } from '../pixel/settings';
 import { docPalette } from '../pixel/palette';
-import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
-import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
+import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing, setActivePixels } from './edit';
+import { sayNoMirror } from './mirror';
+import { gridPixels } from '../core/pixelBounds';
+import { FillOptionsPanel, gapWidth, getFillOptions, setFillOptions, toleranceBytes } from './fill-options';
+import { wallsFor } from './fill-walls';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
+import { gradientFor, withWellGradients } from './gradient-wells';
 import { mergeShapes } from '../geometry/merge';
 import { pixelSelection } from '../select/pixel-state';
 import { clipToMask } from '../select/mask';
 import { reducedMotion } from '../ui/prefs';
+import { paintWellsOn } from './pixelWells';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -122,9 +127,11 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
 }
 
 function fillVector(e: ToolPointer, ctx: ToolContext) {
+  // Mirror drawing copies strokes and shapes, not a fill. Say so rather than sit lit and quiet.
+  sayNoMirror((m) => ctx.hint(m), "Mirror drawing doesn't reach the paint bucket: it fills just where you click. Click the other side too, or turn mirror drawing off.");
   const { doc } = store().get();
-  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator.
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator. With Paint and Back, it pours Paint.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
@@ -151,7 +158,10 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
   // Paint is already here and the lines around it have not changed (or have leaked since): recolour it.
   if (hit && (res.kind === 'leak' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
     const current = hit.type === 'fill' ? hit.color : hit.fill;
-    if (current && current.toLowerCase() === ui.color.toLowerCase()) {
+    // With a gradient in the fill box, the area takes the gradient laid over its own size.
+    const grad = gradientFor('fill', hit.paths);
+    const hadGrad = hit.type === 'fill' ? hit.gradient : hit.fillGradient;
+    if (!grad && !hadGrad && current && current.toLowerCase() === ui.color.toLowerCase()) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
@@ -164,15 +174,22 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
             const at = before.findIndex((x) => x.id === id);
             return mergeShapes(
               before.filter((x) => x.id !== id),
-              [{ ...hit, color }],
+              [grad ? { ...hit, color, gradient: grad } : (({ gradient: _g, ...rest }) => ({ ...rest, color }))(hit)],
               { under: true, at },
             ).shapes;
           })
         : editActiveDrawing('Recolour fill', 'vector', (d) => {
             const s = d.shapes.find((x) => x.id === id);
             if (!s) return;
-            if (s.type === 'fill') s.color = color;
-            else if (s.type === 'path') s.fill = color;
+            if (s.type === 'fill') {
+              s.color = color;
+              if (grad) s.gradient = grad;
+              else delete s.gradient;
+            } else if (s.type === 'path') {
+              s.fill = color;
+              if (grad) s.fillGradient = grad;
+              else delete s.fillGradient;
+            }
           });
     if (r === 'nothing') return;
     if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
@@ -183,7 +200,7 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     ctx.hint(FILL_HINTS.leak);
     return;
   }
-  const shape: FillShape = { id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 };
+  const shape: FillShape = withWellGradients({ id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 });
   const r = merge
     ? // Paint only covers empty ground, and joins any of its own colour it touches.
       editShapes('Fill', (before) => mergeShapes(before, [shape], { under: true, at: indexBelowLines(before) }).shapes)
@@ -216,7 +233,8 @@ export function fillPoints(x: number, y: number, width: number, height: number, 
 }
 
 function fillPixels(e: ToolPointer, ctx: ToolContext) {
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours Paint in the Pixel workspace, the fill colour elsewhere.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
@@ -233,38 +251,55 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   }
   // A palette-locked layer only takes palette colours.
   const color = layer.paletteLock ? ([...snapToPalette(parseColor(ui.color), docPalette(store().get().doc))] as Rgba) : parseColor(ui.color);
-  const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
+  const fo = getFillOptions();
+  const mode = fo.allOfColour ? 'all' : 'contiguous';
+  const tolerance = toleranceBytes(fo.tolerance);
+  // With lines from all layers, whatever is drawn on the other layers stops the fill.
+  const walls = fo.allLayers ? wallsFor(store().get().doc, layer, ui.frame) : null;
   const existing = activeDrawing();
+  const grid = pixelGrid(store().get().doc, layer);
+  const gw = grid.width;
+  const gh = grid.height;
   if (existing && existing.kind === 'pixel') {
-    if (px < 0 || py < 0 || px >= existing.width || py >= existing.height) {
+    if (px < 0 || py < 0 || px >= gw || py >= gh) {
       ctx.hint(FILL_HINTS.outside);
       return;
     }
-    const r = floodFillPoints(existing.pixels, existing.width, existing.height, fillPoints(px, py, existing.width, existing.height, wrapOn), color, { mode, wrap: wrapOn });
+    const base = gridPixels(existing, gw, gh);
+    if (walls && walls[py * gw + px]) {
+      ctx.hint(FILL_HINTS['on-line']);
+      return;
+    }
+    const r = floodFillPoints(base, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn, tolerance, walls: walls ?? undefined });
     if (!r.changed) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
     const sel = pixelSelection();
-    const filled = sel && sel.width === existing.width && sel.height === existing.height ? clipToMask(existing.pixels, r.pixels, sel) : r.pixels;
-    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = filled));
+    const filled = sel && sel.width === gw && sel.height === gh ? clipToMask(base, r.pixels, sel) : r.pixels;
+    const res = setActivePixels('Fill', filled);
     if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
     else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
     return;
   }
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
-  const res = editActiveDrawing('Fill', 'pixel', (d) => {
-    if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
-    const filled = floodFillPoints(d.pixels, d.width, d.height, fillPoints(px, py, d.width, d.height, wrapOn), color, { mode, wrap: wrapOn }).pixels;
-    const sel = pixelSelection();
-    d.pixels = sel && sel.width === d.width && sel.height === d.height ? clipToMask(d.pixels, filled, sel) : filled;
-  });
+  if (px < 0 || py < 0 || px >= gw || py >= gh) return;
+  if (walls && walls[py * gw + px]) {
+    ctx.hint(FILL_HINTS['on-line']);
+    return;
+  }
+  const blank = new Uint8ClampedArray(gw * gh * 4);
+  const filled = floodFillPoints(blank, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn, walls: walls ?? undefined }).pixels;
+  const sel = pixelSelection();
+  const res = setActivePixels('Fill', sel && sel.width === gw && sel.height === gh ? clipToMask(blank, filled, sel) : filled);
   if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
   else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
 }
 
 export const fillTool: Tool = {
   id: 'fill',
+  group: 'draw',
+  groupAt: 3,
   label: 'Paint bucket',
   icon: 'fill',
   key: 'g',
@@ -291,3 +326,16 @@ export const fillTool: Tool = {
 };
 
 registerTool(fillTool);
+
+registerCommands([
+  {
+    id: 'fill.allLayers',
+    label: 'Paint bucket sees lines on all layers',
+    category: 'Draw',
+    description: 'The paint bucket stops at lines drawn on any visible layer, so you can keep colour on its own layer under your line art. Off, it only sees the layer you are on.',
+    help: 'fill',
+    keywords: ['paint bucket', 'fill', 'bucket', 'all layers', 'lines from all layers', 'under line art', 'colour layer', 'flats'],
+    checked: () => getFillOptions().allLayers,
+    run: () => setFillOptions({ allLayers: !getFillOptions().allLayers }),
+  },
+]);

@@ -1,9 +1,12 @@
 /**
  * Options that belong to a tool (not the document): pixel brush size, shape fill, eraser size and so on. They live
- * here because the shared UI state only carries the colour and the vector brush. Saved in the browser's storage so
- * they're still there next time.
+ * here because the shared UI state is rebuilt at every launch and carries only what you are doing right now. Saved in
+ * the browser's storage so they're still there next time. The brush, colours, loop playback and onion skin sit in that
+ * shared state, so they are copied in and out of the `remembered` option (see rememberUi.ts) rather than kept twice.
  */
 import { useSyncExternalStore } from 'react';
+import type { PlaneChoice } from '../canvas/perspectivePlane';
+import type { RememberedUi } from '../core/uiMemory';
 
 export interface ToolSettings {
   /** Pixel brush: size in art pixels, shape, and the corner clean-up. */
@@ -18,8 +21,22 @@ export interface ToolSettings {
   /** Rectangle, ellipse and line: outline thickness. Colours come from the fill and stroke boxes (wells.ts). */
   shapeStroke: number;
   cornerRadius: number;
+  /** Rectangle and ellipse with perspective guides showing: which plane they lie on (auto guesses from the drag). */
+  perspectivePlane: PlaneChoice;
   /** Eyedropper: pick from the active layer only. */
   pickActiveLayerOnly: boolean;
+  /** Polygon: how many sides. Star: how many points, and how deep the dips are (inner size, 10 to 95 percent). */
+  polygonSides: number;
+  starPoints: number;
+  starInner: number;
+  /** Pencil on vector layers: false draws the hand-drawn outline, true a clean even line you can edit by its points. */
+  pencilClean: boolean;
+  /**
+   * The vector brush, the stroke and fill colours, loop playback and the onion skin. They live in the shared UI state
+   * while you work, so src/tools/rememberUi.ts copies them here on every change and puts them back at launch. The
+   * values are checked when they are read back (core/uiMemory.ts). null = nothing saved yet.
+   */
+  remembered: Partial<RememberedUi> | null;
 }
 
 export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
@@ -31,7 +48,13 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   eraserPixelSize: 1,
   shapeStroke: 4,
   cornerRadius: 0,
+  perspectivePlane: 'auto',
   pickActiveLayerOnly: false,
+  polygonSides: 6,
+  starPoints: 5,
+  starInner: 45,
+  pencilClean: false,
+  remembered: null,
 };
 
 const KEY = 'frameling.toolSettings';

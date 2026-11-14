@@ -164,6 +164,9 @@ export function LipSyncPanel() {
         <span>Go to the next frame after each pick</span>
       </label>
       <p className="ls-note">Click a frame in the strip, then a mouth. Playing the animation shows how it reads.</p>
+      <button type="button" className="ls-words" disabled={!has} title="Type what is said, and the mouths line up with the words" onClick={() => getCommand('lipsync.autoWords')?.run()}>
+        Know what they say? Type the words...
+      </button>
     </div>
   );
 }

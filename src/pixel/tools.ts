@@ -5,11 +5,12 @@
  * a palette-locked layer (both handled by PixelSession).
  */
 import { findLayer } from '../core/doc';
-import type { PixelLayer } from '../core/format';
+import type { PathShape, PixelLayer, SubPath } from '../core/format';
 import { registerCommand, registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
 import { getHover } from '../canvas/controller';
+import { angleSteps, vanishingPoints } from '../canvas/guides';
 import { docToPixel, type PxPt } from '../canvas/pixels';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { drawPixelFootprint } from '../tools/cursors';
@@ -18,11 +19,20 @@ import { PixelStroke, lastPixelEnd } from '../tools/pixelStroke';
 import { noteColorUsed } from '../tools/recent';
 import { getToolSettings } from '../tools/settings';
 import { reportEdit } from '../tools/util';
+import { shapeColors } from '../tools/wells';
+import { viewPixelSize } from '../tools/view-size';
 import { ditherInk, shadeInk, solidInk, type Ink } from './ink';
 import { docPalette } from './palette';
-import { dragBox, plotEllipse, plotLine, plotRect, plotRectInside, snapCleanLine } from './raster';
+import { perspectivePixelOutline, type PixelPerspective } from './perspective';
+import { coveredCells, dragBox, edgeRing, snapCleanLine } from './raster';
+import { outlineThickness, plotThickEllipse, plotThickLine, plotThickPolygon, plotThickRect, type Thickness } from './thick';
+import { getPrefs } from '../ui/prefs';
+import { flattenSubPath } from '../geometry/hit';
 import { getPixelSettings } from './settings';
-import { DitherOptions, PixelPencilOptions, ShadeOptions } from './ToolOptions';
+import { DitherOptions, PixelPencilOptions, ShadeOptions, SprayOptions } from './ToolOptions';
+import { SPRAY_DENSITY, seeded, sprayCells } from './spray';
+import { flowFactor, sizeFactor } from '../tablet/dynamics';
+import type { PenTool } from '../tablet/settings';
 
 /** The active layer when it's a pixel layer. */
 export function activePixelLayer(): PixelLayer | null {
@@ -78,6 +88,8 @@ function hoverFootprint(g: CanvasRenderingContext2D, ctx: ToolContext, size: num
 
 interface InkToolSpec {
   id: string;
+  group: string;
+  groupAt: number;
   label: string;
   icon: string;
   key?: string;
@@ -100,6 +112,8 @@ function inkTool(spec: InkToolSpec): Tool {
   let stroke: PixelStroke | null = null;
   return {
     id: spec.id,
+    group: spec.group,
+    groupAt: spec.groupAt,
     label: spec.label,
     icon: spec.icon,
     key: spec.key,
@@ -115,14 +129,17 @@ function inkTool(spec: InkToolSpec): Tool {
       const ink = spec.ink();
       if (typeof ink === 'string') return ctx.hint(ink);
       const { doc, ui } = store().get();
-      stroke = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 255], size: spec.size(), shape: getToolSettings().pixelBrushShape, perfect: spec.perfect(), ink });
+      stroke = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 255], size: viewPixelSize(spec.size()), shape: getToolSettings().pixelBrushShape, perfect: spec.perfect(), ink });
+      stroke.scale(sizeFactor(spec.id as PenTool, e));
       const here = stroke.cell(e.x, e.y);
       const from = e.shift ? lastPixelEnd(doc, layer) : null;
       if (from) stroke.beginLine(from, here);
       else stroke.begin(here);
     },
     move(e) {
-      stroke?.moveTo(stroke.cell(e.x, e.y));
+      if (!stroke) return;
+      stroke.scale(sizeFactor(spec.id as PenTool, e));
+      stroke.moveTo(stroke.cell(e.x, e.y));
     },
     up(e, ctx) {
       const s = stroke;
@@ -143,7 +160,7 @@ function inkTool(spec: InkToolSpec): Tool {
     },
     overlay(g, ctx) {
       if (stroke) return drawMirrorLines(g, ctx);
-      hoverFootprint(g, ctx, spec.size(), spec.hoverColor());
+      hoverFootprint(g, ctx, viewPixelSize(spec.size()), spec.hoverColor());
     },
   };
 }
@@ -152,6 +169,8 @@ const rgbaOf = (hex: string | null) => (hex ? parseHex(hex) : null);
 
 export const shadeTool = inkTool({
   id: 'shade',
+  group: 'extras',
+  groupAt: 0,
   label: 'Shade',
   icon: 'shade',
   key: 's',
@@ -172,6 +191,8 @@ export const shadeTool = inkTool({
 
 export const ditherTool = inkTool({
   id: 'dither',
+  group: 'extras',
+  groupAt: 1,
   label: 'Dither',
   icon: 'dither',
   order: 24,
@@ -191,8 +212,86 @@ export const ditherTool = inkTool({
   used: () => store().get().ui.color,
 });
 
+/** The Spray: Paint pixels sprinkled round the pointer. No key by default, so it never takes one from anything. */
+export const sprayTool: Tool = (() => {
+  let session: PixelSession | null = null;
+  let last: PxPt | null = null;
+  let rng = seeded(1);
+  let radius = 4;
+  let density = SPRAY_DENSITY;
+  const dab = (at: PxPt, ink: Ink) => {
+    if (!session) return;
+    for (const c of sprayCells(at.x, at.y, radius, density, rng)) session.paint(c.x, c.y, ink);
+  };
+  let ink: Ink | null = null;
+  const go = (e: ToolPointer, first: boolean) => {
+    if (!session || !ink) return;
+    // A pen: pressure and tilt change the size of the cloud, and how thick it is.
+    radius = (getPixelSettings().spraySize / 2) * sizeFactor('spray', e);
+    density = Math.min(1, SPRAY_DENSITY * flowFactor('spray', e));
+    const at = docToPixel(e.x, e.y, session.pixelSize);
+    // Along the way too, so a fast drag still sprays an even trail.
+    const from = first || !last ? at : last;
+    const steps = Math.max(1, Math.max(Math.abs(at.x - from.x), Math.abs(at.y - from.y)));
+    for (let i = first ? 0 : 1; i <= steps; i++) dab({ x: Math.round(from.x + ((at.x - from.x) * i) / steps), y: Math.round(from.y + ((at.y - from.y) * i) / steps) }, ink);
+    last = at;
+    session.flush();
+  };
+  return {
+    id: 'spray',
+    group: 'extras',
+    groupAt: 5,
+    label: 'Spray',
+    icon: 'spray',
+    layers: ['pixel'],
+    order: 26,
+    help: 'tool-spray',
+    cursor: 'crosshair',
+    options: SprayOptions,
+    down(e, ctx) {
+      const { layer, problem } = activeLayer();
+      if (problem) return ctx.hint(EDIT_HINTS[problem]);
+      if (!layer || layer.kind !== 'pixel') return ctx.hint('The spray works on pixel layers. Pick a pixel layer in the timeline first.');
+      const { doc, ui } = store().get();
+      const rgba = parseHex(ui.color);
+      if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
+      session = new PixelSession(doc, layer, ui.frame, { adds: true });
+      ink = session.lock(solidInk(rgba));
+      radius = getPixelSettings().spraySize / 2;
+      rng = seeded((Date.now() & 0xffff) + 1);
+      last = null;
+      go(e, true);
+    },
+    move(e) {
+      go(e, false);
+    },
+    up(e, ctx) {
+      go(e, false);
+      const s = session;
+      session = null;
+      last = null;
+      if (!s) return;
+      const r = s.commit('Spray pixels');
+      if (r === 'ok') noteColorUsed(store().get().ui.color);
+      else if (r !== 'nothing') reportEdit(ctx, r);
+      ctx.requestOverlay();
+    },
+    cancel(ctx) {
+      session?.discard();
+      session = null;
+      last = null;
+      ctx.requestOverlay();
+    },
+    overlay(g, ctx) {
+      if (session) return drawMirrorLines(g, ctx);
+      hoverFootprint(g, ctx, Math.max(1, viewPixelSize(getPixelSettings().spraySize)), null);
+    },
+  };
+})();
+
 registerTool(shadeTool);
 registerTool(ditherTool);
+registerTool(sprayTool);
 // The dither tool's own command, so it gets Shift+B (single letters are running out).
 registerCommand({
   id: 'tools.dither',
@@ -209,7 +308,10 @@ registerCommand({
 
 // ---------------------------------------------------------------- the pencil on a pixel layer
 
-/** The Pencil on a pixel layer: always one pixel, pixel perfect unless turned off, Shift+click for a line. */
+/**
+ * The Pencil on a pixel layer: one tool with a size (size 1 is the plain pencil), pixel perfect unless turned off,
+ * Shift+click for a line. The Brush on a pixel layer is the same pen.
+ */
 export function makePixelPencil() {
   let stroke: PixelStroke | null = null;
   let color = '';
@@ -221,14 +323,18 @@ export function makePixelPencil() {
       const rgba = parseHex(ui.color);
       if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
       color = ui.color;
-      stroke = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: 1, shape: 'square', perfect: getToolSettings().pixelPerfect });
+      const t = getToolSettings();
+      stroke = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(t.pixelBrushSize), shape: t.pixelBrushShape, perfect: t.pixelPerfect });
+      stroke.scale(sizeFactor('pencil', e));
       const here = stroke.cell(e.x, e.y);
       const from = e.shift ? lastPixelEnd(doc, layer) : null;
       if (from) stroke.beginLine(from, here);
       else stroke.begin(here);
     },
     move(e: ToolPointer): void {
-      stroke?.moveTo(stroke.cell(e.x, e.y));
+      if (!stroke) return;
+      stroke.scale(sizeFactor('pencil', e));
+      stroke.moveTo(stroke.cell(e.x, e.y));
     },
     up(e: ToolPointer, ctx: ToolContext): void {
       const s = stroke;
@@ -246,7 +352,7 @@ export function makePixelPencil() {
     },
     overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
       if (stroke) return drawMirrorLines(g, ctx);
-      hoverFootprint(g, ctx, 1, store().get().ui.color);
+      hoverFootprint(g, ctx, viewPixelSize(getToolSettings().pixelBrushSize), store().get().ui.color);
     },
   };
 }
@@ -255,10 +361,17 @@ export function makePixelPencil() {
 
 export type PixelShapeKind = 'rect' | 'ellipse' | 'line';
 
+/** The outline thickness to draw with right now (the preference, as it comes out through the camera), or none. */
+export function currentOutline(): Thickness | undefined {
+  const p = getPrefs();
+  return p.pixelThickOutlines ? outlineThickness(true, viewPixelSize(p.pixelOutlineWidth), getToolSettings().pixelBrushShape) : undefined;
+}
+
 /**
  * Paints a pixel shape between two cells into a session (after a reset, so it can be called on every move).
  * Rectangles and ellipses take the fill colour inside and the stroke colour round the edge (either can be none); a
- * line always uses the stroke colour. Shift squares the box, or snaps a line to a clean pixel slope.
+ * line always uses the stroke colour. Shift squares the box, or snaps a line to a clean pixel slope. `persp` puts a
+ * rectangle or ellipse on a perspective plane. `thick` stamps the pixel brush along the outline (the fill is untouched).
  */
 export function paintPixelShape(
   session: PixelSession,
@@ -267,6 +380,8 @@ export function paintPixelShape(
   b: PxPt,
   mod: { shift: boolean; alt: boolean },
   colors: { fill: string | null; stroke: string | null; line: string },
+  persp?: PixelPerspective,
+  thick?: Thickness,
 ): void {
   session.reset();
   if (kind === 'line') {
@@ -275,12 +390,15 @@ export function paintPixelShape(
     const ink = session.lock(solidInk(c));
     let end = b;
     let start = a;
-    if (mod.shift) end = snapCleanLine(a, b);
+    if (mod.shift && angleSteps()) end = snapCleanLine(a, b);
     if (mod.alt) start = { x: 2 * a.x - end.x, y: 2 * a.y - end.y };
-    plotLine(start.x, start.y, end.x, end.y, (x, y) => session.paint(x, y, ink));
+    plotThickLine(start.x, start.y, end.x, end.y, thick, (x, y) => session.paint(x, y, ink));
     return;
   }
   const [p, q] = dragBox(a, b, mod.shift, mod.alt);
+  // With perspective guides showing, it follows the plane it's drawn on, rasterised as crisply as a flat one.
+  const onPlane = persp && perspectivePixelOutline(kind, p, q, session.pixelSize, persp);
+  if (onPlane) return paintPerspectiveShape(session, onPlane, colors, thick);
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -288,12 +406,34 @@ export function paintPixelShape(
   // With no outline the fill covers the whole shape, edge included.
   const edge = si ?? fi;
   if (!edge) return;
-  if (kind === 'rect') {
-    if (fi) plotRectInside(p.x, p.y, q.x, q.y, (x, y) => session.paint(x, y, fi));
-    plotRect(p.x, p.y, q.x, q.y, false, (x, y) => session.paint(x, y, edge));
-  } else {
-    plotEllipse(p.x, p.y, q.x, q.y, (x, y) => session.paint(x, y, edge), fi ? (x, y) => session.paint(x, y, fi) : undefined);
-  }
+  // Thickness is for the outline only: a shape with no outline keeps the one pixel edge of its fill.
+  const t = si ? thick : undefined;
+  const paintFill = fi ? (x: number, y: number) => session.paint(x, y, fi) : undefined;
+  const paintEdge = (x: number, y: number) => session.paint(x, y, edge);
+  if (kind === 'rect') plotThickRect(p.x, p.y, q.x, q.y, t, paintEdge, paintFill);
+  else plotThickEllipse(p.x, p.y, q.x, q.y, t, paintEdge, paintFill);
+}
+
+/**
+ * Paints a shape on a perspective plane: the cells whose middle is inside the projected outline, so it covers exactly
+ * the quad (or ellipse) and never more. The fill takes all of them; the stroke is the ring of them as thick as the
+ * brush, on top. With no stroke the fill covers the whole shape. Thickness is for the stroke only.
+ */
+function paintPerspectiveShape(session: PixelSession, outline: SubPath, colors: { fill: string | null; stroke: string | null }, thick?: Thickness): void {
+  const fill = colors.fill ? parseHex(colors.fill) : null;
+  const stroke = colors.stroke ? parseHex(colors.stroke) : null;
+  const fi = fill ? session.lock(solidInk(fill)) : null;
+  const si = stroke ? session.lock(solidInk(stroke)) : null;
+  if (!fi && !si) return;
+  const ps = session.pixelSize;
+  const flat = flattenSubPath(outline);
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i] / ps, y: flat[i + 1] / ps });
+  let cells = coveredCells(pts);
+  // A shape too small to hold a cell's middle still leaves its one cell.
+  if (!cells.length && pts.length) cells = [{ x: Math.floor(pts.reduce((n, q) => n + q.x, 0) / pts.length), y: Math.floor(pts.reduce((n, q) => n + q.y, 0) / pts.length) }];
+  if (fi) for (const c of cells) session.paint(c.x, c.y, fi);
+  if (si) for (const c of edgeRing(cells, thick?.size ?? 1)) session.paint(c.x, c.y, si);
 }
 
 /** The handlers the shape tools use on a pixel layer. */
@@ -305,14 +445,16 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
     if (!session || !start) return;
     const ui = store().get().ui;
     const here = docToPixel(e.x, e.y, size);
-    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null, line: ui.color });
+    const persp = kind === 'line' ? undefined : { vps: vanishingPoints(e.mod), plane: getToolSettings().perspectivePlane };
+    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { ...shapeColors(ui), line: ui.color }, persp, currentOutline());
     session.flush();
   };
   return {
     active: () => !!session,
     down(e: ToolPointer, ctx: ToolContext, layer: PixelLayer): void {
       const { doc, ui } = store().get();
-      if (kind !== 'line' && !ui.fillColor && !ui.strokeOn) return ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
+      const sc = shapeColors(ui);
+      if (kind !== 'line' && !sc.fill && !sc.stroke) return ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
       session = new PixelSession(doc, layer, ui.frame, { adds: true });
       size = layer.pixelSize;
       start = docToPixel(e.x, e.y, size);
@@ -330,8 +472,100 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
       const r = s.commit(`Draw ${label.toLowerCase()}`);
       if (r === 'ok') {
         const ui = store().get().ui;
-        if (kind === 'line' || ui.strokeOn) noteColorUsed(ui.color);
-        if (kind !== 'line' && ui.fillColor) noteColorUsed(ui.fillColor);
+        const used = shapeColors(ui);
+        if (kind === 'line' || used.stroke) noteColorUsed(ui.color);
+        if (kind !== 'line' && used.fill) noteColorUsed(used.fill);
+      } else if (r !== 'nothing') reportEdit(ctx, r);
+      ctx.requestOverlay();
+    },
+    cancel(): void {
+      session?.discard();
+      session = null;
+      start = null;
+    },
+    overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
+      if (session) return drawMirrorLines(g, ctx);
+      hoverFootprint(g, ctx, 1, null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- pen, polygon and star on a pixel layer
+
+/**
+ * Paints outlines (in document units) as clean pixels: the fill colour inside closed ones, the stroke colour round
+ * the edge. With no stroke the fill covers the edge too, like the pixel rectangle. Curves are cut into short lines.
+ */
+export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }, thick?: Thickness): void {
+  const fill = colors.fill ? parseHex(colors.fill) : null;
+  const stroke = colors.stroke ? parseHex(colors.stroke) : null;
+  const fi = fill ? session.lock(solidInk(fill)) : null;
+  const si = stroke ? session.lock(solidInk(stroke)) : null;
+  const edge = si ?? fi;
+  if (!edge) return;
+  const ps = session.pixelSize;
+  const toPts = (sp: SubPath) => {
+    const flat = flattenSubPath(sp);
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i] / ps, y: flat[i + 1] / ps });
+    return pts;
+  };
+  const paintEdge = (x: number, y: number) => session.paint(x, y, edge);
+  for (const sp of paths) {
+    const paintFill = fi && sp.closed ? (x: number, y: number) => session.paint(x, y, fi) : undefined;
+    plotThickPolygon(toPts(sp), sp.closed, si ? thick : undefined, paintEdge, paintFill);
+  }
+}
+
+/** Puts a finished vector shape onto the pixel layer as pixels, one undo step. Used by the pen, with the outline thickness preference. */
+export function commitPixelPath(shape: PathShape, label: string, ctx: ToolContext): void {
+  const layer = activePixelLayer();
+  if (!layer) return;
+  const { doc, ui } = store().get();
+  const session = new PixelSession(doc, layer, ui.frame, { adds: true });
+  paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null }, currentOutline());
+  const r = session.commit(label);
+  if (r === 'ok') {
+    if (shape.fill) noteColorUsed(shape.fill);
+    if (shape.stroke) noteColorUsed(shape.stroke.color);
+  } else if (r !== 'nothing') reportEdit(ctx, r);
+}
+
+/** The handlers the polygon and star use on a pixel layer: `build` makes the vector shape for a drag. */
+export function makePixelPathShape(label: string, build: (a: { x: number; y: number }, e: ToolPointer) => PathShape | null) {
+  let session: PixelSession | null = null;
+  let start: { x: number; y: number } | null = null;
+  const draw = (e: ToolPointer) => {
+    if (!session || !start) return;
+    session.reset();
+    const shape = build(start, e);
+    if (shape) paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null }, currentOutline());
+    session.flush();
+  };
+  return {
+    active: () => !!session,
+    down(e: ToolPointer, ctx: ToolContext, layer: PixelLayer): void {
+      const { doc, ui } = store().get();
+      const sc = shapeColors(ui);
+      if (!sc.fill && !sc.stroke) return ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
+      session = new PixelSession(doc, layer, ui.frame, { adds: true });
+      start = { x: e.x, y: e.y };
+      draw(e);
+    },
+    move(e: ToolPointer): void {
+      draw(e);
+    },
+    up(e: ToolPointer, ctx: ToolContext): void {
+      draw(e);
+      const s = session;
+      session = null;
+      start = null;
+      if (!s) return;
+      const r = s.commit(`Draw ${label.toLowerCase()}`);
+      if (r === 'ok') {
+        const used = shapeColors(store().get().ui);
+        if (used.stroke) noteColorUsed(used.stroke);
+        if (used.fill) noteColorUsed(used.fill);
       } else if (r !== 'nothing') reportEdit(ctx, r);
       ctx.requestOverlay();
     },

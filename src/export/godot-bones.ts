@@ -1,82 +1,26 @@
 /**
  * Godot "Bones (editable in Godot)" export: the skeleton as Skeleton2D and Bone2D nodes, every part as a Sprite2D
  * riding its bone (or a skinned Polygon2D for layers that bend), and an AnimationPlayer with one animation per clip
- * holding each bone's position, rotation and squash. Pure: the runner renders the part pictures and hands them in.
+ * holding each bone's position, rotation and squash. Symbols with skeletons of their own become nested rigs under
+ * their instance, the camera becomes a Camera2D and layers with depth go under a Parallax2D. Fade, Add and Multiply
+ * and a symbol's colour wash are Godot's own; other effects were baked into the pictures by the runner.
+ * Pure: the runner renders the part pictures and hands them in.
  *
  * Spaces: Godot gets output pixels (document pixels times the export scale). Bone rest matrices are turns and moves
  * only, so scaling just scales their moves.
  */
-import type { Cel, Doc, Drawing, Easing, Id, Layer, SkinMesh } from '../core/format';
-import { poseAt } from '../core/symbols';
-import { isRigLayer, poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
+import type { Cel, Doc, Easing, Id, Layer } from '../core/format';
+import { activeCamera, cameraViewAt, depthAnchor, depthScale, parallaxFactor, plainView, clampZoom } from '../core/camera';
+import { celAt } from '../core/doc';
+import { folderChain } from '../core/folders';
+import { nextKey } from '../core/symbols';
+import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
 import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
-import type { Animation } from './sheet';
+import { withNativeBounce, type Animation } from './sheet';
+import { bonesRigs, groupLayout, isShaderBlend, nativeFolderFades, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-// ---------------------------------------------------------------- what goes in
-
-export type PartKind = 'cut' | 'mesh' | 'free';
-
-export interface BonesPart {
-  layer: Layer;
-  /** Draw order, back to front (the layer's place in the stack). */
-  z: number;
-  kind: PartKind;
-  rig?: RigLayer;
-  bone?: Id;
-  mesh?: SkinMesh;
-  /** Every different picture the layer shows in the range, at rest (not moved by its bone). */
-  pictures: Drawing[];
-  /** For each frame of the range: which picture shows, or -1 for nothing. */
-  frameOf: number[];
-}
-
-/** A rendered picture: where its top-left sits in output pixels, its size, and its res:// path. */
-export interface BonesTexture {
-  path: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/** What a layer shows at a frame without its bone moving it (symbols, morphs and swaps still play). */
-export function restPicture(doc: Doc, layer: Layer, frame: number): Drawing | undefined {
-  if (!layer.bind) return poseAt(doc, layer, frame);
-  const { bind: _b, ...free } = layer;
-  return poseAt(doc, free as Layer, frame);
-}
-
-/** The layers that make the scene (visible, not reference, not bones or camera), with their pictures per frame. */
-export function bonesParts(doc: Doc, range: { start: number; end: number }): BonesPart[] {
-  const out: BonesPart[] = [];
-  doc.layers.forEach((layer, z) => {
-    if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') return;
-    const pictures: Drawing[] = [];
-    const frameOf: number[] = [];
-    for (let f = range.start; f <= range.end; f++) {
-      const d = restPicture(doc, layer, f);
-      if (!d) {
-        frameOf.push(-1);
-        continue;
-      }
-      let i = pictures.indexOf(d);
-      if (i < 0) i = pictures.push(d) - 1;
-      frameOf.push(i);
-    }
-    if (!pictures.length) return;
-    const r = layer.bind ? doc.layers.find((l) => l.id === layer.bind!.rig) : undefined;
-    const rig = isRigLayer(r) ? r : undefined;
-    const hasBone = !!rig && rig.rig.bones.some((b) => b.id === layer.bind!.bone);
-    const kind: PartKind = rig && layer.bind!.mesh?.points.length ? 'mesh' : hasBone ? 'cut' : 'free';
-    out.push({ layer, z, kind, ...(rig && kind !== 'free' ? { rig, bone: layer.bind!.bone } : {}), ...(kind === 'mesh' ? { mesh: layer.bind!.mesh } : {}), pictures, frameOf });
-  });
-  return out;
-}
-
-/** The bones layers on the stage that have bones. */
-export function bonesRigs(doc: Doc): RigLayer[] {
-  return doc.layers.filter((l): l is RigLayer => isRigLayer(l) && l.rig.bones.length > 0);
-}
+export { groupLayout, groupBlocker, nativeFolderFades, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
 
@@ -88,6 +32,12 @@ export function gdNum(n: number): string {
   const r = Math.round(n * 1e6) / 1e6;
   if (Object.is(r, -0) || r === 0) return '0';
   return String(r);
+}
+
+/** A number Godot reads as a float (an animation track of floats must not start with a whole number, or it stops blending). */
+export function gdFloat(n: number): string {
+  const s = gdNum(n);
+  return /[.e]/.test(s) ? s : `${s}.0`;
 }
 
 const v2 = (x: number, y: number) => `Vector2(${gdNum(x)}, ${gdNum(y)})`;
@@ -151,7 +101,7 @@ export function rigKeys(rig: Layer, frames: number[], fps: number): RigKey[] {
     const next = k ? rig.cels[k.index + 1] : undefined;
     const gliding = !!cel?.tween && !!next && next.start === cel.start + cel.length && f >= cel.start && f < next.start;
     if (gliding) {
-      const c = exactTransition(cel!.tween!.ease);
+      const c = cel!.tween!.slice ? undefined : exactTransition(cel!.tween!.ease);
       const end = i + (next!.start - f);
       // The whole glide is inside this animation, from its first frame: two keys and Godot's curve.
       if (c !== undefined && f === cel!.start && end <= n - 1 && frames[end] === next!.start) {
@@ -200,6 +150,89 @@ function same(a: number[], b: number[], eps: number): boolean {
   return true;
 }
 
+// ---------------------------------------------------------------- shaders
+
+/** The file a symbol's colour wash needs for a blend (mixing colours is the one thing Godot's modulate can't do). */
+export const tintShaderName = (b: NativeBlend) => (isShaderBlend(b) ? `frameling-blend-${b}.gdshader` : `frameling-tint-${b}.gdshader`);
+
+/** The colour a blend gives against what is behind (cb) for the layer's own colour (cs), the W3C formulas (see src/effects/pixelBlend.ts). */
+const blendExpr: Partial<Record<NativeBlend, string>> = {
+  dodge: 'min(cb + cs, vec3(1.0))',
+  sub: 'max(cb - cs, vec3(0.0))',
+  // Divide: nothing behind stays black, a colour at least as bright as the layer's goes to full, else cb / cs.
+  div: 'mix(min(cb / max(cs, vec3(0.0001)), vec3(1.0)), vec3(0.0), step(cb, vec3(0.0)))',
+  // Screen: what is behind and the layer both lighten, and neither can go over white.
+  screen: 'vec3(1.0) - (vec3(1.0) - cb) * (vec3(1.0) - cs)',
+};
+
+/** A tiny canvas shader: each colour mixes toward `tint_color` by `tint_amount`, like Frameling's colour wash. */
+export function tintShader(blend: NativeBlend): string {
+  if (isShaderBlend(blend))
+    return `// Made by Frameling. A blend mode Godot has no setting for (${{ dodge: 'Glow brighter, plain (linear dodge)', sub: 'Take away (subtract)', div: 'Brighten by dividing (divide)', screen: 'Screen' }[blend as 'dodge']}), done like Frameling does it:
+// the colour behind and the layer's colour go through the formula, and the layer's see-through amount decides how much shows.
+// It also carries the colour wash (tint_color mixed in by tint_amount, 0 to 1) when a symbol is tinted.
+shader_type canvas_item;
+render_mode blend_mix;
+
+uniform sampler2D behind : hint_screen_texture, filter_nearest, repeat_disable;
+uniform vec4 tint_color = vec4(1.0);
+uniform float tint_amount = 0.0;
+
+void fragment() {
+	// COLOR already holds the picture times the node's modulate (straight colour and alpha).
+	vec3 cs = mix(COLOR.rgb, tint_color.rgb, tint_amount);
+	vec3 cb = texture(behind, SCREEN_UV).rgb;
+	COLOR.rgb = ${blendExpr[blend]};
+}
+`;
+  const mode = ({ mix: 'blend_mix', add: 'blend_add', mul: 'blend_mul' } as Record<string, string>)[blend];
+  return `// Made by Frameling. A colour wash over a symbol: every colour mixes toward tint_color by tint_amount (0 to 1).
+shader_type canvas_item;
+render_mode ${mode};
+
+uniform vec4 tint_color = vec4(1.0);
+uniform float tint_amount = 0.0;
+
+void fragment() {
+	// COLOR already holds the picture times the node's modulate.
+	COLOR.rgb = mix(COLOR.rgb, tint_color.rgb, tint_amount);
+}
+`;
+}
+
+function gdColor(hex: string, a = 1): string {
+  const h = hex.replace('#', '');
+  const ch = (i: number) => (parseInt(h.slice(i, i + 2), 16) || 0) / 255;
+  const alpha = h.length >= 8 ? ch(6) * a : a;
+  return `Color(${gdNum(ch(0))}, ${gdNum(ch(2))}, ${gdNum(ch(4))}, ${gdNum(alpha)})`;
+}
+
+// ---------------------------------------------------------------- sampled keys
+
+/**
+ * Keys for a value that is sampled every frame: gliding frames get a key each (Godot joins them), held frames get a
+ * key just before the next frame so they snap the way Frameling's do.
+ */
+function sampledKeys(n: number, fps: number, glide: (i: number) => boolean, value: (i: number) => number[] | null): { t: number; trans: number; v: number[] }[] {
+  const out: { t: number; trans: number; v: number[] }[] = [];
+  for (let i = 0; i < n; i++) {
+    const v = value(i);
+    if (!v) continue;
+    out.push({ t: i / fps, trans: 1, v });
+    if (!glide(i)) out.push({ t: (i + 1) / fps - HOLD / fps, trans: 1, v });
+  }
+  return out;
+}
+
+/** Where the camera's keys go for one animation: a key per gliding frame, a snap for held ones. */
+export function cameraKeys(doc: Doc, frames: number[], fps: number): { t: number; f: number; glide: boolean }[] {
+  const cam = activeCamera(doc);
+  return frames.map((f, i) => {
+    const cel = cam ? celAt(cam, f) : undefined;
+    return { t: i / fps, f, glide: !!cam && !!cel?.tween && !!nextKey(cam, cel) };
+  });
+}
+
 // ---------------------------------------------------------------- the scene
 
 export interface BonesSceneInput {
@@ -212,6 +245,12 @@ export interface BonesSceneInput {
   animations: Animation[];
   rootName: string;
   pixelArt?: boolean;
+  /** Instances of symbols with skeletons of their own. Their scopes hold their own pictures. */
+  nested?: NestedInstance[];
+  /** The Godot folder the included shader files go in (res://...). */
+  shaderDir?: string;
+  /** Let a looping back and forth clip bounce with the AnimationPlayer's own ping-pong loop (one direction is keyed, the ends show twice). */
+  nativeBounce?: boolean;
 }
 
 /** A bone's place under its parent at rest (output pixels). */
@@ -225,16 +264,88 @@ function localRest(rig: RigLayer, id: Id, k: number): Mat {
 
 const angle = (m: readonly number[]) => Math.atan2(m[1], m[0]);
 
-/** A Godot 4 scene (.tscn) for a rigged character. */
-export function godotBonesScene(o: BonesSceneInput): string {
-  const { doc, parts, textures, animations } = o;
+/** How many times bigger a picture's pixels are than the scene's (a symbol copied large is baked bigger to stay sharp). */
+const bk = (t: BonesTexture) => t.bake ?? 1;
+/** The Sprite2D lines that shrink a baked-bigger picture back to scene size. */
+const shrink = (t: BonesTexture) => (bk(t) === 1 ? [] : [`scale = ${v2(1 / bk(t), 1 / bk(t))}`]);
+
+/** How many z steps a scope needs for each of its layers, so a symbol's own layers stay between its neighbours'. */
+function zUnit(sc: BonesScope): number {
+  let u = 1;
+  for (const n of sc.nested) u = Math.max(u, n.scope.layers.length * zUnit(n.scope));
+  return u;
+}
+
+interface Tint {
+  inst: NestedInstance;
+  mats: Map<NativeBlend, { id: string; path: string }>;
+  /** The wash of the symbol this one sits in, when that is washed too: the two stack. */
+  parent?: Tint;
+}
+
+/** A colour wash: every colour mixes toward `color` by `amount`. */
+export interface Wash {
+  color: string;
+  amount: number;
+}
+
+/** How strongly a wash mixes in: its amount (never over 1) times the colour's own see-through, as the canvas paints it. */
+function washAmount(w: Wash): number {
+  const c = rgbaOf(w.color);
+  return Math.max(0, Math.min(1, w.amount)) * c[3];
+}
+
+/**
+ * One wash that does what two do when the outer one is laid over the inner (the canvas fills the colour over the copy
+ * twice, inner copy first): mix(mix(c, inner, a), outer, b) is mix(c, T, 1 - (1 - a)(1 - b)) for one colour T.
+ */
+export function stackWash(inner: Wash | null | undefined, outer: Wash | null | undefined): Wash | null {
+  const a = inner ? washAmount(inner) : 0;
+  const b = outer ? washAmount(outer) : 0;
+  if (a <= 0 && b <= 0) return null;
+  if (a <= 0) return outer!;
+  if (b <= 0) return inner!;
+  const amount = 1 - (1 - a) * (1 - b);
+  const ci = rgbaOf(inner!.color);
+  const co = rgbaOf(outer!.color);
+  const hex = (i: number) =>
+    Math.round(Math.max(0, Math.min(1, (ci[i] * a * (1 - b) + co[i] * b) / amount)) * 255)
+      .toString(16)
+      .padStart(2, '0');
+  return { color: `#${hex(0)}${hex(1)}${hex(2)}`, amount };
+}
+
+/** The wash a tint chain makes on its first frame (a symbol's own, with the ones around it stacked on top). */
+function firstWash(t: Tint): Wash | null {
+  const own = t.inst.at.find((s) => s?.tint)?.tint ?? null;
+  return stackWash(own, t.parent ? firstWash(t.parent) : null);
+}
+
+interface ScopeNodes {
+  sc: BonesScope;
+  rigs: { rig: RigLayer; bonePath: Map<Id, string> }[];
+  partPath: string[];
+  nested: { inst: NestedInstance; path: string; nodes: ScopeNodes; tint?: Tint; group?: boolean; toBone: (m: readonly number[]) => number[] }[];
+}
+
+/** One animation frame by frame: the frame of the scope it shows, and whether the scope is there at all. */
+interface Frames {
+  f: number[];
+  on: boolean[];
+}
+
+function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } {
+  const { doc } = o;
+  const chosen = o.animations.map((a) => withNativeBounce(a, o.nativeBounce));
+  const animations = chosen.map((c) => c.anim);
   const k = o.scale;
-  const rigs = bonesRigs(doc);
   const name = nodeNamer();
   const ext: string[] = [];
   const sub: string[] = [];
   const nodes: string[] = [];
   const texId = new Map<string, string>();
+  const shaders = new Set<NativeBlend>();
+  const shaderDir = o.shaderDir ?? 'res://';
   const tex = (path: string) => {
     let id = texId.get(path);
     if (!id) {
@@ -244,129 +355,306 @@ export function godotBonesScene(o: BonesSceneInput): string {
     }
     return `ExtResource("${id}")`;
   };
+  const blendMats = new Map<NativeBlend, string>();
+  const blendMaterial = (b: NativeBlend): string[] => {
+    if (b === 'mix') return [];
+    let id = blendMats.get(b);
+    if (!id) {
+      id = `Blend_${b}`;
+      blendMats.set(b, id);
+      if (isShaderBlend(b)) sub.push(`[sub_resource type="ShaderMaterial" id="${id}"]`, `shader = ${shaderRes(b)}`, '');
+      else sub.push(`[sub_resource type="CanvasItemMaterial" id="${id}"]`, `blend_mode = ${b === 'add' ? 1 : 3}`, '');
+    }
+    return [`material = SubResource("${id}")`];
+  };
+  const tints: Tint[] = [];
+  const shaderRes = (b: NativeBlend) => {
+    shaders.add(b);
+    const id = `shader_${b}`;
+    if (!ext.some((e) => e.endsWith(`id="${id}"]`))) ext.push(`[ext_resource type="Shader" path=${gdString(`${shaderDir}${shaderDir.endsWith('/') ? '' : '/'}${tintShaderName(b)}`)} id="${id}"]`);
+    return `ExtResource("${id}")`;
+  };
 
   const root = o.rootName.replace(/[.:@/"%]/g, '_').trim() || 'Character';
   nodes.push(`[node name=${gdString(root)} type="Node2D"]`);
   if (o.pixelArt) nodes.push('texture_filter = 1');
   nodes.push('');
 
-  // Skeletons and their bones. Paths are from the scene root.
-  const bonePath = new Map<Id, string>();
-  const skelPath = new Map<Id, string>();
-  for (const rig of rigs) {
-    const sk = name('.', rig.name);
-    skelPath.set(rig.id, sk);
-    nodes.push(`[node name=${gdString(sk)} type="Skeleton2D" parent="."]`, '');
-    for (const b of rig.rig.bones) {
-      const parent = b.parent && bonePath.has(b.parent) ? bonePath.get(b.parent)! : sk;
-      const n = name(parent, b.name);
-      bonePath.set(b.id, `${parent}/${n}`);
-      const m = localRest(rig, b.id, k);
-      nodes.push(
-        `[node name=${gdString(n)} type="Bone2D" parent=${gdString(parent)}]`,
-        `position = ${v2(m[4], m[5])}`,
-        `rotation = ${gdNum(angle(m))}`,
-        `rest = ${xf(m)}`,
-        'auto_calculate_length_and_angle = false',
-        `length = ${gdNum(b.length * k)}`,
-        'bone_angle = 0.0',
-        '',
-      );
-    }
-  }
-
-  // Parts, back to front by z_index (they sit at different depths under the bones, so tree order can't do it).
-  const partPath: string[] = [];
-  parts.forEach((p, i) => {
-    const texs = textures[i];
-    const first = p.frameOf.find((x) => x >= 0) ?? 0;
-    const t0 = texs[first];
-    const z = Math.min(4096, p.z);
-    const fade = p.layer.opacity < 1 ? [`modulate = Color(1, 1, 1, ${gdNum(p.layer.opacity)})`] : [];
-    const hidden = p.frameOf[0] < 0 ? ['visible = false'] : [];
-    if (p.kind === 'mesh' && p.rig && p.mesh) {
-      const sk = skelPath.get(p.rig.id)!;
-      const n = name('.', p.layer.name);
-      partPath.push(n);
-      const mesh = p.mesh;
-      const pts: string[] = [];
-      const uv: string[] = [];
-      for (let j = 0; j < mesh.points.length; j += 2) {
-        pts.push(gdNum(mesh.points[j] * k), gdNum(mesh.points[j + 1] * k));
-        uv.push(gdNum(mesh.points[j] * k - t0.x), gdNum(mesh.points[j + 1] * k - t0.y));
+  const camera = activeCamera(doc);
+  // Godot's Parallax2D follows the camera's pan at a different speed but zooms like everything else, where Frameling's
+  // far layers zoom less. So when the camera zooms, each depth group gets a child node that takes up the difference.
+  let zooms = false;
+  if (camera) for (let f = o.range.start; f <= o.range.end; f++) if (Math.abs(clampZoom((cameraViewAt(doc, f) ?? plainView(doc)).zoom) - 1) > 1e-6) zooms = true;
+  // Layers with depth sit under a Parallax2D (only a camera moves them).
+  const depthNodes = new Map<number, string>();
+  const depthGroups: { factor: number; path: string }[] = [];
+  const topParent = (layer: Layer): string => {
+    const d = layer.depth;
+    if (!camera || !d || layer.bind) return '';
+    let n = depthNodes.get(d);
+    if (!n) {
+      n = name('.', `Depth ${gdNum(d)}`);
+      const f = parallaxFactor(d);
+      nodes.push(`[node name=${gdString(n)} type="Parallax2D" parent="."]`, `scroll_scale = ${v2(f, f)}`, '');
+      if (zooms && Math.abs(f - 1) > 1e-6) {
+        const inner = name(n, 'Zoom');
+        nodes.push(`[node name=${gdString(inner)} type="Node2D" parent=${gdString(n)}]`, '');
+        depthGroups.push({ factor: f, path: `${n}/${inner}` });
+        n = `${n}/${inner}`;
       }
-      const tris: string[] = [];
-      for (let j = 0; j < mesh.triangles.length; j += 3) tris.push(`PackedInt32Array(${mesh.triangles[j]}, ${mesh.triangles[j + 1]}, ${mesh.triangles[j + 2]})`);
-      const bones: string[] = [];
-      const count = mesh.points.length / 2;
-      // Weights per bone per point, each point's weights adding up to 1 (Godot doesn't fill the rest with "stay put").
-      const sums = new Array<number>(count).fill(0);
-      mesh.weights.forEach((w, v) => {
-        for (let q = 0; q < w.length; q += 2) if (bonePath.has(mesh.bones[w[q]]) && w[q + 1] > 0) sums[v] += w[q + 1];
-      });
-      mesh.bones.forEach((bid, bi) => {
-        const path = bonePath.get(bid);
-        if (!path) return;
-        const ws = new Array<number>(count).fill(0);
-        let any = false;
+      depthNodes.set(d, n);
+    }
+    return n;
+  };
+
+  const top: BonesScope = { layers: doc.layers, range: o.range, parts: o.parts, rigs: bonesRigs(doc), nested: o.nested ?? [], textures: o.textures };
+  const nativeFades = nativeFolderFades(doc, top, o.textures, !!camera);
+
+  const emit = (sc: BonesScope, parentPath: string, unit: number, inherit: { blend: NativeBlend; tint?: Tint } | undefined, parentOf: (l: Layer) => string, grouped?: ReturnType<typeof groupLayout>): ScopeNodes => {
+    // A grouped symbol's nodes are written in the order its layout says, so each kind is held back until then.
+    const held = grouped ? { skel: new Map<Id, string[]>(), bone: new Map<Id, string[]>(), part: new Map<BonesPart, string[]>() } : undefined;
+    const textures = sc.textures ?? sc.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 })));
+    const at = (p: string) => p || '.';
+    const under = (p: string, n: string) => (p ? `${p}/${n}` : n);
+    // On the stage every folder is a Node2D with its layers inside, nested like the folders (hidden ones are hidden nodes).
+    const stage = sc === top;
+    const folderNodes = new Map<string, string>();
+    const folderHost = (layer: Layer, host: string): string => {
+      let parent = host;
+      for (const f of folderChain(doc.folders, layer.folder)) {
+        const key = `${host}|${f.id}`;
+        let path = folderNodes.get(key);
+        if (!path) {
+          const n = name(at(parent), f.name);
+          path = under(parent, n);
+          folderNodes.set(key, path);
+          nodes.push(`[node name=${gdString(n)} type="Node2D" parent=${gdString(at(parent))}]`, ...(f.visible ? [] : ['visible = false']), ...(nativeFades.has(f.id) ? [`modulate = Color(1, 1, 1, ${gdNum(f.opacity)})`] : []), '');
+        }
+        parent = path;
+      }
+      return parent;
+    };
+    // The fade a layer still carries itself: its folders' fades that are on their nodes are taken off.
+    const nodeFade = (layer: Layer) => folderChain(doc.folders, layer.folder).reduce((n, f) => (nativeFades.has(f.id) ? n * f.opacity : n), 1);
+    const res: ScopeNodes = { sc, rigs: [], partPath: [], nested: [] };
+    const bonePath = new Map<Id, string>();
+    const skelPath = new Map<Id, string>();
+    for (const rig of sc.rigs) {
+      const sk = name(at(parentPath), rig.name);
+      const skp = under(parentPath, sk);
+      skelPath.set(rig.id, skp);
+      const skelLines = [`[node name=${gdString(sk)} type="Skeleton2D" parent=${gdString(at(parentPath))}]`, ''];
+      if (held) held.skel.set(rig.id, skelLines);
+      else nodes.push(...skelLines);
+      for (const b of rig.rig.bones) {
+        const parent = b.parent && bonePath.has(b.parent) ? bonePath.get(b.parent)! : skp;
+        const n = name(parent, b.name);
+        bonePath.set(b.id, `${parent}/${n}`);
+        const m = localRest(rig, b.id, k);
+        const boneLines = [
+          `[node name=${gdString(n)} type="Bone2D" parent=${gdString(parent)}]`,
+          `position = ${v2(m[4], m[5])}`,
+          `rotation = ${gdNum(angle(m))}`,
+          `rest = ${xf(m)}`,
+          'auto_calculate_length_and_angle = false',
+          `length = ${gdNum(b.length * k)}`,
+          'bone_angle = 0.0',
+          '',
+        ];
+        if (held) held.bone.set(b.id, boneLines);
+        else nodes.push(...boneLines);
+      }
+      res.rigs.push({ rig, bonePath });
+    }
+
+    // The material a part's node gets: Godot's own blend, or the included shader when a symbol is tinted.
+    const materialFor = (blend: NativeBlend, nodePath: string): string[] => {
+      const b = blend !== 'mix' ? blend : (inherit?.blend ?? 'mix');
+      const tint = inherit?.tint;
+      if (!tint) return blendMaterial(b);
+      let m = tint.mats.get(b);
+      if (!m) {
+        const id = `Tint_${tints.indexOf(tint) + 1}_${b}`;
+        m = { id, path: nodePath };
+        tint.mats.set(b, m);
+        const w = firstWash(tint);
+        sub.push(`[sub_resource type="ShaderMaterial" id="${id}"]`, `shader = ${shaderRes(b)}`, `shader_parameter/tint_color = ${gdColor(w?.color ?? '#ffffff')}`, `shader_parameter/tint_amount = ${gdNum(w ? washAmount(w) : 0)}`, '');
+      }
+      return [`material = SubResource("${m.id}")`];
+    };
+
+    // Parts, back to front by z_index (they sit at different depths under the bones, so tree order can't do it).
+    sc.parts.forEach((p, i) => {
+      const texs = textures[i];
+      const first = p.frameOf.find((x) => x >= 0) ?? 0;
+      const t0 = texs[first];
+      // Inside a CanvasGroup the order is the scene tree's (Godot leaves children on other z out of the group).
+      const zl = grouped ? [] : [`z_index = ${Math.max(-4096, Math.min(4096, p.z * unit))}`];
+      const put = (...lines: string[]) => (held ? void held.part.set(p, lines) : void nodes.push(...lines));
+      // Parts that sit under a bone are not in their folder's node, so their folders' fades stay on them.
+      const rides = (p.kind === 'mesh' && !!p.rig && !!p.mesh && skelPath.has(p.rig.id)) || (p.kind === 'cut' && !!p.rig && !!p.bone && bonePath.has(p.bone));
+      const op = Math.min(1, (p.look?.opacity ?? p.layer.opacity) / (stage && !rides ? nodeFade(p.layer) : 1));
+      const fade = op < 1 - 1e-6 ? [`modulate = Color(1, 1, 1, ${gdNum(op)})`] : [];
+      const hidden = p.frameOf[0] < 0 ? ['visible = false'] : [];
+      const blend = p.look?.blend ?? 'mix';
+      if (p.kind === 'mesh' && p.rig && p.mesh && skelPath.has(p.rig.id)) {
+        const sk = skelPath.get(p.rig.id)!;
+        const n = name(at(parentPath), p.layer.name);
+        const path = under(parentPath, n);
+        res.partPath.push(path);
+        const mesh = p.mesh;
+        const pts: string[] = [];
+        const uv: string[] = [];
+        for (let j = 0; j < mesh.points.length; j += 2) {
+          pts.push(gdNum(mesh.points[j] * k), gdNum(mesh.points[j + 1] * k));
+          uv.push(gdNum(mesh.points[j] * k * bk(t0) - t0.x), gdNum(mesh.points[j + 1] * k * bk(t0) - t0.y));
+        }
+        const tris: string[] = [];
+        for (let j = 0; j < mesh.triangles.length; j += 3) tris.push(`PackedInt32Array(${mesh.triangles[j]}, ${mesh.triangles[j + 1]}, ${mesh.triangles[j + 2]})`);
+        const bones: string[] = [];
+        const count = mesh.points.length / 2;
+        // Weights per bone per point, each point's weights adding up to 1 (Godot doesn't fill the rest with "stay put").
+        const sums = new Array<number>(count).fill(0);
         mesh.weights.forEach((w, v) => {
-          for (let q = 0; q < w.length; q += 2)
-            if (w[q] === bi && w[q + 1] > 0 && sums[v] > 0) {
-              ws[v] += w[q + 1] / sums[v];
-              any = true;
-            }
+          for (let q = 0; q < w.length; q += 2) if (bonePath.has(mesh.bones[w[q]]) && w[q + 1] > 0) sums[v] += w[q + 1];
         });
-        if (any) bones.push(`NodePath(${gdString(path.slice(sk.length + 1))})`, `PackedFloat32Array(${ws.map(gdNum).join(', ')})`);
-      });
+        mesh.bones.forEach((bid, bi) => {
+          const bp = bonePath.get(bid);
+          if (!bp) return;
+          const ws = new Array<number>(count).fill(0);
+          let any = false;
+          mesh.weights.forEach((w, v) => {
+            for (let q = 0; q < w.length; q += 2)
+              if (w[q] === bi && w[q + 1] > 0 && sums[v] > 0) {
+                ws[v] += w[q + 1] / sums[v];
+                any = true;
+              }
+          });
+          if (any) bones.push(`NodePath(${gdString(bp.slice(sk.length + 1))})`, `PackedFloat32Array(${ws.map(gdNum).join(', ')})`);
+        });
+        put(
+          `[node name=${gdString(n)} type="Polygon2D" parent=${gdString(at(parentPath))}]`,
+          ...zl,
+          ...hidden,
+          ...fade,
+          ...materialFor(blend, path),
+          `texture = ${tex(t0.path)}`,
+          `skeleton = NodePath(${gdString('../' + sk.slice(sk.lastIndexOf('/') + 1))})`,
+          `polygon = PackedVector2Array(${pts.join(', ')})`,
+          `uv = PackedVector2Array(${uv.join(', ')})`,
+          `polygons = [${tris.join(', ')}]`,
+          `bones = [${bones.join(', ')}]`,
+          '',
+        );
+        return;
+      }
+      if (p.kind === 'cut' && p.rig && p.bone && bonePath.has(p.bone)) {
+        const parent = bonePath.get(p.bone)!;
+        const n = name(parent, p.layer.name);
+        res.partPath.push(`${parent}/${n}`);
+        // Under the bone: undo its rest place, then sit where the picture was drawn.
+        const b = p.rig.rig.bones.find((x) => x.id === p.bone)!;
+        const r = restMatrix(b);
+        const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x / bk(t0), t0.y / bk(t0)]);
+        put(
+          `[node name=${gdString(n)} type="Sprite2D" parent=${gdString(parent)}]`,
+          ...zl,
+          ...hidden,
+          ...fade,
+          ...materialFor(blend, `${parent}/${n}`),
+          `position = ${v2(m[4], m[5])}`,
+          `rotation = ${gdNum(angle(m))}`,
+          ...shrink(t0),
+          `texture = ${tex(t0.path)}`,
+          'centered = false',
+          '',
+        );
+        return;
+      }
+      const host = stage ? folderHost(p.layer, parentOf(p.layer)) : parentOf(p.layer);
+      const n = name(at(host), p.layer.name);
+      res.partPath.push(under(host, n));
+      put(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, ...zl, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x / bk(t0), t0.y / bk(t0))}`, ...shrink(t0), `texture = ${tex(t0.path)}`, 'centered = false', '');
+    });
+
+    // Symbols with skeletons of their own: a node moved by the instance, holding its own rig and parts.
+    const emitNested = (inst: NestedInstance) => {
+      // On a layer that follows a bone the copy sits under that bone: its matrix is taken from the bone's rest place.
+      const boneHost = inst.bind ? bonePath.get(inst.bind.bone) : undefined;
+      const host = boneHost ?? (stage ? folderHost(inst.layer, parentOf(inst.layer)) : parentOf(inst.layer));
+      const n = name(at(host), inst.name);
+      const path = under(host, n);
+      const firstAt = inst.at.findIndex((s) => !!s);
+      const s0 = inst.at[firstAt] ?? undefined;
+      const toBone = (q: readonly number[]): number[] => {
+        const m6s = [q[0], q[1], q[2], q[3], q[4] * k, q[5] * k];
+        if (!boneHost || !inst.bind) return m6s;
+        const r = restMatrix(inst.bind.rig.rig.bones.find((b) => b.id === inst.bind!.bone)!);
+        return mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), m6s as Mat);
+      };
+      const m = s0 ? toBone(s0.matrix) : [1, 0, 0, 1, 0, 0];
+      const op = inst.look.opacity * (s0?.opacity ?? 1);
+      // A symbol that fades is a CanvasGroup when it can be, so it fades as one picture and overlapping parts don't show
+      // through each other (see groupLayout for when it can't).
+      const fades = inst.at.some((s) => s && inst.look.opacity * s.opacity < 1 - 1e-6);
+      // Inside a group its symbols are written in tree order too (no z_index), so a symbol holding symbols fades as one.
+      // Godot draws a group nested in a group wrong (a grey box), so a fade inside a group stays plain and fades part by part.
+      const wantGroup = fades && !grouped && inst.look.blend === 'mix' && (inherit?.blend ?? 'mix') === 'mix';
+      const layout = wantGroup || grouped ? groupLayout(inst.scope) : undefined;
+      const group = wantGroup && !!layout?.ok;
+      // A group's own fade is self_modulate: plain modulate would fade every part again.
+      const fadeProp = group ? 'self_modulate' : 'modulate';
+      const tinted = inst.at.some((s) => s?.tint);
+      const tint: Tint | undefined = tinted ? { inst, mats: new Map(), parent: inherit?.tint } : undefined;
+      if (tint) tints.push(tint);
       nodes.push(
-        `[node name=${gdString(n)} type="Polygon2D" parent="."]`,
-        `z_index = ${z}`,
-        ...hidden,
-        ...fade,
-        `texture = ${tex(t0.path)}`,
-        `skeleton = NodePath(${gdString('../' + sk)})`,
-        `polygon = PackedVector2Array(${pts.join(', ')})`,
-        `uv = PackedVector2Array(${uv.join(', ')})`,
-        `polygons = [${tris.join(', ')}]`,
-        `bones = [${bones.join(', ')}]`,
+        `[node name=${gdString(n)} type=${gdString(group ? 'CanvasGroup' : 'Node2D')} parent=${gdString(at(host))}]`,
+        ...(grouped ? [] : [`z_index = ${Math.max(-4096, Math.min(4096, inst.z * unit))}`]),
+        ...(inst.at[0] ? [] : ['visible = false']),
+        ...(op < 1 ? [`${fadeProp} = Color(1, 1, 1, ${gdNum(op)})`] : []),
+        `transform = ${xf(m)}`,
         '',
       );
-      return;
+      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend !== 'mix' ? inst.look.blend : (inherit?.blend ?? 'mix'), tint: tint ?? inherit?.tint }, () => path, layout?.ok ? layout : undefined);
+      res.nested.push({ inst, path, nodes: nodesOf, tint, group, toBone });
+    };
+    if (!grouped) sc.nested.forEach(emitNested);
+    if (held && grouped) {
+      const write = (item: GroupItem) => {
+        if ('nested' in item) emitNested(item.nested);
+        else if ('part' in item) nodes.push(...(held.part.get(item.part) ?? []));
+        else if ('bone' in item) {
+          nodes.push(...(held.bone.get(item.bone) ?? []));
+          for (const c of grouped.kids.get(item.bone) ?? []) write(c);
+        } else {
+          nodes.push(...(held.skel.get(item.rig) ?? []));
+          for (const c of grouped.kids.get(item.rig) ?? []) write(c);
+        }
+      };
+      for (const item of grouped.top) write(item);
     }
-    if (p.kind === 'cut' && p.rig && p.bone) {
-      const parent = bonePath.get(p.bone)!;
-      const n = name(parent, p.layer.name);
-      partPath.push(`${parent}/${n}`);
-      // Under the bone: undo its rest place, then sit where the picture was drawn.
-      const b = p.rig.rig.bones.find((x) => x.id === p.bone)!;
-      const r = restMatrix(b);
-      const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x, t0.y]);
-      nodes.push(
-        `[node name=${gdString(n)} type="Sprite2D" parent=${gdString(parent)}]`,
-        `z_index = ${z}`,
-        ...hidden,
-        ...fade,
-        `position = ${v2(m[4], m[5])}`,
-        `rotation = ${gdNum(angle(m))}`,
-        `texture = ${tex(t0.path)}`,
-        'centered = false',
-        '',
-      );
-      return;
-    }
-    const n = name('.', p.layer.name);
-    partPath.push(n);
-    nodes.push(`[node name=${gdString(n)} type="Sprite2D" parent="."]`, `z_index = ${z}`, ...hidden, ...fade, `position = ${v2(t0.x, t0.y)}`, `texture = ${tex(t0.path)}`, 'centered = false', '');
-  });
+
+    return res;
+  };
+
+  const rootNodes = emit(top, '', zUnit(top), undefined, topParent);
+
+  let cameraNode = '';
+  if (camera) {
+    const v = cameraViewAt(doc, o.range.start) ?? plainView(doc);
+    const n = (cameraNode = name('.', camera.name));
+    nodes.push(`[node name=${gdString(n)} type="Camera2D" parent="."]`, `position = ${v2(v.x * k, v.y * k)}`, `rotation = ${gdNum((v.rotation * Math.PI) / 180)}`, `zoom = ${v2(clampZoom(v.zoom), clampZoom(v.zoom))}`, 'ignore_rotation = false', '');
+  }
 
   // Animations.
   const animIds: [string, string][] = [];
   animations.forEach((a, ai) => {
+    const bounces = chosen[ai].bounces;
     const id = `Animation_${ai + 1}`;
     animIds.push([a.name, id]);
     const frames = a.frames.map((f) => o.range.start + f);
     const len = frames.length / a.fps;
-    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
+    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(bounces ? ['loop_mode = 2'] : a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
     let ti = 0;
     const track = (path: string, update: 0 | 1, keys: { t: number; trans: number; value: string }[]) => {
       lines.push(
@@ -385,72 +673,181 @@ export function godotBonesScene(o: BonesSceneInput): string {
       );
       ti++;
     };
-    for (const rig of rigs) {
-      const rk = rigKeys(rig, frames, a.fps);
-      const poses = rk.map((q) => rigPoseAt(doc, rig, q.f));
-      for (const b of rig.rig.bones) {
-        const path = bonePath.get(b.id)!;
-        const m = localRest(rig, b.id, k);
-        const la = angle(m);
-        const pos = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [m[4] + (poses[j][b.id]?.x ?? 0) * k, m[5] + (poses[j][b.id]?.y ?? 0) * k] })));
-        const rot = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [la + ((poses[j][b.id]?.r ?? 0) * Math.PI) / 180] })));
-        const sc = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [stretchOf(poses[j][b.id])] })));
-        track(`${path}:position`, 0, pos.map((q) => ({ t: q.t, trans: q.trans, value: v2(q.v[0], q.v[1]) })));
-        track(`${path}:rotation`, 0, rot.map((q) => ({ t: q.t, trans: q.trans, value: gdNum(q.v[0]) })));
-        if (sc.length > 1 || Math.abs(sc[0].v[0] - 1) > 1e-6) track(`${path}:scale`, 0, sc.map((q) => ({ t: q.t, trans: q.trans, value: v2(q.v[0], 1) })));
+    type Keys = { t: number; trans: number; v: number[] }[];
+    const vtrack = (path: string, keys: Keys, show: (v: number[]) => string) => track(path, 0, reduceKeys(keys).map((q) => ({ t: q.t, trans: q.trans, value: show(q.v) })));
+
+    // `outerWash` is the wash of the symbol around this scope at each step, when it has one (stacked with its own).
+    const scopeTracks = (nd: ScopeNodes, fr: Frames, textures: BonesTexture[][], outerWash?: (Wash | null)[]) => {
+      const sc = nd.sc;
+      for (const { rig, bonePath } of nd.rigs) {
+        const rk = rigKeys(rig, fr.f, a.fps);
+        const poses = rk.map((q) => rigPoseAt(doc, rig, q.f));
+        for (const b of rig.rig.bones) {
+          const path = bonePath.get(b.id)!;
+          const m = localRest(rig, b.id, k);
+          const la = angle(m);
+          const pos = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [m[4] + (poses[j][b.id]?.x ?? 0) * k, m[5] + (poses[j][b.id]?.y ?? 0) * k] })));
+          const rot = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [la + ((poses[j][b.id]?.r ?? 0) * Math.PI) / 180] })));
+          const sc2 = reduceKeys(rk.map((q, j) => ({ t: q.t, trans: q.trans, v: [stretchOf(poses[j][b.id])] })));
+          track(`${path}:position`, 0, pos.map((q) => ({ t: q.t, trans: q.trans, value: v2(q.v[0], q.v[1]) })));
+          track(`${path}:rotation`, 0, rot.map((q) => ({ t: q.t, trans: q.trans, value: gdFloat(q.v[0]) })));
+          if (sc2.length > 1 || Math.abs(sc2[0].v[0] - 1) > 1e-6) track(`${path}:scale`, 0, sc2.map((q) => ({ t: q.t, trans: q.trans, value: v2(q.v[0], 1) })));
+        }
       }
-    }
-    // Picture swaps (mouths, hands, frame by frame drawing) and parts that come and go.
-    parts.forEach((p, i) => {
-      const seq = a.frames.map((f) => p.frameOf[f] ?? -1);
-      const pics = new Set(seq.filter((x) => x >= 0));
-      const comes = seq.some((x) => x < 0) || p.frameOf.some((x) => x < 0);
-      const swaps = p.pictures.length > 1;
-      if (!swaps && !comes) return;
-      const texKeys: { t: number; trans: number; value: string }[] = [];
-      const visKeys: { t: number; trans: number; value: string }[] = [];
-      let lastPic = -2;
-      let lastVis: boolean | undefined;
-      seq.forEach((x, j) => {
-        const t = j / a.fps;
-        if (x >= 0 && x !== lastPic && swaps) {
-          texKeys.push({ t, trans: 1, value: tex(textures[i][x].path) });
-          lastPic = x;
-        }
-        const vis = x >= 0;
-        if (vis !== lastVis) {
-          visKeys.push({ t, trans: 1, value: vis ? 'true' : 'false' });
-          lastVis = vis;
-        }
-      });
-      if (swaps && pics.size) track(`${partPath[i]}:texture`, 1, texKeys);
-      if (comes) track(`${partPath[i]}:visible`, 1, visKeys);
-      // A cut-out part's picture can be a different size: its place under the bone changes with it.
-      if (swaps && p.kind !== 'mesh') {
-        const posKeys: { t: number; trans: number; value: string }[] = [];
-        let last = '';
+      // Picture swaps (mouths, hands, frame by frame drawing) and parts that come and go.
+      sc.parts.forEach((p, i) => {
+        const seq = fr.f.map((f, j) => (fr.on[j] ? (p.frameOf[f - sc.range.start] ?? -1) : -1));
+        const pics = new Set(seq.filter((x) => x >= 0));
+        const comes = seq.some((x) => x < 0) || p.frameOf.some((x) => x < 0);
+        const swaps = p.pictures.length > 1;
+        if (!swaps && !comes) return;
+        const texKeys: { t: number; trans: number; value: string }[] = [];
+        const visKeys: { t: number; trans: number; value: string }[] = [];
+        let lastPic = -2;
+        let lastVis: boolean | undefined;
         seq.forEach((x, j) => {
-          if (x < 0) return;
-          const tx = textures[i][x];
-          let at = v2(tx.x, tx.y);
-          if (p.kind === 'cut' && p.rig && p.bone) {
-            const b = p.rig.rig.bones.find((q) => q.id === p.bone)!;
-            const r = restMatrix(b);
-            const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x, tx.y]);
-            at = v2(m[4], m[5]);
+          const t = j / a.fps;
+          if (x >= 0 && x !== lastPic && swaps) {
+            texKeys.push({ t, trans: 1, value: tex(textures[i][x].path) });
+            lastPic = x;
           }
-          if (at !== last) {
-            posKeys.push({ t: j / a.fps, trans: 1, value: at });
-            last = at;
+          const vis = x >= 0;
+          if (vis !== lastVis) {
+            visKeys.push({ t, trans: 1, value: vis ? 'true' : 'false' });
+            lastVis = vis;
           }
         });
-        if (posKeys.length > 1) track(`${partPath[i]}:position`, 1, posKeys);
+        if (swaps && pics.size) track(`${nd.partPath[i]}:texture`, 1, texKeys);
+        if (comes) track(`${nd.partPath[i]}:visible`, 1, visKeys);
+        // A cut-out part's picture can be a different size: its place under the bone changes with it.
+        if (swaps && p.kind !== 'mesh') {
+          const posKeys: { t: number; trans: number; value: string }[] = [];
+          let last = '';
+          seq.forEach((x, j) => {
+            if (x < 0) return;
+            const tx = textures[i][x];
+            let at = v2(tx.x / bk(tx), tx.y / bk(tx));
+            if (p.kind === 'cut' && p.rig && p.bone) {
+              const b = p.rig.rig.bones.find((q) => q.id === p.bone)!;
+              const r = restMatrix(b);
+              const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x / bk(tx), tx.y / bk(tx)]);
+              at = v2(m[4], m[5]);
+            }
+            if (at !== last) {
+              posKeys.push({ t: j / a.fps, trans: 1, value: at });
+              last = at;
+            }
+          });
+          if (posKeys.length > 1) track(`${nd.partPath[i]}:position`, 1, posKeys);
+        }
+      });
+      // Symbols with their own skeletons: where the instance is, how faded and washed, and which of its frames shows.
+      for (const nn of nd.nested) {
+        const inst = nn.inst;
+        const st = fr.f.map((f, j) => (fr.on[j] ? (inst.at[f - sc.range.start] ?? null) : null));
+        const n = st.length;
+        const glide = (j: number) => !!st[j]?.glide;
+        vtrack(`${nn.path}:transform`, sampledKeys(n, a.fps, glide, (j) => (st[j] ? nn.toBone(st[j]!.matrix) : null)), (v) => xf(v));
+        const opKeys = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [inst.look.opacity * st[j]!.opacity] : null));
+        if (opKeys.some((q) => Math.abs(q.v[0] - 1) > 1e-6)) vtrack(`${nn.path}:${nn.group ? 'self_modulate' : 'modulate'}`, opKeys, (v) => `Color(1, 1, 1, ${gdNum(v[0])})`);
+        if (st.some((s) => !s)) track(`${nn.path}:visible`, 1, st.reduce<{ t: number; trans: number; value: string }[]>((acc, s, j) => (acc.length && acc[acc.length - 1].value === String(!!s) ? acc : [...acc, { t: j / a.fps, trans: 1, value: String(!!s) }]), []));
+        // This copy's wash with the ones around it stacked on top, step by step (the next level down sees it too).
+        let wash = outerWash;
+        if (nn.tint) {
+          wash = st.map((s, j) => stackWash(s?.tint, nn.tint!.parent ? outerWash?.[j] : null));
+          let lastColor = wash.find((w) => w)?.color ?? '#ffffff';
+          const colors = wash.map((w) => {
+            if (w) lastColor = w.color;
+            return lastColor;
+          });
+          const amounts = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [wash![j] ? washAmount(wash![j]!) : 0] : null));
+          const cols = sampledKeys(n, a.fps, glide, (j) => (st[j] ? rgbaOf(colors[j]) : null));
+          for (const m of nn.tint.mats.values()) {
+            vtrack(`${m.path}:material:shader_parameter/tint_amount`, amounts, (v) => gdFloat(v[0]));
+            vtrack(`${m.path}:material:shader_parameter/tint_color`, cols, (v) => `Color(${v.map(gdNum).join(', ')})`);
+          }
+        }
+        // The symbol's own timeline: which of its frames shows at each step.
+        const inner: Frames = { f: [], on: [] };
+        let lastF = 0;
+        st.forEach((s) => {
+          if (s) lastF = s.frame;
+          inner.f.push(lastF);
+          inner.on.push(!!s);
+        });
+        scopeTracks(nn.nodes, inner, nn.inst.scope.textures ?? nn.inst.scope.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 }))), wash);
       }
-    });
+    };
+    scopeTracks(rootNodes, { f: frames, on: frames.map(() => true) }, o.textures);
+
+    if (camera) {
+      const cn = cameraNode;
+      const ck = cameraKeys(doc, frames, a.fps);
+      const view = (j: number) => cameraViewAt(doc, ck[j].f) ?? plainView(doc);
+      const keys = (pick: (v: ReturnType<typeof view>) => number[]): Keys => sampledKeys(ck.length, a.fps, (j) => ck[j].glide, (j) => pick(view(j)));
+      vtrack(`${cn}:position`, keys((v) => [v.x * k, v.y * k]), (v) => v2(v[0], v[1]));
+      vtrack(`${cn}:rotation`, keys((v) => [(v.rotation * Math.PI) / 180]), (v) => gdFloat(v[0]));
+      vtrack(`${cn}:zoom`, keys((v) => [clampZoom(v.zoom)]), (v) => v2(v[0], v[0]));
+      for (const g of depthGroups) {
+        // Scale about the camera's own centre of the layer, by how much less the far layer zooms.
+        const grow = (v: ReturnType<typeof view>) => {
+          const sc = depthScale(v, g.factor) / clampZoom(v.zoom);
+          const { x: px, y: py } = depthAnchor(doc, v, g.factor);
+          return [sc, 0, 0, sc, px * (1 - sc) * k, py * (1 - sc) * k];
+        };
+        vtrack(`${g.path}:transform`, keys(grow), (v) => xf(v));
+      }
+    }
     sub.push(lines.join('\n'), '');
   });
   sub.push('[sub_resource type="AnimationLibrary" id="AnimationLibrary_1"]', '_data = {', animIds.map(([n, id]) => `&${gdString(n)}: SubResource("${id}")`).join(',\n'), '}', '');
   nodes.push('[node name="AnimationPlayer" type="AnimationPlayer" parent="."]', 'libraries = {', '&"": SubResource("AnimationLibrary_1")', '}', ...(animations[0] ? [`autoplay = &${gdString(animations[0].name)}`] : []), '');
 
-  return [`[gd_scene load_steps=${ext.length + sub.filter((s) => s.startsWith('[sub_resource')).length + 1} format=3]`, '', ...(ext.length ? [...ext, ''] : []), ...sub, ...nodes].join('\n');
+  const text = [`[gd_scene load_steps=${ext.length + sub.filter((s) => s.startsWith('[sub_resource')).length + 1} format=3]`, '', ...(ext.length ? [...ext, ''] : []), ...sub, ...nodes].join('\n');
+  return { text, shaders };
+}
+
+function rgbaOf(hex: string): number[] {
+  const h = hex.replace('#', '');
+  const ch = (i: number) => (parseInt(h.slice(i, i + 2), 16) || 0) / 255;
+  return [ch(0), ch(2), ch(4), h.length >= 8 ? ch(6) : 1];
+}
+
+/** The helper script's file name, next to the scene. */
+export const fitScriptName = (base: string) => `${base}-fit-window.gd`;
+
+/**
+ * A small optional script that makes the camera and the layers with depth line up at any window size. Godot's Camera2D
+ * and Parallax2D work from the window's size, which only matches Frameling when the window is the stage times the export
+ * scale; this stretches the window from that size instead (the picture keeps its shape).
+ */
+export function fitWindowScript(width: number, height: number): string {
+  return `# Made by Frameling. Keeps the camera and the layers with depth lined up at any window size.
+# Attach it to any node of the exported scene (the root is fine), or add it as an autoload.
+# Without it they line up only when the window is exactly ${width} x ${height} (the stage times the export scale).
+# The same thing without a script: Project Settings > Display > Window, set Viewport Width and Height to
+# ${width} and ${height}, Stretch Mode to canvas_items and Aspect to keep.
+extends Node
+
+@export var design_size := Vector2i(${width}, ${height})
+
+func _ready() -> void:
+	var window := get_window()
+	window.content_scale_size = design_size
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+`;
+}
+
+/** True when the scene has a camera, so its window size matters (layers with depth only move with a camera). */
+export const needsFitScript = (doc: Doc) => !!activeCamera(doc);
+
+/** A Godot 4 scene (.tscn) for a rigged character. */
+export function godotBonesScene(o: BonesSceneInput): string {
+  return build(o).text;
+}
+
+/** The shader files the scene needs next to it (a tinted symbol only), by name. */
+export function godotBonesShaders(o: BonesSceneInput): { name: string; text: string }[] {
+  return [...build(o).shaders].map((b) => ({ name: tintShaderName(b), text: tintShader(b) }));
 }

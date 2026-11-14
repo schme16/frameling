@@ -2,7 +2,32 @@
 
 A friendly desktop tool for drawing and animating 2D art, made for vector and pixel art alike. Draw frame by frame or tween between poses, then export to video, GIFs, sprite sheets, Godot, and natively into Interactives.
 
-Early days: what's here is the empty app shell and the build pipeline. The plan lives on the project board (project `frameling`, doc `evaluation`).
+It runs as a desktop app (Electron, Windows, macOS, Linux). The plan lives on
+the project board (project `frameling`, doc `evaluation`). Developer docs are in [docs/](docs/README.md).
+
+## What it does
+
+- **Drawing**: vector layers (pressure brush, pencil, pen, shapes, paint bucket, gradients, keep separate or merge
+  together) and pixel layers (pixel pencil, shade, dither, palettes and ramps, palette lock, mirror drawing,
+  selections). Reference layers, guides, grids, perspective guides.
+- **Animation**: a detailed timeline (keys, holds, tweens with easing, property rows, multi-key retime) or a clean
+  one; onion skin, light table, play range, ping-pong. Symbols with their own timelines, classic and shape tweens,
+  motion paths, one-click motions.
+- **Rigging and camera**: bones with IK, pins, squash and stretch, bending meshes and a pose library; a camera layer
+  with parallax depth.
+- **Tiles**: animated tiles, tilemap layers, tile editing in place.
+- **Effects**: blend modes, an effects stack with animated values, clip to below, masks, layer folders, text with text
+  animators, particle emitters.
+- **Sound**: sound clips on the timeline and lip sync from audio.
+- **Artboards**: several named canvases in one document. **Clip flow**: which clip follows which, for games.
+- **Export**: MP4, WebM, GIF, APNG, PNG and PNG sequences, sprite sheets with data for Godot, Unity, Phaser, PixiJS,
+  CSS and JSON, SVG and animated SVG, Lottie, PDF, `.ai`, PSD, ProRes 4444, Godot bones scenes and a Godot importer
+  add-on, and `.flplay` for Interactives (with a round trip back into Frameling).
+- **Aseprite files** (`.aseprite`, `.ase`) open as a drawing or add to the open one: layers, groups, exact frame timing, linked cels, tags as clips, palettes, tilemaps as tiles, slices (`src/aseprite`).
+- **Pictures and sprite sheets** (PNG, animated GIF, sprite sheets) open as pixel art or add to the open drawing, cut by a grid, by the gaps or by a JSON (`src/pixel/import`). **Slices** (named rectangles with a 9-patch middle and a pivot) go to Godot, Unity, Phaser, PixiJS, CSS and JSON with the sprite sheet export (`src/pixel/slices`).
+- **Around it**: autosave, recovery and version history, templates (built in and your own), sandboxed plugins, quests
+  and onboarding with Quill the mascot, in-app help with pictures and clips, themes and a theme editor, shortcut sets,
+  workspaces.
 
 ## Get it
 
@@ -12,11 +37,53 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 |---|---|
 | Windows | `Frameling-<version>-setup-x64.exe` (installer) or `...-portable-x64.exe` (runs without installing) |
 | macOS | `Frameling-<version>-mac-arm64.dmg` (Apple silicon) or `...-mac-x64.dmg` (Intel) |
-| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it) |
+| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it; see Help, Installing on Linux) |
 
-The builds aren't signed yet, so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time.
+The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time (see Signing, below).
 
-The same run also has **frameling-web**: the web version, for machines where installing isn't allowed (see below).
+
+### Build it yourself
+
+You need [Node.js](https://nodejs.org) 22 or newer and this repository. Then, in the repository folder:
+
+- **Windows:** double-click `build.cmd`, or run it in a terminal.
+- **macOS and Linux:** run `./build.sh`.
+
+A menu asks what to build:
+
+```
+  1. This computer (Linux)
+  2. Everything this computer can build
+  3. Windows
+  4. macOS  (not on this computer)
+  5. Linux
+```
+
+Or skip the menu by naming it: `./build.sh this`, `all`, `windows`, `mac` or `linux` (the same words work with
+`build.cmd`). Add `--test` to run the tests first. The first run installs the packages (`npm ci`); the apps land in
+`release/`.
+
+What each computer can build:
+
+| On | Can build |
+|---|---|
+| Windows | Windows |
+| macOS | macOS, Linux (Windows too with [Wine](https://www.winehq.org)) |
+| Linux | Linux (Windows too with Wine) |
+
+Only a Mac can build the macOS app. Builds made this way are unsigned on Windows; macOS ones are ad-hoc signed (see
+Signing, below).
+
+## Changes
+
+- **Files are now format version 3.** Every `.frameling` file saved by this build is version 3 (back and forth clip
+  repeat counts changed meaning in version 2; pixel drawings keep only the painted part in version 3, so small
+  pictures on big canvases take a fraction of the memory and file size). This build opens older files and upgrades
+  them as it opens them, but earlier builds can't open a version 3 file: they say it was made with a newer Frameling.
+  Keep a copy of anything you still need to open in an older build, and update every machine you share files with.
+  Details in `docs/format.md`.
+- **Aseprite files can be far bigger.** Only each cel's own bounds are kept, so the old 1 GB limit now counts what
+  is held, not whole canvases.
 
 ## Work on it
 
@@ -24,40 +91,24 @@ Needs Node 22.
 
 ```bash
 npm install
-npm run dev            # opens the app with hot reload
-npm test               # tests
+npm run dev            # opens the app with hot reload (Vite dev server on 5199)
+npm test               # vitest: everything under test/
+npm run typecheck      # tsc --noEmit
 npm run help:audit     # checks the in-app help, and prints what it found
-npm run build          # mascot, type check, then build into dist/
+npm run build          # mascot, type check, then build into dist/ (renderer, main, preload)
 npm run build:mascot   # just rebuild Quill's sprite sheet and the app icons
+npm start              # build, then run the built app
 npm run dist           # installers for this system, into release/
+npm run dist:linux     # just the Linux AppImage
 ```
 
-### The web version
+Checks that drive the real app in Electron (accessibility, every export format, effects pixels, the plugin sandbox,
+performance, screenshots, help clips) are in [docs/testing.md](docs/testing.md). They all run inside xvfb, never on
+the desktop you're working at, for example:
 
 ```bash
-npm run build:web      # static files into dist/web/
-npm run preview:web    # serves dist/web on http://localhost:5198
+xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y
 ```
-
-`dist/web/` is plain static files with relative paths, so it can be copied into any folder of any web server (a
-sub-path like `/tools/frameling/` is fine). It needs https (or localhost) for the offline copy and "Install as an app"
-to work. Nothing is deployed anywhere automatically.
-
-It is the same page as the desktop app. `src/platform/` works out where it's running: the desktop app's preload
-script puts the bridge on `window.frameling`, and in a plain browser `src/platform/web/` builds the same bridge in the
-page. Everything else goes through that bridge, so very little code knows the difference.
-
-| | Chrome, Edge | Firefox, Safari |
-|---|---|---|
-| Open and save | File System Access: Save asks once, then saves in place | Open is an upload; Save downloads the file each time |
-| Open recent | Remembers the files (the browser may ask to allow access again) | Reopens the browser's own copy of the file |
-| Multi-file exports (sprite sheet, tileset) | Into a folder you pick | One .zip download |
-| Autosave and Recover unsaved work | IndexedDB, every 15 seconds and when the tab is hidden, kept 7 days | Same |
-| Install as an app, offline | Yes (manifest, service worker, opens .frameling files) | Offline after the first visit. Safari can add it to the Dock or Home Screen; Firefox can't install it |
-
-Not in the browser: ProRes export (it runs FFmpeg on the computer), fonts installed on the computer for text, "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
-instead, and the work is put aside in Recover unsaved work), and shortcuts the browser keeps (Ctrl+N, Ctrl+W, Ctrl+T).
-The in-app help topic "Frameling in a web browser" says the same in plain words.
 
 ### Install on this Linux machine
 
@@ -66,7 +117,9 @@ npm run install-local                 # build the AppImage and install it
 npm run install-local -- --no-build   # install the last build without rebuilding
 ```
 
-This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`. If Frameling is running from there, the script closes it first so the file can be replaced. Set `FRAMELING_INSTALL_DIR` to install somewhere else.
+This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`. If Frameling is running from there, the script closes it first so the file can be replaced. Set `FRAMELING_INSTALL_DIR` to install somewhere else. It also writes the launcher, which lists Frameling under "Open with" for Aseprite files (and adds the Aseprite file type to your own mime folder if nothing else defines it) without becoming their default.
+
+If `FRAMELING_INGEST_KEY` is set in your environment, it builds a second copy as well, `frameling.beta.AppImage`: the same app with the key compiled in, so it can send reports. The ordinary copy is always built without the key, even when the key is set. The beta copy has its own launcher (**Frameling Beta**), its own settings, recent files and crash notes (a `Frameling Beta` data folder), and never claims `frameling://` links or Aseprite files, so you can run both at once. It is only installed after `npm run beta:check -- --expect-key` finds the key inside the packed app. With no key set, the beta copy is skipped with one line saying so. The key is read from the environment only, and never printed or written to a file.
 
 ### Editing the mascot
 
@@ -103,16 +156,27 @@ in `{curly}` brackets are filled in by the app, so keep them. A list is several 
 app picks from (silly names, quest cheers). Quest step instructions are tutorial content and stay in
 `src/quests/library.ts`; help topics and plain app messages (errors, saving) aren't in it either.
 
-The easy way to edit them is the review page, `brand/dialogue/index.html` (open it straight from disk). Each line
-has its screenshot in place and a box to change it; your edits are kept in that browser until you reset them.
+The easy way to edit them is the review page, `brand/dialogue/index.html`. Open it straight from disk:
 
-1. Edit the lines on the page, then press **Download my changes** (or **Copy my changes** and paste into a file).
+```bash
+xdg-open brand/dialogue/index.html
+```
+
+Each line has its screenshot in place and a box to change it. The same page lives on the board as the
+`quill-dialogue` doc (`npm run dialogue:publish` puts the current build there). Whenever it opens it reads the live list
+from the repo's `development` branch on GitHub (no key), so it is never a stale copy, and it saves your edits as you type:
+in the browser, and on the board as the `quill-lines-draft` doc. **Put these in the app** raises a board task listing
+each changed line (was, now, and the exact row that goes into `lines.json`). If the board can't be reached from the
+page, the edits stay in the browser and the button copies the task text instead.
+
+1. Edit the lines on the page. To merge from the board: `npm run dialogue:apply -- --board` (add `--check` first). To
+   merge from a file: press **Download my changes** (or **Copy my changes** and paste into a file).
 2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
    changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
    that doesn't exist. Add `--check` to see the changes without writing them.
-3. `npm run dialogue:page` refreshes the page's text; `npm run dialogue:shots` rebuilds the app and retakes every
-   screenshot too (about two minutes; it drives an off-screen window, see `scripts/dialogue/shots.cjs`). A shot
-   that only shows the nearest moment says so under the line.
+3. `npm run dialogue:page` refreshes the page's built-in copy (the fallback); `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run
+   dialogue:shots` rebuilds the app and retakes every screenshot too (about two minutes, inside xvfb, see
+   `scripts/dialogue/shots.cjs`). A shot that only shows the nearest moment says so under the line.
 
 Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and `lineParts(id, vars)` (to fill a
 placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
@@ -121,16 +185,24 @@ checks every line is used, every id used exists, and the placeholders match.
 
 ## In-app help
 
-Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), and every one has a picture or a
+Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), their words are in the `help.bodies.ts` beside it (a lazily loaded chunk), and every one has a picture or a
 short clip in `public/help/`. `npm run help:audit` (also part of `npm test`) fails when a command has no topic, a
 topic has no media, a media file is missing or unused, a `help:` link goes nowhere, or a topic names a shortcut no
 command has any more. It also lists topics over 400 words. `test/ui/help-words.test.ts` checks that the plain words
 people type ("rubber", "lost my work") find the right topic; add a pair there when someone can't find something.
 
-Media is captured from the built app: `npm run build`, then
-`npx electron scripts/docs/record.cjs <outDir> <steps.json> --prefs '{"showWelcome":false,"reduceMotion":true}'`
-(steps are documented at the top of the script; under xvfb wrap it in `xvfb-run -a`), and
-`scripts/docs/encode.sh <outDir>/<clip> <name>` turns a recorded clip into an H.264 MP4 and its poster.
+Every picture and clip is in public/help/ twice, `<name>-dark` and `<name>-light`, and the help browser shows the one for
+the mode the app is in (and switches with it, Auto included). A topic's `media` names the base file (`select.png`). They
+are all captured from the built app, inside xvfb, by the steps in `scripts/docs/help/`:
+
+```bash
+npm run help:media                         # everything, both themes
+npm run help:media -- --only select,tour   # just those
+```
+
+To add media for a new topic, add an entry there (the help media test fails if a topic has none) and run it with
+`--only`. The entry format, the step list and the details are in [docs/testing.md](docs/testing.md). Clips are always
+H.264, never AV1.
 
 ## The Interactives package (.flplay)
 
@@ -154,14 +226,21 @@ playable form of the animation, which Interactives drops onto a page as a "Frame
 - `atlas`: `{image, width, height}`.
 - `cells`: one per picture, `{x, y, w, h}` on the atlas and `{ox, oy}`, where its top left sits in the whole frame
   (atlas pixels; the whole frame is `width * scale` by `height * scale`).
-- `frames`: the cell for each frame. A held drawing is the same cell several times, so it is stored once.
+- `frames`: the cell for each frame. A held drawing is the same cell several times, so it is stored once. A clip that
+  plays backward, back and forth or a set number of times has its frames in play order added at the end (its `start`
+  and `end` point there), and `documentFrames` says how many frames are the document's own.
 - `clips`: `{name, start, end, loop, runs}`, frames inclusive and counted from the package's first frame. `runs`
   is the clip as `{cell, frames, ms}`, for players that step picture by picture. Names are unique.
 - `markers`: `{name, frame}`, sorted by frame. Several can share a name (two footsteps).
-- `layers`: `{name, kind, visible, opacity, pixelSize?}`, for information. Frames are already flattened.
+- `layers`: `{name, kind, visible, opacity, pixelSize?}`, for information. Frames are already flattened. Reference
+  layers are left out.
 - `source`: `"source.frameling"` or `null`.
+- `app` (`"Frameling"`) and `appVersion`: what wrote it.
+- `flow` (optional): the clip flow by clip name, `{start, states: [{name, loop, frames}], transitions: [{from, to,
+  on: "end" | "trigger", trigger?}]}`, when the document has one.
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
+The same format is in [docs/format.md](docs/format.md), next to the `.frameling` format.
 
 ### Edit in Frameling (the round trip)
 
@@ -187,24 +266,51 @@ would need to:
 
 Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](docs/plugins.md) for the API, the
 sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
-user data folder (web: IndexedDB).
+user data folder.
 
 ## Templates
 
 Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`
 beside the drawing (name, blurb, kind, tags, author, licence, card frame; `src/templates/community.ts`), kept in
-`library/templates/` in the user data folder (web: IndexedDB). Files dropped into that folder show up too. The welcome
+`library/templates/` in the user data folder. Files dropped into that folder show up too. The welcome
 sheet lists sources from `registerTemplateSource` (`src/templates/user.ts`), so an online gallery can be added later
 as one more source with its own section; there is no server for one today.
 
 ## How it's put together
 
-- `src/main/`: the Electron main process (windows, menus, files).
+The full map is [docs/architecture.md](docs/architecture.md). In short:
+
+- `src/main/`: the Electron main process (windows, dialogs, files, autosave copies, the user library, FFmpeg).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
-- `src/renderer/`: the app's interface (React and TypeScript, built with Vite).
-- `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
-- `src/plugins/`: the plugin sandbox and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
-- `scripts/`: dev, build and local install scripts.
-- `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
+- `src/platform/`: the few things the page does for itself rather than through the desktop bridge.
+- `src/renderer/`: the page's entry (`main.tsx`, `App.tsx`), `features.ts` (loads every area) and the `?debug` hooks.
+- `src/core/`: the document format (`format.ts`), the store with undo (`store.ts`), the registries, and the single
+  renderer (`render.ts`) and posing (`symbols.ts`) every view and export uses.
+- `src/canvas/`, `src/tools/`, `src/timeline/`, `src/ui/`: the canvas engine, the tools, the timeline, and the shell
+  (dock, menus, palette, keyboard, preferences, themes, help, Quill, onboarding, sounds).
+- One folder per feature: `artboards`, `audio`, `camera`, `effects`, `flow`, `geometry`, `lipsync`, `particles`,
+  `pixel`, `quests`, `rig`, `select`, `symbols`, `text`, `tiles`.
+- `src/io/`: files, autosave, recovery, versions. `src/export/`: every exporter. `src/plugins/`: the plugin sandbox
+  and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
+- `test/`: vitest. `scripts/`: dev, build, install, the mascot build, and the Electron harnesses (`e2e/`, `perf/`,
+  `docs/`, `dialogue/`, `a11y.cjs`, `shoot.cjs`); see [docs/testing.md](docs/testing.md).
+- `public/`: help media, the mascot sheet, the plugin host pages. `brand/`: mascot sources, A/B shots, the dialogue
+  review page. `godot/`: the Godot importer add-on. `plugins/examples/`: example plugins.
+- `.github/workflows/build.yml`: the Windows, macOS and Linux builds.
 
 Branches: work happens on `development`, which reaches `main` through pull requests, and each pull request builds the apps.
+
+## Signing (pilot)
+
+Releases are signed the cheap way for now, like Godot's own builds:
+
+- **Windows:** signed with Frameling's self-signed code-signing certificate (publisher "Frameling (self-signed)"). The
+  build uses it when the repository secrets `WIN_CSC_LINK` (the .pfx, base64) and `WIN_CSC_KEY_PASSWORD` are set, and
+  builds unsigned otherwise. The certificate's public half is `build/frameling-codesign.cer`; the private key and its
+  password live outside the repo, with the maintainer. SmartScreen still warns ("More info", "Run anyway").
+- **macOS:** ad-hoc signed after packaging (`build/adhoc-sign.cjs`, `codesign --sign -`), so Apple Silicon will run it
+  once it's allowed (right-click, Open). Not notarised.
+- **Linux:** the AppImage needs no signing.
+
+The in-app help topic "Installing Frameling" walks people through the first-run prompts. Moving to paid certificates
+later means setting `CSC_LINK`/`CSC_KEY_PASSWORD` (and Apple's notarisation variables) and removing the ad-hoc hook.

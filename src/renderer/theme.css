@@ -33,7 +33,7 @@
   --line-soft: #2e2a40;
   --text: #f4efe6;
   --muted: #b3aac4;
-  --faint: #958ea9;
+  --faint: #9d97b0;
   --canvas-bg: #121019;
   --stage-shadow: 0 6px 30px rgb(0 0 0 / 45%);
 
@@ -41,6 +41,8 @@
   --chosen-bg: var(--sunny);
   --chosen-fg: #1d1b26;
   --hover-bg: color-mix(in srgb, var(--raised) 70%, var(--line));
+  /* A faint warm tint of the panel behind warnings; it follows --panel in light and dark. */
+  --peach-soft: color-mix(in srgb, var(--peach) 14%, var(--panel));
   --accent: var(--grape);
   --focus: var(--sunny);
   --danger: #ff7b7b;

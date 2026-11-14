@@ -1,6 +1,7 @@
 // The first-run hello from Quill, as plain data and a reducer: which step shows, what was picked, and what to suggest
 // afterwards. No DOM and no stores, so it's all easy to test. Onboarding.tsx draws it. Quill's words are in
 // ../mascot/lines.json.
+import { interactivesEnabled } from '../../features/flags';
 import { line, lines } from '../mascot/lines';
 
 export type StepId = 'hello' | 'make' | 'themes' | 'prefs' | 'name' | 'done';
@@ -18,14 +19,15 @@ export interface InterestInfo {
   reaction: string;
 }
 
-export const INTERESTS: InterestInfo[] = [
+/** The cards on "What would you like to make?". The Interactives one is left out while Interactives is hidden (src/features/flags.ts). */
+export const INTERESTS: InterestInfo[] = ([
   { id: 'cartoons', title: 'Sketches and cartoons', blurb: 'Doodles that wiggle, blink and bounce.', icon: 'brush', reaction: line('onboarding.make.cartoons') },
   { id: 'sprites', title: 'Game sprites and pixel art', blurb: 'Heroes, baddies and chunky little pixels.', icon: 'pixel', reaction: line('onboarding.make.sprites') },
   { id: 'tiles', title: 'Tiles and levels', blurb: 'Grass, walls and whole worlds to explore.', icon: 'tiles', reaction: line('onboarding.make.tiles') },
   { id: 'motion', title: 'Explainers and motion graphics', blurb: 'Logos, titles and smooth moves.', icon: 'tween', reaction: line('onboarding.make.motion') },
   { id: 'interactives', title: 'Things for Interactives', blurb: 'Art you can poke!', icon: 'play', reaction: line('onboarding.make.interactives') },
   { id: 'play', title: 'Just playing', blurb: 'No plan at all. The best kind of plan.', icon: 'heart', reaction: line('onboarding.make.play') },
-];
+] as InterestInfo[]).filter((i) => i.id !== 'interactives' || interactivesEnabled());
 
 export interface FlowState {
   step: StepId;
@@ -118,6 +120,14 @@ const PLANS: Record<Interest, Plan> = {
   interactives: { workspace: 'animate', template: 'blink', quest: 'share-it', help: ['export-interactives', 'timeline-clips', 'symbols'] },
   play: { workspace: 'draw', template: 'blank-vector', quest: 'fill-it-in', help: ['tool-brush', 'command-palette', 'examples'] },
 };
+
+/** Interests that need a feature which is off, so the plan leaves them out. Each is a feature id. */
+export const INTEREST_FEATURE: Partial<Record<Interest, string>> = { tiles: 'tiles' };
+
+/** The picked interests whose feature is off (so `planFor` should not see them), in card order. */
+export function pickedButOff(interests: readonly Interest[], isOn: (feature: string) => boolean): Interest[] {
+  return interests.filter((i) => INTEREST_FEATURE[i] !== undefined && !isOn(INTEREST_FEATURE[i]!));
+}
 
 /** Everyone starts with this one: the others open up after it. */
 export const FIRST_QUEST = 'first-animation';

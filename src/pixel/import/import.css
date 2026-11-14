@@ -1,0 +1,233 @@
+/* The picture import dialog. Theme tokens only. */
+.im-modal {
+  width: min(960px, 100%);
+}
+.im-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(300px, 380px);
+  gap: 20px;
+  padding: 8px 20px 12px;
+  overflow: auto;
+  min-height: 0;
+}
+@media (max-width: 760px) {
+  .im-body {
+    grid-template-columns: 1fr;
+  }
+}
+.im-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.im-stage-wrap {
+  flex: 1;
+  min-height: 200px;
+  max-height: 440px;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.im-stage {
+  position: relative;
+  background-color: var(--raised);
+  background-image: conic-gradient(color-mix(in srgb, var(--text) 10%, transparent) 25%, transparent 0 50%, color-mix(in srgb, var(--text) 10%, transparent) 0 75%, transparent 0);
+  background-size: 16px 16px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.im-stage canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+.im-stage svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.im-cell {
+  fill: color-mix(in srgb, var(--sunny-deep) 8%, transparent);
+  stroke: var(--sunny-deep);
+  stroke-width: 1;
+}
+.im-num {
+  fill: var(--text);
+  font-family: var(--font-ui);
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 3px;
+}
+.im-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  color: var(--muted);
+}
+.im-zoom .io-btn {
+  padding: 3px 12px;
+}
+.im-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.im-file {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.im-set {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.im-set legend {
+  padding: 0 6px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--muted);
+}
+.im-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.im-segbtn {
+  font: inherit;
+  font-weight: 700;
+  padding: 5px 12px;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.im-segbtn:hover {
+  background: var(--hover-bg);
+}
+.im-segbtn.on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.im-segbtn:focus-visible,
+.im-way:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.im-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.im-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.im-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.im-field input,
+.im-field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+  min-width: 0;
+}
+.im-field input:focus-visible,
+.im-field select:focus-visible,
+.im-check input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.im-hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.im-notes {
+  color: var(--faint);
+}
+.im-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.im-ways {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.im-way {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.im-way span {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.im-way:hover {
+  background: var(--hover-bg);
+}
+.im-way.on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.im-way.on span {
+  color: inherit;
+  opacity: 0.85;
+}
+.im-gifbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.im-gifbar .cv-slider {
+  flex: 1;
+  min-width: 80px;
+}
+.im-link {
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.im-summary {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}

@@ -5,12 +5,13 @@ import type { Doc, PathPoint, Shape, StrokePoint } from '../core/format';
 import { getCommand, getTool } from '../core/registry';
 import { store } from '../core/store';
 import { askAboutUnsavedChanges } from '../io/document';
-import { editActiveDrawing } from '../tools/edit';
+import { editActiveDrawing, paintActiveGrid } from '../tools/edit';
 import { setFillOptions, getFillOptions, type GapPreset } from '../tools/fill-options';
 import { docFromPreset, PRESETS } from '../ui/presets';
 import { closeSheet } from '../ui/overlays';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
+import { madeOnPurpose } from '../pixel/workspace';
 import { closedShapeCenter, hasInkAt, hasPixelLayer, hasVectorLayer } from './predicates';
 
 /** A loop of stroke points: a hand-drawn-looking ball, ends meeting. */
@@ -68,7 +69,7 @@ export function nudgeDrawing(dx = 60): boolean {
 /** Puts a new document on screen after asking about unsaved work. False when they said no. */
 export async function freshPage(make: () => Doc): Promise<boolean> {
   if (!(await askAboutUnsavedChanges())) return false;
-  store().load(make());
+  store().load(madeOnPurpose(make()));
   return true;
 }
 
@@ -132,8 +133,7 @@ export function drawDemoPixelRing(): boolean {
   const cy = Math.floor(g.height / 2);
   const r = Math.max(2, Math.min(6, Math.floor(Math.min(g.width, g.height) / 5)));
   return (
-    editActiveDrawing('Draw pixels', 'pixel', (d) => {
-      const px = new Uint8ClampedArray(d.pixels);
+    paintActiveGrid('Draw pixels', (px, d) => {
       for (let a = 0; a < 64; a++) {
         const x = Math.round(cx + Math.cos((a / 64) * Math.PI * 2) * r);
         const y = Math.round(cy + Math.sin((a / 64) * Math.PI * 2) * r);
@@ -144,7 +144,6 @@ export function drawDemoPixelRing(): boolean {
         px[i + 2] = rgb[2];
         px[i + 3] = 255;
       }
-      d.pixels = px;
     }) === 'ok'
   );
 }
@@ -152,8 +151,7 @@ export function drawDemoPixelRing(): boolean {
 /** Rubs out a few painted pixels on the current pixel drawing, so it differs from its copy. */
 export function tweakPixels(): boolean {
   return (
-    editActiveDrawing('Erase pixels', 'pixel', (d) => {
-      const px = new Uint8ClampedArray(d.pixels);
+    paintActiveGrid('Erase pixels', (px) => {
       let n = 0;
       for (let i = 3; i < px.length && n < 3; i += 4) {
         if (px[i] > 0) {
@@ -161,7 +159,6 @@ export function tweakPixels(): boolean {
           n++;
         }
       }
-      d.pixels = px;
     }) === 'ok'
   );
 }

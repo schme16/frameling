@@ -3,6 +3,8 @@
  * script (which builds it), the main process (which answers it) and the page (which calls it).
  */
 
+import type { SaveChoice } from '../shared/saveQuestion';
+
 export interface FileFilter {
   name: string;
   extensions: string[];
@@ -34,6 +36,8 @@ export interface AutosaveMeta {
   name: string;
   filePath: string | null;
   docId: string;
+  /** A small picture of the drawing. Only the web version sends one: a closing tab has no time to draw it when the work is put aside. */
+  thumb?: string;
 }
 
 export interface AutosaveInfo {
@@ -56,10 +60,10 @@ export interface KeptAutosave {
   thumb?: string;
 }
 
-export type SaveChoice = 'save' | 'discard' | 'cancel';
+export type { SaveChoice };
 
-/** What the app keeps in its own folder: installed plugins and your templates. */
-export type LibraryKind = 'plugins' | 'templates';
+/** What the app keeps in its own folder: installed plugins, your templates, and version history. */
+export type LibraryKind = 'plugins' | 'templates' | 'versions' | 'versions-index';
 
 export interface LibraryEntry {
   id: string;
@@ -77,11 +81,43 @@ export interface LibraryApi {
   showFolder?(kind: LibraryKind): Promise<void>;
 }
 
+/** What the desktop side knows about a crash it found when Frameling started. Plain facts, nothing about what was drawn. */
+export interface CrashNotes {
+  /** `killed`: stopped without closing properly. `window`: the drawing window crashed. `both`: the window crashed, then the app stopped without closing. */
+  how: 'killed' | 'window' | 'both';
+  /** When the run that crashed began (milliseconds since 1970). */
+  startedAt: number;
+  version: string;
+  platform: string;
+  /** Plain lines about what went wrong, such as how the window crashed. */
+  events: string[];
+}
+
+/** A screen as the computer reports it: sizes in its own units (before any interface size), and its scale factor. */
+export interface DisplayInfo {
+  id: number;
+  width: number;
+  height: number;
+  scaleFactor: number;
+  /** The part of the screen windows can use (without taskbars and docks). */
+  workWidth: number;
+  workHeight: number;
+  windowWidth: number;
+  windowHeight: number;
+}
+
+/** One request to the board that beta reports go to, made by the desktop side so a failure comes back with its real reason. */
+export interface BetaBridge {
+  request(req: { url: string; method?: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }): Promise<{ status: number; type: string; text: string } | { code: string; message?: string }>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
   platform: string;
   versions: { app: string; electron: string; chrome: string };
+  /** Linux only: which kind of desktop session this is, for the pen report (pens reach the app differently on Wayland and X11). */
+  session?: { type: string; desktop: string; wayland: boolean; x11: boolean; ozone: string };
   files: {
     /** Shows the Open dialog. null means they cancelled. */
     open(): Promise<OpenedFile | FileFailure | null>;
@@ -113,6 +149,20 @@ export interface FramelingApi {
     toAac(bytes: Uint8Array): Promise<Uint8Array | null>;
   };
   library?: LibraryApi;
+  /** Desktop only: what the plugin watchdog can see. */
+  plugins?: {
+    /** Bytes of memory held by each running plugin's sandbox, by plugin id (a plugin without a process of its own is left out). */
+    memory(): Promise<Record<string, number>>;
+    /** Whether this run gives each plugin's sandbox its own process (only after a restart with "Measure plugins' memory and speed" on). */
+    isolated?(): Promise<boolean>;
+    /** Remembers the "Measure plugins' memory and speed" choice for the next start. */
+    setDiagnostics?(on: boolean): Promise<void>;
+  };
+  /** Desktop only: the fonts installed on this computer. */
+  fonts?: {
+    /** The PostScript name of each font (family, weight 100 to 900, slant) as installed here, null where it is not installed. */
+    psNames(wants: { family: string; weight: number; italic: boolean }[]): Promise<(string | null)[]>;
+  };
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;
@@ -139,7 +189,19 @@ export interface FramelingApi {
     finish(id: number): Promise<{ ok: true } | FileFailure>;
     cancel(id: number): Promise<void>;
   };
+  /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
+  beta?: BetaBridge;
   app: {
+    /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
+    setUiScale?(factor: number): void;
+    /** The notes of the last crash found, and whether Quill has offered them yet. Null when there has been none. Missing in the web build. */
+    getLastCrash?(): Promise<{ notes: CrashNotes; offered: boolean } | null>;
+    /** Quill has offered the notes (or said what happened), so he won't turn up for them again. */
+    crashOffered?(): void;
+    /** The screen the window is on right now. */
+    getDisplay?(): Promise<DisplayInfo | null>;
+    /** Called when the window is dragged onto another screen, or a screen changes size. Returns an unsubscribe function. */
+    onDisplayChanged?(handler: (d: DisplayInfo) => void): () => void;
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
     setDocumentState(state: DocumentState): void;
     /** The file the app was launched with, once. */
@@ -150,7 +212,14 @@ export interface FramelingApi {
     onSaveBeforeClose(handler: () => Promise<boolean>): () => void;
     /** Called when the window is closing and they chose "Don't save": put the work aside, then resolve. */
     onKeepUnsaved(handler: () => Promise<void>): () => void;
-    /** The "Save changes?" question as a native dialog. */
-    askSaveChanges(name: string): Promise<SaveChoice>;
+    /** The "Save changes?" question as the system's own box. The page uses it only when it can't show Quill's dialog. */
+    askSaveChanges(name: string, neverSaved?: boolean): Promise<SaveChoice>;
+    /**
+     * Called when the window is being closed (the window button, Quit) with unsaved changes. The page asks with its own
+     * dialog and resolves the answer. Call `shown` as soon as the dialog is on screen: if it hasn't been within a
+     * couple of seconds the desktop side asks with the system box instead, and `onWithdraw` takes a function to run so
+     * the page can take its dialog down. (A function, not an AbortSignal: only plain values cross the bridge.) Throw (or reject) when the page can't ask, and the system box is used at once.
+     */
+    onCloseQuestion(handler: (q: { name: string; neverSaved: boolean }, shown: () => void, onWithdraw: (fn: () => void) => void) => Promise<SaveChoice>): () => void;
   };
 }

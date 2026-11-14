@@ -1,7 +1,10 @@
 // Works out what an export will be (which frames, how big, what it is called) before anything is drawn.
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
-import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from './types';
+import { inOutRange } from '../timeline/inout';
+import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
+import { exporterOf } from './registry';
+import { DEFAULT_SHEET, formatInfo, normalizeSheet, oneFrameOnly, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
@@ -16,7 +19,17 @@ export interface FrameRange {
 
 export interface Plan {
   range: FrameRange;
+  /** How many pictures the file holds. */
   count: number;
+  /**
+   * For a clip that plays backward, back and forth or a set number of times, in a format that has no such setting
+   * (GIF, APNG, videos): which frame of the range each picture shows, counted from its first. Missing = in order.
+   */
+  order?: number[];
+  /** Whether the file repeats for ever (GIF, APNG, animated SVG), or stops after its last picture. */
+  loop: boolean;
+  /** The loop setting comes from the clip being exported (not from the checkbox). */
+  loopFromClip: boolean;
   width: number;
   height: number;
   /** A file name (or folder name) base, with no extension. */
@@ -42,7 +55,23 @@ export function artScale(doc: Doc): number | null {
   const sizes = new Set(art.map((l) => ('pixelSize' in l ? l.pixelSize : 1)));
   if (sizes.size !== 1) return null;
   const p = [...sizes][0];
-  return p > 1 ? 1 / p : null;
+  return p >= 1 ? 1 / p : null;
+}
+
+/**
+ * A sprite sheet made for a game engine (or a JSON atlas, or a web page) of pixel art always goes out at real size:
+ * one art pixel is one pixel, and the engine scales it up. Only "Just the picture" keeps the size that was picked.
+ */
+export function sheetRealSize(doc: Doc, s: ExportSettings): number | null {
+  if (s.format !== 'sheet') return null;
+  const art = artScale(doc);
+  return art !== null && normalizeSheet(s.sheet).engine !== 'none' ? art : null;
+}
+
+/** The settings with a sheet for a game engine put at real size. */
+export function withRealSize(doc: Doc, s: ExportSettings): ExportSettings {
+  const art = sheetRealSize(doc, s);
+  return art === null || s.scale === art ? s : { ...s, scale: art };
 }
 
 /** The scale is one of the choices offered for this document. */
@@ -75,17 +104,21 @@ export function drawnFrames(doc: Doc): number | null {
   return drawn > 0 && drawn < doc.length ? drawn : null;
 }
 
-/** The frames an export covers. Whole animation, one clip, or the frame being looked at. */
-export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, currentFrame: number): FrameRange {
+/** The frames an export covers. Whole animation, one clip, the play range, or the frame being looked at. */
+export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, currentFrame: number): FrameRange {
   const last = Math.max(0, doc.length - 1);
   const clamp = (n: number) => Math.min(last, Math.max(0, Math.round(n)));
-  if (!formatInfo(s.format).animated || s.range === 'frame') {
+  if (oneFrameOnly(s, formatInfo(s.format).animated)) {
     const f = clamp(currentFrame);
     return { start: f, end: f };
   }
   if (s.range === 'clip') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
     if (clip) return { start: clamp(Math.min(clip.start, clip.end)), end: clamp(Math.max(clip.start, clip.end)) };
+  }
+  if (s.range === 'inOut') {
+    const io = inOutRange(doc);
+    if (io) return io;
   }
   return { start: 0, end: last };
 }
@@ -118,32 +151,95 @@ export function slug(name: string, fallback = 'sprites'): string {
   return s || fallback;
 }
 
-export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): Plan {
+/** Formats that show the pictures one after another (or page after page) with no direction or repeat count of their own. */
+const isBaked = (f: FormatId): boolean => !!exporterOf(f)?.baked;
+
+/** Formats that are pictures to look at, not to play: each frame once, in the order the clip starts, whatever its repeat. */
+export const isStillsFormat = (f: FormatId): boolean => !!exporterOf(f)?.stills;
+
+/**
+ * The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. Stills
+ * (PNG sequence, PDF, Illustrator pages) keep the direction but hold each frame once, however often the clip repeats.
+ */
+export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, range: FrameRange): number[] | undefined {
+  if (s.range !== 'clip' || !isBaked(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
+  const clip = doc.clips.find((c) => c.id === s.clipId);
+  if (!clip || !hasPlaySettings(clip)) return undefined;
+  const len = range.end - range.start + 1;
+  if (isStillsFormat(s.format)) {
+    const once = stillPositions(len, clipDirection(clip));
+    return once.every((p, i) => p === i) ? undefined : once;
+  }
+  return bakedPositions(len, clipDirection(clip), clipPlays(clip));
+}
+
+/** Formats with a loop setting of their own. */
+const hasLoop = (f: FormatId): boolean => !!exporterOf(f)?.loops;
+
+/**
+ * Whether the file repeats for ever. An exported clip sets this itself: one that loops repeats for ever, one that plays
+ * N times or once stops after the passes baked into the file. Choosing by hand (`loopTouched`) wins over the clip.
+ */
+export function exportLoop(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'loop' | 'loopTouched'>): { loop: boolean; fromClip: boolean } {
+  const clip = s.range === 'clip' && hasLoop(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip || s.loopTouched) return { loop: s.loop, fromClip: false };
+  return { loop: clip.loop, fromClip: true };
+}
+
+/** What the clip being exported does when it plays, in plain words ("plays 3 times"), or null when no clip sets the loop. */
+export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>): { name: string; plays: string } | null {
+  const clip = s.range === 'clip' && hasLoop(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip) return null;
+  const n = clipPlays(clip);
+  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} ${isBackAndForth(clipDirection(clip)) ? 'ways' : 'times'}` : 'plays once' };
+}
+
+/** The document frame each picture (or page) of the export shows, in the order the file has them. */
+export const planFrames = (plan: Pick<Plan, 'range' | 'count' | 'order'>): number[] => Array.from({ length: plan.count }, (_, i) => plan.range.start + (plan.order?.[i] ?? i));
+
+/** `bake: false` keeps the range in plain order even for a clip that plays another way (for plugins, which get the clip's settings instead). */
+export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, opts: { bake?: boolean } = {}): Plan {
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
-  const count = range.end - range.start + 1;
-  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
+  const order = opts.bake === false ? undefined : clipPlayOrder(doc, s, range);
+  const count = order ? order.length : range.end - range.start + 1;
+  const video = !!exporterOf(s.format)?.video;
   const { width, height } = outputSize(doc, s.scale, video);
   let name = fileSafe(doc.name);
-  if (info.animated && s.range === 'clip') {
+  const one = oneFrameOnly(s, info.animated);
+  if (info.animated && !one && s.range === 'clip') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
     if (clip) name += '-' + fileSafe(clip.name);
   }
-  if ((!info.animated || s.range === 'frame') && doc.length > 1) name += `-frame-${range.start + 1}`;
+  if (one && doc.length > 1) name += `-frame-${range.start + 1}`;
+  if (info.animated && !one && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
 
   let problem: string | null = null;
   if (!(s.scale > 0)) problem = 'Pick a size first.';
   else if (width > MAX_SIDE || height > MAX_SIDE) problem = `That is bigger than ${MAX_SIDE} pixels on one side. Choose a smaller size.`;
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
-  else if (s.range === 'clip' && info.animated && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
+  else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
   else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
-  return { range, count, width, height, name, problem };
+  const looping = exportLoop(doc, s);
+  return { range, count, ...(order ? { order } : {}), loop: looping.loop, loopFromClip: looping.fromClip, width, height, name, problem };
 }
 
-export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
-  const info = formatInfo(format);
-  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', lottie: 'Lottie animation', svganim: 'Animated SVG', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
-  return [{ name: names[format], extensions: [info.ext] }];
+/** The file extension this export is saved with: a dotLottie `.lottie`, or a zip when each frame is its own
+ * Illustrator file (the format says, see registry.ts). */
+export function extensionFor(s: Pick<ExportSettings, 'format' | 'lottieFile' | 'aiFrames'>): string {
+  return exporterOf(s.format)?.extension?.(s as ExportSettings) ?? formatInfo(s.format).ext;
+}
+
+/** Same as extensionFor (the Illustrator export's name for it). */
+export const outputExt = extensionFor;
+
+type FilterOpts = Pick<ExportSettings, 'lottieFile' | 'aiFrames'>;
+
+export function filtersFor(format: FormatId, opts?: FilterOpts | ExportSettings['lottieFile']): { name: string; extensions: string[] }[] {
+  const s: FilterOpts = typeof opts === 'string' ? { lottieFile: opts } : (opts ?? {});
+  const ext = extensionFor({ format, ...s });
+  const kind = exporterOf(format)?.fileKind?.({ format, ...s } as ExportSettings);
+  return [{ name: kind?.name ?? formatInfo(format).title, extensions: kind?.extensions ?? [ext] }];
 }
 
 /** Zero-padded frame numbers: 0001, 0002... with enough digits for the count. */

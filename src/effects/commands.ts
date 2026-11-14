@@ -129,7 +129,7 @@ registerCommands([
     id: 'layers.newFolder',
     label: 'Put layer in a new folder',
     category: 'Effects',
-    description: 'Group layers in a folder, so they fade, blend and get masked together. Drag more layers into it.',
+    description: 'Group layers in a folder, so they fade, blend and get masked together. Drag more layers into it. On a layer already in a folder, it makes a folder inside that folder.',
     help: 'layer-folders',
     keywords: ['group', 'folder', 'layer group'],
     enabled: (s) => !!active(s),
@@ -149,6 +149,61 @@ registerCommands([
     run: () => {
       const l = activeNow();
       if (l?.folder) ops.ungroupFolder(l.folder);
+    },
+  },
+  {
+    id: 'layers.intoFolder',
+    label: 'Put layer in the folder next to it',
+    category: 'Effects',
+    description: 'Moves the layer into the folder just above it (or just below, if there is none above). It stays where it is in the picture. Alt+Right arrow while a layer is selected in the list.',
+    help: 'layer-folders',
+    keywords: ['nest', 'indent', 'into folder', 'group'],
+    enabled: (s) => !!active(s),
+    run: () => {
+      const l = activeNow();
+      if (l && !ops.nestNode({ layer: l.id })) toast('There is no folder next to this layer to put it in.');
+    },
+  },
+  {
+    id: 'layers.outOfFolder',
+    label: 'Take layer out of its folder',
+    category: 'Effects',
+    description: 'Moves the layer out of its folder, to just above the folder (one level out when folders are inside folders). Alt+Left arrow while a layer is selected in the list.',
+    help: 'layer-folders',
+    keywords: ['unnest', 'outdent', 'out of folder'],
+    enabled: (s) => !!active(s)?.folder,
+    run: () => {
+      const l = activeNow();
+      if (l) ops.outdentNode({ layer: l.id });
+    },
+  },
+  {
+    id: 'layers.folderIntoFolder',
+    label: 'Put this folder in the folder next to it',
+    category: 'Effects',
+    description: 'Makes the active layer\'s folder a folder inside the one just above it (or below). The folders can go up to 8 levels deep.',
+    help: 'layer-folders',
+    keywords: ['nest folder', 'folder in folder', 'subfolder'],
+    enabled: (s) => !!active(s)?.folder,
+    run: () => {
+      const l = activeNow();
+      if (l?.folder && !ops.nestNode({ folder: l.folder })) toast('There is no folder next to this one to put it in, or that would go too deep.');
+    },
+  },
+  {
+    id: 'layers.folderOutOfFolder',
+    label: 'Take this folder out of its folder',
+    category: 'Effects',
+    description: 'Moves the active layer\'s folder out of the folder it is in, to just above that folder.',
+    help: 'layer-folders',
+    keywords: ['unnest folder', 'subfolder out'],
+    enabled: (s) => {
+      const f = active(s)?.folder;
+      return !!f && !!s.doc.folders?.[f]?.parent;
+    },
+    run: () => {
+      const l = activeNow();
+      if (l?.folder) ops.outdentNode({ folder: l.folder });
     },
   },
 ]);

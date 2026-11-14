@@ -7,8 +7,8 @@ import { newParticles } from '../../src/particles/model';
 import { lottieExport, smoothTrack } from '../../src/export/lottie';
 import { animatedSvg, animatedSvgExport } from '../../src/export/svg-anim';
 import { frameToSvg } from '../../src/export/svg';
-import { carryWarnings, docFeatures, CARRY } from '../../src/export/carries';
-import { FORMATS } from '../../src/export/types';
+import { carryOf, carryWarnings, docFeatures } from '../../src/export/carries';
+import { allFormats } from '../../src/export/types';
 import { addVectorLayer, ellipsePath, fill, hold, rectPath, vectorDrawing } from '../../src/templates/build';
 
 const fx = (kind: LayerEffect['kind'], values: Record<string, number | string> = {}): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
@@ -64,10 +64,10 @@ describe('Lottie keeps the look', () => {
     expect(ef[0].ty).toBe(29);
     expect(ef[0].ef[0].v.k).toBeCloseTo(10);
     expect(ef[1].ty).toBe(25);
-    // Straight down is 180 degrees in Lottie, softness doubles (sigma = softness / 4 there).
+    // Straight down is 180 degrees in Lottie, softness is four times ours (sigma = softness / 4 there, ours is the sigma).
     expect(ef[1].ef[2].v.k).toBe(180);
     expect(ef[1].ef[3].v.k).toBe(4);
-    expect(ef[1].ef[4].v.k).toBe(10);
+    expect(ef[1].ef[4].v.k).toBe(20);
     expect(notes).toEqual([]);
   });
 
@@ -152,6 +152,20 @@ describe('SVG keeps the look', () => {
     expect(notes.join(' ')).toMatch(/Pixelate on "Back" was left out/);
   });
 
+  it('draws soft puffs with a gradient that fades to nothing, one per colour', () => {
+    const doc = base();
+    const l = addVectorLayer(doc, 'Smoke');
+    const d = vectorDrawing(doc, []);
+    d.shapes = [{ ...newParticles(uid('s'), 'smoke', { x: 50, y: 40 }), prewarm: true }];
+    hold(l, d.id, 0, 4);
+    for (const svg of [frameToSvg(doc, 2), animatedSvg(doc)]) {
+      expect(svg).toMatch(/<circle [^>]*fill="url\(#soft-[0-9a-f]+\)"/);
+      expect(svg).toMatch(/<radialGradient id="soft-[0-9a-f]+"><stop offset="0" stop-color="#[0-9a-f]{6}"\/><stop offset="0.45"[^>]*stop-opacity="0.667"\/><stop offset="1"[^>]*stop-opacity="0"\/>/);
+      const ids = svg.match(/<radialGradient id="(soft-[0-9a-f]+)"/g) ?? [];
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
   it('draws symbol particles with the symbol, written once and placed with <use>', () => {
     const doc = base();
     const k = vectorDrawing(doc, [fill([ellipsePath(5, 5, 5, 5)], '#ff00ff')]);
@@ -168,7 +182,7 @@ describe('SVG keeps the look', () => {
 
 describe('what carries over', () => {
   it('has a note for every format', () => {
-    for (const f of FORMATS) expect(CARRY[f.id].summary.length).toBeGreaterThan(20);
+    for (const f of allFormats()) expect(carryOf(f.id).summary.length).toBeGreaterThan(20);
   });
 
   it('lists what this document loses per format', () => {

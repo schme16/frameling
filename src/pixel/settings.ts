@@ -1,4 +1,4 @@
-// Options for the pixel art tools (mirror drawing, shading, dither), kept in the browser's storage like the other
+// Options for the pixel art tools (mirror drawing, shading, dither; mirror drawing is shared with the vector tools), kept in the browser's storage like the other
 // tool options in src/tools/settings.ts.
 import { useSyncExternalStore } from 'react';
 import type { DitherPattern } from './dither';
@@ -11,6 +11,9 @@ export interface PixelSettings {
   /** Where the mirror lines sit, in art pixels from the left / top (half steps allowed). null = the canvas centre. */
   axisX: number | null;
   axisY: number | null;
+  /** The same two lines on a vector layer, in document pixels from the left / top. null = the page centre. */
+  vectorAxisX: number | null;
+  vectorAxisY: number | null;
   /** The shading brush makes pixels lighter (true) or darker. */
   shadeLighter: boolean;
   ditherPattern: DitherPattern;
@@ -18,16 +21,27 @@ export interface PixelSettings {
   ditherSize: number;
   /** Outline: include diagonal neighbours. */
   outlineCorners: boolean;
+  /** Spray brush size in art pixels (the radius of the spray). */
+  spraySize: number;
+  /** Pixel shapes are filled in Paint (false = outline only). Only in the Pixel workspace, where shapes use Paint. */
+  shapeFilled: boolean;
+  /** Slices (named rectangles) are drawn on the canvas. */
+  showSlices: boolean;
 }
 
 export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   symmetry: 'off',
   axisX: null,
   axisY: null,
+  vectorAxisX: null,
+  vectorAxisY: null,
   shadeLighter: true,
   ditherPattern: 'checker',
   ditherSize: 4,
   outlineCorners: false,
+  spraySize: 8,
+  shapeFilled: false,
+  showSlices: true,
 };
 
 const KEY = 'frameling.pixelSettings';
@@ -43,6 +57,9 @@ try {
         const d = DEFAULT_PIXEL_SETTINGS[k];
         if (v !== undefined && (typeof v === typeof d || (d === null && (typeof v === 'number' || v === null)))) (state as unknown as Record<string, unknown>)[k] = v;
       }
+      // Mirror drawing starts off every time. It reaches drawn layers now, so a mirror left on in a pixel session
+      // last week would quietly double a stroke today. Where the lines sit is still remembered.
+      state.symmetry = 'off';
     }
   }
 } catch {

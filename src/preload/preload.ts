@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import type { FramelingApi } from './api';
 
 // The page's only window into the desktop side. It grows as features need it; the page never gets Node itself.
@@ -13,6 +13,19 @@ const api: FramelingApi = {
     electron: process.versions.electron,
     chrome: process.versions.chrome,
   },
+  // Not personal: only the kind of desktop, which decides how a pen reaches the app on Linux.
+  ...(process.platform === 'linux'
+    ? {
+        session: {
+          type: process.env.XDG_SESSION_TYPE ?? '',
+          desktop: process.env.XDG_CURRENT_DESKTOP ?? '',
+          wayland: !!process.env.WAYLAND_DISPLAY,
+          x11: !!process.env.DISPLAY,
+          // What the launcher was told with FRAMELING_OZONE (empty: Electron's own choice, which is Wayland on a Wayland session).
+          ozone: process.env.FRAMELING_OZONE ?? process.argv.find((a) => a.startsWith('--ozone-platform='))?.split('=')[1] ?? '',
+        },
+      }
+    : {}),
   files: {
     open: () => call('files:open'),
     read: (path) => call('files:read', path),
@@ -32,6 +45,14 @@ const api: FramelingApi = {
     write: (kind, id, bytes) => call('library:write', kind, id, bytes),
     remove: (kind, id) => call('library:remove', kind, id),
     showFolder: (kind) => call('library:showFolder', kind),
+  },
+  plugins: {
+    memory: () => call('plugins:memory'),
+    isolated: () => call('plugins:isolated'),
+    setDiagnostics: (on) => call('plugins:setDiagnostics', on),
+  },
+  fonts: {
+    psNames: (wants) => call('fonts:psNames', wants),
   },
   media: {
     aacAvailable: () => call('media:aacAvailable'),
@@ -59,7 +80,18 @@ const api: FramelingApi = {
     finish: (id) => call('video:finish', id),
     cancel: (id) => call('video:cancel', id),
   },
+  beta: { request: (req) => call('beta:request', req) },
   app: {
+    // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
+    setUiScale: (factor) => webFrame.setZoomFactor(Math.min(3, Math.max(0.5, factor))),
+    getLastCrash: () => call('app:lastCrash'),
+    crashOffered: () => ipcRenderer.send('app:crashOffered'),
+    getDisplay: () => call('app:display'),
+    onDisplayChanged: (handler) => {
+      const fn = (_: unknown, d: Parameters<typeof handler>[0]) => handler(d);
+      ipcRenderer.on('app:displayChanged', fn);
+      return () => void ipcRenderer.removeListener('app:displayChanged', fn);
+    },
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
     getLaunchFile: () => call('app:launchFile'),
     onOpenFile: (handler) => {
@@ -92,7 +124,28 @@ const api: FramelingApi = {
       ipcRenderer.on('app:keepUnsaved', fn);
       return () => void ipcRenderer.removeListener('app:keepUnsaved', fn);
     },
-    askSaveChanges: (name) => call('app:askSaveChanges', name),
+    askSaveChanges: (name, neverSaved) => call('app:askSaveChanges', name, neverSaved),
+    onCloseQuestion: (handler) => {
+      // What to do if the desktop side withdraws a question (it gave up on the page and asked another way).
+      const withdrawals = new Map<number, () => void>();
+      const ask = (_e: unknown, id: number, q: { name?: unknown; neverSaved?: unknown }) => {
+        Promise.resolve()
+          .then(() => handler({ name: String(q?.name ?? 'Untitled'), neverSaved: q?.neverSaved === true }, () => ipcRenderer.send('app:closeQuestionShown', id), (fn) => void withdrawals.set(id, fn)))
+          .then(
+            (choice) => ipcRenderer.send('app:closeQuestionAnswer', id, choice),
+            // The page can't ask: say so, and the desktop side asks with the system box.
+            () => ipcRenderer.send('app:closeQuestionAnswer', id, 'unavailable'),
+          )
+          .finally(() => withdrawals.delete(id));
+      };
+      const withdraw = (_e: unknown, id: number) => withdrawals.get(id)?.();
+      ipcRenderer.on('app:closeQuestion', ask);
+      ipcRenderer.on('app:closeQuestionWithdraw', withdraw);
+      return () => {
+        ipcRenderer.removeListener('app:closeQuestion', ask);
+        ipcRenderer.removeListener('app:closeQuestionWithdraw', withdraw);
+      };
+    },
   },
 };
 

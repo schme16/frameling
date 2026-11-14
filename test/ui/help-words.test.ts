@@ -2,12 +2,13 @@
 // Help search finds the plain words people type, not just the names Frameling uses. Each word should bring up the
 // topic it means in the top three. Add a pair here when someone can't find something.
 import { describe, expect, it } from 'vitest';
+import { loadHelpBodies } from '../../src/core/registry';
 import { searchHelp } from '../../src/ui/help/search';
 import '../../src/renderer/features';
 
 const Q: [string, string][] = [
   ['rubber', 'tool-eraser'], ['erase', 'tool-eraser'], ['rub out', 'tool-eraser'], ['pan', 'canvas-navigation'], ['move the page', 'canvas-navigation'], ['zoom', 'tool-zoom'],
-  ['pick colour', 'tool-eyedropper'], ['colour picker', 'tool-eyedropper'], ['mirror', 'flip'], ['bring to front', 'arrange'], ['layer order', 'arrange'], ['on top', 'arrange'],
+  ['pick colour', 'tool-eyedropper'], ['colour picker', 'tool-eyedropper'], ['mirror selection', 'flip'], ['mirror', 'mirror-drawing'], ['symmetry', 'mirror-drawing'], ['remember', 'remembered-settings'], ['restart', 'remembered-settings'], ['bring to front', 'arrange'], ['layer order', 'arrange'], ['on top', 'arrange'],
   ['save', 'saving-and-opening'], ['crash', 'autosave'], ['lost my work', 'autosave'], ['recover', 'autosave'], ['rename', 'document-name'], ['title', 'document-name'],
   ['inches', 'units'], ['print size', 'units'], ['dark mode', 'look-and-feel'], ['night mode', 'look-and-feel'], ['video', 'export-video-gif-apng'], ['gif', 'export-video-gif-apng'],
   ['ghost', 'timeline-onion'], ['skeleton', 'rig'], ['puppet', 'rig'], ['talking', 'lip-sync'], ['mouth', 'lip-sync'], ['music', 'sound'], ['audio', 'sound'],
@@ -22,11 +23,13 @@ const Q: [string, string][] = [
   ['bounce', 'easing'], ['theme', 'themes'], ['colours of the app', 'themes'], ['panel', 'panels'], ['missing panel', 'panels'], ['layout', 'workspaces'], ['help', 'using-help'], ['search', 'command-palette'],
   ['plugin', 'plugins'], ['new drawing', 'new-document'], ['template', 'templates-yours'], ['mascot', 'meet-quill'], ['frames', 'timeline-frames'], ['hold', 'timeline-frames'], ['keyframe', 'timeline-frames'],
   ['smooth line', 'tool-brush'], ['pressure', 'tool-brush'], ['pen', 'tool-brush'], ['thin line', 'tool-pencil'], ['sketch', 'tool-pencil'], ['lasso', 'lasso'], ['gap', 'fill-gaps'], ['leak', 'fill-gaps'],
+  ['turn off', 'features'], ['hide a panel i never use', 'features'],
 ];
 
 
 describe('help search in plain words', () => {
-  it('finds the topic people mean in the top three', () => {
+  it('finds the topic people mean in the top three', async () => {
+    await loadHelpBodies();
     const missed = Q.filter(([q, id]) => {
       const at = searchHelp(q, 12).map((h) => h.topic.id).indexOf(id);
       return at < 0 || at > 2;

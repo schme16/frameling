@@ -6,6 +6,11 @@ export function desktop(): FramelingApi | null {
   return w?.frameling?.files ? w.frameling : null;
 }
 
+/** "This computer": for plain-words messages about what the machine can or can't do. */
+export function where(): string {
+  return 'This computer';
+}
+
 /** The last part of a path, whatever separator it uses. */
 export function baseName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;

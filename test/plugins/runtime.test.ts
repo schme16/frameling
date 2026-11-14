@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
 import { readPluginFiles, type Permission } from '../../src/plugins/manifest';
-import { normalizeFiles, PluginRuntime, type HostHooks } from '../../src/plugins/runtime';
+import { exportClips, normalizeFiles, PluginRuntime, type HostHooks } from '../../src/plugins/runtime';
 import { closeAll, exampleFiles, runPlugin, settle } from './harness';
 
 afterEach(closeAll);
@@ -26,7 +26,7 @@ function hooks(over: Partial<HostHooks> = {}): HostHooks & { log: string[] } {
   };
 }
 
-const manifest = (permissions: Permission[]) => ({ id: 't', name: 'T', version: '1', description: '', author: '', main: 'main.js', permissions, network: [], apiVersion: 1 });
+const manifest = (permissions: Permission[]) => ({ id: 't', name: 'T', version: '1', description: '', author: '', main: 'main.js', permissions, network: [], apiVersion: 1, events: [], exporterOptions: {} });
 
 function start(code: string, permissions: Permission[], h = hooks()) {
   const w = runPlugin(code);
@@ -129,6 +129,30 @@ describe('plugin runtime', () => {
     expect(h.log).toContain('notify:info:This plugin did not ask to use the internet.');
   });
 
+  it('hands an exporter\'s progress to whoever is watching, forward only, and ignores it outside a job', async () => {
+    const { rt } = start(
+      `frameling.exporters.register({ id: 'slow', label: 'Slow', extension: 'bin' }, async () => {
+        const gap = () => new Promise((r) => setTimeout(r, 120));
+        frameling.progress(1, 4);
+        await gap();
+        frameling.progress(1, 4);
+        await gap();
+        frameling.progress(3, 4);
+        await gap();
+        frameling.progress(2, 4);
+        await gap();
+        frameling.progress(9, 4);
+        return [{ text: 'x' }];
+      });
+      frameling.progress(1, 2);`,
+      ['export'],
+    );
+    await settle();
+    const seen: string[] = [];
+    await rt.runExport('slow', [], { name: 'n', fps: 1, width: 1, height: 1, scale: 1, frameNumbers: [], clips: [], markers: [] }, undefined, undefined, (d, t) => seen.push(`${d}/${t}`));
+    expect(seen).toEqual(['1/4', '3/4', '4/4']);
+  });
+
   it('says when a plugin fails to load, and stops answering once stopped', async () => {
     const { rt, h } = start(`throw new Error('Oops at start')`, []);
     await settle();
@@ -203,3 +227,34 @@ describe('export files from a plugin', () => {
   });
 });
 
+
+describe('clips as an exporter plugin sees them', () => {
+  const clips = exportClips([
+    { name: 'idle', start: 0, end: 3, loop: true },
+    { name: 'swing', start: 4, end: 7, loop: false, direction: 'pingpong', repeat: 3 },
+    { name: 'hit', start: 8, end: 9, loop: false, direction: 'reverse' },
+  ]);
+
+  it('always has a direction and a repeat count, forward and once when the clip does not say', () => {
+    expect(clips).toEqual([
+      { name: 'idle', start: 0, end: 3, loop: true, direction: 'forward', repeat: 1 },
+      { name: 'swing', start: 4, end: 7, loop: false, direction: 'pingpong', repeat: 3 },
+      { name: 'hit', start: 8, end: 9, loop: false, direction: 'reverse', repeat: 1 },
+    ]);
+  });
+
+  it('ignores a bad direction or repeat from an odd file', () => {
+    expect(exportClips([{ name: 'x', start: 0, end: 1, loop: false, direction: 'sideways' as never, repeat: -4 }])[0]).toMatchObject({ direction: 'forward', repeat: 1 });
+  });
+
+  it('reaches the plugin in info.clips, next to the old fields', async () => {
+    const { rt } = start(
+      `frameling.exporters.register({ id: 'j', label: 'Clips', extension: 'json', multiple: false, transparent: false },
+        async (frames, info) => [{ name: 'clips.json', text: JSON.stringify(info.clips) }]);`,
+      ['export'],
+    );
+    await settle();
+    const out = await rt.runExport('j', [], { name: 'Walk', fps: 12, width: 8, height: 4, scale: 1, frameNumbers: [], clips, markers: [] });
+    expect(JSON.parse(new TextDecoder().decode(out[0].bytes))).toEqual(clips);
+  });
+});

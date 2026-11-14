@@ -125,18 +125,3 @@
   gap: 6px;
   color: var(--text);
 }
-.fl-trigger-name {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: var(--fs-small);
-  color: var(--muted);
-}
-.fl-trigger-name input {
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-small);
-  padding: 5px 8px;
-  font: inherit;
-}
