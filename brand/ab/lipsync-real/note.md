@@ -1,8 +1,8 @@
 # Lip sync on a real voice: before and after
 
-`lipsync-real-before-after.mp4` is silent. It is the mouths only, on one of the user's own recordings ("Pop the bubble,
-Mabel, and pass the pepper.", normal and then faster). The sound is left out on purpose: it is the user's voice, so it
-goes into the repository only if they say so.
+`lipsync-real-before-after.mp4` is one of the user's own recordings ("Pop the bubble, Mabel, and pass the pepper.",
+normal and then faster), with their voice on it so you can judge the mouths by ear as well as by eye. It is their voice,
+published with their say-so.
 
 Four mouths side by side, each with a strip of the frames around the playhead:
 
