@@ -116,7 +116,7 @@ describe('with the dialog on the page', () => {
     expect(document.activeElement).toBe(button('cancel'));
   });
 
-  it('a press just beside it does nothing, and one well clear is Cancel, never Don\'t save', async () => {
+  it('a press on the dim area does nothing at all, near the dialog or well clear of it', async () => {
     mount();
     Element.prototype.getBoundingClientRect = function () {
       const r = this.classList.contains('ui-modal') ? { left: 400, top: 300, right: 800, bottom: 600, width: 400, height: 300 } : { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
@@ -128,6 +128,11 @@ describe('with the dialog on the page', () => {
     act(() => void back.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 810, clientY: 450 })));
     expect(dialog()).not.toBeNull();
     act(() => void back.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 50, clientY: 50 })));
+    // Still up: a stray press on this one costs nothing and asks nothing, since a question about a stray press in
+    // the middle of a question about unsaved work would be a question inside a question. Escape is the way out.
+    await act(async () => {});
+    expect(dialog()).not.toBeNull();
+    act(() => button('cancel').click());
     await expect(p).resolves.toBe('cancel');
   });
 

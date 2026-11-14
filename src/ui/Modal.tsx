@@ -14,6 +14,7 @@ export function Modal({
   hideHeader = false,
   initialFocus,
   describedBy,
+  backdropDoesNothing = false,
 }: {
   title: string;
   onClose: () => void;
@@ -25,6 +26,11 @@ export function Modal({
   initialFocus?: string;
   /** The id of the text inside that says what the dialog is about, so a screen reader reads it out on opening. */
   describedBy?: string;
+  /**
+   * A press on the dim area does nothing at all, and never asks what it should do. For a dialog where a stray press
+   * could cost work (the save question), where a question about a stray press would be a question inside a question.
+   */
+  backdropDoesNothing?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -67,7 +73,7 @@ export function Modal({
     <div
       className="ui-backdrop"
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) pressedBackdrop(e.clientX, e.clientY, ref.current, () => closeRef.current());
+        if (e.target === e.currentTarget && !backdropDoesNothing) pressedBackdrop(e.clientX, e.clientY, ref.current, () => closeRef.current());
       }}
     >
       <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} aria-describedby={describedBy} tabIndex={-1} onKeyDown={onKey}>

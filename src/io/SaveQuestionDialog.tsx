@@ -24,7 +24,7 @@ function Question({ name, neverSaved, onShown }: { name: string; neverSaved: boo
   // Told once the dialog is really on the page, so the desktop side knows it need not ask another way.
   useEffect(() => onShown?.(), [onShown]);
   return (
-    <Modal title={q.title} size="sm" hideHeader className="sq" onClose={() => answerSave('cancel')} initialFocus="[data-autofocus]" describedBy={detailId}>
+    <Modal title={q.title} size="sm" hideHeader className="sq" onClose={() => answerSave('cancel')} initialFocus="[data-autofocus]" describedBy={detailId} backdropDoesNothing>
       <div className="sq-body">
         <QuillSays anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} side="left" whenHidden={null} className="sq-says">
           <p>{line(neverSaved ? 'save.ask.never' : 'save.ask')}</p>
