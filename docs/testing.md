@@ -712,6 +712,26 @@ npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2
 vitest by `test/ui/dialog-ring-everywhere.test.tsx`, which also fails if a file other than the two dialog shells builds a dim
 area of its own (it would skip the ring).
 
+## Hidden layers in a PDF: scripts/e2e/pdf-readers.cjs
+
+Frameling writes layers as optional content (OCG), hidden ones in `/OFF`. A reader that ignores optional content
+would draw art that is meant to be off. This writes the PDFs and Frameling's own picture of the same frame, draws
+each PDF with every reader on this computer, and fails when one of them shows art Frameling's picture does not.
+
+```bash
+npm run build
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pdf-readers.cjs [outDir] [--only=a,b]
+```
+
+Cases come from `illustrator-fixtures.cjs`: `hidden-layers`, `hidden-in-effect-folder`, `layers-folders`,
+`nested-folders`. Readers: poppler (`pdftoppm`), Ghostscript (`gs`) and MuPDF (`mutool`), each used if it is on the
+computer, with the rest named in the report. Outputs: `<case>.pdf`, `<case>-frameling.png`, `<case>-<reader>.png`,
+`report.json`, and `browser/index.html`.
+
+**The browsers have to be opened by hand**, because Chrome uses PDFium and Firefox uses pdf.js and neither can be
+driven from here. Open `browser/index.html`, or the `.pdf` files themselves, in the browser you want to check. The
+results so far are in `brand/ab/pdf-readers/note.md`.
+
 ## Words on one line: scripts/e2e/no-wrap.cjs
 
 The rule: a control's words stay on one line. Every `button`, `summary` and `role=tab|radio|switch|checkbox|menuitem|option`
