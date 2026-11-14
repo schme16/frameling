@@ -417,7 +417,7 @@ export function Header() {
   // A feature turned on or off adds or takes away buttons and the commands folded into "more".
   useFeaturesVersion();
   return (
-    <div ref={ref} className="tl-header" role="toolbar" aria-label="Timeline controls">
+    <div ref={ref} className="tl-header" data-scrolls role="toolbar" aria-label="Timeline controls">
       <span className="tl-group" role="group" aria-label="Playback">
         <Btn id="timeline.firstFrame" icon="first" title="Go to the first frame" />
         <Btn id="timeline.prevFrame" icon="prev" title="Back one frame" />

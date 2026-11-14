@@ -600,6 +600,46 @@ focus moving elsewhere. Every scenario sets up its own state, so any `--only` su
 `--themes` also runs axe's colour contrast rule in every built-in theme. `A11Y_SHOW=1` puts the window on screen
 (the virtual one, under xvfb). `AXE_CORE=<folder>` points at an axe-core install elsewhere.
 
+## Words on one line: scripts/e2e/no-wrap.cjs
+
+The rule: a control's words stay on one line. Every `button`, `summary` and `role=tab|radio|switch|checkbox|menuitem|option`
+gets `white-space: nowrap` from `src/renderer/theme.css`. Where there is not room, the row answers in one of these ways, and
+never by breaking a label in two:
+
+- **stack one per line** on purpose: `useStackWhenTight` (`src/ui/fitRow.ts`) sets `data-stacked` on a pick-one row that does
+  not fit side by side (the tool options' `Choice`), measured before paint so nothing flickers; Preferences' pick-one rows keep their size (`flex: none`) and the description beside them wraps instead;
+- **flow onto the next line**: a `flex-wrap` row or grid of whole buttons (effects tiles, tile sizes, layer kind buttons);
+- **shorter words**: a container query swaps a name for a shorter one (`cv-words-long` and `cv-words-short`), the full
+  name stays in the tooltip and the accessible name;
+- **scroll sideways** on purpose: mark the row `data-scrolls` (tab strips, the timeline);
+- **cut with an ellipsis** for a name that comes from the person (the Preview panel's frame line, the pixel bar's chip).
+
+Words that are a sentence (a card's blurb, a row in a list of help topics) say so with `data-wraps`, which turns the rule
+off for that control and what is inside it. A switch or tick box keeps its knob in place and its words may wrap beside it.
+
+The harness opens the built app at the narrow sizes people use, in five passes: a 1280 laptop with the right side at its smallest
+(200 px) and at its usual width, the interface size slider at 150% and at 200% (1280 pixels becomes 640 and 853 of the app's
+own pixels), and a wide 1920 screen. In each it walks the main window (vector and pixel drawing), every panel, every tool's
+options (on a vector and a pixel drawing), every dialog and every Preferences page, and reports any control that:
+
+- has a short piece of text on two or more lines (a wrap), or
+- keeps its words on one line but sticks out of the box that holds it, or makes a panel scroll sideways when it should not.
+
+It also drags the right side from 200 to 480 px in steps of 10 on a few busy panels, and fails when a wrap shows up on the way
+or the content grows taller as the panel gets wider (the layout jumping about). On the Preview panel it steps the frame
+through 1, 9, 10, 99, 100 and 150 at every width and fails if the panel's height changes with the digits.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/no-wrap.cjs
+```
+
+About 4 minutes a pass, 15 for all five. `NOWRAP_PASSES=a,b` runs only the passes whose name contains a or b (`smallest`,
+`usual`, `150`, `200`, `wide`), `NOWRAP_ONLY="tool select"` only the views whose name starts with that, `NOWRAP_JSON=<file>`
+saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `NOWRAP_DIST=<dir>` checks another copy of `dist/`
+(copy it before a change to get the before numbers). It exits 1 when anything wraps or jumps. The edge of the window itself
+is left to the dock's layout, not judged here: at 200% on a 1280 screen the app has only 640 pixels to share.
+
 ## Performance: scripts/perf/
 
 Full details, options and how to read the numbers are in `scripts/perf/README.md`. Results go in

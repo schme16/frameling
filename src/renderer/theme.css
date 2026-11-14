@@ -179,3 +179,23 @@ textarea {
   font: inherit;
   color: inherit;
 }
+/* The one rule for words on a control: they stay on one line. Where there is not room, the row answers (shorter words,
+   a sideways scroll marked data-scrolls, one per line on purpose, or icons with the words in the tooltip), the control
+   never breaks its label in two. A card or list row whose words are a sentence says so with data-wraps. The no-wrap
+   check (scripts/e2e/no-wrap.cjs) holds every control to this. */
+button,
+summary,
+[role='tab'],
+[role='radio'],
+[role='switch'],
+[role='checkbox'],
+[role='menuitem'],
+[role='menuitemradio'],
+[role='menuitemcheckbox'],
+[role='option'] {
+  white-space: nowrap;
+}
+[data-wraps],
+[data-wraps] * {
+  white-space: normal;
+}

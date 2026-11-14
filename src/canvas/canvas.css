@@ -146,6 +146,7 @@
 
 /* ------------------------------------------------------------ tool options and colour panels */
 .cv-panel {
+  container: cv-panel / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
@@ -1082,4 +1083,25 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+}
+
+/* Too narrow for the words side by side: one button per line, on purpose (see src/ui/fitRow.ts). */
+.cv-choice[data-stacked='true'] {
+  flex-direction: column;
+}
+.cv-choice-btn {
+  white-space: nowrap;
+}
+
+/* A name too long for a narrow panel gives way to a shorter one, whole, instead of breaking onto a second line. */
+.cv-words-short {
+  display: none;
+}
+@container cv-panel (max-width: 250px) {
+  .cv-words-long {
+    display: none;
+  }
+  .cv-words-short {
+    display: inline;
+  }
 }

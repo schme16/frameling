@@ -142,7 +142,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
       <div className="ui-presets" data-help="new-document">
         {PRESETS.filter((p) => !p.pixelSize).map((p, i) => (
-          <button key={p.id} type="button" className="ui-preset" data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
+          <button key={p.id} type="button" className="ui-preset" data-wraps data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
             <span className={`ui-preset-art ${p.pixelSize ? 'is-pixel' : ''}`}>
               <span className="ui-preset-shape" style={{ aspectRatio: `${p.width} / ${p.height}` }} />
               <Icon name={p.icon} size={22} />
@@ -156,6 +156,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <button
             type="button"
             className="ui-preset"
+            data-wraps
             style={{ animationDelay: '100ms' }}
             data-help="pixel-new"
             data-testid="welcome.preset.pixel"
@@ -173,7 +174,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-preset-blurb">One picture, an animation, frames on boards or sprites on a sheet. Quill asks which.</span>
           </button>
         )}
-        <button type="button" className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
+        <button type="button" data-wraps className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
           <span className="ui-preset-art">
             <Icon name="settings" size={22} />
           </span>
@@ -488,7 +489,7 @@ function TabbedExamples({
         <>
           <div className="ui-example-list" role="tabpanel">
             {examples.map(({ template: t }) => (
-              <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+              <button key={t.id} type="button" data-wraps className="ui-example" onClick={() => pick(t)}>
                 <span className="ui-example-art">
                   <Thumb template={t} />
                   {/* On the picture's corner, so long names get the whole width. */}

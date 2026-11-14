@@ -963,7 +963,7 @@ export function TimelineBody() {
   const markers = useStore((s) => (detailed ? s.doc.markers : null));
 
   return (
-    <div ref={scroller} className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
+    <div ref={scroller} data-scrolls className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
       <div className="tl-inner">
       <div className="tl-side">
         <div className="tl-corner" style={{ height: rulerH + marksH + clipsH }}>

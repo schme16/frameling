@@ -171,6 +171,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+/* Too narrow for two words side by side: one per line (src/ui/fitRow.ts). */
+.px-mirror .cv-choice[data-stacked='true'] {
+  grid-template-columns: 1fr;
+}
 .px-extra {
   margin-top: 12px;
 }
@@ -365,6 +369,7 @@
 
 /* The Preview panel (PreviewPanel.tsx). */
 .px-preview {
+  container: px-preview / inline-size;
   height: 100%;
   box-sizing: border-box;
 }
@@ -466,6 +471,36 @@
   margin: 0;
   color: var(--muted);
   font-size: var(--fs-small);
+  /* One line, cut with an ellipsis, so the panel never changes height while the frame number grows. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.px-preview-info .pi-n {
+  display: inline-block;
+  text-align: right;
+}
+/* Tight: the extras go first, in this order, and the frame number stays. */
+@container px-preview (max-width: 380px) {
+  .px-preview-info .pi-follow {
+    display: none;
+  }
+}
+@container px-preview (max-width: 330px) {
+  .px-preview-info .pi-name {
+    display: none;
+  }
+}
+@container px-preview (max-width: 250px) {
+  .px-preview-info .pi-size {
+    display: none;
+  }
+}
+@container px-preview (max-width: 160px) {
+  .px-preview-info .pi-fps {
+    display: none;
+  }
 }
 
 /* In the Pixel workspace the palette is the main colour picker, so its colours are bigger. */
