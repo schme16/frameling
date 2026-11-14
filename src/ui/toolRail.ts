@@ -1,6 +1,7 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
-import { allTools, getTool } from '../core/registry';
+import { allTools, getCommand, getTool } from '../core/registry';
+import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
 import { pickTool } from '../tools/pick';
 import { defaultRailWidthOf, dock, flushDock, setLock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
@@ -11,9 +12,10 @@ import { toast } from './toast';
 import { refuseDrag, run } from './dockDrag';
 import { askRename, whenLocked, type DockMenuItem } from './dockMenus';
 import { openHelp } from './overlays';
+import { goToLayerKind, layerWord, topLayerOf } from './drawingMode';
 import { createStore } from './mini';
 import { railLocked, refuseIfLocked, teachLock } from './lockState';
-import { whyOff, type WaitingTool, canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
+import { waitingWords, whyOff, type WaitingTool, canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -375,14 +377,27 @@ export function goToLayerFor(w: WaitingTool): void {
   pickTool(w.id);
 }
 
-/** What the rail's "waiting" button opens: the tools that need the other kind of layer, each one a way to get there, and a way to see them greyed out instead. */
-export function waitingMenu(list: WaitingTool[]): DockMenuItem[] {
-  const needs = list[0]?.needs ?? 'vector';
-  return [
-    { heading: `Waiting for a ${needs} layer` },
-    ...list.map((w): DockMenuItem => ({ label: `${w.label}: go to a ${needs} layer`, onClick: () => goToLayerFor(w) })),
+/**
+ * What the layer line at the top of the rail opens: which layer you are on, a way to a layer of the other kind (or to
+ * make one, when there is none), and the two ways to treat tools that do not work here. The first item is the fix.
+ */
+export function layerLineMenu(kind: LayerKind, name: string, waiting: WaitingTool[]): DockMenuItem[] {
+  const layers = store().get().doc.layers;
+  const others: ('vector' | 'pixel')[] = waiting.length ? [waiting[0].needs] : kind === 'pixel' ? ['vector'] : kind === 'vector' ? ['pixel'] : ['vector', 'pixel'];
+  const items: DockMenuItem[] = [{ heading: `${layerWord(kind)}${name ? `: ${name}` : ''}` }];
+  if (waiting.length) items.push({ heading: waitingWords(waiting) });
+  for (const other of others) {
+    const there = topLayerOf(layers, other);
+    const add = getCommand(other === 'pixel' ? 'layers.addPixel' : 'layers.addVector');
+    items.push(there ? { label: `Go to the ${other} layer "${there.name}"`, onClick: () => void goToLayerKind(other) } : { label: `Add a ${other} layer`, onClick: () => void add?.run() });
+  }
+  const greyed = getPrefs().toolsOffLayer === 'grey';
+  items.push(
     { separator: true },
-    { label: 'Show them greyed out instead', onClick: () => setPrefs({ toolsOffLayer: 'grey' }) },
-    { label: 'Why are they not on the strip?', onClick: () => openHelp('tool-strip') },
-  ];
+    { heading: 'Tools that do not work on this layer' },
+    { label: 'Hide them', checked: !greyed, onClick: () => setPrefs({ toolsOffLayer: 'hide' }) },
+    { label: 'Grey them out, in their places', checked: greyed, onClick: () => setPrefs({ toolsOffLayer: 'grey' }) },
+    { label: 'Why are some tools off?', onClick: () => openHelp('drawing-mode') },
+  );
+  return items;
 }

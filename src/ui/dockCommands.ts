@@ -10,6 +10,7 @@ import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { goToLayerKind } from './drawingMode';
 import { store } from '../core/store';
 import { setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
@@ -449,5 +450,18 @@ for (const [style, label, about] of [
     keywords: ['tools', 'toolbar', 'rail', 'style', 'stacked', 'two wide', 'flyout'],
     checked: () => getPrefs().toolRail === style,
     run: () => setPrefs({ toolRail: style }),
+  });
+}
+
+// The way back when the layer you are on leaves tools off the strip (the layer line at the top of the strip offers the same).
+for (const kind of ['pixel', 'vector'] as const) {
+  registerCommand({
+    id: `layers.go.${kind}`,
+    label: `Go to a ${kind} layer`,
+    category: 'Layers',
+    description: `Pick the top ${kind} layer, which is where the ${kind === 'pixel' ? 'Shade, Dither and Spray' : 'Text, Gradient and curve'} tools work.`,
+    help: 'drawing-mode',
+    keywords: ['layer', 'switch', 'pick', 'tools missing', 'tools gone', 'drawing mode', 'layer kind', kind],
+    run: () => void goToLayerKind(kind),
   });
 }

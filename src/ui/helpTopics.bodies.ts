@@ -646,6 +646,27 @@ The tool strip has a small grip at its top. Drag it to move the strip: [Move the
 Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it, and **Alt** with the arrow keys makes it bigger or smaller (right and down grow it, left and up shrink it). **Shift** makes bigger steps, and **Alt** with **Enter** goes back to the usual size. The new size is read out. The window's menu has **Make it bigger**, **Make it smaller** and **Back to the usual size** too. Every move is also in the command search.
 
 See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
+  'drawing-mode': `The line at the top of the tool strip says which kind of layer you're drawing on: **Pixel layer**, **Vector layer**, and so on. The layer decides which tools work, not the workspace.
+
+## Why the line is there
+
+The **Pixel** workspace is a layout: a big palette and a real-size Preview. It doesn't change what the layer can do. Pick a vector layer while you're in the Pixel workspace and Shade, Dither, Spray and the Magic wand have nothing to work on, so they leave the strip. The line is how you see that, without opening the Layers panel.
+
+## When tools are off
+
+The line turns gold and counts them: **5 tools off**. A group that lost some says so beside its name (**3 off**). Rest on the line to read which tools they are.
+
+**Get them back:** press the line, then **Go to the pixel layer** (it names yours). With no pixel layer yet it offers **Add a pixel layer**. Clicking a pixel layer in the Layers panel or the timeline does the same.
+
+**From the keyboard:** search for **Go to a pixel layer** or **Go to a vector layer** in the command palette. They're in the **Layers** menu too.
+
+## Hide them, or grey them out
+
+**Hide them** leaves the tools off the strip, so it's shorter and the rest stay put. **Grey them out** keeps every tool where it is, dimmed, and resting on one says why. The first time tools leave the strip Frameling tells you and lets you change your mind. After that it stays as you chose; change it any time from the line, the **View** menu, or **Preferences, General**.
+
+**Good to know:** on a strip that is one button wide, the line shrinks to its icon, with a gold number when tools are off. Tile and camera layers are different jobs, so they show only the tools that work there.
+
+See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-workspace) and [Workspaces](help:workspaces).`,
   'tool-strip': `The strip down the left holds your tools, two across. The one with the gold glow is the one you're using.
 
 ## Groups
@@ -664,7 +685,7 @@ Press its button, or press its key. Rest on a button to see the key.
 
 Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
-While they're out of sight, a small button with a number sits under the strip. Rest on it to read which tools are waiting and what they need. Press it to jump to a layer they work on, or to see them greyed out instead.
+While they're out of sight, the line at the top of the strip says so: it turns gold and counts them (**5 tools off**). Press it to jump to a layer they work on, or to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
 
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
 
