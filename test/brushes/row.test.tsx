@@ -10,6 +10,8 @@ import * as P from '../../src/brushes/presets';
 import { newDoc } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
 
+const S = (n: string) => STARTERS.find((s) => s.id === `starter:${n}`)!;
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let host: HTMLElement;
@@ -37,17 +39,21 @@ afterEach(() => {
 });
 
 describe('BrushPresetRow', () => {
-  it('shows the brush in use on its button, and lists the starters when opened', () => {
+  it('shows the brush in use on its button, and lists the starters by group when opened', () => {
     expect(picker().textContent).toContain('Custom brush');
     act(() => picker().click());
-    expect(rowsOpen().map((r) => r.querySelector('.pk-name-text')!.textContent)).toEqual(STARTERS.map((s) => s.name));
+    const groups = [...document.querySelectorAll('.pk-pop .pk-group-name')].map((g) => g.textContent);
+    expect(groups).toEqual(expect.arrayContaining(['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture']));
+    act(() => void [...document.querySelectorAll<HTMLElement>('.pk-pop .pk-group')].find((g) => g.textContent?.startsWith('Pens'))!.click());
+    expect(rowsOpen().map((r) => r.querySelector('.pk-name-text')!.textContent)).toEqual(STARTERS.filter((s) => s.group === 'Pens').map((s) => s.name));
   });
   it('picks a brush when you click its row, and closes', () => {
     act(() => picker().click());
-    act(() => rowsOpen()[1].click());
-    expect(store().get().ui.brush.size).toBe(STARTERS[1].brush.size);
+    act(() => void [...document.querySelectorAll<HTMLElement>('.pk-pop .pk-group')].find((g) => g.textContent?.startsWith('Markers'))!.click());
+    act(() => rowsOpen().find((r) => r.textContent?.includes('Marker'))!.click());
+    expect(store().get().ui.brush.size).toBe(S('marker').brush.size);
     expect(document.querySelector('.pk-pop')).toBeNull();
-    expect(picker().textContent).toContain(STARTERS[1].name);
+    expect(picker().textContent).toContain(S('marker').name);
   });
   it('offers Save as... only, until a brush of yours is lit', () => {
     expect(button('Save as...')).toBeTruthy();

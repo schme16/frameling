@@ -4,7 +4,9 @@ export const bodies: Record<string, string> = {
 
 **Pick one:** choose the **Brush** tool (**B**). The **brush picker** at the top of its options shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** **Ink**, **Marker**, **Pencil**, **Tapered brush**, **Chalk**, **Charcoal**, **Watercolour** and **Leaves** come with Frameling. They never change, so you can't spoil them.
+**Ready to use:** over forty brushes come with Frameling, in seven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour** and **Stamps and texture**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
+
+**Not here yet:** airbrush, a see-through highlighter, a flat calligraphy pen and smudge. The brush can't make those honestly yet.
 
 **Save your own:**
 1. Set the brush how you like it.
@@ -28,16 +30,16 @@ export const bodies: Record<string, string> = {
 - Pixel layers use the pixel brush, which has its own size and shape.
 
 help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet`,
-  'brush-picker': `The **brush picker** is the button at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with four brushes as with four hundred.
+  'brush-picker': `The **brush picker** is the button at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
 
 **Open it:** click the button, press **Alt+P**, or press **Ctrl+K** and type "brush picker". Pick a brush and it closes. **Esc** or a click away closes it without picking.
 
-**What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has the brush's **tip and size**, a long **stroke** and its **name**. The brush you are using is highlighted and its stroke follows the sliders. **Row size** at the bottom makes the rows taller or smaller.
+**What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has a small picture of the brush's **real tip** (chalk shows its grain, watercolour its wash, a stamp its shapes) with the size under it, a long **stroke** and its **name**. The brush you are using is highlighted and its stroke follows the sliders. Strokes are drawn in a colour that stands out against the panel, in every theme. **Row size** at the bottom makes the rows taller or smaller.
 
-**Eight brushes or fewer?** Then it is just the rows. With more, three things appear:
+**Search, groups and favourites** are always here, because Frameling comes with over forty brushes.
 
 - **Search.** Type a word and the list becomes the matches, each with its group. Every word has to match, in the name or the group. Typing always goes to the search box, so just start typing.
-- **Groups.** **My brushes** is yours, **Starters** come with Frameling, and a brush pack or your own groups sit below. Press a group's name to open or fold it. Only open groups are drawn, which keeps a big library quick. A small dot says your brush is inside. The button beside the search box folds or opens every group.
+- **Groups.** **My brushes** is yours. Below it are the groups that come with Frameling, then a brush pack or your own groups. Press a group's name to open or fold it. Only open groups are drawn, which keeps a big library quick. A small dot says your brush is inside. The button beside the search box folds or opens every group.
 - **Favourites and Recent.** Press the star on a row to keep a brush in Favourites at the top. Recent is the last few brushes you used.
 
 **Make a group:** press **Save as...** and type a group name under the name. To move a brush of yours, pick it and press **Rename**. Leave the group empty and it goes in **My brushes**, which is where brushes saved before groups existed are.

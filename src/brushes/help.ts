@@ -7,8 +7,8 @@ registerHelpTopics([
     media: 'brush-presets.mp4',
     title: 'Saved brushes',
     section: 'Drawing',
-    summary: 'Save the brush you like by name, and pick it again in one click. Ink, Marker, Pencil and a Tapered brush come ready.',
-    keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing'],
+    summary: 'Save the brush you like by name, and pick it again in one click. Over forty come ready: pencils, pens, markers, paint, chalk, charcoal, watercolour and stamps.',
+    keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'pencils', 'pens', 'markers', 'paint', 'pastel', 'crayon', 'gouache', 'oil paint', 'dry brush', 'g-pen', 'comic pen', 'brush pen', 'dip pen', 'felt tip', 'stipple', 'spatter', 'sparkles', 'airbrush', 'highlighter', 'calligraphy', 'built-in brushes', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing'],
   },
   {
     id: 'brush-tips',
@@ -26,6 +26,6 @@ registerHelpTopics([
     title: 'The brush picker: find a brush in a big library',
     section: 'Drawing',
     summary: 'One button drops down every brush with a stroke across it. Search, groups, favourites and recent keep even hundreds of brushes quick to reach.',
-    keywords: ['brush picker', 'picker', 'dropdown', 'drop down', 'brush library', 'many brushes', 'hundreds of brushes', 'brush pack', 'search brushes', 'groups', 'folders', 'favourites', 'favorites', 'star', 'recent brushes', 'two columns', 'row size', 'brush list', 'choose a brush', 'alt+p'],
+    keywords: ['brush picker', 'picker', 'dropdown', 'drop down', 'brush library', 'many brushes', 'hundreds of brushes', 'brush pack', 'search brushes', 'groups', 'folders', 'favourites', 'favorites', 'star', 'recent brushes', 'two columns', 'row size', 'brush list', 'choose a brush', 'alt+p', 'brush thumbnail', 'brush preview', 'stroke colour'],
   },
 ]);

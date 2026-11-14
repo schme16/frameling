@@ -68,42 +68,15 @@ afterEach(() => {
   host.remove();
 });
 
-describe('a small library', () => {
-  it('is only rows: no search box, no groups', () => {
-    open();
-    expect(rows()).toHaveLength(STARTERS.length);
-    expect(search()).toBeNull();
-    expect(heads()).toHaveLength(0);
-  });
-  it('moves with the arrows and picks with Enter, then puts focus back on the button', async () => {
-    open();
-    const list = document.querySelector<HTMLElement>('.pk-list')!;
-    expect(document.activeElement).toBe(list);
-    key(list, 'ArrowDown');
-    key(list, 'Enter');
-    await frame();
-    expect(pop()).toBeNull();
-    expect(store().get().ui.brush.size).toBe(STARTERS[1].brush.size);
-    expect(document.activeElement).toBe(btn());
-  });
-  it('closes with Escape and leaves the brush alone', () => {
-    const before = store().get().ui.brush;
-    open();
-    key(document.querySelector('.pk-list')!, 'Escape');
-    expect(pop()).toBeNull();
-    expect(store().get().ui.brush).toBe(before);
-  });
-});
-
 describe('a big library', () => {
   it('draws rows only for the open group', () => {
     fill(400);
     open();
-    // The standard brush is Ink, so only Starters is open: four rows, though there are 404 brushes.
-    expect(rows()).toHaveLength(STARTERS.length);
-    act(() => head('Inking').click());
-    expect(rows()).toHaveLength(STARTERS.length + 100);
-    expect(heads().length).toBeGreaterThanOrEqual(6);
+    // Only the group of the brush in use is open, so 445 brushes cost 100 rows, and opening Pens adds just its own.
+    expect(rows()).toHaveLength(100);
+    act(() => head('Pens').click());
+    expect(rows()).toHaveLength(100 + STARTERS.filter((x) => x.group === 'Pens').length);
+    expect(heads().length).toBeGreaterThanOrEqual(10);
   });
   it('opens the group the brush in use is in', () => {
     fill(40);
@@ -127,7 +100,8 @@ describe('a big library', () => {
     fill(40);
     open();
     typeIn(search(), 'markers');
-    expect(rows()).toHaveLength(10);
+    // Ten of yours in a group called Markers, and the starters that come in Markers.
+    expect(rows()).toHaveLength(10 + STARTERS.filter((x) => x.group === 'Markers').length);
   });
   it('picks the highlighted match with Enter', async () => {
     fill(40);

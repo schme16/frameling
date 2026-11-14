@@ -11,6 +11,8 @@ import { STARTERS, sameBrush } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
 import { toasts } from '../../src/ui/toast';
 
+const S = (n: string) => STARTERS.find((s) => s.id === `starter:${n}`)!;
+
 let stop: () => void = () => {};
 beforeEach(() => {
   stop();
@@ -30,15 +32,15 @@ const setSize = (size: number) => store().setUi((u) => ({ brush: { ...u.brush, s
 
 describe('picking', () => {
   it('puts a starter brush into the brush in use and lights it', () => {
-    expect(P.applyPreset(STARTERS[1].id)).toBe(true);
-    expect(sameBrush(brushNow(), STARTERS[1].brush)).toBe(true);
-    expect(P.currentBrushState()).toEqual({ activeId: STARTERS[1].id, changed: false });
+    expect(P.applyPreset(S('marker').id)).toBe(true);
+    expect(sameBrush(brushNow(), S('marker').brush)).toBe(true);
+    expect(P.currentBrushState()).toEqual({ activeId: S('marker').id, changed: false });
   });
   it('says no to a brush that is gone', () => {
     expect(P.applyPreset('nope')).toBe(false);
   });
   it('has one command per brush, and drops it when the brush goes', () => {
-    expect(getCommand(`brush.pick.${STARTERS[0].id}`)?.label).toBe('Brush: Ink');
+    expect(getCommand(`brush.pick.${S('ink').id}`)?.label).toBe('Brush: Ink');
     setSize(33);
     const mine = P.saveCurrentAs('Shading')!;
     expect(getCommand(`brush.pick.${mine.id}`)?.label).toBe('Brush: Shading');
@@ -47,9 +49,9 @@ describe('picking', () => {
   });
   it('picks from the palette command and moves to the brush tool', () => {
     store().setUi({ tool: 'eraser' });
-    void getCommand(`brush.pick.${STARTERS[3].id}`)!.run();
+    void getCommand(`brush.pick.${S('tapered').id}`)!.run();
     expect(store().get().ui.tool).toBe('brush');
-    expect(sameBrush(brushNow(), STARTERS[3].brush)).toBe(true);
+    expect(sameBrush(brushNow(), S('tapered').brush)).toBe(true);
   });
 });
 
@@ -85,7 +87,7 @@ describe('saving your own', () => {
     expect(brushNow().size).toBe(30);
   });
   it('cannot update or delete a starter', () => {
-    P.applyPreset(STARTERS[0].id);
+    P.applyPreset(S('ink').id);
     setSize(99);
     expect(P.updateActive()).toBe(false);
     expect(P.deleteActive()).toBe(false);
@@ -128,7 +130,7 @@ describe('steps and commands', () => {
     expect(allCommands().filter((c) => c.id.startsWith('brush.pick.'))).toHaveLength(STARTERS.length);
   });
   it('Update and Delete are greyed out until a saved brush of yours is lit', () => {
-    P.applyPreset(STARTERS[0].id);
+    P.applyPreset(S('ink').id);
     expect(getCommand('brush.update')!.enabled!(store().get())).toBe(false);
     expect(getCommand('brush.delete')!.enabled!(store().get())).toBe(false);
     setSize(20);
@@ -162,9 +164,9 @@ describe('Changing a saved brush', () => {
     setSize(44);
     expect(P.myBrushes()[0].brush.size).toBe(44);
     expect(P.currentBrushState().changed).toBe(false);
-    P.applyPreset(STARTERS[0].id);
+    P.applyPreset(S('ink').id);
     setSize(70);
-    expect(STARTERS[0].brush.size).not.toBe(70);
+    expect(S('ink').brush.size).not.toBe(70);
     expect(P.myBrushes()[0].brush.size).toBe(44);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_BRUSH } from '../../src/core/doc';
+import { STARTER_GROUPS } from '../../src/brushes/starters';
 import {
   addShared,
   allPresets,
@@ -23,22 +24,37 @@ import {
   type BrushPreset,
 } from '../../src/brushes/model';
 
+const S = (n: string) => STARTERS.find((s) => s.id === `starter:${n}`)!;
+
 const wide = { ...DEFAULT_BRUSH, size: 40, taperEnd: 12 };
 let n = 0;
 const id = () => `t${++n}`;
 const saved = (name: string, brush = wide, i = id()): BrushPreset => ({ id: i, name, tool: 'brush', brush });
 
 describe('starters', () => {
-  it('are Ink, Marker, Pencil, Tapered brush, Chalk, Charcoal, Watercolour and Leaves, flagged built in, with distinct ids and sane values', () => {
-    expect(STARTERS.map((s) => s.name)).toEqual(['Ink', 'Marker', 'Pencil', 'Tapered brush', 'Chalk', 'Charcoal', 'Watercolour', 'Leaves']);
-    expect(new Set(STARTERS.map((s) => s.id)).size).toBe(8);
+  it('come in seven groups, flagged built in, with distinct ids, names and sane values', () => {
+    expect(new Set(STARTERS.map((s) => s.id)).size).toBe(STARTERS.length);
+    expect(new Set(STARTERS.map((s) => s.name.toLowerCase())).size).toBe(STARTERS.length);
+    expect(new Set(STARTERS.map((s) => s.group))).toEqual(new Set(STARTER_GROUPS));
     for (const s of STARTERS) {
       expect(s.builtin).toBe(true);
       expect(s.tool).toBe('brush');
       expect(s.brush.size).toBeGreaterThan(0);
+      expect(s.name.length).toBeLessThanOrEqual(MAX_NAME);
+      expect(s.name).not.toMatch(/[\u2014\u2013]/);
     }
-    expect(STARTERS[3].brush.taperStart).toBeGreaterThan(0);
-    expect(STARTERS[1].brush.thinning).toBe(0);
+    expect(S('tapered').brush.taperStart).toBeGreaterThan(0);
+    expect(S('marker').brush.thinning).toBe(0);
+  });
+  it('keep the ids of the original eight, so favourites and recent still find them', () => {
+    const was: Record<string, string> = { ink: 'Ink', marker: 'Marker', pencil: 'Pencil', tapered: 'Tapered brush', chalk: 'Chalk', charcoal: 'Charcoal', watercolour: 'Watercolour', leaves: 'Leaves' };
+    for (const [id, name] of Object.entries(was)) expect(S(id).name).toBe(name);
+  });
+  it('are plain brushes or one of the four tips, so every one exports as ordinary vector shapes', () => {
+    for (const s of STARTERS) expect([undefined, 'chalk', 'charcoal', 'watercolour', 'stamp']).toContain(s.brush.tip?.kind);
+    for (const s of STARTERS) if (s.brush.tip?.kind === 'stamp') expect(s.brush.tip.shape).not.toBe('custom');
+    // The popular kinds are all there: a pencil, a pen, a marker, a paint brush, chalk, charcoal, a wash and a stamp.
+    for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(4);
   });
   it('do not match each other', () => {
     for (const a of STARTERS) for (const b of STARTERS) expect(sameBrush(a.brush, b.brush)).toBe(a === b);
@@ -104,9 +120,9 @@ describe('saving, updating, renaming and deleting', () => {
   });
   it('never changes a starter', () => {
     const before = JSON.stringify(STARTERS);
-    expect(updatePreset([], STARTERS[0].id, wide)).toEqual([]);
-    expect(renamePreset([], STARTERS[0].id, 'Mine')).toEqual([]);
-    expect(deletePreset([], STARTERS[0].id)).toEqual([]);
+    expect(updatePreset([], S('ink').id, wide)).toEqual([]);
+    expect(renamePreset([], S('ink').id, 'Mine')).toEqual([]);
+    expect(deletePreset([], S('ink').id)).toEqual([]);
     expect(JSON.stringify(STARTERS)).toBe(before);
   });
   it('renames, avoiding clashes with other brushes and starters, and ignores an empty name', () => {
@@ -127,9 +143,9 @@ describe('which brush is lit', () => {
   const mine = [saved('Wide', wide, 'w')];
   it('lights the brush that matches, yours before a starter', () => {
     expect(presetState(wide, mine, null)).toEqual({ activeId: 'w', changed: false });
-    expect(presetState(STARTERS[1].brush, mine, null)).toEqual({ activeId: STARTERS[1].id, changed: false });
-    const copy = [saved('My ink', STARTERS[0].brush, 'c')];
-    expect(matchPreset(STARTERS[0].brush, copy)?.id).toBe('c');
+    expect(presetState(S('marker').brush, mine, null)).toEqual({ activeId: S('marker').id, changed: false });
+    const copy = [saved('My ink', S('ink').brush, 'c')];
+    expect(matchPreset(S('ink').brush, copy)?.id).toBe('c');
   });
   it('lights nothing when the brush matches nothing and nothing was picked', () => {
     expect(presetState({ ...wide, size: 77 }, mine, null)).toEqual({ activeId: null, changed: false });

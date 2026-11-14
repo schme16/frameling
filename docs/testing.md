@@ -1023,6 +1023,8 @@ npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the e
 
 `scripts/docs/ab-brush-picker-built/built.cjs` shoots the finished brush picker against a made-up pack of 148 brushes (`scripts/docs/help/_library.cjs`, added through `__brushes.addFromText`, which only exists with `?debug`) in each state: at rest, one group open, Recent, Favourites, every group folded, searching, two columns resized. The brush-picker help clip uses the same pack.
 
+`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (45 brushes in 7 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
+
 `scripts/docs/ab/shape-tools.cjs` is such a folder for combining shapes (before and after, all four operations) and Hold to
 tidy (snapping, slow drawing that is left alone, undo giving the line back). `scripts/ab/shape-tools-files.cjs` is its
 own Electron script: the dashes, arrow heads and tapered lines on screen beside what the PNG, SVG, PDF and Lottie exports
