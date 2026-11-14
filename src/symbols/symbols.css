@@ -378,3 +378,63 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+/* After a recording: a bar at the foot of the canvas to tidy it, play it or try again. */
+.sy-recbar {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-small);
+  font-weight: 700;
+}
+.sy-recbar-what {
+  white-space: nowrap;
+}
+.sy-recbar-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sy-recbar-detail input {
+  width: 150px;
+  accent-color: var(--grape);
+}
+.sy-recbar-keep {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--line-soft);
+}
+.sy-recbar-keep button,
+.sy-recbar-btn {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sy-recbar-keep button[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.sy-recbar-btn:hover,
+.sy-recbar-keep button:hover {
+  background: var(--hover-bg);
+}

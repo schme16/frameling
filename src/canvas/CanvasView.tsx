@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './canvas.css';
 import { CanvasEngine } from './engine';
+import { RecordBar } from '../symbols/RecordBar';
 import { EditBar, onCanvasDoubleClick, onCanvasDragLeave, onCanvasDragOver, onCanvasDrop } from '../symbols/EditBar';
 import { TileEditBanner } from '../tiles/TileEditBanner';
 import { Rulers } from './Rulers';
@@ -58,6 +59,7 @@ export function CanvasView() {
         <NoteMarkers />
       </div>
       <EditBar />
+      <RecordBar />
       <TileEditBanner />
       {rulers && <Rulers root={rootRef} />}
       <SnapChip />

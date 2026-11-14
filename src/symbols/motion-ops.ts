@@ -20,7 +20,7 @@ registerChoice<MotionRoom>({
   ],
 });
 
-function where(layerId?: Id, frame?: number): MotionWhere | null {
+export function where(layerId?: Id, frame?: number): MotionWhere | null {
   const { doc, ui } = store().get();
   const layer = findLayer(doc, layerId ?? ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   if (!layer) return null;

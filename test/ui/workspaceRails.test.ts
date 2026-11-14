@@ -29,7 +29,7 @@ describe('the three defaults', () => {
     applyWorkspace('animate');
     const g = currentGroups();
     expect(ids(g)).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
-    expect(g[1].tools).toEqual(['bone', 'pose', 'weights', 'motion-path', 'shape-hints']);
+    expect(g[1].tools).toEqual(['bone', 'pose', 'weights', 'motion-path', 'shape-hints', 'record-move']);
   });
   it('Pixel: pixel tools first, then the ways of selecting together, vector-only tools later', () => {
     applyWorkspace('pixel');

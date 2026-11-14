@@ -50,6 +50,15 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M17 4.5l3 2.5-3 2.5" />
     </>
   ),
+  // record a move: a dotted trail with a filled dot at the end, like a hand being followed
+  record: (
+    <>
+      <path d="M4 17c2-7 5-7 8-3s5 1 6-6" strokeDasharray="1 3.2" />
+      <circle cx="18.5" cy="6.5" r="2.6" />
+      {dot(18.5, 6.5, 1.3)}
+      {dot(4.5, 17.5, 1.6)}
+    </>
+  ),
   // shape tweens, camera, clip flow
   morph: (
     <>
