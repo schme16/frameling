@@ -245,12 +245,6 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
         )}
       </div>
       <span className="rd-fill" />
-      {locked && (
-        // Takes no room of its own, so nothing beside it moves when the lock goes on.
-        <span className="rd-lock" data-tip="Panels locked" data-tip-desc="The panels stay where they are. Right-click a tab and choose Unlock the panels to move them." data-help="lock-layout">
-          <Icon name="lock" size={13} />
-        </span>
-      )}
       <button
         type="button"
         className={`rd-item rd-panels${picker ? ' is-open' : ''}`}

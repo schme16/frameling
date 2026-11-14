@@ -671,7 +671,7 @@ Let go anywhere that isn't a band or the canvas (over the panels, the top bar, o
 See also [The tool strip](help:tool-strip) and [Change the tools](help:tool-builder).`,
   'lock-layout': `Lock the tool strip, the panels, or both, and nothing about them moves until you unlock them. It is for the day a slip of the mouse drags the strip to the other side, or a panel off into a window.
 
-**Lock the tools:** right-click the tool strip and choose **Lock the tools**, or search for it. The grip and the width edge go, and a small lock takes the grip's place. The strip can't be moved to another side, made wider, rearranged or changed, and **Change the tools** won't open. **Put the tools back** says so and leaves it alone.
+**Lock the tools:** right-click the tool strip and choose **Lock the tools**, or search for it. The grip and the width edge simply go. The strip can't be moved to another side, made wider, rearranged or changed, and **Change the tools** won't open. **Put the tools back** says so and leaves it alone.
 
 **Lock the panels:** right-click a panel's tab and choose **Lock the panels**. No dragging a tab, moving or resizing a window, pulling a side wider, closing, renaming or regrouping.
 
@@ -683,7 +683,7 @@ Everything you actually do. Every tool draws, every panel is still there and wor
 
 ## Why something is greyed
 
-Things that invite a move, like the strip's grip and the edges of windows, go while it is locked. A small lock sits where the grip was. A locked menu entry stays on show but greyed, with a line under it saying it is locked, and a command or key that would move something says what the lock stops and how to undo it.
+Things that invite a move, like the strip's grip and the edges of windows, go while it is locked, and nothing stands in for them. A locked menu entry stays on show but greyed, with a line under it saying it is locked, and a command or key that would move something says what the lock stops and how to undo it.
 
 ## Good to know
 

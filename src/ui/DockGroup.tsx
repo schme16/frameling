@@ -343,12 +343,6 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
           </div>
         )}
         <span className="ui-tabbar-fill" />
-        {locked && first && (
-          // Takes no room of its own, so nothing beside it moves when the lock goes on.
-          <span className="ui-tabbar-lock" data-tip="Panels locked" data-tip-desc="The panels stay where they are. Right-click a tab and choose Unlock the panels to move them." data-help="lock-layout">
-            <Icon name="lock" size={12} />
-          </span>
-        )}
         {panelsButton && first && flat && (
           <button
             type="button"

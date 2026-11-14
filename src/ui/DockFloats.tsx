@@ -134,12 +134,8 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
     </div>
   );
 
-  const grip = locked ? (
-    // Locked: no handle to carry it by, only a quiet lock in the same place so the bar doesn't shift.
-    <span className="ui-float-grip is-locked" data-tip="Locked in place" data-tip-desc="This window stays where it is. Right-click its title bar and choose Unlock the panels to move it again." data-help="lock-layout">
-      <Icon name="lock" size={13} />
-    </span>
-  ) : (
+  // Locked: the handle simply goes, and nothing stands in for it.
+  const grip = locked ? null : (
     <button
       type="button"
       className="ui-float-grip"

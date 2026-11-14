@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// While locked, what invites a move is not on show: the rail's grip becomes a quiet lock in the same place, the page
-// says what is locked on its root (so the edges and cursors leave in CSS), and the window's bar can't be double-clicked
-// back to a side. Unlocking brings the handles back.
+// While locked, what invites a move is not on show: the rail's grip goes altogether with nothing in its place, the
+// page says what is locked on its root (so the edges and cursors leave in CSS), and the window's bar can't be
+// double-clicked back to a side. Unlocking brings the handles back.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -48,16 +48,14 @@ describe('the handles while locked', () => {
     document.documentElement.removeAttribute('data-lock-panels');
   });
 
-  it('the rail has its grip until it is locked, then a lock in the same place, and the grip is back when unlocked', () => {
-    const grip = () => host.querySelector('.ui-tools-grip')!;
-    expect(grip().tagName).toBe('BUTTON');
+  it('the rail has its grip until it is locked, then nothing at all in its place, and the grip is back when unlocked', () => {
+    const grip = () => host.querySelector('.ui-tools-grip');
+    expect(grip()!.tagName).toBe('BUTTON');
     act(() => setLock('tools', true));
-    expect(grip().tagName).toBe('SPAN');
-    expect(grip().classList.contains('is-locked')).toBe(true);
-    expect(grip().querySelector('svg')).toBeTruthy();
-    expect(host.querySelector('button.ui-tools-grip')).toBeNull();
+    expect(grip()).toBeNull();
+    expect(host.querySelector('.ui-tabbar-lock')).toBeNull();
     act(() => setLock('tools', false));
-    expect(grip().tagName).toBe('BUTTON');
+    expect(grip()!.tagName).toBe('BUTTON');
   });
 
   it('a group name stops saying it can be renamed with a double-click', () => {

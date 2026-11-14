@@ -365,12 +365,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     choose(frontOf(g));
   };
 
-  const grip = locked ? (
-    // Locked: no handle to carry it by, only a quiet lock in the same place so the rail doesn't shift.
-    <span className="ui-tools-grip is-locked" data-tip="Locked in place" data-tip-desc="The tools stay where they are. Right-click the rail and choose Unlock the tools to move or change them." data-help="lock-layout">
-      <Icon name="lock" size={12} />
-    </span>
-  ) : (
+  // Locked: the handle simply goes. Nothing takes its place, so a locked rail is just the tools.
+  const grip = locked ? null : (
     <button
       type="button"
       className="ui-tools-grip"
