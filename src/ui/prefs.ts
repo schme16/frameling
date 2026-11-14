@@ -53,6 +53,14 @@ export interface Prefs {
    * `defaultBetaReports` below and src/beta.
    */
   betaReports: boolean;
+  /**
+   * Look for a newer Frameling on this project's GitHub releases, a little after start-up and twice a day. A request to
+   * GitHub and nothing of yours goes with it. Off means no check ever happens by itself (the Check for updates command
+   * still works when you ask). See src/update.
+   */
+  updateCheck: boolean;
+  /** The version you chose Skip this one for. It is never offered again; a newer one still is. Empty when none. */
+  updateSkipped: string;
   /** How to get back to you about a report, only if you chose to give it. Kept on this computer, never anywhere else. */
   betaContact: string;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
@@ -115,6 +123,8 @@ export const DEFAULT_PREFS: Prefs = {
   showQuill: true,
   betaReports: canSend(),
   betaContact: '',
+  updateCheck: true,
+  updateSkipped: '',
   rightSide: 'inspector',
   toolRail: 'two',
   toolSize: 'medium',
@@ -165,6 +175,8 @@ export function migratePrefs(raw: unknown): Prefs {
     showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
     betaReports: bool(r.betaReports, DEFAULT_PREFS.betaReports),
+    updateCheck: bool(r.updateCheck, DEFAULT_PREFS.updateCheck),
+    updateSkipped: typeof r.updateSkipped === 'string' ? r.updateSkipped.slice(0, 40) : DEFAULT_PREFS.updateSkipped,
     betaContact: typeof r.betaContact === 'string' ? r.betaContact.slice(0, 200) : DEFAULT_PREFS.betaContact,
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,

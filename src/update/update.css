@@ -1,0 +1,117 @@
+/* The update offer: a card in the corner, and its switch in Preferences. */
+.up-offer {
+  position: fixed;
+  z-index: 280;
+  right: 16px;
+  bottom: 44px;
+  width: min(450px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: ui-rise 0.3s var(--ui-pop);
+}
+.up-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.up-head .ui-icon {
+  color: var(--accent);
+  flex: none;
+}
+.up-head h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 700;
+}
+.up-help {
+  margin-left: auto;
+  padding: 2px 6px;
+}
+.up-tag {
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.up-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.up-failed {
+  color: var(--text);
+}
+.up-notes {
+  max-height: 168px;
+  padding: 8px 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  font-size: var(--fs-small);
+}
+.up-notes h3 {
+  margin: 6px 0 2px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.up-notes h3:first-child {
+  margin-top: 0;
+}
+.up-notes p {
+  margin: 0 0 3px;
+}
+.up-item {
+  position: relative;
+  padding-left: 14px;
+}
+.up-item::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.6em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.up-more {
+  color: var(--muted);
+}
+.up-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.up-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.up-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+.up-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .up-offer {
+    animation: none;
+  }
+}

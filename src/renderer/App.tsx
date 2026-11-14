@@ -16,6 +16,8 @@ import { watchFirstDrawing } from '../ui/firstDrawing';
 import { startScreenWatch } from '../ui/screenSize';
 import { startCrashWatch } from '../beta/crashAsk';
 import { CrashOffer } from '../beta/CrashOffer';
+import { UpdateOffer } from '../update/UpdateOffer';
+import { startUpdateWatch } from '../update/state';
 import { installDrawingReset } from '../io/fresh';
 import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
@@ -68,6 +70,8 @@ export function App() {
     startScreenWatch();
     // After a crash, a dazed Quill offers to send the crash notes (once, and only if you say so).
     startCrashWatch();
+    // A quiet look for a newer release (when Preferences allows), offered at a calm moment.
+    const stopUpdates = startUpdateWatch();
     // Someone who changed the one tool arrangement before workspaces had their own is told where it went, once.
     const kept = takeRailMigrationNote();
     if (kept) toast(line('workspaces.railKept', { workspace: kept }), { kind: 'info', duration: 9000 });
@@ -78,7 +82,10 @@ export function App() {
         warmLazyParts();
       }),
     );
-    return () => off.forEach((f) => f());
+    return () => {
+      off.forEach((f) => f());
+      stopUpdates();
+    };
   }, []);
 
   return (
@@ -116,6 +123,7 @@ export function App() {
       <PrefsModal />
       <ChoiceDialog />
       <CrashOffer />
+      <UpdateOffer />
       <AskDialog />
       <SaveQuestionDialog />
       <HelpWindow />

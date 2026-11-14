@@ -36,6 +36,8 @@ const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_M
 let quitting = false;
 // Preferences > Performance asked for a restart: open Frameling again once this copy has quit properly.
 let restartWanted = false;
+// An update was put in: the copy to open once this one has quit (the new AppImage, in the same place).
+let relaunchInto: string | null = null;
 const dataDir = () => app.getPath('userData');
 
 
@@ -162,6 +164,7 @@ function createWindow() {
       if (step === 'stay-open') {
         quitRequested = false;
         restartWanted = false;
+        relaunchInto = null;
         return;
       }
       // "Don't save" still puts a copy aside for a week (Recover unsaved work...). The page makes the copy fresh
@@ -225,6 +228,13 @@ registerIpc({
     restartWanted = true;
     app.quit();
   },
+  finishUpdate: (into) => {
+    if (into) {
+      relaunchInto = into;
+      restartWanted = true;
+    }
+    app.quit();
+  },
 });
 
 app.on('second-instance', (_e, argv, cwd) => {
@@ -284,7 +294,7 @@ app.on('window-all-closed', () => {
 // stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
 app.on('will-quit', () => {
   quitting = true;
-  if (restartWanted) app.relaunch();
+  if (restartWanted) app.relaunch(relaunchInto ? { execPath: relaunchInto } : undefined);
   if (watchCrashes) endRun(dataDir(), process.pid);
 });
 if (watchCrashes && process.platform !== 'win32') {

@@ -113,6 +113,7 @@ export const SETTING_ROWS: PrefRow[] = [
 
   // Diagnostics
   row('diagnostics', 'Telling the makers', 'Send a bug report or crash notes, only when you press Send.', ['report a bug', 'bug report', 'feedback', 'send report', 'crash report', 'telemetry', 'analytics', 'privacy', 'beta', 'error report', 'logs', 'crash notes', 'contact'], { find: 'Telling the makers' }),
+  row('diagnostics', 'Look for new versions', 'Quietly check for a newer Frameling, and say what is sent. Off means it never looks by itself.', ['update', 'updates', 'auto update', 'automatic update', 'check for updates', 'new version', 'upgrade', 'new release', 'latest version', 'skip version', 'github', 'privacy', 'offline'], { find: 'Look for new versions' }),
   row('diagnostics', 'Measure my plugins', 'See how much memory and time your plugins use.', ['plugin performance', 'profiler', 'memory', 'plugin cpu', 'plugin timing', 'slow plugin', 'performance'], { find: 'Plugins' }),
   row('diagnostics', 'Check my pen with Quill', 'A short check that saves a report when the pen or tablet is not working.', ['pen check', 'tablet not working', 'pressure not working', 'wacom problem', 'huion problem', 'windows ink', 'driver', 'pen diagnostics', 'test pen', 'tablet problem', 'pen report'], { find: 'Pen and tablet' }),
 ];
