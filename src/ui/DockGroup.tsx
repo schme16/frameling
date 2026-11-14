@@ -2,7 +2,8 @@
 // tab bar over its panel, and the splitter you can pull or use from the keyboard. The model is dockModel.ts.
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
-import { dock, evenGroupSplit, flushDock, hidePanel, nudgeGroupSplit, panelTitle, setActive, setGroupSplit, toggleCollapsed } from './dock';
+import { dock, flushDock, panelTitle, setActive, toggleCollapsed } from './dock';
+import { evenGroupSplit, hidePanel, nudgeGroupSplit, setGroupSplit } from './lockedDock';
 import { dragState, dropIndexFor, splitFor, startPanelDrag } from './dockDrag';
 import { groupCount, groupsOf, MIN_SHARE, sharesOf } from './dockModel';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';

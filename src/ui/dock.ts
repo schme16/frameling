@@ -6,6 +6,7 @@ import type { LayerKind } from '../core/format';
 import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
+import { mergeLocks, sanitizeLockMap, savedLocks, withLock, type LockKind, type Locks } from './dockLock';
 import { cleanRailWidth } from './toolRailWidth';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
@@ -21,6 +22,8 @@ export interface DockState {
   rails?: Record<string, ToolGroup[]>;
   /** How wide the person pulled each workspace's tool rail, in pixels, by workspace id. A workspace missing here uses its own default (the natural width). */
   railWidths?: Record<string, number>;
+  /** What the person locked in each workspace (or unlocked, where the workspace brings a lock), by workspace id. */
+  locks?: Record<string, Locks>;
 }
 
 export const DOCK_KEY = 'frameling.dock.v1';
@@ -184,7 +187,8 @@ function initial(): DockState {
     delete layout.tools.groups;
   }
   const railWidths = sanitizeRailWidths(saved.railWidths);
-  return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}) };
+  const locks = sanitizeLockMap(saved.locks);
+  return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}), ...(Object.keys(locks).length ? { locks } : {}) };
 }
 
 export const dock = createStore<DockState>(initial());
@@ -567,6 +571,31 @@ export function setRailWidth(width: number | undefined, persist = true): void {
   else dock.set(next);
 }
 
+/** What a workspace brings locked (what it was saved with). */
+export function defaultLocksOf(s: Pick<DockState, 'user'>, workspaceId: string): Locks | undefined {
+  return s.user.find((w) => w.id === workspaceId)?.locks;
+}
+
+/** What is locked in the current workspace: your own choice for it on top of what it brings. Only kinds that are decided show. */
+export function locksOf(s: DockState): Locks {
+  return mergeLocks(defaultLocksOf(s, s.workspaceId), s.locks?.[s.workspaceId]);
+}
+
+/** The locks to save with a workspace: only what is locked, or undefined. */
+const locksNow = (s: DockState) => savedLocks(locksOf(s));
+
+/** Locks or unlocks the tool rail or the panels in the current workspace. Kept with the workspace, and in its file when it is saved. */
+export function setLock(kind: LockKind, on: boolean): void {
+  const s = dock.get();
+  const id = s.workspaceId;
+  const own = withLock(s.locks?.[id], defaultLocksOf(s, id), kind, on);
+  const locks = { ...s.locks };
+  if (own) locks[id] = own;
+  else delete locks[id];
+  if (JSON.stringify(locks) === JSON.stringify(s.locks ?? {})) return;
+  commit({ ...s, locks: Object.keys(locks).length ? locks : undefined });
+}
+
 export function hidePanel(id: string): void {
   apply((l) => closePanel(l, id));
 }
@@ -641,7 +670,14 @@ export function applyWorkspace(id: string): boolean {
 /** Back to the current workspace as it was saved (or as it came with the app). */
 export function resetLayout(): void {
   const id = dock.get().workspaceId;
+  // A locked rail stays where it is, with its arrangement and width: the reset is about the panels then.
+  const railKept = locksOf(dock.get()).tools === true ? dock.get().layout.tools : null;
   if (!applyWorkspace(id)) return void applyWorkspace('draw');
+  if (railKept) {
+    const s = dock.get();
+    commit({ ...s, layout: { ...s.layout, tools: { ...railKept } } });
+    return;
+  }
   // One of your own goes back to the arrangement it was saved with; the ones that come with the app keep yours, like the rail place.
   const s = dock.get();
   if (s.rails?.[id] && s.user.some((w) => w.id === id)) {
@@ -673,12 +709,13 @@ export function saveWorkspace(name: string): Workspace | null {
   // The tool arrangement as it is now (yours, or the one the workspace brings) becomes this workspace's default.
   const rail = railOf(s);
   const railWidth = railWidthOf(s);
-  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}) };
+  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}), ...(locksNow(s) ? { locks: locksNow(s) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
   // A workspace saved again starts from what was just saved, so its own changes to the arrangement are folded in.
   const { [ws.id]: _folded, ...rails } = s.rails ?? {};
   const { [ws.id]: _foldedWidth, ...railWidths } = s.railWidths ?? {};
-  commit({ ...s, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined });
+  const { [ws.id]: _foldedLocks, ...locks } = s.locks ?? {};
+  commit({ ...s, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   return ws;
 }
 
@@ -687,12 +724,13 @@ export function deleteWorkspace(id: string): void {
   if (!s.user.some((w) => w.id === id)) return;
   const { [id]: _gone, ...rails } = s.rails ?? {};
   const { [id]: _goneWidth, ...railWidths } = s.railWidths ?? {};
+  const { [id]: _goneLocks, ...locks } = s.locks ?? {};
   const parked = readAllParked();
   if (parked[id]) {
     delete parked[id];
     writeAllParked(parked);
   }
-  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined });
+  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   if (s.workspaceId === id) applyWorkspace('draw');
 }
 
@@ -726,8 +764,9 @@ export function workspaceText(id?: string): string | null {
   const s = dock.get();
   const rail = s.rails?.[id ?? s.workspaceId] ?? (w ?? from)?.rail;
   const railWidth = s.railWidths?.[id ?? s.workspaceId] ?? (w ?? from)?.railWidth;
-  const { rail: _own, railWidth: _ownWidth, ...rest } = ws;
-  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), layout: reconcile(ws.layout) });
+  const lockState = savedLocks(mergeLocks((w ?? from)?.locks, s.locks?.[id ?? s.workspaceId]));
+  const { rail: _own, railWidth: _ownWidth, locks: _ownLocks, ...rest } = ws;
+  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), ...(lockState ? { locks: lockState } : {}), layout: reconcile(ws.layout) });
 }
 
 export type AddResult = { ok: true; workspace: Workspace } | { ok: false; error: string };

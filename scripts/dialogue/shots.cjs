@@ -246,6 +246,12 @@ const GROUPS = {
     { shot: ['welcome.new'], crop: '.ui-welcome-head', pad: 24 },
   ],
   workspaces: [
+    // Quill's lock lesson: the first quick slip with the tool rail.
+    { js: `window.__framelingAsk = true; localStorage.removeItem('frameling.lockTaught.v1'); __frameling.teachLock('tools')` },
+    { wait: 900 },
+    { shot: ['lock.teach'], crop: TOAST, pad: 60, note: 'Shown the first time the rail, a tool or a panel moves in a quick or short drag, once ever. Here {what} is tools.' },
+    { js: `document.querySelectorAll('.ui-toast-x').forEach((b) => b.click()); window.__framelingAsk = false` },
+    { wait: 400 },
     // A rearranged tool strip, then Reset layout: Quill asks about the tools.
     { js: `__frameling.dock.setToolGroups([{ id: 'mine', tools: __frameling.tools().reverse() }])` },
     { wait: 600 },

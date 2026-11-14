@@ -2,7 +2,8 @@
 // new window, or onto a zone to dock it), edges to resize by. Also the floating tool rail.
 import { memo, useEffect, useState, type ReactNode } from 'react';
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, dockFloatBack, hidePanel, panelsAway, panelTitle, raiseFloatWindow, resetFloatSize, resizeFloatBy, setFloatActive, setFloatWindowBox } from './dock';
+import { dock, dockFloatBack, panelsAway, panelTitle, raiseFloatWindow, setFloatActive, setFloatWindowBox } from './dock';
+import { closeFloatWindow, hidePanel, resetFloatSize, resizeFloatBy } from './lockedDock';
 import { clampBox, floatTitle, type FloatWin } from './dockModel';
 import { dragState, dropIndexFor, startFloatDrag, startFloatResize, startPanelDrag } from './dockDrag';
 import { askRename, menuPoint, floatMenu, openDockMenu, panelMenu } from './dockMenus';

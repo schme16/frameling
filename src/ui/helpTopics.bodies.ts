@@ -573,6 +573,10 @@ Drag a tab, or a whole window by its title bar, towards a side of the canvas. Ba
 
 Right-click a tab and choose **Rename** to call a panel what you like. Double-click a window's name to name the window. Both are kept in your workspace.
 
+## Lock them in place
+
+Right-click a tab and choose **Lock the panels**, and no slip of the mouse can move them. See [Lock the tools and panels](help:lock-layout).
+
 ## The tools
 
 The tool strip has a small grip at its top. Drag it to move the strip: [Move the tool strip](help:tool-move) says where it can go.
@@ -632,6 +636,29 @@ Let go anywhere that isn't a band or the canvas (over the panels, the top bar, o
 - Panels move the same way: drag a tab to a side, or out over the canvas for a window. See [Floating windows](help:floating-windows).
 
 See also [The tool strip](help:tool-strip) and [Change the tools](help:tool-builder).`,
+  'lock-layout': `Lock the tool strip, the panels, or both, and nothing about them moves until you unlock them. It is for the day a slip of the mouse drags the strip to the other side, or a panel off into a window.
+
+**Lock the tools:** right-click the tool strip and choose **Lock the tools**, or search for it. The strip can't be moved to another side, made wider, rearranged or changed, and **Change the tools** won't open. **Put the tools back** says so and leaves it alone.
+
+**Lock the panels:** right-click a panel's tab and choose **Lock the panels**. No dragging a tab, moving or resizing a window, pulling a side wider, closing, renaming or regrouping.
+
+**Unlock:** the same menu says **Unlock the tools** or **Unlock the panels**. Pressing **Unlock** on the message that appears does it too.
+
+## What still works
+
+Everything you actually do. Every tool draws, every panel is still there and works, the menus still open and the help still answers. Opening a panel from the **View** menu still works. Only the arranging stops.
+
+## Why something is greyed
+
+A locked menu entry stays on show but greyed, with a line under it saying it is locked. Drag a locked thing and a message says what the lock stops and how to undo it.
+
+## Good to know
+
+- The first time something moves by accident, Quill offers a **Lock it** button on the spot. He only says it once.
+- Each [workspace](help:workspaces) has its own lock. It goes with the workspace when you save or share it.
+- **Reset layout** leaves a locked strip alone, and won't run at all while the panels are locked.
+
+See also [Change the tools](help:tool-builder), [Panels](help:panels) and [Floating windows](help:floating-windows).`,
   'tool-builder': `**Change the tools** lets you set the strip up the way you work: name your groups, make your own, put away the tools you never touch and fold a whole group into one button. Nothing is lost: every tool still has its key and its place in the command search.
 
 **Open it:** **View > Change the tools > Change the tools**, or right-click the strip, or search for it. A gold edge shows the strip is open for changes, and **Done** (or **Escape**) closes it.
@@ -651,6 +678,8 @@ See also [The tool strip](help:tool-strip) and [Change the tools](help:tool-buil
 **Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip shows more of each group's name and fits more buttons across. Double-click the edge to fit the longest name; double-click again for the usual width. A name that still doesn't fit ends in dots and never wraps. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
 
 **Put the tools back** undoes all of it for this workspace, and width, size, names and style too. The message that follows has **Undo**.
+
+**Lock it:** right-click the strip and choose **Lock the tools** and none of this can change by accident. See [Lock the tools and panels](help:lock-layout).
 
 Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools and strip width, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
   'tool-arrange': `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.

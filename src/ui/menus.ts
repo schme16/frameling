@@ -102,12 +102,12 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
+    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.'],
   },
   toolrail: {
     label: 'Change the tools',
-    items: ['view.toolbarBuilder', 'view.toolsReset', '-', 'view.toolGroupRename', 'view.toolGroupStart', 'view.toolGroupJoin', 'view.toolGroupFold', 'view.toolHide', 'view.toolsShowAll', '-', 'view.toolSize.small', 'view.toolSize.medium', 'view.toolSize.large', 'view.toolNames', 'view.toolsOffLayer.hide', 'view.toolsOffLayer.grey', '-', 'view.toolRail.two', 'view.toolRail.stacked', '-', 'view.toolRailWider', 'view.toolRailNarrower', 'view.toolRailFit', 'view.toolRailWidthReset'],
+    items: ['view.toolbarBuilder', 'view.toolsReset', 'view.lockTools', '-', 'view.toolGroupRename', 'view.toolGroupStart', 'view.toolGroupJoin', 'view.toolGroupFold', 'view.toolHide', 'view.toolsShowAll', '-', 'view.toolSize.small', 'view.toolSize.medium', 'view.toolSize.large', 'view.toolNames', 'view.toolsOffLayer.hide', 'view.toolsOffLayer.grey', '-', 'view.toolRail.two', 'view.toolRail.stacked', '-', 'view.toolRailWider', 'view.toolRailNarrower', 'view.toolRailFit', 'view.toolRailWidthReset'],
     prefixes: ['view.toolRail.', 'view.toolSize.', 'view.toolsOffLayer.'],
   },
   wsshare: {
