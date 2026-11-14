@@ -309,5 +309,11 @@
   },
   "nudge.drawn": {
     "file": "shots/nudge.drawn.png"
+  },
+  "save.ask": {
+    "file": "shots/save.ask.png"
+  },
+  "save.ask.never": {
+    "file": "shots/save.ask.never.png"
   }
 }

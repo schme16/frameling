@@ -8,6 +8,7 @@ import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
 import { FileProblem, loadFileAsync, saveFileAsync } from './file';
 import { notify } from './notify';
+import { askSaveInPage, saveAskAvailable } from './saveAsk';
 import { thumbnailOf } from './thumb';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
@@ -88,8 +89,11 @@ export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts
 export async function askAboutUnsavedChanges(): Promise<boolean> {
   if (!store().get().ui.dirty) return true;
   const api = desktop();
+  const neverSaved = !store().get().ui.filePath;
   let choice: 'save' | 'discard' | 'cancel';
-  if (api) choice = await api.app.askSaveChanges(documentTitle(), !store().get().ui.filePath);
+  // Quill's dialog; the system's box only when the page has nowhere to show it.
+  if (saveAskAvailable()) choice = await askSaveInPage(documentTitle(), neverSaved);
+  else if (api) choice = await api.app.askSaveChanges(documentTitle(), neverSaved);
   else choice = window.confirm(`"${documentTitle()}" has changes that aren't saved. Throw them away?`) ? 'discard' : 'cancel';
   if (choice === 'cancel') return false;
   if (choice === 'save') return saveDocument();

@@ -31,8 +31,12 @@ with `FRAMELING_DEV_URL` pointing at it.
   their file in the running window (`fileFromArgs`). The protocol handler is registered only when packaged.
 - The window runs with `contextIsolation`, `sandbox` and no Node. The app version is passed as
   `--frameling-version=`. New windows are refused (http links go to the browser) and navigation is blocked.
-- Closing with unsaved work asks Save / Don't save / Cancel natively. Don't save puts the work aside in "Recover
-  unsaved work" rather than deleting it. At start-up anything a crash left behind is put aside too.
+- Closing with unsaved work asks Save / Don't save / Cancel in Quill's own dialog (`src/io/SaveQuestionDialog.tsx`). The
+  window's `close` event is held (`preventDefault`) while the page asks (`src/main/closeQuestion.ts`: question out,
+  `shown` ack, answer back); Quit is the same path, since `app.quit()` closes the windows and a held close stops the
+  quit, and `before-quit` is remembered so an answered close carries the quit on. The page has 2.5 s to put its dialog up,
+  after which (or if it is gone, hung or throws) the system's own box asks instead: a close is never let through unasked.
+  Don't save puts the work aside in "Recover unsaved work" rather than deleting it. At start-up anything a crash left behind is put aside too.
 
 `src/main/ipc.ts` registers every channel (`files:*`, `recent:*`, `autosave:*`, `library:*`, `media:*`, `video:*`,
 `app:*`). Each handler checks the sender is our own window. Writes are allowed only to files or folders the person

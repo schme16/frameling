@@ -2,6 +2,7 @@
 // person's file). If the app is closed the hard way, the next start offers to bring that copy back.
 import { store } from '../core/store';
 import { desktop } from './desktop';
+import { startCloseQuestions } from './closeQuestion';
 import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
 import { loadFileAsync } from './file';
 import { notify } from './notify';
@@ -78,6 +79,7 @@ export function startFileServices(): void {
   api.app.onOpenFile((p) => void openPath(p));
   api.app.onSaveBeforeClose(() => saveDocument());
   api.app.onKeepUnsaved(() => keepUnsavedWork());
+  startCloseQuestions();
 
   void (async () => {
     const file = await api.app.getLaunchFile();

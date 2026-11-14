@@ -972,6 +972,18 @@ asks the real board's health address when the computer is online (`BETA_NET_OFFL
 and which board it sends to, without printing the key; `--expect-key` makes it exit 1 when there is none, so run it before
 handing a build to a tester. `FRAMELING_BETA=1` on the build itself stops with an error if `FRAMELING_INGEST_KEY` is missing.
 
+### Quill's save question: scripts/ab/quill-save-dialog.cjs
+
+Real built app, real window close and real Quit. `dialog` mode checks the close is held, the dialog's focus, name and role, Escape
+as Cancel, Quit held and cancelled, then Quit with Don't save carrying on (`CLIP=1` also records an H.264 clip). `fallback` mode freezes
+the page, so after the 2.5 s wait the system box asks, and crops it. Used for brand/ab/quill-save-dialog/.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/quill-save-dialog.cjs dialog dark brand/ab/quill-save-dialog
+xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/quill-save-dialog.cjs fallback dark brand/ab/quill-save-dialog
+```
+
 ### Clips with a native question: scripts/ab/close-drawing.cjs
 
 For anything whose point includes a native dialog (the "Save changes?" question), which a page capture can't see. It runs the

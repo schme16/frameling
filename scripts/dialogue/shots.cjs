@@ -273,6 +273,19 @@ const GROUPS = {
     { wait: 300 },
     // crash.sent only shows once a send works, which a build with no key can't do; it is the same dialog with him cheering.
   ],
+  // Quill asking whether to save: a saved drawing, and one that has never been saved.
+  save: [
+    { js: `__frameling.saveQuestion(false)` },
+    { wait: 1400 },
+    { shot: ['save.ask'], crop: '.sq', pad: 12 },
+    { js: `document.querySelector('[data-testid="save.cancel"]').click()` },
+    { wait: 300 },
+    { js: `__frameling.saveQuestion(true)` },
+    { wait: 1400 },
+    { shot: ['save.ask.never'], crop: '.sq', pad: 12 },
+    { js: `document.querySelector('[data-testid="save.cancel"]').click()` },
+    { wait: 300 },
+  ],
   about: [run('help.about'), { wait: 3000 }, { shot: ['about.quill'], crop: '.ui-about', pad: 0 }],
   // Quill's corner and his things: a stroke, a colour, a drawing given, and the moment you get closer.
   pet: [

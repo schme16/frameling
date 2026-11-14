@@ -20,6 +20,7 @@ import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/ov
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
 import { AskDialog } from '../platform/AskDialog';
+import { SaveQuestionDialog } from '../io/SaveQuestionDialog';
 import { StatusBar } from '../ui/StatusBar';
 import { ToastView } from '../ui/ToastView';
 import { ToolFloat, ToolSlot } from '../ui/ToolStrip';
@@ -113,6 +114,7 @@ export function App() {
       <ChoiceDialog />
       <CrashOffer />
       <AskDialog />
+      <SaveQuestionDialog />
       <HelpWindow />
       <WelcomeSheet />
       <OnboardingSheet />

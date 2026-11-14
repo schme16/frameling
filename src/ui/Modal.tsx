@@ -13,6 +13,7 @@ export function Modal({
   size = 'md',
   hideHeader = false,
   initialFocus,
+  describedBy,
 }: {
   title: string;
   onClose: () => void;
@@ -22,6 +23,8 @@ export function Modal({
   hideHeader?: boolean;
   /** CSS selector inside the dialog to focus first (else the dialog itself, so no tooltip pops up on open). */
   initialFocus?: string;
+  /** The id of the text inside that says what the dialog is about, so a screen reader reads it out on opening. */
+  describedBy?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -67,7 +70,7 @@ export function Modal({
         if (e.target === e.currentTarget) pressedBackdrop(e.clientX, e.clientY, ref.current, () => closeRef.current());
       }}
     >
-      <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKey}>
+      <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} aria-describedby={describedBy} tabIndex={-1} onKeyDown={onKey}>
         {!hideHeader && (
           <div className="ui-modal-head">
             <h2>{title}</h2>

@@ -3,6 +3,8 @@
  * script (which builds it), the main process (which answers it) and the page (which calls it).
  */
 
+import type { SaveChoice } from '../shared/saveQuestion';
+
 export interface FileFilter {
   name: string;
   extensions: string[];
@@ -58,7 +60,7 @@ export interface KeptAutosave {
   thumb?: string;
 }
 
-export type SaveChoice = 'save' | 'discard' | 'cancel';
+export type { SaveChoice };
 
 /** What the app keeps in its own folder: installed plugins, your templates, and version history. */
 export type LibraryKind = 'plugins' | 'templates' | 'versions' | 'versions-index';
@@ -210,7 +212,14 @@ export interface FramelingApi {
     onSaveBeforeClose(handler: () => Promise<boolean>): () => void;
     /** Called when the window is closing and they chose "Don't save": put the work aside, then resolve. */
     onKeepUnsaved(handler: () => Promise<void>): () => void;
-    /** The "Save changes?" question as a native dialog. */
+    /** The "Save changes?" question as the system's own box. The page uses it only when it can't show Quill's dialog. */
     askSaveChanges(name: string, neverSaved?: boolean): Promise<SaveChoice>;
+    /**
+     * Called when the window is being closed (the window button, Quit) with unsaved changes. The page asks with its own
+     * dialog and resolves the answer. Call `shown` as soon as the dialog is on screen: if it hasn't been within a
+     * couple of seconds the desktop side asks with the system box instead, and `onWithdraw` takes a function to run so
+     * the page can take its dialog down. (A function, not an AbortSignal: only plain values cross the bridge.) Throw (or reject) when the page can't ask, and the system box is used at once.
+     */
+    onCloseQuestion(handler: (q: { name: string; neverSaved: boolean }, shown: () => void, onWithdraw: (fn: () => void) => void) => Promise<SaveChoice>): () => void;
   };
 }

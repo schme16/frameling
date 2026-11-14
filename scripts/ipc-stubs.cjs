@@ -62,7 +62,7 @@ function invokeStubs(library) {
 }
 
 /** Channels the page sends with ipcRenderer.send() (no answer). */
-const SEND_CHANNELS = ['app:documentState', 'app:crashOffered', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone'];
+const SEND_CHANNELS = ['app:documentState', 'app:crashOffered', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone', 'app:closeQuestionShown', 'app:closeQuestionAnswer'];
 
 /** Every channel stubbed by default, for the drift test. */
 const STUBBED_INVOKE = Object.keys(invokeStubs(new Map()));

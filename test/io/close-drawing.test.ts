@@ -6,7 +6,7 @@ import { getCommand } from '../../src/core/registry';
 import { resetStore, store, Store } from '../../src/core/store';
 import { closeDrawing } from '../../src/io/close';
 import '../../src/io/commands';
-import { saveChangesQuestion } from '../../src/main/saveQuestion';
+import { saveChangesQuestion } from '../../src/shared/saveQuestion';
 import { MENUS } from '../../src/ui/menus';
 import { overlays } from '../../src/ui/overlays';
 import { DEFAULT_CW, resetTl, setTl, tl } from '../../src/timeline/state';
