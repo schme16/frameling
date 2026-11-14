@@ -3,7 +3,8 @@
 //   npx electron scripts/perf/run.cjs --out scripts/perf/results/before.json [--only draw,playback] [--label before]
 //
 // Needs a build first (`npm run build`), or point PERF_RENDERER at another renderer build directory. See README.md.
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app } = require('electron');
+const { startRealApp } = require('./realapp.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -105,34 +106,14 @@ true;
 `;
 
 async function main() {
-  ipcMain.handle('app:launchFile', () => null);
-  ipcMain.handle('recent:list', () => []);
-  ipcMain.handle('library:list', () => []);
-  ipcMain.handle('autosave:read', () => null);
-  await app.whenReady();
-  const gpuRun = await gpuMod.confirmOrExit();
-  // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
-  // number meaningless. So the window is mapped but parked off-screen and unfocusable: nothing appears, nothing
-  // takes focus, and frames are produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
+  // The app's own main process runs (see realapp.cjs), so every handler the page asks for is the real one. A window that is
+  // truly hidden gets one rAF a second with this app (nothing is presented), which makes every number meaningless. So the
+  // window is mapped but parked off-screen and unfocusable: nothing appears, nothing takes focus, and frames are
+  // produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
   const hidden = process.env.PERF_HIDDEN === '1';
   const onScreen = process.env.PERF_SHOW === '1';
-  const win = new BrowserWindow({
-    width: WIN_W,
-    height: WIN_H,
-    x: onScreen ? undefined : -4000,
-    y: onScreen ? undefined : 0,
-    show: false,
-    focusable: onScreen,
-    skipTaskbar: !onScreen,
-    paintWhenInitiallyHidden: true,
-    webPreferences: {
-      preload: path.join(__dirname, '../../dist/preload/preload.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      additionalArguments: ['--frameling-version=perf'],
-      backgroundThrottling: false,
-    },
-  });
+  const win = await startRealApp({ rendererDir, onScreen, hidden, width: WIN_W, height: WIN_H });
+  const gpuRun = await gpuMod.confirmOrExit(win);
   const wc = win.webContents;
   const errors = [];
   wc.on('console-message', (e) => {
@@ -144,8 +125,12 @@ async function main() {
   // Emulate a slower machine (CPU only; the GPU is what it is): PERF_CPU_SLOWDOWN=4 means four times slower JS.
   const slowdown = Number(process.env.PERF_CPU_SLOWDOWN || 1);
   const dbg = (m) => process.env.PERF_DEBUG && console.error('[perf] ' + m);
+  const loadMs = [];
   async function load() {
     dbg('load');
+    // Start-up: from asking for the page to its first two frames with the app ready (the page asks main for the last
+    // session and the plugin settings on the way). One entry per load, kept in the results as env.loadMs.
+    const t0 = Date.now();
     await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1', perf: '1' } });
     if (!hidden) (onScreen ? win.show() : win.showInactive());
     if (slowdown > 1) {
@@ -154,6 +139,8 @@ async function main() {
       await wc.debugger.sendCommand('Emulation.setCPUThrottlingRate', { rate: slowdown });
     }
     dbg('loaded');
+    await js(`new Promise((res) => { const t = Date.now(); const w = () => (window.__frameling ? requestAnimationFrame(() => requestAnimationFrame(res)) : Date.now() - t < 10000 ? setTimeout(w, 5) : res()); w(); })`);
+    loadMs.push(Date.now() - t0);
     await sleep(900);
     await js(PRELUDE);
     dbg('prelude');
@@ -792,6 +779,7 @@ async function main() {
     dpr: await js('window.devicePixelRatio'),
     idleRafMs: await js(`new Promise((res) => { const ts = []; const l = (t) => { ts.push(t); if (ts.length < 40) requestAnimationFrame(l); else res((ts[39] - ts[0]) / 39); }; requestAnimationFrame(l); })`),
     renderer: rendererDir,
+    loadMs,
     when: new Date().toISOString(),
   };
   for (const [name, fn] of Object.entries(tests)) {

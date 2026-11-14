@@ -84,6 +84,21 @@ became a drawn icon; the main thread waits for the whole entry script to be pars
 MB), so every 100 kB kept out of the initial chunk is worth about 2 ms. Moving to a custom scheme to get V8's code
 cache would change the page's origin and lose everyone's saved preferences (localStorage), so it is not done.
 
+## The real main process
+
+`run.cjs`, `brushsize.cjs` and `palettepic.cjs` start the app's own main process (`dist/main/main.cjs`) through
+`realapp.cjs`, with only the window steered (parked, unfocusable, no background throttling) and the user-data folder a
+temporary one, so a run never touches your real recent files, autosave or library. Every handler the page asks for is
+the shipped one, so the harness cannot drift from the app. They used to make a bare window and answer four channels by
+hand, which left `app:restore`, `plugins:setDiagnostics` and `update:facts` failing on every load.
+
+If the main process fails a request (no handler registered, or a handler that throws) the run stops at once with
+`HARNESS IS NOT THE APP` and a non-zero exit code, instead of printing the error and carrying on.
+
+Two things moved when this changed, so older result files are not exactly comparable on them: the window is the real one
+(content area 1400x900, where the bare window had a 27 px menu bar the app never shows, so 1400x873), and the real app
+autosaves while you draw.
+
 ## The hidden window
 
 The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop (`startup.cjs` keeps it on-screen under xvfb, where an off-screen window is never
