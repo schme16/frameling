@@ -197,7 +197,18 @@ barely change): `npx vite build --minify false --outDir /tmp/dev-renderer` then 
 Documents (`--docs a,b`): `bouncing-ball`, `puppet`, `walk-cycle`, `hero-sprites` (built-in templates), `stress-vector`
 (40 layers in nested folders, 240 keys each, three shapes per key), `stress-pixel` (2000 x 2000 stage, 100 frames of an
 800 x 800 painted block), `variations` (a drawing with four variations), `stress-symbols` (60 symbols, 120 instances on the
-stage).
+stage), `history-deep` (a small document with 2000 real undo steps behind it) and `stress-vector-history` (the 40 x 240
+document with 600 steps behind it). The last two are the deep-history corners: `window.__sw.pileHistory(n)` piles the
+steps by adding a line to the drawing on the active layer n times, the shape of edit a person actually makes, and
+reports the steps and the memory the history holds.
+
+**How much a difference has to be before it means anything.** The busy-ms figures drift between whole runs, not just
+between reps inside one: two full sweeps of the same build, 122 rows, came out a mean 3.4% apart with single rows as far
+as 53% down and 50% up. `--reps` repeats the action inside one page session, which does not catch that. So a single
+sweep pair cannot carry a claim under about 25%, and a smaller one needs several whole runs of each side, interleaved.
+The `play` row is worse than the others: its busy ms is how much CPU the page used in a fixed 1.5 s, not how well it
+played, so it rises when the warm-ahead manages more work. Judge playback on `latePaints` and the frame-delta tail from
+`run.cjs` instead.
 
 Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
 `select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),

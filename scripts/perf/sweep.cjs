@@ -108,19 +108,30 @@ const HELPERS = `(() => {
     F.run('view.fit');
   };
   const last = () => { const L = F.store().get().doc.layers; for (let i = L.length - 1; i >= 0; i--) if ((L[i].kind === 'vector' && !L[i].rig) || L[i].kind === 'pixel') return L[i]; return L[L.length - 1]; };
-  window.__sw = { F, last, id, hex, blob, line, vlayer, fresh, finish };
+  // Piles n real undo steps onto whatever is open: each one adds a line to the drawing on the active layer, which is
+  // the shape of edit a person actually makes. Returns how many steps and how much memory the history holds, so a
+  // result file says what corner it measured rather than just naming it.
+  const pileHistory = (n) => {
+    const S = F.store();
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) {
+      const st = S.get();
+      const L = st.doc.layers.find((l) => l.id === st.ui.activeLayerId) || last();
+      const cel = L.cels.find((c) => st.ui.frame >= c.start && st.ui.frame < c.start + c.length) || L.cels[0];
+      if (!cel) break;
+      const sh = line(20 + (i % 40) * 8, 20 + (i % 25) * 10, i);
+      S.update('Draw', (d) => {
+        const dr = d.drawings[cel.drawingId];
+        if (dr && dr.kind === 'vector') dr.shapes.push(sh);
+      });
+    }
+    return { steps: S.historyList().done.length, weightMB: Math.round(S.historyWeight() / 1e6), buildMs: Math.round(performance.now() - t0) };
+  };
+  window.__sw = { F, last, id, hex, blob, line, vlayer, fresh, finish, pileHistory };
 })()`;
 
-const DOCS = {
-  // Built-in templates.
-  'bouncing-ball': { kind: 'vector', make: `(() => { window.__sw.F.template('bouncing-ball'); window.__sw.F.run('view.fit'); return true; })()` },
-  'puppet': { kind: 'vector', make: `(() => { window.__sw.F.template('puppet'); window.__sw.F.run('view.fit'); return true; })()` },
-  'walk-cycle': { kind: 'pixel', make: `(() => { window.__sw.F.template('walk-cycle'); window.__sw.F.run('view.fit'); return true; })()` },
-  'hero-sprites': { kind: 'pixel', make: `(() => { window.__sw.F.template('hero-sprites'); window.__sw.F.run('view.fit'); return true; })()` },
-  // 40 layers x 240 keys, three shapes each, in nested folders.
-  'stress-vector': {
-    kind: 'vector',
-    make: `(() => {
+// The 40 layers x 240 keys document, named so the big-with-a-deep-history corner can build the same thing first.
+const STRESS_VECTOR_MAKE = `(() => {
       const { id, blob, line, vlayer, fresh, finish, F } = window.__sw;
       const d = fresh('blank-vector');
       d.name = 'stress'; d.length = 240; d.layers = []; d.drawings = {}; d.folders = {};
@@ -140,8 +151,17 @@ const DOCS = {
       }
       finish(d);
       return d.layers.length;
-    })()`,
-  },
+    })()`;
+
+const DOCS = {
+  // Built-in templates.
+  'bouncing-ball': { kind: 'vector', make: `(() => { window.__sw.F.template('bouncing-ball'); window.__sw.F.run('view.fit'); return true; })()` },
+  'puppet': { kind: 'vector', make: `(() => { window.__sw.F.template('puppet'); window.__sw.F.run('view.fit'); return true; })()` },
+  'walk-cycle': { kind: 'pixel', make: `(() => { window.__sw.F.template('walk-cycle'); window.__sw.F.run('view.fit'); return true; })()` },
+  'hero-sprites': { kind: 'pixel', make: `(() => { window.__sw.F.template('hero-sprites'); window.__sw.F.run('view.fit'); return true; })()` },
+  // 40 layers x 240 keys, three shapes each, in nested folders.
+  'stress-vector': { kind: 'vector', make: STRESS_VECTOR_MAKE },
+
   // A 2000 x 2000 stage with 100 frames: each frame holds an 800 x 800 painted block of flat 8 x 8 colour cells.
   'stress-pixel': {
     kind: 'pixel',
@@ -171,6 +191,21 @@ const DOCS = {
       F.store().setUi({ tool: 'pencil', color: '#ff2020' });
       return true;
     })()`,
+  },
+  // Small and shallow, with thousands of undo steps behind it: the corner where the history is the big thing.
+  'history-deep': {
+    kind: 'vector',
+    make: `(() => {
+      const { F } = window.__sw;
+      F.template('bouncing-ball');
+      F.run('view.fit');
+      return window.__sw.pileHistory(2000);
+    })()`,
+  },
+  // 40 layers x 240 keys AND a deep history: the corner where both are big at once.
+  'stress-vector-history': {
+    kind: 'vector',
+    make: '(() => { ' + STRESS_VECTOR_MAKE + '; return window.__sw.pileHistory(600); })()',
   },
   // A vector animation with four linked variations (see src/artboards/variations.ts).
   'variations': {

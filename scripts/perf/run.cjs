@@ -195,7 +195,7 @@ async function main() {
   }
 
   const readBag = () =>
-    js(`(() => { const b = window.__framelingPerf; return { latency: b.latency, overlayMs: b.overlayMs, mainMs: b.mainMs, painted: b.painted, builds: b.painter ? b.painter.cache.builds : null }; })()`);
+    js(`(() => { const b = window.__framelingPerf; return { latency: b.latency, overlayMs: b.overlayMs, mainMs: b.mainMs, painted: b.painted, builds: b.painter ? b.painter.cache.builds : null, evictions: b.painter ? b.painter.cache.evictions : null }; })()`);
   const deltas = (ts) => ts.slice(1).map((t, i) => t - ts[i]);
 
   const results = {};
@@ -231,6 +231,7 @@ async function main() {
         longTasks: longs.length,
         longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
         bitmapBuilds: bag.builds,
+        bitmapEvictions: bag.evictions,
       };
     }
     // One short stroke at a steady one-event-per-frame pace on the busy document: plain brush latency.
@@ -277,6 +278,7 @@ async function main() {
         longTasks: longs.length,
         longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
         bitmapBuilds: bag.builds,
+        bitmapEvictions: bag.evictions,
       };
       await js(`window.__frameling.store().setUi({ playing: false })`);
     }
@@ -304,7 +306,7 @@ async function main() {
     await js('window.__h.stopRaf()');
     {
       const bag = await readBag();
-      out.scrubWithOnion60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+      out.scrubWithOnion60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions };
     }
     // Stepping through frames the way a person does (a key press every ~150 ms, onion skin off), so a paused
     // canvas has idle time between steps. What the paint on each step costs.
@@ -318,7 +320,7 @@ async function main() {
     }
     {
       const bag = await readBag();
-      out.stepPaused60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+      out.stepPaused60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions };
     }
     // What one playhead move costs everything that listens to the store (React panels, menus), without any drawing.
     out.storeFrameUpdateMs = stats(
@@ -529,7 +531,7 @@ async function main() {
       let raf = await js('window.__h.stopRaf()');
       let bag = await readBag();
       const zoomLongs = await js('window.__h.takeLongs()');
-      out[name + '_zoom'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), overlayDrawMs: stats(bag.overlayMs), longTasks: zoomLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_zoom'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), overlayDrawMs: stats(bag.overlayMs), longTasks: zoomLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions };
       // Pan: a middle-button drag in a big circle.
       await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
       send({ type: 'mouseMove', x: cx, y: cy });
@@ -544,7 +546,7 @@ async function main() {
       raf = await js('window.__h.stopRaf()');
       bag = await readBag();
       const panLongs = await js('window.__h.takeLongs()');
-      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: panLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: panLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions };
       // Pan again at 400%: the stage is bigger than the screen, so nothing can be cached and every frame is drawn live.
       await js(`window.__frameling.store().setUi({ zoom: 4, panX: -900, panY: -500 })`);
       await js('window.__h.raf2()');
@@ -561,7 +563,7 @@ async function main() {
       raf = await js('window.__h.stopRaf()');
       bag = await readBag();
       const zoomedLongs = await js('window.__h.takeLongs()');
-      out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions };
     }
     return out;
   }
