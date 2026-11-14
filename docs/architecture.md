@@ -416,6 +416,13 @@ Writers:
   a drawing never being changed in place once it is in the document (edits replace it). Save and Save As never reuse.
   Under test and with `?debug` (not `&nofreeze`) immer auto-freezes committed documents and the kept drawings are frozen,
   so a write in place throws where it happens.
+- Taking the colours of a picture (`src/pixel/quantise.ts`, `quantiseRun.ts`, `quantise.worker.ts`): a `Histogram` counts the
+  picture's colours a piece at a time (exactly up to 65,536 distinct, in 5-bit bins with their true average colour past that),
+  and `pickColours` takes at most the limit: variance-driven box cutting, then four rounds of k-means. `startScan` sends the
+  pixels to a worker in 1 MB pieces with at most four unacknowledged (so progress is what the worker has counted), keeps the
+  counting so a new limit only picks again, and can be cancelled (the worker is ended). With no worker, or one that fails,
+  the same code runs on the page in 256 KB steps that give the page back every 8 ms. Big PNGs are decoded on the I/O worker
+  (`decodePngInWorker`).
 - `png.ts` (own PNG codec), `thumb.ts`, `RecentDialog.tsx`, `notify.ts` (toasts from io and export).
 
 **The user library** (desktop: `library/<kind>/` in the user data folder, `src/main/library.ts`; web: IndexedDB):

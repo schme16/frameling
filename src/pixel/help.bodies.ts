@@ -87,7 +87,7 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
 
 **Starter palettes.** A few to get going: *Cosy Sixteen* (a good all-rounder), *Pocket Moss* (four greens, like an old handheld game screen), *Dusk Ramps*, *Arcade Bright* and *Paper and Ink* (one-bit).
 
-**Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture. You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
+**Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture (see [Taking the colours from a picture](help:palette-picture)). You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
 
 The palette is saved with your document. Until you change it, a new document uses Cosy Sixteen.`,
   'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or Pixel tools > Lock this layer to the palette).

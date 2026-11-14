@@ -1,8 +1,11 @@
 // "Bring in a picture": a live preview of what the picture will be cut into, with the choices beside it. Opened for a
 // PNG, GIF or sprite sheet from File > Open, File > Import, a drop, or the palette.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { SpriteWay } from '../../core/format';
+import type { DocPalette, SpriteWay } from '../../core/format';
 import { Modal } from '../../io/mount';
+import { sortForRamps, paletteOfKeys } from '../palette-io';
+import { clampColours, DEFAULT_COLOURS, MAX_COLOURS, MIN_COLOURS } from '../quantise';
+import { Cancelled, startScan, type Picked, type Scan } from '../quantiseRun';
 import { WAYS } from '../way';
 import { colourCount, cutPicture, defaultCut, DEFAULT_FPS, timingOf, type BuildOptions, type Cutting } from './build';
 import type { Picture } from './picture';
@@ -19,7 +22,11 @@ export interface ImportRequest {
   /** With the open drawing: make the layer or boards from the current frame. */
   into: boolean;
   paletteMode: PaletteMode;
+  /** In palette mode: the colours already picked (off the page's thread) for the limit that was set. */
+  picked?: DocPalette;
 }
+
+const plural = (n: number, one: string) => `${n.toLocaleString()} ${n === 1 ? one : one.replace(/our$/, 'ours')}`;
 
 const num = (v: string, min: number, max: number, fallback: number): number => {
   const n = Math.floor(Number(v));
@@ -33,6 +40,8 @@ interface Remembered {
   align?: Align;
   skipBlank?: boolean;
   rowsAsSprites?: boolean;
+  maxColours?: number;
+  paletteMode?: 'add' | 'replace';
 }
 function recall(): Remembered {
   try {
@@ -61,7 +70,7 @@ function Preview({ pic, frame, cells, boxes }: { pic: Picture; frame: number; ce
     c.width = pic.width;
     c.height = pic.height;
     const g = c.getContext('2d');
-    g?.putImageData(new ImageData(new Uint8ClampedArray(pic.frames[Math.min(frame, pic.frames.length - 1)].pixels), pic.width, pic.height), 0, 0);
+    g?.putImageData(new ImageData(pic.frames[Math.min(frame, pic.frames.length - 1)].pixels as Uint8ClampedArray<ArrayBuffer>, pic.width, pic.height), 0, 0);
   }, [pic, frame]);
   const w = Math.round(pic.width * z);
   const h = Math.round(pic.height * z);
@@ -127,7 +136,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
   const animated = pic.frames.length > 1;
   const [json, setJson] = useState<SheetData | null>(companion);
   const sheetLike = useMemo(() => !animated && mode !== 'palette' && looksLikeSheet({ width: pic.width, height: pic.height, pixels: pic.frames[0].pixels }), [pic, animated, mode]);
-  const [how, setHow] = useState<Cutting['how']>(companion ? 'json' : sheetLike ? 'auto' : 'whole');
+  const [how, setHow] = useState<Cutting['how']>(mode === 'palette' ? 'whole' : companion ? 'json' : sheetLike ? 'auto' : 'whole');
   const [grid, setGrid] = useState<GridSpec>(() => defaultGrid(pic.width, pic.height));
   const [auto, setAuto] = useState<AutoSpec>(defaultAuto);
   const [order, setOrder] = useState<CellOrder>(saved.order ?? 'rows');
@@ -136,7 +145,9 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
   const [way, setWay] = useState<SpriteWay | null>(null);
   const [rowsAsSprites, setRowsAsSprites] = useState(saved.rowsAsSprites ?? true);
   const [palette, setPalette] = useState<boolean>(mode === 'new');
-  const [paletteMode, setPaletteMode] = useState<'replace' | 'add'>('add');
+  const [paletteMode, setPaletteMode] = useState<'replace' | 'add'>(saved.paletteMode ?? 'add');
+  const [maxColours, setMaxColours] = useState<number>(clampColours(saved.maxColours));
+  const [maxText, setMaxText] = useState<string>(String(clampColours(saved.maxColours)));
   const [into, setInto] = useState(mode === 'add');
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -159,8 +170,54 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
     if (how === 'auto') return autoCells({ width: pic.width, height: pic.height, pixels: pic.frames[0].pixels }, auto);
     return [];
   }, [pic, how, grid, auto, json, animated]);
-  const colours = useMemo(() => colourCount(sprite), [sprite]);
+  const colours = useMemo(() => (mode === 'palette' ? 0 : colourCount(sprite)), [sprite, mode]);
   const timing = useMemo(() => (frames ? timingOf(sprite) : null), [sprite, frames]);
+
+  // Taking the colours: counted on a worker thread while the dialog stays usable, then picked again (quickly) whenever the limit changes.
+  const [counted, setCounted] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [picked, setPicked] = useState<{ max: number; r: Picked } | null>(null);
+  const [scanFailed, setScanFailed] = useState(false);
+  const scanRef = useRef<Scan | null>(null);
+  useEffect(() => {
+    if (mode !== 'palette') return;
+    // A long animation has few new colours after the first frames, so a sample of the frames is enough.
+    const use = sprite.frames.length > 64 ? sprite.frames.filter((_, i) => i % Math.ceil(sprite.frames.length / 64) === 0) : sprite.frames;
+    const scan = startScan(
+      use.map((f) => f.image.pixels),
+      setCounted,
+    );
+    scanRef.current = scan;
+    setReady(false);
+    setPicked(null);
+    setScanFailed(false);
+    scan.done.then(
+      () => setReady(true),
+      (e) => {
+        if (!(e instanceof Cancelled)) setScanFailed(true);
+      },
+    );
+    // Closing the dialog, or Cancel, stops the work.
+    return () => scan.cancel();
+  }, [mode, sprite]);
+  useEffect(() => {
+    if (!ready || !scanRef.current) return;
+    let stale = false;
+    const t = setTimeout(() => {
+      scanRef.current?.pick(maxColours).then(
+        (r) => {
+          if (!stale) setPicked({ max: maxColours, r });
+        },
+        () => {},
+      );
+    }, 120);
+    return () => {
+      stale = true;
+      clearTimeout(t);
+    };
+  }, [ready, maxColours]);
+  const pickedNow = picked && picked.max === maxColours ? picked.r : null;
+  const swatches = useMemo(() => (pickedNow ? sortForRamps(pickedNow.colours) : []), [pickedNow]);
 
   // A GIF can be watched here.
   useEffect(() => {
@@ -170,23 +227,29 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
   }, [playing, frame, animated, pic]);
 
   const shape = how === 'grid' ? gridShape(pic.width, pic.height, grid) : null;
-  const problem = mode === 'palette' ? (colours === 0 ? 'The picture has no solid colours.' : '') : !frames ? 'Nothing to cut with these settings.' : '';
+  const problem = mode === 'palette' ? (scanFailed ? 'Frameling could not work out the colours of this picture.' : pickedNow && pickedNow.solid === 0 ? 'The picture has no solid colours.' : '') : !frames ? 'Nothing to cut with these settings.' : '';
   const sizes = new Set(sprite.frames.map((f) => `${f.image.width}x${f.image.height}`));
   const summary =
     mode === 'palette'
-      ? `${colours >= 9999 ? 'Many' : colours} ${colours === 1 ? 'colour' : 'colours'} in the picture${colours > 256 ? ' (the 256 that stand for it best are kept)' : ''}.`
+      ? !ready
+        ? `Working out the colours... ${Math.round(counted * 100)}%`
+        : pickedNow
+          ? `${pickedNow.exact ? plural(pickedNow.distinct, 'colour') : 'Many colours'} in the picture${pickedNow.distinct > maxColours || !pickedNow.exact ? `: ${plural(pickedNow.colours.length, 'colour')} that stand for it best.` : '.'}`
+          : 'Picking the colours...'
       : frames
         ? `${frames} ${frames === 1 ? 'frame' : 'frames'} of ${sprite.width} x ${sprite.height}${effectiveWay === 'animation' || effectiveWay === 'sheet' ? `, plays at ${timing?.fps ?? DEFAULT_FPS} fps` : ''}.`
         : '';
 
   const go = () => {
     if (problem) return;
-    remember({ way: effectiveWay, order, align, skipBlank, rowsAsSprites });
+    if (mode === 'palette' && !pickedNow) return;
+    remember({ way: effectiveWay, order, align, skipBlank, rowsAsSprites, maxColours, paletteMode });
     finish({
       sprite,
       options: { way: effectiveWay, name: fileName, rowsAsSprites, palette: mode === 'palette' ? true : palette },
       into,
       paletteMode: mode === 'palette' ? paletteMode : palette ? (mode === 'new' ? 'replace' : 'add') : 'none',
+      ...(mode === 'palette' && pickedNow ? { picked: paletteOfKeys(pickedNow.colours, fileName) } : {}),
     });
     close();
   };
@@ -392,6 +455,36 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
           )}
 
           {mode === 'palette' ? (
+            <>
+              <fieldset className="im-set">
+                <legend>How many colours</legend>
+                <Field label="Most colours to take" hint="A photo has thousands of colours. Frameling keeps this many that stand for it best. A picture with fewer keeps them all.">
+                  <input
+                    type="number"
+                    min={MIN_COLOURS}
+                    max={MAX_COLOURS}
+                    value={maxText}
+                    data-testid="palette.max"
+                    onChange={(e) => {
+                      setMaxText(e.target.value);
+                      if (e.target.value.trim() !== '') setMaxColours(clampColours(e.target.value, maxColours));
+                    }}
+                    onBlur={() => setMaxText(String(maxColours))}
+                  />
+                </Field>
+                {!ready && !scanFailed ? (
+                  <div className="im-progress" role="status">
+                    <progress max={1} value={counted} aria-label="Working out the colours" />
+                    <small className="im-hint">Working out the colours: {Math.round(counted * 100)}%. You can keep using Frameling, or press Cancel to stop.</small>
+                  </div>
+                ) : (
+                  <div className="im-swatches" role="img" aria-label={`The ${swatches.length} colours that will be taken`}>
+                    {swatches.map((k) => (
+                      <i key={k} style={{ background: `#${k.toString(16).padStart(6, '0')}` }} />
+                    ))}
+                  </div>
+                )}
+              </fieldset>
             <fieldset className="im-set">
               <legend>Palette</legend>
               <div className="im-seg" role="radiogroup" aria-label="Palette">
@@ -407,6 +500,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
                 ))}
               </div>
             </fieldset>
+            </>
           ) : (
             <label className="im-check">
               <input type="checkbox" checked={palette} onChange={(e) => setPalette(e.target.checked)} />
@@ -426,7 +520,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
         <button type="button" className="io-btn" data-testid="import.cancel" onClick={close}>
           Cancel
         </button>
-        <button type="button" className="io-btn io-primary" data-testid="import.go" onClick={go} disabled={!!problem} data-autofocus>
+        <button type="button" className="io-btn io-primary" data-testid="import.go" onClick={go} disabled={!!problem || (mode === 'palette' && !pickedNow)} data-autofocus>
           {mode === 'palette' ? 'Take the colours' : into ? 'Add it' : 'Bring it in'}
         </button>
       </div>

@@ -1293,3 +1293,19 @@ python3 scripts/ab/restart-recent-cut.py dark
   file, read from the end of the zip, kept for older files) and `test/io/recent-dialog.test.tsx`.
 - `scripts/ipc-stubs.cjs` keeps a pretend recent list and kept pictures, and `__framelingIo.demoRecent([...])` fills it for
   pictures of Open recent (`scripts/docs/help/restart-recent.cjs`).
+
+## A big picture's palette never freezes the page: scripts/perf/palettepic.cjs
+
+Makes a 4000 x 3000 photo-like picture in the page (JPEG or PNG), opens **Take colours from a picture**, presses the button
+and reports the longest single block of the page's main thread (a 4 ms heartbeat plus the long task observer), when the
+dialog showed, when the colours were ready and the total. It is the proof that the quantiser (`src/pixel/quantise*.ts`)
+stays off the page's thread.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/palettepic.cjs --kind jpeg --max 32 --out /tmp/after-jpeg.json
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/palettepic.cjs --kind png --max 32
+```
+
+`PERF_RENDERER=dir` measures another renderer build (a private `vite build --outDir`), which is how a before and after are
+compared. Before the worker: 1028 ms (JPEG) and 5678 ms (PNG, plus 842 ms decoding it). After: 43 ms and 14 ms.

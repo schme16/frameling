@@ -98,3 +98,20 @@ export async function inflateDocInWorker(bytes: Uint8Array): Promise<Uint8Array 
     return null;
   }
 }
+
+/**
+ * One PNG decoded on a worker, so a big picture does not hold the page up; null when it is small, there is no worker, or
+ * the worker could not (the caller then decodes it itself, and a broken file throws where it always did).
+ */
+export async function decodePngInWorker(bytes: Uint8Array): Promise<RawImage | null> {
+  if (pngPixels(bytes) < WORKER_MIN_PIXELS) return null;
+  const p = getPool();
+  if (!p) return null;
+  try {
+    const copy = bytes.slice();
+    const r = await p.run<IoReply>({ kind: 'png', bytes: copy }, [copy.buffer]);
+    return r.ok && 'image' in r ? r.image : null;
+  } catch {
+    return null;
+  }
+}
