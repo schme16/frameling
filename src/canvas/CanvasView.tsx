@@ -12,6 +12,7 @@ import { SnapChip } from './SnapOptions';
 import { TurnChip } from './TurnChip';
 import { isTurned, useTurn } from './turn';
 import { ReferenceBar, ReferenceHandles } from '../reference/Placement';
+import { NoteCard, NoteMarkers } from '../notes/NotesLayer';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,7 @@ export function CanvasView() {
         <canvas className="cv-layer cv-overlay" ref={overlayRef} />
         <ReferenceHandles />
         <TextEditor />
+        <NoteMarkers />
       </div>
       <EditBar />
       <TileEditBanner />
@@ -59,6 +61,7 @@ export function CanvasView() {
       <SnapChip />
       <TurnChip />
       <ReferenceBar />
+      <NoteCard />
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

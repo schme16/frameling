@@ -28,6 +28,8 @@ import '../symbols/symbols.css';
 import { attachPinch } from '../canvas/pinch';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { TimelineSlot } from './slots';
+import { framesWithNotes } from '../notes/model';
+import '../notes/notes.css';
 import { setScrubbing } from '../gpu/settings';
 import { DetailRow, PropRow } from './Detail';
 import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
@@ -151,6 +153,8 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
   useStore((s) => s.doc.inOut);
   const saved = inOutRange(store().get().doc);
   const io = ghostRange ?? saved;
+  const noted = useStore((s) => s.doc.notes);
+  const notedFrames = noted?.length ? framesWithNotes(store().get().doc) : null;
   return (
     <div className={`tl-ruler${detailed ? ' is-detailed' : ''}`} data-region="ruler" data-quest="timeline-ruler" style={{ height: h }}>
       {detailed ? <SecondsBand cw={cw} from={from} to={Math.min(total, to)} fps={fps} /> : null}
@@ -158,6 +162,11 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
       {onion.enabled && !onion.keysOnly ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
       {onion.enabled && onion.keysOnly && frame >= 0
         ? onionFrames(store().get().doc, frame, onion).map((o) => shade(o.frame, o.frame, o.side === 'before' ? onion.beforeColor : onion.afterColor, `k${o.frame}`))
+        : null}
+      {notedFrames
+        ? [...notedFrames].filter(([f]) => f >= from && f <= to && f < total).map(([f, c]) => (
+            <i key={`note${f}`} className={`tl-notedot${c.open ? '' : ' is-done'}`} style={{ left: f * cw + cw / 2 }} title={`${c.total} note${c.total === 1 ? '' : 's'} on frame ${f + 1}${c.open ? '' : ' (done)'}`} />
+          ))
         : null}
       {labels.map((f) => (
         <span key={`n${f}`} className="tl-num" style={{ left: f * cw, width: cw }}>

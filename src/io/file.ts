@@ -4,6 +4,7 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { readNotes } from '../notes/model';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
@@ -533,6 +534,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (pictures) doc.pictures = pictures;
   const guides = readGuides(raw.guides);
   if (guides) doc.guides = guides;
+  const notes = readNotes(raw.notes);
+  if (notes) doc.notes = notes;
   if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
     const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
     const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));

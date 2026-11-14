@@ -1,5 +1,6 @@
 // What people do with their templates: save the open drawing as one, import one someone shared, share one, remove one.
 import { rootDoc } from '../core/symbols';
+import { withoutNotes } from '../notes/model';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
 import { FileProblem } from '../io/file';
@@ -33,7 +34,7 @@ function rememberAuthor(author: string, licence: string): void {
 }
 
 /** The drawing to keep: as saved (no symbol open), with whatever is being edited inside it. */
-export const templateDoc = () => rootDoc(store().rootDoc());
+export const templateDoc = () => withoutNotes(rootDoc(store().rootDoc()));
 
 export async function saveTemplate(meta: TemplateMeta, share: boolean): Promise<boolean> {
   const doc = templateDoc();

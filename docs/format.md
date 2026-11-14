@@ -166,6 +166,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `audio?` | `AudioClip[]` | (`0b554d4`) |
 | `pictures?` | `ReferencePicture[]` | The pictures reference layers show: `{id, name, data, mime, width, height}`. Bytes in `pictures/<id>.<ext>`; `width` and `height` are as the picture shows (a phone photo's turn already applied). Shared by every layer and shot that names the id. |
 | `guides?` | `Guide[]` | Ruler guides, never exported (`b5f0737`). |
+| `notes?` | `CanvasNote[]` | Notes left on the canvas: `{ id, x, y, text, pin?, frame?, layer?, board?, by?, at?, done?, replies? }`. `pin` is `'page'` (the default), `'frame'` (with `frame`) or `'layer'` (with `layer`). Read by `readNotes` (src/notes/model.ts), which drops what is malformed. Never exported: every way out passes the document through `withoutNotes`. An older Frameling ignores the field. |
 | `inOut?` | `{start, end}` | Play range, inclusive (`9edd74d`). |
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
 | `exports?` | `{last?: {settings, way?}, ways?: {id, name, settings}[]}` | How the drawing was last exported (what Export again repeats) and up to 12 named ways ("the sprite sheet"). Settings are the Export window's choices as plain data. Missing = never exported; old files have none. |

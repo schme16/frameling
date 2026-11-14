@@ -127,6 +127,11 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'make',
     keywords: ['layer', 'layers', 'vector', 'pixel', 'hide', 'lock', 'reorder', 'folder', 'stack'],
   },
+  notes: {
+    blurb: 'Notes you leave on the canvas, for you or whoever opens the file next. They stay in the file and never come out in an export.',
+    group: 'more',
+    keywords: ['notes', 'comments', 'review', 'feedback', 'annotations', 'to do'],
+  },
   artboards: {
     blurb: 'Several canvases in one file: a sprite each, or a shot each, side by side.',
     group: 'make',

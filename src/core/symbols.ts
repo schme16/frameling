@@ -18,6 +18,7 @@ import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
 import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
+import { withoutNotes } from '../notes/model';
 
 // ---------------------------------------------------------------- matrices
 
@@ -746,7 +747,8 @@ function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Draw
 
 /** The document and playhead of the main stage, even while a symbol is open (for exports and thumbnails). */
 export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
-  return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
+  // Notes are left out: nothing made from the scene (an export, a package, a plugin's file) should carry them.
+  return doc.editing?.length ? { doc: withoutNotes(rootDoc(doc)), frame: doc.editing[0].frame } : { doc: withoutNotes(doc), frame };
 }
 
 // ---------------------------------------------------------------- moving shapes (text, particles)

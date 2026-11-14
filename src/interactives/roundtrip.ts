@@ -7,6 +7,7 @@ import { baseName, desktop } from '../io/desktop';
 import { clearAutosaveCopy, loadBytes, registerOpener, registerSaveHook } from '../io/document';
 import { FileProblem, saveFile } from '../io/file';
 import { notify } from '../io/notify';
+import { withoutNotes } from '../notes/model';
 import { defaultSettings } from '../export/plan';
 import { getLink, readPlayable, setLink, type PlayableLink } from './link';
 
@@ -123,4 +124,4 @@ export function registerRoundTrip(): void {
 }
 
 // Used by tests: the editable drawing as it would go back into the package.
-export const sourceBytes = (): Uint8Array => saveFile(store().rootDoc());
+export const sourceBytes = (): Uint8Array => saveFile(withoutNotes(store().rootDoc()));

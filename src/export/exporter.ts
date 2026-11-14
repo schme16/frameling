@@ -17,6 +17,7 @@ import type { Doc } from '../core/format';
 import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
 import { rememberExport } from './savedOps';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
+import { withoutNotes } from '../notes/model';
 
 const KEY = 'frameling.export.last';
 
@@ -115,7 +116,9 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     }
   }
   // While a symbol is open, export the scene as it is saved.
-  const { doc, frame } = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
+  const scene = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
+  const doc = withoutNotes(scene.doc);
+  const frame = scene.frame;
   const picked = settings;
   const def = exporterOf(settings.format);
   if (!def) throw new ExportProblem('That kind of export is turned off. Turn it on in Preferences > Features.');

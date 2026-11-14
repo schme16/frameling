@@ -14,7 +14,7 @@ const PLACES: Record<string, string[]> = {
   select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'slice'],
   pen: ['transform', 'points', 'pen'],
   rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
-  view: ['hand', 'zoom', 'camera', 'artboard'],
+  view: ['hand', 'zoom', 'camera', 'notes', 'artboard'],
 };
 const refs = (ids: string[]) =>
   ids.map((id) => {
