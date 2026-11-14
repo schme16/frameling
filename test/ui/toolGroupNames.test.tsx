@@ -189,7 +189,7 @@ describe('renaming in the page', () => {
 
   it('double-clicking the divider above a group opens the name box for that group, filled with its name', () => {
     mount('two');
-    const gap = host.querySelector<HTMLElement>('[data-tool-gap="2"]')!;
+    const gap = host.querySelector<HTMLElement>('[data-tool-gap="3"]')!;
     expect(gap.getAttribute('data-tip')).toBe('Shapes');
     fire(gap, 'dblclick');
     expect(renaming.get()).toMatchObject({ kind: 'group', id: 'shapes' });
@@ -199,19 +199,19 @@ describe('renaming in the page', () => {
 
   it('saving a name shows it on the group and in its tooltip', () => {
     mount('two');
-    fire(host.querySelector('[data-tool-gap="2"]')!, 'dblclick');
+    fire(host.querySelector('[data-tool-gap="3"]')!, 'dblclick');
     type(box()!.querySelector('input')!, 'Boxes and rings');
     submit();
     expect(box()).toBeNull();
     expect(names()).toContain('Boxes and rings');
-    expect(host.querySelector('[data-tool-gap="2"]')!.getAttribute('data-tip')).toBe('Boxes and rings');
+    expect(host.querySelector('[data-tool-gap="3"]')!.getAttribute('data-tip')).toBe('Boxes and rings');
     expect(host.querySelector('[role="status"]')!.textContent).toBe('Group named Boxes and rings.');
   });
 
   it('typing the usual name back clears the custom one', () => {
     mount('two');
     renameToolGroup('shapes', 'Boxes');
-    fire(host.querySelector('[data-tool-gap="2"]')!, 'dblclick');
+    fire(host.querySelector('[data-tool-gap="3"]')!, 'dblclick');
     type(box()!.querySelector('input')!, 'Shapes');
     submit();
     expect(dock.get().rails).toBeUndefined();
@@ -251,7 +251,7 @@ describe('renaming in the page', () => {
 
   it('Escape closes the box without changing the name', () => {
     mount('two');
-    fire(host.querySelector('[data-tool-gap="2"]')!, 'dblclick');
+    fire(host.querySelector('[data-tool-gap="3"]')!, 'dblclick');
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     expect(box()).toBeNull();
     expect(dock.get().rails).toBeUndefined();

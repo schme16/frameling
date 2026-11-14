@@ -324,7 +324,7 @@ when comparing two drawings for "same look" (as `id` is ignored).
   `opacity`. Kept as input points so it re-renders losslessly. **Brush tips** (`brush.tip`, all optional, missing = a plain
   line, so older files read unchanged): `kind` is `'chalk' | 'charcoal' | 'watercolour' | 'stamp'`, and the rest depend on it:
   `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; watercolour: `amount` is the edge
-  strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | custom`), `spacing` (a share of the
+  strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | paw | custom`), `spacing` (a share of the
   brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
   outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is
   drawn, so the random parts stay put). Four more kinds are the brushes you build yourself (`src/geometry/tipRibbon.ts`), each

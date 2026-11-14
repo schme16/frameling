@@ -32,7 +32,7 @@ const id = () => `t${++n}`;
 const saved = (name: string, brush = wide, i = id()): BrushPreset => ({ id: i, name, tool: 'brush', brush });
 
 describe('starters', () => {
-  it('come in seven groups, flagged built in, with distinct ids, names and sane values', () => {
+  it('come in ten groups, flagged built in, with distinct ids, names and sane values', () => {
     expect(new Set(STARTERS.map((s) => s.id)).size).toBe(STARTERS.length);
     expect(new Set(STARTERS.map((s) => s.name.toLowerCase())).size).toBe(STARTERS.length);
     expect(new Set(STARTERS.map((s) => s.group))).toEqual(new Set(STARTER_GROUPS));

@@ -15,7 +15,7 @@ export type StarterGroup = (typeof STARTER_GROUPS)[number];
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
 
 const grain = (kind: 'chalk' | 'charcoal', amount: number, coarse: number) => ({ ...defaultTip(kind), amount, grain: coarse });
-const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
+const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
   ...defaultTip('stamp'),
   shape,
   angle,
@@ -72,6 +72,7 @@ export const STARTERS: readonly BrushPreset[] = [
   make('falling-leaves', 'Falling leaves', 'Stamps and texture', { size: 18, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('leaf', 'random', 1.3, 0.4, 0.9) }),
   make('stars', 'Stars', 'Stamps and texture', { size: 16, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('star', 'random', 1.3, 0.3, 0.2) }),
   make('sparkles', 'Sparkles', 'Stamps and texture', { size: 10, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('star', 'random', 0.8, 0.8, 1.4) }),
+  make('paw-prints', 'Paw prints', 'Stamps and texture', { size: 24, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('paw', 'follow', 1.7, 0.1, 0) }),
   make('hearts', 'Hearts', 'Stamps and texture', { size: 16, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('heart', 'upright', 1.2, 0.3, 0.15) }),
   make('dotted-line', 'Dotted line', 'Stamps and texture', { size: 6, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('dot', 'upright', 1.9, 0, 0) }),
   make('dashed-line', 'Dashed line', 'Stamps and texture', { size: 7, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('dash', 'follow', 1.9, 0, 0) }),

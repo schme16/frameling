@@ -4,9 +4,9 @@ export const bodies: Record<string, string> = {
 
 **Pick one:** choose the **Brush** tool (**B**). The **brush picker** at the top of its options shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** over forty brushes come with Frameling, in seven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour** and **Stamps and texture**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
+**Ready to use:** nearly sixty brushes come with Frameling, in ten groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles** and **Along the line**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
 
-**Not here yet:** airbrush, a see-through highlighter, a flat calligraphy pen and smudge. The brush can't make those honestly yet.
+**Not here yet:** airbrush, a see-through highlighter and smudge. The brush can't make those honestly yet.
 
 **Save your own:**
 1. Set the brush how you like it.
@@ -36,7 +36,7 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 
 **What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has a small picture of the brush's **real tip** (chalk shows its grain, watercolour its wash, a stamp its shapes) with the size under it, a long **stroke** and its **name**. The brush you are using is highlighted and its stroke follows the sliders. Strokes are drawn in a colour that stands out against the panel, in every theme. **Row size** at the bottom makes the rows taller or smaller.
 
-**Search, groups and favourites** are always here, because Frameling comes with over forty brushes.
+**Search, groups and favourites** are always here, because Frameling comes with nearly sixty brushes.
 
 - **Search.** Type a word and the list becomes the matches, each with its group. Every word has to match, in the name or the group. Typing always goes to the search box, so just start typing.
 - **Groups.** **My brushes** is yours. Below it are the groups that come with Frameling, then a brush pack or your own groups. Press a group's name to open or fold it. Only open groups are drawn, which keeps a big library quick. A small dot says your brush is inside. The button beside the search box folds or opens every group.
@@ -65,7 +65,7 @@ help:brush-presets help:tool-options`,
 
 **Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
 
-**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond or heart. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Spin**, **Gap variety** and a same-size switch give it more say. **Pointy start** and **Pointy end** shrink the stamps at the ends.
+**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond, heart or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Spin**, **Gap variety** and a same-size switch give it more say. **Pointy start** and **Pointy end** shrink the stamps at the ends.
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.

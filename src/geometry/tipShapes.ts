@@ -384,6 +384,26 @@ function dash(): number[] {
   return o;
 }
 
+/** An ellipse as a closed outline, turned by `rot` radians. `top` below 1 squashes the upper half (a pad with a fuller bottom). */
+function oval(cx: number, cy: number, rx: number, ry: number, rot: number, n: number, top = 1): number[] {
+  const o: number[] = [];
+  const c = Math.cos(rot);
+  const s = Math.sin(rot);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const x = rx * Math.cos(a);
+    const sy = Math.sin(a);
+    const y = ry * sy * (sy < 0 ? top : 1);
+    o.push(cx + x * c - y * s, cy + x * s + y * c);
+  }
+  return o;
+}
+
+/** A paw print: a main pad and four toes, toes at the top. Five outlines, so it comes back as a list. */
+function pawRings(): number[][] {
+  return [oval(0, 0.2, 0.27, 0.23, 0, 24, 0.8), oval(-0.38, -0.03, 0.1, 0.15, -0.35, 14), oval(-0.14, -0.3, 0.11, 0.155, -0.1, 14), oval(0.14, -0.3, 0.11, 0.155, 0.1, 14), oval(0.38, -0.03, 0.1, 0.15, 0.35, 14)];
+}
+
 const BUILT_IN: Record<string, () => number[]> = {
   dot: () => circle(16),
   leaf,
@@ -393,10 +413,12 @@ const BUILT_IN: Record<string, () => number[]> = {
   heart,
 };
 const builtCache = new Map<string, number[]>();
+let pawCache: number[][] | undefined;
 
 /** The outlines of a stamp, 1 unit across and centred on 0, as flat lists of x, y. */
 export function stampRings(shape: string, custom: number[][]): number[][] {
   if (shape === 'custom' && custom.length) return custom;
+  if (shape === 'paw') return (pawCache ??= pawRings());
   let r = builtCache.get(shape);
   if (!r) {
     r = (BUILT_IN[shape] ?? BUILT_IN.leaf)();
@@ -469,8 +491,8 @@ function stampShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
     const D = b.size * k;
     if (D < 0.3) return;
     let ang = t.angle === 'follow' ? q.ang + (hash3(seed, i, 2) - 0.5) * t.jitter * 0.8 : t.angle === 'random' ? hash3(seed, i, 2) * Math.PI * 2 : (hash3(seed, i, 2) - 0.5) * t.jitter * 0.5;
-    // Shapes drawn upright (a heart, anything you made) have their top at the front when they follow the line.
-    if ((t.shape === 'heart' || t.shape === 'custom') && t.angle === 'follow') ang += Math.PI / 2;
+    // Shapes drawn upright (a heart, a paw, anything you made) have their top at the front when they follow the line.
+    if ((t.shape === 'heart' || t.shape === 'paw' || t.shape === 'custom') && t.angle === 'follow') ang += Math.PI / 2;
     if (t.turn > 0) ang += (hash3(seed, i, 4) - 0.5) * 2 * Math.PI * t.turn;
     const off = (hash3(seed, i, 3) - 0.5) * 2 * t.scatter * b.size;
     // The gap between stamps varies by sliding each one along the line.
