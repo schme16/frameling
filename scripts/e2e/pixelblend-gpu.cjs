@@ -4,8 +4,8 @@
 //   npm run build
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixelblend-gpu.cjs
 //
-// Fails (non-zero) when the two paths differ by more than 1 level on any pixel (colour measured premultiplied, so
-// near-transparent pixels don't count rounding noise), or when the GPU path was not used, or when the engine is not
+// Fails (non-zero) when a pixel differs by more than 1 level (colour measured premultiplied and as straight bytes), when
+// more than 1 pixel in 100000 differs at all (the reason is where MAX_DIFFER_FRACTION is set), or when the GPU path was not used, or when the engine is not
 // the one asked for (scripts/lib/gpu.cjs).
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
@@ -48,33 +48,62 @@ app.whenReady().then(async () => {
   const ev = (js) => win.webContents.executeJavaScript(js);
   await ev('new Promise((res) => { const t = () => (window.__framelingEffects ? res(true) : setTimeout(t, 50)); t(); })');
   let failed = 0;
+  const REPS = Number(process.env.REPS || 6);
+  // The agreed limit. Both paths share one rounding rule at every step (src/effects/pixelBlend.ts), so the answer is
+  // the same byte for byte except where a pixel's exact value sits within float noise of a rounding edge: the shader
+  // works in 32-bit floats and the CPU path in 64-bit, so a value that close can round either way. That costs one
+  // level, never more, and measured 5 pixels in 2.5 million (2e-6) in software. 1e-5 leaves room for a card's own
+  // float quirks and nothing else: before the shared rule it was 22005 in 2.5 million, up to 4 levels (Divide).
+  const MAX_LEVELS = 1;
+  const MAX_DIFFER_FRACTION = 1e-5;
+  const agree = (premult, straight) => straight <= MAX_LEVELS && premult <= MAX_LEVELS + 0.01;
   const pairs = `(d, bg) => { const E = window.__framelingEffects; E.setPixelBlendGpu(false); const a = E.pixels(d, 0); const b0 = E.gpuBlits(); E.setPixelBlendGpu(true); const b = E.pixels(d, 0); return { a, b, gpu: E.gpuBlits() - b0 }; }`;
+  // Every mode, three layer opacities, solid and see-through shapes, three backdrops, and several random pictures each.
+  // Two blend layers stack on one backdrop, so the second one starts from the first one's result: a one level slip in
+  // the first shows up in the second, and Divide magnifies it. Colours are compared as the canvas hands them back
+  // (straight bytes) and as premultiplied (what is seen); the limit is set above.
+  let pixelsTotal = 0;
+  let differTotal = 0;
+  let worstAll = 0;
   for (const background of ['#ffffff', '#3a5f8c', '']) {
     for (const mode of ['linear-dodge', 'subtract', 'divide']) {
       for (const op of [1, 0.5, 0.2]) {
        for (const soft of [false, true]) {
         const W = 96;
         const H = 80;
-        const d = doc(W, H, [layer(W, H, {}, soft), layer(W, H, { blend: mode, opacity: op }, soft), layer(W, H, { blend: mode, opacity: 1 }, soft)], background);
-        const r = await ev(`(${pairs})(${JSON.stringify(d)})`);
         let worst = 0;
-        let off = 0;
-        for (let i = 0; i < r.a.length; i += 4) {
-          let e = Math.abs(r.a[i + 3] - r.b[i + 3]);
-          for (let c = 0; c < 3; c++) e = Math.max(e, Math.abs((r.a[i + c] * r.a[i + 3]) / 255 - (r.b[i + c] * r.b[i + 3]) / 255));
-          if (e > worst) worst = e;
-          if (e > 1) off++;
+        let worstStraight = 0;
+        let differ = 0;
+        let blits = 0;
+        for (let rep = 0; rep < REPS; rep++) {
+          const d = doc(W, H, [layer(W, H, {}, soft), layer(W, H, { blend: mode, opacity: op }, soft), layer(W, H, { blend: mode, opacity: 1 }, soft)], background);
+          const r = await ev(`(${pairs})(${JSON.stringify(d)})`);
+          blits += r.gpu;
+          for (let i = 0; i < r.a.length; i += 4) {
+            let e = Math.abs(r.a[i + 3] - r.b[i + 3]);
+            let es = e;
+            for (let c = 0; c < 3; c++) {
+              e = Math.max(e, Math.abs((r.a[i + c] * r.a[i + 3]) / 255 - (r.b[i + c] * r.b[i + 3]) / 255));
+              es = Math.max(es, Math.abs(r.a[i + c] - r.b[i + c]));
+            }
+            worst = Math.max(worst, e);
+            worstStraight = Math.max(worstStraight, es);
+            if (es > 0) differ++;
+          }
+          pixelsTotal += r.a.length / 4;
         }
-        // Opaque shapes: both paths work from exact colours, so they must agree within 1 level. See-through shapes put
-        // colours the CPU path has to un-premultiply into whole bytes first (Divide magnifies that), so they get more room.
-        const tol = soft ? 8 : 1.01;
-        const bad = worst > tol || r.gpu === 0;
+        differTotal += differ;
+        worstAll = Math.max(worstAll, worst);
+        const bad = !agree(worst, worstStraight) || blits === 0;
         if (bad) failed++;
-        console.log(`${bad ? 'FAIL' : 'ok  '} ${mode} op ${op} bg ${background || 'none'} ${soft ? 'see-through shapes' : 'solid shapes'}: worst ${worst.toFixed(2)} levels, ${off} pixels over 1, ${r.gpu} gpu blits`);
+        console.log(`${bad ? 'FAIL' : 'ok  '} ${mode} op ${op} bg ${background || 'none'} ${soft ? 'see-through shapes' : 'solid shapes'}: worst ${worst.toFixed(2)} levels (straight ${worstStraight}), ${differ} pixels differ, ${blits} gpu blits`);
        }
       }
     }
   }
+  const fraction = differTotal / pixelsTotal;
+  console.log(`\n${differTotal} of ${pixelsTotal} pixels differ at all (${fraction.toExponential(1)}, limit ${MAX_DIFFER_FRACTION}), worst ${worstAll.toFixed(2)} levels`);
+  if (fraction > MAX_DIFFER_FRACTION) failed++;
   // Timing: 1920x1080, a backdrop and three layers with a pixel blend each.
   const W = 1920;
   const H = 1080;

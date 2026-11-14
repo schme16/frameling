@@ -100,9 +100,23 @@ GPU_MODE=card xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/c
   renderer, canvas and PNG did not.
 - `COLOUR_CPU=1` runs the same on the no-GPU path.
 
-`scripts/e2e/pixelblend-gpu.cjs` also holds the GPU blend path to within 1 level of the CPU path in software. On the
-card (`GPU_MODE=card`) it fails: Divide and Subtract come out up to 4 levels off on a few dozen soft-edge pixels of
-7680. That looks like the card's texture and rounding, not colour; not looked into further.
+`scripts/e2e/pixelblend-gpu.cjs` holds the GPU blend path (Linear dodge, Subtract, Divide) to the CPU path in software,
+and the card run (`GPU_MODE=card`) is the same check. The limit is 1 level on any pixel and at most 1 pixel in 100000
+differing at all.
+
+That was not always true. The old check let see-through shapes differ by 8 levels, which hid a real difference: 22005 of
+2.5 million pixels (0.9%) differed, up to 4 levels on Divide, in software as well as on the card. Two causes, both
+rounding. (1) An exact tie, like half opacity over a solid colour (0.5 x 200 + 0.5 x 255 = 227.5), came out 227 on the
+CPU path and 228 in the shader, by luck of the last bit of the arithmetic. (2) The canvas gives back straight colour
+from its stored premultiplied bytes by its own rounding, and on an exact tie (255 x 1 / 170 = 1.5) it rounds either way
+depending on the pair and the kind of canvas, while the shader rounded by float noise; a one level slip there is
+magnified by Divide at soft edges and by a second blend layer stacked on the first. Neither path was simply right.
+Now both share one rule (`src/effects/pixelBlend.ts`): the CPU path recovers the stored bytes from what the canvas gave
+it, both un-premultiply half up in whole numbers, and both round results half up with a 0.001 nudge so a tie lands the
+same side in 32-bit and 64-bit arithmetic. What cannot be removed: a value that sits within float noise of a rounding
+edge can still round differently in the two number formats. In software that is 5 pixels in 2.5 million, one level each.
+The card has not been run (no card from the agent's sandbox); its own float quirks may add a few more, which is what
+the 1e-5 headroom is for.
 
 ## The framebuffer path
 
