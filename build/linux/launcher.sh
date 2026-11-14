@@ -45,15 +45,28 @@ say() { printf 'Frameling: %s\n' "$*" >&2; }
 # Runs the real program, replacing this script. argv[0] stays "frameling", so the window class and process name match the launcher entry.
 start() { exec -a frameling "$REAL" "$@"; }
 
-args=("$@")
-
 # --show-linux-fix: just print the fix.
-for a in "${args[@]}"; do
+for a in "$@"; do
   if [ "$a" = --show-linux-fix ]; then
     printf '%s\n' "$FIX_TEXT"
     exit 0
   fi
 done
+
+# Hardware drawing. Frameling is a drawing app, so leaving the card out of it is the worst thing to leave to chance,
+# and the browser engine says no to plenty of perfectly good Linux drivers by default. These say yes:
+#  --ignore-gpu-blocklist   use the card even on a driver the engine has not been told about
+#  --enable-features=Vulkan,DefaultANGLEVulkan  draw through Vulkan, which is the path that works across X11 and Wayland
+#  --enable-zero-copy, --canvas-oop-rasterization  keep the pixels on the card instead of copying them back and forth
+# If the card cannot be used after all, the browser engine falls back to software by itself and the window still
+# opens, so there is nothing here to undo. For a driver that is worse than that, FRAMELING_GPU=off (or the file
+# Frameling/gpu-off in your config folder, which Preferences writes) leaves them all out.
+GPU_ARGS=(--ignore-gpu-blocklist --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization)
+if [ "${FRAMELING_GPU:-}" = off ] || [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/Frameling/gpu-off" ]; then
+  GPU_ARGS=(--disable-gpu)
+  say 'drawing in software, as you asked (FRAMELING_GPU=off).'
+fi
+args=("${GPU_ARGS[@]}" "$@")
 
 # The window system, if asked for by hand.
 case "${FRAMELING_OZONE:-}" in

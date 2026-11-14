@@ -27,31 +27,33 @@ const run = (dir: string, args: string[], env: Record<string, string> = {}) =>
   spawnSync(path.join(dir, 'frameling'), args, { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: dir, XDG_CONFIG_HOME: path.join(dir, 'cfg'), ...env } });
 
 describe.skipIf(!canRun)('Linux launcher', () => {
+  // The flags that turn the card on. They lead every start, so the tests say so once here rather than in each line.
+  const GPU = '--ignore-gpu-blocklist --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization';
   it('is valid shell', () => {
     execFileSync('bash', ['-n', launcher]);
   });
 
   it('starts the program with the safety layer on when no flag is given', () => {
     const r = run(fakeApp(), ['file.frameling']);
-    expect(r.stdout.trim()).toBe('ARGS: file.frameling');
+    expect(r.stdout.trim()).toBe(`ARGS: ${GPU} file.frameling`);
   });
 
   it('keeps a --no-sandbox that was asked for through FRAMELING_NO_SANDBOX', () => {
     const r = run(fakeApp(), ['--no-sandbox', 'a'], { FRAMELING_NO_SANDBOX: '1' });
-    expect(r.stdout.trim()).toBe('ARGS: --no-sandbox a');
+    expect(r.stdout.trim()).toBe(`ARGS: --no-sandbox ${GPU} a`);
   });
 
   it('keeps a --no-sandbox that was asked for before, and remembered', () => {
     const dir = fakeApp();
     mkdirSync(path.join(dir, 'cfg/Frameling'), { recursive: true });
     writeFileSync(path.join(dir, 'cfg/Frameling/no-sandbox-ok'), '');
-    expect(run(dir, ['--no-sandbox']).stdout.trim()).toBe('ARGS: --no-sandbox');
+    expect(run(dir, ['--no-sandbox']).stdout.trim()).toBe(`ARGS: --no-sandbox ${GPU}`);
   });
 
   it('picks the window system by hand with FRAMELING_OZONE', () => {
-    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'x11' }).stdout.trim()).toBe('ARGS: --ozone-platform=x11');
-    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'wayland' }).stdout.trim()).toBe('ARGS: --ozone-platform=wayland');
-    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'auto' }).stdout.trim()).toBe('ARGS: --ozone-platform-hint=auto');
+    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'x11' }).stdout.trim()).toBe(`ARGS: --ozone-platform=x11 ${GPU}`);
+    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'wayland' }).stdout.trim()).toBe(`ARGS: --ozone-platform=wayland ${GPU}`);
+    expect(run(fakeApp(), [], { FRAMELING_OZONE: 'auto' }).stdout.trim()).toBe(`ARGS: --ozone-platform-hint=auto ${GPU}`);
   });
 
   it('asks nothing when it cannot ask: user namespaces refused, then a start without the safety layer', () => {
@@ -64,9 +66,15 @@ describe.skipIf(!canRun)('Linux launcher', () => {
     const env = { PATH: `${path.join(dir, 'fakebin')}:${process.env.PATH ?? ''}` };
     // AppRun adds --no-sandbox when it can't make a user namespace; the launcher tries without it first, then falls back.
     const r = run(dir, ['--no-sandbox', 'a.frameling'], env);
-    expect(r.stdout.trim()).toBe('ARGS: --no-sandbox a.frameling');
+    expect(r.stdout.trim()).toBe(`ARGS: --no-sandbox ${GPU} a.frameling`);
     expect(r.stderr).toContain('Starting without it');
     expect(r.stderr).toContain('--show-linux-fix');
+  });
+
+  it('leaves the card out when it is switched off by hand', () => {
+    const r = run(fakeApp(), ['file.frameling'], { FRAMELING_GPU: 'off' });
+    expect(r.stdout.trim()).toBe('ARGS: --disable-gpu file.frameling');
+    expect(r.stderr).toContain('drawing in software');
   });
 
   it('prints the fix with --show-linux-fix', () => {
