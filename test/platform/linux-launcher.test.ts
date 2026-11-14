@@ -10,7 +10,9 @@ import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../..');
 const launcher = path.join(root, 'build/linux/launcher.sh');
-const hasBash = spawnSync('bash', ['--version']).status === 0;
+// The launcher is a Linux shell script for the Linux build, so it is only run on Linux. Windows has git-bash and
+// macOS has bash, but neither has the rest of what it leans on.
+const canRun = process.platform === 'linux' && spawnSync('bash', ['--version']).status === 0;
 
 /** A folder shaped like the unpacked Linux app: the launcher as `frameling`, and a stand-in `frameling.bin` that prints its arguments. */
 function fakeApp(): string {
@@ -24,7 +26,7 @@ function fakeApp(): string {
 const run = (dir: string, args: string[], env: Record<string, string> = {}) =>
   spawnSync(path.join(dir, 'frameling'), args, { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: dir, XDG_CONFIG_HOME: path.join(dir, 'cfg'), ...env } });
 
-describe.skipIf(!hasBash)('Linux launcher', () => {
+describe.skipIf(!canRun)('Linux launcher', () => {
   it('is valid shell', () => {
     execFileSync('bash', ['-n', launcher]);
   });

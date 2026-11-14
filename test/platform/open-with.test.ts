@@ -16,7 +16,8 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const nsh = fs.readFileSync(path.join(root, 'build/installer.nsh'), 'utf8');
 const mimeXml = path.join(root, 'build/linux/application-x-aseprite.xml');
 
-describe('launching Frameling with an Aseprite file', () => {
+// The paths here are written the Linux and macOS way; Windows resolves them with its own separator.
+describe.skipIf(process.platform === 'win32')('launching Frameling with an Aseprite file', () => {
   it('takes plain paths, relative to where it was started', () => {
     expect(fileFromArgs(['/x/a.aseprite'])).toBe('/x/a.aseprite');
     expect(fileFromArgs(['--flag', 'b.ASE'], '/work')).toBe('/work/b.ASE');
@@ -31,7 +32,8 @@ describe('launching Frameling with an Aseprite file', () => {
   });
 });
 
-describe('Linux', () => {
+// The Linux desktop entry and its file type: the paths and the XDG folders only make sense off Windows.
+describe.skipIf(process.platform === 'win32')('Linux', () => {
   it('lists the Aseprite type in the AppImage entry and the local launcher', () => {
     expect(pkg.build.linux.mimeTypes).toContain(ASEPRITE_MIME);
     expect(desktopEntry('/a/f.AppImage', '/a/f.png')).toContain(`MimeType=${ASEPRITE_MIME};`);

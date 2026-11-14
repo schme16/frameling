@@ -45,8 +45,9 @@ describe('the beta build', () => {
 describe('the two copies side by side', () => {
   it('have their own file, icon and build folder', () => {
     const p = installPaths('/apps/frameling');
-    expect(p.ordinary.target).toBe('/apps/frameling/frameling.AppImage');
-    expect(p.beta.target).toBe('/apps/frameling/frameling.beta.AppImage');
+    // path.join uses the separator of whatever computer this runs on, so the test asks for the same.
+    expect(p.ordinary.target).toBe(path.join('/apps/frameling', 'frameling.AppImage'));
+    expect(p.beta.target).toBe(path.join('/apps/frameling', 'frameling.beta.AppImage'));
     expect(new Set([p.ordinary.target, p.beta.target, p.ordinary.icon, p.beta.icon, p.ordinary.built, p.beta.built]).size).toBe(6);
   });
   it('keep their settings in separate folders', () => {
