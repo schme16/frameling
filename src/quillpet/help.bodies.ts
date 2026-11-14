@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 **Open it:** **View > Quill**, or press the **Quill** button on the panel rail.
 
 **What's in it, top to bottom:**
-- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, watches when you stop, dozes off when nothing's happened for a minute, and is proud of you when you finish something.
+- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, watches when you stop, [dozes off](help:quill-naps) when nothing's happened for a minute, and is proud of you when you finish something.
 - **His pencils.** The quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five.
 - **How well you know each other.** The bar fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
 - **His shelves.** **From Quill** holds [the presents he makes you](help:quill-presents), and below it are [the drawings you give him](help:quill-things). Press **Give him this drawing** to add the frame you're on.
@@ -18,7 +18,17 @@ export const bodies: Record<string, string> = {
 - Had enough of the panel? Turn **Quill** off in **Preferences > Features** and he goes back to being just the mascot, saying hello and lending a hand where he always did.
 - Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included, and anything you actually need to read stays as a plain note.
 
-help:quill-things help:quill-presents help:quests help:preferences`,
+help:quill-things help:quill-presents help:quill-naps help:quests help:preferences`,
+  'quill-naps': `Leave Frameling alone for about a minute and **Quill** nods off, curled up with a little **Z** over his head. He's not bored, just resting.
+
+**Waking him:** move the mouse or press any key. He doesn't jump up. He stirs, peeks out, sits up, gives a big yawning stretch, blinks, and settles back to his usual self. It takes a second or so and happens once.
+
+**Good to know:**
+- Any key or mouse move counts, so he wakes the moment you are back.
+- With **Reduce motion** on, he skips the stretch and just goes back to idle.
+- Hide him with **Show Quill** in **Preferences** and none of this shows.
+
+help:quill-pet help:meet-quill`,
   'quill-things': `The drawings you've given **Quill**, on his shelves in the **Quill** tab, with **From Quill** above them for the things he's made you. He keeps a little picture of each one, about 72 pixels across, so nothing you make depends on him.
 
 **Give him one:** press **Give him this drawing** and he keeps the frame you're on. **View > Give this drawing to Quill** does the same from anywhere.

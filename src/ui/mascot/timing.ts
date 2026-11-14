@@ -17,7 +17,7 @@ export interface Sheet {
   anims: Record<string, SheetAnim>;
 }
 
-export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops' | 'sad' | 'wave-sad' | 'dazed';
+export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops' | 'sad' | 'wave-sad' | 'dazed' | 'wake';
 
 /** One step of a little performance: play `anim`, for `hold` ms if given (else once through, or forever if it loops). */
 export interface Beat {
@@ -106,6 +106,22 @@ function frameIn(anim: SheetAnim, local: number): { index: number; next: number 
 export function toBeats(script: Script, then?: QuillAnim): Beat[] {
   const beats = typeof script === 'string' ? [{ anim: script }] : script.length ? script : [{ anim: 'idle' as const }];
   return then ? [...beats, { anim: then }] : beats;
+}
+
+/** The waking-up transition (a stir, a yawn, a stretch) then idle, or null when there is no wake art or motion is off. */
+export function wakeBeats(sheet: Sheet, still = false): Beat[] | null {
+  return sheet.anims.wake && !still ? [{ anim: 'wake' }, { anim: 'idle' }] : null;
+}
+
+/**
+ * What to play when `next` replaces `prev`. Coming out of an explicit sleep into plain idle, he wakes up first instead
+ * of snapping. Anything livelier (a wave, a cheer) goes straight in, so it is never held up.
+ */
+export function withWake(sheet: Sheet, prev: Beat[], next: Beat[], still = false): Beat[] {
+  const was = prev[prev.length - 1]?.anim;
+  if (was !== 'sleep' || next[0]?.anim !== 'idle') return next;
+  const wake = wakeBeats(sheet, still);
+  return wake ? [wake[0], ...next] : next;
 }
 
 export interface Pose {

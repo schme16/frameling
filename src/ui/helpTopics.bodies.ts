@@ -262,7 +262,7 @@ Make the **AppImage** executable (right-click, **Properties**, **Allow executing
 - A message that says no (or that something failed) has a tiny Quill on it.
 - On a new empty page he leaves a [faint line](help:empty-page) about where to start, and after your first drawing he says what to try next.
 
-If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up.
+If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up with a stretch, then settles. See [Quill dozing off and waking up](help:quill-naps).
 
 ## Hiding Quill
 

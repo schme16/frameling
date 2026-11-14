@@ -19,5 +19,6 @@ export const FAKE_SHEET: Sheet = {
     sad: { frames: row(288, [600, 110, 150]), loop: true },
     'wave-sad': { frames: row(320, [260, 300, 600]), loop: false },
     dazed: { frames: row(352, [260, 260, 260, 260]), loop: true },
+    wake: { frames: row(384, [180, 220, 340, 140]), loop: false },
   },
 };
