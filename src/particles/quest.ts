@@ -83,7 +83,7 @@ export const PARTICLES_QUEST: Quest = {
       },
       done: (c) => emitters(c.state.doc).length > 0,
       show: 'particles.add.confetti',
-      hint: 'Effects > Add particles: Confetti in the menu does it too.',
+      hint: 'Tools and layers > Effects > Add particles: Confetti in the menu does it too.',
       help: 'particles',
     },
     {

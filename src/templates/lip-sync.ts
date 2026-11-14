@@ -80,6 +80,6 @@ export function makeLipSync(): Doc {
   const hello: Mouth[] = ['rest', 'rest', 'rest', 'rest', 'rest', 'rest', 'E', 'E', 'etc', 'L', 'L', 'O', 'O', 'O', 'rest', 'rest', 'rest', 'rest', 'rest', 'rest'];
   applyMouths(doc, mouth.id, 0, hello);
 
-  addMarker(doc, 'Import a sound, then Frames and motion > Auto lip sync', 0);
+  addMarker(doc, 'Import a sound, then Frames and motion > Sound and lip sync > Auto lip sync', 0);
   return doc;
 }

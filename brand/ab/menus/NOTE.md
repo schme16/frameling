@@ -1,0 +1,3 @@
+A: the menu bar as it was, eleven menus (File, Edit, View, Artboards, Tools and layers, Pixel tools, Frames and motion, Skeleton (rig), Effects, Plugins, Help). B (default): seven, with Artboards and Skeleton (rig) inside Frames and motion, Effects inside Tools and layers, Plugins inside Edit, and the long lists sorted into submenus.
+
+Every picture is in both themes (`-dark`, `-light`). `overview-*` has every menu open, before above after, drawn at a third of the size. `pair-<menu>-*` is one menu before beside after at full size, with entry and submenu counts. `bar-*` is the bar before above after. `move-and-put-back-*.mp4` (H.264) moves Cut to the top of Edit in Preferences > Menus, shows the real menu, then puts the menu back. Made with `scripts/docs/ab/menus.cjs`.

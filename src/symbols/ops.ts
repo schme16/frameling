@@ -501,7 +501,7 @@ export function hintTarget(): { layer: Layer; cel: Cel; next: Cel; end: 'from' |
 /** Adds a hint (a, b, c...) at a point, on both keys at once; drag its end-key twin into place afterwards. */
 export function addShapeHint(at: { x: number; y: number }): Result {
   const t = hintTarget();
-  if (!t) return say('Shape hints go on a morph. Make one first (Frames and motion > Morph between shapes), then add hints on its first or last key.');
+  if (!t) return say('Shape hints go on a morph. Make one first (Frames and motion > In-betweens and easing > Morph between shapes), then add hints on its first or last key.');
   if ((t.cel.tween?.hints?.length ?? 0) >= 26) return say('That is the most hints a morph can have (26).');
   const id = uid('h');
   return updateHints('Add a shape hint', t, (hs) => void hs.push({ id, from: { ...at }, to: { ...at } }));

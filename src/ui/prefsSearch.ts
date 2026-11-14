@@ -38,6 +38,7 @@ export const PAGE_NAMES: Record<PrefsPage, string> = {
   pen: 'Pen and tablet',
   performance: 'Performance',
   workspaces: 'Workspaces',
+  menus: 'Menus',
   plugins: 'Plugins',
   features: 'Features',
   diagnostics: 'Diagnostics',

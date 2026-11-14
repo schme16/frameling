@@ -26,13 +26,13 @@ Frameling finds each mouth by the **name of its frame** ("M B P", "mbp" and "MBP
 
 ## Auto lip sync
 
-Press **Frames and motion > Auto lip sync...** (or the button in the Lip sync panel). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
+Press **Frames and motion > Sound and lip sync > Auto lip sync...** (or the panel's button). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
 
 It's a good first pass, not a perfect one. Frameling listens to loudness, where the energy sits (which tells vowels apart), hiss versus hum, and the quick dips that mean the lips closed. It all happens on your computer.
 
 ## Typing the words
 
-If you know what is said, press **Frames and motion > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
+If you know what is said, press **Frames and motion > Sound and lip sync > Auto lip sync with the words...** (or **With the words...** in the panel) and type it. Frameling lines the mouths up with your words, which helps when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
 
 ## Fixing it by hand
 

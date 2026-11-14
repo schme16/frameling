@@ -4,6 +4,7 @@ import type { SwitcherLook } from './switcherModel';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { WorkspacesPage } from './WorkspacesPage';
+import { MenusPage } from './MenusPage';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 import { QuillEmpty, setShowQuill } from './mascot';
@@ -50,6 +51,7 @@ export const PAGES: { id: Page; label: string; icon: string; help: string }[] = 
   { id: 'snapping', label: 'Snapping', icon: 'magnet', help: 'snapping' },
   { id: 'pen', label: 'Pen and tablet', icon: 'pen', help: 'pen-tablet' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
+  { id: 'menus', label: 'Menus', icon: 'sliders', help: 'change-the-menus' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
   { id: 'performance', label: 'Performance', icon: 'effects', help: 'performance' },
@@ -108,6 +110,7 @@ function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string
           )}
           {current === 'diagnostics' && <DiagnosticsPage />}
           {current === 'workspaces' && <WorkspacesPage />}
+          {current === 'menus' && <MenusPage />}
           {current === 'plugins' && <PluginsPage />}
           {current === 'features' && <FeaturesPage />}
         </div>

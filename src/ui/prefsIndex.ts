@@ -102,6 +102,11 @@ export const SETTING_ROWS: PrefRow[] = [
   row('workspaces', 'Share a workspace', 'Save one to a file, copy it as text, or add one you were sent.', ['export workspace', 'import workspace', 'workspace file', 'send layout', 'share layout', 'copy layout', 'paste workspace'], { find: 'Share' }),
   row('workspaces', 'Window style', 'How floating panels look and behave.', ['floating panels', 'detached panels', 'undock', 'tear off', 'panel windows', 'always on top', 'floating window', 'floating windows'], { find: 'Window style' }),
 
+  // Menus
+  row('menus', 'Menus', 'Move, rename, take out and add menu entries, and make menus of your own.', ['menu bar', 'customise menus', 'customize menus', 'edit menus', 'rearrange menus', 'reorder', 'hide a menu', 'remove from menu', 'submenu'], { find: 'Menus' }),
+  row('menus', 'Make a menu of your own', 'A new name on the menu bar, with the commands you use most.', ['my menu', 'favourites', 'favorites', 'custom menu', 'new menu', 'add menu'], { find: 'Make a menu of your own' }),
+  row('menus', 'Put the menus back', 'Every menu back to how it came with Frameling.', ['reset menus', 'default menus', 'restore menus', 'undo menu changes'], { find: 'Put all the menus back' }),
+
   // Plugins
   row('plugins', 'Plugins', 'Add commands, exports, panels and tools. Each runs in its own sandbox.', ['add-ons', 'addons', 'extensions', 'scripts', 'mods', 'plug-ins', 'scripting', 'api', 'automation', 'macros'], { find: 'Plugins' }),
   row('plugins', 'Install from file', 'Add a plugin from a .zip file.', ['install plugin', 'add plugin', 'zip', 'install extension', 'add-on', 'download plugin'], { find: 'Install from file' }),

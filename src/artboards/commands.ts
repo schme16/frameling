@@ -1,4 +1,4 @@
-// Artboard commands: palette, menus (Artboards, and File > Export) and keys, plus the Artboards panel.
+// Artboard commands: palette, menus (Frames and motion > Artboards, and File > Export) and keys, plus the Artboards panel.
 import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import type { State } from '../core/store';

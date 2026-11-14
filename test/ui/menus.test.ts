@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
-import { MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
 // These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
@@ -45,8 +45,12 @@ describe('menu filtering', () => {
     const r = registry([c('file.new', 'New', 'File')]);
     expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
   });
-  it('the real menus are named File, Edit, View, Artboards, Draw, Pixel, Animate, Rig, Effects, Plugins and Help', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Artboards', 'Draw', 'Pixel', 'Animate', 'Rig', 'Effects', 'Plugins', 'Help']);
+  it('the real menus are named File, Edit, View, Draw, Pixel, Animate and Help (Artboards, Rig, Effects and Plugins live inside others)', () => {
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Help']);
+  });
+  it('a menu that moved inside another still takes what a feature adds by its old name', () => {
+    expect(MENU_HOMES).toEqual({ Rig: 'sub:rig', Effects: 'sub:effects', Artboards: 'sub:artboards', Plugins: 'sub:plugins' });
+    for (const home of Object.values(MENU_HOMES)) expect(SUBMENUS[home.slice(4)], home).toBeDefined();
   });
 });
 
@@ -64,9 +68,9 @@ describe('the Help and Skeleton menus', () => {
     ]);
     expect(shape(resolveMenu(help, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['help.contents', '-', 'help.sendReport', '-', 'help.about']);
   });
-  it('the Rig menu says what it is for in the menu bar, plain word first', () => {
-    const rig = MENUS.find((m) => m.label === 'Rig')!;
-    expect(menuTitle(rig)).toBe('Skeleton (rig)');
+  it('the Skeleton submenu says what it is for, plain word first', () => {
+    expect(SUBMENUS.rig.label).toBe('Skeleton (rig)');
+    expect(menuTitle(MENUS.find((m) => m.label === 'Animate')!)).toBe('Frames and motion');
   });
 });
 
@@ -112,8 +116,19 @@ describe('the real menus', async () => {
     const items = menu('View');
     expect(depth(items)).toBeLessThan(40);
     const ids = items.flatMap((i) => (i.kind === 'command' ? [i.command.id] : []));
-    for (const id of ['view.saveWorkspace', 'view.manageWorkspaces', 'view.resetLayout', 'view.workspace.draw', 'view.workspace.pixel']) expect(ids).toContain(id);
-    expect(ids.indexOf('view.saveWorkspace')).toBeLessThan(15);
+    for (const id of ['view.workspace.draw', 'view.workspace.animate', 'view.workspace.pixel']) expect(ids).toContain(id);
+    expect(ids.indexOf('view.workspace.draw')).toBeLessThan(10);
+    // Saving, managing, sharing and resetting sit one step in, under the three workspaces.
+    const mine = items.find((i) => i.kind === 'submenu' && i.label === 'Your workspaces');
+    expect(flat(mine && mine.kind === 'submenu' ? mine.items : [])).toEqual(expect.arrayContaining(['view.saveWorkspace', 'view.manageWorkspaces', 'view.resetLayout', 'view.exportWorkspace', 'view.workspaceSwitcher.tabs']));
+  });
+  it('there are seven menus, and the long ones sort their entries into submenus rather than one long list', () => {
+    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
+    for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(40);
+    // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
+    // same with its categories taken away.
+    const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));
+    for (const label of ['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate']) expect(flat(menu(label)), label).toEqual(bare(label));
   });
   it('Snapping, panels and windows are their own submenus', () => {
     const subs = menu('View').filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
@@ -122,8 +137,9 @@ describe('the real menus', async () => {
     expect(flat(snap && snap.kind === 'submenu' ? snap.items : [])).toEqual(expect.arrayContaining(['view.snap', 'view.snapOptions', 'view.snap.guides', 'view.snap.artboards']));
     expect(flat(menu('View').filter((i) => i.kind === 'command'))).not.toContain('view.snap.guides');
   });
-  it('Artboards has its own menu and View no longer carries artboard commands', () => {
-    const own = flat(menu('Artboards'));
+  it('Artboards is a submenu of Frames and motion, and View carries no artboard commands', () => {
+    const sub = menu('Animate').find((i) => i.kind === 'submenu' && i.label === 'Artboards');
+    const own = flat(sub && sub.kind === 'submenu' ? sub.items : []);
     for (const id of ['artboards.new', 'artboards.delete', 'artboards.makeVariation', 'artboards.fitFill', 'artboards.pictureFirst', 'artboards.zoomTo']) expect(own).toContain(id);
     expect(flat(menu('View')).filter((id) => id.startsWith('artboards.') && id !== 'view.panel.artboards')).toEqual([]);
   });

@@ -501,7 +501,19 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
   (`match.ts`); `runCommand` is the one runner menus and keys use too.
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
-  aren't listed are added at the bottom.
+  aren't listed are added at the bottom. Seven menus on the bar (File, Edit, View, Tools and layers, Pixel tools,
+  Frames and motion, Help); everything else is a one-level submenu (`SUBMENUS`, `sub:<key>`). A menu that moved
+  inside another keeps its old id for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to `sub:rig`, and
+  `registerMenuItems('sub:keys', ...)` adds to a submenu directly. Submenus can also claim stray commands by
+  `prefixes` or `categories`.
+- **Changing the menus** (`src/ui/menuEdits.ts` pure, `menuState.ts` storage `frameling.menus.v1`, `MenusPage.tsx`
+  Preferences > Menus). Every menu, submenu and the bar is a list of entries (command id, `-`, `heading:`, `sub:`,
+  `group:`). A changed list is saved whole beside `seen` (what the built-in list held then), so `mergeList` can tell
+  "taken out" from "new in this version" (the `menus.newEntries` choice: `add` puts new entries after the one they
+  follow, `leave` keeps the list as made). A command that is gone is left out when drawing but kept in storage. Entries
+  taken out of every place go in `Shape.hidden`, so category tails don't bring them back. A list set back to the
+  built-in one is dropped, so putting things back leaves nothing saved. The help audit reads `resolveMenus()`, which in
+  tests has no edits, so help paths are always checked against the menus as they come.
 - **Toasts** (`src/ui/toast.ts`, `ToastView.tsx`) and **tooltips** (`src/ui/Tooltips.tsx`: one layer for the whole
   app, built from `data-command`, `data-tip` or `title`).
 

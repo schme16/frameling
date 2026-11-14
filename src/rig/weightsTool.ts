@@ -83,7 +83,7 @@ export function setLayerMesh(layerId: Id, mesh: SkinMesh, label: string, coalesc
   );
 }
 
-const NO_MESH = 'Pick a layer that bends with the bones first: Skeleton (rig) > Bend this layer with the bones.';
+const NO_MESH = 'Pick a layer that bends with the bones first: Frames and motion > Skeleton (rig) > Bend this layer with the bones.';
 
 export function normaliseActive(): string | undefined {
   const t = paintTarget();

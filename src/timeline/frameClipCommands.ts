@@ -9,7 +9,6 @@ import type { Doc, Id } from '../core/format';
 import { findLayer } from '../core/doc';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
-import { registerMenuItems } from '../ui/menus';
 import { toast } from '../ui/toast';
 import { keyConverter, sayConverted, type ConvertNotes } from '../clipboard/frames';
 import { MAX_LENGTH, type Clash } from './edit-core';
@@ -203,4 +202,4 @@ registerCommands([
   },
 ]);
 
-registerMenuItems('Animate', ['-', 'timeline.copyKeys', 'timeline.cutKeys', 'timeline.pasteKeys', 'timeline.pasteKeysAtEnd', 'timeline.pasteKeysInPlace']);
+// These sit in Frames and motion > Copy, move and stretch keys (named in src/ui/menus.ts).

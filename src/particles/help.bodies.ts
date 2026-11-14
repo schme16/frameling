@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## Add some
 
-1. Open the **Particles** panel (View > Particles, or the Effects menu).
+1. Open the **Particles** panel (**View > Panels > Particles**, or **Tools and layers > Effects**).
 2. Click a ready-made one: **Sparkle burst**, **Smoke**, **Rain**, **Snow**, **Confetti** or **Dust**.
 3. Press play. That's it.
 

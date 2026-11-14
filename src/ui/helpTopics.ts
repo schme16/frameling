@@ -2,6 +2,7 @@
 import { registerHelpTopics } from '../core/registry';
 import './onboarding/help';
 import './workspaceSwitcher-help';
+import './menuEdit-help';
 
 registerHelpTopics([
   {
@@ -246,8 +247,8 @@ registerHelpTopics([
     title: 'The menus',
     section: 'Basics',
     media: 'menus.png',
-    summary: 'File, Edit, View, Artboards, Draw, Animate and Help, along the top.',
-    keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate'],
+    summary: 'File, Edit, View, Tools and layers, Pixel tools, Frames and motion and Help, along the top.',
+    keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate', 'customise', 'rearrange'],
   },
   {
     id: 'status-bar',

@@ -624,7 +624,7 @@ export async function installPackage(pkg: PluginPackage): Promise<boolean> {
   const entry: InstalledPlugin = { manifest: m, enabled: true, granted: allowed.permissions, network: allowed.network, grantedFor: m.version, status: 'off' };
   plugins.set((list) => [...list.filter((x) => x.manifest.id !== m.id), entry].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name)));
   await start(entry);
-  notify(`"${m.name}" is installed. Find it in the Plugins menu.`, 'success', undefined, 5000, 'cheer');
+  notify(`"${m.name}" is installed. Find it in Edit > Plugins.`, 'success', undefined, 5000, 'cheer');
   return true;
 }
 

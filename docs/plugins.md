@@ -471,7 +471,7 @@ treated as hostile input.
 | A tool or shape flooding the drawing | Tool ops are the same checked ops (at most 5000 a batch, one undo step); at most 20 shapes a second; each shape's settings at most 64 KB. Events: at most 40 a second, and a plugin that does not finish them stops getting them. |
 | Reading files | `files.read` shows the system's Open dialog; the plugin gets one file the person picked, never a path. |
 | Reading the drawing through events | Events are counts and a label. Selection ids need `document.read`. |
-| A plugin pretending to be part of Frameling | Its commands sit in the Plugins menu and its toasts start with its name. Its panels have a puzzle-piece icon. |
+| A plugin pretending to be part of Frameling | Its commands sit in Edit > Plugins and its toasts start with its name. Its panels have a puzzle-piece icon. |
 
 ### What is not covered
 

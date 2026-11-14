@@ -123,7 +123,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'lip-sync',
     name: 'Lip sync mouth chart',
-    blurb: 'A face with a mouth that has the ten standard talking shapes, with a little "hello" already on it. Try it: File > Import sound, then Frames and motion > Auto lip sync, and fix any mouth in the Lip sync panel.',
+    blurb: 'A face with a mouth that has the ten standard talking shapes, with a little "hello" already on it. Try it: File > Import sound, then Frames and motion > Sound and lip sync > Auto lip sync, and fix any mouth in the Lip sync panel.',
     kind: 'vector',
     thumbnail: () => 11,
     make: makeLipSync,

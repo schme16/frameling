@@ -42,7 +42,7 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
   lot. A folder with normal blend, full opacity, no effects and no masks inside is "pass
   through" (its layers draw straight onto the stage); otherwise it's drawn as one picture first.
 
-Making a mask from the Effects menu or panel puts the mask and the layer under it (or every layer under it, asked the
+Making a mask from Tools and layers > Masks and folders or the Effects panel puts the mask and the layer under it (or every layer under it, asked the
 first time and remembered: choice `effects.maskScope`) into a folder, so a new mask never reaches further than meant.
 
 **Masks you paint** (`src/effects/masks.ts`, no format change). **Add a mask to this layer** (`layers.addMask`, Ctrl+Alt+Shift+M,
@@ -88,7 +88,7 @@ modes mix with it the same way exports do.
 - **Effects panel** (dockable, right side by default): opacity, blend picker with plain words and the industry term,
   clip and mask, the stack with on/off, animate, reorder, reset and remove, and Reset all. A/B of how effects are
   added: `brand/ab/effects-panel/`.
-- **Effects menu** and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
+- **Tools and layers > Effects** and **Masks and folders**, and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
   out of a folder, reset. Every blend mode is a palette command too (`effects.blend.*`).
 - **Timeline**: folder header rows with fold, eye and menu; layers in a folder indented with a purple rule; one small
   mark per layer (mask, clipped, or blend/effects) with the details in its tooltip. Dragging a layer next to a layer

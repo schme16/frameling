@@ -1,0 +1,138 @@
+/* Preferences > Menus: the rows you can move, and the line that shows where one would land. */
+.ui-me-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+.ui-me-crumb-now {
+  font-weight: 700;
+  padding: 0 8px;
+}
+.ui-me-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 10px;
+}
+.ui-me-list {
+  position: relative;
+}
+.ui-me-row {
+  position: relative;
+  min-height: 38px;
+}
+.ui-me-grip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 2px;
+  color: var(--faint);
+  cursor: grab;
+  touch-action: none;
+}
+.ui-me-grip:hover {
+  color: var(--text);
+}
+.ui-me-list.is-dragging,
+.ui-me-list.is-dragging .ui-me-grip {
+  cursor: grabbing;
+}
+.ui-me-row.is-lifted {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.ui-me-row.is-gap-before::before,
+.ui-me-row.is-gap-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--sunny);
+  pointer-events: none;
+}
+.ui-me-row.is-gap-before::before {
+  top: -5px;
+}
+.ui-me-row.is-gap-after::after {
+  bottom: -5px;
+}
+.ui-me-text {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ui-me-name {
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+button.ui-me-name {
+  cursor: pointer;
+}
+button.ui-me-name:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.ui-me-command {
+  font-weight: 600;
+}
+.ui-me-k-divider {
+  min-height: 28px;
+  background: transparent;
+  border-style: dashed;
+}
+.ui-me-divider,
+.ui-me-heading {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ui-me-heading {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.ui-me-name.is-missing {
+  color: var(--muted);
+  font-style: italic;
+}
+.ui-ws.is-hidden {
+  background: transparent;
+  border-style: dashed;
+}
+.ui-me-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.ui-me-or {
+  color: var(--muted);
+}
+.ui-me-subform {
+  display: flex;
+  gap: 6px;
+}
+.ui-me-more summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.ui-me-find {
+  margin-top: 12px;
+}
+.ui-me-crumbs .ui-btn:disabled {
+  opacity: 1;
+  font-weight: 700;
+  color: var(--text);
+}
+.ui-me-crumbs-end {
+  margin-left: auto;
+}
