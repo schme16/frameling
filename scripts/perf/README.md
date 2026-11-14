@@ -24,6 +24,18 @@ Options:
 A full run takes about two minutes. Don't run other Electron work at the same time, it skews the numbers. Compare
 runs from the same machine only, and run each twice if a difference is small.
 
+**Getting the card under xvfb.** On a laptop or desktop with a switchable NVIDIA card, the card only comes up inside
+xvfb when two graphics variables are set in front of the command, and without them the run lands on software and fails
+the card check:
+
+```bash
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia \
+  xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/run.cjs --label after
+```
+
+That goes in front of every xvfb command in this file, including `startup.cjs`, `sweep.cjs` and the brush and pen-up
+harnesses. For software numbers on purpose, leave them off and pass `PERF_SOFTWARE_GL=1`.
+
 ## Start-up time and bundle size
 
 `startup.cjs` launches the built app as a fresh process again and again and times it from launch to the first
