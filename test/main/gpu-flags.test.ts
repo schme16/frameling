@@ -57,9 +57,10 @@ describe('harness engine modes', () => {
     expect(sw).toContain('--enable-unsafe-webgpu');
     expect(sw.join(' ')).not.toMatch(/swiftshader|use-angle/);
   });
-  it('the card flags are the ones the app sets on Linux, and the fuller set is the one it keeps back', () => {
-    const app = hardwareSwitches({}, 'linux');
-    expect(harness.CARD_SWITCHES.map(asArg)).toEqual(app.switches.map(asArg));
+  it('the harness card flags are the app\'s plain mode, and the fuller set is what the app now ships by default', () => {
+    // The harness measures one thing at a time, so its 'card' is hardware drawing alone: the app's `plain` mode.
+    const plain = hardwareSwitches({ FRAMELING_GPU: 'plain' }, 'linux');
+    expect(harness.CARD_SWITCHES.map(asArg)).toEqual(plain.switches.map(asArg));
     expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(hardwareSwitches({ FRAMELING_GPU: 'full' }, 'linux').switches.slice(1).map(asArg));
     expect(harness.VULKAN_SWITCH).toEqual(['enable-features', hardwareSwitches({ FRAMELING_GPU: 'vulkan' }, 'linux').features[0]]);
   });
@@ -106,8 +107,15 @@ describe('judging a run', () => {
 });
 
 describe('hardware drawing (the app, in the main process)', () => {
-  it('says yes to the card on Linux by default, and nothing more', () => {
-    expect(hardwareSwitches({}, 'linux')).toEqual({ switches: [['ignore-gpu-blocklist']], features: [] });
+  it('draws on the card with Skia on Vulkan and the canvas pair by default on Linux, all four proven on a real screen', () => {
+    const r = hardwareSwitches({}, 'linux');
+    expect(r.switches.map(asArg)).toEqual(['--ignore-gpu-blocklist', '--enable-zero-copy', '--canvas-oop-rasterization', '--use-vulkan']);
+    expect(r.features).toEqual(['Vulkan']);
+    // ANGLE on Vulkan is the one that blanked the canvas on a real screen. The default must never reach for it.
+    expect(r.features.join(',')).not.toMatch(/DefaultANGLEVulkan/);
+  });
+  it('FRAMELING_GPU=plain is the way back to hardware drawing and nothing else', () => {
+    expect(hardwareSwitches({ FRAMELING_GPU: 'plain' }, 'linux')).toEqual({ switches: [['ignore-gpu-blocklist']], features: [] });
   });
   it('leaves Windows and macOS to the engine', () => {
     for (const p of ['win32', 'darwin']) expect(hardwareSwitches({}, p)).toEqual({ switches: [], features: [] });
@@ -118,7 +126,9 @@ describe('hardware drawing (the app, in the main process)', () => {
   });
   it('FRAMELING_GPU=full keeps canvas pixels on the card, and no mode but vulkan asks for Vulkan', () => {
     expect(hardwareSwitches({ FRAMELING_GPU: 'full' }, 'linux').switches.map(asArg)).toEqual(['--ignore-gpu-blocklist', '--enable-zero-copy', '--canvas-oop-rasterization']);
-    for (const v of [undefined, '', 'full', 'off', 'card', 'FULL ']) expect(hardwareSwitches({ FRAMELING_GPU: v }, 'linux').features).toEqual([]);
+    for (const v of ['full', 'off', 'plain', 'FULL ']) expect(hardwareSwitches({ FRAMELING_GPU: v }, 'linux').features).toEqual([]);
+    // Only the default and the skia modes ask for Vulkan, and only ever the Skia one.
+    for (const v of [undefined, '', 'skia']) expect(hardwareSwitches({ FRAMELING_GPU: v }, 'linux').features).toEqual(['Vulkan']);
     expect(hardwareSwitches({ FRAMELING_GPU: 'Vulkan' }, 'linux').features).toEqual(['Vulkan,DefaultANGLEVulkan']);
   });
   it('FRAMELING_GPU=skia is Skia on Vulkan with ANGLE left on OpenGL (what the user\'s own Chrome runs), never DefaultANGLEVulkan', () => {

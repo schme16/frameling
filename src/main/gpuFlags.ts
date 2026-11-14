@@ -38,6 +38,10 @@ export function colourSwitches(env: Record<string, string | undefined> = process
 // unless it is asked for by name; it is safe for measuring in a virtual screen and unproven on a real one.
 // Which card (not which API) is a separate matter: see gpuPick.ts and FRAMELING_CARD.
 // Windows and macOS are left to the engine: their lists are about real driver faults and nothing there is known to be wrong.
+// Proven on the user's real screen on 2026-11-15, after the control (ANGLE on Vulkan) blanked the canvas as predicted:
+// Skia on Vulkan draws, the canvas pair draws with it, and a normal session (draw, play, resize, move screens) held up.
+// So the default on Linux is now hardware drawing, Skia on Vulkan, and the canvas pair. FRAMELING_GPU=plain goes back
+// to hardware drawing alone if a machine does not like it, and FRAMELING_GPU=off stops using the card at all.
 export const HARDWARE_SWITCH: EngineSwitch = ['ignore-gpu-blocklist'];
 export const FULL_SWITCHES: EngineSwitch[] = [['enable-zero-copy'], ['canvas-oop-rasterization']];
 export const VULKAN_FEATURES = 'Vulkan,DefaultANGLEVulkan';
@@ -57,9 +61,13 @@ export function hardwareSwitches(
   const mode = (env.FRAMELING_GPU ?? '').trim().toLowerCase();
   if (mode === 'off') return { switches: [], features: [] };
   const switches: EngineSwitch[] = [HARDWARE_SWITCH];
-  if (mode === 'full') switches.push(...FULL_SWITCHES);
-  if (mode === 'skia') switches.push(SKIA_VULKAN_SWITCH);
-  return { switches, features: mode === 'vulkan' ? [VULKAN_FEATURES] : mode === 'skia' ? [SKIA_VULKAN_FEATURES] : [] };
+  // The default on Linux: Skia on Vulkan with the canvas pair, all four proven on a real screen (see the comment above).
+  // `plain` is the way back to hardware drawing and nothing else, for a machine where the fuller set misbehaves.
+  const full = mode === '' || mode === 'full' || mode === 'skia+full';
+  const skia = mode === '' || mode === 'skia' || mode === 'skia+full';
+  if (full) switches.push(...FULL_SWITCHES);
+  if (skia) switches.push(SKIA_VULKAN_SWITCH);
+  return { switches, features: mode === 'vulkan' ? [VULKAN_FEATURES] : skia ? [SKIA_VULKAN_FEATURES] : [] };
 }
 
 /** Adds to --enable-features without losing what is already there (appending the switch again replaces its value). */
