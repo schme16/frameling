@@ -3520,37 +3520,6 @@ body.ui-resizing * {
   background: var(--chosen-bg);
   color: var(--chosen-fg);
 }
-.th-card-actions {
-  /* The buttons lie over the foot of the card and swoop up when you point at it (or tab into it), so the card is
-     the same size whether they are showing or not and the grid never shifts. */
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 4px 4px;
-  border-radius: var(--radius-small);
-  background: linear-gradient(to top, var(--panel-2) 72%, transparent);
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition:
-    opacity 0.18s var(--ease),
-    transform 0.22s var(--ui-pop);
-}
-/* Only while you are pointing at the card or tabbing through it: at rest the name is never covered, and the one in
-   use is told apart by its badge and its gold edge. */
-.th-card:hover .th-card-actions,
-.th-card:focus-within .th-card-actions {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-:root[data-motion='reduce'] .th-card-actions {
-  transition: none;
-}
 
 /* The two themes you are using, in one card split corner to corner by a squiggle. */
 .th-current {
@@ -3821,14 +3790,6 @@ body.ui-resizing * {
   .th-editor-side {
     position: static;
   }
-}
-.th-card-actions .ui-btn {
-  height: auto;
-  min-height: 24px;
-  padding: 3px 8px;
-  white-space: normal;
-  text-align: left;
-  line-height: 1.25;
 }
 
 /* Blank starters on the welcome sheet: a compact row of sizes under the examples (A), or dashed cards (B). */
@@ -4319,7 +4280,8 @@ body.dock-dragging * {
 /* The dock's right-click menu and the name box. */
 .ui-dock-menu {
   position: fixed;
-  z-index: 60;
+  /* Above a dialog's backdrop (100), so the menu a card in Preferences opens is seen, and under tooltips (200). */
+  z-index: 150;
   min-width: 230px;
 }
 .ui-dock-menu-head {

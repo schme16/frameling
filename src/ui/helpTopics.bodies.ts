@@ -395,6 +395,8 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. Every theme sits in one grid
 - **Use it at night**: it becomes your dark theme.
 - **Use it for both**: the same colours whatever the time.
 
+The same menu has **Edit this theme** (your own themes) and **Make a copy to change** (any theme).
+
 The change is instant. Your two wear a badge in the corner of the card, a sun by day and a moon at night, with a gold edge round them. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
 
 ## Dark, light and System
@@ -404,8 +406,6 @@ The **Mode** switch decides which group is showing:
 - **Dark** always uses your dark theme.
 - **Light** always uses your light theme.
 - **System** follows your computer. When your computer goes dark in the evening, Frameling switches to your dark theme by itself, and back to your light theme in the morning.
-
-So you can have a pastel theme by day and a cosy dark one at night, without touching anything.
 
 ## The themes
 
@@ -428,7 +428,7 @@ Chosen things (the tool, the tab, a switch that is on) are gold in most themes. 
 
 ## Easier to see
 
-**Lantern Night** (dark) and **Sunbeam** (light) have extra contrast: brighter words and stronger borders. Try them if small text is hard to read.
+**Lantern Night** and **Sunbeam** have brighter words and stronger borders. Try them if small text is hard to read.
 
 ## Textures
 
@@ -440,12 +440,12 @@ Themes are only colours. [Cosy or Crisp](help:look-and-feel) is separate, so you
 
 ## Make it yours
 
-Press **Make a copy to customise** on any card to [make your own theme](help:make-your-own-theme).`,
+Press any card, then **Make a copy to change**, to [make your own theme](help:make-your-own-theme).`,
   'make-your-own-theme': `You can't break anything: you always work on your own copy, and the built-in themes stay as they were.
 
 ## Start
 
-Open **Preferences, Themes**, and press **Make a copy to customise** on a theme you almost like. (Or press **Make my own theme** to copy the one you're using.) The editor opens and your copy is switched on, so the whole app shows it as you work.
+Open **Preferences, Themes**, and press a theme you almost like, then **Make a copy to change**. (Or press **Make my own theme** to copy the one you're using.) The editor opens and your copy is switched on, so the whole app shows it as you work.
 
 ## Change colours
 

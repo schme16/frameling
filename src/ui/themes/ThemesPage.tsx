@@ -55,7 +55,7 @@ function CurrentTheme({ dark, light }: { dark: Theme; light: Theme }) {
 const themeOf = (id: string, mode: ThemeMode, custom: Theme[]): Theme => findTheme(id, custom) ?? BUILT_IN_THEMES.find((t) => t.mode === mode)!;
 
 /** A card in the gallery: the preview, the name, and badges saying which of your two themes it is, if either. */
-function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: { day: boolean; night: boolean }; onPick: (at: { x: number; y: number }) => void; onCopy: () => void; onEdit?: () => void }) {
+function ThemeCard({ theme, use, onPick }: { theme: Theme; use: { day: boolean; night: boolean }; onPick: (at: { x: number; y: number }) => void }) {
   const chosen = use.day || use.night;
   const says = use.day && use.night ? 'your theme by day and at night' : use.day ? 'your theme by day' : use.night ? 'your theme at night' : 'not in use';
   return (
@@ -90,28 +90,24 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
           )}
         </span>
       </button>
-      <div className="th-card-actions">
-        {onEdit && (
-          <button type="button" className="ui-btn ui-btn-small" onClick={onEdit}>
-            Edit
-          </button>
-        )}
-        <button type="button" className="ui-btn ui-btn-small ui-btn-quiet" onClick={onCopy} title="Make your own copy of this theme and change its colours">
-          <Icon name="duplicate" size={13} />
-          Duplicate and edit
-        </button>
-      </div>
     </div>
   );
 }
 
-/** Pressing a theme asks what it is for. Any theme can be either one, however bright or dark it is. */
-function askWhatFor(theme: Theme, at: { x: number; y: number }): void {
+/**
+ * Pressing a theme opens one menu: what it is for, then what can be done to it. Any theme can be either one, however
+ * bright or dark it is. Edit and Duplicate live here rather than on the card, so each card stays a clean picture of its
+ * theme and a press anywhere on it does the same thing.
+ */
+function askWhatFor(theme: Theme, at: { x: number; y: number }, onCopy: () => void, onEdit?: () => void): void {
   openDockMenu(at.x, at.y, [
     { heading: theme.name },
     { label: 'Use it by day', onClick: () => selectTheme(theme, 'light') },
     { label: 'Use it at night', onClick: () => selectTheme(theme, 'dark') },
     { label: 'Use it for both', onClick: () => { selectTheme(theme, 'light'); selectTheme(theme, 'dark'); } },
+    { separator: true },
+    ...(onEdit ? [{ label: 'Edit this theme', onClick: onEdit }] : []),
+    { label: 'Make a copy to change (duplicate)', onClick: onCopy },
   ]);
 }
 
@@ -123,11 +119,11 @@ function Gallery({ custom, day, night, onCopy, onEdit }: { custom: Theme[]; day:
       <h4>
         <Icon name="palette" size={15} />
         Every theme
-        <span className="th-now">press one and say what it is for</span>
+        <span className="th-now">press one to use it or change it</span>
       </h4>
       <div className="th-grid" role="group" aria-label="Themes">
         {all.map((t) => (
-          <ThemeCard key={t.id} theme={t} use={{ day: t.id === day, night: t.id === night }} onPick={(at) => askWhatFor(t, at)} onCopy={() => onCopy(t)} onEdit={t.builtIn ? undefined : () => onEdit(t.id)} />
+          <ThemeCard key={t.id} theme={t} use={{ day: t.id === day, night: t.id === night }} onPick={(at) => askWhatFor(t, at, () => onCopy(t), t.builtIn ? undefined : () => onEdit(t.id))} />
         ))}
       </div>
     </section>
