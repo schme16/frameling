@@ -15,6 +15,7 @@ import { TurnChip } from './TurnChip';
 import { isTurned, useTurn } from './turn';
 import { ReferenceBar, ReferenceHandles } from '../reference/Placement';
 import { NoteCard, NoteMarkers } from '../notes/NotesLayer';
+import { MarksLayer } from '../notes/MarksLayer';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -56,6 +57,7 @@ export function CanvasView() {
         <ReferenceHandles />
         <TextEditor />
         <PixelTextInput />
+        <MarksLayer />
         <NoteMarkers />
       </div>
       <EditBar />

@@ -31,8 +31,8 @@ const CORE_BACK_IMPORTS = ['core/render.ts -> effects'];
 const CONVERTED: Record<string, { importers: string[] }> = {
   // The video exporters read sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
   audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/formats/video-prep.ts', 'export/formats/video.ts'] },
-  // The camera's helpers (is it looked through, where is it) are used by the canvas, the tools and artboards: it keeps working on a drawing that holds a camera.
-  camera: { importers: ['renderer/features.ts', 'artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/variationOps.ts', 'canvas/engine.ts', 'quests/library.ts', 'text/TextEditor.tsx', 'tools/eyedropper.ts', 'tools/view-size.ts'] },
+  // The camera's helpers (is it looked through, where is it) are used by the canvas, the tools, artboards and the marks overlay (which hides while the camera is looked through): it keeps working on a drawing that holds a camera.
+  camera: { importers: ['renderer/features.ts', 'artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/variationOps.ts', 'canvas/engine.ts', 'notes/MarksLayer.tsx', 'quests/library.ts', 'text/TextEditor.tsx', 'tools/eyedropper.ts', 'tools/view-size.ts'] },
   // Sprite sheet engine, add-on and help: no folder of its own, and nothing imports it but the feature list.
   'godot-export': { importers: [] },
   flow: { importers: ['renderer/features.ts'] },
