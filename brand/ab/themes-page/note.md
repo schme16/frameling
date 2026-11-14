@@ -14,3 +14,6 @@
 - **wavy-card-dark / wavy-card-light / wavy-zoom-dark**: three bends instead of two, and each half is now clipped to
   its own side of the wave, so the line really is where one theme stops and the other starts. The zoom shows the cut
   close up: the paper is white in both themes, so it reads as continuous where the wave crosses the drawing.
+- **paper-card-dark / paper-card-light / paper-zoom-dark**: the paper in this card takes a little of each theme's own
+  colour, so the cut along the wave can be seen even across the drawing, where both themes would otherwise draw the
+  same white page. The gallery cards keep their true white paper.

@@ -3047,6 +3047,11 @@ body.ui-resizing * {
 .th-current-half:not(.is-dark) {
   clip-path: polygon(100% 0%, 97.8% 3.4%, 95.8% 7%, 93.6% 10.3%, 90.9% 13.1%, 87.4% 15.2%, 83.3% 16.7%, 79.1% 18%, 75.1% 19.5%, 71.7% 21.7%, 69.3% 24.8%, 67.7% 28.8%, 66.7% 33.3%, 65.7% 38%, 64.4% 42.2%, 62.2% 45.5%, 58.9% 47.8%, 54.7% 49.2%, 50% 50%, 45.3% 50.8%, 41.1% 52.2%, 37.8% 54.5%, 35.6% 57.8%, 34.3% 62%, 33.3% 66.7%, 32.3% 71.2%, 30.7% 75.2%, 28.3% 78.3%, 24.9% 80.5%, 20.9% 82%, 16.7% 83.3%, 12.6% 84.8%, 9.1% 86.9%, 6.4% 89.7%, 4.2% 93%, 2.2% 96.6%, 0% 100%, 0% 0%);
 }
+.th-current-half .th-prev-stage {
+  /* In this card the paper takes a little of the theme's own colour, so the cut along the wave can be seen even
+     where both themes would otherwise draw the same white page. The gallery cards keep their true white paper. */
+  background: color-mix(in srgb, var(--panel) 80%, #ffffff);
+}
 .th-current-line {
   /* The ink line along the join, drawn over both halves so the squiggle reads as one pen stroke. */
   position: absolute;
