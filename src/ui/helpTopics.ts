@@ -67,6 +67,15 @@ registerHelpTopics([
     keywords: ['settings', 'options', 'config'],
   },
   {
+    id: 'preferences-search',
+    order: 1.5,
+    title: 'Searching Preferences',
+    section: 'Settings',
+    media: 'preferences-search.png',
+    summary: 'Type what you half remember, or what another app calls it, and Preferences shows where it lives.',
+    keywords: ['search settings', 'find a setting', 'filter', 'where is', 'smoothing', 'hotkeys', 'dark mode', 'autosave', 'photoshop', 'aseprite', 'krita', 'procreate', 'flash', 'other names', 'typo', 'fuzzy'],
+  },
+  {
     id: 'interface-size',
     order: 2,
     title: 'Interface size',

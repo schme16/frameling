@@ -7,6 +7,8 @@ import { toast } from './toast';
 import type { FeatureDescriptor } from '../features/feature';
 import { oneOfEach } from './toolTwins';
 import { offFeatures, setFeatureOn } from '../features/host';
+import { choiceRows, featureRows, SETTING_ROWS } from './prefsIndex';
+import { PAGE_NAMES, searchPrefs, type PrefRow } from './prefsSearch';
 
 export type PaletteItem =
   | { kind: 'command'; id: string; label: string; category: string; description: string; command: Command }
@@ -109,6 +111,36 @@ export function rankPalette(query: string, items: PaletteItem[] = paletteItems()
   }
   hits.sort((a, b) => b.score - a.score || a.item.label.localeCompare(b.item.label));
   return hits.slice(0, limit);
+}
+
+/** A row of Preferences found from the palette. Pressing it opens Preferences at that row. */
+export interface SettingItem {
+  kind: 'setting';
+  id: string;
+  label: string;
+  category: string;
+  description: string;
+  row: PrefRow;
+}
+export interface ShownHit {
+  item: PaletteItem | SettingItem;
+  score: number;
+}
+
+/** The rows of Preferences the palette looks through: the settings, the remembered choices and the features. The Keyboard page's commands are the palette's own. */
+export const settingRows = (): PrefRow[] => [...SETTING_ROWS, ...choiceRows(), ...featureRows()];
+
+/**
+ * The palette's results with a few settings let in after the best matches, so a word that names a setting ("smoothing",
+ * "dark mode") finds it from here as well, without crowding out the commands.
+ */
+export function withSettings(hits: PaletteHit[], query: string, rows: PrefRow[] = settingRows(), after = 6, max = 3): ShownHit[] {
+  if (!query.trim()) return hits;
+  const found = searchPrefs(query, rows, 40)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((h): ShownHit => ({ score: h.score, item: { kind: 'setting', id: h.row.id, label: h.row.label, category: `Preferences, ${PAGE_NAMES[h.row.page]}`, description: h.row.hint ?? '', row: h.row } }));
+  return [...hits.slice(0, after), ...found, ...hits.slice(after)];
 }
 
 /** Is this command usable right now? */

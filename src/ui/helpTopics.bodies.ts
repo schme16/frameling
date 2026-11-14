@@ -154,7 +154,9 @@ Used Flash / Animate or a pixel tool before? Pick a [shortcut set](help:shortcut
 - **Mod+K** finds any command by name, even ones with no shortcut.`,
   preferences: `Open it with **Ctrl+,** (**Cmd+,** on a Mac), or **View, Preferences**.
 
-There are five pages:
+Can't find a setting? Type in the box at the top: [searching Preferences](help:preferences-search) knows other apps' names for things too.
+
+The pages down the left include:
 
 - **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
@@ -165,6 +167,28 @@ There are five pages:
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
+  'preferences-search': `The box at the top of **Preferences** finds a setting when you only half remember it. Open Preferences (**Ctrl+,**), or run **Search settings...** from the command palette, and start typing. The box is ready as soon as the window opens.
+
+## Use it
+
+- Type a word or two. The pages step aside and the settings that match line up under the name of their page, so you see where each one lives.
+- Press the one you want, or use the **up** and **down** arrows and **Enter**. You land on its page with the row lit for a moment.
+- **Esc** clears the box. Press it again to close Preferences.
+- A screen reader hears how many settings were found.
+
+## It knows other apps' words
+
+Each setting is also filed under what other drawing apps call it. Try **smoothing** (the stabilizer), **hotkeys** or **keymap** (the Keyboard page), **dark mode** (themes), **tablet pressure** (Pen and tablet), **canvas size** (the picture size), **autosave** or **history**. Nothing here has to be learned: type what you would say.
+
+## Near enough is good enough
+
+A typo still finds it (**stablizer**), and colour and color, stabiliser and stabilizer, work the same. It also searches the little explanation under each setting, the name of the page, and the questions Frameling asks in [Behaviour](help:behaviour) as well as their titles. Shortcuts for commands are in there too, so you can find a command and change its keys.
+
+## Nothing found?
+
+Then it says so, and offers to search the help for the same words instead. The answer may be a way of drawing and not a setting: **symmetry** is a [drawing tool](help:mirror-drawing), for example, not something in Preferences.
+
+Good to know: the command palette (**Ctrl+K**) finds these settings too, below the commands and help. Press one and Preferences opens right at it. See also [Preferences](help:preferences) and [keyboard shortcuts](help:keyboard-shortcuts).`,
   'interface-size': `On a very sharp screen, like a 4k drawing tablet, everything can look tiny. **Interface size** draws the whole of Frameling bigger (or smaller): menus, panels, the timeline and the canvas, all still crisp.
 
 ## Set it yourself
