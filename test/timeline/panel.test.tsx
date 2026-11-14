@@ -244,8 +244,8 @@ describe('timeline panel', () => {
     expect(s.get().doc.layers[0].visible).toBe(false);
     click(q('[aria-label="Lock layer"]'));
     expect(s.get().doc.layers[0].locked).toBe(true);
-    click(q('[aria-label="Add vector layer"]'));
-    click(q('[aria-label="Add pixel layer"]'));
+    click(q('[aria-label="New vector layer"]'));
+    click(q('[aria-label="New pixel layer"]'));
     expect(s.get().doc.layers.map((l) => l.kind)).toEqual(['vector', 'vector', 'pixel']);
     expect(host.querySelectorAll('.tl-layer')).toHaveLength(3);
     click(q('[aria-label="Duplicate layer"]'));
