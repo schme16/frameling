@@ -15,6 +15,7 @@ const harness = req(path.join(root, 'scripts/lib/gpu.cjs')) as {
   judge: (mode: 'card' | 'software', page: { renderer: string | null; webgl2: boolean; wideGamut: boolean; red: number[] }, f: Record<string, string>) => string[];
   CARD_SWITCHES: [string, string?][];
   CARD_FULL_SWITCHES: [string, string?][];
+  VULKAN_SWITCH: [string, string];
   COLOUR_SWITCH: [string, string];
 };
 
@@ -61,16 +62,21 @@ describe('harness engine modes', () => {
     const line = /^GPU_ARGS=\((.*)\)$/m.exec(launcher);
     expect(line, 'GPU_ARGS in build/linux/launcher.sh').not.toBeNull();
     expect(harness.CARD_SWITCHES.map(asArg)).toEqual(line![1].trim().split(/\s+/));
-    const more = /^\s*GPU_ARGS\+=\((.*)\)$/m.exec(launcher);
-    expect(more, 'the FRAMELING_GPU=full line in build/linux/launcher.sh').not.toBeNull();
-    expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(more![1].trim().split(/\s+/));
+    const more = [...launcher.matchAll(/^\s*GPU_ARGS\+=\((.*)\)$/gm)].map((m) => m[1].trim().split(/\s+/));
+    expect(more.length, 'the FRAMELING_GPU=full and =vulkan lines in build/linux/launcher.sh').toBe(2);
+    expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(more[0]);
+    expect([harness.VULKAN_SWITCH].map(asArg)).toEqual(more[1]);
   });
 
-  it('the fuller set is only there when it is asked for, because it has blanked a canvas', () => {
+  it('the fuller set is only there when it is asked for, and never carries Vulkan', () => {
     expect(harness.switchesFor('card').map(asArg).join(' ')).not.toMatch(/zero-copy|oop-rasterization|Vulkan/);
     const full = harness.switchesFor('card', { full: true }).map(asArg);
     expect(full).toContain('--enable-zero-copy');
     expect(full).toContain('--canvas-oop-rasterization');
+    // Vulkan through ANGLE drew nothing at all on the card it was found on, so no mode may reach for it.
+    expect(full.join(' ')).not.toMatch(/Vulkan/);
+    expect(harness.switchesFor('software').map(asArg).join(' ')).not.toMatch(/Vulkan/);
+    expect(harness.VULKAN_SWITCH).toEqual(['enable-features', 'Vulkan,DefaultANGLEVulkan']);
   });
 });
 

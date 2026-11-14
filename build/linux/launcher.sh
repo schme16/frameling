@@ -57,14 +57,19 @@ done
 # and the browser engine says no to plenty of perfectly good Linux drivers by default. --ignore-gpu-blocklist says
 # yes: use the card even on a driver the engine has not been told about. That is all the default does.
 #
-# The fuller set (Vulkan through ANGLE, and keeping canvas pixels on the card) blanked the canvas on an NVIDIA
-# driver here: the file opened, every layer was there, and nothing was drawn. Nothing that can do that is on by
-# default in a drawing app. It is behind FRAMELING_GPU=full until each switch is proven on real cards, one at a
-# time, with a picture of the canvas each time. See the gpu-blank-canvas card.
+# The culprit, found one flag at a time on a real NVIDIA card: --enable-features=Vulkan,DefaultANGLEVulkan draws
+# nothing at all. The file opens, every layer is there, and the canvas stays empty. It is never added here, not even
+# by FRAMELING_GPU=full, and FRAMELING_GPU=vulkan is the only way to get it, for anyone measuring it on another card.
+# --enable-zero-copy and --canvas-oop-rasterization both draw correctly on that same card, and are what
+# FRAMELING_GPU=full means now. They are not the default until they are proven on more than one card.
 GPU_ARGS=(--ignore-gpu-blocklist)
 if [ "${FRAMELING_GPU:-}" = full ]; then
-  GPU_ARGS+=(--enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization)
-  say 'trying the fuller graphics set (FRAMELING_GPU=full). If nothing is drawn, run it without that.'
+  GPU_ARGS+=(--enable-zero-copy --canvas-oop-rasterization)
+  say 'keeping canvas pixels on the card (FRAMELING_GPU=full).'
+fi
+if [ "${FRAMELING_GPU:-}" = vulkan ]; then
+  GPU_ARGS+=(--enable-features=Vulkan,DefaultANGLEVulkan)
+  say 'drawing through Vulkan (FRAMELING_GPU=vulkan). This drew nothing at all on the NVIDIA card it was found on.'
 fi
 if [ "${FRAMELING_GPU:-}" = off ] || [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/Frameling/gpu-off" ]; then
   GPU_ARGS=(--disable-gpu)

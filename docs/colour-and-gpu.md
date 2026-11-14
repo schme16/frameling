@@ -115,10 +115,23 @@ What was checked, and what was not.
   what could be read back.
 - **What that check missed, and it matters.** It read pixels back out of an offscreen canvas. It never looked at the
   window. On the user's NVIDIA driver that same set opened a file with every layer in it and drew **nothing at all**
-  on the canvas. So the launcher now passes `--ignore-gpu-blocklist` and nothing else, and the fuller set is behind
-  `FRAMELING_GPU=full` until each switch is proven one at a time with a picture of the real window. The lesson for
-  any graphics check here: reading a canvas back is not proof that anything reached the screen. See the
-  `gpu-blank-canvas` card.
+  on the canvas. The lesson for any graphics check here: reading a canvas back is not proof that anything reached the
+  screen.
+- **Which flag did it**, found one at a time on that card (RTX 4080 SUPER, Zorin, X11), each run opening the same
+  file and judged by eye:
+
+  | | |
+  |---|---|
+  | `--disable-gpu` (software) | draws |
+  | `--ignore-gpu-blocklist` alone | draws |
+  | `+ --enable-features=Vulkan,DefaultANGLEVulkan` | **blank canvas** |
+  | `+ --enable-zero-copy` | draws |
+  | `+ --canvas-oop-rasterization` | draws |
+
+  So Vulkan through ANGLE is the one. The launcher never adds it, not even for `FRAMELING_GPU=full`, and
+  `FRAMELING_GPU=vulkan` is the only way to get it, for anyone measuring it on another card. `FRAMELING_GPU=full`
+  now means zero copy and out-of-process canvas drawing, the two that work. They are not the default until a second
+  card says so.
 - **The silent fall back** (above) is the real risk with hardware drawing on: on a driver the engine can't use, the
   AppImage still opens, in llvmpipe, and looks fine. The launcher's `FRAMELING_GPU=off` is the honest way to ask for
   software. Preferences should show the renderer name (task `gpu-prefs-page`).

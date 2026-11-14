@@ -31,7 +31,8 @@ describe.skipIf(!canRun)('Linux launcher', () => {
   // The default says yes to the card and nothing more. The fuller set blanked the canvas on an NVIDIA driver, so
   // it is behind FRAMELING_GPU=full (see the gpu-blank-canvas card).
   const GPU = '--ignore-gpu-blocklist';
-  const GPU_FULL = `${GPU} --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization`;
+  const GPU_FULL = `${GPU} --enable-zero-copy --canvas-oop-rasterization`;
+  const GPU_VULKAN = `${GPU} --enable-features=Vulkan,DefaultANGLEVulkan`;
   it('is valid shell', () => {
     execFileSync('bash', ['-n', launcher]);
   });
@@ -77,7 +78,15 @@ describe.skipIf(!canRun)('Linux launcher', () => {
   it('adds the fuller graphics set only when it is asked for', () => {
     const r = run(fakeApp(), ['file.frameling'], { FRAMELING_GPU: 'full' });
     expect(r.stdout.trim()).toBe(`ARGS: ${GPU_FULL} file.frameling`);
-    expect(r.stderr).toContain('fuller graphics set');
+    expect(r.stderr).toContain('canvas pixels on the card');
+    expect(r.stdout).not.toContain('Vulkan');
+  });
+
+  it('Vulkan is its own thing, says what it did, and is in no other mode', () => {
+    const r = run(fakeApp(), ['file.frameling'], { FRAMELING_GPU: 'vulkan' });
+    expect(r.stdout.trim()).toBe(`ARGS: ${GPU_VULKAN} file.frameling`);
+    expect(r.stderr).toContain('drew nothing at all');
+    for (const v of [undefined, 'full', 'off']) expect(run(fakeApp(), [], v ? { FRAMELING_GPU: v } : {}).stdout).not.toContain('Vulkan');
   });
 
   it('leaves the card out when it is switched off by hand', () => {

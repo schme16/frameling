@@ -31,9 +31,12 @@ const SOFT = /swiftshader|llvmpipe|lavapipe|softpipe|software|basic render|micro
 // Kept in the same order as GPU_ARGS in build/linux/launcher.sh: the app's default is to say yes to the card and
 // nothing more.
 const CARD_SWITCHES = [['ignore-gpu-blocklist']];
-// The fuller set the launcher adds for FRAMELING_GPU=full. It blanked the canvas on an NVIDIA driver, so a harness
-// only takes it when it is asked for by name: gpu.use('card', { full: true }), or GPU_FULL=1.
-const CARD_FULL_SWITCHES = [['enable-features', 'Vulkan,DefaultANGLEVulkan'], ['enable-zero-copy'], ['canvas-oop-rasterization']];
+// What the launcher adds for FRAMELING_GPU=full: both draw correctly on the NVIDIA card they were tried on, but they
+// are not the default until more than one card says so. A harness takes them by name: gpu.use('card', { full: true }),
+// or GPU_FULL=1.
+const CARD_FULL_SWITCHES = [['enable-zero-copy'], ['canvas-oop-rasterization']];
+// Vulkan through ANGLE draws nothing at all on that card: the canvas stays empty. Never add it anywhere by default.
+const VULKAN_SWITCH = ['enable-features', 'Vulkan,DefaultANGLEVulkan'];
 const SOFTWARE_SWITCHES = [['ignore-gpu-blocklist'], ['enable-unsafe-swiftshader'], ['use-angle', 'swiftshader']];
 // The colour profile pin; src/main/gpuFlags.ts sets the same switch for the app.
 const COLOUR_SWITCH = ['force-color-profile', 'srgb'];
@@ -178,4 +181,4 @@ async function confirmOrExit(win) {
 /** The mode in force, or null before use(). */
 const current = () => (chosen ? chosen.mode : null);
 
-module.exports = { use, judge, confirm, confirmOrExit, current, switchesFor, probe, SOFT, CARD_SWITCHES, CARD_FULL_SWITCHES, SOFTWARE_SWITCHES, COLOUR_SWITCH };
+module.exports = { use, judge, confirm, confirmOrExit, current, switchesFor, probe, SOFT, CARD_SWITCHES, CARD_FULL_SWITCHES, VULKAN_SWITCH, SOFTWARE_SWITCHES, COLOUR_SWITCH };
