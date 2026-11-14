@@ -7,7 +7,7 @@ import { searchHelp } from '../../src/ui/help/search';
 import '../../src/renderer/features';
 
 const Q: [string, string][] = [
-  ['rubber', 'tool-eraser'], ['erase', 'tool-eraser'], ['rub out', 'tool-eraser'], ['pan', 'canvas-navigation'], ['move the page', 'canvas-navigation'], ['zoom', 'tool-zoom'],
+  ['pixel gradient', 'pixel-gradient'], ['sky fade', 'pixel-gradient'], ['rubber', 'tool-eraser'], ['erase', 'tool-eraser'], ['rub out', 'tool-eraser'], ['pan', 'canvas-navigation'], ['move the page', 'canvas-navigation'], ['zoom', 'tool-zoom'],
   ['pick colour', 'tool-eyedropper'], ['colour picker', 'tool-eyedropper'], ['mirror selection', 'flip'], ['mirror', 'mirror-drawing'], ['symmetry', 'mirror-drawing'], ['remember', 'remembered-settings'], ['restart', 'remembered-settings'], ['bring to front', 'arrange'], ['layer order', 'arrange'], ['on top', 'arrange'],
   ['save', 'saving-and-opening'], ['crash', 'autosave'], ['lost my work', 'autosave'], ['recover', 'autosave'], ['rename', 'document-name'], ['title', 'document-name'],
   ['inches', 'units'], ['print size', 'units'], ['dark mode', 'look-and-feel'], ['night mode', 'look-and-feel'], ['video', 'export-video-gif-apng'], ['gif', 'export-video-gif-apng'],

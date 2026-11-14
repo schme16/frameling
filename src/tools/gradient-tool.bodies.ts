@@ -21,5 +21,7 @@ The paint bucket pours the fill box's gradient too.
 
 Pick the **Gradient** tool (**F**), then drag across a shape: the gradient runs from where you press to where you let go. Drag the two square ends to fine-tune it. On a radial gradient the first square is the middle and the second sets how far it reaches. Hold **Shift** to keep to 45 degree steps.
 
+On a pixel layer the same tool paints a dithered gradient into the pixels instead. See [Gradients on pixel layers](help:pixel-gradient).
+
 Gradients come along when you export to SVG, PDF and Lottie, and of course in videos, GIFs and sprite sheets.`,
 };

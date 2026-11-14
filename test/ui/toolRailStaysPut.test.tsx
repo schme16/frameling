@@ -225,11 +225,11 @@ describe('the real tools', () => {
     }
   });
 
-  it('shade, dither, spray and the wand are off on a vector layer, and the gradient on a pixel layer (the Text tool types pixel text there)', () => {
+  it('shade, dither, spray and the wand are off on a vector layer, and edit points on a pixel layer (the Text tool types pixel text there)', () => {
     const v = railFor(everyday(), 'vector').off;
     for (const id of ['shade', 'dither', 'spray', 'pixel-select-wand']) expect(v, id).toContain(id);
     const p = railFor(everyday(), 'pixel').off;
-    expect(p).toContain('gradient');
+    expect(p).toContain('points');
     expect(p).not.toContain('text');
     expect(v).not.toContain('brush');
     expect(p).not.toContain('brush');
@@ -354,7 +354,7 @@ describe('the rail on the page', () => {
     expect(toasts.get().some((t) => t.message.includes('Shade works on pixel layers'))).toBe(true);
     on(k.pixel);
     expect(host.querySelector('[data-tool-id="shade"]')!.classList.contains('is-off')).toBe(false);
-    expect(host.querySelector('[data-tool-id="gradient"]')!.classList.contains('is-off')).toBe(true);
+    expect(host.querySelector('[data-tool-id="points"]')!.classList.contains('is-off')).toBe(true);
     expect(host.querySelector('[data-tool-id="text"]')!.classList.contains('is-off')).toBe(false);
   });
 

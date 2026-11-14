@@ -645,3 +645,12 @@
   flex: none;
   pointer-events: auto;
 }
+
+.px-grad-strip {
+  width: 100%;
+  height: 28px;
+  image-rendering: pixelated;
+  border-radius: 6px;
+  border: 1px solid var(--line, rgb(128 128 128 / 0.3));
+  background: repeating-conic-gradient(rgb(128 128 128 / 0.18) 0% 25%, transparent 0% 50%) 0 0 / 8px 8px;
+}
