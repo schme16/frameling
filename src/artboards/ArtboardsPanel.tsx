@@ -191,7 +191,7 @@ export function ArtboardsPanel() {
             </span>
             <PieceButton icon="zoom" text="Fit all" tip="Show every artboard at once" label="Fit all artboards" onClick={() => fitAllArtboards()} />
             <PieceButton icon="grid" text="Line up" tip="Line them up in a row, in list order" label="Line up artboards" onClick={() => arrangeAll()} />
-            <PieceButton icon="play" text="Play all in order" tip="Play every artboard one after another, like shots in a film" label="Play all artboards in order" onClick={() => openShotsPlayer()} />
+            <PieceButton icon="play" text="Play all in order" tip="Play every artboard one after another, like shots in a film" label="Play all in order, every artboard" onClick={() => openShotsPlayer()} />
             <PieceButton icon="export" text="Export artboards" tip="Export each artboard as its own file, or pack them all onto one sprite sheet" label="Export artboards" onClick={() => openArtboardExport()} />
           </span>
         )}
@@ -242,7 +242,8 @@ export function ArtboardsPanel() {
               inFolder={!!a.variationOf}
               depth={a.variationOf ? 1 : 0}
               className={a.variationOf ? 'ab-var' : ''}
-              label={`${a.name}, artboard ${size}${frames ? `, ${frames}` : ''}${src ? `, variation of ${src.name}` : ''}`}
+              // The words a person sees (name, then size and rate) come first and in order, so the spoken name holds the printed one.
+              label={`${a.name} ${size}${rate ? ` · ${rate}` : ''}, artboard${frames ? `, ${frames}` : ''}${src ? `, variation of ${src.name}` : ''}`}
               drag={{
                 dropMark: dnd.mark(a.id, dnd.drag.node === a.id),
                 onDragStart: (id) => dnd.start(id),

@@ -21,6 +21,73 @@
   font: inherit;
   resize: vertical;
 }
+/* How we can reach you: a saved detail about the person, not a box in this report's form. */
+.bt-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-small);
+}
+.bt-contact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.bt-remembered {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-small);
+}
+.bt-contact-value {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.bt-contact-buttons {
+  display: flex;
+  gap: 8px;
+}
+.bt-machine-opt {
+  margin: 0;
+}
+/* The processor and graphics card, read plainly before they go. */
+.bt-machine {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+}
+.bt-machine h4 {
+  margin: 0 0 6px;
+  font-size: var(--fs-small);
+  color: var(--text);
+}
+.bt-machine dl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+.bt-machine-row {
+  display: grid;
+  grid-template-columns: 14em 1fr;
+  gap: 8px;
+  font-size: var(--fs-small);
+}
+.bt-machine dt {
+  color: var(--muted);
+}
+.bt-machine dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 /* What will be sent, shown in full. Scrolls rather than pushing the page about. */
 .bt-preview {
   max-height: 260px;

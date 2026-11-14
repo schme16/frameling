@@ -3,6 +3,7 @@
  * script (which builds it), the main process (which answers it) and the page (which calls it).
  */
 
+import type { CpuInfo } from '../gpu/cpu';
 import type { SaveChoice } from '../shared/saveQuestion';
 
 export interface FileFilter {
@@ -174,6 +175,10 @@ export interface GpuReport {
   appKb: number;
   /** The card's own memory, when the system says (Linux with an AMD card). */
   vramBytes?: number;
+  /** The processor: model, cores, threads, architecture (src/gpu/cpu.ts). */
+  cpu?: CpuInfo;
+  /** How much memory the computer has in all, not what Frameling holds. */
+  memoryBytes?: number;
 }
 
 /** The graphics page of Preferences. Missing in the web build, where the browser decides how to draw. */

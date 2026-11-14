@@ -15,6 +15,8 @@ import { getPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { gatherEnv } from '../tablet/check/state';
 import type { CrashNotes, FramelingApi } from '../preload/api';
+import { refreshReport } from '../gpu/report';
+import { machineFacts, type MachineFacts } from './machine';
 import { buildReport, type IngestReport } from './report';
 import { canSend } from './send';
 
@@ -72,8 +74,8 @@ export function sayHow(how: CrashNotes['how']): string {
  * The report for a crash. Built from the notes and what this computer is, and nothing else: no drawing, no file names,
  * no words anyone typed. Pure, so the dialog can show exactly what would go.
  */
-export function crashReport(notes: CrashNotes, env: Record<string, unknown>, contact?: string): IngestReport {
-  const r = buildReport({ note: sayHow(notes.how), contact, where: 'after a crash', env, problems: notes.events });
+export function crashReport(notes: CrashNotes, env: Record<string, unknown>, contact?: string, machine?: MachineFacts | null): IngestReport {
+  const r = buildReport({ note: sayHow(notes.how), contact, where: 'after a crash', env, problems: notes.events, machine });
   return {
     ...r,
     kind: 'crash',
@@ -143,7 +145,9 @@ export async function considerCrash(o: { force?: boolean } = {}): Promise<void> 
   if (!o.force && (anyOverlayOpen() || crashDialog.get())) return;
   const notes = last!.notes;
   const env = (await gatherEnv()) as unknown as Record<string, unknown>;
-  crashDialog.set({ mode: action.kind, notes, report: crashReport(notes, env, getPrefs().betaContact) });
+  // The processor and graphics go in only when the person left that on, and show in the "Read what would go" box.
+  const machine = getPrefs().betaMachine ? machineFacts(await refreshReport()) : null;
+  crashDialog.set({ mode: action.kind, notes, report: crashReport(notes, env, getPrefs().betaContact, machine) });
   bridge()?.crashOffered?.();
 }
 

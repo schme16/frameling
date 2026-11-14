@@ -829,10 +829,18 @@ things with a visible focus ring, Escape closes dialogs and focus goes back). Fr
 axe "serious" or "critical" result or a keyboard failure.
 
 ```bash
-xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
+A11Y_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
 npm run build
-xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
+A11Y_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 ```
+
+**It fails when it looked at nothing.** The run sets the right side to tabs, so every panel really is on the page (in the
+default layout most are folded into one Properties pane, and for a while the panel check was passing on two of 25). A
+scenario whose target is missing or not showing is a failure, a panel with almost nothing in it for axe to judge is a
+failure, and a full run must have checked every panel the app lists (`scripts/lib/a11y-coverage.cjs`, tested in
+`test/a11y/coverage.test.ts`). Each line says how many elements axe judged, and the run ends with
+`panels: N of N really checked`. Panels are shown in the same document as the panel contact sheet. Set `A11Y_SHOW=1`
+under xvfb: an off-screen window gets no keyboard focus, which fails every key check (and the Tab walk now says so).
 
 A full run is about 120 views and takes 4 to 6 minutes (more when the machine is busy), and prints nothing new when piped
 into `tail` until it ends, so give it time before calling it stuck. It always exits: 0 clean, 1 problems found, 2 when the

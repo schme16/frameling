@@ -3367,6 +3367,9 @@ body.ui-resizing * {
   background: var(--panel-2);
   border: 1px solid var(--line-soft);
 }
+.th-prev-chip::before {
+  content: 'Draw';
+}
 .th-prev-chip {
   padding: 1px 4px;
   border-radius: 999px;
