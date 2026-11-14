@@ -9,7 +9,7 @@ import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
+import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { MAX_UNZIPPED } from './ioJobs';
@@ -737,18 +737,50 @@ function readTween(t: unknown): { tween?: Tween } {
   return { tween };
 }
 
-/** The clip flow, keeping only transitions between clips that exist. */
+const FLOW_OPS = new Set(['>', '>=', '<', '<=', '==', '!=']);
+
+/** The checks on an arrow. One on a missing input is kept (the panel and the exports say it never goes), but nonsense is dropped. */
+function readConditions(raw: unknown): FlowCondition[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FlowCondition[] = [];
+  for (const c of raw.slice(0, 12)) {
+    if (!isObj(c) || typeof c.input !== 'string' || !c.input || !FLOW_OPS.has(c.op)) continue;
+    if (typeof c.value === 'boolean') out.push({ input: c.input.slice(0, 40), op: c.op === '!=' ? '!=' : '==', value: c.value });
+    else if (typeof c.value === 'number' && Number.isFinite(c.value)) out.push({ input: c.input.slice(0, 40), op: c.op, value: c.value });
+  }
+  return out;
+}
+
+/** The clip flow, keeping only transitions between clips that exist ("Any clip" arrows start from every clip). */
 export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | undefined {
   if (!isObj(raw)) return undefined;
   const ids = new Set(clips.map((c) => c.id));
   const transitions: ClipTransition[] = (Array.isArray(raw.transitions) ? raw.transitions : [])
-    .filter((t: any) => isObj(t) && ids.has(t.from) && ids.has(t.to))
-    .map((t: any, i: number) => ({ id: str(t.id, 't' + i), from: t.from, to: t.to, when: t.when === 'trigger' ? 'trigger' : 'end', ...(t.when === 'trigger' ? { trigger: str(t.trigger, 'go').slice(0, 60) } : {}) }));
+    .filter((t: any) => isObj(t) && (t.from === FLOW_ANY || ids.has(t.from)) && ids.has(t.to))
+    .map((t: any, i: number) => {
+      const when: ClipTransition['when'] = t.when === 'trigger' ? 'trigger' : t.when === 'now' ? 'now' : 'end';
+      const conditions = readConditions(t.conditions);
+      const blend = typeof t.blend === 'number' && Number.isFinite(t.blend) ? Math.min(MAX_FLOW_BLEND, Math.max(0, t.blend)) : 0;
+      return { id: str(t.id, 't' + i), from: t.from, to: t.to, when, ...(when === 'trigger' ? { trigger: str(t.trigger, 'go').slice(0, 60) } : {}), ...(conditions.length ? { conditions } : {}), ...(blend > 0 ? { blend } : {}) };
+    });
   const positions: Record<string, { x: number; y: number }> = {};
-  if (isObj(raw.positions)) for (const [id, p] of Object.entries<any>(raw.positions)) if (ids.has(id) && isObj(p)) positions[id] = { x: num(p.x, 0), y: num(p.y, 0) };
+  if (isObj(raw.positions)) for (const [id, p] of Object.entries<any>(raw.positions)) if ((id === FLOW_ANY || ids.has(id)) && isObj(p)) positions[id] = { x: num(p.x, 0), y: num(p.y, 0) };
   const start = typeof raw.start === 'string' && ids.has(raw.start) ? raw.start : undefined;
-  if (!transitions.length && !start && !Object.keys(positions).length) return undefined;
-  return { ...(start ? { start } : {}), transitions, ...(Object.keys(positions).length ? { positions } : {}) };
+  const inputs: FlowInput[] = [];
+  for (const i of (Array.isArray(raw.inputs) ? raw.inputs : []).slice(0, 32)) {
+    if (!isObj(i) || typeof i.name !== 'string' || !i.name.trim() || inputs.some((x) => x.name === i.name.slice(0, 40))) continue;
+    const kind = i.kind === 'number' ? 'number' : 'toggle';
+    const s = kind === 'toggle' ? (i.start === true ? true : undefined) : typeof i.start === 'number' && Number.isFinite(i.start) && i.start !== 0 ? i.start : undefined;
+    inputs.push({ name: i.name.slice(0, 40), kind, ...(s !== undefined ? { start: s } : {}) });
+  }
+  if (!transitions.length && !start && !Object.keys(positions).length && !inputs.length) return undefined;
+  return {
+    ...(start ? { start } : {}),
+    transitions,
+    ...(Object.keys(positions).length ? { positions } : {}),
+    ...(inputs.length ? { inputs } : {}),
+    ...(raw.anyFirst === false ? { anyFirst: false } : {}),
+  };
 }
 
 /** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */

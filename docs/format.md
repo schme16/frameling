@@ -106,7 +106,7 @@ Repaired quietly (defaults filled, values clamped):
   keeps its plain bone bind).
 - Tweens: unknown easing becomes `'linear'`, `spin` is rounded, a motion path needs two good points, shape hints
   are kept only on shape tweens, at most 26.
-- Clip flow: transitions between clips that don't exist are dropped; triggers are cut to 60 characters.
+- Clip flow: transitions between clips that don't exist are dropped; triggers are cut to 60 characters; inputs, checks and fades are validated (see Clip flow below).
 - Clips: `direction` is kept only when it is one of the four known words (and not `'forward'`); `repeat` only when it
   rounds to a whole number from 2 to 999 (`readClip` in `src/core/clipPlay.ts`, also used for artboards).
 - Gradients that don't parse are removed from the shape (`cleanGradients` in `src/core/gradient.ts`).
@@ -431,8 +431,21 @@ See `docs/effects.md`.
 
 ### Clip flow (`f587827`)
 
-`ClipFlow`: `{start?, transitions, positions?}`. `ClipTransition`: `{id, from, to, when: 'end' | 'trigger',
-trigger?}`. Frameling's own playback ignores it; game engine exports and Interactives read it as a state machine.
+`ClipFlow`: `{start?, transitions, positions?, inputs?, anyFirst?}`. `ClipTransition`: `{id, from, to, when: 'end' | 'trigger' | 'now',
+trigger?, conditions?, blend?}`. Frameling's own playback ignores it (Try it in the Clip flow panel plays it); game engine exports and
+Interactives read it as a state machine.
+
+All of these are optional, so older files read unchanged (an older Frameling reads a `now` arrow as `end`, and ignores the rest):
+- `inputs`: `{name, kind: 'toggle' | 'number', start?}[]`, named values the game sets. Names are unique, 40 characters at most, at most 32 of them.
+  `start` is missing for off or 0.
+- `conditions`: `{input, op: '>' | '>=' | '<' | '<=' | '==' | '!=', value: boolean | number}[]` on an arrow; all must hold. A toggle uses `==`
+  or `!=` with a boolean. A check on an input that no longer exists is kept (it never holds, and the panel and exports say so).
+- `when: 'now'`: the arrow goes the moment its conditions hold (with no conditions it never goes). `'end'` and `'trigger'` also need their conditions.
+- `from: '*'` (`FLOW_ANY`): an "Any clip" arrow, from every clip except its own target. `positions['*']` places its box in the panel.
+- `blend`: seconds of fade into the next clip, 0 to 5 (missing = a straight cut).
+- `anyFirst: false`: a clip's own arrows are tried before the Any clip ones (missing = Any clip first). The first ready arrow wins.
+
+The rules (`pickTransition`, `conditionHolds`) are pure functions in `src/core/flow.ts`; `readFlow` in `src/io/file.ts` validates the fields.
 
 ### Bones (`0b554d4`, stretch `d31ae80`)
 
@@ -481,8 +494,9 @@ Written by `src/export/playable.ts` (`playablePackage`), a zip with media type `
   then the number of frames the document itself has (the rest are baked passes), for a player that wants the whole
   animation without them. The flow's `frames` is the baked length and its `direction`/`repeat` are left out for such
   a clip. The `.frameling` source inside has the settings.
-- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], transitions: {from, to, on:
-  'end' | 'trigger', trigger?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). Older readers ignore it.
+- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], inputs?: {name, kind, start}[], transitions: {from?, any?: true, to, on:
+  'end' | 'trigger' | 'now', trigger?, conditions?, blend?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). `transitions` are in the
+  order they are tried (the first ready one wins); an Any clip arrow has `any: true` and no `from`. Older readers ignore it.
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
 The round trip (opening a `.flplay`'s source and saving back into it) is `src/interactives/`, described in

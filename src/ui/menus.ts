@@ -275,7 +275,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   clips: {
     label: 'Clips and clip flow',
-    items: ['flow.open', 'flow.try', '-', 'timeline.clipForward', 'timeline.clipBackward', 'timeline.clipOnce', 'timeline.clipForever', 'timeline.clipBackAndForth', 'timeline.clipBackAndForthEnd'],
+    items: ['flow.open', 'flow.try', 'flow.addToggle', 'flow.addNumber', 'flow.fromAny', '-', 'timeline.clipForward', 'timeline.clipBackward', 'timeline.clipOnce', 'timeline.clipForever', 'timeline.clipBackAndForth', 'timeline.clipBackAndForthEnd'],
     prefixes: ['timeline.clip', 'flow.'],
   },
   sound: {

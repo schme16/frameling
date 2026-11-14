@@ -1,5 +1,6 @@
 // What a sprite sheet export asks: where it is going (the engine and its extras) and how the sheet is laid out.
 import { ExNote } from '../ExNote';
+import { flowExportNotes } from '../../core/flow';
 import { useChoice } from '../../core/choices';
 import { sheetExported } from '../../pixel/moments';
 import { sheetFooter } from '../../pixel/sheetMode';
@@ -62,6 +63,12 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
         </p>
       )}
       {godotBones && <BonesLookNotes doc={doc} />}
+      {/* What the clip flow's inputs and checks do in this export: Godot's script carries them, other engines and Godot bones or separate pictures have no flow. */}
+      {flowExportNotes(doc, sheet.engine === 'godot' && !separate && !godotBones ? 'godot' : 'other').map((w) => (
+        <ExNote key={w} stays>
+          {w}
+        </ExNote>
+      ))}
       {sheet.engine === 'godot' && (
         <>
           {!separate && !godotBones && (

@@ -16,6 +16,7 @@
  */
 import type { Doc, EffectKind } from '../core/format';
 import { hasPlaySettings } from '../core/clipPlay';
+import { flowExportNotes } from '../core/flow';
 import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
@@ -107,7 +108,9 @@ export const GRAIN_NOTE = 'Chalk and charcoal grain stays vector, made of thousa
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }): string[] {
   const c = carryOf(format);
   const clipNote = exporterOf(format)?.clipPlayNote;
-  const clipWarn = [...(clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : []), ...(range ? (exporterOf(format)?.docNotes?.(doc, range) ?? []) : [])];
+  // The clip flow's inputs, checks, Any clip arrows and fades go to a Godot sheet and an Interactives package (both say so themselves); anywhere else they are left out, and that is said.
+  const flowWarn = format === 'interactives' || format === 'sheet' ? [] : flowExportNotes(doc, 'other');
+  const clipWarn = [...(clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : []), ...(range ? (exporterOf(format)?.docNotes?.(doc, range) ?? []) : []), ...flowWarn];
   if (!c.rows) return clipWarn;
   const out: string[] = [...clipWarn];
   const pictures: string[] = [];

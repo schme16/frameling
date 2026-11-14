@@ -476,41 +476,136 @@ export function godotAtlasTexture(texturePath: string, c: Cell, at: { x: number;
 
 // ---------------------------------------------------------------- clip flow for Godot
 
-/** A GDScript for an AnimatedSprite2D that follows the clip flow: plays the start clip, moves on at clip ends, and `fire("name")` follows a trigger. */
+/**
+ * A GDScript for an AnimatedSprite2D that follows the clip flow: plays the start clip, moves on at clip ends, and
+ * `fire("name")` follows a trigger. Inputs are set with `set_flow_input("speed", 0.7)`; arrows with checks only go
+ * when every check holds, "as soon as" arrows go the moment they do, "Any clip" arrows count from every clip, and an
+ * arrow with a fade cross fades from a copy of the old clip. The arrows are tried in the order the file lists them.
+ */
 export function godotFlowScript(flow: FlowManifest, resource: string): string {
   const data = JSON.stringify(flow, null, '\t').split('\n').join('\n');
   return `# Made by Frameling. Attach to the AnimatedSprite2D that plays ${resource}.
 # It plays the clips the way the clip flow says: the start clip first, then on to the next one when a clip ends,
-# and fire("trigger name") follows a trigger (a jump, a hit). clip_changed tells you when it moves on.
+# fire("trigger name") follows a trigger (a jump, a hit), and set_flow_input("speed", 0.7) sets an input (on/off
+# inputs take true or false). Arrows can check inputs, start from any clip, and fade. clip_changed tells you when
+# it moves on.
 extends AnimatedSprite2D
 
 signal clip_changed(clip: String)
 
 const FLOW := ${data}
 
+var _values := {}
+
 func _ready() -> void:
+	for i in FLOW.get("inputs", []):
+		_values[i["name"]] = i["start"]
 	animation_finished.connect(_on_clip_end)
 	animation_looped.connect(_on_clip_end)
 	go_to(FLOW["start"])
+	_settle()
 
-## Plays a clip by name.
-func go_to(clip: String) -> void:
+## Plays a clip by name. Blend is seconds of cross fade from the clip that was playing (0 is a straight cut).
+func go_to(clip: String, blend := 0.0) -> void:
+	if blend > 0.0 and sprite_frames != null and sprite_frames.has_animation(animation):
+		_fade_out_copy(blend)
 	play(clip)
 	clip_changed.emit(clip)
 
 ## Follows a trigger from the clip playing now. Returns false when it leads nowhere from here.
 func fire(trigger: String) -> bool:
-	for t in FLOW["transitions"]:
-		if t["from"] == animation and t["on"] == "trigger" and t["trigger"] == trigger:
-			go_to(t["to"])
-			return true
-	return false
+	var t := _first_ready("trigger", trigger)
+	if t.is_empty():
+		return false
+	_take(t)
+	return true
+
+## Sets an input (true or false, or a number) and takes any "as soon as" arrow that is now ready.
+func set_flow_input(input_name: String, value) -> void:
+	_values[input_name] = value
+	_settle()
+
+func get_flow_input(input_name: String):
+	return _values.get(input_name)
 
 func _on_clip_end() -> void:
+	var t := _first_ready("end")
+	if not t.is_empty():
+		_take(t)
+
+func _take(t: Dictionary) -> void:
+	go_to(t["to"], t.get("blend", 0.0))
+	_settle()
+
+# The first arrow, in file order, that leaves the clip playing now (or any clip), is about this event and has its checks holding.
+func _first_ready(event: String, trigger := "") -> Dictionary:
 	for t in FLOW["transitions"]:
-		if t["from"] == animation and t["on"] == "end":
-			go_to(t["to"])
+		var any: bool = t.get("any", false)
+		if not any and t["from"] != animation:
+			continue
+		if any and t["to"] == animation:
+			continue
+		if t["on"] != event:
+			continue
+		if event == "trigger" and t.get("trigger", "") != trigger:
+			continue
+		if event == "now" and t.get("conditions", []).is_empty():
+			continue
+		if _holds(t):
+			return t
+	return {}
+
+func _holds(t: Dictionary) -> bool:
+	for c in t.get("conditions", []):
+		if not _values.has(c["input"]):
+			return false
+		var v = _values[c["input"]]
+		var w = c["value"]
+		if (typeof(v) == TYPE_BOOL) != (typeof(w) == TYPE_BOOL):
+			return false
+		match c["op"]:
+			">":
+				if not (v > w):
+					return false
+			">=":
+				if not (v >= w):
+					return false
+			"<":
+				if not (v < w):
+					return false
+			"<=":
+				if not (v <= w):
+					return false
+			"==":
+				if not (v == w):
+					return false
+			"!=":
+				if not (v != w):
+					return false
+	return true
+
+# Takes "as soon as" arrows that are ready, one after another. At most a few, so two that point at each other can't spin.
+func _settle() -> void:
+	for _i in 8:
+		var t := _first_ready("now")
+		if t.is_empty():
 			return
+		go_to(t["to"], t.get("blend", 0.0))
+
+# A cross fade: a still copy of the old clip sits on top and fades away while the new clip plays.
+func _fade_out_copy(seconds: float) -> void:
+	var ghost := AnimatedSprite2D.new()
+	ghost.sprite_frames = sprite_frames
+	ghost.animation = animation
+	ghost.frame = frame
+	ghost.centered = centered
+	ghost.offset = offset
+	ghost.flip_h = flip_h
+	ghost.flip_v = flip_v
+	add_child(ghost)
+	var tween := create_tween()
+	tween.tween_property(ghost, "modulate:a", 0.0, seconds)
+	tween.tween_callback(ghost.queue_free)
 `;
 }
 

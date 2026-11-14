@@ -125,3 +125,87 @@
   gap: 6px;
   color: var(--text);
 }
+
+.fl-any .fl-rect {
+  fill: transparent;
+}
+.fl-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-soft);
+}
+.fl-block-head {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--text);
+}
+.fl-conds,
+.fl-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fl-cond,
+.fl-input {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.fl-cond select,
+.fl-num,
+.fl-input-name {
+  min-width: 0;
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 3px 6px;
+}
+.fl-num {
+  width: 58px;
+}
+.fl-input-name {
+  flex: 1 1 80px;
+  max-width: 120px;
+}
+.fl-input-start {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.fl-x {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.fl-x:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+.fl-switch[aria-pressed='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.fl-try-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.fl-problem {
+  color: var(--danger);
+}
