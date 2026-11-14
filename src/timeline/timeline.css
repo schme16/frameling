@@ -1192,6 +1192,16 @@
   flex: none;
   height: auto;
   border-bottom: 1px solid var(--line);
+  /* The row asks its own width, so the words "New layer" can give way before the buttons fall onto a second line. */
+  container-type: inline-size;
+  container-name: piecetools;
+}
+/* Too narrow for the label and every button: the words go (the group still says "New layer" to a screen reader, and
+   each button says what it adds) and the buttons stay on one line. */
+@container piecetools (max-width: 330px) {
+  .tl-layer-new-label {
+    display: none;
+  }
 }
 .lp-list {
   flex: 1;
