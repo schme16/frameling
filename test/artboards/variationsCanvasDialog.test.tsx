@@ -65,10 +65,10 @@ describe('Canvas size on a variation', () => {
     const a = findArtboard(doc(), v)!;
     expect(a.content!.width).toBe(50);
     expect(camOf(v).view.zoom).toBeCloseTo(0.25, 5);
-    // Undo takes the original's resize back (the cut keeps the dialog's size), then the move to the original, then the dialog's own step.
+    // Undo takes the original's resize back (the cut keeps the dialog's size), then the dialog's own step. The move to the
+    // original was only a look, so it goes back along with them rather than being a step of its own.
     store().undo();
     expect(camOf(v).view.zoom).toBeCloseTo(0.5, 5);
-    store().undo();
     store().undo();
     expect(activeId(doc())).toBe(v);
     expect(doc().width).toBe(100);

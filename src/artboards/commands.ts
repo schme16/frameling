@@ -9,6 +9,8 @@ import { activeArtboard, activeId, artboardsOf, hasArtboards } from './model';
 import { familyOf, isVariation, sourceOf } from './variations';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, sameSpeedForAll, zoomToArtboard } from './ops';
 import { mixedRates } from './rates';
+import { requestFind } from './find';
+import { showPanel } from '../ui/dock';
 import { toast } from '../ui/toast';
 
 registerPanel({ id: 'artboards', title: 'Artboards', icon: 'artboard', component: lazyPanel(() => import('./ArtboardsPanel').then((m) => m.ArtboardsPanel)), zone: 'right', order: 40, help: 'artboards' });
@@ -207,6 +209,19 @@ registerCommands([
     help: 'artboards',
     enabled: many,
     run: () => step(-1),
+  },
+  {
+    id: 'artboards.find',
+    label: 'Find an artboard by name',
+    category: 'Artboards',
+    description: 'Opens the Artboards panel with the cursor in its search box. Type part of a name and press Enter to open the first match.',
+    keywords: ['artboard', 'search', 'jump', 'go to', 'name', 'switch', 'find'],
+    help: 'artboards',
+    enabled: top,
+    run: () => {
+      showPanel('artboards');
+      requestFind();
+    },
   },
   {
     id: 'artboards.zoomTo',

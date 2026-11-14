@@ -72,23 +72,17 @@ describe('the selection each artboard was left with', () => {
     expect(sel()).toEqual([]);
   });
 
-  it('is restored by Undo and Redo of a switch', () => {
+  it('is restored when you go back to an artboard, and Undo does not walk the switches', () => {
     goToArtboard(t.b);
     store().setUi({ selection: ['b1'] });
     goToArtboard(t.a);
     expect(sel()).toEqual(['a1', 'a2']);
-    store().undo();
-    expect(open()).toBe(t.b);
+    goToArtboard(t.b);
     expect(sel()).toEqual(['b1']);
-    store().undo();
-    expect(open()).toBe(t.a);
+    goToArtboard(t.a);
     expect(sel()).toEqual(['a1', 'a2']);
-    store().redo();
-    expect(open()).toBe(t.b);
-    expect(sel()).toEqual(['b1']);
-    store().redo();
-    expect(open()).toBe(t.a);
-    expect(sel()).toEqual(['a1', 'a2']);
+    // Switching is a look: nothing here was an edit, so there is nothing to undo.
+    expect(store().canUndo()).toBe(false);
   });
 
   it('never carries a shape id from one artboard to the other', () => {

@@ -7,7 +7,7 @@ import { notify } from '../io/notify';
 import { setDocPalette } from './commands';
 import { PaletteProblem, paletteFromPixels, parsePaletteFile, writePalette, type PaletteFormat } from './palette-io';
 import { isAdobeSwatches, parseAdobeSwatches } from './ase-swatches';
-import { docPalette } from './palette';
+import { docPalette, paletteFromSwatches } from './palette';
 import { store } from '../core/store';
 import { activeDrawing } from '../tools/edit';
 
@@ -80,6 +80,14 @@ export function paletteFromDrawing(): void {
   } catch (e) {
     notify(e instanceof PaletteProblem ? e.message : 'No colours found.', 'warn');
   }
+}
+
+/** Makes the pixel palette from the file's named swatches (one undo step), and says how many colours it got. */
+export function paletteFromSwatchesNow(): void {
+  const p = paletteFromSwatches(store().get().doc);
+  if (!p) return hint('This file has no swatches of its own to use. Add some in the Swatches panel first.');
+  setDocPalette(p, 'Palette from swatches');
+  notify(`Made a palette of ${p.colors.length} colour${p.colors.length === 1 ? '' : 's'} from the swatches.`, 'success');
 }
 
 const FORMAT_INFO: Record<PaletteFormat, { ext: string; name: string }> = {

@@ -526,6 +526,53 @@ export function addClip(doc: Doc, a: number, b: number, name?: string, loop = tr
   return clip.id;
 }
 
+/** "Run", then "Run copy", then "Run copy 2": a name no clip has yet. */
+export function copyName(doc: Doc, name: string): string {
+  const taken = new Set(doc.clips.map((c) => c.name.toLowerCase()));
+  const base = name.replace(/ copy( \d+)?$/i, '');
+  let n = `${base} copy`;
+  for (let i = 2; taken.has(n.toLowerCase()); i++) n = `${base} copy ${i}`;
+  return n;
+}
+
+/**
+ * Copies a clip onto the end of the animation: every drawing it shows is cloned (one drawn twice stays one drawing),
+ * so painting on the copy never touches the original. Markers inside the clip come along. The copy keeps how it plays.
+ * Returns the new clip's id, or null when the clip is missing or the animation would pass its longest length.
+ */
+export function duplicateClip(doc: Doc, id: Id): Id | null {
+  const src = doc.clips.find((c) => c.id === id);
+  if (!src) return null;
+  const size = src.end - src.start + 1;
+  if (doc.length + size > MAX_LENGTH) return null;
+  const shift = doc.length - src.start;
+  for (const layer of doc.layers) {
+    const clones = new Map<string, Id>();
+    const made: Cel[] = [];
+    for (const cel of layer.cels) {
+      const a = Math.max(cel.start, src.start);
+      const b = Math.min(cel.start + cel.length - 1, src.end);
+      if (b < a) continue;
+      let did = clones.get(cel.drawingId);
+      if (!did) {
+        const from = doc.drawings[cel.drawingId];
+        if (!from) continue;
+        const d = cloneDrawing(from);
+        doc.drawings[d.id] = d;
+        did = d.id;
+        clones.set(cel.drawingId, did);
+      }
+      made.push({ ...plain(cel), id: uid('c'), start: a + shift, length: b - a + 1, drawingId: did });
+    }
+    layer.cels.push(...made);
+  }
+  for (const m of doc.markers.slice()) if (m.frame >= src.start && m.frame <= src.end) doc.markers.push({ ...plain(m), id: uid('m'), frame: m.frame + shift });
+  doc.length += size;
+  const clip: Clip = { ...plain(src), id: uid('k'), name: copyName(doc, src.name), start: src.start + shift, end: src.end + shift };
+  doc.clips.push(clip);
+  return clip.id;
+}
+
 export function renameClip(doc: Doc, id: Id, name: string): boolean {
   const c = doc.clips.find((x) => x.id === id);
   const n = name.trim();

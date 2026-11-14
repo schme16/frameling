@@ -118,7 +118,8 @@ export function goToArtboard(id: Id, reveal = false): void {
   const doc = store().get().doc;
   if (activeId(doc) === id || !findArtboard(doc, id)) return;
   const name = findArtboard(doc, id)!.name;
-  store().update(`Go to "${name}"`, (d) => void switchArtboard(d as Doc, id));
+  // A look, not an edit: it stays out of Undo and the file isn't marked as changed.
+  store().update(`Go to "${name}"`, (d) => void switchArtboard(d as Doc, id), { view: true });
   if (reveal) revealActive();
 }
 

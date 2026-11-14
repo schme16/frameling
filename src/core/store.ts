@@ -129,6 +129,11 @@ interface HistoryEntry {
   label: string;
   coalesce?: string;
   at: number;
+  /**
+   * A view change (looking at another artboard): kept so earlier steps still fit the content that is open, but never
+   * shown, never dirtying the file, and never the thing Undo stops on. Undo takes it along with the step before it.
+   */
+  view?: boolean;
   /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
   weight: number;
 }
@@ -267,7 +272,7 @@ export class Store {
    * Changes the document. `label` names the step in Undo/Redo ("Undo Draw stroke"). Changes with the same `coalesce`
    * key within a moment of each other merge into one undo step.
    */
-  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string } = {}): void {
+  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string; view?: boolean } = {}): void {
     let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
     const before = this.state.doc;
@@ -287,19 +292,27 @@ export class Store {
     }
     const now = Date.now();
     const last = this.undoStack[this.undoStack.length - 1];
-    if (opts.coalesce && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
+    if (opts.coalesce && !opts.view && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
       last.patches.push(...patches);
       last.inverse.unshift(...inverse);
       last.at = now;
       last.weight += weighPatches(patches) + weighPatches(inverse);
     } else {
-      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse) });
+      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse), ...(opts.view ? { view: true } : {}) });
     }
     this.trimHistory();
     this.redoStack = [];
     this.change = { from: before, to: next, patches };
-    this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
+    this.viewChange = !!opts.view;
+    // Looking around leaves the file as clean as it was.
+    this.state = { doc: next, ui: { ...this.state.ui, dirty: opts.view ? this.state.ui.dirty : true } };
     this.emit();
+  }
+
+  private viewChange = false;
+  /** True when the newest change was only a look at another artboard (nothing was edited). */
+  lastChangeWasView(): boolean {
+    return this.viewChange;
   }
 
   /** Changes UI state (no undo). */
@@ -320,13 +333,19 @@ export class Store {
   }
 
   canUndo(): boolean {
-    return this.undoStack.length > 0;
+    return this.undoStack.some((e) => !e.view);
   }
   canRedo(): boolean {
-    return this.redoStack.length > 0;
+    return this.redoStack.some((e) => !e.view);
   }
   undoLabel(): string | null {
-    return this.undoStack[this.undoStack.length - 1]?.label ?? null;
+    return this.lastReal(this.undoStack)?.label ?? null;
+  }
+
+  /** The newest step that is an edit, not a look at another artboard. */
+  private lastReal(stack: HistoryEntry[]): HistoryEntry | undefined {
+    for (let i = stack.length - 1; i >= 0; i--) if (!stack[i].view) return stack[i];
+    return undefined;
   }
 
   /** Drops the oldest steps until the history is within the number you asked for, and within its memory budget. */
@@ -341,18 +360,18 @@ export class Store {
     return this.undoStack.reduce((n, e) => n + e.weight, 0);
   }
   redoLabel(): string | null {
-    return this.redoStack[this.redoStack.length - 1]?.label ?? null;
+    return this.lastReal(this.redoStack)?.label ?? null;
   }
 
   /** Ids of the steps Undo and Redo would take next (they keep their id as they move between the two). */
   historyIds(): { undo: number | null; redo: number | null } {
-    return { undo: this.undoStack[this.undoStack.length - 1]?.id ?? null, redo: this.redoStack[this.redoStack.length - 1]?.id ?? null };
+    return { undo: this.lastReal(this.undoStack)?.id ?? null, redo: this.lastReal(this.redoStack)?.id ?? null };
   }
 
   /** The steps you can see: done ones oldest first, then undone ones in the order Redo would put them back. */
   historyList(): { done: HistoryStep[]; undone: HistoryStep[] } {
     const view = (e: HistoryEntry): HistoryStep => ({ id: e.id, label: e.label, at: e.at });
-    return { done: this.undoStack.map(view), undone: [...this.redoStack].reverse().map(view) };
+    return { done: this.undoStack.filter((e) => !e.view).map(view), undone: [...this.redoStack].reverse().filter((e) => !e.view).map(view) };
   }
 
   /**
@@ -398,22 +417,39 @@ export class Store {
   }
 
   undo(): void {
-    const e = this.undoStack.pop();
-    if (!e) return;
-    this.redoStack.push(e);
-    this.afterHistory(applyPatches(this.state.doc, e.inverse), e.inverse);
+    if (!this.canUndo()) return;
+    // Looks at other artboards on top go back first (they are part of getting back to the step's own artboard).
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    for (;;) {
+      const e = this.undoStack.pop()!;
+      this.redoStack.push(e);
+      doc = applyPatches(doc, e.inverse);
+      patches.push(...e.inverse);
+      if (!e.view) break;
+    }
+    this.afterHistory(doc, patches);
   }
 
   redo(): void {
-    const e = this.redoStack.pop();
-    if (!e) return;
-    this.undoStack.push({ ...e, coalesce: undefined });
-    this.afterHistory(applyPatches(this.state.doc, e.patches), e.patches);
+    if (!this.canRedo()) return;
+    // Looks that come before the step go first, so it lands on the artboard it was made on.
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    for (;;) {
+      const e = this.redoStack.pop()!;
+      this.undoStack.push({ ...e, coalesce: undefined });
+      doc = applyPatches(doc, e.patches);
+      patches.push(...e.patches);
+      if (!e.view) break;
+    }
+    this.afterHistory(doc, patches);
   }
 
   /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */
   private afterHistory(doc: Doc, patches?: Patch[]): void {
     const ui = this.state.ui;
+    this.viewChange = false;
     if (patches) this.change = { from: this.state.doc, to: doc, patches };
     const keep = existingSelection(doc, ui.activeLayerId, ui.frame, ui.selection);
     this.state = { doc, ui: { ...ui, dirty: true, selection: keep.length === ui.selection.length ? ui.selection : keep } };

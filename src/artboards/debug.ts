@@ -108,6 +108,36 @@ export function demoSharedFrames(): Doc {
   return doc;
 }
 
+/**
+ * For the "small gaps" pictures: a file like Quill's own. Eleven layers shared by thirteen artboards, named swatches of
+ * its own and no pixel palette, so it shows the starter one.
+ */
+export function demoQuillLike(): Doc {
+  const doc = newDoc({ name: 'Quill', width: 128, height: 128, length: 4, background: '#fffaf0', pixel: { pixelSize: 4 } });
+  doc.sharedLayers = true;
+  doc.layers = ['Shadow', 'Tail', 'Wing back', 'Body', 'Belly', 'Wing front', 'Head', 'Beak', 'Eye', 'Quill', 'Sparkle'].map((n) => newPixelLayer(n, 4));
+  doc.swatches = [
+    ['Feather', '#3b2f6b'], ['Feather light', '#6f5bb8'], ['Belly', '#f4e9d0'], ['Beak', '#ffb347'], ['Eye', '#1d1b26'], ['Quill ink', '#2a6f97'], ['Spark', '#ffe27a'], ['Shadow', '#8a8598'],
+  ].map(([name, color]) => ({ id: uid('s'), name, color }));
+  const names = ['Idle', 'Walk', 'Run', 'Jump', 'Fall', 'Land', 'Hurt', 'Talk', 'Fly', 'Dive', 'Perch', 'Sleep', 'Wave'];
+  names.forEach((n, k) => {
+    if (k > 0) model.switchArtboard(doc, model.addArtboard(doc, { name: n, length: 4 }));
+    else model.renameArtboard(doc, model.activeId(doc), n);
+    const pic = newPixelDrawing(32, 32);
+    blob(pic, k % 2 ? '#6f5bb8' : '#3b2f6b', k % 4, k % 3, k % 2);
+    doc.drawings[pic.id] = pic;
+    const body = doc.layers[3];
+    const cel = { id: uid('c'), start: 0, length: 4, drawingId: pic.id };
+    const open = model.artboardsOf(doc).find((a) => a.id === model.activeId(doc))!;
+    if (open.content) (open.content.cels ??= {})[body.id] = [cel];
+    else body.cels = [cel];
+  });
+  model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
+  doc.sprite = { way: 'boards' };
+  doc.clips = [{ id: 'k1', name: 'idle', start: 0, end: 3, loop: true }];
+  return doc;
+}
+
 /** For pictures: a layer added once (to the stack every board shares), with a little spark drawn on it on each board. */
 function addSparkles(name = 'Sparkle'): void {
   store().update('Add a layer', (d) => {
@@ -247,7 +277,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     ops,
     makeVariation,
     addSparkles,
-    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames' | 'shared' | 'speeds') => (which === 'variations' ? loadVariationsDemo() : which === 'shared' ? store().load(demoSharedFrames()) : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : which === 'speeds' ? demoSpeeds() : demoSprites())),
+    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames' | 'shared' | 'speeds' | 'quill') => (which === 'quill' ? store().load(demoQuillLike()) : which === 'variations' ? loadVariationsDemo() : which === 'shared' ? store().load(demoSharedFrames()) : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : which === 'speeds' ? demoSpeeds() : demoSprites())),
     /** The document saved to bytes, and bytes opened as the document (for checking a file round trip). */
     saveBytes: () => saveFile(store().get().doc),
     /** The same through the path Save and autosave use (compressing off the page's thread). */

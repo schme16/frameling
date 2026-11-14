@@ -18,6 +18,32 @@
 .ab-rows {
   width: 100%;
 }
+/* A long list wants its room for rows: the buttons for all of them shrink to their pictures (the words stay in the tips). */
+.ab-compact .tl-layer-new-label,
+.ab-compact .tl-btn-text {
+  display: none;
+}
+.ab-find {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 4px;
+  color: var(--muted);
+}
+.ab-find input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+.ab-none {
+  padding: 4px 12px;
+}
 .ab-rows .tl-kind.tl-thumb {
   width: 30px;
   height: 30px;
