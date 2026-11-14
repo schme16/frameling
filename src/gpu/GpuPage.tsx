@@ -8,6 +8,7 @@ import { toast } from '../ui/toast';
 import { desktop } from '../io/desktop';
 import { store } from '../core/store';
 import { readGpu, restartNeeded } from './describe';
+import { restartFrameling } from '../io/restart';
 import { copyGpuReport } from './copy';
 import { canReadGpu, refreshReport, reportStore } from './report';
 import { CACHE_CHOICES, FPS_CAPS, capEffect, isDefaultPerf, keptBytes, perfStore, resetPerf, setPerf, type ScrubQuality } from './settings';
@@ -94,7 +95,7 @@ export function GpuPage({ onGeneral }: { onGeneral: () => void }) {
           {needsRestart && !envLocked && (
             <div className="gp-pending" role="status">
               <span>{hardwareOn ? 'Hardware drawing is on, from the next start.' : 'Software drawing, from the next start.'} Restart Frameling to use it. It asks about unsaved work first.</span>
-              <button type="button" className="ui-btn ui-btn-small ui-btn-primary" onClick={() => void desktop()?.gpu?.restart()}>
+              <button type="button" className="ui-btn ui-btn-small ui-btn-primary" onClick={() => void restartFrameling()}>
                 Restart now
               </button>
             </div>

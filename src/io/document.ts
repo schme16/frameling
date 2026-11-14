@@ -10,6 +10,7 @@ import { FileProblem, loadFileAsync, saveFileAsync } from './file';
 import { notify } from './notify';
 import { askSaveInPage, saveAskAvailable } from './saveAsk';
 import { thumbnailOf } from './thumb';
+import { previewBytes } from './preview';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
@@ -116,7 +117,10 @@ export async function openDocument(): Promise<void> {
     await other.open(r.bytes, r.path);
     return;
   }
-  if (await loadBytes(r.bytes, r.path)) void api.recent.add(r.path);
+  if (await loadBytes(r.bytes, r.path)) {
+    void api.recent.add(r.path);
+    keepPictureIfMissing(r.path);
+  }
 }
 
 // Other kinds of file that open into a drawing (an Interactives package with its drawing inside), by path.
@@ -168,8 +172,34 @@ export async function openPath(path: string): Promise<boolean> {
   }
   if (other) return other.open(r.bytes, r.path);
   const ok = await loadBytes(r.bytes, r.path);
-  if (ok) void api.recent.add(r.path);
+  if (ok) {
+    void api.recent.add(r.path);
+    keepPictureIfMissing(r.path);
+  }
   return ok;
+}
+
+/**
+ * A file saved by an older Frameling has no little picture inside. Now that it is open there is one to make, kept in
+ * the app's own folder (the file itself is never changed by opening it), so Open recent can show it from now on.
+ */
+export function keepPictureIfMissing(path: string): void {
+  const api = desktop();
+  if (!api?.recent.preview || !api.recent.keepPreview) return;
+  const doc = store().rootDoc();
+  // After a pause, so opening is never slowed by it.
+  window.setTimeout(() => {
+    void (async () => {
+      try {
+        const had = await api.recent.preview!(path);
+        if (had.state !== 'none' || store().get().ui.filePath !== path) return;
+        const png = await previewBytes(rootDoc(doc));
+        if (png) await api.recent.keepPreview!(path, png);
+      } catch {
+        // A picture is a bonus.
+      }
+    })();
+  }, 1500);
 }
 
 /** Saves to the document's file, or asks where when it has none yet. Resolves true when it is saved. */
@@ -206,8 +236,10 @@ async function saveTo(path: string | null): Promise<boolean> {
     const oldPath = store().get().ui.filePath;
     const copyId = path === null && oldPath ? uid('d') : null;
     let bytes: Uint8Array;
+    // The little picture that goes inside the file, for Open recent. Never a reason not to save.
+    const preview = await previewBytes(rootDoc(doc), store().get().ui.frame);
     try {
-      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app);
+      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app, new Date(), { preview });
     } catch {
       notify("Something went wrong while packing up your drawing, so it wasn't saved. Please try again.", 'error');
       return false;
@@ -215,7 +247,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     let r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
     if (!r) return false;
     // Saved as over the same file after all: that's a plain save, so it keeps the drawing's own id.
-    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app), path: r.path, suggestedName: doc.name });
+    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app, new Date(), { preview }), path: r.path, suggestedName: doc.name });
     if (!r) return false;
     if ('error' in r) {
       notify(r.error, 'error');

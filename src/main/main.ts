@@ -1,11 +1,12 @@
 import './profile';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, screen, shell } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { watchDisplay } from './display';
-import { clearAutosave, keepAutosave, pruneKept } from './store';
+import { clearAutosave, keepAutosave, pruneKept, writeFileAtomic } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
 import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
@@ -14,6 +15,7 @@ import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
 import { applyGpuOff } from './gpu';
 import { colourSwitches } from './gpuFlags';
+import { createRestarter, fitWindow, readState, relaunchPlan, type RestartState, type WindowPlace } from './restart';
 
 // The colour profile is pinned to sRGB before the engine starts (see gpuFlags.ts for what that means on a wide-gamut screen).
 for (const [name, value] of colourSwitches()) value === undefined ? app.commandLine.appendSwitch(name) : app.commandLine.appendSwitch(name, value);
@@ -34,10 +36,26 @@ if (!gotLock) app.quit();
 // the installed app does (a dev run killed with Ctrl+C is not a crash worth Quill's time).
 const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_MARKER === '1');
 let quitting = false;
-// Preferences > Performance asked for a restart: open Frameling again once this copy has quit properly.
-let restartWanted = false;
-// An update was put in: the copy to open once this one has quit (the new AppImage, in the same place).
-let relaunchInto: string | null = null;
+// Anything that says "restart" (an update, hardware drawing, plugin memory, the command) comes through here: close the
+// way closing always does, then open again with the drawing and the window as they were (see restart.ts).
+const restartFile = () => path.join(app.getPath('userData'), 'restart.json');
+let lastPlace: WindowPlace | null = null;
+const restarter = createRestarter({
+  plan: () =>
+    relaunchPlan({
+      platform: process.platform,
+      packaged: app.isPackaged,
+      appImage: process.env.APPIMAGE ?? '',
+      portableFile: process.env.PORTABLE_EXECUTABLE_FILE ?? '',
+      exists: (f) => fs.existsSync(f),
+    }),
+  quit: () => app.quit(),
+  state: (view): RestartState => ({ at: Date.now(), file: docState.filePath, view, window: lastPlace }),
+  writeState: (s) => writeFileAtomic(restartFile(), JSON.stringify(s)),
+  relaunch: (execPath) => app.relaunch(execPath ? { execPath } : undefined),
+});
+// What the last restart left for this start, read once and taken away.
+let restoring: RestartState | null = null;
 const dataDir = () => app.getPath('userData');
 
 
@@ -104,11 +122,25 @@ const closeAsker = createCloseAsker({
   clearTimer: (t) => clearTimeout(t as NodeJS.Timeout),
 });
 
+/** Reads the file a restart left (and takes it away, so an ordinary start never finds it). */
+function takeRestartState(): RestartState | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(restartFile(), 'utf8'));
+    return readState(raw);
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(restartFile(), { force: true });
+  }
+}
+
 function createWindow() {
   closeApproved = false;
+  const where = restoring?.window ? fitWindow(restoring.window, screen.getAllDisplays().map((d) => d.workArea)) : null;
   win = new BrowserWindow({
     width: 1400,
     height: 900,
+    ...(where ?? {}),
     minWidth: 800,
     minHeight: 560,
     title: 'Frameling',
@@ -126,7 +158,11 @@ function createWindow() {
       additionalArguments: [`--frameling-version=${app.getVersion()}`],
     },
   });
-  win.once('ready-to-show', () => win?.show());
+  if (restoring?.window?.maximized) win.maximize();
+  win.once('ready-to-show', () => {
+    if (restoring?.window?.fullScreen) win?.setFullScreen(true);
+    win?.show();
+  });
   // The drawing window dying is a crash even if the app is then closed properly, so it goes in the marker.
   win.webContents.on('render-process-gone', (_e, d) => {
     if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, `The drawing window stopped (${d.reason}, exit code ${d.exitCode}).`);
@@ -148,6 +184,9 @@ function createWindow() {
   // and Quit (Ctrl+Q is the page closing its own window; a Mac's Cmd+Q and a system shutdown go through app.quit, which
   // closes the windows too) both end up here, and a close we prevent also stops the quit.
   win.on('close', (e) => {
+    // Where the window is now, for a restart to put it back.
+    const w = win;
+    if (w && !w.isMinimized()) lastPlace = { ...w.getNormalBounds(), maximized: w.isMaximized(), fullScreen: w.isFullScreen() };
     if (!holdClose({ approved: closeApproved, dirty: docState.dirty })) return;
     e.preventDefault();
     if (askingClose) return;
@@ -163,8 +202,7 @@ function createWindow() {
       askingClose = false;
       if (step === 'stay-open') {
         quitRequested = false;
-        restartWanted = false;
-        relaunchInto = null;
+        restarter.cancelled();
         return;
       }
       // "Don't save" still puts a copy aside for a week (Recover unsaved work...). The page makes the copy fresh
@@ -218,23 +256,20 @@ registerIpc({
     askingClose = false;
     if (!ok) {
       quitRequested = false;
+      restarter.cancelled();
       return;
     }
     finishClose();
   },
   closeQuestionShown: (id) => closeAsker.shown(id),
   closeQuestionAnswer: (id, answer) => closeAsker.answered(id, answer),
-  restart: () => {
-    restartWanted = true;
-    app.quit();
+  restart: (view) => restarter.request(view),
+  takeRestore: () => {
+    const r = restoring;
+    restoring = null;
+    return r ? { file: r.file, view: r.view } : null;
   },
-  finishUpdate: (into) => {
-    if (into) {
-      relaunchInto = into;
-      restartWanted = true;
-    }
-    app.quit();
-  },
+  finishUpdate: () => app.quit(),
 });
 
 app.on('second-instance', (_e, argv, cwd) => {
@@ -269,7 +304,9 @@ app.whenReady().then(() => {
   } catch {
     // A tidy-up, nothing more.
   }
-  const f = fileFromArgs(process.argv.slice(1));
+  // A restart left word of what to come back to: the drawing it had open wins over a file on the command line.
+  restoring = takeRestartState();
+  const f = restoring?.file && fs.existsSync(restoring.file) ? restoring.file : fileFromArgs(process.argv.slice(1));
   if (f) {
     grantFile(f);
     launchFile = f;
@@ -294,7 +331,7 @@ app.on('window-all-closed', () => {
 // stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
 app.on('will-quit', () => {
   quitting = true;
-  if (restartWanted) app.relaunch(relaunchInto ? { execPath: relaunchInto } : undefined);
+  restarter.quitting();
   if (watchCrashes) endRun(dataDir(), process.pid);
 });
 if (watchCrashes && process.platform !== 'win32') {

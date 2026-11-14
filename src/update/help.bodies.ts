@@ -14,7 +14,7 @@ export const bodies: Record<string, string> = {
 **What is sent:** one request to GitHub, which sees your internet address like any website does. Nothing of yours goes with it: no drawing, no name, no count of what you do. Switch it off in **Preferences > Diagnostics > Look for new versions** and Frameling never looks by itself.
 
 **How it goes in:**
-- **Linux AppImage:** the new file replaces this one in the same folder, then **Restart now** opens it.
+- **Linux AppImage:** the new file replaces this one in the same folder, then **Restart now** restarts Frameling into it (see [Restarting Frameling](help:restart)).
 - **Windows installer:** the installer opens and Frameling closes so it can finish. If you have unsaved work, Frameling asks about it first.
 - **Anything else** (a Mac, the Windows portable version, a copy running from the source folder): Frameling says where to get the new one and opens the page.
 

@@ -12,8 +12,11 @@ import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
+import { forgetSeen, keepPreview, previewOf } from './preview';
+import { isRecent, previewDir } from './store';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
+import { cleanView, type RestartAnswer, type RestartView } from './restart';
 import type { LastCrash } from './crashMarker';
 import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
@@ -37,10 +40,12 @@ export interface IpcHooks {
   crashOffered(): void;
   closeQuestionShown(id: number): void;
   closeQuestionAnswer(id: number, answer: unknown): void;
-  /** Close and open again (Preferences > Performance, after hardware drawing is switched). */
-  restart(): void;
-  /** An update is in place: open the new copy (a path) or just close so an installer can work (null). */
-  finishUpdate(relaunchInto: string | null): void;
+  /** Close the way closing does, then open again where the person was (see restart.ts). Says no when this copy can't open itself again. */
+  restart(view: RestartView): RestartAnswer;
+  /** What a restart left for this start: the drawing to open and where the person was in it. Once. */
+  takeRestore(): { file: string | null; view: RestartView } | null;
+  /** An installer is about to run: just close, so it can work. */
+  finishUpdate(): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -226,6 +231,17 @@ export function registerIpc(hooks: IpcHooks): void {
   });
   handle('recent:remove', (_e, p: string) => removeRecent(p));
   handle('recent:clear', () => clearRecent());
+  // The picture of a drawing on the list: only for files that are on it, and only a few KB leave.
+  handle('recent:preview', (_e, p: unknown) => (typeof p === 'string' && isRecent(p) ? previewOf(p, previewDir()) : { state: 'none' as const }));
+  handle('recent:keepPreview', (_e, p: unknown, png: unknown) => {
+    if (typeof p !== 'string' || !isRecent(p) || !(png instanceof Uint8Array)) return;
+    try {
+      keepPreview(previewDir(), p, png);
+      forgetSeen(p);
+    } catch {
+      // A picture is a bonus.
+    }
+  });
 
   handle('autosave:write', (_e, bytes: Uint8Array, meta: AutosaveMeta) => {
     try {
@@ -250,6 +266,8 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
+  handle('app:restart', (_e, view: unknown) => hooks.restart(cleanView(view)));
+  handle('app:restore', () => hooks.takeRestore());
   handle('app:lastCrash', () => hooks.lastCrash());
   handle('app:display', () => {
     const w = hooks.window();
@@ -290,7 +308,7 @@ export function registerIpc(hooks: IpcHooks): void {
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
-  registerGpuIpc(handle, hooks.restart);
+  registerGpuIpc(handle);
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);
   // ------------------------------------------------ plugins, templates and Interactives packages

@@ -20,6 +20,7 @@ A `.frameling` file is a zip (fflate) with:
 | `pixels/<id>.png` | One PNG per pixel drawing. `doc.json` holds the entry name in `pixels` instead of the bytes. |
 | `audio/<id>.<ext>` | One entry per sound clip (stored, not compressed). `doc.json` holds the entry name in `data`. |
 | `pictures/<id>.<ext>` | One entry per reference picture a layer still shows (`jpg` or `png`, stored as it came). `doc.json` holds the entry name in `data`. Pictures no layer shows are not written. |
+| `preview.png` | A small picture of the first frame (the first that isn't empty), longest side 160 px or less, a few KB, with the drawing's background behind it (see-through where it has none). Stored, not compressed. Written on Save by `src/io/preview.ts` for lists of files (Open recent, the welcome sheet); read without reading the rest of the zip (`src/shared/zipTail.ts`, `src/main/preview.ts`). Optional: a file from an older Frameling has none, a build that doesn't know the entry skips it, and the document never reads it. |
 
 Tilemap drawings store `cells` as a plain number list in `doc.json`. Sounds on artboards that aren't open are packed
 the same way (`src/artboards/io.ts` `packArtboards`). `saveFile(doc, appVersion)` always saves `rootDoc(doc)`

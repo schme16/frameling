@@ -1,6 +1,7 @@
 // The switch for measuring plugins' memory and speed. It lives in Preferences, Diagnostics.
 import { useEffect, useState } from 'react';
 import { desktop } from '../io/desktop';
+import { restartFrameling } from '../io/restart';
 import { setPrefs, usePrefs } from '../ui/prefs';
 import { diagnosticsAvailableNote, memoryMeasurable, refreshDiag, syncDiagnosticsFlag } from './manager';
 
@@ -37,6 +38,14 @@ export function DiagnosticsSwitch() {
           <strong>Measure plugins' memory and speed</strong> <span className="plugin-item-by">(uses more memory)</span>
           <br />
           <span className="plugin-item-by">{note}</span>
+          {!!desktop()?.plugins && measurable !== null && on !== measurable && (
+            <>
+              {' '}
+              <button type="button" className="ui-btn ui-btn-small" onClick={() => void restartFrameling()}>
+                Restart now
+              </button>
+            </>
+          )}
         </span>
       </div>
     </div>

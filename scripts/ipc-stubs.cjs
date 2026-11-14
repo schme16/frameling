@@ -14,6 +14,9 @@ const noError = () => ({ ok: true });
 /** Channels the page calls with invoke(): name -> handler (given the event, then the arguments). */
 function invokeStubs(library) {
   const own = (kind) => [...library.keys()].filter((k) => k.startsWith(kind + '/'));
+  // A pretend recent list, so a page that opens drawings or keeps their pictures sees them in Open recent. Nothing is on disk.
+  const recent = [];
+  const pictures = new Map();
   return {
     'files:open': () => null,
     'files:read': () => ({ error: 'No such file.' }),
@@ -28,10 +31,12 @@ function invokeStubs(library) {
     'files:linkPlayable': () => undefined,
     'media:aacAvailable': () => false,
     'media:toAac': () => null,
-    'recent:list': () => [],
-    'recent:add': () => undefined,
-    'recent:remove': () => undefined,
-    'recent:clear': () => undefined,
+    'recent:list': () => recent.map((path, i) => ({ path, name: String(path).split('/').pop().replace(/\.[^.]*$/, ''), openedAt: Date.now() - (i * 7 + 1) * 3600000 })),
+    'recent:add': (_e, p) => void recent.splice(0, recent.length, p, ...recent.filter((x) => x !== p)),
+    'recent:remove': (_e, p) => void recent.splice(0, recent.length, ...recent.filter((x) => x !== p)),
+    'recent:clear': () => void recent.splice(0, recent.length),
+    'recent:preview': (_e, p) => (pictures.has(p) ? { state: 'picture', url: 'data:image/png;base64,' + Buffer.from(pictures.get(p)).toString('base64') } : { state: 'none' }),
+    'recent:keepPreview': (_e, p, png) => void pictures.set(p, png),
     'autosave:write': () => true,
     'autosave:read': () => null,
     'autosave:clear': () => true,
@@ -68,7 +73,8 @@ function invokeStubs(library) {
       off: { file: false, env: false, path: '/home/you/.config/Frameling/gpu-off' }, gpuKb: 318 * 1024, appKb: 842 * 1024, vramBytes: 12 * 1024 ** 3,
     }),
     'gpu:setHardware': () => ({ ok: true, path: '/home/you/.config/Frameling/gpu-off' }),
-    'gpu:restart': () => undefined,
+    'app:restart': () => ({ ok: true }),
+    'app:restore': () => null,
     'update:facts': () => ({ how: 'page', beta: false, why: '', version: '0.0.1', platform: 'linux', arch: 'x64', canCheck: false }),
     'update:releases': () => ({ ok: true, releases: [] }),
     'update:install': () => ({ ok: false, message: 'Not in a harness.' }),

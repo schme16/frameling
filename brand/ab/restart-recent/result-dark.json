@@ -1,0 +1,24 @@
+{
+  "before": {
+    "bounds": {
+      "x": 180,
+      "y": 60,
+      "width": 1200,
+      "height": 800
+    },
+    "file": "/tmp/claude-1000/rr-work/drawings/Bouncing ball.frameling",
+    "frame": 5
+  },
+  "after": {
+    "bounds": {
+      "x": 180,
+      "y": 60,
+      "width": 1200,
+      "height": 800
+    },
+    "file": "/tmp/claude-1000/rr-work/drawings/Bouncing ball.frameling",
+    "frame": 5,
+    "dirty": false
+  },
+  "same": true
+}

@@ -66,12 +66,11 @@ export async function gpuReport(): Promise<GpuReport> {
   };
 }
 
-export function registerGpuIpc(handle: Handle, restart: () => void): void {
+export function registerGpuIpc(handle: Handle): void {
   handle('gpu:report', () => gpuReport());
   handle('gpu:setHardware', (_e, on: unknown) => {
     const file = gpuOffFilePath();
     const error = setGpuOffFile(file, on === false);
     return error ? { error } : { ok: true as const, path: file };
   });
-  handle('gpu:restart', () => restart());
 }

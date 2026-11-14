@@ -7,6 +7,7 @@ import { anyOverlayOpen } from '../ui/overlays';
 import { createStore } from '../ui/mini';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
+import { restartFrameling } from '../io/restart';
 import type { FramelingApi } from '../preload/api';
 import { applyAnswer, decide, notesLines, quietEnough, versionText, type Answer, type Memory, type Release, type UpdateFacts } from './logic';
 
@@ -71,9 +72,11 @@ export function openReleasePage(): void {
   offer.set(null);
 }
 
-/** The new copy is in: open it, or close so the installer can run. */
+/** The new copy is in: restart into it (the same restart as everywhere, so it asks about unsaved work and comes back to your drawing), or close so the installer can run. */
 export function finishUpdate(): void {
-  void bridge()?.finish();
+  const o = offer.get();
+  if (o?.phase.kind === 'ready' && o.phase.next === 'restart') void restartFrameling();
+  else void bridge()?.finish();
 }
 
 /** Closes the card after "Update now" went through but you'd rather carry on drawing: the new copy is used next time. */

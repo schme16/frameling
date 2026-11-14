@@ -14,7 +14,7 @@ A dot next to the name at the top of the window means there are changes that are
 
 Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frameling file in your file manager, and it opens in Frameling.
 
-**Open recent...** lists the drawings you had open lately, so you can jump straight back in.
+**Open recent...** lists the drawings you had open lately, each with a little picture, so you can jump straight back in. See [Open recent](help:recent-drawings).
 
 ## Putting a drawing away
 
@@ -31,6 +31,36 @@ Frameling tells you why in plain words. If a file looks damaged, check whether y
 ---
 
 Want to share your work as a video, a GIF or pictures? That's **Export**, a different thing from Save. See [Exporting](help:exporting).`,
+  'recent-drawings': `**Open recent** shows each drawing you had open lately with a little picture of it, so you know your own work at a glance.
+
+**Open it:** **File > Open recent...**, or search the command palette (**Ctrl+K**) for **Open recent**. Pick a row and the drawing opens. The start screen's **Pick up where you left off** shows the same pictures.
+
+**Where the picture comes from:** every time you save, Frameling puts a small picture of the drawing inside the file (the first frame that has something on it, a few KB). It travels with the file, so it is there on any computer. Where the drawing is see-through you see a soft checkerboard behind it.
+
+**Older drawings:** a file saved before this has no picture inside, so its row shows a folder icon. Open it once and Frameling keeps a picture for it in its own folder (your file isn't changed), and from then on it shows. Saving puts one in the file itself.
+
+**Good to know:**
+- The list appears at once and the pictures fill in a moment later, so it is never slow.
+- If a file has gone (a drive unplugged, a folder moved) its row says so. It stays on the list in case it comes back; press the **x** beside it to take it off. The file itself is never touched.
+- **Clear list** forgets them all, and the kept pictures with them.
+
+help:saving-and-opening help:version-history`,
+  restart: `Some things only change when Frameling starts again: the **Hardware drawing** switch, measuring plugins' memory, a new version that has just been put in. Wherever Frameling says that, a **Restart now** button does the whole job.
+
+**What happens:**
+- If you have unsaved work, Frameling asks first, the same question as closing: **Save**, **Don't save** or **Cancel**. **Cancel** stops the restart and nothing is lost.
+- It closes, opens again by itself, and opens the drawing you had, on the same frame, with the window where you left it.
+
+**Any time:** search the command palette (**Ctrl+K**) for **Restart Frameling**.
+
+**If it can't:** a copy that can't find its own file to open again says so, and stays open so your drawing is safe. Close it and start it again yourself; the change is waiting.
+
+**Good to know:**
+- **Don't save** means what it says: you come back to the drawing as it was last saved (a copy of the unsaved work still waits a week in **Recover unsaved work**).
+- A drawing you have never saved is saved first if you press **Save**, so it can come back.
+- After a Windows installer update, Frameling only closes so the installer can finish, and says so.
+
+help:updates help:performance help:autosave`,
   autosave: `Every minute, if you have unsaved changes, Frameling tucks a copy of your work away in its own private folder.
 
 It **never touches your own file**. It's only a safety net.
