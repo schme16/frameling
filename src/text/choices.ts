@@ -1,6 +1,7 @@
 // The text area's remembered choices (see core/choices.ts). Preferences > Behaviour lists them.
 import type { ChoiceDef } from '../core/choices';
 import type { SwapScope } from './fontSwap';
+import type { ClickAway } from './pixel/session';
 
 const fontSwapScope: ChoiceDef<SwapScope> = {
   id: 'text.fontSwapScope',
@@ -16,4 +17,18 @@ const fontSwapScope: ChoiceDef<SwapScope> = {
   ],
 };
 
-export const textChoices = [fontSwapScope];
+const pixelClickAway: ChoiceDef<ClickAway> = {
+  id: 'text.pixelClickAway',
+  title: 'Clicking away from pixel text',
+  question: 'When you are typing pixel text and click somewhere else on the picture, what should happen?',
+  category: 'Draw',
+  silent: true,
+  default: 'finish',
+  help: 'Whether a click outside the words you are typing just finishes them, or finishes them and starts new words where you clicked. A click inside the words always moves the caret.',
+  options: [
+    { value: 'finish', label: 'Just finish the words', detail: 'The click puts the pixels in the layer and nothing more. Click again to start new words.' },
+    { value: 'new', label: 'Finish and start new words there', detail: 'Handy for labelling lots of things in a row: click, type, click the next place, type.' },
+  ],
+};
+
+export const textChoices = [fontSwapScope, pixelClickAway];

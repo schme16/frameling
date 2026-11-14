@@ -25,4 +25,12 @@ export const textHelp: HelpTopic[] = [
     summary: 'Open Edit > Swap fonts to see every font your text uses, which ones this computer does not have, and swap them in one go.',
     keywords: ['swap fonts', 'replace fonts', 'missing font', 'font not found', 'font substitution', 'stand-in font', 'change every font', 'typeface'],
   },
+  {
+    id: 'pixel-text',
+    title: 'Pixel text: crisp letters on a pixel layer',
+    section: 'Drawing',
+    media: 'pixel-text.png',
+    summary: 'Pick the Text tool (T) on a pixel layer, click and type. The letters are a real pixel font, land on the grid and use your palette, with no smoothing.',
+    keywords: ['pixel text', 'pixel font', 'bitmap font', 'text on pixel layer', 'no anti-alias', 'no smoothing', 'crisp text', 'blurry text', 'label', 'pixel art text', 'letters', 'words'],
+  },
 ];

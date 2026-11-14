@@ -11,6 +11,7 @@ import { textChoices } from './choices';
 import { textCommands } from './commands';
 import { preloadFonts } from './fonts';
 import { textHelp } from './help';
+import { pixelTextCommands } from './pixel/commands';
 import { textTool } from './tool';
 
 // Text in a drawing needs its fonts whether or not the feature is on.
@@ -21,7 +22,7 @@ export const textFeature = defineFeature({
   name: 'Text',
   about: 'Words on your drawing that stay editable and can be animated.',
   optional: true,
-  commands: textCommands,
+  commands: [...textCommands, ...pixelTextCommands],
   choices: textChoices,
   panels: [{ id: 'text', title: 'Text', icon: 'text', component: lazyPanel(() => import('./TextPanel').then((m) => m.TextPanel)), zone: 'right', order: 37, help: 'text' }],
   tools: [textTool],

@@ -166,3 +166,31 @@
   align-items: center;
   gap: 10px;
 }
+
+/* Pixel text: the box that only holds the keyboard (the canvas draws the pixels), and the sample in the options. */
+.pxt-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  resize: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pxt-sample {
+  display: block;
+  width: 100%;
+  max-height: 96px;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}

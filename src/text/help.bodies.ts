@@ -1,8 +1,37 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'pixel-text': `Pixel text is writing for pixel art: a real pixel font, every letter lined up on your pixel grid, in your Paint colour, with no smoothing. So it never goes blurry, and on a palette-locked layer it only ever uses your palette.
+
+## Type something
+
+1. Click a **pixel layer** in the timeline.
+2. Pick the **Text** tool (**T**) and click where the words should start. The little bar is your caret.
+3. Type. **Enter** starts a new line.
+4. Press **Esc** (or **Ctrl+Enter**) to finish. The letters are painted into the layer as one undo step.
+
+Until you finish, the words float and you can still fix them: use the arrow keys, select with the mouse or **Shift** and the arrows, and click inside the words to move the caret. Hold **Alt** and press the arrow keys to nudge them one pixel.
+
+## Fonts and looks
+
+The Text tool's options change what the next words look like.
+
+- **Font**: **Classic** is 5 pixels wide and 7 tall with capitals and small letters. **Tiny** is 3 by 5, capitals only, for the smallest labels.
+- **Size**: whole numbers only (1 to 8 times bigger), so each font pixel stays one square block. **Ctrl+Up** and **Ctrl+Down** change it while you type.
+- **Bold**, **letter spacing** (tracking), **line spacing** (leading) and **line up** (left, middle, right of the pixel you clicked).
+
+Colour is the Paint colour, and it can change while you type. Accented letters are drawn without their accent (é as e), and letters the font doesn't have show as a question mark.
+
+## Good to know
+
+- Once finished, the words are plain pixels. They can't be retyped, but you can undo, erase, select and move them like any pixels. To change them, undo and type again.
+- Words that run off the edge of the picture are cut off at the edge.
+- Mirror drawing is ignored for text, so it never comes out doubled.
+- What a click away from the words does (just finish, or finish and start new words there) is in **Preferences > Behaviour**, under **Clicking away from pixel text**.
+
+Text on a vector layer is different: it stays editable, see [Text](help:text). For colours and the palette lock, see [the palette](help:palette).`,
   text: `## Type something
 
-1. Pick the **Text** tool (**T**) on a vector layer.
+1. Pick the **Text** tool (**T**) on a vector layer. (On a pixel layer it types crisp pixel letters instead: see [Pixel text](help:pixel-text).)
 2. Click on the stage where the words should start, and type. **Enter** starts a new line.
 3. Press **Esc** (or click somewhere else) when you're done.
 

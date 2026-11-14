@@ -94,14 +94,13 @@ describe('the waiting button on the rail', () => {
     host.remove();
   });
 
-  it('on a pixel layer it counts Text, Gradient and the rest, and names them', () => {
+  it('on a pixel layer it counts Gradient and the rest, and names them', () => {
     const k = doc();
     resetStore(k.d);
     act(() => store().setUi({ activeLayerId: k.pixel }));
     act(() => root.render(<ToolStrip />));
     expect(chip()).not.toBeNull();
     const tip = chip()!.getAttribute('data-tip-desc')!;
-    expect(tip).toContain('Text');
     expect(tip).toContain('Gradient');
     expect(tip).toContain('work on vector layers');
     expect(Number(chip()!.textContent)).toBeGreaterThanOrEqual(2);

@@ -118,7 +118,7 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
 
 /** The tools the Pixel workspace shows on a pixel layer, drawing tools first. Rig and vector-only tools are left out. */
 export const PIXEL_TOOLS = [
-  'pencil', 'eraser', 'fill', 'shade', 'dither', 'spray', 'line', 'rect', 'ellipse', 'polygon', 'star',
+  'pencil', 'eraser', 'fill', 'shade', 'dither', 'spray', 'line', 'rect', 'ellipse', 'polygon', 'star', 'text',
   // Each way of picking is its own tool (src/select/ways.ts).
   'pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand',
   'eyedropper', 'hand', 'zoom',

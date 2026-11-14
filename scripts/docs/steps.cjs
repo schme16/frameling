@@ -234,7 +234,7 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       rec = startRec(outDir, wc, s.rec === '@' ? name : s.rec, await cropOf(wc, s, width, height), s.every ?? 60);
     } else if (s.type) {
       // Types into the focused input in a way React notices.
-      await wc.executeJavaScript(`(() => { const el = document.activeElement; const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(s.type)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+      await wc.executeJavaScript(`(() => { const el = document.activeElement; const set = Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(s.type)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
       await sleep(s.after ?? 200);
     } else if (s.shot) {
       const crop = await cropOf(wc, s, width, height);

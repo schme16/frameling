@@ -7,6 +7,7 @@ import { TileEditBanner } from '../tiles/TileEditBanner';
 import { Rulers } from './Rulers';
 import { useViewSettings } from './viewSettings';
 import { onTextDoubleClick, TextEditor } from '../text/TextEditor';
+import { PixelTextInput } from '../text/pixel/PixelTextInput';
 import { ArtboardsUnderlay } from '../artboards/Underlay';
 import { SnapChip } from './SnapOptions';
 import { TurnChip } from './TurnChip';
@@ -52,6 +53,7 @@ export function CanvasView() {
         <canvas className="cv-layer cv-overlay" ref={overlayRef} />
         <ReferenceHandles />
         <TextEditor />
+        <PixelTextInput />
       </div>
       <EditBar />
       <TileEditBanner />

@@ -54,7 +54,7 @@ export const MENUS: MenuDef[] = [
     label: 'Pixel',
     title: 'Pixel tools',
     categories: ['Pixel'],
-    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.spray', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
+    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.spray', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
   },
   {
     label: 'Animate',
@@ -198,6 +198,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   slices: {
     label: 'Slices',
     items: ['pixel.showSlices', 'pixel.deleteSlice', 'view.panel.slices'],
+  },
+  pixtext: {
+    label: 'Pixel text style',
+    items: ['text.pixelFont.classic', 'text.pixelFont.tiny', '-', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller'],
+    prefixes: ['text.pixelFont.'],
   },
   pixzoom: {
     label: 'Zoom to a pixel size',
