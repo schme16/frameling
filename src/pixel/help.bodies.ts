@@ -1,6 +1,6 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-art': `Pick **Pixel art** on the New sheet (File > New): Quill asks whether you are making [one picture, an animation, frames on boards or sprites on a sheet](help:pixel-new), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
+  'pixel-art': `Pick **Pixel art** on the New sheet (**File > New drawing...**): Quill asks whether you are making [one picture, an animation, frames on boards or sprites on a sheet](help:pixel-new), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (**View > Pixel workspace**): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
 
 A sprite usually goes like this:
 

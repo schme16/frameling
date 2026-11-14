@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   camera: `A **camera** decides what part of your scene shows. Draw a big background once, then pan across it, zoom in for a close-up, or tilt for drama. Every export and playback shows what the camera sees.
 
-**Add one:** **Frames and motion > Add a camera** (or press **Add a camera** in **View > Camera**). It goes on top of your layers in the timeline and starts out showing the whole stage.
+**Add one:** **Frames and motion > Add a camera** (or press **Add a camera** in the Camera panel, **View > Panels > Camera**). It goes on top of your layers in the timeline and starts out showing the whole stage.
 
 **Move it:** with the camera layer picked, the **Camera** tool is on. On the canvas the purple frame is what the camera sees:
 - **Drag** anywhere to pan.

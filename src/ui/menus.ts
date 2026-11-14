@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Artboards',
     categories: ['Artboards'],
-    items: ['artboards.new', 'artboards.duplicate', 'artboards.delete', '-', 'artboards.previous', 'artboards.next', 'artboards.zoomTo', 'artboards.fitAll', 'artboards.lineUp', 'artboards.playAll', '-', 'sub:variations', 'sub:joined', '-', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas', '-', 'view.panel.artboards'],
+    items: ['artboards.new', 'artboards.duplicate', 'artboards.delete', '-', 'artboards.previous', 'artboards.next', 'artboards.zoomTo', 'artboards.fitAll', 'artboards.lineUp', 'artboards.playAll', 'artboards.sameSpeed', '-', 'sub:variations', 'sub:joined', '-', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas', '-', 'view.panel.artboards'],
   },
   {
     label: 'Draw',

@@ -14,6 +14,7 @@ import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
 import { currentChoice } from '../core/choices';
+import { MAX_FPS } from '../timeline/edit-core';
 import { changeVariation, reframeVariations, setVariationSize, untouchedFramings } from './variations';
 import type { FitMode } from './fit';
 import {
@@ -259,6 +260,32 @@ export function moveArtboardTo(id: Id, x: number, y: number, coalesce?: string):
 export function setArtboardBackgroundById(id: Id, color: string | null): void {
   const isVariation = !!findArtboard(store().get().doc, id)?.variationOf;
   store().update('Artboard background', (d) => void (isVariation ? changeVariation(d as Doc, id, (c) => ({ ...c, background: color })) : setArtboardBackground(d as Doc, id, color)), { coalesce: `ab-bg-${id}` });
+}
+
+/** Sets one artboard's speed (frames per second): the open one's is the document's own, the others' sit in their content. */
+export function setArtboardRate(d: Doc, id: Id, fps: number): void {
+  const n = Math.max(1, Math.min(MAX_FPS, Math.round(fps)));
+  if (!Number.isFinite(n) || d.sharedLayers) return;
+  const a = findArtboard(d, id);
+  if (!a) return;
+  if (a.variationOf) changeVariation(d, id, (c) => ({ ...c, fps: n }));
+  else if (a.content) a.content.fps = n;
+  else d.fps = n;
+}
+
+export function setArtboardRateById(id: Id, fps: number): void {
+  store().update('Change artboard speed (frames per second)', (d) => setArtboardRate(d as Doc, id, fps), { coalesce: `ab-fps-${id}` });
+}
+
+/** Gives every artboard the speed of the open one. Originals first, so a variation that follows one follows it. */
+export function sameSpeedForAll(): number {
+  const n = store().get().doc.fps;
+  store().update('Give every artboard the same speed', (d) => {
+    const list = artboardsOf(d as Doc);
+    for (const a of list) if (!a.variationOf) setArtboardRate(d as Doc, a.id, n);
+    for (const a of list) if (a.variationOf) setArtboardRate(d as Doc, a.id, n);
+  });
+  return n;
 }
 
 export function arrangeAll(columns = 0): void {

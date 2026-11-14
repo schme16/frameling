@@ -271,6 +271,7 @@ registerCommands([
     keywords: ['event', 'flag', 'note'],
     run: () => {
       const o = ops.addMarker();
+      say(o);
       if (o.id) setTl({ editing: { kind: 'marker', id: o.id } });
     },
   },

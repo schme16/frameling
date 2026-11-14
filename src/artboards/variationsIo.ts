@@ -58,6 +58,7 @@ const STAGE_CHECKS: Record<string, Check> = {
   height: (v) => int(v, 1) && v <= 16384,
   background: (v) => v === null || str(v),
   length: (v) => int(v, 1) && v <= 1_000_000,
+  fps: (v) => int(v, 1) && v <= 120,
   clips: (v) => Array.isArray(v) && v.every((c) => isObj(c) && str(c.id)),
   markers: (v) => Array.isArray(v) && v.every((m) => isObj(m) && str(m.id)),
   flow: obj,

@@ -11,6 +11,7 @@ import { fit, hint } from './controller';
 import { ANCHORS, anchorOffset, clampSize, hasPixelArt, MAX_SIZE, NOTE_TEXT, pixelScaleStep, resizeCanvas, scaleArtwork, scaledSize, type Anchor } from './resize';
 import { Icon } from '../ui/icons';
 import { activeId, findArtboard } from '../artboards/model';
+import { hasArtboards } from '../artboards/model';
 import { reframeVariations, setVariationSize, untouchedFramings } from '../artboards/variations';
 import { currentChoice } from '../core/choices';
 import type { FitMode } from '../artboards/fit';
@@ -79,6 +80,7 @@ export type SettingsField = 'size' | 'fps';
 
 function DocumentSettings({ close, field }: { close: () => void; field?: SettingsField }) {
   const doc = store().get().doc;
+  const many = hasArtboards(doc);
   const unit = getPrefs().units;
   const [mode, setMode] = useState<Mode>('canvas');
   const [w, setW] = useState(doc.width);
@@ -256,8 +258,8 @@ function DocumentSettings({ close, field }: { close: () => void; field?: Setting
         ))}
 
         <div className="ds-row">
-          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
-            <span>Speed (frames per second)</span>
+          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc={`How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.${many && !doc.sharedLayers ? ' With several artboards this is the speed of the one you are on.' : ''}`}>
+            <span>Speed (frames per second){many && !doc.sharedLayers ? ', this artboard' : ''}</span>
             <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
           </label>
           <div className="ui-field">

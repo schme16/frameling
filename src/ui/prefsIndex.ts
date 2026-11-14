@@ -110,6 +110,7 @@ export const SETTING_ROWS: PrefRow[] = [
 
 /** Other names for the remembered choices in Behaviour, by id. A choice with no entry is still found by its title and its question. */
 export const CHOICE_ALSO: Record<string, string[]> = {
+  'recolour.where': ['palette swap', 'replace colour', 'recolor', 'this layer', 'this frame', 'selection', 'cel', 'scope', 'find and replace', 'limit recolour'],
   'artboards.fit': ['letterbox', 'pillarbox', 'fit to frame', 'scale to fit', 'crop to fill', 'fill', 'aspect ratio', 'shot size', 'artboard size', 'resize to fit', 'mixed sizes'],
   'artboards.barColor': ['letterbox colour', 'bars', 'black bars', 'background colour', 'padding colour', 'border colour', 'matte'],
   'artboards.pictureSize': ['canvas size', 'image size', 'document size', 'resolution', 'export size', 'video size', 'output size', 'dimensions', 'width height'],

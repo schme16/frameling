@@ -153,6 +153,17 @@ export function demoSprites(): Doc {
   return doc;
 }
 
+/** The three blob sprites, each at a speed of its own: a slow idle, a run on twos and a quick jump. For pictures. */
+export function demoSpeeds(): Doc {
+  const doc = demoSprites();
+  const rates = [6, 12, 24];
+  model.artboardsOf(doc).forEach((a, k) => {
+    if (a.content) a.content.fps = rates[k];
+    else doc.fps = rates[k];
+  });
+  return doc;
+}
+
 const rect = (x: number, y: number, w: number, h: number, fill: string) => ({ id: uid('s'), type: 'path' as const, paths: [{ closed: true, points: [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }] }], fill, stroke: null, opacity: 1 });
 const circle = (cx: number, cy: number, r: number, fill: string) => {
   const k = 0.5523 * r;
@@ -236,7 +247,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     ops,
     makeVariation,
     addSparkles,
-    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames' | 'shared') => (which === 'variations' ? loadVariationsDemo() : which === 'shared' ? store().load(demoSharedFrames()) : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : demoSprites())),
+    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames' | 'shared' | 'speeds') => (which === 'variations' ? loadVariationsDemo() : which === 'shared' ? store().load(demoSharedFrames()) : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : which === 'speeds' ? demoSpeeds() : demoSprites())),
     /** The document saved to bytes, and bytes opened as the document (for checking a file round trip). */
     saveBytes: () => saveFile(store().get().doc),
     /** The same through the path Save and autosave use (compressing off the page's thread). */

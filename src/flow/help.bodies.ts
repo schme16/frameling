@@ -3,7 +3,7 @@ import { ix } from '../features/flags';
 export const bodies: Record<string, string> = {
   'clip-flow': `A character usually has a few [clips](help:timeline-clips): **idle**, **run**, **jump**, **land**. The **clip flow** says how they connect, so a game${ix(' or Interactives')} knows what to play next. Game makers call this a *state machine*.
 
-Open **View > Clip flow**. Every clip is a box.
+Open **Frames and motion > Clip flow (state machine)...**. Every clip is a box.
 - **Drag a box's dot** onto another box to draw an arrow: "after this, that".
 - **Click an arrow** to choose when it happens:
   - **At the end**: when the first clip finishes. A looping clip finishes each time round.

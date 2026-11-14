@@ -201,6 +201,11 @@
 .ab-size {
   white-space: nowrap;
 }
+/* The speed sits on its own line, so a narrow panel never cuts it off. */
+.ab-rate {
+  display: block;
+  white-space: nowrap;
+}
 .ab-badge {
   display: inline-flex;
   align-items: center;

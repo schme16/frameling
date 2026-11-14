@@ -18,6 +18,14 @@ registerHelpTopics([
     keywords: ['shots', 'scenes', 'storyboard', 'animatic', 'sequence', 'cuts', 'film', 'play all', 'artboards animation'],
   },
   {
+    id: 'artboards-speed',
+    title: 'A speed for each artboard',
+    section: 'Animating',
+    media: 'artboards-speed.png',
+    summary: 'Each artboard plays at its own frames per second, so a 24 fps film shot and a 12 fps sprite can live in one file and export at their own speeds.',
+    keywords: ['fps', 'frame rate', 'speed', 'frames per second', 'different speeds', 'artboard speed', '12 fps', '24 fps', 'same speed', 'mixed frame rates'],
+  },
+  {
     id: 'artboards-letterbox',
     title: 'Shots of different sizes: bars or fill',
     section: 'Animating',

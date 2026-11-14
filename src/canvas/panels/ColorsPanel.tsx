@@ -261,7 +261,7 @@ export function ColorsPanel() {
           </div>
         </>
       )}
-      <button type="button" className="cv-action cv-recolour-open" title="Recolour the whole animation: swap one colour for another everywhere, on every frame and every layer, vector and pixel (palette swap)" aria-label="Recolour the whole animation" onClick={openRecolour}>
+      <button type="button" className="cv-action cv-recolour-open" title="Recolour the whole animation: swap one colour for another everywhere, on every frame and every layer, vector and pixel (palette swap)" aria-label="Recolour the whole animation" onClick={() => openRecolour()}>
         <span className="cv-words-long">Recolour the whole animation...</span>
         <span className="cv-words-short" aria-hidden="true">
           Recolour all...

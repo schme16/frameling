@@ -11,7 +11,7 @@ Now pick the [Pose tool](help:rig-posing) (**Shift+K**), go to another frame and
 
 The skeleton lives on its own **Bones** layer in the timeline. Each key on it is a pose. Hide it and the bones still move your character; it never shows in exports.
 
-Want to see one working first? **File > New** and pick **Paper doll puppet**: it has a rig and a walk ready to play with.`,
+Want to see one working first? **File > New drawing...** and pick **Paper doll puppet**: it has a rig and a walk ready to play with.`,
   'rig-bones': `Pick the **Bone tool** (**K**) and **drag** to draw a bone, from its joint to its tip.
 
 - **Chains:** start a drag on the **tip** of a bone (the small dot) and the new bone hangs from it, like an upper arm, then a lower arm, then a hand.

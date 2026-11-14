@@ -52,6 +52,8 @@ function Counter() {
 
 function FpsField() {
   const fps = useStore((s) => s.doc.fps);
+  // With several artboards the speed is this one's own; the others keep theirs.
+  const own = useStore((s) => hasArtboards(s.doc) && !s.doc.sharedLayers);
   const [text, setText] = useState<string | null>(null);
   const commit = (v: string) => {
     setText(null);
@@ -59,7 +61,7 @@ function FpsField() {
     if (Number.isFinite(n)) ops.setFps(n);
   };
   return (
-    <label className="tl-fps" title="How many frames play each second (fps). 12 is a classic hand-drawn pace, 24 is smooth film.">
+    <label className="tl-fps" title={`How many frames play each second (fps). 12 is a classic hand-drawn pace, 24 is smooth film.${own ? ' This artboard keeps its own speed; the others are not changed.' : ''}`}>
       <input
         type="text"
         inputMode="numeric"

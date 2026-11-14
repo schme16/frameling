@@ -7,6 +7,7 @@ import { PictureSizeControl } from './PictureSize';
 import type { ExportSettings } from '../export/types';
 import { customPicture } from './fit';
 import { artboardsOf, hasArtboards, activeArtboard, sizeOf } from './model';
+import { rateOf, speedNote } from './rates';
 import { familyIds } from './variations';
 import { artboardExport, currentArtboardExport, modeOff, setArtboardExport, type ArtboardExportMode } from './export';
 
@@ -36,6 +37,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
   const familyOn = family.length > 1 && mode !== 'one' && chosen.size === family.length && family.every((id) => chosen.has(id));
   const total = list.filter((a) => chosen.has(a.id)).reduce((t, a) => t + (a.content ? a.content.length : doc.length), 0);
   const picked = list.filter((a) => chosen.has(a.id)).map((a) => ({ width: sizeOf(doc, a).w, height: sizeOf(doc, a).h }));
+  const speeds = mode === 'one' ? null : speedNote(mode, list.filter((a) => chosen.has(a.id)).map((a) => ({ name: a.name, fps: rateOf(doc, a.id) })));
   const pic = currentPictureSize(picked);
   const picText = `${pic.width} x ${pic.height}`;
   const sizes = new Set([...picked.map((p) => `${p.width}x${p.height}`), `${pic.width}x${pic.height}`]);
@@ -91,6 +93,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
       )}
       {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
       {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}
+      {speeds && <p className="ex-note">{speeds}</p>}
     </fieldset>
   );
 }

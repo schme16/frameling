@@ -9,7 +9,7 @@ export const bodies: Record<string, string> = {
 3. Give it a name and a line about what it is and what to try. Tags help you find it later.
 4. Choose **Save template**.
 
-It shows up under **Yours** when you choose **File > New**. Picking it gives you a fresh copy; the template itself never changes.
+It shows up under **Yours** when you choose **File > New drawing...**. Picking it gives you a fresh copy; the template itself never changes.
 
 ## Share one
 

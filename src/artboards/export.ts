@@ -292,7 +292,7 @@ export async function atlasFiles(root: Doc, ids: Id[], settings: ExportSettings,
       const img = readPixels(drawFrame(canvas, doc, f, { width: w, height: h, scale, background: bg, crisp }));
       frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
     }
-    sets.push({ name, frames, clips: doc.clips });
+    sets.push({ name, frames, clips: doc.clips, fps: doc.fps });
   }
   onProgress({ done: total, total, label: 'Packing the sheet' });
   const base = `${fileSafe(root.name)}-atlas`;

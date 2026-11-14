@@ -4,7 +4,8 @@ import { useStore } from '../core/store';
 import { Num } from '../symbols/PropertiesPanel';
 import { artPixelOf, artSizeOf, docSizeOf } from '../pixel/units';
 import { artboardDoc, exportNameOf, findArtboard, sizeOf } from './model';
-import { renameArtboardById, resizeArtboard, setArtboardBackgroundById, setExportNameById } from './ops';
+import { rateOf } from './rates';
+import { renameArtboardById, resizeArtboard, setArtboardBackgroundById, setArtboardRateById, setExportNameById } from './ops';
 import './artboards.css';
 
 /** Name, export name, size and background of one artboard. Used by the panel and the Artboard tool's options. */
@@ -36,6 +37,11 @@ export function ArtboardFields({ id }: { id: Id }) {
         <Num label="W" value={w} onChange={(v) => resize(v, h)} title="Width in pixels. The drawing stays put at the top-left." />
         <Num label="H" value={h} onChange={(v) => resize(w, v)} title="Height in pixels. The drawing stays put at the top-left." />
       </div>
+      {!doc.sharedLayers && (
+        <div className="sy-grid">
+          <Num label="Speed" value={rateOf(doc, a.id)} onChange={(v) => setArtboardRateById(a.id, v)} suffix="fps" title="Frames per second for this artboard alone. Each artboard keeps its own, so a 24 fps shot and a 12 fps sprite can sit in one file." />
+        </div>
+      )}
       <div className="ab-bg">
         <span>Background</span>
         <input type="color" value={bg ?? '#ffffff'} disabled={bg === null} aria-label="Background colour" onChange={(e) => setArtboardBackgroundById(a.id, e.target.value)} />

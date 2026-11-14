@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol. Pixel art works too: see [Symbols from pixel art](help:symbols-pixel).
 
-**The Library** lists every symbol in your document (**View > Library**):
+**The Library** lists every symbol in your document (**View > Panels > Library**):
 - **Drag** a symbol onto the canvas to place a copy, or press its **+** button to drop one in the middle.
 - **Click its name** to rename it.
 - The pencil opens it so you can [draw inside it](help:symbols-editing). The copy button makes a separate symbol you can change on its own.
@@ -41,7 +41,7 @@ Draw, add layers and add frames just as you would on the main stage. Every copy 
 The bar at the top of the canvas shows where you are, like **Scene › Bird › Wing**. Click any name to go back to it, or press **Done**. You can also double-click an empty spot, or press **Shift+F9**, to go back out one level.
 
 Undo works as usual. Going into and out of a symbol are steps too, so undoing far enough takes you back out.`,
-  'symbol-properties': `Select a symbol on the canvas and open **View > Symbol and motion**.
+  'symbol-properties': `Select a symbol on the canvas and open **View > Panels > Symbol and motion**.
 
 **Shows** picks which symbol this copy is. Swapping keeps its place, size and turn, which is handy for mouth shapes or hand poses.
 

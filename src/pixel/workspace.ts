@@ -25,7 +25,7 @@ registerChoice({
   options: [
     { value: 'always', label: 'Always', did: 'Switched workspace to match your drawing.', detail: 'Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.' },
     { value: 'later', label: 'Not now', detail: 'Stay as you are this time. Frameling asks again next time it matters.', once: true },
-    { value: 'never', label: 'Never', detail: 'Keep my layout as it is. View > Workspaces switches any time.' },
+    { value: 'never', label: 'Never', detail: 'Keep my layout as it is. The workspace lines in the View menu switch any time.' },
   ],
 });
 
