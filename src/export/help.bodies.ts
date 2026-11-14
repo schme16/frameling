@@ -52,7 +52,7 @@ Plays almost everywhere: phones, social media, slides. It can't have a see-throu
 
 Great for websites. It can keep a **transparent background** on computers that support it. If yours doesn't, the option is greyed out and says so.
 
-WebM uses **AV1** when your computer can make it (smaller files, slower to make), and falls back to VP9, then VP8. You can pick **VP9** instead with the *Video codec* buttons in the export window, or in Preferences > Behaviour. If the codec you like can't keep a see-through background but another one can, Frameling uses that one when you ask for transparency.
+WebM uses **VP9**, which plays almost everywhere. **AV1** makes smaller files, but some players and browsers can't play it. Pick one with the *Video codec* buttons in the export window, or in Preferences > Behaviour. A see-through background always uses a codec that can keep it.
 
 ## Animated GIF
 

@@ -2,6 +2,16 @@ import { getChoiceDef, setChoice, useChoice } from '../../core/choices';
 import type { ExportUiProps } from '../registry';
 import '../choices';
 
+/** The line under the codec buttons: which codec this WebM is made with (it can differ from the pick when this computer cannot make that one). */
+export function webmCodecNote(codec: string | null, alphaCodec: string | null | undefined): string {
+  const name = codec === 'av1' ? 'AV1' : codec === 'vp9' ? 'VP9' : 'VP8';
+  const alpha = alphaCodec && alphaCodec !== codec ? ` (${alphaCodec.toUpperCase()} for the see-through background)` : '';
+  return `Making this one with ${name}${alpha}.`;
+}
+
+/** What each codec is for, always shown so nobody finds out from a video that will not play. */
+export const WEBM_CODEC_WORDS = 'VP9 plays almost everywhere. AV1 makes smaller files, but some players and browsers cannot play it.';
+
 /** WebM: which codec, and the one this computer will use. */
 export function WebmOptions({ s, support }: ExportUiProps) {
   const webmPref = useChoice<string>('export.webmCodec');
@@ -16,7 +26,8 @@ export function WebmOptions({ s, support }: ExportUiProps) {
           </button>
         ))}
       </div>
-      <p className="ex-note">{v?.ok ? `Making this one with ${v.codec === 'av1' ? 'AV1' : v.codec === 'vp9' ? 'VP9' : 'VP8'}${s.transparent && v.alphaCodec && v.alphaCodec !== v.codec ? ` (${v.alphaCodec.toUpperCase()} for the see-through background)` : ''}.` : 'Also in Preferences > Behaviour.'}</p>
+      <p className="ex-note">{v?.ok ? webmCodecNote(v.codec, s.transparent ? v.alphaCodec : null) : 'Also in Preferences > Behaviour.'}</p>
+      <p className="ex-note">{WEBM_CODEC_WORDS}</p>
     </fieldset>
   );
 }

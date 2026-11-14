@@ -17,6 +17,8 @@ export type PaletteItem =
 export interface PaletteHit {
   item: PaletteItem;
   score: number;
+  /** A heading to list this row under when nothing is typed ("Recent", "Try these"). Otherwise its category. */
+  group?: string;
 }
 
 /** Id prefix of the "Turn on <feature>" entries, which only show once someone types. */
@@ -87,7 +89,15 @@ export function scoreItem(query: string, it: PaletteItem): number {
   return total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0);
 }
 
-/** Ranked results for a query. With no query: recently used commands first, then everything by category. */
+/**
+ * The things nearly everyone does in their first minutes, in the order they come up: start something, open
+ * something, keep it, share it, take a step back, ask for help. Shown under "Try these" until recent commands build up.
+ */
+export const STARTER_COMMANDS = ['file.new', 'file.open', 'file.save', 'file.export', 'edit.undo', 'help.contents'];
+/** Once someone has used this many commands, their own recents are the list and the starters step aside. */
+export const STARTERS_UNTIL_RECENT = 3;
+
+/** Ranked results for a query. With no query: recent commands, then "Try these" until recents build up, then everything by category. */
 export function rankPalette(query: string, items: PaletteItem[] = paletteItems(), recent: string[] = recentCommands(), limit = 60): PaletteHit[] {
   if (!query.trim()) {
     const byId = new Map(items.map((i) => [`${i.kind}:${i.id}`, i]));
@@ -96,10 +106,19 @@ export function rankPalette(query: string, items: PaletteItem[] = paletteItems()
     recent.forEach((id, n) => {
       const it = byId.get(`command:${id}`);
       if (it) {
-        out.push({ item: it, score: 1000 - n });
+        out.push({ item: it, score: 1000 - n, group: 'Recent' });
         seen.add(`command:${id}`);
       }
     });
+    if (out.length < STARTERS_UNTIL_RECENT) {
+      STARTER_COMMANDS.forEach((id, n) => {
+        const it = byId.get(`command:${id}`);
+        if (it && !seen.has(`command:${id}`)) {
+          out.push({ item: it, score: 500 - n, group: 'Try these' });
+          seen.add(`command:${id}`);
+        }
+      });
+    }
     const rest = items.filter((i) => i.kind === 'command' && !i.id.startsWith(TURN_ON_PREFIX) && !seen.has(`command:${i.id}`)).sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
     for (const it of rest) out.push({ item: it, score: 0 });
     return out.slice(0, limit);
@@ -125,6 +144,7 @@ export interface SettingItem {
 export interface ShownHit {
   item: PaletteItem | SettingItem;
   score: number;
+  group?: string;
 }
 
 /** The rows of Preferences the palette looks through: the settings, the remembered choices and the features. The Keyboard page's commands are the palette's own. */

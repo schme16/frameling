@@ -36,3 +36,13 @@ export const ART_ZOOM_PRESETS = [100, 200, 400, 800, 1600, 3200] as const;
 
 /** How many frames a new pixel file starts with: one picture is a single frame, an animation gets four to play with. */
 export const START_FRAMES = { picture: 1, animation: 4 } as const;
+
+/**
+ * What to say after the first pixel layer lands on a page: how many pixels it has and how wide each one is. Pixel
+ * layers after the first copy the size of the others, so there is nothing new to say then (null).
+ */
+export function newPixelLayerNote(pageW: number, pageH: number, pixel: number, hadPixelLayer: boolean): string | null {
+  if (hadPixelLayer) return null;
+  const art = artSizeOf(pageW, pageH, pixel);
+  return `Pixel layer: ${art.w} x ${art.h} pixels, each one ${pixel} wide on the page.`;
+}

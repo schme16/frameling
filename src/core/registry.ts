@@ -140,6 +140,8 @@ export type DockZone = 'left' | 'right' | 'bottom' | 'top';
 export interface PanelDef {
   id: string;
   title: string;
+  /** What its show-or-hide command says in the menus and the palette, when the panel's own name needs more words. */
+  commandLabel?: string;
   /** Icon name from the shared icon set (src/ui/icons.tsx). */
   icon: string;
   component: ComponentType;
@@ -207,6 +209,8 @@ export interface ToolContext {
 export interface Tool {
   id: string;
   label: string;
+  /** What its menu and palette command says when the rail's short name needs more words ("Draw bones (Bone tool)"). */
+  commandLabel?: string;
   /** Icon name from src/ui/icons.tsx. */
   icon: string;
   /** Default shortcut (a single key like 'b', or 'Shift+K'); registered as a `tools.<id>` command automatically. */

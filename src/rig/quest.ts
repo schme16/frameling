@@ -88,7 +88,7 @@ export const BONES_QUEST: Quest = {
       enter: () => showPanel('rig'),
       done: (c) => !!rigOf(c.state),
       show: 'rig.addBones',
-      hint: 'It is in the Rig panel on the right, or Rig > Add bones in the menu.',
+      hint: 'It is in the Rig panel on the right, or Skeleton (rig) > Add a skeleton to this drawing in the menu.',
       help: 'rig-bones',
     },
     {
@@ -108,7 +108,7 @@ export const BONES_QUEST: Quest = {
       target: SEL.rig,
       done: (c) => attached(c.state) >= 2,
       show: () => void autoAttach(),
-      hint: 'Rig > Attach parts to bones does the same.',
+      hint: 'Skeleton (rig) > Attach parts to bones does the same.',
       help: 'rig-attach',
     },
     {

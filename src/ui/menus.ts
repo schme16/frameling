@@ -64,6 +64,7 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'Rig',
+    title: 'Skeleton (rig)',
     categories: ['Rig'],
     items: ['rig.addBones', 'tools.bone', 'tools.pose', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'view.panel.rig', 'rig.boneLook'],
   },
@@ -79,8 +80,10 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'Help',
-    categories: ['Help'],
-    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', 'quill.nudges', '-', 'help.about'],
+    // Nothing joins by category: shortcut sets live in Preferences > Keyboard, the quest controls with the Quests panel
+    // and the pen check in Preferences. They stay in the command palette.
+    categories: [],
+    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', 'quill.nudges', '-', 'help.sendReport', 'help.sendCrashNotes', '-', 'help.about'],
   },
 ];
 

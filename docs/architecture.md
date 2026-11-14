@@ -369,7 +369,7 @@ Where things live:
 
 - `plan.ts` (pure): range, size and name; limits 8192 px per side, 5000 frames, 16384 px sheets.
 - `run.ts` `runExport`: draws each frame with the shared renderer (`draw.ts`) and hands it to the format's writer.
-- `capabilities.ts`: what this machine can encode (WebCodecs through mediabunny: H.264 for MP4; AV1, VP9 or VP8 for
+- `capabilities.ts`: what this machine can encode (WebCodecs through mediabunny: H.264 for MP4; VP9 (the default), AV1 or VP8 for
   WebM, transparency only with VP9 and VP8).
 - `carries.ts` + `CarryNotes.tsx`: a table of what each format keeps (text, particles, tint, blend, effects, clipping,
   masks, folders, bones, gradient alpha) as kept, shapes, picture or lost; `carryWarnings` tells the person before
