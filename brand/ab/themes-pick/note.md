@@ -10,3 +10,5 @@
   day one, instead of a small round dot. Both means a bigger corner with the two icons on it.
 - **earmark-curved-dark / earmark-curved-light**: the fold is curved now, like a page corner turned over, and the
   sun or moon on it is bigger and sits where the fold is widest.
+- **earmark-wiggly-dark / earmark-wiggly-light**: a wiggle along the fold, and the sun or moon bigger and sitting in
+  the middle of the yellow rather than tucked into the corner.

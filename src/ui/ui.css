@@ -3261,37 +3261,38 @@ body.ui-resizing * {
   padding: 0 2px;
 }
 .th-card-badges {
-  /* A folded corner on the card, curved like a page turned over, with the sun or the moon sitting on it. */
+  /* A folded corner on the card, turned over with a wiggle in it, the sun or the moon sitting in the middle of it. */
   position: absolute;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 1px;
-  width: 54px;
-  height: 54px;
-  /* The icon sits where the fold is widest, not at its point. */
-  padding: 7px 0 0 7px;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  /* The fold's weight is up in its corner, so the icon is nudged there to sit in the middle of the yellow. */
+  padding: 0 19px 19px 0;
   border-top-left-radius: var(--radius-small);
   background: var(--chosen-bg);
   color: var(--chosen-fg);
-  clip-path: polygon(100% 0%, 98.2% 10.5%, 95.4% 20.8%, 91.5% 30.9%, 86.7% 40.7%, 81% 50.1%, 74.4% 58.8%, 67% 67%, 58.8% 74.4%, 50.1% 81%, 40.7% 86.7%, 30.9% 91.5%, 20.8% 95.4%, 10.5% 98.2%, 0% 100%, 0% 0%);
+  clip-path: polygon(100% 0%, 99.5% 6.8%, 99.1% 13.7%, 98.1% 20.6%, 95.9% 27.4%, 92.3% 33.6%, 87.4% 39.1%, 82.2% 44.1%, 77.5% 49.2%, 73.6% 54.6%, 70.6% 60.9%, 67.8% 67.8%, 64.4% 74.7%, 59.9% 80.6%, 54% 85%, 47.2% 87.8%, 40% 89.4%, 32.9% 90.5%, 26.2% 92%, 19.8% 94.1%, 13.3% 96.6%, 6.7% 98.8%, 0% 100%, 0% 0%);
 }
 .th-card-badges.is-both {
-  width: 64px;
-  height: 64px;
+  width: 62px;
+  height: 62px;
+  padding: 0 21px 21px 0;
 }
 .th-card-badge {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 21px;
+  height: 21px;
 }
 .th-card-badge svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 .th-card-pick {
   position: relative;
