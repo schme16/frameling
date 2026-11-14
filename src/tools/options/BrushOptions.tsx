@@ -10,6 +10,7 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
+import { BrushPresetRow } from '../../brushes/BrushPresetRow';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -58,6 +59,7 @@ function VectorBrushOptions() {
   const pressure = brush.thinning !== 0;
   return (
     <div className="cv-options">
+      <BrushPresetRow />
       <BrushPreview brush={brush} color={color} />
       <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
       <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">

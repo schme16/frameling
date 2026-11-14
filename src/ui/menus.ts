@@ -48,7 +48,7 @@ export const MENUS: MenuDef[] = [
     label: 'Draw',
     title: 'Tools and layers',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange', 'Effects'],
-    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'tiles.addLayer', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
+    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'tiles.addLayer', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
@@ -144,6 +144,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Recolour',
     items: ['colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
     prefixes: ['colors.recolour'],
+  },
+  brushes: {
+    label: 'Saved brushes',
+    items: ['brush.saveAs', 'brush.update', 'brush.rename', 'brush.delete', '-', 'brush.next', 'brush.previous', '-', 'brush.saveFile', 'brush.copyText', 'brush.addFile', 'brush.pasteText'],
+    prefixes: ['brush.pick.'],
   },
   toolopts: {
     label: 'Brush and tool options',
