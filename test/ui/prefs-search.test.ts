@@ -75,6 +75,7 @@ describe('the index keeps up with the pages', () => {
     keyboard: ['src/ui/PrefsModal.tsx'],
     snapping: ['src/ui/PrefsModal.tsx', 'src/canvas/SnapOptions.tsx'],
     pen: ['src/tablet/PenPage.tsx'],
+    performance: ['src/gpu/GpuPage.tsx'],
     themes: ['src/ui/themes/ThemesPage.tsx'],
     workspaces: ['src/ui/WorkspacesPage.tsx'],
     plugins: ['src/plugins/PluginsPage.tsx'],
@@ -83,7 +84,7 @@ describe('the index keeps up with the pages', () => {
     behaviour: ['src/ui/ChoiceDialog.tsx'],
   };
   it('has a row for every labelled row on the pages', () => {
-    for (const page of ['general', 'keyboard', 'pen'] as const) {
+    for (const page of ['general', 'keyboard', 'pen', 'performance'] as const) {
       const labels = [...src(...PAGE_FILES[page]).matchAll(/<Row label="([^"]+)"/g)].map((m) => m[1]);
       expect(labels.length).toBeGreaterThan(0);
       // General and Keyboard share a file: a label counts if any page of that file has it.

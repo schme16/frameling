@@ -111,6 +111,51 @@ export interface BetaBridge {
   request(req: { url: string; method?: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }): Promise<{ status: number; type: string; text: string } | { code: string; message?: string }>;
 }
 
+/** One graphics card the computer has, as Electron reports it. */
+export interface GpuDevice {
+  vendorId: number;
+  deviceId: number;
+  /** The one drawing the window. */
+  active: boolean;
+  name?: string;
+  driver?: string;
+}
+
+/** What the desktop side found out about drawing, raw. src/gpu/describe.ts turns it into plain words. */
+export interface GpuReport {
+  platform: string;
+  arch: string;
+  electron: string;
+  chromium: string;
+  devices: GpuDevice[];
+  glRenderer?: string;
+  glVendor?: string;
+  glVersion?: string;
+  /** For example "(gl=egl-angle,angle=vulkan)": which way the browser engine talks to the card. */
+  glImplementation?: string;
+  skia?: string;
+  /** The engine's own verdict per job: "enabled_on", "disabled_software", "disabled_off" and so on. */
+  features: Record<string, string>;
+  hardwareAcceleration: boolean;
+  /** The command line switches that matter for drawing, as they were given. */
+  flags: string[];
+  off: { file: boolean; env: boolean; path: string };
+  /** Memory the graphics process holds, and all of Frameling's processes together, in kilobytes. */
+  gpuKb: number;
+  appKb: number;
+  /** The card's own memory, when the system says (Linux with an AMD card). */
+  vramBytes?: number;
+}
+
+/** The graphics page of Preferences. Missing in the web build, where the browser decides how to draw. */
+export interface GpuBridge {
+  report(): Promise<GpuReport>;
+  /** Writes or removes the gpu-off file. Takes effect at the next start. */
+  setHardware(on: boolean): Promise<{ ok: true; path: string } | FileFailure>;
+  /** Closes Frameling (asking about unsaved work first) and opens it again. */
+  restart(): Promise<void>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -191,6 +236,8 @@ export interface FramelingApi {
   };
   /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
   beta?: BetaBridge;
+  /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */
+  gpu?: GpuBridge;
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;

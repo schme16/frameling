@@ -42,6 +42,7 @@ import { Stabilizer } from '../tablet/stabilizer';
 import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
+import { roughNow, setKeptProbe, subscribeScrubbing } from '../gpu/settings';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -127,6 +128,7 @@ export class CanvasEngine {
     this.og = els.overlay.getContext('2d', { desynchronized: true } as CanvasRenderingContext2DSettings)!;
     this.prev = store().get();
     if (perf) perf.painter = this.painter;
+    setKeptProbe(() => this.painter.cache.size.pixels);
     this.docId = this.prev.doc.id;
     this.loads = store().loads;
     const self = this;
@@ -188,6 +190,8 @@ export class CanvasEngine {
     ro.observe(root);
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
+    // Starting or ending a drag along the timeline: paint again, with the extras left out or put back.
+    this.cleanups.push(subscribeScrubbing(() => this.invalidate(true, false)));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
@@ -362,7 +366,9 @@ export class CanvasEngine {
     this.els.stage.classList.toggle('cv-checker', !doc.background);
 
     const zooming = performance.now() < this.zoomingUntil;
-    const lt = ui.playing ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
+    // Playing, or dragging along the timeline with quick scrubbing on, leaves the onion skins, ghosts and light table out.
+    const bare = ui.playing || roughNow();
+    const lt = bare ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
     const settled = this.painter.paint(this.mg, {
       doc,
       frame: ui.frame,
@@ -371,14 +377,14 @@ export class CanvasEngine {
       height: this.els.main.height,
       live: ctl.getLive(),
       onion: ui.onion,
-      playing: ui.playing,
+      playing: bare,
       zooming,
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
-      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
+      ghost: getViewSettings().emptyGhost && !bare && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
       lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
     if (!settled) {

@@ -6,6 +6,7 @@ import '../ui';
 import '../canvas';
 import '../tools';
 import '../tablet';
+import '../gpu';
 import '../geometry';
 import '../timeline';
 import '../symbols';

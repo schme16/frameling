@@ -12,10 +12,14 @@ import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarke
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
+import { applyGpuOff } from './gpu';
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
 if (isolationWanted(app.getPath('userData'))) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+
+// Hardware drawing off: the gpu-off file or FRAMELING_GPU=off, read before any window exists (see gpuFile.ts).
+applyGpuOff();
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.
 const gotLock = app.requestSingleInstanceLock();
@@ -26,6 +30,8 @@ if (!gotLock) app.quit();
 // the installed app does (a dev run killed with Ctrl+C is not a crash worth Quill's time).
 const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_MARKER === '1');
 let quitting = false;
+// Preferences > Performance asked for a restart: open Frameling again once this copy has quit properly.
+let restartWanted = false;
 const dataDir = () => app.getPath('userData');
 
 
@@ -151,6 +157,7 @@ function createWindow() {
       askingClose = false;
       if (step === 'stay-open') {
         quitRequested = false;
+        restartWanted = false;
         return;
       }
       // "Don't save" still puts a copy aside for a week (Recover unsaved work...). The page makes the copy fresh
@@ -210,6 +217,10 @@ registerIpc({
   },
   closeQuestionShown: (id) => closeAsker.shown(id),
   closeQuestionAnswer: (id, answer) => closeAsker.answered(id, answer),
+  restart: () => {
+    restartWanted = true;
+    app.quit();
+  },
 });
 
 app.on('second-instance', (_e, argv, cwd) => {
@@ -269,6 +280,7 @@ app.on('window-all-closed', () => {
 // stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
 app.on('will-quit', () => {
   quitting = true;
+  if (restartWanted) app.relaunch();
   if (watchCrashes) endRun(dataDir(), process.pid);
 });
 if (watchCrashes && process.platform !== 'win32') {

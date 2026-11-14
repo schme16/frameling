@@ -8,6 +8,7 @@ import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { registerBetaIpc } from './beta';
+import { registerGpuIpc } from './gpu';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
@@ -34,6 +35,8 @@ export interface IpcHooks {
   crashOffered(): void;
   closeQuestionShown(id: number): void;
   closeQuestionAnswer(id: number, answer: unknown): void;
+  /** Close and open again (Preferences > Performance, after hardware drawing is switched). */
+  restart(): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -283,6 +286,7 @@ export function registerIpc(hooks: IpcHooks): void {
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
+  registerGpuIpc(handle, hooks.restart);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

@@ -37,6 +37,7 @@ import { UNITS, type Unit } from '../core/units';
 import { SnapPanel } from '../canvas/SnapOptions';
 import { PenPage } from '../tablet/PenPage';
 import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
+import { GpuPage } from '../gpu/GpuPage';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -51,6 +52,7 @@ export const PAGES: { id: Page; label: string; icon: string; help: string }[] = 
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
+  { id: 'performance', label: 'Performance', icon: 'effects', help: 'performance' },
   { id: 'diagnostics', label: 'Diagnostics', icon: 'info', help: 'pen-check' },
 ];
 
@@ -96,6 +98,14 @@ function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string
           {current === 'keyboard' && <KeyboardPage key={focusCmd.n} focusId={focusCmd.id} />}
           {current === 'snapping' && <SnappingPage />}
           {current === 'pen' && <PenPage />}
+          {current === 'performance' && (
+            <GpuPage
+              onGeneral={() => {
+                setCurrent('general');
+                setLit({ words: 'Undo steps', n: Date.now() });
+              }}
+            />
+          )}
           {current === 'diagnostics' && <DiagnosticsPage />}
           {current === 'workspaces' && <WorkspacesPage />}
           {current === 'plugins' && <PluginsPage />}
