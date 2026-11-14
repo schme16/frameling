@@ -389,19 +389,20 @@ See also: [Exporting](help:exporting), [Sticker and emoji packs](help:export-sti
 ## Make one
 
 1. Choose **File > Export > Export a sticker or emoji pack**.
-2. Tick the apps you want: **Slack**, **Microsoft Teams**, **Discord** (emoji and stickers), **Telegram**, **WhatsApp** and **Signal**.
+2. Tick the apps you want: **Slack**, **Microsoft Teams**, **Discord** (emoji and stickers), **Telegram** (stickers and custom emoji), **WhatsApp**, **Signal**, **iMessage** and **LINE**.
 3. Pick **A clip** or **This frame** for just one sticker, or **Whole animation** for one per frame.
 4. Press **Export**.
 
-Slack, Teams and Discord get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit. This is what each app gets:
+Slack, Teams, Discord, iMessage and LINE get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit. This is what each app gets:
 
 ${stickerTable()}
 
 ## Good to know
 
-- The pictures are square, with a see-through background. A drawing that isn't square follows the **Show it all** or **Fill the square** choice (see [App icons and favicons](help:export-icons-favicon)).
+- The pictures have a see-through background. They're square for every app but LINE, which asks for a wider 370 by 320. A drawing that doesn't match the shape follows the **Show it all** or **Fill the square** choice (see [App icons and favicons](help:export-icons-favicon)).
 - If a picture is still over an app's limit, Frameling tells you which app when it's done. A simpler drawing or fewer colours makes it lighter.
-- The apps change their rules now and then, so check the size your app asks for when you upload.
+- The apps change their rules now and then, so check the size your app asks for when you upload. Where an app publishes a size but not a weight limit, Frameling aims low on purpose: a slightly lighter picture always uploads, a heavy one can be turned away.
+- iMessage wants every sticker in a pack at the same size, so export the whole set in one go rather than a frame at a time.
 - Every frame is a still. For a moving sticker, use [WebP](help:export-jpeg-webp-contact) or [GIF](help:export-video-gif-apng).
 
 See also: [Exporting](help:exporting)`,

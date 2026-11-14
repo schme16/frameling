@@ -209,7 +209,7 @@ const defs: ExporterDef[] = [
     load: () => import('./formats/favicon'),
   },
   {
-    info: { id: 'stickers', title: 'Sticker and emoji pack', tag: '.zip', goodFor: 'Slack, Teams, Discord, Telegram, WhatsApp and Signal sizes, a folder for each.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
+    info: { id: 'stickers', title: 'Sticker and emoji pack', tag: '.zip', goodFor: 'Slack, Teams, Discord, Telegram, WhatsApp, Signal, iMessage and LINE sizes, a folder for each.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
     nameSuffix: '-stickers',
     baked: true,
     stills: true,

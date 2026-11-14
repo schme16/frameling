@@ -113,7 +113,7 @@ registerHelpTopics([
     title: 'Sticker and emoji packs',
     section: 'Exporting',
     media: 'export-stickers.png',
-    summary: 'Every frame at the sizes Slack, Teams, Discord, Telegram, WhatsApp and Signal ask for, a folder for each.',
+    summary: 'Every frame at the sizes Slack, Teams, Discord, Telegram, WhatsApp, Signal, iMessage and LINE ask for, a folder for each.',
     keywords: ['sticker', 'stickers', 'emoji', 'slack', 'teams', 'discord', 'telegram', 'whatsapp', 'signal', 'messaging', 'chat'],
   },
 ]);

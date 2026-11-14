@@ -157,10 +157,15 @@ export interface FitBox {
  * sides of a drawing that is not square; "fill" fills the square and cuts off what sticks out.
  */
 export function fitBox(w: number, h: number, size: number, mode: IconFit): FitBox {
-  const scale = mode === 'fill' ? size / Math.min(w, h) : size / Math.max(w, h);
+  return fitRect(w, h, size, size, mode);
+}
+
+/** The same, in a box that need not be square: LINE's stickers are 370 x 320. */
+export function fitRect(w: number, h: number, boxW: number, boxH: number, mode: IconFit): FitBox {
+  const scale = mode === 'fill' ? Math.max(boxW / w, boxH / h) : Math.min(boxW / w, boxH / h);
   const width = Math.max(1, Math.round(w * scale));
   const height = Math.max(1, Math.round(h * scale));
-  return { scale, width, height, x: Math.round((size - width) / 2), y: Math.round((size - height) / 2) };
+  return { scale, width, height, x: Math.round((boxW - width) / 2), y: Math.round((boxH - height) / 2) };
 }
 
 /** The extra files of a favicon set, beside the pictures. */
@@ -218,17 +223,26 @@ export type StickerType = 'png' | 'webp';
 export interface StickerService {
   id: string;
   title: string;
-  /** Pixels on a side (the picture is square). */
+  /** Pixels on a side. The picture is square unless `height` says otherwise. */
   size: number;
+  /** Pixels tall, when the app wants a picture that is not square (LINE). Square when left out. */
+  height?: number;
   type: StickerType;
   /** The most it is allowed to weigh, in bytes. */
   maxBytes: number;
 }
 
+/** How tall this app's picture is: its own height, or its width when the picture is square. */
+export const stickerHeight = (s: StickerService): number => s.height ?? s.size;
+
 /**
  * The sizes the messaging apps ask for today. They change now and then, so the help says to check the app.
- * Last checked 2026-11-14 against Telegram's sticker page, WhatsApp's stickers repo, Slack's emoji help, and Discord, Signal and
- * Teams guides. Nothing had drifted. test/export/stickerLimits.test.ts pins every number, so a change here is a deliberate one.
+ * Last checked 2026-11-14 against Telegram's sticker page, WhatsApp's stickers repo, Slack's emoji help, LINE's creator
+ * guidelines, and Discord, Signal, Teams and iMessage guides. Nothing had drifted.
+ * Where an app publishes a size but no weight limit (Signal, Discord, Teams, Telegram's custom emoji), the cautious
+ * number stays: the exporter lowers WebP quality until a picture fits, so a limit set too low costs a little quality,
+ * while one set too high would fail at the app's door.
+ * test/export/stickerLimits.test.ts pins every number, so a change here is a deliberate one.
  */
 export const STICKER_SERVICES: StickerService[] = [
   { id: 'slack', title: 'Slack emoji', size: 128, type: 'png', maxBytes: 128 * 1024 },
@@ -238,6 +252,9 @@ export const STICKER_SERVICES: StickerService[] = [
   { id: 'telegram', title: 'Telegram sticker', size: 512, type: 'webp', maxBytes: 512 * 1024 },
   { id: 'whatsapp', title: 'WhatsApp sticker', size: 512, type: 'webp', maxBytes: 100 * 1024 },
   { id: 'signal', title: 'Signal sticker', size: 512, type: 'webp', maxBytes: 300 * 1024 },
+  { id: 'telegram-emoji', title: 'Telegram custom emoji', size: 100, type: 'webp', maxBytes: 64 * 1024 },
+  { id: 'imessage', title: 'iMessage sticker', size: 618, type: 'png', maxBytes: 500 * 1024 },
+  { id: 'line', title: 'LINE sticker', size: 370, height: 320, type: 'png', maxBytes: 1024 * 1024 },
 ];
 
 export const stickerServiceOf = (id: string): StickerService | undefined => STICKER_SERVICES.find((s) => s.id === id);
@@ -262,7 +279,7 @@ export const STICKER_QUALITIES = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
 
 /** The apps and what each one gets, as a help table: size, type and weight limit, straight from the list above. */
 export function stickerTable(): string {
-  const rows = STICKER_SERVICES.map((s) => `| ${s.title} | ${s.size} x ${s.size} | ${s.type === 'webp' ? 'WebP' : 'PNG'} | ${kilobytes(s.maxBytes)} |`);
+  const rows = STICKER_SERVICES.map((s) => `| ${s.title} | ${s.size} x ${stickerHeight(s)} | ${s.type === 'webp' ? 'WebP' : 'PNG'} | ${kilobytes(s.maxBytes)} |`);
   return ['| App | Size in pixels | Picture | Up to |', '| --- | --- | --- | --- |', ...rows].join('\n');
 }
 

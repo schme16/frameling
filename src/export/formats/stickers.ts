@@ -4,10 +4,10 @@ import { currentChoice } from '../../core/choices';
 import { encodePng } from '../../io/png';
 import { readPixels } from '../draw';
 import { canvasBytes } from '../encode';
-import { kilobytes, STICKER_QUALITIES, stickerPick, type IconFit, type StickerService } from '../icons';
+import { kilobytes, STICKER_QUALITIES, stickerHeight, stickerPick, type IconFit, type StickerService } from '../icons';
 import { frameNumber, slug } from '../plan';
 import { breathe } from '../runtime';
-import { squareCanvas } from './square';
+import { boxCanvas } from './square';
 import type { ExporterRun } from '../registry';
 import '../choices';
 
@@ -32,14 +32,15 @@ export const run: ExporterRun['run'] = async ({ doc, settings, signal }, { plan,
   for (let i = 0; i < plan.count; i++) {
     const frame = plan.range.start + (plan.order?.[i] ?? i);
     const src = { doc, frame, bg, crisp, fit } as const;
-    // Apps that want the same size share one drawing.
-    const drawn = new Map<number, OffscreenCanvas>();
+    const drawn = new Map<string, OffscreenCanvas>();
     for (const sv of services) {
       await breathe(signal, done);
       step(done, `Making ${sv.title} ${i + 1} of ${plan.count}`);
       done++;
-      let canvas = drawn.get(sv.size);
-      if (!canvas) drawn.set(sv.size, (canvas = squareCanvas(src, sv.size)));
+      // Apps that want the same shape share one drawing, so LINE's 370 x 320 doesn't reuse a 370 square.
+      const shape = `${sv.size}x${stickerHeight(sv)}`;
+      let canvas = drawn.get(shape);
+      if (!canvas) drawn.set(shape, (canvas = boxCanvas(src, sv.size, stickerHeight(sv))));
       let bytes: Uint8Array;
       if (sv.type === 'webp') {
         const r = await webpUnder(canvas, sv.maxBytes);

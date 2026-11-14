@@ -210,11 +210,14 @@ i=Image.open(sys.argv[1]);print(json.dumps({'sizes':sorted(set(i.info.get('sizes
     const bad = [];
     for (const f of list) {
       const [svc] = f.split('/');
-      const want = { slack: 128, teams: 128, 'discord-emoji': 128, 'discord-sticker': 320, telegram: 512, whatsapp: 512, signal: 512 }[svc];
+      // Width then height. LINE is the one app that asks for a picture that is not square.
+      const want = { slack: [128, 128], teams: [128, 128], 'discord-emoji': [128, 128], 'discord-sticker': [320, 320], telegram: [512, 512], whatsapp: [512, 512], signal: [512, 512], 'telegram-emoji': [100, 100], imessage: [618, 618], line: [370, 320] }[svc];
       const info = py(`import json,sys;from PIL import Image;i=Image.open(sys.argv[1]);print(json.dumps({'s':i.size,'f':i.format}))`, path.join(ex, f));
-      if (!(info.s?.[0] === want && info.s?.[1] === want)) bad.push(`${f} ${JSON.stringify(info)}`);
+      if (!(want && info.s?.[0] === want[0] && info.s?.[1] === want[1])) bad.push(`${f} ${JSON.stringify(info)}`);
     }
-    check(!bad.length, `every sticker is square at its app's size${bad.length ? ': ' + bad.join(', ') : ''}`);
+    check(!bad.length, `every sticker is its app's size and shape${bad.length ? ': ' + bad.join(', ') : ''}`);
+    const line = list.find((f) => f.startsWith('line/'));
+    check(line && fs.statSync(path.join(ex, line)).size <= 1024 * 1024, `the LINE sticker is under 1 MB (${line && fs.statSync(path.join(ex, line)).size} bytes)`);
     const wa = list.find((f) => f.startsWith('whatsapp/'));
     check(wa && fs.statSync(path.join(ex, wa)).size <= 100 * 1024, `WhatsApp sticker is under 100 KB (${wa && fs.statSync(path.join(ex, wa)).size} bytes)`);
   }

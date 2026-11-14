@@ -2,7 +2,7 @@
 import { getChoiceDef, setChoice, useChoice } from '../../core/choices';
 import { CONTACT_SIDE, contactColumnsOf, contactLabelsOf, contactPageOf, contactSheetSize, contactSizeOf, type ContactPage, type ContactSize } from '../contact';
 import { ExNote } from '../ExNote';
-import { iconPartsOf, planFavicon, planIcons, STICKER_SERVICES, stickerPick, stickerToggle, type IconParts } from '../icons';
+import { iconPartsOf, planFavicon, planIcons, STICKER_SERVICES, stickerHeight, stickerPick, stickerToggle, type IconParts } from '../icons';
 import type { ExportUiHookProps, ExportUiProps } from '../registry';
 import { DEFAULT_JPEG_QUALITY, DEFAULT_WEBP_QUALITY, jpegQualityOf, webpLosslessOf, webpQualityOf } from '../webp';
 import { hasPixelLayers } from '../plan';
@@ -75,8 +75,11 @@ export function WebpOptions(p: ExportUiProps) {
   );
 }
 
-/** Whole drawing or filled square: the saved choice, always shown so nobody finds out from the files. */
-export function FitPick() {
+/**
+ * Whole drawing or filled box: the saved choice, always shown so nobody finds out from the files.
+ * `shape` is what the pictures are: square for icons and favicons, but a sticker pack now has LINE's 370 x 320 in it.
+ */
+export function FitPick({ shape = 'square' }: { shape?: 'square' | 'mixed' } = {}) {
   const pref = useChoice<string>('export.iconFit');
   return (
     <>
@@ -87,7 +90,10 @@ export function FitPick() {
           </button>
         ))}
       </div>
-      <ExNote>Icons are square. {pref === 'fill' ? 'A drawing that is not square is cut off at the sides to fill it.' : 'A drawing that is not square keeps empty margins at the sides.'}</ExNote>
+      <ExNote>
+        {shape === 'square' ? 'Icons are square. ' : 'Each app has its own shape. '}
+        {pref === 'fill' ? 'A drawing that is a different shape is cut off at the sides to fill it.' : 'A drawing that is a different shape keeps empty margins at the sides.'}
+      </ExNote>
     </>
   );
 }
@@ -143,10 +149,10 @@ export function StickerOptions({ s, set }: ExportUiProps) {
       <legend>Which apps</legend>
       {STICKER_SERVICES.map((sv) => (
         <Check key={sv.id} checked={picked.has(sv.id)} onChange={(v) => set({ stickerFor: stickerToggle(s.stickerFor, sv.id, v) })}>
-          {sv.title} ({sv.size} × {sv.size}, {sv.type === 'webp' ? 'WebP' : 'PNG'})
+          {sv.title} ({sv.size} × {stickerHeight(sv)}, {sv.type === 'webp' ? 'WebP' : 'PNG'})
         </Check>
       ))}
-      <FitPick />
+      <FitPick shape="mixed" />
       <ExNote>
         Each frame becomes one picture. Pick a clip, or &ldquo;This frame&rdquo;, for a single sticker. Apps change their rules now and then, so check yours.{' '}
         <HelpLink topic="export-stickers">How to upload them</HelpLink>
