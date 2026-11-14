@@ -23,7 +23,7 @@ export const bodies: Record<string, string> = {
 **Good to know:**
 - Pixel strokes appear when you lift the pen; freehand lines on vector layers show as you draw them.
 - If you close the drawing window, the second window closes with it.
-- If the second window gets lost behind others, choose **View > Bring the second window forward**.
+- If the second window gets lost behind others, choose **View > Panel windows and tools > Bring the second window forward**.
 - It needs the Frameling desktop app.
 
 To see what a camera shows, see [Camera](help:camera). To check the picture as it will export, see [Exporting](help:exporting).`,
