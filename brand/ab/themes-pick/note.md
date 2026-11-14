@@ -12,3 +12,5 @@
   sun or moon on it is bigger and sits where the fold is widest.
 - **earmark-wiggly-dark / earmark-wiggly-light**: a wiggle along the fold, and the sun or moon bigger and sitting in
   the middle of the yellow rather than tucked into the corner.
+- **earmark-small-dark**: smaller again (44 px) and wigglier, so it marks the card without taking a third of the
+  preview with it.

@@ -63,12 +63,12 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
           <span className={`th-card-badges${use.day && use.night ? ' is-both' : ''}`} aria-hidden="true">
             {use.day && (
               <span className="th-card-badge is-day" title="Your theme by day">
-                <Icon name="sun" size={20} />
+                <Icon name="sun" size={16} />
               </span>
             )}
             {use.night && (
               <span className="th-card-badge is-night" title="Your theme at night">
-                <Icon name="moon" size={20} />
+                <Icon name="moon" size={16} />
               </span>
             )}
           </span>
