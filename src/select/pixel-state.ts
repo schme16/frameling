@@ -109,6 +109,20 @@ export function pixelSelection(): Mask | null {
   return sel;
 }
 
+let shownAs: Mask | null = null;
+
+/** Draws the marching ants round another mask than the real one (the Transform tool's preview), or null for the real one. */
+export function setSelectionShownAs(m: Mask | null): void {
+  if (shownAs === m) return;
+  shownAs = m;
+  requestOverlay();
+}
+
+/** The mask the ants go round: the one being previewed, else the selection. */
+export function shownSelection(): Mask | null {
+  return shownAs ?? pixelSelection();
+}
+
 export function hasPixelSelection(): boolean {
   return !!pixelSelection();
 }

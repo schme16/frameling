@@ -180,6 +180,18 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
+  // Transform: a box with a handle on each corner, and the round turn knob above it.
+  transform: (
+    <>
+      <rect x="5" y="9.5" width="14" height="10" rx="0.6" />
+      <path d="M12 9.5V5.2" />
+      <circle cx="12" cy="3.8" r="1.6" />
+      <rect x="3.6" y="8.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="17.6" y="8.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="3.6" y="18.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="17.6" y="18.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+    </>
+  ),
   lasso: (
     <>
       <path d="M8.5 15.5C5.2 14.6 3 12.6 3 10.2 3 6.8 7 4 12 4s9 2.8 9 6.2-4 6.2-9 6.2" />

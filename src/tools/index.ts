@@ -25,3 +25,4 @@ import.meta.glob(['./fill*.ts', '!./**/*.bodies.ts'], { eager: true });
 // Pixel art tools, palette and commands. Last, since it adds mirror drawing to the brush and eraser above.
 import '../pixel';
 import '../select';
+import '../transform';

@@ -72,6 +72,8 @@ export const KEYMAP_SETS: KeymapSet[] = [
       'tools.pen': ['Shift+Alt+P'],
       'tools.pixel-select': ['m', 'v'],
       'select.lasso': ['q'],
+      // Q is Aseprite's lasso, so Transform takes Shift+Q here
+      'tools.transform': ['Shift+Q'],
       // The mirror button's key makes room for Aseprite's Shift+M
       'pixel.mirror': ['Shift+Alt+M'],
       'rig.mirrorPose': ['Mod+Alt+M'],

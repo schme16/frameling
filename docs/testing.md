@@ -802,6 +802,7 @@ npm run help:media                        # npm run build, then every entry in d
 npm run help:media -- --only select,tour  # just those names (base names, no extension)
 npm run help:media -- --theme light       # one theme only
 npm run help:media -- --list              # every entry and whether it is a picture or a clip
+npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the entries of another folder, for a before/after look (not a help topic)
 ```
 
 It runs the steps in `scripts/docs/help/*.cjs` (one file per area; files starting with `_` aren't entries). Each entry is
