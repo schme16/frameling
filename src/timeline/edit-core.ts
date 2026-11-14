@@ -242,6 +242,21 @@ export function clearKey(doc: Doc, layerId: Id, frame: number): boolean {
   return true;
 }
 
+/**
+ * Gives the drawing at `frame` a copy of its own, so changing it no longer changes the other places that show it. The
+ * copy looks the same; the drawing it came from stays where it was. Returns the copy's id, or null with no drawing there.
+ */
+export function makeOwnDrawing(doc: Doc, layerId: Id, frame: number): Id | null {
+  const layer = findLayer(doc, layerId);
+  const cel = layer && celAt(layer, frame);
+  const src = cel && doc.drawings[cel.drawingId];
+  if (!cel || !src) return null;
+  const copy = cloneDrawing(src);
+  doc.drawings[copy.id] = copy;
+  cel.drawingId = copy.id;
+  return copy.id;
+}
+
 /** Takes the key (and its whole hold) away, leaving empty frames. */
 export function deleteKey(doc: Doc, layerId: Id, frame: number): boolean {
   const layer = findLayer(doc, layerId);

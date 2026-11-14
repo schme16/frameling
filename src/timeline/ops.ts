@@ -10,6 +10,7 @@ import type { Draft } from 'immer';
 import type { ClipDirection, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
+import { placesOf } from '../core/sharedDrawings';
 import { askAboutMasks } from '../effects/ops';
 import * as core from './edit-core';
 import type { Clash } from './edit-core';
@@ -19,7 +20,7 @@ import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/cho
 import type { TidyEndChoice } from './choices';
 import './choices';
 
-export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol';
+export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol' | 'not-shared';
 export interface Outcome {
   ok: boolean;
   reason?: Reason;
@@ -34,6 +35,7 @@ const WHY: Record<Reason, string> = {
   'last-layer': 'You need at least one layer, so this one has to stay.',
   'no-change': 'Nothing to change there.',
   'in-symbol': 'Markers and clips belong to the main scene. Go back out of the symbol first.',
+  'not-shared': "This drawing is only shown here, so it's already its own.",
 };
 
 /** A friendly sentence for why an op did nothing. */
@@ -148,6 +150,17 @@ export function duplicateKey(layerId?: Id, frame?: number): Outcome {
   const r = edit('Copy drawing to next frame', t.layerId, (d) => core.duplicateKey(d, t.layerId, t.frame));
   if (r.ok) store().setUi({ frame: t.frame + 1, activeLayerId: t.layerId });
   return r;
+}
+
+/** Gives this drawing a copy of its own when other places show it too, so changing it changes only this one. */
+export function makeOwnDrawing(layerId?: Id, frame?: number): Outcome {
+  const t = target(layerId, frame);
+  if (!t) return no('no-layer');
+  const layer = findLayer(store().get().doc, t.layerId);
+  const cel = layer && celAt(layer, t.frame);
+  if (!cel) return no('nothing-here');
+  if (placesOf(store().get().doc, cel.drawingId) < 2) return no('not-shared');
+  return edit('Make this drawing its own', t.layerId, (d) => core.makeOwnDrawing(d, t.layerId, t.frame));
 }
 
 export function clearKey(layerId?: Id, frame?: number): Outcome {

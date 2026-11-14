@@ -1239,3 +1239,50 @@
 .lp-list .tl-layers {
   width: 100%;
 }
+
+/* A drawing shown in more than one place: a pale edge along the bottom, and a link with the count when there is room. */
+.tl-cel.is-shared::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: color-mix(in srgb, var(--text) 85%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.tl-shared {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  height: 14px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--text) 88%, transparent);
+  color: var(--panel);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+/* Frames squeezed very narrow: no gap lines inside a hold, no handle to grab, runs of tiny drawings as one band. */
+.tl-main.is-tiny .tl-cel {
+  background-image: none;
+}
+.tl-main.is-tiny .tl-cel-handle,
+.tl-cel.is-thin .tl-cel-handle {
+  display: none;
+}
+.tl-main.is-tiny .tl-cel-dot,
+.tl-main.is-tiny .tl-dkey {
+  display: none;
+}
+.tl-cel.is-dense {
+  background-color: color-mix(in srgb, var(--cel-key) 70%, var(--panel-2));
+  border-radius: 1px;
+}

@@ -3,13 +3,15 @@
  * their easing drawn in, and the property rows under an opened layer. The clean timeline uses Grid.tsx's GridRow.
  */
 import { memo } from 'react';
-import type { Cel, Easing, Layer } from '../core/format';
+import type { Cel, Easing, Id, Layer } from '../core/format';
+import type { DrawingUse } from '../core/sharedDrawings';
 import { easeLabel, tweenEase } from '../core/ease';
 import { nextKey } from '../core/symbols';
-import { celLabelBox, holdWords, MIN_LABEL_W } from './geometry';
+import { celLabelBox, holdWords, MIN_LABEL_W, thinCels } from './geometry';
 import { InlineName } from './Menu';
 import * as ops from './ops';
 import { setTl, useTl } from './state';
+import { SharedMark, sharedTitle } from './SharedMark';
 import { celRef, type Track } from './tracks';
 
 /** The colour class for a layer: its label, or its kind's own colour. */
@@ -35,6 +37,13 @@ export function EaseCurve({ ease: e, slice, width, height = 12 }: { ease: Easing
   );
 }
 
+function celTitle(layer: Layer, c: Cel, tweened: boolean): string {
+  const span = c.length > 1 ? `, held for ${holdWords(c.length)}` : '';
+  const tw = tweened && c.tween ? `. ${c.tween.kind === 'shape' ? 'Melts into the next drawing (shape tween)' : 'Moves to the next drawing (tween)'}, ${easeLabel(c.tween.ease).toLowerCase()}` : '';
+  return `${layer.name}: ${c.name ? '"' + c.name + '", ' : ''}drawing at frame ${c.start + 1}${span}${tw}. Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
+}
+
+/** One layer's row: keys (solid cell with a diamond), holds (a band with an end cap), tweens (an arrow with the easing). */
 /**
  * A drawing's name on its row, just after the key. It sits beside the cel (not in it) so it can run on over the empty
  * frames after a short drawing; a click goes through it to the frame. Being renamed it is a name box.
@@ -64,41 +73,32 @@ export function CelName({ layer, cel, next, cw }: { layer: Layer; cel: Cel; next
   );
 }
 
-function celTitle(layer: Layer, c: Cel, tweened: boolean): string {
-  const span = c.length > 1 ? `, held for ${holdWords(c.length)}` : '';
-  const tw = tweened && c.tween ? `. ${c.tween.kind === 'shape' ? 'Melts into the next drawing (shape tween)' : 'Moves to the next drawing (tween)'}, ${easeLabel(c.tween.ease).toLowerCase()}` : '';
-  return `${layer.name}: ${c.name ? '"' + c.name + '", ' : ''}drawing at frame ${c.start + 1}${span}${tw}. Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
-}
-
-/** The cels of a row that are on screen between two frames, each with the drawing that follows it (for its name's room). */
-export function shownCels(layer: Layer, from: number, to: number): { cel: Cel; next: Cel | undefined }[] {
-  const out: { cel: Cel; next: Cel | undefined }[] = [];
-  for (let i = 0; i < layer.cels.length; i++) {
-    const c = layer.cels[i];
+export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, picked, fxKeys, h, shared }: { layer: Layer; cw: number; from: number; to: number; active: boolean; picked: ReadonlySet<string>; fxKeys: Track[] | null; h: number; shared: ReadonlyMap<Id, DrawingUse> }) {
+  const shown: Cel[] = [];
+  for (const c of layer.cels) {
     if (c.start > to) break;
-    if (c.start + c.length >= from) out.push({ cel: c, next: layer.cels[i + 1] });
+    if (c.start + c.length >= from) shown.push(c);
   }
-  return out;
-}
-
-/** One layer's row: keys (solid cell with a diamond), holds (a band with an end cap), tweens (an arrow with the easing). */
-export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, picked, fxKeys, h }: { layer: Layer; cw: number; from: number; to: number; active: boolean; picked: ReadonlySet<string>; fxKeys: Track[] | null; h: number }) {
-  const shown = shownCels(layer, from, to);
   return (
     <div className={`tl-row tl-drow ${layerColorClass(layer)}${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: h }} data-layer={layer.id}>
-      {shown.map(({ cel: c }) => {
+      {thinCels(shown, cw).map((p) => {
+        const c = p.cel;
+        // A band of tiny drawings is drawn as one plain block: no diamond, no tween arrow.
+        if (p.dense)
+          return <div key={c.id} className="tl-cel tl-dcel is-dense" data-cel={c.id} style={{ left: p.left, width: p.right - p.left }} title={`${p.count} short drawings. Zoom in to see each one.`} />;
         const next = c.tween ? nextKey(layer, c) : undefined;
         const tweened = !!(c.tween && next);
         const ref = celRef(layer.id, c.id);
-        const w = c.length * cw;
+        const w = p.right - p.left;
         const auto = c.autoHold && c.length > 1;
+        const use = shared.get(c.drawingId);
         return (
           <div
             key={c.id}
-            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}`}
+            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}${w < 8 ? ' is-thin' : ''}`}
             data-cel={c.id}
-            style={{ left: c.start * cw, width: w }}
-            title={celTitle(layer, c, tweened)}
+            style={{ left: p.left, width: w }}
+            title={sharedTitle(use, celTitle(layer, c, tweened))}
           >
             <span className={`tl-dkey-cell${picked.has(ref) ? ' is-picked' : ''}`} style={{ width: cw }} data-key={ref}>
               <span className={`tl-dkey${picked.has(ref) ? ' is-picked' : ''}`} />
@@ -109,13 +109,16 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
               </span>
             ) : null}
             {!tweened && c.length > 1 ? <span className="tl-dend" style={{ width: Math.min(cw, 10) }} /> : null}
+            {use ? <SharedMark use={use} width={w} at={cw + 3} /> : null}
             <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
           </div>
         );
       })}
-      {shown.map(({ cel, next }) => (
-        <CelName key={`n${cel.id}`} layer={layer} cel={cel} next={next} cw={cw} />
-      ))}
+      {thinCels(shown, cw)
+        .filter((p) => !p.dense)
+        .map((p, i, list) => (
+          <CelName key={`n${p.cel.id}`} layer={layer} cel={p.cel} next={list[i + 1]?.cel} cw={cw} />
+        ))}
       {fxKeys
         ? fxKeys.flatMap((t) =>
             t.keys

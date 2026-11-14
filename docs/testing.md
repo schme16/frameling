@@ -1335,6 +1335,23 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/quill-artboards
 `--before --file <old one-timeline file>` and `--after` (with `--clip oops`) shoot the A/B pictures of the timeline instead: the
 Animate workspace, the timeline dragged tall, one animation on a long timeline against its own artboard.
 
+## Shared drawings, artboard names and fitting a long clip on Quill's file: scripts/e2e/shared-drawings.cjs
+
+Three timeline changes on `brand/mascot/mascot.frameling` in the real app, on a scratch copy. Idle is 419 frames: it checks Fit the
+whole animation gives frames narrower than the old 5 px floor and all 419 fit the window; that idle's Body block is marked as shown in
+several places and says where; that Make this drawing its own gives the block a new drawing, the other animations keep the old one, and
+no frame's pixels or hold change (the sheet's tiles can move, because it packs frames that share a drawing onto one tile); that undo
+shares it again; that renaming an artboard renames its whole-board clip, and a duplicate's clip takes the copy's name. It writes the A/B
+pictures (`marker-*`, `names-*`, `fit-*`, `-before` and `-after`) into the output folder. The pictures in `brand/ab/shared-drawings/` are
+these, cropped and captioned with ImageMagick.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shared-drawings.cjs <outDir> [--theme dark|light]
+```
+
+`__frameling.timelineZoom(px)` sets the timeline's frame width, for a zoom the slider is too coarse to land on.
+
 ## The off-screen window and ?debug hooks
 
 A truly hidden Electron window only gets about one animation frame a second, so the canvas and React lag and shots

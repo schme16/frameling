@@ -4,6 +4,7 @@ import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } f
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
 import { celAt, findLayer } from '../core/doc';
+import { placesOf } from '../core/sharedDrawings';
 import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
@@ -241,6 +242,20 @@ registerCommands([
     help: 'timeline-frames',
     keywords: ['copy', 'clone', 'duplicate frame'],
     run: () => void say(ops.duplicateKey()),
+  },
+  {
+    id: 'timeline.makeOwnDrawing',
+    label: 'Make this drawing its own (stop sharing it)',
+    category: 'Timeline',
+    description: "When this drawing is shown in more than one place (the link mark on its block says so), give this place a copy of its own. It looks the same, and changing it no longer changes the other places.",
+    help: 'timeline-shared',
+    keywords: ['shared drawing', 'unlink', 'unshare', 'detach', 'make unique', 'copy drawing', 'used in several places', 'linked'],
+    enabled: (s) => {
+      const layer = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+      const cel = layer && celAt(layer, s.ui.frame);
+      return !!cel && placesOf(s.doc, cel.drawingId) > 1;
+    },
+    run: () => void say(ops.makeOwnDrawing()),
   },
   { id: 'timeline.clearKey', label: 'Clear this drawing', category: 'Timeline', description: 'Wipe this drawing clean. The frame stays, with the same hold.', help: 'timeline-frames', keywords: ['erase', 'empty'], run: () => void say(ops.clearKey()) },
   { id: 'timeline.emptyFrame', label: 'Make these frames empty', category: 'Timeline', description: 'Take the drawing away, so these frames show nothing on this layer.', help: 'timeline-frames', run: () => void say(ops.deleteKey()) },

@@ -23,9 +23,14 @@ export interface TlState {
   findTick: number;
 }
 
-export const MIN_CW = 5;
+/** Frames can go very narrow, so a clip of thousands of frames still fits the window (see thinCels in geometry.ts). */
+export const MIN_CW = 0.2;
 export const MAX_CW = 64;
 export const DEFAULT_CW = 22;
+
+/** The zoom slider runs on a log scale, so the tiny end gets as much of the track as the roomy end. */
+export const cwToSlider = (cw: number): number => Math.log(Math.max(MIN_CW, Math.min(MAX_CW, cw)) / MIN_CW) / Math.log(MAX_CW / MIN_CW);
+export const sliderToCw = (v: number): number => MIN_CW * Math.pow(MAX_CW / MIN_CW, Math.max(0, Math.min(1, v)));
 
 const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0 });
 let state: TlState = freshTl();
@@ -37,7 +42,7 @@ export function tl(): TlState {
 
 export function setTl(patch: Partial<TlState>): void {
   const next = { ...state, ...patch };
-  next.cw = Math.max(MIN_CW, Math.min(MAX_CW, Math.round(next.cw * 100) / 100));
+  next.cw = Math.max(MIN_CW, Math.min(MAX_CW, Math.round(next.cw * 1000) / 1000));
   state = next;
   for (const fn of listeners) fn();
 }

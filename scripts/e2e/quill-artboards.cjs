@@ -55,7 +55,7 @@ async function start() {
   win = BrowserWindow.getAllWindows()[0];
   await gpu.confirmOrExit(win);
   const prefs = { theme, look: 'cosy', darkTheme: 'midnight-sketchbook', showWelcome: false, onboarded: true, showTips: false };
-  await ev(`localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); true`);
+  await ev(`localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify({ 'draw.sharedDrawing': 'everywhere' }))}); true`);
   win.setBounds({ x: 0, y: 0, width: 1500, height: 940 });
   win.webContents.reload();
   await new Promise((r) => win.webContents.once('did-finish-load', r));

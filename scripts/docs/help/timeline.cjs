@@ -1,7 +1,7 @@
 const F = '__frameling';
 const js = (code) => ({ eval: code });
 // The "ask the first time" questions (hold longer, mask scope...) are answered up front, so no dialog opens mid-clip.
-const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer', 'timeline.pasteOver': 'insert' };
+const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.sharedDrawing': 'everywhere', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer', 'timeline.pasteOver': 'insert' };
 const PANELS = ['tool-options', 'timeline', 'colors', 'palette', 'library', 'tileset', 'symbol-props', 'effects', 'particles', 'camera', 'text', 'rig', 'clip-flow', 'artboards', 'lipsync', 'preview', 'quests', 'help'];
 // Properties (the right side) is one long list of sections. Folding all but the ones named in `keep` leaves them in view.
 const quiet = (keep, answers = {}) => [js(`localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify({ ...ANSWERS, ...answers }))}); localStorage.setItem('frameling.inspector.v1', ${JSON.stringify(JSON.stringify({ folded: keep.length ? PANELS.filter((p) => !keep.includes(p)) : [] }))}); setTimeout(() => location.reload(), 0); true`), { wait: 2500 }];
@@ -155,6 +155,32 @@ module.exports = [
       { key: 'Enter', after: 3600 },
       { key: 'Enter', after: 1200 },
       { rec: 'stop' },
+    ],
+  },
+  {
+    // The ground is shown on two layers with one drawing, so both blocks carry the link and the 2.
+    name: 'timeline-shared',
+    prefs: { showTips: false },
+    steps: [
+      ...open('bouncing-ball'),
+      js(`(() => { ${F}.store().update('setup', (d) => { const g = d.layers.find((l) => l.name === 'Ground'); const copy = JSON.parse(JSON.stringify(g)); copy.id = 'far-ground'; copy.name = 'Far ground'; copy.cels = g.cels.map((c, i) => ({ ...c, id: 'fg' + i })); d.layers.splice(d.layers.indexOf(g) + 1, 0, copy); d.layers = d.layers.filter((l) => l.name !== 'Shadow'); }); return 1; })()`),
+      { wait: 700 },
+      { move: PARK }, { move: [645, 785], after: 1500 },
+      { shot: '@', crop: [108, 430, 806, 232] },
+    ],
+  },
+  {
+    // 419 frames in one go: every drawing its own, lengths from one frame to a long hold, fitted across the window.
+    name: 'timeline-fit',
+    prefs: { showTips: false },
+    steps: [
+      ...open('bouncing-ball'),
+      js(`(() => { ${F}.store().update('setup', (d) => { const lens = { Ball: [1, 1, 2, 3, 1, 6, 1, 1, 12, 2, 1, 4, 1, 24, 1, 2], Shadow: [2, 1, 1, 8, 1, 1, 3, 30, 1, 2, 5, 1] }; for (const name of ['Ball', 'Shadow']) { const layer = d.layers.find((l) => l.name === name); const src = layer.cels.map((c) => d.drawings[c.drawingId]); let at = 0; const cels = []; let i = 0; while (at < 419) { const len = Math.min(lens[name][i % lens[name].length], 419 - at); const nd = JSON.parse(JSON.stringify(src[i % src.length])); nd.id = name + '-' + i; d.drawings[nd.id] = nd; cels.push({ id: name + 'c' + i, start: at, length: len, drawingId: nd.id }); at += len; i++; } layer.cels = cels; } d.layers.find((l) => l.name === 'Ground').cels[0].length = 419; d.length = 419; }); return 1; })()`),
+      { wait: 600 },
+      js(`${F}.run('timeline.zoomFit')`),
+      { wait: 800 },
+      { move: PARK }, { move: [645, 785], after: 1500 },
+      { shot: '@', crop: [108, 430, 806, 232] },
     ],
   },
   {
