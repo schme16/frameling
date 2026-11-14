@@ -1,6 +1,6 @@
 // The words of the help topics in merge-mode.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'merge-drawing': `Each vector layer has a **Merge shapes together** switch at the top of the tool options, and **J** flips it.
+  'merge-drawing': `Each vector layer has a **Merge shapes together** switch in the tool options (under **More brush options** for the brush), and **J** flips it.
 
 **Off** (object drawing) is how layers start. Every line and shape stays on its own. You can click it later, move it, and everything under it is still there.
 

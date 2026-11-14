@@ -91,11 +91,15 @@ Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never
 - **Recently used** shows the last 8 colours you drew with, so it's easy to go back.
 
 Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
-  'tool-options': `This panel changes to match whichever tool you've picked. Brush has size, smoothing and pointy ends. Shapes have fill and outline. The eraser has its reach.
+  'tool-options': `This panel changes to match whichever tool you've picked. Brush opens on its size, with the rest under **More brush options**. Shapes have fill and outline. The eraser has its reach.
 
 ## Sliders
 
 Click a slider's number to type an exact value (Enter keeps it, Escape cancels). Hold **Shift** while dragging for big steps, or **Alt** or **Ctrl** for fine control. The arrow keys work the same way.
+
+## More brush options
+
+The brush shows **Size** and the colour first, so you can start drawing. Press **More brush options** for smoothing, pressure, pointy ends, the stabilizer and **Merge shapes together**. It stays open or shut the way you left it. You can also flip it from the command palette.
 
 Your settings are remembered, so the brush is just as you left it next time.`,
   'grids-perspective': `**Grids**

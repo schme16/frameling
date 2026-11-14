@@ -2,6 +2,7 @@
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { center, fit, zoom100, zoomStep } from './controller';
+import { getFold, setFold } from './folds';
 import { getViewSettings, setViewSettings } from './viewSettings';
 
 registerCommands([
@@ -92,5 +93,22 @@ registerCommands([
     keywords: ['canvas size', 'image size', 'resize', 'page size', 'stage size', 'document settings', 'fps', 'frame rate', 'dpi', 'background', 'scale', 'crop'],
     // The dialog loads on first use.
     run: () => void import('./DocumentSettings').then((m) => m.openDocumentSettings()),
+  },
+]);
+
+registerCommands([
+  {
+    id: 'draw.moreBrushOptions',
+    label: 'More brush options',
+    category: 'Draw',
+    description: 'Show or fold away the brush settings under Size: smoothing, pressure, pointy ends and the stabilizer.',
+    help: 'tool-options',
+    keywords: ['brush', 'smoothing', 'pressure', 'pointy', 'taper', 'stabilizer', 'merge', 'settings', 'fold', 'expand'],
+    checked: () => getFold('brush'),
+    run: () => {
+      setFold('brush', !getFold('brush'));
+      // the panel shows the brush's options, so bring them up if another tool was showing
+      store().setUi({});
+    },
   },
 ]);
