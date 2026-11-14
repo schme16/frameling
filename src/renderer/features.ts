@@ -2,6 +2,7 @@
 // default toolbar and panel order, which the registries sort anyway. Features that can be turned off are not imported
 // for their side effects: each one hands over a descriptor (src/features) and the host registers it, tagged, below.
 import '../core/commands';
+import '../history';
 import '../ui';
 import '../canvas';
 import '../tools';
