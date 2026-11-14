@@ -1,6 +1,6 @@
 // The "draw in software" switch that works from outside the app. If hardware drawing ever stopped the window opening,
 // Preferences could not be reached to turn it off, so the switch is a plain empty file the start-up reads before any
-// window exists: Frameling/gpu-off in the config folder (build/linux/launcher.sh reads the same file on Linux), or
+// window exists: Frameling/gpu-off in the config folder, or
 // FRAMELING_GPU=off in the environment. No electron import here, so tests can run it.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,8 +16,8 @@ interface Where {
 }
 
 /**
- * The file's place. On Linux it is exactly where the launcher looks (`$XDG_CONFIG_HOME` or `~/.config`, then
- * Frameling/gpu-off); elsewhere it sits in the app's data folder, which is where the same name is read at start-up.
+ * The file's place. On Linux it is `$XDG_CONFIG_HOME` or `~/.config`, then
+ * Frameling/gpu-off; elsewhere it sits in the app's data folder, which is where the same name is read at start-up.
  */
 export function gpuOffPath(w: Where): string {
   const base = w.platform === 'linux' ? w.env.XDG_CONFIG_HOME || path.join(w.home, '.config') : w.appData;

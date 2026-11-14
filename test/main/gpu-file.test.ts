@@ -1,10 +1,10 @@
 // The switch that works from outside the app: where the gpu-off file is, that turning hardware drawing off writes it and
-// back on removes it, and that the Linux launcher really starts the program in software when that file is there.
-import { spawnSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+// back on removes it, and that the app then leaves the card out (and asks for it when the file is not there).
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { hardwareSwitches } from '../../src/main/gpuFlags';
 import { GPU_OFF_FILE, gpuOffPath, gpuOffState, parseVramBytes, setGpuOffFile } from '../../src/main/gpuFile';
 
 const tmp = () => mkdtempSync(path.join(os.tmpdir(), 'frameling-gpu-'));
@@ -49,34 +49,25 @@ describe('card memory from the system', () => {
   });
 });
 
-const root = path.resolve(__dirname, '../..');
-const canRun = process.platform === 'linux' && spawnSync('bash', ['--version']).status === 0;
-describe.skipIf(!canRun)('the launcher reads what Preferences writes', () => {
-  function startWith(prepare: (cfg: string) => void): string {
-    const dir = tmp();
-    copyFileSync(path.join(root, 'build/linux/launcher.sh'), path.join(dir, 'frameling'));
-    writeFileSync(path.join(dir, 'frameling.bin'), '#!/usr/bin/env bash\necho "ARGS: $*"\n');
-    chmodSync(path.join(dir, 'frameling'), 0o755);
-    chmodSync(path.join(dir, 'frameling.bin'), 0o755);
-    const cfg = path.join(dir, 'cfg');
+describe('the app reads what Preferences writes', () => {
+  // What applyGpuOff (src/main/gpu.ts) does, minus Electron: the file or the variable means off, else the card is asked for.
+  function switchesWith(prepare: (cfg: string) => void, env: Record<string, string> = {}): string[] {
+    const cfg = path.join(tmp(), 'cfg');
     prepare(cfg);
-    const r = spawnSync(path.join(dir, 'frameling'), [], { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: dir, XDG_CONFIG_HOME: cfg } });
-    return r.stdout;
+    const off = gpuOffState(home(cfg), env);
+    return hardwareSwitches(env, 'linux', off.file || off.env).switches.map(([k]) => `--${k}`);
   }
   const home = (cfg: string) => gpuOffPath({ platform: 'linux', env: { XDG_CONFIG_HOME: cfg }, home: '/unused', appData: '/unused' });
-  it('starts with the card when the file is not there', () => expect(startWith(() => {})).toContain('--ignore-gpu-blocklist'));
-  it('starts in software once the switch has written the file', () => {
-    const out = startWith((cfg) => expect(setGpuOffFile(home(cfg), true)).toBeNull());
-    expect(out).toContain('--disable-gpu');
-    expect(out).not.toContain('--ignore-gpu-blocklist');
+  it('asks for the card when the file is not there', () => expect(switchesWith(() => {})).toContain('--ignore-gpu-blocklist'));
+  it('asks for nothing once the switch has written the file', () => {
+    expect(switchesWith((cfg) => expect(setGpuOffFile(home(cfg), true)).toBeNull())).toEqual([]);
   });
-  it('starts with the card again once the switch has taken it away', () => {
-    const out = startWith((cfg) => {
+  it('asks for the card again once the switch has taken it away', () => {
+    const out = switchesWith((cfg) => {
       setGpuOffFile(home(cfg), true);
       setGpuOffFile(home(cfg), false);
     });
     expect(out).toContain('--ignore-gpu-blocklist');
-    expect(out).not.toContain('--disable-gpu');
   });
-  it('the launcher comment points at the same file name', () => expect(readFileSync(path.join(root, 'build/linux/launcher.sh'), 'utf8')).toContain(`Frameling/${GPU_OFF_FILE}`));
+  it('asks for nothing with FRAMELING_GPU=off', () => expect(switchesWith(() => {}, { FRAMELING_GPU: 'off' })).toEqual([]));
 });

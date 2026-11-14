@@ -13,7 +13,7 @@ import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarke
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
-import { applyGpuOff } from './gpu';
+import { addFeatures, applyGpuOff } from './gpu';
 import { colourSwitches } from './gpuFlags';
 import { createRestarter, fitWindow, readState, relaunchPlan, type RestartState, type WindowPlace } from './restart';
 
@@ -22,9 +22,10 @@ for (const [name, value] of colourSwitches()) value === undefined ? app.commandL
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
-if (isolationWanted(app.getPath('userData'))) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+if (isolationWanted(app.getPath('userData'))) addFeatures([PLUGIN_PROCESS_FEATURE]);
 
-// Hardware drawing off: the gpu-off file or FRAMELING_GPU=off, read before any window exists (see gpuFile.ts).
+// Hardware drawing: off for the gpu-off file or FRAMELING_GPU=off, otherwise asked for by name on Linux (see gpuFlags.ts).
+// Read before any window exists.
 applyGpuOff();
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.

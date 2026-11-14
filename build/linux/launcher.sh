@@ -53,29 +53,10 @@ for a in "$@"; do
   fi
 done
 
-# Hardware drawing. Frameling is a drawing app, so leaving the card out of it is the worst thing to leave to chance,
-# and the browser engine says no to plenty of perfectly good Linux drivers by default. --ignore-gpu-blocklist says
-# yes: use the card even on a driver the engine has not been told about. That is all the default does.
-#
-# The culprit, found one flag at a time on a real NVIDIA card: --enable-features=Vulkan,DefaultANGLEVulkan draws
-# nothing at all. The file opens, every layer is there, and the canvas stays empty. It is never added here, not even
-# by FRAMELING_GPU=full, and FRAMELING_GPU=vulkan is the only way to get it, for anyone measuring it on another card.
-# --enable-zero-copy and --canvas-oop-rasterization both draw correctly on that same card, and are what
-# FRAMELING_GPU=full means now. They are not the default until they are proven on more than one card.
-GPU_ARGS=(--ignore-gpu-blocklist)
-if [ "${FRAMELING_GPU:-}" = full ]; then
-  GPU_ARGS+=(--enable-zero-copy --canvas-oop-rasterization)
-  say 'keeping canvas pixels on the card (FRAMELING_GPU=full).'
-fi
-if [ "${FRAMELING_GPU:-}" = vulkan ]; then
-  GPU_ARGS+=(--enable-features=Vulkan,DefaultANGLEVulkan)
-  say 'drawing through Vulkan (FRAMELING_GPU=vulkan). This drew nothing at all on the NVIDIA card it was found on.'
-fi
-if [ "${FRAMELING_GPU:-}" = off ] || [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/Frameling/gpu-off" ]; then
-  GPU_ARGS=(--disable-gpu)
-  say 'drawing in software, as you asked (FRAMELING_GPU=off).'
-fi
-args=("${GPU_ARGS[@]}" "$@")
+# Hardware drawing is not set here. It does not need to be: the engine reads --ignore-gpu-blocklist after it starts, so the
+# app asks for the card itself, in its main process (src/main/gpuFlags.ts), and that holds for every way of starting it.
+# FRAMELING_GPU=off, =full and =vulkan are read there too.
+args=("$@")
 
 # The window system, if asked for by hand.
 case "${FRAMELING_OZONE:-}" in

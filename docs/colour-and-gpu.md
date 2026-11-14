@@ -53,7 +53,7 @@ screen looks wide) and prints one line:
 | `software` | pixel comparisons that must be the same everywhere | SwiftShader, which ships inside Electron | a real card turns up |
 | `software` with `{ noGpu: true }` | captures and checks that never had a GPU (shots, help media, most e2e); also anything with an off-screen window, which paints nothing with SwiftShader on | no GPU process at all, no WebGL | the GPU is on |
 | `software` with `{ webgpu: true }` | Phaser and PixiJS WebGPU checks | leaves ANGLE alone (with the SwiftShader switch the GPU process drops the WebGPU device), so the renderer is Mesa's llvmpipe | a real card turns up |
-| `card` | anything that claims to measure speed (`perf/run.cjs`, `sweep.cjs`, `penup.cjs`, `startup.cjs`) | the same flags as the Linux AppImage launcher (a test compares the two lists) | the engine fell back to software, the window is composited in software, 2D canvas is not on the card, or there is no WebGL |
+| `card` | anything that claims to measure speed (`perf/run.cjs`, `sweep.cjs`, `penup.cjs`, `startup.cjs`) | the same flags the app sets on Linux, in its main process (`src/main/gpuFlags.ts`; a test compares the two lists) | the engine fell back to software, the window is composited in software, 2D canvas is not on the card, or there is no WebGL |
 
 `GPU_MODE=card` or `GPU_MODE=software` in the environment overrides what a harness asked for, to run the same check
 both ways. `PERF_SOFTWARE_GL=1` still asks the perf scripts for software. Perf results files now carry the line above
@@ -128,12 +128,12 @@ What was checked, and what was not.
   | `+ --enable-zero-copy` | draws |
   | `+ --canvas-oop-rasterization` | draws |
 
-  So Vulkan through ANGLE is the one. The launcher never adds it, not even for `FRAMELING_GPU=full`, and
+  So Vulkan through ANGLE is the one. The app never adds it, not even for `FRAMELING_GPU=full`, and
   `FRAMELING_GPU=vulkan` is the only way to get it, for anyone measuring it on another card. `FRAMELING_GPU=full`
   now means zero copy and out-of-process canvas drawing, the two that work. They are not the default until a second
   card says so.
 - **The silent fall back** (above) is the real risk with hardware drawing on: on a driver the engine can't use, the
-  AppImage still opens, in llvmpipe, and looks fine. The launcher's `FRAMELING_GPU=off` is the honest way to ask for
+  AppImage still opens, in llvmpipe, and looks fine. `FRAMELING_GPU=off` is the honest way to ask for
   software. Preferences should show the renderer name (task `gpu-prefs-page`).
 - **A second screen at a different scale (fixed).** When a window moves between screens at different scales and keeps
   its size, no resize event comes, so the canvas kept its old number of pixels and was shown stretched. Measured
@@ -146,3 +146,13 @@ What was checked, and what was not.
   Chromium's own notes say, that is honoured only where the canvas can go straight to the compositor (not on Linux), so it
   should be ignored there. Not measured.
   X11 has one scale for all screens, so a second screen at a different scale is a Wayland, macOS and Windows case.
+
+## The AppImage uses the card (appimage-gpu-flags)
+
+On Linux the engine blocks drivers it does not know, and measured here under xvfb the plain app with nothing added has
+every verdict `disabled_software` (compositing, 2D canvas, rasterization, WebGL). With `--ignore-gpu-blocklist` all of
+them are `enabled`. The flag used to come from the launcher (`build/linux/launcher.sh`). It now comes from the app's
+main process, `hardwareSwitches` in `src/main/gpuFlags.ts`, because the engine reads that switch after it starts and
+so it needs no launcher: it holds for the AppImage, a `.deb`, `npm start` and anything else that runs the app.
+`FRAMELING_GPU=off` (or the `gpu-off` file) leaves it out, `=full` and `=vulkan` are as above, and Windows and macOS are
+left to the engine. The proof is `scripts/e2e/appimage-gpu.cjs` (docs/testing.md).
