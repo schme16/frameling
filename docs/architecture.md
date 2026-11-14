@@ -496,7 +496,10 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
   draw, and how to add one, are in `docs/mascots.md`.
 - `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns each mascot's source (Quill's
   is `brand/mascot/mascot.frameling`) into its sheet and `mascot-icon.frameling` into the app icons, and fails if a
-  mascot is missing a clip. See the README.
+  mascot is missing a clip. Quill's file has an artboard per animation on one shared stack of layers (`doc.sharedLayers`,
+  see `docs/artboards.md`); `docToSheet` walks the artboards in panel order, so the tile order is the artboard order, and
+  an artboard with one clip across all of it is named after the artboard. `node brand/mascot/mascot.mjs check` compares a
+  file's sheet, frame by frame, with the one that ships. See the README.
 
 ## Help
 

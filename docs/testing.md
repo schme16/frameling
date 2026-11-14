@@ -1220,7 +1220,25 @@ npm run build:mascot
 Reads each mascot's source (Quill's is `brand/mascot/mascot.frameling`) and `mascot-icon.frameling` with the app's own reader and writes
 `public/mascot/mascot.png` + `mascot.json`, `build/icon.png`, `build/icon.svg`, `build/icons/` and
 `public/mascot/logo.png`, touching only files whose bytes changed. `npm run build` runs it first.
-`test/io/mascot-source.test.ts` checks the source files still load. `test/ui/mascots.test.ts` checks every mascot in `src/ui/mascot/mascots.json` keeps the clip contract in `docs/mascots.md` (and that the code only asks for clips on the list), and `test/ui/mascots-switch.test.tsx` the picker (hidden while there is one) and switching the sheet while running.
+`test/io/mascot-source.test.ts` checks the source files still load (an artboard per animation, one clip each, the committed sheet up to date with them), the split into artboards, `copyAnimation`, `compareSheets` and the build over artboards. `test/ui/mascots.test.ts` checks every mascot in `src/ui/mascot/mascots.json` keeps the clip contract in `docs/mascots.md` (and that the code only asks for clips on the list), and `test/ui/mascots-switch.test.tsx` the picker (hidden while there is one) and switching the sheet while running.
+
+## Quill's file in the real app: scripts/e2e/quill-artboards.cjs
+
+An artist's journey through `brand/mascot/mascot.frameling`, which has an artboard per animation. Works on a scratch copy in the
+output folder, so the repo's file is never touched. It opens the file and checks it opens on 13 artboards with only the first
+animation's timeline, saves through the app and rebuilds the sheet (`node brand/mascot/mascot.mjs check <file>`, which compares frame
+by frame with `public/mascot/`), picks another animation's artboard by clicking its row and checks the timeline is that animation's
+alone, picks the Eyes layer, draws a pixel with the pencil, saves and checks the sheet changed only in the animations that show
+that drawing, undoes and saves and checks the sheet is the one that ships again. It also draws on Body in idle, a part shown by
+several animations, and reports how many animations that changed (a known gap, told and not failed).
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/quill-artboards.cjs <outDir> [--theme dark|light]
+```
+
+`--before --file <old one-timeline file>` and `--after` (with `--clip oops`) shoot the A/B pictures of the timeline instead: the
+Animate workspace, the timeline dragged tall, one animation on a long timeline against its own artboard.
 
 ## The off-screen window and ?debug hooks
 
