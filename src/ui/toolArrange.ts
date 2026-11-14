@@ -3,6 +3,12 @@
 // workspace's default (BUILTIN_RAILS for the ones that come with the app, the saved one for your own) and what you
 // change is kept for that workspace alone (`rails` in the dock state). Tools nobody has placed yet (new ones, plugin
 // ones) are put away for you.
+//
+// The rail keeps its shape from layer to layer: every tool that works on a vector or a pixel layer has a place all the
+// time. A tool that doesn't work on the layer you're on stays where it is, greyed out (railFor). The Lasso and the
+// Pixel lasso (and the other ways of picking) share one place, and the one for your layer shows (a slot, see slotMates).
+
+import type { LayerKind } from '../core/format';
 
 export interface ToolGroup {
   id: string;
@@ -27,6 +33,8 @@ export interface ToolRef {
   id: string;
   group?: string;
   groupAt?: number;
+  /** Tools with the same slot share one place on the rail (the Lasso and the Pixel lasso). */
+  slot?: string;
 }
 
 /**
@@ -151,7 +159,91 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     }
     g.tools.push(t);
   }
-  return groups.filter((g) => g.tools.length);
+  return bindSlots(groups, slotMates(tools)).filter((g) => g.tools.length);
+}
+
+/**
+ * For each tool that shares a place with others (a slot), every tool in it: itself too, in registration order. Tools
+ * with no slot, or alone in theirs, give back just themselves.
+ */
+export function slotMates(tools: ToolRef[]): (id: string) => string[] {
+  const bySlot = new Map<string, string[]>();
+  for (const t of tools) if (t.slot) bySlot.set(t.slot, [...(bySlot.get(t.slot) ?? []), t.id]);
+  const slotOf = new Map(tools.map((t) => [t.id, t.slot]));
+  return (id) => {
+    const slot = slotOf.get(id);
+    return (slot && bySlot.get(slot)) || [id];
+  };
+}
+
+/** The arrangement with the tools of each slot side by side, in the group of whichever the arrangement places first. */
+function bindSlots(groups: ToolGroup[], mates: (id: string) => string[]): ToolGroup[] {
+  const placed = new Set<string>();
+  const have = new Set(groups.flatMap((g) => g.tools));
+  return groups.map((g) => {
+    const tools: string[] = [];
+    for (const t of g.tools) {
+      if (placed.has(t)) continue;
+      placed.add(t);
+      tools.push(t);
+      for (const m of mates(t)) {
+        if (m === t || placed.has(m) || !have.has(m)) continue;
+        placed.add(m);
+        tools.push(m);
+      }
+    }
+    return { ...g, tools };
+  });
+}
+
+/** A tool as the rail sees it for the layer you're on: what it works on, as well as where it sits. */
+export interface RailTool extends ToolRef {
+  layers: LayerKind[];
+  label?: string;
+}
+
+const everyday = (k: LayerKind | null): boolean => k === 'vector' || k === 'pixel';
+
+/**
+ * Which tools the rail shows for a kind of layer, and which of those are greyed out because they don't work there.
+ * Vector and pixel layers get the same rail: every tool that works on either, one button per slot, with the ones that
+ * don't work on this layer off. Other kinds of layer (tiles, camera) and no layer at all show only what works.
+ * `only` is a workspace narrowing the strip for this kind (the Pixel workspace on a pixel layer): just those tools.
+ */
+export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string[]): { shown: string[]; off: string[] } {
+  const works = (t: RailTool) => !kind || t.layers.includes(kind);
+  let pool = tools;
+  if (only) {
+    const keep = new Set(only);
+    pool = pool.filter((t) => keep.has(t.id) && works(t));
+  } else if (everyday(kind)) pool = pool.filter((t) => t.layers.some(everyday));
+  else pool = pool.filter(works);
+  // One button per slot: the tool that works here, or the first when none does.
+  const pick = new Map<string, RailTool>();
+  for (const t of pool) {
+    if (!t.slot) continue;
+    const had = pick.get(t.slot);
+    if (!had || (!works(had) && works(t))) pick.set(t.slot, t);
+  }
+  const shown = pool.filter((t) => !t.slot || pick.get(t.slot) === t);
+  return { shown: shown.map((t) => t.id), off: shown.filter((t) => !works(t)).map((t) => t.id) };
+}
+
+/** The tool of the same slot that works on this kind of layer, or null when it has no slot or none works. */
+export function twinFor(tools: RailTool[], id: string, kind: LayerKind | null): string | null {
+  const me = tools.find((t) => t.id === id);
+  if (!me?.slot) return null;
+  return tools.find((t) => t.slot === me.slot && t.id !== id && (!kind || t.layers.includes(kind)))?.id ?? null;
+}
+
+const KIND_WORDS: Record<LayerKind, string> = { vector: 'vector', pixel: 'pixel', tilemap: 'tile', camera: 'camera' };
+
+/** Why a greyed-out tool is greyed out, in plain words, and what to do about it. */
+export function whyOff(tool: { label?: string; layers: LayerKind[] }, kind: LayerKind | null): string {
+  const name = tool.label ?? 'This tool';
+  const needs = tool.layers.includes('pixel') && !tool.layers.includes('vector') ? 'pixel' : 'vector';
+  const on = KIND_WORDS[kind ?? 'vector'];
+  return `${name} works on ${needs} layers, and you're on a ${on} layer. Click a ${needs} layer, or add one with ${needs === 'pixel' ? 'Pixel' : 'Vector'} in the Layers header.`;
 }
 
 /** True when a group carries a name that is not the one it would have anyway (its usual name, or "Group N"). */
@@ -196,7 +288,38 @@ export function newGroupId(groups: ToolGroup[]): string {
  * group). `newGroupAt` is a place among the groups (0 = first). Groups left empty are dropped. A tool it doesn't know
  * is left alone.
  */
-export function moveTool(groups: ToolGroup[], tool: string, to: ToolDrop): ToolGroup[] {
+export function moveTool(groups: ToolGroup[], tool: string, to: ToolDrop, mates?: (id: string) => string[]): ToolGroup[] {
+  const slot = mates?.(tool).filter((t) => groups.some((g) => g.tools.includes(t))) ?? [];
+  if (slot.length > 1) return moveSlot(groups, slot, to, mates!);
+  // A drop before one of a pair lands before the pair, never between the two.
+  if (mates && 'group' in to && to.before) {
+    const flat = groups.flatMap((g) => g.tools);
+    const ahead = mates(to.before).filter((t) => flat.includes(t)).sort((x, y) => flat.indexOf(x) - flat.indexOf(y))[0];
+    if (ahead && ahead !== tool) return moveOne(groups, tool, { group: to.group, before: ahead });
+  }
+  return moveOne(groups, tool, to);
+}
+
+/** A slot moves as one: its tools go together, in the order they are in now, and a drop before one of a slot goes before the slot. */
+function moveSlot(groups: ToolGroup[], slot: string[], to: ToolDrop, mates: (id: string) => string[]): ToolGroup[] {
+  const flat = groups.flatMap((g) => g.tools);
+  const first = (ids: string[]) => ids.filter((t) => flat.includes(t)).sort((a, b) => flat.indexOf(a) - flat.indexOf(b));
+  const mine = first(slot);
+  let dest = to;
+  if ('group' in to && to.before) {
+    if (mine.includes(to.before)) return groups;
+    dest = { group: to.group, before: first(mates(to.before))[0] ?? to.before };
+  }
+  let out = moveOne(groups, mine[0], dest);
+  for (const t of mine.slice(1)) {
+    const prev = out.find((g) => g.tools.includes(mine[mine.indexOf(t) - 1]));
+    if (!prev) continue;
+    out = moveOne(out, t, { group: prev.id, before: prev.tools[prev.tools.indexOf(mine[mine.indexOf(t) - 1]) + 1] ?? null });
+  }
+  return JSON.stringify(out) === JSON.stringify(groups) ? groups : out;
+}
+
+function moveOne(groups: ToolGroup[], tool: string, to: ToolDrop): ToolGroup[] {
   if (!groups.some((g) => g.tools.includes(tool))) return groups;
   const out = copy(groups);
   const from = out.find((g) => g.tools.includes(tool))!;
@@ -226,20 +349,20 @@ export function moveTool(groups: ToolGroup[], tool: string, to: ToolDrop): ToolG
  * One step along the rail for the keyboard: `by` places later (negative: earlier) among the tools that show. Past the
  * end of its group a tool crosses into the next group. At the very start or end nothing happens.
  */
-export function shiftTool(groups: ToolGroup[], tool: string, by: number, visible: (id: string) => boolean = () => true): ToolGroup[] {
+export function shiftTool(groups: ToolGroup[], tool: string, by: number, visible: (id: string) => boolean = () => true, mates?: (id: string) => string[]): ToolGroup[] {
   const gi = groups.findIndex((g) => g.tools.includes(tool));
   if (gi < 0 || !by) return groups;
   const shown = groups[gi].tools.filter(visible);
   const j = shown.indexOf(tool) + by;
   if (j >= 0 && j < shown.length) {
     const rest = shown.filter((t) => t !== tool);
-    return moveTool(groups, tool, { group: groups[gi].id, before: rest[j] ?? null });
+    return moveTool(groups, tool, { group: groups[gi].id, before: rest[j] ?? null }, mates);
   }
   const step = j < 0 ? -1 : 1;
   for (let k = gi + step; k >= 0 && k < groups.length; k += step) {
     const there = groups[k].tools.filter(visible);
     if (!there.length) continue;
-    return moveTool(groups, tool, { group: groups[k].id, before: step < 0 ? null : there[0] });
+    return moveTool(groups, tool, { group: groups[k].id, before: step < 0 ? null : there[0] }, mates);
   }
   return groups;
 }

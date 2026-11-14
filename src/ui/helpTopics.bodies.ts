@@ -398,7 +398,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 
 - **Draw** has the tools and colours close, and a small timeline. The drawing tools lead the tool strip.
 - **Animate** gives the timeline lots of room. The tool strip puts drawing first, then the rig and motion tools.
-- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. Its tool strip starts with the pixel tools, with shade, dither and pixel select together, and the vector-only tools after. See [The Pixel workspace](help:pixel-workspace).
+- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. Its tool strip starts with the pixel tools, with shade, dither and pixel select together, and the vector-only tools after. On a pixel layer it shows only the pixel tools. See [The Pixel workspace](help:pixel-workspace).
 
 Each workspace brings its own tools, and you can change them (see below).
 
@@ -571,9 +571,13 @@ Tools that belong together sit together, with a thin gap between groups: drawing
 
 Press its button, or press its key. Rest on a button to see the key.
 
-## Not every tool is always there
+## The strip stays put
 
-Pixel layers and vector layers need different tools. The strip shows the ones that work on the layer you're drawing on, so you never pick one that can't help.
+Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is greyed out where it sits: Shade, Dither, Spray and the Magic wand wait on a vector layer, and Text, Gradient and the curve tools wait on a pixel layer. Rest on a greyed tool and it says why. Press it and it says what to do.
+
+A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
+
+Tilemap and camera layers are different jobs, so on those the strip shows only the tools that work there.
 
 ## Your way
 

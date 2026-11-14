@@ -313,6 +313,7 @@ export const pixelSelectTools: Tool[] = WAYS.map((w) => ({
   id: w.pixel,
   group: 'select',
   groupAt: w.at,
+  slot: `select.${w.mode}`,
   label: w.label,
   icon: w.icon,
   key: w.key,

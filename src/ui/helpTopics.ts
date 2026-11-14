@@ -189,7 +189,7 @@ registerHelpTopics([
     section: 'Basics',
     media: 'tool-strip.png',
     summary: 'Your tools, two across, in groups. Pick one to draw with.',
-    keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout'],
+    keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout', 'greyed out', 'grey', 'disabled', 'pixel layer', 'vector layer', 'moves', 'same place'],
   },
   {
     id: 'tool-arrange',

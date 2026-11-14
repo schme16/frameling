@@ -7,14 +7,15 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
-import { currentWorkspace, dock, railOf, stripTools } from './dock';
+import { currentWorkspace, dock, railOf } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { menuPoint, openDockMenu, toolsMenu } from './dockMenus';
 import type { DockZone } from './dockModel';
 import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
-import { groupName, resolveGroups, visibleGroups, type ToolGroup } from './toolArrange';
+import { groupName, railFor, resolveGroups, twinFor, visibleGroups, whyOff, type RailTool, type ToolGroup } from './toolArrange';
+import { toast } from './toast';
 import { askGroupRename, currentGroups, flyRequest, frontTools, groupMenu, railNote, startToolDrag, stepTool, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
@@ -78,7 +79,7 @@ function neighbour(buttons: HTMLElement[], from: HTMLElement, key: string): HTML
 }
 
 /** The stacked style's flyout: the rest of a group, beside its button. */
-function Flyout({ group, groups, anchor, place, visible, current, onPick, onClose }: { group: ToolGroup; groups: ToolGroup[]; anchor: DOMRect; place: DockZone | 'float'; visible: (id: string) => boolean; current: string; onPick: (id: string) => void; onClose: () => void }) {
+function Flyout({ group, groups, anchor, place, visible, off, why, current, onPick, onClose }: { group: ToolGroup; groups: ToolGroup[]; anchor: DOMRect; place: DockZone | 'float'; visible: (id: string) => boolean; off: Set<string>; why: (id: string) => string; current: string; onPick: (id: string) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   usePopover(ref, onClose);
   useEffect(() => {
@@ -124,9 +125,11 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
             type="button"
             role="menuitemradio"
             aria-checked={current === id}
-            className={`ui-tool-fly-item${current === id ? ' is-chosen' : ''}`}
+            className={`ui-tool-fly-item${current === id ? ' is-chosen' : ''}${off.has(id) ? ' is-off' : ''}`}
+            aria-disabled={off.has(id) || undefined}
             data-tool-id={id}
             data-command={`tools.${id}`}
+            {...(off.has(id) ? { 'data-tip': t.label, 'data-tip-desc': why(id) } : {})}
             onClick={() => onPick(id)}
             onPointerDown={(e) => startToolDrag(e, id, () => visibleGroups(currentGroups(), visible), visible, onClose)}
             onContextMenu={(e) => {
@@ -160,9 +163,19 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const current = useStore((s) => s.ui.tool);
   // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
   const wsId = dock.use((d) => d.workspaceId);
-  const usable = allTools().filter((t) => !kind || t.layers.includes(kind));
-  const tools = stripTools(usable, kind, wsId ? currentWorkspace() : undefined);
-  const ids = tools.map((t) => t.id).join(',');
+  // Vector and pixel layers get the same rail; what doesn't work on this layer is greyed out where it sits.
+  const everything = allTools() as RailTool[];
+  const only = kind && wsId ? currentWorkspace()?.tools?.[kind] : undefined;
+  const rail = railFor(everything, kind, only);
+  const tools = rail.shown.map((id) => getTool(id)!).filter(Boolean);
+  const ids = rail.shown.join(',');
+  const offKey = rail.off.join(',');
+  const off = useMemo(() => new Set(offKey ? offKey.split(',') : []), [offKey]);
+  const why = (id: string): string => whyOff({ label: getTool(id)?.label, layers: getTool(id)?.layers ?? [] }, kind);
+  const choose = (id: string) => {
+    if (off.has(id)) toast(why(id), { quill: null });
+    else pickTool(id);
+  };
   const saved = dock.use((d) => railOf(d));
   // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
   const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}`).join(',');
@@ -191,12 +204,16 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const byId = new Map(tools.map((t) => [t.id, t]));
   const axis = sideways ? 'y' : 'x';
 
-  // The picked tool doesn't work on this kind of layer: move to the first one that does. A tool the workspace only
-  // leaves out of the strip still works (picked by its key, say), so it's left alone.
+  // The picked tool doesn't work on this kind of layer: move to the same job there (the Lasso becomes the Pixel lasso),
+  // or else the first one that does. A tool the workspace only leaves out of the strip still works (picked by its key,
+  // say), so it's left alone.
   useEffect(() => {
-    if (tools.length && getTool(current) && !usable.some((t) => t.id === current)) store().setUi({ tool: tools[0].id });
+    const now = getTool(current);
+    if (!tools.length || !now || !kind || now.layers.includes(kind)) return;
+    const next = twinFor(everything, current, kind) ?? tools.find((t) => !off.has(t.id))?.id;
+    if (next) store().setUi({ tool: next });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, ids]);
+  }, [current, ids, kind]);
 
   // Whatever tool is used from a group is the one its stacked button shows.
   useEffect(() => {
@@ -218,7 +235,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const frontOf = (g: ToolGroup): string => {
     if (g.tools.includes(current)) return current;
     const f = front[g.id];
-    return f && g.tools.includes(f) ? f : g.tools[0];
+    if (f && g.tools.includes(f) && !off.has(f)) return f;
+    return g.tools.find((t) => !off.has(t)) ?? g.tools[0];
   };
 
   const refocus = (id: string) =>
@@ -263,7 +281,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       held.current.fired = false;
       return;
     }
-    pickTool(frontOf(g));
+    choose(frontOf(g));
   };
 
   const grip = (
@@ -344,11 +362,13 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                 return (
                   <button
                     type="button"
-                    className={`ui-tool is-stack${more ? ' has-more' : ''}${g.tools.includes(current) ? ' is-chosen' : ''}${drag?.mark?.kind === 'group' && drag.mark.group === g.id ? ' is-drop-group' : ''}`}
+                    className={`ui-tool is-stack${more ? ' has-more' : ''}${off.has(id) ? ' is-off' : ''}${g.tools.includes(current) ? ' is-chosen' : ''}${drag?.mark?.kind === 'group' && drag.mark.group === g.id ? ' is-drop-group' : ''}`}
                     aria-label={more ? `${t.label}. ${groupName(g, groups)} group, ${g.tools.length} tools.` : t.label}
                     aria-pressed={g.tools.includes(current)}
                     aria-haspopup={more ? 'menu' : undefined}
+                    aria-disabled={off.has(id) || undefined}
                     data-tip={`${t.label}, in ${groupName(g, groups)}`}
+                    {...(off.has(id) ? { 'data-tip-desc': why(id) } : {})}
                     data-command={`tools.${id}`}
                     data-help={t.help}
                     data-tool-group={g.id}
@@ -386,13 +406,15 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                     <button
                       key={id}
                       type="button"
-                      className={`ui-tool${current === id ? ' is-chosen' : ''}${drag?.id === id ? ' is-lifted' : ''}${markOf(id)}`}
+                      className={`ui-tool${current === id ? ' is-chosen' : ''}${off.has(id) ? ' is-off' : ''}${drag?.id === id ? ' is-lifted' : ''}${markOf(id)}`}
                       aria-label={t.label}
                       aria-pressed={current === id}
+                      aria-disabled={off.has(id) || undefined}
+                      {...(off.has(id) ? { 'data-tip': t.label, 'data-tip-desc': why(id) } : {})}
                       data-command={`tools.${id}`}
                       data-help={t.help}
                       data-tool-id={id}
-                      onClick={() => pickTool(id)}
+                      onClick={() => choose(id)}
                       onPointerDown={(e) => startToolDrag(e, id, () => groups, visible)}
                     >
                       <Icon name={t.icon} size={20} />
@@ -413,10 +435,12 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
           anchor={fly.rect}
           place={place}
           visible={visible}
+          off={off}
+          why={why}
           current={current}
           onPick={(id) => {
             setFly(null);
-            pickTool(id);
+            choose(id);
             refocus(id);
           }}
           onClose={() => setFly(null)}

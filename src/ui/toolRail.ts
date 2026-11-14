@@ -5,7 +5,7 @@ import { dock, railOf, resetToolGroups, setToolGroups } from './dock';
 import { run } from './dockDrag';
 import { askRename, type DockMenuItem } from './dockMenus';
 import { createStore } from './mini';
-import { groupName, hasOwnName, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, type ToolDrop, type ToolGroup } from './toolArrange';
+import { groupName, hasOwnName, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, slotMates, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -36,15 +36,18 @@ export const resetToolArrangement = (): void => resetToolGroups();
 /** A line for a screen reader after a move ("Pencil moved. Draw, place 2 of 4."). */
 export const railNote = createStore('');
 
+/** The tools that share a place on the rail with this one (the Lasso and the Pixel lasso move as one). */
+const mates = (id: string): string[] => slotMates(allTools())(id);
+
 const label = (id: string): string => getTool(id)?.label ?? id;
 
 export function moveToolTo(id: string, to: ToolDrop, visible: (id: string) => boolean = () => true): void {
-  if (arrange((g) => moveTool(g, id, to))) railNote.set(`${label(id)} moved. ${placeWords(currentGroups(), id, visible)}.`);
+  if (arrange((g) => moveTool(g, id, to, mates))) railNote.set(`${label(id)} moved. ${placeWords(currentGroups(), id, visible)}.`);
 }
 
 /** Alt+arrow: one step along the rail. Returns true when the tool moved. */
 export function stepTool(id: string, by: number, visible: (id: string) => boolean): boolean {
-  const moved = arrange((g) => shiftTool(g, id, by, visible));
+  const moved = arrange((g) => shiftTool(g, id, by, visible, mates));
   if (moved) railNote.set(`${label(id)} moved. ${placeWords(currentGroups(), id, visible)}.`);
   return moved;
 }

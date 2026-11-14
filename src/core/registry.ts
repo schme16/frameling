@@ -222,6 +222,11 @@ export interface Tool {
   group?: string;
   /** Its place in that group, lower first (tools with none come after, in registration order). */
   groupAt?: number;
+  /**
+   * A slot on the tool rail shared with the same job on the other kind of layer (the Lasso and the Pixel lasso share
+   * one). Tools with the same slot get one button, and the one that works on the layer you're on is the one it picks.
+   */
+  slot?: string;
   help?: string;
   cursor?: string;
   /** Tool options shown in the Tool options panel. */
