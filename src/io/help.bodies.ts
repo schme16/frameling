@@ -22,7 +22,7 @@ Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frame
 
 ## If you have unsaved changes
 
-Opening something else, starting a new drawing, closing the drawing or closing the window all ask first: **Save**, **Don't save**, or **Cancel**. If the drawing has never been saved, the question says so, and **Save** asks where to put it. Nothing is lost by accident. Even **Don't save** isn't final: the work is kept for 7 days (see [Autosave](help:autosave)).
+Opening something else, starting a new drawing, closing the drawing, closing the window or quitting all ask first, and it's Quill who asks: **Save**, **Don't save**, or **Cancel**. Your drawing's name is in the question. **Save** is already chosen, so pressing **Enter** saves, and **Esc** is the same as **Cancel**. If the drawing has never been saved, the question says so, and **Save** asks where to put it. Nothing is lost by accident. Even **Don't save** isn't final: the work is kept for 7 days (see [Autosave](help:autosave)).
 
 ## If a file won't open
 

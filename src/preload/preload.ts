@@ -125,6 +125,27 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('app:keepUnsaved', fn);
     },
     askSaveChanges: (name, neverSaved) => call('app:askSaveChanges', name, neverSaved),
+    onCloseQuestion: (handler) => {
+      // What to do if the desktop side withdraws a question (it gave up on the page and asked another way).
+      const withdrawals = new Map<number, () => void>();
+      const ask = (_e: unknown, id: number, q: { name?: unknown; neverSaved?: unknown }) => {
+        Promise.resolve()
+          .then(() => handler({ name: String(q?.name ?? 'Untitled'), neverSaved: q?.neverSaved === true }, () => ipcRenderer.send('app:closeQuestionShown', id), (fn) => void withdrawals.set(id, fn)))
+          .then(
+            (choice) => ipcRenderer.send('app:closeQuestionAnswer', id, choice),
+            // The page can't ask: say so, and the desktop side asks with the system box.
+            () => ipcRenderer.send('app:closeQuestionAnswer', id, 'unavailable'),
+          )
+          .finally(() => withdrawals.delete(id));
+      };
+      const withdraw = (_e: unknown, id: number) => withdrawals.get(id)?.();
+      ipcRenderer.on('app:closeQuestion', ask);
+      ipcRenderer.on('app:closeQuestionWithdraw', withdraw);
+      return () => {
+        ipcRenderer.removeListener('app:closeQuestion', ask);
+        ipcRenderer.removeListener('app:closeQuestionWithdraw', withdraw);
+      };
+    },
   },
 };
 

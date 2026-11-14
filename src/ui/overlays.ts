@@ -1,6 +1,7 @@
 // Which big floating things are open: command palette, preferences, help window, welcome and new-document sheets.
 import { store } from '../core/store';
 import { createStore } from './mini';
+import { saveAsking } from '../io/saveAsk';
 
 export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins' | 'features' | 'snapping' | 'pen' | 'diagnostics';
 
@@ -46,7 +47,7 @@ export const closeOnboarding = () => patch({ onboarding: false });
 
 export const anyOverlayOpen = (): boolean => {
   const o = overlays.get();
-  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding || !!o.penCheck || !!o.crashOffer;
+  return saveAsking.get() !== null || o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding || !!o.penCheck || !!o.crashOffer;
 };
 
 /** A document that opens while the Welcome or New sheet is showing (a double-click, Open recent) closes the sheet. */

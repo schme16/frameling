@@ -746,5 +746,10 @@
     ],
     "where": "The same dazed Quill, in a build that has no way to send reports. He only says what happened, with OK under it."
   },
+  "save.ask": {
+    "text": "Hold on! Some of this isn't saved yet.",
+    "where": "Quill thinking it over in the Save changes? dialog: closing the window, Quit, New, Open or Close drawing while the drawing has unsaved changes. The question and Save, Don't save and Cancel sit under him."
+  },
+  "save.ask.never": { "text": "Hold on! This one has never been saved.", "where": "The same Save changes? dialog when the drawing has no file yet, so Save will ask where to put it." },
   "crash.sent": { "text": "Sent! Thank you, that helps more than you'd think.", "where": "The dazed Quill again, once the crash notes have gone: he cheers up." }
 }

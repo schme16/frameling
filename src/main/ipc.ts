@@ -14,7 +14,7 @@ import { describeDisplay } from './display';
 import type { LastCrash } from './crashMarker';
 import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
-import { saveChangesQuestion } from './saveQuestion';
+import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
@@ -32,6 +32,8 @@ export interface IpcHooks {
   /** The notes of the last crash found, and whether Quill has offered them. */
   lastCrash(): LastCrash | null;
   crashOffered(): void;
+  closeQuestionShown(id: number): void;
+  closeQuestionAnswer(id: number, answer: unknown): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -248,14 +250,9 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:askSaveChanges', async (_e, name: string, neverSaved?: boolean): Promise<SaveChoice> => {
-    const r = await dialog.showMessageBox(hooks.window()!, {
-      type: 'question',
-      ...saveChangesQuestion(name, neverSaved === true),
-      defaultId: 0,
-      cancelId: 2,
-      noLink: true,
-    });
-    return r.response === 0 ? 'save' : r.response === 1 ? 'discard' : 'cancel';
+    const q = saveChangesQuestion(name, neverSaved === true);
+    const r = await dialog.showMessageBox(hooks.window()!, { type: 'question', message: q.message, detail: q.detail, buttons: q.buttons, defaultId: 0, cancelId: 2, noLink: true });
+    return choiceAt(r.response);
   });
 
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
@@ -269,6 +266,14 @@ export function registerIpc(hooks: IpcHooks): void {
   ipcMain.on('app:keepUnsavedDone', (e) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.keepUnsavedDone();
+  });
+  ipcMain.on('app:closeQuestionShown', (e, id: number) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.closeQuestionShown(id);
+  });
+  ipcMain.on('app:closeQuestionAnswer', (e, id: number, answer: unknown) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.closeQuestionAnswer(id, answer);
   });
   ipcMain.on('app:saveBeforeCloseDone', (e, ok: boolean) => {
     if (e.sender !== hooks.window()?.webContents) return;
