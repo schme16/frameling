@@ -243,7 +243,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 |---|---|
 | `outDir` | Where outputs and `report.json` go (default: a new folder in the system temp dir). |
 | `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones svganim`. |
-| `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink`. |
+| `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink pixel-symbol-walk` (the last is a four-drawing pixel walk made into one looping symbol, with a second turned copy: every format must show each drawing on its own frame). |
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
 | `GODOT_BIN=/path/to/godot-4-editor` | Also load the sprite sheet exports and the Godot bones export in Godot and compare frames. |

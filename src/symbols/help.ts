@@ -20,6 +20,15 @@ registerHelpTopics([
     keywords: ['pixel', 'sprite', 'pixel symbol', 'pixel art', 'tween pixel', 'move sprite', 'reuse sprite', 'coin'],
   },
   {
+    id: 'symbols-frames',
+    order: 1.7,
+    title: 'A symbol that holds a whole animation',
+    section: 'Symbols and motion',
+    media: 'symbols-frames.mp4',
+    summary: 'Turn every drawing on a layer into one looping symbol that plays itself, then place it again and again.',
+    keywords: ['animated symbol', 'whole animation', 'sprite animation', 'pixel animation', 'loop', 'all frames', 'walk cycle', 'Shift+F8', 'movie clip'],
+  },
+  {
     id: 'symbols-editing',
     title: 'Drawing inside a symbol',
     section: 'Symbols and motion',

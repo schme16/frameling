@@ -17,7 +17,10 @@ import {
   freeSymbolName,
   identityTransform,
   instanceAt,
+  framesWithArt,
   isInstance,
+  keysInSpan,
+  makeFramesSymbol,
   makePixelSymbol,
   makeSymbol,
   newInstance,
@@ -33,6 +36,8 @@ import { cloneDrawing } from '../timeline/edit-core';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { toast } from '../ui/toast';
 import { leaveTileEdit } from '../tiles/tileEdit';
+import { tl } from '../timeline/state';
+import { parseRef } from '../timeline/tracks';
 
 registerChoice<'symbol' | 'morph'>({
   id: 'tween.plainDrawing',
@@ -44,6 +49,21 @@ registerChoice<'symbol' | 'morph'>({
   options: [
     { value: 'symbol', label: 'Move it as one piece', detail: 'Frameling makes it a symbol, then you move, turn, resize or fade it on the next key (classic tween).' },
     { value: 'morph', label: 'Morph the shapes', detail: 'The outlines and colours melt into whatever you draw on the next key (shape tween).' },
+  ],
+});
+
+export type FramesChoice = 'all' | 'one';
+
+registerChoice<FramesChoice>({
+  id: 'symbols.frames',
+  title: 'Symbol from a layer with several drawings',
+  question: 'This layer has several drawings. What should the new symbol hold?',
+  category: 'Animation',
+  default: 'all',
+  help: 'symbols-frames',
+  options: [
+    { value: 'all', label: 'The whole animation', detail: 'Every drawing, in time, as one looping symbol. Place it again and again, move it, fade it.' },
+    { value: 'one', label: 'Just this drawing', detail: 'Only the drawing on this frame (or your selection on a vector layer). The other drawings stay on the layer.' },
   ],
 });
 
@@ -92,11 +112,43 @@ export function editPath(doc: Doc): { id: Id | null; name: string }[] {
 
 // ---------------------------------------------------------------- making and editing symbols
 
-/** Turns the selected shapes (or the whole drawing when nothing is picked) into a new symbol. */
+/** The keys picked on the timeline that belong to this layer. */
+export function pickedKeys(layerId: Id): Id[] {
+  const out: Id[] = [];
+  for (const r of tl().keys) {
+    const p = parseRef(r);
+    if (p?.kind === 'cel' && p.layerId === layerId) out.push(p.celId);
+  }
+  return out;
+}
+
+/**
+ * Turns the selected shapes (or the whole drawing when nothing is picked) into a new symbol. A layer with several
+ * drawings can become one looping symbol of the whole animation instead: with keys picked on the timeline it does that
+ * straight away, otherwise it asks once (and remembers) which one is wanted.
+ */
 export function makeSymbolFromSelection(name?: string): Result {
   const { layer, problem } = activeLayer();
   if (problem || !layer) return say(EDIT_HINTS[problem ?? 'no-layer']);
-  if (layer.kind === 'pixel') return makeSymbolFromPixels(layer.id);
+  if (layer.kind !== 'pixel' && layer.kind !== 'vector') return say('Symbols are made from drawing layers. Pick a vector or pixel layer first.');
+  const { doc, ui } = store().get();
+  const picked = pickedKeys(layer.id);
+  const several = framesWithArt(doc, layer, picked) > 1;
+  if (several && picked.length > 1) return makeSymbolFromFrames({ layerId: layer.id, celIds: picked, name });
+  // A selection on the canvas means "just these shapes", so it is never asked about.
+  const chosen = layer.kind === 'vector' && ui.selection.length > 0;
+  if (several && !chosen && !layer.locked && !(layer.kind === 'vector' && layer.rig)) {
+    withChoice<FramesChoice>('symbols.frames', (v) => void (v === 'all' ? makeSymbolFromFrames({ layerId: layer.id, name }) : makeSymbolFromDrawing(name)));
+    return undefined;
+  }
+  return makeSymbolFromDrawing(name);
+}
+
+/** Turns just the drawing at the playhead (the selected shapes, on a vector layer) into a symbol. */
+export function makeSymbolFromDrawing(name?: string): Result {
+  const { layer, problem } = activeLayer();
+  if (problem || !layer) return say(EDIT_HINTS[problem ?? 'no-layer']);
+  if (layer.kind === 'pixel') return makeSymbolFromPixels(layer.id, name);
   if (layer.kind !== 'vector') return say('Symbols are made from drawing layers. Pick a vector or pixel layer first.');
   const k = currentKey();
   if (!k || !k.drawing.shapes.length) return say('Draw something first, then make it into a symbol.');
@@ -116,6 +168,54 @@ export function makeSymbolFromSelection(name?: string): Result {
   store().setUi({ selection: [made.instanceId], tool: 'select' });
   const symName = store().get().doc.symbols?.[made.symbolId]?.name ?? 'symbol';
   toast(`Made "${symName}". Double-click it to draw inside, or find it in the Library.`, { kind: 'success' });
+  return undefined;
+}
+
+/**
+ * Turns the layer's whole animation (or the stretch between the keys picked on the timeline) into one symbol that
+ * plays the same drawings in the same time and loops. The picture stays where it is; the symbol sits on a vector layer
+ * (the same layer for vector art, and for pixel art that was the layer's only drawings).
+ */
+export function makeSymbolFromFrames(opts: { layerId?: Id; celIds?: Id[]; name?: string } = {}): Result {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, opts.layerId ?? ui.activeLayerId);
+  if (!layer || (layer.kind !== 'pixel' && layer.kind !== 'vector')) return say('Pick a pixel or vector layer with some drawings on it first.');
+  if (layer.locked) return say(EDIT_HINTS.locked);
+  if (layer.kind === 'vector' && layer.rig) return say('A bones layer holds poses, not drawings, so it cannot become a symbol. Use a layer with drawings on it.');
+  const picked = opts.celIds ?? pickedKeys(layer.id);
+  const keys = keysInSpan(layer, picked);
+  if (framesWithArt(doc, layer, picked) < 1) return say('Draw something first, then make it into a symbol.');
+  const shared = sharedEditNote(doc, 'symbols');
+  if (shared) return say(shared);
+  // Vector art turns around the middle of everything drawn on any of the frames.
+  let origin: { x: number; y: number } | undefined;
+  if (layer.kind === 'vector') {
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const c of keys) {
+      const d = doc.drawings[c.drawingId];
+      const b = d?.kind === 'vector' && d.shapes.length ? shapesBounds(d.shapes as Shape[]) : null;
+      if (!b) continue;
+      x0 = Math.min(x0, b.x);
+      y0 = Math.min(y0, b.y);
+      x1 = Math.max(x1, b.x + b.w);
+      y1 = Math.max(y1, b.y + b.h);
+    }
+    origin = Number.isFinite(x0) ? { x: (x0 + x1) / 2, y: (y0 + y1) / 2 } : { x: 0, y: 0 };
+  }
+  const ids = keys.map((c) => c.id);
+  let made: ReturnType<typeof makeFramesSymbol>;
+  store().update('Make a symbol from the animation', (d) => {
+    made = makeFramesSymbol(d as Doc, layer.id, { celIds: ids, name: opts.name, origin });
+  });
+  if (!made) return undefined;
+  const m = made;
+  store().setUi({ activeLayerId: m.layerId, selection: [m.instanceId], tool: 'select' });
+  const symName = store().get().doc.symbols?.[m.symbolId]?.name ?? 'symbol';
+  const where = m.layerId === layer.id ? 'This layer now holds the symbol' : 'It sits on a new layer just above';
+  toast(`Made "${symName}" from ${m.frames} drawings. It plays them in order and loops. ${where}, so you can move, turn, fade and tween it. Double-click it to change a drawing.`, { kind: 'success' });
   return undefined;
 }
 
@@ -350,7 +450,10 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
   if (!cel) return say('Pick a frame with a drawing on it, then make in-betweens from there.');
   const d0 = doc.drawings[cel.drawingId];
   if (!camera && !(d0?.kind === 'vector' && d0.shapes.length) && !(pixel && pixelKeyAt(doc, layer.id, f))) return say('Draw something first: in-betweens move a drawing from one key to the next.');
-  const hasNext = !pixel && (!!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length));
+  // Pixel art with another drawing after it moves into that one: both become symbols on one layer.
+  const after = pixel ? [...layer.cels].filter((c) => c.start >= cel.start + cel.length).sort((x, y) => x.start - y.start)[0] : undefined;
+  const liftNext = after && pixelKeyAt(doc, layer.id, after.start) ? after : undefined;
+  const hasNext = pixel ? !!liftNext : !!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length);
   // A lone one-frame drawing has no room to move: hold it for about a second first, so the tween just works.
   const room = !hasNext && f === cel.start && cel.length < 2 ? Math.max(2, Math.min(doc.fps, 48)) : 0;
 
@@ -360,9 +463,18 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
   store().update('Make in-betweens', (dd) => {
     // Pixel art moves as a symbol, so the key becomes one first (on a vector layer in the same place).
     if (pixel) {
+      const toKey = liftNext ? makePixelSymbol(dd as Doc, layer.id, liftNext.start) : undefined;
       const lifted = makePixelSymbol(dd as Doc, layer.id, f);
       if (!lifted) return;
       layerNow = lifted.layerId;
+      if (toKey) {
+        // The end key's symbol goes onto the same layer, so the two keys can move into each other.
+        const home = dd.layers.find((x) => x.id === layerNow)!;
+        const from = dd.layers.findIndex((x) => x.id === toKey.layerId);
+        home.cels.push(...dd.layers[from].cels);
+        home.cels.sort((x, y) => x.start - y.start);
+        dd.layers.splice(from, 1);
+      }
     }
     const l = dd.layers.find((x) => x.id === layerNow)!;
     const a = pixel ? celAt(l as Layer, f)! : l.cels.find((c) => c.id === cel.id)!;
@@ -370,7 +482,7 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
       a.length = room;
       dd.length = Math.max(dd.length, a.start + room);
     }
-    const before = Object.keys(dd.symbols ?? {}).length - (pixel ? 1 : 0);
+    const before = Object.keys(dd.symbols ?? {}).length - (pixel ? (liftNext ? 2 : 1) : 0);
     // A morph changes the shapes themselves, so they stay plain shapes.
     if (kind === 'classic') wrapIfPlain(dd, a.drawingId, 'Moving part');
     let b = nextKey(l as Layer, a as Cel);

@@ -2,7 +2,7 @@
 import { trimmedDrawing } from '../core/pixelBounds';
 // exportDocument is the very function the dialog's Export button calls, so this runs the same path a person does.
 // Never on in normal use.
-import { rootDoc } from '../core/symbols';
+import { makeFramesSymbol, newInstance, rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
 import type { ClipDirection, Doc } from '../core/format';
 import { store } from '../core/store';
@@ -53,12 +53,48 @@ function stressDoc(): Doc {
   return doc;
 }
 
+/**
+ * A pixel walk of four drawings made into one looping symbol (the whole animation), with a second copy of it turned and
+ * faded on another layer: every export has to show each drawing on its own frame, in both copies.
+ */
+function pixelSymbolWalkDoc(): Doc {
+  const doc = newDoc({ name: 'Pixel symbol walk', width: 128, height: 96, fps: 8, length: 8, background: '#fffaf0' });
+  const lp = newPixelLayer('Walk', 4);
+  const cels: Doc['layers'][number]['cels'] = [];
+  [0, 1, 2, 3].forEach((i) => {
+    const px = newPixelDrawing(32, 24);
+    const x0 = 4 + i * 6;
+    for (let y = 8; y < 14; y++) for (let x = x0; x < x0 + 4; x++) px.pixels.set([255 - i * 60, 80 + i * 50, 120, 255], (y * 32 + x) * 4);
+    px.pixels.set([30, 30, 60, 255], (9 * 32 + x0 + 1) * 4);
+    doc.drawings[px.id] = trimmedDrawing(px);
+    cels.push({ id: `walk-${i}`, start: i * 2, length: 2, drawingId: px.id });
+  });
+  lp.cels = cels;
+  doc.layers = [lp];
+  const made = makeFramesSymbol(doc, lp.id, { name: 'Walk' });
+  if (made) {
+    const above = newVectorLayer('Second copy');
+    const held = newVectorDrawing();
+    const inst = newInstance(made.symbolId, { x: 40, y: 70 });
+    inst.transform.rotation = 20;
+    inst.transform.scaleX = 0.8;
+    inst.transform.scaleY = 0.8;
+    inst.opacity = 0.7;
+    held.shapes.push(inst);
+    doc.drawings[held.id] = held;
+    above.cels = [{ id: 'second', start: 0, length: 8, drawingId: held.id }];
+    doc.layers.push(above);
+  }
+  return doc;
+}
+
 if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __framelingExport: unknown }).__framelingExport = {
     // The templates load on demand, so a normal run never pays for them here.
     templates: async () => (await import('../templates')).TEMPLATES.map((t) => t.id),
     load: async (id: string) => store().load((await import('../templates')).findTemplate(id)!.make(), null),
     loadStress: () => store().load(stressDoc(), null),
+    loadPixelSymbolWalk: () => store().load(pixelSymbolWalkDoc(), null),
     // A symbol with bones, a camera, a far layer and an Add glow, for the Godot bones checks.
     loadBonesExtras: async (camera = true, extra: Record<string, unknown> = {}) => store().load((await import('./bonesExtrasDoc')).bonesExtrasDoc({ ...(camera ? { camera: { a: { x: 180, y: 135, zoom: 1, rotation: 0 }, b: { x: 215, y: 150, zoom: 1.4, rotation: 6 } } } : {}), ...extra }), null),
     // Every feature at once (symbols, tweens, effects, folders, masks, tiles, bones, sound): see kitchenSink.ts.

@@ -21,7 +21,7 @@ import { acceptTweenOffer, closeTweenOffer, dismissTweenOffer, offerTweenAt, twe
 import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
-import { makeTween, removeTween } from '../symbols/ops';
+import { makeSymbolFromFrames, makeTween, removeTween } from '../symbols/ops';
 import { MOTIONS } from '../core/motions';
 import { makeMotion } from '../symbols/motion-ops';
 import '../symbols/symbols.css';
@@ -1184,6 +1184,7 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     cel?.tween
       ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }
       : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel'), onClick: () => void makeTween(layer.id, frame) },
+    { label: 'Make a symbol from the whole animation', hint: keyHint('symbols.makeFrames'), disabled: (layer.kind !== 'vector' && layer.kind !== 'pixel') || layer.cels.length < 1, onClick: () => void makeSymbolFromFrames({ layerId: layer.id }) },
     { heading: 'One-click motions' },
     ...MOTIONS.map((m): MenuItem => ({ label: `Make it ${m.label.toLowerCase()}`, disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel') || !!cel?.tween, onClick: () => makeMotion(m.id, layer.id, frame) })),
     { separator: true },

@@ -137,7 +137,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   symbols: {
     label: 'Symbols',
-    items: ['symbols.make', 'symbols.edit', 'symbols.exit', 'symbols.exitAll', '-', 'symbols.swap', 'symbols.resetTransform', 'symbols.deleteUnused'],
+    items: ['symbols.make', 'symbols.makeFrames', 'symbols.makeOne', 'symbols.edit', 'symbols.exit', 'symbols.exitAll', '-', 'symbols.swap', 'symbols.resetTransform', 'symbols.deleteUnused'],
     prefixes: ['symbols.'],
   },
   tidy: {
