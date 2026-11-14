@@ -74,6 +74,9 @@ Three small tools, all for the built app (run them under xvfb, never on the desk
   Chromium trace of the first load; `node scripts/perf/tracesum.cjs /tmp/st.json` lists main-thread work from the
   first request to the `frameling:interactive` mark (script eval, layout, style, frames). `PERF_DIST=<folder>` points
   `launch.cjs` (and so `startup.cjs`) at another build's `dist/`, so two builds can be timed one after the other.
+  `STARTUP_TRACE_STACKS=1` beside it records the stack of whatever asked for each layout or style pass, which is how
+  the first layout was traced back to a single `offsetWidth` read in the menu bar. It makes the trace much bigger, so
+  it is off by default.
 
 Things that were found this way: the first layout of the page is cold (system font fallback lookups are slow on a
 machine with thousands of fonts), so a text glyph the page font lacks (the old "more" dots) cost about 20 ms until it

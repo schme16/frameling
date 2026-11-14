@@ -33,7 +33,12 @@ function traceWindow(win, file) {
   dbg.on('message', (_e, method, params) => {
     if (method === 'Tracing.dataCollected') events.push(...params.value);
   });
-  void dbg.sendCommand('Tracing.start', { traceConfig: { includedCategories: ['devtools.timeline', 'v8', 'blink.user_timing', 'loading', 'disabled-by-default-devtools.timeline'] }, transferMode: 'ReportEvents' });
+  // STARTUP_TRACE_STACKS=1 adds the stack of whatever asked for each layout or style pass. It is how the menu bar's
+  // 40 ms layout was traced back to a single offsetWidth read, so it is worth having, but it makes the trace much
+  // bigger and a little slower, which is why it is off unless asked for.
+  const categories = ['devtools.timeline', 'v8', 'blink.user_timing', 'loading', 'disabled-by-default-devtools.timeline'];
+  if (process.env.STARTUP_TRACE_STACKS === '1') categories.push('disabled-by-default-devtools.timeline.stack');
+  void dbg.sendCommand('Tracing.start', { traceConfig: { includedCategories: categories }, transferMode: 'ReportEvents' });
   setTimeout(() => {
     dbg.on('message', (_e, method) => {
       if (method !== 'Tracing.tracingComplete') return;
