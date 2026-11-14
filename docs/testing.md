@@ -174,6 +174,26 @@ espeak-ng was not used for the list: its dictionary data is GPL-3 and whether ge
 reading of the transcript onto it (DTW on mel features; good to a few frames). Keep recordings out of the repository;
 `eval.mjs <out> --text` scores them under "real speech".
 
+### Real voices (the recording script clips)
+
+The 30 clips of `pb doc lipsync-recording-script` are somebody's own voice. They stay out of the repository and are
+never sent anywhere; everything below runs on this computer, with the folder somewhere outside the checkout.
+
+```bash
+python3 scripts/lipsync/real_voice.py <recordings_dir> /tmp/real          # flac/wav named by sentence ("... - whispered", "... - faster")
+node scripts/lipsync/eval_real.mjs /tmp/real [--text] [--shapes] [--closures] [--unseen]   # per mouth shape, per kind, lip closures
+node scripts/lipsync/cv_real.mjs /tmp/refs /tmp/real /tmp/cv --init src/lipsync/model.ts --hidden 128 --epochs 6 --lr 0.001 --real-weight 3 --synth-keep 0.3 --cache /tmp/synth --shapes
+node scripts/lipsync/train.mjs /tmp/refs --init src/lipsync/model.ts --hidden 128 --epochs 6 --lr 0.001 --real /tmp/real --real-weight 3 --synth-keep 0.3
+LIPSYNC_REAL_DIR=/tmp/real npx vitest run test/lipsync/real-voices.test.ts
+```
+
+`real_voice.py` times normal and faster clips by warping an espeak reading of the sentence onto them (the recording's
+own noise floor is allowed for when finding where speech starts and ends), and times a whispered clip by warping the
+same speaker's normal reading of that sentence onto it. The timing is good to a few frames, so `eval_real.mjs` also
+gives the score within one frame. `cv_real.mjs` keeps each sentence's readings together in one fold and scores every
+clip with a model that never heard it: that is the number to quote. A model trained on all the clips scores
+higher on them and says nothing about other voices. `real-voices.test.ts` is skipped without `LIPSYNC_REAL_DIR`.
+
 ## Build first
 
 Every Electron harness except `vector-check.cjs` loads `dist/`, so build first:

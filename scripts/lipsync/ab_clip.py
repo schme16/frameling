@@ -1,5 +1,5 @@
 """Draws the before/after lip sync clip from frames.json and line.wav (see ab_data.mjs) and encodes it as H.264 + AAC.
-  python3 scripts/lipsync/ab_clip.py <data_dir> <out.mp4>
+  python3 scripts/lipsync/ab_clip.py <data_dir> <out.mp4> [--silent] [--truth-label "Said (estimated)"] [--still 42]
 Four talking mouths side by side (what was said, the old guess, the new guess, the new guess with the words typed in),
 each with a strip of the mouth on every frame around the playhead, so timing can be judged by eye and by ear.
 """
@@ -7,6 +7,11 @@ import json, os, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 
 data_dir, out = sys.argv[1], sys.argv[2]
+argv = sys.argv[3:]
+silent = '--silent' in argv
+flag = lambda n, d: argv[argv.index(n) + 1] if n in argv else d
+truth_label = flag('--truth-label', 'Said (the true mouths)')
+still = int(flag('--still', 42))
 d = json.load(open(os.path.join(data_dir, 'frames.json')))
 fps, frames = d['fps'], d['frames']
 W, H = 1280, 520
@@ -47,7 +52,7 @@ def mouth(dr, cx, cy, m):
         dr.rounded_rectangle([cx - 66, cy - 22, cx + 66, cy + 24], 18, fill=DARK, outline=LIP, width=8)
         dr.rectangle([cx - 52, cy - 14, cx + 52, cy - 2], fill=TEETH); dr.rectangle([cx - 52, cy + 4, cx + 52, cy + 14], fill=TEETH)
 
-PANELS = [('Said (the true mouths)', d['truth']), ('Before', d['before']), ('After', d['after']), ('After + words', d['afterText'])]
+PANELS = [(truth_label, d['truth']), ('Before', d['before']), ('After', d['after']), ('After + words', d['afterText'])]
 acc = [sum(1 for a, b in zip(g, d['truth']) if a == b) / frames for _, g in PANELS]
 tmp = tempfile.mkdtemp()
 for f in range(frames):
@@ -83,7 +88,9 @@ for f in range(frames):
                     x = x0 + 14 + k * cw
                     dr.rectangle([x + cw / 2 - 3, 448, x + cw / 2 + 3, 454], fill=(244, 114, 114))
     im.save(os.path.join(tmp, 'f%04d.png' % f))
-subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(fps), '-i', os.path.join(tmp, 'f%04d.png'), '-i', os.path.join(data_dir, 'line.wav'),
-                '-vf', 'format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-movflags', '+faststart', out], check=True)
-subprocess.run(['cp', os.path.join(tmp, 'f%04d.png' % 42), out.replace('.mp4', '-still.png')], check=True)
+audio = [] if silent else ['-i', os.path.join(data_dir, 'line.wav')]
+sound = ['-an'] if silent else ['-c:a', 'aac', '-b:a', '128k', '-shortest']
+subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(fps), '-i', os.path.join(tmp, 'f%04d.png'), *audio,
+                '-vf', 'format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', *sound, '-movflags', '+faststart', out], check=True)
+subprocess.run(['cp', os.path.join(tmp, 'f%04d.png' % still), out.replace('.mp4', '-still.png')], check=True)
 print('wrote', out)
