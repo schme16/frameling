@@ -1,5 +1,6 @@
 // Tile state that isn't part of the document: the tile being painted with, how it is turned, and tile mode.
 import { useSyncExternalStore } from 'react';
+import { onFreshDrawing } from '../core/fresh';
 
 export interface TileUi {
   /** The tile the tile tools paint with (a tile key), or 0 for none picked yet. */
@@ -49,3 +50,6 @@ export function wrap(n: number, size: number): number {
 export function gridHandleOn(alt: boolean, formOpen: boolean): boolean {
   return alt || formOpen;
 }
+
+// A tile key means something only in its own drawing's tileset. Tile mode is a choice, so it stays.
+onFreshDrawing(() => setTileUi({ brush: 0, flags: 0, sizeForm: false }));

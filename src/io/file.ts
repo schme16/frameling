@@ -208,7 +208,7 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
 }
 
 export function saveFile(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Uint8Array {
-  return zipSync(filesToSave(open, appVersion, now, opts.reuse), { level: 6 });
+  return zipSync(filesToSave(open, appVersion, now, opts.reuse), { level: 6, mtime: now.getTime() });
 }
 
 export interface SaveOptions {
@@ -231,11 +231,11 @@ export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new 
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
   const size = doc instanceof Uint8Array ? doc.length : 0;
-  const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : []);
+  const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
   if (made) return made;
   // No worker (or it failed): the handed over buffer is gone, so make the files again.
   if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse);
-  return new Promise((resolve, reject) => zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))));
+  return new Promise((resolve, reject) => zip(files, { level: 6, mtime: now.getTime() }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
 // ---------------------------------------------------------------- migration

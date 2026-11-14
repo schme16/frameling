@@ -27,7 +27,7 @@ import type { PrefRow } from './prefsSearch';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, UI_SCALE_RANGE, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
-import { applySettings, pickSettingsFile, saveSettingsFile } from './settingsFile';
+import { applySettings, backedUpMessage, collectSettings, pickSettingsFile, restoreChanges, restoredMessage, restoreQuestion, saveSettingsFile, type SettingsFile } from './settingsFile';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
@@ -155,20 +155,33 @@ function SnappingPage() {
 // ---------------------------------------------------------------- general
 
 async function backUpSettings(): Promise<void> {
+  const n = Object.keys(collectSettings().items).length;
   const r = await saveSettingsFile();
-  if (r === 'saved') toast('Your settings are saved.', { kind: 'success' });
-  else if (r === 'failed') toast('That file could not be saved.', { kind: 'error' });
+  if (r === 'saved') toast(backedUpMessage(n), { kind: 'success' });
+  else if (r === 'failed') toast('That backup could not be saved.', { kind: 'error' });
 }
 
-/** Puts a backup back and starts Frameling again, so every part reads the restored settings. */
+/** Restore: reads a backup, says what it will do and waits for a yes, then puts it back and starts Frameling again. */
 async function restoreSettings(): Promise<void> {
   const r = await pickSettingsFile();
   if (!r) return;
   if (!r.ok) return void toast(r.why, { kind: 'error' });
-  const n = applySettings(r.file);
-  if (!n) return void toast('Those settings could not be put back.', { kind: 'error' });
-  toast('Your settings are back. Frameling is starting again.', { kind: 'success' });
-  setTimeout(() => location.reload(), 900);
+  toast(restoreQuestion(r.file, r.count), {
+    kind: 'warn',
+    duration: 0,
+    quill: null,
+    sound: null,
+    action: { label: 'Restore', id: 'restore-settings', run: () => applyRestore(r.file) },
+    decline: { label: 'Cancel', id: 'restore-cancel', run: () => {} },
+  });
+}
+
+function applyRestore(file: SettingsFile): void {
+  const changes = restoreChanges(collectSettings(), file);
+  const n = applySettings(file);
+  if (!n) return void toast('That backup could not be restored.', { kind: 'error' });
+  toast(restoredMessage(file, changes), { kind: 'success', duration: 2400 });
+  setTimeout(() => location.reload(), 1800);
 }
 
 function GeneralPage({ onThemes }: { onThemes: () => void }) {
@@ -351,10 +364,10 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Your settings" hint="Everything you have set: themes, shortcuts, pen settings, workspaces and the answers you have given. Keep a copy, or put one back on another computer.">
         <div className="ui-pref-volume">
           <button type="button" className="ui-btn ui-btn-small" onClick={() => void backUpSettings()}>
-            Back up...
+            Backup
           </button>
           <button type="button" className="ui-btn ui-btn-small" onClick={() => void restoreSettings()}>
-            Put a backup back...
+            Restore
           </button>
         </div>
       </Row>

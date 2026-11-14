@@ -22,5 +22,5 @@ Press **Ctrl+K** (the command palette) and run **Bring the onion skin back on at
 
 Run **Put the brush, colours, onion skin and looping back to the start** from the command palette. It is one step and it is what a fresh install has.
 
-Your settings are kept on this computer, and the **Back up...** button in Preferences includes them.`,
+Your settings are kept on this computer, and the **Backup** button in Preferences includes them.`,
 };

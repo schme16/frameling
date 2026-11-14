@@ -1,6 +1,7 @@
 // UI state for bones that isn't part of the document: the selected bone, the Bone tool's mode and the bone look.
 import { useSyncExternalStore } from 'react';
 import type { Id } from '../core/format';
+import { onFreshDrawing } from '../core/fresh';
 
 export type BoneMode = 'add' | 'adjust';
 export type BoneLook = 'kite' | 'capsule';
@@ -31,3 +32,8 @@ export function subscribeRigUi(fn: () => void): () => void {
 export function useRigUi(): RigUi {
   return useSyncExternalStore(subscribeRigUi, rigUi);
 }
+
+// A new drawing has no bone picked. The mode and look are choices, so they stay.
+onFreshDrawing(() => {
+  if (ui.selected) setRigUi({ selected: null });
+});
