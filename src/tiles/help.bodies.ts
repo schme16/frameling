@@ -27,7 +27,7 @@ Deleting a tile empties the places it was used. Undo puts it all back.
 Water, torches and conveyor belts can move. Open the tile and use the timeline as usual: add a key (**N**) for each new frame, and stretch a key to hold it longer. The tile plays everywhere it is used, and exports keep the frames and their timing. A number on the tile in the panel says how many frames it has.`,
   tilemaps: `A **tilemap layer** is a grid you paint with tiles from the [Tileset panel](help:tileset). Change a tile and every copy of it in the map changes too.
 
-Add one with **Draw > Add a tilemap layer**, or from a layer's **⋯** menu in the timeline. It sits with your other layers, so you can draw a character on a pixel layer in front of it.
+Add one with **Tools and layers > Add a tilemap layer**, or from a layer's **⋯** menu in the timeline. It sits with your other layers, so you can draw a character on a pixel layer in front of it.
 
 ## The tile tools
 

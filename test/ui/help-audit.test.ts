@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Command, HelpTopic } from '../../src/core/registry';
 import { allCommands, allHelp, allPanels, allTools, loadHelpBodies } from '../../src/core/registry';
+import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { auditHelp, formatAudit, helpLinksIn, shortcutsIn } from '../../src/ui/help/audit';
 import '../../src/renderer/features';
 import { KEYMAP_SETS } from '../../src/ui/keymapSets';
@@ -25,6 +26,8 @@ describe('help audit (the real app)', () => {
   let a: ReturnType<typeof run>;
   beforeAll(async () => {
     await loadHelpBodies();
+    // The tool, panel and workspace commands are made on demand; the real app has made them by now.
+    syncDynamicCommands();
     a = run();
     if (process.env.HELP_AUDIT || process.env.npm_lifecycle_event === 'help:audit') process.stdout.write(`\n${formatAudit(a)}\n`);
   });

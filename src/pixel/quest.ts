@@ -126,7 +126,7 @@ export const SHADE_AND_SHINE: Quest = {
     },
     {
       id: 'edge',
-      say: 'Finish with an outline round the whole thing: Pixel menu, then Add outline (outside).',
+      say: 'Finish with an outline round the whole thing: Pixel tools menu, then Add outline (outside).',
       why: 'It uses the stroke colour. An outline makes a sprite pop on any background.',
       target: SEL.menu,
       done: (c) => c.edits.includes('Add outline'),

@@ -311,6 +311,8 @@ called from `view.workspace.<id>`, Preferences > Workspaces and onboarding. `src
 the kind of document (one remembered choice, `workspace.follow`: Always / Not now / Never; Draw and Pixel only, Animate is left alone). `src/ui/presets.ts` is new-document size presets, not
 workspaces.
 
+The switcher in the top bar (`WorkspaceSwitcher.tsx`, pure parts in `switcherModel.ts`) shows every workspace as a tab, or one chip when the window is under 1400 wide or the `workspaceSwitcher` Preference says so (`tabs`, `chip`, `off`). `switcherSlots` keeps five tabs and the current one always on a tab. The three built-in workspaces have keys (`WORKSPACE_KEYS`, Ctrl+Alt+1 to 3), given to their `view.workspace.<id>` commands in `dynamic.ts`. A menu's `label` in `menus.ts` is its id (features add items by it); `title` is what the bar shows.
+
 ## Lazy loading
 
 `src/core/lazy.ts`:

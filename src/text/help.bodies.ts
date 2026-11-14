@@ -18,7 +18,7 @@ Text is a shape like any other: move it, stretch it, turn it and flip it with th
 
 ## Convert to shapes
 
-**Draw > Convert text to shapes** (Ctrl+Shift+O) turns the text into ordinary filled shapes (outlines). Now you can reshape the letters, merge them with drawings, or fill them with the paint bucket. They can't be typed into afterwards, so keep a copy if you might change the words.
+**Tools and layers > Convert text to shapes** (Ctrl+Shift+O) turns the text into ordinary filled shapes (outlines). Now you can reshape the letters, merge them with drawings, or fill them with the paint bucket. They can't be typed into afterwards, so keep a copy if you might change the words.
 
 Want the letters to move one by one? See [Text animations](help:text-animators).`,
   'text-animators': `Text animations move the pieces of a text one after another, so a title can type itself on, letters can drop in with a bounce, or a word can wave.

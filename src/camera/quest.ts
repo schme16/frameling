@@ -63,7 +63,7 @@ export const CAMERA_QUEST: Quest = {
   steps: [
     {
       id: 'add',
-      say: 'Add a camera: Animate > Add a camera.',
+      say: 'Add a camera: Frames and motion > Add a camera.',
       why: 'The camera is a layer of its own. Its frame shows what an export will show.',
       target: SEL.panel,
       enter: () => showPanel('camera'),

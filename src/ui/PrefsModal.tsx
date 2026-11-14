@@ -1,4 +1,5 @@
 import { line } from './mascot/lines';
+import type { SwitcherLook } from './switcherModel';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { WorkspacesPage } from './WorkspacesPage';
@@ -258,6 +259,18 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
+      </Row>
+      <Row label="Workspace switcher" hint="Which workspace you are in, beside the drawing's name. Tabs show them all at once, Chip shows just the one you are in, and Hidden leaves it to the View menu. A narrow window uses the chip.">
+        <Segmented<SwitcherLook>
+          label="Workspace switcher"
+          value={p.workspaceSwitcher}
+          onChange={(workspaceSwitcher) => setPrefs({ workspaceSwitcher })}
+          options={[
+            { id: 'tabs', label: 'Tabs' },
+            { id: 'chip', label: 'Chip' },
+            { id: 'off', label: 'Hidden' },
+          ]}
+        />
       </Row>
       <Row label="Right side" hint="Properties shows the settings for what you're doing, with the other panels on a labelled rail. Rail puts every panel on the rail. Tabs is the older row of tabs.">
         <Segmented<'inspector' | 'rail' | 'tabs'>

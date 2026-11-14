@@ -175,7 +175,7 @@ export const TILES_QUEST: Quest = {
     },
     {
       id: 'layer',
-      say: 'Add a tilemap layer: Draw menu, then Add a tilemap layer.',
+      say: 'Add a tilemap layer: Tools and layers menu, then Add a tilemap layer.',
       why: 'A tilemap layer is a grid you paint with tiles instead of colours. Game levels are made of them.',
       target: SEL.menu,
       done: (c) => c.state.doc.layers.some((l) => l.kind === 'tilemap'),

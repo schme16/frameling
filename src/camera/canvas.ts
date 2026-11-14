@@ -167,7 +167,7 @@ export const cameraTool: Tool = {
     const s = store().get();
     const cam = stageCamera(s.doc);
     if (!cam) {
-      ctx.hint('Add a camera first (Animate > Add a camera).');
+      ctx.hint('Add a camera first (Frames and motion > Add a camera).');
       return;
     }
     if (cam.locked) {

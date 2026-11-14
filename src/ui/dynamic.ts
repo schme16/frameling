@@ -6,6 +6,7 @@ import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
 import { pickTool } from '../tools/pick';
+import { WORKSPACE_KEYS } from './switcherModel';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
 
 const mine = new Map<string, string>();
@@ -77,6 +78,7 @@ export function syncDynamicCommands(): void {
       id,
       label: `${w.name} workspace`,
       category: 'View',
+      keys: w.builtin && WORKSPACE_KEYS[w.id] ? [WORKSPACE_KEYS[w.id]] : [],
       description: w.about ?? (w.builtin ? `Arrange the panels for ${w.name.toLowerCase()}ing.` : 'Your saved panel layout.'),
       help: 'workspaces',
       keywords: ['layout', 'panels', 'arrange', w.name],

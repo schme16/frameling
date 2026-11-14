@@ -26,13 +26,13 @@ Frameling finds each mouth by the **name of its frame** ("M B P", "mbp" and "MBP
 
 ## Auto lip sync
 
-Press **Animate > Auto lip sync...** (or the button in the Lip sync panel). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
+Press **Frames and motion > Auto lip sync...** (or the button in the Lip sync panel). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
 
 It's a good first pass, not a perfect one. Frameling listens to how loud the sound is, where its energy sits (which tells the vowels apart), whether it is hissy or humming, and the quick dips that mean the lips closed. It all happens on your computer. Fix the rest by hand.
 
 ## Typing the words
 
-If you know what is said, press **Animate > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
+If you know what is said, press **Frames and motion > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
 
 ## Fixing it by hand
 
@@ -41,11 +41,11 @@ Open the **Lip sync** panel (View menu). It shows the mouth on each frame around
 1. Click a frame in the strip to go there.
 2. Click a mouth button to put that mouth on the frame. Each button shows a little picture of the mouth, with its name underneath.
 
-Keys are split and joined for you. Turn on **Go to the next frame after each pick** to work along quickly.
+Turn on **Go to the next frame after each pick** to work along quickly.
 
 ## Tips
 
 - Mouths stay on for at least two frames so they don't flicker.
 - Running Auto lip sync again replaces only the frames under the sound.
-- Your own character? Draw each mouth on its own frame inside one symbol, then use **Name a symbol's frames** (Animate > Lip sync) to give them the chart names.`,
+- Your own character? Draw each mouth on its own frame inside one symbol, then use **Name a symbol's frames** (in Frames and motion) to give them the chart names.`,
 };

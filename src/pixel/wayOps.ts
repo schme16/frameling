@@ -113,7 +113,7 @@ registerChoice<'share' | 'leave' | 'later'>({
   dismiss: 'later',
   options: [
     { value: 'share', label: 'One stack for all the frames', detail: 'Layers with the same name and kind join up, and every board keeps its own pixels. One undo step puts it back.' },
-    { value: 'leave', label: 'Leave my files as they are', detail: 'Each board keeps layers of its own. You can put them on one stack later, from the Pixel menu.' },
+    { value: 'leave', label: 'Leave my files as they are', detail: 'Each board keeps layers of its own. You can put them on one stack later, from the Pixel tools menu.' },
     { value: 'later', label: 'Not now', detail: 'Ask again the next time a file like this opens.', once: true },
   ],
 });

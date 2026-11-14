@@ -728,7 +728,7 @@ clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script u
 script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
 Every entry starts with the first-time question "Workspace follows the drawing" answered Never (so it never covers pixel art);
 an entry can give other answers, or change that one, with `choices: { 'workspace.follow': 'always' }`. Steps can click by selector
-instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Animate", "after": 900}` (`"hover": true` only moves
+instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Frames and motion", "after": 900}` (`"hover": true` only moves
 there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. Each capture looks for a question
 left open or a loading state in the frame and prints `[LOOK: ...]` after the entry's `ok` line: look at those files.
 
