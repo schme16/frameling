@@ -213,7 +213,7 @@ Want to trace a particular frame, not just the last one? Put it on the [light ta
 ## Two kinds
 
 - **Vector layer** (the *V* badge): smooth, sharp lines that stay crisp at any size. Best for hand-drawn or cartoon art.
-- **Pixel layer** (the *P* badge): pixel art, one square at a time. You choose how big each pixel is (new pixel layers copy the size of the ones you already have, or start at 8).
+- **Pixel layer** (the *P* badge): pixel art, one square at a time. Each pixel starts 8 wide on the page, so a 1280 x 720 page gives a 160 x 90 pixel layer. The first one you add tells you its size, with a **Change size** button that opens the page size. New pixel layers copy the size of the ones you already have.
 
 You can mix both in one animation.
 

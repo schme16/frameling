@@ -8,6 +8,7 @@ import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { playCue } from '../ui/sounds';
+import { newPixelLayerNote } from '../pixel/units';
 
 // A soft page-flip when stepping by hand. Never while playing (stepping then just moves the playhead).
 const tick = () => void (store().get().ui.playing || playCue('tick'));
@@ -291,7 +292,15 @@ registerCommands([
     description: 'A layer for pixel art, drawn one square at a time.',
     help: 'timeline-layers',
     keywords: ['add layer', 'pixel art', 'sprite'],
-    run: () => void ops.addPixelLayer(),
+    run: () => {
+      const { doc } = store().get();
+      const hadPixel = doc.layers.some((l) => l.kind === 'pixel');
+      const o = ops.addPixelLayer();
+      const layer = o.ok ? findLayer(store().get().doc, o.id ?? null) : null;
+      // The first pixel layer on a page picks its own size from the page, so say what it came out as.
+      const note = layer?.kind === 'pixel' ? newPixelLayerNote(doc.width, doc.height, layer.pixelSize, hadPixel) : null;
+      if (note) toast(note, { action: { label: 'Change size', run: () => void import('../canvas/DocumentSettings').then((m) => m.openDocumentSettings('size')) } });
+    },
   },
   { id: 'layers.delete', label: 'Delete layer', category: 'Layers', description: 'Remove this layer and everything drawn on it. You can undo it.', help: 'timeline-layers', enabled: (s) => s.doc.layers.length > 1, run: () => void say(ops.deleteLayer()) },
   { id: 'layers.duplicate', label: 'Duplicate layer', category: 'Layers', description: 'Make a copy of this layer with all its drawings.', help: 'timeline-layers', run: () => void say(ops.duplicateLayer()) },

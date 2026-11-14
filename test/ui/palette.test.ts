@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Command, HelpTopic } from '../../src/core/registry';
-import { notNowMessage, paletteItems, rankPalette, scoreItem } from '../../src/ui/palette';
+import { notNowMessage, paletteItems, rankPalette, scoreItem, STARTER_COMMANDS, STARTERS_UNTIL_RECENT } from '../../src/ui/palette';
 import { editDistance, inOrder, scoreWord, wordsOf } from '../../src/ui/match';
 
 const c = (id: string, label: string, extra: Partial<Command> = {}): Command => ({ id, label, category: 'Test', run: () => {}, ...extra });
@@ -58,6 +58,24 @@ describe('ranking', () => {
     expect(list.slice(0, 2)).toEqual(['command:file.export', 'command:edit.redo']);
     expect(list).toHaveLength(cmds.length);
     expect(list.some((x) => x.startsWith('help:'))).toBe(false);
+  });
+  it('with nothing typed and nothing used yet, shows the starter commands first under "Try these"', () => {
+    const starters = STARTER_COMMANDS.map((id) => c(id, id, { category: 'Zed' }));
+    const its = paletteItems([c('add.camera', 'Add a camera', { category: 'Add' }), ...starters], []);
+    const hits = rankPalette('', its, []);
+    expect(hits.slice(0, STARTER_COMMANDS.length).map((h) => h.item.id)).toEqual(STARTER_COMMANDS);
+    expect(hits.slice(0, STARTER_COMMANDS.length).every((h) => h.group === 'Try these')).toBe(true);
+    expect(hits[STARTER_COMMANDS.length].item.id).toBe('add.camera');
+  });
+  it('starters give way as recent commands build up, and never repeat a recent one', () => {
+    const starters = STARTER_COMMANDS.map((id) => c(id, id, { category: 'Zed' }));
+    const its = paletteItems(starters, []);
+    const few = rankPalette('', its, ['file.save']);
+    expect(few[0]).toMatchObject({ group: 'Recent' });
+    expect(few.map((h) => h.item.id).filter((id) => id === 'file.save')).toHaveLength(1);
+    expect(few.some((h) => h.group === 'Try these')).toBe(true);
+    const many = rankPalette('', its, STARTER_COMMANDS.slice(0, STARTERS_UNTIL_RECENT));
+    expect(many.some((h) => h.group === 'Try these')).toBe(false);
   });
   it('scores zero for no match', () => expect(scoreItem('qqqq', items[0])).toBe(0));
 });

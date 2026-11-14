@@ -115,7 +115,7 @@ Each command shows its shortcut on the right, so you can learn it for next time.
 
 Help pages show up in the list too. Choose one to read it.
 
-> With nothing typed, the list starts with the commands you used last.`,
+> With nothing typed, the list starts with the commands you used last. Until you've used a few, it shows **Try these** instead: new drawing, open, save, export, undo and help, the things most people reach for first.`,
   'keyboard-shortcuts': `Shortcuts are the quick way to do things. **Mod** means **Ctrl** on Windows and Linux, and **Cmd** on a Mac.
 
 ## See them all

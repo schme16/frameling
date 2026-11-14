@@ -96,12 +96,13 @@ function PaletteDialog() {
         {hits.map((h, i) => {
           const it = h.item;
           const enabled = it.kind !== 'command' || commandEnabled(it.command);
-          const showHead = !query.trim() && it.category !== lastCategory;
-          lastCategory = it.category;
+          const head = h.group ?? it.category;
+          const showHead = !query.trim() && head !== lastCategory;
+          lastCategory = head;
           const key = it.kind === 'command' ? effectiveKeys(it.command)[0] : '';
           return (
             <div key={`${it.kind}:${it.id}`}>
-              {showHead && <div className="ui-palette-head">{it.category}</div>}
+              {showHead && <div className="ui-palette-head">{head}</div>}
               <div
                 id={`ui-pal-${i}`}
                 role="option"

@@ -37,7 +37,7 @@ export function syncDynamicCommands(): void {
   for (const t of allTools()) {
     ensure({
       id: `tools.${t.id}`,
-      label: t.label,
+      label: t.commandLabel ?? t.label,
       category: 'Tools',
       keys: t.key ? [t.key] : [],
       description: `Switch to the ${t.label.toLowerCase()} tool.`,
@@ -52,7 +52,7 @@ export function syncDynamicCommands(): void {
   for (const p of allPanels()) {
     ensure({
       id: `view.panel.${p.id}`,
-      label: p.title,
+      label: p.commandLabel ?? p.title,
       category: 'View',
       description: `Show or hide the ${p.title} panel.`,
       help: p.help,

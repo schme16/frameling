@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
-import { MENUS, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
 // These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
@@ -47,6 +47,26 @@ describe('menu filtering', () => {
   });
   it('the real menus are named File, Edit, View, Artboards, Draw, Pixel, Animate, Rig, Effects, Plugins and Help', () => {
     expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Artboards', 'Draw', 'Pixel', 'Animate', 'Rig', 'Effects', 'Plugins', 'Help']);
+  });
+});
+
+describe('the Help and Skeleton menus', () => {
+  const help = MENUS.find((m) => m.label === 'Help')!;
+  it('Help holds help only: no shortcut sets, quest controls or pen check, even if they are in the Help category', () => {
+    const r = registry([
+      c('help.contents', 'Help', 'Help'),
+      c('keys.set.flash', 'Shortcut set: Familiar from Flash / Animate', 'Help'),
+      c('quests.resume', 'Carry on with my quest', 'Help'),
+      c('quests.stop', 'Put this quest down for now', 'Help'),
+      c('pen.check', 'Check my pen with Quill...', 'Help'),
+      c('help.sendReport', 'Tell the makers what happened...', 'Help'),
+      c('help.about', 'About Frameling', 'Help'),
+    ]);
+    expect(shape(resolveMenu(help, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['help.contents', '-', 'help.sendReport', '-', 'help.about']);
+  });
+  it('the Rig menu says what it is for in the menu bar, plain word first', () => {
+    const rig = MENUS.find((m) => m.label === 'Rig')!;
+    expect(menuTitle(rig)).toBe('Skeleton (rig)');
   });
 });
 

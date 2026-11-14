@@ -82,7 +82,7 @@ describe('menus are not workspaces', () => {
       expect(m, label).toBeTruthy();
       expect(menuTitle(m)).not.toBe(label);
     }
-    expect(MENUS.map(menuTitle)).toEqual(['File', 'Edit', 'View', 'Artboards', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Rig', 'Effects', 'Plugins', 'Help']);
+    expect(MENUS.map(menuTitle)).toEqual(['File', 'Edit', 'View', 'Artboards', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Skeleton (rig)', 'Effects', 'Plugins', 'Help']);
   });
   it('no menu on the bar is called the same as a workspace', () => {
     for (const m of MENUS) expect(names).not.toContain(menuTitle(m));

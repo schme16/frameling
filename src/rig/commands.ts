@@ -1,4 +1,4 @@
-// Bone commands: palette, the Rig menu and keys.
+// Bone commands: palette, the Skeleton (rig) menu and keys.
 import { lazyPanel } from '../core/lazy';
 import { getCommand, registerCommand, type Command, type PanelDef } from '../core/registry';
 import { store, type State } from '../core/store';
@@ -12,7 +12,7 @@ import { artCoverage } from './coverage';
 import { isRigLayer } from './pose';
 import { normaliseActive, paintTarget, smoothActive } from './weightsTool';
 
-export const rigPanel: PanelDef = { id: 'rig', title: 'Rig', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' };
+export const rigPanel: PanelDef = { id: 'rig', title: 'Rig', commandLabel: 'Skeleton panel (Rig)', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' };
 
 const hasBones = (s: State) => !!currentRig(s.doc, s.ui.activeLayerId)?.rig.bones.length;
 const say = (r: string | undefined, ok?: string) => {
@@ -28,9 +28,9 @@ const selectedBone = (s: State) => {
 export const rigCommands: Command[] = [
   {
     id: 'rig.addBones',
-    label: 'Add bones',
+    label: 'Add a skeleton to this drawing',
     category: 'Rig',
-    description: 'Makes a bones layer (if there is none yet) and picks the Bone tool, so you can draw a skeleton.',
+    description: 'Makes a layer for the bones (if there is none yet) and picks the Bone tool, so you can draw the skeleton (the rig).',
     keywords: ['skeleton', 'armature', 'rig', 'bone', 'cut-out', 'puppet'],
     help: 'rig-bones',
     run: () => {

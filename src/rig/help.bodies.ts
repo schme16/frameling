@@ -1,11 +1,11 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  rig: `**Bones** turn a drawing into a puppet. Instead of redrawing an arm on every frame, you drag it into a new pose and Frameling moves it smoothly from the last pose to this one.
+  rig: `A **skeleton** (animators call it a **rig**) turns a drawing into a puppet: you draw **bones** over it, then pose them. Instead of redrawing an arm on every frame, you drag it into a new pose and Frameling moves it smoothly from the last pose to this one.
 
 **The three steps:**
 1. **Draw each part on its own layer**: head, body, upper arm, lower arm and so on. (Or draw it all on one layer and let it [bend](help:rig-bend).)
 2. **Draw bones** over it with the [Bone tool](help:rig-bones) (**K**). Start at the hips, then draw from each bone's tip to make chains for the spine, arms and legs.
-3. **Attach the parts** with **Rig > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
+3. **Attach the parts** with **Skeleton (rig) > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
 
 Now pick the [Pose tool](help:rig-posing) (**Shift+K**), go to another frame and drag the bones. That's animation!
 
@@ -24,10 +24,10 @@ Want to see one working first? **File > New** and pick **Paper doll puppet**: it
 
 You can draw bones on any frame, even over a posed character: they're placed where they'd be at rest so everything lines up.
 
-Prefer slimmer bones? **Rig > Slim bones** switches the look.`,
+Prefer slimmer bones? **Skeleton (rig) > Slim bones** switches the look.`,
   'rig-attach': `A layer **attached** to a bone moves and turns with it, like a paper cut-out pinned to a stick.
 
-- **Rig > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
+- **Skeleton (rig) > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
 - In the **Rig panel**, under **Parts**, every layer has a menu: pick the bone it should follow, **Not attached**, or **Bends with the bones** to [bend it smoothly](help:rig-bend).
 
 You can keep drawing on an attached layer. Draw where you see the part, even when it's turned: Frameling works out where that is on the part itself.
@@ -45,10 +45,10 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
 
 **Squash and stretch:** **Shift+drag** a bone to make it longer or shorter on this frame. See [squash and stretch](help:rig-stretch).
 
-**Rig > Reset pose** puts every bone back where it was drawn, on this frame.`,
+**Skeleton (rig) > Reset pose** puts every bone back where it was drawn, on this frame.`,
   'rig-bend': `Some things don't come apart into neat pieces: a tail, a noodle arm, a whole character drawn on one layer. Let those **bend**.
 
-Pick the layer and choose **Rig > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
+Pick the layer and choose **Skeleton (rig) > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
 
 Frameling lays a fine mesh of triangles over the drawing and ties each point to the nearest bones, more strongly the closer it is (*automatic weights*). Points near one bone follow it exactly; points near a joint blend between the two, so elbows and knees bend smoothly. It works on vector drawings and pixel art alike.
 
@@ -60,7 +60,7 @@ Frameling lays a fine mesh of triangles over the drawing and ties each point to 
 - SVG exports put bent layers in as pictures, since SVG can't bend shapes. Every other export shows exactly what you see.`,
   'rig-weights': `When a layer [bends with the bones](help:rig-bend), Frameling guesses how strongly each part follows each bone. Most of the time the guess is fine. When a bend looks wrong (a sleeve that tears at the elbow, a tail that bends too early), paint it right.
 
-1. Pick the bending layer, then **Rig > Paint how much it bends**.
+1. Pick the bending layer, then **Skeleton (rig) > Paint how much it bends**.
 2. Pick the **bone** in Tool options, or **Ctrl+click** it on the canvas.
 3. Paint. The colours show that bone's pull: **red** follows it fully, **blue** doesn't follow it at all, green and yellow are in between.
 

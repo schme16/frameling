@@ -62,7 +62,7 @@ export function blobWorkersWork(): Promise<boolean> {
 
 /** The order WebM codecs are tried in: the preferred one first, then whatever else this computer has. */
 export function webmOrder(pref: string): VideoCodec[] {
-  return pref === 'vp9' ? ['vp9', 'av1', 'vp8'] : ['av1', 'vp9', 'vp8'];
+  return pref === 'av1' ? ['av1', 'vp9', 'vp8'] : ['vp9', 'av1', 'vp8'];
 }
 
 export function detectCapabilities(width: number, height: number): Promise<Capabilities> {
@@ -84,7 +84,7 @@ async function probe(width: number, height: number, pref: string): Promise<Capab
   const mp4: VideoSupport = avc
     ? { ok: true, codec: 'avc', alpha: false, reason: null }
     : { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for MP4 here. Try a smaller size.' : `${where()} can't make H.264 video. WebM or GIF will still work.` };
-  // WebM: the codec they prefer (AV1 unless they changed it), then the others in turn.
+  // WebM: the codec they prefer (VP9 unless they changed it), then the others in turn.
   let webm: VideoSupport = { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for WebM here. Try a smaller size.' : `${where()} can't make WebM video. MP4 or GIF will still work.` };
   const order = webmOrder(pref);
   // A see-through WebM is only widely understood with VP9 (or VP8). AV1 can be written with an alpha channel, but
