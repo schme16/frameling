@@ -34,12 +34,12 @@ export interface ChoiceDef<V extends string = string> {
   highlight?: V;
   /** Groups it in Preferences > Behaviour. */
   category: string;
-  help?: string;
+  help?: string; // a help topic id, with #heading to land on one part ("behaviour#dialogs")
   /** Quill asks it: his face sits beside the question in the dialog (and it stays a plain question with Quill off). */
   quill?: boolean;
   /** Never ask: just use the remembered answer or the default (for choices that are preferences, not questions). */
   silent?: boolean;
-  /** Always a sheet that stops and asks, never a toast, and left alone by "Use the usual answers for everything" (it can change or lose something that Undo does not bring back). */
+  /** Always a sheet that stops and asks, never a toast, and left alone by "Answer all the questions the usual way" (it can change or lose something that Undo does not bring back). */
   mustAsk?: boolean;
 }
 
@@ -55,7 +55,7 @@ export interface AskOpts {
 }
 
 /** The part of a call that decides how a choice is put. A pure function of what is known, so it can be tested on its own. */
-export type AskPlan = 'remembered' | 'usual' | 'toast' | 'sheet';
+export type AskPlan = 'remembered' | 'usual' | 'weary' | 'toast' | 'sheet';
 
 export interface AskFacts {
   remembered: boolean;
@@ -68,17 +68,37 @@ export interface AskFacts {
   mustAsk: boolean;
   /** There is a way to show a toast with a Change button. */
   canTell: boolean;
+  /** The sheet has been closed without an answer enough times this session (see `isWeary`). */
+  weary?: boolean;
 }
 
 export function planAsk(f: AskFacts): AskPlan {
   if (f.remembered) return 'remembered';
   if (f.silent || !f.canAsk || !f.matters) return 'usual';
+  if (f.weary && !f.mustAsk) return 'weary';
   if (f.gently && f.canTell && !f.mustAsk) return 'toast';
   return 'sheet';
 }
 
+/**
+ * How many times the sheet for a choice can be closed without an answer, in one session, before Frameling stops putting
+ * it. After that it does what closing already did (`dismiss`, else the default), says so with a Change button, and
+ * asks again next session. Never for a `mustAsk` choice.
+ */
+export const WEARY_AFTER = 2;
+
+/** True once `closed` closes without an answer is enough, for a choice that is allowed to stop asking. */
+export function isWeary(closed: number, def: Pick<ChoiceDef, 'mustAsk' | 'silent'> | undefined): boolean {
+  return closed >= WEARY_AFTER && !!def && !def.mustAsk && !def.silent;
+}
+
+/** The answer used once Frameling stops asking: what closing the sheet did anyway, which is never the risky one. */
+export function wearyAnswer(def: Pick<ChoiceDef, 'dismiss' | 'default'>): string {
+  return def.dismiss ?? def.default;
+}
+
 /** Tells the person what was done the usual way and lets them change it. Provided by the UI; without one the usual answer is just used. */
-export type GentleTeller = (def: ChoiceDef, value: string, run: (value: string) => void, undo: (() => void) | undefined) => void;
+export type GentleTeller = (def: ChoiceDef, value: string, run: (value: string) => void, undo: (() => void) | undefined, notRemembered?: boolean) => void;
 
 export type ChoiceAsker = (def: ChoiceDef) => Promise<{ value: string; remember: boolean } | null>;
 
@@ -89,6 +109,8 @@ let asker: ChoiceAsker | null = null;
 const listeners = new Set<() => void>();
 // One question at a time: a second ask for the same choice waits for the first.
 const pending = new Map<string, Promise<string>>();
+// Times each sheet was closed without an answer this session. In memory only: a new session starts asking again.
+const closed = new Map<string, number>();
 
 function load(): Record<string, string> {
   try {
@@ -168,6 +190,7 @@ export function migrateChoices(newId: string, olds: string[], pick: (answers: (s
 /** Forgets every answer, so each will be asked again. */
 export function resetChoices(): void {
   answers = {};
+  closed.clear();
   save();
   emit();
 }
@@ -178,6 +201,18 @@ export function setChoiceAsker(fn: ChoiceAsker | null): void {
 
 let teller: GentleTeller | null = null;
 
+let wearyNotice: ((def: ChoiceDef, value: string) => void) | null = null;
+
+/** Says (in a toast) that a question was not put because it was closed twice. Provided by the UI. */
+export function setWearyNotice(fn: ((def: ChoiceDef, value: string) => void) | null): void {
+  wearyNotice = fn;
+}
+
+/** Puts a question that stopped asking back, for the rest of the session (the toast's "Ask me again"). */
+export function askMeAgain(id: string): void {
+  closed.delete(id);
+}
+
 export function setGentleTeller(fn: GentleTeller | null): void {
   teller = fn;
 }
@@ -186,26 +221,39 @@ export function setGentleTeller(fn: GentleTeller | null): void {
 export function askAgain(id: string, startOn?: string): Promise<{ value: string; remember: boolean } | null> {
   const def = defs.get(id);
   if (!def || !asker) return Promise.resolve(null);
-  return asker(startOn ? { ...def, highlight: startOn } : def);
+  return asker(startOn ? { ...def, highlight: startOn } : def).then((r) => {
+    if (r) closed.delete(id);
+    return r;
+  });
+}
+
+/** The choices "Answer them all the usual way" would set: not the ones that must always ask, nor the already answered. */
+export function usualAnswerIds(): string[] {
+  return [...defs.values()].filter((d) => !d.mustAsk && !d.silent && answers[d.id] === undefined).map((d) => d.id);
 }
 
 /**
- * Sets every choice to its usual answer, so nothing asks again ("Use the usual answers for everything"). Choices that
+ * Sets every choice to its usual answer, so nothing asks again ("Answer all the questions the usual way"). Choices that
  * must always ask, and the ones already answered, are left alone. Every choice is still listed in Preferences > Behaviour.
- * Returns how many it set.
+ * Returns the ids it set, which `forgetAnswers` takes back.
  */
-export function setUsualAnswers(): number {
-  let n = 0;
+export function setUsualAnswers(): string[] {
+  const ids = usualAnswerIds();
   const next = { ...answers };
-  for (const def of defs.values()) {
-    if (def.mustAsk || def.silent || next[def.id] !== undefined) continue;
-    next[def.id] = def.default;
-    n++;
-  }
+  for (const id of ids) next[id] = defs.get(id)!.default;
   answers = next;
   save();
   emit();
-  return n;
+  return ids;
+}
+
+/** Forgets just these answers, so they are asked again (the Undo of `setUsualAnswers`). */
+export function forgetAnswers(ids: string[]): void {
+  const next = { ...answers };
+  for (const id of ids) delete next[id];
+  answers = next;
+  save();
+  emit();
 }
 
 let deferral: (() => boolean) | null = null;
@@ -235,11 +283,20 @@ export function choose<V extends string = string>(id: string): Promise<V> {
   const known = answers[id];
   if (known !== undefined) return Promise.resolve(known as V);
   if (def.silent || !asker || deferred()) return Promise.resolve(def.default as V);
+  if (isWeary(closed.get(id) ?? 0, def)) {
+    // Closed twice already: do what closing does, and say so, without a sheet.
+    wearyNotice?.(def, wearyAnswer(def));
+    return Promise.resolve(wearyAnswer(def) as V);
+  }
   const waiting = pending.get(id);
   if (waiting) return waiting as Promise<V>;
   const p = asker(def)
     .then((r) => {
-      if (!r) return def.dismiss ?? def.default;
+      if (!r) {
+        closed.set(id, (closed.get(id) ?? 0) + 1);
+        return def.dismiss ?? def.default;
+      }
+      closed.delete(id);
       if (r.remember && !def.options.find((o) => o.value === r.value)?.once) setChoice(id, r.value);
       return r.value;
     })
@@ -263,9 +320,16 @@ export function withChoice<V extends string = string>(id: string, fn: (value: V)
     gently,
     mustAsk: !!def?.mustAsk,
     canTell: !!teller,
+    weary: isWeary(closed.get(id) ?? 0, def),
   });
   if (plan === 'remembered' || plan === 'usual') {
     fn(currentChoice<V>(id));
+  } else if (plan === 'weary' && def) {
+    // Closed twice already: do what closing does, say so with a Change button, and remember nothing.
+    const value = wearyAnswer(def);
+    const undo = typeof opts.gently === 'object' ? opts.gently.undo : undefined;
+    if (teller) teller(def, value, fn as (value: string) => void, undo, true);
+    else fn(value as V);
   } else if (plan === 'toast' && def) {
     // Do the usual thing now, say so, and remember it so the toast is a one-off (Preferences still lists it).
     const undo = typeof opts.gently === 'object' ? opts.gently.undo : undefined;
@@ -316,5 +380,7 @@ export function _resetChoicesForTests(): void {
   pending.clear();
   asker = null;
   teller = null;
+  wearyNotice = null;
+  closed.clear();
   deferral = null;
 }

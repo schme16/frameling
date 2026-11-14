@@ -58,7 +58,7 @@ export const SETTING_ROWS: PrefRow[] = [
   row('keyboard', 'Shortcut used twice', 'A warning mark shows where two commands share keys.', ['conflict', 'clash', 'duplicate shortcut', 'used twice', 'overlap', 'same key'], { find: 'Search shortcuts' }),
 
   // Behaviour (the choices themselves are added from the app's list)
-  row('behaviour', 'Use the usual answers for everything', 'Stop the questions and do what most people like.', ['ask me', 'stop asking', 'do not ask again', 'dont show again', 'confirmations', 'prompts', 'warnings', 'defaults', 'questions', 'remember', 'choices', 'reset choices'], { find: 'Use the usual answers for everything' }),
+  row('behaviour', 'Answer all the questions the usual way', 'Stop the questions and do what most people like. Every answer stays listed here, and there is an Undo.', ['ask me', 'stop asking', 'do not ask again', 'dont show again', 'confirmations', 'prompts', 'warnings', 'defaults', 'questions', 'remember', 'choices', 'reset choices'], { find: 'the usual way and stop asking' }),
 
   // Snapping
   row('snapping', 'Snapping', 'Switch snapping on or off. Hold Ctrl to skip it for a moment.', ['snap', 'magnet', 'magnetic', 'sticky', 'smart guides', 'align', 'alignment', 'snap to grid', 'snap to guides', 'snap to pixel', 'grid', 'guides']),

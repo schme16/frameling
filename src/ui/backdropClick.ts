@@ -19,7 +19,7 @@ registerChoice<BackdropMode>({
   default: 'stay',
   // Closing the question without picking leaves the dialog open, so nothing is ever lost by not answering.
   dismiss: 'stay',
-  help: 'Escape and the close button always work, whichever you choose.',
+  help: 'behaviour#dialogs',
   options: [
     { value: 'close', label: 'Yes, close it', detail: 'A press beside a dialog puts it away, the way it works in a lot of apps.' },
     { value: 'stay', label: 'No, leave it open', detail: 'Only Escape and the close button close a dialog, so a stray press never costs you anything.' },

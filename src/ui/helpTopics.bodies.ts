@@ -273,25 +273,27 @@ He only says it a few times in all, and never again once you've pressed either b
 - **Help > Gentle nudges on or off** flips both at once.
 
 Good to know: the line shows on plain drawings, not on pixel art or tile maps, which have their own welcome. It says **The brush is ready** with the Brush or Pencil picked, and asks you to pick a tool when something else is.`,
-  behaviour: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling does the usual thing and tells you in a little message at the bottom, with a **Change** button. Press it and you pick the other way (and Frameling redoes it that way for you). Whichever you pick is remembered.
+  behaviour: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling does the usual thing and tells you in a little message at the bottom, with a **Change** button. Press it and you pick the other way, and Frameling redoes it that way for you. Whichever you pick is remembered.
 
-Frameling only says something when the answers would really differ. With one layer, adding a frame on every layer or just this one is the same thing, so nothing is said.
+It only says something when the answers would really differ. With one layer, adding a frame on every layer or just this one is the same thing, so nothing is said.
 
 ## When it stops and asks
 
-A few choices can take something with them, such as taking a frame off every layer, or bringing back an older version. Those still stop and ask, with a short explanation of each option. Tick **Remember my choice** and it won't ask again. Untick it to be asked again next time.
+A few choices can take something with them, such as taking a frame off every layer, or bringing back an older version. Those stop and ask, with a short explanation of each option. Tick **Remember my choice** and it won't ask again. Untick it to be asked next time.
+
+Press **Learn more** on a question and the question steps aside, so you can read the help before you decide. **Esc** brings it back just as you left it.
+
+## Closing a question
+
+Close one with **Esc** and Frameling does what closing always does: the safe answer, never one that could lose something. It asks again next time. Close the same question twice in a session and it stops asking until you restart, says so in a message, and the message has **Ask me again**. Questions that could lose work always ask.
 
 ## Don't want to be asked at all?
 
-The first question you meet has a button, **Use the usual answers for everything**. It sets every choice to what Frameling does to start with, so nothing asks again (the few that could lose something still do). The same button sits at the top of **Preferences > Behaviour**.
-
-## Changing your mind
-
-Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there, even after you've used the usual answers. Pick a different answer, or pick **Ask me** to be asked again next time.
+The first question you meet has a button, **Answer all 25 questions the usual way and stop asking** (the number is however many are left). It sets each one to what Frameling does to start with, except the few that could lose something, and the message after has an **Undo**. The same button sits at the top of **Preferences > Behaviour**, where every answer stays listed. Pick **Ask me** on any of them to be asked again.
 
 ## Dialogs
 
-The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer, so it does the same thing every time after that. Change your mind in **Preferences > Behaviour**. A press that only just misses the dialog's edge never counts either way: there are 24 pixels of dead space all round, so a near miss does nothing at all. **Escape** and the close button always work.`,
+The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer. Change your mind in **Preferences > Behaviour**. A press that only just misses a dialog's edge never counts either way: every dialog has 24 pixels of dead space all round it, so a near miss does nothing at all. The save question ignores the dim area completely. **Esc** and the close button always work.`,
   features: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
 
 ## Switching one on or off

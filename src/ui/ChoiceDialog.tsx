@@ -1,11 +1,11 @@
 // The "ask the first time" dialog for core choices (src/core/choices.ts), and the Behaviour preferences page that
 // lists every choice so an answer can be changed or forgotten later.
-import { useEffect, useState } from 'react';
-import { allChoices, askAgain, setChoice, setChoiceAsker, setGentleTeller, useChoices, setUsualAnswers, type ChoiceDef } from '../core/choices';
+import { useEffect, useRef, useState } from 'react';
+import { allChoices, askAgain, askMeAgain, forgetAnswers, setChoice, setChoiceAsker, setGentleTeller, setUsualAnswers, setWearyNotice, useChoices, usualAnswerIds, type ChoiceDef } from '../core/choices';
 import { store } from '../core/store';
 import { Icon } from './icons';
 import { Modal } from './Modal';
-import { openHelp, openPrefs } from './overlays';
+import { openHelp, openPrefs, overlays } from './overlays';
 import { Quill, useQuillShown } from './mascot';
 import { createStore } from './mini';
 import { toast } from './toast';
@@ -15,14 +15,18 @@ interface Pending {
   resolve: (r: { value: string; remember: boolean } | null) => void;
 }
 
-const asking = createStore<Pending | null>(null);
+export const asking = createStore<Pending | null>(null);
+// A question that arrives while another is up waits its turn, rather than taking its place and leaving it unanswered.
+const waiting: Pending[] = [];
 
-setChoiceAsker(
-  (def) =>
-    new Promise((resolve) => {
-      asking.set(() => ({ def, resolve }));
-    }),
-);
+export const putQuestion = (def: ChoiceDef) =>
+  new Promise<{ value: string; remember: boolean } | null>((resolve) => {
+    const p = { def, resolve };
+    if (asking.get()) waiting.push(p);
+    else asking.set(() => p);
+  });
+
+setChoiceAsker(putQuestion);
 
 // The sheets a person has met so far: the first one carries the button that switches the lot off.
 const MET_KEY = 'frameling.choices.sheetsMet.v1';
@@ -41,18 +45,32 @@ function metASheet(): void {
   }
 }
 
-/** Everything now uses its usual answer, and the toast says where to change them. */
-export function applyUsualAnswers(): void {
-  setUsualAnswers();
-  toast('Done. Nothing will ask you questions now. Change any answer in Preferences, Behaviour.', {
+const questions = (n: number) => (n === 1 ? '1 question' : `${n} questions`);
+
+/** Answers every question that can be answered the usual way, and says so with an Undo. Returns how many. */
+export function applyUsualAnswers(): number {
+  const ids = setUsualAnswers();
+  toast(`Answered ${questions(ids.length)} the usual way. Nothing will ask now.`, {
     kind: 'success',
-    duration: 9000,
-    action: { label: 'Open Behaviour', id: 'open-behaviour', run: () => openPrefs('behaviour') },
+    duration: 12000,
+    action: {
+      label: 'Undo',
+      id: 'undo-usual-answers',
+      run: () => {
+        forgetAnswers(ids);
+        toast(`Put back. Those ${questions(ids.length)} will ask again.`);
+      },
+    },
+    decline: { label: 'Open Behaviour', id: 'open-behaviour', run: () => openPrefs('behaviour') },
   });
+  return ids.length;
 }
 
+/** The words on the button that does it, with the number that makes it real. */
+export const usualAnswersLabel = (n: number): string => `Answer all ${questions(n)} the usual way and stop asking`;
+
 // A choice that would have asked: the usual thing happens, a toast says so, and Change puts the question after the fact.
-setGentleTeller((def, value, run, undo) => {
+setGentleTeller((def, value, run, undo, notRemembered) => {
   const before = store().historyIds().undo;
   run(value);
   const after = store().historyIds().undo;
@@ -62,7 +80,7 @@ setGentleTeller((def, value, run, undo) => {
     return;
   }
   const did = def.options.find((o) => o.value === value)?.did ?? def.title;
-  toast(did, {
+  toast(notRemembered ? `${did} You closed that question twice, so it won't ask again until you restart.` : did, {
     action: {
       label: 'Change',
       id: `change-${def.id}`,
@@ -83,23 +101,51 @@ setGentleTeller((def, value, run, undo) => {
   });
 });
 
-export function ChoiceDialog() {
-  const pending = asking.use((p) => p);
-  if (!pending) return null;
-  return <Ask key={pending.def.id} pending={pending} />;
+// A question that was closed twice is not put a third time this session: what closing does happens, and a toast says so.
+setWearyNotice((def, value) => {
+  const label = def.options.find((o) => o.value === value)?.label ?? value;
+  toast(`You closed "${def.title}" twice, so it used "${label}" without asking. It won't ask again until you restart.`, {
+    action: { label: 'Ask me again', id: `ask-again-${def.id}`, run: () => askMeAgain(def.id) },
+  });
+});
+
+/** A choice's help is a topic id, with `#heading` to land on one part of it. */
+export function helpTarget(help: string): [string, string | undefined] {
+  const [topic, anchor] = help.split('#');
+  return [topic, anchor || undefined];
 }
 
-function Ask({ pending }: { pending: Pending }) {
+export function ChoiceDialog() {
+  const pending = asking.use((p) => p);
+  // Learn more opens the help; the question steps aside so the help can be read first, and comes back with its place kept.
+  const helpOpen = overlays.use((o) => !!o.help);
+  if (!pending) return null;
+  return (
+    <div className="ui-choice-wrap" style={helpOpen ? { display: 'none' } : undefined} data-stepped-aside={helpOpen || undefined}>
+      <Ask key={pending.def.id} pending={pending} aside={helpOpen} />
+    </div>
+  );
+}
+
+function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
   const { def, resolve } = pending;
   const [value, setValue] = useState(def.highlight ?? def.default);
   const [remember, setRemember] = useState(true);
   const quill = useQuillShown();
   const [first] = useState(() => sheetsMet() === 0);
   useEffect(metASheet, []);
+  const learn = useRef<HTMLButtonElement>(null);
+  const wasAside = useRef(false);
+  // Back from the help: the place is kept (what you picked, the tick box), and focus returns to Learn more.
+  useEffect(() => {
+    if (wasAside.current && !aside) learn.current?.focus();
+    wasAside.current = aside;
+  }, [aside]);
   const finish = (r: { value: string; remember: boolean } | null) => {
-    asking.set(() => null);
+    asking.set(() => waiting.shift() ?? null);
     resolve(r);
   };
+  const howMany = usualAnswerIds().length;
   return (
     <Modal title={def.title} size="sm" className="ui-choice" onClose={() => finish(null)} initialFocus=".ui-choice-opt.is-chosen">
       {def.quill && quill ? (
@@ -134,7 +180,7 @@ function Ask({ pending }: { pending: Pending }) {
         <input type="checkbox" data-testid={`choice.${def.id}.remember`} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         Remember my choice. You can change it any time in Preferences, Behaviour.
       </label>
-      {first && (
+      {first && howMany > 1 && (
         <div className="ui-choice-usual">
           <button
             type="button"
@@ -145,14 +191,14 @@ function Ask({ pending }: { pending: Pending }) {
               finish({ value: def.default, remember: false });
             }}
           >
-            Use the usual answers for everything
+            {usualAnswersLabel(howMany)}
           </button>
-          <span>Frameling stops asking. Every answer stays listed in Preferences, Behaviour.</span>
+          <span>Every answer stays listed in Preferences, Behaviour, and the message after has an Undo.</span>
         </div>
       )}
       <div className="ui-choice-foot">
         {def.help && (
-          <button type="button" className="ui-btn ui-btn-quiet" data-testid={`choice.${def.id}.help`} onClick={() => openHelp(def.help)}>
+          <button type="button" className="ui-btn ui-btn-quiet" data-testid={`choice.${def.id}.help`} onClick={() => openHelp(...helpTarget(def.help ?? ''))} ref={learn}>
             <Icon name="help" size={14} /> Learn more
           </button>
         )}
@@ -168,6 +214,7 @@ function Ask({ pending }: { pending: Pending }) {
 /** Preferences > Behaviour: every choice, with "Ask me" for ones not answered yet. */
 export function BehaviourPage() {
   const answers = useChoices();
+  const usualLeft = usualAnswerIds().length;
   const groups = new Map<string, ChoiceDef[]>();
   for (const c of allChoices()) {
     const list = groups.get(c.category) ?? [];
@@ -178,9 +225,13 @@ export function BehaviourPage() {
     <div className="ui-behaviour">
       <p className="ui-pref-intro">How Frameling behaves where people like different things. Anything set to "Ask me" asks the first time it comes up.</p>
       <p className="ui-pref-intro">
-        <button type="button" className="ui-btn" data-testid="choice.usual-all" onClick={applyUsualAnswers}>
-          Use the usual answers for everything
-        </button>
+        {usualLeft > 0 ? (
+          <button type="button" className="ui-btn" data-testid="choice.usual-all" onClick={applyUsualAnswers}>
+            {usualAnswersLabel(usualLeft)}
+          </button>
+        ) : (
+          'Every question already has an answer.'
+        )}
       </p>
       {[...groups].map(([cat, list]) => (
         <section key={cat}>

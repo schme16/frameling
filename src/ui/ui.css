@@ -1656,6 +1656,21 @@ body.ui-resizing * {
   font-size: 17px;
 }
 
+/* Help opened from a question sheet: the sheet steps aside, and this line says it is waiting. */
+.ui-help-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px 8px 20px;
+  background: color-mix(in srgb, var(--sunny) 22%, var(--panel));
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-small);
+}
+.ui-help-waiting .ui-btn {
+  flex: none;
+}
+
 /* An ask-the-first-time question comes from whatever is open, so it sits above other dialogs (Export is 900). */
 .ui-backdrop:has(.ui-choice) {
   z-index: 950;
