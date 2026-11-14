@@ -35,7 +35,8 @@ const CARD_SWITCHES = [['ignore-gpu-blocklist']];
 // are not the default until more than one card says so. A harness takes them by name: gpu.use('card', { full: true }),
 // or GPU_FULL=1.
 const CARD_FULL_SWITCHES = [['enable-zero-copy'], ['canvas-oop-rasterization']];
-// Vulkan through ANGLE draws nothing at all on that card: the canvas stays empty. Never add it anywhere by default.
+// Vulkan through ANGLE left the canvas empty on that card on a real screen (it draws correctly under xvfb; see
+// scripts/e2e/gpu-canvas.cjs). Never add it anywhere by default.
 const VULKAN_SWITCH = ['enable-features', 'Vulkan,DefaultANGLEVulkan'];
 const SOFTWARE_SWITCHES = [['ignore-gpu-blocklist'], ['enable-unsafe-swiftshader'], ['use-angle', 'swiftshader']];
 // The colour profile pin; src/main/gpuFlags.ts sets the same switch for the app.
@@ -116,7 +117,7 @@ function judge(mode, page, f, opts = {}) {
   if (page.red.join() !== '255,0,0,255') problems.push(`a 2D canvas drawn rgb(255,0,0) reads back ${page.red.join(',')}`);
   if (mode === 'card') {
     if (!page.webgl2) problems.push('asked for the card but WebGL 2 is not available at all');
-    if (soft) problems.push(`asked for the card and got software (${renderer})`);
+    if (soft) problems.push(`asked for the card and got software (${renderer}). Under xvfb, start the run with the card's own switches so OpenGL goes to it: FRAMELING_CARD does this for the app; a harness needs __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia in its environment (set in the main process it comes too late, the engine reads it at start)`);
     if (f.gpu_compositing !== 'enabled') problems.push(`asked for the card but the window is composited in software (gpu_compositing: ${f.gpu_compositing})`);
     if (f['2d_canvas'] !== 'enabled') problems.push(`asked for the card but 2D canvas is not on it (2d_canvas: ${f['2d_canvas']})`);
   } else if (opts.noGpu) {

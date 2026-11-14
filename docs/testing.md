@@ -464,6 +464,8 @@ page). Nothing in the app is probed for the test.
 | a card that cannot be used (`--use-angle=no-such-driver`) | the app still opens and draws, the engine says software, and the app's log says so: `[gpu] hardware drawing was asked for but the engine is drawing in software` |
 | `FRAMELING_GPU=full` | zero copy and out-of-process canvas are on the command line, no Vulkan, and it still draws |
 
+This one sees the engine's verdicts, not the card: under xvfb OpenGL has no card, so every start here is on llvmpipe whatever it asks. Which card and whether the window shows the drawing are `gpu-canvas.cjs`, next.
+
 ```bash
 npm run dist:linux
 xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/appimage-gpu.cjs                 # the AppImage in release/
@@ -479,6 +481,26 @@ so its OpenGL is Mesa's llvmpipe, and the report names the adapter (`ANGLE (Mesa
 beside it. `--require-card` fails on a software adapter, for the run on the real card, which belongs to `gpu-real-runs`.
 The flag is set in the app's main process (`src/main/gpuFlags.ts`), not the launcher; see
 [colour-and-gpu.md](colour-and-gpu.md).
+
+## The real card, and the window: scripts/e2e/gpu-canvas.cjs
+
+Starts the real app (`dist/`) for each way of asking for the card, opens a vector and a pixel starter drawing, takes a
+picture of the composited window through the debugging port, and fails on an empty canvas or one that does not match the
+software drawing. Each run prints the adapter the page really got, and for a card run says which of the app's processes
+was on the NVIDIA card in `nvidia-smi` while it ran. A control hides the canvas and must be caught.
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs            # what ships
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs --explore  # plus the Vulkan and Skia-on-Vulkan combinations (report only)
+node scripts/e2e/gpu-canvas.cjs --shots /tmp/shots   # keeps each window picture
+```
+
+`--allow-software` for a computer with no card (the card runs then only have to draw). A virtual screen cannot show the
+last step on a real one, the card's pixels reaching a real X server, so a pass here is the floor: see
+[colour-and-gpu.md](colour-and-gpu.md). To get the real card for any other Electron harness in xvfb, start it with
+`__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia` in its environment (set later, in the main process, it is
+too late). `scripts/ab/gpu-detect.cjs <appDir> <outPrefix> [KEY=VALUE ...]` shoots Preferences > Performance from the real
+app in both themes.
 
 ## Finishing effects, GPU against JS: scripts/e2e/effects-gpu.cjs
 

@@ -159,3 +159,42 @@ describe('the line printed on start', () => {
   });
   it('has no em dashes', () => expect(startLine(base)).not.toContain('\u2014'));
 });
+
+describe('a computer with a discrete card and an onboard one', () => {
+  // What this build machine's engine reports under a Vulkan run: it flags the onboard AMD card active, names nothing, and
+  // the page is in fact drawing on the NVIDIA card. The report must say the NVIDIA card (the regression: it said the AMD one).
+  const hybrid: GpuReport = {
+    ...software,
+    devices: [
+      { vendorId: 0x1002, deviceId: 0x164e, active: true },
+      { vendorId: 0x10de, deviceId: 0x2702, active: false, discrete: true },
+    ],
+    liveRenderer: 'ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 SUPER (0x00002702)), NVIDIA)',
+    features: { gpu_compositing: 'enabled', '2d_canvas': 'enabled', rasterization: 'enabled', vulkan: 'enabled_on' },
+    glImplementation: '(gl=none,angle=none)',
+    flags: ['--ignore-gpu-blocklist'],
+  };
+  it('names the discrete card that the page is drawing on, not the one the engine flagged', () => {
+    expect(cardName(hybrid)).toBe('NVIDIA GeForce RTX 4080 SUPER');
+    expect(readGpu(hybrid).card).toBe('NVIDIA GeForce RTX 4080 SUPER');
+  });
+  it('says Vulkan when the page is on Vulkan, though the engine\'s part list says nothing', () => expect(drawPath(hybrid)).toBe('Vulkan'));
+  it('gives a real name, never a hex code, to a card the engine has no string for (the page, then the GL text)', () => {
+    expect(cardName({ ...hybrid, devices: [{ vendorId: 0x10de, deviceId: 0x2702, active: true }] })).not.toMatch(/0x/);
+    expect(cardName({ ...hybrid, liveRenderer: undefined, glRenderer: 'ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)', devices: [{ vendorId: 0x10de, deviceId: 0x2702, active: true }] })).toBe('NVIDIA GeForce RTX 4080 SUPER');
+  });
+  it('is drawing in software, not "card", when the engine says enabled but the page is on llvmpipe', () => {
+    const soft = { ...hybrid, liveRenderer: 'ANGLE (Mesa, llvmpipe (LLVM 20.1.2 256 bits), OpenGL 4.5)', features: { ...hybrid.features, vulkan: 'disabled_off' } };
+    expect(drawMode(soft)).toBe('software');
+    expect(drawPath(soft)).toBe('Software');
+    expect(startLine(soft)).toMatch(/software/);
+  });
+  it('tells you about the faster card when the onboard one is drawing, and how to ask for it', () => {
+    const onboard: GpuReport = { ...hybrid, liveRenderer: 'ANGLE (AMD, AMD Radeon Graphics (radeonsi, raphael_mendocino, LLVM 20.1.2, DRM 3.64), OpenGL 4.6 Mesa 25)', devices: [{ vendorId: 0x1002, deviceId: 0x164e, active: true, name: 'AMD Radeon Graphics' }, { vendorId: 0x10de, deviceId: 0x2702, active: false, discrete: true, name: 'NVIDIA GeForce RTX 4080 SUPER' }] };
+    expect(readGpu(onboard).advice.join(' ')).toMatch(/NVIDIA GeForce RTX 4080 SUPER.*FRAMELING_CARD=discrete/);
+  });
+  it('does not offer a card that is set aside for a virtual machine', () => {
+    const away: GpuReport = { ...hybrid, devices: [{ vendorId: 0x1002, deviceId: 0x164e, active: false, reserved: true }, { vendorId: 0x10de, deviceId: 0x2702, active: true, discrete: true }] };
+    expect(readGpu(away).advice).toEqual([]);
+  });
+});
