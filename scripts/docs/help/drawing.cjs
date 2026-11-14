@@ -185,4 +185,13 @@ module.exports = [
   { name: 'tool-pen', steps: [T('blank-vector'), view(0.6), UI({ color: '#1d1b26', fillColor: '#93cdb0' }), tool('pen'), { wait: 700 }, away, WARM, REC([113, 47, 764, 385], 80), { wait: 900 },
     tap(320, 380, 800), draw([[640, 180], [760, 180]], { steps: 10, delay: 28 }), { wait: 800 }, tap(960, 380, 800), draw([[640, 580], [520, 580]], { steps: 10, delay: 28 }), { wait: 800 },
     tap(320, 380, 1000), { move: [700, 700] }, { wait: 2000 }, STOP] },
+  // Shapes copied from a vector layer and pasted on a pixel layer: they come out as chunky pixels (nudged aside here, so both show),
+  // and the message says what was converted.
+  { name: 'clipboard-system', width: 900, prefs: { firstDrawn: true }, steps: [T('blank-vector'), view(0.6),
+    dom(`(() => { const S = __frameling.store(); S.update('setup', (d) => { d.drawings.pxd = { id: 'pxd', kind: 'pixel', width: 0, height: 0, pixels: new Uint8ClampedArray(0) }; d.layers.push({ id: 'Lpx', name: 'Pixels', kind: 'pixel', visible: true, locked: false, opacity: 1, pixelSize: 8, cels: [{ id: 'cpx', start: 0, length: d.length, drawingId: 'pxd' }] }); }); })()`),
+    put('Lines', [ell(220, 160, 300, 220, '#ff6f91', INK, 8), rect(420, 300, 260, 150, '#6a52d4', INK, 8)], [0, 1]),
+    dom("__frameling.run('edit.copy')"), UI({ activeLayerId: 'Lpx', selection: [] }), { wait: 300 },
+    dom("__frameling.run('edit.paste')"), { wait: 500 },
+    dom("for (let i = 0; i < 4; i++) __frameling.run('select.nudgeRightMore')"), { wait: 700 }, away, { wait: 500 },
+    { shot: '@', crop: [113, 47, 802, 716] }] },
 ];

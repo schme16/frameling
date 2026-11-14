@@ -133,6 +133,28 @@ In the top bar these buttons show their words while there's room, and shrink to 
 **<** and **>** (Shift+comma and Shift+full stop) jump to the previous and next drawing on the layer you're on.
 
 If a layer is locked its frames can't be changed. Click the padlock to unlock it.`,
+  'timeline-copy-keys': `Repeat a walk cycle three times, put a blink at the start and the end, copy a mouth shape onto another layer, paste a pose at frame 40. Copy the drawings once, paste them where you like.
+
+**Copy:** pick some keys (click one, **Shift**+click more, or **Shift**+drag a box), or click a frame that has a drawing. Then press **Ctrl+C** while the timeline has focus. **Ctrl+X** cuts them instead. Right-click works too.
+
+The copy keeps each drawing, how long it is held, and the gaps between them.
+
+**Paste:** click the frame you want it to start on, pick the layer, and press **Ctrl+V**. The pasted keys are picked, so you can nudge them straight away.
+
+- **Pasted drawings are new drawings.** Change one and the original stays as it was.
+- To add on to the end of a layer, use **Paste keys after the last drawing** (in the command palette): the playhead can't go past the end, and this goes right after it.
+- Keys copied from several layers land on the layer you paste on and the ones below it, in the same order.
+- **Paste keys where they were** (in the command palette) puts them back on the same layers and frames, as new drawings, covering what is there now.
+
+**When it lands on drawings that are already there:** the first time, Frameling makes room: the drawings in the way move later, so nothing is lost. A message says so, with a **Change** button for **Paste over them** instead, which covers them and keeps the animation the same length. Either way, Undo takes it back. You can change your mind any time in Preferences > Behaviour.
+
+**Onto another kind of layer:** a vector drawing pasted on a pixel layer becomes pixels, with hard edges snapped to that layer's grid (and its palette, when that is locked). A pixel drawing pasted on a vector layer becomes a picture you can move, turn and resize. A message says what was converted. Camera keys and tile keys only go on their own kind of layer.
+
+**Good to know:**
+
+- Only drawing keys are copied. Effect keys aren't; a symbol's position, size and turn travel with its drawing.
+- On the canvas, **Ctrl+C** still copies shapes. It is the timeline having focus (click it first) that makes it copy keys.
+- Shapes and pixels: [Copy and paste with other apps](help:clipboard-system).`,
   'timeline-tidy-end': `Stretch a hold to frame 31, then pull it back to 28, and the timeline still says 31. The three frames on the end are empty. **Tidy the end** is Frameling taking them off, so the animation finishes where your last drawing does.
 
 ## The first time it happens

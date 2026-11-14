@@ -4,6 +4,7 @@ import { registerPanel } from '../core/registry';
 import './choices';
 import './commands';
 import './keyCommands';
+import './frameClipCommands';
 import './range';
 import './help';
 import { installPlayback } from './playback';

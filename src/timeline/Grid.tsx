@@ -35,6 +35,7 @@ import { currentLayout, useLayout } from './view';
 import { celRef, layerTracks, type KeyRef } from './tracks';
 import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } from './keys';
 import { clearKeys, pickKeys } from './state';
+import { copyKeys, cutKeys, hasFrameClip, pasteKeys } from './frameClipCommands';
 import { toast } from '../ui/toast';
 import { clipPlayItems } from './ClipPlay';
 import { isSection } from '../ui/panelInfo';
@@ -835,6 +836,14 @@ export function TimelineBody() {
       e.stopPropagation();
     };
     const picked = [...tl().keys];
+    // Copy, cut and paste work on keys while the frames have focus (on the canvas they work on shapes).
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
+      done();
+      if (e.key === 'v') pasteKeys();
+      else if (e.key === 'c') copyKeys();
+      else cutKeys();
+      return;
+    }
     if ((e.key === 'Delete' || e.key === 'Backspace') && picked.length) {
       done();
       const o = deleteKeys(picked);
@@ -1081,6 +1090,9 @@ function keyMenu(refs: KeyRef[], extra: MenuItem[]): MenuItem[] {
   const n = refs.length;
   const items: MenuItem[] = [
     { heading: n === 1 ? 'Key' : `${n} keys` },
+    { label: n === 1 ? 'Copy this key' : `Copy ${n} keys`, hint: keyHint('edit.copy'), onClick: () => void copyKeys({ refs }) },
+    { label: n === 1 ? 'Cut this key' : `Cut ${n} keys`, hint: keyHint('edit.cut'), onClick: () => void cutKeys({ refs }) },
+    { label: 'Paste keys at the playhead', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys() },
     { label: n === 1 ? 'Delete this key' : `Delete ${n} keys`, danger: true, hint: 'Delete', onClick: () => void (deleteKeys(refs).ok && clearKeys()) },
     { label: 'Move one frame later', hint: 'Alt+→', onClick: () => void keysResult(moveKeys(refs, 1)) },
     { label: 'Move one frame earlier', hint: 'Alt+←', onClick: () => void keysResult(moveKeys(refs, -1)) },
@@ -1155,6 +1167,8 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { heading: `${layer.name}, frame ${frame + 1}${cel ? ` (drawing held for ${holdWords(cel.length)})` : ' (empty)'}` },
     { label: 'New blank drawing here', hint: keyHint('timeline.newKey'), onClick: () => void say(ops.newBlankKey(layer.id, frame)) },
     { label: 'Copy this drawing to the next frame', hint: keyHint('timeline.duplicateKey'), disabled: none, onClick: () => void say(ops.duplicateKey(layer.id, frame)) },
+    { label: 'Copy this drawing', hint: keyHint('edit.copy'), disabled: none, onClick: () => void copyKeys({ layerId: layer.id, frame }) },
+    { label: 'Paste keys here', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys({ layerId: layer.id, frame }) },
     { label: 'Clear this drawing', disabled: none, onClick: () => void say(ops.clearKey(layer.id, frame)) },
     { label: 'Make these frames empty', disabled: none, onClick: () => void say(ops.deleteKey(layer.id, frame)) },
     { separator: true },

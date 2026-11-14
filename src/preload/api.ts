@@ -156,6 +156,14 @@ export interface GpuBridge {
   restart(): Promise<void>;
 }
 
+/** The system clipboard, for pictures and text. Missing in a plain browser tab, where the page's own clipboard is used. */
+export interface ClipboardBridge {
+  /** The picture on the clipboard as PNG bytes, or null when there isn't one. `ours` is true when this app put it there. */
+  readPicture(): Promise<{ png: Uint8Array; ours: boolean } | null>;
+  writePicture(png: Uint8Array): Promise<boolean>;
+  writeText(text: string): Promise<boolean>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -236,6 +244,8 @@ export interface FramelingApi {
   };
   /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
   beta?: BetaBridge;
+  /** Pictures and text to and from the system clipboard (desktop only). */
+  clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */
   gpu?: GpuBridge;
   app: {

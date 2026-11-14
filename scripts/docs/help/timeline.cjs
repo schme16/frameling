@@ -1,7 +1,7 @@
 const F = '__frameling';
 const js = (code) => ({ eval: code });
 // The "ask the first time" questions (hold longer, mask scope...) are answered up front, so no dialog opens mid-clip.
-const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer' };
+const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer', 'timeline.pasteOver': 'insert' };
 const PANELS = ['tool-options', 'timeline', 'colors', 'palette', 'library', 'tileset', 'symbol-props', 'effects', 'particles', 'camera', 'text', 'rig', 'clip-flow', 'artboards', 'lipsync', 'preview', 'quests', 'help'];
 // Properties (the right side) is one long list of sections. Folding all but the ones named in `keep` leaves them in view.
 const quiet = (keep, answers = {}) => [js(`localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify({ ...ANSWERS, ...answers }))}); localStorage.setItem('frameling.inspector.v1', ${JSON.stringify(JSON.stringify({ folded: keep.length ? PANELS.filter((p) => !keep.includes(p)) : [] }))}); setTimeout(() => location.reload(), 0); true`), { wait: 2500 }];
@@ -321,6 +321,27 @@ module.exports = [
       { drag: [[fx(26), RULER_Y], [fx(1), RULER_Y]], steps: 40, delay: 20, after: 300 },
       { drag: [[fx(1), RULER_Y], [fx(26), RULER_Y]], steps: 50, delay: 40, after: 1200 },
       { move: PARK, after: 300 },
+      { rec: 'stop' },
+    ],
+  },
+  // Four keys of the walk cycle picked (Shift+click), copied with Ctrl+C, pasted at frame 9 with Ctrl+V: the drawings in the way
+  // move later (the first time, a message says so, with a Change button) and the cycle goes round twice.
+  {
+    name: 'timeline-copy-keys',
+    prefs: { firstDrawn: true },
+    steps: [
+      ...open('walk-cycle', [], [], { 'timeline.pasteOver': undefined }),
+      { move: [700, 740] },
+      { rec: '@', crop: [108, 40, 812, 726], every: 80 },
+      { wait: 700 },
+      { click: [fx(1), BALL_Y], after: 500 },
+      { click: [fx(3), BALL_Y], mods: ['shift'], after: 450 },
+      { click: [fx(5), BALL_Y], mods: ['shift'], after: 450 },
+      { click: [fx(7), BALL_Y], mods: ['shift'], after: 700 },
+      { key: 'c', mods: ['control'], after: 1500 },
+      { click: [fx(9), BALL_Y], after: 900 },
+      { key: 'v', mods: ['control'], after: 2200 },
+      { move: PARK, after: 900 },
       { rec: 'stop' },
     ],
   },
