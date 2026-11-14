@@ -130,7 +130,7 @@ What was checked, and what was not.
 - **What that check missed, and it matters.** It read pixels back out of an offscreen canvas. It never looked at the
   window. On the user's NVIDIA driver that same set opened a file with every layer in it and drew **nothing at all**
   on the canvas. The lesson for any graphics check here: reading a canvas back is not proof that anything reached the
-  screen.
+  screen. `scripts/e2e/gpu-canvas.cjs` now looks at the window (below).
 - **Which flag did it**, found one at a time on that card (RTX 4080 SUPER, Zorin, X11), each run opening the same
   file and judged by eye:
 
@@ -143,9 +143,88 @@ What was checked, and what was not.
   | `+ --canvas-oop-rasterization` | draws |
 
   So Vulkan through ANGLE is the one. The app never adds it, not even for `FRAMELING_GPU=full`, and
-  `FRAMELING_GPU=vulkan` is the only way to get it, for anyone measuring it on another card. `FRAMELING_GPU=full`
-  now means zero copy and out-of-process canvas drawing, the two that work. They are not the default until a second
-  card says so.
+  `FRAMELING_GPU=vulkan` is the only way to get it. `FRAMELING_GPU=full` now means zero copy and out-of-process canvas
+  drawing, the two that drew on their own. They are not the default (see "Why the canvas went blank" for what would
+  change that).
+
+## Why the canvas went blank, and what a virtual screen can and cannot show
+
+Looked at again with the real card (RTX 4080 SUPER, driver 615, Vulkan 1.4.351), inside xvfb, with the real app and a
+picture of the composited window (`scripts/e2e/gpu-canvas.cjs`, the canvas area compared with the software drawing of the
+same file, two starter drawings: a vector one and a pixel one). **Every one of these draws correctly**, each with the app's
+graphics process on the NVIDIA card in `nvidia-smi` while it ran:
+
+| way of asking | page's renderer |
+|---|---|
+| as shipped, with the card asked for (`FRAMELING_CARD=discrete`) | NVIDIA GeForce RTX 4080 SUPER, OpenGL |
+| `FRAMELING_GPU=full` (zero copy and out-of-process canvas together) | the same |
+| `FRAMELING_GPU=vulkan` (`Vulkan,DefaultANGLEVulkan`, no `--use-vulkan`) | the same card, Vulkan |
+| the same plus `--use-vulkan` | Vulkan |
+| plus `--use-angle=vulkan --use-vulkan` | Vulkan |
+| plus `--enable-features=VulkanFromANGLE --use-vulkan` | Vulkan |
+| Vulkan with zero copy and out-of-process canvas | Vulkan |
+
+So the lead "the tried set had no `--use-vulkan`" is not it: with and without, Vulkan draws here. What does not reproduce
+is the blank canvas itself. The difference between this run and the user's is the screen. A virtual screen has no card to
+present on, so the engine composes and presents in software; on the real X11 screen the card's pixels have to reach a real
+X server (the engine's compositor and the Vulkan drawing share memory with each other and with the server), and that is the
+step nothing here exercises. Vulkan's *drawing* is fine on this card, the blank is in the *presenting*, and only a real
+screen can show it. Not proven by any run: this is the reading that fits every piece of evidence, not a measurement.
+
+What this settles:
+
+- `gpu-real-runs` can measure the real card through Vulkan or OpenGL in xvfb, since drawing is correct in both. The comment
+  that Vulkan "draws nothing" is true of the user's real screen only, and says so now.
+- Nothing may ship because a virtual screen passes. `gpu-canvas.cjs` is the floor (a flag that blanks the canvas in the
+  window fails it, and the check proves it can tell with a control that hides the canvas), not the ceiling.
+- Zero copy and out-of-process canvas stay opt-in. They drew on the real screen one at a time, and together they draw in the
+  window check, but the pair has not been seen on a real screen, and a virtual one cannot show presenting. What would move
+  them to the default: `FRAMELING_GPU=full` run on a real screen for a while (the user's own machine is enough), then a
+  second maker's card in the same check. The caution was "wait for a second card"; it is now "wait for the real screen".
+- Vulkan stays off by default for the same reason, stronger: it is the one that was seen to blank.
+
+## Which card (gpu-detect)
+
+Reported, then fixed:
+
+- **The report named the wrong card.** The engine's `active` flag pointed at the onboard AMD card (which on this machine is
+  not even usable: the kernel has it on `vfio-pci`, set aside for a virtual machine) while the page was drawing on the
+  NVIDIA card. The Performance page said "AMD card (device 0x164e)". The engine here also fills no `deviceString` and no GL
+  strings. Now the card in use is read from what a page's own WebGL says (`liveRenderer`, `src/gpu/identify.ts`), the name
+  comes from that, then the engine's string if it is a real name (a generic "NVIDIA Device (0x2702)" never wins), then the
+  system's PCI list (`pci.ids`), and the hex code is the last resort. Software (llvmpipe, SwiftShader) reads as software even
+  when the engine's own verdicts say "enabled".
+- **Not `ba023c83`.** Moving the flags from the launcher to the main process changes nothing: the same renderer comes out
+  with the switches on the command line or set with `appendSwitch`. The regression window is `2d9d209a` (Vulkan taken out
+  of the default). On this machine ANGLE on Vulkan picks the discrete card by itself; the OpenGL path that replaced it
+  follows the X server, which under xvfb lands on llvmpipe (Mesa), and on a computer with two cards can land on either.
+  Nothing asked for a card on either path.
+- **Asking for the discrete card** (`src/main/gpuPick.ts`, `FRAMELING_CARD`). The card makers' own switches, because OpenGL
+  chooses by system, not by the engine: NVIDIA's driver `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia
+  __VK_LAYER_NV_optimus=NVIDIA_only` (measured under xvfb: `__GLX_VENDOR_LIBRARY_NAME=nvidia` alone takes OpenGL from
+  llvmpipe to the RTX 4080; `DRI_PRIME` and the EGL vendor file do nothing there), and for Mesa cards
+  `DRI_PRIME=pci-<address>` (untested here: no Mesa discrete card). They are set only when there are two cards that can draw
+  and exactly one is discrete (NVIDIA, or AMD with 3 GB or more of its own memory), the driver's library is installed, and
+  nothing in the environment already chose. `FRAMELING_CARD=system` leaves it to the system, `FRAMELING_CARD=discrete` asks
+  even with one working card (that is how a virtual screen gets the card). The environment has to be there when the engine
+  starts: setting it in the running main process does not reach the graphics process (measured), so Frameling sets it and
+  starts itself again once (`FRAMELING_STEERED=1` stops a second time; the relaunch uses the same plan as Restart, so an
+  AppImage opens by its own file). If it cannot restart itself it does not ask. A run from source is not restarted unless
+  the card is asked for by name, since a restart takes the terminal away.
+- Why the card makers' switches and not Vulkan: Vulkan picks the discrete card by itself but is the path that blanked the
+  canvas on a real screen. The switches keep the proven OpenGL path and only choose the card.
+- The Performance page says when a faster card is there and not drawing, and the copied report has `Asked for:`, `Page renderer:`
+  and which cards are discrete or set aside.
+
+## The window check (scripts/e2e/gpu-canvas.cjs)
+
+Opens a starter drawing in the real app for each way of asking for the card, takes a picture of the composited window,
+and judges the canvas area (`scripts/lib/canvas-judge.cjs`): one flat colour is "empty", and a canvas that does not match
+the software drawing of the same file fails. Every run names the adapter the page really got, and the shipped runs must
+have the app's process on the NVIDIA card in `nvidia-smi` taken during the run. A hidden-canvas control must be caught, or
+the check fails itself. A test (`test/gpu/canvas-judge.test.ts`) holds the judge, and holds the list of shipped runs to
+"never a Vulkan switch". Limit, stated plainly: it runs in a virtual screen, so it cannot see a blank that only happens when
+a real X server is presenting.
 - **The silent fall back** (above) is the real risk with hardware drawing on: on a driver the engine can't use, the
   AppImage still opens, in llvmpipe, and looks fine. `FRAMELING_GPU=off` is the honest way to ask for
   software. Preferences should show the renderer name (task `gpu-prefs-page`).

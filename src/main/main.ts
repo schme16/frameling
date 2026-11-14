@@ -27,10 +27,11 @@ if (isolationWanted(app.getPath('userData'))) addFeatures([PLUGIN_PROCESS_FEATUR
 
 // Hardware drawing: off for the gpu-off file or FRAMELING_GPU=off, otherwise asked for by name on Linux (see gpuFlags.ts).
 // Read before any window exists.
-applyGpuOff();
+const relaunchingForCard = applyGpuOff();
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.
-const gotLock = app.requestSingleInstanceLock();
+// (A copy that has just started itself again, to be on the discrete card, leaves the lock for the new one.)
+const gotLock = !relaunchingForCard && app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 // Spotting a crash (see crashMarker.ts): a marker written at start and taken away on a proper quit. Only the copy that

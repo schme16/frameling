@@ -25,10 +25,17 @@ export function colourSwitches(env: Record<string, string | undefined> = process
 // This is set here, in the main process, because the engine reads it after it starts, so it needs no launcher: it holds
 // for the AppImage, a .deb, a dev run and anything else that starts this file. (The launcher used to pass it.)
 //
-// FRAMELING_GPU=full also keeps canvas pixels on the card (--enable-zero-copy, --canvas-oop-rasterization): both draw
-// correctly on the NVIDIA card they were tried on, so they wait for a second card before they become the default.
-// FRAMELING_GPU=vulkan asks for Vulkan through ANGLE, which drew nothing at all on that same card (the file opens, every
-// layer is there and the canvas stays empty), so nothing reaches for it unless it is asked for by name.
+// FRAMELING_GPU=full also keeps canvas pixels on the card (--enable-zero-copy, --canvas-oop-rasterization). Each drew
+// correctly on its own on the user's real screen (RTX 4080 SUPER, X11), and both together draw correctly in the window
+// check (scripts/e2e/gpu-canvas.cjs, composited pixels, on that card). What nobody has seen is the pair on a real screen,
+// and a virtual screen cannot show it: it has no card to present on, and presenting is where the Vulkan blank canvas
+// happened. So they stay opt-in until FRAMELING_GPU=full has been run on a real screen, not until a second card turns up.
+// FRAMELING_GPU=vulkan asks for Vulkan through ANGLE. On the user's real screen that left the canvas empty (the file opens,
+// every layer is there, nothing is drawn). Under a virtual screen the same card draws correctly through it, with every
+// combination of --use-vulkan, --use-angle=vulkan and VulkanFromANGLE tried: so the drawing is not what fails, the step
+// after it is (the card's pixels reaching a real X server), which a virtual screen cannot show. Nothing reaches for it
+// unless it is asked for by name; it is safe for measuring in a virtual screen and unproven on a real one.
+// Which card (not which API) is a separate matter: see gpuPick.ts and FRAMELING_CARD.
 // Windows and macOS are left to the engine: their lists are about real driver faults and nothing there is known to be wrong.
 export const HARDWARE_SWITCH: EngineSwitch = ['ignore-gpu-blocklist'];
 export const FULL_SWITCHES: EngineSwitch[] = [['enable-zero-copy'], ['canvas-oop-rasterization']];

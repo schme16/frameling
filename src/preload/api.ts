@@ -140,6 +140,10 @@ export interface GpuDevice {
   active: boolean;
   name?: string;
   driver?: string;
+  /** A card with its own memory, as opposed to the onboard one (known on Linux; NVIDIA counts everywhere). */
+  discrete?: boolean;
+  /** The system has the card set aside (for a virtual machine, say), so nothing on this computer can draw on it. */
+  reserved?: boolean;
 }
 
 /** What the desktop side found out about drawing, raw. src/gpu/describe.ts turns it into plain words. */
@@ -150,6 +154,10 @@ export interface GpuReport {
   chromium: string;
   devices: GpuDevice[];
   glRenderer?: string;
+  /** What a page's own WebGL says it is drawing on. The one answer that cannot be stale; the card in use is read from it. */
+  liveRenderer?: string;
+  /** What Frameling asked the system for about which card to use, in plain words, when it asked for anything. */
+  asked?: string;
   glVendor?: string;
   glVersion?: string;
   /** For example "(gl=egl-angle,angle=vulkan)": which way the browser engine talks to the card. */

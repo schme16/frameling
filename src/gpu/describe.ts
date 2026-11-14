@@ -2,6 +2,7 @@
 // GpuReport) and it says which card is drawing, which way it talks to it, whether that is good, and what to try when
 // it isn't. Nothing here is measured speed: it only reports what the browser engine says it is doing.
 import type { GpuReport } from '../preload/api';
+import { isSoftwareRenderer, parseRenderer } from './identify';
 
 export type DrawMode =
   /** The card draws the window and the canvas. */
@@ -28,6 +29,8 @@ const runningOff = (r: GpuReport): boolean => !r.hardwareAcceleration || r.flags
 export function drawMode(r: GpuReport): DrawMode {
   // What is running now: the file or variable only count once Frameling has started with them (restartNeeded says when it has not).
   if (runningOff(r)) return 'off';
+  // The engine's verdicts say "enabled" for its own software GL too; a page that says llvmpipe is not on a card.
+  if (isSoftwareRenderer(r.liveRenderer)) return 'software';
   const compositing = enabled(r.features.gpu_compositing);
   const canvas = enabled(r.features['2d_canvas']);
   if (compositing && canvas) return 'card';
@@ -38,6 +41,8 @@ export function drawMode(r: GpuReport): DrawMode {
 /** Which way the browser engine talks to the card. */
 export function drawPath(r: GpuReport): DrawPath {
   if (drawMode(r) === 'off' || drawMode(r) === 'software') return 'Software';
+  const live = parseRenderer(r.liveRenderer).api;
+  if (live === 'Vulkan' || live === 'OpenGL' || live === 'Direct3D' || live === 'Metal') return live;
   const part = r.glImplementation ?? '';
   const angle = /angle=([a-z0-9]+)/i.exec(part)?.[1]?.toLowerCase();
   if (angle === 'vulkan' || enabled(r.features.vulkan)) return 'Vulkan';
@@ -51,15 +56,11 @@ export function drawPath(r: GpuReport): DrawPath {
 export function cardName(r: GpuReport): string | null {
   const dev = r.devices.find((d) => d.active) ?? r.devices[0];
   if (dev?.name) return dev.name;
-  const gl = r.glRenderer;
-  if (gl) {
-    const inner = /^ANGLE \((.*)\)$/.exec(gl)?.[1];
-    if (inner) {
-      const parts = inner.split(',').map((s) => s.trim());
-      const name = (parts[1] ?? parts[0]).replace(/\/.*$/, '').replace(/\s*\(0x[0-9a-f]+\)\s*$/i, '').trim();
-      if (name && !/swiftshader|llvmpipe|software/i.test(name)) return name;
-    } else if (!/swiftshader|llvmpipe|software/i.test(gl)) return gl;
+  for (const text of [r.liveRenderer, r.glRenderer]) {
+    const n = parseRenderer(text).name;
+    if (n) return n;
   }
+  if (r.glRenderer && !isSoftwareRenderer(r.glRenderer) && !/^ANGLE \(/.test(r.glRenderer)) return r.glRenderer;
   if (dev) return `${vendorName(dev.vendorId)} card (device 0x${dev.deviceId.toString(16)})`;
   return null;
 }
@@ -91,7 +92,7 @@ export function readGpu(r: GpuReport, keptBytes = 0): Reading {
   const mode = drawMode(r);
   const path = drawPath(r);
   const name = cardName(r);
-  const found = r.devices.map((d) => d.name ?? vendorName(d.vendorId));
+  const found = r.devices.map((d) => `${d.name ?? vendorName(d.vendorId)}${d.reserved ? ' (set aside for a virtual machine)' : ''}`);
   const dev = r.devices.find((d) => d.active) ?? r.devices[0];
   const hardware = mode === 'card' || mode === 'partly';
   const linux = r.platform === 'linux';
@@ -110,6 +111,10 @@ export function readGpu(r: GpuReport, keptBytes = 0): Reading {
     if (linux) advice.push('Start Frameling from the AppImage (it asks for the card as it opens), not by running the program inside it.');
     advice.push('On a remote desktop or in a virtual machine there is often no card to use. That is fine, it just draws slower.');
   }
+
+  // A faster card is here and is not the one drawing: say so, and how to ask for it.
+  const spare = r.devices.find((d) => d.discrete && !d.reserved && !d.active);
+  if (hardware && spare && linux) advice.push(`This computer also has ${spare.name ?? vendorName(spare.vendorId)}, which is the faster card. Start Frameling with FRAMELING_CARD=discrete to ask for it, then restart.`);
 
   const driver = dev?.driver ?? (r.glVersion ? r.glVersion : hardware ? 'not reported' : 'none (software)');
   const card = hardware ? name ?? 'a graphics card' : found.length ? `None used (this computer has ${found.join(' and ')})` : 'None found';
@@ -147,7 +152,9 @@ export function reportText(r: GpuReport, keptBytes: number, settings: { hardware
     `On start: ${startLine(r).replace(/^Frameling: /, '')}`,
     `Card memory: ${x.cardMemory}`,
     `Memory: ${x.holding}`,
-    `Cards found: ${r.devices.length ? r.devices.map((d) => `${d.name ?? vendorName(d.vendorId)} [${d.vendorId.toString(16)}:${d.deviceId.toString(16)}]${d.active ? ' (active)' : ''}${d.driver ? ` driver ${d.driver}` : ''}`).join('; ') : 'none'}`,
+    `Asked for: ${r.asked ?? 'nothing (the system picks the card)'}`,
+    `Page renderer: ${r.liveRenderer ?? 'not reported'}`,
+    `Cards found: ${r.devices.length ? r.devices.map((d) => `${d.name ?? vendorName(d.vendorId)} [${d.vendorId.toString(16)}:${d.deviceId.toString(16)}]${d.active ? ' (active)' : ''}${d.driver ? ` driver ${d.driver}` : ''}${d.discrete ? ' discrete' : ''}${d.reserved ? ' set aside for a virtual machine' : ''}`).join('; ') : 'none'}`,
     `Renderer: ${r.glRenderer ?? 'not reported'}`,
     `GL: ${r.glVersion ?? 'not reported'} ${r.glImplementation ?? ''}`.trim(),
     `Skia backend: ${r.skia ?? 'not reported'}`,
