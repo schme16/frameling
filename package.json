@@ -26,7 +26,8 @@
     "install-local": "node scripts/install-local.mjs",
     "dialogue:shots": "npm run build && electron scripts/dialogue/shots.cjs",
     "dialogue:page": "node scripts/dialogue/page.mjs",
-    "dialogue:apply": "node scripts/dialogue/apply.mjs"
+    "dialogue:apply": "node scripts/dialogue/apply.mjs",
+    "dialogue:publish": "node scripts/dialogue/page.mjs --put"
   },
   "dependencies": {
     "fflate": "^0.8.3",
