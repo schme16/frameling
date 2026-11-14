@@ -11,6 +11,7 @@ import { setDocPalette } from '../commands';
 import { docPalette } from '../palette';
 import { mergePalette, spriteDoc, spriteInto, spritePalette } from './build';
 import { ImportDialog, type ImportMode, type ImportRequest } from './ImportDialog';
+import { pickSpritePalette } from './spriteColours';
 import { decodePicture, PICTURE_ACCEPT, PICTURE_EXT, PictureProblem } from './picture';
 import { readSheetJson, type SheetData } from './sheetJson';
 
@@ -43,7 +44,16 @@ export async function pickSheetJson(): Promise<SheetData | null> {
 
 /** The sprite as a new drawing, or added to the open one. */
 export async function apply(req: ImportRequest, name: string): Promise<boolean> {
-  const { sprite, options } = req;
+  const { sprite } = req;
+  let options = req.options;
+  // The colours are picked here in small steps, so a big picture never holds the page up while it is built.
+  if (options.palette && options.colours === undefined) {
+    try {
+      options = { ...options, colours: await pickSpritePalette(sprite, options.name) };
+    } catch {
+      options = { ...options, colours: null };
+    }
+  }
   if (req.into) {
     if (store().nestedTag()) {
       notify('Close the symbol you are editing first, then add the picture to the drawing.', 'info');

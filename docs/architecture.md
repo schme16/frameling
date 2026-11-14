@@ -422,7 +422,9 @@ Writers:
   pixels to a worker in 1 MB pieces with at most four unacknowledged (so progress is what the worker has counted), keeps the
   counting so a new limit only picks again, and can be cancelled (the worker is ended). With no worker, or one that fails,
   the same code runs on the page in 256 KB steps that give the page back every 8 ms. Big PNGs are decoded on the I/O worker
-  (`decodePngInWorker`).
+  (`decodePngInWorker`). A sprite brought in with "Put its colours in the palette" goes the same way: `apply` (import/run.tsx)
+  calls `pickSpritePalette` (import/spriteColours.ts, up to 256 colours, sampled frames, no copy of the pixels; small sprites
+  skip the worker) and hands the result to `spriteDoc`/`spriteInto` as `BuildOptions.colours`. Without it they pick in one go.
 - `png.ts` (own PNG codec), `thumb.ts`, `RecentDialog.tsx`, `notify.ts` (toasts from io and export).
 
 **The user library** (desktop: `library/<kind>/` in the user data folder, `src/main/library.ts`; web: IndexedDB):
