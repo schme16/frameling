@@ -57,7 +57,7 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
   const says = use.day && use.night ? 'your theme by day and at night' : use.day ? 'your theme by day' : use.night ? 'your theme at night' : 'not in use';
   return (
     <div className={`th-card${chosen ? ' is-chosen' : ''}`}>
-      <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} title={theme.description} aria-label={`${theme.name}, ${says}`}>
+      <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} data-tip={theme.name} data-tip-desc={theme.description ?? 'Made by you.'} aria-label={`${theme.name}, ${says}. ${theme.description ?? 'Made by you.'}`}>
         <ThemePreview theme={theme} />
         {chosen && (
           <span className="th-card-badges" aria-hidden="true">
@@ -81,7 +81,6 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
             </span>
           )}
         </span>
-        <span className="th-card-desc">{theme.description ?? 'Made by you.'}</span>
       </button>
       <div className="th-card-actions">
         {onEdit && (
@@ -89,9 +88,9 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
             Edit
           </button>
         )}
-        <button type="button" className="ui-btn ui-btn-small ui-btn-quiet" onClick={onCopy} title="Make your own copy and change its colours">
+        <button type="button" className="ui-btn ui-btn-small ui-btn-quiet" onClick={onCopy} title="Make your own copy of this theme and change its colours">
           <Icon name="duplicate" size={13} />
-          Make it mine
+          Duplicate and edit
         </button>
       </div>
     </div>

@@ -3219,6 +3219,7 @@ body.ui-resizing * {
   gap: 12px;
 }
 .th-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3285,34 +3286,33 @@ body.ui-resizing * {
   background: var(--chosen-bg);
   color: var(--chosen-fg);
 }
-.th-card-desc {
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: var(--fs-small);
-  line-height: 1.35;
-  min-height: 4em;
-}
 .th-card-actions {
+  /* The buttons lie over the foot of the card and swoop up when you point at it (or tab into it), so the card is
+     the same size whether they are showing or not and the grid never shifts. */
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 0 2px 2px;
-  /* The buttons wait below the card and swoop up when you point at it (or tab into it). */
-  max-height: 0;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius-small);
+  background: linear-gradient(to top, var(--panel-2) 72%, transparent);
   opacity: 0;
   transform: translateY(8px);
-  overflow: hidden;
+  pointer-events: none;
   transition:
-    max-height 0.22s var(--ease),
     opacity 0.18s var(--ease),
     transform 0.22s var(--ui-pop);
 }
+/* Only while you are pointing at the card or tabbing through it: at rest the name is never covered, and the one in
+   use is told apart by its badge and its gold edge. */
 .th-card:hover .th-card-actions,
-.th-card:focus-within .th-card-actions,
-.th-card.is-chosen .th-card-actions {
-  max-height: 80px;
+.th-card:focus-within .th-card-actions {
   opacity: 1;
   transform: none;
+  pointer-events: auto;
 }
 :root[data-motion='reduce'] .th-card-actions {
   transition: none;
