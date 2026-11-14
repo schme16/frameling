@@ -27,6 +27,14 @@ registerHelpTopics([
     keywords: ['magnetic', 'magnetic lasso', 'magnet', 'edge', 'snap', 'cling', 'follow edge', 'smart select', 'intelligent scissors', 'cut out', 'trace', 'outline', 'Shift+E'],
   },
   {
+    id: 'select-parts',
+    title: 'Picking part of a shape',
+    section: 'Drawing',
+    media: 'select-parts.mp4',
+    summary: 'Drag a box round one corner and pick just that corner, or the whole shape. Frameling asks the first time; Ctrl swaps it for one drag.',
+    keywords: ['select part of a shape', 'select one point', 'move one corner', 'whole shape', 'direct select', 'select points', 'partial selection', 'box select', 'marquee', 'touches', 'ctrl select', 'reshape', 'stretch a corner'],
+  },
+  {
     id: 'lasso',
     title: 'Lasso',
     section: 'Drawing',

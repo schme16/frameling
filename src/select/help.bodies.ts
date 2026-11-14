@@ -70,6 +70,34 @@ On a **vector layer** it clings to the outlines of your shapes, so one trace pic
 **How strongly it clings** is in the tool options. Light only catches an edge right under the pointer. Strong reaches for one from further off, so a rough trace still lands on the outline. If it grabs the wrong line in a busy drawing, turn it down, or zoom in and click your own points.
 
 Shift adds to the selection and Alt takes away, the same as the other ways to pick. See [Selecting pixels](help:pixel-select).`,
+  'select-parts': `On a vector layer, dragging a box (or a lasso) over part of a shape has two good answers, and Frameling asks you the first time:
+
+- **Just the bit I went round.** Only the points and edges inside your drag are picked. Pull one and the shape stretches, so you can move one corner and leave the rest.
+- **The whole shape.** Any shape your drag touches is picked all of it. Move it and it goes as one piece, so you are arranging, not reshaping.
+
+It only asks when the two would give different answers. If you go right round a shape, nothing to ask.
+
+**Swap it for one drag:** hold **Ctrl** (**Cmd** on a Mac) while you drag the box or the lasso. If you have picked just the bit, Ctrl picks the whole shape, and the other way round.
+
+**Change it any time:**
+- In the **Select** tool's options, **Picks**.
+- In **Preferences > Behaviour**, **Selecting part of a shape**.
+- In the command palette (**Ctrl+K**), **Selecting picks just the bit I went round**.
+
+**With just the bit picked:**
+- The picked points show as little dark squares, and the handles stand a little way off them so you can still grab a point.
+- **Drag** a picked point to move it. The handles resize or turn just the picked points.
+- **Arrow keys** nudge them, and **Delete** takes them away (a shape left with too few points goes too).
+- Click a different shape, or empty page, to let go.
+
+**Good to know:**
+- It works the same with the **Box**, **Lasso**, **Polygon** and **Magnetic lasso** tools.
+- Text, symbols and other things with no points of their own are only picked when you go right round them.
+- Group members aren't pulled in when you pick just the bit.
+- A layer that merges shapes keeps its own way, where a box cuts out just the part inside. See [Merge drawing](help:merge-drawing).
+- Pixel layers are different: see [Selecting pixels](help:pixel-select).
+
+See also [Select](help:tool-select) and [Lasso](help:lasso).`,
   lasso: `Press **Shift+L**, or pick **Lasso** in the toolbar.
 
 - **Drag round** what you want. When you let go, every shape the lasso touches is selected.

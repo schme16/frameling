@@ -144,6 +144,7 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'nudge.drawn': ['tip', 'hint', 'first drawing', 'quill tip', 'tutorial', 'onboarding', 'next step', 'suggestion'],
   'draw.newLayerMode': ['merge shapes', 'merge', 'draw mode', 'object drawing', 'merge drawing', 'stacking', 'separate shapes', 'shape mode', 'overlap', 'object mode', 'behind'],
   'tween.plainDrawing': ['shape tween', 'motion tween', 'classic tween', 'morph', 'inbetween', 'interpolate', 'in-betweens', 'tween type', 'morphing'],
+  'select.vectorScope': ['select', 'selection', 'marquee', 'box select', 'lasso', 'whole shape', 'parts', 'points', 'one corner', 'direct select', 'partial select', 'touches', 'move a corner'],
   'eraser.vectorWay': ['erase', 'rubber', 'erase whole shape', 'partial erase', 'erase strokes', 'object eraser', 'vector eraser', 'stroke eraser'],
   'memory.onion': ['onion skin', 'onionskin', 'ghost', 'ghosting', 'light table', 'lightbox', 'light box', 'remember onion', 'onion on startup', 'tracing', 'previous frame', 'launch'],
   'palette.recolour': ['swatches', 'palette swap', 'replace colour', 'recolor', 'colour ramp', 'indexed colour', 'change colour everywhere', 'global colour', 'palette edit'],

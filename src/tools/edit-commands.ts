@@ -4,11 +4,12 @@ import { registerCommands, type Command } from '../core/registry';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { bringForward, bringToFront, sendBackward, sendToBack } from '../canvas/arrange';
-import { flipMatrix, shapesBounds, transformShape, translate, type Matrix } from '../canvas/geometry';
+import { flipMatrix, transformShape, translate, type Matrix } from '../canvas/geometry';
 import { activeDrawing, activeLayer, addingStartsNewDrawing, editActiveDrawing, EDIT_HINTS } from './edit';
 import { clipboardHasShapes, copyToClipboard, duplicateShapes, notePasted, pasteFromClipboard } from './clipboard';
 import { activeIsMerge, addShapes, cutBase, editShapes, pendingCut, setCut } from './merge-mode';
 import { placeMoved } from '../geometry/merge';
+import { clearParts, currentParts, pickedBounds, removePoints, transformPicked, type PartMap } from '../select/scope';
 
 function vectorDrawing(): VectorDrawing | undefined {
   const d = activeDrawing();
@@ -46,10 +47,12 @@ function change(label: string, recipe: (d: VectorDrawing) => void, opts: { coale
   return true;
 }
 
-function transformSelected(label: string, m: (shapes: Shape[]) => Matrix, opts: { coalesce?: string } = {}): void {
+/** `m` gets the picked points too: when only part of a shape is picked, a nudge or a flip takes just those points. */
+function transformSelected(label: string, m: (shapes: Shape[], parts: PartMap) => Matrix, opts: { coalesce?: string } = {}): void {
   const sel = selectedShapes();
   if (!sel.length) return;
-  const matrix = m(sel);
+  const parts: PartMap = pendingCut() ? new Map() : currentParts();
+  const matrix = m(sel, parts);
   if (activeIsMerge()) {
     let ids: Id[] = [];
     const r = editShapes(
@@ -66,7 +69,7 @@ function transformSelected(label: string, m: (shapes: Shape[]) => Matrix, opts: 
     else if (r !== 'nothing') say(EDIT_HINTS[r]);
     return;
   }
-  const repl = new Map(sel.map((s) => [s.id, transformShape(s, matrix)]));
+  const repl = new Map(sel.map((s) => [s.id, transformPicked(s, matrix, parts)]));
   change(label, (d) => void (d.shapes = d.shapes.map((x) => repl.get(x.id) ?? x)), opts);
 }
 
@@ -81,6 +84,19 @@ function deleteSelected(label: string): void {
     setCut(null);
     if (r === 'ok') setSelection([]);
     else if (r !== 'nothing') say(EDIT_HINTS[r]);
+    return;
+  }
+  const parts = currentParts();
+  if (parts.size) {
+    // Just the bit you picked goes: those points, and any shape picked whole. A shape left with too little to draw goes too.
+    const sel = selectedShapes();
+    // Worked out on the plain shapes (not the drafts the change is made on).
+    const after = new Map<Id, Shape | null>(sel.map((s) => [s.id, parts.has(s.id) ? removePoints(s, parts.get(s.id)!) : null]));
+    const ok = change(label, (d) => void (d.shapes = d.shapes.flatMap((x) => (after.has(x.id) ? (after.get(x.id) ? [after.get(x.id)!] : []) : [x])) as never));
+    if (ok) {
+      clearParts();
+      setSelection(sel.filter((s) => after.get(s.id)).map((s) => s.id));
+    }
     return;
   }
   if (change(label, (d) => void (d.shapes = d.shapes.filter((s) => !ids.has(s.id))))) setSelection([]);
@@ -208,7 +224,7 @@ registerCommands([
     help: 'flip',
     keywords: ['mirror'],
     enabled: hasSelection,
-    run: () => transformSelected('Flip horizontal', (sel) => flipMatrix(shapesBounds(sel)!, 'h')),
+    run: () => transformSelected('Flip horizontal', (sel, parts) => flipMatrix(pickedBounds(sel, parts)!, 'h')),
   },
   {
     id: 'select.flipV',
@@ -218,7 +234,7 @@ registerCommands([
     help: 'flip',
     keywords: ['mirror'],
     enabled: hasSelection,
-    run: () => transformSelected('Flip vertical', (sel) => flipMatrix(shapesBounds(sel)!, 'v')),
+    run: () => transformSelected('Flip vertical', (sel, parts) => flipMatrix(pickedBounds(sel, parts)!, 'v')),
   },
   {
     id: 'arrange.forward',
