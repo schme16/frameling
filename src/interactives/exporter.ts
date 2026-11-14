@@ -2,12 +2,15 @@
 // when it is used, and the options load with the dialog.
 import type { ExporterDef } from '../export/registry';
 import { clipsTooLong, MAX_BAKED } from '../export/playableClips';
+import { flowExportNotes } from '../core/flow';
 
 export const interactivesExporter: ExporterDef = {
   info: { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
   popular: 5,
-  docNotes: (doc, range) =>
-    clipsTooLong(doc, range).map((c) => `The clip "${c.name}" plays ${c.how}, which comes to ${c.frames.toLocaleString('en')} frames, more than the ${MAX_BAKED.toLocaleString('en')} Interactives can hold written out. It stays forward in the package.`),
+  docNotes: (doc, range) => [
+    ...clipsTooLong(doc, range).map((c) => `The clip "${c.name}" plays ${c.how}, which comes to ${c.frames.toLocaleString('en')} frames, more than the ${MAX_BAKED.toLocaleString('en')} Interactives can hold written out. It stays forward in the package.`),
+    ...flowExportNotes(doc, 'interactives'),
+  ],
   fileKind: () => ({ name: 'Interactives package' }),
   carry: {
     summary: 'Everything looks exactly as it does on the canvas: each frame is a finished picture. Clips, markers and the clip flow come along for Interactives to play.',

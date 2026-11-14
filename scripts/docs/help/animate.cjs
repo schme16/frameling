@@ -14,6 +14,12 @@ const fit = () => L.cmd('view.fit');
 const ROW = (n) => `document.querySelectorAll('.ab-panel [data-artboard]')[${n}]`;
 
 
+
+/** The hero's clip flow with inputs: run on speed, jump only when grounded, hurt on a hit and die at no health, both from any clip. */
+const flowInputsDemo = () => L.js(`(() => { const s = __frameling.store(); s.update('setup', (d) => { const id = (n) => d.clips.find((c) => c.name === n).id; let k = 0; const t = (from, to, when, extra) => ({ id: 'd' + k++, from, to, when, ...extra }); d.flow = { start: id('idle'), inputs: [{ name: 'speed', kind: 'number' }, { name: 'grounded', kind: 'toggle', start: true }, { name: 'health', kind: 'number', start: 3 }], transitions: [ t(id('idle'), id('run'), 'now', { conditions: [{ input: 'speed', op: '>', value: 0.5 }] }), t(id('run'), id('idle'), 'now', { conditions: [{ input: 'speed', op: '<=', value: 0.5 }] }), t(id('run'), id('jump'), 'trigger', { trigger: 'jump', conditions: [{ input: 'grounded', op: '==', value: true }] }), t(id('jump'), id('idle'), 'end'), t('*', id('hurt'), 'trigger', { trigger: 'hit' }), t(id('hurt'), id('idle'), 'end'), t('*', id('die'), 'now', { conditions: [{ input: 'health', op: '<=', value: 0 }] }) ], positions: { [id('idle')]: { x: 10, y: 90 }, [id('run')]: { x: 190, y: 10 }, [id('jump')]: { x: 190, y: 130 }, [id('hurt')]: { x: 10, y: 190 }, [id('die')]: { x: 190, y: 250 }, '*': { x: 10, y: 290 } } }; }); return true; })()`);
+/** Types a number into one of the flow panel's number boxes, by its label. */
+const setFlowNum = (label, v) => L.js(`(() => { const i = document.querySelector('input[aria-label=' + JSON.stringify(${JSON.stringify(label)}) + ']'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, ${JSON.stringify(String(v))}); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+
 /** The puppet with the Bones layer on its first frame, tool and layer picked, the Rig panel open. */
 const rigged = (tool = 'pose') => L.js(`(() => { const s = __frameling.store(); const l = s.get().doc.layers.find((x) => x.name === 'Bones'); s.setUi({ tool: ${JSON.stringify(tool)}, activeLayerId: l.id, frame: 0, selection: [] }); return true; })()`);
 /** The puppet with no skeleton and nothing attached, to draw one. */
@@ -260,6 +266,31 @@ const entries = [
   {
     name: 'clip-flow',
     steps: [L.template('hero-sprites'), L.panel('clip-flow'), L.cmd('flow.try'), L.wait(800), { click: [987, 149] }, { move: [150, 250] }, L.wait(1000), { shot: '@', crop: [0, 0, 1280, 765] }],
+  },
+  {
+    // Inputs: Try it with a switch and number boxes; speed changes idle to run, a jump needs grounded, a hit plays hurt from any clip, no health plays die.
+    name: 'clip-flow-inputs',
+    steps: [
+      L.template('hero-sprites'),
+      flowInputsDemo(),
+      L.panel('clip-flow'),
+      L.wait(500),
+      { clickOn: 'button', text: 'Keep them', after: 400 },
+      L.cmd('flow.try'),
+      L.wait(600),
+      { rec: '@', crop: [0, 0, 1280, 765], every: 90 },
+      L.wait(900),
+      setFlowNum('Set speed', 0.9),
+      L.wait(1500),
+      { clickOn: '.fl-trigger', text: 'jump', after: 1800 },
+      setFlowNum('Set speed', 0.2),
+      L.wait(1300),
+      { clickOn: '.fl-trigger', text: 'hit', after: 700 },
+      L.wait(1200),
+      setFlowNum('Set health', 0),
+      L.wait(1500),
+      { rec: 'stop' },
+    ],
   },
   {
     name: 'rig-attach',

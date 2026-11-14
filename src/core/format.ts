@@ -1184,25 +1184,61 @@ export interface ParticlesShape {
 
 /**
  * Which clip plays first and what follows what. States are the document's clips. Game engines and Interactives read
- * this as a state machine; Frameling's own playback ignores it.
+ * this as a state machine; Frameling's own playback ignores it (Try it in the Clip flow panel plays it).
  */
 export interface ClipFlow {
   /** The clip that plays first (missing = the first clip). */
   start?: Id;
   transitions: ClipTransition[];
-  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). */
+  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). The "Any clip" box is under `FLOW_ANY`. */
   positions?: Record<Id, { x: number; y: number }>;
+  /** Named values the game sets while it plays (speed, grounded, health). Arrows can check them. Missing = none. */
+  inputs?: FlowInput[];
+  /**
+   * Which arrow goes first when an "Any clip" arrow and the clip's own arrow are both ready. True (the default, so a
+   * hurt clip cuts in) puts the Any clip arrows first, false the clip's own. Exports write the arrows in this order.
+   */
+  anyFirst?: boolean;
 }
 
-/** Go from one clip to another when it ends, or when something triggers it (a key press, "jump", "hit"). */
+/** The `from` of an arrow that starts from every clip ("Any clip"), so a hurt clip can play from anywhere. */
+export const FLOW_ANY = '*';
+
+/** The longest fade between two clips, in seconds. */
+export const MAX_FLOW_BLEND = 5;
+
+/** A named value the flow can check: on/off ('toggle') or a number. Names are unique and are how arrows refer to it. */
+export interface FlowInput {
+  name: string;
+  kind: 'toggle' | 'number';
+  /** What it starts as (missing = off, or 0). */
+  start?: boolean | number;
+}
+
+/** One check on an arrow: "speed is above 0.5", "grounded is on". An on/off input uses '==' or '!=' with true or false. */
+export interface FlowCondition {
+  input: string;
+  op: '>' | '>=' | '<' | '<=' | '==' | '!=';
+  value: boolean | number;
+}
+
+/** Go from one clip to another when it ends, when something triggers it (a key press, "jump", "hit"), or as soon as its checks hold. */
 export interface ClipTransition {
   id: Id;
+  /** The clip it leaves, or `FLOW_ANY` for every clip. */
   from: Id;
   to: Id;
-  /** 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired. */
-  when: 'end' | 'trigger';
+  /**
+   * 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired.
+   * 'now': as soon as `conditions` hold (an arrow with no checks never fires).
+   */
+  when: 'end' | 'trigger' | 'now';
   /** The trigger's name, for 'trigger' transitions. */
   trigger?: string;
+  /** Checks that must all hold before the arrow is taken (missing = none). */
+  conditions?: FlowCondition[];
+  /** Seconds to fade from one clip into the next (missing or 0 = a straight cut). */
+  blend?: number;
 }
 
 // ---------------------------------------------------------------- bones and rigs
