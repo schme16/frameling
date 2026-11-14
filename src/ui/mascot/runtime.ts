@@ -3,7 +3,7 @@
 // drawn by setting a background position straight on the element, so React never re-renders for a frame.
 import { createStore } from '../mini';
 import { reducedMotion, subscribePrefs } from '../prefs';
-import { poseAt, scaleFor, type Beat, type Sheet, parseSheet } from './timing';
+import { poseAt, scaleFor, wakeBeats, withWake, type Beat, type Sheet, parseSheet } from './timing';
 
 /** Where the sheet image is, relative to the page (Electron loads the page from file://). */
 export const SHEET_URL = 'mascot/mascot.png';
@@ -68,8 +68,8 @@ export const sinceInput = (): number => (typeof performance === 'undefined' ? 0 
 function setSleepy(v: boolean): void {
   if (v === sleepy) return;
   sleepy = v;
-  // Start the sleep (or the waking idle) from its first frame.
-  for (const p of players) p.restartIfResting();
+  // Start the sleep from its first frame, or wake up through the stretch before settling into idle.
+  for (const p of players) (v ? p.restartIfResting() : p.wakeIfResting());
   tick();
 }
 
@@ -109,6 +109,8 @@ function watch(): void {
 export interface Player {
   restart(): void;
   restartIfResting(): void;
+  /** Resting Quills play the waking-up frames once, then idle. */
+  wakeIfResting(): void;
   /** Draws the frame for now and says how long until the next change. */
   draw(now: number): number;
 }
@@ -142,9 +144,14 @@ export interface PlayerOptions {
 export function createPlayer(opts: PlayerOptions): Player & { stop(): void; set(beats: Beat[], onDone?: () => void, size?: number): void } {
   watch();
   let { beats, onDone, size } = opts;
+  // The waking-up script while it is playing; null otherwise. Replaces `beats` for as long as it is set.
+  let waking: Beat[] | null = null;
   let start = performance.now();
   let fired = false;
   let lastKey = '';
+
+  // Just idling: all idle (the pet tab asks for idle then idle), so a nap or a wake changes what shows.
+  const resting = (): boolean => beats.every((b) => b.anim === 'idle');
 
   const player = {
     restart() {
@@ -153,12 +160,20 @@ export function createPlayer(opts: PlayerOptions): Player & { stop(): void; set(
       lastKey = '';
     },
     restartIfResting() {
-      if (beats.length === 1 && beats[0].anim === 'idle') player.restart();
+      if (!resting()) return;
+      waking = null;
+      player.restart();
+    },
+    wakeIfResting() {
+      if (!resting()) return;
+      const sheet = quillSheet.get();
+      waking = sheet ? wakeBeats(sheet, reducedMotion()) : null;
+      player.restart();
     },
     draw(now: number): number {
       const sheet = quillSheet.get();
       if (!sheet) return Infinity;
-      const pose = poseAt(sheet, beats, now - start, { sleepy, still: reducedMotion() });
+      const pose = poseAt(sheet, waking ?? beats, now - start, { sleepy, still: reducedMotion() });
       const scale = scaleFor(sheet.frameW, size);
       const key = `${sheet.url}|${scale}|${pose.frame.x}|${pose.frame.y}`;
       if (key !== lastKey) {
@@ -180,7 +195,10 @@ export function createPlayer(opts: PlayerOptions): Player & { stop(): void; set(
       return pose.next;
     },
     set(next: Beat[], done?: () => void, nextSize?: number) {
-      beats = next;
+      const sheet = quillSheet.get();
+      // Changing from a sleep to plain idle wakes him up on the way.
+      beats = sheet ? withWake(sheet, waking ?? beats, next, reducedMotion()) : next;
+      waking = null;
       onDone = done;
       if (nextSize) size = nextSize;
       player.restart();

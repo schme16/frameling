@@ -10,6 +10,14 @@ export const quillPetHelp: HelpTopic[] = [
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'companion', 'corner', 'scratch', 'stroke', 'pat', 'closeness'],
   },
   {
+    id: 'quill-naps',
+    title: 'Quill dozing off and waking up',
+    section: 'Getting around',
+    media: 'quill-wake.mp4',
+    summary: 'Leave things alone for a minute and Quill nods off. Move the mouse or press a key and he wakes with a stretch, instead of jumping up.',
+    keywords: ['quill', 'sleep', 'nap', 'dozing', 'asleep', 'wake', 'waking', 'stretch', 'yawn', 'idle', 'mascot'],
+  },
+  {
     id: 'quill-things',
     title: 'Things you give Quill',
     section: 'Getting around',

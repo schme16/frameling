@@ -727,6 +727,24 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // Quill waking from a nap: left alone for a minute he dozes off, then a nudge of the mouse wakes him with a stretch.
+  {
+    name: 'quill-wake',
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      wait(1500),
+      tag('.qp-him'),
+      // No input for the minute it takes him to nod off.
+      wait(64000),
+      { rec: '@', el: '[data-shot]', pad: 10, every: 50 },
+      wait(1200),
+      js(`window.dispatchEvent(new Event('pointermove')); true`),
+      wait(2600),
+      { rec: 'stop' },
+    ],
+  },
   // The workspace switcher at the top: press each tab and watch the room rearrange.
   {
     name: 'workspace-switcher',
