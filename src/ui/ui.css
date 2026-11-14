@@ -3258,30 +3258,37 @@ body.ui-resizing * {
   padding: 0 2px;
 }
 .th-card-badges {
-  /* A folded corner on the card: gold, with a sun on your day theme and a moon on your night one. */
+  /* A folded corner on the card, curved like a page turned over, with the sun or the moon sitting on it. */
   position: absolute;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: 44px;
-  height: 44px;
-  padding: 3px 0 0 3px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1px;
+  width: 54px;
+  height: 54px;
+  /* The icon sits where the fold is widest, not at its point. */
+  padding: 7px 0 0 7px;
   border-top-left-radius: var(--radius-small);
   background: var(--chosen-bg);
   color: var(--chosen-fg);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
+  clip-path: polygon(100% 0%, 98.2% 10.5%, 95.4% 20.8%, 91.5% 30.9%, 86.7% 40.7%, 81% 50.1%, 74.4% 58.8%, 67% 67%, 58.8% 74.4%, 50.1% 81%, 40.7% 86.7%, 30.9% 91.5%, 20.8% 95.4%, 10.5% 98.2%, 0% 100%, 0% 0%);
 }
 .th-card-badges.is-both {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
 }
 .th-card-badge {
   display: grid;
   place-items: center;
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
+}
+.th-card-badge svg {
+  width: 19px;
+  height: 19px;
 }
 .th-card-pick {
   position: relative;
