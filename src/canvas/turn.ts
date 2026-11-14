@@ -15,7 +15,7 @@
 import { useSyncExternalStore } from 'react';
 
 export interface Turn {
-  /** Degrees, clockwise, 0 up to (not including) 360, in whole steps of TURN_STEP. */
+  /** Degrees, clockwise, 0 up to (not including) 360. Any angle (a tenth of a degree is the finest); the keys move in TURN_STEPs. */
   angle: number;
   /** Mirrored left to right on screen. */
   flip: boolean;
@@ -42,9 +42,41 @@ export function snapAngle(deg: number, step = TURN_STEP): number {
   return ((a % 360) + 360) % 360;
 }
 
-/** Turn by some number of steps (negative turns the other way). */
+/** An angle brought into 0 up to (not including) 360 and kept to a tenth of a degree, so any angle is allowed. */
+export function normAngle(deg: number): number {
+  if (!Number.isFinite(deg)) return 0;
+  const tenths = ((Math.round(deg * 10) % 3600) + 3600) % 3600;
+  return tenths / 10;
+}
+
+/**
+ * Turn by some number of steps (negative turns the other way). From a free angle like 37 the first press lands on the
+ * next 15 in that direction (45, or 30 the other way), so the keys always bring you back onto the grid.
+ */
 export function turnedBy(t: Turn, steps: number): Turn {
-  return { ...t, angle: snapAngle(t.angle + steps * TURN_STEP) };
+  const here = t.angle / TURN_STEP;
+  const onGrid = Math.abs(here - Math.round(here)) < 1e-6;
+  let n = Math.round(here);
+  if (!onGrid && steps !== 0) n = steps > 0 ? Math.ceil(here) + (steps - 1) : Math.floor(here) + (steps + 1);
+  else n += steps;
+  return { ...t, angle: snapAngle(n * TURN_STEP) };
+}
+
+/** How close to a quarter turn (0, 90, 180, 270) a dragged angle sticks, in degrees: the page settles straight. */
+export const TURN_MAGNET = 2.5;
+
+/**
+ * The angle a drag gives. `from` is the angle the view had when the drag began, `swung` how far the pointer has gone
+ * round the middle since (clockwise positive), `flip` whether the view is mirrored (which reverses the drag).
+ * `steps`: hold-a-key mode, round to 15 degrees. Otherwise any angle, but within TURN_MAGNET of a quarter turn it
+ * sticks, so getting back to straight needs no precision.
+ */
+export function dragAngle(from: number, swung: number, flip: boolean, steps: boolean): number {
+  const raw = from + (flip ? -swung : swung);
+  if (steps) return snapAngle(raw);
+  const a = normAngle(raw);
+  const q = Math.round(a / 90) * 90;
+  return Math.abs(a - q) <= TURN_MAGNET ? normAngle(q) : a;
 }
 
 export function flipped(t: Turn): Turn {
@@ -131,11 +163,16 @@ export function turnedSize(w: number, h: number, angle: number): { w: number; h:
   return { w: w * c + h * s, h: w * s + h * c };
 }
 
+/** An angle as written for people: whole numbers plain, otherwise one decimal ("37", "37.5"). */
+export function angleText(deg: number): string {
+  return Number.isInteger(deg) ? String(deg) : deg.toFixed(1);
+}
+
 /** A short phrase for what the view is doing, for the status bar and the chip: "flipped", "turned 30 degrees". */
 export function describeTurn(t: Turn): string {
   const parts: string[] = [];
   if (t.flip) parts.push('flipped');
-  if (t.angle) parts.push(`turned ${t.angle} degrees`);
+  if (t.angle) parts.push(`turned ${angleText(t.angle)} degrees`);
   return parts.join(' and ');
 }
 
@@ -149,7 +186,7 @@ export function getTurn(): Turn {
 }
 
 export function setTurn(t: Turn): void {
-  const next = { angle: snapAngle(t.angle), flip: !!t.flip };
+  const next = { angle: normAngle(t.angle), flip: !!t.flip };
   if (next.angle === current.angle && next.flip === current.flip) return;
   current = next;
   for (const l of [...listeners]) l();

@@ -157,6 +157,16 @@ export const QUEST_CATALOG: QuestInfo[] = [
     badge: { id: 'sheet-master', name: 'Sheet Master', icon: 'grid', color: '--sunny' },
     requires: [],
   },
+  {
+    id: 'turn-the-page',
+    title: 'Turn the page',
+    summary: 'Turn the canvas to any angle, the way you turn a sheet of paper, then put it straight again.',
+    minutes: 1,
+    icon: 'rotate',
+    group: 'drawing',
+    badge: { id: 'page-turner', name: 'Page Turner', icon: 'rotate', color: '--sky' },
+    requires: [],
+  },
 ];
 
 for (const q of QUEST_CATALOG) registerQuest(q);

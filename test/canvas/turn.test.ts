@@ -24,7 +24,7 @@ import { fitView } from '../../src/canvas/view';
 beforeEach(() => resetTurn());
 
 describe('angles', () => {
-  it('snap to 15 degree steps and wrap into 0..359', () => {
+  it('snap to 15 degree steps (snapAngle) and wrap into 0..359', () => {
     expect(snapAngle(7)).toBe(0);
     expect(snapAngle(8)).toBe(15);
     expect(snapAngle(-15)).toBe(345);
@@ -173,8 +173,8 @@ describe('the session turn', () => {
     const off = subscribeTurn(() => calls++);
     expect(getTurn()).toEqual(NO_TURN);
     setTurn({ angle: 22, flip: true });
-    expect(getTurn()).toEqual({ angle: 15, flip: true });
-    setTurn({ angle: 15, flip: true });
+    expect(getTurn()).toEqual({ angle: 22, flip: true });
+    setTurn({ angle: 22, flip: true });
     expect(calls).toBe(1);
     setTurn(flipped(getTurn()));
     expect(getTurn().flip).toBe(false);

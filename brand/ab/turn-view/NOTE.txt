@@ -1,0 +1,4 @@
+Turning the view, Alt and drag. Each file is in dark and light.
+turn-view-<theme>.mp4: Alt and drag round the middle turns the page to any angle (H.264, 764x444), a stroke drawn while it is turned, then Straighten on the note puts it back. The clip opens with the view flipped and unflipped.
+turn-view-angle-<theme>.png: the note on the canvas says how far the view is turned (to a tenth of a degree) and has a Straighten button.
+turn-view-alt-pick-<theme>.png: Alt and a plain click on a pixel layer still picks a colour. The Paint colour was dark, the click landed on a pink pixel, and the Paint square is now pink.

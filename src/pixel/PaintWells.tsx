@@ -54,7 +54,10 @@ export function PaintWells() {
         </li>
         <li>Click paints Paint, right-click paints Back</li>
         <li>
-          Hold <kbd>Alt</kbd> to pick a colour
+          Hold <kbd>Alt</kbd> and click to pick a colour
+        </li>
+        <li>
+          Hold <kbd>Alt</kbd> and drag to turn the page
         </li>
       </ul>
     </div>
