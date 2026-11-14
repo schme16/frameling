@@ -3751,6 +3751,15 @@ body.ui-resizing * {
   color: var(--faint);
   cursor: grab;
 }
+/* On a docked side the rail's width edge (the splitter) overlaps its inner few pixels: the grip stops short of it, so a press there is only ever a resize. */
+.ui-tools[data-place='left'] .ui-tools-grip {
+  width: calc(100% - 8px);
+  align-self: flex-start;
+}
+.ui-tools[data-place='right'] .ui-tools-grip {
+  width: calc(100% - 8px);
+  align-self: flex-end;
+}
 .ui-tools-grip:hover,
 .ui-tools-grip:focus-visible {
   color: var(--text);
@@ -4035,6 +4044,23 @@ body.dock-dragging * {
   border-style: solid;
   border-color: var(--sunny);
   background: color-mix(in srgb, var(--sunny) 34%, transparent);
+}
+.dock-edge.is-home {
+  border-style: solid;
+}
+/* Over the canvas while the tool rail is carried: letting go here floats it. */
+.dock-float-zone {
+  position: fixed;
+  z-index: 17;
+  border: 2px dashed color-mix(in srgb, var(--sunny) 45%, transparent);
+  border-radius: var(--radius);
+  pointer-events: none;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.dock-float-zone.is-over {
+  border-style: solid;
+  border-color: var(--sunny);
+  background: color-mix(in srgb, var(--sunny) 10%, transparent);
 }
 .dock-ghost {
   position: fixed;

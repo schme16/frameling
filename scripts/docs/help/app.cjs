@@ -248,6 +248,32 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // Moving the tool strip by its grip: first pulled wider by its edge, then out over the canvas, back on the left exactly as it was, then the right, the top and
+  // the bottom, a drop on the top bar that springs back, and home again. Edges are reached from the middle of the work area.
+  {
+    name: 'tool-move',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(1000),
+      // The width edge pulls the strip wider (a different thing from the grip), so the return shows the width is kept.
+      { dragOn: '.ui-rail-splitter', to: '.ui-rail-splitter', toDx: 64, steps: 10, delay: 40, hold: 500, after: 300 },
+      { move: [620, 420] },
+      wait(900),
+      { dragOn: '.ui-tools-grip', to: '.ui-canvas', steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 1500, after: 1200 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 610, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDy: -330, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDy: 330, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-topbar', steps: 12, delay: 45, hold: 1300, after: 1300 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 900, after: 1500 },
+      { rec: 'stop' },
+    ],
+  },
+
   // Change the tools: open it, name a group, start one, move a tool, put one away, fold a group, put it all back.
   {
     name: 'tool-builder',

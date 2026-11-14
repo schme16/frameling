@@ -3,12 +3,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel } from '../core/registry';
 import { dock, panelTitle, renameFloat, renamePanel } from './dock';
-import { dragState, dropNote, type DragState } from './dockDrag';
+import { dragState, dropNote, railGeometry, type DragState } from './dockDrag';
+import { railBands } from './railDrop';
 import { closeDockMenu, dockMenu, renaming } from './dockMenus';
 import { currentGroups, renameToolGroup } from './toolRail';
 import { groupName } from './toolArrange';
 import { installPanelFocus } from './dockShared';
-import type { DockZone } from './dockModel';
+import { ZONES, type DockZone } from './dockModel';
 import { Icon } from './icons';
 
 export function DockOverlays() {
@@ -28,6 +29,7 @@ const BAND = 56;
 function DragLayer() {
   const d = dragState.use((v) => v);
   if (!d) return null;
+  if (d.kind === 'tools' && d.rail) return <RailDragLayer d={d} />;
   const stage = document.querySelector('.ui-canvas')?.getBoundingClientRect();
   const over: DockZone | null = d.kind === 'tools' ? (d.toolsAt && d.toolsAt !== 'float' ? d.toolsAt : null) : d.target && 'zone' in d.target ? d.target.zone : null;
   const verb = d.kind === 'tools' ? 'Tools' : 'Dock';
@@ -48,6 +50,36 @@ function DragLayer() {
         </>
       )}
       {d.kind === 'panel' && t && 'newFloat' in t && <div className="dock-ghost" style={{ left: t.newFloat.x, top: t.newFloat.y }} />}
+      <Chip d={d} />
+    </>
+  );
+}
+
+const SIDE_LABEL: Record<DockZone, string> = { left: 'the left', right: 'the right', top: 'the top', bottom: 'the bottom' };
+
+/** While the tool rail is carried: a band along each outer edge of the work area, an outline round the canvas to float on, and a label. */
+function RailDragLayer({ d }: { d: DragState }) {
+  const g = railGeometry();
+  const rail = d.rail!;
+  const bands = g ? railBands(g) : null;
+  const over = rail.drop && 'dock' in rail.drop ? rail.drop.dock : null;
+  const floating = !!rail.drop && 'float' in rail.drop;
+  return (
+    <>
+      {g && (
+        <div className={`dock-float-zone${floating ? ' is-over' : ''}`} style={{ left: g.canvas.left, top: g.canvas.top, width: g.canvas.right - g.canvas.left, height: g.canvas.bottom - g.canvas.top }} aria-hidden="true" />
+      )}
+      {bands &&
+        ZONES.map((z) => (
+          <div
+            key={z}
+            className={`dock-edge dock-edge-${z}${over === z ? ' is-over' : ''}${rail.home === z ? ' is-home' : ''}`}
+            data-dock-edge={z}
+            style={{ left: bands[z].left, top: bands[z].top, width: bands[z].right - bands[z].left, height: bands[z].bottom - bands[z].top }}
+          >
+            <span>{rail.home === z ? `Back on ${SIDE_LABEL[z]}, as it was` : `Dock on ${SIDE_LABEL[z]}`}</span>
+          </div>
+        ))}
       <Chip d={d} />
     </>
   );
