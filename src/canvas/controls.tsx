@@ -201,7 +201,7 @@ export function MoreOptions({ name, label, hint, children }: { name: string; lab
   const id = `cv-more-${name}`;
   return (
     <div className="cv-more" data-open={open}>
-      <button type="button" className="cv-more-btn" aria-expanded={open} aria-controls={id} onClick={() => setFold(name, !open)}>
+      <button type="button" className="cv-more-btn" data-fold={name} aria-expanded={open} aria-controls={id} onClick={() => setFold(name, !open)}>
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
         <span>{label}</span>
       </button>
