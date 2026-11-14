@@ -16,6 +16,7 @@ import { groupsOf } from './dockModel';
 import { dragging, PanelBoundary } from './dockShared';
 import { Icon } from './icons';
 import { openHelp } from './overlays';
+import { PanelHelp, PanelScope, useShowExplanations } from './explain/ExplainIcon';
 import { groupWord, infoFor, planRight, sectionsNow, shortName, PANEL_INFO, type RightGroupPlan } from './panelInfo';
 import { PanelPicker } from './PanelPicker';
 import { ZoneStack } from './DockGroup';
@@ -60,6 +61,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
 /** One group's content: Properties, or its front panel under a heading with help and close. */
 function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
   const names = dock.use((d) => d.layout.names);
+  const showWords = useShowExplanations();
   const { active, onProps, sections } = plan;
   const panel = !onProps && active ? getPanel(active) : undefined;
   if (!onProps && !panel) return null;
@@ -73,18 +75,18 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
             <header className="rd-head">
               <Icon name={panel.icon} size={16} />
               <h2 className="rd-head-title">{names?.[panel.id] ?? panel.title}</h2>
-              <button type="button" className="ui-icon-btn" aria-label={`Help on ${panel.title}`} data-tip="What's this?" onClick={() => openHelp(panel.help ?? 'panels')}>
-                <Icon name="help" size={14} />
-              </button>
+              <PanelHelp id={panel.id} title={names?.[panel.id] ?? panel.title} help={panel.help} blurb={infoFor(panel).blurb} />
               <button type="button" className="ui-icon-btn" aria-label={`Close ${panel.title}`} data-tip={`Close ${panel.title}`} data-tip-desc="Bring it back from the Panels button or the View menu." onClick={() => hidePanel(panel.id)}>
                 <Icon name="close" size={13} />
               </button>
             </header>
-            <p className="rd-head-blurb">{infoFor(panel).blurb}</p>
+            {showWords && <p className="rd-head-blurb">{infoFor(panel).blurb}</p>}
             <div className="rd-scroll">
-              <PanelBoundary name={panel.title} key={panel.id}>
-                <panel.component />
-              </PanelBoundary>
+              <PanelScope id={panel.id} title={panel.title} help={panel.help} bar>
+                <PanelBoundary name={panel.title} key={panel.id}>
+                  <panel.component />
+                </PanelBoundary>
+              </PanelScope>
             </div>
           </>
         )
@@ -381,15 +383,15 @@ function Section({ id, open, flash, all }: { id: string; open: boolean; flash: b
           <span className="rd-sec-title">{p.title}</span>
           {detail && <span className="rd-sec-detail">{detail}</span>}
         </button>
-        <button type="button" className="ui-icon-btn rd-sec-help" aria-label={`Help on ${p.title}`} data-tip="What's this?" onClick={() => openHelp(p.help ?? 'properties')}>
-          <Icon name="help" size={13} />
-        </button>
+        <PanelHelp id={p.id} title={p.title} help={p.help ?? 'properties'} blurb={info?.blurb} size={13} className="rd-sec-help" />
       </h3>
       {open && (
         <div className="rd-sec-body" id={`rd-sec-b-${id}`}>
-          <PanelBoundary name={p.title}>
-            <p.component />
-          </PanelBoundary>
+          <PanelScope id={p.id} title={p.title} help={p.help ?? 'properties'} bar>
+            <PanelBoundary name={p.title}>
+              <p.component />
+            </PanelBoundary>
+          </PanelScope>
         </div>
       )}
     </section>

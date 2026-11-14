@@ -1,5 +1,6 @@
 // The snapping choices: a master switch and, for each kind of work, a tick for each thing to snap to. The same panel
 // sits in a popover on the status bar's Snap button and on the Preferences page. Changes take effect straight away.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../core/store';
@@ -93,7 +94,7 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
           </label>
         ))}
       </div>
-      <p className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Perspective lines and the grid only snap while they show.</p>
+      <Explainer className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Perspective lines and the grid only snap while they show.</Explainer>
       <button type="button" className="ui-btn ui-btn-small ui-btn-quiet sn-reset" onClick={resetSnapPicks}>
         Back to the usual choices
       </button>

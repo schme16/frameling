@@ -1,4 +1,5 @@
 // Loop and colour options of the formats that play by themselves: GIF, APNG and the moving SVG.
+import { ExNote } from '../ExNote';
 import { openHelp } from '../../ui/overlays';
 import { GIF_MAX_FPS } from '../gif';
 import type { ExportUiProps } from '../registry';
@@ -47,7 +48,7 @@ export function GifOptions(p: ExportUiProps) {
         Smooth colours (dither), for gradients and soft shading
       </Check>
       {doc.fps > GIF_MAX_FPS && <p className="ex-note">GIFs can&apos;t go faster than {GIF_MAX_FPS} frames per second, so this one will play a little slower.</p>}
-      <p className="ex-note">GIFs use up to 256 colours, chosen from your whole animation.</p>
+      <ExNote>GIFs use up to 256 colours, chosen from your whole animation.</ExNote>
     </fieldset>
   );
 }

@@ -18,7 +18,7 @@ export function ClipPanel() {
   if (!clip) {
     return (
       <div className="cv-panel" data-help="timeline-clip-play">
-        <Tip>Click a clip on the timeline to see and change how it plays: forward, backward or back and forth, and how many times. Drag across frames in the clips row to make one.</Tip>
+        <Tip stays>Click a clip on the timeline to see and change how it plays: forward, backward or back and forth, and how many times. Drag across frames in the clips row to make one.</Tip>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function ClipPanel() {
         </span>
       </div>
       <ClipPlayFields clip={clip} />
-      <Tip>
+      <Tip stays>
         Now: {DIRECTION_HELP[dir].toLowerCase()}, {repeatLabel(clip).toLowerCase()}.
         {isBackAndForth(dir) && clipPlays(clip) !== Infinity ? ' Back and forth counts each direction as one.' : ''} Games and sprite sheets read this too.
       </Tip>

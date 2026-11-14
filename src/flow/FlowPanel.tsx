@@ -49,11 +49,11 @@ export function FlowPanel() {
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ id: Id; dx: number; dy: number; key: string; moved: boolean } | null>(null);
 
-  if (doc.editing?.length) return <div className="cv-panel cv-options" data-help="clip-flow"><Tip>The clip flow belongs to the main scene. Go back out of the symbol to see it.</Tip></div>;
+  if (doc.editing?.length) return <div className="cv-panel cv-options" data-help="clip-flow"><Tip stays>The clip flow belongs to the main scene. Go back out of the symbol to see it.</Tip></div>;
   if (!doc.clips.length) {
     return (
       <div className="cv-panel cv-options fl-panel" data-help="clip-flow">
-        <Tip>Clip flow decides which clip plays first and what follows what: idle until jump, jump then land, land back to idle. Make some clips first: drag across the clip row at the top of the timeline.</Tip>
+        <Tip stays>Clip flow decides which clip plays first and what follows what: idle until jump, jump then land, land back to idle. Make some clips first: drag across the clip row at the top of the timeline.</Tip>
       </div>
     );
   }
@@ -276,7 +276,7 @@ export function FlowPanel() {
             <b>{selClip.name}</b>
           </div>
           <div className="cv-row cv-wrap">
-            {selClip.id !== start ? <ActionButton onClick={() => makeStart(selClip.id)}>Play this one first</ActionButton> : <Tip>This clip plays first (the star).</Tip>}
+            {selClip.id !== start ? <ActionButton onClick={() => makeStart(selClip.id)}>Play this one first</ActionButton> : <Tip stays>This clip plays first (the star).</Tip>}
           </div>
           <ClipPlayFields clip={selClip} />
           {doc.clips.length > 1 && (

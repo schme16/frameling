@@ -1,6 +1,7 @@
 // The theme editor: grouped colour controls with plain names, a live preview on the whole app, a "start from one
 // colour" helper, contrast warnings in plain words, undo, rename, delete, reset, duplicate and export. Every change
 // is saved as it happens (it's a copy, so nothing is at risk), and shows on the real app behind the dialog.
+import { Explainer } from '../explain/ExplainIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../icons';
 import { getPrefs, setThemePreview, usePrefs } from '../prefs';
@@ -334,7 +335,7 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
           {EDITOR_GROUPS.map((g) => (
             <section key={g.id} className="th-group" aria-label={g.label}>
               <h4>{g.label}</h4>
-              <p className="th-group-hint">{g.hint}</p>
+              <Explainer className="th-group-hint">{g.hint}</Explainer>
               {[...EDITOR_CONTROLS, ...SNAP_CONTROLS].filter((c) => c.group === g.id).map((c) => {
                 const probs = problemsFor(theme.tokens, c.token);
                 const fixable = probs.find((r) => r.fg === c.token);

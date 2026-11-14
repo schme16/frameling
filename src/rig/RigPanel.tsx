@@ -41,10 +41,10 @@ export function RigPanel() {
   if (!rig || !rig.rig.bones.length)
     return (
       <div className="cv-panel cv-options rg-panel" data-help="rig">
-        <Tip>
+        <Tip stays>
           No bones yet. Bones let you pose a character by dragging its arms and legs, like a puppet, and the frames in between move on their own.
         </Tip>
-        <Tip>Draw each part of your character on its own layer (head, body, arms, legs), then draw bones over it with the Bone tool.</Tip>
+        <Tip stays>Draw each part of your character on its own layer (head, body, arms, legs), then draw bones over it with the Bone tool.</Tip>
         <div className="cv-row cv-wrap">
           <ActionButton onClick={() => run('rig.addBones')} title="Pick the Bone tool (K)">
             Draw bones

@@ -96,6 +96,8 @@ Point at something, or click into it, and press **F1**. Frameling opens the help
 
 Rest your mouse on a button for a moment. A small tip shows its name, what it does and its shortcut. **Learn more** opens its help page.
 
+Panels and settings that need a word of explanation have a small **?** beside them: point at it, or press it, to read the words. See [The ? icons](help:explanations).
+
 ## Help panel and help window
 
 The **Help** panel sits with the other panels, handy while you work. Press the little window button in it for a bigger view, with the contents down the side.
@@ -103,6 +105,24 @@ The **Help** panel sits with the other panels, handy while you work. Press the l
 ## Searching
 
 Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K** to search the commands and the help at the same time.`,
+  explanations: `Panels and settings used to explain themselves all the time. Now the words fold away behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
+
+## Read one
+
+Point at a **?** icon, or Tab to it, and the words appear in a tip. Press it (a click, or **Enter**) and the tip stays open, so you can read at your own pace and press **Learn more** to go to the full help page. **Esc** closes it.
+
+A panel's **?** sits in its title bar. A section inside a panel has its own beside its heading, and a setting that needs a word of explanation has one beside its name.
+
+## Keep them on show
+
+When you are new, the explanations sit on show where they always did, so you meet them once. After your first drawing Frameling offers to tuck them away, and you can say no. Any time you know your way round, tuck them away yourself: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it back on any time.
+
+## Good to know
+
+- A line that is a warning, or says what is going on right now ("The camera layer is hidden"), stays on show. Only the "what is this for" lines move.
+- A screen reader reads the words when you reach the **?**, so they are there for everyone.
+
+See also [Using help](help:using-help), [Panels](help:panels) and [Preferences](help:preferences).`,
   'command-palette': `Can't remember where something lives? Press **Ctrl+K** (**Cmd+K** on a Mac), or **Ctrl+Shift+P**.
 
 ## How

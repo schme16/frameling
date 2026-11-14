@@ -1,4 +1,5 @@
 // The Export dialog's "Which artboards" row. Only shows when the document has more than one artboard.
+import { ExNote } from '../export/ExNote';
 import type { Id } from '../core/format';
 import { useStore } from '../core/store';
 import { setChoice, useChoice } from '../core/choices';
@@ -89,7 +90,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
       {mode === 'joined' && sizes.size <= 1 && (
         <p className="ex-note">{settings.format === 'sheet' ? `${total} frames in all. Each artboard is a frame of one sprite, in order, and they play as one animation. Their clips are left out.` : `${total} frames in all, one artboard after another.`}</p>
       )}
-      {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
+      {mode === 'atlas' && <ExNote>Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</ExNote>}
       {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}
     </fieldset>
   );

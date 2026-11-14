@@ -35,7 +35,7 @@ export function Wells() {
   if (paintWells) return <PaintWells />;
   return (
     <div className="cv-wells" data-quest="color-wells">
-      <div className="cv-wells-stack">
+      <div className="cv-wells-stack" data-overlaps>
         <Box which="fill" color={fill} front={active === 'fill'} />
         <Box which="stroke" color={stroke} front={active === 'stroke'} />
       </div>

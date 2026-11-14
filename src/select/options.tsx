@@ -60,7 +60,7 @@ export function PixelSelectOptions() {
           <Toggle label="Only touching pixels" checked={contiguous} onChange={(v) => setSelectSettings({ contiguous: v })} hint="On: just the patch you clicked. Off: that colour everywhere on the drawing (contiguous)." />
         </>
       )}
-      <Tip>
+      <Tip stays>
         {count ? `${count} pixel${count === 1 ? '' : 's'} selected. Drag inside to move them (Alt+drag for a copy, Ctrl+D to duplicate); arrow keys nudge. ` : `${how} `}
         Shift adds, Alt takes away. Painting stays inside the selection.
       </Tip>

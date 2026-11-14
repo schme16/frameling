@@ -1,6 +1,7 @@
 // Small fields the Particles and Text panels share: a number box, a colour well and a titled section.
 import { useState, type ReactNode } from 'react';
 import '../symbols/symbols.css';
+import { SectionScope } from './explain/ExplainIcon';
 import './panelFields.css';
 
 export function Num({ label, value, onChange, step = 1, min, max, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; suffix?: string; title?: string }) {
@@ -51,9 +52,16 @@ export function ColorWell({ label, value, onChange, title }: { label: string; va
 
 export function Section({ title, children, open = true, help }: { title: string; children: ReactNode; open?: boolean; help?: string }) {
   return (
-    <details className="pt-section" open={open} data-help={help}>
-      <summary className="sy-section-title">{title}</summary>
-      <div className="pt-section-body">{children}</div>
-    </details>
+    <SectionScope title={title}>
+      {(icon) => (
+        <details className="pt-section" open={open} data-help={help}>
+          <summary className="sy-section-title">
+            {title}
+            {icon}
+          </summary>
+          <div className="pt-section-body">{children}</div>
+        </details>
+      )}
+    </SectionScope>
   );
 }

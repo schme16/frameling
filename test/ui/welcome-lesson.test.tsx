@@ -7,6 +7,7 @@ import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
 import { watchFirstDrawing } from '../../src/ui/firstDrawing';
 import { closeSheet, openSheet } from '../../src/ui/overlays';
+import { toasts } from '../../src/ui/toast';
 import { getPrefs, migratePrefs, resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { WelcomeSheet } from '../../src/ui/Welcome';
 import { stroke } from '../quests/helpers';
@@ -70,6 +71,23 @@ describe('noticing the first drawing', () => {
     expect(getPrefs().firstDrawn).toBe(false); // an opened file is not drawing
     store().update('Rename', (x) => void (x.name = 'x'));
     expect(getPrefs().firstDrawn).toBe(true);
+    off();
+  });
+  it('offers to fold the explanations away once, and "Tuck them away" does it', () => {
+    toasts.set([]);
+    const off = watchFirstDrawing();
+    expect(getPrefs().showExplanations).toBe(true); // a new person has them on show
+    store().update('Rename', (x) => void (x.name = 'x'));
+    // A blank page does not count as drawing, so nothing yet; put a shape on it.
+    const doc = store().get().doc;
+    const d = newVectorDrawing();
+    d.shapes = [stroke([[1, 1], [20, 20]])];
+    store().load({ ...doc, drawings: { ...doc.drawings, [d.id]: d } });
+    store().update('Rename again', (x) => void (x.name = 'y'));
+    const offer = toasts.get().find((t) => t.action?.id === 'explanations-away');
+    expect(offer).toBeTruthy();
+    offer!.action!.run();
+    expect(getPrefs().showExplanations).toBe(false);
     off();
   });
   it('is true for someone who already got past the first hello, false for a brand new profile', () => {

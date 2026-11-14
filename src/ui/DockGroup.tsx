@@ -11,6 +11,7 @@ import { Icon } from './icons';
 import { PanelPicker } from './PanelPicker';
 import { panelPicker, togglePicker } from './rightStyle';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
+import { PanelScope } from './explain/ExplainIcon';
 
 const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down', top: 'chevron-up' };
 const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up', top: 'chevron-down' };
@@ -388,9 +389,11 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
       {!z.collapsed && panel && (
         <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`} data-panel-id={active}>
           <h2 className="ui-sr-only">{names?.[active] ?? panel.title}</h2>
-          <PanelBoundary name={panel.title} key={active}>
-            <panel.component />
-          </PanelBoundary>
+          <PanelScope id={active} title={names?.[active] ?? panel.title} help={panel.help}>
+            <PanelBoundary name={panel.title} key={active}>
+              <panel.component />
+            </PanelBoundary>
+          </PanelScope>
         </div>
       )}
     </>

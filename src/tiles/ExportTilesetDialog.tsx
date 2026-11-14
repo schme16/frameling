@@ -1,4 +1,5 @@
 // File > Export tileset...: the tiles on one picture, plus a Godot TileSet and level scene, JSON or Tiled files.
+import { ExNote } from '../export/ExNote';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
@@ -144,7 +145,7 @@ function ExportTilesetDialog({ close }: { close: () => void }) {
             <Check checked={s.tiled} onChange={(v) => set({ tiled: v })}>
               Tiled tileset and map (.tsj, .tmj)
             </Check>
-            <p className="ex-note">Maps are saved as they are on frame {frame + 1}. Animated tiles keep their frames and timing.</p>
+            <ExNote>Maps are saved as they are on frame {frame + 1}. Animated tiles keep their frames and timing.</ExNote>
           </fieldset>
         </div>
       </div>

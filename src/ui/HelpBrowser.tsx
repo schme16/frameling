@@ -201,7 +201,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
               <p>Pick something from the list, or search. Pressing F1 over any button comes straight here.</p>
               <div className="ui-help-quick">
                 {['welcome', 'command-palette', 'keyboard-shortcuts', 'workspaces'].filter((id) => getHelp(id)).map((id) => (
-                  <button key={id} type="button" className="ui-card" onClick={() => go(id)}>
+                  <button key={id} type="button" className="ui-card" data-wraps onClick={() => go(id)}>
                     <strong>{getHelp(id)!.title}</strong>
                     <span>{getHelp(id)!.summary}</span>
                   </button>

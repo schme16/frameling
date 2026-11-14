@@ -19,7 +19,7 @@ export function TileToolOptions() {
   if (!tileset?.tiles.length) {
     return (
       <div className="cv-options">
-        <Tip>There are no tiles yet. Make one in the Tileset panel, draw it, then paint with it here.</Tip>
+        <Tip stays>There are no tiles yet. Make one in the Tileset panel, draw it, then paint with it here.</Tip>
         <ActionButton onClick={() => run('tiles.new')}>New tile</ActionButton>
       </div>
     );

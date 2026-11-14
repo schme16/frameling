@@ -372,3 +372,8 @@
   font-weight: 500;
   color: var(--muted);
 }
+.ex-about {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -6px;
+}

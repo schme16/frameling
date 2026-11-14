@@ -31,6 +31,7 @@ export const SETTING_ROWS: PrefRow[] = [
   row('general', 'Reduce motion', 'Stops the bouncing and fading.', ['animations off', 'accessibility', 'transitions', 'fade', 'calm', 'less animation', 'motion sickness', 'vestibular', 'no animation']),
   row('general', 'Welcome sheet', 'Show the start page when Frameling opens.', ['start page', 'start screen', 'splash', 'home screen', 'startup', 'launch screen', 'welcome screen', 'new document screen', 'open on start']),
   row('general', 'Tips', 'A friendly tip in the status bar.', ['hints', 'status bar tips', 'did you know', 'tip of the day', 'advice']),
+  row('general', 'Explanations', 'The little lines that say what a panel or a setting is for, or tucked behind the ? icons.', ['hints', 'help icons', 'tooltips', 'descriptions', 'explainers', 'instructions', 'notes', 'clutter', 'show help text', 'question mark']),
   row('general', 'Workspace switcher', 'Which workspace you are in, beside the drawing name: tabs, a chip, or hidden.', ['workspace tabs', 'layout tabs', 'workspace bar', 'workspace picker', 'layout switcher']),
   row('general', 'Right side', 'Properties, a rail of panels, or the older tabs.', ['properties panel', 'inspector', 'options panel', 'panel tabs', 'right dock', 'side panels', 'panel layout', 'sidebar']),
   row('general', 'Tool rail style', 'Two wide, or stacked with a button per group.', ['toolbar', 'toolbox', 'tool bar', 'tool palette', 'tools panel', 'flyout', 'grouped tools', 'two columns', 'tool layout']),
