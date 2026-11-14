@@ -31,7 +31,7 @@ const px = (data, x, y) => data.slice((y * W + x) * 4, (y * W + x) * 4 + 4);
 const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
 
 const cases = [];
-const add = (name, d, checks, frame = 0, editor = false) => cases.push({ name, d, checks, frame, editor });
+const add = (name, d, checks, frame = 0, editor = false, active, editorOnly = false) => cases.push({ name, d, checks, frame, editor, active, editorOnly });
 
 const full = (c) => [rect('r' + n, 0, 0, W, H, c)];
 
@@ -53,6 +53,35 @@ add('clipped layers hide with their base', doc([layer('base', [rect('b', 0, 0, 8
     [12, 4, [255, 255, 255, 255], 1],
     [12, 14, [0, 0, 255, 255], 1],
   ]);
+}
+{
+  // A mask added to a layer (its own folder), and the same mask switched off: on the render and on the editor canvas.
+  const f = { f: { id: 'f', name: 'Masked', visible: true, opacity: 1 } };
+  const a = () => layer('a', full('#ff0000'), { folder: 'f' });
+  add('a mask added to a layer shows where it is painted', doc([layer('bg', full('#00ff00')), a(), layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show' }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [0, 255, 0, 255], 1],
+  ], 0, true);
+  add('a mask that is switched off cuts nothing', doc([layer('bg', full('#00ff00')), a(), layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show', visible: false }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [255, 0, 0, 255], 1],
+  ], 0, true);
+  add('an empty show mask hides its layer; the layer under the folder stays', doc([layer('bg', full('#00ff00')), a(), layer('m', [], { folder: 'f', mask: 'show' }), layer('top', [])], { folders: f }), [
+    [2, 4, [0, 255, 0, 255], 1],
+    [12, 4, [0, 255, 0, 255], 1],
+  ], 0, true);
+  {
+    // While a mask is the layer being painted, what it hides shows faintly (28%) and what it shows has a purple wash (35%).
+    const m = layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show' });
+    add('painting a mask: the hidden part shows faintly, the painted part washes purple', doc([layer('bg', full('#00ff00')), a(), m], { folders: f }), [
+      [12, 4, [71, 183, 0, 255], 4],
+      [2, 4, [219, 43, 89, 255], 4],
+    ], 0, true, m.layer.id, true);
+  }
+  add('an empty hide mask shows its layer in full', doc([layer('bg', full('#00ff00')), a(), layer('m', [], { folder: 'f', mask: 'hide' }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [255, 0, 0, 255], 1],
+  ], 0, true);
 }
 {
   const a = layer('a', full('#ff0000'), { folder: 'f' });
@@ -178,17 +207,17 @@ app.whenReady().then(async () => {
   console.log(`canvas filter: ${await win.webContents.executeJavaScript('window.__framelingEffects.nativeFilterWorks() ? "native" : "JS fallback"')}`);
   let failed = 0;
   for (const c of cases) {
-    const data = await win.webContents.executeJavaScript(`window.__framelingEffects.pixels(${JSON.stringify(c.d)}, ${c.frame})`);
+    const data = c.editorOnly ? [] : await win.webContents.executeJavaScript(`window.__framelingEffects.pixels(${JSON.stringify(c.d)}, ${c.frame})`);
     const bad = [];
-    for (const [x, y, want, tol] of c.checks) {
+    for (const [x, y, want, tol] of c.editorOnly ? [] : c.checks) {
       const got = px(data, x, y);
       if (!near(got, want, tol)) bad.push(`(${x},${y}) got ${got.join(',')} want ${want.join(',')} ±${tol}`);
     }
     if (c.editor) {
       // The same pixels on the editor canvas (scaled to fit the window, so only well inside each area is compared).
-      const got = await win.webContents.executeJavaScript(`window.__framelingEffects.editorPixels(${JSON.stringify(c.d)}, ${c.frame}, ${JSON.stringify(c.checks.map(([x, y]) => [x, y]))})`);
+      const got = await win.webContents.executeJavaScript(`window.__framelingEffects.editorPixels(${JSON.stringify(c.d)}, ${c.frame}, ${JSON.stringify(c.checks.map(([x, y]) => [x, y]))}, ${JSON.stringify(c.active || null)})`);
       c.checks.forEach(([x, y, want, tol], i) => {
-        if (!near(got[i], want, tol + 40)) bad.push(`editor (${x},${y}) got ${got[i].join(',')} want ${want.join(',')}`);
+        if (!near(got[i], want, c.editorOnly ? tol : tol + 40)) bad.push(`editor (${x},${y}) got ${got[i].join(',')} want ${want.join(',')}`);
       });
     }
     if (bad.length) failed++;

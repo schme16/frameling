@@ -59,22 +59,28 @@ A blend mode mixes with **everything under the layer**, including the stage colo
 Also in the command palette (Ctrl+K): type "blend".`,
   masks: `## Clip to the layer below
 
-**Clip to the layer below** (a clipping mask) shows a layer only where the layer under it has drawing. Perfect for shading: draw the character's colours on one layer, put a shading layer above it, clip it, and scribble shadows without ever going over the edge.
+**Clip to the layer below** (a clipping mask) shows a layer only where the layer under it has drawing. Perfect for shading: colour the character on one layer, put a shading layer above it, clip it, and scribble shadows without going over the edge.
 
-- Pick the layer, then **Effects > Clip to the layer below** (Ctrl+Alt+G), or the switch in the Effects panel.
-- Several clipped layers in a row all clip to the same layer under them.
-- A clipped layer shows a little bent arrow in the timeline. Hide the layer it clips to and it hides too.
+Pick the layer, then **Effects > Clip to the layer below** (Ctrl+Alt+G). A clipped layer shows a little bent arrow in the timeline.
 
 ## Masks
 
-A **mask layer** (layer mask) is never shown itself. What you draw on it decides what shows of the layers under it:
+A **mask** is a layer that decides where the layer under it shows. You paint where it shows, instead of rubbing bits out, and you can change your mind any time.
 
-- **Show inside**: the layers under it only show where the mask has drawing. A reveal: a circle that grows, a window you look through.
-- **Hide inside**: the layers under it are hidden where the mask has drawing. A hole, a bite, an eraser you can animate.
+- **Add one:** pick the layer, then press **Mask** in the Layers panel (or **Effects > Add a mask to this layer**, Ctrl+Alt+Shift+M). A purple mask layer appears above it, picked and ready. The first time, Frameling asks whether a new mask starts as **Paint where it shows** or **Paint where it hides**.
+- **Paint on it** with any tool. What the mask hides shows faintly on the canvas, and what you've painted shows in purple. The eraser undoes a bit.
+- **Switch between the mask and the layer:** Ctrl+Alt+J, or click the little mask mark on either row. The next stroke goes on the one you picked.
+- **See which is which:** a mask row is purple and names the layers it masks, and those layers have a purple edge.
+- **Turn it off for a moment:** click the mask switch on its row, where the eye would be. The mask and its drawing are kept.
+- **Take it off for good:** **Take the mask off for good** in its menu. It becomes a plain layer that shows its drawing.
+- **Flip it:** **Flip the mask** swaps shows-where-painted and hides-where-painted.
 
-Make one with **Effects > Use layer as a mask**, or **Mask** in the Effects panel. The first time, Frameling asks whether it should mask just the layer under it or every layer under it, and puts them in a [folder](help:layer-folders) together. Drag more layers into the folder to mask them too.
+**Good to know:**
 
-A mask only reaches the layers under it in its own folder, so it never cuts into the rest of your picture. While a mask layer is picked, its drawing shows faintly in purple on the canvas so you can see what you're drawing. Masks animate like any layer: draw a different mask on each key, and soft edges come from a [Soften effect](help:effects) on the mask.`,
+- A mask only reaches the layers under it in its own [folder](help:layer-folders), so it never cuts into the rest of your picture. Drag a mask out of its folder and Frameling asks once whether to keep it a mask or make it a plain layer.
+- To mask with a layer you already drew, use **Effects > More about masks > Use layer as a mask**.
+- Masks work the same on vector and pixel layers, and every export agrees with the canvas. An off mask exports as off.
+- Masks animate like any layer, and a [Soften effect](help:effects) on the mask gives soft edges.`,
   'layer-folders': `A **folder** (layer group) holds layers that belong together, like the parts of a character. Folders can hold other folders, up to 8 levels deep: a **Scene** folder can hold a **Character** folder, which holds an **Arm** folder.
 
 - **Make one:** pick a layer, then **Effects > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.

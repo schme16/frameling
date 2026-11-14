@@ -65,14 +65,17 @@ export function EffectsPanel() {
         </div>
       )}
 
-      <Slider
-        label="See-through (opacity)"
-        value={Math.round(look.opacity * 100)}
-        min={0}
-        max={100}
-        format={(v) => `${v}%`}
-        onChange={(v) => (useFolder ? ops.setFolderOpacity(folder!.id, v / 100) : setLayerOpacity(layer.id, v / 100))}
-      />
+      {/* A mask only decides where, so how see-through it is changes nothing. */}
+      {layer.mask && !useFolder ? null : (
+        <Slider
+          label="See-through (opacity)"
+          value={Math.round(look.opacity * 100)}
+          min={0}
+          max={100}
+          format={(v) => `${v}%`}
+          onChange={(v) => (useFolder ? ops.setFolderOpacity(folder!.id, v / 100) : setLayerOpacity(layer.id, v / 100))}
+        />
+      )}
 
       {layer.mask && !useFolder ? null : <BlendPicker value={look.blend ?? 'normal'} onChange={(m) => ops.setBlend(target, m)} />}
 
@@ -154,11 +157,19 @@ function ClipAndMask({ layer }: { layer: Layer }) {
         onChange={() => toggleClip(layer)}
         hint={isBottom ? 'Nothing under this layer to clip to yet.' : 'Only shows where the layer under it has drawing (a clipping mask).'}
       />
+      {layer.mask ? (
+        <Toggle
+          label="Mask is on"
+          checked={layer.visible}
+          onChange={() => ops.setMaskOn(layer.id, !layer.visible)}
+          hint="Switch it off to see the layers without it. The mask and its drawing are kept."
+        />
+      ) : null}
       <Choice
         label="Mask (layer mask)"
         value={layer.mask ?? 'off'}
         options={[
-          { value: 'off', label: 'Off', title: 'A normal layer' },
+          { value: 'off', label: 'Off', title: 'A normal layer. A mask taken off shows its drawing like any layer.' },
           { value: 'show', label: 'Show', title: 'Show inside: not shown itself. The layers under it only show where this layer has drawing.' },
           { value: 'hide', label: 'Hide', title: 'Hide inside: not shown itself. The layers under it are hidden where this layer has drawing.' },
         ]}

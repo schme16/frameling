@@ -8,6 +8,7 @@ import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { showPanel } from '../ui/dock';
 import { BLEND_MODES, EFFECTS } from './model';
+import { maskPartner } from './masks';
 import * as ops from './ops';
 
 export type MaskScope = 'below' | 'all';
@@ -21,6 +22,36 @@ registerChoice<MaskScope>({
     { value: 'all', label: 'Every layer under it', detail: 'The mask and every layer under it go into a folder together.' },
   ],
   default: 'below',
+  category: 'Layers',
+  help: 'masks',
+});
+
+export type MaskStart = 'show' | 'hide';
+
+registerChoice<MaskStart>({
+  id: 'effects.maskStart',
+  title: 'A new mask starts as',
+  question: 'You are adding a mask to this layer. What should it start as?',
+  options: [
+    { value: 'show', label: 'Paint where it shows', detail: 'The mask starts empty, so the layer is hidden until you paint on the mask. What you paint is what you see.', did: 'Added a mask that shows where you paint.' },
+    { value: 'hide', label: 'Paint where it hides', detail: 'The layer shows in full, and what you paint on the mask is hidden. Like rubbing out, but you can change your mind later.', did: 'Added a mask that hides where you paint.' },
+  ],
+  default: 'show',
+  category: 'Layers',
+  help: 'masks',
+});
+
+export type MaskLeaves = 'keep' | 'plain';
+
+registerChoice<MaskLeaves>({
+  id: 'effects.maskLeavesFolder',
+  title: 'A mask that leaves its folder',
+  question: 'That mask is out of its folder now, so it reaches every layer under it. What should happen to it?',
+  options: [
+    { value: 'keep', label: 'Keep it a mask', detail: 'It now shows or hides every layer under it, not just the ones in its folder.', did: 'Kept it as a mask.' },
+    { value: 'plain', label: 'Make it a plain layer again', detail: 'It stops being a mask and shows its drawing like any layer. Nothing is lost.', did: 'Made it a plain layer.' },
+  ],
+  default: 'keep',
   category: 'Layers',
   help: 'masks',
 });
@@ -48,6 +79,33 @@ export function toggleMask(layer: Layer | undefined = activeNow(), mode: 'show' 
     return;
   }
   withChoice<MaskScope>('effects.maskScope', (scope) => void ops.useAsMask(layer.id, scope, mode));
+}
+
+/** Adds a new mask above the layer (asking the first time what it starts as) and picks it, ready to paint on. */
+export function addMask(layer: Layer | undefined = activeNow()): void {
+  if (!layer) return;
+  if (layer.kind === 'camera') {
+    toast('The camera has nothing to mask. Pick a drawing layer.');
+    return;
+  }
+  if (layer.mask) {
+    toast('This layer is a mask already. Paint on it, or pick the layer you want to mask.');
+    return;
+  }
+  withChoice<MaskStart>('effects.maskStart', (mode) => void ops.addMask(layer.id, mode));
+}
+
+/** Jumps between a mask and the layer it masks, so the next stroke goes on the other one. */
+export function switchMaskAndLayer(): void {
+  const s = store().get();
+  const l = active(s);
+  if (!l) return;
+  const other = maskPartner(s.doc, l.id);
+  if (!other) {
+    toast(l.mask ? 'This mask has no layer under it to switch to.' : 'No mask on this layer yet. Add one first.');
+    return;
+  }
+  store().setUi({ activeLayerId: other.id });
 }
 
 export function toggleClip(layer: Layer | undefined = activeNow()): void {
@@ -124,6 +182,71 @@ registerCommands([
     keywords: ['mask', 'reveal', 'cut out', 'layer mask', 'stencil'],
     checked: (s) => !!active(s)?.mask,
     run: () => toggleMask(),
+  },
+  {
+    id: 'layers.addMask',
+    label: 'Add a mask to this layer',
+    category: 'Effects',
+    keys: ['Mod+Alt+Shift+M'],
+    description: 'Adds a mask layer just above this one and picks it, so you paint where this layer shows. Paint with any tool.',
+    help: 'masks',
+    keywords: ['mask', 'layer mask', 'reveal', 'hide part', 'add mask', 'new mask', 'stencil'],
+    enabled: (s) => !!active(s) && active(s)!.kind !== 'camera' && !active(s)!.mask,
+    run: () => addMask(),
+  },
+  {
+    id: 'layers.maskSwitch',
+    label: 'Switch between the mask and its layer',
+    category: 'Effects',
+    keys: ['Mod+Alt+J'],
+    description: 'On a mask, picks the layer it masks. On a masked layer, picks its mask. The next stroke goes on the one you picked.',
+    help: 'masks',
+    keywords: ['mask', 'paint the mask', 'paint the layer', 'jump', 'switch'],
+    enabled: (s) => {
+      const l = active(s);
+      return !!l && !!maskPartner(s.doc, l.id);
+    },
+    run: () => switchMaskAndLayer(),
+  },
+  {
+    id: 'layers.maskOnOff',
+    label: 'Turn this mask on or off',
+    category: 'Effects',
+    description: 'Switches the mask off for a moment to see the layers without it. The mask and its drawing are kept, and it still exports as a mask.',
+    help: 'masks',
+    keywords: ['mask', 'disable mask', 'enable mask', 'switch off', 'peek'],
+    enabled: (s) => !!active(s)?.mask,
+    checked: (s) => !!active(s)?.mask && active(s)!.visible,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.setMaskOn(l.id, !l.visible);
+    },
+  },
+  {
+    id: 'layers.flipMask',
+    label: 'Flip the mask (show or hide where it is painted)',
+    category: 'Effects',
+    description: 'Swaps what the mask does: where you painted shows the layer, or where you painted hides it. The drawing stays as it is.',
+    help: 'masks',
+    keywords: ['mask', 'invert mask', 'reverse', 'flip'],
+    enabled: (s) => !!active(s)?.mask,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.flipMask(l.id);
+    },
+  },
+  {
+    id: 'layers.removeMask',
+    label: 'Take the mask off for good',
+    category: 'Effects',
+    description: 'The layer stops being a mask and becomes a plain layer that shows its drawing. To get rid of the drawing too, delete the layer.',
+    help: 'masks',
+    keywords: ['mask', 'remove mask', 'delete mask', 'unmask'],
+    enabled: (s) => !!active(s)?.mask,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.setMask(l.id, null);
+    },
   },
   {
     id: 'layers.newFolder',

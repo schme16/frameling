@@ -83,6 +83,17 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       const bytes = r.kind === 'file' ? r.bytes.length : -1;
       return { bytes, ms: Math.round(performance.now() - t0) };
     },
+    /** The PNG export of one frame, through the real exporter, as base64 (for A/B stills of an export beside the screen). */
+    pngBase64: async (frame = 0, scale = 1) => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const settings = { ...defaultSettings(doc), format: 'png', range: 'frame', clipId: null, scale } as unknown as ExportSettings;
+      const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'ab' });
+      if (r.kind !== 'file') return null;
+      let bin = '';
+      for (const b of r.bytes) bin += String.fromCharCode(b);
+      return btoa(bin);
+    },
     /** Runs an export. `cancelAfterMs` presses Cancel that long after the start. */
     run: async (s: ExportSettings, cancelAfterMs?: number) => {
       const ac = new AbortController();

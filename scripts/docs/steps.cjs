@@ -81,6 +81,8 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
   for (const s of steps) {
     if (s.eval) await wc.executeJavaScript(s.eval);
     else if (s.log) console.log(JSON.stringify(await wc.executeJavaScript(s.log)));
+    // {"write": "js returning base64", "file": "name.png"}: saves what the page hands back (an exported picture) into the output folder.
+    else if (s.write) fs.writeFileSync(path.join(outDir, s.file), Buffer.from(await wc.executeJavaScript(s.write), 'base64'));
     else if (s.wait) await sleep(s.wait);
     else if (s.clickOn) {
       // Click the middle of the first element matching a selector (and containing `text`, when given), so a step

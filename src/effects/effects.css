@@ -369,3 +369,73 @@
 .tl-layer.is-mask .tl-layer-name {
   font-style: italic;
 }
+/* A mask row is purple, like the mask on the canvas; the layers it cuts carry a purple edge, so the pair reads at a glance. */
+.tl-layer.is-mask {
+  background: color-mix(in srgb, var(--grape) 13%, transparent);
+}
+.tl-layer.is-masked {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--grape) 75%, transparent);
+}
+.tl-mask-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  max-width: 110px;
+  height: 20px;
+  margin-left: 2px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--grape);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-mask-link.is-mask {
+  background: color-mix(in srgb, var(--grape) 18%, transparent);
+}
+.tl-mask-link:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--grape) 30%, transparent);
+}
+.tl-mask-link:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.tl-mask-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.tl-mask-link-text {
+  /* Only where there is room (the Layers panel): the timeline's name column is narrow. The tooltip has the names. */
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-list .tl-mask-link-text {
+  display: inline;
+}
+.tl-mask-switch {
+  position: relative;
+  color: var(--grape);
+}
+.tl-mask-switch.is-off {
+  color: var(--muted);
+  opacity: 0.7;
+}
+.tl-mask-switch.is-off::after {
+  content: '';
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(-40deg);
+  pointer-events: none;
+}

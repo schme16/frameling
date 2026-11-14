@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Explainer } from '../ui/explain/ExplainIcon';
 import type { Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
@@ -10,7 +10,8 @@ import { isFeatureOn } from '../features/host';
 import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
 import { pickKeys, setTl, toggleOpen, useTl } from './state';
-import { FolderRow, LookTags, lookMenu } from '../effects/TimelineBits';
+import { FolderRow, LookTags, MaskLink, MaskSwitch, lookMenu, maskInfoFor, type MaskInfo } from '../effects/TimelineBits';
+import { maskLinks } from '../effects/masks';
 import { moveNode } from '../effects/ops';
 import type { Drop, Node } from '../effects/edit';
 import { rowKey } from '../effects/rowKeys';
@@ -29,10 +30,18 @@ export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
   const count = useStore((s) => s.doc.layers.length);
   // Frames on boards: these layers are on every frame.
   const everyFrame = useStore((s) => !!s.doc.sharedLayers && (s.doc.artboards?.length ?? 0) > 1);
+  // A mask is added to a drawing layer; a mask or the camera has nothing to add one to.
+  const maskProblem = useStore((s) => {
+    const l = s.doc.layers.find((x) => x.id === s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    return !l ? 'Add a layer first.' : l.mask ? 'This layer is a mask already. Pick the layer you want to mask.' : l.kind === 'camera' ? 'The camera has nothing to mask.' : '';
+  });
   const actions = (
     <span className="tl-layer-actions" role="group" aria-label="This layer">
       <button type="button" className="tl-btn" title={tip('layers.duplicate', 'Duplicate this layer with all its drawings')} aria-label="Duplicate layer" onClick={() => runCmd('layers.duplicate')}>
         <Icon name="duplicate" size={15} />
+      </button>
+      <button type="button" className="tl-btn" title={maskProblem || tip('layers.addMask', 'Add a mask: a layer above this one that decides where it shows. Paint on it with any tool.')} aria-label="Add a mask to this layer" disabled={!!maskProblem} onClick={() => runCmd('layers.addMask')}>
+        <Icon name="mask" size={15} />
       </button>
       <button type="button" className="tl-btn" title={count > 1 ? tip('layers.delete', 'Delete this layer') : 'You need at least one layer'} aria-label="Delete layer" disabled={count < 2} onClick={() => runCmd('layers.delete')}>
         <Icon name="trash" size={15} />
@@ -126,6 +135,8 @@ interface RowProps {
   depth: number;
   active: boolean;
   editing: boolean;
+  /** What a mask does here: the mask cutting this layer, or the layers this mask cuts. */
+  mask?: MaskInfo;
   dropMark: 'above' | 'below' | null;
   onDragStart: (id: Id) => void;
   onDragOver: (id: Id, where: 'above' | 'below') => void;
@@ -134,12 +145,12 @@ interface RowProps {
   onMenu: (layer: Layer, x: number, y: number) => void;
 }
 
-const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, depth, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
+const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, depth, active, editing, mask, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
     <div
-      className={`tl-layer${detailed ? ` is-detailed ${layerColorClass(layer)}` : ''}${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
+      className={`tl-layer${detailed ? ` is-detailed ${layerColorClass(layer)}` : ''}${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
       style={{ height: h, ['--depth' as string]: depth }}
       draggable={!editing}
       data-layer={layer.id}
@@ -225,10 +236,15 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
         </span>
       )}
       <LookTags layer={layer} />
+      <MaskLink layer={layer} info={mask} />
       {detailed ? <SoloButton layer={layer} /> : null}
-      <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
-        <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
-      </button>
+      {layer.mask ? (
+        <MaskSwitch layer={layer} />
+      ) : (
+        <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
+          <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
+        </button>
+      )}
       <button type="button" className="tl-icon-btn" title={layer.locked ? 'Unlock this layer' : 'Lock this layer so it can not be changed by accident'} aria-label={layer.locked ? 'Unlock layer' : 'Lock layer'} aria-pressed={layer.locked} onClick={(e) => (e.stopPropagation(), ops.setLayerLocked(layer.id, !layer.locked))}>
         <Icon name={layer.locked ? 'lock' : 'unlock'} size={15} />
       </button>
@@ -274,6 +290,13 @@ const NO_DRAG: DragState = { node: null, over: null, where: 'above' };
  */
 export function LayerList({ layout: given }: { layout?: Layout } = {}) {
   const layers = useStore((s) => s.doc.layers);
+  const folders = useStore((s) => s.doc.folders);
+  // Which layer is a mask and what it cuts, worked out from the same plan the picture is drawn from.
+  const maskInfo = useMemo(() => {
+    if (!layers.some((l) => l.mask)) return null;
+    const links = maskLinks({ layers, folders } as Parameters<typeof maskLinks>[0]);
+    return new Map(layers.map((l) => [l.id, maskInfoFor(l, links)]));
+  }, [layers, folders]);
   const own = useLayout();
   const layout = given ?? own;
   const detailed = layout.style === 'detailed';
@@ -328,6 +351,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
           depth={r.depth}
           active={l.id === activeId}
           editing={editing === l.id}
+          mask={maskInfo?.get(l.id)}
           dropMark={(mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id) as 'above' | 'below' | null)}
           onDragStart={(id) => setDrag({ node: { layer: id }, over: null, where: 'above' })}
           onDragOver={(id, where) => over(id, where)}

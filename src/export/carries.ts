@@ -55,7 +55,8 @@ export function docFeatures(doc: Doc): DocFeatures {
     if (l.blend && l.blend !== 'normal') features.add('blend');
     for (const e of l.effects ?? []) if (e.on !== false) effectKinds.add(e.kind);
     if (l.clipToBelow) features.add('clip');
-    if (l.mask) features.add('mask');
+    // A mask that is switched off cuts nothing, so no format needs to carry it.
+    if (l.mask && l.visible) features.add('mask');
     if (l.folder) features.add('folders');
     if ((l as { bind?: unknown }).bind) features.add('bones');
   }

@@ -1,14 +1,15 @@
 // The timeline's side of effects: folder header rows, the little blend/clip/mask/effects tags on a layer row, and
 // the look entries in a layer's menu.
 import { useState } from 'react';
-import type { Layer } from '../core/format';
+import type { Id, Layer } from '../core/format';
 import { store } from '../core/store';
 import { Icon } from '../ui/icons';
 import { showPanel } from '../ui/dock';
 import { ContextMenu, InlineName, type MenuItem } from '../timeline/Menu';
 import { blendInfo, lookSummary } from './model';
 import * as ops from './ops';
-import { toggleClip, toggleMask } from './commands';
+import { addMask, toggleClip, toggleMask } from './commands';
+import { namesList, type MaskLinks } from './masks';
 import type { Drop } from './edit';
 import { rowKey } from './rowKeys';
 import { toggleFolderCollapsed, type TimelineRow } from './rows';
@@ -147,14 +148,84 @@ export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { t
 
 /** One small mark after a layer's name (mask, clipped, or blend and effects), with the whole story in its tooltip. */
 export function LookTags({ layer }: { layer: Layer }) {
+  // A mask row has its own button (see MaskLink): it says the same and also jumps to the layer.
+  if (layer.mask) return null;
   const summary = lookSummary(layer);
   if (!summary) return null;
-  const icon = layer.mask ? 'mask' : layer.clipToBelow ? 'clip-below' : 'effects';
+  const icon = layer.clipToBelow ? 'clip-below' : 'effects';
   return (
-    <span className={`tl-look-tag${layer.mask ? ' is-mask' : ''}`} title={summary} aria-label={summary} role="img">
+    <span className="tl-look-tag" title={summary} aria-label={summary} role="img">
       <Icon name={icon} size={12} />
     </span>
   );
+}
+
+/** What the list knows about a layer's mask: the mask that cuts it, or the layers a mask cuts. */
+export interface MaskInfo {
+  by?: { id: Id; name: string };
+  cuts?: { id: Id; names: string };
+}
+
+/**
+ * The mask mark on a row. On a mask it says what it masks and jumps to that layer; on a layer a mask cuts it says which
+ * mask and jumps to it. So the pair is one click apart, and the mask's purple runs down the layers it cuts.
+ */
+export function MaskLink({ layer, info }: { layer: Layer; info?: MaskInfo }) {
+  if (layer.mask) {
+    const what = info?.cuts?.names ? `Masks ${info.cuts.names}` : 'Masks nothing yet: put a layer under it';
+    const how = layer.mask === 'hide' ? 'hides' : 'shows';
+    const text = `${what}. Where you paint, it ${how} them. Click to pick the layer it masks.`;
+    return (
+      <button
+        type="button"
+        className="tl-mask-link is-mask"
+        title={text}
+        aria-label={text}
+        disabled={!info?.cuts}
+        onClick={(e) => (e.stopPropagation(), info?.cuts && store().setUi({ activeLayerId: info.cuts.id }))}
+      >
+        <Icon name="mask" size={13} />
+        <span className="tl-mask-link-text">{info?.cuts?.names ?? ''}</span>
+      </button>
+    );
+  }
+  if (!info?.by) return null;
+  const text = `Masked by ${info.by.name}. Click to paint its mask.`;
+  return (
+    <button type="button" className="tl-mask-link" title={text} aria-label={text} onClick={(e) => (e.stopPropagation(), store().setUi({ activeLayerId: info.by!.id }))}>
+      <Icon name="mask" size={12} />
+    </button>
+  );
+}
+
+/** The switch on a mask's row, in place of the eye: off keeps the mask and what is painted on it, and cuts nothing. */
+export function MaskSwitch({ layer }: { layer: Layer }) {
+  const on = layer.visible;
+  const text = on ? 'Mask is on. Click to turn it off for a moment: it is kept, and cuts nothing.' : 'Mask is off. Click to turn it on again.';
+  return (
+    <button
+      type="button"
+      className={`tl-icon-btn tl-mask-switch${on ? '' : ' is-off'}`}
+      title={text}
+      aria-label={on ? 'Turn mask off' : 'Turn mask on'}
+      aria-pressed={on}
+      onClick={(e) => (e.stopPropagation(), ops.setMaskOn(layer.id, !on))}
+    >
+      <Icon name="mask" size={15} />
+    </button>
+  );
+}
+
+/** Builds the info for one row from the document's links. */
+export function maskInfoFor(layer: Layer, links: MaskLinks): MaskInfo | undefined {
+  const by = links.by.get(layer.id);
+  const cut = links.targets.get(layer.id);
+  if (!by && !cut?.length) return undefined;
+  return {
+    by: by ? { id: by.id, name: by.name } : undefined,
+    // The layer it jumps to is the one just under the mask.
+    cuts: cut?.length ? { id: cut[cut.length - 1].id, names: namesList(cut) } : undefined,
+  };
 }
 
 /** The look entries for a layer's menu. */
@@ -163,7 +234,16 @@ export function lookMenu(layer: Layer): MenuItem[] {
     { separator: true },
     { label: 'Effects and blend...', onClick: () => showPanel('effects') },
     { label: 'Clip to the layer below', checked: !!layer.clipToBelow, onClick: () => toggleClip(layer) },
-    { label: 'Use as a mask', checked: !!layer.mask, onClick: () => toggleMask(layer) },
+    ...(layer.mask
+      ? [
+          { label: layer.visible ? 'Turn this mask off (keeps it)' : 'Turn this mask on', onClick: () => void ops.setMaskOn(layer.id, !layer.visible) },
+          { label: layer.mask === 'show' ? 'Flip it: hide where painted' : 'Flip it: show where painted', onClick: () => void ops.flipMask(layer.id) },
+          { label: 'Take the mask off for good', onClick: () => toggleMask(layer) },
+        ]
+      : [
+          { label: 'Add a mask to this layer', onClick: () => addMask(layer) },
+          { label: 'Use this layer as a mask', onClick: () => toggleMask(layer) },
+        ]),
     { label: 'Put in the folder next to it', onClick: () => void ops.nestNode({ layer: layer.id }) },
     ...(layer.folder ? [{ label: 'Take out of its folder', onClick: () => void ops.outdentNode({ layer: layer.id }) }] : []),
     { label: layer.folder ? 'Put in a new folder inside it' : 'Put in a new folder', onClick: () => void ops.makeFolder([layer.id]) },

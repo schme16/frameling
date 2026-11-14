@@ -3,8 +3,11 @@
  * single undo.
  */
 import type { BlendMode, EffectKind, Id } from '../core/format';
+import { withChoice } from '../core/choices';
+import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import * as edit from './edit';
+import { masksThatLeft } from './masks';
 import type { Target } from './edit';
 import { blendInfo, effectInfo } from './model';
 
@@ -47,20 +50,58 @@ export const resetLook = (t: Target) => run('Reset blend and effects', (d) => ed
 export const setClip = (layerId: Id, on: boolean) => run(on ? 'Clip to the layer below' : 'Stop clipping', (d) => edit.setClip(d, layerId, on));
 export const setMask = (layerId: Id, mode: 'show' | 'hide' | null) => run(mode ? 'Make mask' : 'Stop being a mask', (d) => edit.setMask(d, layerId, mode));
 export const useAsMask = (layerId: Id, scope: 'below' | 'all', mode: 'show' | 'hide' = 'show') => run('Use as mask', (d) => edit.useAsMask(d, layerId, scope, mode));
+export const setMaskOn = (layerId: Id, on: boolean) => run(on ? 'Turn mask on' : 'Turn mask off', (d) => edit.setMaskOn(d, layerId, on));
+export const flipMask = (layerId: Id) => run('Flip mask', (d) => edit.flipMask(d, layerId));
+
+/** Gives a layer a mask of its own and picks it, ready to paint. Returns the mask's id. */
+export function addMask(layerId: Id, mode: 'show' | 'hide'): Id | null {
+  let made: Id | null = null;
+  run('Add a mask', (d) => {
+    const r = edit.addMask(d, layerId, mode);
+    made = r?.mask ?? null;
+    return r;
+  });
+  if (made) store().setUi({ activeLayerId: made });
+  return made;
+}
+
+/**
+ * Runs a move, then looks for masks it took out of their folder: such a mask now reaches every layer under it, which
+ * can change the picture, so the first time it asks whether to keep it a mask or make it a plain layer again.
+ */
+export function watchMasks(move: () => boolean): boolean {
+  const before: Doc = store().get().doc;
+  const did = move();
+  if (did) askAboutMasks(before);
+  return did;
+}
+
+/** The asking half of `watchMasks`, for a move made somewhere else: `before` is the document before it. */
+export function askAboutMasks(before: Doc): void {
+  const left = masksThatLeft(before, store().get().doc);
+  if (left.length) {
+    withChoice<'keep' | 'plain'>('effects.maskLeavesFolder', (v) => {
+      if (v !== 'plain') return;
+      store().update('Stop being a mask', (d) => {
+        for (const id of left) edit.setMask(d, id, null);
+      });
+    });
+  }
+}
 
 export function makeFolder(layerIds: Id[]): Id | null {
   let id: Id | null = null;
   run('Put in a folder', (d) => (id = edit.makeFolder(d, layerIds)));
   return id;
 }
-export const ungroupFolder = (folderId: Id) => run('Take layers out of folder', (d) => edit.ungroupFolder(d, folderId));
+export const ungroupFolder = (folderId: Id) => watchMasks(() => run('Take layers out of folder', (d) => edit.ungroupFolder(d, folderId)));
 export const renameFolder = (folderId: Id, name: string) => run('Rename folder', (d) => edit.setFolderProps(d, folderId, { name }));
 export const setFolderVisible = (folderId: Id, visible: boolean) => run(visible ? 'Show folder' : 'Hide folder', (d) => edit.setFolderProps(d, folderId, { visible }));
 export const setFolderOpacity = (folderId: Id, opacity: number) => run('Change folder opacity', (d) => edit.setFolderProps(d, folderId, { opacity }), `folder-opacity:${folderId}`);
-export const moveLayerInto = (layerId: Id, to: number, folder: Id | null) => run('Move layer', (d) => edit.moveLayerInto(d, layerId, to, folder));
+export const moveLayerInto = (layerId: Id, to: number, folder: Id | null) => watchMasks(() => run('Move layer', (d) => edit.moveLayerInto(d, layerId, to, folder)));
 
 const nodeWord = (n: edit.Node) => ('layer' in n ? 'layer' : 'folder');
-export const moveNode = (drag: edit.Node, target: edit.Node, where: edit.Drop) => run(`Move ${nodeWord(drag)}`, (d) => edit.moveNode(d, drag, target, where));
-export const stepNode = (n: edit.Node, dir: 'up' | 'down') => run(dir === 'up' ? `Move ${nodeWord(n)} up` : `Move ${nodeWord(n)} down`, (d) => edit.stepNode(d, n, dir));
+export const moveNode = (drag: edit.Node, target: edit.Node, where: edit.Drop) => watchMasks(() => run(`Move ${nodeWord(drag)}`, (d) => edit.moveNode(d, drag, target, where)));
+export const stepNode = (n: edit.Node, dir: 'up' | 'down') => watchMasks(() => run(dir === 'up' ? `Move ${nodeWord(n)} up` : `Move ${nodeWord(n)} down`, (d) => edit.stepNode(d, n, dir)));
 export const nestNode = (n: edit.Node) => run(`Put ${nodeWord(n)} in the folder next to it`, (d) => edit.nestNode(d, n));
-export const outdentNode = (n: edit.Node) => run(`Take ${nodeWord(n)} out of its folder`, (d) => edit.outdentNode(d, n));
+export const outdentNode = (n: edit.Node) => watchMasks(() => run(`Take ${nodeWord(n)} out of its folder`, (d) => edit.outdentNode(d, n)));

@@ -10,6 +10,7 @@ import type { Draft } from 'immer';
 import type { ClipDirection, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
+import { askAboutMasks } from '../effects/ops';
 import * as core from './edit-core';
 import type { Clash } from './edit-core';
 import { shiftInOut } from './inout';
@@ -278,7 +279,10 @@ export function reorderLayer(layerId: Id, to: number): Outcome {
 export function stepLayer(dir: 'up' | 'down', layerId?: Id): Outcome {
   const id = layerId ?? currentLayerId();
   if (!id) return no('no-layer');
-  return simple(dir === 'up' ? 'Move layer up' : 'Move layer down', (d) => core.stepLayer(d, id, dir));
+  const before = store().get().doc;
+  const r = simple(dir === 'up' ? 'Move layer up' : 'Move layer down', (d) => core.stepLayer(d, id, dir));
+  askAboutMasks(before);
+  return r;
 }
 
 export function setLayerVisible(layerId: Id, visible: boolean): Outcome {

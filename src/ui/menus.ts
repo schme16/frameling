@@ -71,7 +71,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Effects',
     categories: ['Effects'],
-    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', 'layers.intoFolder', 'layers.outOfFolder', 'layers.folderIntoFolder', 'layers.folderOutOfFolder', '-', 'effects.reset'],
+    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.addMask', 'sub:masks', '-', 'layers.newFolder', 'layers.ungroupFolder', 'layers.intoFolder', 'layers.outOfFolder', 'layers.folderIntoFolder', 'layers.folderOutOfFolder', '-', 'effects.reset'],
   },
   {
     label: 'Plugins',
@@ -127,6 +127,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   grids: {
     label: 'Guides, grids and perspective',
     items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.gridSettings', '-', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective'],
+  },
+  masks: {
+    label: 'More about masks',
+    items: ['layers.useAsMask', 'layers.maskSwitch', 'layers.maskOnOff', 'layers.flipMask', 'layers.removeMask'],
   },
   lighttable: {
     label: 'Light table',

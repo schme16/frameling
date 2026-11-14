@@ -269,7 +269,8 @@ export function folderOf(doc: Doc, l: Layer): LayerFolder | undefined {
 /** Plain-words summary of a layer's look, for tooltips and the timeline ("Darken like ink, 2 effects"). */
 export function lookSummary(l: Layer): string {
   const parts: string[] = [];
-  if (l.mask) parts.push(l.mask === 'hide' ? 'Mask: hides the layers under it where it has drawing' : 'Mask: the layers under it only show where it has drawing');
+  if (l.mask && !l.visible) parts.push('Mask is off: it cuts nothing for now');
+  else if (l.mask) parts.push(l.mask === 'hide' ? 'Mask: hides the layers under it where it has drawing' : 'Mask: the layers under it only show where it has drawing');
   if (l.clipToBelow) parts.push('Clipped to the layer below');
   if (l.blend && l.blend !== 'normal') parts.push(blendInfo(l.blend).label);
   const n = l.effects?.filter((e) => e.on !== false).length ?? 0;
