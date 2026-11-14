@@ -51,6 +51,8 @@ export interface RestartView {
   zoom?: number;
   panX?: number;
   panY?: number;
+  /** There was Undo history, which can't come across: the restarted copy says so. */
+  hadUndo?: boolean;
 }
 
 /** Everything handed from the copy that quits to the copy that starts. */
@@ -61,6 +63,8 @@ export interface RestartState {
   file: string | null;
   view: RestartView;
   window: WindowPlace | null;
+  /** The unsaved work waits in the autosave copy: the new copy opens that, still marked unsaved. Missing means only the saved file comes back. */
+  carry?: boolean;
 }
 
 /** A state file older than this is a leftover from a restart that never came back, and is ignored. */
@@ -83,6 +87,7 @@ export function cleanView(raw: unknown): RestartView {
     view.panX = px;
     view.panY = py;
   }
+  if (v.hadUndo === true) view.hadUndo = true;
   return view;
 }
 
@@ -97,7 +102,7 @@ export function readState(raw: unknown, now = Date.now()): RestartState | null {
   const place = w && [w.x, w.y, w.width, w.height].every((n) => num(n) !== undefined) && (w.width as number) > 0 && (w.height as number) > 0
     ? { x: w.x as number, y: w.y as number, width: w.width as number, height: w.height as number, maximized: w.maximized === true, fullScreen: w.fullScreen === true }
     : null;
-  return { at, file: typeof o.file === 'string' && o.file ? o.file : null, view, window: place };
+  return { at, file: typeof o.file === 'string' && o.file ? o.file : null, view, window: place, ...(o.carry === true ? { carry: true } : {}) };
 }
 
 export interface Area {
@@ -124,45 +129,67 @@ export function fitWindow(place: WindowPlace, screens: Area[], min = { width: 80
 
 export interface RestartDeps {
   plan(): RelaunchPlan;
-  /** Starts quitting: the window closes the way the close button closes it (the question about unsaved work, then the quit). */
-  quit(): void;
-  /** What is open and where the window is, read as late as possible (after the work was saved). */
+  /** Starts quitting. `ask` true: the window closes the way the close button closes it (the question about unsaved work, then the quit). False: it goes straight away, because the work is safe. */
+  quit(ask: boolean): void;
+  /** What is open and where the window is, read as late as possible. */
   state(view: RestartView): RestartState;
   writeState(state: RestartState): void;
   relaunch(execPath: string | null): void;
 }
 
-export type RestartAnswer = { ok: true } | { ok: false; message: string };
+/** `carried`: the unsaved work goes across in the autosave and nothing was asked. False: it asked first (or there was nothing unsaved) and only the saved drawing comes back. */
+export type RestartAnswer = { ok: true; carried: boolean } | { ok: false; message: string };
 
 /** Remembers that a restart was asked for, and does the relaunch only when the app really is quitting. */
 export function createRestarter(deps: RestartDeps) {
   let wanted = false;
+  let written = false;
   let view: RestartView = {};
   return {
-    /** Asks for a restart. Says no, in plain words, when this copy can't open itself again (and then closes nothing). */
-    request(v: RestartView = {}): RestartAnswer {
+    /**
+     * Asks for a restart. `carry` says the unsaved work is already safe in the autosave copy: then nothing is asked, the
+     * state is written now, and the window goes. If that state can't be written, or `carry` is false, it falls back to
+     * asking first (the same question as closing) and the saved drawing comes back. Says no, in plain words, when this
+     * copy can't open itself again (and then closes nothing).
+     */
+    request(v: RestartView = {}, carry = false): RestartAnswer {
       const plan = deps.plan();
       if (!plan.ok) return { ok: false, message: plan.message };
-      wanted = true;
       view = v;
-      deps.quit();
-      return { ok: true };
+      if (carry) {
+        try {
+          deps.writeState({ ...deps.state(v), carry: true });
+          written = true;
+          wanted = true;
+          deps.quit(false);
+          return { ok: true, carried: true };
+        } catch {
+          // Nowhere to put the handover: ask first instead, so nothing is lost.
+        }
+      }
+      wanted = true;
+      deps.quit(true);
+      return { ok: true, carried: false };
     },
     /** The question was answered Cancel, or the save did not work: the restart is off, and a later close is only a close. */
     cancelled(): void {
       wanted = false;
+      written = false;
     },
-    /** The app is quitting for real, and the work is safe. Writes what to come back to, then opens the new copy. */
+    /** The app is quitting for real, and the work is safe. Writes what to come back to (unless it was already written), then opens the new copy. */
     quitting(): void {
       if (!wanted) return;
       wanted = false;
       const plan = deps.plan();
       if (!plan.ok) return;
-      try {
-        deps.writeState(deps.state(view));
-      } catch {
-        // Coming back without the exact spot is better than not coming back.
+      if (!written) {
+        try {
+          deps.writeState(deps.state(view));
+        } catch {
+          // Coming back without the exact spot is better than not coming back.
+        }
       }
+      written = false;
       deps.relaunch(plan.execPath);
     },
     get wanted(): boolean {

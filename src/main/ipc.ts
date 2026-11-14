@@ -41,9 +41,9 @@ export interface IpcHooks {
   closeQuestionShown(id: number): void;
   closeQuestionAnswer(id: number, answer: unknown): void;
   /** Close the way closing does, then open again where the person was (see restart.ts). Says no when this copy can't open itself again. */
-  restart(view: RestartView): RestartAnswer;
-  /** What a restart left for this start: the drawing to open and where the person was in it. Once. */
-  takeRestore(): { file: string | null; view: RestartView } | null;
+  restart(view: RestartView, carry: boolean): RestartAnswer;
+  /** What a restart left for this start: the drawing to open, where the person was in it, and whether unsaved work waits in the autosave. Once. */
+  takeRestore(): { file: string | null; view: RestartView; carry: boolean } | null;
   /** An installer is about to run: just close, so it can work. */
   finishUpdate(): void;
 }
@@ -246,8 +246,10 @@ export function registerIpc(hooks: IpcHooks): void {
   handle('autosave:write', (_e, bytes: Uint8Array, meta: AutosaveMeta) => {
     try {
       writeAutosave(bytes, meta);
+      return true;
     } catch {
-      // A failed autosave is not worth interrupting someone's drawing for.
+      // A failed autosave is not worth interrupting someone's drawing for. (A restart asks, so it can fall back.)
+      return false;
     }
   });
   handle('autosave:read', () => readAutosave());
@@ -266,7 +268,7 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
-  handle('app:restart', (_e, view: unknown) => hooks.restart(cleanView(view)));
+  handle('app:restart', (_e, view: unknown, carry: unknown) => hooks.restart(cleanView(view), carry === true));
   handle('app:restore', () => hooks.takeRestore());
   handle('app:lastCrash', () => hooks.lastCrash());
   handle('app:display', () => {

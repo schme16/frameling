@@ -1249,6 +1249,10 @@ python3 scripts/ab/restart-recent-cut.py dark
 - `recent` saves six starter drawings (each file gets its `preview.png`), strips the picture from one (an older file) and
   deletes another (a file that has gone), then shoots Open recent in both themes, and again in a 800 x 560 window at the
   interface size 200%.
+- `carry` (the default restart): the first half saves a drawing, draws a real unsaved brush stroke with mouse events, runs the
+  Restart command, answers the once-only Undo question, and checks no save question shows. The relaunched copy writes
+  `result.json`: the file, frame and window position as before, `dirty` still true, the same drawing size, and `questionShown`
+  false. `MODE=carry THEME=dark scripts/ab/restart-recent-record.sh /tmp/restart-dark`, then `restart-recent-cut.py dark`.
 - `restart` is two halves of one run: the relaunched copy runs the same script again and tells itself apart by a marker
   file. The first half saves a drawing, moves the window, goes to frame 6, makes an unsaved change and runs the Restart
   command; it presses Save on Quill's question. The second half (after the app really came back) writes `result.json`

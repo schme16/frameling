@@ -110,7 +110,7 @@ const api: FramelingApi = {
     },
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
     getLaunchFile: () => call('app:launchFile'),
-    restart: (view) => call('app:restart', view),
+    restart: (view, carry) => call('app:restart', view, carry === true),
     getRestore: () => call('app:restore'),
     onOpenFile: (handler) => {
       const fn = (_: unknown, path: string) => handler(path);

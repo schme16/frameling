@@ -94,7 +94,7 @@ export function GpuPage({ onGeneral }: { onGeneral: () => void }) {
           {envLocked && <p className="gp-note">FRAMELING_GPU=off is set where Frameling starts, so it draws in software whatever this switch says. Remove it to use the card.</p>}
           {needsRestart && !envLocked && (
             <div className="gp-pending" role="status">
-              <span>{hardwareOn ? 'Hardware drawing is on, from the next start.' : 'Software drawing, from the next start.'} Restart Frameling to use it. It asks about unsaved work first.</span>
+              <span>{hardwareOn ? 'Hardware drawing is on, from the next start.' : 'Software drawing, from the next start.'} Restart Frameling to use it. Your drawing comes back just as it is, unsaved changes and all.</span>
               <button type="button" className="ui-btn ui-btn-small ui-btn-primary" onClick={() => void restartFrameling()}>
                 Restart now
               </button>

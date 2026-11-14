@@ -1,0 +1,29 @@
+{
+  "carry": true,
+  "questionShown": false,
+  "before": {
+    "bounds": {
+      "x": 180,
+      "y": 60,
+      "width": 1200,
+      "height": 800
+    },
+    "file": "/tmp/frameling-rr-work/drawings/Bouncing ball.frameling",
+    "frame": 5,
+    "dirty": true,
+    "drawing": 122978
+  },
+  "after": {
+    "bounds": {
+      "x": 180,
+      "y": 60,
+      "width": 1200,
+      "height": 800
+    },
+    "file": "/tmp/frameling-rr-work/drawings/Bouncing ball.frameling",
+    "frame": 5,
+    "dirty": true,
+    "drawing": 122978
+  },
+  "same": true
+}

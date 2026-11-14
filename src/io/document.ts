@@ -11,6 +11,7 @@ import { notify } from './notify';
 import { askSaveInPage, saveAskAvailable } from './saveAsk';
 import { thumbnailOf } from './thumb';
 import { previewBytes } from './preview';
+import { handoverFits } from '../shared/handover';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
@@ -45,6 +46,28 @@ export async function autosaveNow(): Promise<void> {
     lastDoc = doc;
   } catch {
     // Try again at the next tick; a failed autosave should never get in the way.
+  }
+}
+
+export type Handover = { ok: true } | { ok: false; why: 'big' | 'failed' };
+
+/**
+ * Writes the unsaved work to the autosave copy right now (whatever the clock says), for a restart to carry across, and
+ * says whether it is really there. `big`: too large to hand over as a copy. `failed`: it could not be written.
+ */
+export async function handOverUnsavedWork(): Promise<Handover> {
+  const api = desktop();
+  if (!api) return { ok: false, why: 'failed' };
+  const { ui } = store().get();
+  const doc = store().rootDoc();
+  try {
+    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
+    if (!handoverFits(bytes.length)) return { ok: false, why: 'big' };
+    if ((await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id })) === false) return { ok: false, why: 'failed' };
+    lastDoc = doc;
+    return { ok: true };
+  } catch {
+    return { ok: false, why: 'failed' };
   }
 }
 

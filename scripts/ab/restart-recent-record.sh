@@ -8,7 +8,7 @@ rm -rf "$OUT" /tmp/frameling-rr-work; mkdir -p "$OUT"
 ffmpeg -loglevel error -y -f x11grab -framerate 15 -video_size 1400x900 -i "$DISPLAY" -c:v libx264 -preset veryfast -pix_fmt yuv420p "$OUT/raw.mp4" &
 FF=$!
 date +%s%3N > "$OUT/start.txt"; sleep 1
-RR_THEME=${THEME:-dark} RR_MODE=restart RR_OUT="$OUT" RR_WORK=/tmp/frameling-rr-work npx electron scripts/ab/restart-recent.cjs > "$OUT/log.txt" 2>&1 &
+RR_THEME=${THEME:-dark} RR_MODE=${MODE:-restart} RR_OUT="$OUT" RR_WORK=/tmp/frameling-rr-work npx electron scripts/ab/restart-recent.cjs > "$OUT/log.txt" 2>&1 &
 APP=$!
 for i in $(seq 1 90); do [ -f "$OUT/result.json" ] && break; sleep 1; done
 sleep 4

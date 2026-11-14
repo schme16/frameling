@@ -246,7 +246,8 @@ export interface FramelingApi {
     keepPreview?(path: string, png: Uint8Array): Promise<void>;
   };
   autosave: {
-    write(bytes: Uint8Array, meta: AutosaveMeta): Promise<void>;
+    /** Resolves false when the copy could not be written. */
+    write(bytes: Uint8Array, meta: AutosaveMeta): Promise<boolean | void>;
     read(): Promise<AutosaveInfo | null>;
     clear(): Promise<void>;
     /** Puts the current autosave copy aside for 7 days (replacing an older one for the same drawing). */
@@ -289,13 +290,14 @@ export interface FramelingApi {
     /** The file the app was launched with, once. */
     getLaunchFile(): Promise<string | null>;
     /**
-     * Restart: closes the way closing does (asking about unsaved work first), then opens again with the drawing and the
-     * window as they were. `view` is where the person is in the drawing. Says no, in plain words, when this copy can't open
+     * Restart: closes and opens again with the drawing and the window as they were. `view` is where the person is in the
+     * drawing. `carry` says the unsaved work is already safe in the autosave copy: then nothing is asked and it comes back
+     * still unsaved. Without it, it closes the way closing does (asking about unsaved work first). Says no, in plain words, when this copy can't open
      * itself again; then nothing is closed. Use `restartFrameling()` in src/io/restart.ts, not this.
      */
-    restart(view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number }): Promise<{ ok: true } | { ok: false; message: string }>;
+    restart(view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number; hadUndo?: boolean }, carry?: boolean): Promise<{ ok: true; carried: boolean } | { ok: false; message: string }>;
     /** What a restart left for this start (the drawing and where the person was in it), once. Null on an ordinary start. */
-    getRestore(): Promise<{ file: string | null; view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number } } | null>;
+    getRestore(): Promise<{ file: string | null; view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number; hadUndo?: boolean }; carry?: boolean } | null>;
     /** Called when a `.frameling` file is opened while the app is already running. Returns an unsubscribe function. */
     onOpenFile(handler: (path: string) => void): () => void;
     /** Called when the window is closing with unsaved changes and they chose Save. Resolve true once saved, false to stay open. */

@@ -8,7 +8,7 @@ import { loadFileAsync } from './file';
 import { notify } from './notify';
 import { closeSheet, overlays } from '../ui/overlays';
 import { recovery, restorePending } from './recovery';
-import { applyRestoredView } from './restart';
+import { bringBack } from './restart';
 
 export { autosaveNow };
 
@@ -86,8 +86,12 @@ export function startFileServices(): void {
     const file = await api.app.getLaunchFile();
     // A restart left word of where you were: open that drawing again, then go back to the same frame and view.
     const restore = await api.app.getRestore?.().catch(() => null);
+    if (restore) {
+      // Unsaved work that came across is open again, still unsaved, so there is nothing to offer back.
+      if (!(await bringBack(restore))) await offerRecovery();
+      return;
+    }
     if (file) await openPath(file);
-    if (restore && file && restore.file === file && store().get().ui.filePath === file) applyRestoredView(restore.view);
     await offerRecovery();
   })();
 }

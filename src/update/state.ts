@@ -72,7 +72,7 @@ export function openReleasePage(): void {
   offer.set(null);
 }
 
-/** The new copy is in: restart into it (the same restart as everywhere, so it asks about unsaved work and comes back to your drawing), or close so the installer can run. */
+/** The new copy is in: restart into it (the same restart as everywhere: your drawing comes back as it is, unsaved changes and all), or close so the installer can run. */
 export function finishUpdate(): void {
   const o = offer.get();
   if (o?.phase.kind === 'ready' && o.phase.next === 'restart') void restartFrameling();

@@ -4,19 +4,27 @@
 import { describe, expect, it } from 'vitest';
 import { closeStep } from '../../src/main/closeQuestion';
 import { cleanView, createRestarter, fitWindow, readState, relaunchPlan, STATE_MAX_AGE_MS, type RelaunchFacts, type RestartState } from '../../src/main/restart';
+import { handoverFits, MAX_HANDOVER_BYTES } from '../../src/shared/handover';
 import type { SaveChoice } from '../../src/shared/saveQuestion';
 
 const facts = (o: Partial<RelaunchFacts> = {}): RelaunchFacts => ({ platform: 'linux', packaged: true, appImage: '', portableFile: '', exists: () => true, ...o });
 
 /** The desktop side with a pretend window: quitting asks the question like the close button does, saves, then quits for real. */
-function rig(o: { dirty?: boolean; answer?: SaveChoice; saveWorks?: boolean; facts?: Partial<RelaunchFacts> } = {}) {
+function rig(o: { dirty?: boolean; answer?: SaveChoice; saveWorks?: boolean; facts?: Partial<RelaunchFacts>; stateWorks?: boolean } = {}) {
   const log: string[] = [];
   const written: RestartState[] = [];
   const dirty = o.dirty ?? true;
   const r = createRestarter({
     plan: () => relaunchPlan(facts(o.facts)),
-    quit: () => {
-      log.push('quit asked');
+    quit: (ask) => {
+      log.push(ask ? 'quit asked' : 'quit, not asking');
+      if (!ask) {
+        // Work that is safe goes straight away: no question, no save.
+        log.push('window closed');
+        r.quitting();
+        log.push('quit');
+        return;
+      }
       void (async () => {
         if (dirty) {
           log.push('question');
@@ -34,6 +42,7 @@ function rig(o: { dirty?: boolean; answer?: SaveChoice; saveWorks?: boolean; fac
     },
     state: (view) => ({ at: 1000, file: '/art/walk.frameling', view, window: null }),
     writeState: (s) => {
+      if (o.stateWorks === false && s.carry) throw new Error('disk full');
       log.push('state written');
       written.push(s);
     },
@@ -45,7 +54,7 @@ function rig(o: { dirty?: boolean; answer?: SaveChoice; saveWorks?: boolean; fac
 describe('save first, then relaunch', () => {
   it('asks, saves, closes, then writes where to come back to and relaunches, in that order', async () => {
     const t = rig();
-    expect(t.r.request({ frame: 7 })).toEqual({ ok: true });
+    expect(t.r.request({ frame: 7 })).toEqual({ ok: true, carried: false });
     await t.settle();
     expect(t.log).toEqual(['quit asked', 'question', 'save', 'window closed', 'state written', 'relaunch itself', 'quit']);
     expect(t.written[0].view).toEqual({ frame: 7 });
@@ -161,5 +170,64 @@ describe('what comes back', () => {
     expect(fitWindow({ ...place, x: 4000 }, screens)).toEqual({ width: 1200, height: 800 });
     expect(fitWindow({ ...place, x: 4000 }, [...screens, { x: 3840, y: 0, width: 1920, height: 1080 }])).toEqual({ x: 4000, y: 80, width: 1200, height: 800 });
     expect(fitWindow({ ...place, width: 100, height: 100 }, screens)).toMatchObject({ width: 800, height: 560 });
+  });
+});
+
+describe('carrying unsaved work across', () => {
+  it('asks nothing: the state is written first, then the window goes, then it opens again', async () => {
+    const t = rig({ answer: 'cancel' });
+    expect(t.r.request({ frame: 3, hadUndo: true }, true)).toEqual({ ok: true, carried: true });
+    await t.settle();
+    expect(t.log).toEqual(['state written', 'quit, not asking', 'window closed', 'relaunch itself', 'quit']);
+    expect(t.log).not.toContain('question');
+    expect(t.log).not.toContain('save');
+    expect(t.written[0]).toMatchObject({ carry: true, file: '/art/walk.frameling', view: { frame: 3, hadUndo: true } });
+    // Written once: the state from before the quit is the one handed over.
+    expect(t.written.length).toBe(1);
+  });
+
+  it('falls back to asking first when the handover cannot be written, and says it did not carry', async () => {
+    const t = rig({ stateWorks: false });
+    expect(t.r.request({}, true)).toEqual({ ok: true, carried: false });
+    await t.settle();
+    expect(t.log.slice(0, 3)).toEqual(['quit asked', 'question', 'save']);
+    expect(t.written.every((w) => !w.carry)).toBe(true);
+    expect(t.log).toContain('relaunch itself');
+  });
+
+  it('falling back still honours Cancel', async () => {
+    const t = rig({ stateWorks: false, answer: 'cancel' });
+    t.r.request({}, true);
+    await t.settle();
+    expect(t.log).not.toContain('relaunch itself');
+  });
+
+  it('nothing to carry (no carry asked) is the ordinary restart', async () => {
+    const t = rig({ dirty: false });
+    expect(t.r.request({})).toEqual({ ok: true, carried: false });
+    await t.settle();
+    expect(t.written[0].carry).toBeUndefined();
+  });
+
+  it('cannot-relaunch still closes nothing and writes nothing, even with work to carry', async () => {
+    const t = rig({ facts: { platform: 'linux', appImage: '/a.AppImage', exists: () => false } });
+    expect(t.r.request({}, true).ok).toBe(false);
+    await t.settle();
+    expect(t.log).toEqual([]);
+    expect(t.written).toEqual([]);
+  });
+
+  it('a state file says whether work is carried, and drops anything but true', () => {
+    expect(readState({ at: 5, file: null, carry: true }, 6)?.carry).toBe(true);
+    expect(readState({ at: 5, file: null, carry: 'yes' }, 6)?.carry).toBeUndefined();
+    expect(cleanView({ hadUndo: true, frame: 1 })).toEqual({ frame: 1, hadUndo: true });
+    expect(cleanView({ hadUndo: 'x' })).toEqual({});
+  });
+
+  it('the size limit is a plain yes or no', () => {
+    expect(handoverFits(5_000_000)).toBe(true);
+    expect(handoverFits(MAX_HANDOVER_BYTES + 1)).toBe(false);
+    expect(handoverFits(0)).toBe(false);
+    expect(handoverFits(NaN)).toBe(false);
   });
 });
