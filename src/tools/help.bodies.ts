@@ -106,7 +106,7 @@ On a pixel layer these pick and move pixels, and **Ctrl+Shift+I** inverts the se
 
 Pasting onto a different frame puts them in exactly the same place, which is handy for reusing a pose. Pasting onto the same frame puts the copy a little to the side. The pasted shapes are selected, ready to move.
 
-Copy and paste works between frames and layers of the same kind, inside Frameling. On a pixel layer it copies the selected pixels: see [Selecting pixels](help:pixel-select).`,
+Copy and paste works between frames and layers, and with other apps too: Ctrl+C also puts a picture on the computer's clipboard, and Ctrl+V pastes a picture copied anywhere. See [Copy and paste with other apps](help:clipboard-system). On a pixel layer it copies the selected pixels: see [Selecting pixels](help:pixel-select).`,
   'duplicate-delete': `- **Ctrl+D** duplicates the selection. The copy appears just beside it and is selected.
 - **Delete** (or **Backspace**) removes the selection.
 

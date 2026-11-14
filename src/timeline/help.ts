@@ -39,6 +39,15 @@ registerHelpTopics([
     keywords: ['key', 'keyframe', 'hold', 'exposure', 'ones', 'twos', 'threes', 'on twos', 'duplicate', 'insert', 'remove frame', 'flipbook', 'carry on', 'until next', 'blank gap'],
   },
   {
+    id: 'timeline-copy-keys',
+    order: 2.2,
+    title: 'Copying frames and keys',
+    section: 'Animating',
+    media: 'timeline-copy-keys.mp4',
+    summary: 'Copy drawings on the timeline and paste them later in time, or on another layer: repeat a walk cycle, put a blink at both ends.',
+    keywords: ['copy', 'paste', 'cut', 'frames', 'keys', 'keyframes', 'repeat', 'walk cycle', 'duplicate frames', 'another layer', 'paste in place', 'clipboard'],
+  },
+  {
     id: 'timeline-tidy-end',
     order: 2.1,
     title: 'Tidy the end: empty frames after your last drawing',

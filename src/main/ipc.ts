@@ -9,6 +9,7 @@ import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { registerBetaIpc } from './beta';
 import { registerGpuIpc } from './gpu';
+import { registerClipboardIpc } from './clipboard';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
@@ -287,6 +288,7 @@ export function registerIpc(hooks: IpcHooks): void {
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
   registerGpuIpc(handle, hooks.restart);
+  registerClipboardIpc(handle);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

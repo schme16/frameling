@@ -5,7 +5,7 @@
 //
 // The renderer defaults to dist/renderer. Pass --renderer to point at a private `vite build --outDir` so a
 // capture never races someone else's build. The steps file is a JSON array:
-//   {"eval": "js"}  {"log": "js"} (prints the result)  {"wait": ms}  {"click": [x, y]}  {"key": "g", "mods": ["control"]}
+//   {"eval": "js"}  {"log": "js"} (prints the result)  {"wait": ms}  {"click": [x, y], "mods": ["shift"]}  {"key": "g", "mods": ["control"]}
 //   {"down": [x, y]} {"held": [x, y]} {"up": [x, y]}      press, move with the button held, release (for a shot mid-drag)
 //   {"drag": [[x, y], ...], "steps": 6, "delay": 8, "mods": ["shift"]}   delay is the ms between mouse moves, so slow
 //                                                       strokes look drawn; mods are held down through the drag

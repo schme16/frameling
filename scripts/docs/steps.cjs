@@ -124,9 +124,11 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       const [x, y] = s.click;
       send({ type: 'mouseMove', x, y });
       await sleep(s.pause ?? 0);
-      send({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+      // `mods` holds keys through the click (a Shift+click that picks one more key).
+      const modifiers = s.mods ?? [];
+      send({ type: 'mouseDown', x, y, button: 'left', clickCount: 1, modifiers });
       await sleep(30);
-      send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+      send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1, modifiers });
       await sleep(s.after ?? 80);
     } else if (s.dblclick) {
       // Two quick presses at one spot, the second counted as a double-click.

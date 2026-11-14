@@ -63,12 +63,13 @@ What's in `test/`, by folder:
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
 | `rig/` | Bone maths, posing, caches, stretch, weights. |
 | `select/` | Pixel selection, masks, vector lasso. |
+| `clipboard/` | Copy and paste with other apps: which paste it is, where a picture lands and how big, shrinking, hard edges, the words said, the picture symbol (`plan.test.ts`, `picture-symbol.test.ts`), and pixels pasted on a vector layer through the real commands (`paste-across.test.ts`). Anything that needs a canvas or the real clipboard is in `scripts/e2e/clipboard.cjs`. |
 | `symbols/` | Motions and symbol and shape ops. |
 | `templates/` | Every starter template builds; community templates; setup. |
 | `text/` | Text layout and animators. |
 | `aseprite/` | The Aseprite reader and importer: `writer.ts` writes .aseprite files chunk by chunk (every colour depth, cel type, palette chunk, tags, slices, user data, tilesets) and `import.test.ts` checks every pixel of the imported frames. `aseprite-bin.test.ts` needs `ASEPRITE_BIN`. |
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
-| `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
+| `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. Copying keys: `frame-clip.test.ts` (the pure copy and paste: holds, new drawings, making room or covering, several layers, vector and pixel across kinds) and `frame-clip-commands.test.ts` (on the store, as one undo step). |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
 | `nudge/` | The empty-page line and Quill's tip after the first drawing: when each shows, when it goes, when it stays quiet (Show Quill off, choice off, harness, playing, mid stroke), the three-times cap, Not now being remembered. Under `?debug` both stay quiet so existing pictures are unchanged; a capture turns them on with `window.__framelingAsk = true`. |
 | `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
@@ -189,6 +190,20 @@ the pasteboard (no stale stage-coloured rectangle). Needs `npm run build` first.
 
 ```
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboard-drag.cjs
+```
+
+## Copy and paste with other apps: scripts/e2e/clipboard.cjs
+
+Starts the real main process and uses the real system clipboard. A picture is put there the way another app would
+(a screenshot-like PNG), Ctrl+V is pressed in the window and the drawing is read back: onto a vector layer (a picture
+of pixels in the middle, at its own size), onto a pixel layer (lifted pixels), one bigger than the page (shrunk, then
+Change to cut the edges), and onto a locked palette. The other way, Ctrl+C is pressed and the clipboard is read (twice
+the page size, see-through corner, solid middle), then Copy as SVG, Paste after Copy (Frameling's own shapes, not the
+picture), and shapes to pixels and pixels to a picture with the words each says. Needs `npm run build` first.
+`--stills <dir>` also saves a cropped picture of each, in both themes.
+
+```
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/clipboard.cjs [outDir] [--stills <dir>]
 ```
 
 ## Export end to end: scripts/e2e/export.cjs

@@ -81,6 +81,7 @@ const api: FramelingApi = {
     cancel: (id) => call('video:cancel', id),
   },
   beta: { request: (req) => call('beta:request', req) },
+  clipboard: { readPicture: () => call('clipboard:readPicture'), writePicture: (png) => call('clipboard:writePicture', png), writeText: (text) => call('clipboard:writeText', text) },
   gpu: { report: () => call('gpu:report'), setHardware: (on) => call('gpu:setHardware', on), restart: () => call('gpu:restart') },
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.

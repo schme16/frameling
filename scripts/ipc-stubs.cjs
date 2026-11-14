@@ -69,6 +69,9 @@ function invokeStubs(library) {
     }),
     'gpu:setHardware': () => ({ ok: true, path: '/home/you/.config/Frameling/gpu-off' }),
     'gpu:restart': () => undefined,
+    'clipboard:readPicture': () => null,
+    'clipboard:writePicture': () => false,
+    'clipboard:writeText': () => false,
   };
 }
 

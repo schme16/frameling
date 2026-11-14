@@ -39,6 +39,8 @@ interface PixelClip {
   height: number;
   pixels: Uint8ClampedArray;
   mask: Mask;
+  /** Page units per art pixel on the layer it came from, so a paste on a vector layer keeps its size. */
+  pixelSize: number;
 }
 let clip: PixelClip | null = null;
 
@@ -53,15 +55,16 @@ export function clearPixelClipboard(): void {
 /** Copies the selected pixels (or the lifted ones, where they are now). */
 export function copyPixels(): boolean {
   const lifted = floatingPixels();
+  const pixelSize = activePixelGrid()?.layer.pixelSize ?? 1;
   if (lifted) {
-    clip = { width: lifted.mask.width, height: lifted.mask.height, pixels: lifted.pixels, mask: lifted.mask };
+    clip = { width: lifted.mask.width, height: lifted.mask.height, pixels: lifted.pixels, mask: lifted.mask, pixelSize };
     return true;
   }
   const m = pixelSelection();
   if (!m) return false;
   const d = activePixelDrawing();
   const pixels = d ? extractPixels(gridPixels(d, m.width, m.height), m) : new Uint8ClampedArray(m.width * m.height * 4);
-  clip = { width: m.width, height: m.height, pixels, mask: m };
+  clip = { width: m.width, height: m.height, pixels, mask: m, pixelSize };
   return true;
 }
 
