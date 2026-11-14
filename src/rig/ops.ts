@@ -9,7 +9,7 @@ import { celAt, findLayer, newVectorDrawing, uid } from '../core/doc';
 import { store } from '../core/store';
 import { currentChoice, type ChoiceDef } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
-import { boneBetween, boneForBox, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
+import { boneBetween, boneForBox, descendants, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
 
 export type NewPoseChoice = 'glide' | 'hold';
@@ -147,25 +147,58 @@ export function moveJoint(rigId: Id, boneId: Id, which: 'base' | 'tip', p: Pt): 
   );
 }
 
-/** Deletes a bone. Its children hang from its parent instead, and layers attached to it move to its parent. */
-export function deleteBone(rigId: Id, boneId: Id): void {
+/**
+ * Deletes a bone. By default its children hang from its parent instead; with `withBranch` the bones hanging from it go
+ * too. Layers attached to a removed bone move to the nearest bone left above it.
+ */
+export function deleteBone(rigId: Id, boneId: Id, withBranch = false): void {
   store().update('Delete bone', (d) => {
     const rig = draftRig(d, rigId)?.rig;
     const b = rig?.bones.find((x) => x.id === boneId);
     if (!rig || !b) return;
-    for (const c of rig.bones) if (c.parent === boneId) c.parent = b.parent ?? null;
-    rig.bones = rig.bones.filter((x) => x.id !== boneId);
+    const byId = new Map(rig.bones.map((x) => [x.id, x]));
+    const gone = withBranch ? descendants(rig as Rig, boneId) : new Set<Id>([boneId]);
+    // The nearest bone above that is staying, or none.
+    const above = (id: Id): Id | null => {
+      let cur = byId.get(id)?.parent ?? null;
+      while (cur && gone.has(cur)) cur = byId.get(cur)?.parent ?? null;
+      return cur;
+    };
+    for (const c of rig.bones) if (!gone.has(c.id) && c.parent && gone.has(c.parent)) c.parent = above(c.parent);
+    rig.bones = rig.bones.filter((x) => !gone.has(x.id));
     for (const l of d.layers) {
       if (l.bind?.rig !== rigId) continue;
       if (l.bind.mesh) l.bind.mesh = skinMesh(rig as Rig, l.bind.mesh);
-      if (l.bind.bone === boneId) {
-        if (b.parent) l.bind.bone = b.parent;
+      if (gone.has(l.bind.bone)) {
+        const up = above(l.bind.bone);
+        if (up) l.bind.bone = up;
         else if (rig.bones[0]) l.bind.bone = rig.bones[0].id;
         else delete l.bind;
       }
     }
-    for (const p of rig.poses ?? []) delete p.pose[boneId];
+    for (const p of rig.poses ?? []) for (const id of gone) delete p.pose[id];
   });
+}
+
+/** What removing a bone that has bones hanging from it does (asked the first time, then remembered). */
+export type RemoveBoneChoice = 'keep' | 'branch';
+
+export const removeBoneChoice: ChoiceDef<RemoveBoneChoice> = {
+  id: 'rig.removeBone',
+  title: 'Removing a bone with bones hanging from it',
+  question: 'The bone you removed had other bones hanging from it (like a forearm from an upper arm). What should happen to those?',
+  options: [
+    { value: 'keep', label: 'Keep them', detail: 'They stay, and hang from the bone above instead. Good for taking one joint out of a chain.', did: 'Removed the bone and kept the ones hanging from it.' },
+    { value: 'branch', label: 'Remove them too', detail: 'The whole branch goes: the bone and everything hanging from it. Good for taking a whole arm away.', did: 'Removed the bone and everything hanging from it.' },
+  ],
+  default: 'keep',
+  category: 'Animating',
+  help: 'rig-bone-tools',
+};
+
+/** The bones hanging straight from a bone. */
+export function childBones(rig: Rig, id: Id): Bone[] {
+  return rig.bones.filter((b) => b.parent === id);
 }
 
 export function renameBone(rigId: Id, boneId: Id, name: string): void {

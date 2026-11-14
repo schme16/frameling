@@ -87,6 +87,31 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="18" cy="6" r="1.6" />
     </>
   ),
+  // The three bone tools: a short bone with a badge for what it does.
+  'bone-add': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M18 3v6M15 6h6" />
+    </>
+  ),
+  'bone-edit': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M15 6h6M16.8 4.2L15 6l1.8 1.8M19.2 4.2L21 6l-1.8 1.8" />
+    </>
+  ),
+  'bone-remove': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M15.5 3.5l5 5M20.5 3.5l-5 5" />
+    </>
+  ),
   pose: (
     <>
       <circle cx="12" cy="4.8" r="2" />

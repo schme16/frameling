@@ -113,3 +113,20 @@
   border-radius: var(--radius-small);
   padding: 3px 6px;
 }
+
+.rg-name-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: inherit;
+  font: inherit;
+  user-select: text;
+}
+.rg-name-input:focus-visible {
+  outline: 2px solid var(--focus, var(--grape));
+  outline-offset: 1px;
+}

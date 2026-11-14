@@ -6,9 +6,9 @@ import { defineFeature } from '../features/feature';
 import './kind';
 import { giveBackDelete, rigCommands, rigPanel, takeOverDelete } from './commands';
 import { rigHelp } from './help';
-import { newPoseChoice } from './ops';
+import { newPoseChoice, removeBoneChoice } from './ops';
 import { setRigUi } from './state';
-import { boneTool, poseTool } from './tools';
+import { boneEditTool, boneRemoveTool, boneTool, poseTool } from './tools';
 import { weightsTool } from './weightsTool';
 import { layerOf, toolIs } from '../ui/panelInfo';
 import { eachLayer } from '../core/scan';
@@ -20,16 +20,16 @@ export const rigFeature = defineFeature({
   optional: true,
   commands: rigCommands,
   panels: [rigPanel],
-  tools: [boneTool, poseTool, weightsTool],
+  tools: [boneTool, boneEditTool, boneRemoveTool, poseTool, weightsTool],
   help: rigHelp,
-  choices: [newPoseChoice],
+  choices: [newPoseChoice, removeBoneChoice],
   templates: ['puppet'],
   sections: {
     rig: {
       blurb: 'Bones for puppet animation: build a skeleton, attach drawings and pose it.',
       group: 'properties',
       section: true,
-      relevant: (s) => toolIs('bone', 'pose', 'weights')(s) || !!(layerOf(s) as { rig?: unknown } | undefined)?.rig,
+      relevant: (s) => toolIs('bone', 'bone-edit', 'bone-remove', 'pose', 'weights')(s) || !!(layerOf(s) as { rig?: unknown } | undefined)?.rig,
       idle: 'Pick the Bone tool',
       keywords: ['bones', 'skeleton', 'puppet', 'pose'],
     },
