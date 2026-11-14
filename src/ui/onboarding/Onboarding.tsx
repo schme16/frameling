@@ -1,7 +1,7 @@
 // Quill's first-run hello: who he is, what Frameling is for, what you'd like to make, your colours, a few settings,
 // then a name for your first animation and off you go. Every step can be skipped. The steps live in flow.ts.
 import { isFirstRun, markFirstRun } from './state';
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { getHelp } from '../../core/registry';
 import { store } from '../../core/store';
 import { askAboutUnsavedChanges } from '../../io/document';
@@ -12,7 +12,7 @@ import { playCue } from '../sounds';
 import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
 import { Modal } from '../Modal';
 import { closeOnboarding, openHelp, openSheet, overlays } from '../overlays';
-import { getPrefs, setPrefs, setThemePreview, usePrefs, type LookPref, type ThemePref } from '../prefs';
+import { effectiveTheme, getPrefs, setPrefs, setThemePreview, usePrefs, type LookPref, type ThemePref } from '../prefs';
 import { Segmented, Switch } from '../PrefsModal';
 import { getQuest, questProgress, startQuest } from '../quests';
 import { BUILT_IN_THEMES, type Theme } from '../themes/builtIn';
@@ -42,23 +42,46 @@ const TITLES: Record<StepId, string> = {
   done: 'All set!',
 };
 
-/** True in a short window (about 760 px or less), where Quill and his bubbles are drawn smaller so they all fit. */
-function useShortWindow(): boolean {
-  const query = '(max-height: 760px)';
-  const ask = () => (typeof window.matchMedia === 'function' ? window.matchMedia(query) : null);
-  const [short, setShort] = useState(() => !!ask()?.matches);
+/**
+ * How big Quill is, and whether his bubbles are tighter, from roomiest to tightest. The sheet picks the first one in
+ * which everything on his side fits, so the bubbles are never cut off and never scroll. `q` 0 means no picture of him,
+ * the last resort in a very short window (his words stay).
+ */
+export const FIT_LEVELS = [
+  { q: 192, tight: false },
+  { q: 168, tight: false },
+  { q: 168, tight: true },
+  { q: 140, tight: true },
+  { q: 116, tight: true },
+  { q: 96, tight: true },
+  { q: 0, tight: true },
+] as const;
+
+/** Picks the first FIT_LEVELS entry that fits Quill's side, re-checking whenever the words or the window change. */
+function useQuillFit(side: React.RefObject<HTMLElement | null>, key: string): number {
+  const [size, setSize] = useState(() => `${window.innerWidth}x${window.innerHeight}`);
   useEffect(() => {
-    const m = ask();
-    if (!m) return;
-    const on = () => setShort(m.matches);
-    m.addEventListener('change', on);
-    return () => m.removeEventListener('change', on);
+    const on = () => setSize(`${window.innerWidth}x${window.innerHeight}`);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
   }, []);
-  return short;
+  const fitKey = `${key}|${size}`;
+  const [tried, setTried] = useState({ key: '', level: 0 });
+  const level = tried.key === fitKey ? tried.level : 0;
+  useLayoutEffect(() => {
+    const el = side.current;
+    if (!el) return;
+    const css = getComputedStyle(el);
+    const bubbles = el.querySelector<HTMLElement>('.ob-bubbles');
+    const stand = el.querySelector<HTMLElement>('.ob-quill-stand');
+    const used = parseFloat(css.paddingTop) + parseFloat(css.paddingBottom) + (bubbles?.offsetHeight ?? 0) + (stand ? stand.offsetHeight + parseFloat(css.rowGap || '0') : 0);
+    if (used > el.clientHeight + 1 && level < FIT_LEVELS.length - 1) setTried({ key: fitKey, level: level + 1 });
+    else if (tried.key !== fitKey) setTried({ key: fitKey, level });
+  }, [fitKey, level, tried.key, side]);
+  return level;
 }
 
 function Flow() {
-  const short = useShortWindow();
   const [s, dispatch] = useReducer(reduceFlow, undefined, () => startFlow(sillyName()));
   // Show Quill switched on the settings step: a sad goodbye (he stays on screen until it's done), or a cheer.
   const [mood, setMood] = useState<{ kind: 'bye' | 'back'; n: number; playing: boolean } | null>(null);
@@ -175,13 +198,16 @@ function Flow() {
         ? [...lines('onboarding.doze.woke'), ...say]
         : say;
 
+  const sideRef = useRef<HTMLElement>(null);
+  const quillFit = useQuillFit(sideRef, `${s.step}|${dozing}|${mood?.n ?? 0}|${quill}|${words.join('\n')}`);
   const i = stepIndex(s.step);
   const last = s.step === 'done';
+  const fit = FIT_LEVELS[quillFit];
 
   return (
     <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className="ob ob-a" onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
-        <aside className={`ob-quill${quill ? '' : ' is-alone'}${short ? ' is-short' : ''}`}>
+        <aside ref={sideRef} className={`ob-quill${quill && fit.q ? '' : ' is-alone'}${fit.tight ? ' is-tight' : ''}`}>
           <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}-${mood?.n ?? 0}`}>
             {words.map((w, n) => (
               <p key={n} className="ob-bubble" style={{ animationDelay: `${n * 450}ms` }}>
@@ -189,15 +215,15 @@ function Flow() {
               </p>
             ))}
           </div>
-          {quill && (
-            <div className="ob-quill-stand">
+          {quill && fit.q > 0 && (
+            <div className="ob-quill-stand" style={{ minHeight: fit.q }}>
               <Quill
                 anim={anim}
-                size={short ? 156 : 192}
+                size={fit.q}
                 force={byePlaying}
                 onDone={byePlaying ? () => setMood((m) => m && { ...m, playing: false }) : undefined}
               />
-              {lovesIt && s.step === 'themes' && <Berry />}
+              {lovesIt && s.step === 'themes' && <Berry size={fit.q} />}
             </div>
           )}
         </aside>
@@ -296,9 +322,9 @@ function animFor(s: FlowState, lovesIt: boolean, beat: number): Script {
 }
 
 /** A little strawberry that pops up beside Quill when you pick his favourite. */
-function Berry() {
+function Berry({ size }: { size: number }) {
   return (
-    <svg className="ob-berry" viewBox="0 0 32 32" width="40" height="40" aria-hidden="true">
+    <svg className="ob-berry" viewBox="0 0 32 32" width="40" height="40" aria-hidden="true" style={{ left: Math.round(size * 0.92), bottom: Math.round(size * 0.5) }}>
       <path d="M16 9c6 0 11 2 11 7 0 6-6 13-11 13S5 22 5 16c0-5 5-7 11-7z" fill="#e8364f" stroke="#7a1426" strokeWidth="1.5" />
       <path d="M16 10l-4-6 4 3 4-3z M10 9l6 1 6-1-3 3h-6z" fill="#3fae5a" stroke="#1d5e2c" strokeWidth="1" strokeLinejoin="round" />
       {[
@@ -371,7 +397,7 @@ function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[numb
         {INTERESTS.filter((x) => interestAvailable(x.id)).map((x, n) => {
           const on = s.interests.includes(x.id);
           return (
-            <button key={x.id} type="button" aria-pressed={on} className={`ob-card${on ? ' is-chosen' : ''}`} style={{ animationDelay: `${n * 60}ms` }} onClick={() => toggle(x.id)}>
+            <button key={x.id} type="button" data-wraps aria-pressed={on} className={`ob-card${on ? ' is-chosen' : ''}`} style={{ animationDelay: `${n * 60}ms` }} onClick={() => toggle(x.id)}>
               <span className="ob-card-icon">
                 <Icon name={on ? 'check' : x.icon} size={22} />
               </span>
@@ -388,66 +414,72 @@ function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[numb
 
 function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: Theme | null; light: Theme | null } }) {
   const p = usePrefs((x) => x);
+  // With Auto, which mode's themes are on show is a choice of its own; with Light or Dark only that mode's are, so the
+  // whole page fits without scrolling.
+  const [looking, setLooking] = useState<'dark' | 'light'>(() => effectiveTheme());
+  const mode = p.theme === 'system' ? looking : p.theme;
   const pick = (t: Theme) => {
     setPrefs(t.mode === 'dark' ? { darkTheme: t.id } : { lightTheme: t.id });
     // Show it straight away, even when the mode would show the other one.
     setThemePreview(t);
   };
-  const row = (mode: 'dark' | 'light') => {
-    const chosen = mode === 'dark' ? p.darkTheme : p.lightTheme;
-    // With Light or Dark picked, the other row isn't used, so it steps back (still pickable for later).
-    const unused = p.theme !== 'system' && p.theme !== mode;
-    return (
-      <div className={`ob-theme-row${unused ? ' is-unused' : ''}`}>
-        <h3>
-          <Icon name={mode === 'dark' ? 'moon' : 'sun'} size={14} />
-          {mode === 'dark' ? 'For dark mode' : 'For light mode'}
-        </h3>
-        <div className="ob-themes" role="radiogroup" aria-label={mode === 'dark' ? 'Dark theme' : 'Light theme'}>
-          {themes
-            .filter((t) => t.mode === mode)
-            .map((t) => {
-              const fav = strawberry[mode]?.id === t.id;
-              return (
-                <button key={t.id} type="button" role="radio" aria-checked={chosen === t.id} className={`ob-theme${chosen === t.id ? ' is-chosen' : ''}${fav ? ' is-fav' : ''}`} title={t.description} onClick={() => pick(t)}>
-                  <ThemePreview theme={t} />
-                  <span className="ob-theme-name">
-                    {t.name}
-                    {fav && (
-                      <span className="ob-fav">
-                        <Icon name="heart" size={11} />
-                        {line('onboarding.themes.favourite')}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-        </div>
-      </div>
-    );
-  };
+  const chosen = mode === 'dark' ? p.darkTheme : p.lightTheme;
   return (
     <>
       <div className="ob-mode">
-        <h3>Light or dark?</h3>
-        <p>{p.theme === 'system' ? 'Auto follows your computer: light in the day, dark at night if it switches.' : p.theme === 'dark' ? 'Always dark, whatever your computer does.' : 'Always light, whatever your computer does.'}</p>
-        <Segmented<ThemePref>
-          label="Light or dark"
-          value={p.theme}
-          onChange={(theme) => {
-            setThemePreview(null);
-            setPrefs({ theme });
-          }}
-          options={[
-            { id: 'system', label: 'Auto', icon: 'settings' },
-            { id: 'dark', label: 'Dark', icon: 'moon' },
-            { id: 'light', label: 'Light', icon: 'sun' },
-          ]}
-        />
+        <div className="ob-mode-head">
+          <div>
+            <h3>Light or dark?</h3>
+            <p>{p.theme === 'system' ? 'Auto follows your computer: light in the day, dark at night if it switches.' : p.theme === 'dark' ? 'Always dark, whatever your computer does.' : 'Always light, whatever your computer does.'}</p>
+          </div>
+          <Segmented<ThemePref>
+            label="Light or dark"
+            value={p.theme}
+            onChange={(theme) => {
+              setThemePreview(null);
+              setPrefs({ theme });
+            }}
+            options={[
+              { id: 'system', label: 'Auto', icon: 'settings' },
+              { id: 'dark', label: 'Dark', icon: 'moon' },
+              { id: 'light', label: 'Light', icon: 'sun' },
+            ]}
+          />
+        </div>
       </div>
-      {row('dark')}
-      {row('light')}
+      {p.theme === 'system' && (
+        <div className="ob-looking">
+          <span>Pick the theme for</span>
+          <Segmented<'dark' | 'light'>
+            label="Which mode to pick a theme for"
+            value={looking}
+            onChange={setLooking}
+            options={[
+              { id: 'dark', label: 'Dark mode', icon: 'moon' },
+              { id: 'light', label: 'Light mode', icon: 'sun' },
+            ]}
+          />
+        </div>
+      )}
+      <div className="ob-themes" role="radiogroup" aria-label={mode === 'dark' ? 'Dark theme' : 'Light theme'}>
+        {themes
+          .filter((t) => t.mode === mode)
+          .map((t) => {
+            const fav = strawberry[mode]?.id === t.id;
+            return (
+              <button key={t.id} type="button" role="radio" data-wraps aria-checked={chosen === t.id} className={`ob-theme${chosen === t.id ? ' is-chosen' : ''}${fav ? ' is-fav' : ''}`} title={t.description} onClick={() => pick(t)}>
+                <ThemePreview theme={t} />
+                {fav && (
+                  <span className="ob-fav" title={line('onboarding.themes.favourite')}>
+                    <Icon name="heart" size={11} />
+                    <span className="ui-sr-only">{line('onboarding.themes.favourite')}</span>
+                  </span>
+                )}
+                <span className="ob-theme-name">{t.name}</span>
+              </button>
+            );
+          })}
+      </div>
     </>
   );
 }
@@ -559,7 +591,7 @@ function Done({ s, plan, tuck, setName, setTuck, go }: { s: FlowState; plan: Ret
       )}
       <div className="ob-go-list">
         {quest && (
-          <button type="button" className="ob-go is-main" onClick={() => go('quest')}>
+          <button type="button" data-wraps className="ob-go is-main" onClick={() => go('quest')}>
             <span className="ob-card-icon">
               <Icon name={quest.icon} size={24} />
             </span>
@@ -568,7 +600,7 @@ function Done({ s, plan, tuck, setName, setTuck, go }: { s: FlowState; plan: Ret
           </button>
         )}
         {templateName && (
-          <button type="button" className="ob-go" onClick={() => go('template')}>
+          <button type="button" data-wraps className="ob-go" onClick={() => go('template')}>
             <span className="ob-card-icon">
               <Icon name="film" size={24} />
             </span>
@@ -576,7 +608,7 @@ function Done({ s, plan, tuck, setName, setTuck, go }: { s: FlowState; plan: Ret
             <span>{line('onboarding.done.example', { example: templateName })}</span>
           </button>
         )}
-        <button type="button" className="ob-go" onClick={() => go('blank')}>
+        <button type="button" data-wraps className="ob-go" onClick={() => go('blank')}>
           <span className="ob-card-icon">
             <Icon name="brush" size={24} />
           </span>

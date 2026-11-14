@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 // The first-run hello is five steps. Page one is a plain list (nothing on it looks clickable but isn't), the settings
 // page holds only what can be judged before a mark has been made, and the name is asked on the last page.
+import fs from 'node:fs';
+import path from 'node:path';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { reduceFlow, startFlow, STEPS } from '../../src/ui/onboarding/flow';
-import { OnboardingSheet } from '../../src/ui/onboarding/Onboarding';
+import { FIT_LEVELS, OnboardingSheet } from '../../src/ui/onboarding/Onboarding';
 import { closeOnboarding, openOnboarding } from '../../src/ui/overlays';
 import { resetPrefs } from '../../src/ui/prefs';
 import '../../src/renderer/features';
@@ -78,14 +80,41 @@ describe('the hello is short', () => {
     expect(bubbles.length).toBe(4);
   });
 
-  it('uses a smaller Quill and tighter bubbles in a short window, so six bubbles fit', async () => {
-    expect(document.querySelector('.ob-quill')!.classList.contains('is-short')).toBe(false);
-    act(() => root.unmount());
-    const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ matches: q.includes('max-height'), media: q, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
-    root = createRoot(host);
-    await act(async () => root.render(<OnboardingSheet />));
-    expect(document.querySelector('.ob-quill')!.classList.contains('is-short')).toBe(true);
-    window.matchMedia = real;
+  it('shrinks Quill and tightens the bubbles to fit, in steps, and never scrolls the bubbles', () => {
+    const sizes = FIT_LEVELS.map((l) => l.q);
+    expect(sizes).toEqual([...sizes].sort((a, b) => b - a));
+    expect(sizes[0]).toBe(192);
+    // The last resort is no picture of him, so his words still fit.
+    expect(sizes[sizes.length - 1]).toBe(0);
+    const css = fs.readFileSync(path.join(__dirname, '../../src/ui/onboarding/onboarding.css'), 'utf8');
+    const block = (sel: string) => css.slice(css.indexOf(`${sel} {`), css.indexOf('}', css.indexOf(`${sel} {`)));
+    expect(block('.ob-bubbles')).not.toMatch(/overflow/);
+    expect(block('.ob-quill')).toMatch(/overflow: hidden/);
+  });
+
+  it('lets the words of every card wrap, so a sentence never runs out of its card', async () => {
+    await next();
+    const cards = [...document.querySelectorAll('.ob-card')];
+    expect(cards.length).toBeGreaterThan(3);
+    for (const c of cards) expect(c.hasAttribute('data-wraps')).toBe(true);
+    await next();
+    await next();
+    await next();
+    for (const c of document.querySelectorAll('.ob-go')) expect(c.hasAttribute('data-wraps')).toBe(true);
+  });
+
+  it('shows one mode of themes at a time, so the colours page fits without scrolling', async () => {
+    await next();
+    await next();
+    const modes = (document.querySelectorAll('.ob-themes .ob-theme').length);
+    expect(modes).toBeGreaterThan(5);
+    expect(document.querySelectorAll('.ob-themes')).toHaveLength(1);
+    // Auto shows which mode to pick for; Dark or Light has no need to.
+    const seg = (label: string) => [...document.querySelectorAll<HTMLElement>('.ob-mode .ui-seg')].find((b) => b.textContent?.includes(label))!;
+    await click(seg('Auto'));
+    expect(document.querySelector('.ob-looking')).toBeTruthy();
+    await click(seg('Dark'));
+    expect(document.querySelector('.ob-looking')).toBeNull();
+    for (const t of document.querySelectorAll('.ob-theme')) expect(t.hasAttribute('data-wraps')).toBe(true);
   });
 });

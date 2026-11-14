@@ -42,10 +42,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* If it is ever too tall for the window it scrolls, instead of being cut off at the top. */
-  min-height: 0;
-  overflow-y: auto;
-  /* Room for the little tail under the last bubble, so it does not count as overflow. */
+  /* Never scrolls: the sheet picks a smaller Quill and tighter bubbles until they all fit (Onboarding.tsx, FIT_LEVELS). */
+  flex: none;
+  /* Room for the little tail under the last bubble. */
   padding-bottom: 9px;
 }
 .ob-bubble {
@@ -143,6 +142,20 @@
   background: var(--raised);
   color: var(--accent);
 }
+/* A tall window has the room: give the list some air. */
+@media (min-height: 800px) {
+  .ob-hello li {
+    padding: 14px 0;
+  }
+  .ob-hello-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .ob-hello li {
+    grid-template-columns: 40px 120px 1fr;
+    font-size: 16px;
+  }
+}
 @media (max-width: 760px) {
   .ob-hello li {
     grid-template-columns: 36px 1fr;
@@ -204,34 +217,25 @@
   color: var(--chosen-fg);
 }
 
-/* Themes. */
-.ob-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.ob-row > span {
-  font-weight: 600;
-}
-.ob-theme-row h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 12px 0 8px;
-  font-size: 14px;
-  color: var(--muted);
-}
+/* Themes: one mode's at a time, small enough that two rows of them and the controls fit in a 720 px window. */
 .ob-themes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 10px;
+  margin-top: 10px;
+}
+/* A tall window has the room for bigger pictures: four across, three down. */
+@media (min-height: 860px) {
+  .ob-themes {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 .ob-theme {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px;
+  gap: 5px;
+  padding: 5px;
   font: inherit;
   color: var(--text);
   text-align: left;
@@ -246,26 +250,34 @@
   border-color: var(--chosen-bg);
 }
 .ob-theme-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  font-size: 13px;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.25;
   font-weight: 600;
 }
 .ob-fav {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 600;
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   background: var(--rose, var(--accent));
   color: #fff;
 }
 .ob-theme.is-fav {
   animation: ob-wiggle 1.4s var(--ease-bounce, ease-out) 0.6s 1;
+}
+.ob-looking {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: var(--fs-small);
 }
 
 /* Settings. */
@@ -292,25 +304,18 @@
   font-size: 13px;
 }
 
-/* A short window (about 720 px high): smaller bubbles and a smaller Quill, so all six bubbles of the hello fit. */
-.ob-quill.is-short {
+/* Tighter bubbles, for when the roomy ones do not fit the window's height. */
+.ob-quill.is-tight {
   gap: 8px;
   padding-top: 16px;
 }
-.ob-quill.is-short .ob-bubbles {
+.ob-quill.is-tight .ob-bubbles {
   gap: 6px;
 }
-.ob-quill.is-short .ob-bubble {
+.ob-quill.is-tight .ob-bubble {
   padding: 6px 12px;
   font-size: 14px;
   line-height: 1.35;
-}
-.ob-quill.is-short .ob-quill-stand {
-  min-height: 156px;
-}
-.ob-quill.is-short .ob-berry {
-  left: 140px;
-  bottom: 80px;
 }
 .ob-more {
   margin-top: 14px;
@@ -485,23 +490,108 @@
   }
 }
 
-/* The Auto / Light / Dark choice leads the theme step. */
-.ob-mode {
-  margin-bottom: 6px;
+/* The Auto / Light / Dark choice leads the theme step: its words on the left, the choice on the right. */
+.ob-mode-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
 }
 .ob-mode h3 {
   margin: 0 0 2px;
   font-size: 14px;
 }
 .ob-mode p {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--muted);
   font-size: var(--fs-small);
 }
-.ob-theme-row.is-unused {
-  opacity: 0.5;
+
+/* A short window (the interface size turned up on a small screen counts as one): tighter pages, so each still fits
+   without scrolling. Same shapes, less air. */
+@media (max-height: 680px) {
+  .ui-modal.ob {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 32px);
+  }
+  .ob-main {
+    padding: 16px 24px 8px;
+  }
+  .ob-title {
+    margin-bottom: 4px;
+    font-size: 22px;
+  }
+  .ob-lead {
+    margin-bottom: 8px;
+  }
+  .ob-hello li {
+    padding: 5px 0;
+  }
+  .ob-cards,
+  .ob-go-list {
+    gap: 8px;
+  }
+  .ob-card,
+  .ob-go {
+    padding: 10px 12px;
+    gap: 2px;
+  }
+  .ob-card-icon {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 0;
+  }
+  .ob-themes {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .ob-theme-name {
+    font-size: 11px;
+  }
+  .ob-looking {
+    margin-top: 6px;
+  }
+  .ob-setting {
+    padding: 6px 0;
+  }
+  .ob-name label {
+    margin: 4px 0;
+  }
+  .ob-name-row input,
+  .ob-dice {
+    height: 36px;
+    font-size: 16px;
+  }
+  .ob-name .ob-lead {
+    margin-top: 6px;
+  }
+  .ob-reads {
+    margin-top: 10px;
+  }
+  .ob-foot {
+    padding: 8px 16px;
+  }
 }
-.ob-theme-row.is-unused:hover,
-.ob-theme-row.is-unused:focus-within {
-  opacity: 1;
+
+/* A very short one (about 520 px high): Quill's side steps aside so the page has the whole width and height. His
+   words are all on the page too, so nothing is lost. */
+@media (max-height: 520px) {
+  .ob-body {
+    grid-template-columns: 1fr;
+  }
+  .ob-quill {
+    display: none;
+  }
+  /* The "rename it any time" hint is the first thing to go when height is this tight. */
+  .ob-name .ob-lead {
+    display: none;
+  }
+  .ob-tuck .ob-setting {
+    padding: 4px 0;
+  }
+  .ob-reads {
+    margin-top: 8px;
+  }
 }
