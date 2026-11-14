@@ -285,6 +285,144 @@ export function makePixelSymbol(doc: Doc, layerId: Id, frame: number, name?: str
   return { symbolId, instanceId: inst.id, layerId };
 }
 
+/** True when a drawing has something in it: pixels painted, or at least one shape. */
+export function drawingHasArt(d: Drawing | undefined): boolean {
+  if (!d) return false;
+  if (d.kind === 'pixel') return d.width > 0 && d.height > 0 && trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0).width > 0;
+  if (d.kind === 'vector') return d.shapes.length > 0 && !d.pose;
+  return false;
+}
+
+/**
+ * The keys a "symbol from the animation" takes. With picked keys it is the stretch from the first one to the end of the
+ * last, with everything the layer has in between (so nothing is left lying under the symbol). With none picked it is
+ * every key on the layer. In time order.
+ */
+export function keysInSpan(layer: Layer, picked?: readonly Id[]): Cel[] {
+  const sorted = [...layer.cels].sort((a, b) => a.start - b.start);
+  const chosen = picked?.length ? sorted.filter((c) => picked.includes(c.id)) : [];
+  if (!chosen.length) return sorted;
+  const lo = chosen[0].start;
+  const hi = Math.max(...chosen.map((c) => c.start + c.length));
+  return sorted.filter((c) => c.start >= lo && c.start < hi);
+}
+
+/** How many of the keys in that span have something drawn (two or more is a real animation). */
+export function framesWithArt(doc: Doc, layer: Layer, picked?: readonly Id[]): number {
+  if (layer.kind !== 'pixel' && layer.kind !== 'vector') return 0;
+  return keysInSpan(layer, picked).filter((c) => drawingHasArt(doc.drawings[c.drawingId])).length;
+}
+
+/**
+ * Turns a pixel or vector layer's whole animation (or the stretch between the picked keys) into one looping symbol, on
+ * a draft. The symbol gets the same drawings with the same timing, so it plays the way the layer did, and one instance
+ * stands in their place on a vector layer, held for the same frames. Nothing moves on screen. Pixel layers work as
+ * `makePixelSymbol` does (trimmed to the painted part, the same pixel size, the instance on the layer or just above
+ * it). Vector layers keep their own layer and the keys outside the stretch. `origin` is the registration point for
+ * vector art (pixel art works it out from every frame, so the symbol turns around the middle of all of them).
+ * Returns undefined when there is nothing to take (or the layer is a bones layer).
+ */
+export function makeFramesSymbol(
+  doc: Doc,
+  layerId: Id,
+  opts: { celIds?: readonly Id[]; name?: string; origin?: { x: number; y: number } } = {},
+): { symbolId: Id; instanceId: Id; layerId: Id; frames: number; length: number } | undefined {
+  const at = doc.layers.findIndex((x) => x.id === layerId);
+  const layer = doc.layers[at];
+  if (!layer || (layer.kind !== 'pixel' && layer.kind !== 'vector') || (layer.kind === 'vector' && layer.rig)) return undefined;
+  const keys = keysInSpan(layer, opts.celIds);
+  if (!keys.length) return undefined;
+  const pixel = layer.kind === 'pixel';
+  const first = keys[0].start;
+  const end = Math.max(...keys.map((c) => c.start + c.length));
+  const inSet = new Set(keys.map((c) => c.id));
+  // A drawing another key (anywhere) shows too is copied rather than moved.
+  const elsewhere = new Set<Id>();
+  for (const list of allLayerLists(doc)) for (const l of list) for (const c of l.cels) if (!inSet.has(c.id)) elsewhere.add(c.drawingId);
+  const inner = new Map<Id, Id | null>();
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  const ps = pixel ? layer.pixelSize : 1;
+  for (const c of keys) {
+    if (inner.has(c.drawingId)) continue;
+    const d = doc.drawings[c.drawingId];
+    if (pixel) {
+      if (d?.kind !== 'pixel' || d.width <= 0 || d.height <= 0) {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      const t = trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0);
+      if (t.width <= 0 || t.height <= 0) {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      x0 = Math.min(x0, t.x);
+      y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x + t.width);
+      y1 = Math.max(y1, t.y + t.height);
+      const id = elsewhere.has(d.id) ? uid('p') : d.id;
+      doc.drawings[id] = { id, kind: 'pixel', ...(t.x ? { x: t.x } : {}), ...(t.y ? { y: t.y } : {}), width: t.width, height: t.height, pixels: new Uint8ClampedArray(t.pixels) };
+      inner.set(d.id, id);
+    } else {
+      if (d?.kind !== 'vector') {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      if (elsewhere.has(d.id)) {
+        const copy: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: plainShapes(d.shapes) };
+        for (const s of copy.shapes) {
+          s.origin = s.origin ?? s.id;
+          s.id = uid('s');
+        }
+        doc.drawings[copy.id] = copy;
+        inner.set(d.id, copy.id);
+      } else inner.set(d.id, d.id);
+    }
+  }
+  const made = keys.filter((c) => inner.get(c.drawingId));
+  if (!made.length || (pixel && !Number.isFinite(x0))) return undefined;
+  const origin = pixel ? { x: ((x0 + x1) / 2) * ps, y: ((y0 + y1) / 2) * ps } : { ...(opts.origin ?? { x: 0, y: 0 }) };
+  const cels: Cel[] = made.map((c) => {
+    const next = keys.find((k) => k.start === c.start + c.length);
+    return {
+      id: uid('c'),
+      start: c.start - first,
+      length: c.length,
+      drawingId: inner.get(c.drawingId)!,
+      ...(c.tween && next && inner.get(next.drawingId) ? { tween: JSON.parse(JSON.stringify(c.tween)) } : {}),
+      ...(c.autoHold && c.start + c.length < end ? { autoHold: true as const } : {}),
+    };
+  });
+  const symLayer: Layer = pixel
+    ? { id: uid('l'), name: 'Layer 1', kind: 'pixel', visible: true, locked: false, opacity: 1, pixelSize: ps, ...(layer.paletteLock ? { paletteLock: true } : {}), cels }
+    : { id: uid('l'), name: 'Layer 1', kind: 'vector', visible: true, locked: false, opacity: 1, cels };
+  const symbolId = uid('y');
+  const length = Math.max(1, end - first);
+  (doc.symbols ??= {})[symbolId] = { id: symbolId, name: opts.name ?? freeSymbolName(doc), layers: [symLayer], length, origin };
+  const inst = newInstance(symbolId, origin);
+  const held: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [inst] };
+  doc.drawings[held.id] = held;
+  const heldCel: Cel = { id: uid('c'), start: first, length, drawingId: held.id };
+  const rest = layer.cels.filter((c) => !inSet.has(c.id));
+  if (!pixel) {
+    layer.cels = [...rest, heldCel].sort((a, b) => a.start - b.start);
+    return { symbolId, instanceId: inst.id, layerId, frames: made.length, length };
+  }
+  const keepPixels = rest.length > 0 || !!layer.slices?.length;
+  if (keepPixels) {
+    layer.cels = rest;
+    const { id: _id, kind: _k, pixelSize: _p, paletteLock: _l, slices: _s, cels: _c, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+    const above: Layer = { ...look, id: uid('l'), name: `${layer.name} symbol`, kind: 'vector', cels: [heldCel] } as Layer;
+    doc.layers.splice(at + 1, 0, above);
+    return { symbolId, instanceId: inst.id, layerId: above.id, frames: made.length, length };
+  }
+  const { pixelSize: _p, paletteLock: _l, slices: _s, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+  doc.layers[at] = { ...look, kind: 'vector', cels: [heldCel] } as Layer;
+  return { symbolId, instanceId: inst.id, layerId, frames: made.length, length };
+}
+
 function plainShapes(shapes: Shape[]): Shape[] {
   // Drafts can't be structured-cloned; JSON is fine for shapes (plain data).
   return JSON.parse(JSON.stringify(shapes));

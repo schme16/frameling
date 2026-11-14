@@ -5,7 +5,7 @@ import { resetStore, store } from '../../src/core/store';
 import { isInstance, isPosed, makePixelSymbol, pixelKeyAt, poseAt, rootDoc } from '../../src/core/symbols';
 import { symbolBounds, instanceBounds } from '../../src/canvas/geometry';
 import { loadFile, saveFile } from '../../src/io/file';
-import { makeSymbolFromSelection, makeTween, placeInstance } from '../../src/symbols/ops';
+import { makeSymbolFromDrawing, makeSymbolFromSelection, makeTween, placeInstance } from '../../src/symbols/ops';
 import { makeMotion } from '../../src/symbols/motion-ops';
 import { motionProblem } from '../../src/symbols/motions';
 
@@ -82,7 +82,7 @@ describe('pixel layers into symbols', () => {
 
   it('leaves other drawings on the pixel layer and puts the symbol on a new layer above', () => {
     setup(true);
-    makeSymbolFromSelection();
+    makeSymbolFromDrawing();
     const { doc, ui } = store().get();
     expect(doc.layers.map((l) => l.kind)).toEqual(['pixel', 'vector']);
     expect(doc.layers[1].name).toBe('Layer 1 symbol');
@@ -96,7 +96,7 @@ describe('pixel layers into symbols', () => {
     store().update('share', (x) => {
       x.layers[0].cels.push({ id: 'c9', start: 8, length: 2, drawingId: x.layers[0].cels[0].drawingId });
     });
-    makeSymbolFromSelection();
+    makeSymbolFromDrawing();
     const { doc } = store().get();
     const sym = Object.values(doc.symbols!)[0];
     expect(sym.layers[0].cels[0].drawingId).not.toBe(d.layers[0].cels[0].drawingId);

@@ -30,10 +30,32 @@ Symbols can go inside other symbols, as deep as you like (just never inside them
 ## Good to know
 
 - Only the painted part goes into the symbol, so it turns and scales around the sprite's own middle.
-- The symbol holds the drawing at this frame. Draw inside it to give it more frames.
+- F8 takes the drawing at this frame. A layer with several drawings can become one looping symbol instead: see [A symbol that holds a whole animation](help:symbols-frames).
 - A **morph** reshapes outlines, and pixels have none, so morphs need vector shapes. In-betweens move pixel art as a whole.
 
 See [Symbols](help:symbols), and [Pixel art](help:pixel-art) to start a sprite.`,
+  'symbols-frames': `A symbol can hold a whole animation. Draw a walk or a coin spin on one layer, turn it into one symbol, and it plays itself, in the same timing, wherever you place it. It works on pixel and vector layers alike.
+
+**Make one:** pick the layer and press **Shift+F8** (**Tools and layers > Symbols > Make a symbol from the whole animation**), or right-click a frame and choose **Make a symbol from the whole animation**. Every drawing on the layer goes in, with the same holds and gaps, and the symbol loops.
+
+**Just part of it:** pick drawings on the timeline (click, **Shift+click** more, or drag a box) and the symbol takes the stretch from the first to the last. The rest stay on the layer.
+
+**Plain F8:** on a layer with several drawings, Frameling asks once whether you want **The whole animation** or **Just this drawing**, then remembers. Change it any time in **Preferences > Behaviour**. **Make a symbol from just this drawing** is always in the command palette.
+
+**Where it goes:** the symbol sits on a vector layer, held for as long as the animation runs. Pixel art that filled its layer turns that layer into the vector one; otherwise the symbol gets a new layer just above and the other keys stay put. Nothing moves on screen. **Ctrl+Z** puts it all back.
+
+**Then:**
+- Move, turn, fade and tween it like any symbol. In the properties you can play it once, hold one frame, or start it on a later frame.
+- **Double-click** it to change a drawing or add one. Every copy changes.
+- Every export plays it: videos, GIF, sprite sheets, Lottie and the rest.
+
+## Good to know
+
+- Empty drawings leave a gap, and pixel art is trimmed to what's painted, so it turns around the middle of the whole animation.
+- A bones layer can't become a symbol: it holds poses, not drawings.
+- On a vector layer a selection on the canvas still means just those shapes, and nothing is asked.
+
+See [Symbols from pixel art](help:symbols-pixel), [Symbols](help:symbols) and [In-betweens](help:tweens).`,
   'symbols-editing': `**Double-click** a symbol on the canvas with the Select tool (or press **F9**) to open it. The rest of the scene fades back so you can see where it sits, and the timeline shows the symbol's own frames and layers.
 
 Draw, add layers and add frames just as you would on the main stage. Every copy of the symbol changes with you.
@@ -61,6 +83,8 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
 
 - **Move** glides, grows, turns or fades the drawing from one key to the next (a classic tween). A plain drawing becomes a [symbol](help:symbols) first.
 - **Morph** melts one drawing's shapes into the next (a [shape tween](help:shape-tweens)). It's offered when both drawings are plain shapes.
+
+On a pixel layer it offers **Move** between two pixel drawings. Each one becomes a [pixel symbol](help:symbols-pixel) and the first glides into the place of the next. Pixels can't morph, so there's no **Morph** there.
 - **x** (or **Esc**) says no thanks. It won't offer again on that stretch until something on the layer changes.
 
 Either way it's one step, so **Ctrl+Z** takes it straight back. You can reach the buttons with **Tab**.

@@ -4,11 +4,11 @@ import { getCommand, registerCommands, registerPanel } from '../core/registry';
 import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
 import { EASE_PRESETS } from '../core/ease';
-import { pixelKeyAt } from '../core/symbols';
+import { framesWithArt, pixelKeyAt } from '../core/symbols';
 import { toast } from '../ui/toast';
 import { MOTIONS } from '../core/motions';
 import { canMotion, makeMotion } from './motion-ops';
-import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
+import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromDrawing, makeSymbolFromFrames, makeSymbolFromSelection, makeTween, pickedKeys, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
 registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 30, help: 'symbols' });
 registerPanel({ id: 'symbol-props', title: 'Symbol and motion', icon: 'tween', component: lazyPanel(() => import('./PropertiesPanel').then((m) => m.PropertiesPanel)), zone: 'right', order: 35, help: 'symbol-properties' });
@@ -23,6 +23,10 @@ const cameraKeyHere = (s: State) => {
   return l?.kind === 'camera' && !!celAt(l, s.ui.frame);
 };
 const pixelKeyHere = (s: State) => !!s.ui.activeLayerId && pixelKeyAt(s.doc, s.ui.activeLayerId, s.ui.frame);
+const animationHere = (s: State) => {
+  const l = findLayer(s.doc, s.ui.activeLayerId);
+  return !!l && !s.doc.editing?.length && framesWithArt(s.doc, l, pickedKeys(l.id)) > 0;
+};
 const showPanel = (id: string) => void getCommand(`view.panel.${id}`)?.run();
 
 registerCommands([
@@ -31,10 +35,31 @@ registerCommands([
     label: 'Make a reusable symbol',
     category: 'Draw',
     keys: ['F8'],
-    description: 'Turns the selection (or the whole drawing, vector or pixel art) into a symbol you can place again and again.',
+    description: 'Turns the selection (or the whole drawing, vector or pixel art) into a symbol you can place again and again. A layer with several drawings can become one looping symbol of the whole animation.',
     keywords: ['convert to symbol', 'symbol', 'component', 'movie clip', 'graphic', 'reuse', 'library', 'group'],
     help: 'symbols',
     run: () => void makeSymbolFromSelection(),
+  },
+  {
+    id: 'symbols.makeFrames',
+    label: 'Make a symbol from the whole animation',
+    category: 'Draw',
+    keys: ['Shift+F8'],
+    description: 'Turns every drawing on this layer, in time, into one looping symbol (or just the keys you picked on the timeline). Works on pixel and vector layers.',
+    keywords: ['animated symbol', 'symbol from frames', 'sprite animation', 'loop', 'whole animation', 'all frames', 'movie clip', 'pixel animation', 'reuse animation'],
+    help: 'symbols-frames',
+    enabled: animationHere,
+    run: () => void makeSymbolFromFrames(),
+  },
+  {
+    id: 'symbols.makeOne',
+    label: 'Make a symbol from just this drawing',
+    category: 'Draw',
+    description: 'Turns only the drawing on this frame (or your selection) into a symbol, even when the layer has several drawings.',
+    keywords: ['single drawing', 'one frame', 'one drawing', 'symbol from selection', 'just this frame'],
+    help: 'symbols-frames',
+    enabled: animationHere,
+    run: () => void makeSymbolFromDrawing(),
   },
   {
     id: 'symbols.edit',

@@ -13,7 +13,7 @@
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
 //                        godot-bones)
-//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
+//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink pixel-symbol-walk)
 //   --cases=phaser,css   only cases with these labels (the word after the format in the report)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot, unity, web
 //   --show               leave the window visible (needs a real display)
@@ -127,7 +127,7 @@ const X = (call) => ev(`window.__framelingExport.${call}`);
 const IO = (call) => ev(`window.__framelingIo.${call}`);
 
 // stress and kitchen-sink are fixtures, not templates people see (src/export/debug.ts, src/export/kitchenSink.ts).
-const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
+const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'pixel-symbol-walk' ? 'loadPixelSymbolWalk()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
 
 function setAutomationDir(d) {
   fs.mkdirSync(d, { recursive: true });

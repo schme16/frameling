@@ -2,7 +2,7 @@
 // Detection is pure; the rest is a little state (what's offered, what was dismissed) the timeline renders.
 import { registerChoice, currentChoice } from '../core/choices';
 import type { Cel, Doc, Id, Layer } from '../core/format';
-import { isInstance } from '../core/symbols';
+import { drawingHasArt, isInstance } from '../core/symbols';
 import { makeTween } from '../symbols/ops';
 import { createStore } from '../ui/mini';
 
@@ -44,7 +44,7 @@ const plain = (doc: Doc, c: Cel) => {
  * and no in-betweens there yet. Clicking a key itself offers nothing; that's where you draw.
  */
 export function tweenOfferAt(doc: Doc, layer: Layer, frame: number): TweenOffer | null {
-  if (layer.locked || (layer.kind !== 'vector' && layer.kind !== 'camera')) return null;
+  if (layer.locked || (layer.kind !== 'vector' && layer.kind !== 'camera' && layer.kind !== 'pixel')) return null;
   if (layer.kind === 'vector' && layer.rig) return null;
   let prev: Cel | undefined;
   let next: Cel | undefined;
@@ -58,6 +58,8 @@ export function tweenOfferAt(doc: Doc, layer: Layer, frame: number): TweenOffer 
   if (!prev || !next || prev.start === frame || prev.tween) return null;
   const d = doc.drawings[prev.drawingId];
   if (layer.kind === 'vector' && (d?.kind !== 'vector' || !d.shapes.length)) return null;
+  // Pixel art moves between two drawings that both have something painted (each becomes a symbol when you accept).
+  if (layer.kind === 'pixel' && !(drawingHasArt(d) && drawingHasArt(doc.drawings[next.drawingId]))) return null;
   return {
     layerId: layer.id,
     celId: prev.id,
