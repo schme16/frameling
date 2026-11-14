@@ -1,0 +1,65 @@
+/* The Turn into pixels and Turn into shapes dialogs. Theme tokens only; classes start with cvt-. */
+.cvt {
+  max-width: 640px;
+}
+.cvt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cvt-row > .cv-field-label {
+  min-width: 9.5em;
+}
+.cvt-small {
+  margin: 0;
+  font-size: 12px;
+}
+.cvt-lose {
+  margin: 0;
+}
+.cvt-num {
+  width: 4.5em;
+}
+.cvt-more {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cvt-more > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--muted);
+}
+.cvt-more[open] > summary {
+  margin-bottom: 8px;
+}
+.cvt-previews {
+  justify-content: center;
+}
+.cvt-canvas {
+  max-width: 300px;
+  max-height: 300px;
+}
+.cvt-spacer {
+  flex: 1;
+}
+.cvt-warn {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}
+.cvt-warn.cvt-mess {
+  border-color: var(--danger, #d9534f);
+  background: color-mix(in srgb, var(--danger, #d9534f) 14%, var(--panel-2));
+}
+.cvt-warn.cvt-heavy {
+  border-color: var(--chosen-bg);
+  background: color-mix(in srgb, var(--chosen-bg) 14%, var(--panel-2));
+}

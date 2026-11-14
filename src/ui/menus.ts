@@ -54,7 +54,7 @@ export const MENUS: MenuDef[] = [
     label: 'Pixel',
     title: 'Pixel tools',
     categories: ['Pixel'],
-    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.gradient', 'sub:pixgrad', 'tools.spray', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
+    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.gradient', 'sub:pixgrad', 'tools.spray', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', 'convert.toShapes', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
   },
   {
     label: 'Animate',
@@ -151,7 +151,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tidy: {
     label: 'Tidy and convert shapes',
-    items: ['draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes'],
+    items: ['draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes'],
   },
   recolour: {
     label: 'Recolour',

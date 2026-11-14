@@ -5,6 +5,7 @@ import '../core/commands';
 import '../history';
 import '../brushes';
 import '../trim';
+import '../convert';
 import '../ui';
 import '../canvas';
 import '../tools';
