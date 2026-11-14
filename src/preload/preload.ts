@@ -124,7 +124,7 @@ const api: FramelingApi = {
       ipcRenderer.on('app:keepUnsaved', fn);
       return () => void ipcRenderer.removeListener('app:keepUnsaved', fn);
     },
-    askSaveChanges: (name) => call('app:askSaveChanges', name),
+    askSaveChanges: (name, neverSaved) => call('app:askSaveChanges', name, neverSaved),
   },
 };
 

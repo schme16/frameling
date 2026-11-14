@@ -13,6 +13,7 @@ import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept,
 import { describeDisplay } from './display';
 import type { LastCrash } from './crashMarker';
 import { pathKey, safeFileName } from './paths';
+import { saveChangesQuestion } from './saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
@@ -245,12 +246,10 @@ export function registerIpc(hooks: IpcHooks): void {
     return w ? describeDisplay(w) : null;
   });
 
-  handle('app:askSaveChanges', async (_e, name: string): Promise<SaveChoice> => {
+  handle('app:askSaveChanges', async (_e, name: string, neverSaved?: boolean): Promise<SaveChoice> => {
     const r = await dialog.showMessageBox(hooks.window()!, {
       type: 'question',
-      message: `Save changes to "${String(name).slice(0, 80)}"?`,
-      detail: `If you don't save, your latest changes will be lost.`,
-      buttons: ['Save', `Don't save`, 'Cancel'],
+      ...saveChangesQuestion(name, neverSaved === true),
       defaultId: 0,
       cancelId: 2,
       noLink: true,

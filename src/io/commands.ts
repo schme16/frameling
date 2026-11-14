@@ -1,5 +1,6 @@
 import { registerCommand, registerCommands } from '../core/registry';
 import { desktop } from './desktop';
+import { closeDrawing } from './close';
 import { openDocument, saveDocument, saveDocumentAs } from './document';
 import { openRecentDialog } from './RecentDialog';
 import { openRecoverDialog } from './RecoverDialog';
@@ -58,6 +59,18 @@ registerCommands([
     run: () => void saveDocumentAs(),
   },
 ]);
+
+registerCommand({
+  id: 'file.close',
+  label: 'Close drawing',
+  category: 'File',
+  keys: ['Mod+W'],
+  description: 'Put this drawing away and go back to the start screen. It asks about anything unsaved first.',
+  help: 'saving-and-opening',
+  keywords: ['put away', 'finish', 'start screen', 'welcome', 'back to start', 'shut'],
+  global: true,
+  run: () => void closeDrawing(),
+});
 
 // Closing the window is how you leave: the window asks about unsaved work first, exactly as the window button does.
 // macOS keeps Quit in its own app menu, and a browser tab is not ours to close, so neither gets this one.

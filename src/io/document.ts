@@ -27,6 +27,11 @@ export async function clearAutosaveCopy(): Promise<void> {
 
 let lastDoc: unknown = null;
 
+/** Lets go of the drawing the autosave last wrote, so a closed drawing isn't held in memory. */
+export function forgetAutosaved(): void {
+  lastDoc = null;
+}
+
 export async function autosaveNow(): Promise<void> {
   const api = desktop();
   const { ui } = store().get();
@@ -84,7 +89,7 @@ export async function askAboutUnsavedChanges(): Promise<boolean> {
   if (!store().get().ui.dirty) return true;
   const api = desktop();
   let choice: 'save' | 'discard' | 'cancel';
-  if (api) choice = await api.app.askSaveChanges(documentTitle());
+  if (api) choice = await api.app.askSaveChanges(documentTitle(), !store().get().ui.filePath);
   else choice = window.confirm(`"${documentTitle()}" has changes that aren't saved. Throw them away?`) ? 'discard' : 'cancel';
   if (choice === 'cancel') return false;
   if (choice === 'save') return saveDocument();

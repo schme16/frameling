@@ -16,9 +16,13 @@ Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frame
 
 **Open recent...** lists the drawings you had open lately, so you can jump straight back in.
 
+## Putting a drawing away
+
+**File > Close drawing** (**Ctrl+W**) puts the drawing down and takes you back to the start screen, with the cards and **Start from an example**, even if you've turned **Show welcome** off. It's in **Open recent...** straight away, so you can pick it up again.
+
 ## If you have unsaved changes
 
-Opening something else, starting a new drawing, or closing the window all ask first: **Save**, **Don't save**, or **Cancel**. Nothing is lost by accident. Even **Don't save** isn't final: the work is kept for 7 days (see [Autosave](help:autosave)).
+Opening something else, starting a new drawing, closing the drawing or closing the window all ask first: **Save**, **Don't save**, or **Cancel**. If the drawing has never been saved, the question says so, and **Save** asks where to put it. Nothing is lost by accident. Even **Don't save** isn't final: the work is kept for 7 days (see [Autosave](help:autosave)).
 
 ## If a file won't open
 
