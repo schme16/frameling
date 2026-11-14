@@ -11,9 +11,10 @@ const root = path.resolve(__dirname, '../..');
 const req = createRequire(import.meta.url);
 // The harness module needs Electron only when it runs; here it is read for its lists and its judge().
 const harness = req(path.join(root, 'scripts/lib/gpu.cjs')) as {
-  switchesFor: (mode: 'card' | 'software', opts?: { webgpu?: boolean }) => [string, string?][];
+  switchesFor: (mode: 'card' | 'software', opts?: { webgpu?: boolean; full?: boolean }) => [string, string?][];
   judge: (mode: 'card' | 'software', page: { renderer: string | null; webgl2: boolean; wideGamut: boolean; red: number[] }, f: Record<string, string>) => string[];
   CARD_SWITCHES: [string, string?][];
+  CARD_FULL_SWITCHES: [string, string?][];
   COLOUR_SWITCH: [string, string];
 };
 
