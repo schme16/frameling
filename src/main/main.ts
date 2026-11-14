@@ -13,7 +13,7 @@ import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarke
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
-import { applyGpuOff } from './gpu';
+import { applyGpuOff, logDrawingPath } from './gpu';
 import { colourSwitches } from './gpuFlags';
 import { createRestarter, fitWindow, readState, relaunchPlan, type RestartState, type WindowPlace } from './restart';
 
@@ -322,6 +322,7 @@ app.whenReady().then(() => {
     if (!restoring?.carry) launchFile = f;
   }
   createWindow();
+  void logDrawingPath();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

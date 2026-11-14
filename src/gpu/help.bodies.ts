@@ -11,9 +11,9 @@ A short answer first: **Your card is doing the drawing**, or **Frameling is draw
 - **Card memory**, when your system says. Many don't, and Frameling says so rather than guessing.
 - **Memory held**: what Frameling's own parts take, and how much of that is kept drawings.
 
-**Copy for a bug report** puts all of it on your clipboard. **Check again** asks once more.
+From a terminal, Frameling prints the same answer in one line as it starts. **Copy for a bug report** puts all of it on your clipboard. **Check again** asks once more.
 
-These are what the system reports, not a speed test. A card doing the drawing is usually much quicker, but Frameling doesn't claim a number for your computer.
+These are what the system reports, not a speed test.
 
 ## What you can change
 

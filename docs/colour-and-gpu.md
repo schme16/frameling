@@ -146,3 +146,13 @@ What was checked, and what was not.
   Chromium's own notes say, that is honoured only where the canvas can go straight to the compositor (not on Linux), so it
   should be ignored there. Not measured.
   X11 has one scale for all screens, so a second screen at a different scale is a Wayland, macOS and Windows case.
+
+## The start line and the certificate line
+
+- On start the main process prints one line in the Performance page's words (`startLine` in `src/gpu/describe.ts`, from
+  the same report as the page), for example `Frameling: drawing on your graphics card (NVIDIA ...), through OpenGL.` or
+  `Frameling: drawing in software, which is slower (no graphics card could be used).` The copied drawing report has it as `On start:`.
+- The engine's `nss_util.cc ... After loading Root Certs, loaded==false: NSS error code: -8018` line is harmless (no NSS
+  certificate database on the desktop). It is native code writing to stderr, so the Linux launcher filters that exact
+  line and nothing else (`quiet()` in `build/linux/launcher.sh`; the pattern is `NSS_NOISE_PATTERN` in `src/main/stderrNoise.ts`, and a
+  test keeps the two the same). `npm run dev` does not go through the launcher, so it still shows the line.

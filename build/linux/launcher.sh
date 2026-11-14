@@ -42,8 +42,17 @@ sudo sysctl --system'
 
 say() { printf 'Frameling: %s\n' "$*" >&2; }
 
+# One harmless line from the engine's certificate store ("After loading Root Certs, loaded==false: NSS error code: -8018")
+# is the first thing a terminal showed and made a working app look broken. It is native code writing straight to stderr,
+# so it is dropped here, by exact pattern. Every other line, errors included, passes through. Keep this the same as
+# NSS_NOISE_PATTERN in src/main/stderrNoise.ts (a test checks they match). Without grep nothing is filtered.
+NSS_NOISE='ERROR:(crypto/)?nss_util\.cc:[0-9]+\] After loading Root Certs, loaded==false: NSS error code: -8018$'
+quiet() { grep --line-buffered -v -E "$NSS_NOISE" || true; }
+if ! command -v grep >/dev/null 2>&1; then quiet() { cat; }; fi
+
 # Runs the real program, replacing this script. argv[0] stays "frameling", so the window class and process name match the launcher entry.
-start() { exec -a frameling "$REAL" "$@"; }
+# Its errors go through quiet(); the exit code is the program's own, since the program replaces this script.
+start() { exec -a frameling "$REAL" "$@" 2> >(quiet >&2); }
 
 # --show-linux-fix: just print the fix.
 for a in "$@"; do
@@ -109,7 +118,7 @@ fi
 log="$(mktemp "${TMPDIR:-/tmp}/frameling-launch.XXXXXX")"
 # The program's errors go to the terminal and to the log through tee. Keep tee's id so the log can be read only once
 # tee has written all of it (otherwise, on a busy computer, the check below can read the log before the error is in it).
-exec 3> >(tee "$log" >&2)
+exec 3> >(tee "$log" | quiet >&2)
 teepid=$!
 (exec -a frameling "$REAL" "${kept[@]}") 2>&3 3>&- &
 pid=$!
