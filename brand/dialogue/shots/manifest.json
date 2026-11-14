@@ -300,5 +300,14 @@
   },
   "crash.told": {
     "file": "shots/crash.told.png"
+  },
+  "nudge.page": {
+    "file": "shots/nudge.page.png"
+  },
+  "nudge.page.other": {
+    "file": "shots/nudge.page.other.png"
+  },
+  "nudge.drawn": {
+    "file": "shots/nudge.drawn.png"
   }
 }

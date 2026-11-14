@@ -47,6 +47,9 @@ export function setStrokeProbe(fn: (() => boolean) | null): void {
   strokeOn = fn ?? (() => false);
 }
 
+/** Whether a stroke (or any drag) is on right now. */
+export const strokeIsOn = (): boolean => strokeOn();
+
 /** Quill's offer is wanted: a pen has been seen, the check was never finished or turned down, and nothing else is open. */
 export function shouldOffer(): boolean {
   const m = checkMemory.get();

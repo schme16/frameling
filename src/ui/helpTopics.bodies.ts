@@ -215,6 +215,7 @@ Make the **AppImage** executable (right-click, **Properties**, **Allow executing
 - While an export is being made he has a **think**. He cheers on the message when it's done, and says **oops** if something went wrong.
 - He keeps you company where there's nothing to show yet, like a help search with no results.
 - A message that says no (or that something failed) has a tiny Quill on it.
+- On a new empty page he leaves a [faint line](help:empty-page) about where to start, and after your first drawing he says what to try next.
 
 If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up.
 
@@ -227,6 +228,27 @@ He'll be a little sad about it (a sniffle, maybe a tear), but he understands. He
 ## Less movement
 
 With **Reduce motion** on (or when your computer asks apps to be calm), Quill stands still in one pose instead of moving. See [Mode and look](help:look-and-feel).`,
+  'empty-page': `A new page is white, and the panels around it are full of sliders, so it's fair to wonder where to start. Frameling helps in two small ways, and both are easy to send away.
+
+## The line on the page
+
+While a new drawing is still empty, a faint line sits in the middle of the page: **Draw something. The brush is ready.** It's only a hint painted over the page. You can't select it or draw over it, it never prints, and it's never in an export or a picture of your work.
+
+It goes the moment you make your first stroke, and it doesn't come back for that file, even if you undo.
+
+## Quill's tip
+
+A moment after your first drawing, Quill pops up with an idea for what's next: press **Play** to watch it, or draw on frame 2 to make it move. **Play it** does the first for you. **Not now** means he won't mention it again.
+
+He only says it a few times in all, and never again once you've pressed either button.
+
+## Turning them off
+
+- **Show Quill** in **Preferences** (**Ctrl+,**), on the **General** page, stops both. See [Meet Quill](help:meet-quill).
+- **Preferences > Behaviour** has **A hint on an empty page** and **Quill's tip after your first drawing**, so you can keep one and drop the other. See [Behaviour choices](help:behaviour).
+- **Help > Gentle nudges on or off** flips both at once.
+
+Good to know: the line shows on plain drawings, not on pixel art or tile maps, which have their own welcome. It says **The brush is ready** with the Brush or Pencil picked, and asks you to pick a tool when something else is.`,
   behaviour: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling asks you the first time it comes up, with a short explanation of each option.
 
 Tick **Remember my choice** and it won't ask again. Untick it to be asked again next time.

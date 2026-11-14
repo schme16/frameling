@@ -70,6 +70,7 @@ What's in `test/`, by folder:
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
+| `nudge/` | The empty-page line and Quill's tip after the first drawing: when each shows, when it goes, when it stays quiet (Show Quill off, choice off, harness, playing, mid stroke), the three-times cap, Not now being remembered. Under `?debug` both stay quiet so existing pictures are unchanged; a capture turns them on with `window.__framelingAsk = true`. |
 | `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
 | top level | `smoke.test.ts` (package targets), `core.test.ts` (store, undo, registries), `case-sensitive-imports.test.ts`. |
 

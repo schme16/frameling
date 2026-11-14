@@ -70,7 +70,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Help',
     categories: ['Help'],
-    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', '-', 'help.about'],
+    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', 'quill.nudges', '-', 'help.about'],
   },
 ];
 

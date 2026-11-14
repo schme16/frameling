@@ -304,6 +304,20 @@ const GROUPS = {
     { wait: 1400 },
     { shot: ['pet.hello.again'], crop: '.qp-says', pad: 16, note: 'Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you.' },
   ],
+  // The empty page and the tip after the first drawing. The page line is quiet in the harness unless asked for.
+  nudge: [
+    { js: `window.__framelingAsk = true; __frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },
+    { wait: 900 },
+    { shot: ['nudge.page'], crop: '.cv-overlay', pad: 0 },
+    { js: `__frameling.store().setUi({ tool: 'select' })` },
+    { wait: 500 },
+    { shot: ['nudge.page.other'], crop: '.cv-overlay', pad: 0 },
+    { js: `__frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },
+    { wait: 500 },
+    { js: `__frameling.store().update('Draw', (d) => { const id = 'nd1'; d.drawings[id] = { id, kind: 'vector', shapes: [{ id: 'sh1', type: 'path', paths: [{ closed: false, points: [{ x: 300, y: 400 }, { x: 600, y: 200 }, { x: 900, y: 400 }] }], fill: null, stroke: { color: '#1d1b26', width: 8, join: 'round', cap: 'round' }, opacity: 1 }] }; d.layers[0].cels.push({ id: 'nc1', start: 0, length: d.length, drawingId: id }); })` },
+    { wait: 2200 },
+    { shot: ['nudge.drawn'], crop: TOAST, pad: 60 },
+  ],
   empty: [
     { js: `__frameling.overlays.openHelp(undefined, undefined, 'zzqxwv')` },
     { wait: 900 },

@@ -85,6 +85,7 @@ module.exports = [
   { name: 'grids-perspective', steps: [T('bouncing-ball'), view(0.5, 640, 360), dom("__frameling.run('view.perspective2')"), { wait: 5200 }, away, { wait: 300 }, { shot: '@', crop: CV }] },
   // The light table: the ball up high on frame 1 shows faintly while you draw the squash on frame 9.
   { name: 'light-table', size: [1600, 900], width: 900, steps: [T('bouncing-ball'), { wait: 400 }, dom("__frameling.run('view.lightTable')"), { wait: 300 }, UI({ frame: 8 }), dom("__frameling.dock.toggleCollapsed('right', true)"), { wait: 800 }, dom("__frameling.run('view.fit')"), { wait: 5200 }, away, { wait: 300 }, { shot: '@', crop: [330, 80, 900, 610] }] },
+  { name: 'empty-page', steps: [dom('window.__framelingAsk = true'), T('blank-vector'), { wait: 900 }, away, { wait: 400 }, { shot: '@', crop: [0, 40, 880, 460] }] },
   { name: 'where-did-it-go', steps: [T('blank-vector'), put('Lines', [ell(470, 220, 340, 280, '#ff6f91', INK, 8)]), dom("(() => { const S = __frameling.store(); const l = S.get().doc.layers.find((x) => x.name === 'Lines'); S.update('hide', (d) => { d.layers.find((x) => x.id === l.id).visible = false; }); })()"), { wait: 1800 }, away, { wait: 300 }, { shot: '@' }] },
 
   // Rectangle and ellipse follow the perspective guides: a wall on each side, a window and a round window drawn on them.
