@@ -1,4 +1,4 @@
-// Quill's panel: where he lives when the pet is turned on. He gets on with whatever he's doing, you can stroke him,
+// Quill's panel: where he lives when the pet is turned on. He gets on with whatever he's doing, you can give him a scratch,
 // and it shows how well you two know each other. Nothing here nags, and nothing here goes down.
 import { useEffect, useRef, useState } from 'react';
 import { Quill, useShowQuill } from '../ui/mascot';
@@ -73,7 +73,7 @@ export function QuillPetPanel() {
     <div className="cv-panel cv-options qp-panel" data-help="quill-pet">
       <div className="qp-stage">
         {showQuill ? (
-          <button type="button" className="qp-pat" onClick={pat} title="Give him a stroke" aria-label="Give Quill a stroke">
+          <button type="button" className="qp-pat" onClick={pat} title="Give him a scratch" aria-label="Give Quill a scratch">
             <Quill anim={anim} then="idle" size={112} />
           </button>
         ) : (
