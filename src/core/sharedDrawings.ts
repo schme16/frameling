@@ -38,20 +38,50 @@ const countCels = (m: Tally, cels: Record<Id, Cel[]> | undefined, board: string)
   for (const list of Object.values(cels ?? {})) for (const c of list) bump(m, c.drawingId, { board });
 };
 
-/** Every drawing shown in more than one place, with where. Nothing while a symbol is open for editing in place. */
-function tally(doc: Doc): Tally {
+/** What the symbols and the other artboards add to each drawing's count (every drawing, shared or not). Nothing from the open layers. */
+function restOf(doc: Doc): Tally {
   const m: Tally = new Map();
-  if (doc.editing?.length) return m;
-  countLayers(m, doc.layers, 'here');
   for (const s of Object.values(doc.symbols ?? {})) countLayers(m, s.layers, 'symbols');
-  // The open artboard is the document's own layers (above); the others keep theirs in `content`.
+  // The open artboard is the document's own layers; the others keep theirs in `content`.
   for (const a of doc.artboards ?? []) {
     if (a.variationOf || !a.content) continue;
     countLayers(m, a.content.layers, { board: a.name });
     countCels(m, a.content.cels, a.name);
   }
-  for (const [id, u] of m) if (u.total < 2) m.delete(id);
   return m;
+}
+
+/** How many cels of the open layers point at each drawing. */
+function hereOf(layers: readonly Layer[]): Map<Id, number> {
+  const m = new Map<Id, number>();
+  for (const l of layers) addCels(m, l.cels, 1);
+  return m;
+}
+
+function addCels(m: Map<Id, number>, cels: readonly Cel[], by: 1 | -1): void {
+  for (const c of cels) {
+    const n = (m.get(c.drawingId) ?? 0) + by;
+    if (n > 0) m.set(c.drawingId, n);
+    else m.delete(c.drawingId);
+  }
+}
+
+/** One drawing's use, or nothing when it is on its own. */
+function useOf(id: Id, here: Map<Id, number>, rest: Tally): DrawingUse | null {
+  const h = here.get(id) ?? 0;
+  const r = rest.get(id);
+  const total = h + (r?.total ?? 0);
+  return total < 2 ? null : { total, here: h, boards: r ? r.boards.slice() : [], symbols: r?.symbols ?? 0 };
+}
+
+/** Every drawing shown in more than one place, with where. Nothing while a symbol is open for editing in place. */
+function tally(here: Map<Id, number>, rest: Tally): Tally {
+  const out: Tally = new Map();
+  for (const id of new Set([...here.keys(), ...rest.keys()])) {
+    const u = useOf(id, here, rest);
+    if (u) out.set(id, u);
+  }
+  return out;
 }
 
 const same = (a: Tally, b: Tally): boolean => {
@@ -63,7 +93,61 @@ const same = (a: Tally, b: Tally): boolean => {
   return true;
 };
 
-let memo: { layers: unknown; artboards: unknown; symbols: unknown; editing: unknown; out: Tally } | null = null;
+/**
+ * What the last answer was made from. `here` and `rest` are kept so an edit to a few layers only has to look at those
+ * layers (the store keeps every layer it did not touch as the very same object), not at every cel of a big file.
+ */
+interface Memo {
+  layers: unknown;
+  artboards: unknown;
+  symbols: unknown;
+  editing: unknown;
+  out: Tally;
+  /** The open layers as they were counted, each with the cels array it had then. Missing while a symbol was open. */
+  counted: { layer: Layer; cels: readonly Cel[]; n: number }[] | null;
+  here: Map<Id, number>;
+  rest: Tally;
+}
+
+let memo: Memo | null = null;
+
+/** The work for a change to the open layers only: take away the layers that left, add the ones that arrived. */
+function nudge(prev: Memo, layers: readonly Layer[]): { counted: NonNullable<Memo['counted']>; here: Map<Id, number>; out: Tally } {
+  const old = new Map<Layer, { cels: readonly Cel[]; n: number }>();
+  for (const c of prev.counted!) old.set(c.layer, c);
+  // The counts are this memo's own and the memo is replaced right after, so they are changed in place rather than copied.
+  const here = prev.here;
+  const touched = new Set<Id>();
+  const kept = new Set<Layer>();
+  const counted: NonNullable<Memo['counted']> = [];
+  for (const l of layers) {
+    const was = old.get(l);
+    if (was && was.cels === l.cels && was.n === l.cels.length && !kept.has(l)) {
+      kept.add(l);
+    } else {
+      addCels(here, l.cels, 1);
+      for (const c of l.cels) touched.add(c.drawingId);
+    }
+    counted.push({ layer: l, cels: l.cels, n: l.cels.length });
+  }
+  // A layer counted before is taken away unless it came back as the same layer once (a layer listed twice is counted twice).
+  const seen = new Set<Layer>();
+  for (const c of prev.counted!) {
+    if (kept.has(c.layer) && !seen.has(c.layer)) {
+      seen.add(c.layer);
+      continue;
+    }
+    addCels(here, c.cels, -1);
+    for (const x of c.cels) touched.add(x.drawingId);
+  }
+  const out: Tally = new Map(prev.out);
+  for (const id of touched) {
+    const u = useOf(id, here, prev.rest);
+    if (u) out.set(id, u);
+    else out.delete(id);
+  }
+  return { counted, here, out };
+}
 
 /**
  * The drawings shown in more than one place. The same object comes back until the layers, artboards or symbols change,
@@ -71,9 +155,27 @@ let memo: { layers: unknown; artboards: unknown; symbols: unknown; editing: unkn
  */
 export function sharedDrawings(doc: Doc): ReadonlyMap<Id, DrawingUse> {
   if (memo && memo.layers === doc.layers && memo.artboards === doc.artboards && memo.symbols === doc.symbols && memo.editing === doc.editing) return memo.out;
-  const out = tally(doc);
+  const editing = !!doc.editing?.length;
+  let counted: Memo['counted'] = null;
+  let here: Map<Id, number>;
+  let rest: Tally;
+  let out: Tally;
+  if (editing) {
+    here = new Map();
+    rest = new Map();
+    out = new Map();
+  } else if (memo?.counted && memo.artboards === doc.artboards && memo.symbols === doc.symbols) {
+    // Only the open layers moved, which is every ordinary edit.
+    ({ counted, here, out } = nudge(memo, doc.layers));
+    rest = memo.rest;
+  } else {
+    here = hereOf(doc.layers);
+    rest = restOf(doc);
+    out = tally(here, rest);
+    counted = doc.layers.map((layer) => ({ layer, cels: layer.cels, n: layer.cels.length }));
+  }
   const keep = memo && same(memo.out, out) ? memo.out : out;
-  memo = { layers: doc.layers, artboards: doc.artboards, symbols: doc.symbols, editing: doc.editing, out: keep };
+  memo = { layers: doc.layers, artboards: doc.artboards, symbols: doc.symbols, editing: doc.editing, out: keep, counted, here, rest };
   return keep;
 }
 

@@ -8,6 +8,50 @@ const box: PathShape = { id: 's1', type: 'path', paths: [{ closed: true, points:
 const page: PageLineInput = { quill: true, choice: 'on', harness: false, fresh: true, drawnOn: false, playing: false, stroking: false };
 const drawn: DrawnInput = { quill: true, choice: 'on', harness: false, firstStroke: true, shown: 0, frames: 24, playing: false };
 
+describe('an empty page, on files with many drawings', () => {
+  const many = (n: number, shapeAt: number | null, kind: 'vector' | 'pixel' = 'vector') => {
+    const d = newDoc();
+    for (let i = 0; i < n; i++) {
+      const dr = newVectorDrawing();
+      if (i === shapeAt) {
+        if (kind === 'pixel') d.drawings[dr.id] = newPixelDrawing(4, 4);
+        else {
+          dr.shapes.push(box);
+          d.drawings[dr.id] = dr;
+        }
+      } else d.drawings[dr.id] = dr;
+    }
+    return d;
+  };
+
+  it('is still empty when every one of many drawings is empty', () => {
+    expect(isFreshVectorPage(many(500, null))).toBe(true);
+  });
+
+  it('finds a shape wherever it is in the list: first, middle or last', () => {
+    for (const at of [0, 250, 499]) expect(isFreshVectorPage(many(500, at))).toBe(false);
+  });
+
+  it('finds a pixel drawing wherever it is in the list', () => {
+    for (const at of [0, 250, 499]) expect(isFreshVectorPage(many(500, at, 'pixel'))).toBe(false);
+  });
+
+  it('answers for the drawings it is given each time, not for an older answer', () => {
+    const d = many(50, null);
+    expect(isFreshVectorPage(d)).toBe(true);
+    // The same document after a stroke, the way the store makes one: new drawings object, same layers.
+    const id = Object.keys(d.drawings)[20];
+    const drawn = { ...d, drawings: { ...d.drawings, [id]: { ...d.drawings[id], shapes: [box] } } } as typeof d;
+    expect(isFreshVectorPage(drawn)).toBe(false);
+    // Undo: back to the earlier drawings object.
+    expect(isFreshVectorPage({ ...drawn, drawings: d.drawings })).toBe(true);
+    // The layers still matter when the drawings did not change.
+    const withPixelLayer = { ...d, layers: [...d.layers, newPixelLayer('Px', 4)] };
+    expect(isFreshVectorPage(withPixelLayer)).toBe(false);
+    expect(isFreshVectorPage({ ...d, artboards: [{ id: 'a', name: 'A', x: 0, y: 0 }] as never })).toBe(false);
+  });
+});
+
 describe('an empty page', () => {
   it('is a new plain vector drawing with nothing on it', () => {
     expect(isFreshVectorPage(newDoc())).toBe(true);

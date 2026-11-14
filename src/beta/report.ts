@@ -69,7 +69,7 @@ export function scrub(text: string): string {
 export interface ReportParts {
   /** What the person typed. Theirs, kept as they wrote it apart from paths and addresses. */
   note: string;
-  /** How to get back to them, only if they chose to give it. */
+  /** How to get back to them, only if they chose to give it. Kept exactly as typed: giving an address is the whole point of it, and the preview shows it as it will be sent. */
   contact?: string;
   /** Where in the app it happened, as a plain word ("Export", "Drawing"). */
   where?: string;
@@ -95,7 +95,7 @@ export function buildReport(p: ReportParts, app = 'Frameling'): IngestReport {
     app,
     version: String(p.env.appVersion ?? ''),
     platform: String(p.env.platform ?? ''),
-    ...(p.contact?.trim() ? { contact: scrub(p.contact.trim()).slice(0, 200) } : {}),
+    ...(p.contact?.trim() ? { contact: p.contact.trim().slice(0, 200) } : {}),
     summary: first || 'No note',
     text: note,
     data: {

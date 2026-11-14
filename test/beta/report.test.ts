@@ -40,7 +40,19 @@ describe('what goes in a report', () => {
   it('only carries a contact when one was given', () => {
     expect(buildReport({ note: 'x', env }).contact).toBeUndefined();
     expect(buildReport({ note: 'x', contact: '  ', env }).contact).toBeUndefined();
-    expect(buildReport({ note: 'x', contact: 'me@example.com', env }).contact).toBe('<an address>');
+    // The contact is given on purpose, so it goes as typed (an address is not turned into <an address>).
+    expect(buildReport({ note: 'x', contact: ' me@example.com ', env }).contact).toBe('me@example.com');
+    expect(buildReport({ note: 'x', contact: 'x'.repeat(300), env }).contact).toHaveLength(200);
+  });
+
+  it('shows the contact in the preview exactly as it is sent, while still scrubbing everything else', () => {
+    const r = buildReport({ note: 'mail me at sam@example.com, see /home/sam/film.fra', contact: 'me@example.com', env, problems: ['failed at /home/sam/film.fra for sam@example.com'] });
+    expect(reportText(r)).toContain('"contact": "me@example.com"');
+    expect(JSON.parse(reportText(r)).contact).toBe(r.contact);
+    expect(r.text).toBe('mail me at <an address>, see <a path>');
+    expect(JSON.stringify(r.data)).not.toContain('sam@');
+    expect(JSON.stringify(r.data)).not.toContain('/home/sam');
+    expect(r.data).toMatchObject({ problems: ['failed at <a path> for <an address>'] });
   });
 
   it('takes its title and summary from the first line of your note', () => {

@@ -8,10 +8,16 @@
  * It is kept narrow on purpose: crashes only, never anything you did. Nothing counts your strokes, your exports or
  * your time. A burst of errors becomes one report, and it gives up after a few so a build stuck in a loop cannot
  * sit there sending for ever.
+ *
+ * These reports go without being read, so they leave out the processor, memory and graphics card unless the person
+ * answered yes, once, to the question in autoMachine.ts.
  */
 import { store } from '../core/store';
 import { getPrefs } from '../ui/prefs';
 import { gatherEnv } from '../tablet/check/state';
+import { refreshReport } from '../gpu/report';
+import { autoMachineAllowed } from './autoMachine';
+import { machineFacts, type MachineFacts } from './machine';
 import { buildReport, docShape } from './report';
 import { canSend, sendReport } from './send';
 import { onProblem, recentProblems } from './problems';
@@ -47,6 +53,8 @@ async function sendNow(): Promise<void> {
   const problems = recentProblems();
   if (!problems.length) return;
   const s = store().get();
+  // Nobody reads these first, so the computer's details go only when the person said yes to that (see autoMachine.ts).
+  const machine: MachineFacts | null = autoMachineAllowed() ? machineFacts(await refreshReport()) : null;
   const report = buildReport({
     note: `Something went wrong by itself. ${problems.length === 1 ? 'One problem' : `${problems.length} problems`} while the app was open.`,
     contact: getPrefs().betaContact,
@@ -54,6 +62,7 @@ async function sendNow(): Promise<void> {
     env: (await gatherEnv()) as unknown as Record<string, unknown>,
     shape: docShape(s.doc),
     problems,
+    machine,
   });
   await sendReport({ ...report, kind: 'crash' });
 }
