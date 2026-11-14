@@ -22,6 +22,7 @@ import { effectInfo } from '../effects/model';
 import { shapeFeatureOf } from './shapeExport';
 import { trimOf } from '../core/trimTween';
 import { trimActive } from '../geometry/trim';
+import { isGrainy } from '../geometry/tip';
 import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
 import './builtin';
 
@@ -39,6 +40,7 @@ export const FEATURE_WORDS: Record<Feature, string> = {
   bones: 'bent (boned) drawings',
   gradientAlpha: 'see-through colours inside gradients',
   trim: 'lines that draw themselves',
+  grain: 'chalk and charcoal brush grain',
 };
 
 /** What a format keeps (it is in the format's registration, see builtin.ts). */
@@ -73,6 +75,7 @@ export function docFeatures(doc: Doc): DocFeatures {
     if (d.kind !== 'vector') continue;
     for (const s of d.shapes) {
       if (trimActive(trimOf(s))) features.add('trim');
+      if (s.type === 'stroke' && isGrainy(s.brush)) features.add('grain');
       const kind = s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path' && s.type !== 'instance' ? shapeFeatureOf(s.type) : undefined;
       if (kind) features.add(kind);
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');
@@ -97,6 +100,9 @@ export function hasSoftOrShadow(found: DocFeatures): boolean {
   return found.effectKinds.has('blur') || found.effectKinds.has('shadow');
 }
 
+/** What the Export window says about chalk and charcoal in a vector format. */
+export const GRAIN_NOTE = 'Chalk and charcoal grain stays vector, made of thousands of tiny shapes. It looks the same, and the file comes out bigger.';
+
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }): string[] {
   const c = carryOf(format);
@@ -118,6 +124,8 @@ export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = d
     if (how === 'picture' && other.length) pictures.push(`layers with ${list(other)}`);
     else if (how === 'kept' && other.length) left.push(list(other));
   }
+  // Grain stays vector in the formats that carry shapes, but it is a lot of shapes.
+  if (found.features.has('grain') && c.rows.grain === 'shapes') out.push(GRAIN_NOTE);
   if (pictures.length) out.push(`Turned into pictures here: ${list(pictures)}.`);
   if (left.length) out.push(`Left out here: ${list(left)}.`);
   return out;

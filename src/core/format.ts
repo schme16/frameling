@@ -604,6 +604,40 @@ export interface BrushSettings {
   /** Round or flat ends when not tapered. */
   capStart: boolean;
   capEnd: boolean;
+  /** What the line is made of instead of a smooth solid (chalk, charcoal, watercolour edges, a stamp along the line). Missing = a plain line. See `BrushTip`. */
+  tip?: BrushTip;
+}
+
+/** The kinds of tip a brush can have besides plain. */
+export type TipKind = 'chalk' | 'charcoal' | 'watercolour' | 'stamp';
+/** The built-in stamps, and `custom` for one made from a selection. */
+export type StampShape = 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'custom';
+/** How stamps turn: along the line, always upright, or every which way. */
+export type StampAngle = 'follow' | 'upright' | 'random';
+
+/**
+ * A brush tip. The line is still kept as its points, so it can be restyled; the tip only changes what is drawn from them
+ * (the shapes it is made of are worked out when drawing and exporting, see src/geometry/tip.ts). Every field but `kind`
+ * is optional and has a default there.
+ */
+export interface BrushTip {
+  kind: TipKind;
+  /** Chalk and charcoal: how much of the line is grain, 0 to 1. Watercolour: how strong the darker edge is, 0 to 1. */
+  amount?: number;
+  /** Chalk and charcoal: how coarse the grain is, 0.5 to 3 (1 = usual). */
+  grain?: number;
+  /** Stamp: which shape, and how far apart the stamps are (a share of the brush size, 0.2 to 4). */
+  shape?: StampShape;
+  spacing?: number;
+  /** Stamp: how much the size varies from stamp to stamp, 0 to 1. */
+  jitter?: number;
+  angle?: StampAngle;
+  /** Stamp: how far stamps wander off the line, a share of the brush size, 0 to 2. */
+  scatter?: number;
+  /** A custom stamp: closed outlines as flat lists [x, y, x, y, ...], centred on 0 and 1 unit across. */
+  custom?: number[][];
+  /** Keeps the random parts (stamp jitter and scatter) the same every time the line is drawn. Set when the line is drawn. */
+  seed?: number;
 }
 
 /**

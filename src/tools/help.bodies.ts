@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **On a vector layer** the brush makes smooth lines that follow your hand. If you have a drawing pen, pressing harder makes the line thicker. With a mouse, drawing faster makes it a little thinner. Every line stays editable, so you can select it later and move or resize it.
 
-In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped.
+In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped. The **Tip** row gives lines a different feel: [chalk, charcoal, watercolour or stamps](help:brush-tips).
 
 **On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.

@@ -98,3 +98,37 @@
   font-size: var(--fs-small);
   color: var(--muted);
 }
+
+/* The tip picker under the brush preview. */
+.tp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tp-label {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+.tp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tp-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tp-pixel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tp-pixel canvas {
+  flex: none;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+}

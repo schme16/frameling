@@ -29,9 +29,9 @@ const id = () => `t${++n}`;
 const saved = (name: string, brush = wide, i = id()): BrushPreset => ({ id: i, name, tool: 'brush', brush });
 
 describe('starters', () => {
-  it('are Ink, Marker, Pencil and Tapered brush, flagged built in, with distinct ids and sane values', () => {
-    expect(STARTERS.map((s) => s.name)).toEqual(['Ink', 'Marker', 'Pencil', 'Tapered brush']);
-    expect(new Set(STARTERS.map((s) => s.id)).size).toBe(4);
+  it('are Ink, Marker, Pencil, Tapered brush, Chalk, Charcoal, Watercolour and Leaves, flagged built in, with distinct ids and sane values', () => {
+    expect(STARTERS.map((s) => s.name)).toEqual(['Ink', 'Marker', 'Pencil', 'Tapered brush', 'Chalk', 'Charcoal', 'Watercolour', 'Leaves']);
+    expect(new Set(STARTERS.map((s) => s.id)).size).toBe(8);
     for (const s of STARTERS) {
       expect(s.builtin).toBe(true);
       expect(s.tool).toBe('brush');

@@ -5,6 +5,7 @@
  * reach isn't known here (symbol instances, text, particles, plugin shapes) answers "unknown" and keeps a
  * stage-sized bitmap.
  */
+import { tipReach } from '../geometry/tip';
 import type { PathPoint, Shape, StrokeShape, SubPath } from '../core/format';
 import { styleReach } from '../geometry/lineStyle';
 
@@ -39,7 +40,7 @@ function strokeReach(s: StrokeShape): number {
   for (const p of s.points) dev = Math.max(dev, Math.abs(p.p - 0.5));
   // perfect-freehand's radius is size * (0.5 - thinning * (0.5 - pressure)).
   const radius = Math.abs(b.size) * (0.5 + Math.abs(b.thinning) * (0.5 + dev));
-  return radius * 1.5 + 1;
+  return radius * 1.5 + 1 + tipReach(b);
 }
 
 function addPaths(b: InkBox, paths: readonly SubPath[], r: number): boolean {

@@ -36,18 +36,26 @@ export function drawRing(g: CanvasRenderingContext2D, ctx: ToolContext, x: numbe
 }
 
 /** The art pixels a brush would cover, outlined and lightly filled with the colour. */
-export function drawPixelFootprint(g: CanvasRenderingContext2D, ctx: ToolContext, at: PxPt, pixelSize: number, size: number, shape: PixelShape, color: string | null): void {
+export function drawPixelFootprint(g: CanvasRenderingContext2D, ctx: ToolContext, at: PxPt, pixelSize: number, size: number, shape: PixelShape, color: string | null, stamp?: readonly { x: number; y: number; rgba: readonly number[] }[]): void {
   const px = 1 / ctx.zoom;
   g.save();
-  if (color) {
+  const offs: PxPt[] = stamp ? stamp.map((c) => ({ x: c.x, y: c.y })) : brushOffsets(size, shape);
+  if (stamp) {
+    // A brush made from a selection shows its own colours when it has them, and your colour when it is a plain shape.
+    g.globalAlpha = 0.7;
+    for (const c of stamp) {
+      g.fillStyle = color ?? `rgb(${c.rgba[0]} ${c.rgba[1]} ${c.rgba[2]})`;
+      g.fillRect((at.x + c.x) * pixelSize, (at.y + c.y) * pixelSize, pixelSize, pixelSize);
+    }
+    g.globalAlpha = 1;
+  } else if (color) {
     g.globalAlpha = 0.55;
     g.fillStyle = color;
-    for (const o of brushOffsets(size, shape)) g.fillRect((at.x + o.x) * pixelSize, (at.y + o.y) * pixelSize, pixelSize, pixelSize);
+    for (const o of offs) g.fillRect((at.x + o.x) * pixelSize, (at.y + o.y) * pixelSize, pixelSize, pixelSize);
     g.globalAlpha = 1;
   }
   g.lineWidth = 3 * px;
   g.strokeStyle = 'rgb(255 255 255 / 0.75)';
-  const offs = brushOffsets(size, shape);
   const box = () => {
     g.beginPath();
     for (const o of offs) g.rect((at.x + o.x) * pixelSize, (at.y + o.y) * pixelSize, pixelSize, pixelSize);

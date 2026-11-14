@@ -20,6 +20,8 @@ import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
 import { canvasGradient } from './gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 import { trimActive, trimStrokePoints } from '../geometry/trim';
+import { tipReach } from '../geometry/tip';
+import { setTipOutliner, strokeParts } from './tips';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -93,6 +95,9 @@ export function strokeOutlineWhole(s: StrokeShape): number[][] {
   return o;
 }
 
+// Tipped lines ask for the outline of the line itself, whatever tip it has (the cache above keeps it).
+setTipOutliner((s, b) => (b === s.brush ? strokeOutline(s) : computeOutline({ ...s, brush: b })));
+
 /** Smooth closed Path2D through outline points (quadratic midpoints, as perfect-freehand recommends). */
 export function outlinePath(points: number[][]): Path2D {
   const p = new Path2D();
@@ -163,8 +168,15 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeKind(s.type)?.draw(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
-    g.fillStyle = s.color;
-    g.fill(strokePath(s));
+    // A chalk, charcoal, watercolour or stamp line is drawn as the plain shapes it is made of.
+    const parts = s.brush.tip ? strokeParts(s) : null;
+    if (parts) {
+      g.globalAlpha = 1;
+      for (const p of parts) drawShape(g, p, at);
+    } else {
+      g.fillStyle = s.color;
+      g.fill(strokePath(s));
+    }
   } else if (s.type === 'fill') {
     g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
     g.fill(shapePath(s), 'evenodd');
@@ -471,7 +483,10 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
     grow(b, o.x + d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, o.y + d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
   } else if (d.kind === 'vector')
     for (const s of d.shapes) {
-      if (s.type === 'stroke') for (const [x, y] of strokeOutline(s)) grow(b, x, y);
+      if (s.type === 'stroke') {
+        const reach = tipReach(s.brush);
+        for (const [x, y] of strokeOutline(s)) grow(b, x, y, reach);
+      }
       else if (s.type === 'fill' || s.type === 'path') {
         const r = s.type === 'path' && s.stroke ? s.stroke.width : 0;
         for (const sp of s.paths)

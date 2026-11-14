@@ -11,6 +11,7 @@ import { zlibSync } from 'fflate';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
+import { strokeParts } from '../core/tips';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { flattenDrawing } from '../core/layerKinds';
 import type { RawImage } from '../io/png';
@@ -522,6 +523,14 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
   if (s.type === 'path' && !expanded && hasLineStyle(s.stroke)) {
     for (const part of expandStroke(s, { bakeDashes: !!s.strokeGradient })) drawShape(cx, ctx, part.shape, true);
     return;
+  }
+  if (s.type === 'stroke' && s.brush.tip) {
+    // A chalk, charcoal, watercolour or stamp line is drawn as the plain shapes it is made of.
+    const parts = strokeParts(s);
+    if (parts) {
+      for (const p of parts) drawShape(cx, ctx, p);
+      return;
+    }
   }
   cx.push('q');
   if (s.type === 'stroke') {

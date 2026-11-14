@@ -19,6 +19,8 @@ import { docToPixel } from '../canvas/pixels';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
 import { activeVectorMirror, mirrorSpots } from './mirror';
+import { brushForLine } from '../geometry/tip';
+import { readPixelStamp, stampCells } from '../brushes/stamps';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
@@ -32,7 +34,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (layer.kind === 'vector') {
     if (!canEdit(ctx, 'vector', 'The brush')) return;
     const dyn = vectorDynamics('brush', { ...ui.brush, size: ui.brush.size * viewSizeFactor() }, e);
-    vec = new VectorStroke(dyn.brush, ui.color, dyn);
+    // A stamp line gets a seed of its own, so its jitter is the same every time it is drawn.
+    vec = new VectorStroke(brushForLine(dyn.brush, 1 + Math.floor(Math.random() * 2 ** 30)), ui.color, dyn);
     // Shift+click runs a straight line from where the last stroke ended, as it does on a pixel layer.
     startFromLast(vec, e, ctx.zoom);
     // Hold to tidy, unless this started as a Shift+click straight line.
@@ -43,7 +46,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const rgba = parseHex(ui.color);
   if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
   const s = getToolSettings();
-  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect });
+  const stamp = readPixelStamp(s.pixelStamp) ?? undefined;
+  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect, stamp });
   pixColor = ui.color;
   pix.scale(sizeFactor('brush', e));
   const here = pix.cell(e.x, e.y);
@@ -93,7 +97,8 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   const layer = activeLayer().layer;
   if (layer?.kind === 'pixel') {
     const s = getToolSettings();
-    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, ui.color);
+    const stamp = readPixelStamp(s.pixelStamp);
+    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, stamp?.keep ? null : ui.color, stamp ? stampCells(stamp) : undefined);
   } else {
     const m = activeVectorMirror();
     for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
