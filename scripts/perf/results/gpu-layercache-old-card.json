@@ -1,0 +1,371 @@
+{
+ "label": "lc-old-card",
+ "when": "2026-11-14T17:04:08.092Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 118.5,
+   "runs": [
+    152.1,
+    118.5,
+    114.4,
+    123.1,
+    111.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 9.87,
+   "topSelf": [
+    [
+     "(program) :0",
+     94.5
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:65",
+     2.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     94.5
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     17.2
+    ],
+    [
+     "Bd index-C-Y36zSy.js:10",
+     16.1
+    ],
+    [
+     "Ff index-C-Y36zSy.js:10",
+     16.1
+    ],
+    [
+     "Af index-C-Y36zSy.js:10",
+     16.1
+    ],
+    [
+     "Mf index-C-Y36zSy.js:10",
+     16.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 465.4,
+   "runs": [
+    465.4,
+    438.3,
+    478.2,
+    451.7,
+    475.4
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 5.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     244.3
+    ],
+    [
+     "(garbage collector) :0",
+     107.6
+    ],
+    [
+     "setTransform :0",
+     32.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     244.3
+    ],
+    [
+     "(garbage collector) :0",
+     107.6
+    ],
+    [
+     "build index-C-Y36zSy.js:58",
+     60.8
+    ],
+    [
+     "frame index-C-Y36zSy.js:58",
+     56.1
+    ],
+    [
+     "drawMain index-C-Y36zSy.js:58",
+     54.5
+    ],
+    [
+     "paint index-C-Y36zSy.js:58",
+     52.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 323.5,
+   "runs": [
+    360.6,
+    323.5,
+    320.2,
+    328.9,
+    317.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 53.91,
+   "topSelf": [
+    [
+     "(program) :0",
+     222.2
+    ],
+    [
+     "(garbage collector) :0",
+     25.4
+    ],
+    [
+     "getBoundingClientRect :0",
+     6.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     222.2
+    ],
+    [
+     "Bd index-C-Y36zSy.js:10",
+     61.7
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     37.1
+    ],
+    [
+     "D index-C-Y36zSy.js:3",
+     31.9
+    ],
+    [
+     "Mf index-C-Y36zSy.js:10",
+     31.8
+    ],
+    [
+     "Ff index-C-Y36zSy.js:10",
+     31.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 23.3,
+   "runs": [
+    24,
+    23,
+    21.7,
+    23.3,
+    38.8
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 1.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.3
+    ],
+    [
+     "(garbage collector) :0",
+     1
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:65",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.3
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     5.8
+    ],
+    [
+     "Mf index-C-Y36zSy.js:10",
+     5
+    ],
+    [
+     "Ff index-C-Y36zSy.js:10",
+     4.9
+    ],
+    [
+     "Af index-C-Y36zSy.js:10",
+     4.9
+    ],
+    [
+     "Bd index-C-Y36zSy.js:10",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 51.3,
+   "runs": [
+    54.9,
+    51.3,
+    46.3,
+    51.6,
+    40.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.64,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "Vu index-C-Y36zSy.js:17",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.3
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     12.1
+    ],
+    [
+     "wh index-C-Y36zSy.js:11",
+     9.5
+    ],
+    [
+     "Ch index-C-Y36zSy.js:11",
+     9.3
+    ],
+    [
+     "On index-C-Y36zSy.js:10",
+     9.2
+    ],
+    [
+     "Xf index-C-Y36zSy.js:10",
+     9.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 94.2,
+   "runs": [
+    89.2,
+    97.8,
+    90.3,
+    94.6,
+    94.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 15.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     37.6
+    ],
+    [
+     "(garbage collector) :0",
+     18.7
+    ],
+    [
+     "scrollIntoView :0",
+     4.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     37.6
+    ],
+    [
+     "Bd index-C-Y36zSy.js:10",
+     26.7
+    ],
+    [
+     "(anon) index-C-Y36zSy.js:10",
+     25.8
+    ],
+    [
+     "Mf index-C-Y36zSy.js:10",
+     24.3
+    ],
+    [
+     "Ff index-C-Y36zSy.js:10",
+     24.2
+    ],
+    [
+     "Af index-C-Y36zSy.js:10",
+     24.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
