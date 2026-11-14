@@ -134,4 +134,39 @@ describe('the one rounding rule the CPU and GPU paths share', () => {
     expect(FRAG).toContain('(510 * ti.rgb + ti.a) / (2 * ti.a)');
     expect(FRAG.match(/\+ 0\.5 \+ NUDGE/g)).toHaveLength(2);
   });
+
+  // The card bug: over a partly see-through result the shader premultiplied in float and left the rounding to the
+  // output's own conversion, and a real card turns 82.502 into 82 (a canvas gives 83). Software did not show it, so this
+  // pins the rule both sides must follow, and `scripts/e2e/pixelblend-gpu.cjs` checks it on the card itself.
+  it('premultiplies the result in whole numbers in the shader, the rule a canvas uses, for every colour over every alpha', async () => {
+    const { FRAG } = await import('../../src/effects/pixelBlendGL');
+    expect(FRAG).toContain('(2 * sq * aq + 255) / 510');
+    expect(FRAG).toContain('vec3(pq) / 255.0');
+    expect(FRAG).not.toMatch(/\/ 255\.0 \* aq/);
+    let nearTie = 0;
+    for (let a = 0; a <= 255; a++) {
+      for (let s = 0; s <= 255; s++) {
+        // The shader's integer form, which is what the card now sees, against the canvas rule in pixelBlend.ts.
+        expect(Math.floor((2 * s * a + 255) / 510)).toBe(premultipliedByte(s, a));
+        const frac = (s * a) / 255 - Math.floor((s * a) / 255);
+        if (Math.abs(frac - 0.5) < 0.06 && frac !== 0.5) nearTie++;
+      }
+    }
+    // These are the values a float premultiply plus a card's output conversion got wrong (0.502 to 0.561 rounded down).
+    expect(nearTie).toBeGreaterThan(2000);
+  });
+
+  it('keeps the colour through a see-through backdrop: blend, then store, then read back', () => {
+    // 157 at alpha 134 is 82.502 premultiplied: the canvas rounds it to 83, which reads back as 158 (one stored level is nearly two straight ones here).
+    expect(premultipliedByte(157, 134)).toBe(83);
+    expect(straightByte(83, 134)).toBe(158);
+    // A backdrop at alpha 12 is stored with the colour at 12 levels wide; what the pixel blend sees is the settled byte.
+    const dst = px(0, 40, 255, 12);
+    settleCanvasBytes(dst);
+    blendPixels(dst, px(90, 160, 197, 255), 'linear-dodge', 0.5);
+    expect(dst[3]).toBe(134);
+    // The straight result 157 is what the canvas stores as 83, the byte the shader now writes.
+    expect(dst[1]).toBe(157);
+    expect(premultipliedByte(dst[1], dst[3])).toBe(83);
+  });
 });
