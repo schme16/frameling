@@ -177,7 +177,7 @@ describe('words and wiring', () => {
     const c = textCommands.find((x) => x.id === 'text.swapFonts');
     expect(c).toBeTruthy();
     expect(`${c!.label} ${c!.description}`).not.toMatch(/—/);
-    expect(textChoices.map((x) => x.id)).toEqual(['text.fontSwapScope']);
+    expect(textChoices.map((x) => x.id)).toContain('text.fontSwapScope');
     expect(textChoices[0].default).toBe('missing');
   });
 

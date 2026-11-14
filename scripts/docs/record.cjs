@@ -14,7 +14,7 @@
 //   {"wheel": [x, y], "dy": -120, "count": 3, "delay": 70, "mods": ["shift"]}   the mouse wheel (negative dy = up = zoom in); "dx" slides sideways
 //   {"pinch": [x, y], "dy": -6, "count": 14}           a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it); negative = zoom in
 //   {"shot": "name", "crop": [x, y, w, h]}              PNG of the window (cropped if asked), or "el": "css selector", "pad": 12
-//   {"type": "text"}                                    sets the focused input's text (then fires input)
+//   {"type": "text"}                                    sets the focused input or text box text (then fires input)
 //   {"rec": "name", "crop": [x, y, w, h], "every": 60}  start recording frames in the background
 //   {"rec": "stop"}                                     stop, and write frames + a timing list into <outDir>/<name>/
 // Frames are stamped as they are captured; encode.sh turns each folder into an H.264 MP4 at the real pace.
