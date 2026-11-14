@@ -37,6 +37,7 @@ import { setViewSettings } from '../canvas/viewSettings';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
+import { getFillOptions, setFillOptions } from '../tools/fill-options';
 
 if (new URLSearchParams(location.search).has('debug')) {
   // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
@@ -57,6 +58,8 @@ if (new URLSearchParams(location.search).has('debug')) {
         return layer ? !!offerTweenAt(store().get().doc, layer, frame) : false;
       },
     },
+    // The paint bucket's options, for its shots and A/Bs.
+    fill: { get: getFillOptions, set: setFillOptions },
     // Opens a starter template by id (for shots of a known document).
     template: (id: string) => {
       const t = findTemplate(id);

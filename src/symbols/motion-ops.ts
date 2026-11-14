@@ -53,7 +53,7 @@ function run(id: MotionId, w: MotionWhere, room: MotionRoom): void {
   });
   if (!out) return;
   if (!out.ok) return void toast(out.why, { kind: 'warn' });
-  store().setUi({ frame: out.start, activeLayerId: w.layerId, selection: out.instanceIds, playing: false });
+  store().setUi({ frame: out.start, activeLayerId: out.layerId, selection: out.instanceIds, playing: false });
   const secs = Math.round((out.frames / store().get().doc.fps) * 10) / 10;
   toast(`${out.wrapped ? 'Made it a symbol and added' : 'Added'} "${def.label.toLowerCase()}" (${out.frames} frames, ${secs} s). Press play to see it. Every key is yours to change.`, {
     kind: 'success',

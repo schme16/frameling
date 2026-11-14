@@ -6,7 +6,7 @@
 import type { Doc, Drawing, FillShape, Shape } from '../core/format';
 import { drawingAt, pixelGrid, uid } from '../core/doc';
 import { tileModeOn, wrap } from '../tiles/state';
-import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { registerCommands, registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
 import { pointInPaths } from '../geometry/hit';
@@ -16,7 +16,8 @@ import { getPixelSettings } from '../pixel/settings';
 import { docPalette } from '../pixel/palette';
 import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing, setActivePixels } from './edit';
 import { gridPixels } from '../core/pixelBounds';
-import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
+import { FillOptionsPanel, gapWidth, getFillOptions, setFillOptions, toleranceBytes } from './fill-options';
+import { wallsFor } from './fill-walls';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { gradientFor, withWellGradients } from './gradient-wells';
@@ -247,7 +248,11 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   }
   // A palette-locked layer only takes palette colours.
   const color = layer.paletteLock ? ([...snapToPalette(parseColor(ui.color), docPalette(store().get().doc))] as Rgba) : parseColor(ui.color);
-  const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
+  const fo = getFillOptions();
+  const mode = fo.allOfColour ? 'all' : 'contiguous';
+  const tolerance = toleranceBytes(fo.tolerance);
+  // With lines from all layers, whatever is drawn on the other layers stops the fill.
+  const walls = fo.allLayers ? wallsFor(store().get().doc, layer, ui.frame) : null;
   const existing = activeDrawing();
   const grid = pixelGrid(store().get().doc, layer);
   const gw = grid.width;
@@ -258,7 +263,11 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
       return;
     }
     const base = gridPixels(existing, gw, gh);
-    const r = floodFillPoints(base, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn });
+    if (walls && walls[py * gw + px]) {
+      ctx.hint(FILL_HINTS['on-line']);
+      return;
+    }
+    const r = floodFillPoints(base, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn, tolerance, walls: walls ?? undefined });
     if (!r.changed) {
       ctx.hint(FILL_HINTS.same);
       return;
@@ -272,8 +281,12 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   }
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
   if (px < 0 || py < 0 || px >= gw || py >= gh) return;
+  if (walls && walls[py * gw + px]) {
+    ctx.hint(FILL_HINTS['on-line']);
+    return;
+  }
   const blank = new Uint8ClampedArray(gw * gh * 4);
-  const filled = floodFillPoints(blank, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn }).pixels;
+  const filled = floodFillPoints(blank, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn, walls: walls ?? undefined }).pixels;
   const sel = pixelSelection();
   const res = setActivePixels('Fill', sel && sel.width === gw && sel.height === gh ? clipToMask(blank, filled, sel) : filled);
   if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
@@ -310,3 +323,16 @@ export const fillTool: Tool = {
 };
 
 registerTool(fillTool);
+
+registerCommands([
+  {
+    id: 'fill.allLayers',
+    label: 'Paint bucket sees lines on all layers',
+    category: 'Draw',
+    description: 'The paint bucket stops at lines drawn on any visible layer, so you can keep colour on its own layer under your line art. Off, it only sees the layer you are on.',
+    help: 'fill',
+    keywords: ['paint bucket', 'fill', 'bucket', 'all layers', 'lines from all layers', 'under line art', 'colour layer', 'flats'],
+    checked: () => getFillOptions().allLayers,
+    run: () => setFillOptions({ allLayers: !getFillOptions().allLayers }),
+  },
+]);
