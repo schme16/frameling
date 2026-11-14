@@ -43,3 +43,16 @@ export function holdWords(frames: number): string {
   const on = ['', 'ones', 'twos', 'threes', 'fours'][frames];
   return on ? `${frames} frame${frames === 1 ? '' : 's'} (on ${on})` : `${frames} frames`;
 }
+
+/**
+ * Where a drawing's name goes on its row, and how much room it has: it starts just after the key and runs to the next
+ * drawing on the row (or to the end of its own hold when there is none), so a name on a one frame drawing still shows
+ * when the frames after it are empty. `width` is in screen pixels; a name needs about 28 to be worth drawing.
+ */
+export function celLabelBox(cel: { start: number; length: number }, nextStart: number | undefined, cw: number): { left: number; width: number } {
+  const stop = nextStart !== undefined ? Math.max(nextStart, cel.start + cel.length) : cel.start + cel.length;
+  return { left: (cel.start + 1) * cw + 3, width: Math.max(0, (stop - cel.start - 1) * cw - 10) };
+}
+
+/** The least width a name is drawn in: narrower than this it would only be a smudge, and the tooltip still has it. */
+export const MIN_LABEL_W = 28;

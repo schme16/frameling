@@ -11,7 +11,7 @@ const Q: [string, string][] = [
   ['pick colour', 'tool-eyedropper'], ['colour picker', 'tool-eyedropper'], ['mirror selection', 'flip'], ['mirror', 'mirror-drawing'], ['symmetry', 'mirror-drawing'], ['remember', 'remembered-settings'], ['restart', 'remembered-settings'], ['bring to front', 'arrange'], ['layer order', 'arrange'], ['on top', 'arrange'],
   ['save', 'saving-and-opening'], ['crash', 'autosave'], ['lost my work', 'autosave'], ['recover', 'autosave'], ['rename', 'document-name'], ['title', 'document-name'],
   ['inches', 'units'], ['print size', 'units'], ['dark mode', 'look-and-feel'], ['night mode', 'look-and-feel'], ['video', 'export-video-gif-apng'], ['gif', 'export-video-gif-apng'],
-  ['ghost', 'timeline-onion'], ['skeleton', 'rig'], ['puppet', 'rig'], ['talking', 'lip-sync'], ['mouth', 'lip-sync'], ['music', 'sound'], ['audio', 'sound'],
+  ['ghost', 'timeline-onion'], ['name a pose', 'timeline-drawings'], ['onion skin clips', 'timeline-onion'], ['skeleton', 'rig'], ['puppet', 'rig'], ['talking', 'lip-sync'], ['mouth', 'lip-sync'], ['music', 'sound'], ['audio', 'sound'],
   ['background sketch', 'reference-layers'], ['trace', 'reference-layers'], ['blur', 'effects'], ['shadow', 'effects'], ['snow', 'particles'], ['sparkles', 'particles'],
   ['resize canvas', 'canvas-size'], ['frame rate', 'canvas-size'], ['fps', 'canvas-size'], ['grid', 'pixel-grid'], ['straight line', 'tool-line'], ['square', 'tool-rect'], ['circle', 'tool-ellipse'],
   ['words', 'text'], ['type', 'text'], ['rotate', 'selecting'], ['scale', 'selecting'], ['tween', 'tweens'], ['in between', 'tweens'], ['morph', 'shape-tweens'], ['shortcut', 'keyboard-shortcuts'],

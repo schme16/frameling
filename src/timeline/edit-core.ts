@@ -6,6 +6,7 @@
  *
  * Frames are 0-based in the data. The panel shows them 1-based.
  */
+import { cleanCelName } from '../core/celName';
 import { current, isDraft } from 'immer';
 import type { Cel, Clip, ClipDirection, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
 import { currentChoice } from '../core/choices';
@@ -524,6 +525,17 @@ export function addClip(doc: Doc, a: number, b: number, name?: string, loop = tr
   const clip: Clip = { id: uid('k'), name: name?.trim() || `Clip ${doc.clips.length + 1}`, start, end: last, loop };
   doc.clips.push(clip);
   return clip.id;
+}
+
+/** Names a drawing (an empty name takes the name off). False when nothing changed. */
+export function renameCel(doc: Doc, layerId: Id, celId: Id, name: string): boolean {
+  const cel = doc.layers.find((l) => l.id === layerId)?.cels.find((c) => c.id === celId);
+  if (!cel) return false;
+  const n = cleanCelName(name);
+  if (cel.name === n) return false;
+  if (n) cel.name = n;
+  else delete cel.name;
+  return true;
 }
 
 export function renameClip(doc: Doc, id: Id, name: string): boolean {

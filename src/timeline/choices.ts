@@ -80,3 +80,20 @@ registerChoice<TidyEndChoice>({
   category: 'Timeline',
   help: 'timeline-tidy-end',
 });
+
+export type OnionClipsChoice = 'inside' | 'across';
+
+// The onion skin shows the frames around the one you are on. At the end of a clip the next frame belongs to another
+// animation, so by default it stops there. Told, with a Change button, the first time a clip's edge hides a ghost.
+registerChoice<OnionClipsChoice>({
+  id: 'timeline.onionClips',
+  title: 'Onion skin at the end of a clip',
+  question: 'The onion skin is at the edge of a clip. Should it stop there, or carry on into the next clip?',
+  options: [
+    { value: 'inside', label: 'Stop at the edge of the clip', did: 'The onion skin stays inside the clip you are in, so you draw against your own animation.', detail: 'Ghosts never come from the clip next door. Best when each clip is its own animation (idle, run, jump).' },
+    { value: 'across', label: 'Carry on into the next clip', did: 'The onion skin carries on over the edge of a clip into the next one.', detail: 'Handy for one long scene made of clips back to back, where the end of one is the start of the next.' },
+  ],
+  default: 'inside',
+  category: 'Timeline',
+  help: 'timeline-onion',
+});

@@ -143,6 +143,12 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'make',
     keywords: ['artboard', 'canvases', 'sprites', 'shots', 'scenes', 'pages'],
   },
+  'clip-drawings': {
+    short: 'Drawings',
+    blurb: 'Every drawing in the clip you are in, once each with held frames skipped, with its name underneath. Click one to go there, or search by name.',
+    group: 'animate',
+    keywords: ['drawings', 'poses', 'keys', 'keyframes', 'contact sheet', 'thumbnails', 'names', 'find', 'jump', 'overview', 'clip'],
+  },
   timeline: {
     blurb: 'Your frames and layers over time: draw a frame, then the next, and play them back.',
     group: 'animate',

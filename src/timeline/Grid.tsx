@@ -15,7 +15,7 @@ import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
 import { goTo, inOutRange } from './playback';
-import { onionFrames } from '../canvas/onion';
+import { onionShading } from '../canvas/onion';
 import { pinLightTable } from '../canvas/lightTable';
 import { acceptTweenOffer, closeTweenOffer, dismissTweenOffer, offerTweenAt, tweenOffer } from './tweenOffer';
 import { clearInOut, setIn, setInOut, setOut } from './range';
@@ -31,7 +31,7 @@ import { TimelineSlot } from './slots';
 import { framesWithNotes } from '../notes/model';
 import '../notes/notes.css';
 import { setScrubbing } from '../gpu/settings';
-import { DetailRow, PropRow } from './Detail';
+import { CelName, DetailRow, PropRow, shownCels } from './Detail';
 import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
 import { currentLayout, useLayout } from './view';
 import { celRef, layerTracks, type KeyRef } from './tracks';
@@ -95,20 +95,16 @@ const Playhead = memo(function Playhead({ part, cw, cursor }: { part: 'ruler' | 
 
 /** One layer's row of drawings. Only draws the cels that are on screen. */
 const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: Layer; cw: number; from: number; to: number; active: boolean }) {
-  const shown: Cel[] = [];
-  for (const c of layer.cels) {
-    if (c.start > to) break;
-    if (c.start + c.length >= from) shown.push(c);
-  }
+  const shown = shownCels(layer, from, to);
   return (
     <div className={`tl-row${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: ROW_H }} data-layer={layer.id}>
-      {shown.map((c) => (
+      {shown.map(({ cel: c }) => (
         <div
           key={c.id}
           className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}`}
           data-cel={c.id}
           style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}
-          title={c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined}
+          title={cellTitle(c)}
         >
           <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
             <i className="tl-cel-dot" />
@@ -117,9 +113,18 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
           <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
         </div>
       ))}
+      {shown.map(({ cel, next }) => (
+        <CelName key={`n${cel.id}`} layer={layer} cel={cel} next={next} cw={cw} />
+      ))}
     </div>
   );
 });
+
+/** What hovering a drawing on the clean timeline says: its name, and that a held drawing carries on. */
+function cellTitle(c: Cel): string | undefined {
+  const carries = c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : '';
+  return [c.name ? `"${c.name}". Double-click to rename.` : '', carries].filter(Boolean).join(' ') || undefined;
+}
 
 /** In-betweens on a key: a band with an arrow to the next key (dashed when the keys don't touch). */
 function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
@@ -135,6 +140,8 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
   const frame = useStore((s) => (s.ui.onion.enabled ? s.ui.frame : -1));
   // Keys only: the shaded frames move when the drawings do.
   useStore((s) => (s.ui.onion.enabled && s.ui.onion.keysOnly ? s.doc.layers : null));
+  // The shading stops at the edge of the clip, like the ghosts do.
+  useStore((s) => (s.ui.onion.enabled ? s.doc.clips : null));
   const step = labelStep(cw);
   const labels: number[] = [];
   const secs: number[] = [];
@@ -159,10 +166,7 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
     <div className={`tl-ruler${detailed ? ' is-detailed' : ''}`} data-region="ruler" data-quest="timeline-ruler" style={{ height: h }}>
       {detailed ? <SecondsBand cw={cw} from={from} to={Math.min(total, to)} fps={fps} /> : null}
       {clip ? <i className="tl-range-shade" style={{ left: clip.start * cw, width: (clip.end - clip.start + 1) * cw }} /> : null}
-      {onion.enabled && !onion.keysOnly ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
-      {onion.enabled && onion.keysOnly && frame >= 0
-        ? onionFrames(store().get().doc, frame, onion).map((o) => shade(o.frame, o.frame, o.side === 'before' ? onion.beforeColor : onion.afterColor, `k${o.frame}`))
-        : null}
+      {onion.enabled && frame >= 0 ? onionShading(store().get().doc, frame, onion).map((r) => shade(r.from, r.to, r.side === 'before' ? onion.beforeColor : onion.afterColor, `${r.side}${r.from}`)) : null}
       {notedFrames
         ? [...notedFrames].filter(([f]) => f >= from && f <= to && f < total).map(([f, c]) => (
             <i key={`note${f}`} className={`tl-notedot${c.open ? '' : ' is-done'}`} style={{ left: f * cw + cw / 2 }} title={`${c.total} note${c.total === 1 ? '' : 's'} on frame ${f + 1}${c.open ? '' : ' (done)'}`} />
@@ -921,6 +925,11 @@ export function TimelineBody() {
     } else if (region === 'clips') {
       const c = t.closest<HTMLElement>('[data-clip]');
       if (c) setTl({ editing: { kind: 'clip', id: c.dataset.clip! } });
+    } else if (region === 'rows' && t.closest('.tl-cel, .tl-cel-name')) {
+      // A drawing: name it ("eyes sad"), so it can be found without counting frames.
+      const row = rowAt(e);
+      const cel = row && row.kind !== 'folder' ? celAt(row.layer, frameAt(e)) : undefined;
+      if (cel) setTl({ editing: { kind: 'cel', id: cel.id } });
     }
   };
 
@@ -1180,6 +1189,7 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { label: 'Paste keys here', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys({ layerId: layer.id, frame }) },
     { label: 'Clear this drawing', disabled: none, onClick: () => void say(ops.clearKey(layer.id, frame)) },
     { label: 'Make these frames empty', disabled: none, onClick: () => void say(ops.deleteKey(layer.id, frame)) },
+    { label: cel?.name ? 'Rename this drawing' : 'Name this drawing', hint: keyHint('timeline.nameKey'), disabled: none, onClick: () => cel && setTl({ editing: { kind: 'cel', id: cel.id } }) },
     { separator: true },
     cel?.tween
       ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }

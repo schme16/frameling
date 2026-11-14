@@ -278,9 +278,13 @@ pixel layer of the board and write them into the engine data (see the sprite she
 
 ### Cels
 
-`Cel` is `{id, start, length, drawingId, tween?, autoHold?}`. `length` is the exposure (1 = on ones). `tween` makes
+`Cel` is `{id, start, length, drawingId, tween?, autoHold?, name?}`. `length` is the exposure (1 = on ones). `tween` makes
 in-betweens to the next key on the layer when it starts right where this one ends (`828d4a8`). `autoHold` (`cd5f717`)
-means the hold reaches the next key and gives way when someone draws on a later frame of it.
+means the hold reaches the next key and gives way when someone draws on a later frame of it. `name` is a name for the
+drawing ("eyes sad"): optional, tidied by `cleanCelName` (`src/core/celName.ts`: spaces folded, 60 characters at most)
+and written only when there is one, so a file with no names is the file it always was. The format version stays 3: an
+older Frameling builds each cel from the fields it knows and drops `name` without a warning, so the file opens and plays
+the same there, just without the names. Copying or pasting keys does not carry a name; duplicating a layer does.
 
 ### Drawings
 

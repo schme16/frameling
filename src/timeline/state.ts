@@ -11,19 +11,23 @@ export interface TlState {
   cw: number;
   /** The clip chosen as the play range. */
   clipId: Id | null;
-  /** A name box that is open right now (a new clip or marker, or a layer being renamed). */
-  editing: { kind: 'clip' | 'marker' | 'layer'; id: Id } | null;
+  /** A name box that is open right now (a new clip or marker, a layer or a drawing being renamed). */
+  editing: { kind: 'clip' | 'marker' | 'layer' | 'cel'; id: Id } | null;
   /** Layers opened up to show their property rows (detailed timeline). */
   open: ReadonlySet<Id>;
   /** Keys picked on the detailed timeline (see tracks.ts for the ref format). */
   keys: ReadonlySet<string>;
+  /** The Drawings panel shows the whole animation instead of the clip you are in. */
+  drawingsAll: boolean;
+  /** Counts up each time "Find a drawing" is run, so the open panel puts the cursor in its search box. */
+  findTick: number;
 }
 
 export const MIN_CW = 5;
 export const MAX_CW = 64;
 export const DEFAULT_CW = 22;
 
-const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() });
+const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0 });
 let state: TlState = freshTl();
 const listeners = new Set<() => void>();
 

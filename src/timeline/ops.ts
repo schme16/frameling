@@ -343,6 +343,11 @@ export function addClip(a: number, b: number, name?: string): Outcome {
   store().update('Add clip', (d) => void (id = core.addClip(d, a, b, name)));
   return ok(id);
 }
+/** Names the drawing that starts a key (or takes its name off with an empty one). A name is not a change to the picture, so a locked layer can still be named. */
+export function renameCel(layerId: Id, celId: Id, name: string): Outcome {
+  if (!findLayer(store().get().doc, layerId)) return no('no-layer');
+  return simple(name.trim() ? 'Name a drawing' : 'Take the name off a drawing', (d) => core.renameCel(d, layerId, celId, name));
+}
 export function renameClip(id: Id, name: string): Outcome {
   if (inSymbol()) return no('in-symbol');
   return simple('Rename clip', (d) => core.renameClip(d, id, name));
