@@ -267,7 +267,7 @@ Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is list
 
 ## Dialogs
 
-Pressing the dim area beside a dialog closes it, unless you have typed or changed something in it, and then it stays open so a stray press costs you nothing. It never stops to ask. If you'd rather it always closed, or never did, pick that in **Preferences > Behaviour**. A press that only just misses the dialog's edge never counts either way. **Escape** and the close button always work.`,
+The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer, so it does the same thing every time after that. Change your mind in **Preferences > Behaviour**. A press that only just misses the dialog's edge never counts either way: there are 24 pixels of dead space all round, so a near miss does nothing at all. **Escape** and the close button always work.`,
   features: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
 
 ## Switching one on or off

@@ -1,13 +1,12 @@
 /**
  * Pressing the dim area around a dialog. Two things make that kinder:
  *  - a ring of dead space round the dialog, so a press that just misses an edge does nothing at all;
- *  - a quiet rule instead of a question: the dialog closes if nothing has been typed or changed in it, and stays open
- *    if something has. Nobody has an opinion about a stray press until it costs them something, so it never asks. The
- *    setting is in Preferences > Behaviour for anyone who wants it always one way.
+ *  - one answer, asked the first time it comes up and then remembered. The rule never changes under you: whatever you
+ *    answer is what a press beside a dialog does from then on, and it is in Preferences > Behaviour to change.
  */
 import { registerChoice, withChoice } from '../core/choices';
 
-export type BackdropMode = 'smart' | 'close' | 'stay';
+export type BackdropMode = 'close' | 'stay';
 
 /** How far outside a dialog a press still counts as a near miss, in pixels. */
 export const NEAR_MISS = 24;
@@ -15,15 +14,15 @@ export const NEAR_MISS = 24;
 registerChoice<BackdropMode>({
   id: 'ui.backdropClick',
   title: 'Pressing beside a dialog',
-  question: 'What should pressing the dim area beside a dialog do?',
+  question: 'Should pressing the dim area beside a dialog close it?',
   category: 'Dialogs',
-  silent: true,
-  default: 'smart',
+  default: 'stay',
+  // Closing the question without picking leaves the dialog open, so nothing is ever lost by not answering.
+  dismiss: 'stay',
   help: 'Escape and the close button always work, whichever you choose.',
   options: [
-    { value: 'smart', label: 'Close it, unless you have typed something', detail: 'An untouched dialog closes. One with a name, a number or a changed setting in it stays open, so a stray press loses nothing.' },
-    { value: 'close', label: 'Always close it', detail: 'Pressing beside a dialog closes it, even with something typed in.' },
-    { value: 'stay', label: 'Never close it', detail: 'Only Escape and the close button close a dialog, so nothing is lost by a stray press.' },
+    { value: 'close', label: 'Yes, close it', detail: 'A press beside a dialog puts it away, the way it works in a lot of apps.' },
+    { value: 'stay', label: 'No, leave it open', detail: 'Only Escape and the close button close a dialog, so a stray press never costs you anything.' },
   ],
 });
 
@@ -35,7 +34,7 @@ export function nearMiss(x: number, y: number, dialog: Element | null | undefine
 }
 
 // Dialogs that something has been typed or changed in. An input event only comes from a person, never from code, so
-// a dialog that filled itself in still counts as untouched.
+// a dialog that filled itself in still counts as untouched. Kept for the first ask, which says what is at stake.
 const touched = new WeakSet<Element>();
 if (typeof document !== 'undefined') {
   document.addEventListener(
@@ -51,17 +50,18 @@ if (typeof document !== 'undefined') {
 /** Whether anything has been typed or changed in this dialog by hand. */
 export const hasTypedIn = (dialog: Element | null | undefined): boolean => !!dialog && touched.has(dialog);
 
-/** What a press well clear of the dialog does for this mode, given whether something has been typed in it. */
-export function backdropCloses(mode: BackdropMode, typed: boolean): boolean {
-  return mode === 'close' || (mode === 'smart' && !typed);
+/** What a press well clear of the dialog does for this answer. The same every time, whatever is in the dialog. */
+export function backdropCloses(mode: BackdropMode): boolean {
+  return mode === 'close';
 }
 
 /**
- * The backdrop was pressed well clear of the dialog: close it, or not, by the person's setting. It never asks.
+ * The backdrop was pressed well clear of the dialog. The first time, Frameling asks what that should do and
+ * remembers the answer; after that it does the same thing every time.
  */
 export function pressedBackdrop(x: number, y: number, dialog: Element | null | undefined, close: () => void): void {
   if (nearMiss(x, y, dialog)) return;
   withChoice<BackdropMode>('ui.backdropClick', (v) => {
-    if (backdropCloses(v, hasTypedIn(dialog))) close();
+    if (backdropCloses(v)) close();
   });
 }
