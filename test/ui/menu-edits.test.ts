@@ -29,6 +29,13 @@ import {
 } from '../../src/ui/menuEdits';
 import { MENUS, resolveMenu, resolveMenus, SUBMENUS, type MenuDef, type MenuItem, type SubmenuDef } from '../../src/ui/menus';
 import { getMenuEdits, MENUS_KEY, resetMenuEdits, setMenuEdits } from '../../src/ui/menuState';
+import { DOCK_KEY, dock } from '../../src/ui/dock';
+
+// What is saved for the workspace the person is in (menu changes live in the dock state, per workspace).
+const savedMenus = (): { lists?: Record<string, { items: string[] }> } | null => {
+  const d = JSON.parse(localStorage.getItem(DOCK_KEY) ?? 'null');
+  return d?.menus?.[dock.get().workspaceId] ?? null;
+};
 
 _forceInteractivesForTests(true);
 
@@ -254,17 +261,17 @@ describe('the real menu bar with changes saved', async () => {
 
   it('starts as the menus came, with nothing saved', () => {
     expect(resolveMenus().map((x) => x.menu.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Help']);
-    expect(localStorage.getItem(MENUS_KEY)).toBeNull();
+    expect(savedMenus()).toBeNull();
   });
   it('moves an entry, and putting it back leaves nothing saved', () => {
     const items = [...edit('Edit').items];
     const at = items.indexOf('edit.duplicate');
     setMenuEdits(setList(getMenuEdits(), 'Edit', moveEntry(items, at, 0), items));
     expect(shown('Edit')[0]).toBe('edit.duplicate');
-    expect(localStorage.getItem(MENUS_KEY)).not.toBeNull();
+    expect(savedMenus()).not.toBeNull();
     setMenuEdits(setList(getMenuEdits(), 'Edit', items, items));
     expect(shown('Edit')[0]).toBe('edit.undo');
-    expect(localStorage.getItem(MENUS_KEY)).toBeNull();
+    expect(savedMenus()).toBeNull();
   });
   it('an entry taken out of every menu does not turn up again at the bottom', () => {
     const items = edit('Edit').items.filter((e) => e !== 'select.invert');
@@ -283,7 +290,7 @@ describe('the real menu bar with changes saved', async () => {
     setMenuEdits(setList(getMenuEdits(), 'Help', list, edit('Help').items));
     expect(shown('Help')).not.toContain('gone.forever');
     expect(shown('Help')).toContain('help.about');
-    expect(JSON.parse(localStorage.getItem(MENUS_KEY)!).lists.Help.items).toContain('gone.forever');
+    expect(savedMenus()!.lists!.Help.items).toContain('gone.forever');
   });
   it('a menu of your own shows on the bar with its entries, even a command in two menus', () => {
     const made = addCustomMenu(getMenuEdits(), 'Quick', resolveMenus().map((x) => x.menu.label), edit('File').items.length ? MENUS.map((x) => x.label) : []);

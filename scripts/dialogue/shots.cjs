@@ -259,6 +259,12 @@ const GROUPS = {
     { js: `__frameling.overlays.closeSheet()` },
     { wait: 1500 },
     { shot: ['workspaces.railKept'], crop: TOAST, pad: 60 },
+    // The note about where the old single set of menu changes went: a global set saved, then a restart.
+    { js: `(() => { const k = 'frameling.dock.v1'; const d = JSON.parse(localStorage.getItem(k)); delete d.menus; localStorage.setItem(k, JSON.stringify(d)); localStorage.setItem('frameling.menus.v1', JSON.stringify({ v: 1, titles: { File: 'Files' } })); localStorage.removeItem('frameling.dock.menusNote.v1'); })()` },
+    { reload: true },
+    { js: `__frameling.overlays.closeSheet()` },
+    { wait: 1500 },
+    { shot: ['workspaces.menusKept'], crop: TOAST, pad: 60 },
   ],
   // After a crash: the dazed Quill, in a build that can send (a pretend crash) and in one that can't.
   crash: [

@@ -109,6 +109,11 @@
     "where": "A toast once, on the first start after the update that gave each workspace its own tool arrangement, for someone who had changed the single arrangement before.",
     "vars": ["workspace"]
   },
+  "workspaces.menusKept": {
+    "text": "Your menu changes stay in {workspace}. Other workspaces now keep their own.",
+    "where": "A toast once, on the first start after the update that gave each workspace its own menu changes, for someone who had changed the menus before. It has a Use them everywhere button.",
+    "vars": ["workspace"]
+  },
   "workspaces.resetTools": {
     "text": "Reset your tool layout in {workspace} too?",
     "where": "A toast with Yes and No after Reset layout on a workspace that comes with the app, only when you have rearranged its tools. Yes puts its tools back the way it comes.",

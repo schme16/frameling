@@ -10,6 +10,8 @@ import { toast } from './toast';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { mergeLocks, sanitizeLockMap, savedLocks, withLock, type LockKind, type Locks } from './dockLock';
 import { cleanRailWidth } from './toolRailWidth';
+import type { MenuEdits } from './menuEdits';
+import { MENUS_KEY, menuEditsIn, migrateLegacyMenus, ownAfter, sanitizeMenuMap, withMenuEntry, withoutMenuEntry } from './workspaceMenus';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
 export * from './dockModel';
@@ -26,6 +28,8 @@ export interface DockState {
   railWidths?: Record<string, number>;
   /** What the person locked in each workspace (or unlocked, where the workspace brings a lock), by workspace id. */
   locks?: Record<string, Locks>;
+  /** What the person changed in each workspace's menus, by workspace id. A workspace missing here uses what it brings, or the menus as they come. */
+  menus?: Record<string, MenuEdits>;
 }
 
 export const DOCK_KEY = 'frameling.dock.v1';
@@ -33,6 +37,11 @@ export const DOCK_KEY = 'frameling.dock.v1';
 export const RAIL_NOTE_KEY = 'frameling.dock.railNote.v1';
 /** The workspace a customised single arrangement moved to at start-up, until the person is told (see takeRailMigrationNote). */
 let railMoved: string | null = null;
+/** The workspace the menu changes moved to at start-up (they used to be one set for every workspace), until the person is told. */
+let menusMoved: string | null = null;
+/** True from the move until the dock has been saved with the menu changes in it: only then is the old storage key removed. */
+let legacyMenusPending = false;
+export const MENUS_NOTE_KEY = 'frameling.dock.menusNote.v1';
 /** Saved state is version 2 from the top zone, floating windows, the movable tool rail and panel names. Version 1 loads as it was. */
 const DOCK_VERSION = 2;
 
@@ -172,11 +181,28 @@ export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Lay
   return l;
 }
 
+/** Menu changes from before each workspace had its own, moved to the workspace the person is on. */
+function menusFrom(saved: Record<string, unknown> | null, workspaceId: string): Record<string, MenuEdits> | undefined {
+  const own = saved?.menus === undefined ? undefined : sanitizeMenuMap(saved.menus);
+  const moved = migrateLegacyMenus(readRaw<unknown>(MENUS_KEY, null), own, workspaceId);
+  if (moved) {
+    legacyMenusPending = true;
+    menusMoved = workspaceId;
+    return moved;
+  }
+  // Moved already (or never changed): an old key left behind is cleared with the next save.
+  if (own !== undefined) legacyMenusPending = readRaw<unknown>(MENUS_KEY, null) !== null;
+  return own && Object.keys(own).length ? own : undefined;
+}
+
 function initial(): DockState {
   const saved = readRaw<Record<string, unknown> | null>(DOCK_KEY, null);
   const user = sanitizeWorkspaces(saved?.user);
   // Panels from other areas register after this file loads, so a first run waits for syncPanels() to build the layout.
-  if (!saved?.layout || typeof saved.layout !== 'object') return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true };
+  if (!saved?.layout || typeof saved.layout !== 'object') {
+    const menus = menusFrom(null, 'draw');
+    return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true, ...(menus ? { menus } : {}) };
+  }
   const layout = normaliseLayout(saved.layout);
   const workspaceId = typeof saved.workspaceId === 'string' ? saved.workspaceId : 'draw';
   const rails = sanitizeRails(saved.rails);
@@ -191,7 +217,8 @@ function initial(): DockState {
   }
   const railWidths = sanitizeRailWidths(saved.railWidths);
   const locks = sanitizeLockMap(saved.locks);
-  return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}), ...(Object.keys(locks).length ? { locks } : {}) };
+  const menus = menusFrom(saved, workspaceId);
+  return { layout, workspaceId, user, ...(menus ? { menus } : {}), ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}), ...(Object.keys(locks).length ? { locks } : {}) };
 }
 
 export const dock = createStore<DockState>(initial());
@@ -209,12 +236,37 @@ export function takeRailMigrationNote(): string | null {
   return listWorkspaces().find((w) => w.id === id)?.name ?? null;
 }
 
+/**
+ * The name of the workspace the menu changes moved to when each workspace got its own, once. Null when there is nothing
+ * to say, or it has been said.
+ */
+export function takeMenusMigrationNote(): string | null {
+  const id = menusMoved;
+  menusMoved = null;
+  if (!id) return null;
+  if (readRaw<unknown>(MENUS_NOTE_KEY, null)) return null;
+  writeJson(MENUS_NOTE_KEY, 'told');
+  return listWorkspaces().find((w) => w.id === id)?.name ?? null;
+}
+
 /** True while the panels are put away for room to draw (Hide all panels). Not kept: a new session starts with them back. */
 export const panelsAway = createStore(false);
 export const togglePanelsAway = (to?: boolean): void => panelsAway.set(to ?? !panelsAway.get());
 
 function save(): void {
   writeJson(DOCK_KEY, { ...dock.get(), v: DOCK_VERSION });
+  // The old single set of menu changes goes only once the dock holds them, so a failed save loses nothing.
+  if (legacyMenusPending) {
+    try {
+      const back = JSON.parse(localStorage.getItem(DOCK_KEY) ?? 'null') as { menus?: unknown } | null;
+      if (back && (back.menus || !dock.get().menus)) {
+        localStorage.removeItem(MENUS_KEY);
+        legacyMenusPending = false;
+      }
+    } catch {
+      // Storage blocked: the old key stays, and the move is tried again next start.
+    }
+  }
 }
 
 function commit(next: DockState): void {
@@ -589,6 +641,48 @@ export function locksOf(s: DockState): Locks {
   return mergeLocks(defaultLocksOf(s, s.workspaceId), s.locks?.[s.workspaceId]);
 }
 
+/** What a workspace brings for its menus: changes from its file or from when it was saved. */
+export function defaultMenusOf(s: Pick<DockState, 'user'>, workspaceId: string): MenuEdits | undefined {
+  return s.user.find((w) => w.id === workspaceId)?.menus;
+}
+
+/** The menu changes in force: the person's own for the workspace, else the ones it brings, else none. */
+export function menuEditsOf(s: DockState): MenuEdits {
+  return menuEditsIn(s.menus?.[s.workspaceId], defaultMenusOf(s, s.workspaceId));
+}
+
+/** Sets the menu changes for the workspace the person is in. Kept with the workspace, and in its file when it is saved. */
+export function setWorkspaceMenus(next: MenuEdits): void {
+  const s = dock.get();
+  const id = s.workspaceId;
+  const menus = withMenuEntry(s.menus, id, ownAfter(next, defaultMenusOf(s, id)));
+  if (JSON.stringify(menus ?? {}) === JSON.stringify(s.menus ?? {})) return;
+  commit({ ...s, menus });
+}
+
+/** Every workspace's own menu changes, for undoing a change that touched more than one. */
+export const menuMapOf = (s: DockState): Record<string, MenuEdits> | undefined => s.menus;
+
+/** Puts back a map of menu changes taken with menuMapOf. */
+export function restoreMenuMap(menus: Record<string, MenuEdits> | undefined): void {
+  commit({ ...dock.get(), menus });
+}
+
+/** Gives every workspace, the ones that come with the app and your own, the menu changes of the one you are in. */
+export function shareMenusWithAll(): void {
+  const s = dock.get();
+  const now = menuEditsOf(s);
+  let menus = s.menus;
+  for (const w of listWorkspaces()) menus = withMenuEntry(menus, w.id, ownAfter(now, defaultMenusOf(s, w.id)));
+  commit({ ...s, menus });
+}
+
+/** The menu changes to save with a workspace: only when there are some, or undefined. */
+const menusNow = (s: DockState): MenuEdits | undefined => {
+  const e = menuEditsOf(s);
+  return ownAfter(e, undefined);
+};
+
 /** The locks to save with a workspace: only what is locked, or undefined. */
 const locksNow = (s: DockState) => savedLocks(locksOf(s));
 
@@ -717,13 +811,15 @@ export function saveWorkspace(name: string): Workspace | null {
   // The tool arrangement as it is now (yours, or the one the workspace brings) becomes this workspace's default.
   const rail = railOf(s);
   const railWidth = railWidthOf(s);
-  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}), ...(locksNow(s) ? { locks: locksNow(s) } : {}) };
+  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}), ...(locksNow(s) ? { locks: locksNow(s) } : {}), ...(menusNow(s) ? { menus: clone(menusNow(s)!) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
   // A workspace saved again starts from what was just saved, so its own changes to the arrangement are folded in.
   const { [ws.id]: _folded, ...rails } = s.rails ?? {};
   const { [ws.id]: _foldedWidth, ...railWidths } = s.railWidths ?? {};
   const { [ws.id]: _foldedLocks, ...locks } = s.locks ?? {};
-  commit({ ...s, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
+  // The menu changes in force go into the saved workspace, so the person's own entry for it is folded in.
+  const menus = withoutMenuEntry(s.menus, ws.id);
+  commit({ ...s, menus, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   return ws;
 }
 
@@ -733,12 +829,13 @@ export function deleteWorkspace(id: string): void {
   const { [id]: _gone, ...rails } = s.rails ?? {};
   const { [id]: _goneWidth, ...railWidths } = s.railWidths ?? {};
   const { [id]: _goneLocks, ...locks } = s.locks ?? {};
+  const menus = withoutMenuEntry(s.menus, id);
   const parked = readAllParked();
   if (parked[id]) {
     delete parked[id];
     writeAllParked(parked);
   }
-  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
+  commit({ ...s, menus, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   if (s.workspaceId === id) applyWorkspace('draw');
 }
 
@@ -773,8 +870,9 @@ export function workspaceText(id?: string): string | null {
   const rail = s.rails?.[id ?? s.workspaceId] ?? (w ?? from)?.rail;
   const railWidth = s.railWidths?.[id ?? s.workspaceId] ?? (w ?? from)?.railWidth;
   const lockState = savedLocks(mergeLocks((w ?? from)?.locks, s.locks?.[id ?? s.workspaceId]));
-  const { rail: _own, railWidth: _ownWidth, locks: _ownLocks, ...rest } = ws;
-  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), ...(lockState ? { locks: lockState } : {}), layout: reconcile(ws.layout) });
+  const menuState = ownAfter(menuEditsIn(s.menus?.[id ?? s.workspaceId], (w ?? from)?.menus), undefined);
+  const { rail: _own, railWidth: _ownWidth, locks: _ownLocks, menus: _ownMenus, ...rest } = ws;
+  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), ...(lockState ? { locks: lockState } : {}), ...(menuState ? { menus: menuState } : {}), layout: reconcile(ws.layout) });
 }
 
 export type AddResult = { ok: true; workspace: Workspace } | { ok: false; error: string };

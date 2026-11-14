@@ -520,7 +520,7 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
   inside another keeps its old id for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to `sub:rig`, and
   `registerMenuItems('sub:keys', ...)` adds to a submenu directly. Submenus can also claim stray commands by
   `prefixes` or `categories`.
-- **Changing the menus** (`src/ui/menuEdits.ts` pure, `menuState.ts` storage `frameling.menus.v1`, `MenusPage.tsx`
+- **Changing the menus** (`src/ui/menuEdits.ts` pure, `menuState.ts` the edits in force for the workspace you are in, `MenusPage.tsx`
   Preferences > Menus). Every menu, submenu and the bar is a list of entries (command id, `-`, `heading:`, `sub:`,
   `group:`). A changed list is saved whole beside `seen` (what the built-in list held then), so `mergeList` can tell
   "taken out" from "new in this version" (the `menus.newEntries` choice: `add` puts new entries after the one they
@@ -528,6 +528,17 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
   taken out of every place go in `Shape.hidden`, so category tails don't bring them back. A list set back to the
   built-in one is dropped, so putting things back leaves nothing saved. The help audit reads `resolveMenus()`, which in
   tests has no edits, so help paths are always checked against the menus as they come.
+  **Per workspace** (`src/ui/workspaceMenus.ts` pure, state in `dock.ts`): the person's own edits are `DockState.menus`
+  by workspace id, and `Workspace.menus` is what a saved workspace or a workspace file brings (optional, so older
+  files open). In force: the person's own entry, else what the workspace brings, else none. An own entry of `{ v: 1 }`
+  means "put back" over a workspace that brings changes. `saveWorkspace` folds the edits in force into the workspace,
+  `workspaceText` writes them, `deleteWorkspace` drops them. They used to be one global set in `frameling.menus.v1`:
+  `initial()` moves it into the workspace the person was on (only when the dock has no `menus` yet), the old key goes
+  once the dock is saved with them, and `takeMenusMigrationNote` tells the person once. Menus do not follow the
+  workspace's kind (Draw, Animate, Pixel show the same bar until the person changes one): a menu that loses entries
+  under someone who switches about is a surprise, the palette cannot be the only way to find them, and the per-workspace
+  edits let anyone who wants a different bar in a workspace make one. `view.menusEverywhere` copies one workspace's
+  edits to all.
 - **Toasts** (`src/ui/toast.ts`, `ToastView.tsx`) and **tooltips** (`src/ui/Tooltips.tsx`: one layer for the whole
   app, built from `data-command`, `data-tip` or `title`).
 

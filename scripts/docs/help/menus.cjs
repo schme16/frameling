@@ -9,6 +9,8 @@ module.exports = [
   {
     name: 'change-the-menus',
     prefs: CALM,
+    // A press that lands beside the dialog while dragging must not raise the ask-once question over the clip.
+    choices: { 'ui.backdropClick': 'stay' },
     width: 760,
     steps: [
       L.template('bouncing-ball'),
