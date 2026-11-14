@@ -22,6 +22,12 @@ export interface ToolPen {
   /** How much the stabilizer steadies the line, 0 (off) to 100. */
   stabilizer: number;
   stabMode: StabMode;
+  /**
+   * The stabilizer was set by the person (the slider, the command), so the number is theirs and stays. While this is
+   * false the tool simply takes the start amount, and a later change to that start reaches it. Saved settings from
+   * before this existed have no flag: see stabilizerFor.
+   */
+  stabSet: boolean;
 }
 
 export interface PenDevice {
@@ -61,7 +67,7 @@ export interface PenSettings {
 // like the line is lagging behind the pen. Each tool's own options can change it.
 export const DEFAULT_STABILIZER = 12;
 
-const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: false, flow: false, tilt: false, stabilizer: DEFAULT_STABILIZER, stabMode: 'string', ...o });
+const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: false, flow: false, tilt: false, stabilizer: DEFAULT_STABILIZER, stabMode: 'string', stabSet: false, ...o });
 
 export const DEFAULT_PEN: PenSettings = {
   pen: { curve: CURVE_PRESETS.normal, min: 0, max: 1, tiltAmount: 60, eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan', swapButtons: false },
@@ -71,6 +77,20 @@ export const DEFAULT_PEN: PenSettings = {
 };
 
 export const PEN_KEY = 'frameling.pen.v1';
+
+/**
+ * The stabilizer a tool should have, from what was saved for it.
+ * - Flagged as set by the person: their number, whatever it is (0 means they turned it off).
+ * - Flagged as not set: the start amount.
+ * - No flag (saved before the flag existed): every save wrote all six tools out, so a 0 there is the old start and not
+ *   a choice, and takes the new start. Any other number can only have been set by the person, so it stays.
+ */
+export function stabilizerFor(saved: unknown, flag: unknown): { stabilizer: number; stabSet: boolean } {
+  const n = typeof saved === 'number' && Number.isFinite(saved) ? Math.round(Math.min(100, Math.max(0, saved))) : null;
+  if (flag === true) return { stabilizer: n ?? DEFAULT_STABILIZER, stabSet: true };
+  if (flag === false || n === null || n === 0) return { stabilizer: DEFAULT_STABILIZER, stabSet: false };
+  return { stabilizer: n, stabSet: true };
+}
 
 const bool = (v: unknown, d: boolean): boolean => (typeof v === 'boolean' ? v : d);
 const num = (v: unknown, d: number, lo: number, hi: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
@@ -94,7 +114,7 @@ export function cleanPen(raw: unknown): PenSettings {
       opacity: bool(s.opacity, def.opacity),
       flow: bool(s.flow, def.flow),
       tilt: bool(s.tilt, def.tilt),
-      stabilizer: Math.round(num(s.stabilizer, def.stabilizer, 0, 100)),
+      ...stabilizerFor(s.stabilizer, s.stabSet),
       stabMode: oneOf(s.stabMode, ['string', 'average'] as const, def.stabMode),
     };
   }
@@ -136,7 +156,9 @@ export function setTouch(patch: Partial<TouchDevice>): void {
 }
 export function setToolPen(id: PenTool, patch: Partial<ToolPen>): void {
   const cur = getPen();
-  save(cleanPen({ ...cur, tools: { ...cur.tools, [id]: { ...cur.tools[id], ...patch } } }));
+  // Choosing a stabilizer amount, even 0, is a choice: from here on the number is theirs.
+  const next = 'stabilizer' in patch ? { ...patch, stabSet: true } : patch;
+  save(cleanPen({ ...cur, tools: { ...cur.tools, [id]: { ...cur.tools[id], ...next } } }));
 }
 export function resetPen(): void {
   save({ ...DEFAULT_PEN, seen: getPen().seen });

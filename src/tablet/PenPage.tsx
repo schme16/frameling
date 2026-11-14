@@ -5,7 +5,7 @@ import { Row, Segmented, Switch } from '../ui/PrefsModal';
 import { BARREL_ACTIONS, barrelBits, firstBarrelBit, penPress, type BarrelAction } from './buttons';
 import { penTools } from './tool';
 import { CurveEditor } from './CurveEditor';
-import { CURVE_PRESETS, PRESET_ORDER, presetOf, type CurvePreset } from './curve';
+import { CURVE_PRESETS, PRESET_ORDER, isPlainCurve, presetOf, type CurvePreset } from './curve';
 import { penFields } from './input';
 import { PEN_TOOLS, penStore, resetPen, setPenDevice, setToolPen, setTouch, type OneFinger, type PenTool } from './settings';
 import { altitudeOf, azimuthOf } from './tilt';
@@ -166,6 +166,7 @@ export function PenPage() {
   const tools = penStore.use((s) => s.tools);
   const [live, setLive] = useState<number | null>(null);
   const preset = presetOf(pen.curve);
+  const plain = isPlainCurve(pen.curve);
   return (
     <div className="tb-page">
       <h3>Pen and tablet</h3>
@@ -182,9 +183,21 @@ export function PenPage() {
 
       <h4>Pen pressure</h4>
       <div className="tb-curve-row">
-        <CurveEditor curve={pen.curve} min={pen.min} max={pen.max} live={live} onChange={(curve) => setPenDevice({ curve })} />
+        <div className="tb-curve-col">
+          <CurveEditor curve={pen.curve} min={pen.min} max={pen.max} live={live} onChange={(curve) => setPenDevice({ curve })} />
+          <button
+            type="button"
+            className="tb-clear"
+            disabled={plain}
+            onClick={() => setPenDevice({ curve: CURVE_PRESETS.normal })}
+            title={plain ? 'The curve is already the straight line.' : 'Put the curve back to the straight line. Your other pen settings stay as they are.'}
+          >
+            Reset
+          </button>
+          <p className="tb-note tb-curve-note">Drag the dots to make the feel your own. <b>Reset</b> brings back the straight line.</p>
+        </div>
         <div className="tb-curve-side">
-          <Row label="Feel" hint="Soft counts a light touch for a lot. Firm needs a harder press. Drag the dots on the graph to make your own.">
+          <Row label="Feel" hint="Soft counts a light touch for a lot. Firm needs a harder press. Normal is the straight line. Pick one to start from, then drag the dots to make it yours.">
             <Segmented<CurvePreset | 'custom'>
               label="Pressure feel"
               value={preset}
@@ -243,7 +256,7 @@ export function PenPage() {
 
       <h4>What each tool does with the pen</h4>
       <p className="tb-note">
-        The vector Brush has its own thickness switch in its options. Everything else is here, and in each tool's options. The stabilizer steadies a mouse too.
+        The vector Brush has its own thickness switch in its options. Everything else is here, and in each tool's options. The stabilizer smooths a wobbly line by letting the brush trail a little behind your pen or mouse. Every tool starts at a gentle 12%; slide it to 0 to turn it off.
       </p>
       <table className="tb-tools">
         <thead>

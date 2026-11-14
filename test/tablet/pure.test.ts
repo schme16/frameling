@@ -299,7 +299,7 @@ describe('what the tools start with', () => {
   it('every drawing tool gets a gentle stabilizer, so a slow line does not wobble', () => {
     for (const id of PEN_TOOLS) expect(DEFAULT_PEN.tools[id].stabilizer).toBe(DEFAULT_STABILIZER);
     expect(DEFAULT_STABILIZER).toBe(12);
-    // Still only a suggestion: a saved 0 stays 0.
-    expect(cleanPen({ tools: { brush: { stabilizer: 0 } } }).tools.brush.stabilizer).toBe(0);
+    // Still only a suggestion: a 0 the person chose stays 0 (see pen-tidy.test.ts for the rest).
+    expect(cleanPen({ tools: { brush: { stabilizer: 0, stabSet: true } } }).tools.brush.stabilizer).toBe(0);
   });
 });

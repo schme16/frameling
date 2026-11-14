@@ -74,6 +74,12 @@ export function mapPressure(raw: number, shape: PressureShape): number {
   return curveAt(shape.curve, t);
 }
 
+/** The curve is the straight line it starts as (close enough that a nudge you can't see doesn't count). */
+export function isPlainCurve(c: Curve): boolean {
+  const n = CURVE_PRESETS.normal;
+  return Math.abs(c.x1 - n.x1) + Math.abs(c.y1 - n.y1) + Math.abs(c.x2 - n.x2) + Math.abs(c.y2 - n.y2) < 0.02;
+}
+
 /** The preset a curve is (nearly) the same as, or 'custom'. */
 export function presetOf(c: Curve): CurvePreset | 'custom' {
   const near = (a: Curve, b: Curve) => Math.abs(a.x1 - b.x1) + Math.abs(a.y1 - b.y1) + Math.abs(a.x2 - b.x2) + Math.abs(a.y2 - b.y2) < 0.02;
