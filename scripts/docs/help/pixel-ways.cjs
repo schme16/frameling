@@ -44,7 +44,7 @@ module.exports = [
   {
     // Frames on boards with one set of layers: a layer added once is on every frame, and the Layers panel says so.
     name: 'pixel-shared-layers',
-    prefs: { showTips: false },
+    prefs: { showTips: false, firstDrawn: true },
     steps: [
       pixelWs,
       wait(500),

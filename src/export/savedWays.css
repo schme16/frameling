@@ -30,6 +30,8 @@
 }
 .ex-ways > .ex-link {
   margin-top: 4px;
+  /* The fieldset is a grid, so a lone link would stretch and centre its words. */
+  justify-self: start;
 }
 .ex-ways .ex-seg {
   margin-bottom: 4px;

@@ -2,35 +2,33 @@
 .ab-underlay {
   z-index: 0;
 }
-.ab-item {
-  cursor: pointer;
+/* The list of artboards is the Layers panel's list (src/timeline/PieceRow.tsx): rows, header and marks come from there.
+   What is here is only what a board has and a layer does not: its picture and its size. */
+.ab-listed {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
-.ab-item.ab-open {
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-  border-color: var(--chosen-bg);
+.ab-listed .tl-layer-tools.in-panel {
+  border-bottom: 1px solid var(--line);
 }
-.ab-item.ab-open .sy-item-meta,
-.ab-item.ab-open .sy-icon-btn {
-  color: var(--chosen-fg);
+.ab-tip {
+  padding: 8px 12px 0;
 }
-.ab-item.ab-over {
-  box-shadow: 0 -3px 0 var(--focus);
+.ab-rows {
+  width: 100%;
 }
-.ab-name {
-  cursor: text;
+.ab-rows .tl-kind.tl-thumb {
+  width: 30px;
+  height: 30px;
+  background: none;
+  border-radius: 0;
 }
-.ab-item .sy-item-meta {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.ab-rows .tl-thumb .sy-thumb {
+  display: block;
 }
-.ab-item .sy-icon-btn {
-  width: 22px;
-  height: 24px;
-}
-.ab-item .sy-item-actions {
-  gap: 0;
+.ab-rest {
+  border-top: 1px solid var(--line);
 }
 .ab-fields {
   display: flex;
@@ -154,9 +152,6 @@
 .ab-player-look .ab-pic-label {
   min-width: 6.5em;
 }
-.ab-item:not(:hover):not(:focus-within) .ab-move {
-  display: none;
-}
 .ab-pic {
   display: flex;
   flex-wrap: wrap;
@@ -192,19 +187,14 @@
 }
 
 /* Variations: the badge, the size cuts and the list of differences. */
-.ab-item.ab-var {
-  margin-left: 10px;
-}
-.ab-item.ab-var .sy-item-meta {
-  white-space: normal;
-}
 .ab-size {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--fs-small);
   white-space: nowrap;
 }
-/* The speed sits on its own line, so a narrow panel never cuts it off. */
-.ab-rate {
-  display: block;
-  white-space: nowrap;
+.tl-layer.is-active .ab-size {
+  color: var(--text);
 }
 .ab-badge {
   display: inline-flex;

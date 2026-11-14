@@ -19,13 +19,9 @@ export function ExportExplainScope({ children }: { children: ReactNode }) {
   );
 }
 
-/** The dialog's help icon, at the top of the options, shown once the notes are tucked away and there are some. */
+/** The dialog's help icon, beside its title like every panel's, shown once the notes are tucked away and there are some. */
 export function ExAbout() {
   const show = useShowExplanations();
   if (show) return null;
-  return (
-    <div className="ex-about">
-      <ScopeIcon scope={EXPORT_SCOPE} title="About these options" help="exporting" />
-    </div>
-  );
+  return <ScopeIcon scope={EXPORT_SCOPE} title="About these options" help="exporting" />;
 }

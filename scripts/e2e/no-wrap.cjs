@@ -73,6 +73,12 @@ const DIALOGS = [
   ['pen check', run('pen.check')],
   ['canvas size', run('document.settings')],
   ['export', run('file.export')],
+  // Every format brings its own options, so the window's height and the second column change with each: look at them all.
+  ...Array.from({ length: 16 }, (_, n) => [
+    `export format ${n + 1}`,
+    [run('file.export'), `document.querySelector('.ex-more[aria-expanded=false]')?.click()`, `[...document.querySelectorAll('.ex-card')][${n}]?.click()`],
+  ]),
+  ['export artboards', [`__framelingArtboards.load('variations')`, run('file.export')]],
   ['export tileset', [tpl('tileset'), run('tiles.export')]],
   ['rotate', [tpl('hero-sprites'), run('pixel.rotate')]],
   ['import picture', [tpl('hero-sprites'), picture('slime-sheet.png')]],
@@ -360,6 +366,16 @@ async function runPass(p) {
     await js(`__frameling.run('select.all'); return true`);
     await sleep(220);
     await view(`panel ${id} selected`, SCOPE(id));
+  }
+
+  // The Artboards panel with several boards and variations, beside the Layers panel it is built like (a board's row has its
+  // size and a variation tag that a layer's does not).
+  for (const id of ['artboards', 'layers']) {
+    await reset('bouncing-ball');
+    await js(`__framelingArtboards.load('variations'); return true`);
+    await js(`__frameling.showPanel(${JSON.stringify(id)}); return true`);
+    await sleep(300);
+    await view(`panel ${id} with several boards`, SCOPE(id));
   }
 
   // Every tool's options, on a vector drawing and a pixel drawing, with something selected (selection options show then).

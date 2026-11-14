@@ -221,7 +221,7 @@ You can mix both in one animation.
 
 Layers show in two places, and they are the same list: the **Layers** panel in the right rail, and down the left
 side of the timeline, where each row lines up with that layer's keys. Use whichever is closer to what you are
-doing. Anything you change in one shows in the other at once.
+doing. Anything you change in one shows in the other at once. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
 
 ## The layer list
 

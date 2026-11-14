@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 Press **Ctrl+E** (**Cmd+E** on a Mac), or choose **File > Export**, pick a format card, tweak the options if you like, and press **Export**. Frameling asks where to put it, then draws every frame and shows a progress bar. You can cancel any time.
 
-${ix('The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**.', 'The four formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence** and **Sprite sheet**.')} The others are under **More formats**. Every export is also in the **File > Export** submenu.
+${ix('The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**.', 'The four formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence** and **Sprite sheet**.')} The others are under **More formats**, bottom left of the window. Every export is also in the **File > Export** submenu.
 
 ## Which one?
 

@@ -211,10 +211,12 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
   }
 
   return (
-    <Modal title="Export" onClose={close} wide>
+    <Modal title="Export" onClose={close} wide headExtra={<ExAbout />}>
       <ExportExplainScope>
       <div className="ex-body">
-        <div className="ex-cards" role="radiogroup" aria-label="Format">
+        <div className="ex-formats">
+        <h3 className="ex-h" id="ex-format-h">Format</h3>
+        <div className="ex-cards" role="radiogroup" aria-labelledby="ex-format-h">
           {[...groups.popular, ...(showMore ? groups.more : [])].map((f: FormatInfo) => {
             const why = unavailable(f.id);
             return (
@@ -238,17 +240,10 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
               </button>
             );
           })}
-          {!moreChosen && (
-            <button type="button" className="ex-more" data-wraps data-testid="export.more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
-              <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
-              {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
-              {!showMore && <small>WebM, PNG picture, SVG, Lottie, PSD, PDF and more</small>}
-            </button>
-          )}
+        </div>
         </div>
 
         <div className="ex-options">
-          <ExAbout />
           <SavedWays settings={s} onPick={(w) => setS(wayAsSettings(w))} />
           <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
@@ -344,6 +339,20 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
         </QuillSays>
       )}
       <div className="io-foot ex-foot">
+        {!moreChosen && (
+          <button
+            type="button"
+            className="io-btn ex-more"
+            data-wraps
+            data-testid="export.more"
+            aria-expanded={showMore}
+            title={showMore ? 'Show the popular formats only' : 'WebM, PNG picture, SVG, Lottie, PSD, PDF and more'}
+            onClick={() => setMore((m) => !m)}
+          >
+            <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
+            {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
+          </button>
+        )}
         <span className={`ex-summary${problem ? ' ex-problem' : ''}`} aria-live="polite">
           {problem ?? summary}
         </span>

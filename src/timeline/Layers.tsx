@@ -5,7 +5,8 @@ import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { runCmd, tip } from './cmd';
-import { ContextMenu, InlineName, type MenuItem } from './Menu';
+import { ContextMenu, type MenuItem } from './Menu';
+import { PieceActions, PieceButton, PieceRow, PieceTools, pieceMenuBasics, useRowDrag } from './PieceRow';
 import { isFeatureOn } from '../features/host';
 import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
@@ -36,48 +37,42 @@ export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
     return !l ? 'Add a layer first.' : l.mask ? 'This layer is a mask already. Pick the layer you want to mask.' : l.kind === 'camera' ? 'The camera has nothing to mask.' : '';
   });
   const actions = (
-    <span className="tl-layer-actions" role="group" aria-label="This layer">
-      <button type="button" className="tl-btn" title={tip('layers.duplicate', 'Duplicate this layer with all its drawings')} aria-label="Duplicate layer" onClick={() => runCmd('layers.duplicate')}>
-        <Icon name="duplicate" size={15} />
-      </button>
-      <button type="button" className="tl-btn" title={maskProblem || tip('layers.addMask', 'Add a mask: a layer above this one that decides where it shows. Paint on it with any tool.')} aria-label="Add a mask to this layer" disabled={!!maskProblem} onClick={() => runCmd('layers.addMask')}>
-        <Icon name="mask" size={15} />
-      </button>
-      <button type="button" className="tl-btn" title={count > 1 ? tip('layers.delete', 'Delete this layer') : 'You need at least one layer'} aria-label="Delete layer" disabled={count < 2} onClick={() => runCmd('layers.delete')}>
-        <Icon name="trash" size={15} />
-      </button>
-    </span>
+    <PieceActions
+      thing="layer"
+      duplicate={{ tip: tip('layers.duplicate', 'Duplicate this layer with all its drawings'), run: () => runCmd('layers.duplicate') }}
+      extra={
+        <button type="button" className="tl-btn" title={maskProblem || tip('layers.addMask', 'Add a mask: a layer above this one that decides where it shows. Paint on it with any tool.')} aria-label="Add a mask to this layer" disabled={!!maskProblem} onClick={() => runCmd('layers.addMask')}>
+          <Icon name="mask" size={15} />
+        </button>
+      }
+      remove={{ tip: tip('layers.delete', 'Delete this layer'), run: () => runCmd('layers.delete'), off: count < 2 ? 'You need at least one layer' : undefined }}
+    />
   );
   return (
-    <div className={`tl-layer-tools${inPanel ? ' in-panel' : ''}`} role="toolbar" aria-label="Layers">
-      {inPanel ? null : (
-        <span className="tl-layer-tools-title">
-          <span>
-            Layers
-            {everyFrame ? <span className="tl-shared-chip" title="One set of layers for the whole drawing: add, hide or reorder one here and every frame has it. Each frame keeps its own pixels.">on every frame</span> : null}
-          </span>
-          {actions}
-        </span>
-      )}
-      {/* The two buttons add a layer of that kind (they are not a mode switch), so the row says so. */}
-      <span className="tl-layer-new" role="group" aria-label="New layer">
-        <span className="tl-layer-new-label" aria-hidden="true">New layer</span>
-        <button type="button" className="tl-btn" title={tip('layers.addVector', 'New vector layer: smooth drawing you can resize and edit')} aria-label="New vector layer" onClick={() => runCmd('layers.addVector')}>
-          <Icon name="vector" size={15} />
-          <span className="tl-btn-text">Vector</span>
-        </button>
-        <button type="button" className="tl-btn" title={tip('layers.addPixel', 'New pixel layer: pixel art, one square at a time')} aria-label="New pixel layer" onClick={() => runCmd('layers.addPixel')}>
-          <Icon name="pixel" size={15} />
-          <span className="tl-btn-text">Pixel</span>
-        </button>
-      </span>
-      {inPanel ? actions : null}
+    <PieceTools
+      name="Layers"
+      newWord="New layer"
+      inPanel={inPanel}
+      actions={actions}
+      title={
+        <>
+          Layers
+          {everyFrame ? <span className="tl-shared-chip" title="One set of layers for the whole drawing: add, hide or reorder one here and every frame has it. Each frame keeps its own pixels.">on every frame</span> : null}
+        </>
+      }
+      adds={
+        <>
+          <PieceButton icon="vector" text="Vector" tip={tip('layers.addVector', 'New vector layer: smooth drawing you can resize and edit')} label="New vector layer" onClick={() => runCmd('layers.addVector')} />
+          <PieceButton icon="pixel" text="Pixel" tip={tip('layers.addPixel', 'New pixel layer: pixel art, one square at a time')} label="New pixel layer" onClick={() => runCmd('layers.addPixel')} />
+        </>
+      }
+    >
       {inPanel && everyFrame ? (
         <Explainer className="tl-shared-note">
           These layers are on <b>every frame</b>. Each frame keeps its own pixels on them.
         </Explainer>
       ) : null}
-    </div>
+    </PieceTools>
   );
 }
 
@@ -99,12 +94,15 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : layer.kind === 'tilemap' ? 'tilemap layer' : layer.kind === 'camera' ? 'camera' : 'vector layer'})` },
     { node: <OpacitySlider layerId={layer.id} /> },
     { separator: true },
-    { label: 'Rename', onClick: onRename },
-    { label: 'Duplicate layer', onClick: () => void say(ops.duplicateLayer(layer.id)) },
-    { label: 'Delete layer', danger: true, disabled: total < 2, onClick: () => void say(ops.deleteLayer(layer.id)) },
-    { separator: true },
-    { label: 'Bring forward (move up)', disabled: index >= total - 1 && !layer.folder, onClick: () => void ops.stepLayer('up', layer.id) },
-    { label: 'Send backward (move down)', disabled: index <= 0 && !layer.folder, onClick: () => void ops.stepLayer('down', layer.id) },
+    ...pieceMenuBasics({
+      thing: 'layer',
+      onRename,
+      onDuplicate: () => void say(ops.duplicateLayer(layer.id)),
+      onDelete: () => void say(ops.deleteLayer(layer.id)),
+      canDelete: total >= 2,
+      up: { label: 'Bring forward (move up)', disabled: index >= total - 1 && !layer.folder, run: () => void ops.stepLayer('up', layer.id) },
+      down: { label: 'Send backward (move down)', disabled: index <= 0 && !layer.folder, run: () => void ops.stepLayer('down', layer.id) },
+    }),
     { separator: true },
     { label: layer.visible ? 'Hide layer' : 'Show layer', onClick: () => void ops.setLayerVisible(layer.id, !layer.visible) },
     { label: layer.locked ? 'Unlock layer' : 'Lock layer (protect it from changes)', onClick: () => void ops.setLayerLocked(layer.id, !layer.locked) },
@@ -137,7 +135,7 @@ interface RowProps {
   editing: boolean;
   /** What a mask does here: the mask cutting this layer, or the layers this mask cuts. */
   mask?: MaskInfo;
-  dropMark: 'above' | 'below' | null;
+  dropMark: Drop | null;
   onDragStart: (id: Id) => void;
   onDragOver: (id: Id, where: 'above' | 'below') => void;
   onDrop: (id: Id) => void;
@@ -149,140 +147,98 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
-    <div
-      className={`tl-layer${detailed ? ` is-detailed ${layerColorClass(layer)}` : ''}${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
-      style={{ height: h, ['--depth' as string]: depth }}
-      draggable={!editing}
-      data-layer={layer.id}
-      data-row=""
-      role="treeitem"
-      tabIndex={0}
-      aria-level={depth + 1}
-      aria-selected={active}
-      aria-expanded={tracks.length ? open : undefined}
-      aria-label={`${layer.name}, ${kind}${layer.reference ? ', reference layer' : ''}`}
-      aria-current={active ? 'true' : undefined}
-      onClick={select}
-      onKeyDown={(e) => {
-        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          e.stopPropagation();
-          select();
-          return;
-        }
-        rowKey(e, { layer: layer.id }, `[data-layer="${layer.id}"]`);
+    <PieceRow
+      id={layer.id}
+      attr="data-layer"
+      h={h}
+      active={active}
+      dim={!layer.visible}
+      className={`${detailed ? `is-detailed ${layerColorClass(layer)}` : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}`}
+      inFolder={inFolder}
+      depth={depth}
+      label={`${layer.name}, ${kind}${layer.reference ? ', reference layer' : ''}`}
+      extra={{ 'aria-expanded': tracks.length ? open : undefined }}
+      drag={{ dropMark, onDragStart, onDragOver, onDrop, onDragEnd }}
+      onSelect={select}
+      onMenu={(x, y) => onMenu(layer, x, y)}
+      onKey={(e) => rowKey(e, { layer: layer.id }, `[data-layer="${layer.id}"]`)}
+      before={
+        detailed ? (
+          tracks.length ? (
+            <button
+              type="button"
+              className="tl-twisty"
+              aria-expanded={open}
+              aria-label={open ? `Hide ${layer.name}'s properties` : `Show ${layer.name}'s properties`}
+              title={open ? 'Fold away the property rows' : `Show what changes on this layer: ${tracks.map((t) => t.label).join(', ')}`}
+              onClick={(e) => (e.stopPropagation(), toggleOpen(layer.id))}
+            >
+              <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
+            </button>
+          ) : (
+            <span className="tl-twisty-gap" aria-hidden="true" />
+          )
+        ) : null
+      }
+      lead={
+        <span className={`tl-kind is-${layer.kind}`} title={layer.kind === 'vector' && layer.rig ? 'Bones layer (the skeleton; each key is a pose)' : kind}>
+          <Icon name={layer.kind === 'vector' && layer.rig ? 'bone' : layer.kind} size={13} />
+        </span>
+      }
+      name={layer.name}
+      nameLabel="Layer name"
+      editing={editing}
+      onStartRename={() => setTl({ editing: { kind: 'layer', id: layer.id } })}
+      onRename={(v) => {
+        setTl({ editing: null });
+        if (v !== null) ops.renameLayer(layer.id, v);
       }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        select();
-        onMenu(layer, e.clientX, e.clientY);
-      }}
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', layer.id);
-        onDragStart(layer.id);
-      }}
-      onDragOver={(e) => {
-        e.preventDefault();
-        const r = e.currentTarget.getBoundingClientRect();
-        onDragOver(layer.id, e.clientY < r.top + r.height / 2 ? 'above' : 'below');
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop(layer.id);
-      }}
-      onDragEnd={onDragEnd}
-    >
-      <span className="tl-grip" aria-hidden="true"><Icon name="grip" size={12} /></span>
-      {detailed ? (
-        tracks.length ? (
-          <button
-            type="button"
-            className="tl-twisty"
-            aria-expanded={open}
-            aria-label={open ? `Hide ${layer.name}'s properties` : `Show ${layer.name}'s properties`}
-            title={open ? 'Fold away the property rows' : `Show what changes on this layer: ${tracks.map((t) => t.label).join(', ')}`}
-            onClick={(e) => (e.stopPropagation(), toggleOpen(layer.id))}
-          >
-            <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
-          </button>
-        ) : (
-          <span className="tl-twisty-gap" aria-hidden="true" />
-        )
-      ) : null}
-      <span className={`tl-kind is-${layer.kind}`} title={layer.kind === 'vector' && layer.rig ? 'Bones layer (the skeleton; each key is a pose)' : kind}>
-        <Icon name={layer.kind === 'vector' && layer.rig ? 'bone' : layer.kind} size={13} />
-      </span>
-      {editing ? (
-        <InlineName
-          label="Layer name"
-          value={layer.name}
-          onDone={(v) => {
-            setTl({ editing: null });
-            if (v !== null) ops.renameLayer(layer.id, v);
-          }}
-        />
-      ) : (
-        <span className="tl-layer-name" title="Double-click to rename" onDoubleClick={() => setTl({ editing: { kind: 'layer', id: layer.id } })}>
-          {layer.name}
+      tags={
+        <>
           {layer.bind && (
             <small className="tl-ref-tag" title={layer.bind.mesh ? 'Bends with the bones' : 'Follows a bone'}>
               <Icon name="bone" size={10} />
             </small>
           )}
-          {layer.reference && (
-            <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title="Reference layer: you see it while drawing, exports leave it out" />
+          {layer.reference && <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title="Reference layer: you see it while drawing, exports leave it out" />}
+        </>
+      }
+      meta={
+        <>
+          <LookTags layer={layer} />
+          <MaskLink layer={layer} info={mask} />
+        </>
+      }
+      buttons={
+        <>
+          {detailed ? <SoloButton layer={layer} /> : null}
+          {layer.mask ? (
+            <MaskSwitch layer={layer} />
+          ) : (
+            <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
+              <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
+            </button>
           )}
-        </span>
-      )}
-      <LookTags layer={layer} />
-      <MaskLink layer={layer} info={mask} />
-      {detailed ? <SoloButton layer={layer} /> : null}
-      {layer.mask ? (
-        <MaskSwitch layer={layer} />
-      ) : (
-        <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
-          <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
-        </button>
-      )}
-      <button type="button" className="tl-icon-btn" title={layer.locked ? 'Unlock this layer' : 'Lock this layer so it can not be changed by accident'} aria-label={layer.locked ? 'Unlock layer' : 'Lock layer'} aria-pressed={layer.locked} onClick={(e) => (e.stopPropagation(), ops.setLayerLocked(layer.id, !layer.locked))}>
-        <Icon name={layer.locked ? 'lock' : 'unlock'} size={15} />
-      </button>
-      <button
-        type="button"
-        className={`tl-icon-btn tl-layer-onion${layer.onion === false ? ' is-off' : ''}`}
-        title={layer.onion === false ? 'Show this layer in the onion skin' : 'Leave this layer out of the onion skin (handy for backgrounds)'}
-        aria-label={layer.onion === false ? 'Show in onion skin' : 'Leave out of onion skin'}
-        aria-pressed={layer.onion !== false}
-        onClick={(e) => (e.stopPropagation(), ops.setLayerOnion(layer.id, layer.onion === false))}
-      >
-        <Icon name="onion" size={15} />
-      </button>
-      <button
-        type="button"
-        className="tl-icon-btn tl-more"
-        title="More: see-through slider, move up or down, duplicate, delete"
-        aria-label="More layer options"
-        aria-haspopup="menu"
-        onClick={(e) => {
-          e.stopPropagation();
-          const r = e.currentTarget.getBoundingClientRect();
-          select();
-          onMenu(layer, r.left, r.bottom + 2);
-        }}
-      >
-        <Icon name="more" size={16} />
-      </button>
-    </div>
+          <button type="button" className="tl-icon-btn" title={layer.locked ? 'Unlock this layer' : 'Lock this layer so it can not be changed by accident'} aria-label={layer.locked ? 'Unlock layer' : 'Lock layer'} aria-pressed={layer.locked} onClick={(e) => (e.stopPropagation(), ops.setLayerLocked(layer.id, !layer.locked))}>
+            <Icon name={layer.locked ? 'lock' : 'unlock'} size={15} />
+          </button>
+          <button
+            type="button"
+            className={`tl-icon-btn tl-layer-onion${layer.onion === false ? ' is-off' : ''}`}
+            title={layer.onion === false ? 'Show this layer in the onion skin' : 'Leave this layer out of the onion skin (handy for backgrounds)'}
+            aria-label={layer.onion === false ? 'Show in onion skin' : 'Leave out of onion skin'}
+            aria-pressed={layer.onion !== false}
+            onClick={(e) => (e.stopPropagation(), ops.setLayerOnion(layer.id, layer.onion === false))}
+          >
+            <Icon name="onion" size={15} />
+          </button>
+        </>
+      }
+      moreTitle="More: see-through slider, move up or down, duplicate, delete"
+      moreLabel="More layer options"
+    />
   );
 });
-
-interface DragState {
-  node: Node | null;
-  over: string | null;
-  where: Drop;
-}
-const NO_DRAG: DragState = { node: null, over: null, where: 'above' };
 
 /**
  * The layer list, top layer first. The timeline lays its rows out to line up with the keys; the Layers panel passes
@@ -303,19 +259,17 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const editing = useTl((t) => (t.editing?.kind === 'layer' ? t.editing.id : null));
   // What is being dragged (a layer, or a folder with all in it), and the row it is over: a layer's id, or `f:` and a folder's.
-  const [drag, setDrag] = useState<DragState>(NO_DRAG);
+  const dnd = useRowDrag<Node>();
+  const drag = dnd.drag;
   const [menu, setMenu] = useState<{ layer: Layer; x: number; y: number } | null>(null);
 
   const drop = (over: string) => {
-    const { node } = drag;
-    const where = drag.where;
-    setDrag(NO_DRAG);
+    const { node, where } = dnd.take();
     if (!node) return;
     // Next to a layer it joins that layer's folder; next to a folder it sits beside it, or goes in (the middle of its row).
     void moveNode(node, over.startsWith('f:') ? { folder: over.slice(2) } : { layer: over }, where);
   };
-  const over = (key: string, where: Drop) => setDrag((d) => (d.over === key && d.where === where ? d : { ...d, over: key, where }));
-  const mark = (key: string, own: boolean) => (drag.over === key && !own ? drag.where : null);
+  const { over, mark } = dnd;
 
   return (
     <div className={`tl-layers${detailed ? ' is-detailed' : ''}`} role="tree" aria-label="Layers, top layer first">
@@ -329,10 +283,10 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
               height={r.h}
               drag={{
                 dropMark: mark(`f:${id}`, !!drag.node && 'folder' in drag.node && drag.node.folder === id),
-                onDragStart: (fid) => setDrag({ node: { folder: fid }, over: null, where: 'above' }),
+                onDragStart: (fid) => dnd.start({ folder: fid }),
                 onDragOver: (fid, where) => over(`f:${fid}`, where),
                 onDrop: (fid) => drop(`f:${fid}`),
-                onDragEnd: () => setDrag(NO_DRAG),
+                onDragEnd: dnd.end,
               }}
             />
           );
@@ -352,11 +306,11 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
           active={l.id === activeId}
           editing={editing === l.id}
           mask={maskInfo?.get(l.id)}
-          dropMark={(mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id) as 'above' | 'below' | null)}
-          onDragStart={(id) => setDrag({ node: { layer: id }, over: null, where: 'above' })}
+          dropMark={mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id)}
+          onDragStart={(id) => dnd.start({ layer: id })}
           onDragOver={(id, where) => over(id, where)}
           onDrop={drop}
-          onDragEnd={() => setDrag(NO_DRAG)}
+          onDragEnd={dnd.end}
           onMenu={(layer, x, y) => setMenu({ layer, x, y })}
         />
         );
