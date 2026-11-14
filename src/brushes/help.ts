@@ -20,6 +20,15 @@ registerHelpTopics([
     keywords: ['brush', 'tip', 'tips', 'texture', 'textured', 'chalk', 'charcoal', 'watercolour', 'watercolor', 'grain', 'rough', 'stamp', 'stamps', 'leaf', 'star', 'custom brush', 'pixel brush', 'brush from selection', 'make a brush', 'sketch', 'wash', 'paper'],
   },
   {
+    id: 'brush-own',
+    order: 8.35,
+    media: 'brush-own.mp4',
+    title: 'Brushes you build yourself: calligraphy, ribbons, chains and bristles',
+    section: 'Drawing',
+    summary: 'A pen nib at an angle, bristles, or your own drawing bent along the line, with separate ends and corners for chains and borders.',
+    keywords: ['brush', 'calligraphy', 'calligraphic', 'nib', 'pen nib', 'bristle', 'art brush', 'pattern brush', 'illustrator', 'scatter brush', 'along the line', 'edged', 'border', 'chain', 'ribbon', 'rope', 'corner', 'make a brush', 'own brush', 'custom brush', 'flatten', 'expand', 'plain shapes'],
+  },
+  {
     id: 'brush-picker',
     order: 8.1,
     media: 'brush-picker.mp4',

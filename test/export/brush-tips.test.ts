@@ -110,6 +110,34 @@ describe('drawn as plain shapes', () => {
   });
 });
 
+describe('brushes you build yourself leave as plain vector shapes', () => {
+  const ribbon = defaultTip('along');
+  const link = defaultTip('edged');
+  const mine = { nib: defaultTip('nib'), bristle: { ...defaultTip('bristle'), seed: 4 }, along: ribbon, edged: link };
+  for (const [name, tip] of Object.entries(mine)) {
+    it(`${name}: SVG, PDF, Lottie and Illustrator write them with nothing to flatten, and the file keeps the tip`, () => {
+      const doc = docWith(stroke('a', tip, { size: 16 }));
+      const svg = frameToSvg(doc, 0);
+      expect(count(svg, /<path /g)).toBeGreaterThanOrEqual(1);
+      expect(svg).not.toMatch(/<image|data:image/);
+      const pdf = Buffer.from(writePdf(doc, { frames: [0], scale: 1, background: null, title: 't' })).toString('latin1');
+      expect(pdf.startsWith('%PDF')).toBe(true);
+      expect(pdf).not.toContain('/Subtype /Image');
+      expect(() => JSON.parse(JSON.stringify(docToLottie(doc, {})))).not.toThrow();
+      for (const f of ALL_VECTOR) expect(carryWarnings(doc, f), f).not.toContain(GRAIN_NOTE);
+      // The stored line is untouched, and a saved file brings the same tip back.
+      const bytes = saveFile(doc, 't');
+      const back = loadFile(bytes).doc.drawings.d;
+      expect(back.kind === 'vector' && (back.shapes[0] as StrokeShape).brush.tip).toEqual(tip);
+    });
+  }
+  it('the poses a drawing is exported from hold only fills and paths, never a brush line with a tip', () => {
+    const doc = docWith(...Object.values(mine).map((t, i) => stroke(`s${i}`, t)));
+    const d = poseAt(doc, doc.layers[0], 0)!;
+    expect(d.kind === 'vector' && d.shapes.every((x) => x.type === 'fill' || x.type === 'path')).toBe(true);
+  });
+});
+
 describe('the file', () => {
   const reopen = (doc: Doc, edit?: (raw: any) => void) => {
     const bytes = saveFile(doc, 't');

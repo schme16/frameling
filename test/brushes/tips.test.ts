@@ -73,15 +73,15 @@ describe('picking and changing a tip', () => {
   });
   it('steps round through Plain and the tips, both ways', () => {
     const seen: string[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 10; i++) {
       stepTip(1);
       seen.push(currentTip()?.kind ?? 'plain');
     }
-    expect(seen).toEqual(['chalk', 'charcoal', 'watercolour', 'stamp', 'plain', 'chalk']);
+    expect(seen).toEqual(['chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle', 'plain', 'chalk']);
     stepTip(-1);
     expect(currentTip()).toBeUndefined();
     stepTip(-1);
-    expect(currentTip()?.kind).toBe('stamp');
+    expect(currentTip()?.kind).toBe('bristle');
   });
 });
 
@@ -147,7 +147,7 @@ describe('the commands', () => {
       expect(c!.help).toBe('brush-tips');
       expect(`${c!.label}${c!.description}`).not.toContain('—');
     }
-    expect(allCommands().filter((c) => c.id.startsWith('brush.tip.')).length).toBe(5);
+    expect(allCommands().filter((c) => c.id.startsWith('brush.tip.')).length).toBe(9);
   });
   it('have keys for stepping and for making a brush, and none that two commands share', () => {
     expect(getCommand('brush.tipNext')!.keys).toEqual(['Alt+Shift+ArrowDown']);

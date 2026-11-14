@@ -2,14 +2,14 @@
 // draw. Each is a plain brush or one of the tips (chalk, charcoal, watercolour, stamp), so every one of them stays a
 // vector shape on the way out. They never change and can't be deleted; save a copy to make it your own.
 // Left out on purpose, because the brush engine can't do them honestly yet: airbrush and soft round (a soft edge), a
-// highlighter that lets the line underneath show, a flat calligraphy nib (it has no angle), and smudge or blend.
+// highlighter that lets the line underneath show, and smudge or blend.
 import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
-import { defaultTip } from '../geometry/tip';
+import { defaultTip, startLink, startRibbon } from '../geometry/tip';
 import type { BrushPreset } from './model';
 
 /** The groups the starters sit in, in the order the picker lists them. */
-export const STARTER_GROUPS = ['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture'] as const;
+export const STARTER_GROUPS = ['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture', 'Calligraphy', 'Bristles', 'Along the line'] as const;
 export type StarterGroup = (typeof STARTER_GROUPS)[number];
 
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
@@ -78,4 +78,20 @@ export const STARTERS: readonly BrushPreset[] = [
   make('stipple', 'Stipple', 'Stamps and texture', { size: 5, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: stamp('dot', 'random', 0.6, 0.7, 1.1) }),
   make('spatter', 'Spatter', 'Stamps and texture', { size: 14, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: stamp('dot', 'upright', 0.8, 0.9, 1.6) }),
   make('confetti', 'Confetti', 'Stamps and texture', { size: 12, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('diamond', 'random', 1.3, 0.5, 1) }),
+  // Calligraphy: a pen nib with an angle
+  make('italic', 'Italic nib', 'Calligraphy', { size: 14, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.18, nibAngle: 40 } }),
+  make('broad', 'Broad nib', 'Calligraphy', { size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.12, nibAngle: 30 } }),
+  make('copperplate', 'Copperplate', 'Calligraphy', { size: 9, thinning: 0.7, smoothing: 0.65, streamline: 0.65, tip: { ...defaultTip('nib'), roundness: 0.35, nibAngle: 55 } }),
+  make('round-nib', 'Round nib', 'Calligraphy', { size: 8, thinning: 0.5, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 1 } }),
+  make('turning-nib', 'Turning nib', 'Calligraphy', { size: 16, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.2, nibAngle: 90, angle: 'follow' } }),
+  // Bristles: many thin lines
+  make('hog', 'Hog bristle', 'Bristles', { size: 36, thinning: 0.4, smoothing: 0.55, streamline: 0.55, tip: { ...defaultTip('bristle'), count: 18, stiffness: 0.7, amount: 0.2 } }),
+  make('dry-bristle', 'Dry bristle', 'Bristles', { size: 40, thinning: 0.5, smoothing: 0.5, streamline: 0.5, tip: { ...defaultTip('bristle'), count: 24, stiffness: 0.5, amount: 0.65 } }),
+  make('fan', 'Fan brush', 'Bristles', { size: 56, thinning: 0.2, smoothing: 0.55, streamline: 0.55, tip: { ...defaultTip('bristle'), count: 32, stiffness: 0.9, amount: 0.35 } }),
+  make('rake', 'Rake', 'Bristles', { size: 30, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: { ...defaultTip('bristle'), count: 6, stiffness: 1, amount: 0 } }),
+  // Along the line: a drawing bent along it
+  make('ribbon', 'Ribbon', 'Along the line', { size: 18, thinning: 0.6, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startRibbon(), fit: 'stretch' } }),
+  make('thread', 'Thread', 'Along the line', { size: 7, thinning: 0.3, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startRibbon(), fit: 'stretch' } }),
+  make('chain', 'Chain', 'Along the line', { size: 22, thinning: 0, smoothing: 0.65, streamline: 0.65, tip: { kind: 'edged', custom: startLink() } }),
+  make('chain-links', 'Beads and links', 'Along the line', { size: 16, thinning: 0, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startLink(), fit: 'repeat' } }),
 ];

@@ -9,6 +9,7 @@
 import polygonClipping, { type Pair } from 'polygon-clipping';
 import type { BrushSettings, FillShape, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
 import { plainBrush, resolveTip, type ResolvedTip } from './tip';
+import { alongShapes, bristleShapes, edgedShapes, nibShapes } from './tipRibbon';
 
 /** The outline polygon of a line drawn with this brush (the line's own, whatever tip it has). */
 export type OutlineFn = (s: StrokeShape, b: BrushSettings) => number[][];
@@ -461,7 +462,7 @@ function stampShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
   const out: FillShape[] = [];
   const seed = t.seed;
   sites.forEach((q, i) => {
-    let k = flat ? 1 : widthAt(q.p, b.thinning);
+    let k = flat || t.fixedSize ? 1 : widthAt(q.p, b.thinning);
     k *= 1 - t.jitter * 0.7 * hash3(seed, i, 1);
     if (b.taperStart > 0) k *= 0.12 + 0.88 * Math.min(1, (q.d + b.size * 0.25) / b.taperStart);
     if (b.taperEnd > 0) k *= 0.12 + 0.88 * Math.min(1, (q.len - q.d + b.size * 0.25) / b.taperEnd);
@@ -470,9 +471,12 @@ function stampShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
     let ang = t.angle === 'follow' ? q.ang + (hash3(seed, i, 2) - 0.5) * t.jitter * 0.8 : t.angle === 'random' ? hash3(seed, i, 2) * Math.PI * 2 : (hash3(seed, i, 2) - 0.5) * t.jitter * 0.5;
     // Shapes drawn upright (a heart, anything you made) have their top at the front when they follow the line.
     if ((t.shape === 'heart' || t.shape === 'custom') && t.angle === 'follow') ang += Math.PI / 2;
+    if (t.turn > 0) ang += (hash3(seed, i, 4) - 0.5) * 2 * Math.PI * t.turn;
     const off = (hash3(seed, i, 3) - 0.5) * 2 * t.scatter * b.size;
-    const ox = q.x + -Math.sin(q.ang) * off;
-    const oy = q.y + Math.cos(q.ang) * off;
+    // The gap between stamps varies by sliding each one along the line.
+    const slide = t.gapVary > 0 ? (hash3(seed, i, 5) - 0.5) * t.gapVary * t.spacing * b.size * 0.9 : 0;
+    const ox = q.x - Math.sin(q.ang) * off + Math.cos(q.ang) * slide;
+    const oy = q.y + Math.cos(q.ang) * off + Math.sin(q.ang) * slide;
     const co = Math.cos(ang) * D;
     const si = Math.sin(ang) * D;
     const paths: SubPath[] = rings.map((r) => {
@@ -514,6 +518,10 @@ export function tipShapes(s: StrokeShape, outlineOf: OutlineFn): Shape[] | null 
   if (!tip) return null;
   const t = resolveTip(tip);
   if (t.kind === 'stamp') return stampShapes(s, t);
+  if (t.kind === 'nib') return nibShapes(s, t);
+  if (t.kind === 'along') return alongShapes(s, t);
+  if (t.kind === 'edged') return edgedShapes(s, t);
+  if (t.kind === 'bristle') return bristleShapes(s, t);
   const o = outlineOf(s, s.brush);
   if (o.length < 3) return null;
   return t.kind === 'watercolour' ? watercolourShapes(s, o, t) : grainShape(s, o, t.kind, t);

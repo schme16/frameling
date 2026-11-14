@@ -50,8 +50,8 @@ describe('starters', () => {
     const was: Record<string, string> = { ink: 'Ink', marker: 'Marker', pencil: 'Pencil', tapered: 'Tapered brush', chalk: 'Chalk', charcoal: 'Charcoal', watercolour: 'Watercolour', leaves: 'Leaves' };
     for (const [id, name] of Object.entries(was)) expect(S(id).name).toBe(name);
   });
-  it('are plain brushes or one of the four tips, so every one exports as ordinary vector shapes', () => {
-    for (const s of STARTERS) expect([undefined, 'chalk', 'charcoal', 'watercolour', 'stamp']).toContain(s.brush.tip?.kind);
+  it('are plain brushes or one of the tips, so every one exports as ordinary vector shapes', () => {
+    for (const s of STARTERS) expect([undefined, 'chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle']).toContain(s.brush.tip?.kind);
     for (const s of STARTERS) if (s.brush.tip?.kind === 'stamp') expect(s.brush.tip.shape).not.toBe('custom');
     // The popular kinds are all there: a pencil, a pen, a marker, a paint brush, chalk, charcoal, a wash and a stamp.
     for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(4);
