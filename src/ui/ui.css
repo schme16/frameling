@@ -920,8 +920,7 @@ kbd {
   cursor: pointer;
 }
 /* Tools put away leave a quiet chip at the foot of the rail. */
-.ui-tools-away,
-.ui-tools-waiting {
+.ui-tools-away {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -936,22 +935,116 @@ kbd {
   font-weight: 800;
 }
 .ui-tools-away:hover,
-.ui-tools-away:focus-visible,
-.ui-tools-waiting:hover,
-.ui-tools-waiting:focus-visible {
+.ui-tools-away:focus-visible {
   background: var(--hover-bg);
   color: var(--text);
 }
 
-/* The waiting button stays at the bottom of what you can see, so a short window doesn't scroll it out of reach. */
-.ui-tools-waiting {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  background: var(--panel);
+/* The layer line at the top of the rail: which layer the tools are for, and how many are off because of it. */
+.ui-tool-layer {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  width: calc(100% - 8px);
+  margin: 2px 4px 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
 }
-.ui-tools.is-sideways .ui-tools-waiting {
-  position: static;
+.ui-tool-layer:hover,
+.ui-tool-layer:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-layer svg {
+  flex: none;
+}
+.ui-tool-layer-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-tool-layer-off {
+  color: var(--text);
+  font-weight: 700;
+}
+.ui-tool-layer-count {
+  display: none;
+}
+/* Tools are off: a firmer line. It turns gold only when the layout and the layer disagree (the Pixel workspace on a vector layer), which is when missing tools come as a surprise. */
+.ui-tool-layer.is-off {
+  border-color: var(--muted);
+  color: var(--text);
+}
+.ui-tool-layer.is-alert {
+  border-color: var(--sunny-deep, var(--sunny));
+  background: color-mix(in srgb, var(--sunny) 18%, transparent);
+}
+.ui-tool-layer.is-alert:hover,
+.ui-tool-layer.is-alert:focus-visible {
+  background: color-mix(in srgb, var(--sunny) 30%, transparent);
+}
+/* One button wide, or lying along the top: just the icon, and the count when tools are off. */
+.ui-tools.is-stacked .ui-tool-layer,
+.ui-tools.is-sideways .ui-tool-layer {
+  position: relative;
+  width: var(--tool);
+  justify-content: center;
+  padding: 6px 0;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-layer-text,
+.ui-tools.is-sideways .ui-tool-layer-text {
+  display: none;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-layer-count,
+.ui-tools.is-sideways .ui-tool-layer-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--sunny-deep, var(--sunny));
+  color: #1d1b26;
+  font-size: 10px;
+  font-weight: 800;
+}
+/* A group that lost tools to the layer says how many, beside its name. */
+.ui-tool-head.has-off {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1px 6px;
+}
+.ui-tool-head-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-tool-head.is-alert .ui-tool-head-off {
+  background: color-mix(in srgb, var(--sunny) 28%, transparent);
+}
+.ui-tool-head-off {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--text);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 /* Change the tools: the panel beside the rail. */

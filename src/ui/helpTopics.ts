@@ -220,6 +220,14 @@ registerHelpTopics([
     keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout', 'greyed out', 'grey', 'disabled', 'pixel layer', 'vector layer', 'moves', 'same place'],
   },
   {
+    id: 'drawing-mode',
+    title: "Which layer you're drawing on",
+    section: 'Basics',
+    media: 'drawing-mode.png',
+    summary: 'The line at the top of the tool strip says what kind of layer you are on, and why some tools are off.',
+    keywords: ['layer kind', 'drawing mode', 'pixel layer', 'vector layer', 'tools missing', 'tools gone', 'tools off', 'pixel tools', 'shade', 'dither', 'greyed out', 'hidden tools', 'workspace', 'which layer', 'go to layer'],
+  },
+  {
     id: 'tool-move',
     title: 'Move the tool strip',
     section: 'Basics',
