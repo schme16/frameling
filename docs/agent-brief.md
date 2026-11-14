@@ -43,5 +43,8 @@ scripts/shoot.cjs (screenshots: off-screen window, `?debug` exposes window.__fra
   `xvfb-run -a -s "-screen 0 1600x1000x24" <command>` (add `SHOT_SHOW=1` for scripts/shoot.cjs and scripts/docs/record.cjs).
   If a harness fails under xvfb, fix the harness rather than using the live display.
 - Videos must be H.264 (libx264, yuv420p, even dimensions); the user can't play AV1.
+- Clean up only your OWN runs. Never `pkill Xvfb`, `pkill -f electron` or anything else that sweeps by name: other
+  agents are working on this machine at the same time, and a blanket kill takes their harness down mid-run. Kill the
+  pids you started, and leave anything you did not start alone, even if it looks stale.
 - No em dashes in user-facing text. TS comments plain and short.
 - Final report (short): branch name, commits, what works, tests count, A/B files, anything not done or risky.
