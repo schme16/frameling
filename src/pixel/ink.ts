@@ -14,10 +14,13 @@ export interface Ink {
    * Returns false to leave the pixel alone.
    */
   color(x: number, y: number, base: Uint8ClampedArray, i: number, out: Uint8Array): boolean;
+  /** Set when every pixel gets this one colour whatever was there, so a row can be filled in one go. */
+  readonly solid?: RGBA;
 }
 
 export function solidInk(c: RGBA): Ink {
   return {
+    solid: c,
     color(_x, _y, _b, _i, out) {
       out[0] = c[0];
       out[1] = c[1];
