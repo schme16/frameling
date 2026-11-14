@@ -9,6 +9,7 @@ import '../plugins/debug';
 import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
+import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
 import { store } from '../core/store';
