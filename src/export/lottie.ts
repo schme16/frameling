@@ -28,8 +28,9 @@
  * multiplies opacity into each shape) fades the group as one too. Effects don't play in that renderer.
  * Pictures made from effects are cropped, shared when they repeat and stored as WebP or PNG (see PICTURE_LOOKS).
  */
-import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
+import type { Cel, Doc, Drawing, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
 import { celAt } from '../core/doc';
+import { celOffsetAt } from '../core/symbols';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
 import { folderChain } from '../core/folders';
@@ -1097,7 +1098,9 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
       const moving = d?.kind === 'tilemap' && !!doc.tileset?.tiles.some((t) => t.frames.length > 1);
       const id = imageAsset(ctx, px.id + ':' + layer.pixelSize + (moving ? ':f' + cel.start : ''), px, layer.pixelSize);
       // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.
-      const at = [(px.x ?? 0) * layer.pixelSize, (px.y ?? 0) * layer.pixelSize];
+      // A key's offset (see core/offset.ts) moves it further.
+      const moved = celOffsetAt(layer, cel.start);
+      const at = [(px.x ?? 0) * layer.pixelSize + (moved?.x ?? 0), (px.y ?? 0) * layer.pixelSize + (moved?.y ?? 0)];
       out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat(at), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
@@ -1109,9 +1112,14 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     const frames: number[] = [];
     for (let f = a; f <= b; f++) frames.push(f);
     // A layer on a bone comes back as one posed group: its shapes are moved (or bent) into place per frame.
+    // The same posed drawing flattens to the same object, so a held key stays one still picture.
+    const flat = new Map<Drawing, Drawing>();
     const drawings = frames.map((f) => {
       const d = poseAt(doc, layer, f);
-      return layer.bind && d?.kind === 'vector' ? { ...d, shapes: flattenBound(d.shapes) } : d;
+      if (!((layer.bind || celOffsetAt(layer, f)) && d?.kind === 'vector')) return d;
+      let out = flat.get(d);
+      if (!out) flat.set(d, (out = { ...d, shapes: flattenBound(d.shapes) }));
+      return out;
     });
     const first = drawings[0];
     if (!first || first.kind !== 'vector') continue;

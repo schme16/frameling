@@ -8,7 +8,7 @@
  * - Posing: `poseAt` is what a layer shows at a frame once instances know which of their own frames to show and
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
-import type { Artboard, Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import type { Artboard, Cel, CelOffset, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { folderChain } from './folders';
 import { layersWithCels } from './sharedLayers';
 import { tweenEase } from './ease';
@@ -18,6 +18,7 @@ import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
 import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
+import { canOffset, mixOffsets, offsetDrawing, offsetOf } from './offset';
 import { withoutNotes } from '../notes/model';
 import { withTips } from './tips';
 import { hasTrim, trimmedBetween } from './trimTween';
@@ -694,13 +695,29 @@ export const poseStats = { built: 0 };
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseAtPlain(doc, layer, frame, depth);
-  return d ? withTips(d) : d;
+  return d ? moved(layer, frame, withTips(d)) : d;
 }
 
 /** `poseAt` with brush tips left as the lines they were drawn as, for code that looks lines up by their id. */
 export function poseAtPlain(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseCel(doc, layer, frame, depth);
   return d && layer.bind ? bindLayer(doc, layer, frame, d) : d;
+}
+
+/** Where a key's drawing sits at `frame`: its own offset, or part way to the next key's while a tween runs (missing = not moved). */
+export function celOffsetAt(layer: Layer, frame: number): CelOffset | undefined {
+  if (!canOffset(layer)) return undefined;
+  const cel = celAt(layer, frame);
+  if (!cel) return undefined;
+  const tp = cel.tween && frame > cel.start ? tweenProgress(layer, cel, frame) : undefined;
+  if (tp && (cel.offset || tp.next.offset)) return mixOffsets(cel.offset, tp.next.offset, tp.t);
+  return offsetOf(cel);
+}
+
+/** A layer's drawing moved by its key's offset (the drawing itself when there is none). */
+function moved(layer: Layer, frame: number, d: Drawing): Drawing {
+  const off = celOffsetAt(layer, frame);
+  return off ? offsetDrawing(d, off, layer.kind === 'pixel' ? layer.pixelSize : 1) : d;
 }
 
 function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
@@ -894,7 +911,7 @@ export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   const d = poseLiveCel(doc, layer, frame, live);
-  return layer.bind ? bindLayer(doc, layer, frame, d) : d;
+  return moved(layer, frame, layer.bind ? bindLayer(doc, layer, frame, d) : d);
 }
 
 function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {

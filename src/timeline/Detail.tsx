@@ -6,7 +6,7 @@ import { memo } from 'react';
 import type { Cel, Easing, Layer } from '../core/format';
 import { easeLabel, tweenEase } from '../core/ease';
 import { nextKey } from '../core/symbols';
-import { holdWords } from './geometry';
+import { holdWords, movedWords } from './geometry';
 import { celRef, type Track } from './tracks';
 
 /** The colour class for a layer: its label, or its kind's own colour. */
@@ -35,7 +35,8 @@ export function EaseCurve({ ease: e, slice, width, height = 12 }: { ease: Easing
 function celTitle(layer: Layer, c: Cel, tweened: boolean): string {
   const span = c.length > 1 ? `, held for ${holdWords(c.length)}` : '';
   const tw = tweened && c.tween ? `. ${c.tween.kind === 'shape' ? 'Melts into the next drawing (shape tween)' : 'Moves to the next drawing (tween)'}, ${easeLabel(c.tween.ease).toLowerCase()}` : '';
-  return `${layer.name}: drawing at frame ${c.start + 1}${span}${tw}. Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
+  const moved = c.offset ? ` ${movedWords(c.offset)}` : '';
+  return `${layer.name}: drawing at frame ${c.start + 1}${span}${tw}.${moved} Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
 }
 
 /** One layer's row: keys (solid cell with a diamond), holds (a band with an end cap), tweens (an arrow with the easing). */
@@ -56,7 +57,7 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
         return (
           <div
             key={c.id}
-            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}`}
+            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}${c.offset ? ' is-moved' : ''}`}
             data-cel={c.id}
             style={{ left: c.start * cw, width: w }}
             title={celTitle(layer, c, tweened)}

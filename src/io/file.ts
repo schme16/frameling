@@ -9,13 +9,14 @@ import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
+import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { MAX_UNZIPPED } from './ioJobs';
 import { readExports } from '../export/saved';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
+import { cleanOffset, versionFor } from '../core/offset';
 import { isEasing } from '../core/ease';
 import { readOrigin } from './shapes-extra';
 import { hasShapeKind, shapeKind } from '../core/shapeKinds';
@@ -206,7 +207,9 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false, pr
       entries.push(d.kind === 'vector' ? keep(id, d, () => d) : { id, value: () => d });
     }
   }
-  const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
+  // The usual version, or the next when a key has an offset, so an older Frameling refuses the file instead of drawing parts in the wrong place.
+  const version = versionFor(doc);
+  const manifest: Manifest = { format: 'frameling', version, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   // A small picture of the drawing for lists of files. Stored as it is (a PNG is already packed), and older versions skip it.
   if (preview?.length) files['preview.png'] = [preview, { level: 0 }];
@@ -215,7 +218,7 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false, pr
   // Reference pictures the same way, in `pictures/` (only those a layer still shows).
   const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = docJsonBytes({ ...doc, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
+  files['doc.json'] = docJsonBytes({ ...doc, version, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
   return files;
 }
 
@@ -379,7 +382,7 @@ function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, 
   if (!isObj(manifest) || manifest.format !== 'frameling' || !isObj(raw)) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   const version = manifest.version;
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw damaged();
-  if (version > FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
+  if (version > NEWEST_FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
 
   const warnings: string[] = [];
   raw = migrate(raw, version);
@@ -474,7 +477,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
           warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
           continue;
         }
-        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween), ...(c.autoHold === true ? { autoHold: true } : {}) });
+        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween), ...(c.autoHold === true ? { autoHold: true } : {}), ...readOffset(c.offset) });
       }
       cels.sort((a, b) => a.start - b.start);
       const base = {
@@ -712,6 +715,12 @@ function readBind(b: unknown): { bind?: LayerBind } {
 }
 
 /** A key's in-betweens, if it has readable ones. */
+/** A key's offset: kept only when it moves the drawing, with absurd numbers pulled in (see `cleanOffset`). */
+function readOffset(v: unknown): { offset?: CelOffset } {
+  const offset = cleanOffset(v);
+  return offset ? { offset } : {};
+}
+
 function readTween(t: unknown): { tween?: Tween } {
   if (!isObj(t)) return {};
   const tween: Tween = { ...(t.kind === 'shape' ? { kind: 'shape' as const } : {}), ease: isEasing(t.ease) ? t.ease : 'linear' };

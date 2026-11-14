@@ -742,6 +742,17 @@
 .tl-cel.is-auto {
   background-color: color-mix(in srgb, var(--cel-hold) 55%, transparent);
 }
+/* A drawing that sits somewhere other than where it was drawn (see core/offset.ts): a small corner tick. */
+.tl-cel.is-moved::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border-style: solid;
+  border-width: 0 0 7px 7px;
+  border-color: transparent transparent var(--raised) transparent;
+  pointer-events: none;
+}
 .tl-row.is-hidden .tl-cel {
   opacity: 0.4;
 }

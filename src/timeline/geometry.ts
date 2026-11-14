@@ -43,3 +43,9 @@ export function holdWords(frames: number): string {
   const on = ['', 'ones', 'twos', 'threes', 'fours'][frames];
   return on ? `${frames} frame${frames === 1 ? '' : 's'} (on ${on})` : `${frames} frames`;
 }
+
+/** "Moved 3 right and 2 down from where it was drawn", in words. */
+export function movedWords(o: { x: number; y: number }): string {
+  const bits = [o.x ? `${Math.abs(o.x)} ${o.x > 0 ? 'right' : 'left'}` : '', o.y ? `${Math.abs(o.y)} ${o.y > 0 ? 'down' : 'up'}` : ''].filter(Boolean);
+  return `Moved ${bits.join(' and ')} from where it was drawn.`;
+}

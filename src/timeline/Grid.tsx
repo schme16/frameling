@@ -10,7 +10,7 @@ import { duplicateClipAndPick, say } from './commands';
 import { keyHint } from './cmd';
 import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
-import { frameAtX, holdWords, labelStep, visibleFrames, zoomScroll } from './geometry';
+import { frameAtX, holdWords, labelStep, movedWords, visibleFrames, zoomScroll } from './geometry';
 import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
@@ -105,10 +105,10 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
       {shown.map((c) => (
         <div
           key={c.id}
-          className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}`}
+          className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}${c.offset ? ' is-moved' : ''}`}
           data-cel={c.id}
           style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}
-          title={c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined}
+          title={[c.offset ? movedWords(c.offset) : '', c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : ''].filter(Boolean).join(' ') || undefined}
         >
           <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
             <i className="tl-cel-dot" />

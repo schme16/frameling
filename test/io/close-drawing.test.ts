@@ -139,7 +139,7 @@ describe('Close drawing', () => {
     expect(now.canRedo()).toBe(false);
     expect(now.nestedTag()).toBeNull();
     // The timeline's own state, and the autosave copy.
-    expect(tl()).toEqual({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() });
+    expect(tl()).toEqual({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), moveFolder: false });
     expect(cleared).toBeGreaterThan(0);
   });
 });

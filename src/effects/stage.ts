@@ -4,10 +4,11 @@
  * playing over held drawings with a glow blurs nothing new.
  */
 import type { Doc, Layer } from '../core/format';
-import { poseAt, poseLive } from '../core/symbols';
+import { celOffsetAt, poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
 import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
+import { offsetMatrix } from '../core/offset';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
 import { paintLayerPicture } from '../reference/paint';
@@ -43,13 +44,18 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const d = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
       lg.save();
       lg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
-      if (lv?.kind === 'pixel') drawLivePixels(lg, lv, pixelSize);
-      else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
+      if (lv?.kind === 'pixel') {
+        const pm = offsetMatrix(celOffsetAt(layer, p.frame));
+        if (pm) lg.transform(pm[0], pm[1], pm[2], pm[3], pm[4], pm[5]);
+        drawLivePixels(lg, lv, pixelSize);
+      } else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
       lg.restore();
       return;
     }
     if (lv?.kind === 'pixel') {
       lg.save();
+      const pm = offsetMatrix(celOffsetAt(layer, p.frame));
+      if (pm) lg.transform(pm[0], pm[1], pm[2], pm[3], pm[4], pm[5]);
       drawLivePixels(lg, lv, pixelSize);
       lg.restore();
       return;

@@ -278,9 +278,25 @@ pixel layer of the board and write them into the engine data (see the sprite she
 
 ### Cels
 
-`Cel` is `{id, start, length, drawingId, tween?, autoHold?}`. `length` is the exposure (1 = on ones). `tween` makes
+`Cel` is `{id, start, length, drawingId, tween?, autoHold?, offset?}`. `length` is the exposure (1 = on ones). `tween` makes
 in-betweens to the next key on the layer when it starts right where this one ends (`828d4a8`). `autoHold` (`cd5f717`)
-means the hold reaches the next key and gives way when someone draws on a later frame of it.
+means the hold reaches the next key and gives way when someone draws on a later frame of it. `offset` is `{x, y}` in
+document pixels (right and down positive): where the key's drawing sits, so a breathe or a head bob moves a part
+without a new drawing per position. Missing means not moved; a zero move is never written; numbers are rounded to a
+thousandth and held within 16384, and anything that isn't a pair of numbers is dropped on open (`cleanOffset` in
+`core/offset.ts`). On a pixel layer the editor keeps it to whole art pixels. In-betweens run from this key's offset to
+the next key's while the key has a tween (a missing one counts as 0). Only vector layers without bones and pixel
+layers use it (not cameras, bones layers or tilemaps). Every renderer and export shows it through `poseAt`, which wraps
+the drawing in the same posed group a bone-attached layer uses; `celOffsetAt` (`core/symbols.ts`) is the one place that
+works the offset out. A folder has no offset of its own: moving a folder (Frameling's "Move the whole folder together")
+sets the offset of every layer under it on that frame, so the group moves as one.
+
+**Version.** A file that uses an offset anywhere (stage, symbols, artboards, what a variation changes) is saved as
+version 4 (`OFFSET_FORMAT_VERSION`); a file that doesn't stays version 3, so nothing changes for anyone not using it.
+`versionFor` in `core/offset.ts` decides. An older Frameling refuses a version 4 file with the "made with a newer
+Frameling" message. That is on purpose: opening it anyway would drop the offsets without a word, draw every moved part
+in the wrong place, and take the moves out of the file for good on the next save. `NEWEST_FORMAT_VERSION` is the
+newest this build opens. `test/offset/offset.test.ts` covers the round trip, the repair of odd values and the version.
 
 ### Drawings
 

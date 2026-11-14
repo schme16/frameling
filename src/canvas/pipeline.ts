@@ -13,7 +13,7 @@ import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { Mat } from '../core/symbols';
 import { mul, poseAt, poseLive, rootDoc } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
-import { bindMatrixAt } from '../rig/pose';
+import { placementAt } from '../rig/pose';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
@@ -420,8 +420,8 @@ export class FramePainter {
         g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
         const lc = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
         if (lc) g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
-        // Pixels being painted on a part attached to a bone show where the part is.
-        const bm = bindMatrixAt(doc, layer, p.frame);
+        // Pixels being painted on a part attached to a bone, or moved by its key's offset, show where the part is.
+        const bm = placementAt(doc, layer, p.frame);
         if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
         drawLivePixels(g, lv, pixelSize);
         g.restore();

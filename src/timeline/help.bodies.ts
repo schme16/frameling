@@ -1,6 +1,27 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 import { ix } from '../features/flags';
 export const bodies: Record<string, string> = {
+  'timeline-move-drawing': `A breathe or a head bob moves a part by a pixel or two. You don't need a new drawing for every position: **move the drawing** instead, and Frameling remembers where it sits. A small corner mark on the block in the timeline shows a drawing that has been moved.
+
+**Move it:** pick the layer, go to the frame, and press **Ctrl+Alt+arrow keys**. Each press moves it one pixel (one art pixel on a pixel layer, so it stays on the grid). Hold the key and it still undoes in one step.
+
+**A bob, frame by frame:** on a later frame of a held drawing, moving it cuts the hold there, so the part sits somewhere else from that frame on. Both blocks share the one drawing, so nothing is copied.
+
+**A whole group together:** put the head's layers in a folder, pick one of them and turn on **Frames and motion > Move a drawing without redrawing it > Move the whole folder together**. Now the same keys move every layer of that folder on this frame, so the head bobs as one.
+
+**Back to where it was drawn:** **Put drawing back where it was drawn**, in the same menu or the command palette. If your computer already uses Ctrl+Alt+arrows (some Linux desktops switch workspace with them), change the keys in **Preferences > Keyboard**.
+
+**Between two drawings:** with in-betweens on, the move glides from this drawing's place to the next one's.
+
+## Good to know
+
+- Everything draws it moved: the canvas, the player, pictures, GIFs, sprite sheets, SVG, PDF and Lottie.
+- Drawing on a moved layer works where you see it. A new drawing made as a copy keeps the move; a blank one starts where it was drawn.
+- Two blocks that share a drawing show a change to it together. Draw on the one you mean, or make a copy first.
+- A file with a moved drawing is saved as a newer file. An older Frameling will say so and not open it, rather than put the parts in the wrong place.
+- Cameras, skeletons (bones) and tiles can't be moved this way.
+
+Learn more: [Frames, keys and holds](help:timeline-frames), [Layer folders](help:layer-folders).`,
   timeline: `The timeline is the strip along the bottom. Time runs left to right, one square for each frame. Your layers are stacked on the left, the top layer in front.
 
 ## Reading it

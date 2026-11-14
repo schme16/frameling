@@ -11,7 +11,7 @@ import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDraw
 import { celAt, findLayer, newDrawingFor, pixelGrid, uid } from '../core/doc';
 import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { cutProblem, cutTween, takeTurns, OVERSHOOT_CUT_WHY } from '../core/tweenCut';
-import { isInBetween, nextKey, shownDrawing } from '../core/symbols';
+import { celOffsetAt, isInBetween, nextKey, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
 import { autoHeldAt, newKeySpan, splitAutoHold } from '../timeline/edit-core';
@@ -118,6 +118,8 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
         if (cel && split && cel.start < frame) {
           // Make a new key here: the held cel ends just before this frame, and a copy of its drawing takes over.
           const src = doc.drawings[cel.drawingId];
+          // The new key sits where the old one was (or where its glide had got to), so a moved drawing doesn't jump.
+          const moved = celOffsetAt(current(l) as Layer, frame);
           const copy = (shown ? structuredClone(shown) : structuredClone(current(src))) as Draft<Drawing>;
           copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
@@ -132,7 +134,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           }
           const tween = cut?.second;
           cel.length = frame - cel.start;
-          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}) });
+          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}), ...(moved ? { offset: { ...moved } } : {}) });
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
         }

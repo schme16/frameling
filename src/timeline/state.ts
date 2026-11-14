@@ -17,13 +17,15 @@ export interface TlState {
   open: ReadonlySet<Id>;
   /** Keys picked on the detailed timeline (see tracks.ts for the ref format). */
   keys: ReadonlySet<string>;
+  /** Moving a drawing (Ctrl+Alt+arrows) moves the whole folder it is in instead, so the group moves together. */
+  moveFolder: boolean;
 }
 
 export const MIN_CW = 5;
 export const MAX_CW = 64;
 export const DEFAULT_CW = 22;
 
-const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() });
+const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), moveFolder: false });
 let state: TlState = freshTl();
 const listeners = new Set<() => void>();
 
