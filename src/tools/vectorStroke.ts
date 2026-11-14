@@ -12,6 +12,7 @@ import { reportEdit } from './util';
 import type { VectorDynamics } from '../tablet/dynamics';
 import { store } from '../core/store';
 import { afterStroke, drawQuickPreview, holdModeNow, QuickHold } from './quickshape';
+import { inkWanted, noteInk } from '../popout/ink';
 
 /** The document and layer a stroke belongs to, for remembering where it ended. */
 function lastStore(): { doc: string; ui: string } {
@@ -98,6 +99,7 @@ export class VectorStroke {
   /** Stops the watching (the stroke ended or was dropped). */
   stop(): void {
     this.hold?.stop();
+    noteInk(null);
   }
 
   /** True while the clean shape is showing. */
@@ -116,6 +118,8 @@ export class VectorStroke {
     this.points.push(this.point(e));
     const op = this.dyn?.opacity?.(e);
     if (op !== undefined) this.strengths.push(op);
+    // A second window, if one is open, follows the line as it grows.
+    if (inkWanted()) noteInk(this.shape());
   }
 
   /** The stroke as it would be committed right now. */

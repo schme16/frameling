@@ -1,0 +1,27 @@
+/* The picture window: the drawing and nothing else. */
+html, body, #root { margin: 0; height: 100%; overflow: hidden; }
+body { background: #121019; font-family: 'Nunito Variable', 'Nunito', system-ui, sans-serif; }
+.po-root { position: fixed; inset: 0; overflow: hidden; background: var(--po-bg, #121019); color: var(--po-text, #f4efe6); user-select: none; cursor: default; }
+.po-stage { position: absolute; pointer-events: none; box-shadow: 0 6px 30px rgb(0 0 0 / 35%); }
+.po-checker {
+  --po-check-a: color-mix(in srgb, var(--po-text) 9%, var(--po-raised));
+  --po-check-b: color-mix(in srgb, var(--po-text) 4%, var(--po-raised));
+  background-color: var(--po-check-b);
+  background-image: conic-gradient(var(--po-check-a) 25%, transparent 0 50%, var(--po-check-a) 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+.po-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.po-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.po-wait { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 24px; }
+.po-wait-title { font-size: 20px; font-weight: 800; }
+.po-wait-text { font-size: 14px; color: var(--po-muted); max-width: 32em; }
+.po-hint, .po-note {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  color: var(--po-text); background: color-mix(in srgb, var(--po-raised) 88%, transparent); border: 1px solid color-mix(in srgb, var(--po-text) 14%, transparent);
+  pointer-events: none;
+}
+.po-hint { animation: po-fade 6s ease forwards; }
+@keyframes po-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .po-hint { animation: none; } }
+.mk-ghost { opacity: 0.85; }
+.mk-text { font-family: 'Nunito Variable', system-ui, sans-serif; font-weight: 650; user-select: none; }

@@ -114,6 +114,13 @@ export interface State {
   ui: UiState;
 }
 
+/** How the document got from one value to the next, when it was by patches (an edit, Undo, Redo). For anything that mirrors it elsewhere (the second window). */
+export interface DocChange {
+  from: Doc;
+  to: Doc;
+  patches: Patch[];
+}
+
 interface HistoryEntry {
   /** Stays the same through undo and redo, so other parts can remember things about a step. */
   id: number;
@@ -223,6 +230,11 @@ export class Store {
   private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
   /** What the selection stands for while it follows across keys (see followSelection). */
   private follow: FollowMemory | null = null;
+  private change: DocChange | null = null;
+  /** The last change made by patches. It only counts when `from` is the document you hold and `to` is the one now showing; anything else was a whole new document. */
+  lastChange(): DocChange | null {
+    return this.change;
+  }
   /** How many times a whole document has been put in (new or opened), so the canvas can refit even when it is the same file again. */
   loads = 0;
 
@@ -285,6 +297,7 @@ export class Store {
     }
     this.trimHistory();
     this.redoStack = [];
+    this.change = { from: before, to: next, patches };
     this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
     this.emit();
   }
@@ -388,19 +401,20 @@ export class Store {
     const e = this.undoStack.pop();
     if (!e) return;
     this.redoStack.push(e);
-    this.afterHistory(applyPatches(this.state.doc, e.inverse));
+    this.afterHistory(applyPatches(this.state.doc, e.inverse), e.inverse);
   }
 
   redo(): void {
     const e = this.redoStack.pop();
     if (!e) return;
     this.undoStack.push({ ...e, coalesce: undefined });
-    this.afterHistory(applyPatches(this.state.doc, e.patches));
+    this.afterHistory(applyPatches(this.state.doc, e.patches), e.patches);
   }
 
   /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */
-  private afterHistory(doc: Doc): void {
+  private afterHistory(doc: Doc, patches?: Patch[]): void {
     const ui = this.state.ui;
+    if (patches) this.change = { from: this.state.doc, to: doc, patches };
     const keep = existingSelection(doc, ui.activeLayerId, ui.frame, ui.selection);
     this.state = { doc, ui: { ...ui, dirty: true, selection: keep.length === ui.selection.length ? ui.selection : keep } };
     this.emit();

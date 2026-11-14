@@ -183,6 +183,15 @@ export interface ClipboardBridge {
   writeText(text: string): Promise<boolean>;
 }
 
+export interface PopoutBridge {
+  /** Opens the picture window, or brings it forward when it is already open. A fresh link to the drawing arrives as a window message. */
+  open(): Promise<void>;
+  close(): Promise<void>;
+  isOpen(): Promise<boolean>;
+  /** Called when the picture window has gone, however it went. Returns an unsubscribe function. */
+  onClosed(handler: () => void): () => void;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -274,6 +283,8 @@ export interface FramelingApi {
   clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */
   gpu?: GpuBridge;
+  /** The picture window: a second window that shows the drawing big (desktop only). The link between the two pages is a message port, handed over as a window message (see src/popout/link.ts). */
+  popout?: PopoutBridge;
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;

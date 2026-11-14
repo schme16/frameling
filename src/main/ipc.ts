@@ -46,6 +46,8 @@ export interface IpcHooks {
   takeRestore(): { file: string | null; view: RestartView; carry: boolean } | null;
   /** An installer is about to run: just close, so it can work. */
   finishUpdate(): void;
+  /** The picture window (a second window showing the drawing big). */
+  popout: { open(): void; close(): void; isOpen(): boolean };
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -267,6 +269,9 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof id === 'string') removeKept(id);
   });
 
+  handle('popout:open', () => hooks.popout.open());
+  handle('popout:close', () => hooks.popout.close());
+  handle('popout:isOpen', () => hooks.popout.isOpen());
   handle('app:launchFile', () => hooks.takeLaunchFile());
   handle('app:restart', (_e, view: unknown, carry: unknown) => hooks.restart(cleanView(view), carry === true));
   handle('app:restore', () => hooks.takeRestore());

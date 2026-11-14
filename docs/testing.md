@@ -718,6 +718,33 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
+## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
+
+The second window (the picture window, `src/popout/`, `src/main/popout.ts`) needs the real main process (two windows and the
+message port between them), so these three run `dist/main/main.cjs` inside the harness (`scripts/e2e/popout-lib.cjs`) instead of
+stubbing the desktop side. Always in xvfb, after `npm run build`:
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/popout.cjs [--theme light]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/popout-media.cjs --theme dark [--ab] [--help]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--rounds 7] [--seconds 6] [--out file.json]
+```
+
+- `popout.cjs` is the check, exit code 1 on any failure. It opens the window and compares the copy it holds with the drawing
+  (JSON equal) after: a stroke drawn with real pointer events (the stroke shows live while the pen is down, and the live ink is
+  gone once it lands), undo, redo, a new drawing, moving the playhead and playing. Then the awkward cases: moved and resized,
+  closed and reopened (a fresh window, back where it was), the command closing it, asking again never making a second one,
+  the drawing window reloading (the link is made again) and the drawing window closing (the second window goes with it and
+  the app quits). The pure rules behind this are in `test/main/popout.test.ts` and `test/popout/`.
+- `popout-media.cjs` records the whole virtual screen with ffmpeg (both windows at once): drawing three strokes, then playing.
+  `--ab` writes `brand/ab/canvas-popout/canvas-popout-<theme>.mp4` and `rest-<theme>.png` (the window at rest, cropped, captioned);
+  `--help` writes the help topic's `public/help/canvas-popout-<theme>.mp4` and poster. Run it once per theme. The help runner
+  (`help-media.cjs`) skips the `canvas-popout` entry (`external:` in `scripts/docs/help/popout.cjs`) and says to use this script.
+- `scripts/perf/popout.cjs` is the frame rate with and without the window, in one run: playback of a heavy drawing (240 frames,
+  5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, alternating closed, an animated control window, the
+  real window not painting (messages only) and the real window, and printing the median of each. See `scripts/perf/README.md`.
+
 ## What is remembered between launches: scripts/e2e/remember.cjs
 
 The brush, the stroke and fill colours, loop playback and the onion skin are kept between launches (src/core/uiMemory.ts

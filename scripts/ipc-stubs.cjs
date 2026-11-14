@@ -44,6 +44,10 @@ function invokeStubs(library) {
     'autosave:listKept': () => [],
     'autosave:readKept': () => null,
     'autosave:removeKept': () => true,
+    // The second window needs the real main process, so a harness with stubs just has none to open.
+    'popout:open': () => undefined,
+    'popout:close': () => undefined,
+    'popout:isOpen': () => false,
     'app:launchFile': () => null,
     'app:display': () => null,
     'app:lastCrash': () => null,

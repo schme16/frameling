@@ -457,6 +457,26 @@ the plugin's permissions and limits; `ops.ts` applies edits as one undo step; `u
 descriptions; `manager.ts` installs, enables and removes; approvals live in `localStorage` `frameling.plugins.v1`. The
 API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.md`.
 
+## The second window
+
+A window that shows the drawing big (for a second screen) and follows the drawing window. It only watches: nothing in it
+can change the drawing.
+
+- **Desktop side.** `src/main/popout.ts` holds the rules (one window at most, where it was, what to do when it or the drawing
+  window goes), with Electron handed in so `test/main/popout.test.ts` can run them with stand-ins. `popoutWindow.ts` is the
+  Electron half. The window loads `dist/popout/popout.html` (a page of its own, `vite.popout.config.ts`, so it loads none of the
+  app's chunk) with its own preload (`src/preload/popout.ts`), which can pass on a message port and nothing else.
+- **The link.** A `MessageChannelMain` pair: one end to each page, so what crosses never goes through the main process. The
+  drawing window's end is `src/popout/link.ts`, started by a window message; it does nothing until a picture window says hello.
+- **What is sent.** `mirror.ts` watches the store: the whole drawing first, then immer patches (`store.lastChange()` says how the
+  drawing got from the last value to this one; anything that is not a clean step sends the whole drawing again), a small
+  `look` (playhead, playing, camera, marks, theme), the freehand stroke in progress (`ink.ts`, a tap in `VectorStroke`) and
+  half-done vector changes (`setLive`). A message that does not follow on makes the other side ask again (`replica.ts`).
+- **How it paints.** `painter.ts` calls the canvas's own `FramePainter`, so it is the same renderer with its own bitmap cache.
+  `show.ts` has the decisions (camera, marks, which frame, fitting the page), all pure.
+- **Choices.** `popout.camera` and `popout.marks` (`src/popout/choices.ts`), asked once and only when the drawing has a camera
+  or marks. Onion skin, light table, ghosts, grid, guides, handles, notes and reference pictures are never shown.
+
 ## Other feature folders
 
 - `src/reference/`: reference pictures (a JPG or PNG on a reference layer, to trace over): which picture shows on which frame and where it sits (`model.ts`, pure), drawing it for the editing canvas only (`paint.ts`, so exports never see it), adding and moving it (`ops.ts`), the handles and the bar (`Placement.tsx`), the drop and the commands. Its file part is `src/io/pictures-file.ts`. `src/import/video/` opens a video as frames to trace over (mediabunny's decoder, a video element as the fallback).
