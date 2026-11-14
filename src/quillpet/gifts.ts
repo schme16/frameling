@@ -60,7 +60,7 @@ function sayMade(present: Present, reason: PresentReason): void {
     duration: 8000,
     action: {
       label: 'Have a look',
-      run: () => showPanel('quill-things'),
+      run: () => showPanel('quill-pet'),
     },
   });
   // The first time, ask whether he should carry on doing this. The present is already made: the question is about

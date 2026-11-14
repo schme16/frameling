@@ -3,7 +3,7 @@
 // onboarding and the quests all carry on exactly as they were. Show Quill in Preferences is the other switch, and
 // that one hides him everywhere, pet included.
 import { defineFeature } from '../features/feature';
-import { quillPetCommands, quillPetPanel, quillThingsPanel } from './commands';
+import { quillPetCommands, quillPetPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
 import { watchForPresents } from './gifts';
@@ -14,30 +14,18 @@ let stopGifts: (() => void) | null = null;
 
 export const quillPetFeature = defineFeature({
   id: 'quill-pet',
-  name: "Quill's corner",
-  about: 'Quill lives in a panel of his own, keeps you company while you draw, and remembers the two of you.',
+  name: 'Quill',
+  about: 'A home for Quill in the right rail: how he is, the things you and he have given each other, and how well you know each other. Off, he is still your guide.',
   optional: true,
   commands: quillPetCommands,
-  panels: [quillPetPanel, quillThingsPanel],
+  panels: [quillPetPanel],
   help: quillPetHelp,
-  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.things', 'quillPet.give'] }],
+  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.give'] }],
   sections: {
     'quill-pet': {
-      blurb: 'Quill, how he is, and how well the two of you know each other.',
+      blurb: 'Quill, how he is, how well the two of you know each other, and the things you have given each other.',
       group: 'learn',
-      keywords: ['quill', 'pet', 'hedgehog', 'friend'],
-    },
-    'quill-things': {
-      short: 'His things',
-      blurb: 'The drawings you have given Quill, which he keeps.',
-      group: 'learn',
-      keywords: ['quill', 'things', 'collection', 'gifts', 'presents'],
-    },
-    'quill-presents': {
-      short: 'His presents',
-      blurb: 'Quill redraws something of yours with a wobbly hand and leaves it for you.',
-      group: 'learn',
-      keywords: ['quill', 'present', 'gift', 'crayon', 'copy', 'made', 'surprise'],
+      keywords: ['quill', 'pet', 'hedgehog', 'friend', 'things', 'collection', 'gifts', 'presents', 'crayon', 'surprise'],
     },
   },
   activate: () => {

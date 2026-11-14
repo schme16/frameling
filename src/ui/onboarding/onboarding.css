@@ -42,6 +42,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* If it is ever too tall for the window it scrolls, instead of being cut off at the top. */
+  min-height: 0;
+  overflow-y: auto;
+  /* Room for the little tail under the last bubble, so it does not count as overflow. */
+  padding-bottom: 9px;
 }
 .ob-bubble {
   white-space: pre-line;
@@ -71,6 +76,7 @@
 }
 .ob-quill-stand {
   position: relative;
+  flex: none;
   display: flex;
   align-items: flex-end;
   padding-left: 12px;
@@ -104,45 +110,47 @@
   color: var(--muted);
 }
 
-/* Hello: five little feature tiles. */
+/* Hello: what you can do, as a plain list. Nothing here is a button, so nothing is drawn like one. */
 .ob-hello {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
-  margin-top: 12px;
-}
-/* Five tiles: three across the top, two wider ones under them. */
-.ob-hello .ob-feature {
-  grid-column: span 2;
-  min-height: 132px;
-}
-.ob-hello .ob-feature:nth-child(n + 4) {
-  grid-column: span 3;
-}
-@media (max-width: 760px) {
-  .ob-hello {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .ob-hello .ob-feature,
-  .ob-hello .ob-feature:nth-child(n + 4) {
-    grid-column: span 1;
-  }
-}
-.ob-feature {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px;
-  border-radius: var(--radius);
-  background: var(--panel-2);
-  border: 1px solid var(--line-soft);
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ob-hello li {
+  display: grid;
+  grid-template-columns: 36px 110px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
   animation: ob-pop 0.38s var(--ease-bounce, ease-out) both;
 }
-.ob-feature span:last-child {
-  color: var(--muted);
-  font-size: 13px;
+.ob-hello li:last-child {
+  border-bottom: none;
 }
-.ob-feature-icon,
+.ob-hello li > span:last-child {
+  color: var(--muted);
+}
+.ob-hello-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--accent);
+}
+@media (max-width: 760px) {
+  .ob-hello li {
+    grid-template-columns: 36px 1fr;
+  }
+  .ob-hello li > span:last-child {
+    grid-column: 2;
+  }
+}
 .ob-card-icon {
   display: inline-grid;
   place-items: center;
@@ -282,6 +290,34 @@
 .ob-setting > div:first-child span {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* A short window (about 720 px high): smaller bubbles and a smaller Quill, so all six bubbles of the hello fit. */
+.ob-quill.is-short {
+  gap: 8px;
+  padding-top: 16px;
+}
+.ob-quill.is-short .ob-bubbles {
+  gap: 6px;
+}
+.ob-quill.is-short .ob-bubble {
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.ob-quill.is-short .ob-quill-stand {
+  min-height: 156px;
+}
+.ob-quill.is-short .ob-berry {
+  left: 140px;
+  bottom: 80px;
+}
+.ob-more {
+  margin-top: 14px;
+  font-size: 13px;
+}
+.ob-tuck {
+  margin-bottom: 8px;
 }
 
 /* Name. */

@@ -1,5 +1,6 @@
 // The commands the shell owns: new document, view (panels, workspaces, theme, palette, preferences) and help.
 import { getHelp, registerCommands } from '../core/registry';
+import { offFeatures, setFeatureOn } from '../features/host';
 import { contextualHelpId } from './help/context';
 import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
@@ -92,6 +93,17 @@ registerCommands([
     keywords: ['turn off', 'turn on', 'switch', 'optional', 'simple', 'hide', 'lip sync', 'particles', 'text', 'tiles'],
     global: true,
     run: () => openPrefs('features'),
+  },
+  {
+    id: 'view.featuresAllOn',
+    label: 'Turn every feature back on',
+    category: 'View',
+    description: 'Brings back every part of Frameling that is switched off, like the ones Quill tucked away in his hello.',
+    help: 'features',
+    keywords: ['turn on', 'bring back', 'tucked away', 'everything', 'all', 'features', 'rig', 'lip sync', 'particles', 'tiles', 'camera'],
+    global: true,
+    enabled: () => offFeatures().length > 0,
+    run: () => offFeatures().forEach((f) => setFeatureOn(f.id, true)),
   },
   {
     id: 'view.toggleTheme',

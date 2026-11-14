@@ -1,5 +1,5 @@
 {
-  "$about": "Everything Quill says, in one place. Edit the text freely. Words in {curly} brackets are filled in by the app (a name, a theme), so keep them, spelled the same. A list is several bubbles shown together, or a set the app picks from (the 'where' says which). Not here: quest step instructions (src/quests/library.ts, tutorial content rather than Quill's personality), help topics, and plain app messages like errors. Review page: brand/dialogue/index.html. Apply an exported changes file with: npm run dialogue:apply <file.json>",
+  "$about": "Everything Quill says, in one place. Edit the text freely. Words in {curly} brackets are filled in by the app (a name, a theme), so keep them, spelled the same. A list is several bubbles shown together, or a set the app picks from (the 'where' says which). Not here: help topics, plain app messages like errors, and quest step instructions (src/quests/library.ts, tutorial content rather than Quill's personality). What he says as you finish each quest step is here (quests.did.*). Review page: brand/dialogue/index.html. Apply an exported changes file with: npm run dialogue:apply <file.json>",
   "onboarding.hello": {
     "text": [
       "Hi, I'm Quill!",
@@ -63,14 +63,14 @@
       "Every masterpiece needs a name.",
       "Something poignant... or roll the dice for some silly ones!"
     ],
-    "where": "First-run hello, 'Name your first animation'. Two bubbles."
+    "where": "First-run hello, last step ('All set!', where you name your first animation). Two bubbles, first."
   },
   "onboarding.done": {
     "text": [
       "Hooray! {name} is going to be brilliant.",
       "Pick how you'd like to start."
     ],
-    "where": "First-run hello, last step ('All set!'). Two bubbles. {name} is the animation's name, or the 'no name' words below.",
+    "where": "First-run hello, last step ('All set!'). Two bubbles, after the name ones. {name} is the animation's name, or the 'no name' words below.",
     "vars": ["name"]
   },
   "onboarding.done.noName": { "text": "Your animation", "where": "Stands in for {name} at the start of the 'All set!' bubble when the name box was left empty." },
@@ -91,6 +91,11 @@
     "where": "First-run hello: the question that opens from the Tiles-is-off note, before 'Turn Tiles on?'."
   },
   "onboarding.tilesOff.button": { "text": "Turn Tiles on", "where": "First-run hello: the button on the Tiles-is-off note, which asks before turning Tiles on." },
+  "onboarding.tucked": {
+    "text": "Tucked away {names}, so there's less in your way. Any of it comes back in Preferences > Features.",
+    "where": "A toast right after the first-run hello, when it put away the areas you didn't pick. It has a Bring them back button. {names} is the areas' names, like \"Rig, Lip sync and Clip flow\".",
+    "vars": ["names"]
+  },
   "onboarding.done.blank": { "text": "Straight in. You know what you're doing.", "where": "First-run hello, 'All set!': under 'Just a blank page'." },
   "onboarding.doze.asleep": { "text": "Zzz...", "where": "First-run hello: any step left untouched for 20 seconds. Quill nods off." },
   "onboarding.doze.woke": {
@@ -420,6 +425,238 @@
     ],
     "where": "The quest bar: a little cheer that pops up for a moment when a step is done. Takes turns through these."
   },
+  "quests.did.first-animation.draw": {
+    "text": "You drew something! Look at it sitting there, full of possibilities.",
+    "where": "The Great work card in the quest \"Your first animation in 60 seconds\", after the step \"draw\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-animation.next-frame": {
+    "text": "You copied your drawing onto the next frame, so now you've got something to change.",
+    "where": "The Great work card in the quest \"Your first animation in 60 seconds\", after the step \"next-frame\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-animation.change": {
+    "text": "You changed it a little. That little change is the whole trick of animation!",
+    "where": "The Great work card in the quest \"Your first animation in 60 seconds\", after the step \"change\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bouncing-ball.open": {
+    "text": "You opened the Bouncing ball. Somebody else did the drawing, so poke it as much as you like.",
+    "where": "The Great work card in the quest \"Bouncing ball\", after the step \"open\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bouncing-ball.scrub": {
+    "text": "You scrubbed through it, one frame at a time. Now you can feel how it moves.",
+    "where": "The Great work card in the quest \"Bouncing ball\", after the step \"scrub\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bouncing-ball.squash": {
+    "text": "You found the squashed ball. Flat as a pancake, right as it hits the ground!",
+    "where": "The Great work card in the quest \"Bouncing ball\", after the step \"squash\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bouncing-ball.hold": {
+    "text": "You held that drawing for longer, so the ball lingers on the ground and feels heavier.",
+    "where": "The Great work card in the quest \"Bouncing ball\", after the step \"hold\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.fill-it-in.shape": {
+    "text": "You drew a closed shape and joined it up where it started, so the paint can't leak out.",
+    "where": "The Great work card in the quest \"Fill it in\", after the step \"shape\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.fill-it-in.bucket": {
+    "text": "You picked the paint bucket. Time to colour something in!",
+    "where": "The Great work card in the quest \"Fill it in\", after the step \"bucket\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.fill-it-in.fill": {
+    "text": "You filled it in. Look at all that colour!",
+    "where": "The Great work card in the quest \"Fill it in\", after the step \"fill\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.pixel-pal.draw": {
+    "text": "You drew your pal's outline, one chunky pixel at a time.",
+    "where": "The Great work card in the quest \"Pixel pal\", after the step \"draw\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.pixel-pal.fill": {
+    "text": "You poured colour inside the outline. Your pal's got a body now!",
+    "where": "The Great work card in the quest \"Pixel pal\", after the step \"fill\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.pixel-pal.copy": {
+    "text": "You copied your sprite onto a second frame, so it has somewhere to go.",
+    "where": "The Great work card in the quest \"Pixel pal\", after the step \"copy\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.pixel-pal.change": {
+    "text": "You changed a few pixels, so frame 2 doesn't match frame 1. That's the wiggle!",
+    "where": "The Great work card in the quest \"Pixel pal\", after the step \"change\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.shade-and-shine.mirror": {
+    "text": "You turned on mirror drawing. Whatever you do on one side, the other side copies.",
+    "where": "The Great work card in the quest \"Shade and shine\", after the step \"mirror\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.shade-and-shine.outline": {
+    "text": "You drew half a blob and the other half drew itself. Showoff.",
+    "where": "The Great work card in the quest \"Shade and shine\", after the step \"outline\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.shade-and-shine.fill": {
+    "text": "You filled it with the palette green, so it matches the rest of the set.",
+    "where": "The Great work card in the quest \"Shade and shine\", after the step \"fill\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.shade-and-shine.shade": {
+    "text": "You shaded along the bottom, and now it looks round.",
+    "where": "The Great work card in the quest \"Shade and shine\", after the step \"shade\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.shade-and-shine.shine": {
+    "text": "You dabbed on a highlight. Now it's catching the light!",
+    "where": "The Great work card in the quest \"Shade and shine\", after the step \"shine\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.tiles.make": {
+    "text": "You made a new tile. It's blank for now, but it's yours.",
+    "where": "The Great work card in the quest \"Tiles\", after the step \"make\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.tiles.open": {
+    "text": "You opened your tile to draw on it. See how it repeats all the way round?",
+    "where": "The Great work card in the quest \"Tiles\", after the step \"open\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.tiles.edge": {
+    "text": "You drew off the right edge and it carried on from the left. That's how tiles join up with no seam!",
+    "where": "The Great work card in the quest \"Tiles\", after the step \"edge\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.tiles.done": {
+    "text": "You put the tile back. It's ready to be stamped all over a level.",
+    "where": "The Great work card in the quest \"Tiles\", after the step \"done\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.tiles.layer": {
+    "text": "You added a tilemap layer. That's the floor your tiles go on.",
+    "where": "The Great work card in the quest \"Tiles\", after the step \"layer\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-tween.draw": {
+    "text": "You drew something to move. Nice and simple is best.",
+    "where": "The Great work card in the quest \"First tween\", after the step \"draw\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-tween.tween": {
+    "text": "You asked for in-betweens, and that's a stretch of frames you don't have to draw.",
+    "where": "The Great work card in the quest \"First tween\", after the step \"tween\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-tween.move": {
+    "text": "You dragged it somewhere new, so now it has somewhere to go.",
+    "where": "The Great work card in the quest \"First tween\", after the step \"move\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.first-tween.ease": {
+    "text": "You picked how it moves. That's the easing, and it's the feel of the whole thing.",
+    "where": "The Great work card in the quest \"First tween\", after the step \"ease\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.share-it.open": {
+    "text": "You opened Export. That's the door from Frameling out into the world.",
+    "where": "The Great work card in the quest \"Share it\", after the step \"open\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bones-and-pose.add": {
+    "text": "You started drawing bones. That's the skeleton for your puppet.",
+    "where": "The Great work card in the quest \"Bones and pose\", after the step \"add\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bones-and-pose.draw": {
+    "text": "You drew the bones, shoulder to elbow to hand. It's an arm!",
+    "where": "The Great work card in the quest \"Bones and pose\", after the step \"draw\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bones-and-pose.attach": {
+    "text": "You attached each part to the bone over it, so they move together.",
+    "where": "The Great work card in the quest \"Bones and pose\", after the step \"attach\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.bones-and-pose.pose": {
+    "text": "You lifted the hand on frame 13. That's the wave, in one pose.",
+    "where": "The Great work card in the quest \"Bones and pose\", after the step \"pose\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.make-it-glow.glow": {
+    "text": "You added a Glow to the lantern. It's got a light of its own now.",
+    "where": "The Great work card in the quest \"Make it glow\", after the step \"glow\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.make-it-glow.size": {
+    "text": "You made the glow bigger. Look at it spill!",
+    "where": "The Great work card in the quest \"Make it glow\", after the step \"size\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.make-it-glow.blend": {
+    "text": "You set the Light layer to Add, so its colours pile up like real light.",
+    "where": "The Great work card in the quest \"Make it glow\", after the step \"blend\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.make-it-glow.flicker": {
+    "text": "You made the glow flicker by changing its Strength on frame 7. Cosy.",
+    "where": "The Great work card in the quest \"Make it glow\", after the step \"flicker\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.particle-party.add": {
+    "text": "You added some confetti. Instant party!",
+    "where": "The Great work card in the quest \"Particle party\", after the step \"add\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.particle-party.motion": {
+    "text": "You changed how it flies, and it's a different thing altogether.",
+    "where": "The Great work card in the quest \"Particle party\", after the step \"motion\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.particle-party.colour": {
+    "text": "You gave it your own colours. Much more you.",
+    "where": "The Great work card in the quest \"Particle party\", after the step \"colour\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.particle-party.shuffle": {
+    "text": "You shuffled for a new random spread with the same settings. Every one is a little different!",
+    "where": "The Great work card in the quest \"Particle party\", after the step \"shuffle\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.say-it-with-text.type": {
+    "text": "You typed a word on the page. It stays editable, so you can change your mind.",
+    "where": "The Great work card in the quest \"Say it with text\", after the step \"type\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.say-it-with-text.animate": {
+    "text": "You made the letters pop in with Grow.",
+    "where": "The Great work card in the quest \"Say it with text\", after the step \"animate\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.say-it-with-text.wave": {
+    "text": "You added a Wave, so the letters keep bobbing after they land.",
+    "where": "The Great work card in the quest \"Say it with text\", after the step \"wave\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.camera-move.add": {
+    "text": "You added a camera. Whatever's inside its frame is what the audience sees.",
+    "where": "The Great work card in the quest \"Camera move\", after the step \"add\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.camera-move.move": {
+    "text": "You dragged the camera over to the house, on the last frame.",
+    "where": "The Great work card in the quest \"Camera move\", after the step \"move\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.camera-move.glide": {
+    "text": "You made it glide, so the camera drifts from where it started to the house.",
+    "where": "The Great work card in the quest \"Camera move\", after the step \"glide\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.camera-move.depth": {
+    "text": "You pushed the hills back to a distance of 3, so they slide slower than the rest. That's parallax!",
+    "where": "The Great work card in the quest \"Camera move\", after the step \"depth\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.camera-move.look": {
+    "text": "You looked through the camera. That's the view the audience gets.",
+    "where": "The Great work card in the quest \"Camera move\", after the step \"look\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.one-tiny-picture.draw": {
+    "text": "You drew a little heart, one chunky pixel per click.",
+    "where": "The Great work card in the quest \"One tiny picture\", after the step \"draw\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.one-tiny-picture.swap": {
+    "text": "You swapped Paint and Back, so the two colours traded places.",
+    "where": "The Great work card in the quest \"One tiny picture\", after the step \"swap\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.one-tiny-picture.back": {
+    "text": "You right-clicked to paint with Back and dabbed on a shine.",
+    "where": "The Great work card in the quest \"One tiny picture\", after the step \"back\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.board-by-board.one": {
+    "text": "You drew frame 1. That's the start of your animation.",
+    "where": "The Great work card in the quest \"Board by board\", after the step \"one\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.board-by-board.two": {
+    "text": "You drew frame 2, a little different from the first.",
+    "where": "The Great work card in the quest \"Board by board\", after the step \"two\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.board-by-board.three": {
+    "text": "You drew frame 3. That's enough for a wiggle!",
+    "where": "The Great work card in the quest \"Board by board\", after the step \"three\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.board-by-board.play": {
+    "text": "You played the boards all in order, and it's a flipbook now.",
+    "where": "The Great work card in the quest \"Board by board\", after the step \"play\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.cast-on-a-sheet.hero": {
+    "text": "You drew your hero on the Hero board.",
+    "where": "The Great work card in the quest \"Cast on a sheet\", after the step \"hero\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.cast-on-a-sheet.item": {
+    "text": "You drew a coin on the Item board. Every board gets its own spot on the sheet.",
+    "where": "The Great work card in the quest \"Cast on a sheet\", after the step \"item\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
   "quests.badge": { "text": "You earned {badge}", "where": "The badge card at the end of a quest (with confetti): the heading. {badge} is the badge's name.", "vars": ["badge"] },
   "quests.finished": { "text": "Quest Complete", "where": "The end-of-quest card heading, for a quest with no badge." },
   "quests.finishedQuest": { "text": "You completed: {quest}.", "where": "The end-of-quest card, under the heading, for a quest that has no finish line of its own.", "vars": ["quest"] },
@@ -721,9 +958,12 @@
       "It's yours now. Draw all over it if you like.",
       "Not as neat as yours. That's rather the point."
     ],
-    "where": "Quill's things: you opened one of his presents (the app picks one)."
+    "where": "The Quill tab, his shelves: you opened one of his presents (the app picks one)."
   },
-  "pet.present.none": { "text": "Give me one of your drawings and I'll see what I can do with it.", "where": "Quill's things: the shelf where his presents go, while he has not made one yet." },
+  "pet.present.none": {
+    "text": "Give me one of your drawings and I'll see what I can do with it.",
+    "where": "The Quill tab, his shelves: the shelf where his presents go, while he has not made one yet."
+  },
   "pet.given": {
     "text": [
       "For me? I'll put it somewhere safe.",

@@ -41,7 +41,7 @@ export interface QuestStep {
   say: string;
   /** An extra line saying why, shown quietly under the instruction. */
   why?: string;
-  /** What you just did, for the Great work card ("You drew your first line."). Falls back to the step's own words. */
+  /** What you just did, for the Great work card ("You drew your first line."). Quill's own words for each step are in lines.json (quests.did.*, see did.ts); this overrides them. Falls back to counting the step off. */
   did?: string;
   /** The thing to ring while this step is on. */
   target?: QuestTarget;
