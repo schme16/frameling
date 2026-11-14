@@ -19,6 +19,7 @@ import { flatPlan, type FlatUnit } from './layered';
 import { nativeData } from './ai-native';
 import { gradientKey, sortedStops } from '../core/gradient';
 import { flattenRing, lineArea } from '../geometry/merge';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 const PDF_BLEND: Record<BlendMode, string> = {
   normal: 'Normal',
@@ -510,13 +511,18 @@ export interface PdfFrameContext {
   view?: CameraView;
 }
 
-function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
+function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false): void {
   if (s.type === 'instance') {
     if (isPosed(s)) drawInstance(cx, ctx, s);
     return;
   }
   // Text, particles and the like draw themselves, through their registered export.
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.pdf?.(cx, ctx, s);
+  // Arrow heads and a changing width are shapes of their own; PDF dashes the line itself (a gradient line is cut into dashes instead).
+  if (s.type === 'path' && !expanded && hasLineStyle(s.stroke)) {
+    for (const part of expandStroke(s, { bakeDashes: !!s.strokeGradient })) drawShape(cx, ctx, part.shape, true);
+    return;
+  }
   cx.push('q');
   if (s.type === 'stroke') {
     if (cx.fillColor(s.color, s.opacity)) {
@@ -558,6 +564,8 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
       if (ctx.includeHidden) cx.push('EMC');
     } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
       cx.push(`${num(s.stroke.width)} w ${JOIN[s.stroke.join] ?? 1} j ${CAP[s.stroke.cap] ?? 1} J`);
+      const dash = dashPx(s.stroke);
+      if (dash) cx.push(`[${dash.map((v) => num(v)).join(' ')}] ${num(dashOffsetPx(s.stroke))} d`);
       cx.subPaths(s.paths);
       cx.push('S');
     }

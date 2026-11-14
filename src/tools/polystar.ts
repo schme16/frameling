@@ -4,6 +4,7 @@
  * points, and how deep a star's dips go.
  */
 import type { PathShape, SubPath } from '../core/format';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
@@ -69,7 +70,7 @@ export function makePolyStar(kind: 'polygon' | 'star', a: Pt, b: Pt, mod: { shif
     type: 'path',
     paths: [polyStarSubPath(kind, r, mod.shift, s)],
     fill: colors.fill,
-    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke * viewSizeFactor(), join: 'round', cap: 'round' } : null,
+    stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width: s.shapeStroke * viewSizeFactor(), join: 'round', cap: 'round' }, s) : null,
     opacity: 1,
   };
 }

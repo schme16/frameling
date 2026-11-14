@@ -48,7 +48,7 @@ export const MENUS: MenuDef[] = [
     label: 'Draw',
     title: 'Tools and layers',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange'],
-    items: ['group:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', '-', 'view.panel.layers'],
+    items: ['group:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'sub:combine', 'sub:linestyle', '-', 'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
@@ -127,6 +127,15 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   grids: {
     label: 'Guides, grids and perspective',
     items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.gridSettings', '-', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective'],
+  },
+  combine: {
+    label: 'Combine shapes',
+    items: ['shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch'],
+  },
+  linestyle: {
+    label: 'Line style',
+    items: ['stroke.dash.solid', 'stroke.dash.dashed', 'stroke.dash.dotted', 'stroke.dash.dashdot', '-', 'stroke.arrow.start', 'stroke.arrow.end', '-', 'stroke.width.even', 'stroke.width.swell', 'stroke.width.pinch', 'stroke.width.taper', 'stroke.width.taperStart', 'stroke.width.brush'],
+    prefixes: ['stroke.'],
   },
   masks: {
     label: 'More about masks',

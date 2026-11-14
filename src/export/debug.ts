@@ -94,6 +94,17 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       for (const b of r.bytes) bin += String.fromCharCode(b);
       return btoa(bin);
     },
+    /** One frame through the real exporter in any single-file format (svg, pdf, lottie, png...), as base64, for stills of an export beside the screen. */
+    fileBase64: async (format: string, frame = 0, range: 'frame' | 'all' = 'frame') => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const settings = { ...defaultSettings(doc), format, range, clipId: null, scale: 1 } as unknown as ExportSettings;
+      const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'ab' });
+      if (r.kind !== 'file') return null;
+      let bin = '';
+      for (let i = 0; i < r.bytes.length; i += 0x8000) bin += String.fromCharCode(...r.bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    },
     /** Runs an export. `cancelAfterMs` presses Cancel that long after the start. */
     run: async (s: ExportSettings, cancelAfterMs?: number) => {
       const ac = new AbortController();

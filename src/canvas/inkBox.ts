@@ -6,6 +6,7 @@
  * stage-sized bitmap.
  */
 import type { PathPoint, Shape, StrokeShape, SubPath } from '../core/format';
+import { styleReach } from '../geometry/lineStyle';
 
 export interface InkBox {
   x0: number;
@@ -72,7 +73,7 @@ export function shapesInk(shapes: readonly Shape[]): InkBox | null {
         // A zero or odd width leaves the canvas's previous line width in force, so the reach can't be told.
         if (!(half > 0) || !Number.isFinite(half)) return null;
         // A miter can reach ten half-widths (the canvas default limit), a square cap a corner's worth.
-        r = half * (s.stroke.join === 'miter' ? 10 : 1.5);
+        r = Math.max(half * (s.stroke.join === 'miter' ? 10 : 1.5), styleReach(s.stroke));
       }
       if (!addPaths(b, s.paths, r)) return null;
     } else return null;

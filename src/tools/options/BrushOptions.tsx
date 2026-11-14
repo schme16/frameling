@@ -9,6 +9,7 @@ import { buildStroke } from '../vectorStroke';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
+import { HoldToTidyOptions } from './HoldToTidyOptions';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -66,6 +67,7 @@ function VectorBrushOptions() {
         {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
         <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
         <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+        <HoldToTidyOptions />
         <PenOptions tool="brush" opacity />
         <MirrorOptions />
       </MoreOptions>

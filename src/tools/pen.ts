@@ -6,6 +6,7 @@
  * The pure model (`PenPath`) is separate from the canvas tool so it can be tested on its own.
  */
 import type { PathShape } from '../core/format';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { subPathsToPath2D } from '../core/render';
@@ -85,10 +86,10 @@ export class PenPath {
 export function penShape(sp: PathShape['paths'][number], colors: { fill: string | null; stroke: string | null; line: string }, width: number): PathShape | null {
   if (sp.closed) {
     if (!colors.fill && !colors.stroke) return null;
-    return { id: uid('sh'), type: 'path', paths: [sp], fill: colors.fill, stroke: colors.stroke ? { color: colors.stroke, width, join: 'round', cap: 'round' } : null, opacity: 1 };
+    return { id: uid('sh'), type: 'path', paths: [sp], fill: colors.fill, stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width, join: 'round', cap: 'round' }, getToolSettings()) : null, opacity: 1 };
   }
   // An open line always shows: with the stroke set to none it still uses the stroke colour, like the Line tool.
-  return { id: uid('sh'), type: 'path', paths: [sp], fill: null, stroke: { color: colors.stroke ?? colors.line, width, join: 'round', cap: 'round' }, opacity: 1 };
+  return { id: uid('sh'), type: 'path', paths: [sp], fill: null, stroke: strokeWithStyle({ color: colors.stroke ?? colors.line, width, join: 'round', cap: 'round' }, getToolSettings()), opacity: 1 };
 }
 
 let path: PenPath | null = null;

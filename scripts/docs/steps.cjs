@@ -167,8 +167,21 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
           send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: [...mods, 'leftButtonDown'] });
           await sleep(d);
         }
+        // "pause": [[pointIndex, ms], ...] keeps the pen still part way along (a thinking pause that carries on).
+        for (const [at, ms] of s.pause ?? []) if (at === i) await sleep(ms);
       }
-      const [lx, ly] = pts[pts.length - 1];
+      let [lx, ly] = pts[pts.length - 1];
+      // "hold": ms the pen stays still at the end before it lifts (Hold to tidy). "pull": [x, y] then drags there, still pressed.
+      if (s.hold) await sleep(s.hold);
+      if (s.pull) {
+        const [px, py] = s.pull;
+        for (let k = 1; k <= 8; k++) {
+          send({ type: 'mouseMove', x: Math.round(lx + ((px - lx) * k) / 8), y: Math.round(ly + ((py - ly) * k) / 8), modifiers: [...mods, 'leftButtonDown'] });
+          await sleep(d);
+        }
+        [lx, ly] = [px, py];
+        if (s.holdAfterPull) await sleep(s.holdAfterPull);
+      }
       send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1, modifiers: mods });
       await sleep(s.after ?? 80);
     } else if (s.rdrag || s.rclick) {

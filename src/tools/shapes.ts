@@ -3,6 +3,7 @@
  * ellipse round and a line at 45 degree steps. Alt draws from the centre. The options choose outline, fill or both.
  */
 import { shapeColors } from './wells';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
@@ -122,7 +123,7 @@ export function makeShape(
       type: 'path',
       paths: [lineSubPath(p, q)],
       fill: null,
-      stroke: { color, width: s.shapeStroke, join: 'round', cap: 'round' },
+      stroke: strokeWithStyle({ color, width: s.shapeStroke, join: 'round', cap: 'round' }, s),
       opacity: 1,
     };
   }
@@ -143,7 +144,7 @@ export function makeShape(
     type: 'path',
     paths: [path],
     fill: colors.fill,
-    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
+    stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' }, s) : null,
     opacity: 1,
   };
 }

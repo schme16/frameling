@@ -35,6 +35,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     vec = new VectorStroke(dyn.brush, ui.color, dyn);
     // Shift+click runs a straight line from where the last stroke ended, as it does on a pixel layer.
     startFromLast(vec, e, ctx.zoom);
+    // Hold to tidy, unless this started as a Shift+click straight line.
+    if (!e.shift) vec.watchHold(ctx.zoom, ctx.requestOverlay);
     return;
   }
   if (layer.kind !== 'pixel') return;
@@ -75,6 +77,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
 }
 
 function cancel(ctx: ToolContext): void {
+  vec?.stop();
   vec = null;
   pix?.discard();
   pix = null;
@@ -82,7 +85,7 @@ function cancel(ctx: ToolContext): void {
 }
 
 function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
-  if (vec) return vec.overlay(g);
+  if (vec) return vec.overlay(g, ctx.zoom);
   if (pix) return;
   const h = getHover();
   if (!h) return;

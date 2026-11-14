@@ -125,6 +125,9 @@ interface GState {
   lw: number;
   cap: number;
   join: number;
+  /** Dashes and gaps (as the page has them), and where the pattern starts. */
+  dash: number[];
+  phase: number;
   ca: number;
   CA: number;
   blend: string;
@@ -159,7 +162,7 @@ interface Run {
 const CAP_NUM: Record<string, number> = { butt: 0, round: 1, square: 2 };
 const JOIN_NUM: Record<string, number> = { miter: 0, round: 1, bevel: 2 };
 
-const gsOf = (): GState => ({ ctm: ident, fill: [0, 0, 0], stroke: [0, 0, 0], lw: 1, cap: 1, join: 1, ca: 1, CA: 1, blend: 'Normal', fade: false });
+const gsOf = (): GState => ({ ctm: ident, fill: [0, 0, 0], stroke: [0, 0, 0], lw: 1, cap: 1, join: 1, dash: [], phase: 0, ca: 1, CA: 1, blend: 'Normal', fade: false });
 
 /** Reads one page's content stream into layers. */
 function translate(run: Run, content: string, rootName: string): AiLayer[] {
@@ -225,7 +228,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
   /** Writes the paths as Illustrator items: a path, or a compound path for several. */
   function paintPath(
     list: Sub[],
-    p: { fill?: Rgb; fillA?: number; stroke?: Rgb; strokeA?: number; width?: number; cap?: number; join?: number; rule?: boolean; blend: number; gradient?: { g: Gradient; ctm: Mat }; strokeGradient?: { g: Gradient; ctm: Mat } },
+    p: { fill?: Rgb; fillA?: number; stroke?: Rgb; strokeA?: number; width?: number; cap?: number; join?: number; dash?: number[]; phase?: number; rule?: boolean; blend: number; gradient?: { g: Gradient; ctm: Mat }; strokeGradient?: { g: Gradient; ctm: Mat } },
   ): void {
     const out: string[] = [];
     if (p.strokeGradient) {
@@ -256,7 +259,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     out.push('0 R');
     if (p.stroke) out.push(`${colorOps(p.stroke)} XA`);
     out.push(`${p.blend} ${r4(opacity)} 0 0 0 Xy`);
-    out.push(`${p.cap ?? 0} J ${p.join ?? 0} j ${r4(p.width ?? 1)} w 10 M []0 d`);
+    out.push(`${p.cap ?? 0} J ${p.join ?? 0} j ${r4(p.width ?? 1)} w 10 M [${(p.dash ?? []).map(r4).join(' ')}]${r4(p.phase ?? 0)} d`);
     out.push(`${p.rule ? 1 : 0} XR`);
     const live = list.filter((s) => s.segs.length > 1);
     if (!live.length) return;
@@ -286,6 +289,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     if (op === 'n') return; // only a clip, handled with `sh`
     void clip;
     const blend = BLEND_INDEX[gs.blend] ?? 0;
+    const dashOf = () => (gs.dash.length ? { dash: gs.dash.map((v) => v * scale()), phase: gs.phase * scale() } : {});
     if (op === 'f' || op === 'f*') {
       flushFill();
       pendingFill = { key: subKey(list), subs: list, rgb: gs.fill, a: gs.ca, rule: op === 'f*', blend };
@@ -294,10 +298,10 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
       if (pendingFill && pendingFill.key === subKey(list) && Math.abs(pendingFill.a - gs.CA) < 0.002) {
         const f = pendingFill;
         pendingFill = null;
-        paintPath(list, { fill: f.rgb, fillA: f.a, stroke: gs.stroke, strokeA: gs.CA, width: w, cap: gs.cap, join: gs.join, rule: f.rule, blend });
+        paintPath(list, { fill: f.rgb, fillA: f.a, stroke: gs.stroke, strokeA: gs.CA, width: w, cap: gs.cap, join: gs.join, ...dashOf(), rule: f.rule, blend });
       } else {
         flushFill();
-        paintPath(list, { stroke: gs.stroke, strokeA: gs.CA, width: w, cap: gs.cap, join: gs.join, blend });
+        paintPath(list, { stroke: gs.stroke, strokeA: gs.CA, width: w, cap: gs.cap, join: gs.join, ...dashOf(), blend });
       }
     }
   };
@@ -403,7 +407,22 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     const tok = text.split(/\s+/).filter(Boolean);
     const st: (string | number)[] = [];
     const num = (i: number) => Number(st[st.length - i]);
+    // A dash array arrives as `[3 2] 0 d`: gather what is between the brackets.
+    let arr: number[] | null = null;
+    let lastArr: number[] = [];
     for (const t of tok) {
+      if (t.startsWith('[') || arr) {
+        const body = t.startsWith('[') ? t.slice(1) : t;
+        if (t.startsWith('[')) arr = [];
+        const end = body.endsWith(']');
+        const text = end ? body.slice(0, -1) : body;
+        if (text && Number.isFinite(Number(text))) arr!.push(Number(text));
+        if (end) {
+          lastArr = arr!;
+          arr = null;
+        }
+        continue;
+      }
       const c = t.charCodeAt(0);
       if (c === 47 || c === 45 || c === 46 || (c >= 48 && c <= 57)) {
         st.push(c === 47 ? t : Number(t));
@@ -435,6 +454,9 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
           break;
         case 'j':
           gs = { ...gs, join: num(1) };
+          break;
+        case 'd':
+          gs = { ...gs, dash: lastArr, phase: num(1) };
           break;
         case 'gs': {
           const info = run.w.gsInfo.get(String(st[st.length - 1]).slice(1));
