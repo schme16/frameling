@@ -259,7 +259,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Folders** are groups too, named after the folder, with the folder's layers inside (and folders inside folders as groups inside groups), even a folder that changes nothing. Other programs read the name from the group's id (spaces and symbols become dashes, and a repeated name gets an underscore). Inkscape shows the folder's own name, spelled the way you wrote it.
 - **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
-- **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
+- **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no SVG version, so they're left out (the Export window says so first).
 - **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
 
@@ -289,7 +289,7 @@ Under **File type** in the Export window:
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other.
-- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** for players that skip Lottie's effects.
+- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline, Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** for players that skip Lottie's effects.
 
 ## Pictures from effects
 
@@ -320,7 +320,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## Good to know
 
 - **Morphs (shape tweens)** are a drawing per frame, so long morphs make bigger files.
-- **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate is left out.
+- **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur are left out.
 - Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
 

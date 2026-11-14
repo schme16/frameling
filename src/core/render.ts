@@ -499,6 +499,9 @@ export function effectReach(kind: string, v: Record<string, number | string>): n
   if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 3;
   if (kind === 'outline') return n('width') + 1;
   if (kind === 'pixelate') return n('size');
+  if (kind === 'wave') return n('amount') * Math.hypot(1, n('ripple') / 100) + 1;
+  if (kind === 'fringe') return n('distance') + 1;
+  if (kind === 'motionblur') return n('length') + 1;
   return 0;
 }
 

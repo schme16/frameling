@@ -5,7 +5,7 @@
  *
  * Effects: Soften is a Gaussian blur, Shadow a blurred, moved and coloured copy underneath, Colour adjust colour
  * matrices, Glow a blurred coloured copy underneath (stacked by strength), Outline the drawing moved round a ring of
- * offsets the same way the canvas does it. Pixelate has no SVG equivalent and is left out (the export says so).
+ * offsets the same way the canvas does it. Pixelate, film grain, wave, colour fringe, dark corners and motion blur have no SVG equivalent and are left out (the export says so).
  * Effect settings that change over time are SMIL <animate>s switching once per frame.
  */
 import type { Doc, Layer, LayerEffect, LayerFolder } from '../core/format';

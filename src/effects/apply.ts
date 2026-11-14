@@ -6,9 +6,13 @@
  * Blur, colour adjust and shadow use the canvas `filter` (fast, done on the GPU in Electron). Glow is a blurred,
  * tinted copy underneath. Outline stamps a tinted copy around a circle underneath. Pixelate shrinks and grows back.
  * Where the canvas has no working `filter` (Safari), blur, adjust, shadow and glow use the JS blur in softBlur.ts.
+ * Film grain, wave, colour fringe, dark corners and motion blur change pixels one by one (kernels.ts): on the GPU
+ * when there is one (effectsGL.ts), else in JS. Both read the same numbers, so they give the same picture.
  */
 import type { EffectKind } from '../core/format';
+import { runEffectGpu } from './effectsGL';
 import { canFallback, nativeFilterWorks } from './filterSupport';
+import { isKernelKind, kernelParams, runKernelBytes, type StageRect } from './kernels';
 import { adjustPixels, blurPixels, MIN_SIGMA } from './softBlur';
 
 export type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
@@ -125,11 +129,32 @@ export function outlineOffsets(r: number): [number, number][] {
   return out;
 }
 
+/** One of the per-pixel effects: on the GPU when it can, else in JS, else (no pixel access at all) left undone. */
+function applyKernel(src: Canvas2, kind: Parameters<typeof kernelParams>[0], v: Record<string, number | string>, scale: number, stage: StageRect, pool: BufferPool): Canvas2 {
+  const p = kernelParams(kind, v, scale, stage);
+  const out = pool.get();
+  if (runEffectGpu(src, out, p)) {
+    pool.put(src);
+    return out;
+  }
+  if (canFallback(ctx2(src))) {
+    const img = ctx2(src).getImageData(0, 0, src.width, src.height);
+    const res = ctx2(out).createImageData(src.width, src.height);
+    runKernelBytes(p, img.data, res.data, src.width, src.height);
+    ctx2(out).putImageData(res, 0, 0);
+    pool.put(src);
+    return out;
+  }
+  pool.put(out);
+  return src;
+}
+
 /**
  * Applies one effect to `src` and returns the result: `src` itself when changed in place, or a canvas from the pool
  * (and `src` goes back to the pool). The caller owns what's returned.
  */
-export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, number | string>, scale: number, origin: { x: number; y: number }, pool: BufferPool): Canvas2 {
+export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, number | string>, scale: number, origin: { x: number; y: number }, pool: BufferPool, stage?: { w: number; h: number }): Canvas2 {
+  if (isKernelKind(kind)) return applyKernel(src, kind, v, scale, { x: origin.x, y: origin.y, w: stage?.w ?? src.width, h: stage?.h ?? src.height }, pool);
   const n = (k: string) => Number(v[k]);
   const filter = filterFor(kind, v, scale);
   const native = canFilter(ctx2(src));

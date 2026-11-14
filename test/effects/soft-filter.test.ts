@@ -374,4 +374,23 @@ describe('every filter effect on the forced fallback path', () => {
     expect(px(a, 12, 14)[3]).toBe(255);
     expect(ctx2(a)).toBeTruthy();
   });
+  it('the per-pixel effects run in JS when there is no GPU, whatever the filter says', () => {
+    const pool = new BufferPool(W, H);
+    for (const filter of ['native', 'fallback'] as const) {
+      setFilterOverride(filter);
+      const fringe = applyEffect(source(pool), 'fringe', { distance: 2, angle: 0 }, 1, origin, pool);
+      // The red goes right and the blue left, so the blue square grows a blue edge on its left.
+      expect(px(fringe, 12, 14).slice(0, 3)).toEqual([0, 0, 255]);
+      const blur = applyEffect(source(pool), 'motionblur', { length: 6, angle: 0, trail: 0 }, 1, origin, pool);
+      expect(px(blur, 12, 14)[3]).toBeGreaterThan(0);
+      expect(px(blur, 12, 14)[3]).toBeLessThan(255);
+      const dark = applyEffect(source(pool), 'vignette', { amount: 100, size: 0, softness: 0, color: '#000000' }, 1, origin, pool, { w: W, h: H });
+      expect(px(dark, 0, 0)).toEqual([0, 0, 0, 255]);
+      const grain = applyEffect(source(pool), 'grain', { amount: 50, size: 1, colour: 0, pattern: 1 }, 1, origin, pool);
+      expect(px(grain, 2, 2)[3]).toBe(0);
+      expect(px(grain, 18, 14)[3]).toBe(255);
+      const wave = applyEffect(source(pool), 'wave', { amount: 3, length: 20, phase: 0, angle: 0, ripple: 0 }, 1, origin, pool);
+      expect(px(wave, 2, 2)[3]).toBe(0);
+    }
+  });
 });

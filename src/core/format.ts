@@ -796,7 +796,7 @@ export type BlendMode =
   /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
   | 'divide';
 
-export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
+export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate' | 'grain' | 'wave' | 'fringe' | 'vignette' | 'motionblur';
 
 /**
  * One effect in a layer's stack. `values` holds every setting (numbers, and colours as hex). Numbers can be animated
