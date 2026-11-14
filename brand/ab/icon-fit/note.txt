@@ -1,0 +1,1 @@
+A: icons from a wide drawing keep the whole drawing with empty margins (Show it all, the default). B: the square is filled edge to edge and the sides are cut off (Fill the square). Both are the export.iconFit choice in Preferences > Behaviour. contact-sheet-sample.png is the contact sheet of the bouncing ball.

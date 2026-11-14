@@ -17,7 +17,7 @@ ${ix('The five formats most people want come first: **Animated GIF**, **MP4 vide
 | Use it in a chat or forum | **Animated GIF** |
 | Something sharper than a GIF, with soft edges | **Animated PNG** |
 | One picture of the frame I'm on | **PNG picture** |
-| One picture per frame, for a video editor | **PNG sequence** |
+| A JPEG, a small WebP, an icon set or stickers | Under **More formats** |
 | Vector art that stays sharp at any size | **SVG drawing** |
 | Use it in a game or on a web page | **Sprite sheet** |
 ${ix('| Put it on an Interactives page and control it there | **Interactives** |\n')}| An app or website, as a small vector animation | **Lottie animation** |
@@ -43,7 +43,7 @@ ${ix('| Put it on an Interactives page and control it there | **Interactives** |
 
 Every export looks exactly like the canvas, and a slow computer makes the same file as a fast one.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator), [JPEG and WebP](help:export-jpeg-webp-contact), [Icons](help:export-icons-favicon), [Stickers](help:export-stickers).`,
   'export-ways': `A drawing often leaves in more than one way: a sprite sheet for the game, a GIF for the web page, an MP4 for social. **Saved ways** keep each set of Export choices under a name, inside the drawing, so next week you send it out the same way without picking it all again.
 
 ## Keep one
@@ -323,4 +323,82 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 - **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate is left out.
 - Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
+
+  'export-jpeg-webp-contact': `Three small jobs for the end of a project: a **JPEG** for a form that won't take a PNG, a **WebP** for a chat or a web page, and a **contact sheet** that puts every frame on one page.
+
+## JPEG picture
+
+Saves the frame you're on. JPEG has no see-through, so the background is painted in (white, if your drawing has none). Drag **Quality** to trade sharpness for file size: **90** looks the same to most eyes and is a lot smaller than a PNG.
+
+JPEG blurs hard edges a little, so it suits paintings and soft shading better than pixel art or text. For those, pick [PNG](help:exporting) or WebP.
+
+## WebP picture
+
+One frame gives a plain still WebP. A whole animation or a clip gives a **moving WebP**, which plays by itself in browsers and most chat apps, with soft see-through edges that a GIF can't do.
+
+- **Lose nothing (lossless):** every pixel stays exactly as drawn. It's on to begin with for pixel art, and it makes bigger files.
+- **Quality:** for everything else. Lower is smaller but blurrier.
+- **Loop forever:** untick it to play once.
+
+Frames that look the same as the one before are stored once and just show for longer, so a slow animation makes a small file.
+
+## Contact sheet
+
+Every frame as a small picture on one page, with its number under it and the name of your drawing on top. It's the quick way to look over a whole animation, or to send one picture to someone for a review.
+
+Pick **Small**, **Medium** or **Large** pictures, how many to put in a row (**Automatic** makes a page about the shape of a sheet of paper), a light or dark page, and whether to show the numbers. A clip's frames come out in the order the clip plays them.
+
+**Good to know:** a page can only be so big. If it's too much, the footer says so; choose smaller pictures or one clip at a time.
+
+Go to **File > Export** and pick one, or open the command palette and type **JPEG**, **WebP** or **contact sheet**.
+
+See also: [Video, GIF and APNG](help:export-video-gif-apng), [Exporting](help:exporting)`,
+
+  'export-icons-favicon': `An **app icon set** takes the frame you're looking at and draws it at every size an icon needs, then puts the lot in one zip. Each size is drawn fresh from your drawing, not shrunk from a big picture, so the 16 pixel one stays sharp.
+
+## What goes in it
+
+Tick what you want:
+
+- **A PNG at every size:** 16, 32, 48, 64, 128, 256, 512 and 1024, in a **png** folder.
+- **Windows icon (.ico):** one file holding 16 to 256.
+- **Mac icon (.icns):** one file holding 16 to 1024.
+- **iPhone, iPad and Android sizes:** an **ios** folder, and an **android** folder laid out the way Android Studio wants it (**mipmap-mdpi** and so on, plus the 512 Play Store picture).
+
+## A favicon
+
+**Favicon set** makes what a website needs: **favicon.ico**, two small PNGs, an iPhone touch icon, the 192 and 512 icons for Android, a **site.webmanifest** and a **head.html** with the lines to paste in.
+
+**Put it on a site:** unzip the files next to your **index.html**, then paste the lines from **head.html** into the head of each page.
+
+## A drawing that isn't square
+
+Icons are square. **Show it all** keeps your whole drawing with empty margins at the sides; **Fill the square** cuts off what sticks out. You can change it any time in **Preferences > Behaviour**.
+
+**Good to know:**
+- It uses the frame you're looking at, so go to the frame you want first.
+- A see-through background stays see-through. Untick **Transparent background** to paint your drawing's colour behind it.
+- Icons look best when the drawing is simple and bold. Fine detail disappears at 16 pixels.
+
+See also: [Exporting](help:exporting), [Sticker and emoji packs](help:export-stickers)`,
+
+  'export-stickers': `A **sticker and emoji pack** makes your frames at the sizes chat apps ask for, a folder for each app, all in one zip. Each frame becomes one picture, so a clip gives you a whole set.
+
+## Make one
+
+1. Choose **File > Export > Export a sticker or emoji pack**.
+2. Tick the apps you want: **Slack**, **Microsoft Teams**, **Discord** (emoji and stickers), **Telegram**, **WhatsApp** and **Signal**.
+3. Pick **A clip** or **This frame** for just one sticker, or **Whole animation** for one per frame.
+4. Press **Export**.
+
+Slack, Teams and Discord get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit.
+
+## Good to know
+
+- The pictures are square, with a see-through background. A drawing that isn't square follows the **Show it all** or **Fill the square** choice (see [App icons and favicons](help:export-icons-favicon)).
+- If a picture is still over an app's limit, Frameling tells you which app when it's done. A simpler drawing or fewer colours makes it lighter.
+- The apps change their rules now and then, so check the size your app asks for when you upload.
+- Every frame is a still. For a moving sticker, use [WebP](help:export-jpeg-webp-contact) or [GIF](help:export-video-gif-apng).
+
+See also: [Exporting](help:exporting)`,
 };

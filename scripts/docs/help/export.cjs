@@ -70,6 +70,8 @@ const installPlugin = (n) => [
 ];
 
 const TALL = [1280, 960];
+// The new small formats sit far down a long list of cards, so the window is tall enough to show them and their options together.
+const LONG = [1280, 1320];
 
 const T = '__framelingTemplates';
 const keep = (from, meta) => js(`${T}.saveFrom(${q(from)}, ${q({ tags: [], author: 'You', licence: 'personal', ...meta })})`);
@@ -234,4 +236,7 @@ module.exports = [
   formatEntry('export-psd', 'bouncing-ball', 'file.exportPsd', undefined, [], TALL),
   formatEntry('export-pdf', 'bouncing-ball', 'file.exportPdf', undefined, [], TALL),
   formatEntry('export-prores', 'bouncing-ball', 'file.exportProres', undefined, [], TALL),
+  formatEntry('export-jpeg-webp-contact', 'bouncing-ball', 'file.exportContactSheet', undefined, [], LONG),
+  formatEntry('export-icons-favicon', 'bouncing-ball', 'file.exportIcons', undefined, [], LONG),
+  formatEntry('export-stickers', 'bouncing-ball', 'file.exportStickers', undefined, [], LONG),
 ];

@@ -23,7 +23,7 @@ vi.mock('../../src/io/desktop', async (orig) => ({ ...(await orig<object>()), de
 const encoders = vi.hoisted(() => ({ opus: true }));
 vi.mock('../../src/audio/export', async (orig) => ({ ...(await orig<object>()), canMakeAac: async () => false, canMakeOpus: async () => encoders.opus }));
 
-const BUILT_IN = ['mp4', 'webm', 'gif', 'apng', 'png', 'pngseq', 'svg', 'sheet', 'lottie', 'svganim', 'prores', 'psd', 'pdf', 'ai'];
+const BUILT_IN = ['mp4', 'webm', 'gif', 'apng', 'png', 'jpeg', 'webp', 'pngseq', 'svg', 'sheet', 'lottie', 'svganim', 'prores', 'psd', 'pdf', 'ai', 'icons', 'favicon', 'stickers', 'contact'];
 
 beforeEach(() => {
   localStorage.clear();
@@ -39,7 +39,7 @@ describe('the registered formats', () => {
 
   it('put the popular ones first, in their order, and the rest under More formats', () => {
     expect(splitFormats().popular.map((f) => f.id)).toEqual(['gif', 'mp4', 'pngseq', 'sheet', 'interactives']);
-    expect(splitFormats().more.map((f) => f.id)).toEqual(['webm', 'apng', 'png', 'svg', 'lottie', 'svganim', 'prores', 'psd', 'pdf', 'ai']);
+    expect(splitFormats().more.map((f) => f.id)).toEqual(['webm', 'apng', 'png', 'jpeg', 'webp', 'svg', 'lottie', 'svganim', 'prores', 'psd', 'pdf', 'ai', 'icons', 'favicon', 'stickers', 'contact']);
   });
 
   it('every format loads its making and its options', async () => {

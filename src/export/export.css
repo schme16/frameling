@@ -357,3 +357,21 @@
   font-weight: 500;
   color: var(--muted);
 }
+
+.ex-slider {
+  display: grid;
+  grid-template-columns: auto 1fr 2.5em;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+.ex-slider output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ex-slider input[type='range'] {
+  min-width: 0;
+}
+.ex-slider input:disabled {
+  opacity: 0.45;
+}

@@ -92,4 +92,28 @@ registerHelpTopics([
     summary: 'Export one SVG file that plays your animation by itself in any browser, even inside an image tag.',
     keywords: ['animated svg', 'svg animation', 'css animation', 'smil', 'web', 'img', 'vector animation'],
   },
+  {
+    id: 'export-jpeg-webp-contact',
+    title: 'JPEG, WebP and contact sheets',
+    section: 'Exporting',
+    media: 'export-jpeg-webp-contact.png',
+    summary: 'A JPEG for a form that refuses PNG, a small still or moving WebP, and one numbered page of every frame.',
+    keywords: ['jpeg', 'jpg', 'webp', 'animated webp', 'contact sheet', 'thumbnails', 'review', 'proof sheet', 'quality', 'lossless', 'photo', 'form'],
+  },
+  {
+    id: 'export-icons-favicon',
+    title: 'App icons and favicons',
+    section: 'Exporting',
+    media: 'export-icons-favicon.png',
+    summary: 'Make your drawing into an icon at every size: PNGs, a Windows .ico, a Mac .icns, the phone sizes, and the files for a website tab.',
+    keywords: ['icon', 'icons', 'app icon', 'favicon', 'ico', 'icns', 'ios', 'android', 'apple touch icon', 'website icon', 'manifest', 'windows', 'mac'],
+  },
+  {
+    id: 'export-stickers',
+    title: 'Sticker and emoji packs',
+    section: 'Exporting',
+    media: 'export-stickers.png',
+    summary: 'Every frame at the sizes Slack, Teams, Discord, Telegram, WhatsApp and Signal ask for, a folder for each.',
+    keywords: ['sticker', 'stickers', 'emoji', 'slack', 'teams', 'discord', 'telegram', 'whatsapp', 'signal', 'messaging', 'chat'],
+  },
 ]);
