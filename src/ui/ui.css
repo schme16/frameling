@@ -3311,7 +3311,9 @@ body.ui-resizing * {
   padding: 0 2px;
 }
 .th-card-badges {
-  /* A folded corner on the card, turned over with a wiggle in it, the sun or the moon sitting in the middle of it. */
+  /* A folded corner on the card, turned over with a wiggle in it, the sun or the moon sitting in the middle of it.
+     The fold's size is one number, shared with the ink line drawn along its inside edge. */
+  --fold: 40px;
   position: absolute;
   top: 0;
   left: 0;
@@ -3320,29 +3322,48 @@ body.ui-resizing * {
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 44px;
-  height: 44px;
+  width: var(--fold);
+  height: var(--fold);
   /* The fold's weight is up in its corner, so the icon is nudged there to sit in the middle of the yellow. */
-  padding: 0 15px 15px 0;
+  padding: 0 14px 14px 0;
   border-top-left-radius: var(--radius-small);
   background: var(--chosen-bg);
   color: var(--chosen-fg);
-  clip-path: polygon(100% 0%, 99.5% 6.1%, 99.3% 12.3%, 98.2% 18.6%, 95.5% 24.5%, 91.1% 29.7%, 85.9% 34.4%, 81.3% 39%, 78.4% 44.2%, 77.1% 50.7%, 76.4% 58%, 74.8% 65.3%, 71.2% 71.2%, 65.3% 74.8%, 58% 76.4%, 50.7% 77.1%, 44.2% 78.4%, 39% 81.3%, 34.4% 85.9%, 29.7% 91.1%, 24.5% 95.5%, 18.6% 98.2%, 12.3% 99.3%, 6.1% 99.5%, 0% 100%, 0% 0%);
+  clip-path: polygon(100% 0%, 99.8% 5.2%, 99.9% 10.6%, 99.2% 16%, 96.7% 21%, 92.3% 25.4%, 87.3% 29.3%, 83.4% 33.3%, 81.7% 38.2%, 82.2% 44.4%, 83.4% 51.5%, 83.3% 58.3%, 80.3% 63.5%, 74.3% 66.1%, 66.6% 66.6%, 59.1% 66.4%, 53.4% 67.7%, 50% 71.5%, 47.9% 77.8%, 45.9% 85%, 42.7% 91%, 37.9% 94.5%, 32.1% 95.1%, 26% 94.3%, 20.3% 93.6%, 15.1% 94.2%, 10.2% 96.2%, 5.2% 98.6%, 0% 100%, 0% 0%);
 }
 .th-card-badges.is-both {
-  width: 54px;
-  height: 54px;
-  padding: 0 18px 18px 0;
+  --fold: 50px;
+  padding: 0 17px 17px 0;
+}
+/* The ink line along the fold's inside edge. It sits outside the clipped corner, so the whole stroke shows. */
+.th-card-fold-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+}
+.th-card-fold-edge.is-both {
+  width: 50px;
+  height: 50px;
+}
+.th-card-fold-edge polyline {
+  fill: none;
+  stroke: #0d0b12;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 .th-card-badge {
   display: grid;
   place-items: center;
-  width: 17px;
-  height: 17px;
-}
-.th-card-badge svg {
   width: 16px;
   height: 16px;
+}
+.th-card-badge svg {
+  width: 15px;
+  height: 15px;
 }
 .th-card-pick {
   position: relative;

@@ -14,3 +14,5 @@
   the middle of the yellow rather than tucked into the corner.
 - **earmark-small-dark**: smaller again (44 px) and wigglier, so it marks the card without taking a third of the
   preview with it.
+- **earmark-inked-dark**: smaller again (40 px), wigglier, and the fold's inside edge is drawn as a 2 px black line,
+  so the corner reads as a turned page rather than a shape cut out of the card.
