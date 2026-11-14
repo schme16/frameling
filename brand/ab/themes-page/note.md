@@ -17,3 +17,7 @@
 - **paper-card-dark / paper-card-light / paper-zoom-dark**: the paper in this card takes a little of each theme's own
   colour, so the cut along the wave can be seen even across the drawing, where both themes would otherwise draw the
   same white page. The gallery cards keep their true white paper.
+- **fixed-card-dark / fixed-card-light / fixed-zoom-dark**: the real cause of the spill, found by reading the boxes
+  back out of the running app: each half was 190 x 124 inside a 190 x 119 art box, so its clip stretched the wave
+  over a box 5 px taller than the one the inked line was drawn in, and the two drifted apart in the middle. The
+  halves are now pinned to the art box, so the cut and the line are the same curve.
