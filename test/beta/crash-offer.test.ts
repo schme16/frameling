@@ -91,12 +91,13 @@ describe('the report', () => {
   it('is a crash report with the facts, and nothing of what was drawn or where it lives', async () => {
     const { crashReport, sayHow } = await load(true);
     const r = crashReport(notes, { appVersion: '9.9.9', platform: 'linux', screen: { width: 1920, height: 1080 } }, 'ada@example.com');
-    expect(r).toMatchObject({ kind: 'crash', app: 'Frameling', version: '1.4.0', platform: 'linux x64', contact: '<an address>', summary: sayHow('both') });
+    expect(r).toMatchObject({ kind: 'crash', app: 'Frameling', version: '1.4.0', platform: 'linux x64', contact: 'ada@example.com', summary: sayHow('both') });
     expect((r.data as { crash: unknown }).crash).toEqual({ how: 'both', startedAt: '2026-11-14T09:30:00.000Z', version: '1.4.0', platform: 'linux x64' });
     const text = JSON.stringify(r);
     expect(text).not.toContain('/home/ada');
     expect(text).not.toContain('secret-film');
-    expect(text).not.toContain('ada@');
+    // The contact is given on purpose, so it is in as typed (see the report tests); it is the only address that may be.
+    expect(text.split('ada@example.com').length - 1).toBe(1);
     expect(text).toContain('exit code 139');
   });
 
