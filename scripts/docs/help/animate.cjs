@@ -329,6 +329,38 @@ const entries = [
     ],
   },
   {
+    // Add, edit and remove bones with the buttons: draw a chain, add the next bone with a click, switch to Edit to move a tip
+    // and type a name, switch to Remove, hover a bone (it turns pink), click it, then Undo brings it back.
+    name: 'rig-bone-tools',
+    steps: [
+      L.template('puppet'),
+      bare(),
+      L.js(`__frameling.store().setUi({ tool: 'bone' })`),
+      fit(),
+      // A little closer, so the bones read clearly: the character stays centred in the canvas.
+      L.js(`__frameling.store().setUi({ zoom: 1, panX: 8, panY: -61 })`),
+      L.wait(800),
+      { rec: '@', crop: [143, 47, 1053, 444], every: 80 },
+      L.wait(800),
+      { drag: [[511, 296], [511, 252]], steps: 8, delay: 40, after: 400 },
+      { drag: [[511, 252], [511, 200]], steps: 8, delay: 40, after: 400 },
+      { drag: [[511, 200], [511, 122]], steps: 10, delay: 40, after: 700 },
+      { drag: [[511, 296], [513, 350]], steps: 8, delay: 40, after: 800 },
+      { clickOn: 'button.cv-action', text: 'Add next bone', after: 1200 },
+      { clickOn: 'button.cv-choice-btn', text: 'Edit', after: 900 },
+      { drag: [[513, 350], [531, 343]], steps: 10, delay: 40, after: 900 },
+      { clickOn: 'input[data-bone-name]', after: 300 },
+      { key: 'a', mods: ['control'], after: 200 },
+      { type: 'Left leg', after: 600 },
+      { key: 'Enter', after: 1000 },
+      { clickOn: 'button.cv-choice-btn', text: 'Remove', after: 700 },
+      { move: [511, 160], after: 1000 },
+      { click: [511, 160], after: 1200 },
+      { key: 'z', mods: ['control'], after: 1600 },
+      { rec: 'stop' },
+    ],
+  },
+  {
     name: 'rig',
     steps: [
       L.template('puppet'),
@@ -421,7 +453,7 @@ const entries = [
 ];
 
 // Questions Frameling would ask the first time are answered up front, so no sheet gets in the shot.
-const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'motion.room': 'squeeze', 'workspace.follow': 'never' };
+const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'rig.removeBone': 'keep', 'motion.room': 'squeeze', 'workspace.follow': 'never' };
 const answer = L.js(Object.entries(ANSWERS).map(([k, v]) => `__framelingArtboards.setChoice(${JSON.stringify(k)}, ${JSON.stringify(v)})`).join(';') + ';true');
 
 // No status bar tips either: they change from run to run.

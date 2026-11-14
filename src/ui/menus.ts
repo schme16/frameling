@@ -271,7 +271,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   rig: {
     label: 'Skeleton (rig)',
-    items: ['rig.addBones', 'tools.bone', 'tools.pose', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'rig.deleteBone', 'rig.boneLook', 'view.panel.rig'],
+    items: ['rig.addBones', 'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', '-', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'rig.deleteBone', 'rig.deleteBranch', 'rig.boneLook', 'view.panel.rig'],
     categories: ['Rig'],
   },
   reference: {

@@ -1,18 +1,19 @@
-// UI state for bones that isn't part of the document: the selected bone, the Bone tool's mode and the bone look.
+// UI state for bones that isn't part of the document: the selected bone, what dragging does with the Pose tool and the bone look.
 import { useSyncExternalStore } from 'react';
 import type { Id } from '../core/format';
 import { onFreshDrawing } from '../core/fresh';
 
-export type BoneMode = 'add' | 'adjust';
+/** What a drag or click with the Pose tool does. Shift (stretch) and Alt (pin) still switch for a moment. */
+export type PoseGrab = 'turn' | 'stretch' | 'pin';
 export type BoneLook = 'kite' | 'capsule';
 
 interface RigUi {
   selected: Id | null;
-  mode: BoneMode;
+  grab: PoseGrab;
   look: BoneLook;
 }
 
-let ui: RigUi = { selected: null, mode: 'add', look: 'kite' };
+let ui: RigUi = { selected: null, grab: 'turn', look: 'kite' };
 const listeners = new Set<() => void>();
 
 export function rigUi(): RigUi {
@@ -33,7 +34,7 @@ export function useRigUi(): RigUi {
   return useSyncExternalStore(subscribeRigUi, rigUi);
 }
 
-// A new drawing has no bone picked. The mode and look are choices, so they stay.
+// A new drawing has no bone picked. The grab and look are choices, so they stay.
 onFreshDrawing(() => {
   if (ui.selected) setRigUi({ selected: null });
 });

@@ -59,7 +59,7 @@ let drag: { id: string; end: 'from' | 'to'; key: string } | null = null;
 export const shapeHintTool: Tool = {
   id: 'shape-hints',
   group: 'rig',
-  groupAt: 4,
+  groupAt: 6,
   label: 'Shape hints',
   icon: 'hint',
   layers: ['vector'],

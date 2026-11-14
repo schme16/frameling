@@ -142,7 +142,7 @@ describe('Rig', () => {
   it('adds its commands, panel, tools, help, choice and Properties entry, and goes with them when off', () => {
     expect(getCommand('rig.addBones')).toBeTruthy();
     expect(getPanel('rig')).toBeTruthy();
-    for (const t of ['bone', 'pose', 'weights']) expect(getTool(t), t).toBeTruthy();
+    for (const t of ['bone', 'bone-edit', 'bone-remove', 'pose', 'weights']) expect(getTool(t), t).toBeTruthy();
     expect(getHelp('rig')).toBeTruthy();
     expect(getChoiceDef('rig.newPose')).toBeTruthy();
     expect(PANEL_INFO.rig).toBeTruthy();
@@ -150,7 +150,7 @@ describe('Rig', () => {
     off('rig');
     expect(getCommand('rig.addBones')).toBeUndefined();
     expect(getPanel('rig')).toBeUndefined();
-    for (const t of ['bone', 'pose', 'weights']) expect(getTool(t), t).toBeUndefined();
+    for (const t of ['bone', 'bone-edit', 'bone-remove', 'pose', 'weights']) expect(getTool(t), t).toBeUndefined();
     expect(getHelp('rig')).toBeUndefined();
     expect(getChoiceDef('rig.newPose')).toBeUndefined();
     expect(PANEL_INFO.rig).toBeUndefined();

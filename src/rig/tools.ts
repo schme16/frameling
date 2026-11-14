@@ -1,18 +1,19 @@
 /**
- * The Bone tool (K: draw and adjust the skeleton) and the Pose tool (O: turn bones, drag hands and feet with IK,
- * move the whole skeleton, pin bones), plus how bones look on the canvas.
+ * The three bone tools (Add bone K, Edit bone Alt+K, Remove bone Alt+Shift+K) and the Pose tool (Shift+K: turn bones, drag
+ * hands and feet with IK, move the whole skeleton, pin bones), plus how bones look on the canvas. The moves that used to be
+ * hidden (Alt to adjust, Delete to remove, Alt+click to pin, Shift+drag to stretch) still work, and each has a button too.
  */
 import type { Id } from '../core/format';
 import { type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
-import { rememberedChoice, withChoice } from '../core/choices';
+import { currentChoice, rememberedChoice, withChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
 import { requestOverlay } from '../canvas/controller';
-import { aimBone, applyPins, capturePins, descendants, ikChain, moveBone, rigState, solveIK, stretchBone, type PinHold, type Pt, type RigState } from './math';
+import { aimBone, applyPins, capturePins, descendants, ikChain, moveBone, nextBoneFrom, rigState, solveIK, stretchBone, type PinHold, type Pt, type RigState } from './math';
 import { rigPoseAt, type RigLayer } from './pose';
-import { addBone, currentRig, deleteBone, ensureRig, moveJoint, needsNewPoseKey, setPin, setPose } from './ops';
+import { addBone, childBones, currentRig, deleteBone, ensureRig, moveJoint, needsNewPoseKey, setPin, setPose, type RemoveBoneChoice } from './ops';
 import { rigUi, setRigUi, type BoneLook } from './state';
-import { BoneOptions, PoseOptions } from './Options';
+import { AddBoneOptions, EditBoneOptions, PoseOptions, RemoveBoneOptions } from './Options';
 import type { Pose } from '../core/format';
 
 // ---------------------------------------------------------------- hit testing
@@ -52,7 +53,7 @@ function stateNow(rig: RigLayer): RigState {
 // ---------------------------------------------------------------- drawing bones
 
 /** Draws a skeleton in document space. `look` picks between the two styles (see brand/ab/bones). */
-export function drawSkeleton(g: CanvasRenderingContext2D, st: RigState, zoom: number, opts: { selected?: Id | null; hover?: Id | null; look?: BoneLook; faded?: boolean } = {}): void {
+export function drawSkeleton(g: CanvasRenderingContext2D, st: RigState, zoom: number, opts: { selected?: Id | null; hover?: Id | null; look?: BoneLook; faded?: boolean; /** Bones about to be removed: drawn in the warning colour. */ doomed?: ReadonlySet<Id> } = {}): void {
   const look = opts.look ?? 'kite';
   const base = cssVar('--grape') || '#9b7bff';
   const sel = cssVar('--sunny') || '#ffc94a';
@@ -62,9 +63,10 @@ export function drawSkeleton(g: CanvasRenderingContext2D, st: RigState, zoom: nu
   g.save();
   g.globalAlpha = opts.faded ? 0.45 : 1;
   for (const s of st.values()) {
-    const on = s.bone.id === opts.selected;
-    const hot = s.bone.id === opts.hover;
-    const col = on ? sel : base;
+    const doomed = !!opts.doomed?.has(s.bone.id);
+    const on = s.bone.id === opts.selected && !doomed;
+    const hot = s.bone.id === opts.hover || doomed;
+    const col = doomed ? pin : on ? sel : base;
     const { x: ax, y: ay } = s.base;
     const { x: bx, y: by } = s.tip;
     const len = Math.hypot(bx - ax, by - ay) || 1;
@@ -137,7 +139,10 @@ export function drawSkeleton(g: CanvasRenderingContext2D, st: RigState, zoom: nu
   g.restore();
 }
 
-// ---------------------------------------------------------------- the Bone tool
+// ---------------------------------------------------------------- the bone tools
+
+/** What a bone tool does: draw new bones, move joints and tips, or take a bone away by clicking it. */
+export type BoneJob = 'add' | 'edit' | 'remove';
 
 type BoneDrag =
   | { kind: 'new'; rigId: Id; from: Pt; to: Pt; parent: Id | null }
@@ -147,11 +152,18 @@ let boneDrag: BoneDrag | null = null;
 let hover: Id | null = null;
 const DRAG_PX = 4;
 
-function startBone(e: ToolPointer, ctx: ToolContext): void {
+function startBone(e: ToolPointer, ctx: ToolContext, job: BoneJob): void {
   const rig = currentRig();
   const st = rig ? stateNow(rig) : undefined;
   const hit = st ? hitBone(st, e, ctx.zoom, rigUi().selected) : undefined;
-  const adjust = rigUi().mode === 'adjust' !== e.alt;
+  if (job === 'remove') {
+    // One click takes the bone under the pointer away (one undo step), whichever part of it is hit.
+    if (rig && hit) removeBone(rig.id, hit.id);
+    else if (!rig?.rig.bones.length) ctx.hint('There are no bones to remove yet.');
+    return;
+  }
+  // Alt switches between drawing and editing for a moment (the old way, still here).
+  const adjust = (job === 'edit') !== e.alt;
   if (hit && rig && adjust) {
     setRigUi({ selected: hit.id });
     if (hit.part !== 'body') boneDrag = { kind: 'joint', rigId: rig.id, id: hit.id, part: hit.part, moved: false };
@@ -172,85 +184,130 @@ function startBone(e: ToolPointer, ctx: ToolContext): void {
   boneDrag = { kind: 'new', rigId, from, to: from, parent };
 }
 
-export const boneTool: Tool = {
-  id: 'bone',
-  group: 'rig',
-  groupAt: 0,
-  label: 'Bone',
-  commandLabel: 'Draw the bones (Bone tool)',
-  icon: 'bone',
-  key: 'k',
-  layers: ['vector', 'pixel', 'tilemap'],
-  order: 70,
-  help: 'rig-bones',
-  cursor: 'crosshair',
-  options: BoneOptions,
-  down(e, ctx) {
-    startBone(e, ctx);
-    ctx.requestOverlay();
-  },
-  move(e, ctx) {
-    const d = boneDrag;
-    if (!d) return;
-    if (d.kind === 'new') d.to = { x: e.x, y: e.y };
-    else {
-      d.moved = true;
-      moveJoint(d.rigId, d.id, d.part, e);
-    }
-    ctx.requestOverlay();
-  },
-  up(e, ctx) {
-    const d = boneDrag;
-    boneDrag = null;
-    if (d?.kind === 'new') {
-      const far = Math.hypot(e.x - d.from.x, e.y - d.from.y) * ctx.zoom;
-      if (far < DRAG_PX) {
-        // A click: picks (or clears) the bone under it.
-        const rig = currentRig();
-        const hit = rig ? hitBone(stateNow(rig), e, ctx.zoom) : undefined;
-        setRigUi({ selected: hit?.id ?? null });
-      } else {
-        const rigId = d.rigId || ensureRig();
-        const first = !currentRig()?.rig.bones.length;
-        const id = addBone(rigId, d.from, { x: e.x, y: e.y }, d.parent);
-        if (id) setRigUi({ selected: id });
-        if (first) ctx.hint('Nice, your first bone! Keep drawing from its tip to make a chain.');
-      }
-    }
-    ctx.requestOverlay();
-  },
-  hover(e, ctx) {
-    const rig = currentRig();
-    const h = rig ? (hitBone(stateNow(rig), e, ctx.zoom)?.id ?? null) : null;
-    if (h !== hover) {
-      hover = h;
+/** The bones that go with a removal from `id`: just it, or its whole branch, by the remembered answer. */
+function doomedBy(rig: RigLayer, id: Id): Set<Id> {
+  return currentChoice<RemoveBoneChoice>('rig.removeBone') === 'branch' ? descendants(rig.rig, id) : new Set([id]);
+}
+
+/**
+ * Removes a bone. If bones hang from it, the first time asks (gently: it does the usual thing at once and says so, with a
+ * Change button) whether they stay or go too, then remembers. Everything is one undo step.
+ */
+export function removeBone(rigId: Id, id: Id): void {
+  const rig = currentRig();
+  if (!rig || rig.id !== rigId || !rig.rig.bones.some((b) => b.id === id)) return;
+  const kids = childBones(rig.rig, id).length;
+  withChoice<RemoveBoneChoice>(
+    'rig.removeBone',
+    (v) => {
+      deleteBone(rigId, id, v === 'branch');
+      setRigUi({ selected: null });
+      hover = null;
+      requestOverlay();
+    },
+    { matters: kids > 0, gently: { undo: () => store().undo() } },
+  );
+}
+
+function boneToolOf(job: BoneJob): Tool {
+  const text = {
+    add: { id: 'bone', label: 'Add bone', commandLabel: 'Add bones (Bone tool)', icon: 'bone-add', key: 'k', cursor: 'crosshair', options: AddBoneOptions, groupAt: 0, order: 70 },
+    edit: { id: 'bone-edit', label: 'Edit bone', commandLabel: 'Move bones, joints and tips (Edit bone tool)', icon: 'bone-edit', key: 'Alt+K', cursor: 'move', options: EditBoneOptions, groupAt: 1, order: 70.3 },
+    remove: { id: 'bone-remove', label: 'Remove bone', commandLabel: 'Remove bones (Remove bone tool)', icon: 'bone-remove', key: 'Alt+Shift+K', cursor: 'not-allowed', options: RemoveBoneOptions, groupAt: 2, order: 70.6 },
+  }[job];
+  return {
+    ...text,
+    group: 'rig',
+    layers: ['vector', 'pixel', 'tilemap'],
+    help: 'rig-bone-tools',
+    down(e, ctx) {
+      startBone(e, ctx, job);
       ctx.requestOverlay();
-    }
-  },
-  cancel(ctx) {
-    boneDrag = null;
-    ctx.requestOverlay();
-  },
-  overlay(g, ctx) {
-    const rig = currentRig();
-    if (rig) drawSkeleton(g, stateNow(rig), ctx.zoom, { selected: rigUi().selected, hover, look: rigUi().look });
-    const d = boneDrag;
-    if (d?.kind === 'new' && Math.hypot(d.to.x - d.from.x, d.to.y - d.from.y) > 0) {
-      const ghost = new Map(); // A preview bone, drawn the same way.
-      const len = Math.hypot(d.to.x - d.from.x, d.to.y - d.from.y);
-      ghost.set('~new', {
-        bone: { id: '~new', name: '', x: d.from.x, y: d.from.y, angle: 0, length: len },
-        rest: [1, 0, 0, 1, 0, 0],
-        posed: [1, 0, 0, 1, 0, 0],
-        skin: [1, 0, 0, 1, 0, 0],
-        angle: 0,
-        base: d.from,
-        tip: d.to,
-      });
-      drawSkeleton(g, ghost as RigState, ctx.zoom, { selected: '~new', look: rigUi().look });
-    }
-  },
-};
+    },
+    move(e, ctx) {
+      const d = boneDrag;
+      if (!d) return;
+      if (d.kind === 'new') d.to = { x: e.x, y: e.y };
+      else {
+        d.moved = true;
+        moveJoint(d.rigId, d.id, d.part, e);
+      }
+      ctx.requestOverlay();
+    },
+    up(e, ctx) {
+      const d = boneDrag;
+      boneDrag = null;
+      if (d?.kind === 'new') {
+        const far = Math.hypot(e.x - d.from.x, e.y - d.from.y) * ctx.zoom;
+        if (far < DRAG_PX) {
+          // A click: picks (or clears) the bone under it.
+          const rig = currentRig();
+          const hit = rig ? hitBone(stateNow(rig), e, ctx.zoom) : undefined;
+          setRigUi({ selected: hit?.id ?? null });
+        } else {
+          const rigId = d.rigId || ensureRig();
+          const first = !currentRig()?.rig.bones.length;
+          const id = addBone(rigId, d.from, { x: e.x, y: e.y }, d.parent);
+          if (id) setRigUi({ selected: id });
+          if (first) ctx.hint('Nice, your first bone! Keep drawing from its tip to make a chain.');
+        }
+      }
+      ctx.requestOverlay();
+    },
+    hover(e, ctx) {
+      const rig = currentRig();
+      const h = rig ? (hitBone(stateNow(rig), e, ctx.zoom)?.id ?? null) : null;
+      if (h !== hover) {
+        hover = h;
+        ctx.requestOverlay();
+      }
+    },
+    cancel(ctx) {
+      boneDrag = null;
+      ctx.requestOverlay();
+    },
+    leave() {
+      hover = null;
+    },
+    overlay(g, ctx) {
+      const rig = currentRig();
+      if (rig) drawSkeleton(g, stateNow(rig), ctx.zoom, { selected: rigUi().selected, hover, look: rigUi().look, doomed: job === 'remove' && hover ? doomedBy(rig, hover) : undefined });
+      const d = boneDrag;
+      if (d?.kind === 'new' && Math.hypot(d.to.x - d.from.x, d.to.y - d.from.y) > 0) {
+        const ghost = new Map(); // A preview bone, drawn the same way.
+        const len = Math.hypot(d.to.x - d.from.x, d.to.y - d.from.y);
+        ghost.set('~new', {
+          bone: { id: '~new', name: '', x: d.from.x, y: d.from.y, angle: 0, length: len },
+          rest: [1, 0, 0, 1, 0, 0],
+          posed: [1, 0, 0, 1, 0, 0],
+          skin: [1, 0, 0, 1, 0, 0],
+          angle: 0,
+          base: d.from,
+          tip: d.to,
+        });
+        drawSkeleton(g, ghost as RigState, ctx.zoom, { selected: '~new', look: rigUi().look });
+      }
+    },
+  };
+}
+
+/** Add bone (K): drag to draw. Edit bone (Alt+K): drag joints and tips. Remove bone (Alt+Shift+K): click a bone. */
+export const boneTool: Tool = boneToolOf('add');
+export const boneEditTool: Tool = boneToolOf('edit');
+export const boneRemoveTool: Tool = boneToolOf('remove');
+
+/** Adds the next bone in the chain from the picked bone's tip, with no dragging. Returns whether it did. */
+export function addNextBone(): boolean {
+  const rig = currentRig();
+  const id = rigUi().selected;
+  const s = rig && id ? stateNow(rig).get(id) : undefined;
+  if (!rig || !s) return false;
+  const { from, to } = nextBoneFrom(s);
+  const nid = addBone(rig.id, from, to, id);
+  if (nid) setRigUi({ selected: nid });
+  requestOverlay();
+  return !!nid;
+}
 
 // ---------------------------------------------------------------- the Pose tool
 
@@ -295,7 +352,7 @@ export function dragPose(rig: RigLayer, d: PoseDrag, p: Pt): Pose {
 export const poseTool: Tool = {
   id: 'pose',
   group: 'rig',
-  groupAt: 1,
+  groupAt: 3,
   label: 'Pose',
   commandLabel: 'Pose the bones (Pose tool)',
   icon: 'pose',
@@ -319,14 +376,14 @@ export const poseTool: Tool = {
       return;
     }
     setRigUi({ selected: hit.id });
-    if (e.alt) {
+    if (e.alt || rigUi().grab === 'pin') {
       const b = rig.rig.bones.find((x) => x.id === hit.id)!;
       setPin(rig.id, hit.id, !b.pin);
       ctx.hint(b.pin ? `${b.name} is free again.` : `${b.name} is pinned: it stays put while you move the rest.`);
       return;
     }
     const begin = () => {
-      const stretch = e.shift && hit.part !== 'base';
+      const stretch = (e.shift || rigUi().grab === 'stretch') && hit.part !== 'base';
       poseDrag = { rigId: rig.id, id: hit.id, part: hit.part, start: { x: e.x, y: e.y }, pose0, holds: capturePins(rig.rig, pose0), chain: hit.part === 'tip' && !stretch ? ikChain(rig.rig, hit.id) : [hit.id], stretch };
     };
     // The first time a pose lands on a frame without one, ask whether in-betweens glide or jump.
@@ -372,13 +429,11 @@ export const poseTool: Tool = {
 };
 
 
-/** Deletes the selected bone (the Delete key, while the Bone tool is out). */
+/** Deletes the picked bone (the Delete key and the Remove bone button). */
 export function deleteSelectedBone(): boolean {
   const rig = currentRig();
   const id = rigUi().selected;
   if (!rig || !id || !rig.rig.bones.some((b) => b.id === id)) return false;
-  deleteBone(rig.id, id);
-  setRigUi({ selected: null });
-  requestOverlay();
+  removeBone(rig.id, id);
   return true;
 }

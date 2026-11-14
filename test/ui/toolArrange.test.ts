@@ -13,7 +13,7 @@ const PLACES: Record<string, string[]> = {
   // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
   select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'slice'],
   pen: ['transform', 'points', 'pen'],
-  rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints', 'record-move'],
+  rig: ['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints'],
   view: ['hand', 'zoom', 'camera', 'notes', 'artboard'],
 };
 const refs = (ids: string[]) =>

@@ -633,3 +633,23 @@ export function boneBetween(id: Id, name: string, a: Pt, b: Pt, parent: Id | nul
 export function restTip(b: Bone): Pt {
   return { x: b.x + Math.cos(b.angle * RAD) * b.length, y: b.y + Math.sin(b.angle * RAD) * b.length };
 }
+
+/**
+ * Where the next bone in a chain goes when a person asks for one instead of dragging it: from the tip of this bone,
+ * carrying on the way it points, a little shorter (so a spine, an arm or a tail tapers on its own). Document space.
+ */
+export function nextBoneFrom(s: Pick<BoneState, 'base' | 'tip'>): { from: Pt; to: Pt } {
+  const dx = s.tip.x - s.base.x;
+  const dy = s.tip.y - s.base.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const next = Math.max(16, Math.min(len * 0.85, 160));
+  return { from: { ...s.tip }, to: { x: s.tip.x + (dx / len) * next, y: s.tip.y + (dy / len) * next } };
+}
+
+/** The bone to pick when stepping through the skeleton: up to its parent, or down to its first child. */
+export function stepBone(rig: Rig, id: Id, way: 'parent' | 'child'): Id | undefined {
+  const b = rig.bones.find((x) => x.id === id);
+  if (!b) return undefined;
+  if (way === 'parent') return b.parent ?? undefined;
+  return rig.bones.find((x) => x.parent === id)?.id;
+}

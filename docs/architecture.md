@@ -198,6 +198,9 @@ import neither. A kind stays registered for good, also while its feature is off,
   out from the seed for each frame (`src/particles/model.ts`), with no step simulation.
 - A layer bound to a bone is wrapped by `boundDrawing` (`src/rig/pose.ts`): moved by the bone, or bent through a skin
   mesh. Bone maths is `src/rig/math.ts`; weights are `src/rig/weights.ts`.
+  The bone tools are three tools made by one factory in `src/rig/tools.ts` (`bone` Add, `bone-edit` Edit, `bone-remove` Remove), each with a
+  button for what used to be a held key (Alt, Shift) or a hidden key (Delete); the old moves still work. Removing a bone that has bones hanging
+  from it goes through the `rig.removeBone` choice (keep them, or take the branch).
 - `src/core/motions.ts` is data for one-click motions; it makes keys and plays no part in rendering.
 
 **Camera** (`src/core/camera.ts`): `cameraViewAt` finds the first visible camera layer and eases its keys;

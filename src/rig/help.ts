@@ -13,11 +13,20 @@ export const rigHelp: HelpTopic[] = [
   {
     id: 'rig-bones',
     order: 2,
-    title: 'The Bone tool: drawing a skeleton',
+    title: 'The Add bone tool: drawing a skeleton',
     section: 'Rigging',
     media: 'rig-bones.mp4',
     summary: 'Drag to draw a bone. Start on a bone\'s tip to make a chain, or on its middle to branch off.',
     keywords: ['bone tool', 'skeleton', 'armature', 'joint', 'chain', 'K'],
+  },
+  {
+    id: 'rig-bone-tools',
+    order: 2.5,
+    title: 'Add, edit and remove bones',
+    section: 'Rigging',
+    media: 'rig-bone-tools.mp4',
+    summary: 'Three bone tools with buttons for everything: draw bones, move and rename them, click one to take it away.',
+    keywords: ['bone tools', 'add bone', 'edit bone', 'remove bone', 'delete bone', 'rename bone', 'move joint', 'pin', 'child bone', 'parent bone'],
   },
   {
     id: 'rig-attach',
