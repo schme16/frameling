@@ -17,6 +17,7 @@ import {
   brushesToText,
   deletePreset,
   MAX_BRUSHES_BYTES,
+  movePreset,
   MAX_PRESETS,
   parseBrushesText,
   presetState,
@@ -29,6 +30,7 @@ import {
   type BrushPreset,
   type PresetState,
 } from './model';
+import { noteRecent, toggleFavourite } from './picker';
 import './help';
 
 const KEY = 'frameling.brushPresets';
@@ -80,7 +82,7 @@ function emit(): void {
 function setMine(list: BrushPreset[]): void {
   mine = list;
   try {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify({ version: 1, presets: mine.map((p) => ({ id: p.id, name: p.name, tool: p.tool, brush: p.brush })) }));
+    if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify({ version: 1, presets: mine.map((p) => (p.group ? { id: p.id, name: p.name, tool: p.tool, brush: p.brush, group: p.group } : { id: p.id, name: p.name, tool: p.tool, brush: p.brush })) }));
   } catch {
     // not saved this time
   }
@@ -126,21 +128,23 @@ export function applyPreset(id: string): boolean {
   if (!p) return false;
   pickedId = p.id;
   store().setUi({ brush: { ...p.brush } });
+  noteRecent(p.id);
   emit();
   return true;
 }
 
 /** Saves the brush in use under a name. Returns the brush saved, or null if the name was empty or the list was full. */
-export function saveCurrentAs(name: string): BrushPreset | null {
-  const r = savePreset(mine, name, store().get().ui.brush, uid('b'));
+export function saveCurrentAs(name: string, group?: string): BrushPreset | null {
+  const r = savePreset(mine, name, store().get().ui.brush, uid('b'), group);
   if (!r) {
     toast(name.trim() ? `You have ${MAX_PRESETS} saved brushes already. Delete one to make room.` : 'Give the brush a name first.', { kind: 'warn' });
     return null;
   }
   setMine(r.list);
   pickedId = r.preset.id;
+  noteRecent(r.preset.id);
   naming = null;
-  toast(r.replaced ? `Updated "${r.preset.name}" with this brush.` : `Saved "${r.preset.name}". Find it at the top of the brush options.`, { kind: 'success' });
+  toast(r.replaced ? `Updated "${r.preset.name}" with this brush.` : `Saved "${r.preset.name}". Find it in the brush picker at the top of the brush options.`, { kind: 'success' });
   emit();
   return r.preset;
 }
@@ -161,14 +165,17 @@ export function revertActive(): boolean {
   return applyPreset(p.id);
 }
 
-export function renameActive(name: string): boolean {
+/** Gives the lit saved brush a new name and, when `group` is given, moves it there (empty: back to "My brushes"). */
+export function renameActive(name: string, group?: string): boolean {
   const own = activeOwn();
   naming = null;
   if (!own || !name.trim()) {
     emit();
     return false;
   }
-  setMine(renamePreset(mine, own.id, name));
+  let list = renamePreset(mine, own.id, name);
+  if (group !== undefined) list = movePreset(list, own.id, group);
+  setMine(list);
   return true;
 }
 
@@ -193,6 +200,15 @@ export function deleteActive(): boolean {
     },
   });
   return true;
+}
+
+/** Stars the lit brush, or takes the star off. Says what happened. */
+export function toggleActiveFavourite(): boolean {
+  const p = everyBrush().find((x) => x.id === currentBrushState().activeId);
+  if (!p) return warn('Pick or save a brush first, then star it.');
+  const on = toggleFavourite(p.id);
+  toast(on ? `"${p.name}" is in your Favourites.` : `"${p.name}" is out of your Favourites.`, { duration: 1600 });
+  return on;
 }
 
 /** Moves to the next (or previous) brush in the row. */
@@ -282,6 +298,7 @@ export async function addBrushesFromClipboard(): Promise<boolean> {
 // ---------------------------------------------------------------- one command per brush
 
 const registered = new Set<string>();
+let syncedFor = '';
 
 /** Picking a brush from the palette: use it, and move to the brush tool when the layer can take it. */
 export function pickBrushCommand(id: string): void {
@@ -294,6 +311,10 @@ export function pickBrushCommand(id: string): void {
 /** One palette command per brush ("Brush: Ink"), kept in step with the list. */
 export function syncPickCommands(): void {
   const all = everyBrush();
+  // A slider drag with "save every change" on saves the brush on every tick; the commands only change with names.
+  const signature = all.map((p) => `${p.id}\u0000${p.name}`).join('\u0001');
+  if (signature === syncedFor) return;
+  syncedFor = signature;
   const keep = new Set(all.map((p) => `brush.pick.${p.id}`));
   for (const id of [...registered]) {
     if (!keep.has(id)) {

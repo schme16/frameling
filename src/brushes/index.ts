@@ -16,8 +16,10 @@ import {
   saveBrushesFile,
   startNaming,
   stepBrush,
+  toggleActiveFavourite,
   updateActive,
 } from './presets';
+import { flipRowStyle, requestPicker } from './picker';
 
 export { startBrushPresets } from './presets';
 
@@ -28,6 +30,37 @@ function showBrushOptions(): void {
 }
 
 registerCommands([
+  {
+    id: 'brush.picker',
+    label: 'Open the brush picker',
+    category: 'Draw',
+    keys: ['Alt+P'],
+    description: 'Drop down the list of your brushes, each with a stroke across it. Type to search, arrows to move, Enter to pick.',
+    help: 'brush-picker',
+    keywords: ['brush', 'picker', 'pick brush', 'brushes', 'library', 'choose brush', 'search brushes', 'preset', 'saved brush'],
+    run: () => {
+      showBrushOptions();
+      requestPicker();
+    },
+  },
+  {
+    id: 'brush.favourite',
+    label: 'Add the brush to Favourites (or take it out)',
+    category: 'Draw',
+    description: 'Star the brush you are using, so it is at the top of the brush picker. Run it again to take the star off.',
+    help: 'brush-picker',
+    keywords: ['brush', 'favourite', 'favorite', 'star', 'pin', 'bookmark'],
+    run: () => void toggleActiveFavourite(),
+  },
+  {
+    id: 'brush.rows',
+    label: 'Brush picker: one column or two',
+    category: 'Draw',
+    description: 'Switch the brush picker between one wide column and two denser columns. Your choice is remembered.',
+    help: 'brush-picker',
+    keywords: ['brush', 'picker', 'columns', 'rows', 'dense', 'layout', 'two columns'],
+    run: () => void flipRowStyle(),
+  },
   {
     id: 'brush.saveAs',
     label: 'Save this brush as...',
