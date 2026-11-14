@@ -384,6 +384,14 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Thicker pixel outlines" hint="Pixel shapes (rectangle, ellipse, line, polygon, star) get an outline thicker than one pixel. Off keeps the classic one pixel line.">
         <Switch label="Thicker pixel outlines" on={p.pixelThickOutlines} onChange={(pixelThickOutlines) => setPrefs({ pixelThickOutlines })} />
       </Row>
+      <Row label="New pixel layer size" hint="How wide each square is on a pixel layer you make from the Pixels and Vectors switch, when no other pixel layer is there to copy. Bigger squares, chunkier art.">
+        <Segmented<'1' | '2' | '4' | '8' | '16' | '32'>
+          label="New pixel layer size"
+          value={String(p.newPixelSize) as '1' | '2' | '4' | '8' | '16' | '32'}
+          onChange={(v) => setPrefs({ newPixelSize: Number(v) })}
+          options={(['1', '2', '4', '8', '16', '32'] as const).map((id) => ({ id, label: id }))}
+        />
+      </Row>
       <Row label="Your settings" hint="Everything you have set: themes, shortcuts, pen settings, workspaces and the answers you have given. Keep a copy, or put one back on another computer.">
         <div className="ui-pref-volume">
           <button type="button" className="ui-btn ui-btn-small" onClick={() => void backUpSettings()}>

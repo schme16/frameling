@@ -93,6 +93,8 @@ export interface Prefs {
   pixelThickOutlines: boolean;
   /** How thick that outline is, in art pixels (1 to 16). */
   pixelOutlineWidth: number;
+  /** How wide each square is (in page pixels) on a new pixel layer made when no other pixel layer shows the size to copy. */
+  newPixelSize: number;
   /** How many undo steps to keep (20 to 2000). A very long history still stops growing when it gets heavy. */
   historySteps: number;
   /** How big the whole interface is drawn, as a share of the usual size (0.75 to 2). For big, dense screens. */
@@ -145,6 +147,7 @@ export const DEFAULT_PREFS: Prefs = {
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
+  newPixelSize: 8,
   pluginDiagnostics: false,
 };
 
@@ -201,6 +204,7 @@ export function migratePrefs(raw: unknown): Prefs {
     pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
     pluginDiagnostics: bool(r.pluginDiagnostics, DEFAULT_PREFS.pluginDiagnostics),
     pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
+    newPixelSize: typeof r.newPixelSize === 'number' && Number.isFinite(r.newPixelSize) ? Math.min(64, Math.max(1, Math.round(r.newPixelSize))) : DEFAULT_PREFS.newPixelSize,
   };
 }
 

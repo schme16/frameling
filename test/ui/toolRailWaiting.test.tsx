@@ -79,7 +79,9 @@ describe('the layer line on the rail', () => {
     d.layers.push(px);
     return { d, vector: d.layers[0].id, pixel: px.id };
   };
-  const line = () => host.querySelector<HTMLButtonElement>('.ui-tool-layer');
+  const line = () => host.querySelector<HTMLElement>('.ui-tool-switch');
+  // The lit side of the switch carries the layer's tip, the other side says where it would go.
+  const lit = () => host.querySelector<HTMLButtonElement>('.ui-tool-side.is-on');
 
   beforeEach(() => {
     resetDock();
@@ -103,11 +105,12 @@ describe('the layer line on the rail', () => {
     act(() => store().setUi({ activeLayerId: k.pixel }));
     act(() => root.render(<ToolStrip />));
     expect(line()).not.toBeNull();
-    expect(line()!.textContent).toContain('Pixel layer');
+    expect(lit()!.textContent).toBe('Pixels');
     expect(line()!.classList.contains('is-off')).toBe(true);
-    const tip = line()!.getAttribute('data-tip-desc')!;
+    const tip = lit()!.getAttribute('data-tip-desc')!;
     expect(tip).toContain('Edit points');
     expect(tip).toContain('need a vector layer');
+    expect(tip).toContain('Press Vectors to go to one.');
   });
 
   it('on a vector layer it says Vector layer and names Shade, Dither and the rest', () => {
@@ -115,11 +118,11 @@ describe('the layer line on the rail', () => {
     resetStore(k.d);
     act(() => store().setUi({ activeLayerId: k.vector }));
     act(() => root.render(<ToolStrip />));
-    expect(line()!.textContent).toContain('Vector layer');
+    expect(lit()!.textContent).toBe('Vectors');
     expect(line()!.textContent).not.toMatch(/tools off/);
-    expect(line()!.getAttribute('data-tip')).toMatch(/\d+ tools off/);
-    expect(line()!.getAttribute('data-tip-desc')).toContain('Shade');
-    expect(line()!.getAttribute('data-tip-desc')).toContain('need a pixel layer');
+    expect(lit()!.getAttribute('data-tip')).toMatch(/\d+ tools off/);
+    expect(lit()!.getAttribute('data-tip-desc')).toContain('Shade');
+    expect(lit()!.getAttribute('data-tip-desc')).toContain('need a pixel layer');
   });
 
   it('turns gold only when the Pixel workspace is on a layer that is not pixel', () => {
@@ -144,7 +147,7 @@ describe('the layer line on the rail', () => {
     act(() => root.render(<ToolStrip />));
     expect(host.querySelector('.ui-tool-head-off')?.textContent).toMatch(/^\d+ off$/);
     act(() => store().setUi({ activeLayerId: k.pixel }));
-    expect(line()!.textContent).toContain('Pixel layer');
+    expect(lit()!.textContent).toBe('Pixels');
   });
 
   it('with the tools greyed out it still names the layer, and counts the greyed ones without turning gold', () => {
@@ -153,19 +156,19 @@ describe('the layer line on the rail', () => {
     setPrefs({ toolsOffLayer: 'grey' });
     act(() => store().setUi({ activeLayerId: k.vector }));
     act(() => root.render(<ToolStrip />));
-    expect(line()!.textContent).toContain('Vector layer');
+    expect(lit()!.textContent).toBe('Vectors');
     expect(line()!.textContent).not.toMatch(/greyed out/);
-    expect(line()!.getAttribute('data-tip')).toMatch(/\d+ tools? greyed out/);
+    expect(lit()!.getAttribute('data-tip')).toMatch(/\d+ tools? greyed out/);
     expect(line()!.classList.contains('is-off')).toBe(false);
     expect(host.querySelector('.ui-tool-head-off')).toBeNull();
   });
 
-  it('pressing it opens the way back first, and "grey them out" switches the preference', () => {
+  it('right-clicking it opens the way back first, and "grey them out" switches the preference', () => {
     const k = doc();
     resetStore(k.d);
     act(() => store().setUi({ activeLayerId: k.vector }));
     act(() => root.render(<ToolStrip />));
-    act(() => line()!.click());
+    act(() => void line()!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
     const items = dockMenu.get()!.items;
     expect(items[0]).toEqual({ heading: 'Vector layer: Layer 1' });
     const go = items.find((i) => 'label' in i && i.label.startsWith('Go to the pixel layer'));
@@ -214,8 +217,144 @@ describe('the layer line on the rail', () => {
     resetStore(d);
     act(() => store().setUi({ activeLayerId: d.layers[0].id }));
     act(() => root.render(<ToolStrip />));
-    act(() => line()!.click());
+    act(() => void line()!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
     expect(dockMenu.get()!.items.some((i) => 'label' in i && i.label === 'Add a pixel layer')).toBe(true);
+  });
+});
+
+describe('the Pixels | Vectors switch on the rail', () => {
+  let host: HTMLElement;
+  let root: Root;
+  const make = () => {
+    const d = newDoc({ width: 100, height: 100 });
+    const px = newPixelLayer('Pixels', 8);
+    d.layers.push(px);
+    return { d, vector: d.layers[0].id, pixel: px.id };
+  };
+  const side = (which: 'pixel' | 'vector') => host.querySelector<HTMLButtonElement>(`.ui-tool-side.is-${which}`)!;
+  const mount = (activeLayerId: string, d = store().get().doc) => {
+    resetStore(d);
+    act(() => store().setUi({ activeLayerId }));
+    act(() => root.render(<ToolStrip />));
+  };
+
+  beforeEach(() => {
+    resetDock();
+    resetPrefs();
+    resetChoices();
+    setChoiceAsker(null);
+    frontTools.set({});
+    flyRequest.set(null);
+    toasts.set([]);
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it('has Pixels on the left and Vectors on the right, and lights the side of the layer you are on', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    const words = [...host.querySelectorAll('.ui-tool-side-word')].map((b) => b.textContent);
+    expect(words).toEqual(['Pixels', 'Vectors']);
+    expect(side('vector').getAttribute('aria-pressed')).toBe('true');
+    expect(side('pixel').getAttribute('aria-pressed')).toBe('false');
+    act(() => store().setUi({ activeLayerId: k.pixel }));
+    expect(side('pixel').getAttribute('aria-pressed')).toBe('true');
+    expect(side('vector').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('pressing the other side goes to the top layer of that kind', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => side('pixel').click());
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+    act(() => side('vector').click());
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+  });
+
+  it('pressing the side you are on does nothing', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => side('vector').click());
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(toasts.get().length).toBe(0);
+  });
+
+  it('with no layer of that kind it makes one, and the switch follows', () => {
+    const d = newDoc({ width: 100, height: 100 });
+    mount(d.layers[0].id, d);
+    act(() => side('pixel').click());
+    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(true);
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+  });
+
+  it('a one-way tool picked from the wrong kind of layer flips the switch instead of being refused', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => store().setUi({ tool: 'shade' }));
+    expect(store().get().ui.tool).toBe('shade');
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+    act(() => store().setUi({ tool: 'points' }));
+    expect(store().get().ui.tool).toBe('points');
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(side('vector').classList.contains('is-on')).toBe(true);
+  });
+
+  it('with the tools greyed out, pressing a greyed one flips the switch and picks it', () => {
+    setPrefs({ toolsOffLayer: 'grey' });
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => host.querySelector<HTMLButtonElement>('[data-tool-id="shade"]')!.click());
+    expect(store().get().ui.tool).toBe('shade');
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+  });
+
+  it('a tool that works on both leaves the switch alone', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => store().setUi({ tool: 'brush' }));
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    act(() => store().setUi({ tool: 'pencil' }));
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+  });
+
+  it('the Lasso becomes the Pixel lasso on a pixel layer rather than flipping the switch', () => {
+    const k = make();
+    mount(k.pixel, k.d);
+    act(() => store().setUi({ tool: 'select-lasso' }));
+    expect(store().get().ui.tool).toBe('pixel-select-lasso');
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
+  });
+
+  it('pressing a side while holding a one-way tool moves to a tool that works there, and stays put', () => {
+    const k = make();
+    mount(k.pixel, k.d);
+    act(() => store().setUi({ tool: 'shade' }));
+    act(() => side('vector').click());
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(store().get().ui.tool).not.toBe('shade');
+    expect(side('vector').classList.contains('is-on')).toBe(true);
+  });
+
+  it('with no layer for a one-way tool, makes one when nothing asks, and leaves the tool picked', () => {
+    const d = newDoc({ width: 100, height: 100 });
+    mount(d.layers[0].id, d);
+    act(() => store().setUi({ tool: 'shade' }));
+    expect(store().get().ui.tool).toBe('shade');
+    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(true);
+  });
+
+  it('the count of tools that are off sits on the side they are on, in the icons-only form', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    expect(host.querySelector('.ui-tool-side.is-pixel .ui-tool-layer-count')).not.toBeNull();
+    expect(host.querySelector('.ui-tool-side.is-vector .ui-tool-layer-count')).toBeNull();
   });
 });
 

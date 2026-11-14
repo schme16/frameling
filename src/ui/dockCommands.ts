@@ -10,7 +10,7 @@ import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
-import { goToLayerKind } from './drawingMode';
+import { activeKindNow, pressSide, sideOf } from './drawingMode';
 import { store } from '../core/store';
 import { setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
@@ -453,15 +453,17 @@ for (const [style, label, about] of [
   });
 }
 
-// The way back when the layer you are on leaves tools off the strip (the layer line at the top of the strip offers the same).
+// The Pixels | Vectors switch at the top of the tool rail, as commands: the way back when the layer you are on leaves
+// tools off the strip. With no layer of that kind, they offer to make one (asked once, then remembered).
 for (const kind of ['pixel', 'vector'] as const) {
   registerCommand({
     id: `layers.go.${kind}`,
-    label: `Go to a ${kind} layer`,
+    label: `Go to a ${kind} layer (${kind === 'pixel' ? 'Pixels' : 'Vectors'})`,
     category: 'Layers',
-    description: `Pick the top ${kind} layer, which is where the ${kind === 'pixel' ? 'Shade, Dither and Spray' : 'Text, Gradient and curve'} tools work.`,
+    description: `The same as pressing ${kind === 'pixel' ? 'Pixels' : 'Vectors'} on the tool rail. Picks the top ${kind} layer, which is where the ${kind === 'pixel' ? 'Shade, Dither and Spray' : 'Text, Gradient and curve'} tools work, or offers to make one.`,
     help: 'drawing-mode',
-    keywords: ['layer', 'switch', 'pick', 'tools missing', 'tools gone', 'drawing mode', 'layer kind', kind],
-    run: () => void goToLayerKind(kind),
+    keywords: ['layer', 'switch', 'pick', 'toggle', 'tools missing', 'tools gone', 'drawing mode', 'layer kind', 'pixels', 'vectors', kind],
+    checked: () => sideOf(activeKindNow()) === kind,
+    run: () => pressSide(kind),
   });
 }

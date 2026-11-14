@@ -6,8 +6,10 @@ import { onChoiceChange, rememberedChoice, registerChoice, setChoice, withChoice
 import { findLayer } from '../core/doc';
 import type { Layer, LayerKind } from '../core/format';
 import { store } from '../core/store';
+import * as ops from '../timeline/ops';
 import { inHarness } from '../pixel/harness';
 import { getPrefs, setPrefs, subscribePrefs, type OffLayerPref } from './prefs';
+import { openPrefs } from './overlays';
 import { toast } from './toast';
 import type { WaitingTool } from './toolArrange';
 
@@ -39,14 +41,16 @@ export function modeLine(kind: LayerKind, layerName: string, waiting: WaitingToo
   const n = waiting.length;
   const needs = n ? waiting[0].needs : null;
   const named = layerName ? ` "${layerName}"` : '';
+  const other: Side | null = needs ?? (kind === 'pixel' ? 'vector' : kind === 'vector' ? 'pixel' : null);
+  const press = other ? `Press ${sideWord(other)} to go to ${n ? 'one' : `a ${other} layer`}.` : 'Press Pixels or Vectors to go to a layer.';
   if (!n) {
     return {
       word,
       off: '',
       needs: null,
       tip: `${word}${named}`,
-      desc: greyed ? 'This is the layer you are drawing on. Press for other layers.' : 'This is the layer you are drawing on, so every tool here works on it. Press for other layers.',
-      label: `You are drawing on a ${LOWER[kind]} layer${named}. Press for other layers.`,
+      desc: `${greyed ? 'This is the layer you are drawing on.' : 'This is the layer you are drawing on, so every tool here works on it.'} ${press}`,
+      label: `You are drawing on a ${LOWER[kind]} layer${named}. ${press}`,
     };
   }
   const names = waiting.slice(0, 3).map((t) => t.label);
@@ -57,8 +61,8 @@ export function modeLine(kind: LayerKind, layerName: string, waiting: WaitingToo
     off: greyed ? `${n} greyed out` : `${n} tool${n === 1 ? '' : 's'} off`,
     needs,
     tip: `${word}${named}: ${n} tool${n === 1 ? '' : 's'} ${greyed ? 'greyed out' : 'off'}`,
-    desc: `${list} ${n === 1 ? 'needs' : 'need'} a ${needs} layer. Press to go to one.`,
-    label: `You are drawing on a ${LOWER[kind]} layer${named}. ${n} tool${n === 1 ? ' is' : 's are'} ${greyed ? 'greyed out' : 'off the rail'} because they need a ${needs} layer: ${list}. Press to go to one.`,
+    desc: `${list} ${n === 1 ? 'needs' : 'need'} a ${needs} layer. ${press}`,
+    label: `You are drawing on a ${LOWER[kind]} layer${named}. ${n} tool${n === 1 ? ' is' : 's are'} ${greyed ? 'greyed out' : 'off the rail'} because they need a ${needs} layer: ${list}. ${press}`,
   };
 }
 
@@ -76,17 +80,126 @@ export function topLayerOf(layers: readonly Layer[], kind: LayerKind): Layer | u
 
 /**
  * Goes to the top layer of a kind and picks it. With none, says so and how to make one (and does not make it for you:
- * a layer you did not ask for would be an odd surprise). True when it went.
+ * a layer you did not ask for would be an odd surprise). `because` names the tool that sent you ("Shade"). True when it went.
  */
-export function goToLayerKind(kind: 'vector' | 'pixel'): boolean {
+export function goToLayerKind(kind: 'vector' | 'pixel', because?: string): boolean {
   const layer = topLayerOf(store().get().doc.layers, kind);
   if (!layer) {
     toast(`There is no ${kind} layer yet. Add one with New ${kind} layer in the Layers menu, then go to it.`, { quill: null });
     return false;
   }
   store().setUi({ activeLayerId: layer.id });
-  toast(`Now on the ${kind} layer "${layer.name}".`, { kind: 'success', quill: null, duration: 2200 });
+  toast(because ? `${because} works on ${kind} layers, so you are now on "${layer.name}".` : `Now on the ${kind} layer "${layer.name}".`, { kind: 'success', quill: null, duration: 2200 });
   return true;
+}
+
+// ---- The Pixels | Vectors switch at the top of the rail. It shows the kind of the layer you are on, so it can never
+// disagree with the layer. Pressing a side goes to the top layer of that kind, or offers to make one.
+
+export type Side = 'pixel' | 'vector';
+export const SIDES: readonly Side[] = ['pixel', 'vector'];
+
+/** The word on a side of the switch. */
+export const sideWord = (side: Side): string => (side === 'pixel' ? 'Pixels' : 'Vectors');
+
+/** Which side of the switch a layer lights: pixel or vector. Tile and camera layers light neither. */
+export function sideOf(kind: LayerKind | null): Side | null {
+  return kind === 'pixel' || kind === 'vector' ? kind : null;
+}
+
+/** What pressing a side does: nothing (already there), go to a layer, or make one because there is none. */
+export type PressPlan = { do: 'stay' } | { do: 'go'; layerId: string; name: string } | { do: 'make' };
+
+export function planPress(layers: readonly Layer[], kind: LayerKind | null, side: Side): PressPlan {
+  if (sideOf(kind) === side) return { do: 'stay' };
+  const there = topLayerOf(layers, side);
+  return there ? { do: 'go', layerId: there.id, name: there.name } : { do: 'make' };
+}
+
+/**
+ * The side a tool needs when the layer you are on is the wrong one: Shade, Dither, Spray, Magic wand and Slices need
+ * Pixels, Edit points and Shape hints need Vectors. Null when the tool works here, works on both kinds (so the switch
+ * stays put), or belongs to tile or camera layers.
+ */
+export function flipSideFor(toolLayers: readonly LayerKind[], kind: LayerKind | null): Side | null {
+  if (!kind || toolLayers.includes(kind)) return null;
+  const wanted = SIDES.filter((s) => toolLayers.includes(s));
+  return wanted.length === 1 ? wanted[0] : null;
+}
+
+/**
+ * The square size for a new pixel layer: the top pixel layer's, else a tile layer's (tiles sit on a pixel grid too, so
+ * the art lines up), else the preference. `from` says which, for the toast.
+ */
+export function sizeForNewPixelLayer(layers: readonly Layer[], preferred: number): { size: number; from: 'layer' | 'tiles' | 'prefs' } {
+  const top = topLayerOf(layers, 'pixel');
+  if (top && top.kind === 'pixel') return { size: top.pixelSize, from: 'layer' };
+  const tiles = topLayerOf(layers, 'tilemap');
+  if (tiles && tiles.kind === 'tilemap') return { size: tiles.pixelSize, from: 'tiles' };
+  return { size: Math.max(1, Math.round(preferred)), from: 'prefs' };
+}
+
+// ---- When a side has no layer: asked once, then remembered.
+
+export const MAKE_LAYER_CHOICE = 'toggle.makeLayer';
+
+registerChoice<'make' | 'tell'>({
+  id: MAKE_LAYER_CHOICE,
+  title: 'Pixels or Vectors with no layer of that kind',
+  question: 'You pressed Pixels or Vectors and there is no layer of that kind yet. Make one for you?',
+  category: 'Layers',
+  help: 'drawing-mode',
+  default: 'make',
+  dismiss: 'tell',
+  options: [
+    { value: 'make', label: 'Make one', did: 'Made the layer you asked for.', detail: 'A new layer of that kind goes above the one you are on, and you land on it. Undo takes it back.' },
+    { value: 'tell', label: 'Just tell me how', did: 'Said how to add one.', detail: 'Nothing is made. A note says where New layer is.' },
+  ],
+});
+
+/** Makes a layer of a kind, above the one you are on, and says what it chose (the square size, for pixels). */
+export function makeLayerFor(side: Side): void {
+  const { doc } = store().get();
+  if (side === 'vector') {
+    const o = ops.addVectorLayer();
+    const name = findLayer(store().get().doc, o.id ?? null)?.name ?? '';
+    toast(`Made a vector layer${name ? ` called "${name}"` : ''} and moved you to it.`, { kind: 'success', quill: null, duration: 3200 });
+    return;
+  }
+  const pick = sizeForNewPixelLayer(doc.layers, getPrefs().newPixelSize);
+  const o = ops.addPixelLayer(undefined, pick.size);
+  const name = findLayer(store().get().doc, o.id ?? null)?.name ?? '';
+  const why = pick.from === 'layer' ? 'the same as your other pixel layer' : pick.from === 'tiles' ? 'the same as your tile layer' : 'from your Preferences';
+  toast(`Made a pixel layer${name ? ` called "${name}"` : ''}. Its squares are ${pick.size} wide, ${why}.`, {
+    kind: 'success',
+    quill: null,
+    duration: 5000,
+    action: { label: 'Change size', run: () => openPrefs('general', undefined, 'New pixel layer size') },
+  });
+}
+
+/**
+ * Presses a side of the switch: goes to the top layer of that kind, or, with none, makes one (asked once, remembered).
+ * `because` names the tool that sent you here. `declined` runs when no layer came of it, so the caller can step aside.
+ */
+export function pressSide(side: Side, opts: { because?: string; declined?: () => void } = {}): void {
+  const plan = planPress(store().get().doc.layers, sideOf(activeKindNow()), side);
+  if (plan.do === 'stay') return;
+  if (plan.do === 'go') {
+    goToLayerKind(side, opts.because);
+    return;
+  }
+  withChoice<'make' | 'tell'>(MAKE_LAYER_CHOICE, (v) => {
+    if (v === 'make') return makeLayerFor(side);
+    toast(`There is no ${side} layer yet. Add one with New ${side} layer in the Layers menu, then press ${sideWord(side)}.`, { quill: null });
+    opts.declined?.();
+  });
+}
+
+/** The kind of the layer in use (the top one when none is picked). */
+export function activeKindNow(): LayerKind | null {
+  const s = store().get();
+  return (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? null;
 }
 
 /** The name of the layer in use (the top one when none is picked), for the tip. */
