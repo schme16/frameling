@@ -30,7 +30,7 @@ export interface WayInfo {
 
 export const WAYS: WayInfo[] = [
   { id: 'picture', name: 'One picture', term: 'single-image sprite', blurb: 'An icon, an item, a single tile.' },
-  { id: 'animation', name: 'An animation', term: 'timeline frames', blurb: 'One sprite that moves. The frames live on the timeline, like in Aseprite.', tag: 'Like Aseprite' },
+  { id: 'animation', name: 'An animation', term: 'timeline frames', blurb: 'One sprite that moves. Its frames sit on the timeline, one after another (the way Aseprite does it).', tag: 'A good place to start' },
   { id: 'boards', name: 'Frames on boards', term: 'artboards as frames', blurb: 'Draw each frame on its own board, side by side. They play as one animation.' },
   { id: 'sheet', name: 'Sprites on a sheet', term: 'artboards as sprites', blurb: 'Every board is its own sprite (hero, bat, coin) and they pack onto one sheet.' },
 ];

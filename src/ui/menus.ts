@@ -2,7 +2,8 @@
 // left out, so a feature that isn't there yet never leaves a dead entry. Commands that register under a menu's
 // categories and aren't listed anywhere turn up at the bottom of that menu on their own.
 import { allCommands, allPanels, allTools, getCommand, type Command } from '../core/registry';
-import { isDynamicCommand, isStaleCommand, syncDynamicCommands } from './dynamic';
+import { isDynamicCommand, isStaleCommand, syncDynamicCommands, toolEnabled } from './dynamic';
+import { oneOfEach } from './toolTwins';
 import { listWorkspaces } from './dock';
 import { ownedUndo } from '../core/owners';
 
@@ -178,10 +179,17 @@ const contributedFor = (menu: string): string[] => (contributed.get(menu) ?? [])
 
 export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'heading'; label: string } | { kind: 'submenu'; label: string; items: MenuItem[] };
 
-function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS): string[] {
+/**
+ * `visible` is for drawing a menu: the Draw menu then lists only the tools that work on the layer you are on, each
+ * name once. Without it (working out which commands some menu already names) every tool counts.
+ */
+function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS, visible = false): string[] {
   if (entry.startsWith('heading:')) return [];
   if (entry.startsWith('sub:')) return (subs[entry.slice(4)]?.items ?? []).filter((e) => e !== '-').flatMap((e) => expand(e, subs));
-  if (entry === 'group:tools') return allTools().map((t) => `tools.${t.id}`);
+  if (entry === 'group:tools') {
+    const tools = visible ? oneOfEach(allTools().filter((t) => toolEnabled(t.layers)), (t) => t.label, () => true) : allTools();
+    return tools.map((t) => `tools.${t.id}`);
+  }
   if (entry === 'group:panels') return allPanels().map((p) => `view.panel.${p.id}`);
   if (entry === 'group:workspaces') return listWorkspaces().map((w) => `view.workspace.${w.id}`);
   return [entry];
@@ -218,13 +226,13 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
       if (!sub) continue;
       const inner = resolveMenu({ label: sub.label, categories: [], items: sub.items }, menus, lookup, all, subs);
       const extra = all()
-        .filter((c) => (sub.prefixes ?? []).some((p) => c.id.startsWith(p)) && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+        .filter((c) => (sub.prefixes ?? []).some((p) => c.id.startsWith(p)) && !c.hidden && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
         .sort((a, b) => a.label.localeCompare(b.label));
       for (const c of extra) inner.push({ kind: 'command', command: c });
       if (inner.length) out.push({ kind: 'submenu', label: sub.label, items: inner });
       continue;
     }
-    for (const id of expand(e, subs)) {
+    for (const id of expand(e, subs, true)) {
       const c = lookup(id);
       if (!c || seen.has(id) || isStaleCommand(id)) continue;
       seen.add(id);
@@ -232,7 +240,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
     }
   }
   const extra = all()
-    .filter((c) => menu.categories.includes(c.category) && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+    .filter((c) => menu.categories.includes(c.category) && !c.hidden && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
     .sort((a, b) => a.label.localeCompare(b.label));
   if (extra.length) {
     out.push({ kind: 'separator' });

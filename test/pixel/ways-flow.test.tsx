@@ -62,16 +62,27 @@ const click = (el: Element) => act(() => (el as HTMLElement).click());
 const startBtn = () => [...document.querySelectorAll<HTMLButtonElement>('.io-foot button')].find((b) => b.textContent === 'Start')!;
 
 describe("Quill's chooser", () => {
-  it('asks what we are making with four answers, and Start waits for one', async () => {
+  it('asks what we are making with four answers, with An animation already picked so Start works at once', async () => {
     act(() => openPixelChooser());
     expect(document.querySelector('.px-chooser-head h2')?.textContent).toBe('Pixel time! What are we making?');
     expect(cards().map((c) => c.querySelector('strong')!.textContent)).toEqual(['One picture', 'An animation', 'Frames on boards', 'Sprites on a sheet']);
-    expect(document.querySelector('.px-way-tag')?.textContent).toBe('Like Aseprite');
-    expect(startBtn().disabled).toBe(true);
-    expect(document.querySelector('.px-chooser-says')?.textContent).toMatch(/Not sure\? Pick An animation/);
+    expect(document.querySelector('.px-way-tag')?.textContent).toBe('A good place to start');
+    expect(cards().map((c) => c.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false', 'false']);
+    expect(startBtn().disabled).toBe(false);
+    expect(document.querySelector('.px-chooser-says')?.textContent).toMatch(/Not sure\? I've picked An animation for you/);
     click(cards()[2]);
     expect(document.querySelector('.px-chooser-says')?.textContent).toBe('Every frame gets its own little board. Tidy!');
     expect(startBtn().disabled).toBe(false);
+  });
+
+  it('Start straight away, with nothing clicked, makes an animation at 32 x 32', async () => {
+    act(() => openPixelChooser());
+    click(startBtn());
+    await flush();
+    const doc = store().get().doc;
+    expect(wayOf(doc)).toBe('animation');
+    expect(Math.ceil(doc.width / (doc.layers[0] as { pixelSize: number }).pixelSize)).toBe(32);
+    expect(document.querySelector('.px-chooser')).toBeNull();
   });
 
   it.each([

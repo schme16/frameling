@@ -43,6 +43,9 @@ const ASK: Record<SpriteWay, string> = {
   sheet: 'How big is each sprite?',
 };
 
+/** The way the chooser starts on: what Quill recommends when you are not sure. */
+const DEFAULT_WAY: SpriteWay = 'animation';
+
 const clamp = (n: number) => (Number.isFinite(n) ? Math.max(1, Math.min(512, Math.round(n))) : 32);
 
 /** The four cards, used by the chooser and by the starter cards. */
@@ -104,11 +107,15 @@ export function SizeRow({ label, size, onSize }: { label: string; size: { w: num
 
 function Chooser({ close }: { close: () => void }) {
   const quill = useQuillShown();
-  const [way, setWay] = useState<SpriteWay | null>(null);
+  // An animation starts picked, the one Quill recommends, so Enter always makes a sprite. Until you pick a card
+  // yourself Quill says it was picked for you.
+  const [way, setWay] = useState<SpriteWay>(DEFAULT_WAY);
+  const [chose, setChose] = useState(false);
   const [size, setSize] = useState({ w: 32, h: 32 });
-  const start = async (w: SpriteWay | null = way) => {
-    if (await startSprite(w ?? 'animation', clamp(size.w), clamp(size.h))) close();
+  const start = async (w: SpriteWay = way) => {
+    if (await startSprite(w, clamp(size.w), clamp(size.h))) close();
   };
+  const pick = (w: SpriteWay) => (setWay(w), setChose(true));
   return (
     <Modal title="New pixel art" onClose={close} wide className="px-chooser">
       <div className="px-chooser-head">
@@ -121,15 +128,15 @@ function Chooser({ close }: { close: () => void }) {
       <div className="io-body">
         <WayCards
           value={way}
-          onPick={setWay}
+          onPick={pick}
           onStart={(w) => {
-            setWay(w);
+            pick(w);
             void start(w);
           }}
         />
-        <SizeRow label={ASK[way ?? 'animation']} size={size} onSize={setSize} />
-        <QuillSays side="left" anim={way ? 'cheer' : 'think'} size={56} className="px-chooser-says" whenHidden={way ? null : <span>Not sure? Pick An animation. You can switch any time, and nothing is lost.</span>}>
-          <span aria-live="polite">{way ? pickedLine(way) : line('pixel.chooser.unsure')}</span>
+        <SizeRow label={ASK[way]} size={size} onSize={setSize} />
+        <QuillSays side="left" anim={chose ? 'cheer' : 'think'} size={56} className="px-chooser-says" whenHidden={chose ? null : <span>{line('pixel.chooser.unsure')}</span>}>
+          <span aria-live="polite">{chose ? pickedLine(way) : line('pixel.chooser.unsure')}</span>
         </QuillSays>
       </div>
       <div className="io-foot">
@@ -144,7 +151,7 @@ function Chooser({ close }: { close: () => void }) {
         >
           Back
         </button>
-        <button type="button" className="io-btn io-primary" data-testid="pixel.start" data-autofocus="" disabled={!way} onClick={() => void start()}>
+        <button type="button" className="io-btn io-primary" data-testid="pixel.start" data-autofocus="" onClick={() => void start()}>
           Start
         </button>
       </div>

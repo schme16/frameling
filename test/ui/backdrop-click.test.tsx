@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// Pressing beside a dialog: a near miss does nothing, and the first real press asks what it should do.
+// Pressing beside a dialog: a near miss does nothing, and a real press closes it unless something has been typed in it. It never asks.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setChoice, setChoiceAsker } from '../../src/core/choices';
 import { Modal } from '../../src/ui/Modal';
-import { nearMiss, NEAR_MISS } from '../../src/ui/backdropClick';
+import { backdropCloses, nearMiss, NEAR_MISS } from '../../src/ui/backdropClick';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -66,18 +66,37 @@ describe('what a press beside a dialog does', () => {
     expect(close).not.toHaveBeenCalled();
   });
 
-  it('asks the first time, and does what the answer says', async () => {
+  it('never asks, and closes an untouched dialog by default', () => {
     const asker = vi.fn(async () => ({ value: 'stay', remember: true }));
     setChoiceAsker(asker);
     const close = vi.fn();
     act(() => root.render(<Modal title="Test" onClose={close}><p>Hello</p></Modal>));
     press(100, 100);
-    await act(async () => {});
-    expect(asker).toHaveBeenCalledOnce();
-    expect(close).not.toHaveBeenCalled();
-    // Answered now, so the next press goes straight through without asking again.
+    expect(asker).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a dialog open once something has been typed in it, and closes it with nothing typed', () => {
+    const close = vi.fn();
+    act(() => root.render(<Modal title="Test" onClose={close}><input aria-label="Name" /></Modal>));
+    const input = host.querySelector('input')!;
+    act(() => void input.dispatchEvent(new Event('input', { bubbles: true })));
     press(100, 100);
-    await act(async () => {});
-    expect(asker).toHaveBeenCalledOnce();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('a value set by code is not typing', () => {
+    const close = vi.fn();
+    act(() => root.render(<Modal title="Test" onClose={close}><input aria-label="Name" defaultValue="Untitled" /></Modal>));
+    host.querySelector('input')!.value = 'Filled in for you';
+    press(100, 100);
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('the setting can say always or never, whatever is typed', () => {
+    expect(backdropCloses('smart', false)).toBe(true);
+    expect(backdropCloses('smart', true)).toBe(false);
+    expect(backdropCloses('close', true)).toBe(true);
+    expect(backdropCloses('stay', false)).toBe(false);
   });
 });

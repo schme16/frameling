@@ -492,7 +492,7 @@
   },
   "pixel.chooser.title": { "text": "Pixel time! What are we making?", "where": "Pixel chooser (New > Pixel art): the heading beside Quill." },
   "pixel.chooser.lead": { "text": "Pick the one that sounds most like it, but don't stress too hard, you can change your mind later.", "where": "Pixel chooser: the line under the heading." },
-  "pixel.chooser.unsure": { "text": "Not sure? Pick An animation. You can switch any time, and nothing is lost.", "where": "Pixel chooser: Quill's bubble before you have picked a card." },
+  "pixel.chooser.unsure": { "text": "Not sure? I've picked An animation for you. You can switch any time, and nothing is lost.", "where": "Pixel chooser: Quill's bubble until you pick a card." },
   "pixel.chooser.picture": { "text": "One lovely picture. Simple and sweet!", "where": "Pixel chooser: you picked One picture." },
   "pixel.chooser.animation": { "text": "Frames on a timeline, just like you know it.", "where": "Pixel chooser: you picked An animation." },
   "pixel.chooser.boards": { "text": "Every frame gets its own little board. Tidy!", "where": "Pixel chooser: you picked Frames on boards." },

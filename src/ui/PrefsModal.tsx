@@ -348,8 +348,10 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
   const [query, setQuery] = useState('');
   const [rec, setRec] = useState<Recording | null>(null);
   const [clash, setClash] = useState<Clash | null>(null);
-  const commands = allCommands().filter((c) => !isStaleCommand(c.id));
-  const conflicts = useMemo(() => allConflicts(commands, layeredOverrides(setId, commands, keymap)), [commands.length, keymap, setId]);
+  const live = allCommands().filter((c) => !isStaleCommand(c.id));
+  // Commands the lists leave out still hold keys, so they still count for clashes.
+  const commands = live.filter((c) => !c.hidden);
+  const conflicts = useMemo(() => allConflicts(live, layeredOverrides(setId, live, keymap)), [live.length, keymap, setId]);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Wait for a key. Everything goes to the recorder, nothing reaches the shortcut handler.

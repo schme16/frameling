@@ -37,6 +37,8 @@ export interface Command {
   run: () => void | Promise<void>;
   /** Runs even while typing in a text field (default false). */
   global?: boolean;
+  /** Left out of the menus, the palette and the shortcut list, because a tool or command already says it. Still runs from a key or a script. */
+  hidden?: boolean;
   /** Only works on these layer kinds (tools). Two commands may share a shortcut when these never overlap. */
   layers?: LayerKind[];
 }
