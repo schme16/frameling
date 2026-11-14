@@ -3,13 +3,13 @@ export const bodies: Record<string, string> = {
   'pixel-new': `Pick **Pixel art** on the New sheet (File > New), or run **New pixel art...** from the command palette. Quill asks **"Pixel time! What are we making?"** and shows four answers, each with a tiny picture:
 
 - **One picture**: an icon, an item, a single tile. One board, one frame.
-- **An animation** (*timeline frames*): one sprite that moves. The frames live on the timeline, like in Aseprite.
+- **An animation** (*timeline frames*): one sprite that moves. Its frames sit on the timeline, one after another, the way Aseprite does it.
 - **Frames on boards** (*artboards as frames*): draw each frame on its own board, side by side. They play as one animation.
 - **Sprites on a sheet** (*artboards as sprites*): every board is its own sprite (hero, bat, coin) and they pack onto one sheet.
 
 Then choose a size: 16, 24, 32, 48 or 64 pixels square, or your own. Press **Start** and you get a ready sprite: an animation comes with four empty frames and a first clip called idle, frames on boards come with four boards, and a sheet comes with Hero, Enemy and Item.
 
-**Not sure?** Pick An animation. You can change how a sprite is built at any time and nothing is lost: see [The four ways to build a sprite](help:pixel-ways).
+**Not sure?** Leave An animation picked, it's the one the chooser starts on. You can change how a sprite is built at any time and nothing is lost: see [The four ways to build a sprite](help:pixel-ways).
 
 With Quill turned off in Preferences, the New sheet shows the same four as plain starter cards with a size row, so there is no extra step.`,
   'pixel-ways': `Every pixel sprite is built one of four ways. The **chip** at the start of the pixel bar says which, for example **One picture** or **Animation, 23 frames**.

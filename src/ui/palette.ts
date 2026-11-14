@@ -5,6 +5,7 @@ import { scoreWord, wordsOf } from './match';
 import { readRaw, writeJson } from './mini';
 import { toast } from './toast';
 import type { FeatureDescriptor } from '../features/feature';
+import { oneOfEach } from './toolTwins';
 import { offFeatures, setFeatureOn } from '../features/host';
 
 export type PaletteItem =
@@ -34,8 +35,15 @@ export function turnOnCommands(off: FeatureDescriptor[] = offFeatures()): Comman
   }));
 }
 
+/** Select, Lasso and the like are one tool per kind of layer with the same name: list each name once, the one that works on this layer first. */
+export function withoutToolTwins(commands: Command[]): Command[] {
+  const tools = commands.filter((c) => c.category === 'Tools' && c.id.startsWith('tools.'));
+  const keep = new Set(oneOfEach(tools, (c) => c.label, commandEnabled));
+  return commands.filter((c) => !tools.includes(c) || keep.has(c));
+}
+
 export function paletteItems(commands: Command[] = allCommands(), topics: HelpTopic[] = allHelp(), off: Command[] = turnOnCommands()): PaletteItem[] {
-  commands = [...commands, ...off];
+  commands = [...withoutToolTwins(commands.filter((c) => !c.hidden)), ...off];
   const items: PaletteItem[] = commands.map((c) => ({ kind: 'command', id: c.id, label: c.label, category: c.category, description: c.description ?? '', command: c }));
   for (const t of topics) items.push({ kind: 'help', id: t.id, label: t.title, category: 'Help', description: t.summary, topic: t });
   return items;

@@ -169,6 +169,8 @@ function pickWith(mode: SelectMode): void {
   store().setUi({ tool });
 }
 
+// The four ways of picking are tools with their own commands now (tools.select-lasso and so on), so these older
+// "pick the way" commands stay only for keys that name them (the Aseprite set's Q) and are kept out of the lists.
 const commands: Command[] = [
   {
     id: 'select.invert',
@@ -189,6 +191,7 @@ const commands: Command[] = [
   },
   {
     id: 'select.box',
+    hidden: true,
     label: 'Select with a box',
     category: 'Tools',
     description: 'The Select tool, picking with a rectangle (marquee).',
@@ -198,6 +201,7 @@ const commands: Command[] = [
   },
   {
     id: 'select.lasso',
+    hidden: true,
     label: 'Lasso',
     category: 'Tools',
     description: 'The Select tool, drawing round what you want. Hold Alt as you let go for straight sides.',
@@ -207,6 +211,7 @@ const commands: Command[] = [
   },
   {
     id: 'select.magnetic',
+    hidden: true,
     label: 'Magnetic lasso',
     category: 'Tools',
     description: 'The Select tool, tracing roughly round something and clinging to its edge. Click to place a point, Backspace takes one back, Enter closes it.',
@@ -216,6 +221,7 @@ const commands: Command[] = [
   },
   {
     id: 'select.wand',
+    hidden: true,
     label: 'Magic wand',
     category: 'Tools',
     description: 'The Select tool on a pixel layer, picking every pixel of the colour you click.',
