@@ -56,6 +56,18 @@ const entries = [
     steps: [L.template('bouncing-logo'), L.wait(300), pick('Logo', 24), L.wait(1200), { shot: '@', crop: [886, 92, 310, 660] }],
   },
   {
+    // A plain shape picked with the Select tool: the Position and size boxes that symbols already had.
+    name: 'selection-numbers',
+    steps: [
+      L.template('bouncing-ball'),
+      L.wait(300),
+      L.js(`(() => { const s = __frameling.store(); const { doc } = s.get(); const l = doc.layers.find((x) => x.kind === 'vector' && x.cels.length && doc.drawings[x.cels[0].drawingId].shapes.some((sh) => sh.type === 'path' || sh.type === 'fill')); const sh = doc.drawings[l.cels[0].drawingId].shapes.find((x) => x.type === 'path' || x.type === 'fill'); s.setUi({ tool: 'select', activeLayerId: l.id, frame: 0, selection: [sh.id] }); return true; })()`),
+      L.panel('symbol-props'),
+      L.wait(1200),
+      { shot: '@', crop: [886, 44, 310, 520] },
+    ],
+  },
+  {
     name: 'tween-offer',
     steps: [L.template('morphing-shapes'), noTweens(), fit(), L.wait(500), { click: [361 + 22 * 6, 663] }, { move: [600, 300] }, L.wait(1500), { shot: '@', crop: [112, 505, 766, 235] }],
   },

@@ -35,6 +35,16 @@ const answerAsk = (n = 0) => [
 /** Loads a template; pixel art offers the Pixel workspace first, which we decline (Never, the third answer) so the window stays as it is. */
 const load = (id) => [template(id), wait(1200), ...answerAsk(2)];
 
+/** Types a name into "Save these choices as..." and saves, the way a person does. */
+const saveWayAs = (name) => [
+  js(`document.querySelector('[data-testid="export.saveWay"]')?.click()`),
+  wait(250),
+  js(`(() => { const i = document.querySelector('.ex-way-name input'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, ${q(name)}); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
+  wait(250),
+  js(`[...document.querySelectorAll('.ex-way-name .ex-link')].find((b) => b.textContent.trim() !== 'Cancel')?.click()`),
+  wait(400),
+];
+
 const sheetEntry = (name, template_, engine, extra = []) => ({
   name,
   steps: [...load(template_), ...openExport(), ...pickFormat('Sprite sheet'), ...pickEngine(engine), wait(500), ...answerAsk(0), ...extra, wait(300), ...dialogShot],
@@ -201,6 +211,11 @@ module.exports = [
   {
     name: 'making-plugins',
     steps: [template('bouncing-ball'), wait(500), js(`window.__framelingPlugins.install(${JSON.stringify(example('contact-sheet'))}); true`), wait(1200), { shot: '@', el: '.plugin-approve', pad: 0 }],
+  },
+  {
+    name: 'export-ways',
+    size: TALL,
+    steps: [...load('hero-sprites'), ...openExport(), ...pickFormat('Animated GIF'), ...saveWayAs('the web video'), ...pickFormat('Sprite sheet'), ...pickEngine('Godot'), wait(400), ...answerAsk(0), ...saveWayAs('the sprite sheet'), wait(300), ...dialogShot],
   },
   formatEntry('exporting', 'bouncing-ball', 'file.export', 'MP4 video'),
   formatEntry('export-video', 'bouncing-ball', 'file.export', 'MP4 video', [moreFormats, wait(300)], TALL),

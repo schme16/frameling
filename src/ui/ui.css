@@ -882,7 +882,8 @@ kbd {
   cursor: pointer;
 }
 /* Tools put away leave a quiet chip at the foot of the rail. */
-.ui-tools-away {
+.ui-tools-away,
+.ui-tools-waiting {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -897,9 +898,22 @@ kbd {
   font-weight: 800;
 }
 .ui-tools-away:hover,
-.ui-tools-away:focus-visible {
+.ui-tools-away:focus-visible,
+.ui-tools-waiting:hover,
+.ui-tools-waiting:focus-visible {
   background: var(--hover-bg);
   color: var(--text);
+}
+
+/* The waiting button stays at the bottom of what you can see, so a short window doesn't scroll it out of reach. */
+.ui-tools-waiting {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--panel);
+}
+.ui-tools.is-sideways .ui-tools-waiting {
+  position: static;
 }
 
 /* Change the tools: the panel beside the rail. */

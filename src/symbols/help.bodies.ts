@@ -45,7 +45,7 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
 
 **Shows** picks which symbol this copy is. Swapping keeps its place, size and turn, which is handy for mouth shapes or hand poses.
 
-**X, Y, Width, Height, Turn and Slant** place it exactly. (The industry words are position, scale, rotation and skew.) You can also drag it, its corners and its round handle on the canvas.
+**X, Y, Width, Height, Turn and Slant** place it exactly. (The industry words are position, scale, rotation and skew.) You can also drag it, its corners and its round handle on the canvas. Plain shapes and selected pixels have boxes too: see [Exact position and size](help:selection-numbers).
 
 **See-through** fades the whole copy, and **Colour wash** tints it any colour (opacity and tint). Both can change smoothly with [in-betweens](help:tweens), so a copy can fade in or flash red.
 

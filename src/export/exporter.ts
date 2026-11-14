@@ -14,11 +14,15 @@ import { ExportProblem } from './problem';
 import type { RunContext } from './runtime';
 import type { Doc } from '../core/format';
 import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
+import { rememberExport } from './savedOps';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
 
-/** The settings used last time, if any (kept in the browser's own storage, so they survive restarts). */
+/**
+ * The settings used last time on any drawing, if any (kept in the browser's own storage, so they survive restarts). A
+ * drawing that has been exported keeps its own (Doc.exports); this is where a new drawing starts.
+ */
 export function loadLastSettings(): ExportSettings | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -102,7 +106,9 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
   if (!only && exportsSeveral(store().rootDoc(), settings)) {
     try {
-      return await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+      const outcome = await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+      if (outcome === 'done') rememberExport(settings);
+      return outcome;
     } catch (e) {
       throw e instanceof ArtboardExportProblem ? new ExportProblem(e.message) : e;
     }
@@ -136,6 +142,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
       throw new ExportProblem(e instanceof Error ? e.message : String(e));
     }
     saveLastSettings(settings);
+    if (!only) rememberExport(settings);
     notifySaved(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
@@ -162,6 +169,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
   saveLastSettings(picked);
+  if (!only) rememberExport(picked);
   const note = result.kind === 'file' ? result.note : undefined;
   notifySaved(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';

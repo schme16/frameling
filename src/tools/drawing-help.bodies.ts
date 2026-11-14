@@ -25,9 +25,26 @@ The pen works on vector layers, in both drawing modes. On a **pixel layer** it w
 - **Delete** (or the **Delete point** button) takes the chosen point away.
 - **Escape** lets go of the point, then the shape.
 
-It works on pen shapes, rectangles, ellipses, polygons and stars, lines, [clean pencil lines](help:tool-pencil) and paint from the bucket. Brush lines are made of many tiny points, so they aren't edited this way.
+It works on pen shapes, rectangles, ellipses, polygons and stars, lines, [clean pencil lines](help:tool-pencil) and paint from the bucket. Brush lines are made of many tiny points, so click one with this tool and it offers to [turn it into an editable line](help:brush-edit-points) first.
 
 Each drag is one step to undo.`,
+  'brush-edit-points': `A brush line is made of hundreds of tiny points, one for every spot the pen touched, so there is nothing sensible to drag. **Turn into an editable line** swaps it for a shape with a few smooth points, which you then reshape with [Edit points](help:tool-points) (**A**).
+
+## Do it
+
+1. Select the brush line with **Select** (**V**). To tidy several at once, select them all.
+2. Choose **Turn into an editable line...** from the **Tools and layers** menu (or press **Ctrl+K** and search for it). Or press **A**, click the line, and press the button on the message.
+3. Slide **Smoothness** while you watch the line on the canvas. Left keeps it closest to what you drew, with more points. Right is smoother, with the fewest points, and a wobbly hand comes out steady. The card tells you how many points it becomes.
+4. Press **Turn into a line**. You're now in Edit points, ready to drag.
+
+It stays the same colour, width and tapered ends. It is one step to undo, and **Ctrl+Z** brings the brush line back exactly as it was.
+
+## Good to know
+
+- Afterwards it is a shape, not a brush line, so it no longer follows pen pressure if you change the brush. Turn it back with **Undo**, not with a button.
+- **Break apart** (**Ctrl+B**) also makes a brush line into plain paint, but out of many short straight sides. This makes a few smooth curves, which are much easier to drag.
+- Only lines made with the Brush have this. Pen shapes, rectangles, [clean pencil lines](help:tool-pencil) and paint from the bucket already have points to edit.
+- On a **merge** layer shapes are already plain paint, so there are no brush lines to turn.`,
   'tool-polygon-star': `Press **U** for the Polygon, or **Shift+U** for the Star, then drag a box.
 
 - Hold **Shift** to keep it even: all sides the same, or a star with equal arms.

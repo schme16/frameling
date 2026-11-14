@@ -1,5 +1,4 @@
 // Symbol and motion: the selected symbol's place, look and playback, and the in-betweens on the key at the playhead.
-import { SectionScope } from '../ui/explain/ExplainIcon';
 import { useState, type ReactNode } from 'react';
 import type { Easing, InstanceShape, PlayMode } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
@@ -13,66 +12,12 @@ import { CurveEditor } from './CurveEditor';
 import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
 import './symbols.css';
 import { usePrefs } from '../ui/prefs';
-import { docDpi, formatSize, pxTo, roundIn, toPx, unitInfo } from '../core/units';
+import { docDpi, formatSize } from '../core/units';
+import { LengthNum, Num, Section } from './Num';
+import { SelectionNumbers } from './SelectionNumbers';
 import { instanceBounds } from '../canvas/geometry';
 
-export function Num({ label, value, onChange, step = 1, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix?: string; title?: string }) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const shown = draft ?? String(Math.round(value * 100) / 100);
-  const commit = (s: string) => {
-    const n = Number(s);
-    if (s.trim() !== '' && Number.isFinite(n)) onChange(n);
-    setDraft(null);
-  };
-  return (
-    <label className="sy-num" title={title}>
-      <span>{label}</span>
-      <span className="sy-num-box">
-        <input
-          type="number"
-          step={step}
-          value={shown}
-          aria-label={label}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            const n = Number(e.target.value);
-            // Spinner arrows and typing both land straight away, coalesced into one undo step.
-            if (e.target.value.trim() !== '' && Number.isFinite(n)) onChange(n);
-          }}
-          onBlur={(e) => commit(e.target.value)}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter') commit(e.currentTarget.value);
-          }}
-        />
-        {suffix && <i>{suffix}</i>}
-      </span>
-    </label>
-  );
-}
-
-/** A length typed in the chosen unit (Preferences > Units), stored as stage pixels. */
-export function LengthNum({ label, px, onPx, title }: { label: string; px: number; onPx: (px: number) => void; title?: string }) {
-  const unit = usePrefs((p) => p.units);
-  const dpi = useStore((s) => docDpi(s.doc));
-  return <Num label={label} value={roundIn(pxTo(px, unit, dpi), unit)} suffix={unit === 'px' ? undefined : unit} step={unit === 'px' ? 1 : 10 ** -unitInfo(unit).places} onChange={(v) => onPx(toPx(v, unit, dpi))} title={title} />;
-}
-
-export function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <SectionScope title={title}>
-      {(icon) => (
-        <section className="sy-section">
-          <h3 className="sy-section-title">
-            {title}
-            {icon}
-          </h3>
-          {children}
-        </section>
-      )}
-    </SectionScope>
-  );
-}
+export { LengthNum, Num, Section };
 
 const PLAY_OPTIONS: { value: PlayMode; label: string; title: string }[] = [
   { value: 'loop', label: 'Loop', title: 'Plays its own animation round and round' },
@@ -310,14 +255,17 @@ export function PropertiesPanel() {
       {inst ? (
         <InstanceSection inst={inst} between={between} />
       ) : (
-        <Tip stays>
-          {picked.length > 1 ? `${picked.length} symbols selected. Pick just one to change it here.` : 'Select a symbol on the canvas to change its size, turn, fade, colour wash and how it plays.'}{' '}
-          {!picked.length && sel.length > 0 && (
-            <button type="button" className="sy-link" onClick={() => void getCommand('symbols.make')?.run()}>
-              Make the selection a symbol
-            </button>
-          )}
-        </Tip>
+        <>
+          <SelectionNumbers />
+          <Tip stays>
+            {picked.length > 1 ? `${picked.length} symbols selected. Pick just one to change it here.` : 'Select a symbol on the canvas to change its size, turn, fade, colour wash and how it plays.'}{' '}
+            {!picked.length && sel.length > 0 && (
+              <button type="button" className="sy-link" onClick={() => void getCommand('symbols.make')?.run()}>
+                Make the selection a symbol
+              </button>
+            )}
+          </Tip>
+        </>
       )}
       <TweenSection />
     </div>

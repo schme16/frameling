@@ -29,6 +29,32 @@ They all share one selection, so you can start a box, then switch to the lasso a
 - **Reduce to palette** changes only the selected pixels.
 
 **Ctrl+A** selects everything, **Ctrl+Shift+I** inverts (selects everything else), **Escape** lets go. The selection stays put when you change frame, so you can work on the same spot frame after frame.`,
+  'selection-numbers': `Dragging is quick, but sometimes you want an icon at exactly 64 by 64, or a button 200 pixels from the left. Select something and type it instead.
+
+Open **View > Panels > Symbol and motion** (or press **Ctrl+K** and search **Type an exact position and size**, which opens it and puts the cursor in **X**).
+
+## Shapes
+
+Select one shape or several and the **Position and size** boxes appear:
+
+- **X** and **Y** are where the left and top of the selection's box are.
+- **Width** and **Height** are how big the box is. **Keep proportions** (on to begin with) makes typing one change the other too, so nothing squashes.
+- **Turn by** turns the selection that many degrees clockwise about its middle. **Slant by** leans it sideways the same way.
+
+Press **Enter** or click away to make it happen; one box is one step in **Undo**. They use the units you chose in **Preferences > General > Units**, so millimetres and inches work too.
+
+**Turn by** and **Slant by** say "from where it is now", because a plain shape doesn't remember an angle: type 15 and it turns 15 degrees, and the box goes back to 0. A [symbol](help:symbol-properties) does remember its angle, so its own **Turn** and **Slant** show the angle it has.
+
+## Pixels
+
+Select pixels with the [Select tool](help:pixel-select) and the same boxes count **whole pixels of the art**, not of the page. **X 3** is the fourth column of the sprite, wherever it is on the page and however big it is zoomed. On a layer drawn at 8 page pixels to each art pixel, X 3 sits 24 pixels across the page.
+
+You can move, stretch and turn pixels this way. **Width** and **Height** repeat or skip whole pixels, so every colour stays one of your own. **Slant** isn't there: it would smear the pixels.
+
+## Good to know
+
+- A symbol on its own keeps its own boxes, which show its angle and size as numbers.
+- Pixels moved off the edge of the picture are dropped.`,
   'select-magnetic': `Press **Shift+E**, or pick **Magnetic lasso** (the horseshoe magnet) in the toolbar. It is a lasso that reaches for the edge your drawing already has, so cutting a character out of its background does not take a steady hand.
 
 1. **Click** on or near the edge to start.

@@ -158,7 +158,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   export: {
     label: 'Export',
     items: [
-      'file.export', 'file.exportAgain',
+      'file.export', 'file.exportAgain', 'file.exportAll',
       'heading:Popular', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportPdf',
       'heading:Game engines', 'file.exportGodotAddon', 'tiles.export',
       'heading:Artboards', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas',

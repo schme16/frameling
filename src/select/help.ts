@@ -11,6 +11,14 @@ registerHelpTopics([
     keywords: ['selection', 'duplicate', 'alt drag copy', 'marquee', 'lasso', 'polygon', 'magnetic lasso', 'magic wand', 'select colour', 'move pixels', 'floating selection', 'marching ants', 'invert', 'mask'],
   },
   {
+    id: 'selection-numbers',
+    title: 'Exact position and size',
+    section: 'Drawing',
+    media: 'selection-numbers.png',
+    summary: 'Type where a selection sits and how big it is: X, Y, Width, Height, Turn and Slant for shapes, and the same in whole pixels for selected pixels.',
+    keywords: ['position', 'coordinates', 'x y', 'numbers', 'width', 'height', 'resize exactly', 'rotate by', 'turn by', 'slant', 'skew', 'precise', 'exact', 'move to', 'properties', 'transform'],
+  },
+  {
     id: 'select-magnetic',
     title: 'Magnetic lasso',
     section: 'Pixel art',

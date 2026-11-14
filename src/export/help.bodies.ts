@@ -39,11 +39,37 @@ ${ix('| Put it on an Interactives page and control it there | **Interactives** |
 
 ## Quick repeat
 
-**Ctrl+Shift+E** exports again with the same settings as last time, without asking questions (it still asks where to save).
+**Ctrl+Shift+E** exports again with the same settings as the last time you exported *this drawing*, without asking questions (it still asks where to save). The settings are kept in the drawing, so another file's export never changes what it repeats. To keep more than one way, see [Saved ways out](help:export-ways).
 
 Every export looks exactly like the canvas, and a slow computer makes the same file as a fast one.
 
 More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
+  'export-ways': `A drawing often leaves in more than one way: a sprite sheet for the game, a GIF for the web page, an MP4 for social. **Saved ways** keep each set of Export choices under a name, inside the drawing, so next week you send it out the same way without picking it all again.
+
+## Keep one
+
+1. Open **File > Export** and pick the format and options you want.
+2. Under **Your ways out**, press **Save these choices as...** and type a name, like *the sprite sheet* or *the web video*. Press **Enter**.
+
+Do that once for each way. Each one shows as a button.
+
+## Use them
+
+- **Bring one back:** press its button in the Export window. The choices fill in, and you can still change them before you press **Export**.
+- **Send them all:** **Export all saved ways** (in the command palette, **Ctrl+K**) runs every one, one after another. Each asks where to save, and the first one you cancel stops the rest.
+- **Repeat the last:** **Ctrl+Shift+E** repeats whatever you last exported from this drawing. It never repeats another file's export: a drawing you haven't exported yet opens the Export window instead.
+- **Update one:** pick it, change what you like, then **Save these choices as...** with the same name.
+- **Forget one:** press the small cross on its button.
+
+## Good to know
+
+- The ways live in the drawing's file, so they travel with it, and an older file simply has none.
+- A drawing keeps up to 12 ways.
+- A new drawing starts from the choices you used last on any drawing, until it has its own.
+- Which artboards go out is not part of a way; the Export window asks that each time.
+
+More about the formats: [Exporting](help:exporting).`,
+
   'export-video-gif-apng': `## MP4 video
 
 Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background. If your animation has sound, see [Sound](help:sound) for how it plays on Apple devices.

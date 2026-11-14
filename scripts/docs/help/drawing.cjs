@@ -106,6 +106,10 @@ module.exports = [
       { x: 640, y: 650, c1: { x: 900, y: 520 }, c2: { x: 760, y: 650 } },
     ] }], '#93cdb0', INK, 4)]),
     tool('points'), { click: at(640, 400) }, { wait: 300 }, { click: at(640, 170) }, { wait: 300 }, fold('symbol-props', 'effects'), { wait: 500 }, away, { wait: 300 }, { shot: '@', crop: [113, 47, 1087, 444] }] },
+  // A wobbly brush line picked, with the Turn into an editable line card open and the smoothed result showing.
+  { name: 'brush-edit-points', width: 1000, steps: [T('blank-vector'), view(0.6),
+    put('Lines', [squiggle(along(70, (t) => [300 + t * 680, 330 + Math.sin(t * Math.PI * 2) * 110 + Math.sin(t * 61) * 5]), '#cc3366', 22)], [0]),
+    UI({ tool: 'select' }), dom("__frameling.run('arrange.strokeToLine')"), { wait: 900 }, away, { wait: 400 }, { shot: '@', crop: [113, 80, 770, 640] }] },
   { name: 'polygon-star', width: 1000, steps: [T('blank-vector'), view(0.6), tool('polygon'), UI({ fillColor: '#f7c95a' }), draw([[250, 200], [480, 430]], { mods: ['shift'] }),
     tool('star'), UI({ fillColor: '#f07a94', activeWell: 'fill' }), draw([[740, 180], [1010, 450]], { mods: ['shift'] }), { wait: 300 }, fold('colors'), { wait: 300 }, away, { wait: 400 }, { shot: '@', crop: [113, 47, 1087, 444] }] },
   // A linear gradient on a rectangle (with the Gradient tool's two ends showing) and a radial one on a star.

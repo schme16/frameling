@@ -110,7 +110,9 @@ Repaired quietly (defaults filled, values clamped):
 - Text and particles are read field by field with clamps and defaults (`src/io/shapes-extra.ts`); particle defaults
   come from the shape's `preset`.
 - Palette colours must be hex, at most 256; ramps must point inside the palette. `dpi` outside 1..10000 is dropped.
-  `inOut` is clamped to the length and put in order; `perspective` keeps at most two points.
+  `inOut` is clamped to the length and put in order; `perspective` keeps at most two points. `exports` keeps only plain
+  settings (no format means the entry is dropped), ways without a name or with a repeated id are dropped, and at most 12
+  ways are kept (`readExports` in `src/export/saved.ts`).
 
 Stroke, fill and path shapes are otherwise passed through as stored.
 
@@ -163,6 +165,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `guides?` | `Guide[]` | Ruler guides, never exported (`b5f0737`). |
 | `inOut?` | `{start, end}` | Play range, inclusive (`9edd74d`). |
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
+| `exports?` | `{last?: {settings, way?}, ways?: {id, name, settings}[]}` | How the drawing was last exported (what Export again repeats) and up to 12 named ways ("the sprite sheet"). Settings are the Export window's choices as plain data. Missing = never exported; old files have none. |
 | `artboards?` | `Artboard[]` | (`d7cd660`) |
 | `activeArtboard?` | Id | Missing = the first (`d7cd660`). |
 | `sprite?` | `{way}` | How a pixel sprite is built: `picture`, `animation`, `boards` (artboards are the frames) or `sheet` (artboards are separate sprites). Missing = worked out from the document (`inferWay` in `src/pixel/way.ts`), so old files open unchanged. Never added to a file that does not say it. |

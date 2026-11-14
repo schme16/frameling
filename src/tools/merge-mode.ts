@@ -9,6 +9,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type State } from '../core/store';
 import { explode, mergeShapes } from '../geometry/merge';
 import { toast } from '../ui/toast';
+import { openStrokeLineBar } from './StrokeLineBar';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS, type EditResult } from './edit';
 
 export type DrawMode = 'object' | 'merge';
@@ -246,6 +247,16 @@ registerCommands([
       if (!ids.size) return;
       say(editShapes('Ungroup', (before) => ungroupShapes(cutBase(before), ids)));
     },
+  },
+  {
+    id: 'arrange.strokeToLine',
+    label: 'Turn into an editable line...',
+    category: 'Arrange',
+    description: 'Swap a brush line for a shape with a few smooth points you can drag with Edit points, keeping its width and tapered ends. A Smoothness slider tidies a wobbly line.',
+    help: 'brush-edit-points',
+    keywords: ['edit points', 'reshape', 'smooth', 'simplify', 'brush stroke', 'convert stroke', 'stroke to path', 'straighten', 'tidy', 'fewer points', 'outline stroke', 'make editable'],
+    enabled: (s) => hasSelection(s) && isVector(),
+    run: () => void openStrokeLineBar(),
   },
   {
     id: 'arrange.breakApart',

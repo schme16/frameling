@@ -15,11 +15,11 @@ import type { DockZone } from './dockModel';
 import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
-import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, whyOff, type RailTool, type ToolGroup } from './toolArrange';
+import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, waitingFor, waitingWords, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
 import { acrossFor, clampRailWidth, minRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
-import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
+import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu, waitingMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
@@ -259,6 +259,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   // What the shelf shows: one for each place, and only the ones that exist on the rail for this layer.
   const awayList = useMemo(() => awayPlaces(whole, slotMates(allTools())).filter((id) => getTool(id)), [whole, allKey]);
   const visible = (id: string) => shown.has(id) && !awayIds.has(id);
+  // With the other tools hidden on this layer, say what is missing and why, so a shorter rail isn't a mystery.
+  const waiting = greyOut || only ? [] : waitingFor(everything, kind, awayIds);
   const groups = useMemo(() => visibleGroups(whole, (id) => shown.has(id) && !awayIds.has(id)), [whole, shown, awayIds]);
   const drag = toolDrag.use((d) => d);
   const note = railNote.use((n) => n);
@@ -558,6 +560,23 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
         >
           <Icon name="eye-off" size={14} />
           <span>{awayList.length}</span>
+        </button>
+      )}
+      {!editing && waiting.length > 0 && (
+        <button
+          type="button"
+          className="ui-tools-waiting"
+          aria-label={`${waiting.length} ${waiting.length === 1 ? 'tool is' : 'tools are'} not on the strip because you're on a ${kind} layer. ${waitingWords(waiting)} Press to see them.`}
+          data-tip={`${waiting.length} not on this layer`}
+          data-tip-desc={`${waitingWords(waiting)} Press to see them.`}
+          data-help="tool-strip"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            openDockMenu(r.right + 6, r.top, waitingMenu(waiting));
+          }}
+        >
+          <Icon name="layers" size={14} />
+          <span>{waiting.length}</span>
         </button>
       )}
       {!tools.length && <span className="ui-tools-empty" aria-hidden="true"><Icon name="brush" size={20} /></span>}
