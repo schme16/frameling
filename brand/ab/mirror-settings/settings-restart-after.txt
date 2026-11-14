@@ -1,0 +1,17 @@
+kept       vector brush size (33)
+kept       vector brush pointy end (17)
+kept       stroke colour (#123456)
+kept       fill colour (#654321)
+kept       stroke switched off
+kept       loop playback off
+kept       onion skin on
+kept       onion frames before (5)
+kept       onion frames after (3)
+kept       onion strength (0.6)
+kept       eraser size (40), already remembered
+kept       pencil thickness (5), already remembered
+kept       star points (9), already remembered
+kept       shape outline (11), already remembered
+kept       mirror drawing on, already remembered
+
+not meant to be kept: playhead frame 0 (was 7), zoom 0.7597222222222222 (was 2.5), tool brush (was ellipse)

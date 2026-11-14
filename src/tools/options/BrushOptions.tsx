@@ -8,6 +8,7 @@ import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls'
 import { buildStroke } from '../vectorStroke';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
+import { MirrorOptions } from './MirrorOptions';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -58,7 +59,7 @@ function VectorBrushOptions() {
     <div className="cv-options">
       <BrushPreview brush={brush} color={color} />
       <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
-      <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends and the stabilizer.">
+      <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
         <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
@@ -66,6 +67,7 @@ function VectorBrushOptions() {
         <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
         <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
         <PenOptions tool="brush" opacity />
+        <MirrorOptions />
       </MoreOptions>
     </div>
   );

@@ -64,10 +64,10 @@ describe('the brush fold in the panel', () => {
     expect(host.querySelector('[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('shows all nine controls once opened, and remembers it', () => {
+  it('shows all ten controls once opened, and remembers it', () => {
     render();
     act(() => (host.querySelector('.cv-more-btn') as HTMLButtonElement).click());
-    expect(labels()).toEqual(['Size', 'Merge shapes together', 'Smoothing', 'Pressure changes thickness', 'How much', 'Pointy start', 'Pointy end', 'Stabilizer', 'Stabilizer style']);
+    expect(labels()).toEqual(['Size', 'Merge shapes together', 'Smoothing', 'Pressure changes thickness', 'How much', 'Pointy start', 'Pointy end', 'Stabilizer', 'Stabilizer style', 'Mirror drawing']);
     expect(getFold('brush')).toBe(true);
     expect(JSON.parse(localStorage.getItem('frameling.optionFolds') ?? '{}')).toEqual({ brush: true });
     act(() => (host.querySelector('.cv-more-btn') as HTMLButtonElement).click());

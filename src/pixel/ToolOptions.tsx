@@ -17,52 +17,8 @@ export function useLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
 }
 
-function useGrid(): { w: number; h: number } {
-  const w = useStore((s) => {
-    const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
-    return l?.kind === 'pixel' ? Math.ceil(s.doc.width / l.pixelSize) : 0;
-  });
-  const h = useStore((s) => {
-    const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
-    return l?.kind === 'pixel' ? Math.ceil(s.doc.height / l.pixelSize) : 0;
-  });
-  return { w, h };
-}
-
-/** Mirror drawing: off, left and right, top and bottom, or all four ways, and where the mirror lines sit. */
-export function MirrorOptions() {
-  const mode = usePixelSettings((s) => s.symmetry);
-  const ax = usePixelSettings((s) => s.axisX);
-  const ay = usePixelSettings((s) => s.axisY);
-  const { w, h } = useGrid();
-  const fmt = (v: number) => (Number.isInteger(v) ? `${v}` : `${Math.floor(v)}½`);
-  return (
-    <div className="px-mirror">
-      <Choice<SymmetryMode>
-        label="Mirror drawing"
-        value={mode}
-        options={[
-          { value: 'off', label: 'Off' },
-          { value: 'h', label: 'Left and right', title: 'Whatever you draw on one side appears flipped on the other (a mirror line down the middle).' },
-          { value: 'v', label: 'Top and bottom', title: 'A mirror line across the middle.' },
-          { value: 'both', label: 'Both ways', title: 'Four ways at once, like a snowflake.' },
-        ]}
-        onChange={(v) => setPixelSettings({ symmetry: v })}
-      />
-      {mode !== 'off' && w > 0 && (
-        <>
-          {(mode === 'h' || mode === 'both') && (
-            <Slider label="Mirror line across" value={ax ?? w / 2} min={0.5} max={w - 0.5} step={0.5} format={(v) => (ax === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setPixelSettings({ axisX: v })} />
-          )}
-          {(mode === 'v' || mode === 'both') && (
-            <Slider label="Mirror line down" value={ay ?? h / 2} min={0.5} max={h - 0.5} step={0.5} format={(v) => (ay === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setPixelSettings({ axisY: v })} />
-          )}
-          {(ax !== null || ay !== null) && <ActionButton onClick={() => setPixelSettings({ axisX: null, axisY: null })}>Back to the middle</ActionButton>}
-        </>
-      )}
-    </div>
-  );
-}
+export { MirrorOptions } from '../tools/options/MirrorOptions';
+import { MirrorOptions } from '../tools/options/MirrorOptions';
 
 function PixelPerfectToggle() {
   const perfect = useToolSettings((s) => s.pixelPerfect);

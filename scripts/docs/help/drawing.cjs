@@ -169,6 +169,14 @@ module.exports = [
     { wheel: [495, 269], dx: 0, dy: 120, count: 3, delay: 110, mods: ['shift'], after: 1000 },
     tool('hand'), { wait: 700 },
     { drag: [[480, 260], [440, 330], [400, 400]], steps: 10, delay: 26 }, { wait: 1000 }, { key: '0', mods: ['control'], after: 1800 }, STOP] },
+  // Mirror drawing on a vector layer: Shift+M, then draw one half of a face and the other half follows.
+  { name: 'mirror-drawing', steps: [T('blank-vector'), view(0.6), UI({ color: '#25233a' }), BRUSH(8), tool('brush'), { wait: 700 }, away, WARM, REC(CV, 70), { wait: 900 },
+    { key: 'm', mods: ['shift'], after: 1300 },
+    draw(along(40, (t) => [640 + 210 * Math.cos(-Math.PI / 2 - t * Math.PI), 360 + 210 * Math.sin(-Math.PI / 2 - t * Math.PI)]), { steps: 2, delay: 14 }), { wait: 500 },
+    draw(along(14, (t) => [490 + t * 80, 320 - 22 * Math.sin(t * Math.PI)]), { steps: 2, delay: 16 }), { wait: 500 },
+    draw(along(16, (t) => [640 - t * 120, 470 + 30 * Math.sin(t * Math.PI * 0.5)]), { steps: 2, delay: 16 }), { wait: 1600 }, STOP] },
+  // Everything the brush, colours, looping and onion skin were set to is still set that way after a restart.
+  { name: 'remembered-settings', steps: [T('bouncing-ball'), { wait: 600 }, UI({ color: '#7a5cff', fillColor: '#4fd1a5', brush: { size: 24, thinning: 0.3, smoothing: 0.7, streamline: 0.7, taperStart: 12, taperEnd: 12, capStart: true, capEnd: true }, loopPlayback: false, frame: 5, onion: { enabled: true, before: 3, after: 2, opacity: 0.55, beforeColor: '#ff6f91', afterColor: '#4fd1a5', tint: true } }), { wait: 900 }, away, WARM, { wait: 400 }, { shot: '@' }] },
   // The pen: click for corners, drag for curves, click the first point to close the leaf.
   { name: 'tool-pen', steps: [T('blank-vector'), view(0.6), UI({ color: '#1d1b26', fillColor: '#93cdb0' }), tool('pen'), { wait: 700 }, away, WARM, REC([113, 47, 764, 385], 80), { wait: 900 },
     tap(320, 380, 800), draw([[640, 180], [760, 180]], { steps: 10, delay: 28 }), { wait: 800 }, tap(960, 380, 800), draw([[640, 580], [520, 580]], { steps: 10, delay: 28 }), { wait: 800 },

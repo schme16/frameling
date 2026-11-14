@@ -8,12 +8,12 @@
 import type { PathShape } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
-import { drawShape, subPathsToPath2D } from '../core/render';
+import { subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
 import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
 import { activePixelLayer, commitPixelPath, currentOutline } from '../pixel/tools';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
-import { addShapes } from './merge-mode';
+import { addDrawn, drawWithMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { viewSizeFactor } from './view-size';
@@ -136,7 +136,7 @@ function finish(ctx: ToolContext, closed: boolean): void {
   // On a pixel layer the finished path is painted as clean pixels.
   if (activePixelLayer()) return commitPixelPath(shape, closed ? 'Draw with the pen' : 'Draw a pen line', ctx);
   const s = withWellGradients(shape);
-  const r = addShapes(closed ? 'Draw with the pen' : 'Draw a pen line', [s]).result;
+  const r = addDrawn(closed ? 'Draw with the pen' : 'Draw a pen line', [s]).result;
   if (r === 'ok') {
     if (s.fill) noteColorUsed(s.fill);
     if (s.stroke) noteColorUsed(s.stroke.color);
@@ -246,7 +246,7 @@ export const penTool: Tool = {
     if (!path) return;
     const z = ctx.zoom;
     const s = preview(false);
-    if (s) drawShape(g, s);
+    if (s) drawWithMirror(g, s);
     const sp = path.subPath(false);
     if (sp) drawGuidePath(g, subPathsToPath2D([sp]), z);
     const last = path.anchors[path.length - 1];

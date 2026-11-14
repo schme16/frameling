@@ -8,6 +8,7 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { useStore } from '../../core/store';
 import { findLayer } from '../../core/doc';
 import { isMergeLayer } from '../merge-mode';
+import { MirrorOptions } from './MirrorOptions';
 
 export function EraserOptions() {
   const kind = useActiveLayerKind();
@@ -46,6 +47,7 @@ export function EraserOptions() {
             ? 'Rubs out just the part under the circle. Drag across a line to cut it in two, or along its end to nibble it away. Symbols and text are left alone.'
             : 'This erases whole lines. Anything the circle touches disappears, so one swipe removes a stroke or a shape. Undo brings it back.'}
       </Tip>
+      <MirrorOptions />
       <PenOptions tool="eraser" size />
     </div>
   );

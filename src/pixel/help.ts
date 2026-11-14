@@ -37,11 +37,11 @@ registerHelpTopics([
   },
   {
     id: 'pixel-mirror',
-    title: 'Mirror drawing',
+    title: 'Mirror drawing on pixel layers',
     section: 'Pixel art',
     media: 'pixel-mirror.mp4',
-    summary: 'Draw on one side and it appears flipped on the other side too.',
-    keywords: ['symmetry', 'symmetrical', 'mirror', 'mirror mode', 'kaleidoscope', 'axis'],
+    summary: 'Draw on one side and it appears flipped on the other side too. The pixel side of mirror drawing.',
+    keywords: ['symmetry', 'symmetrical', 'kaleidoscope', 'axis'],
   },
   {
     id: 'pixel-outline',

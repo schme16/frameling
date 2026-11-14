@@ -5,9 +5,8 @@
 import type { BrushSettings, StrokePoint, StrokeShape } from '../core/format';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
-import { drawShape } from '../core/render';
 import { getPredicted } from '../canvas/controller';
-import { addShapes } from './merge-mode';
+import { addDrawn, drawWithMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import type { VectorDynamics } from '../tablet/dynamics';
@@ -107,7 +106,7 @@ export class VectorStroke {
 
   overlay(g: CanvasRenderingContext2D): void {
     const s = this.shape(true);
-    if (s) drawShape(g, s);
+    if (s) drawWithMirror(g, s);
   }
 
   /** Finishes the stroke. */
@@ -119,7 +118,7 @@ export class VectorStroke {
     const shape = this.shape();
     if (!shape) return;
     // On a merge layer the stroke joins or cuts what it lands on.
-    const r = addShapes('Draw stroke', [shape]).result;
+    const r = addDrawn('Draw stroke', [shape]).result;
     if (r === 'ok') {
       noteColorUsed(this.color);
       const { doc, ui } = lastStore();

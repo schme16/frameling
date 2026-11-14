@@ -39,6 +39,7 @@ import { penFields } from '../tablet/input';
 import { penTools } from '../tablet/tool';
 import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
 import { Stabilizer } from '../tablet/stabilizer';
+import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
 
@@ -423,6 +424,7 @@ export class CanvasEngine {
       layerSpace();
       const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
       if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
+      if (mirrorsOnVector(tool.id)) drawVectorMirrorLines(g, ui.zoom);
       tool.overlay(g, this.ctx);
       g.restore();
     }

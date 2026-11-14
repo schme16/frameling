@@ -6,10 +6,9 @@ import { shapeColors } from './wells';
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
-import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
-import { addShapes } from './merge-mode';
+import { addDrawn, drawWithMirror } from './mirror';
 import { clearSnap, snapLineEnd, snapPt, vanishingPoints } from '../canvas/guides';
 import { choosePlane, planeMap, projectedEllipse, projectSubPath } from '../canvas/perspectivePlane';
 import { viewSizeFactor } from './view-size';
@@ -223,7 +222,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
       const shape = build();
       drag = null;
       if (shape) {
-        const r = addShapes(`Draw ${label.toLowerCase()}`, [shape]).result;
+        const r = addDrawn(`Draw ${label.toLowerCase()}`, [shape]).result;
         if (r === 'ok') {
           if (shape.fill) noteColorUsed(shape.fill);
           if (shape.stroke) noteColorUsed(shape.stroke.color);
@@ -241,7 +240,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     overlay(g, ctx) {
       if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
       const s = build();
-      if (s) drawShape(g, s);
+      if (s) drawWithMirror(g, s);
     },
   };
 }
