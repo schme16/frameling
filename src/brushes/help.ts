@@ -7,7 +7,7 @@ registerHelpTopics([
     media: 'brush-presets.mp4',
     title: 'Saved brushes',
     section: 'Drawing',
-    summary: 'Save the brush you like by name, and pick it again in one click. Over forty come ready: pencils, pens, markers, paint, chalk, charcoal, watercolour and stamps.',
+    summary: 'Save the brush you like by name, and pick it again in one click. Over sixty come ready: pencils, pens, markers, paint, chalk, charcoal, watercolour, stamps and more.',
     keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'pencils', 'pens', 'markers', 'paint', 'pastel', 'crayon', 'gouache', 'oil paint', 'dry brush', 'g-pen', 'comic pen', 'brush pen', 'dip pen', 'felt tip', 'stipple', 'spatter', 'sparkles', 'airbrush', 'highlighter', 'calligraphy', 'built-in brushes', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing'],
   },
   {

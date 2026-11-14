@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **Pick one:** choose the **Brush** tool (**B**). The **brush picker** at the top of its options shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** nearly sixty brushes come with Frameling, in ten groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles** and **Along the line**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
+**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
 
 **Not here yet:** airbrush, a see-through highlighter and smudge. The brush can't make those honestly yet.
 
@@ -36,7 +36,7 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 
 **What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has a small picture of the brush's **real tip** (chalk shows its grain, watercolour its wash, a stamp its shapes) with the size under it, a long **stroke** and its **name**. The brush you are using is highlighted and its stroke follows the sliders. Strokes are drawn in a colour that stands out against the panel, in every theme. **Row size** at the bottom makes the rows taller or smaller.
 
-**Search, groups and favourites** are always here, because Frameling comes with nearly sixty brushes.
+**Search, groups and favourites** are always here, because Frameling comes with over sixty brushes.
 
 - **Search.** Type a word and the list becomes the matches, each with its group. Every word has to match, in the name or the group. Typing always goes to the search box, so just start typing.
 - **Groups.** **My brushes** is yours. Below it are the groups that come with Frameling, then a brush pack or your own groups. Press a group's name to open or fold it. Only open groups are drawn, which keeps a big library quick. A small dot says your brush is inside. The button beside the search box folds or opens every group.
@@ -91,12 +91,12 @@ help:brush-presets help:brush-own help:tool-brush help:exporting`,
 
 **Bristles:** lots of thin lines side by side. **Bristles** is how many, **Stiffness** is whether they stay in line or wander, and **Dry gaps** is how often one runs out of paint.
 
-**Along the line:** your own drawing, bent down the whole line.
+**Along the line:** your own drawing, bent down the whole line. **Ribbon**, **Thread** and **Leafy vine** are ready made in the brush picker to try.
 1. Draw it and select it (the **Select** tool, **V**).
 2. Choose **Make a brush that goes along the line, from the selection** in the palette (**Ctrl+Alt+Shift+B**), or **Use the selection as the drawing** in the brush options.
 3. Draw. On a long line it can **Stretch** (a ribbon, a flame) or **Repeat** (beads, a border). Frameling asks once and remembers.
 
-**Edged:** separate drawings for the **Sides**, the **Start**, the **End**, and the **Inside** and **Outside corner**. Make the sides first: select that part and choose **Edged brush: sides from the selection**. Then select each other part and use its button in the brush options. The sides repeat to fit the line exactly. A corner drawing shows up where your line turns about a right angle, and the outside one is used when the line turns away from the top of your drawing. Leave a part out and the sides are used there. Chains and borders are what it's for.
+**Edged:** separate drawings for the **Sides**, the **Start**, the **End**, and the **Inside** and **Outside corner**. Make the sides first: select that part and choose **Edged brush: sides from the selection**. Then select each other part and use its button in the brush options. The sides repeat to fit the line exactly. A corner drawing shows up where your line turns about a right angle, and the outside one is used when the line turns away from the top of your drawing. Leave a part out and the sides are used there. Chains and borders are what it's for. **Chain** and **Battlements** are ready made in the brush picker.
 
 **Turn it into plain shapes:** a line keeps its brush, so you can see it change if you undo and redraw. **Turn brush lines into plain shapes** fixes the selected lines as ordinary shapes you can edit point by point.
 

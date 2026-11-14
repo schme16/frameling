@@ -5,11 +5,11 @@
 // highlighter that lets the line underneath show, and smudge or blend.
 import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
-import { defaultTip, startLink, startRibbon } from '../geometry/tip';
+import { defaultTip, startBattlements, startLink, startRibbon, startVine } from '../geometry/tip';
 import type { BrushPreset } from './model';
 
 /** The groups the starters sit in, in the order the picker lists them. */
-export const STARTER_GROUPS = ['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture', 'Calligraphy', 'Bristles', 'Along the line'] as const;
+export const STARTER_GROUPS = ['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture', 'Calligraphy', 'Bristles', 'Along the line', 'Edged'] as const;
 export type StarterGroup = (typeof STARTER_GROUPS)[number];
 
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
@@ -23,6 +23,8 @@ const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | '
   jitter,
   scatter,
 });
+
+const battlements = startBattlements();
 
 /** The first eight are the original starters: their ids stay, so favourites and recent keep pointing at them. */
 export const STARTERS: readonly BrushPreset[] = [
@@ -72,6 +74,7 @@ export const STARTERS: readonly BrushPreset[] = [
   make('falling-leaves', 'Falling leaves', 'Stamps and texture', { size: 18, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('leaf', 'random', 1.3, 0.4, 0.9) }),
   make('stars', 'Stars', 'Stamps and texture', { size: 16, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('star', 'random', 1.3, 0.3, 0.2) }),
   make('sparkles', 'Sparkles', 'Stamps and texture', { size: 10, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('star', 'random', 0.8, 0.8, 1.4) }),
+  make('spinning-leaves', 'Spinning leaves', 'Stamps and texture', { size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...stamp('leaf', 'follow', 1.2, 0.3, 0.4), turn: 0.35, gapVary: 0.6 } }),
   make('paw-prints', 'Paw prints', 'Stamps and texture', { size: 24, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('paw', 'follow', 1.7, 0.1, 0) }),
   make('hearts', 'Hearts', 'Stamps and texture', { size: 16, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('heart', 'upright', 1.2, 0.3, 0.15) }),
   make('dotted-line', 'Dotted line', 'Stamps and texture', { size: 6, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('dot', 'upright', 1.9, 0, 0) }),
@@ -95,4 +98,7 @@ export const STARTERS: readonly BrushPreset[] = [
   make('thread', 'Thread', 'Along the line', { size: 7, thinning: 0.3, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startRibbon(), fit: 'stretch' } }),
   make('chain', 'Chain', 'Along the line', { size: 22, thinning: 0, smoothing: 0.65, streamline: 0.65, tip: { kind: 'edged', custom: startLink() } }),
   make('chain-links', 'Beads and links', 'Along the line', { size: 16, thinning: 0, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startLink(), fit: 'repeat' } }),
+  make('leafy-vine', 'Leafy vine', 'Along the line', { size: 40, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { kind: 'along', custom: startVine(), fit: 'repeat' } }),
+  // Edged: a drawing for the sides, with its own ends and corners
+  make('battlements', 'Battlements', 'Edged', { size: 30, thinning: 0, smoothing: 0.4, streamline: 0.2, tip: { kind: 'edged', custom: battlements.sides, pieces: { start: battlements.end, end: battlements.end, inner: battlements.inner, outer: battlements.outer } } }),
 ];

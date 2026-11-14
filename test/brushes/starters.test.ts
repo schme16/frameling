@@ -5,6 +5,8 @@ import { groupOf, groupsOf, MY_GROUP } from '../../src/brushes/library';
 import { allPresets, STARTERS } from '../../src/brushes/model';
 import { STARTER_GROUPS } from '../../src/brushes/starters';
 import type { StrokeShape } from '../../src/core/format';
+import { readTip } from '../../src/geometry/tip';
+import { tileOf } from '../../src/geometry/tipRibbon';
 import { tipShapes, type OutlineFn } from '../../src/geometry/tipShapes';
 
 const outline: OutlineFn = (s, b) => getStroke(s.points.map((p) => [p.x, p.y, p.p]), { size: b.size, thinning: b.thinning, smoothing: b.smoothing, streamline: b.streamline, simulatePressure: true, last: true });
@@ -44,6 +46,29 @@ describe('the built-in brushes', () => {
     expect(paw.brush.tip).toMatchObject({ kind: 'stamp', shape: 'paw', angle: 'follow' });
     const names = STARTERS.filter((s) => s.group === 'Stamps and texture').map((s) => s.name);
     expect(names).toEqual(expect.arrayContaining(['Leaves', 'Falling leaves', 'Stars', 'Sparkles', 'Paw prints']));
+  });
+  it('has Spinning leaves in Stamps and texture, a leaf stamp that turns and varies its gaps', () => {
+    const b = STARTERS.find((s) => s.name === 'Spinning leaves')!;
+    expect(b.group).toBe('Stamps and texture');
+    expect(b.brush.tip).toMatchObject({ kind: 'stamp', shape: 'leaf', angle: 'follow', turn: 0.35, gapVary: 0.6 });
+  });
+  it('has a Leafy vine in Along the line, a drawing of its own laid end to end', () => {
+    const b = STARTERS.find((s) => s.name === 'Leafy vine')!;
+    expect(b.group).toBe('Along the line');
+    expect(b.brush.tip).toMatchObject({ kind: 'along', fit: 'repeat' });
+    expect(readTip(b.brush.tip)).toEqual(b.brush.tip);
+    const t = tileOf(b.brush.tip!.custom)!;
+    expect(t.x1 - t.x0).toBeCloseTo(1, 3);
+    expect(t.h).toBeGreaterThan(0.2);
+  });
+  it('has Battlements in an Edged group of its own, with sides, both ends and both corners', () => {
+    const b = STARTERS.find((s) => s.name === 'Battlements')!;
+    expect(b.group).toBe('Edged');
+    expect(groupsOf(allPresets([])).map((g) => g.name)).toContain('Edged');
+    expect(groupsOf(allPresets([])).find((g) => g.name === 'Edged')!.brushes.map((x) => x.name)).toEqual(['Battlements']);
+    expect(b.brush.tip).toMatchObject({ kind: 'edged' });
+    expect(Object.keys(b.brush.tip!.pieces!).sort()).toEqual(['end', 'inner', 'outer', 'start']);
+    expect(readTip(b.brush.tip)).toEqual(b.brush.tip);
   });
   it('keep the grain of a tipped brush from bloating a file', () => {
     const chalky = STARTERS.filter((s) => s.brush.tip?.kind === 'chalk' || s.brush.tip?.kind === 'charcoal');

@@ -32,7 +32,7 @@ const id = () => `t${++n}`;
 const saved = (name: string, brush = wide, i = id()): BrushPreset => ({ id: i, name, tool: 'brush', brush });
 
 describe('starters', () => {
-  it('come in ten groups, flagged built in, with distinct ids, names and sane values', () => {
+  it('come in eleven groups, flagged built in, with distinct ids, names and sane values', () => {
     expect(new Set(STARTERS.map((s) => s.id)).size).toBe(STARTERS.length);
     expect(new Set(STARTERS.map((s) => s.name.toLowerCase())).size).toBe(STARTERS.length);
     expect(new Set(STARTERS.map((s) => s.group))).toEqual(new Set(STARTER_GROUPS));
@@ -54,7 +54,8 @@ describe('starters', () => {
     for (const s of STARTERS) expect([undefined, 'chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle']).toContain(s.brush.tip?.kind);
     for (const s of STARTERS) if (s.brush.tip?.kind === 'stamp') expect(s.brush.tip.shape).not.toBe('custom');
     // The popular kinds are all there: a pencil, a pen, a marker, a paint brush, chalk, charcoal, a wash and a stamp.
-    for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(4);
+    // Edged is the one small group: a single drawing-based brush so far.
+    for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(group === 'Edged' ? 1 : 4);
   });
   it('do not match each other', () => {
     for (const a of STARTERS) for (const b of STARTERS) expect(sameBrush(a.brush, b.brush)).toBe(a === b);
