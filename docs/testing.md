@@ -786,6 +786,24 @@ saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `N
 (copy it before a change to get the before numbers). It exits 1 when anything wraps or jumps. The edge of the window itself
 is left to the dock's layout, not judged here: at 200% on a 1280 screen the app has only 640 pixels to share.
 
+## The tool rail's width and names: scripts/e2e/rail-width.cjs
+
+Checks the rail the way a new person meets it, in the real app. For both looks, the three tool sizes, the draw, animate and
+pixel workspaces and the interface sizes 100, 125, 150 and 200 per cent, in a 1280 x 720 window, it reads the rail's width,
+how many group names sit on two lines, which are cut short, and the room the canvas keeps (at least 280 x 190). Then it gives
+three groups names of your own and checks they drop to two lines before anything is cut, and that only a third line or one
+very long word ends in dots. Exits 1 when a built-in name is cut at the starting width, a name of your own is cut too soon, or the
+canvas is too small.
+
+```bash
+npm run build && SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/rail-width.cjs
+```
+
+`RAILW_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `RAILW_SIZE=<w>x<h>`
+sets the window, `RAILW_QUICK=1` runs one look and one workspace, `RAILW_JSON=<file>` saves every row. The starting width
+itself is worked out in `src/ui/toolRailWidth.ts` from the built-in group names (`test/ui/railStart.test.ts` holds it to the
+widths the real rail measured), so add a longer built-in group name and the rail starts wider by itself.
+
 ## Quill's hello, page by page: scripts/e2e/hello-fit.cjs
 
 Walks every page of the first-run hello (hello, what to make with and without picks, colours with Auto, settings, the last page) at

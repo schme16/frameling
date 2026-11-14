@@ -22,13 +22,13 @@ const every = () => flat(resolveGroups(undefined, allTools())).sort();
 
 describe('the three defaults', () => {
   it('Draw: drawing first, then the standard order', () => {
-    expect(ids(currentGroups())).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
+    expect(ids(currentGroups())).toEqual(['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view']);
     expect(currentGroups()[0].tools.slice(0, 4)).toEqual(['pencil', 'brush', 'eraser', 'fill']);
   });
   it('Animate: drawing, then rig and motion, then the rest', () => {
     applyWorkspace('animate');
     const g = currentGroups();
-    expect(ids(g)).toEqual(['draw', 'rig', 'select', 'shapes', 'extras', 'view']);
+    expect(ids(g)).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
     expect(g[1].tools).toEqual(['bone', 'pose', 'weights', 'motion-path', 'shape-hints']);
   });
   it('Pixel: pixel tools first, then the ways of selecting together, vector-only tools later', () => {
@@ -63,7 +63,7 @@ describe('changes belong to the workspace they were made in', () => {
     expect(isCustomArrangement()).toBe(true);
     applyWorkspace('animate');
     expect(isCustomArrangement()).toBe(false);
-    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
     applyWorkspace('draw');
     expect(currentGroups()[0].tools).toEqual(['hand']);
   });
@@ -84,7 +84,7 @@ describe('changes belong to the workspace they were made in', () => {
     applyWorkspace('animate');
     moveToolTo('hand', { newGroupAt: 0 });
     resetToolArrangement();
-    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
     expect(isCustomArrangement()).toBe(false);
     applyWorkspace('pixel');
     expect(isCustomArrangement()).toBe(true);

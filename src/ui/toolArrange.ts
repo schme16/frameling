@@ -24,9 +24,12 @@ export interface ToolGroup {
 /** The groups the rail starts with. A tool says which one it starts in (`group`) and where (`groupAt`) when it is registered. */
 export const DEFAULT_GROUPS: { id: string; name: string }[] = [
   { id: 'draw', name: 'Draw' },
-  { id: 'extras', name: 'Colour and pixel extras' },
+  // The id is the old one (it was "Colour and pixel extras"), so a rail saved with it still reads right. Shade, Dither and Spray
+  // are colour tools too: they change the colour of pixels, and they sit here on a pixel layer so the strip stays put.
+  { id: 'extras', name: 'Colour' },
   { id: 'shapes', name: 'Shapes' },
-  { id: 'select', name: 'Select and pen' },
+  { id: 'select', name: 'Select' },
+  { id: 'pen', name: 'Pen and edit' },
   { id: 'rig', name: 'Rig and motion' },
   { id: 'view', name: 'View' },
 ];
@@ -46,10 +49,10 @@ export interface ToolRef {
  * that start there (their `group` and `groupAt`) fill it. Draw is the standard order.
  */
 export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
-  // Drawing first, then colour extras, shapes, select and pen, rig, view.
+  // Drawing first, then colour, shapes, select, pen and edit, rig, view.
   draw: DEFAULT_GROUPS.map((g) => ({ id: g.id, tools: [] })),
-  // Drawing, then rig and motion straight after, then select and pen, shapes, extras and view.
-  animate: ['draw', 'rig', 'select', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
+  // Drawing, then rig and motion straight after, then select, pen and edit, shapes, colour and view.
+  animate: ['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
   // Pixel tools first: draw with the eyedropper in reach, shade, dither and pixel select, then shapes; the vector-only
   // tools (select and pen, rig) come after.
   pixel: [
@@ -59,6 +62,7 @@ export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },
+    { id: 'pen', tools: [] },
     { id: 'rig', tools: [] },
   ],
 };

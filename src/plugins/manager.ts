@@ -377,7 +377,6 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
       label: def.label,
       icon: ICON_NAMES.includes(def.icon) ? def.icon : 'plugin',
       layers: def.layers,
-      group: 'extras',
       help: 'plugin-tools',
       cursor: 'crosshair',
       down: (e, ctx) => send('down', e, ctx),

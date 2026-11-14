@@ -18,7 +18,7 @@ import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, waitingFor, waitingWords, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
-import { acrossFor, clampRailWidth, minRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
+import { acrossFor, clampRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
 import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu, waitingMenu } from './toolRail';
 
@@ -43,8 +43,9 @@ function RailSplitter({ at }: { at: 'left' | 'right' }) {
   const style = usePrefs((p) => p.toolRail);
   const size = usePrefs((p) => p.toolSize);
   const look = usePrefs((p) => p.look);
+  const names = usePrefs((p) => p.toolNames);
   const sizes = railSizes(look, size);
-  const width = railWidthNow(saved, sizes, style);
+  const width = railWidthNow(saved, sizes, style, names);
   // A rail on the left grows when pulled right; on the right, when pulled left.
   const drag = useEdgeDrag({ horizontal: false, sign: at === 'left' ? 1 : -1, size: () => width, set: (n) => setToolRailWidth(n, false), end: endToolRailPull });
   const to = (n: number) => setToolRailWidth(clampRailWidth(n, sizes));
@@ -221,8 +222,17 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const iconPx = iconSizeFor(size);
   // A width the person pulled (docked at a side): the rail takes it, and the buttons across follow it.
   const sizes = railSizes(look, size);
-  const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style) : undefined;
-  const pulled = pulledWidth === undefined ? undefined : ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties);
+  const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style, showNames) : undefined;
+  // No width of their own: the rail starts as wide as its longest group name needs, still two buttons across.
+  const startWidth = pulledWidth === undefined && showNames && !sideways ? naturalRailWidth(sizes, style, true) : undefined;
+  const pulled =
+    pulledWidth !== undefined
+      ? ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties)
+      : startWidth !== undefined && startWidth > naturalRailWidth(sizes, style)
+        ? ({ width: startWidth, '--tool-cols': 2 } as React.CSSProperties)
+        : undefined;
+  // The one-per-group rail is one button wide: a name has no room there until the rail is pulled wider.
+  const showHeads = showNames && !sideways && (!stacked || pulledWidth !== undefined);
   const kind = useActiveKind();
   const current = useStore((s) => s.ui.tool);
   // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
@@ -397,7 +407,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   return (
     <nav
       ref={navRef}
-      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showNames && !sideways ? ' has-names' : ''} is-size-${size}`}
+      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showHeads ? ' has-names' : ''} is-size-${size}`}
       aria-label="Tools"
       data-place={place}
       style={pulled}
@@ -459,7 +469,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                     <Icon name={folded ? 'chevron-right' : 'chevron-down'} size={14} />
                   </button>
                 </div>
-              ) : !sideways && showNames && heading ? (
+              ) : showHeads && heading ? (
                 <div className="ui-tool-head" aria-hidden="true" data-tool-head={g.id} onDoubleClick={() => askGroupRename(g.id)}>
                   {heading}
                 </div>

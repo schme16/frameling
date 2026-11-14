@@ -344,7 +344,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
-      <Row label="Tool group names" hint="Each group of tools gets its name above it. Turn them off for a slimmer rail. A group you made and never named is just a divider either way.">
+      <Row label="Tool group names" hint="Each group of tools gets its name above it, and the rail starts wide enough to read them. Turn them off for a slimmer rail. A group you made and never named is just a divider either way. The Stacked rail shows names only once you pull it wider.">
         <Switch label="Tool group names" on={p.toolNames} onChange={(toolNames) => setPrefs({ toolNames })} />
       </Row>
       <Row label="Tool button size" hint="How big the buttons on the tool rail are. Change the tools, in the View menu, has this too.">

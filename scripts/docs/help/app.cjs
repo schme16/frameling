@@ -238,7 +238,7 @@ const entries = [
       ...dragSlow([[72, 225], [76, 180], [83, 134]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
-      ...dragSlow([[30, 579], [40, 430], [56, 297]], { n: 8, after: 70, hold: 1200 }),
+      ...dragSlow([[30, 630], [40, 470], [56, 297]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
       // Then the new group gets a name: double-click the divider above it, type, Save.
