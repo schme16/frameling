@@ -7,6 +7,8 @@ export const bodies: Record<string, string> = {
 2. Press **Ctrl+Alt+W** (or **Make the line draw itself** in the command palette, or **Draw it on** in the **Draw on** panel).
 3. Press play. The line draws itself in over about a second.
 
+The **Draw on** panel starts put away, so the rail stays short. Open it from **Panels**, the command search, or **Frames and motion > Make a line draw itself**.
+
 It hides the line on this frame, makes a second key a second later (if there isn't one yet), and glides between them. **Rub it out** does the same the other way round.
 
 **Change it:**

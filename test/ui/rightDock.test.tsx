@@ -24,7 +24,7 @@ beforeAll(() => {
   registerPanel({ id: 'tool-options', title: 'Tool options', icon: 'sliders', component: body('tool body'), zone: 'right', order: 10, help: 'tool-options' });
   registerPanel({ id: 'colors', title: 'Colours', icon: 'palette', component: body('colour body'), zone: 'right', order: 20 });
   registerPanel({ id: 'particles', title: 'Particles', icon: 'particles', component: body('particle body'), zone: 'right', order: 36 });
-  registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: body('library body'), zone: 'right', order: 30 });
+  registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: body('library body'), zone: 'right', order: 92 });
   registerPanel({ id: 'help', title: 'Help', icon: 'help', component: body('help body'), zone: 'right', order: 90 });
 });
 
@@ -50,7 +50,7 @@ const tab = (name: string) => host.querySelector<HTMLElement>(`[role="tab"][aria
 
 describe('the right side (Properties and the rail)', () => {
   it('names every place on the rail, Properties first', () => {
-    expect(tabs()).toEqual(['Properties', 'Library', 'Help']);
+    expect(tabs()).toEqual(['Properties', 'Help', 'Library']);
     expect(tab('Properties').getAttribute('aria-selected')).toBe('true');
     expect(host.textContent).toContain('Library');
   });
@@ -90,9 +90,9 @@ describe('the right side (Properties and the rail)', () => {
   it('moves along the rail with the arrow keys, one tab stop', () => {
     expect([...host.querySelectorAll('[role="tab"][tabindex="0"]')].length).toBe(1);
     act(() => tab('Properties').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
-    expect(dock.get().layout.zones.right.active).toBe('library');
-    act(() => tab('Library').dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })));
     expect(dock.get().layout.zones.right.active).toBe('help');
+    act(() => tab('Help').dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })));
+    expect(dock.get().layout.zones.right.active).toBe('library');
   });
 
   it('asking for a section from elsewhere opens Properties at it', () => {
@@ -111,7 +111,7 @@ describe('the right side (Properties and the rail)', () => {
 
   it('the plain rail and the tabs are there for comparisons', () => {
     act(() => rightStyle.set('rail'));
-    expect(tabs()).toEqual(['Tool options', 'Colours', 'Particles', 'Library', 'Help']);
+    expect(tabs()).toEqual(['Tool options', 'Colours', 'Particles', 'Help', 'Library']);
     act(() => rightStyle.set('tabs'));
     expect(host.querySelector('.ui-tabbar')).toBeTruthy();
     expect(host.querySelector('[data-panels-button]')).toBeTruthy();

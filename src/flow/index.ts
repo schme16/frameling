@@ -14,7 +14,7 @@ export const flowFeature = defineFeature({
   about: 'A map of how your clips lead into each other, for games.',
   optional: true,
   commands: flowCommands,
-  panels: [{ id: 'clip-flow', title: 'Clip flow', icon: 'flow', component: lazyPanel(() => import('./FlowPanel').then((m) => m.FlowPanel)), zone: 'right', order: 38, help: 'clip-flow' }],
+  panels: [{ id: 'clip-flow', title: 'Clip flow', icon: 'flow', component: lazyPanel(() => import('./FlowPanel').then((m) => m.FlowPanel)), zone: 'right', order: 38, startsAway: true, help: 'clip-flow' }],
   help: flowHelp,
   choices: flowChoices,
   sections: {

@@ -544,8 +544,11 @@ Want a section somewhere else? Drag its name onto the left or bottom zone. See [
 The right side has a **rail** down its edge: an icon with a name for every place there, so you can see everything at a glance.
 
 - **Properties** comes first. It holds the settings for what you're doing now. See [Properties](help:properties).
-- Below it are the panels you open now and then: **Library**, **Clip flow**, **Lip sync**, **Quests** and **Help**. Press one to open it, and press it again to fold the side away.
+- Below it are the panels you open now and then: **Layers**, **Artboards**, **Preview**, **Quests**, **Help** and, last of all, **Library**. Press one to open it, and press it again to fold the side away.
+- **Clip flow** and **Draw on** start put away, to keep the rail short. Find them in **Panels** or the command search.
 - **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Type to find one. Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
+
+A layout you already have keeps its arrangement. **Reset layout** in the command search gives you the newest start.
 
 ## Move
 

@@ -10,6 +10,8 @@ import { ClipPanel } from '../../src/timeline/ClipPanel';
 import { DIRECTION_HELP } from '../../src/timeline/ClipPlay';
 import { setTl } from '../../src/timeline/state';
 import { sectionsNow } from '../../src/ui/panelInfo';
+import { registerPanel, unregisterPanel } from '../../src/core/registry';
+import { dock, isVisible, resetDock } from '../../src/ui/dock';
 import { docWith } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -75,3 +77,30 @@ describe('plain words for the directions', () => {
     expect(DIRECTION_HELP['pingpong-reverse']).toBe('Back and forth, backward first');
   });
 });
+
+describe('a way to Clip flow, which starts put away', () => {
+  const flow = () => registerPanel({ id: 'clip-flow', title: 'Clip flow', icon: 'flow', component: () => null, zone: 'right', startsAway: true });
+  const button = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Open Clip flow');
+  it('is in the Clip section with a clip picked, and opens the panel from away', () => {
+    flow();
+    resetDock();
+    withClip();
+    act(() => setTl({ clipId: 'k1' }));
+    act(() => root.render(<ClipPanel />));
+    expect(isVisible('clip-flow')).toBe(false);
+    act(() => button()!.click());
+    expect(isVisible('clip-flow')).toBe(true);
+    expect(dock.get().layout.hidden).not.toContain('clip-flow');
+    unregisterPanel('clip-flow');
+  });
+  it('is there with no clip picked too, and absent when the Clip flow feature is off', () => {
+    withClip();
+    act(() => root.render(<ClipPanel />));
+    expect(button()).toBeUndefined();
+    flow();
+    act(() => root.render(<ClipPanel />));
+    expect(button()).toBeTruthy();
+    unregisterPanel('clip-flow');
+  });
+});
+

@@ -45,7 +45,8 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
   const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
   const merge = style === 'inspector';
-  const plans = planRight(groupsOf(z), merge);
+  const railAt = dock.use((d) => d.layout.railAt);
+  const plans = planRight(groupsOf(z), merge, railAt);
   const first = plans[0];
   const picker = panelPicker.use((v) => v);
   // Remember the Properties section in front, so pressing Properties on the rail comes back to it.
