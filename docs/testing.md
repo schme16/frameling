@@ -968,6 +968,45 @@ pixel density; `SHOT_LOG=1` prints console errors as they happen; `SHOT_W`, `SHO
 x 900), `SHOT_DISPLAY` a JSON screen (what the desktop side reports) so the app knows which screen it is on, as `screen-shoot.cjs` below sets it. Console errors are printed after each shot anyway. A step can open a real file with
 `{"eval": "__framelingIo.openPath('/abs/path.frameling')"}`.
 
+## Every panel on one sheet: scripts/panels-sheet.cjs
+
+A contact sheet of every panel, with its name under it, in dark and in light. It is the browsable gallery a component
+library would give, built on the help-picture harness (`scripts/docs/steps.cjs`), so there is nothing new to install.
+Look at it after a change to a panel, a theme or the dock, to see everything at once.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/panels-sheet.cjs <outDir> [options]
+```
+
+It writes `panels-dark.png`, `panels-light.png`, `panels-both.png` (each panel with its dark and light crops side by
+side) and `panels.json` (one line per panel per theme: size, document, and its problem or null). About 45 seconds.
+
+| Option | |
+|---|---|
+| `--themes dark,light` | Which themes (both by default). |
+| `--doc <template id>` | Show every panel in this template. By default it is Bouncing ball, and the template a panel needs when that would leave it empty (Lip sync for Lip sync, Hero sprites for Slices, a title card for Text; the table is in `scripts/lib/sheet-layout.cjs`). |
+| `--only a,b`, `--skip a,b` | Just these panels, or all but these. A name that is not a panel is reported. |
+| `--no-select` | Nothing selected. By default everything on the layer is, since most panels show their controls only then. |
+| `--right tabs` | The right side's layout (`tabs`, `rail` or `inspector`). Tabs is the default because the usual Properties pane folds many panels into one, leaving no panel of their own to crop. |
+| `--full` | Keep each panel as tall as its dock zone. By default the empty space under a short panel is cut. |
+| `--width 1800` | Sheet width in pixels. |
+| `--renderer <dir>` | A private `vite build --outDir`, as for `record.cjs`. |
+
+The list comes from the app's own registry (`__frameling.panelList()`), so a new panel appears on the sheet without
+anyone adding it, and a panel a plugin or feature registers shows up too. Panels with a state that is hard to reach get
+it from the `?debug` hooks in `__frameling.seed` (`text`, `notes`, `slices`, `history`, in `src/renderer/debug.ts`); give
+a new panel one by adding it there and in `SEEDS` in `scripts/lib/sheet-layout.cjs` (a test checks the two agree).
+
+A panel that cannot be shown is never left out quietly. It gets a red box on the sheet that says why, `panels.json`
+carries the reason, the run lists them at the end and exits 1. The reasons: no panel on screen (the dock did not show
+it), its own "tripped over something" screen, every pixel one colour, a call that threw, or an error the page logged
+while it was up (a missing hook or Electron call). The console errors are the page's own, so a panel that needs a real
+file or the main process will say so here (the harness answers those calls with the stand-ins in `scripts/ipc-stubs.cjs`).
+
+The pure parts (panel list, documents, packing, trimming, blank detection) are tested in `test/ui/panels-sheet.test.ts`.
+Sheets from a run live in `brand/ab/panel-sheet/`.
+
 ## A pretend screen of any size: scripts/screen-shoot.cjs
 
 Shoots the interface as it looks on a particular screen, such as a 16 inch 4K laptop, without that screen. It wraps
