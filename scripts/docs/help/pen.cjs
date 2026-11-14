@@ -40,10 +40,9 @@ module.exports = [
   {
     name: 'pen-tablet',
     prefs: CALM,
-    // A tall window so one picture reaches from the pad at the top down to How much leaning counts and Swap my two
-    // pen buttons, the two rows the page gained.
+    // Scrolled to the pressure curve with its Reset button under it, and the feel and press settings beside it.
     size: [1280, 1180],
-    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('pen')`), wait(1500), penStroke('.tb-pad'), wait(300), js("document.querySelector('.ui-prefs-page').scrollTop = 630"), wait(300), ...shotOf('.ui-prefs', 10)],
+    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('pen')`), wait(1500), penStroke('.tb-pad'), wait(300), js("(() => { const pg = document.querySelector('.ui-prefs-page'); pg.scrollTop += document.querySelector('.tb-curve-row').getBoundingClientRect().top - pg.getBoundingClientRect().top - 24; return true; })()"), wait(300), ...shotOf('.ui-prefs', 10)],
   },
   {
     name: 'pen-check',

@@ -14,9 +14,7 @@ export const bodies: Record<string, string> = {
 
 ## Pen and tablet preferences
 
-Open **Preferences, Pen and tablet**. Try your pen on a pad (it says whether Frameling hears a pen or a mouse), pick a **Soft**, **Normal** or **Firm** pressure feel or drag the dots on the graph, set the lightest press that counts, and choose what the buttons do. One table shows what every tool does with pressure, leaning and the stabilizer.
-
-Frameling keeps one set of settings for any pen, and one for your mouse and fingers.
+Open **Preferences, Pen and tablet**. Try your pen on a pad (it says whether Frameling hears a pen or a mouse), pick a **Soft**, **Normal** or **Firm** feel, drag the dots on the graph to make your own (**Reset** brings back the straight line), set the lightest press that counts, and choose what the buttons do. One table shows what every tool does with pressure, leaning and the stabilizer.
 
 ## Fingers and palms
 
