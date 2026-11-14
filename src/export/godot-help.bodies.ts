@@ -62,7 +62,7 @@ Every clip is there with its speed and loop setting, and held frames last as lon
 
 ## Using the .tres yourself
 
-Add an **AnimatedSprite2D** node, click **Sprite Frames** in the Inspector, then **Load**, and pick the \`.tres\` file. If pixel art looks blurry there, set the node's **Texture > Filter** to **Nearest**.
+Add an **AnimatedSprite2D** node, click **Sprite Frames** in the Inspector, then **Load**, and pick the \`.tres\` file. If pixel art looks blurry there, set **Filter** to **Nearest** under the node's **Texture** heading.
 
 ## Separate sprites
 

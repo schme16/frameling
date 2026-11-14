@@ -66,6 +66,8 @@ export function takeContent(doc: Doc): ArtboardContent {
   const shared = !!doc.sharedLayers;
   const c: ArtboardContent = { width: doc.width, height: doc.height, background: doc.background, length: doc.length, layers: shared ? [] : doc.layers, clips: doc.clips, markers: doc.markers };
   if (shared) c.cels = celsOfStack(peek(doc.layers));
+  // Each artboard plays at its own speed. With shared layers every one plays at the document's.
+  else c.fps = doc.fps;
   if (doc.flow) c.flow = doc.flow;
   if (doc.audio) c.audio = doc.audio;
   if (doc.guides) c.guides = doc.guides;
@@ -80,6 +82,8 @@ export function putContent(doc: Doc, c: ArtboardContent): void {
   doc.height = c.height;
   doc.background = c.background;
   doc.length = c.length;
+  // One without a rate of its own (a new one, or a file from before each had one) plays at the rate already open.
+  if (c.fps !== undefined && !doc.sharedLayers) doc.fps = c.fps;
   // Shared layers: the layers and every setting on them stay the document's, only the drawing on them swaps. A new
   // array, never the stack changed in place (this is also called on a plain copy of the open document).
   if (doc.sharedLayers || c.cels) doc.layers = layersWithCels(peek(doc.layers), c.cels);
@@ -279,6 +283,8 @@ export interface NewArtboard {
   height?: number;
   background?: string | null;
   length?: number;
+  /** Frames per second (default: the open artboard's, which is the one a new artboard starts from). */
+  fps?: number;
   x?: number;
   y?: number;
 }
@@ -302,7 +308,7 @@ export function addArtboard(d: Doc, o: NewArtboard = {}): Id {
     name: o.name ?? freshName(d),
     x: Math.round(o.x ?? spot.x),
     y: Math.round(o.y ?? spot.y),
-    content: { width: w, height: h, background: o.background === undefined ? root.background : o.background, length: Math.max(1, Math.round(o.length ?? root.length)), layers, ...(d.sharedLayers ? { cels: {} } : {}), clips: [], markers: [] },
+    content: { width: w, height: h, background: o.background === undefined ? root.background : o.background, length: Math.max(1, Math.round(o.length ?? root.length)), layers, ...(d.sharedLayers ? { cels: {} } : { fps: Math.max(1, Math.round(o.fps ?? root.fps)) }), clips: [], markers: [] },
   });
   return id;
 }

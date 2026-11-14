@@ -79,7 +79,7 @@ export interface Doc {
   /**
    * Artboards: several named canvases in one document, each with its own size, background, layers and timeline (a
    * sprite, a shot). The open one's content is the document's own fields (`width` to `perspective`); the others keep theirs
-   * in `Artboard.content`. Palette, swatches, symbols, tiles and fps are shared. Missing = the document is one artboard.
+   * in `Artboard.content`. Palette, swatches, symbols and tiles are shared; the frame rate is each artboard's own (`Doc.fps` is the open one's). Missing = the document is one artboard.
    * See src/artboards.
    */
   artboards?: Artboard[];
@@ -224,6 +224,8 @@ export interface ArtboardContent {
   height: number;
   background: Color | null;
   length: number;
+  /** Frames per second, this artboard's own (missing = the rate of the artboard open when it was read: files from before each had its own). Not kept with shared layers, where every artboard plays at `Doc.fps`. */
+  fps?: number;
   /** The artboard's own layers. Empty when the document shares one stack (`Doc.sharedLayers`): see `cels`. */
   layers: Layer[];
   /** With shared layers: this artboard's cels on each layer of the document's stack, by layer id (missing = nothing drawn). */

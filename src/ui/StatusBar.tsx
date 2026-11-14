@@ -10,6 +10,7 @@ import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
 import { SnapButton } from '../canvas/SnapOptions';
+import { hasArtboards } from '../artboards/model';
 import { artSizeOf, artZoomPercent } from '../pixel/units';
 import { dock, inPixelWorkspace, showPanel } from './dock';
 
@@ -18,6 +19,7 @@ export function StatusBar() {
   const w = useStore((s) => s.doc.width);
   const h = useStore((s) => s.doc.height);
   const fps = useStore((s) => s.doc.fps);
+  const ownFps = useStore((s) => hasArtboards(s.doc) && !s.doc.sharedLayers);
   const dpi = useStore((s) => docDpi(s.doc));
   const units = usePrefs((p) => p.units);
   const frame = useStore((s) => s.ui.frame);
@@ -81,7 +83,7 @@ export function StatusBar() {
           {selSize}
         </span>
       )}
-      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc="Press to change how many drawings show each second.">
+      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc={ownFps ? "Press to change how many drawings show each second on this artboard. The others keep their own." : 'Press to change how many drawings show each second.'}>
         <Icon name="film" size={14} />
         {fps} fps
       </button>

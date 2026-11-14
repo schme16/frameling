@@ -13,6 +13,8 @@ import { auditHelp, formatAudit, helpLinksIn, shortcutsIn } from '../../src/ui/h
 import '../../src/renderer/features';
 import { hiddenFeatureHelp } from '../../src/features/host';
 import { KEYMAP_SETS } from '../../src/ui/keymapSets';
+import { wordsTree } from '../helpers/menuTree';
+import { menuPathDrift, menuPathProblem, menuPathsIn, type MenuNode } from '../../src/ui/help/menuPaths';
 
 const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/help');
 
@@ -20,7 +22,7 @@ const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.
 // Plus every key a shortcut set gives (the shortcut-sets topic names them).
 const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2', ...KEYMAP_SETS.flatMap((s) => Object.values(s.keys).flat())];
 
-const run = () => auditHelp({ topics: allHelp(), keptOut: hiddenFeatureHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
+const run = () => auditHelp({ menus: wordsTree(), topics: allHelp(), keptOut: hiddenFeatureHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
 
 describe('help audit (the real app)', () => {
   // The topics' words load on demand, so the audit waits for them.
@@ -39,6 +41,7 @@ describe('help audit (the real app)', () => {
   it('every file in public/help is used', () => expect(a.orphanFiles).toEqual([]));
   it('every help link goes somewhere', () => expect(a.brokenLinks).toEqual([]));
   it('every shortcut a topic names is a real one', () => expect(a.shortcutDrift).toEqual([]));
+  it('every **Menu > Item** a topic names is in the menus, where it says', () => expect(a.menuPathDrift).toEqual([]));
   it('no topic rambles on', () => {
     // Over 400 words shows in the report; over 500 fails.
     const way = a.longTopics.filter((x) => Number(/\((\d+) words\)/.exec(x)![1]) > 500);
@@ -83,5 +86,37 @@ describe('help audit (the checks)', () => {
   it('lets a shortcut through when it is allowed on purpose', () => {
     const a = auditHelp({ topics: [topic('t', 'Press **Ctrl+W**.', { media: 'x.png' })], commands: [], files: ['x-dark.png', 'x-light.png'], extraKeys: ['Mod+W'] });
     expect(a.shortcutDrift).toEqual([]);
+  });
+});
+
+describe('menu paths in help words', () => {
+  const menus: MenuNode[] = [
+    { label: 'File', items: [{ label: 'Open...' }, { label: 'Export', items: [{ label: 'Export...' }, { label: 'Export a Lottie animation...' }] }] },
+    { label: 'Artboards', items: [{ label: 'Zoom to artboard' }, { label: 'Make a variation (linked copy)' }] },
+    { label: 'View', items: [{ label: 'Panels', items: [{ label: 'Library' }] }, { label: 'Tile mode (repeat around the edges)' }] },
+  ];
+
+  it('reads the bold paths and nothing else', () => {
+    expect(menuPathsIn('Use **File > Export > Export...** or **Ctrl+E**, but not plain File > Open.')).toEqual([['File', 'Export', 'Export...']]);
+  });
+  it('lets a path through when it leads somewhere, ignoring dots, case and a bracketed aside', () => {
+    expect(menuPathProblem(['File', 'Open'], menus)).toBeUndefined();
+    expect(menuPathProblem(['file', 'export', 'export a lottie animation'], menus)).toBeUndefined();
+    expect(menuPathProblem(['View', 'Tile mode'], menus)).toBeUndefined();
+    expect(menuPathProblem(['Artboards', 'Make a variation'], menus)).toBeUndefined();
+  });
+  it('says where a thing went when the path is stale', () => {
+    expect(menuPathProblem(['View', 'Zoom to artboard'], menus)).toBe('"Zoom to artboard" is not in View (it is at Artboards > Zoom to artboard)');
+    expect(menuPathProblem(['View', 'Library'], menus)).toBe('"Library" is not in View (it is at View > Panels > Library)');
+    expect(menuPathProblem(['Draw', 'Library'], menus)).toContain('"Draw" is not in the menu bar');
+    expect(menuPathProblem(['File', 'Open', 'Recent'], menus)).toBe('"Open..." is an item, not a menu'.replace('Open...', 'Open'));
+  });
+  it('leaves other programs\' menus alone and the ⋯ button', () => {
+    expect(menuPathProblem(['⋯', 'Remove'], menus)).toBeUndefined();
+    expect(menuPathProblem(['Window', 'Package Manager'], menus)).toBeUndefined();
+  });
+  it('reports each stale path once, with where it was found', () => {
+    const md = 'Try **View > Zoom to artboard**, then **View > Zoom to artboard** again, then **File > Open**.';
+    expect(menuPathDrift('artboards', md, menus)).toEqual(['artboards: View > Zoom to artboard ("Zoom to artboard" is not in View (it is at Artboards > Zoom to artboard))']);
   });
 });

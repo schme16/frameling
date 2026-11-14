@@ -232,6 +232,17 @@ function MarkersRow({ cw, from, to, h }: { cw: number; from: number; to: number;
   );
 }
 
+/** Where the Markers and Clips lanes are while a symbol is open: they are the scene's, and a marker made here would land on it. */
+function SceneOnlyNote({ from, cw, h }: { from: number; cw: number; h: number }) {
+  return (
+    <div className="tl-scene-only" data-testid="timeline.sceneOnly" style={{ height: h }}>
+      <span className="tl-lane-empty" style={{ left: from * cw + 8 }}>
+        Markers and clips belong to the main scene. Go back out of the symbol to use them.
+      </span>
+    </div>
+  );
+}
+
 let toldClipKept = false;
 /**
  * Picks a clip to play on its own (or lets go of it, when it is the picked one), and shows how it plays in
@@ -960,7 +971,9 @@ export function TimelineBody() {
   const dragClip = ghost?.kind === 'clip' ? ghost : null;
   const dragKeys = ghost?.kind === 'keys' ? ghost : null;
   const box = ghost?.kind === 'box' ? ghost : null;
-  const markers = useStore((s) => (detailed ? s.doc.markers : null));
+  const markers = useStore((s) => (detailed && !s.doc.editing?.length ? s.doc.markers : null));
+  // Markers and clips are the scene's, so inside a symbol their lanes give way to a note saying so.
+  const inSymbol = useStore((s) => !!s.doc.editing?.length);
 
   return (
     <div ref={scroller} data-scrolls className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
@@ -992,8 +1005,14 @@ export function TimelineBody() {
       >
         <div className="tl-top">
           <Ruler cw={cw} from={from} to={to} length={length} fps={fps} total={total} ghostLength={ghost?.kind === 'length' ? ghost.length : null} ghostRange={ghost?.kind === 'inOut' ? ghost : null} detailed={detailed} h={rulerH} />
-          <MarkersRow cw={cw} from={from} to={to} h={marksH} />
-          <ClipsRow cw={cw} from={from} to={to} h={clipsH} />
+          {inSymbol ? (
+            <SceneOnlyNote from={from} cw={cw} h={marksH + clipsH} />
+          ) : (
+            <>
+              <MarkersRow cw={cw} from={from} to={to} h={marksH} />
+              <ClipsRow cw={cw} from={from} to={to} h={clipsH} />
+            </>
+          )}
           <Playhead part="ruler" cw={cw} cursor={cursor} />
           {dragMarker ? <i className="tl-ghost-line" style={{ left: dragMarker.frame * cw, top: 0, height: rulerH + marksH }} /> : null}
           {dragClip ? <i className="tl-ghost-clip" style={{ left: dragClip.start * cw, width: (dragClip.end - dragClip.start + 1) * cw, top: rulerH + marksH, height: clipsH }} /> : null}
@@ -1148,7 +1167,7 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { label: 'Add a frame (hold one longer)', hint: keyHint('timeline.insertFrame'), onClick: () => void say(ops.insertFrame(layer.id, frame)) },
     { label: 'Remove a frame', hint: keyHint('timeline.removeFrame'), onClick: () => void say(ops.removeFrame(layer.id, frame)) },
     { separator: true },
-    { label: 'Add a marker here', onClick: () => void ops.addMarker(frame) },
+    { label: 'Add a marker here', onClick: () => void say(ops.addMarker(frame)) },
     {
       label: 'Put this drawing on the light table',
       checked: store().get().ui.lightTable?.frame === frame && store().get().ui.lightTable?.layerId === layer.id,

@@ -70,7 +70,7 @@ Click the frames once so the timeline has the keys, then:
 
 ## Prefer it simpler?
 
-Turn on **Clean timeline** (the sliders button in the timeline, **View > Clean timeline**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
+Turn on **Clean timeline** (the sliders button in the timeline, **View > Look and sound > Clean timeline (simple blocks)**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
   'timeline-property-rows': `Open a layer with the **arrow** beside its name and each thing that changes gets its own row of diamonds.
 
 ## What moves on its own
@@ -146,7 +146,7 @@ Whichever you pick is remembered. Change it any time in **Preferences > Behaviou
 
 ## Do it yourself
 
-Open the command palette and run **Tidy the end**, or use **Timeline > Tidy the end**. It works whatever you chose above, and you can undo it.
+Open the command palette and run **Tidy the end**, or use **Frames and motion > Tidy the end**. It works whatever you chose above, and you can undo it.
 
 ## What it never touches
 
@@ -174,13 +174,13 @@ Click the little arrow beside the onion for:
 - **Strength:** how strong the nearest ghost is. Ones further away fade.
 - **Colours:** frames before are tinted rose and frames after mint, so you can tell them apart. Turn the tint off to see them in their own colours.
 
-- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses before and after this one, not copies of the drawing you're on. Also in **Timeline > Onion skin shows only keys**.
+- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses before and after this one, not copies of the drawing you're on. Also in **Frames and motion > Onion skin shows only keys**.
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
 ## Boards either side
 
-Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Timeline > Onion skin shows the boards either side**.
+Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Frames and motion > Onion skin shows the boards either side**.
 
 Board ghosts sit under this board's own frame ghosts, and a board of another size is fitted into yours and centred. Variations are left out: a variation is another take on a board, not the next one.
 
@@ -273,7 +273,7 @@ Frames outside the range are dimmed on the ruler, and there's a bracket at each 
 
 ## Clear it
 
-Click the **x** beside the range in the top bar, or use **Timeline > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
+Click the **x** beside the range in the top bar, or use **Frames and motion > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
 
 ## Good to know
 
@@ -298,7 +298,7 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 
 > Frames in your animation that are not in any clip still play and still export. Clips just give them names.
 
-When you export a sprite sheet or a game animation file, each clip becomes its own animation.`,
+When you export a sprite sheet or a game animation file, each clip becomes its own animation. Clips belong to the main scene, so they are hidden inside an open symbol: see [markers](help:timeline-markers).`,
   'timeline-clip-play': `A [clip](help:timeline-clips) can play three ways, and repeat as often as you like. Say it once on the clip and the timeline, your sprite sheets and your game animations all follow.
 
 ## Setting it
@@ -351,7 +351,9 @@ Type a name, like *footstep*, and press Enter.
 - **Drag** it to move it to another frame.
 - **Right-click** it to delete it.
 
-Markers come out in exports as events.`,
+Markers come out in exports as events.
+
+Good to know: markers and clips belong to the main scene, so inside an open [symbol](help:symbols) their rows give way to a note and nothing can be added there. A marker made from inside would land on the scene at the symbol's own frame number and fire at the wrong moment. Go back out of the symbol to use them. To name frames inside a symbol (a mouth shape, say), see [lip sync](help:lip-sync).`,
   'reference-layers': `Some layers are only there to help you draw: the ground a character stands on, a rough sketch, a grid of where the feet go. Make it a **reference layer** and you still see it on the canvas, but videos, pictures, SVGs and sprite sheets all leave it out.
 
 ## Make one

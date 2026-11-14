@@ -56,7 +56,7 @@ export function splitAlias(id: Id): { orig: Id; vid: Id } | null {
 export const framingLayerId = (vid: Id): Id => `frame-${vid}`;
 
 /** The parts of an artboard's content a variation can change as a whole (layers are done item by item). */
-export const STAGE_KEYS = ['width', 'height', 'background', 'length', 'clips', 'markers', 'flow', 'guides', 'inOut', 'perspective'] as const;
+export const STAGE_KEYS = ['width', 'height', 'background', 'length', 'fps', 'clips', 'markers', 'flow', 'guides', 'inOut', 'perspective'] as const;
 
 export const isVariation = (a: Artboard | undefined): boolean => !!a?.variationOf;
 
@@ -308,7 +308,8 @@ export interface IncrementalDiff {
  */
 export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, cur: ArtboardContent, curDrawings: Record<Id, Drawing>, vid: Id, inc?: IncrementalDiff, pal?: PaletteOverride): VariationOverrides {
   const out: VariationOverrides = {};
-  const stage = diffPatch(pick(base), pick(cur));
+  // An original that never said its rate (a file from before each artboard had one) is at the one the variation has.
+  const stage = diffPatch(pick(base, cur.fps), pick(cur));
   if (stage) out.stage = stage;
   const layers = diffList<Layer, ListOverride<Cel>>(base.layers, cur.layers, { item: (b, c) => diffLayer(b, c, vid), mapAdded: (l) => unaliasLayer(l, vid) });
   if (layers) out.layers = layers;
@@ -344,9 +345,10 @@ export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Draw
   return out;
 }
 
-function pick(c: ArtboardContent): Record<string, unknown> {
+function pick(c: ArtboardContent, fpsIfMissing?: number): Record<string, unknown> {
   const o: Record<string, unknown> = {};
   for (const k of STAGE_KEYS) if (c[k] !== undefined) o[k] = c[k];
+  if (o.fps === undefined && fpsIfMissing !== undefined) o.fps = fpsIfMissing;
   return o;
 }
 
@@ -585,7 +587,7 @@ function baseOf(doc: Doc, src: Artboard): ArtboardContent | undefined {
   return src.id === activeId(doc) ? takeContent(doc) : src.content;
 }
 
-const CONTENT_KEYS = new Set<string>(['width', 'height', 'background', 'length', 'layers', 'clips', 'markers', 'flow', 'audio', 'guides', 'inOut', 'perspective']);
+const CONTENT_KEYS = new Set<string>(['width', 'height', 'background', 'length', 'fps', 'layers', 'clips', 'markers', 'flow', 'audio', 'guides', 'inOut', 'perspective']);
 
 /** What a change touched, read from its patches. Anything not clearly small counts as everything (`full`). */
 export interface Touch {
@@ -1389,7 +1391,7 @@ const LAYER_WORDS: Record<string, string> = {
 
 const CEL_WORDS: Record<string, string> = { start: 'moved', length: 'held for a different time', tween: 'in-between', drawingId: 'drawing', autoHold: 'hold' };
 
-const STAGE_WORDS: Record<string, string> = { background: 'Background colour', clips: 'Clips', markers: 'Markers', flow: 'Clip flow', guides: 'Guides', inOut: 'In and out points', perspective: 'Perspective guides', length: 'Length' };
+const STAGE_WORDS: Record<string, string> = { background: 'Background colour', clips: 'Clips', markers: 'Markers', flow: 'Clip flow', guides: 'Guides', inOut: 'In and out points', perspective: 'Perspective guides', length: 'Length', fps: 'Speed (frames per second)' };
 
 const COLOUR_KEYS = new Set(['fill', 'color', 'stroke', 'gradient', 'strokeColor', 'strokeGradient', 'fillGradient', 'palette']);
 

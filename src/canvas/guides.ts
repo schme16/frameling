@@ -33,7 +33,7 @@ export const getGuideDrag = (): GuideDrag | null => drag;
 
 export function startGuideDrag(axis: 'x' | 'y', existing?: Guide): boolean {
   if (getViewSettings().lockGuides) {
-    hint('Guides are locked. Unlock them from View > Lock guides.');
+    hint('Guides are locked. Unlock them from View > Guides, grids and perspective > Lock guides.');
     return false;
   }
   if (!getViewSettings().guides) setViewSettings({ guides: true });

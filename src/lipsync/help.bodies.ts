@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## What you need
 
-1. **A mouth**: a symbol with a named frame for each mouth below. **File > New** and the **Lip sync mouth chart** card gives you a face with ten ready-made ones.
+1. **A mouth**: a symbol with a named frame for each mouth below. **File > New drawing...** and the **Lip sync mouth chart** card gives you a face with ten ready-made ones.
 2. **A sound**, lined up where the talking starts. See [Sound](help:sound).
 
 ## The mouth chart (phoneme chart)

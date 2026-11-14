@@ -18,7 +18,7 @@ import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/cho
 import type { TidyEndChoice } from './choices';
 import './choices';
 
-export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change';
+export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol';
 export interface Outcome {
   ok: boolean;
   reason?: Reason;
@@ -32,6 +32,7 @@ const WHY: Record<Reason, string> = {
   'nothing-here': 'There is no drawing on this frame. Press N to start one.',
   'last-layer': 'You need at least one layer, so this one has to stay.',
   'no-change': 'Nothing to change there.',
+  'in-symbol': 'Markers and clips belong to the main scene. Go back out of the symbol first.',
 };
 
 /** A friendly sentence for why an op did nothing. */
@@ -329,43 +330,57 @@ export function setDocLength(length: number): Outcome {
   return simple('Change animation length', (d) => core.setDocLength(d, length), { coalesce: 'doc-length' });
 }
 
+/** Markers and clips are the scene's: inside a symbol they would land on the scene at the symbol's frame numbers. */
+const inSymbol = (): boolean => !!store().get().doc.editing?.length;
+
 export function addClip(a: number, b: number, name?: string): Outcome {
+  if (inSymbol()) return no('in-symbol');
   let id = '';
   store().update('Add clip', (d) => void (id = core.addClip(d, a, b, name)));
   return ok(id);
 }
 export function renameClip(id: Id, name: string): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Rename clip', (d) => core.renameClip(d, id, name));
 }
 export function setClipRange(id: Id, a: number, b: number): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Change clip frames', (d) => core.setClipRange(d, id, a, b));
 }
 export function setClipLoop(id: Id, loop: boolean): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple(loop ? 'Make clip loop' : 'Make clip play once', (d) => core.setClipLoop(d, id, loop));
 }
 export function setClipDirection(id: Id, direction: ClipDirection): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Change how a clip plays', (d) => core.setClipDirection(d, id, direction));
 }
 export function setClipRepeat(id: Id, repeat: 'forever' | number): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Change how often a clip plays', (d) => core.setClipRepeat(d, id, repeat));
 }
 export function removeClip(id: Id): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Delete clip', (d) => core.removeClip(d, id));
 }
 
 export function addMarker(frame?: number, name?: string): Outcome {
+  if (inSymbol()) return no('in-symbol');
   let id = '';
   const f = frame ?? store().get().ui.frame;
   store().update('Add marker', (d) => void (id = core.addMarker(d, f, name)));
   return ok(id);
 }
 export function renameMarker(id: Id, name: string): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Rename marker', (d) => core.renameMarker(d, id, name));
 }
 export function moveMarker(id: Id, frame: number): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Move marker', (d) => core.moveMarker(d, id, frame));
 }
 export function removeMarker(id: Id): Outcome {
+  if (inSymbol()) return no('in-symbol');
   return simple('Delete marker', (d) => core.removeMarker(d, id));
 }
 

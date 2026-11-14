@@ -172,6 +172,20 @@ const entries = [
     steps: [L.js(`__framelingArtboards.load('shots')`), L.wait(400), L.js(`__framelingArtboards.player()`), L.wait(1500), { click: [704, 622], after: 700 }, { shot: '@', el: '[role=dialog]', pad: 0 }],
   },
   {
+    // Three sprites at 6, 12 and 24 fps: the panel names each board's speed, and the Speed box is under the list.
+    name: 'artboards-speed',
+    steps: [
+      L.js(`__framelingArtboards.load('speeds')`),
+      L.wait(400),
+      L.panel('artboards'),
+      L.cmd('artboards.fitAll'),
+      L.wait(1200),
+      L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 0)`),
+      L.wait(400),
+      { shot: '@', crop: [60, 44, 1220, 716] },
+    ],
+  },
+  {
     name: 'artboards-letterbox',
     steps: [L.js(`__framelingArtboards.load('mixed')`), L.wait(400), L.js(`__framelingArtboards.player()`), L.wait(1500), { click: [704, 622], after: 700 }, { shot: '@', el: '[role=dialog]', pad: 12 }],
   },

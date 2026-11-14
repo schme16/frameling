@@ -15,6 +15,7 @@ import { openShotsPlayer } from './player';
 import { openArtboardExport } from './exportDialog';
 import { VariationBadge, VariationSection } from './VariationPanel';
 import { sourceOf } from './variations';
+import { mixedRates, rateOf } from './rates';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { artPixelOf, artSizeOf } from '../pixel/units';
 import '../symbols/symbols.css';
@@ -78,6 +79,8 @@ export function ArtboardsPanel() {
   const list = artboardsOf(doc);
   const open = activeId(doc);
   const many = hasArtboards(doc);
+  // The speed shows on each row only once they differ: a file where every artboard is at 12 fps says nothing.
+  const mixed = many && mixedRates(doc);
   return (
     <div className="cv-panel cv-options ab-panel" data-help="artboards">
       {!many && <Tip>Every artboard shares your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>}
@@ -134,6 +137,7 @@ export function ArtboardsPanel() {
                     {w} x {h}
                     {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
                   </span>
+                  {mixed && <span className="ab-rate">{rateOf(doc, a.id)} fps</span>}
                 </span>
               </div>
               <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>

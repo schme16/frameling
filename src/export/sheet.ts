@@ -299,6 +299,8 @@ export interface AtlasInput {
   cellOfFrame: number[];
   animations: Animation[];
   fps: number;
+  /** A rate for each cell, when the frames come from artboards that play at different speeds (missing = `fps` for all). Sets each frame's `duration`. */
+  cellFps?: number[];
   scale: number;
   frameCount: number;
   /** A name per cell. With names, each frame also gets a `filename`. */
@@ -324,12 +326,12 @@ const extras = (a: Animation): { direction?: ClipDirection; repeat?: number } =>
 /** A generic atlas any engine or script can read: where each frame is on the picture, and how the animations use them. */
 export function buildAtlas(a: AtlasInput) {
   const meta = { app: 'Frameling', format: 'frameling-atlas', version: 1, image: a.image, size: { w: a.layout.width, h: a.layout.height }, scale: a.scale, fps: a.fps, frameCount: a.frameCount };
-  const duration = (c: Cell) => Math.round((c.held * 1000) / a.fps);
+  const duration = (c: Cell, i: number) => Math.round((c.held * 1000) / (a.cellFps?.[i] ?? a.fps));
   if (a.style === 'hash' && a.names) {
     const names = a.names;
     return {
       meta,
-      frames: Object.fromEntries(a.cells.map((c, i) => [names[i], { ...atlasFrame(c, a.layout.positions[i]), duration: duration(c) }])),
+      frames: Object.fromEntries(a.cells.map((c, i) => [names[i], { ...atlasFrame(c, a.layout.positions[i]), duration: duration(c, i) }])),
       animations: Object.fromEntries(a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, ...extras(an), frames: an.frames.map((f) => names[a.cellOfFrame[f]]) }])),
     };
   }
@@ -339,7 +341,7 @@ export function buildAtlas(a: AtlasInput) {
       index: i,
       ...(a.names ? { filename: a.names[i] } : {}),
       ...atlasFrame(c, a.layout.positions[i]),
-      duration: duration(c),
+      duration: duration(c, i),
     })),
     animations: Object.fromEntries(
       a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, ...extras(an), frames: an.frames.map((f) => a.cellOfFrame[f]) }]),

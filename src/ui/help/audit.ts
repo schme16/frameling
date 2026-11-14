@@ -6,6 +6,7 @@ import { helpBody, type Command, type HelpTopic, type PanelDef, type Tool } from
 import { normaliseCombo } from '../keys';
 import { mediaFiles } from './media';
 import { slug } from './markdown';
+import { menuPathDrift, type MenuNode } from './menuPaths';
 
 export interface HelpAuditInput {
   topics: HelpTopic[];
@@ -22,6 +23,8 @@ export interface HelpAuditInput {
   hiddenTopics?: HelpTopic[];
   /** Topics kept out of sight for good (a hidden feature's): their pictures count as used, but a link to one is a broken link. */
   keptOut?: HelpTopic[];
+  /** The menus as the bar shows them. Given, every **Menu > Item** path a topic names is held against them. */
+  menus?: MenuNode[];
 }
 
 export interface HelpAudit {
@@ -39,6 +42,8 @@ export interface HelpAudit {
   shortcutDrift: string[];
   /** `where -> help:target` for links to a topic or heading that doesn't exist. */
   brokenLinks: string[];
+  /** `topic: path (what is wrong)` for a **Menu > Item** path a body names that the menus don't have. */
+  menuPathDrift: string[];
 }
 
 const wordCount = (md: string) => md.replace(/```[\s\S]*?```/g, '').split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).length;
@@ -111,6 +116,8 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
     }
   }
 
+  const menuDrift = input.menus ? topics.flatMap((t) => menuPathDrift(t.id, helpBody(t), input.menus!)) : [];
+
   return {
     commandsWithoutHelp: commands.filter((c) => !c.help).map((c) => c.id).sort(),
     topicsWithoutMedia: topics.filter((t) => !t.media).map((t) => t.id).sort(),
@@ -119,6 +126,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
     longTopics: topics.map((t) => [t.id, wordCount(helpBody(t))] as const).filter(([, n]) => n > maxWords).map(([id, n]) => `${id} (${n} words)`),
     shortcutDrift,
     brokenLinks,
+    menuPathDrift: menuDrift,
   };
 }
 

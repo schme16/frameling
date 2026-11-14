@@ -89,7 +89,7 @@ With a tile tool on a tilemap layer, hold **Alt** (or keep the tile size form op
 - The Godot and Tiled exports use the same start, so the level lines up in the game too.
 
 Related: [Tiles and the Tileset panel](help:tileset), [Tilemap layers](help:tilemaps).`,
-  'export-tileset': `**File > Export tileset...** saves your tiles as one picture, with files that tell a game engine where each tile is.
+  'export-tileset': `**File > Export > Export tileset...** saves your tiles as one picture, with files that tell a game engine where each tile is.
 
 ## Godot 4
 

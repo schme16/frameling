@@ -1,6 +1,6 @@
 // The words of the help topics in workspace-help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-workspace': `Pick **View > Workspaces > Pixel**. The first time pixel art meets the Draw workspace (a new pixel art file, or one you open), or a drawing opens in Pixel, Frameling asks: **Switch workspaces to match the kind of drawing?** Say **Always** and Pixel opens for pixel art and Draw for drawings, by themselves, from then on. **Not now** asks again next time, and **Never** leaves your layout alone. The Animate workspace and ones you made yourself are never switched. Change your answer any time in Preferences, under Behaviour. A new pixel art file starts on the Pencil.
+  'pixel-workspace': `Pick **View > Pixel workspace**. The first time pixel art meets the Draw workspace (a new pixel art file, or one you open), or a drawing opens in Pixel, Frameling asks: **Switch workspaces to match the kind of drawing?** Say **Always** and Pixel opens for pixel art and Draw for drawings, by themselves, from then on. **Not now** asks again next time, and **Never** leaves your layout alone. The Animate workspace and ones you made yourself are never switched. Change your answer any time in Preferences, under Behaviour. A new pixel art file starts on the Pencil.
 
 What changes:
 

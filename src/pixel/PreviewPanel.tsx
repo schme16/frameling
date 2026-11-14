@@ -74,7 +74,8 @@ export function PreviewPanel() {
   const artW = Math.max(1, Math.round(box0.w * base));
   const artH = Math.max(1, Math.round(box0.h * base));
   const source = kind === 'boards' ? root : sdoc;
-  const fps = root.fps;
+  // Frames on boards play at the document's speed; a sprite plays at the speed of its own artboard.
+  const fps = kind === 'boards' ? root.fps : sdoc.fps;
   const scale = previewScale(settings.zoom, artW, artH, boxSize.w - 16, boxSize.h - 16);
   const showQuill = quillOn && settings.quillForScale && quillFits(scale, artW, artH, boxSize.w, boxSize.h);
 

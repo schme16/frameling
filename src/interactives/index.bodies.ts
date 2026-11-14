@@ -13,7 +13,7 @@ The first time you save, Frameling asks whether to **just update the Interactive
 
 ## Turn the updating off
 
-**File > Update the Interactives file when saving** is ticked for drawings that came from a .flplay. Untick it to work on a copy without touching the Interactives file; Frameling remembers this for each drawing. **File > Update the Interactives file now** puts the changes in without saving anything else.
+**File > Export > Update the Interactives file when saving** is ticked for drawings that came from a .flplay. Untick it to work on a copy without touching the Interactives file; Frameling remembers this for each drawing. **Update the Interactives file now** (press **Ctrl+K** and type it) puts the changes in without saving anything else.
 
 ## If there's nothing to edit
 

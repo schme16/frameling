@@ -97,6 +97,11 @@ same in any test or script that reads `helpBody()` or runs `searchHelp`). Fails 
 - a file in `public/help/` isn't used by any topic (a video's poster counts as used);
 - a `help:` link points at a topic or heading that doesn't exist;
 - a topic names a shortcut no command has any more (keys from `KEYMAP_SETS` and a few browser keys are allowed);
+- a **Menu > Item** path in a topic's words isn't in the menus (the bar's own titles, submenus and **Preferences > Page >
+  Row** all count; `Window` and the panel row's `⋯` button are left alone). `test/ui/menu-paths.test.ts` runs the same check over
+  every topic, including hidden Interactives ones, and over every other string in `src/` (tips, quests, hints), with
+  Interactives on. Write a path in bold with ` > ` between the parts, spelled as the menu says it (a trailing `...` and a
+  bracketed aside are optional). The failure says where the thing moved to. Logic: `src/ui/help/menuPaths.ts`;
 - a topic is over 500 words (over 400 is listed in the report).
 
 `help-words.test.ts` checks the plain words people type ("rubber", "lost my work") bring up the right topic in the

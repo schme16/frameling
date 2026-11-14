@@ -847,6 +847,12 @@
   flex-direction: column;
   gap: 10px;
 }
+.cv-recolour-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .cv-recolour-pick,
 .cv-recolour-field {
   display: flex;

@@ -40,7 +40,7 @@ import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
 
-const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
+export const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'general', label: 'General', icon: 'settings', help: 'look-and-feel' },
   { id: 'themes', label: 'Themes', icon: 'palette', help: 'themes' },
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },

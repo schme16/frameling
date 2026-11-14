@@ -566,7 +566,8 @@
 }
 
 .tl-marks,
-.tl-clips {
+.tl-clips,
+.tl-scene-only {
   position: relative;
   border-bottom: 1px solid var(--line-soft);
 }
