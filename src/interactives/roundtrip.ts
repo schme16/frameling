@@ -20,6 +20,7 @@ const saveTarget: ChoiceDef<'flplay' | 'both'> = {
   category: 'Files',
   help: 'edit-in-frameling',
   default: 'flplay',
+  mustAsk: true,
   options: [
     { value: 'flplay', label: 'Just update the Interactives file', detail: 'One file to look after. Interactives picks up the changes next time it loads.' },
     { value: 'both', label: 'Also keep a .frameling file', detail: 'Asks where to save a .frameling the first time, then updates both.' },

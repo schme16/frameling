@@ -121,8 +121,8 @@ A new drawing stays on screen until your next one, so there are no blank gaps. S
 
 ## Adding and removing time
 
-- **Add a frame (=)** holds the drawing one frame longer, and everything after it moves later.
-- **Remove a frame (-)** does the opposite.
+- **Add a frame (=)** holds the drawing one frame longer, and everything after it moves later. A message says what it did, with a **Change** button.
+- **Remove a frame (-)** does the opposite. With several layers it asks first whether to take the frame off every layer or just this one, since that can take drawings with it.
 - Drag the **right edge of a block** to hold it for longer or shorter, or drag the block to move it. If it lands on another drawing, that drawing is nudged out of the way (hold **Alt** while you let go to cover it instead).
 
 ## Moving between keys
@@ -134,12 +134,12 @@ If a layer is locked its frames can't be changed. Click the padlock to unlock it
 
 ## The first time it happens
 
-Frameling asks: **Take the empty frames off the end?**
+Frameling takes them off for you, and a little message at the bottom says so: **Took the empty frames off the end.** Press **Change** on it if you'd rather keep the length you have. Frameling puts the frames back and asks which you want from now on.
 
-- **Take them off** (the one it starts on): the animation ends where its last drawing, marker or clip ends. From then on it happens by itself, in the same step as your edit, so one **Undo** puts it all back.
+- **Take them off** (what it does to start with): the animation ends where its last drawing, marker or clip ends. From then on it happens by itself, in the same step as your edit, so one **Undo** puts it all back.
 - **Keep the length I have:** nothing changes. The empty frames wait on the end.
 
-Your answer is remembered. Change it any time in **Preferences > Behaviour**, under **Empty frames at the end**.
+Whichever you pick is remembered. Change it any time in **Preferences > Behaviour**, under **Empty frames at the end**.
 
 ## Do it yourself
 
@@ -156,7 +156,7 @@ The end never moves past the furthest of these, so nothing gets lost:
 
 Each artboard keeps its own length, so tidying one never changes another.
 
-Good to know: opening a file never shortens it. Only an edit that leaves empty frames on the end asks, such as dragging a hold shorter, removing a frame, deleting a drawing or deleting a layer. Setting the length yourself always does exactly what you typed.
+Good to know: opening a file never shortens it. Only an edit that leaves empty frames on the end does it, such as dragging a hold shorter, removing a frame, deleting a drawing or deleting a layer. Setting the length yourself always does exactly what you typed.
 
 Learn more: [Frames, keys and holds](help:timeline-frames), [The timeline](help:timeline).`,
   'timeline-onion': `Drawing a walk or a bounce is much easier when you can see where the last pose was. **Onion skin** (named after the thin paper animators traced through) shows the neighbouring frames as faint ghosts under your drawing.

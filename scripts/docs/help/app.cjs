@@ -131,11 +131,12 @@ const entries = [
     steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
   },
 
-  // The "Holding a drawing longer" question (the first time a hold is asked for).
+  // Preferences, Behaviour: every choice listed, and the button that switches the questions off.
   {
     name: 'behaviour-choice',
     prefs: CALM,
-    steps: [template('bouncing-ball'), cmd('timeline.hold2'), wait(1200), ...shotOf('.ui-choice', null, 16)],
+    size: [1280, 1000],
+    steps: [template('bouncing-ball'), prefsPage('behaviour'), wait(1500), ...shotOf('.ui-prefs', null, 10)],
   },
   // Quill's offer of a bigger interface on a very dense screen (a pretend 4k panel; the capture screen isn't one).
   {

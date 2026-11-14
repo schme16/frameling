@@ -12,8 +12,8 @@ registerChoice<NewKeyChoice>({
   title: 'New drawing (N)',
   question: 'When you make a new drawing on a frame, should it start blank or as a copy of the drawing that was there?',
   options: [
-    { value: 'blank', label: 'Start blank', detail: 'A clean page. The onion skin shows the last drawing faintly, so you can draw over it like a flipbook.' },
-    { value: 'copy', label: 'Start as a copy', detail: 'Begin with the last drawing and change a little of it. Handy for small movements.' },
+    { value: 'blank', label: 'Start blank', did: 'Started a blank drawing.', detail: 'A clean page. The onion skin shows the last drawing faintly, so you can draw over it like a flipbook.' },
+    { value: 'copy', label: 'Start as a copy', did: 'Started a copy of the drawing.', detail: 'Begin with the last drawing and change a little of it. Handy for small movements.' },
   ],
   default: 'blank',
   category: 'Timeline',
@@ -25,8 +25,8 @@ registerChoice<HoldChoice>({
   title: 'Holding a drawing longer',
   question: 'When you make a drawing stay on screen for more frames, what should happen to the drawings after it?',
   options: [
-    { value: 'push', label: 'Move them later', detail: 'Nothing is lost. The animation gets longer.' },
-    { value: 'cover', label: 'Cover them', detail: 'The animation stays the same length. The drawings after it are shortened or covered.' },
+    { value: 'push', label: 'Move them later', did: 'Moved the drawings after it later.', detail: 'Nothing is lost. The animation gets longer.' },
+    { value: 'cover', label: 'Cover them', did: 'Covered the drawings after it.', detail: 'The animation stays the same length. The drawings after it are shortened or covered.' },
   ],
   default: 'push',
   category: 'Timeline',
@@ -38,8 +38,8 @@ registerChoice<FrameScopeChoice>({
   title: 'Adding or removing a frame',
   question: 'When you add or remove a frame, should it happen on every layer, or only the layer you are on?',
   options: [
-    { value: 'all', label: 'Every layer', detail: 'Like adding a page to the whole flipbook. Layers stay in step. Hold Alt to do just one layer.' },
-    { value: 'layer', label: 'Just this layer', detail: 'Only the selected layer changes. Hold Alt to do every layer.' },
+    { value: 'all', label: 'Every layer', did: 'Added a frame on every layer.', detail: 'Like adding a page to the whole flipbook. Layers stay in step. Hold Alt to do just one layer.' },
+    { value: 'layer', label: 'Just this layer', did: 'Added a frame on this layer only.', detail: 'Only the selected layer changes. Hold Alt to do every layer.' },
   ],
   default: 'all',
   category: 'Timeline',
@@ -72,8 +72,8 @@ registerChoice<TidyEndChoice>({
   title: 'Empty frames at the end',
   question: 'Take the empty frames off the end?',
   options: [
-    { value: 'tidy', label: 'Take them off', detail: 'The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.' },
-    { value: 'keep', label: 'Keep the length I have', detail: 'The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.' },
+    { value: 'tidy', label: 'Take them off', did: 'Took the empty frames off the end.', detail: 'The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.' },
+    { value: 'keep', label: 'Keep the length I have', did: 'Kept the length you have.', detail: 'The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.' },
   ],
   default: 'tidy',
   dismiss: 'keep',
