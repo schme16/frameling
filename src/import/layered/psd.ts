@@ -1,10 +1,13 @@
 // A Photoshop (.psd) reader: the layers of an 8 or 16 bit RGB or grey file, with their names, order, opacity, blend mode,
-// visibility, clipping, groups and layer masks. Text, smart objects, shape layers and the like come in as the pictures they
+// visibility, clipping, groups and layer masks. Text layers come in as real text (psdtext.ts) unless they are warped, vertical,
+// on a path or masked, when they are the picture of their words. Smart objects, shape layers and the like come in as the pictures they
 // show; adjustment layers and layer styles can't, and are counted and said. Pure: bytes in, layers out. Follows Adobe's
 // "Photoshop File Formats Specification" (src/export/psd.ts is the same layout from the writing side).
 import { unzlibSync } from 'fflate';
 import type { BlendMode } from '../../core/format';
-import { LayeredProblem, Leftovers, MAX_CANVAS_PIXELS, MAX_CANVAS_SIDE, namesOf, plural, type GroupNode, type LayeredFile, type LayerNode, type RasterNode } from './model';
+import { LayeredProblem, Leftovers, MAX_CANVAS_PIXELS, MAX_CANVAS_SIDE, namesOf, plural, type GroupNode, type LayeredFile, type LayerNode, type RasterNode, type TextNode } from './model';
+import { pictureReason, textNodeFrom, type TextLoss } from './psdtext';
+import { parseTypeBlock } from './psdtype';
 
 const BLEND: Record<string, BlendMode> = {
   norm: 'normal',
@@ -129,6 +132,8 @@ interface Rec {
   keys: Set<string>;
   mask: MaskInfo | null;
   fillOpacity: number;
+  /** The bytes of a type layer's `TySh` block. */
+  typeData?: Uint8Array;
   data: { id: number; compression: number; bytes: Uint8Array }[];
 }
 
@@ -250,6 +255,7 @@ function readRecord(r: Reader): Rec {
   let section = 0;
   let sectionBlend: string | undefined;
   let fillOpacity = 255;
+  let typeData: Uint8Array | undefined;
   while (r.pos + 12 <= extraEnd) {
     const sig = r.tag();
     if (sig !== '8BIM' && sig !== '8B64') break;
@@ -266,12 +272,13 @@ function readRecord(r: Reader): Rec {
         sectionBlend = r.tag();
       }
     } else if (key === 'iOpa') fillOpacity = r.u8();
+    else if (TEXT.has(key)) typeData = r.bytes(len);
     r.pos = end;
     // Blocks are padded; the next one starts with a signature, so step over padding until one does.
     for (let k = 0; k < 3 && r.pos + 4 <= extraEnd && !(r.b[r.pos] === 0x38 && r.b[r.pos + 1] === 0x42); k++) r.pos++;
   }
   r.pos = extraEnd;
-  return { top, left, bottom, right, chans, blend, opacity, clip: clipping !== 0, hidden: !!(flags & 2), name, section, sectionBlend, keys, mask, fillOpacity, data: [] };
+  return { top, left, bottom, right, chans, blend, opacity, clip: clipping !== 0, hidden: !!(flags & 2), name, section, sectionBlend, keys, mask, fillOpacity, typeData, data: [] };
 }
 
 /** A layer's pixels on the canvas: the part that is inside the picture, with its layer mask applied. */
@@ -366,6 +373,35 @@ function mergedImage(r: Reader, w: number, h: number, channels: number, depth: n
 
 export const isPsd = (b: Uint8Array): boolean => b.length > 26 && b[0] === 0x38 && b[1] === 0x42 && b[2] === 0x50 && b[3] === 0x53;
 
+/** Why a text layer had to stay a picture of its words, as a sentence. */
+function pictureSentence(why: 'warped' | 'vertical' | 'path' | 'masked' | 'unread', n: number, names: string[]): string {
+  const layers = `${plural(n, 'text layer')} (${namesOf(names, n)})`;
+  const pic = n === 1 ? 'a picture' : 'pictures';
+  switch (why) {
+    case 'warped':
+      return `${layers} ${n === 1 ? 'is' : 'are'} warped (bent into a shape), which Frameling text can't be, so ${n === 1 ? 'it' : 'they'} came in as ${pic} of the words.`;
+    case 'vertical':
+      return `${layers} ${n === 1 ? 'runs' : 'run'} top to bottom, which Frameling text can't, so ${n === 1 ? 'it' : 'they'} came in as ${pic} of the words.`;
+    case 'path':
+      return `${layers} ${n === 1 ? 'runs' : 'run'} along a line or shape, which Frameling text can't, so ${n === 1 ? 'it' : 'they'} came in as ${pic} of the words.`;
+    case 'masked':
+      return `${layers} ${n === 1 ? 'has' : 'have'} a layer mask over ${n === 1 ? 'it' : 'them'}, so ${n === 1 ? 'it' : 'they'} came in as ${pic} of the words with the mask applied.`;
+    default:
+      return `${layers} ${n === 1 ? 'has' : 'have'} text settings Frameling couldn't read, so ${n === 1 ? 'it' : 'they'} came in as ${pic} of the words.`;
+  }
+}
+
+/** What a type layer held that a Frameling text shape can't, counted by name. */
+function noteTextLoss(left: Leftovers, loss: TextLoss, name: string): void {
+  const it = (n: number) => (n === 1 ? 'it' : 'they');
+  if (loss.mixed) left.add('text:mixed', (n, names) => `${plural(n, 'text layer')} (${namesOf(names, n)}) mixed more than one font, size or colour in the same words. Frameling text has one style, so ${it(n)} use${n === 1 ? 's' : ''} the style of the longest part throughout.`, name);
+  if (loss.underline) left.add('text:underline', (n, names) => `Underlined words on ${plural(n, 'text layer')} (${namesOf(names, n)}): Frameling text has no underline, so the line is missing.`, name);
+  if (loss.strike) left.add('text:strike', (n, names) => `Struck-through words on ${plural(n, 'text layer')} (${namesOf(names, n)}): Frameling text has no strikethrough, so the line is missing.`, name);
+  if (loss.smallCaps) left.add('text:smallcaps', (n, names) => `Small capitals on ${plural(n, 'text layer')} (${namesOf(names, n)}) came in as ordinary letters.`, name);
+  if (loss.justify) left.add('text:justify', (n, names) => `${plural(n, 'text layer')} (${namesOf(names, n)}) had both edges straight (justified) and came in left aligned.`, name);
+  if (loss.caps) left.add('text:caps', (n, names) => `All capitals on ${plural(n, 'text layer')} (${namesOf(names, n)}): the words were typed out in capitals, so they look the same, but the text itself is now capitals.`, name);
+}
+
 /** Reads a .psd. Throws LayeredProblem in plain words when it can't. */
 export function readPsd(bytes: Uint8Array): LayeredFile {
   if (!isPsd(bytes)) throw new LayeredProblem("That file isn't a Photoshop file: it doesn't start the way .psd files do.");
@@ -455,6 +491,7 @@ export function readPsd(bytes: Uint8Array): LayeredFile {
       const frame = stack.length > 1 ? stack.pop()! : { children: [] };
       const g: GroupNode = { type: 'group', name: rec.name, hidden: rec.hidden, opacity: rec.opacity / 255, blend: blendOf(rec.sectionBlend ?? rec.blend, rec.name), children: frame.children };
       stack[stack.length - 1].children.push(g);
+      if (rec.mask && !rec.mask.disabled && rec.chans.some((c) => c.id === -2)) left.add('foldermask', (n, names) => `A layer mask on ${plural(n, 'folder')} (${namesOf(names, n)}) was not applied: Frameling folders can't hold a mask, so everything inside shows in full.`, rec.name);
       for (const k of rec.keys) if (STYLES.has(k)) left.add('styles', (n, names) => `Layer styles (shadows, glows, strokes and the like) on ${plural(n, 'layer')} (${namesOf(names, n)}).`, rec.name);
       continue;
     }
@@ -473,17 +510,31 @@ export function readPsd(bytes: Uint8Array): LayeredFile {
       left.add('huge', (n, names) => `${plural(n, 'layer')} (${namesOf(names, n)}) far too big to hold.`, rec.name);
       continue;
     }
-    let node: RasterNode | null;
-    try {
-      node = layerPixels(rec, width, height, depth);
-    } catch (e) {
-      if (e instanceof LayeredProblem) throw e;
-      throw new LayeredProblem(`The layer "${rec.name}" can't be read: the file is damaged.`);
+    // A type layer comes in as words when it can; otherwise as the picture of them, and the reason is said.
+    const isText = kind.some((k) => TEXT.has(k));
+    const opacity = (rec.opacity / 255) * (rec.fillOpacity / 255);
+    let node: RasterNode | TextNode | null = null;
+    if (isText) {
+      const t = rec.typeData ? parseTypeBlock(rec.typeData) : null;
+      const masked = !!rec.mask && !rec.mask.disabled;
+      const why = !t ? 'unread' : pictureReason(t) ?? (masked ? 'masked' : null);
+      if (t && !why) {
+        const made = textNodeFrom(t, { name: rec.name, hidden: rec.hidden, opacity, blend: blendOf(rec.blend, rec.name), clip: rec.clip });
+        node = made.node;
+        noteTextLoss(left, made.loss, rec.name);
+      } else left.add(`text:${why}`, (n, names) => pictureSentence(why!, n, names), rec.name);
     }
-    if (!node) node = { type: 'layer', name: rec.name, hidden: rec.hidden, opacity: 1, blend: 'normal', clip: rec.clip, x: 0, y: 0, width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
-    node.opacity = (rec.opacity / 255) * (rec.fillOpacity / 255);
-    node.blend = blendOf(rec.blend, rec.name);
-    if (kind.some((k) => TEXT.has(k))) left.add('text', (n, names) => `${plural(n, 'text layer')} (${namesOf(names, n)}) came in as ${n === 1 ? 'a picture' : 'pictures'} of the words, so the text can't be edited.`, rec.name);
+    if (!node) {
+      try {
+        node = layerPixels(rec, width, height, depth);
+      } catch (e) {
+        if (e instanceof LayeredProblem) throw e;
+        throw new LayeredProblem(`The layer "${rec.name}" can't be read: the file is damaged.`);
+      }
+      if (!node) node = { type: 'layer', name: rec.name, hidden: rec.hidden, opacity: 1, blend: 'normal', clip: rec.clip, x: 0, y: 0, width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
+      node.opacity = opacity;
+      node.blend = blendOf(rec.blend, rec.name);
+    }
     if (kind.some((k) => SMART.has(k))) left.add('smart', (n, names) => `${plural(n, 'smart object')} (${namesOf(names, n)}) came in as ${n === 1 ? 'a picture' : 'pictures'} of what ${n === 1 ? 'it shows' : 'they show'}, not as something you can open and edit.`, rec.name);
     if (kind.some((k) => VECTOR.has(k))) left.add('vector', (n, names) => `${plural(n, 'shape layer')} or vector mask (${namesOf(names, n)}) came in as the pixels ${n === 1 ? 'it draws' : 'they draw'}, not as ${n === 1 ? 'an editable shape' : 'editable shapes'}.`, rec.name);
     if (kind.some((k) => STYLES.has(k))) left.add('styles', (n, names) => `Layer styles (shadows, glows, strokes and the like) on ${plural(n, 'layer')} (${namesOf(names, n)}).`, rec.name);

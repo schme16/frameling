@@ -9,14 +9,15 @@ import { addPieces, centreOn, docFromPieces, STILL_LENGTH } from '../pieces';
 import { pickFiles } from '../pick';
 import { reportImport } from '../report';
 import { hasDrawing, whereToPut, type ImportWhere } from '../where';
-import { layeredPieces, countNodes } from './build';
+import { layeredPieces, countNodes, countText } from './build';
 import { LayeredProblem, plural, type LayeredFile } from './model';
 import { LAYERED_ACCEPT, readLayered } from './read';
 
 /** What came in, in a sentence. Pure. */
 export function layeredHeadline(name: string, where: ImportWhere, file: LayeredFile, cutOff: boolean): string {
   const c = countNodes(file.nodes);
-  const what = `${plural(c.layers, 'layer')}${c.groups ? ` in ${plural(c.groups, 'group')}` : ''}, ${file.width} x ${file.height}`;
+  const words = countText(file.nodes);
+  const what = `${plural(c.layers, 'layer')}${c.groups ? ` in ${plural(c.groups, 'group')}` : ''}${words ? ` (${words} of them text you can edit)` : ''}, ${file.width} x ${file.height}`;
   return `${where === 'add' ? 'Added' : 'Opened'} "${name}": ${what}.${cutOff ? ' It is bigger than the drawing, so the edges were cut off.' : ''}`;
 }
 

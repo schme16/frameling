@@ -32,7 +32,46 @@ export interface GroupNode {
   children: LayerNode[];
 }
 
-export type LayerNode = RasterNode | GroupNode;
+/**
+ * A text layer that came in as words, not a picture. Everything a Frameling text shape holds: one font, size, colour,
+ * spacing and alignment for the whole text, placed by where its first baseline starts.
+ */
+export interface TextNode {
+  type: 'text';
+  name: string;
+  hidden: boolean;
+  opacity: number;
+  blend: BlendMode;
+  clip: boolean;
+  locked?: boolean;
+  /** The words, with `\n` between lines. */
+  text: string;
+  /** The family to draw in (set to the nearest font here when the file's font is not on this computer). */
+  font: string;
+  weight: number;
+  italic: boolean;
+  /** Document pixels. */
+  size: number;
+  color: string;
+  align: 'left' | 'center' | 'right';
+  /** A multiple of the size. */
+  lineHeight: number;
+  /** Document pixels between letters. */
+  letterSpacing: number;
+  /** Where the first baseline starts (for centred or right text, the middle or the right end), in document pixels. */
+  x: number;
+  y: number;
+  /** Degrees. */
+  rotation: number;
+  /** Across stretch relative to the height (1 = none). */
+  scaleX: number;
+  /** The font as the file named it, e.g. "CenturyGothic-Bold" (the family above is the nearest one here when that font is not). */
+  fontFile: string;
+  /** Paragraph text: the width of the box it wraps in, document pixels (the lines are broken to fit when the font is settled). */
+  wrap?: number;
+}
+
+export type LayerNode = RasterNode | GroupNode | TextNode;
 
 export interface LayeredFile {
   format: 'psd' | 'ora';

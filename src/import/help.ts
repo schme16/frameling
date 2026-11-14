@@ -22,7 +22,7 @@ registerHelpTopics([
     media: 'import-layered.png',
     title: 'Opening a Photoshop, Krita or OpenRaster file',
     section: 'Files',
-    summary: 'A layered .psd or .ora file opens with every layer on its own, keeping its name, order, opacity and visibility. What can\'t come across is listed.',
-    keywords: ['import', 'psd', 'photoshop', 'ora', 'openraster', 'krita', 'gimp', 'procreate', 'layers', 'groups', 'blend', 'open', 'kra'],
+    summary: 'A layered .psd or .ora file opens with every layer on its own, and Photoshop text stays text you can edit. What can\'t come across is listed.',
+    keywords: ['import', 'psd', 'photoshop', 'ora', 'openraster', 'krita', 'gimp', 'procreate', 'layers', 'groups', 'blend', 'open', 'kra', 'text', 'font', 'editable'],
   },
 ]);
