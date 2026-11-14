@@ -28,6 +28,7 @@ import '../symbols/symbols.css';
 import { attachPinch } from '../canvas/pinch';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { TimelineSlot } from './slots';
+import { setScrubbing } from '../gpu/settings';
 import { DetailRow, PropRow } from './Detail';
 import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
 import { currentLayout, useLayout } from './view';
@@ -530,6 +531,7 @@ export function TimelineBody() {
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && dragRef.current) {
         dragRef.current = null;
+        setScrubbing(false);
         setGhost(null);
       }
     };
@@ -567,6 +569,7 @@ export function TimelineBody() {
     if (!region) return;
     const capture = (d: Drag) => {
       dragRef.current = d;
+      if (d.kind === 'scrub') setScrubbing(true);
       main.current?.setPointerCapture(e.pointerId);
     };
     if (region === 'ruler') {
@@ -751,6 +754,7 @@ export function TimelineBody() {
     }
     const g = ghost;
     dragRef.current = null;
+    setScrubbing(false);
     const click = clickRef.current;
     clickRef.current = null;
     if (click && Math.abs(e.clientX - click.x) < 3 && Math.abs(e.clientY - click.y) < 3 && !store().get().ui.playing) {
@@ -996,6 +1000,7 @@ export function TimelineBody() {
         onPointerUp={onUp}
         onPointerCancel={() => {
           dragRef.current = null;
+          setScrubbing(false);
           setPanning(false);
           setGhost(null);
         }}

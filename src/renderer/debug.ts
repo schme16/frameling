@@ -36,6 +36,7 @@ import { toast } from '../ui/toast';
 import { recovery } from '../io/recovery';
 import * as lockState from '../ui/lockState';
 import { setViewSettings } from '../canvas/viewSettings';
+import { pretendReport } from '../gpu/report';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
@@ -69,6 +70,8 @@ if (new URLSearchParams(location.search).has('debug')) {
       return !!t;
     },
     tiles,
+    // Pretend what the computer reports about its graphics, for the Performance page's shots: pretendReport(report | null).
+    gpu: { pretend: pretendReport },
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
     // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.

@@ -58,6 +58,17 @@ function invokeStubs(library) {
     'video:finish': () => ({ error: 'No FFmpeg in the test harness.' }),
     'video:cancel': () => undefined,
     'beta:request': () => ({ code: 'ERR_BLOCKED_BY_CLIENT', message: 'No board in the test harness.' }),
+    // The graphics report: a fixed, ordinary one (a card drawing through Vulkan), so pictures of the Performance page are the same every run.
+    'gpu:report': () => ({
+      platform: 'linux', arch: 'x64', electron: '45.0.0', chromium: '140.0.0.0',
+      devices: [{ vendorId: 0x10de, deviceId: 0x2702, active: true, name: 'NVIDIA GeForce RTX 4070', driver: 'NVIDIA 580.65.06' }],
+      glRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070/PCIe/SSE2, OpenGL 4.5.0 NVIDIA 580.65.06)', glVersion: 'OpenGL ES 3.1', glImplementation: '(gl=egl-angle,angle=vulkan)', skia: 'Ganesh',
+      features: { gpu_compositing: 'enabled', '2d_canvas': 'enabled_on', rasterization: 'enabled_on', vulkan: 'enabled_on' },
+      hardwareAcceleration: true, flags: ['--ignore-gpu-blocklist', '--enable-features=Vulkan,DefaultANGLEVulkan'],
+      off: { file: false, env: false, path: '/home/you/.config/Frameling/gpu-off' }, gpuKb: 318 * 1024, appKb: 842 * 1024, vramBytes: 12 * 1024 ** 3,
+    }),
+    'gpu:setHardware': () => ({ ok: true, path: '/home/you/.config/Frameling/gpu-off' }),
+    'gpu:restart': () => undefined,
   };
 }
 

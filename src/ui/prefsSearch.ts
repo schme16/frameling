@@ -36,6 +36,7 @@ export const PAGE_NAMES: Record<PrefsPage, string> = {
   keyboard: 'Keyboard',
   snapping: 'Snapping',
   pen: 'Pen and tablet',
+  performance: 'Performance',
   workspaces: 'Workspaces',
   plugins: 'Plugins',
   features: 'Features',

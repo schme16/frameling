@@ -379,3 +379,42 @@ describe('a clip with a direction and a repeat count', () => {
     expect(pb.upcomingFrames(s.get().doc, 4, 3, true, id)).toEqual([3, 2, 5]);
   });
 });
+
+describe('the frame rate limit in Preferences > Performance', () => {
+  it('shows fewer frames, in time, and lets go of the limit when it is off', async () => {
+    const { setPerf, resetPerf } = await import('../../src/gpu/settings');
+    try {
+      // 24 frames a second, shown at most 12 times a second: every other frame, and the clock still decides which.
+      const m = manual();
+      const s = start(48, 24);
+      setPerf({ fpsCap: 12 });
+      const seen: number[] = [];
+      s.subscribe(() => {
+        const f = s.get().ui.frame;
+        if (seen[seen.length - 1] !== f) seen.push(f);
+      });
+      s.setUi({ playing: true });
+      m.run(1000);
+      // Just under a second in: about 12 new frames went up, and the one on screen is where the clock says it should be.
+      expect(seen.length).toBeGreaterThanOrEqual(10);
+      expect(seen.length).toBeLessThanOrEqual(14);
+      expect(s.get().ui.frame).toBeGreaterThanOrEqual(20);
+      expect(s.get().ui.frame).toBeLessThanOrEqual(24);
+      s.setUi({ playing: false });
+
+      resetPerf();
+      const m2 = manual();
+      const s2 = start(48, 24);
+      const seen2: number[] = [];
+      s2.subscribe(() => {
+        const f = s2.get().ui.frame;
+        if (seen2[seen2.length - 1] !== f) seen2.push(f);
+      });
+      s2.setUi({ playing: true });
+      m2.run(1000);
+      expect(seen2.length).toBeGreaterThanOrEqual(20);
+    } finally {
+      resetPerf();
+    }
+  });
+});

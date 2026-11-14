@@ -118,6 +118,13 @@ const entries = [
     prefs: CALM,
     steps: [template('bouncing-ball'), prefsPage('keyboard'), wait(900), ...shotOf('.ui-prefs', null, 10)],
   },
+  // Preferences, Performance: the card found (the harness gives a fixed ordinary report), and the settings under it.
+  {
+    name: 'performance',
+    prefs: CALM,
+    size: [1280, 1300],
+    steps: [template('bouncing-ball'), prefsPage('performance'), wait(1500), js(`document.querySelector('.ui-prefs').style.height = '1200px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
+  },
   // Preferences, General.
   {
     name: 'preferences',

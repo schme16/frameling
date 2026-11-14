@@ -21,6 +21,7 @@ import { drawLivePixels } from './livePixels';
 import type { Rect } from './view';
 import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
+import { budgetPixels } from '../gpu/settings';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
 import { onionBoards, onionFrames } from './onion';
@@ -81,6 +82,8 @@ const ctxOf = (c: Canvas2) => c.getContext('2d') as CanvasRenderingContext2D | O
 
 // Total bitmap memory we'll hold (in pixels, 4 bytes each), across all layers and frames.
 export const BUDGET_PIXELS = 40_000_000;
+/** What the cache holds to right now: the default above unless Preferences > Performance changed it. */
+const budget = (): number => budgetPixels();
 
 export interface Entry {
   drawing: Drawing;
@@ -253,10 +256,10 @@ export class BitmapCache {
   }
 
   private trim(keep: Entry): void {
-    if (this.total <= BUDGET_PIXELS) return;
+    if (this.total <= budget()) return;
     // Oldest first. Removing while iterating a Set is fine.
     for (const e of this.all) {
-      if (this.total <= BUDGET_PIXELS) break;
+      if (this.total <= budget()) break;
       if (e !== keep) {
         this.remove(e);
         this.evictions++;
@@ -318,7 +321,7 @@ export class FramePainter {
     const whole = rect.w * rect.h;
     // Needs a fair sample (a frame's worth), and never assumes bitmaps smaller than a 40th of the stage.
     const each = entries >= layers ? Math.min(whole, Math.max(whole / 40, pixels / entries)) : whole;
-    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * each))));
+    return Math.max(0, Math.min(48, Math.floor((budget() * 0.5) / (layers * each))));
   }
 
   /**
