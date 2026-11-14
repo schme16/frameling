@@ -13,6 +13,7 @@ import { Modal } from './Modal';
 import { hiddenHelp, setFeatureOn } from '../features/host';
 import { useFeaturesVersion } from '../features/use';
 import { toast } from './toast';
+import { asking } from './ChoiceDialog';
 
 interface Nav {
   topic: string | null;
@@ -221,9 +222,21 @@ export function HelpPanel() {
 
 export function HelpWindow() {
   const h = overlays.use((o) => o.help);
+  // A question sheet stepped aside to let this be read: say so, and offer the way back.
+  const waitingFor = asking.use((p) => p?.def.title ?? null);
   if (!h) return null;
   return (
     <Modal title="Help" size="lg" className="ui-help-modal" onClose={closeHelp} initialFocus=".ui-help-search input">
+      {waitingFor && (
+        <div className="ui-help-waiting" role="status" data-testid="help.waiting">
+          <span>
+            Your question is waiting: <strong>{waitingFor}</strong>. Esc takes you back to it.
+          </span>
+          <button type="button" className="ui-btn" data-testid="help.back-to-question" onClick={closeHelp}>
+            Back to the question
+          </button>
+        </div>
+      )}
       <HelpBrowser key={`${h.topic ?? ''}#${h.anchor ?? ''}?${h.query ?? ''}`} initial={h} />
     </Modal>
   );

@@ -617,6 +617,23 @@ focus moving elsewhere. Every scenario sets up its own state, so any `--only` su
 `--themes` also runs axe's colour contrast rule in every built-in theme. `A11Y_SHOW=1` puts the window on screen
 (the virtual one, under xvfb). `AXE_CORE=<folder>` points at an axe-core install elsewhere.
 
+## The ring round a dialog: scripts/e2e/dialog-ring.cjs
+
+Presses just outside every modal with a real mouse, with "Pressing beside a dialog" set to Close. A press within 24 pixels of a
+dialog's edge (`NEAR_MISS` in `src/ui/backdropClick.ts`) must do nothing; one well clear must close it. The save question
+ignores the dim area, so a far press must leave it open, and the quest cards are not modals at all. It also reports any part of a
+dialog that sticks out past the box the ring is measured from. Walks Preferences, Help, the palette, the welcome and new
+sheets, New pixel art, About, Quill's hello, Export, the settings dialogs, Versions, Recover, the pen check, a choice question,
+the crash offer and the save question.
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dialog-ring.cjs
+```
+
+`DIALOGRING_ONLY=<text>` runs only dialogs whose name starts with it. Exits 1 on any wrong press. The same rule is held in
+vitest by `test/ui/dialog-ring-everywhere.test.tsx`, which also fails if a file other than the two dialog shells builds a dim
+area of its own (it would skip the ring).
+
 ## Words on one line: scripts/e2e/no-wrap.cjs
 
 The rule: a control's words stay on one line. Every `button`, `summary` and `role=tab|radio|switch|checkbox|menuitem|option`

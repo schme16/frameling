@@ -96,7 +96,7 @@ describe('withChoice with a moment to judge', () => {
   });
 });
 
-describe('Use the usual answers for everything', () => {
+describe('Answer all the questions the usual way', () => {
   beforeEach(() => {
     _resetChoicesForTests();
     registerChoice(def('t.a'));
@@ -108,7 +108,7 @@ describe('Use the usual answers for everything', () => {
 
   it('sets each question to its default, and leaves answered, silent and must-ask ones alone', () => {
     setChoice('t.answered', 'b');
-    expect(setUsualAnswers()).toBe(2);
+    expect(setUsualAnswers()).toEqual(['t.a', 't.b']);
     expect(rememberedChoice('t.a')).toBe('a');
     expect(rememberedChoice('t.b')).toBe('b');
     expect(rememberedChoice('t.answered')).toBe('b');
