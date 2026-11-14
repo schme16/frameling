@@ -5,6 +5,7 @@ export const bodies: Record<string, string> = {
 - **Box** (**V**): drag a rectangle (a *marquee*).
 - **Lasso** (**Shift+L**): draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt, click the first point, or press **Enter**, to finish.
 - **Polygon** (**Shift+G**): click each corner, one at a time, then close it: click the first corner again, or press **Enter** wherever you are. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
+- **Magnetic lasso** (**Shift+E**): trace roughly round something and the outline clings to its edge. Click to place a point yourself, **Backspace** takes the last one back, **Enter** closes it. See [Magnetic lasso](help:select-magnetic).
 - **Magic wand** (**W**): click a colour to pick it. **Colour match** lets close colours in too, and turn off **Only touching pixels** to pick that colour everywhere. Shortcut: **W**.
 
 The selected part gets a crawling dashed edge (*marching ants*).
@@ -28,6 +29,21 @@ They all share one selection, so you can start a box, then switch to the lasso a
 - **Reduce to palette** changes only the selected pixels.
 
 **Ctrl+A** selects everything, **Ctrl+Shift+I** inverts (selects everything else), **Escape** lets go. The selection stays put when you change frame, so you can work on the same spot frame after frame.`,
+  'select-magnetic': `Press **Shift+E**, or pick **Magnetic lasso** (the horseshoe magnet) in the toolbar. It is a lasso that reaches for the edge your drawing already has, so cutting a character out of its background does not take a steady hand.
+
+1. **Click** on or near the edge to start.
+2. **Move the pointer** round the shape, roughly. The outline snaps onto the edge close to the pointer, and a dot shows where it has hold. Points drop by themselves as you go.
+3. **Click** wherever you want a point of your own, say at a tricky corner.
+4. **Backspace** takes the last stretch back. **Escape** gives up.
+5. **Close it** by clicking the first point again, or press **Enter** wherever you are.
+
+On a **pixel layer** the edge is exact: it follows the line where one colour meets the next, pixel by pixel, so the outline lands on the sprite and not just near it. Where there is no edge in reach (flat colour all round), it draws a straight line to the pointer.
+
+On a **vector layer** it clings to the outlines of your shapes, so one trace picks up the shapes you went round.
+
+**How strongly it clings** is in the tool options. Light only catches an edge right under the pointer. Strong reaches for one from further off, so a rough trace still lands on the outline. If it grabs the wrong line in a busy drawing, turn it down, or zoom in and click your own points.
+
+Shift adds to the selection and Alt takes away, the same as the other ways to pick. See [Selecting pixels](help:pixel-select).`,
   lasso: `Press **Shift+L**, or pick **Lasso** in the toolbar.
 
 - **Drag round** what you want. When you let go, every shape the lasso touches is selected.
@@ -36,5 +52,7 @@ They all share one selection, so you can start a box, then switch to the lasso a
 
 On a **merge layer** (where shapes join like paint) the lasso cuts out exactly what's inside it, so you can lift out just part of a painted area and move it, recolour it or delete it.
 
-On a pixel layer the lasso picks pixels instead: see [Selecting pixels](help:pixel-select).`,
+On a pixel layer the lasso picks pixels instead: see [Selecting pixels](help:pixel-select).
+
+Want it to cling to the edges of what you are going round? Try the [Magnetic lasso](help:select-magnetic).`,
 };

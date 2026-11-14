@@ -43,7 +43,7 @@ export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
   pixel: [
     { id: 'draw', tools: ['pencil', 'eraser', 'fill', 'eyedropper'] },
     { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'spray'] },
-    { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-wand'] },
+    { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand'] },
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },

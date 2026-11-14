@@ -100,7 +100,7 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
 export const PIXEL_TOOLS = [
   'pencil', 'eraser', 'fill', 'shade', 'dither', 'spray', 'line', 'rect', 'ellipse', 'polygon', 'star',
   // Each way of picking is its own tool (src/select/ways.ts).
-  'pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-wand',
+  'pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand',
   'eyedropper', 'hand', 'zoom',
 ] as const;
 /** Panels the Pixel workspace starts with closed. */

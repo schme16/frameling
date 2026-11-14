@@ -3,6 +3,7 @@
 import { getCommand } from '../core/registry';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
+import { ClingSlider } from './ClingSlider';
 import { maskCount } from './mask';
 import { pixelSelection, usePixelSelectionVersion } from './pixel-state';
 import { setSelectSettings, useSelectSettings, type SelectSettings } from './settings';
@@ -35,9 +36,11 @@ export function PixelSelectOptions() {
       ? 'Click a colour to pick it.'
       : mode === 'polygon'
         ? 'Click each corner, then the first one again (or press Enter) to close it.'
-        : mode === 'lasso'
-          ? 'Draw round what you want.'
-          : 'Drag a box round what you want.';
+        : mode === 'magnetic'
+          ? 'Trace roughly round it and the outline clings to the edge. Click to place a point, Backspace takes one back, Enter closes it.'
+          : mode === 'lasso'
+            ? 'Draw round what you want.'
+            : 'Drag a box round what you want.';
   return (
     <div className="cv-options">
       <Choice<SelectSettings['op']>
@@ -50,6 +53,7 @@ export function PixelSelectOptions() {
         ]}
         onChange={(v) => setSelectSettings({ op: v })}
       />
+      {mode === 'magnetic' && <ClingSlider />}
       {mode === 'wand' && (
         <>
           <Slider label="Colour match" value={tolerance} min={0} max={100} format={(v) => (v === 0 ? 'Exact colour' : `Close colours (${v}%)`)} onChange={(v) => setSelectSettings({ tolerance: v })} hint="How alike a colour has to be to get picked too. Exact picks only the very same colour (tolerance)." />

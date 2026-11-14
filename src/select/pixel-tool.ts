@@ -23,7 +23,8 @@ import {
   pixelSelection,
   setPixelSelection,
 } from './pixel-state';
-import { getSelectSettings } from './settings';
+import { clingReach, getSelectSettings } from './settings';
+import { MagneticTrace, PixelEdges, pixelSource } from './magnetic';
 import { modeOfTool, WAYS } from './ways';
 import { store } from '../core/store';
 import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
@@ -35,7 +36,7 @@ const DRAG_PX = 3;
 
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
-  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean }
+  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace }
   | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
@@ -78,6 +79,10 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     g.cur = e;
     // Back on the first corner closes it, whichever way it was started.
     if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso();
+    if (g.mag) {
+      g.mag.place(e, reachOf(ctx), ctx.zoom);
+      return;
+    }
     g.pts.push({ x: e.x, y: e.y });
     // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
     g.open = !!g.poly;
@@ -109,7 +114,14 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     return;
   }
   if (isFloating()) dropFloating();
-  if (mode === 'polygon') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: true, poly: true };
+  if (mode === 'magnetic') {
+    // The pixels as they are now: the edges to cling to are where their colour changes.
+    const d = activePixelDrawing();
+    const pixels = d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
+    const mag = new MagneticTrace(pixelSource(new PixelEdges(pixels, a.width, a.height), size));
+    mag.begin(e, reachOf(ctx));
+    g = { kind: 'lasso', op, pts: mag.pts, cur: e, size, open: true, poly: true, mag };
+  } else if (mode === 'polygon') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: true, poly: true };
   else if (mode === 'lasso') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: false };
   else g = { kind: 'box', op, start: { x: e.x, y: e.y }, cur: e, size };
 }
@@ -119,7 +131,8 @@ function move(e: ToolPointer, ctx: ToolContext): void {
   if (g.kind === 'box') g.cur = e;
   else if (g.kind === 'lasso') {
     g.cur = e;
-    if (!g.open) lassoPoint(g.pts, e, ctx.zoom);
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
+    else if (!g.open) lassoPoint(g.pts, e, ctx.zoom);
   } else {
     const c = cellOf(e, g.size);
     const dx = c.x - g.startCell.x;
@@ -195,7 +208,7 @@ function finishLasso(): void {
   if (!s || s.kind !== 'lasso') return;
   const a = activePixelGrid();
   if (!a) return;
-  const pts = s.pts.map((p) => ({ x: p.x / s.size, y: p.y / s.size }));
+  const pts = (s.mag ? s.mag.outline() : s.pts).map((p) => ({ x: p.x / s.size, y: p.y / s.size }));
   if (pts.length < 3) {
     if (s.op === 'replace') setPixelSelection(null);
   } else apply(polygonMask(a.width, a.height, pts), s.op);
@@ -219,8 +232,23 @@ export function closeOpenPixelLasso(): boolean {
   return true;
 }
 
-/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. */
-function polygonKey(e: KeyboardEvent): boolean {
+/** How far (document pixels) the magnetic lasso reaches for an edge, from the cling setting. */
+const reachOf = (ctx: ToolContext): number => clingReach(getSelectSettings().cling) / ctx.zoom;
+
+/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
+export function backOpenPixelLasso(ctx?: ToolContext): boolean {
+  if (g?.kind !== 'lasso' || !g.open || !g.poly) return false;
+  if (g.mag) {
+    if (!g.mag.back()) g = null;
+    else if (ctx) g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
+  } else if (g.pts.length > 1) g.pts.pop();
+  else g = null;
+  return true;
+}
+
+/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. Backspace takes a corner back. */
+function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {
+  if (e.key === 'Backspace') return backOpenPixelLasso(ctx);
   if (e.key !== 'Enter' || !pixelLassoIsOpen()) return false;
   return closeOpenPixelLasso();
 }
@@ -232,9 +260,10 @@ function cancel(ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
-function hover(e: ToolPointer): void {
+function hover(e: ToolPointer, ctx: ToolContext): void {
   if (g?.kind === 'lasso' && g.open) {
     g.cur = e;
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
     return setCursor('crosshair');
   }
   const a = activePixelGrid();
@@ -248,7 +277,11 @@ function hover(e: ToolPointer): void {
 
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const ink = cssVar('--grape', '#9b7bff');
-  if (g?.kind === 'lasso') drawLasso(gx, g.pts, g.open ? g.cur : null, ctx.zoom, ink);
+  if (g?.kind === 'lasso') {
+    // The magnetic lasso shows the stretch along the edge it is clinging to, where the others show a straight line.
+    const rubber = g.open ? (g.mag ? (g.mag.target ? g.mag.tail : [g.cur]) : g.cur) : null;
+    drawLasso(gx, g.pts, rubber, ctx.zoom, ink, g.mag?.target);
+  }
   else if (g?.kind === 'box') {
     // The box snaps to whole pixels, so it shows exactly what will be picked.
     const s = g.size;

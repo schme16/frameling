@@ -17,11 +17,13 @@ import {
   hitHandle,
   IDENTITY,
   inflateRect,
+  rectContainsPoint,
   rectFromPoints,
   rectsIntersect,
   rotateMatrixForHandle,
   scaleMatrixForHandle,
   shapeBounds,
+  shapeOutlines,
   shapesBounds,
   topShapeAt,
   transformShape,
@@ -40,6 +42,8 @@ import { activeIsMerge, editShapes, pendingCut, setCut, withGroups } from './mer
 import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox, shapeInsideArea, shapeTouchesArea, type Geom } from '../geometry/merge';
 import { modeOfTool, WAYS } from '../select/ways';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
+import { MagneticTrace, ringSource, type Ring } from '../select/magnetic';
+import { clingReach, getSelectSettings } from '../select/settings';
 import { subPathsToPath2D } from '../core/render';
 import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
 import { lockedLayerAt } from '../canvas/lost';
@@ -76,6 +80,8 @@ interface Gesture {
   open: boolean;
   /** The Polygon way: every side is straight and each click is a corner, until you close it. */
   poly?: boolean;
+  /** The Magnetic way: a polygon whose sides cling to the outlines of the shapes. `lasso` is its fastened points. */
+  mag?: MagneticTrace;
   /** The move, resize or turn as last worked out (with snapping), so drawing it doesn't snap again. */
   m?: Matrix;
 }
@@ -83,6 +89,18 @@ interface Gesture {
 let g: Gesture | null = null;
 
 const selectedIds = (): Id[] => store().get().ui.selection;
+
+/** How far (document pixels) the magnetic lasso reaches for an outline, from the cling setting. */
+const reachOf = (ctx: ToolContext): number => clingReach(getSelectSettings().cling) / ctx.zoom;
+
+/** The outlines of the shapes close to a point, which is all the magnetic lasso has to search. */
+function outlinesNear(shapes: readonly Shape[]): (p: Pt, reach: number) => Ring[] {
+  return (p, reach) => {
+    const out: Ring[] = [];
+    for (const s of shapes) if (rectContainsPoint(inflateRect(shapeBounds(s), reach), p.x, p.y)) out.push(...shapeOutlines(s));
+    return out;
+  };
+}
 
 /** The selected shapes that are really on the active drawing. */
 function selectedOn(d: VectorDrawing): Shape[] {
@@ -155,6 +173,10 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     g.cur = e;
     // Back on the first corner closes it, whichever way it was started.
     if (lassoClosesAt(g.lasso, e, ctx.zoom)) return finishLasso(g);
+    if (g.mag) {
+      g.mag.place(e, reachOf(ctx), ctx.zoom);
+      return;
+    }
     g.lasso.push({ x: e.x, y: e.y });
     // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
     g.open = !!g.poly;
@@ -181,11 +203,14 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       return;
     }
   }
-  if (cut && !e.shift && topShapeAt(cut.lifted, e.x, e.y, HIT_TOL / ctx.zoom)) {
+  // The magnetic lasso starts at an outline, so a click on a shape begins a trace instead of picking the shape up.
+  const picks = modeOfTool(store().get().ui.tool);
+  const magnetic = picks === 'magnetic';
+  if (cut && !e.shift && !magnetic && topShapeAt(cut.lifted, e.x, e.y, HIT_TOL / ctx.zoom)) {
     g = { ...base, mode: 'move', originals: cut.lifted, handle: null };
     return;
   }
-  const hit = topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom);
+  const hit = magnetic ? undefined : topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom);
   if (hit) {
     // Clicking outside a picked part lets go of it and starts afresh.
     if (cut) setCut(null);
@@ -214,10 +239,14 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     if (locked) ctx.hint(`That's on "${locked.name}", which is locked. Unlock it in the timeline to select it.`);
   }
   if (cut) setCut(null);
-  const picks = modeOfTool(store().get().ui.tool);
-  const poly = picks === 'polygon';
-  const lasso = picks === 'lasso' || poly ? [{ x: e.x, y: e.y }] : null;
-  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso, open: poly, poly };
+  const poly = picks === 'polygon' || magnetic;
+  let mag: MagneticTrace | undefined;
+  if (magnetic) {
+    mag = new MagneticTrace(ringSource(outlinesNear(d.shapes)));
+    mag.begin(e, reachOf(ctx));
+  }
+  const lasso = mag ? mag.pts : picks === 'lasso' || poly ? [{ x: e.x, y: e.y }] : null;
+  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso, open: poly, poly, mag };
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -225,7 +254,8 @@ function move(e: ToolPointer, ctx: ToolContext): void {
   g.cur = e;
   if (g.lasso) {
     // The lasso picks when it closes; until then it's just a line.
-    if (!g.open) lassoPoint(g.lasso, e, ctx.zoom);
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
+    else if (!g.open) lassoPoint(g.lasso, e, ctx.zoom);
     return;
   }
   if (g.mode === 'marquee') {
@@ -311,7 +341,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
 /** Closes a lasso and selects what it touches (on a merge layer, cuts out exactly what's inside it). */
 function finishLasso(s: Gesture): void {
   g = null;
-  const pts = s.lasso ?? [];
+  const pts = (s.mag ? s.mag.outline() : s.lasso) ?? [];
   const area = pts.length >= 3 ? polygonGeom(pts) : [];
   if (!area.length) {
     requestOverlay();
@@ -391,6 +421,7 @@ const RESIZE_CURSOR: Record<HandleId, string> = { nw: 'nwse-resize', se: 'nwse-r
 function hover(e: ToolPointer, ctx: ToolContext): void {
   if (g?.open) {
     g.cur = e;
+    if (g.mag) g.mag.move(e, reachOf(ctx), ctx.zoom);
     return setCursor('crosshair');
   }
   const d = vectorDrawing();
@@ -406,7 +437,11 @@ function hover(e: ToolPointer, ctx: ToolContext): void {
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const px = 1 / ctx.zoom;
   const ink = cssVar('--grape', '#9b7bff');
-  if (g?.lasso) drawLasso(gx, g.lasso, g.open ? g.cur : null, ctx.zoom, ink);
+  if (g?.lasso) {
+    // The magnetic lasso shows the stretch along the outline it is clinging to, where the others show a straight line.
+    const rubber = g.open ? (g.mag ? (g.mag.target ? g.mag.tail : [g.cur]) : g.cur) : null;
+    drawLasso(gx, g.lasso, rubber, ctx.zoom, ink, g.mag?.target);
+  }
   const marquee = g?.mode === 'marquee' && !g.lasso ? rectFromPoints(g.start, g.cur) : null;
   if (marquee) {
     gx.save();
@@ -502,8 +537,20 @@ function polygon(gx: CanvasRenderingContext2D, pts: Pt[]): void {
   gx.closePath();
 }
 
-/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. */
-function polygonKey(e: KeyboardEvent): boolean {
+/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
+function backOpenLasso(ctx: ToolContext): boolean {
+  if (!g?.open || !g.poly || !g.lasso) return false;
+  if (g.mag) {
+    if (!g.mag.back()) g = null;
+    else g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
+  } else if (g.lasso.length > 1) g.lasso.pop();
+  else g = null;
+  return true;
+}
+
+/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. Backspace takes a corner back. */
+function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {
+  if (e.key === 'Backspace') return backOpenLasso(ctx);
   if (e.key !== 'Enter' || !g?.open) return false;
   return closeOpenLasso();
 }
