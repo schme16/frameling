@@ -3,3 +3,6 @@ import './commands';
 import './canvas';
 import './help';
 import './hints';
+import './recordTool';
+import './recordCommands';
+import './record-help';

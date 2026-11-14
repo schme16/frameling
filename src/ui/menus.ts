@@ -241,7 +241,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tween: {
     label: 'In-betweens and easing',
-    items: ['tween.make', 'tween.morph', 'tween.remove', '-', 'tween.drawPath', 'tween.pathFromSelection', '-', 'tween.hints', 'tween.hints.clear', '-', 'tween.ease.linear', 'tween.ease.easeIn', 'tween.ease.easeOut', 'tween.ease.easeInOut', 'tween.ease.backIn', 'tween.ease.backOut', 'tween.ease.bounceOut', 'tween.ease.elasticOut'],
+    items: ['tween.make', 'tween.morph', 'tween.remove', '-', 'tween.drawPath', 'tween.pathFromSelection', '-', 'tween.recordMove', 'tween.recordAgain', 'tween.recordPlay', '-', 'tween.hints', 'tween.hints.clear', '-', 'tween.ease.linear', 'tween.ease.easeIn', 'tween.ease.easeOut', 'tween.ease.easeInOut', 'tween.ease.backIn', 'tween.ease.backOut', 'tween.ease.bounceOut', 'tween.ease.elasticOut'],
     prefixes: ['tween.'],
   },
   drawon: {

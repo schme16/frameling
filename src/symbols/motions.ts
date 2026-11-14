@@ -28,7 +28,7 @@ const plain = <T,>(x: T): T => (isDraft(x) ? (current(x as never) as T) : x);
 const end = (c: Cel) => c.start + c.length;
 
 /** Why a motion can't go here, in plain words, or null when it can. */
-export function motionProblem(doc: Doc, w: MotionWhere): string | null {
+export function motionProblem(doc: Doc, w: MotionWhere, opts: { allowTween?: boolean } = {}): string | null {
   const layer = findLayer(doc, w.layerId);
   if (!layer) return 'Add a layer first, then draw something to move.';
   if (layer.locked) return 'This layer is locked. Unlock it in the timeline to animate it.';
@@ -41,12 +41,12 @@ export function motionProblem(doc: Doc, w: MotionWhere): string | null {
   const cel = celAt(layer, w.frame);
   const d = cel ? doc.drawings[cel.drawingId] : undefined;
   if (!cel || d?.kind !== 'vector' || !d.shapes.length) return 'Draw something first (or go to a frame with a drawing), then make it move.';
-  if (cel.tween) return 'This drawing is already moving (it has in-betweens). Pick a frame without them, or remove them first.';
+  if (cel.tween && !(opts.allowTween && w.frame === cel.start)) return 'This drawing is already moving (it has in-betweens). Pick a frame without them, or remove them first.';
   return null;
 }
 
 /** The next drawing after the one at the playhead, on the same layer (where the motion would run into it). */
-function nextStart(layer: Layer, cel: Cel): number {
+export function nextStart(layer: Layer, cel: Cel): number {
   return layer.cels.find((c) => c.start >= end(cel))?.start ?? Infinity;
 }
 
@@ -65,12 +65,25 @@ function instanceSize(doc: Doc, s: InstanceShape): { w: number; h: number } {
   return { w: r.w * Math.abs(s.transform.scaleX), h: r.h * Math.abs(s.transform.scaleY) };
 }
 
+export interface Prepared {
+  layer: Layer;
+  cel: Cel;
+  base: VectorDrawing;
+  /** The instances that move. */
+  targets: Id[];
+  /** Plain shapes (or pixels) were made into a symbol to be moved. */
+  wrapped: boolean;
+  start: number;
+  layerId: Id;
+}
+
 /**
- * Adds the motion. Changes `doc` in place. `room` says what to do when it runs into the next drawing (the default
- * squeezes it in).
+ * Gets the key at the playhead ready to be moved: a pixel key made into a symbol, a hold split so the move starts at
+ * the playhead, a drawing shared with other frames given its own copy, and plain shapes made into a symbol. Changes
+ * `doc` in place.
  */
-export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: MotionRoom = 'squeeze'): MotionOutcome {
-  const why = motionProblem(doc, w);
+export function prepareTargets(doc: Doc, w: MotionWhere, opts: { allowTween?: boolean } = {}): ({ ok: true } & Prepared) | { ok: false; why: string } {
+  const why = motionProblem(doc, w, opts);
   if (why) return { ok: false, why };
   let layer = findLayer(doc, w.layerId)!;
   // Pixel art moves as a symbol: the key becomes one first, on a vector layer in the same place.
@@ -127,6 +140,18 @@ export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: Motion
     }
   }
   if (!targets.length) return { ok: false, why: 'Select something to move first.' };
+  return { ok: true, layer, cel, base, targets, wrapped, start, layerId: w.layerId };
+}
+
+/**
+ * Adds the motion. Changes `doc` in place. `room` says what to do when it runs into the next drawing (the default
+ * squeezes it in).
+ */
+export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: MotionRoom = 'squeeze'): MotionOutcome {
+  const prep = prepareTargets(doc, w);
+  if (!prep.ok) return prep;
+  const { layer, cel, base, targets, wrapped, start } = prep;
+  w = { ...w, layerId: prep.layerId };
 
   // How long, and room for it.
   let frames = motionFrames(id, doc.fps);

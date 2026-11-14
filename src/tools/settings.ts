@@ -38,6 +38,10 @@ export interface ToolSettings {
   starInner: number;
   /** Pencil on vector layers: false draws the hand-drawn outline, true a clean even line you can edit by its points. */
   pencilClean: boolean;
+  /** Record a move: how closely the keys follow the hand (0 loose, 1 a key on every frame), how the move is kept ('keys' or 'path'), and whether a path turns to face along it. */
+  recordDetail: number;
+  recordKeep: string;
+  recordFace: boolean;
   /**
    * The vector brush, the stroke and fill colours, loop playback and the onion skin. They live in the shared UI state
    * while you work, so src/tools/rememberUi.ts copies them here on every change and puts them back at launch. The
@@ -66,6 +70,9 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   starPoints: 5,
   starInner: 45,
   pencilClean: false,
+  recordDetail: 0.5,
+  recordKeep: 'keys',
+  recordFace: false,
   remembered: null,
 };
 
