@@ -120,6 +120,22 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
   exactly the outline the finished stroke gets. It stays well under a millisecond at 2,000 points on a fast CPU and
   about 1.3 ms with the CPU throttled 4x, so it was left alone.
 
+## Big brushes: brushsize.cjs
+
+`brushsize.cjs` draws one stroke per tip and size with real pointer events and reports what each pointer move costs: the
+overlay draw (`overlayDrawMs`), input to drawn (`latency`), the time between frames (`frameDeltaMs`), the time from lift to
+settled and the longest long task. `vector` runs every tip on a big canvas at the old 120 px cap, the top of the slider
+(the longer side plus a tenth) and well past it; `pixel` does the square and round pixel brush on a 2000 x 2000 pixel layer,
+with a hover (no button) measurement of the footprint outline. Point `PERF_RENDERER` at a build of `development` to run the
+before in the same session, then run the branch.
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/brushsize.cjs --only vector --out scripts/perf/results/brushsize-vector.json
+```
+
+`BRUSH_TIPS=chalk,nib`, `BRUSH_VSIZES=120,4400`, `BRUSH_PSIZES=24,2200`, `BRUSH_EVENTS=30` and `BRUSH_CANVAS=4000x3000` narrow it.
+Under xvfb there is no card, so run it with `PERF_SOFTWARE_GL=1` and read the numbers as software drawing.
+
 ## Pen-up cost
 
 `penup.cjs` draws a stroke on a big pixel drawing and times the release (mouse-up to the next task), with `--profile out.cpuprofile` printing the top functions of the release (self and inclusive). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/perf/penup.cjs --size 4096 --laps 6`.

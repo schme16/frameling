@@ -6,6 +6,7 @@
  */
 import type { BrushSettings } from './format';
 import { readTip } from '../geometry/tip';
+import { TYPED_MAX } from '../tools/brushRange';
 import type { OnionSettings, UiState } from './store';
 
 export interface RememberedUi {
@@ -41,7 +42,8 @@ export function brushFrom(raw: unknown, base: BrushSettings): BrushSettings | un
   const tip = 'tip' in r ? readTip(r.tip) : base.tip;
   return {
     ...(tip ? { tip } : {}),
-    size: num(r.size, 1, 400) ?? base.size,
+    // Kept up to the biggest size the number box takes, so a big brush survives a restart.
+    size: num(r.size, 1, TYPED_MAX) ?? base.size,
     thinning: num(r.thinning, -1, 1) ?? base.thinning,
     smoothing: num(r.smoothing, 0, 1) ?? base.smoothing,
     streamline: num(r.streamline, 0, 1) ?? base.streamline,

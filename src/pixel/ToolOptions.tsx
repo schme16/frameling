@@ -11,6 +11,8 @@ import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
 import { PenOptions } from '../tablet/PenOptions';
+import { typedSize } from '../tools/brushRange';
+import { useBrushRange } from '../tools/options/useBrushRange';
 import './pixel.css';
 
 export function useLayerKind(): 'vector' | 'pixel' {
@@ -27,7 +29,8 @@ function PixelPerfectToggle() {
 
 function SizeSlider() {
   const size = useToolSettings((s) => s.pixelBrushSize);
-  return <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />;
+  const range = useBrushRange(true);
+  return <Slider label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />;
 }
 
 export function PixelPencilOptions() {

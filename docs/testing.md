@@ -740,6 +740,18 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
+## Big brushes: scripts/perf/brushsize.cjs and scripts/ab/brush-size.cjs
+
+`scripts/perf/brushsize.cjs` times a stroke per tip at the old 120 px cap, the top of the size slider and past it, on a
+vector canvas and on a big pixel layer (see `scripts/perf/README.md`). `scripts/ab/brush-size.cjs` takes the A/B pictures for
+the brush-size card (a stroke at the old cap beside one at the top of the slider, the Size control at the top of its range, and a
+bigger number typed into the box), both themes; `scripts/ab/brush-size-sheets.py` joins and captions them.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/brush-size.cjs /tmp/bs
+```
+
 ## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
 
 The second window (the picture window, `src/popout/`, `src/main/popout.ts`) needs the real main process (two windows and the

@@ -22,6 +22,7 @@ import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/r
 import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getFullQuest, loadQuests, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
+import { getToolSettings, setToolSettings } from '../tools/settings';
 import { considerScreen } from '../ui/screenSize';
 import * as screenFit from '../ui/screenFit';
 import { crashDialog, crashReport } from '../beta/crashAsk';
@@ -69,6 +70,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     // The paint bucket's options, for its shots and A/Bs.
     fill: { get: getFillOptions, set: setFillOptions },
+    // The tool options (pixel brush size and shape, pencil thickness), for the big brush check (scripts/perf/brushsize.cjs).
+    toolSettings: { get: getToolSettings, set: setToolSettings },
     // Opens a starter template by id (for shots of a known document).
     template: (id: string) => {
       const t = findTemplate(id);

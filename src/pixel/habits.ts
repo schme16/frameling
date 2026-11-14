@@ -5,6 +5,7 @@ import { paletteIndexOf, sizeSettingFor } from './bar';
 import { docPalette } from './palette';
 import { getPixelSettings, setPixelSettings } from './settings';
 import { activePixelLayer } from './tools';
+import { brushRange } from '../tools/brushRange';
 import { ART_ZOOM_PRESETS, zoomForArtPercent } from './units';
 import { zoomTo } from '../canvas/controller';
 import { registerCommands } from '../core/registry';
@@ -31,14 +32,27 @@ export interface SizeStep {
   set: Partial<Sizes>;
 }
 
-/** Bigger (dir 1) or smaller (-1) for the tool in hand. Tools with no size do nothing. */
-export function stepSize(tool: string, sizes: Sizes, dir: 1 | -1): SizeStep | null {
+/**
+ * One step of the size key. The brush counts in ones up to ten, then in tenths of itself, so reaching a brush as big as a
+ * big canvas does not take a thousand presses (and the same key steps back to where it was).
+ */
+export function brushStep(now: number, dir: 1 | -1): number {
+  const base = dir > 0 ? now : now - 1;
+  return Math.max(1, Math.round(base * 0.1));
+}
+
+/**
+ * Bigger (dir 1) or smaller (-1) for the tool in hand. Tools with no size do nothing. `reach` is how far the brush slider
+ * goes on this canvas (see tools/brushRange.ts); the keys stop there, and only the number box goes past it.
+ */
+export function stepSize(tool: string, sizes: Sizes, dir: 1 | -1, reach = MAX_BRUSH): SizeStep | null {
   const which = sizeSettingFor(tool);
   if (!which) return null;
   const key = which as keyof Sizes;
-  const max = key === 'ditherSize' || key === 'spraySize' ? MAX_DITHER : MAX_BRUSH;
+  const max = key === 'ditherSize' || key === 'spraySize' ? MAX_DITHER : key === 'pixelBrushSize' ? reach : MAX_BRUSH;
   const now = sizes[key];
-  const next = Math.min(max, Math.max(1, now + dir));
+  const by = key === 'pixelBrushSize' ? brushStep(now, dir) : 1;
+  const next = now > max && dir > 0 ? now : Math.min(max, Math.max(1, now + dir * by));
   return next === now ? null : { set: { [key]: next } };
 }
 
@@ -62,7 +76,9 @@ function resize(dir: 1 | -1): void {
 
 function stepSizeNow(dir: 1 | -1): SizeStep | null {
   const t = getToolSettings();
-  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize, spraySize: getPixelSettings().spraySize }, dir);
+  const { doc } = store().get();
+  const layer = activePixelLayer();
+  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize, spraySize: getPixelSettings().spraySize }, dir, brushRange(doc.width, doc.height, layer?.pixelSize).max);
 }
 
 const canResize = (dir: 1 | -1) => () => !!activePixelLayer() && !!stepSizeNow(dir);
