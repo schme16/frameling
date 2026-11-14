@@ -638,6 +638,35 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // The quest card finds free room beside what the step points at; drag it, tuck it away, bring it back.
+  {
+    name: 'quest-card',
+    size: [1280, 720],
+    prefs: { firstDrawn: true },
+    steps: [
+      js(`${F}.quests.start('first-animation')`),
+      wait(2200),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 720], every: 100 },
+      wait(1200),
+      clickText('.qb-go', 'Show me'),
+      wait(2600),
+      clickText('.qb-go', 'Next'),
+      wait(2600),
+      // Step two points at the Copy button in the timeline, and the card keeps off it. Drag the card across.
+      js(`(() => { const h = document.querySelector('.qb-head'); const r = h.getBoundingClientRect(); const x = r.left + 40, y = r.top + 12;
+        h.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y }));
+        let i = 0; const step = () => { i++; window.dispatchEvent(new PointerEvent('pointermove', { clientX: x + i * 26, clientY: y - i * 22 })); if (i < 14) setTimeout(step, 60); else window.dispatchEvent(new PointerEvent('pointerup', { clientX: x + i * 26, clientY: y - i * 22 })); };
+        step(); return true; })()`),
+      wait(2200),
+      // Tuck it away for a moment, then bring it back.
+      js(`document.querySelector('.qb-tuck').click()`),
+      wait(2000),
+      js(`document.querySelector('.qb-tuck').click()`),
+      wait(2400),
+      { rec: 'stop' },
+    ],
+  },
   // Quill's shelves in the Quill tab: the drawings he has been given.
   {
     name: 'quill-things',

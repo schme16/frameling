@@ -60,7 +60,6 @@ function sanitizeRailWidths(raw: unknown): Record<string, number> {
 
 const isHelp = (p: PanelDef) => /help/.test(p.id);
 const isColour = (p: PanelDef) => /colou?r|palette|swatch/.test(p.id);
-const isLayers = (p: PanelDef) => /layer/.test(p.id);
 
 /** Panels in their registered zones, in order, the first one (that isn't help) showing. */
 function layoutFrom(panels: PanelDef[], place: (p: PanelDef) => DockZone, order: (a: PanelDef, b: PanelDef) => number = () => 0): Layout {
@@ -80,10 +79,12 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   // Tall enough for the timeline buttons and two layer rows at the default window size.
   draw.zones.bottom.size = 260;
 
-  // Animate: the timeline gets room, layers lead the right side.
-  const animate = layoutFrom(panels, (p) => p.zone, (a, b) => (isLayers(b) ? 1 : 0) - (isLayers(a) ? 1 : 0));
+  // Animate: the timeline gets room. Its own layer column already lists the layers, so the Layers panel does not lead the
+  // right side here (it would show the same list twice, side by side): the right side starts as in Draw, and Layers is a
+  // tab away for a drawing with a great many layers.
+  const animate = layoutFrom(panels, (p) => p.zone);
   animate.zones.bottom.size = 330;
-  animate.zones.right.size = 280;
+  animate.zones.right.size = 316;
 
   // Pixel: a big palette on the left where it's always in reach, the real-size Preview leading the right, and the
   // panels pixel art never needs tucked away (View > Panels still has them).
@@ -110,7 +111,7 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
 
   return [
     { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw, rail: BUILTIN_RAILS.draw },
-    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with Layers leading the right side.', layout: animate, rail: BUILTIN_RAILS.animate },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. The Layers panel is a tab away for long lists.', layout: animate, rail: BUILTIN_RAILS.animate },
     { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
   ];
 }

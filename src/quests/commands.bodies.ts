@@ -4,13 +4,13 @@ export const bodies: Record<string, string> = {
 
 ## How it works
 
-A small bar appears at the bottom left with what to do next, and a soft gold ring shows you where. [Quill](help:meet-quill) reads each step out in a speech bubble and points while the ring is showing. The dots show how far along you are.
+A small card appears beside what to do next, never over it, and a soft gold ring shows you where ([move it or tuck it away](help:quest-card)). [Quill](help:meet-quill) reads each step out in a speech bubble and points while the ring is showing. The dots show how far along you are.
 
 - **Show me** does the step for you, so you can watch how it is done. You can undo it like anything else.
 - **Skip** moves on without doing the step. **Back** returns to the step before, and waits for you to really do it again.
 - When a step is done, a **Great work** card says what you just did. Press **Next** for the following step.
 - The cross puts the quest down for now. Open the **Quests** panel (or press the command palette and type "quest") and choose **Continue** to carry on from the same step.
-- Wait a while and the bar adds a quiet hint.
+- Wait a while and the card adds a quiet hint.
 
 ## The quests
 
@@ -45,4 +45,24 @@ The first quest opens the others. If you said you're here for game sprites, **Pi
 - Your badges and place are remembered on this computer.
 - With less motion asked for, the badge is a still card instead of confetti. Turn sounds on in Preferences for a soft chime.
 - **Start the quests over** at the bottom of the panel forgets your badges.`,
+  'quest-card': `The quest card is the little box that says what to do next. It tries hard never to be in your way.
+
+## Where it sits
+
+It looks at the thing the step points at and at the page you draw on, and finds the biggest bit of free room close by. It never sits over the thing it is asking you to use, and never over your drawing. If you move a panel or resize the window, it settles into a new spot, quietly, and only when its old one stops working.
+
+## Move it yourself
+
+- **Drag** the card by its top edge to put it wherever you like. It stays there for the rest of the quest. If a later step points at something under it, it steps aside just for that step.
+- With the keyboard, Tab to the top edge and use the **arrow keys** (hold Shift to go further). **Home** lets it choose its own place again.
+- **Double-click** the top edge, or run **Let the quest card find its own place** from the command palette, to hand the choosing back.
+
+## Out of the way for a moment
+
+- The **down arrow** in the card's top corner tucks it into a small bar. The **up arrow** on the bar, or **Alt+Q**, brings it straight back.
+- **Alt+Q** works from anywhere, and it is in the Help menu too, as **Tuck the quest card away, or bring it back**. When the next step starts, the card comes back by itself.
+
+## In a small window
+
+When the window is small, or Interface size is large, there may be no room for the card at all. It then shrinks to a narrower card, and then to the small bar. Press the bar's up arrow and the card opens over the page for a moment, fading while your pointer is near what it covers. Press the down arrow to tuck it again.`,
 };

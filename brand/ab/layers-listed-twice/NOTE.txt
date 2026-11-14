@@ -1,0 +1,3 @@
+The Animate workspace, 1280 x 720, both themes.
+Before: the Layers panel leads the right side, so the same layer list shows twice (the panel and the timeline column).
+After: Layers is a tab, Properties leads like Draw, and the right side is 316 wide (was 280) for Tool options.

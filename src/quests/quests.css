@@ -51,7 +51,9 @@
 .qb {
   position: fixed;
   z-index: 1001;
-  bottom: 42px;
+  /* Where it sits is set from place.ts (inline left, top and width): in free space, never over what it points at. */
+  left: 12px;
+  top: 12px;
   width: min(420px, calc(100vw - 24px));
   display: flex;
   flex-direction: column;
@@ -62,23 +64,39 @@
   border: 1px solid color-mix(in srgb, var(--sunny) 45%, var(--line));
   box-shadow: var(--shadow);
   animation: qb-rise 0.3s var(--ease-bounce);
+  transition:
+    left 0.28s var(--ease),
+    top 0.28s var(--ease),
+    width 0.2s var(--ease),
+    opacity 0.18s var(--ease);
 }
-.qb-bl {
-  left: 12px;
+.qb.is-dragging {
+  transition: none;
+  box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--sunny) 35%, transparent);
 }
-.qb-br {
-  right: 12px;
+/* No room and the card is over something: see through it while the pointer is near what it covers. */
+.qb.is-faded {
+  opacity: 0.3;
 }
-.qb-tl,
-.qb-tr {
-  top: 52px;
-  bottom: auto;
+/* The card put out of the way: a small bar, one press to open it again. */
+.qb.qb-tucked {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 6px 8px;
+  gap: 0;
+  justify-content: center;
 }
-.qb-tl {
-  left: 12px;
+.qb-head {
+  cursor: grab;
+  touch-action: none;
 }
-.qb-tr {
-  right: 12px;
+.qb.is-dragging .qb-head {
+  cursor: grabbing;
+}
+.qb-head:focus-visible {
+  outline: 2px solid var(--focus, var(--sunny));
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 @keyframes qb-rise {
   from {
@@ -115,7 +133,8 @@
   font-size: var(--fs-small);
   white-space: nowrap;
 }
-.qb-x {
+.qb-x,
+.qb-tuck {
   display: grid;
   place-items: center;
   flex: none;
@@ -126,7 +145,8 @@
   background: transparent;
   color: var(--muted);
 }
-.qb-x:hover {
+.qb-x:hover,
+.qb-tuck:hover {
   background: var(--hover-bg);
   color: var(--text);
 }
