@@ -7,7 +7,7 @@ export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'works
 
 export interface Overlays {
   palette: boolean;
-  prefs: { page: PrefsPage; /** Scroll to and highlight this command in the keyboard page. */ commandId?: string } | null;
+  prefs: { page: PrefsPage; /** Scroll to and highlight this command in the keyboard page. */ commandId?: string; /** Light the row with these words when it opens (a result picked in the palette). */ light?: string } | null;
   help: { topic?: string; anchor?: string; query?: string } | null;
   /** `welcome` is the first-run sheet, `new` is the same chooser opened from File > New, `examples` is the same sheet scrolled to the examples. */
   sheet: 'welcome' | 'new' | 'examples' | null;
@@ -29,7 +29,7 @@ export const openPalette = () => patch({ palette: true });
 export const closePalette = () => patch({ palette: false });
 export const togglePalette = () => patch({ palette: !overlays.get().palette });
 
-export const openPrefs = (page: PrefsPage = 'general', commandId?: string) => patch({ prefs: { page, commandId }, palette: false });
+export const openPrefs = (page: PrefsPage = 'general', commandId?: string, light?: string) => patch({ prefs: { page, commandId, light }, palette: false });
 export const closePrefs = () => patch({ prefs: null });
 
 /** Opens the help window on a topic (and a heading inside it), or on the contents when there's no topic. */

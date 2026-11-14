@@ -21,6 +21,9 @@ import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
 import { wordsOf } from './match';
 import { Modal } from './Modal';
+import { PrefsSearch } from './PrefsSearchBox';
+import { lightRow } from './prefsLight';
+import type { PrefRow } from './prefsSearch';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, UI_SCALE_RANGE, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
@@ -53,15 +56,30 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
 export function PrefsModal() {
   const state = overlays.use((o) => o.prefs);
   if (!state) return null;
-  return <Prefs page={state.page} commandId={state.commandId} />;
+  return <Prefs page={state.page} commandId={state.commandId} light={state.light} />;
 }
 
-function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
+function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string; light?: string }) {
   const [current, setCurrent] = useState<Page>(page);
+  const [query, setQuery] = useState('');
+  const [focusCmd, setFocusCmd] = useState<{ id?: string; n: number }>({ id: commandId, n: 0 });
+  const [lit, setLit] = useState<{ words: string; n: number } | null>(light ? { words: light, n: 0 } : null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const active = PAGES.find((p) => p.id === current)!;
+
+  // Pressing a search result goes to its page and lights the row there for a moment.
+  const go = (row: PrefRow) => {
+    setQuery('');
+    setCurrent(row.page);
+    if (row.commandId) setFocusCmd((f) => ({ id: row.commandId, n: f.n + 1 }));
+    else setLit({ words: row.find ?? row.label, n: Date.now() });
+  };
+  useEffect(() => (lit ? lightRow(pageRef.current, lit.words) : undefined), [lit]);
+
   return (
     <Modal title="Preferences" size="lg" className="ui-prefs" onClose={closePrefs}>
-      <div className="ui-prefs-body">
+      <PrefsSearch query={query} onQuery={setQuery} onGo={go} pageIcons={Object.fromEntries(PAGES.map((p) => [p.id, p.icon]))} />
+      <div className={`ui-prefs-body${query.trim() ? ' is-searching' : ''}`}>
         <nav className="ui-prefs-nav" aria-label="Preference pages">
           {PAGES.map((p) => (
             <button key={p.id} type="button" className={`ui-prefs-tab${current === p.id ? ' is-chosen' : ''}`} aria-current={current === p.id ? 'page' : undefined} onClick={() => setCurrent(p.id)}>
@@ -70,11 +88,11 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
             </button>
           ))}
         </nav>
-        <div className="ui-prefs-page" data-help={active.help}>
+        <div className="ui-prefs-page" data-help={active.help} ref={pageRef}>
           {current === 'general' && <GeneralPage onThemes={() => setCurrent('themes')} />}
           {current === 'themes' && <ThemesPage />}
           {current === 'behaviour' && <BehaviourPage />}
-          {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
+          {current === 'keyboard' && <KeyboardPage key={focusCmd.n} focusId={focusCmd.id} />}
           {current === 'snapping' && <SnappingPage />}
           {current === 'pen' && <PenPage />}
           {current === 'diagnostics' && <DiagnosticsPage />}

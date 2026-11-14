@@ -64,6 +64,16 @@ registerCommands([
     run: () => openPrefs('general'),
   },
   {
+    id: 'view.searchSettings',
+    label: 'Search settings...',
+    category: 'View',
+    description: 'Open Preferences with the search box ready: find a setting by what you call it, or what another app does.',
+    help: 'preferences-search',
+    keywords: ['find setting', 'search preferences', 'filter settings', 'where is the setting', 'options'],
+    global: true,
+    run: () => openPrefs('general'),
+  },
+  {
     id: 'view.interfaceSize',
     label: 'Suggest an interface size for this screen',
     category: 'View',

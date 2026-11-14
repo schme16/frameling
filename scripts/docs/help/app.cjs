@@ -124,6 +124,20 @@ const entries = [
     steps: [template('bouncing-ball'), prefsPage('general'), wait(1800), ...shotOf('.ui-prefs', null, 10)],
   },
 
+  // Preferences, the search box in use: "smoothing" is what other apps call the stabilizer.
+  {
+    name: 'preferences-search',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      prefsPage('general'),
+      wait(1500),
+      js(`(() => { const i = document.querySelector('[data-testid="prefs-search"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, 'smoothing'); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
+      wait(600),
+      ...shotOf('.ui-prefs', null, 10),
+    ],
+  },
+
   // Preferences, Features.
   {
     name: 'features',
@@ -152,7 +166,7 @@ const entries = [
   // Preferences, General: the top of the page (mode, theme, look).
   {
     name: 'look-and-feel',
-    steps: [template('bouncing-ball'), prefsPage('general'), wait(1800), ...settle, { shot: '@', crop: [180, 70, 920, 340] }],
+    steps: [template('bouncing-ball'), prefsPage('general'), wait(1800), ...settle, { shot: '@', crop: [180, 176, 920, 446] }],
   },
   // Preferences, Themes: both groups of cards, the mode switch.
   {
