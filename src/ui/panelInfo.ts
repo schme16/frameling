@@ -127,6 +127,12 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'make',
     keywords: ['layer', 'layers', 'vector', 'pixel', 'hide', 'lock', 'reorder', 'folder', 'stack'],
   },
+  'draw-on': {
+    short: 'Draw on',
+    blurb: 'Make a picked line draw itself: Start, End and Offset for how much of it shows, and a one-click Draw it on.',
+    group: 'animate',
+    keywords: ['trim', 'trim path', 'draw on', 'write on', 'reveal', 'progress ring', 'signature', 'line draws itself'],
+  },
   notes: {
     blurb: 'Notes you leave on the canvas, for you or whoever opens the file next. They stay in the file and never come out in an export.',
     group: 'more',

@@ -329,7 +329,12 @@ when comparing two drawings for "same look" (as `id` is ignored).
   0 with round caps is a dot), `arrowStart?` / `arrowEnd?` (`'triangle' | 'open' | 'dot' | 'bar'`, on every open subpath),
   `arrowSize?` (line widths, default 4) and `widths?: {at, w}[]` (width along the line, `at` 0 to 1, `w` times `width`).
   `src/geometry/lineStyle.ts` turns these into plain shapes for the writers; see `test/export/line-style.test.ts` for
-  what each format does with them.
+  what each format does with them. It can also carry `trim?: {start, end, offset, order?}` (a line that draws itself:
+  percents of the line's length; the part between `start` and `end` shows, `offset` slides it, `order` is `'inOrder'`
+  to treat several outlines as one long line, missing = each the same; whole line = missing). A `StrokeShape` takes the
+  same `trim?` on the shape. Cleaned on open by `cleanTrim`. Between two drawing keys joined by a classic tween the trims
+  of the same shape (found by `origin`) blend at the eased progress (`src/core/trimTween.ts`); the timeline shows it as
+  the "Draw on" row (`trim`). See `test/trim/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
 - `Gradient` is `{kind: 'linear' | 'radial', stops: {at, color}[], from, to}` in document pixels, so it moves with
   the shape.

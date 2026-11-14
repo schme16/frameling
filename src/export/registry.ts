@@ -11,7 +11,7 @@ import type { ExportSettings, FormatInfo } from './types';
 import type { Progress, RunContext, RunResult } from './runtime';
 
 /** Things a document can have that not every format can carry. */
-export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha';
+export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha' | 'trim';
 
 /** kept: as itself. shapes: kept, but as outlines or shapes rather than editable text. picture: baked into pictures. out: left out. */
 export type Carry = 'kept' | 'shapes' | 'picture' | 'out';

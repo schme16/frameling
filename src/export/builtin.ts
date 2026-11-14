@@ -113,8 +113,8 @@ const defs: ExporterDef[] = [
     info: { id: 'lottie', title: 'Lottie animation', tag: 'JSON', goodFor: 'Apps and websites: a small vector animation that plays at any size.', icon: 'play', ext: 'json', animated: true, alpha: true },
     carry: {
       help: 'export-lottie',
-      summary: 'Shapes, symbols, tweens, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
-      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept' },
+      summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
+      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept', trim: 'kept' },
       nativeEffects: ['blur', 'shadow'],
     },
     // A clip that plays backward, back and forth or N times is baked in play order with a time remap (nothing is drawn twice).
@@ -133,8 +133,8 @@ const defs: ExporterDef[] = [
     fileKind: () => ({ name: 'Animated SVG' }),
     carry: {
       help: 'export-svg-animated',
-      summary: 'Shapes, symbols, tweens, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
-      rows: { effects: 'kept', bones: 'picture' },
+      summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
+      rows: { effects: 'kept', bones: 'picture', trim: 'kept' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
     ui: () => import('./options/playback').then((m) => ({ After: m.SvgAnimOptions })),

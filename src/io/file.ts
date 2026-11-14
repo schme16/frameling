@@ -27,6 +27,7 @@ import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
 import { cleanStrokeStyle } from '../geometry/lineStyle';
+import { cleanTrim } from '../geometry/trim';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -747,6 +748,12 @@ export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | unde
 
 /** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */
 function cleanLineStyle<T extends Record<string, any>>(s: T): T {
+  if (s.type === 'stroke' && 'trim' in s) {
+    // A brush line's trim (the part of the line that shows): sane numbers, or gone.
+    const { trim, ...rest } = s;
+    const clean = cleanTrim(trim);
+    return (clean ? { ...rest, trim: clean } : rest) as unknown as T;
+  }
   if (s.type !== 'path' || !isObj(s.stroke)) return s;
   return { ...s, stroke: cleanStrokeStyle(s.stroke as PathStroke) };
 }

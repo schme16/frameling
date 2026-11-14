@@ -3,7 +3,7 @@
  * All pure functions on the document types (no DOM), in document pixels unless a name says screen.
  */
 import type { Doc, FillShape, Gradient, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath, Transform2D } from '../core/format';
-import { strokeOutline } from '../core/render';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { mapGradient } from '../core/gradient';
 import { store } from '../core/store';
 import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';

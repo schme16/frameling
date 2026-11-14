@@ -789,6 +789,14 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="5" y="17" width="4" height="2.4" rx="0.5" transform="rotate(40 7 18)" />
     </>
   ),
+  // a line drawing itself: the part drawn so far, then the part still to come, faint
+  'draw-on': (
+    <>
+      <path d="M4 17c3-9 6 3 9-5" />
+      <path d="M13 12c1.5-2.5 3-3.5 7-4.5" opacity="0.35" strokeDasharray="1.5 3" />
+      {dot(13, 12, 1.8)}
+    </>
+  ),
   'pt-dust': (
     <>
       <circle cx="6" cy="8" r="1" fill="currentColor" />

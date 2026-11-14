@@ -15,7 +15,8 @@ import { rigPoseAt } from '../rig/pose';
 import { tidyPose } from '../rig/math';
 import { uid } from '../core/doc';
 import { cloneDrawing, MAX_LENGTH } from './edit-core';
-import { propRef, rowOf, same, type KeyRef, type RowDef } from './tracks';
+import { propRef, rowOf, same, writeTrimOf, type KeyRef, type RowDef } from './tracks';
+import { trimmedBetween, trimOf } from '../core/trimTween';
 
 const end = (c: { start: number; length: number }) => c.start + c.length;
 
@@ -146,7 +147,7 @@ function simulate(layer: Layer, lists: (unknown[] | undefined)[], keys: Snap[], 
  * On a tween the two halves each play their own part of the one easing curve (`Tween.slice`), so the motion of every
  * row over the span is exactly what it was.
  */
-function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
+export function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
   const cel = layer.cels.find((c) => c.start < frame && frame < end(c));
   const d = cel && doc.drawings[cel.drawingId];
   if (!cel || !d) return undefined;
@@ -174,6 +175,9 @@ function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
       if (s.play === 'once') s.firstFrame = Math.min(n - 1, first + local);
       else if (s.play !== 'single') s.firstFrame = (((first + local) % n) + n) % n;
     });
+    // Lines drawing themselves hold how much they had drawn.
+    const ahead = tp && cel.tween && cel.tween.kind !== 'shape' && to?.kind === 'vector' ? trimmedBetween(d, to, tp.t) : null;
+    if (ahead) nd.shapes.forEach((s, i) => writeTrimOf(s, trimOf(ahead.shapes[i])));
     // A bones key holds the pose the glide had reached.
     if (layer.kind === 'vector' && layer.rig) {
       const pose = tidyPose(rigPoseAt(doc, layer, frame));
@@ -201,7 +205,7 @@ function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
 }
 
 /** Makes sure writing to this cel's symbol copies won't change another key sharing its drawing. */
-function ownDrawing(doc: Doc, cel: Cel): void {
+export function ownDrawing(doc: Doc, cel: Cel): void {
   let uses = 0;
   for (const list of allLayerLists(doc)) for (const l of list) for (const c of l.cels) if (c.drawingId === cel.drawingId) uses++;
   const d = doc.drawings[cel.drawingId];

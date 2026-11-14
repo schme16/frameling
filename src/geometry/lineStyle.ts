@@ -12,6 +12,7 @@ import type { Pair, Polygon } from 'polygon-clipping';
 import { evalCubic, type Cubic, type V } from './bezier';
 import { geomToSubPaths } from './boolean';
 import { union, type Geom } from './merge';
+import { cleanTrim, trimActive, trimSubPaths } from './trim';
 
 // ---------------------------------------------------------------- the choices people make
 
@@ -103,7 +104,7 @@ export interface LineStyleChoice {
 const isHead = (v: unknown): v is ArrowHead => typeof v === 'string' && v in ARROW_HEADS;
 
 /** A change to an outline's style: a key set to `undefined` takes that part away. */
-export type StylePatch = Partial<Pick<PathStroke, 'dash' | 'dashOffset' | 'arrowStart' | 'arrowEnd' | 'arrowSize' | 'widths' | 'cap'>>;
+export type StylePatch = Partial<Pick<PathStroke, 'dash' | 'dashOffset' | 'arrowStart' | 'arrowEnd' | 'arrowSize' | 'widths' | 'cap' | 'trim'>>;
 
 /** The change a quick dash choice makes (Dotted also rounds the ends, or the dots would vanish). */
 export function dashPatch(kind: DashKind): StylePatch {
@@ -180,13 +181,16 @@ export function cleanStrokeStyle<T extends Pick<PathStroke, 'width'> & Partial<P
   const w = Array.isArray(st.widths) ? cleanWidths(st.widths) : null;
   if (w) out.widths = w;
   else delete out.widths;
+  const trim = cleanTrim(st.trim);
+  if (trim) out.trim = trim;
+  else delete out.trim;
   return out;
 }
 
 /** Does this outline use anything past a plain width? */
 export function hasLineStyle(st: PathStroke | null | undefined): boolean {
   if (!st || !(st.width > 0)) return false;
-  return !!(dashPx(st) || st.arrowStart || st.arrowEnd || cleanWidths(st.widths));
+  return !!(dashPx(st) || st.arrowStart || st.arrowEnd || cleanWidths(st.widths) || trimActive(st.trim));
 }
 
 /** How far past the line's own width the outline can reach (in document pixels from the path), for working out where ink lands. */
@@ -740,11 +744,30 @@ export function expandStroke(s: PathShape, opts: ExpandOptions = {}): StrokePart
     ];
   }
   const key = `${opts.bakeDashes ? 'b' : ''}${opts.split ? 's' : ''}`;
+  if (trimActive(st.trim)) return trimmedParts(s, st, key, opts);
   let byKey = expandCache.get(s);
   if (!byKey) expandCache.set(s, (byKey = new Map()));
   const hit = byKey.get(key);
   if (hit) return hit;
   const parts = build(s, st, opts);
+  byKey.set(key, parts);
+  return parts;
+}
+
+/**
+ * A shape whose outline is trimmed: the fill as it is (a trim only hides the line), and the line cut down to its window,
+ * which then has its dashes, heads and widths put on like any other line, so an arrow head rides the end as it draws.
+ */
+function trimmedParts(s: PathShape, st: PathStroke, key: string, opts: ExpandOptions): StrokePart[] {
+  let byKey = expandCache.get(s);
+  if (!byKey) expandCache.set(s, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const { trim: _t, ...plain } = st;
+  const cut: PathShape = { ...s, id: `${s.id}~trim`, paths: trimSubPaths(s.paths, st.trim) as SubPath[], fill: null, fillGradient: undefined, stroke: plain };
+  const parts: StrokePart[] = [];
+  if (s.fill) parts.push({ role: 'fill', shape: { ...s, stroke: null, strokeGradient: undefined } });
+  for (const p of expandStroke(cut, { ...opts, split: false })) parts.push({ role: p.role === 'main' ? 'line' : p.role, shape: p.shape });
   byKey.set(key, parts);
   return parts;
 }

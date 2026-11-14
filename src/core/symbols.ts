@@ -19,6 +19,7 @@ import { morphShapes } from './shape-tween';
 import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
 import { withoutNotes } from '../notes/model';
+import { hasTrim, trimmedBetween } from './trimTween';
 
 // ---------------------------------------------------------------- matrices
 
@@ -704,14 +705,21 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     if (m) return m;
   }
   if (!d || d.kind !== 'vector') return d;
-  if (!hasInstances(d)) return hasMoving(d) ? poseMoving(doc, cel, d, frame - cel.start, depth) : d;
+  // Lines that draw themselves: the trims blend between this key and the next, so the shapes are the in-between's.
+  const blended = cel.tween && cel.tween.kind !== 'shape' ? trimBlend(doc, layer, cel, d, frame) : undefined;
+  const src = blended ?? d;
+  if (!hasInstances(src)) {
+    if (!hasMoving(src)) return src;
+    if (!blended) return poseMoving(doc, cel, d, frame - cel.start, depth);
+    return { ...src, id: `${src.id}@moving${frame - cel.start}`, shapes: src.shapes.map((s) => poseMovingShape(doc, s, frame - cel.start, depth)) };
+  }
   if (depth > MAX_DEPTH) return undefined;
 
   const local = frame - cel.start;
   const tp = tweenProgress(layer, cel, frame);
   const to = tp ? doc.drawings[tp.next.drawingId] : undefined;
   const toInst = to?.kind === 'vector' ? to.shapes.filter(isInstance) : [];
-  const fromInst = d.shapes.filter(isInstance);
+  const fromInst = src.shapes.filter(isInstance);
   const pairs = tp ? pairInstances(fromInst, toInst) : [];
 
   // Each instance's own frame, plus the tween position, names this picture.
@@ -720,7 +728,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     const c = symbolContent(doc, s.symbolId);
     frames.push(c ? symbolFrame(s, local, c.length) : -1);
   }
-  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',') + (hasMoving(d) ? `|@${local}` : '');
+  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',') + (hasMoving(src) ? `|@${local}` : '');
   const world = worldOf(doc);
   let byKey = world.cels.get(cel);
   if (!byKey) world.cels.set(cel, (byKey = new Map()));
@@ -728,7 +736,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
   if (hit) return hit;
 
   let n = 0;
-  const shapes: Shape[] = d.shapes.map((s) => {
+  const shapes: Shape[] = src.shapes.map((s) => {
     if (!isInstance(s)) return poseMovingShape(doc, s, local, depth);
     const i = n++;
     const at = tp ? tweenInstance(s, pairs[i], cel.tween!, tp.t) : s;
@@ -740,6 +748,28 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
   // Keep a scrub through a long tween from growing this without end.
   if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
   return out;
+}
+
+/**
+ * The key's drawing with its lines' trims blended toward the next key's, at this frame; undefined when no line changes
+ * (so a plain drawing comes back as itself). Cached by progress, like the other in-betweens.
+ */
+function trimBlend(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: number): VectorDrawing | undefined {
+  const tp = tweenProgress(layer, cel, frame);
+  if (!tp || tp.t === 0) return undefined;
+  const to = doc.drawings[tp.next.drawingId];
+  if (to?.kind !== 'vector' || (!hasTrim(d) && !hasTrim(to))) return undefined;
+  const key = `trim|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}`;
+  const world = worldOf(doc);
+  let byKey = world.cels.get(cel);
+  if (!byKey) world.cels.set(cel, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit.id === d.id ? undefined : (hit as VectorDrawing);
+  const out = trimmedBetween(d, to, tp.t);
+  // A key that blends to nothing new is remembered too, as itself.
+  byKey.set(key, out ? { ...out, id: `${d.id}@${key}` } : d);
+  if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
+  return out ? (byKey.get(key) as VectorDrawing) : undefined;
 }
 
 /** A shape tween's in-between at `frame`, or undefined on the key's own frame (or with no end key to morph to). */

@@ -15,12 +15,13 @@
  * - The camera is a transform on each layer, again a key per frame when it moves.
  * - Blend modes, opacity, effects, clipping, masks and tint come from svg-look.ts, as in the still SVG.
  */
-import type { Cel, Doc, Drawing, InstanceShape, Layer } from '../core/format';
+import type { Cel, Doc, Drawing, InstanceShape, Layer, Shape } from '../core/format';
 import { isInstance, isPosed, poseAt, symbolContent, symbolFrame, type Mat, type PosedInstance } from '../core/symbols';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import { defsBlock, drawingToSvg, esc, inkscapeNs, layerId, n2, n4, paint, posedLayerSvg, shapeToSvg } from './svg';
 import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr } from './svg-look';
+import { nativeTrim, trimSpan } from './trimNative';
 
 export interface AnimatedSvgOptions {
   range?: { start: number; end: number };
@@ -81,6 +82,27 @@ class Writer {
     return name;
   }
 
+  /**
+   * A class that draws a line on by its dash: the line is written at a length of 1000 (pathLength), and each frame says how
+   * much of it shows and where it starts. Blends between frames, like the moves do.
+   */
+  dashing(frames: number[], spans: { from: number; len: number }[], closed: boolean): string {
+    const name = `d${this.n++}`;
+    const val = (sp: { from: number; len: number }) => {
+      const len = Math.round(sp.len * 1e5) / 100;
+      const gap = closed ? Math.round((1000 - len) * 100) / 100 : 3000;
+      return `stroke-dasharray:${len} ${gap};stroke-dashoffset:${Math.round(-sp.from * 1e5) / 100};`;
+    };
+    const keys: string[] = [];
+    frames.forEach((f, i) => {
+      keys.push(`${pct(f, this.count)}{${val(spans[i])}}`);
+      if (i === frames.length - 1) keys.push(`100%{${val(spans[i])}}`);
+      if (i === 0 && f > 0) keys.unshift(`0%{${val(spans[i])}}`);
+    });
+    this.styles.push(`@keyframes ${name}{${keys.join('')}}`, `.${name}{${val(spans[0])}${this.anim(name, 'linear')}}`);
+    return name;
+  }
+
   /** A class moving and fading an element through one matrix and opacity per frame (blending between frames). */
   moving(frames: number[], mats: Mat[], opacities: number[]): { cls: string; still: string } {
     const sameM = mats.every((m) => matStr(m) === matStr(mats[0]));
@@ -100,6 +122,28 @@ class Writer {
     this.styles.push(`@keyframes ${name}{${keys.join('')}}`, `.${name}{${this.anim(name, 'linear')}}`);
     return { cls: name, still: sameM ? still : sameO && opacities[0] < 1 ? ` opacity="${op(opacities[0])}"` : '' };
   }
+}
+
+/**
+ * A line that only draws itself across these frames, as one line with a dash animation (so it stays a single sharp path, not
+ * a picture per frame). False when it changes in any other way, and the caller writes a picture per frame.
+ */
+function trimmedLine(w: Writer, shapes: Shape[], frames: number[], parts: string[]): boolean {
+  const run = nativeTrim(shapes, { dash: false, noFill: false, noOpenSlide: false });
+  if (!run) return false;
+  const closed = run.base.paths[0].closed && run.base.paths[0].points.length > 2;
+  const spans = run.trims.map((t) => trimSpan(t, closed));
+  const shown: number[] = [];
+  const kept: { from: number; len: number }[] = [];
+  spans.forEach((sp, i) => {
+    if (!sp) return;
+    shown.push(frames[i]);
+    kept.push(sp);
+  });
+  if (!shown.length) return true;
+  const svg = shapeToSvg(run.base).replace('<path ', `<path pathLength="1000" class="${w.dashing(shown, kept, closed)}" `);
+  parts.push(`<g${cls(w.shownOn(shown))}>${svg}</g>`);
+  return true;
 }
 
 const cls = (...names: string[]) => {
@@ -154,6 +198,7 @@ function celSvg(w: Writer, doc: Doc, layer: Layer, cel: Cel, frames: number[], d
     if (!isInstance(s0)) {
       const all = drawings.map((d) => (d as unknown as { shapes: unknown[] }).shapes[k]);
       if (all.every((x) => x === s0)) parts.push(shapeToSvg(s0));
+      else if (trimmedLine(w, all as Shape[], frames, parts)) return;
       else drawings.forEach((d, i) => parts.push(`<g${cls(w.shownOn([frames[i]]))}>${shapeToSvg((d as unknown as { shapes: InstanceShape[] }).shapes[k])}</g>`));
       return;
     }
