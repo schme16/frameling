@@ -1,5 +1,6 @@
 // Timeline behaviours people like differently. Asked the first time, then remembered (Preferences > Behaviour).
 import { registerChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
 
 export type NewKeyChoice = 'blank' | 'copy';
 export type HoldChoice = 'push' | 'cover';
@@ -9,11 +10,11 @@ export type TidyEndChoice = 'tidy' | 'keep';
 
 registerChoice<NewKeyChoice>({
   id: 'timeline.newKey',
-  title: 'New drawing (N)',
-  question: 'When you make a new drawing on a frame, should it start blank or as a copy of the drawing that was there?',
+  title: choiceWord('choice.timeline.newKey.title'),
+  question: choiceWord('choice.timeline.newKey.question'),
   options: [
-    { value: 'blank', label: 'Start blank', did: 'Started a blank drawing.', detail: 'A clean page. The onion skin shows the last drawing faintly, so you can draw over it like a flipbook.' },
-    { value: 'copy', label: 'Start as a copy', did: 'Started a copy of the drawing.', detail: 'Begin with the last drawing and change a little of it. Handy for small movements.' },
+    { value: 'blank', label: choiceWord('choice.timeline.newKey.blank.label'), did: choiceWord('choice.timeline.newKey.blank.did'), detail: choiceWord('choice.timeline.newKey.blank.detail') },
+    { value: 'copy', label: choiceWord('choice.timeline.newKey.copy.label'), did: choiceWord('choice.timeline.newKey.copy.did'), detail: choiceWord('choice.timeline.newKey.copy.detail') },
   ],
   default: 'blank',
   category: 'Timeline',
@@ -22,11 +23,11 @@ registerChoice<NewKeyChoice>({
 
 registerChoice<HoldChoice>({
   id: 'timeline.holdLonger',
-  title: 'Holding a drawing longer',
-  question: 'When you make a drawing stay on screen for more frames, what should happen to the drawings after it?',
+  title: choiceWord('choice.timeline.holdLonger.title'),
+  question: choiceWord('choice.timeline.holdLonger.question'),
   options: [
-    { value: 'push', label: 'Move them later', did: 'Moved the drawings after it later.', detail: 'Nothing is lost. The animation gets longer.' },
-    { value: 'cover', label: 'Cover them', did: 'Covered the drawings after it.', detail: 'The animation stays the same length. The drawings after it are shortened or covered.' },
+    { value: 'push', label: choiceWord('choice.timeline.holdLonger.push.label'), did: choiceWord('choice.timeline.holdLonger.push.did'), detail: choiceWord('choice.timeline.holdLonger.push.detail') },
+    { value: 'cover', label: choiceWord('choice.timeline.holdLonger.cover.label'), did: choiceWord('choice.timeline.holdLonger.cover.did'), detail: choiceWord('choice.timeline.holdLonger.cover.detail') },
   ],
   default: 'push',
   category: 'Timeline',
@@ -35,11 +36,11 @@ registerChoice<HoldChoice>({
 
 registerChoice<FrameScopeChoice>({
   id: 'timeline.frameScope',
-  title: 'Adding or removing a frame',
-  question: 'When you add or remove a frame, should it happen on every layer, or only the layer you are on?',
+  title: choiceWord('choice.timeline.frameScope.title'),
+  question: choiceWord('choice.timeline.frameScope.question'),
   options: [
-    { value: 'all', label: 'Every layer', did: 'Added a frame on every layer.', detail: 'Like adding a page to the whole flipbook. Layers stay in step. Hold Alt to do just one layer.' },
-    { value: 'layer', label: 'Just this layer', did: 'Added a frame on this layer only.', detail: 'Only the selected layer changes. Hold Alt to do every layer.' },
+    { value: 'all', label: choiceWord('choice.timeline.frameScope.all.label'), did: choiceWord('choice.timeline.frameScope.all.did'), detail: choiceWord('choice.timeline.frameScope.all.detail') },
+    { value: 'layer', label: choiceWord('choice.timeline.frameScope.layer.label'), did: choiceWord('choice.timeline.frameScope.layer.did'), detail: choiceWord('choice.timeline.frameScope.layer.detail') },
   ],
   default: 'all',
   category: 'Timeline',
@@ -49,11 +50,11 @@ registerChoice<FrameScopeChoice>({
 // A preference, not a question: holding until the next drawing is what nearly everyone expects.
 registerChoice<NewKeyHoldChoice>({
   id: 'timeline.newKeyHold',
-  title: 'How long a new drawing lasts',
-  question: 'When you draw on an empty frame, how long should the new drawing stay on screen?',
+  title: choiceWord('choice.timeline.newKeyHold.title'),
+  question: choiceWord('choice.timeline.newKeyHold.question'),
   options: [
-    { value: 'until-next', label: 'Until the next drawing', detail: 'It stays until your next drawing, or the end, so playing never shows blank gaps. Draw on a later frame to start a new drawing there.' },
-    { value: 'one-frame', label: 'One frame', detail: 'Each drawing is one frame (on ones) until you hold it longer. Empty frames stay empty.' },
+    { value: 'until-next', label: choiceWord('choice.timeline.newKeyHold.until-next.label'), detail: choiceWord('choice.timeline.newKeyHold.until-next.detail') },
+    { value: 'one-frame', label: choiceWord('choice.timeline.newKeyHold.one-frame.label'), detail: choiceWord('choice.timeline.newKeyHold.one-frame.detail') },
   ],
   default: 'until-next',
   category: 'Timeline',
@@ -69,11 +70,11 @@ export const clashFor = (c: HoldChoice): 'push' | 'trim' => (c === 'cover' ? 'tr
 // question should never throw frames away.
 registerChoice<TidyEndChoice>({
   id: 'timeline.tidyEnd',
-  title: 'Empty frames at the end',
-  question: 'Take the empty frames off the end?',
+  title: choiceWord('choice.timeline.tidyEnd.title'),
+  question: choiceWord('choice.timeline.tidyEnd.question'),
   options: [
-    { value: 'tidy', label: 'Take them off', did: 'Took the empty frames off the end.', detail: 'The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.' },
-    { value: 'keep', label: 'Keep the length I have', did: 'Kept the length you have.', detail: 'The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.' },
+    { value: 'tidy', label: choiceWord('choice.timeline.tidyEnd.tidy.label'), did: choiceWord('choice.timeline.tidyEnd.tidy.did'), detail: choiceWord('choice.timeline.tidyEnd.tidy.detail') },
+    { value: 'keep', label: choiceWord('choice.timeline.tidyEnd.keep.label'), did: choiceWord('choice.timeline.tidyEnd.keep.did'), detail: choiceWord('choice.timeline.tidyEnd.keep.detail') },
   ],
   default: 'tidy',
   dismiss: 'keep',
@@ -87,11 +88,11 @@ export type OnionClipsChoice = 'inside' | 'across';
 // animation, so by default it stops there. Told, with a Change button, the first time a clip's edge hides a ghost.
 registerChoice<OnionClipsChoice>({
   id: 'timeline.onionClips',
-  title: 'Onion skin at the end of a clip',
-  question: 'The onion skin is at the edge of a clip. Should it stop there, or carry on into the next clip?',
+  title: choiceWord('choice.timeline.onionClips.title'),
+  question: choiceWord('choice.timeline.onionClips.question'),
   options: [
-    { value: 'inside', label: 'Stop at the edge of the clip', did: 'The onion skin stays inside the clip you are in, so you draw against your own animation.', detail: 'Ghosts never come from the clip next door. Best when each clip is its own animation (idle, run, jump).' },
-    { value: 'across', label: 'Carry on into the next clip', did: 'The onion skin carries on over the edge of a clip into the next one.', detail: 'Handy for one long scene made of clips back to back, where the end of one is the start of the next.' },
+    { value: 'inside', label: choiceWord('choice.timeline.onionClips.inside.label'), did: choiceWord('choice.timeline.onionClips.inside.did'), detail: choiceWord('choice.timeline.onionClips.inside.detail') },
+    { value: 'across', label: choiceWord('choice.timeline.onionClips.across.label'), did: choiceWord('choice.timeline.onionClips.across.did'), detail: choiceWord('choice.timeline.onionClips.across.detail') },
   ],
   default: 'inside',
   category: 'Timeline',

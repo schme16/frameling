@@ -20,6 +20,7 @@ import { activeDrawing, activeLayer, EDIT_HINTS } from './edit';
 import { activeIsMerge, editShapes, selected } from './merge-mode';
 import { activeVectorMirror } from './mirror';
 import { getToolSettings } from './settings';
+import { choiceWord } from '../words/choices';
 
 // ---------------------------------------------------------------- the feel: every number that matters, named
 
@@ -46,11 +47,11 @@ export type TidyChoice = 'on' | 'off';
 
 registerChoice<TidyChoice>({
   id: TIDY_CHOICE,
-  title: 'Hold to tidy',
-  question: 'When you hold the pen still at the end of a brush or pencil line, should it turn into a clean line, circle or box?',
+  title: choiceWord('choice.draw.holdToTidy.title'),
+  question: choiceWord('choice.draw.holdToTidy.question'),
   options: [
-    { value: 'off', label: 'Leave my lines as I drew them', detail: 'Nothing changes. You can still tidy a line any time with Tidy into a shape.', did: 'Left your line as you drew it. Hold to tidy can turn it into a clean line, circle or box.' },
-    { value: 'on', label: 'Tidy them into shapes', detail: 'Hold still for about half a second and a rough circle, box, triangle or straight line becomes a clean one. Undo gives your line back.', did: 'Tidied it into a clean shape.' },
+    { value: 'off', label: choiceWord('choice.draw.holdToTidy.off.label'), detail: choiceWord('choice.draw.holdToTidy.off.detail'), did: choiceWord('choice.draw.holdToTidy.off.did') },
+    { value: 'on', label: choiceWord('choice.draw.holdToTidy.on.label'), detail: choiceWord('choice.draw.holdToTidy.on.detail'), did: choiceWord('choice.draw.holdToTidy.on.did') },
   ],
   default: 'off',
   category: 'Drawing',

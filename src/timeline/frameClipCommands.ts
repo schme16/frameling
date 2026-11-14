@@ -28,16 +28,17 @@ import { deleteKeys } from './keys';
 import { currentLayerId } from './ops';
 import { clearKeys, pickKeys, tl } from './state';
 import { celRef, type KeyRef } from './tracks';
+import { choiceWord } from '../words/choices';
 
 export type PasteOverChoice = 'insert' | 'cover';
 
 registerChoice<PasteOverChoice>({
   id: 'timeline.pasteOver',
-  title: 'Pasting keys onto other keys',
-  question: 'This paste lands on frames that already have drawings. Should they make room, or should the paste cover them?',
+  title: choiceWord('choice.timeline.pasteOver.title'),
+  question: choiceWord('choice.timeline.pasteOver.question'),
   options: [
-    { value: 'insert', label: 'Make room', did: 'Moved the drawings in the way later.', detail: 'Nothing is lost. The drawings in the way move later, and the animation gets longer if it needs to.' },
-    { value: 'cover', label: 'Paste over them', did: 'Covered the drawings in the way.', detail: 'The animation stays the same length. The drawings in the way are shortened or covered (Undo brings them back).' },
+    { value: 'insert', label: choiceWord('choice.timeline.pasteOver.insert.label'), did: choiceWord('choice.timeline.pasteOver.insert.did'), detail: choiceWord('choice.timeline.pasteOver.insert.detail') },
+    { value: 'cover', label: choiceWord('choice.timeline.pasteOver.cover.label'), did: choiceWord('choice.timeline.pasteOver.cover.did'), detail: choiceWord('choice.timeline.pasteOver.cover.detail') },
   ],
   default: 'insert',
   category: 'Timeline',

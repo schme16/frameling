@@ -22,21 +22,22 @@ import { GRADIENT_DITHERS, type GradientDither } from './dither';
 import { gradientInk, GRADIENT_COLOURS, type GradientColours, type GradientShape, type GradientSpec } from './gradient';
 import { docPalette } from './palette';
 import { getPixelSettings, setPixelSettings } from './settings';
+import { choiceWord } from '../words/choices';
 
 export type GradientWhere = 'all' | 'painted';
 
 registerChoice<GradientWhere>({
   id: 'pixelGradient.where',
-  title: 'Gradient on pixel layers',
-  question: 'Should a gradient on a pixel layer cover the empty pixels too?',
+  title: choiceWord('choice.pixelGradient.where.title'),
+  question: choiceWord('choice.pixelGradient.where.question'),
   category: 'Drawing',
   default: 'all',
   // A preference with its own switch in the Gradient tool's options, so it never stops to ask.
   silent: true,
   help: 'pixel-gradient',
   options: [
-    { value: 'all', label: 'Everywhere', detail: 'Covers the whole selection, or the whole canvas when nothing is selected, empty pixels too. Good for a sky or a backdrop.' },
-    { value: 'painted', label: 'Only painted pixels', detail: 'Colours what is already drawn and leaves empty pixels empty. Good for shading a sprite.' },
+    { value: 'all', label: choiceWord('choice.pixelGradient.where.all.label'), detail: choiceWord('choice.pixelGradient.where.all.detail') },
+    { value: 'painted', label: choiceWord('choice.pixelGradient.where.painted.label'), detail: choiceWord('choice.pixelGradient.where.painted.detail') },
   ],
 });
 

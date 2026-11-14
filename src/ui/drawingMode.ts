@@ -12,6 +12,7 @@ import { getPrefs, setPrefs, subscribePrefs, type OffLayerPref } from './prefs';
 import { openPrefs } from './overlays';
 import { toast } from './toast';
 import type { WaitingTool } from './toolArrange';
+import { choiceWord } from '../words/choices';
 
 const WORDS: Record<LayerKind, string> = { vector: 'Vector layer', pixel: 'Pixel layer', tilemap: 'Tile layer', camera: 'Camera layer' };
 const ICONS: Record<LayerKind, 'vector' | 'pixel' | 'tilemap' | 'camera'> = { vector: 'vector', pixel: 'pixel', tilemap: 'tilemap', camera: 'camera' };
@@ -145,15 +146,15 @@ export const MAKE_LAYER_CHOICE = 'toggle.makeLayer';
 
 registerChoice<'make' | 'tell'>({
   id: MAKE_LAYER_CHOICE,
-  title: 'Pixels or Vectors with no layer of that kind',
-  question: 'You pressed Pixels or Vectors and there is no layer of that kind yet. Make one for you?',
+  title: choiceWord('choice.toggle.makeLayer.title'),
+  question: choiceWord('choice.toggle.makeLayer.question'),
   category: 'Layers',
   help: 'drawing-mode',
   default: 'make',
   dismiss: 'tell',
   options: [
-    { value: 'make', label: 'Make one', did: 'Made the layer you asked for.', detail: 'A new layer of that kind goes above the one you are on, and you land on it. Undo takes it back.' },
-    { value: 'tell', label: 'Just tell me how', did: 'Said how to add one.', detail: 'Nothing is made. A note says where New layer is.' },
+    { value: 'make', label: choiceWord('choice.toggle.makeLayer.make.label'), did: choiceWord('choice.toggle.makeLayer.make.did'), detail: choiceWord('choice.toggle.makeLayer.make.detail') },
+    { value: 'tell', label: choiceWord('choice.toggle.makeLayer.tell.label'), did: choiceWord('choice.toggle.makeLayer.tell.did'), detail: choiceWord('choice.toggle.makeLayer.tell.detail') },
   ],
 });
 
@@ -214,14 +215,14 @@ export const OFF_LAYER_CHOICE = 'tools.offLayer';
 
 registerChoice<OffLayerPref>({
   id: OFF_LAYER_CHOICE,
-  title: 'Tools that do not work on this layer',
-  question: 'Some tools only work on one kind of layer. Hide the ones that do not work here, or keep them on the rail, greyed out?',
+  title: choiceWord('choice.tools.offLayer.title'),
+  question: choiceWord('choice.tools.offLayer.question'),
   category: 'Tools',
   help: 'tool-strip',
   default: 'hide',
   options: [
-    { value: 'hide', label: 'Hide them', did: 'Tools that do not work on this layer are hidden. The line at the top of the rail says what is off.', detail: 'A shorter rail. The line at the top says which layer you are on and how many tools are off.' },
-    { value: 'grey', label: 'Grey them out', did: 'Tools that do not work on this layer are greyed out, in their usual places.', detail: 'Every tool stays where it is. The ones that cannot be used here are dimmed, and say why when you point at them.' },
+    { value: 'hide', label: choiceWord('choice.tools.offLayer.hide.label'), did: choiceWord('choice.tools.offLayer.hide.did'), detail: choiceWord('choice.tools.offLayer.hide.detail') },
+    { value: 'grey', label: choiceWord('choice.tools.offLayer.grey.label'), did: choiceWord('choice.tools.offLayer.grey.did'), detail: choiceWord('choice.tools.offLayer.grey.detail') },
   ],
 });
 

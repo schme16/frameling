@@ -13,16 +13,17 @@ import { pickTool } from '../tools/pick';
 import { showPanel } from '../ui/dock';
 import { toast } from '../ui/toast';
 import { vectorStampFrom } from './stamps';
+import { choiceWord } from '../words/choices';
 
 export type AlongFit = 'stretch' | 'repeat';
 
 registerChoice<AlongFit>({
   id: 'brush.alongFit',
-  title: 'A brush that goes along the line',
-  question: 'Your drawing is shorter than most lines. What should it do on a long line?',
+  title: choiceWord('choice.brush.alongFit.title'),
+  question: choiceWord('choice.brush.alongFit.question'),
   options: [
-    { value: 'stretch', label: 'Stretch to fit', detail: 'One copy, stretched down the whole line. Good for a ribbon, a rope or a flame.', did: 'Made it stretch down the whole line.' },
-    { value: 'repeat', label: 'Repeat', detail: 'Whole copies end to end, a little stretched so they fit exactly. Good for a chain, a border or a row of beads.', did: 'Made it repeat along the line.' },
+    { value: 'stretch', label: choiceWord('choice.brush.alongFit.stretch.label'), detail: choiceWord('choice.brush.alongFit.stretch.detail'), did: choiceWord('choice.brush.alongFit.stretch.did') },
+    { value: 'repeat', label: choiceWord('choice.brush.alongFit.repeat.label'), detail: choiceWord('choice.brush.alongFit.repeat.detail'), did: choiceWord('choice.brush.alongFit.repeat.did') },
   ],
   default: 'stretch',
   category: 'Drawing',

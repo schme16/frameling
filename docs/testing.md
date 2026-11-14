@@ -129,6 +129,14 @@ the letter case on disk. Windows and macOS don't care, Linux does, so this catch
 `test/ui/quill-lines.test.ts` checks every line in `src/ui/mascot/lines.json` is used, every id the code uses exists,
 and placeholders match.
 
+### The app's words
+
+`test/words/words.test.ts` is the same check for everything that isn't Quill's (`src/words/*.json`): every word is
+used, every id the code asks for exists, placeholders match, no em dashes, the files are in their tidy shape, and
+`words:apply` merges an edit in and refuses a lost or gained placeholder, an unknown id, or an id in two files. It also
+loads the real choices and quests and checks their name, question, answers and steps are what the file says, so a word
+wired to the wrong place fails here. `STILL_IN_CODE` in that file lists the choices whose words are still built in code.
+
 ### Random operations (fuzz): test/artboards/fuzz.test.ts
 
 Runs seeded random lists of 22 operations (variations made, opened, detached, resized and recoloured, artboards
@@ -1285,6 +1293,19 @@ Blend modes: `ASEPRITE_BIN=... xvfb-run -a -s "-screen 0 1600x1000x24" npx elect
 against Aseprite and against the W3C maths in floats (`blend-reference.cjs`). It writes `blend-report.md` and `.json`.
 Result: Frameling matches the W3C maths within rounding in every mode; Aseprite matches it over solid backdrops but mixes
 see-through backdrops its own way (up to 64 of 255 off). `test/aseprite/blend-bin.test.ts` checks the pixel modes against it.
+
+## The app's words
+
+```bash
+npm run words:list                          # every word in src/words, with its id and where it shows
+npm run words:list -- choice.               # only the ids that start with this
+npm run words:list -- --json > words.json   # the { "word id": "words" } file, to edit and send back
+npm run words:apply <changes.json> [--check]   # merge edits into whichever file holds each id, write nothing with --check
+```
+
+`words:apply` takes the same `{ "id": "new words" }` file as Quill's `dialogue:apply` and refuses the whole file, writing
+nothing, if a `{placeholder}` was lost or gained, an id doesn't exist, or a word is empty. It uses Quill's checks
+(`scripts/dialogue/lines-tools.mjs`), because the entries have the same shape.
 
 ## Quill's dialogue
 

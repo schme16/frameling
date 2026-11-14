@@ -6,6 +6,7 @@ import type { ExportSettings } from '../export/types';
 import { applyWorkspace, dock, hidePanel, inPixelWorkspace, PIXEL_TOOLS, showPanel } from '../ui/dock';
 import { isPlaced } from '../ui/dockModel';
 import { isPixelDoc } from './way';
+import { choiceWord } from '../words/choices';
 
 export { isPixelDoc };
 
@@ -14,8 +15,8 @@ export const FOLLOW_CHOICE = 'workspace.follow';
 
 registerChoice({
   id: FOLLOW_CHOICE,
-  title: 'Workspace follows the drawing',
-  question: 'Switch workspaces to match the kind of drawing? (Pixel for pixel art, Draw for drawings)',
+  title: choiceWord('choice.workspace.follow.title'),
+  question: choiceWord('choice.workspace.follow.question'),
   category: 'Workspace',
   help: 'pixel-workspace',
   default: 'always',
@@ -23,9 +24,9 @@ registerChoice({
   dismiss: 'later',
   quill: true,
   options: [
-    { value: 'always', label: 'Always', did: 'Switched workspace to match your drawing.', detail: 'Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.' },
-    { value: 'later', label: 'Not now', detail: 'Stay as you are this time. Frameling asks again next time it matters.', once: true },
-    { value: 'never', label: 'Never', detail: 'Keep my layout as it is. The workspace lines in the View menu switch any time.' },
+    { value: 'always', label: choiceWord('choice.workspace.follow.always.label'), did: choiceWord('choice.workspace.follow.always.did'), detail: choiceWord('choice.workspace.follow.always.detail') },
+    { value: 'later', label: choiceWord('choice.workspace.follow.later.label'), detail: choiceWord('choice.workspace.follow.later.detail'), once: true },
+    { value: 'never', label: choiceWord('choice.workspace.follow.never.label'), detail: choiceWord('choice.workspace.follow.never.detail') },
   ],
 });
 

@@ -10,14 +10,15 @@ import { toast } from '../ui/toast';
 import { COMBINE_OPS, COMBINE_WORDS, combineShapes, looksDiffer, type CombineOp, type CombineProblem, type CombineResult, type LookFrom } from '../geometry/boolean';
 import { withGroups, cutBase, editShapes, selected } from './merge-mode';
 import { activeDrawing, activeLayer, EDIT_HINTS } from './edit';
+import { choiceWord } from '../words/choices';
 
 registerChoice<LookFrom>({
   id: 'shapes.combineLook',
-  title: 'Colours when shapes are combined',
-  question: 'When shapes with different colours are joined into one, whose colours should it keep?',
+  title: choiceWord('choice.shapes.combineLook.title'),
+  question: choiceWord('choice.shapes.combineLook.question'),
   options: [
-    { value: 'bottom', label: 'The bottom shape', detail: 'The one furthest back. The result takes its fill, outline and see-through.', did: 'Kept the bottom shape’s colours.' },
-    { value: 'top', label: 'The top shape', detail: 'The one in front. The result takes its fill, outline and see-through.', did: 'Kept the top shape’s colours.' },
+    { value: 'bottom', label: choiceWord('choice.shapes.combineLook.bottom.label'), detail: choiceWord('choice.shapes.combineLook.bottom.detail'), did: choiceWord('choice.shapes.combineLook.bottom.did') },
+    { value: 'top', label: choiceWord('choice.shapes.combineLook.top.label'), detail: choiceWord('choice.shapes.combineLook.top.detail'), did: choiceWord('choice.shapes.combineLook.top.did') },
   ],
   default: 'bottom',
   category: 'Drawing',

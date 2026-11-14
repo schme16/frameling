@@ -6,17 +6,18 @@ import { motionDef, type MotionId } from '../core/motions';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { applyMotion, motionFits, motionProblem, type MotionRoom, type MotionWhere } from './motions';
+import { choiceWord } from '../words/choices';
 
 registerChoice<MotionRoom>({
   id: 'motion.room',
-  title: 'A motion that runs into the next drawing',
-  question: 'This motion is longer than the gap before the next drawing on this layer. What should happen?',
+  title: choiceWord('choice.motion.room.title'),
+  question: choiceWord('choice.motion.room.question'),
   category: 'Animation',
   default: 'squeeze',
   help: 'You can change the speed afterwards by dragging the keys in the timeline.',
   options: [
-    { value: 'squeeze', label: 'Make it quicker to fit', detail: 'The motion plays faster, and the next drawing stays where it is.' },
-    { value: 'push', label: 'Move later drawings along', detail: 'The motion keeps its speed, and the drawings after it on this layer move later.' },
+    { value: 'squeeze', label: choiceWord('choice.motion.room.squeeze.label'), detail: choiceWord('choice.motion.room.squeeze.detail') },
+    { value: 'push', label: choiceWord('choice.motion.room.push.label'), detail: choiceWord('choice.motion.room.push.detail') },
   ],
 });
 

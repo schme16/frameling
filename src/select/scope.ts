@@ -36,6 +36,7 @@ import {
   shapeInsideArea,
   shapeTouchesArea,
 } from "../geometry/merge";
+import { choiceWord } from '../words/choices';
 
 export type VectorScope = "parts" | "whole";
 
@@ -43,23 +44,23 @@ export const SCOPE_CHOICE = "select.vectorScope";
 
 registerChoice<VectorScope>({
   id: SCOPE_CHOICE,
-  title: "Selecting part of a shape",
+  title: choiceWord('choice.select.vectorScope.title'),
   question:
-    "You've dragged round only part of a shape. Should Frameling pick just the bit you went round (so you can move one corner), or the whole shape? Hold Ctrl while you drag to get the other one for a go. You can change this any time in Preferences.",
+    choiceWord('choice.select.vectorScope.question'),
   options: [
     {
       value: "parts",
-      label: "Just the bit I went round",
+      label: choiceWord('choice.select.vectorScope.parts.label'),
       detail:
-        "Only the points and edges inside your drag are picked. Move them and the shape stretches, so you can nudge one corner and leave the rest.",
-      did: "Picked just the bit you went round.",
+        choiceWord('choice.select.vectorScope.parts.detail'),
+      did: choiceWord('choice.select.vectorScope.parts.did'),
     },
     {
       value: "whole",
-      label: "The whole shape",
+      label: choiceWord('choice.select.vectorScope.whole.label'),
       detail:
-        "Any shape your drag touches is picked all of it. Move it and it goes as one piece, so you are arranging, not reshaping.",
-      did: "Picked the whole shape.",
+        choiceWord('choice.select.vectorScope.whole.detail'),
+      did: choiceWord('choice.select.vectorScope.whole.did'),
     },
   ],
   default: "whole",

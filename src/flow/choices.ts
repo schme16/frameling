@@ -1,14 +1,15 @@
 // Asked the first time a clip flow gets an "Any clip" arrow next to arrows of its own, then remembered.
 import type { ChoiceDef } from '../core/choices';
+import { choiceWord } from '../words/choices';
 
 export const flowChoices: ChoiceDef<'any' | 'own'>[] = [
   {
     id: 'flow.anyFirst',
-    title: 'Any clip arrows and a clip\'s own arrows',
-    question: 'Sometimes an "Any clip" arrow (like hurt) and a clip\'s own arrow (like run to jump) are ready at the same moment. Which should go first?',
+    title: choiceWord('choice.flow.anyFirst.title'),
+    question: choiceWord('choice.flow.anyFirst.question'),
     options: [
-      { value: 'any', label: 'The Any clip arrow', detail: 'Hurt cuts in on whatever is playing, even if the clip had somewhere else to go.', did: 'Any clip arrows go first.' },
-      { value: 'own', label: 'The clip\'s own arrow', detail: 'A clip finishes its own business first. Any clip arrows only go when nothing else is ready.', did: 'A clip\'s own arrows go first.' },
+      { value: 'any', label: choiceWord('choice.flow.anyFirst.any.label'), detail: choiceWord('choice.flow.anyFirst.any.detail'), did: choiceWord('choice.flow.anyFirst.any.did') },
+      { value: 'own', label: choiceWord('choice.flow.anyFirst.own.label'), detail: choiceWord('choice.flow.anyFirst.own.detail'), did: choiceWord('choice.flow.anyFirst.own.did') },
     ],
     default: 'any',
     category: 'Timeline',

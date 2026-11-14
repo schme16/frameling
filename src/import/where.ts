@@ -4,19 +4,20 @@
 import { choose, registerChoice } from '../core/choices';
 import type { Doc } from '../core/format';
 import { drawingIsBlank } from '../timeline/matters';
+import { choiceWord } from '../words/choices';
 
 export type ImportWhere = 'add' | 'new';
 
 registerChoice<ImportWhere>({
   id: 'import.where',
-  title: 'Bringing in a sequence, an SVG or a layered file',
-  question: 'Where should it go?',
+  title: choiceWord('choice.import.where.title'),
+  question: choiceWord('choice.import.where.question'),
   category: 'Files',
   default: 'add',
   help: 'import-sequence',
   options: [
-    { value: 'add', label: 'Add it to this drawing', detail: 'Its layers go on top of yours, as one undo step.', did: 'Added it to this drawing.' },
-    { value: 'new', label: 'Open it as a new drawing', detail: 'Asks to save changes to the open drawing first.', did: 'Opened it as a new drawing.' },
+    { value: 'add', label: choiceWord('choice.import.where.add.label'), detail: choiceWord('choice.import.where.add.detail'), did: choiceWord('choice.import.where.add.did') },
+    { value: 'new', label: choiceWord('choice.import.where.new.label'), detail: choiceWord('choice.import.where.new.detail'), did: choiceWord('choice.import.where.new.did') },
   ],
 });
 

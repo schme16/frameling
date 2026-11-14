@@ -3,6 +3,7 @@ import { registerChoice } from '../core/choices';
 import { registerCommand, registerCommands, registerHelp } from '../core/registry';
 import { hasPixelSelection } from '../select/pixel-state';
 import type { RecolourWhere } from './recolour';
+import { choiceWord } from '../words/choices';
 
 export function openRecolour(where?: RecolourWhere): void {
   void import('./RecolourDialog').then((m) => m.openRecolourDialog(where));
@@ -12,17 +13,17 @@ export function openRecolour(where?: RecolourWhere): void {
 // dialog set it, and Preferences > Behaviour can too.
 registerChoice<RecolourWhere>({
   id: 'recolour.where',
-  title: 'Recolour reaches',
-  question: 'When you recolour, where should it start out?',
+  title: choiceWord('choice.recolour.where.title'),
+  question: choiceWord('choice.recolour.where.question'),
   category: 'Draw',
   default: 'all',
   silent: true,
   help: 'Where the recolour dialog starts: everything, this layer, this frame or the selection. The Where buttons in the dialog change it. A choice that cannot apply (no selection) falls back to everything.',
   options: [
-    { value: 'all', label: 'Everything', detail: 'Every frame and every layer, and the swatches.' },
-    { value: 'layer', label: 'This layer', detail: 'Every frame of the layer you are on.' },
-    { value: 'frame', label: 'This frame', detail: 'The drawing showing on this frame, on every layer.' },
-    { value: 'selection', label: 'The selection', detail: 'Only the shapes or pixels you have selected.' },
+    { value: 'all', label: choiceWord('choice.recolour.where.all.label'), detail: choiceWord('choice.recolour.where.all.detail') },
+    { value: 'layer', label: choiceWord('choice.recolour.where.layer.label'), detail: choiceWord('choice.recolour.where.layer.detail') },
+    { value: 'frame', label: choiceWord('choice.recolour.where.frame.label'), detail: choiceWord('choice.recolour.where.frame.detail') },
+    { value: 'selection', label: choiceWord('choice.recolour.where.selection.label'), detail: choiceWord('choice.recolour.where.selection.detail') },
   ],
 });
 

@@ -512,6 +512,7 @@ can change the drawing.
   moves every Quill on screen by setting `background-position`, an idle clock sends him to sleep), `Quill.tsx`
   (`Quill`, `QuillSays`, `QuillEmpty`), `scripts.ts` (little performances), `goodbye.ts` (turning him off and on).
 - `lines.json` holds everything he says; `lines.ts` reads it (`line`, `lines`, `lineParts`) with typed ids.
+- The rest of the app's words follow the same pattern in `src/words/` (see "The app's words").
 - `mascots.json` and `mascots.ts` are the registry: which mascots there are and which is current (the `mascot`
   preference). The app asks it, not Quill by name; `runtime.ts` loads whichever is current. The clips a mascot must
   draw, and how to add one, are in `docs/mascots.md`.
@@ -583,3 +584,31 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 `src/ui/sounds/`: every cue is synthesised from notes (`synth.ts`, no sample files): step, celebrate, exported,
 refused, goodbye, nothing to undo, tick. `index.ts` `playCue` caches each as an `AudioBuffer`, honours the sounds
 preference and rate-limits.
+
+
+## The app's words (src/words)
+
+Quill's lines were the first words to live in one file. The rest of the app's words are moving the same way, an area at
+a time, into `src/words/<area>.json`. Each entry is `"id": { "text", "where", "vars"? }`, exactly like `lines.json`.
+
+- `choices.json` (the ask-once-then-remember questions: each choice's name, question, answers, the line under each
+  answer, the toast for an unasked answer) and `quests.json` (each quest's name, summary, badge and finishing line, and
+  every step's instruction, reason and hint) are done. Ids are `choice.<choice id>.title`, `.question`,
+  `.<value>.label|detail|did` and `quest.<quest id>.title|summary|badge|finish` and `quest.<quest id>.<step id>.say|why|hint|did`.
+- Code reads a word through its area's small module: `choiceWord(id, vars?)` in `src/words/choices.ts`,
+  `questWord(id, vars?)` in `src/words/quests.ts`. They are made by `readWords` (`src/words/make.ts`), and the ids are
+  typed from the JSON, so a typo fails `npm run typecheck`. `fill` and `placeholders` (`src/words/fill.ts`) are shared
+  with Quill's `lines.ts`.
+- One file per area, not one big one, so an area's words load with the area (the quest words go with the quests) and a
+  file stays readable. Ids are prefixed with the area and never repeat across files, which a test checks.
+- `where` and `vars` are for whoever edits. In a build, `scripts/words/vite-plugin.ts` (wired into `vite.config.ts`)
+  drops them and the `$about` note, and swaps every plain `choiceWord('id')` / `questWord('id')` call for its words, so
+  the bundle holds the same text as before and no table of long ids (the build ends up the same size as with the strings
+  in code). A call that fills placeholders or builds its id stays a lookup. Tests and `npm run dev` read the files as
+  they are, and `test/words/words.test.ts` runs the swap over every call to check it gives the same words.
+- A choice or quest whose words are built from a value in code (`screen.fit`, `screen.size`, the nudge answers) keeps
+  them there for now; the test names them.
+- Help bodies stay in their `*.bodies.ts` files: they are long markdown that loads lazily, and the help audit already
+  reads them. Not moved on purpose.
+- Add a word: put it in the area's file with its `where`, read it with `choiceWord`/`questWord`. Edit words in bulk with
+  `npm run words:list -- --json` and `npm run words:apply` (see docs/testing.md).

@@ -7,6 +7,7 @@ import { line } from '../ui/mascot/lines';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { inHarness } from './harness';
+import { choiceWord } from '../words/choices';
 
 export const KEYS_CHOICE = 'pixel.keys';
 /** The id of the Aseprite set in src/ui/keymapSets.ts (kept as `pixel` so a saved choice keeps working). */
@@ -14,15 +15,15 @@ export const ASEPRITE_SET = 'pixel';
 
 registerChoice({
   id: KEYS_CHOICE,
-  title: 'Coming from Aseprite?',
+  title: choiceWord('choice.pixel.keys.title'),
   question: line('pixel.keys.ask'),
   category: 'Keyboard',
   help: 'pixel-aseprite-habits',
   default: 'frameling',
   quill: true,
   options: [
-    { value: 'aseprite', label: 'Use Aseprite keys', detail: 'B is the pencil, X swaps Paint and Back, [ and ] step the palette, 1 to 6 zoom.' },
-    { value: 'frameling', label: 'Use Frameling keys', detail: "Frameling's own keys. Aseprite keys are one pick away in Preferences, Keyboard." },
+    { value: 'aseprite', label: choiceWord('choice.pixel.keys.aseprite.label'), detail: choiceWord('choice.pixel.keys.aseprite.detail') },
+    { value: 'frameling', label: choiceWord('choice.pixel.keys.frameling.label'), detail: choiceWord('choice.pixel.keys.frameling.detail') },
   ],
 });
 

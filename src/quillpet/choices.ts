@@ -2,15 +2,16 @@
 // the first present is still a surprise. Changeable any time in Preferences > Behaviour.
 import { registerChoice } from '../core/choices';
 import { PRESENTS_CHOICE } from './gifts';
+import { choiceWord } from '../words/choices';
 
 export function registerPresentChoice(): void {
   registerChoice<'yes' | 'no'>({
     id: PRESENTS_CHOICE,
-    title: "Quill's presents",
-    question: 'Quill made you something out of a drawing you gave him. Would you like him to do that now and then?',
+    title: choiceWord('choice.quill.presents.title'),
+    question: choiceWord('choice.quill.presents.question'),
     options: [
-      { value: 'yes', label: 'Yes, now and then', detail: 'He makes you one once in a while, as a quiet toast you can ignore. Never more than one a day.' },
-      { value: 'no', label: 'No thank you', detail: 'He keeps the drawings you give him and makes nothing from them.' },
+      { value: 'yes', label: choiceWord('choice.quill.presents.yes.label'), detail: choiceWord('choice.quill.presents.yes.detail') },
+      { value: 'no', label: choiceWord('choice.quill.presents.no.label'), detail: choiceWord('choice.quill.presents.no.detail') },
     ],
     default: 'yes',
     category: 'Quill',

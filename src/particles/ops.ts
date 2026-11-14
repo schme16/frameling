@@ -9,16 +9,17 @@ import { addVectorLayer } from '../timeline/edit-core';
 import { EDIT_HINTS, editActiveDrawing } from '../tools/edit';
 import { toast } from '../ui/toast';
 import { newParticles, presetById, PARTICLE_PRESETS } from './model';
+import { choiceWord } from '../words/choices';
 
 export type ParticlesWhere = 'new-layer' | 'this-layer';
 
 export const particlesWhere: ChoiceDef<ParticlesWhere> = {
   id: 'particles.where',
-  title: 'Where new particles go',
-  question: 'Where should new particles go?',
+  title: choiceWord('choice.particles.where.title'),
+  question: choiceWord('choice.particles.where.question'),
   options: [
-    { value: 'new-layer', label: 'On a new layer of their own', detail: 'Easiest to give them a glow or a blend mode, hide them, or move them in front of or behind things.' },
-    { value: 'this-layer', label: 'On the layer I have picked', detail: 'They sit with the drawing on that layer and share its look.' },
+    { value: 'new-layer', label: choiceWord('choice.particles.where.new-layer.label'), detail: choiceWord('choice.particles.where.new-layer.detail') },
+    { value: 'this-layer', label: choiceWord('choice.particles.where.this-layer.label'), detail: choiceWord('choice.particles.where.this-layer.detail') },
   ],
   default: 'new-layer',
   category: 'Drawing',

@@ -5,20 +5,21 @@
  */
 import { currentChoice, registerChoice } from '../core/choices';
 import { createStore, readRaw, writeJson } from '../ui/mini';
+import { choiceWord } from '../words/choices';
 
 export type FitMode = 'bars' | 'fill';
 
 registerChoice<FitMode>({
   id: 'artboards.fit',
-  title: 'Shots of different sizes',
-  question: 'When shots are different sizes, how should each fit the picture?',
+  title: choiceWord('choice.artboards.fit.title'),
+  question: choiceWord('choice.artboards.fit.question'),
   category: 'Export',
   default: 'bars',
   silent: true,
   help: 'Used by Play all in order and by exporting the artboards all in order, as one.',
   options: [
-    { value: 'bars', label: 'Fit (bars)', detail: 'The whole shot shows, with bars at the sides or top and bottom.' },
-    { value: 'fill', label: 'Fill (crop)', detail: 'The shot covers the whole picture and what hangs over is cropped.' },
+    { value: 'bars', label: choiceWord('choice.artboards.fit.bars.label'), detail: choiceWord('choice.artboards.fit.bars.detail') },
+    { value: 'fill', label: choiceWord('choice.artboards.fit.fill.label'), detail: choiceWord('choice.artboards.fit.fill.detail') },
   ],
 });
 
@@ -26,16 +27,16 @@ export type BarColor = 'background' | 'black' | 'white';
 
 registerChoice<BarColor>({
   id: 'artboards.barColor',
-  title: 'Bars round a shot that does not fill the picture',
-  question: 'What colour should the bars be?',
+  title: choiceWord('choice.artboards.barColor.title'),
+  question: choiceWord('choice.artboards.barColor.question'),
   category: 'Export',
   default: 'background',
   silent: true,
   help: 'The picture is the first shot, so by default the bars are its background colour.',
   options: [
-    { value: 'background', label: 'Background colour', detail: 'The first shot\'s stage colour (none if it is see-through).' },
-    { value: 'black', label: 'Black', detail: 'Classic letterbox bars.' },
-    { value: 'white', label: 'White' },
+    { value: 'background', label: choiceWord('choice.artboards.barColor.background.label'), detail: choiceWord('choice.artboards.barColor.background.detail') },
+    { value: 'black', label: choiceWord('choice.artboards.barColor.black.label'), detail: choiceWord('choice.artboards.barColor.black.detail') },
+    { value: 'white', label: choiceWord('choice.artboards.barColor.white.label') },
   ],
 });
 
@@ -53,16 +54,16 @@ export type PictureSize = 'first' | 'largest' | 'custom';
 
 registerChoice<PictureSize>({
   id: 'artboards.pictureSize',
-  title: 'Picture size when shots are joined',
-  question: 'How big should the picture be when shots are played or exported in order?',
+  title: choiceWord('choice.artboards.pictureSize.title'),
+  question: choiceWord('choice.artboards.pictureSize.question'),
   category: 'Export',
   default: 'first',
   silent: true,
   help: 'Used by Play all in order and by exporting the artboards all in order, as one. Shots of another size are fitted into it.',
   options: [
-    { value: 'first', label: 'First shot', detail: 'The picture is the size of the first shot.' },
-    { value: 'largest', label: 'Largest shot', detail: 'The picture is the size of the biggest shot, so none of them has to shrink.' },
-    { value: 'custom', label: 'Custom', detail: 'Type the width and height you want.' },
+    { value: 'first', label: choiceWord('choice.artboards.pictureSize.first.label'), detail: choiceWord('choice.artboards.pictureSize.first.detail') },
+    { value: 'largest', label: choiceWord('choice.artboards.pictureSize.largest.label'), detail: choiceWord('choice.artboards.pictureSize.largest.detail') },
+    { value: 'custom', label: choiceWord('choice.artboards.pictureSize.custom.label'), detail: choiceWord('choice.artboards.pictureSize.custom.detail') },
   ],
 });
 

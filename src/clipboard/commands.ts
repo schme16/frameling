@@ -25,14 +25,15 @@ import type { Doc, PixelLayer, Shape } from '../core/format';
 import { pictureSymbol, shapesToPicture, shapesToPixels, shapesToSvg, toPng } from './convert';
 import { copyScale, decidePaste, fitPicture, placeOnGrid, sayPicture, sayPixelsToPicture, sayShapesToPixels, upscalePixels, type BigPicture, type Copied } from './plan';
 import { canReadSystem, readSystemPicture, type SystemPicture, writeSystemPicture, writeSystemText } from './system';
+import { choiceWord } from '../words/choices';
 
 registerChoice<BigPicture>({
   id: 'clipboard.bigPicture',
-  title: 'Pasting a picture bigger than the page',
-  question: 'This picture is bigger than the layer. Shrink it to fit, or keep its size and cut off what hangs over?',
+  title: choiceWord('choice.clipboard.bigPicture.title'),
+  question: choiceWord('choice.clipboard.bigPicture.question'),
   options: [
-    { value: 'shrink', label: 'Shrink it to fit', did: 'Shrank the picture to fit.', detail: 'The whole picture stays, smaller, with its shape kept. A picture that already fits is never made bigger.' },
-    { value: 'crop', label: 'Keep its size, cut the edges', did: 'Kept its size and cut off the edges.', detail: 'It stays at its own size, centred, so the edges that hang over the page are cut off.' },
+    { value: 'shrink', label: choiceWord('choice.clipboard.bigPicture.shrink.label'), did: choiceWord('choice.clipboard.bigPicture.shrink.did'), detail: choiceWord('choice.clipboard.bigPicture.shrink.detail') },
+    { value: 'crop', label: choiceWord('choice.clipboard.bigPicture.crop.label'), did: choiceWord('choice.clipboard.bigPicture.crop.did'), detail: choiceWord('choice.clipboard.bigPicture.crop.detail') },
   ],
   default: 'shrink',
   category: 'Edit',

@@ -12,6 +12,7 @@ import { showPanel } from '../ui/dock';
 import { addAnimator, textDefaults } from './ops';
 // The steps run these commands, so they must be registered wherever the quest is.
 import './commands';
+import { questWord } from '../words/quests';
 
 const RUN = 36;
 
@@ -78,32 +79,32 @@ const SEL = {
 
 export const TEXT_QUEST: Quest = {
   id: 'say-it-with-text',
-  title: 'Say it with text',
-  summary: 'Type a word and make its letters pop in and wave.',
+  title: questWord('quest.say-it-with-text.title'),
+  summary: questWord('quest.say-it-with-text.summary'),
   minutes: 2,
   icon: 'text',
-  badge: { id: 'wordsmith', name: 'Wordsmith', icon: 'text', color: '--grape' },
+  badge: { id: 'wordsmith', name: questWord('quest.say-it-with-text.badge'), icon: 'text', color: '--grape' },
   features: ['text'],
   requires: ['first-animation'],
-  finish: 'Text stays text, so you can fix a typo any time and the animation just follows. The Title card example has more.',
+  finish: questWord('quest.say-it-with-text.finish'),
   prepare: ensureBlankVectorPage,
   ready: hasVectorLayer,
   steps: [
     {
       id: 'type',
-      say: 'The Text tool is picked. Click the page and type a word, then press Esc.',
-      why: 'Text stays editable: double-click it later to change the words.',
+      say: questWord('quest.say-it-with-text.type.say'),
+      why: questWord('quest.say-it-with-text.type.why'),
       target: SEL.canvas,
       enter: () => store().setUi({ tool: 'text', frame: 0 }),
       done: (c) => texts(c.state.doc).length > 0,
       show: typeDemo,
-      hint: 'Press T for the Text tool if it got switched off.',
+      hint: questWord('quest.say-it-with-text.type.hint'),
       help: 'text',
     },
     {
       id: 'animate',
-      say: 'Make it pop in: in the Text panel, under "Animate the letters", press Grow.',
-      why: 'Each letter grows in a moment after the one before. Animators call it kinetic type.',
+      say: questWord('quest.say-it-with-text.animate.say'),
+      why: questWord('quest.say-it-with-text.animate.why'),
       target: SEL.panel,
       enter: () => {
         selectText();
@@ -115,24 +116,24 @@ export const TEXT_QUEST: Quest = {
       show: () => {
         if (selectText()) addAnimator('scale');
       },
-      hint: 'If the Text panel is empty, click your text with the Select tool (V) first.',
+      hint: questWord('quest.say-it-with-text.animate.hint'),
       help: 'text-animators',
     },
     {
       id: 'wave',
-      say: 'Add a Wave as well, so the letters keep bobbing after they land.',
-      why: 'Animations stack. Each one has its own start, length and order.',
+      say: questWord('quest.say-it-with-text.wave.say'),
+      why: questWord('quest.say-it-with-text.wave.why'),
       target: SEL.panel,
       done: (c) => layered(c.state.doc),
       show: () => {
         if (selectText()) addAnimator('wave');
       },
-      hint: 'Wave is in the same row of buttons, next to Typewriter.',
+      hint: questWord('quest.say-it-with-text.wave.hint'),
       help: 'text-animators',
     },
     {
       id: 'play',
-      say: 'Press play and read all about it.',
+      say: questWord('quest.say-it-with-text.play.say'),
       target: SEL.play,
       enter: () => {
         makeRoom();
@@ -140,7 +141,7 @@ export const TEXT_QUEST: Quest = {
       },
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.say-it-with-text.play.hint'),
     },
   ],
 };

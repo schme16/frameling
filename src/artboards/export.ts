@@ -20,6 +20,7 @@ import { formatInfo, type ExportSettings } from '../export/types';
 import { artboardDoc, artboardsOf, exportNameOf, hasArtboards, joinShots } from './model';
 import { rememberedFrame } from './ops';
 import { packArtboardAtlas } from './pack';
+import { choiceWord } from '../words/choices';
 
 export type ArtboardExportMode = 'one' | 'each' | 'joined' | 'atlas';
 
@@ -48,14 +49,14 @@ export type ArtboardFolderChoice = 'folder' | 'zip';
 
 registerChoice<ArtboardFolderChoice>({
   id: 'artboards.exportAs',
-  title: 'Exporting several artboards',
-  question: 'Where should the artboards go, one file each?',
+  title: choiceWord('choice.artboards.exportAs.title'),
+  question: choiceWord('choice.artboards.exportAs.question'),
   category: 'Export',
   default: 'folder',
   help: 'Each artboard is saved as its own file, named after the artboard.',
   options: [
-    { value: 'folder', label: 'Into a folder', detail: 'Pick a folder and every artboard lands in it, ready to use.' },
-    { value: 'zip', label: 'One zip file', detail: 'Everything in one .zip, handy for sending or uploading.' },
+    { value: 'folder', label: choiceWord('choice.artboards.exportAs.folder.label'), detail: choiceWord('choice.artboards.exportAs.folder.detail') },
+    { value: 'zip', label: choiceWord('choice.artboards.exportAs.zip.label'), detail: choiceWord('choice.artboards.exportAs.zip.detail') },
   ],
 });
 

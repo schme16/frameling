@@ -11,6 +11,7 @@ import { shadeInk } from './ink';
 import { docPalette } from './palette';
 import { getPixelSettings, setPixelSettings } from './settings';
 import { activePixelLayer } from './tools';
+import { questWord } from '../words/quests';
 
 const SEL = {
   canvas: '.cv-root',
@@ -62,20 +63,20 @@ function shadeDemo(): boolean {
 
 export const SHADE_AND_SHINE: Quest = {
   id: 'shade-and-shine',
-  title: 'Shade and shine',
-  summary: 'Draw a mirrored blob, shade it with the palette and give it a crisp outline.',
+  title: questWord('quest.shade-and-shine.title'),
+  summary: questWord('quest.shade-and-shine.summary'),
   minutes: 4,
   icon: 'shade',
-  badge: { id: 'shade-and-shine', name: 'Shade Maker', icon: 'shade', color: '--grape' },
+  badge: { id: 'shade-and-shine', name: questWord('quest.shade-and-shine.badge'), icon: 'shade', color: '--grape' },
   requires: ['first-animation'],
-  finish: 'Shaded, outlined and symmetrical. That is most of pixel art! Try the Dither brush (Shift+B) next for texture.',
+  finish: questWord('quest.shade-and-shine.finish'),
   prepare: ensureTinySpritePage,
   ready: hasPixelLayer,
   steps: [
     {
       id: 'mirror',
-      say: 'Turn on mirror drawing: press Shift+M.',
-      why: 'A dashed line appears down the middle. Whatever you draw on one side shows up on the other.',
+      say: questWord('quest.shade-and-shine.mirror.say'),
+      why: questWord('quest.shade-and-shine.mirror.why'),
       target: SEL.canvas,
       done: (c) => c.ran.has('pixel.mirror') || getPixelSettings().symmetry !== 'off',
       show: () => setPixelSettings({ symmetry: 'h' }),
@@ -83,28 +84,28 @@ export const SHADE_AND_SHINE: Quest = {
     },
     {
       id: 'outline',
-      say: 'Pick the pencil (P) and draw half a round blob. Watch the other half draw itself.',
+      say: questWord('quest.shade-and-shine.outline.say'),
       target: SEL.pencil,
       enter: () => store().setUi({ tool: 'pencil', color: '#1d1b26', strokeOn: true, fillColor: '#4f9a45' }),
       done: (c) => paintedAt(c.state.doc, c.state.ui.frame) >= 10,
       show: () => void drawDemoBlob(),
-      hint: 'Make it a closed shape, so the bucket can fill it next.',
+      hint: questWord('quest.shade-and-shine.outline.hint'),
       help: 'tool-pencil',
     },
     {
       id: 'fill',
-      say: 'Fill the inside with the paint bucket (G). It pours the fill colour, a palette green.',
+      say: questWord('quest.shade-and-shine.fill.say'),
       target: SEL.fill,
       enter: () => store().setUi({ tool: 'fill' }),
       done: (c) => c.edits.includes('Fill'),
       show: () => void demoFill(),
-      hint: 'Click inside the blob. If the green spills out, undo and close the gap.',
+      hint: questWord('quest.shade-and-shine.fill.hint'),
       help: 'fill',
     },
     {
       id: 'shade',
-      say: 'Pick Shade (S), choose Darker, and brush along the bottom of the blob.',
-      why: 'Each pass moves a pixel one step darker along its palette ramp. Bottoms are in shadow.',
+      say: questWord('quest.shade-and-shine.shade.say'),
+      why: questWord('quest.shade-and-shine.shade.why'),
       target: SEL.shade,
       enter: () => {
         store().setUi({ tool: 'shade' });
@@ -112,22 +113,22 @@ export const SHADE_AND_SHINE: Quest = {
       },
       done: (c) => c.edits.includes('Shade pixels'),
       show: () => void shadeDemo(),
-      hint: 'Shade only changes palette colours, so your outline stays as it is.',
+      hint: questWord('quest.shade-and-shine.shade.hint'),
       help: 'tool-shade',
     },
     {
       id: 'shine',
-      say: 'Now switch Shade to Lighter and dab a highlight near the top.',
+      say: questWord('quest.shade-and-shine.shine.say'),
       target: SEL.shade,
       enter: () => setPixelSettings({ shadeLighter: true }),
       done: (c) => c.edits.includes('Shade pixels'),
-      hint: 'One or two pixels is plenty. Small highlights read best.',
+      hint: questWord('quest.shade-and-shine.shine.hint'),
       help: 'tool-shade',
     },
     {
       id: 'edge',
-      say: 'Finish with an outline round the whole thing: Pixel tools menu, then Add outline (outside).',
-      why: 'It uses the stroke colour. An outline makes a sprite pop on any background.',
+      say: questWord('quest.shade-and-shine.edge.say'),
+      why: questWord('quest.shade-and-shine.edge.why'),
       target: SEL.menu,
       done: (c) => c.edits.includes('Add outline'),
       show: () => void getCommand('pixel.outline')?.run(),

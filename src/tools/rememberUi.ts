@@ -11,16 +11,17 @@ import { applyRemembered, readRemembered, rememberedOf, sameRemembered } from '.
 import { toast } from '../ui/toast';
 import { getToolSettings, setToolSettings } from './settings';
 import './remember-help';
+import { choiceWord } from '../words/choices';
 
 export type OnionMemory = 'remember' | 'fresh';
 
 registerChoice<OnionMemory>({
   id: 'memory.onion',
-  title: 'Onion skin at launch',
-  question: 'When Frameling opens, should the onion skin be on if you left it on?',
+  title: choiceWord('choice.memory.onion.title'),
+  question: choiceWord('choice.memory.onion.question'),
   options: [
-    { value: 'remember', label: 'Yes, as I left it', detail: 'The onion skin comes back on, with the same frames and strength.' },
-    { value: 'fresh', label: 'No, start with it off', detail: 'Your frames before and after, and the strength, are still remembered. Only on or off starts off.' },
+    { value: 'remember', label: choiceWord('choice.memory.onion.remember.label'), detail: choiceWord('choice.memory.onion.remember.detail') },
+    { value: 'fresh', label: choiceWord('choice.memory.onion.fresh.label'), detail: choiceWord('choice.memory.onion.fresh.detail') },
   ],
   default: 'remember',
   category: 'Drawing',

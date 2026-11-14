@@ -17,6 +17,7 @@ import { gatherEnv } from '../tablet/check/state';
 import type { CrashNotes, FramelingApi } from '../preload/api';
 import { buildReport, type IngestReport } from './report';
 import { canSend } from './send';
+import { choiceWord } from '../words/choices';
 
 /** The choice that remembers a No thanks. */
 export const CRASH_CHOICE = 'beta.crashOffer';
@@ -95,15 +96,15 @@ crashDialog.subscribe(() => overlays.set((o) => (!!o.crashOffer === !!crashDialo
 export function registerCrashChoice(): void {
   registerChoice<'ask' | 'no'>({
     id: CRASH_CHOICE,
-    title: 'Quill after a crash',
-    question: 'When Frameling crashed last time, shall Quill turn up and offer to send the crash notes? Nothing is ever sent without a press.',
+    title: choiceWord('choice.beta.crashOffer.title'),
+    question: choiceWord('choice.beta.crashOffer.question'),
     category: 'Diagnostics',
     default: 'ask',
     silent: true,
     help: 'crash-notes',
     options: [
-      { value: 'ask', label: 'Offer to send the notes', detail: 'Quill asks once per crash. You can read the notes before anything goes.' },
-      { value: 'no', label: 'No thanks', detail: "Quill stays away after a crash. The command Send the notes from the last crash still works." },
+      { value: 'ask', label: choiceWord('choice.beta.crashOffer.ask.label'), detail: choiceWord('choice.beta.crashOffer.ask.detail') },
+      { value: 'no', label: choiceWord('choice.beta.crashOffer.no.label'), detail: choiceWord('choice.beta.crashOffer.no.detail') },
     ],
   });
 }

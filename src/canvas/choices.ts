@@ -1,32 +1,33 @@
 // The canvas area's remembered choices (see core/choices.ts). Preferences > Behaviour lists them.
 import { registerChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
 
 export type WheelMode = 'zoom' | 'scroll';
 export type SpaceTapMode = 'play' | 'pan-only';
 
 registerChoice<WheelMode>({
   id: 'canvas.wheel',
-  title: 'Mouse wheel',
-  question: 'What should the mouse wheel do over the canvas?',
+  title: choiceWord('choice.canvas.wheel.title'),
+  question: choiceWord('choice.canvas.wheel.question'),
   category: 'Canvas',
   silent: true,
   default: 'zoom',
   help: 'Pinching on a trackpad always zooms.',
   options: [
-    { value: 'zoom', label: 'Zoom', detail: 'The wheel zooms towards the cursor. Shift+wheel scrolls sideways.' },
-    { value: 'scroll', label: 'Scroll', detail: 'The wheel moves the drawing up and down. Hold Ctrl to zoom.' },
+    { value: 'zoom', label: choiceWord('choice.canvas.wheel.zoom.label'), detail: choiceWord('choice.canvas.wheel.zoom.detail') },
+    { value: 'scroll', label: choiceWord('choice.canvas.wheel.scroll.label'), detail: choiceWord('choice.canvas.wheel.scroll.detail') },
   ],
 });
 
 registerChoice<SpaceTapMode>({
   id: 'canvas.spaceTap',
-  title: 'Tapping Space',
-  question: 'Should a quick tap of Space play and pause your animation?',
+  title: choiceWord('choice.canvas.spaceTap.title'),
+  question: choiceWord('choice.canvas.spaceTap.question'),
   category: 'Canvas',
   default: 'play',
   help: 'Holding Space and dragging always moves the drawing around.',
   options: [
-    { value: 'play', label: 'Play or pause', detail: 'A quick tap plays. Holding Space and dragging still pans.' },
-    { value: 'pan-only', label: 'Only for panning', detail: 'Space does nothing unless you hold it and drag.' },
+    { value: 'play', label: choiceWord('choice.canvas.spaceTap.play.label'), detail: choiceWord('choice.canvas.spaceTap.play.detail') },
+    { value: 'pan-only', label: choiceWord('choice.canvas.spaceTap.pan-only.label'), detail: choiceWord('choice.canvas.spaceTap.pan-only.detail') },
   ],
 });

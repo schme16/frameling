@@ -17,17 +17,18 @@ import { registerChoice, withChoice } from '../core/choices';
 import { placesOf } from '../core/sharedDrawings';
 import { autoHeldAt, cloneDrawing, newKeySpan, splitAutoHold } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
+import { choiceWord } from '../words/choices';
 
 export type HeldFrameChoice = 'new-key' | 'edit-held';
 
 registerChoice<HeldFrameChoice>({
   id: 'draw.heldFrame',
-  title: 'Drawing on a held frame',
+  title: choiceWord('choice.draw.heldFrame.title'),
   question:
-    "This frame is still showing a drawing from an earlier frame (it's being held). When you draw here, what should happen?",
+    choiceWord('choice.draw.heldFrame.question'),
   options: [
-    { value: 'new-key', label: 'Make a new drawing here', detail: 'This frame gets its own copy of the drawing, with your change. Earlier frames stay as they were.' },
-    { value: 'edit-held', label: 'Change the held drawing', detail: 'Your change shows on every frame that holds that drawing.' },
+    { value: 'new-key', label: choiceWord('choice.draw.heldFrame.new-key.label'), detail: choiceWord('choice.draw.heldFrame.new-key.detail') },
+    { value: 'edit-held', label: choiceWord('choice.draw.heldFrame.edit-held.label'), detail: choiceWord('choice.draw.heldFrame.edit-held.detail') },
   ],
   default: 'new-key',
   category: 'Drawing',
@@ -38,11 +39,11 @@ export type SharedDrawingChoice = 'everywhere' | 'own';
 
 registerChoice<SharedDrawingChoice>({
   id: 'draw.sharedDrawing',
-  title: 'Drawing on a shared drawing',
-  question: 'This drawing is shown in more than one place (the link mark on its block in the timeline says where). When you change it, what should happen?',
+  title: choiceWord('choice.draw.sharedDrawing.title'),
+  question: choiceWord('choice.draw.sharedDrawing.question'),
   options: [
-    { value: 'everywhere', label: 'Change it everywhere', detail: 'Every place that shows this drawing changes with it. Good when they are meant to match.', did: 'Changed the drawing everywhere it is shown.' },
-    { value: 'own', label: 'Make this one its own', detail: 'This place gets a copy of its own, with your change. The other places keep the drawing as it was.', did: 'Made this one its own, so only this place changed.' },
+    { value: 'everywhere', label: choiceWord('choice.draw.sharedDrawing.everywhere.label'), detail: choiceWord('choice.draw.sharedDrawing.everywhere.detail'), did: choiceWord('choice.draw.sharedDrawing.everywhere.did') },
+    { value: 'own', label: choiceWord('choice.draw.sharedDrawing.own.label'), detail: choiceWord('choice.draw.sharedDrawing.own.detail'), did: choiceWord('choice.draw.sharedDrawing.own.did') },
   ],
   default: 'everywhere',
   category: 'Drawing',
@@ -53,12 +54,12 @@ export type TweenFrameChoice = 'new-key' | 'edit-key';
 
 registerChoice<TweenFrameChoice>({
   id: 'draw.tweenFrame',
-  title: 'Changing an in-between',
+  title: choiceWord('choice.draw.tweenFrame.title'),
   question:
-    "This frame is an in-between: Frameling works it out from the keys on either side. When you move or change something here, what should happen?",
+    choiceWord('choice.draw.tweenFrame.question'),
   options: [
-    { value: 'new-key', label: 'Make a key here', detail: 'This frame becomes a key with your change, and the glide goes through it. The keys on either side stay as they were.' },
-    { value: 'edit-key', label: 'Change the key before', detail: 'Your change goes to the key the in-betweens start from, so the whole glide changes.' },
+    { value: 'new-key', label: choiceWord('choice.draw.tweenFrame.new-key.label'), detail: choiceWord('choice.draw.tweenFrame.new-key.detail') },
+    { value: 'edit-key', label: choiceWord('choice.draw.tweenFrame.edit-key.label'), detail: choiceWord('choice.draw.tweenFrame.edit-key.detail') },
   ],
   default: 'new-key',
   category: 'Drawing',

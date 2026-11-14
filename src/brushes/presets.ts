@@ -32,6 +32,7 @@ import {
 } from './model';
 import { noteRecent, toggleFavourite } from './picker';
 import './help';
+import { choiceWord } from '../words/choices';
 
 const KEY = 'frameling.brushPresets';
 
@@ -39,11 +40,11 @@ export type BrushEdits = 'keep' | 'follow';
 
 registerChoice<BrushEdits>({
   id: 'brushes.edits',
-  title: 'Changing a saved brush',
-  question: 'When you change a saved brush (its size, say), should the saved copy change too?',
+  title: choiceWord('choice.brushes.edits.title'),
+  question: choiceWord('choice.brushes.edits.question'),
   options: [
-    { value: 'keep', label: 'No, keep it as saved', detail: 'The brush row shows it has changed, with Update to keep the change and the brush button to go back.' },
-    { value: 'follow', label: 'Yes, save every change', detail: 'Your saved brush always matches what you are drawing with. The starters never change.' },
+    { value: 'keep', label: choiceWord('choice.brushes.edits.keep.label'), detail: choiceWord('choice.brushes.edits.keep.detail') },
+    { value: 'follow', label: choiceWord('choice.brushes.edits.follow.label'), detail: choiceWord('choice.brushes.edits.follow.detail') },
   ],
   default: 'keep',
   category: 'Drawing',

@@ -10,6 +10,7 @@ import { makeCameraPan } from '../templates/camera-pan';
 import { lookingThrough, setDepth, setView, stageCamera } from './ops';
 // The steps run the camera commands, which are registered while the Camera feature is on (the lesson is hidden when it is off).
 import '../symbols/commands';
+import { questWord } from '../words/quests';
 
 /** The Camera and parallax example with its camera and distances taken out: the page the quest starts on. */
 export function makeValleyScene(): Doc {
@@ -50,32 +51,32 @@ const pickCamera = () => {
 
 export const CAMERA_QUEST: Quest = {
   id: 'camera-move',
-  title: 'Camera move',
-  summary: 'Pan a camera across a valley, with far hills that drift slower.',
+  title: questWord('quest.camera-move.title'),
+  summary: questWord('quest.camera-move.summary'),
   minutes: 3,
   icon: 'camera',
-  badge: { id: 'director', name: 'Director', icon: 'camera', color: '--sky' },
+  badge: { id: 'director', name: questWord('quest.camera-move.badge'), icon: 'camera', color: '--sky' },
   features: ['camera'],
   requires: ['first-animation'],
-  finish: "That's a real camera move with parallax. Exports always see what the camera sees.",
+  finish: questWord('quest.camera-move.finish'),
   prepare: () => (isValley(store().get()) && !camOf(store().get()) ? true : freshPage(makeValleyScene)),
   ready: isValley,
   steps: [
     {
       id: 'add',
-      say: 'Add a camera: Frames and motion > Camera > Add a camera.',
-      why: 'The camera is a layer of its own. Its frame shows what an export will show.',
+      say: questWord('quest.camera-move.add.say'),
+      why: questWord('quest.camera-move.add.why'),
       target: SEL.panel,
       enter: () => showPanel('camera'),
       done: (c) => !!camOf(c.state),
       show: 'camera.add',
-      hint: 'The Camera panel on the right has an Add a camera button too.',
+      hint: questWord('quest.camera-move.add.hint'),
       help: 'camera',
     },
     {
       id: 'move',
-      say: 'This is the last frame. Drag the camera frame to the right, over the house.',
-      why: 'Moving the camera on another frame gives that frame a camera key of its own.',
+      say: questWord('quest.camera-move.move.say'),
+      why: questWord('quest.camera-move.move.why'),
       target: SEL.canvas,
       enter: () => {
         pickCamera();
@@ -86,13 +87,13 @@ export const CAMERA_QUEST: Quest = {
         if (store().get().ui.frame === 0) store().setUi({ frame: lastFrame() });
         setView({ x: 1150, y: 260 });
       },
-      hint: 'Press inside the camera frame (the box with the dark edge) and drag.',
+      hint: questWord('quest.camera-move.move.hint'),
       help: 'camera',
     },
     {
       id: 'glide',
-      say: 'Now make it glide: on frame 1, press Ctrl+Shift+T for in-betweens.',
-      why: 'Without in-betweens the camera would jump at the last frame. With them it pans smoothly.',
+      say: questWord('quest.camera-move.glide.say'),
+      why: questWord('quest.camera-move.glide.why'),
       target: [SEL.ruler, ...SEL.panel],
       enter: () => {
         pickCamera();
@@ -104,39 +105,39 @@ export const CAMERA_QUEST: Quest = {
         store().setUi({ frame: 0 });
         void getCommand('tween.make')?.run();
       },
-      hint: 'Or right-click the camera key on frame 1 in the timeline and choose Make in-betweens.',
+      hint: questWord('quest.camera-move.glide.hint'),
       help: 'tweens',
     },
     {
       id: 'depth',
-      say: 'Push the Far hills back: in the Camera panel, set their distance to 3.',
-      why: 'Far things drift slower than near ones as the camera passes. That is called parallax.',
+      say: questWord('quest.camera-move.depth.say'),
+      why: questWord('quest.camera-move.depth.why'),
       target: SEL.depths,
       done: (c) => c.state.doc.layers.some((l) => (l.depth ?? 0) >= 1),
       show: () => {
         const far = store().get().doc.layers.find((l) => l.name === 'Far hills') ?? store().get().doc.layers[0];
         if (far) setDepth(far.id, 3);
       },
-      hint: 'Each layer has a box under "Distance from the camera" in the Camera panel. 0 is right on the stage.',
+      hint: questWord('quest.camera-move.depth.hint'),
       help: 'camera',
     },
     {
       id: 'look',
-      say: 'Press Shift+C to look through the camera.',
+      say: questWord('quest.camera-move.look.say'),
       target: SEL.canvas,
       done: (c) => lookingThrough(c.state),
       show: 'camera.lookThrough',
-      hint: 'View > Look through the camera does the same. Press it again to see the whole stage.',
+      hint: questWord('quest.camera-move.look.hint'),
       help: 'camera',
     },
     {
       id: 'play',
-      say: 'Press play. Lights, camera, action!',
+      say: questWord('quest.camera-move.play.say'),
       target: SEL.play,
       enter: () => store().setUi({ frame: 0 }),
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.camera-move.play.hint'),
     },
   ],
 };

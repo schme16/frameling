@@ -11,6 +11,7 @@ import { setDocLength } from '../timeline/ops';
 import { DEFAULT_EASE, updateInstances } from './ops';
 // The steps run these commands, so they must be registered wherever the quest is.
 import './commands';
+import { questWord } from '../words/quests';
 
 const SEL = {
   canvas: '.cv-root',
@@ -43,31 +44,31 @@ export function tweenMoves(doc: Doc): boolean {
 
 export const FIRST_TWEEN: Quest = {
   id: 'first-tween',
-  title: 'Your first tween',
-  summary: 'Draw something once and let Frameling draw all the frames as it glides across.',
+  title: questWord('quest.first-tween.title'),
+  summary: questWord('quest.first-tween.summary'),
   minutes: 2,
   icon: 'tween',
-  badge: { id: 'smooth-mover', name: 'Smooth Mover', icon: 'tween', color: '--sky' },
+  badge: { id: 'smooth-mover', name: questWord('quest.first-tween.badge'), icon: 'tween', color: '--sky' },
   requires: ['first-animation'],
-  finish: 'Smooth! Try Draw a path in Symbol and motion next, to send it along a curve.',
+  finish: questWord('quest.first-tween.finish'),
   prepare: ensureBlankVectorPage,
   ready: hasVectorLayer,
   steps: [
     {
       id: 'draw',
-      say: 'Draw something on the page: a ball, a star, a paper plane.',
-      why: 'You only draw it once. Frameling does the rest.',
+      say: questWord('quest.first-tween.draw.say'),
+      why: questWord('quest.first-tween.draw.why'),
       target: SEL.canvas,
       enter: () => store().setUi({ tool: 'brush', frame: 0 }),
       done: (c) => hasInkAt(c.state.doc, 0),
       show: () => void drawDemoBall(-120),
-      hint: 'Click and drag on the white page.',
+      hint: questWord('quest.first-tween.draw.hint'),
       help: 'drawing-basics',
     },
     {
       id: 'tween',
-      say: 'Press Ctrl+Shift+T to make in-betweens.',
-      why: 'In-betweens are the frames between two poses. Animators call them tweens.',
+      say: questWord('quest.first-tween.tween.say'),
+      why: questWord('quest.first-tween.tween.why'),
       target: SEL.canvas,
       enter: () => {
         // Give the drawing room to move: hold it for 16 frames (only when it's still a single frame).
@@ -81,23 +82,23 @@ export const FIRST_TWEEN: Quest = {
       },
       done: (c) => !!firstTween(c.state.doc),
       show: 'tween.make',
-      hint: 'You can also right-click the drawing in the timeline and choose Make in-betweens.',
+      hint: questWord('quest.first-tween.tween.hint'),
       help: 'tweens',
     },
     {
       id: 'move',
-      say: 'This is the last frame. Drag your drawing somewhere else, so it has somewhere to go.',
-      why: 'You can resize it with the corners or turn it with the round handle too.',
+      say: questWord('quest.first-tween.move.say'),
+      why: questWord('quest.first-tween.move.why'),
       target: SEL.canvas,
       done: (c) => tweenMoves(c.state.doc),
       show: () => void updateInstances('Move', (s) => void (s.transform.x += 360)),
-      hint: 'With the Select tool, drag the drawing to the right.',
+      hint: questWord('quest.first-tween.move.hint'),
       help: 'tweens',
     },
     {
       id: 'ease',
-      say: 'Pick how it moves. Try Bouncy in the Easing list.',
-      why: 'Easing is how it speeds up and slows down. Watch the dots on the canvas bunch up where it goes slowly.',
+      say: questWord('quest.first-tween.ease.say'),
+      why: questWord('quest.first-tween.ease.why'),
       target: SEL.props,
       enter: () => {
         void getCommand('view.panel.symbol-props')?.run();
@@ -108,16 +109,16 @@ export const FIRST_TWEEN: Quest = {
         return !!t && t.ease !== DEFAULT_EASE;
       },
       show: 'tween.ease.bounceOut',
-      hint: 'The Easing list is in the Symbol and motion panel.',
+      hint: questWord('quest.first-tween.ease.hint'),
       help: 'easing',
     },
     {
       id: 'play',
-      say: 'Press play and watch it glide!',
+      say: questWord('quest.first-tween.play.say'),
       target: SEL.play,
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.first-tween.play.hint'),
     },
   ],
 };

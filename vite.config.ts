@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { lean as leanWords } from './scripts/words/vite-plugin';
 
 const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string;
 
@@ -27,7 +28,7 @@ export default defineConfig({
   base: './',
   // The repo's public/ folder (help pictures and videos), not src/renderer/public.
   publicDir: '../../public',
-  plugins: [react(), allowIngest],
+  plugins: [react(), allowIngest, leanWords],
   // The web build has no desktop side to ask for the version (src/platform).
   // The beta build's write-only ingest key, from the environment at build time, never from the repository. An
   // ordinary build has none, so it simply has no Send button (src/beta/send.ts).

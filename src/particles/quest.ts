@@ -10,6 +10,7 @@ import { presetById } from './model';
 import { shuffleSeed, updateParticles } from './ops';
 // The steps run these commands, so they must be registered wherever the quest is.
 import './commands';
+import { questWord } from '../words/quests';
 
 /** Every emitter in the document. */
 export function emitters(doc: Doc): ParticlesShape[] {
@@ -61,21 +62,21 @@ const SEL = {
 
 export const PARTICLES_QUEST: Quest = {
   id: 'particle-party',
-  title: 'Particle party',
-  summary: 'Throw some confetti, then make it your own.',
+  title: questWord('quest.particle-party.title'),
+  summary: questWord('quest.particle-party.summary'),
   minutes: 2,
   icon: 'particles',
-  badge: { id: 'confetti-cannon', name: 'Confetti Cannon', icon: 'pt-confetti', color: '--rose' },
+  badge: { id: 'confetti-cannon', name: questWord('quest.particle-party.badge'), icon: 'pt-confetti', color: '--rose' },
   features: ['particles'],
   requires: ['first-animation'],
-  finish: 'Particles are worked out fresh for every frame, so they always look the same when you scrub, play or export.',
+  finish: questWord('quest.particle-party.finish'),
   prepare: ensureBlankVectorPage,
   ready: hasVectorLayer,
   steps: [
     {
       id: 'add',
-      say: 'Add some confetti: in the Particles panel, press Confetti.',
-      why: 'A preset is a starting point. Rain, snow, smoke and sparkles are there too.',
+      say: questWord('quest.particle-party.add.say'),
+      why: questWord('quest.particle-party.add.why'),
       target: SEL.presets,
       enter: () => {
         showPanel('particles');
@@ -83,13 +84,13 @@ export const PARTICLES_QUEST: Quest = {
       },
       done: (c) => emitters(c.state.doc).length > 0,
       show: 'particles.add.confetti',
-      hint: 'Tools and layers > Effects > Add particles: Confetti in the menu does it too.',
+      hint: questWord('quest.particle-party.add.hint'),
       help: 'particles',
     },
     {
       id: 'motion',
-      say: 'Change how it flies. Drag Gravity, Speed or Spread in the Particles panel.',
-      why: 'More gravity and it falls faster. More spread and it fans out wider.',
+      say: questWord('quest.particle-party.motion.say'),
+      why: questWord('quest.particle-party.motion.why'),
       target: SEL.panel,
       enter: () => void selectEmitter(),
       done: (c) => tweakedMotion(c.state.doc),
@@ -97,40 +98,40 @@ export const PARTICLES_QUEST: Quest = {
         const s = selectEmitter();
         if (s) updateParticles('Change particles', (x) => void ((x.gravity += 260), (x.spread = Math.min(180, x.spread + 30))), { id: s.id });
       },
-      hint: 'Pick the confetti with the Select tool if the panel says nothing is selected.',
+      hint: questWord('quest.particle-party.motion.hint'),
       help: 'particles',
     },
     {
       id: 'colour',
-      say: 'Give it your own colours with the two colour boxes in the Particles panel.',
-      why: 'Each piece takes its colour from these two: a mix of them, or one turning into the other as it ages.',
+      say: questWord('quest.particle-party.colour.say'),
+      why: questWord('quest.particle-party.colour.why'),
       target: SEL.panel,
       done: (c) => recoloured(c.state.doc),
       show: () => {
         const s = selectEmitter();
         if (s) updateParticles('Particle colours', (x) => void ((x.colorStart = '#4fd1a5'), (x.colorEnd = '#9b7bff')), { id: s.id });
       },
-      hint: 'The colour boxes are further down the Particles panel.',
+      hint: questWord('quest.particle-party.colour.hint'),
       help: 'particles',
     },
     {
       id: 'shuffle',
-      say: 'Press Shuffle for a new random spread with the same settings.',
+      say: questWord('quest.particle-party.shuffle.say'),
       target: SEL.shuffle,
       done: (c) => seeds(c.state.doc) !== seeds(c.entry.state.doc),
       show: () => {
         if (selectEmitter()) shuffleSeed();
       },
-      hint: 'Shuffle is the button at the top of the Particles panel.',
+      hint: questWord('quest.particle-party.shuffle.hint'),
       help: 'particles',
     },
     {
       id: 'play',
-      say: 'Press play. Party time!',
+      say: questWord('quest.particle-party.play.say'),
       target: SEL.play,
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.particle-party.play.hint'),
     },
   ],
 };
