@@ -12,6 +12,8 @@ import '../pixel/debug';
 import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
+import { uid } from '../core/doc';
+import { activeDrawing } from '../tools/edit';
 import { store } from '../core/store';
 import { guard as saveGuard } from '../io/file';
 import { findTemplate } from '../templates';
@@ -125,6 +127,41 @@ if (new URLSearchParams(location.search).has('debug')) {
     pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen, forgetTools: () => penTools.reset() },
     // The accessibility check (scripts/a11y.cjs) opens every panel and picks every tool.
     panels: () => allPanels().map((p) => p.id),
+    // Small states that are hard to reach by hand, so the contact sheet of panels (scripts/panels-sheet.cjs) shows them:
+    // one picked text shape, two notes, three named slices on the first pixel layer (picked), and a few edits in the History list.
+    seed: {
+      notes: () =>
+        store().update('Seed notes', (d) => {
+          (d.notes ??= []).push(
+            { id: uid('n'), x: 120, y: 90, text: 'Make the squash a touch longer.', pin: 'page' },
+            { id: uid('n'), x: 300, y: 200, text: 'Shadow should shrink as the ball rises.', pin: 'page' },
+          );
+        }),
+      slices: () => {
+        const layer = store().get().doc.layers.find((l) => l.kind === 'pixel');
+        if (!layer) return false;
+        store().setUi({ activeLayerId: layer.id });
+        store().update('Seed slices', (d) => {
+          const l = d.layers.find((x) => x.id === layer.id);
+          if (l?.kind === 'pixel') l.slices = [{ id: uid('s'), name: 'idle', x: 0, y: 0, w: 16, h: 16 }, { id: uid('s'), name: 'run', x: 16, y: 0, w: 16, h: 16 }, { id: uid('s'), name: 'jump', x: 32, y: 0, w: 16, h: 16 }];
+        });
+        return true;
+      },
+      // Picks the first text shape on any layer (the Text panel only shows its controls for one). False when there is none.
+      text: () => {
+        for (const l of store().get().doc.layers) {
+          store().setUi({ activeLayerId: l.id, selection: [] });
+          const shape = activeDrawing()?.kind === 'vector' ? (activeDrawing() as { shapes: { id: string; type: string }[] }).shapes.find((x) => x.type === 'text') : undefined;
+          if (shape) return void store().setUi({ selection: [shape.id] });
+        }
+        return false;
+      },
+      history: () => {
+        for (const label of ['Move the ball', 'Squash and stretch', 'Fade the shadow']) store().update(label, (d) => void (d.layers[0].opacity = d.layers[0].opacity === 1 ? 0.9 : 1));
+      },
+    },
+    // Every panel with its name and zone, for the contact sheet of all panels (scripts/panels-sheet.cjs).
+    panelList: () => allPanels().map((p) => ({ id: p.id, title: p.title, zone: p.zone })),
     tools: () => allTools().map((t) => t.id),
     showPanel,
     // The right side's layout, for side by side shots: 'inspector' (the real one), 'rail' or 'tabs'.
