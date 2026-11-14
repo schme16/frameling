@@ -9,6 +9,7 @@
 //   {"down": [x, y]} {"held": [x, y]} {"up": [x, y]}      press, move with the button held, release (for a shot mid-drag)
 //   {"drag": [[x, y], ...], "steps": 6, "delay": 8, "mods": ["shift"]}   delay is the ms between mouse moves, so slow
 //                                                       strokes look drawn; mods are held down through the drag
+//   {"dragOn": "css", "to": "css", "text": "...", "toText": "..."}   drag from the middle of one element to the middle of another, gliding (hold = ms before letting go)
 //   {"rdrag": [[x, y], ...]} / {"rclick": [x, y]}   the same with the right mouse button (paints with Back in the Pixel workspace)
 //   {"wheel": [x, y], "dy": -120, "count": 3, "delay": 70, "mods": ["shift"]}   the mouse wheel (negative dy = up = zoom in); "dx" slides sideways
 //   {"pinch": [x, y], "dy": -6, "count": 14}           a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it); negative = zoom in

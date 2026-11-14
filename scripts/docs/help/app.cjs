@@ -197,16 +197,17 @@ const entries = [
     steps: [template('bouncing-ball'), js(installingDom()), wait(400), ...settle, ...shotOf('#help-installing', null, 0)],
   },
 
-  // The tool strip on a vector layer, with the tooltip on Shade: greyed out where it sits, saying why.
+  // The tool strip on a vector layer as it comes: group names over the groups, only the tools that work here, the tooltip on the Brush.
   {
     name: 'tool-strip',
     prefs: CALM,
-    steps: [template('bouncing-ball'), wait(800), { clickOn: "[data-command='tools.shade']", hover: true, after: 1800 }, ...settle, { shot: '@', crop: [0, 40, 380, 720] }],
+    steps: [template('bouncing-ball'), wait(800), { clickOn: "[data-command='tools.brush']", hover: true, after: 1800 }, ...settle, { shot: '@', crop: [0, 40, 380, 720] }],
   },
   // Two tools dragged: the eyedropper into the drawing group, then the pen into a group of its own between two others.
   {
     name: 'tool-arrange',
-    prefs: CALM,
+    // Group names off and tools greyed rather than hidden, so the strip is as it was when the drag points below were measured.
+    prefs: { ...CALM, toolNames: false, toolsOffLayer: 'grey' },
     steps: [
       template('bouncing-ball'),
       wait(1000),
@@ -230,6 +231,46 @@ const entries = [
       { move: [56, 293] },
       { move: [57, 294] },
       wait(2200),
+      { rec: 'stop' },
+    ],
+  },
+  // Change the tools: open it, name a group, start one, move a tool, put one away, fold a group, put it all back.
+  {
+    name: 'tool-builder',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 40, 720, 640], every: 70 },
+      wait(900),
+      cmd('view.toolbarBuilder'),
+      wait(1500),
+      // Name a group: Shapes becomes Blocking.
+      { clickOn: '[data-tool-head="shapes"] .ui-tool-head-name', after: 700 },
+      { type: 'Blocking', after: 700 },
+      clickText('.ui-dock-rename button', 'Save'),
+      { move: [560, 500] },
+      wait(1100),
+      // Make a group: a click on the Star opens its menu, and Start a new group here divides the shapes there.
+      { clickOn: '[data-tool-id="star"]', after: 900 },
+      { clickOn: '.ui-menu-item', text: 'Start a new group here', after: 400 },
+      { move: [560, 500] },
+      wait(1300),
+      // Move a tool: the Text tool goes up into the drawing group.
+      { dragOn: '[data-tool-id="text"]', to: '[data-tool-group="draw"]', hold: 800 },
+      wait(1300),
+      // Put one away: the Eraser goes onto the shelf.
+      { dragOn: '[data-tool-id="eraser"]', to: '[data-tool-shelf]', hold: 800 },
+      wait(1300),
+      // Fold a group: the Select group becomes one button.
+      { clickOn: '[data-tool-head="select"] .ui-tool-fold', after: 400 },
+      { move: [560, 500] },
+      wait(1500),
+      // Put it all back.
+      { clickOn: '.ui-tb-back', after: 500 },
+      { move: [560, 500] },
+      wait(1800),
       { rec: 'stop' },
     ],
   },

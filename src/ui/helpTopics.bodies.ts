@@ -426,7 +426,7 @@ A shared workspace moves panels around (including any [stacked groups](help:pane
 
 ## Reset
 
-**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. Your tool arrangement is separate: **Reset tools to default** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
+**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. Your tool arrangement is separate: **Put the tools back** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
 
 See also [Panels](help:panels).`,
   properties: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
@@ -573,7 +573,7 @@ Press its button, or press its key. Rest on a button to see the key.
 
 ## The strip stays put
 
-Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is greyed out where it sits: Shade, Dither, Spray and the Magic wand wait on a vector layer, and Text, Gradient and the curve tools wait on a pixel layer. Rest on a greyed tool and it says why. Press it and it says what to do.
+Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. If you'd rather see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General** (or in [Change the tools](help:tool-builder)). Then they wait where they sit, and resting on one says why.
 
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
 
@@ -581,13 +581,32 @@ Tilemap and camera layers are different jobs, so on those the strip shows only t
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). Right-click the strip to move it to another side, or to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Right-click the strip to move it to another side, or to put the tools back the way they came.
 
 ## One button per group
 
 If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
+  'tool-builder': `**Change the tools** lets you set the strip up the way you work: name your groups, make your own, put away the tools you never touch and fold a whole group into one button. Nothing is lost: every tool still has its key and its place in the command search.
+
+**Open it:** **View > Change the tools > Change the tools**, or right-click the strip, or search for it. A gold edge shows the strip is open for changes, and **Done** (or **Escape**) closes it.
+
+**Move a tool:** drag it to another place, or onto another group. Click a tool for a menu with the same things.
+
+**Make a group:** drag a tool onto a gold **+** between two groups, or click a tool and choose **Start a new group here**. A group you never name is just a divider. **Join the group above** takes the divider away.
+
+**Name a group:** click its name above it. Leave the name empty and it goes back to its usual one, or to a plain divider if it never had one.
+
+**Put a tool away:** click it and choose **Hide this tool**, or drag it to **Put away**. A small chip at the foot of the strip counts what is away. Press it, then press a tool to bring it back to the place it had. The Lasso and its pixel twin are one place, so they go and come back together.
+
+**Fold a group:** press the little arrow beside its name. The group becomes one button with a corner mark; press and hold it for the rest. **Rail style** in the panel folds every group at once, and your own folds are still there when you go back to **Every tool**.
+
+**Button size** is small, medium or large. **Group names** shows or hides the names above the groups (it is on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
+
+**Put the tools back** undoes all of it for this workspace, and size, names and style too. The message that follows has **Undo**.
+
+Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
   'tool-arrange': `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
 
 ## With the mouse
@@ -608,7 +627,7 @@ A group you make is called **Group 2**, **Group 3** and so on. Give it a name of
 
 ## Put them back
 
-Right-click the strip and choose **Reset tools to default**. It puts back the tools and the group names of the workspace you are in, the way that workspace comes. It is also in the command search.
+Right-click the strip and choose **Put the tools back**. It puts back the tools and the group names of the workspace you are in, the way that workspace comes. It is also in the command search.
 
 ## One for each workspace
 

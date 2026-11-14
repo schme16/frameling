@@ -477,8 +477,11 @@ kbd {
 
 /* Tool strip */
 .ui-tools {
+  /* The size of a tool button: Change the tools sets it (small, medium, large). The rail is two buttons wide. */
+  --tool: 38px;
+  --tool-pad: 18px;
   flex: none;
-  width: 94px;
+  width: calc(var(--tool) * 2 + var(--tool-pad));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -492,16 +495,33 @@ kbd {
   scrollbar-width: none;
 }
 :root[data-look='crisp'] .ui-tools {
-  width: 82px;
+  --tool: 34px;
+  --tool-pad: 14px;
   padding: 6px 0;
   gap: 2px;
+}
+.ui-tools.is-size-small {
+  --tool: 30px;
+  --tool-pad: 14px;
+}
+:root[data-look='crisp'] .ui-tools.is-size-small {
+  --tool: 28px;
+  --tool-pad: 12px;
+}
+.ui-tools.is-size-large {
+  --tool: 46px;
+  --tool-pad: 20px;
+}
+:root[data-look='crisp'] .ui-tools.is-size-large {
+  --tool: 42px;
+  --tool-pad: 16px;
 }
 .ui-tool {
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--tool);
+  height: var(--tool);
   padding: 0;
   border: 0;
   border-radius: calc(var(--radius) - 2px);
@@ -510,8 +530,6 @@ kbd {
   transition: background 0.12s var(--ease), color 0.12s var(--ease), transform 0.22s var(--ui-pop);
 }
 :root[data-look='crisp'] .ui-tool {
-  width: 34px;
-  height: 34px;
   border-radius: var(--radius-small);
 }
 .ui-tool:hover {
@@ -558,6 +576,10 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+}
+.ui-tools.is-sideways .ui-tool-groups {
+  width: auto;
 }
 .ui-tool-group {
   display: grid;
@@ -659,10 +681,10 @@ kbd {
 }
 /* Stacked: one button per group, a corner mark when there is more to find in it. */
 .ui-tools.is-stacked {
-  width: 50px;
+  width: calc(var(--tool) + 12px);
 }
 :root[data-look='crisp'] .ui-tools.is-stacked {
-  width: 44px;
+  width: calc(var(--tool) + 10px);
 }
 .ui-tools.is-stacked .ui-tool-gap {
   height: 7px;
@@ -730,6 +752,271 @@ kbd {
   background: var(--hover-bg);
 }
 .ui-tool-fly-item.is-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+
+/* Group names above the groups (Group names: Show), and the same row when the tools are being changed. */
+.ui-tool-head {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 3px 8px 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ui-tool-head.is-edit {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 1px 6px;
+}
+.ui-tool-head-name {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+.ui-tool-head-name:hover,
+.ui-tool-head-name:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-head-name.is-empty {
+  color: var(--faint);
+  font-style: italic;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ui-tool-fold {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+}
+.ui-tool-fold:hover:not(:disabled),
+.ui-tool-fold:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-fold.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ui-tool-fold:disabled {
+  opacity: 0.4;
+}
+/* While the tools are being changed: a + on every divider says a group can start here. */
+.ui-tools.is-editing {
+  outline: 2px solid color-mix(in srgb, var(--sunny) 70%, transparent);
+  outline-offset: -2px;
+}
+.ui-tools.is-editing .ui-tool-gap {
+  height: 16px;
+}
+.ui-tools.is-editing .ui-tool-gap::before {
+  top: 7px;
+  background: color-mix(in srgb, var(--sunny) 55%, var(--line));
+}
+.ui-tools.is-editing .ui-tool-gap::after {
+  content: '+';
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sunny-deep, var(--sunny));
+  color: var(--chosen-fg, #2b2100);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+.ui-tools.is-editing .ui-tool-gap.is-end {
+  height: 22px;
+}
+.ui-tools.is-editing .ui-tool-gap.is-drop::before {
+  top: 6px;
+  height: 4px;
+}
+.ui-tools.is-editing .ui-tool {
+  cursor: pointer;
+}
+/* Tools put away leave a quiet chip at the foot of the rail. */
+.ui-tools-away {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--faint);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tools-away:hover,
+.ui-tools-away:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
+/* Change the tools: the panel beside the rail. */
+.ui-tb-panel {
+  position: fixed;
+  z-index: 52;
+  width: 292px;
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  animation: ui-drop 0.14s var(--ui-pop);
+}
+.ui-tb-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.ui-tb-hint,
+.ui-tb-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.ui-tb-note {
+  margin-top: 4px;
+}
+.ui-tb-head {
+  margin: 12px 0 6px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tb-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px;
+  border: 1.5px dashed var(--line);
+  border-radius: calc(var(--radius) - 2px);
+}
+.ui-tb-shelf.is-drop {
+  border-color: var(--sunny-deep, var(--sunny));
+  background: color-mix(in srgb, var(--sunny) 14%, transparent);
+}
+.ui-tb-away {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--muted);
+}
+.ui-tb-away:hover,
+.ui-tb-away:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tb-away.is-lifted {
+  opacity: 0.35;
+}
+.ui-tb-empty {
+  padding: 0 6px;
+  color: var(--faint);
+  font-size: var(--fs-small);
+}
+.ui-tb-link {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.ui-tb-segs {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.ui-tb-seg {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+.ui-tb-seg:hover {
+  color: var(--text);
+}
+.ui-tb-seg.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ui-tb-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ui-tb-back,
+.ui-tb-done {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+}
+.ui-tb-back:disabled {
+  opacity: 0.45;
+}
+.ui-tb-back:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.ui-tb-done {
+  border-color: transparent;
   background: var(--chosen-bg);
   color: var(--chosen-fg);
 }
@@ -3430,14 +3717,13 @@ body.ui-resizing * {
 .ui-tools.is-sideways {
   flex-direction: row;
   width: auto;
-  height: 94px;
+  height: calc(var(--tool) * 2 + var(--tool-pad));
   padding: 0 8px 0 2px;
   overflow-x: auto;
   overflow-y: hidden;
 }
 :root[data-look='crisp'] .ui-tools.is-sideways {
   width: auto;
-  height: 82px;
   padding: 0 6px 0 2px;
 }
 .ui-tools.is-sideways .ui-tool-groups {
@@ -3480,10 +3766,10 @@ body.ui-resizing * {
   height: 80%;
 }
 .ui-tools.is-sideways.is-stacked {
-  height: 50px;
+  height: calc(var(--tool) + 12px);
 }
 :root[data-look='crisp'] .ui-tools.is-sideways.is-stacked {
-  height: 44px;
+  height: calc(var(--tool) + 10px);
 }
 .ui-tools.is-sideways.is-stacked .ui-tool-gap,
 .ui-tools.is-sideways.is-stacked.is-arranging .ui-tool-gap {

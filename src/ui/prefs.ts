@@ -12,6 +12,9 @@ import { DEFAULT_HISTORY_STEPS, HISTORY_STEPS_RANGE, setHistorySteps } from '../
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
 export type ToolRailPref = 'two' | 'stacked';
+export type ToolSizePref = 'small' | 'medium' | 'large';
+export type OffLayerPref = 'hide' | 'grey';
+export const TOOL_SIZES: ToolSizePref[] = ['small', 'medium', 'large'];
 
 export interface Prefs {
   /** The mode: follow the computer (system), or always dark, or always light. (Called `theme` since before themes existed.) */
@@ -50,6 +53,12 @@ export interface Prefs {
   rightSide: 'inspector' | 'rail' | 'tabs';
   /** The tool rail: every tool two wide in groups, or one button per group with the rest in a flyout. */
   toolRail: ToolRailPref;
+  /** How big the tool buttons are. */
+  toolSize: ToolSizePref;
+  /** Show each group's name above it on the tool rail (a group you made and never named stays a plain divider). On by default; off is the slim rail. */
+  toolNames: boolean;
+  /** Tools that do not work on the layer you are on: left out of the rail (hide), or kept in place and greyed out (grey). */
+  toolsOffLayer: OffLayerPref;
   /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
   fadeTileCopies: boolean;
   /** How sizes are shown: pixels, or mm, cm, inches or points at the document's DPI. */
@@ -101,6 +110,9 @@ export const DEFAULT_PREFS: Prefs = {
   betaContact: '',
   rightSide: 'inspector',
   toolRail: 'two',
+  toolSize: 'medium',
+  toolNames: true,
+  toolsOffLayer: 'hide',
   fadeTileCopies: false,
   units: DEFAULT_UNIT,
   onboarded: false,
@@ -148,6 +160,9 @@ export function migratePrefs(raw: unknown): Prefs {
     betaContact: typeof r.betaContact === 'string' ? r.betaContact.slice(0, 200) : DEFAULT_PREFS.betaContact,
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
+    toolSize: TOOL_SIZES.includes(r.toolSize as ToolSizePref) ? (r.toolSize as ToolSizePref) : DEFAULT_PREFS.toolSize,
+    toolNames: bool(r.toolNames, DEFAULT_PREFS.toolNames),
+    toolsOffLayer: r.toolsOffLayer === 'grey' || r.toolsOffLayer === 'hide' ? r.toolsOffLayer : DEFAULT_PREFS.toolsOffLayer,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
     themePicking: r.themePicking === 'advanced' ? 'advanced' : DEFAULT_PREFS.themePicking,

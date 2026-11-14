@@ -2,6 +2,7 @@
 import { store } from '../core/store';
 import { foldedStepOf, moreRequest } from '../timeline/headerMenu';
 import { currentGroups, flyRequest, frontTools } from '../ui/toolRail';
+import { hiddenTools } from '../ui/toolArrange';
 import type { QuestTarget } from './types';
 
 /** On screen and not hidden. */
@@ -71,6 +72,15 @@ function stackedToolButton(id: string, shown: (el: Element) => boolean): Element
   return btn;
 }
 
+/**
+ * Where a tool's button is when the person has put the tool away: nowhere on the rail. The ring goes round the little
+ * "put away" chip at the foot of the rail instead, which opens the shelf to bring it back.
+ */
+function putAwayChip(id: string, shown: (el: Element) => boolean): Element | null {
+  if (!hiddenTools(currentGroups()).includes(id)) return null;
+  return [...document.querySelectorAll('.ui-tools-away')].find(shown) ?? null;
+}
+
 /** The first element a target names that is actually showing. */
 export function resolveTarget(t: QuestTarget | undefined, shown: (el: Element) => boolean = isShown): Element | null {
   if (!t || typeof document === 'undefined') return null;
@@ -107,6 +117,8 @@ export function resolveTarget(t: QuestTarget | undefined, shown: (el: Element) =
     // A tool inside a stacked group of the tool rail has no button of its own to find.
     const group = tool && stackedToolButton(tool, shown);
     if (group) return group;
+    const away = tool && putAwayChip(tool, shown);
+    if (away) return away;
   }
   return null;
 }

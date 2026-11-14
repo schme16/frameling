@@ -295,6 +295,32 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
+      <Row label="Tool group names" hint="Each group of tools gets its name above it. Turn them off for a slimmer rail. A group you made and never named is just a divider either way.">
+        <Switch label="Tool group names" on={p.toolNames} onChange={(toolNames) => setPrefs({ toolNames })} />
+      </Row>
+      <Row label="Tool button size" hint="How big the buttons on the tool rail are. Change the tools, in the View menu, has this too.">
+        <Segmented<'small' | 'medium' | 'large'>
+          label="Tool button size"
+          value={p.toolSize}
+          onChange={(toolSize) => setPrefs({ toolSize })}
+          options={[
+            { id: 'small', label: 'Small' },
+            { id: 'medium', label: 'Medium' },
+            { id: 'large', label: 'Large' },
+          ]}
+        />
+      </Row>
+      <Row label="Tools that do not work here" hint="A tool that only works on vector layers has nothing to do on a pixel layer, and the other way round. Hide them leaves them off the rail, so it is shorter. Grey them out keeps every tool in its place.">
+        <Segmented<'hide' | 'grey'>
+          label="Tools that do not work here"
+          value={p.toolsOffLayer}
+          onChange={(toolsOffLayer) => setPrefs({ toolsOffLayer })}
+          options={[
+            { id: 'hide', label: 'Hide them' },
+            { id: 'grey', label: 'Grey them out' },
+          ]}
+        />
+      </Row>
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
         <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>

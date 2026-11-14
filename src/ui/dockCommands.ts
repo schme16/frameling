@@ -10,7 +10,7 @@ import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { store } from '../core/store';
-import { askGroupRename, currentGroups, isCustomArrangement, resetToolArrangement } from './toolRail';
+import { askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -223,17 +223,132 @@ registerCommand({
 
 registerCommand({
   id: 'view.toolsReset',
-  label: 'Reset tools to default',
+  label: 'Put the tools back',
   category: 'View',
-  description: 'Put this workspace\'s tools back in the groups and order it comes with.',
-  help: 'tool-strip',
-  keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange'],
-  enabled: () => isCustomArrangement(),
+  description: 'Put this workspace\'s tools back the way they come: groups, names, hidden and folded tools, button size, group names and rail style. Undo is on the message.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange', 'reset', 'default', 'restore', 'undo changes'],
+  enabled: () => toolbarIsChanged(),
+  run: putToolsBack,
+});
+
+registerCommand({
+  id: 'view.toolbarBuilder',
+  label: 'Change the tools',
+  category: 'View',
+  description: 'Name groups, make your own, move tools between them, put away the ones you never use, fold a group into one button and set the button size.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'tool rail', 'customise', 'customize', 'edit', 'builder', 'groups', 'hide', 'fold', 'size', 'rearrange', 'arrange', 'divider'],
+  checked: () => toolbarEditing.get(),
+  run: () => setToolbarEditing(),
+});
+
+/** The group of the tool in use, for the commands that act on "this group". */
+const groupInUse = () => {
+  const tool = store().get().ui.tool;
+  const groups = currentGroups();
+  return { tool, group: groups.find((x) => x.tools.includes(tool)) };
+};
+
+registerCommand({
+  id: 'view.toolHide',
+  label: 'Hide the tool in use from the rail',
+  category: 'View',
+  description: 'Put the picked tool away. It keeps its key and its place in the command search, and Change the tools brings it back.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'hide', 'put away', 'remove', 'declutter'],
+  run: () => putToolAway(store().get().ui.tool),
+});
+
+registerCommand({
+  id: 'view.toolsShowAll',
+  label: 'Bring back the tools put away',
+  category: 'View',
+  description: 'Put every hidden tool back on the rail, in the place it had.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'hide', 'show', 'unhide', 'put away', 'restore'],
+  enabled: () => currentGroups().some((g) => g.hidden?.length),
+  run: () => bringToolBack(),
+});
+
+registerCommand({
+  id: 'view.toolGroupFold',
+  label: 'Fold the group of the tool in use into one button',
+  category: 'View',
+  description: 'The group becomes one button, with the rest behind it (press and hold). Run it again to open the group out.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'group', 'fold', 'collapse', 'stack', 'one button', 'flyout'],
+  checked: () => !!groupInUse().group?.fold,
+  enabled: () => getPrefs().toolRail === 'two',
   run: () => {
-    resetToolArrangement();
-    toast('Tools are back the way this workspace has them.', { duration: 1800 });
+    const g = groupInUse().group;
+    if (g) foldToolGroup(g.id, !g.fold);
   },
 });
+
+registerCommand({
+  id: 'view.toolGroupStart',
+  label: 'Start a new tool group at the tool in use',
+  category: 'View',
+  description: 'Put a divider before the picked tool: it and the ones after it in its group become a group of their own.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'group', 'divider', 'split', 'new group', 'separator'],
+  run: () => startToolGroupHere(groupInUse().tool),
+});
+
+registerCommand({
+  id: 'view.toolGroupJoin',
+  label: 'Join the tool group of the tool in use to the one above',
+  category: 'View',
+  description: 'Take the divider above the picked tool\'s group away.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'group', 'divider', 'join', 'merge', 'separator'],
+  run: () => {
+    const g = groupInUse().group;
+    if (g) joinToolGroupAbove(g.id);
+  },
+});
+
+for (const size of ['small', 'medium', 'large'] as const) {
+  registerCommand({
+    id: `view.toolSize.${size}`,
+    label: `Tool buttons: ${size}`,
+    category: 'View',
+    description: 'How big the buttons on the tool rail are.',
+    help: 'tool-builder',
+    keywords: ['tools', 'toolbar', 'size', 'bigger', 'smaller', 'icons', 'buttons', 'zoom', size],
+    checked: () => getPrefs().toolSize === size,
+    run: () => setPrefs({ toolSize: size }),
+  });
+}
+
+for (const [way, label, about] of [
+  ['hide', 'Tools that do not work here: hide them', 'Leave a tool off the rail when it does not work on the layer you are on. The rail is shorter, and the places of the others stay put.'],
+  ['grey', 'Tools that do not work here: grey them out', 'Keep every tool in its place and grey out the ones that do not work on the layer you are on.'],
+] as const) {
+  registerCommand({
+    id: `view.toolsOffLayer.${way}`,
+    label,
+    category: 'View',
+    description: about,
+    help: 'tool-builder',
+    keywords: ['tools', 'toolbar', 'grey', 'gray', 'greyed', 'hide', 'disabled', 'pixel layer', 'vector layer', 'layer kind', 'rail'],
+    checked: () => getPrefs().toolsOffLayer === way,
+    run: () => setPrefs({ toolsOffLayer: way }),
+  });
+}
+
+registerCommand({
+  id: 'view.toolNames',
+  label: 'Show group names on the tool rail',
+  category: 'View',
+  description: 'Put each group\'s name above it. A group you made and never named stays a plain divider.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'group', 'names', 'labels', 'headings', 'rail'],
+  checked: () => getPrefs().toolNames,
+  run: () => setPrefs({ toolNames: !getPrefs().toolNames }),
+});
+
 // How the workspace switcher beside the drawing's name looks (see WorkspaceSwitcher.tsx).
 for (const [look, label, about] of [
   ['tabs', 'Workspace switcher: tabs', 'Every workspace as a small tab beside the drawing name, the one you are in lit up.'],

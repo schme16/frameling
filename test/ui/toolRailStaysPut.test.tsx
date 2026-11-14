@@ -297,6 +297,7 @@ describe('the rail on the page', () => {
   });
 
   it('changing layer changes no place, and the lasso becomes the pixel lasso', () => {
+    setPrefs({ toolsOffLayer: 'grey' });
     const k = kindsDoc();
     resetStore(k.doc);
     on(k.vector);
@@ -314,7 +315,31 @@ describe('the rail on the page', () => {
     expect(store().get().ui.tool).toBe('select-lasso');
   });
 
+  it('hiding what does not work leaves the others in their order, twins on one button, and the rail shorter', () => {
+    const k = kindsDoc();
+    resetStore(k.doc);
+    on(k.vector);
+    mount();
+    const vector = ids().map(slotOf);
+    expect(host.querySelector('[data-tool-id="shade"]')).toBeNull();
+    expect(host.querySelector('.ui-tool.is-off')).toBeNull();
+    expect(host.querySelector('[data-tool-id="select-lasso"]')).toBeTruthy();
+    on(k.pixel);
+    const pixel = ids().map(slotOf);
+    expect(host.querySelector('[data-tool-id="shade"]')).toBeTruthy();
+    expect(host.querySelector('[data-tool-id="select-lasso"]')).toBeNull();
+    expect(host.querySelector('[data-tool-id="pixel-select-lasso"]')).toBeTruthy();
+    // What the two layers share is in the same order on both.
+    const shared = vector.filter((id) => pixel.includes(id));
+    expect(pixel.filter((id) => shared.includes(id))).toEqual(shared);
+    // Grey keeps every place, so it is the longer rail.
+    setPrefs({ toolsOffLayer: 'grey' });
+    mount();
+    expect(ids().length).toBeGreaterThan(pixel.length);
+  });
+
   it('a tool that does not work here is greyed, says why on hover, and explains when pressed', () => {
+    setPrefs({ toolsOffLayer: 'grey' });
     const k = kindsDoc();
     resetStore(k.doc);
     on(k.vector);

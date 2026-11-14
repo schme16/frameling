@@ -137,9 +137,9 @@ describe('names are kept per workspace', () => {
   it('the menus offer it', () => {
     const labels = (items: ReturnType<typeof groupMenu>) => items.flatMap((i) => ('label' in i ? [i.label] : []));
     expect(labels(toolMenu('pencil', () => true))).toContain('Rename Draw...');
-    expect(labels(groupMenu('shapes'))).toEqual(['Rename group...']);
+    expect(labels(groupMenu('shapes'))).toEqual(['Rename group...', 'Fold this group into one button', 'Join the group above']);
     renameToolGroup('shapes', 'Boxes');
-    expect(labels(groupMenu('shapes'))).toEqual(['Rename group...', 'Use the usual name again']);
+    expect(labels(groupMenu('shapes'))).toEqual(['Rename group...', 'Use the usual name again', 'Fold this group into one button', 'Join the group above']);
     expect(labels(toolMenu('rect', () => true))).toContain('Rename Boxes...');
   });
 });
@@ -222,7 +222,7 @@ describe('renaming in the page', () => {
     fire(host.querySelector('[data-tool-gap="1"]')!, 'contextmenu');
     const items = dockMenu.get()!.items.flatMap((i) => ('label' in i ? [i.label] : []));
     expect(items[0]).toBe('Rename group...');
-    expect(items).toContain('Reset tools to default');
+    expect(items).toContain('Put the tools back');
   });
 
   it('right-clicking a tool offers renaming its group', () => {

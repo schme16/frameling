@@ -2,10 +2,12 @@
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
 import { allTools, getTool } from '../core/registry';
 import { dock, railOf, resetToolGroups, setToolGroups } from './dock';
+import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
+import { toast } from './toast';
 import { run } from './dockDrag';
 import { askRename, type DockMenuItem } from './dockMenus';
 import { createStore } from './mini';
-import { groupName, hasOwnName, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, slotMates, type ToolDrop, type ToolGroup } from './toolArrange';
+import { canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -42,7 +44,11 @@ const mates = (id: string): string[] => slotMates(allTools())(id);
 const label = (id: string): string => getTool(id)?.label ?? id;
 
 export function moveToolTo(id: string, to: ToolDrop, visible: (id: string) => boolean = () => true): void {
-  if (arrange((g) => moveTool(g, id, to, mates))) railNote.set(`${label(id)} moved. ${placeWords(currentGroups(), id, visible)}.`);
+  if ('away' in to) return void putToolAway(id);
+  const wasAway = hiddenTools(currentGroups()).includes(id);
+  // A tool brought back from the shelf shows again, so it counts as visible where it lands.
+  const sees = wasAway ? (t: string) => t === id || visible(t) : visible;
+  if (arrange((g) => moveTool(g, id, to, mates))) railNote.set(`${label(id)} ${wasAway ? 'is back' : 'moved'}. ${placeWords(currentGroups(), id, sees)}.`);
 }
 
 /** Alt+arrow: one step along the rail. Returns true when the tool moved. */
@@ -72,34 +78,119 @@ export function askGroupRename(groupId: string, at?: { x: number; y: number }): 
   askRename('group', groupId, x, y);
 }
 
-/** The menu for a group of the rail: its name, and any other things to do to the group as a whole. */
-export function groupMenu(groupId: string, at?: { x: number; y: number }): DockMenuItem[] {
+/** The menu for a group of the rail: its name, folding it, joining it, and any other things to do to the group as a whole. */
+export function groupMenu(groupId: string, at?: { x: number; y: number }, visible: (id: string) => boolean = () => true): DockMenuItem[] {
   const groups = currentGroups();
   const g = groups.find((x) => x.id === groupId);
   if (!g) return [];
+  const folded = !!g.fold;
+  const above = groupAbove(groupId, visible);
   return [
     { heading: groupName(g, groups) },
     { label: 'Rename group...', onClick: () => askGroupRename(groupId, at) },
     ...(hasOwnName(g, groups) ? [{ label: 'Use the usual name again', onClick: () => renameToolGroup(groupId, '') } satisfies DockMenuItem] : []),
+    { separator: true },
+    { label: folded ? 'Show every tool in this group' : 'Fold this group into one button', disabled: getPrefs().toolRail === 'stacked', onClick: () => foldToolGroup(groupId, !folded) },
+    { label: 'Join the group above', disabled: !above, onClick: () => joinToolGroupAbove(groupId, visible) },
   ];
 }
 
-/** The menu for one tool: where to move it, and putting the rail back. */
+/** The menu for one tool: where to move it, putting it away, dividing and folding its group. */
 export function toolMenu(id: string, visible: (id: string) => boolean): DockMenuItem[] {
   const groups = currentGroups();
   const here = groups.find((g) => g.tools.includes(id));
   const items: DockMenuItem[] = [{ heading: label(id) }];
   for (const g of groups) items.push({ label: `Move to ${groupName(g, groups)}`, disabled: g === here, onClick: () => moveToolTo(id, { group: g.id }, visible) });
   items.push({ label: 'Move to a new group', disabled: here?.tools.length === 1, onClick: () => moveToolTo(id, { newGroupAt: groups.length }, visible) });
+  const first = here ? here.tools.filter(visible)[0] === id : true;
+  items.push({ separator: true }, { label: 'Start a new group here', disabled: first, onClick: () => startToolGroupHere(id, visible) });
+  if (here) {
+    items.push({ label: 'Join the group above', disabled: !groupAbove(here.id, visible), onClick: () => joinToolGroupAbove(here.id, visible) });
+    items.push({ label: here.fold ? 'Show every tool in this group' : 'Fold this group into one button', disabled: getPrefs().toolRail === 'stacked', onClick: () => foldToolGroup(here.id, !here.fold) });
+  }
+  items.push({ label: 'Hide this tool', onClick: () => putToolAway(id) });
   if (here) items.push({ separator: true }, { label: `Rename ${groupName(here, groups)}...`, onClick: () => askGroupRename(here.id) });
-  items.push({ separator: true }, { label: 'Reset tools to default', disabled: !isCustomArrangement(), onClick: resetToolArrangement });
   return items;
+}
+
+// ---------------------------------------------------------------- the builder: change the tools
+
+/** True while the rail is being changed (the Change the tools panel is open). */
+export const toolbarEditing = createStore(false);
+export const setToolbarEditing = (on = !toolbarEditing.get()): void => toolbarEditing.set(on);
+
+/** The group above one on the rail as it shows now (the groups with nothing showing do not count), or undefined. */
+export function groupAbove(groupId: string, visible: (id: string) => boolean = () => true): ToolGroup | undefined {
+  const shown = visibleGroups(currentGroups(), visible);
+  const i = shown.findIndex((g) => g.id === groupId);
+  return i > 0 ? shown[i - 1] : undefined;
+}
+
+/** Puts a tool away: it leaves the rail but keeps its place in its group, and it is still in the command search and on its key. */
+export function putToolAway(id: string): void {
+  if (arrange((g) => hideTool(g, id, mates))) railNote.set(`${label(id)} put away. It is in Change the tools, under Put away.`);
+}
+
+/** Brings a put-away tool (or with no id, every one) back to the place it had. */
+export function bringToolBack(id?: string): void {
+  if (arrange((g) => (id ? showTool(g, id, mates) : showAllTools(g)))) railNote.set(id ? `${label(id)} is back on the rail.` : 'Every tool is back on the rail.');
+}
+
+/** Folds a group into one button with the rest behind it (or opens it out again). */
+export function foldToolGroup(groupId: string, fold: boolean): void {
+  if (arrange((g) => foldGroup(g, groupId, fold))) railNote.set(fold ? 'Group folded into one button.' : 'Group opened out.');
+}
+
+/** A divider before a tool: it and the ones after it in its group start a group of their own. */
+export function startToolGroupHere(id: string, visible: (id: string) => boolean = () => true): void {
+  if (arrange((g) => startGroupAt(g, id, mates))) railNote.set(`New group started at ${label(id)}. ${placeWords(currentGroups(), id, visible)}.`);
+}
+
+/** Takes the divider above a group away: the group joins the one above it. */
+export function joinToolGroupAbove(groupId: string, visible: (id: string) => boolean = () => true): void {
+  const up = groupAbove(groupId, visible);
+  if (up && arrange((g) => joinGroupAbove(g, groupId, up.id))) railNote.set('Group joined to the one above.');
+}
+
+/** True when the rail is not as it comes: moved, named, hidden or folded tools, or a button size, names or style set. */
+export const toolbarIsChanged = (): boolean => {
+  const p = getPrefs();
+  return isCustomArrangement() || TOOL_PREF_KEYS.some((k) => p[k] !== DEFAULT_PREFS[k]);
+};
+
+/** The preferences "Put the tools back" puts back with the arrangement. */
+const TOOL_PREF_KEYS = ['toolSize', 'toolNames', 'toolRail', 'toolsOffLayer'] as const;
+
+/**
+ * Puts it all back the way it comes: this workspace's groups, their names, what was hidden or folded, and the button
+ * size, group names, rail style and what to do with tools that do not work on the layer. A toast offers Undo, because it undoes more than one thing.
+ */
+export function putToolsBack(): void {
+  const d = dock.get();
+  const id = d.workspaceId;
+  const before = d.rails?.[id];
+  const p = getPrefs();
+  const prefs = Object.fromEntries(TOOL_PREF_KEYS.map((k) => [k, p[k]]));
+  if (!toolbarIsChanged()) return void toast('The tools are already the way they come.', { duration: 1800 });
+  resetToolArrangement();
+  setPrefs(Object.fromEntries(TOOL_PREF_KEYS.map((k) => [k, DEFAULT_PREFS[k]])));
+  toast('The tools are back the way they come.', {
+    kind: 'success',
+    action: {
+      label: 'Undo',
+      run: () => {
+        // Only in the workspace it was done in: if you moved on, leave that one alone.
+        if (dock.get().workspaceId === id && before) setToolGroups(before);
+        setPrefs(prefs);
+      },
+    },
+  });
 }
 
 // ---------------------------------------------------------------- dragging a tool
 
 /** What the drop would be shown as: a bar before or after a tool, a group lit up, or a gap between groups opened. */
-export type DropMark = { kind: 'before' | 'after'; tool: string } | { kind: 'group'; group: string } | { kind: 'gap'; at: number };
+export type DropMark = { kind: 'before' | 'after'; tool: string } | { kind: 'group'; group: string } | { kind: 'gap'; at: number } | { kind: 'shelf' };
 
 export interface ToolDragState {
   id: string;
@@ -133,6 +224,7 @@ export function hitTool(x: number, y: number, groups: ToolGroup[], dragged: stri
       const next = g.tools.filter((t) => t !== dragged)[g.tools.filter((t) => t !== dragged).indexOf(id) + 1] ?? null;
       return { drop: { group: g.id, before: next }, mark: { kind: 'after', tool: id } };
     }
+    if (el.closest('[data-tool-shelf]')) return { drop: { away: true }, mark: { kind: 'shelf' } };
     const gap = el.closest<HTMLElement>('[data-tool-gap]');
     if (gap) {
       const at = Number(gap.dataset.toolGap);
