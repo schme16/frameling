@@ -11,7 +11,7 @@
     ],
     "where": "First-run hello, step 1 (Hello from Quill). Four bubbles beside Quill, one after another."
   },
-  "onboarding.make.cartoons": { "text": "Cartoons! Can't wait to see it uploaded to newgrounds!", "where": "First-run hello, 'What would you like to make?': you just picked Sketches and cartoons." },
+  "onboarding.make.cartoons": { "text": "Cartoons! Can't wait to see it uploaded to Newgrounds!", "where": "First-run hello, 'What would you like to make?': you just picked Sketches and cartoons." },
   "onboarding.make.sprites": { "text": "Pixel heroes! Chunky and charming (just like me!)", "where": "First-run hello, 'What would you like to make?': you just picked Game sprites and pixel art." },
   "onboarding.make.tiles": { "text": "Dungeon Diving! I'll pack the potions!", "where": "First-run hello, 'What would you like to make?': you just picked Tiles and levels." },
   "onboarding.make.motion": {
