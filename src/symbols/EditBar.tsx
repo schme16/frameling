@@ -3,6 +3,7 @@
 import type { DragEvent, MouseEvent } from 'react';
 import { useStore, store } from '../core/store';
 import { topShapeAt } from '../canvas/geometry';
+import { getTurn, windowToBox } from '../canvas/turn';
 import { screenToDoc } from '../canvas/view';
 import { SYMBOL_DRAG_TYPE } from './dragType';
 import { currentKey, editInstance, editPath, leaveSymbol, placeInstance } from './ops';
@@ -35,7 +36,8 @@ export function EditBar() {
 function docPoint(e: { clientX: number; clientY: number; currentTarget: Element }): { x: number; y: number } {
   const r = e.currentTarget.getBoundingClientRect();
   const { zoom, panX, panY } = store().get().ui;
-  return screenToDoc({ zoom, panX, panY }, e.clientX - r.left, e.clientY - r.top);
+  const q = windowToBox(getTurn(), r.width, r.height, e.clientX - r.left, e.clientY - r.top);
+  return screenToDoc({ zoom, panX, panY }, q.x, q.y);
 }
 
 /** Double-click with the Select tool: open the symbol under the pointer, or go back out from an empty spot. */

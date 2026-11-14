@@ -15,9 +15,18 @@ export interface DrawTarget {
   crisp?: boolean;
 }
 
-/** How the background should be painted: see-through when asked and allowed, else the document's own, else white. */
+/**
+ * Whether a page comes out see-through where the format can hold it: when "Transparent background" is ticked, and
+ * always when the page has no background colour of its own (a see-through artboard stays see-through, whatever the tick
+ * says about the others). A format that can't hold it (MP4) paints the page's colour, or white where there is none.
+ */
+export function wantsSeeThrough(doc: Doc, wantTransparent: boolean): boolean {
+  return wantTransparent || doc.background === null;
+}
+
+/** How the background should be painted: see-through when wanted and allowed, else the document's own, else white. */
 export function backgroundFor(doc: Doc, wantTransparent: boolean, formatAllowsAlpha: boolean): BackgroundMode {
-  if (wantTransparent && formatAllowsAlpha) return 'none';
+  if (wantsSeeThrough(doc, wantTransparent) && formatAllowsAlpha) return 'none';
   return doc.background ? 'doc' : 'white';
 }
 

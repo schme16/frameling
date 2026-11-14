@@ -13,7 +13,7 @@ import { can } from '../platform';
 import { notifySaved } from '../io/notify';
 import { encodePng, type RawImage } from '../io/png';
 import { detectCapabilities } from '../export/capabilities';
-import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
+import { backgroundFor, drawFrame, makeCanvas, readPixels, wantsSeeThrough } from '../export/draw';
 import { MAX_SHEET_SIDE, fileSafe, planExport } from '../export/plan';
 import { isCancelled, runExport, type Progress } from '../export/run';
 import { formatInfo, type ExportSettings } from '../export/types';
@@ -236,7 +236,7 @@ export async function exportArtboards(
       const caps = await detectCapabilities(plan.width, plan.height);
       const cap = caps[settings.format];
       if (!cap.ok) throw new ArtboardExportProblem(cap.reason ?? "This computer can't make that kind of video.");
-      videoCodec = settings.format === 'webm' && settings.transparent && cap.alphaCodec ? cap.alphaCodec : cap.codec;
+      videoCodec = settings.format === 'webm' && wantsSeeThrough(doc, settings.transparent) && cap.alphaCodec ? cap.alphaCodec : cap.codec;
       videoAlpha = cap.alpha;
     }
     if (settings.format === 'prores') throw new ArtboardExportProblem('ProRes goes one artboard at a time. Pick "This artboard", or another format.');

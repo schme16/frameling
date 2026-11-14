@@ -5,6 +5,8 @@ import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../
 import type { LayerKind } from '../core/format';
 import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
+import { isRoomFolded } from './roomFolds';
+import { toast } from './toast';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { mergeLocks, sanitizeLockMap, savedLocks, withLock, type LockKind, type Locks } from './dockLock';
 import { cleanRailWidth } from './toolRailWidth';
@@ -414,6 +416,11 @@ export function resizeZone(zone: DockZone, size: number): void {
 }
 
 export function toggleCollapsed(zone: DockZone, to?: boolean): void {
+  // Folded only for lack of room: opening it by hand would just squeeze the canvas, so say what would help instead.
+  if (to !== true && isRoomFolded(zone) && !dock.get().layout.zones[zone].collapsed) {
+    toast('There is not room for those panels at this size. A bigger window, or a smaller interface size, brings them back.', { duration: 6000 });
+    return;
+  }
   change((l) => void (l.zones[zone].collapsed = to ?? !l.zones[zone].collapsed));
 }
 

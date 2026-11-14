@@ -6,6 +6,7 @@ import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
 import { effectiveKeys } from './keys';
 import { headingTo, HOVER_GRACE, HOVER_STEP, type Box, type Pt } from './hoverIntent';
+import { menusThatFit } from './menuFold';
 
 export function MenuBar() {
   const [open, setOpen] = useState<number | null>(null);
@@ -17,6 +18,41 @@ export function MenuBar() {
   useStore((s) => (open === null ? null : s));
   const menus = resolveMenus();
   const bar = useRef<HTMLElement>(null);
+  // Menus that don't fit beside the rest of the top bar fold into a More menu at the end (see menuFold.ts).
+  const [shown, setShown] = useState(Infinity);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const folded = Math.min(shown, menus.length) < menus.length;
+  const firstFolded = Math.min(shown, menus.length);
+  useLayoutEffect(() => {
+    const el = bar.current;
+    const top = el?.parentElement;
+    if (!el || !top) return;
+    const fit = () => {
+      const wraps = [...el.querySelectorAll<HTMLElement>(':scope > .ui-menu-wrap:not(.ui-menu-more)')];
+      const widths = wraps.map((w) => w.offsetWidth);
+      const more = el.querySelector<HTMLElement>(':scope > .ui-menu-more');
+      const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+      // The room the bar has: the top bar's width less everything else on it (the logo, the name, the workspace tabs and the buttons).
+      const cs = getComputedStyle(top);
+      let others = 0;
+      let count = 0;
+      for (const c of top.children) {
+        count++;
+        if (c === el) continue;
+        others += c.classList.contains('ui-topbar-mid') ? Math.min(NAME_ROOM, (c as HTMLElement).offsetWidth) : (c as HTMLElement).offsetWidth;
+      }
+      const room = top.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - others - (parseFloat(cs.columnGap) || 0) * (count - 1) - (parseFloat(getComputedStyle(el).marginLeft) || 0);
+      setShown(menusThatFit(widths, room, more?.offsetWidth || MORE_WIDTH, gap));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(top);
+    for (const c of top.children) if (c !== el) ro.observe(c);
+    return () => ro.disconnect();
+  }, [menus.length]);
+  useEffect(() => {
+    if (!folded) setMoreOpen(false);
+  }, [folded]);
   // Where the pointer was and is, the open submenu's box, and the change we are holding back while the pointer is
   // still on its way to that box. Moving diagonally into a submenu crosses the rows below it; without this, each of
   // those rows would close the submenu out from under you.
@@ -65,7 +101,7 @@ export function MenuBar() {
         return;
       }
       setOpen(null);
-      bar.current?.querySelectorAll<HTMLElement>('[data-top]')[open]?.focus();
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[open]?.focus();
     };
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
@@ -74,11 +110,23 @@ export function MenuBar() {
   useEffect(() => {
     if (open === null) return;
     const away = (e: PointerEvent) => {
-      if (!bar.current?.contains(e.target as Node)) setOpen(null);
+      if (!bar.current?.contains(e.target as Node)) {
+        setOpen(null);
+        setMoreOpen(false);
+      }
     };
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
   }, [open]);
+
+  useEffect(() => {
+    if (!moreOpen || open !== null) return;
+    const away = (e: PointerEvent) => {
+      if (!bar.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [moreOpen, open]);
 
   const focusItem = (menu: number, which: 'first' | 'last' | number) => {
     requestAnimationFrame(() => {
@@ -88,14 +136,16 @@ export function MenuBar() {
   };
 
   const onBarKey = (e: React.KeyboardEvent, index: number) => {
-    const n = menus.length;
+    // The menus that show, and the More button after them when some are folded.
+    const n = firstFolded + (folded ? 1 : 0);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + n) % n;
-      const wasOpen = open !== null;
-      if (wasOpen) setOpen(next);
-      bar.current?.querySelectorAll<HTMLElement>('[data-top]')[next]?.focus();
-      if (wasOpen) focusItem(next, 'first');
+      const wasOpen = open !== null && open < firstFolded;
+      if (wasOpen && next < firstFolded) setOpen(next);
+      else if (wasOpen) setOpen(null);
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[next]?.focus();
+      if (wasOpen && next < firstFolded) focusItem(next, 'first');
     } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       setOpen(index);
@@ -123,12 +173,14 @@ export function MenuBar() {
       e.preventDefault();
       e.stopPropagation();
       setOpen(null);
-      bar.current?.querySelectorAll<HTMLElement>('[data-top]')[index]?.focus();
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[index]?.focus();
     } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + menus.length) % menus.length;
+      // A menu opened from More has no neighbours to move to.
+      if (index >= firstFolded) return;
+      const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + firstFolded) % firstFolded;
       setOpen(next);
-      bar.current?.querySelectorAll<HTMLElement>('[data-top]')[next]?.focus();
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[next]?.focus();
       focusItem(next, 'first');
     } else if (e.key === 'Tab') setOpen(null);
   };
@@ -208,6 +260,7 @@ export function MenuBar() {
         onClick={() => {
           if (!enabled) return;
           setOpen(null);
+          setMoreOpen(false);
           runCommand(c);
         }}
       >
@@ -230,11 +283,13 @@ export function MenuBar() {
       }}
     >
       {menus.map(({ menu, items }, index) => (
-        <div key={menu.label} className="ui-menu-wrap">
+        <div key={menu.label} className={`ui-menu-wrap${index >= firstFolded ? ' is-folded' : ''}`} aria-hidden={index >= firstFolded || undefined}>
           <button
             type="button"
             role="menuitem"
             data-top
+            data-folded={index >= firstFolded ? '' : undefined}
+            tabIndex={index >= firstFolded ? -1 : undefined}
             data-quest={`menu-${menu.label.toLowerCase()}`}
             aria-haspopup="menu"
             aria-expanded={open === index}
@@ -245,16 +300,109 @@ export function MenuBar() {
           >
             {menuTitle(menu)}
           </button>
-          {open === index && (
+          {open === index && index < firstFolded && (
             <div className="ui-menu" role="menu" aria-label={menuTitle(menu)} data-menu={index}>
               {items.map((it, i) => row(it, i, index))}
             </div>
           )}
         </div>
       ))}
+      {folded && (
+        <div className="ui-menu-wrap ui-menu-more">
+          <button
+            type="button"
+            role="menuitem"
+            data-top
+            data-quest="menu-more"
+            aria-haspopup="menu"
+            aria-expanded={moreOpen}
+            aria-label="More menus"
+            className={`ui-menu-top${moreOpen ? ' is-open' : ''}`}
+            onClick={() => {
+              setOpen(null);
+              setMoreOpen(!moreOpen);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setOpen(null);
+                setMoreOpen(true);
+                requestAnimationFrame(() => bar.current?.querySelector<HTMLElement>('.ui-menu-more [role^="menuitem"]:not([data-top])')?.focus());
+              } else if (e.key === 'Escape') setMoreOpen(false);
+              else onBarKey(e, firstFolded);
+            }}
+          >
+            More
+            <Icon name="chevron-down" size={12} />
+          </button>
+          {moreOpen && open !== null && open >= firstFolded && menus[open] && (
+            <div className="ui-menu" role="menu" aria-label={menuTitle(menus[open].menu)} data-menu={open}>
+              <button
+                type="button"
+                role="menuitem"
+                className="ui-menu-item"
+                onClick={() => setOpen(null)}
+                onKeyDown={(e) => onItemKey(e, open)}
+              >
+                <span className="ui-menu-tick">
+                  <Icon name="chevron-left" size={14} />
+                </span>
+                <span className="ui-menu-label">More menus</span>
+              </button>
+              {menus[open].items.map((it, i) => row(it, i, open))}
+            </div>
+          )}
+          {moreOpen && (open === null || open < firstFolded) && (
+            <div className="ui-menu" role="menu" aria-label="More menus" data-menu="more">
+              {menus.slice(firstFolded).map(({ menu }, k) => (
+                <button
+                  key={menu.label}
+                  type="button"
+                  role="menuitem"
+                  aria-haspopup="menu"
+                  className="ui-menu-item"
+                  data-more-menu={menu.label}
+                  onClick={() => {
+                    setOpen(firstFolded + k);
+                    requestAnimationFrame(() => focusItem(firstFolded + k, 'first'));
+                  }}
+                  onKeyDown={(e) => {
+                    const list = [...(bar.current?.querySelectorAll<HTMLElement>('[data-menu="more"] > [role="menuitem"]') ?? [])];
+                    const at = list.indexOf(e.currentTarget);
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      list[(at + 1) % list.length]?.focus();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      list[(at - 1 + list.length) % list.length]?.focus();
+                    } else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setOpen(firstFolded + k);
+                      requestAnimationFrame(() => focusItem(firstFolded + k, 'first'));
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMoreOpen(false);
+                      bar.current?.querySelector<HTMLElement>('.ui-menu-more [data-top]')?.focus();
+                    }
+                  }}
+                >
+                  <span className="ui-menu-tick" />
+                  <span className="ui-menu-label">{menuTitle(menu)}</span>
+                  <Icon name="chevron-right" size={14} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 }
+
+/** The room kept for the drawing's name when the bar works out how many menus fit, and a stand-in width for the More button before it is on screen. */
+const NAME_ROOM = 96;
+const MORE_WIDTH = 64;
 
 const PAGE = 8;
 const jumpKey = (k: string): boolean => k === 'Home' || k === 'End' || k === 'PageUp' || k === 'PageDown';

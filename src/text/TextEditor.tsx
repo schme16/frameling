@@ -4,6 +4,7 @@ import { useEffect, useRef, useSyncExternalStore, type MouseEvent } from 'react'
 import type { Id, TextShape } from '../core/format';
 import { uid } from '../core/doc';
 import { store, useStore } from '../core/store';
+import { getTurn, windowToBox } from '../canvas/turn';
 import { screenToDoc } from '../canvas/view';
 import { topShapeAt } from '../canvas/geometry';
 import { currentKey } from '../symbols/ops';
@@ -115,7 +116,8 @@ export function onTextDoubleClick(e: MouseEvent<HTMLElement>): boolean {
   const { ui } = store().get();
   if (ui.tool !== 'select' && ui.tool !== 'text') return false;
   const r = e.currentTarget.getBoundingClientRect();
-  const sp = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, e.clientX - r.left, e.clientY - r.top);
+  const q = windowToBox(getTurn(), r.width, r.height, e.clientX - r.left, e.clientY - r.top);
+  const sp = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, q.x, q.y);
   // Looking through the camera, the screen shows camera space; text lives in stage space.
   const cam = canvasCamera()?.matrix;
   const p = cam ? applyMat(invert(cam), sp.x, sp.y) : sp;

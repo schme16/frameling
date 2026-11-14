@@ -11,7 +11,8 @@
 //
 // NOWRAP_JSON=<file> saves every finding. NOWRAP_SHOTS=<dir> saves a picture of each view that has a wrap.
 // NOWRAP_EXPLAIN=on runs with the explanations on show (a new person's view; the default run has them tucked away behind the ? icons).
-// NOWRAP_SIZE=<w>x<h> runs the passes at that window size. NOWRAP_ONLY=<text> runs only the views whose name starts with it. NOWRAP_PASSES=a,b runs only those passes.
+// NOWRAP_SIZE=<w>x<h> runs the passes at that window size. NOWRAP_ROOM_ONLY=1 runs only the room check (canvas size, top bar fits).
+// NOWRAP_ONLY=<text> runs only the views whose name starts with it. NOWRAP_PASSES=a,b runs only those passes.
 // It also looks for a control sitting on top of another one (an overlap is not a wrap: words that will not wrap run under the
 // next column). Mark a stack that is meant with data-overlaps.
 // Exits 1 when anything wraps, overlaps or jumps.
@@ -278,6 +279,24 @@ const FIND = `((scopeSel) => {
   return { found, squeezed: squeezedCount };
 })`;
 
+// Does the main window have room: the canvas keeps a usable size, nothing in the top bar sits past the window's edge, and the page
+// has no sideways scroll. Reads the real layout (see src/ui/dockFit.ts for the rule: the canvas keeps at least 280 x 190).
+const ROOM = `(() => {
+  const win = { w: window.innerWidth, h: window.innerHeight };
+  const cv = document.querySelector('.ui-canvas')?.getBoundingClientRect();
+  const out = [];
+  for (const el of document.querySelectorAll('.ui-topbar *, .ui-status *')) {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    if (r.right > win.w + 1) out.push((el.getAttribute('aria-label') || el.textContent || String(el.className?.baseVal ?? el.className)).toString().trim().slice(0, 24));
+  }
+  return { win, canvas: cv ? { w: Math.round(cv.width), h: Math.round(cv.height) } : null, pastTheEdge: [...new Set(out)].slice(0, 12), scrolls: document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1 };
+})()`;
+const rooms = []; // { pass, view, win, canvas, pastTheEdge, scrolls }
+const CANVAS_LEAST = { w: 280, h: 190 };
+
 // A panel is a section of Properties (the right side's usual look) or a panel of its own (the right side's other looks, the bottom).
 const SCOPE = (id) => `#rd-sec-${id}, [data-panel-id="${id}"]`;
 
@@ -356,6 +375,26 @@ async function runPass(p) {
       if (img) fs.writeFileSync(path.join(shotsDir, `${p.name}__${name}`.replace(/\W+/g, '-') + '.png'), img.toPNG());
     }
   };
+
+  // Room in each of the three workspaces: the canvas keeps its least size, the top bar fits, nothing scrolls sideways.
+  const room = async (name) => {
+    const r = await js(`return ${ROOM}`);
+    rooms.push({ pass: p.name, view: name, ...r });
+    const bad = !r.canvas || r.canvas.w < CANVAS_LEAST.w || r.canvas.h < CANVAS_LEAST.h || r.pastTheEdge.length || r.scrolls;
+    if (bad) findings.push({ pass: p.name, view: `room ${name}`, sig: `[room] ${name}: canvas ${r.canvas ? r.canvas.w + ' x ' + r.canvas.h : 'missing'}${r.pastTheEdge.length ? ', past the edge: ' + r.pastTheEdge.join(' | ') : ''}${r.scrolls ? ', sideways scroll' : ''}`, text: name, lines: 1 });
+  };
+  for (const ws of ['draw', 'animate', 'pixel']) {
+    await reset(ws === 'pixel' ? 'blank-pixel' : 'bouncing-ball');
+    await js(`__frameling.dock.applyWorkspace(${JSON.stringify(ws)}); return true`).catch(() => {});
+    await sleep(400);
+    await room(`${ws} workspace`);
+  }
+  await js(`__frameling.dock.applyWorkspace('draw'); return true`).catch(() => {});
+  // NOWRAP_ROOM_ONLY=1 stops here: just the room check, in a minute instead of half an hour.
+  if (process.env.NOWRAP_ROOM_ONLY) {
+    win.destroy();
+    return;
+  }
 
   // The main window, with a vector drawing and a pixel drawing, nothing selected and then everything selected.
   await reset('bouncing-ball');
@@ -501,6 +540,11 @@ app.whenReady().then(async () => {
   }
   for (const e of [...bySig.values()].sort((a, b) => b.views.size - a.views.size)) {
     console.log(`     ${e.sig}  (${e.sig.startsWith('[overlaps]') ? 'on top of each other' : e.lines === 1 ? 'one line, pokes out' : e.lines + ' lines'}; ${e.views.size} views: ${[...e.views].slice(0, 3).join(', ')}${e.views.size > 3 ? ', ...' : ''}; ${[...e.passes].map((x) => x.replace(/^.*?, /, '')).join(' / ')})`);
+  }
+  // The room the canvas had, per pass: the smallest it got across the three workspaces.
+  for (const p of PASSES) {
+    const mine = rooms.filter((r) => r.pass === p.name && r.canvas);
+    if (mine.length) console.log(`room ${p.name}: canvas at least ${Math.min(...mine.map((r) => r.canvas.w))} x ${Math.min(...mine.map((r) => r.canvas.h))} of a ${mine[0].win.w} x ${mine[0].win.h} window`);
   }
   for (const j of jumps) console.log(`JUMP ${j.pass}: ${j.view}: ${j.text}`);
   if (missing.length) console.log(`${missing.length} views had nothing on screen to check: ${missing.slice(0, 12).join('; ')}${missing.length > 12 ? '; ...' : ''}`);

@@ -44,9 +44,12 @@ import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
 import { roughNow, setKeptProbe, subscribeScrubbing } from '../gpu/settings';
 import { watchPixelRatio } from './pixelRatio';
+import { boxOffset, getTurn, isTurned, resetTurn, setTurn, subscribeTurn, turnAngleFor, turnBox, turnCss, unturnVector, windowToBox, type Turn } from './turn';
 
 export interface EngineElements {
   root: HTMLElement;
+  /** The box the canvas layers sit in, which the view's turn and flip are applied to. */
+  turn?: HTMLElement;
   stage: HTMLElement;
   main: HTMLCanvasElement;
   overlay: HTMLCanvasElement;
@@ -54,6 +57,7 @@ export interface EngineElements {
 
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
+  | { kind: 'turn'; pointerId: number; from: number; swung: number; start: Turn }
   | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
   | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab }
   | { kind: 'pinch'; pointerId: number; ids: [number, number]; start: PinchStart };
@@ -117,6 +121,12 @@ export class CanvasEngine {
   private docId: string;
   private loads: number;
   private bounds = { left: 0, top: 0 };
+  /** Stands in for the turn box when a caller (a test) has none. */
+  private spareTurn = document.createElement('div');
+  /** The window's own size (the canvas layers' box is bigger while the view is turned). */
+  private win = { w: 1, h: 1 };
+  /** How far the turn box sticks out left and top of the window. */
+  private boxOff = { x: 0, y: 0 };
   private cleanups: (() => void)[] = [];
   private lastDpr = 0;
   /** Called with a friendly message to show near the canvas. */
@@ -198,6 +208,7 @@ export class CanvasEngine {
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
+    this.cleanups.push(subscribeTurn(() => this.resize(true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
@@ -225,22 +236,44 @@ export class CanvasEngine {
 
   // ---------------------------------------------------------------- sizing
 
-  private resize = (): void => {
+  /** `turning`: the view's turn or flip changed, which keeps the zoom (as turning a sheet on a desk would) rather than refitting. */
+  private resize = (turning = false): void => {
     const { root, main, overlay } = this.els;
-    const w = Math.max(1, root.clientWidth);
-    const h = Math.max(1, root.clientHeight);
+    const turn = this.els.turn ?? this.spareTurn;
+    const winW = Math.max(1, root.clientWidth);
+    const winH = Math.max(1, root.clientHeight);
+    this.win = { w: winW, h: winH };
+    const t = getTurn();
+    // The canvas layers live in the turn box: the window's own size when straight, a little bigger when turned.
+    const box = turnBox(winW, winH, t);
+    const w = box.w;
+    const h = box.h;
     const dpr = window.devicePixelRatio || 1;
     const dw = Math.max(1, Math.round(w * dpr));
     const dh = Math.max(1, Math.round(h * dpr));
     const changed = main.width !== dw || main.height !== dh || dpr !== this.lastDpr;
     this.lastDpr = dpr;
+    const off = boxOffset(winW, winH, t);
+    const ts = turn.style;
+    ts.left = -off.x + 'px';
+    ts.top = -off.y + 'px';
+    ts.width = w + 'px';
+    ts.height = h + 'px';
+    ts.transform = turnCss(t);
+    // A turn or a flip keeps the picture where it is: the box grew or shrank about its centre, so the pan follows.
+    const keep = { x: off.x - this.boxOff.x, y: off.y - this.boxOff.y };
+    this.boxOff = off;
     if (changed) {
       main.width = overlay.width = dw;
       main.height = overlay.height = dh;
       this.painter.clear();
     }
-    ctl.setViewport({ w, h, dpr });
-    if (ctl.isAutoFit()) ctl.fit(true);
+    ctl.setViewport({ w, h, dpr, room: isTurned(t) ? { w: winW, h: winH, angle: t.angle } : undefined });
+    if (keep.x || keep.y) {
+      const ui = store().get().ui;
+      store().setUi({ panX: ui.panX + keep.x, panY: ui.panY + keep.y });
+    }
+    if (ctl.isAutoFit() && !turning) ctl.fit(true);
     this.invalidate(true, true);
   };
 
@@ -338,6 +371,8 @@ export class CanvasEngine {
     if (s.doc.id !== this.docId || store().loads !== this.loads) {
       this.docId = s.doc.id;
       this.loads = store().loads;
+      // The view's turn is for the file you were checking, not the next one.
+      resetTurn();
       this.painter.clear();
       ctl.setLive(null);
       ctl.fit(true);
@@ -528,7 +563,7 @@ export class CanvasEngine {
 
   private updateCursor(): void {
     let c: string;
-    if (this.gesture?.kind === 'pan') c = 'grabbing';
+    if (this.gesture?.kind === 'pan' || this.gesture?.kind === 'turn') c = 'grabbing';
     else if (this.gesture?.kind === 'grab') c = 'grabbing';
     else if (this.grabHover && !this.spaceDown) c = this.grabHover;
     else if (this.spaceDown && this.inside) c = 'grab';
@@ -550,10 +585,23 @@ export class CanvasEngine {
     this.bounds.top = r.top;
   }
 
+  /** A pointer position on the screen to a position in the canvas layers' own frame (undoes the view's turn and flip). */
+  private rel(clientX: number, clientY: number): Pt {
+    return windowToBox(getTurn(), this.win.w, this.win.h, clientX - this.bounds.left, clientY - this.bounds.top);
+  }
+
+  /** The direction of the pointer from the middle of the window, in degrees (for the Turn drag). */
+  private pointerAngle(e: { clientX: number; clientY: number }): number {
+    const dx = e.clientX - (this.bounds.left + this.win.w / 2);
+    const dy = e.clientY - (this.bounds.top + this.win.h / 2);
+    return (Math.atan2(dy, dx) * 180) / Math.PI;
+  }
+
   /** The screen point in stage space. `forTool`: through the picked layer's own camera speed (a layer at another depth). */
   private toDocPoint(e: { clientX: number; clientY: number }, forTool = false): Pt {
     const { zoom, panX, panY } = store().get().ui;
-    const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    const q = this.rel(e.clientX, e.clientY);
+    const p = screenToDoc({ zoom, panX, panY }, q.x, q.y);
     // Through the camera, the screen shows camera space: tools still work in stage space.
     const cam = forTool ? overlayCamera(this.stageToolNow()) : canvasCamera()?.matrix;
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
@@ -606,7 +654,7 @@ export class CanvasEngine {
       if (g) this.cancelGesture();
       this.refreshBounds();
       const [i, j] = [...this.touches.keys()];
-      const rel = (k: number) => ({ x: this.touches.get(k)!.x - this.bounds.left, y: this.touches.get(k)!.y - this.bounds.top });
+      const rel = (k: number) => this.rel(this.touches.get(k)!.x, this.touches.get(k)!.y);
       const ui = store().get().ui;
       this.capture(i);
       this.capture(j);
@@ -634,7 +682,7 @@ export class CanvasEngine {
     const b = this.touches.get(g.ids[1]);
     if (!a || !b) return;
     this.refreshBounds();
-    const rel = (p: { x: number; y: number }) => ({ x: p.x - this.bounds.left, y: p.y - this.bounds.top });
+    const rel = (p: { x: number; y: number }) => this.rel(p.x, p.y);
     ctl.setView(pinchView(g.start, rel(a), rel(b)), true);
   }
 
@@ -663,6 +711,14 @@ export class CanvasEngine {
     const button = meaning ? meaning.button : e.button;
     const penEraser = !!meaning?.eraser;
     const pick = !!meaning?.pick;
+    // Shift and Space together, then drag: turn the view about the middle of the window, in 15 degree steps.
+    if (button === 0 && this.spaceDown && e.shiftKey && !penEraser && !pick) {
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'turn', pointerId: e.pointerId, from: this.pointerAngle(e), swung: 0, start: getTurn() };
+      this.updateCursor();
+      return;
+    }
     const wantPan = button === 1 || (button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser && !pick);
     if (wantPan) {
       e.preventDefault();
@@ -779,11 +835,17 @@ export class CanvasEngine {
       this.invalidate(false, true);
       return;
     }
+    if (g.kind === 'turn') {
+      // A mirrored view turns the other way on screen, so the drag reverses to keep the page following the pointer.
+      const now = this.pointerAngle(e);
+      g.swung += turnAngleFor(g.from, now);
+      g.from = now;
+      setTurn({ angle: g.start.angle + (g.start.flip ? -g.swung : g.swung), flip: g.start.flip });
+      return;
+    }
     if (g.kind === 'pan') {
-      ctl.setView(
-        { zoom: store().get().ui.zoom, panX: g.panX + (e.clientX - g.startX), panY: g.panY + (e.clientY - g.startY) },
-        true,
-      );
+      const d = unturnVector(getTurn(), e.clientX - g.startX, e.clientY - g.startY);
+      ctl.setView({ zoom: store().get().ui.zoom, panX: g.panX + d.x, panY: g.panY + d.y }, true);
       return;
     }
     if (perf) perf.pending.push(e.timeStamp);
@@ -941,18 +1003,21 @@ export class CanvasEngine {
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     this.refreshBounds();
-    const sx = e.clientX - this.bounds.left;
-    const sy = e.clientY - this.bounds.top;
+    const { x: sx, y: sy } = this.rel(e.clientX, e.clientY);
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
     const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
     if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode, intent.step), sx, sy));
-    else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
+    else {
+      const d = unturnVector(getTurn(), intent.dx, intent.dy);
+      ctl.setView({ zoom: v.zoom, panX: v.panX - d.x, panY: v.panY - d.y });
+    }
   };
 
   private onPinch = (factor: number, clientX: number, clientY: number): void => {
     this.refreshBounds();
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
-    ctl.setView(zoomAbout(v, v.zoom * factor, clientX - this.bounds.left, clientY - this.bounds.top));
+    const q = this.rel(clientX, clientY);
+    ctl.setView(zoomAbout(v, v.zoom * factor, q.x, q.y));
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {

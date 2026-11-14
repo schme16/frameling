@@ -77,6 +77,13 @@ export function withRealSize(doc: Doc, s: ExportSettings): ExportSettings {
 /** The scale is one of the choices offered for this document. */
 export const scaleAllowed = (doc: Doc, scale: number): boolean => scaleChoices(doc).includes(scale) || scale === artScale(doc);
 
+/** The background of every artboard (the open one's is the document's own), or just the document's when there is one page. */
+export function boardBackgrounds(doc: Doc): (string | null)[] {
+  const list = doc.artboards;
+  if (!list || list.length < 2) return [doc.background];
+  return list.map((a) => (a.content ? a.content.background : doc.background));
+}
+
 export function defaultSettings(doc: Doc): ExportSettings {
   const pixel = hasPixelLayers(doc);
   return {
@@ -85,7 +92,9 @@ export function defaultSettings(doc: Doc): ExportSettings {
     clipId: null,
     // Pixel art starts big enough to see (about 512 pixels across), on a whole number so every art pixel stays square.
     scale: pixel ? [...scaleChoices(doc)].reverse().find((c) => c <= 512 / Math.max(doc.width, doc.height)) ?? 1 : 1,
-    transparent: doc.background === null,
+    // Several artboards: ticked only when every one is see-through, so a coloured board keeps its colour. A see-through
+    // board stays see-through either way (see wantsSeeThrough in draw.ts).
+    transparent: boardBackgrounds(doc).every((b) => b === null),
     loop: true,
     dither: false,
     sheet: { ...DEFAULT_SHEET },

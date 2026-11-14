@@ -14,6 +14,7 @@ import { PanelPicker } from './PanelPicker';
 import { panelPicker, togglePicker } from './rightStyle';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
 import { PanelScope } from './explain/ExplainIcon';
+import { useShownZone } from './roomFolds';
 
 const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down', top: 'chevron-up' };
 const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up', top: 'chevron-down' };
@@ -132,7 +133,7 @@ function GroupSplitter({ zone, boundary, stack }: { zone: DockZone; boundary: nu
 export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; group: number; panelsButton?: boolean }) {
   const locked = useLocked('panels');
   const picker = panelPicker.use((v) => (panelsButton ? v : null));
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const g = groupsOf(z)[group] ?? { tabs: [], active: null };
   const drag = dragState.use((d) => (d && d.kind !== 'tools' ? d.panels[0] : null));
   const dropAt = dragState.use((d) => dropIndexFor(d, { zone, group }, g.tabs.length));

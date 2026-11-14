@@ -5,6 +5,7 @@ import { resizeZone } from './lockedDock';
 import { TabGroupView, ZoneStack } from './DockGroup';
 import { useEdgeDrag } from './dockShared';
 import { RightDock } from './RightDock';
+import { useShownZone } from './roomFolds';
 import { rightStyle } from './rightStyle';
 
 export function DockZoneView({ zone }: { zone: DockZone }) {
@@ -16,11 +17,12 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
 }
 
 function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: boolean }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   // An empty zone takes no room. While something is dragged, the bands over the canvas edges stand in for it.
   if (!z.tabs.length) return null;
   const horizontal = zone === 'bottom' || zone === 'top';
-  const style = z.collapsed ? undefined : horizontal ? { height: z.size } : { width: z.size };
+  // The size is what it is asked for; it gives way (down to its least) when the window is short of room (see dockFit.ts).
+  const style = z.collapsed ? undefined : horizontal ? { height: z.size, minHeight: MIN_SIZE[zone] } : { width: z.size, minWidth: MIN_SIZE[zone] };
   return (
     <section className={`ui-zone ui-zone-${zone}${z.collapsed ? ' is-collapsed' : ''}`} style={style} aria-label={`${zone} panels`}>
       <ZoneStack zone={zone} render={(gi) => <TabGroupView zone={zone} group={gi} panelsButton={panelsButton && gi === 0} />} />
@@ -30,7 +32,7 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
 
 /** The thin line between a zone and the canvas. */
 export function Splitter({ zone }: { zone: DockZone }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const away = panelsAway.use((v) => v);
   const horizontal = zone === 'bottom' || zone === 'top';
   // Dragging right grows the left side, left grows the right side; down grows the top, up grows the bottom.

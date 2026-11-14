@@ -4,3 +4,5 @@
 import './pixel-tool';
 import './commands';
 import './help';
+import './align-commands';
+import './align-help';

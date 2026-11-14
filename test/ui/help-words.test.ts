@@ -15,7 +15,7 @@ const Q: [string, string][] = [
   ['background sketch', 'reference-layers'], ['trace', 'reference-layers'], ['blur', 'effects'], ['shadow', 'effects'], ['snow', 'particles'], ['sparkles', 'particles'],
   ['resize canvas', 'canvas-size'], ['frame rate', 'canvas-size'], ['fps', 'canvas-size'], ['grid', 'pixel-grid'], ['straight line', 'tool-line'], ['square', 'tool-rect'], ['circle', 'tool-ellipse'],
   ['words', 'text'], ['type', 'text'], ['rotate', 'selecting'], ['scale', 'selecting'], ['tween', 'tweens'], ['in between', 'tweens'], ['morph', 'shape-tweens'], ['shortcut', 'keyboard-shortcuts'],
-  ['undo', 'undo'], ['go back', 'undo'], ['mistake', 'undo'], ['transparent background', 'export-video-gif-apng'], ['overview', 'whats-in-frameling'], ['features', 'whats-in-frameling'], ['what can it do', 'whats-in-frameling'],
+  ['undo', 'undo'], ['go back', 'undo'], ['mistake', 'undo'], ['transparent background', 'see-through-page'], ['see-through video', 'export-video-gif-apng'], ['overview', 'whats-in-frameling'], ['features', 'whats-in-frameling'], ['what can it do', 'whats-in-frameling'],
   ['tutorial', 'quests'], ['lesson', 'quests'], ['loop', 'timeline-playing'], ['play', 'timeline-playing'], ['speed', 'timeline-playing'], ['paint bucket', 'fill'], ['fill colour', 'fill-and-stroke'],
   ['outline colour', 'fill-and-stroke'], ['sprite sheet', 'export-sprite-sheets'], ['game', 'export-sprite-sheets'], ['copy', 'copy-paste'], ['paste', 'copy-paste'], ['delete', 'duplicate-delete'],
   ['remove', 'duplicate-delete'], ['palette', 'palette'], ['8 bit', 'pixel-art'], ['retro', 'pixel-art'], ['hand tool', 'tool-hand'], ['move tool', 'tool-select'], ['select', 'tool-select'],
