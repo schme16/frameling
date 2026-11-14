@@ -4,7 +4,7 @@
 import type { Shape } from '../core/format';
 import { rdp } from '../geometry/bezier';
 import { geomBox, shapeParts, union, type Geom } from '../geometry/merge';
-import { MAX_CUSTOM_POINTS, MAX_CUSTOM_RINGS } from '../geometry/tip';
+import { MAX_CUSTOM_POINTS, MAX_CUSTOM_RINGS, MAX_TILE_POINTS, MAX_TILE_RINGS } from '../geometry/tip';
 import type { RGBA } from '../canvas/pixels';
 import { maskBounds, type Mask } from '../select/mask';
 
@@ -25,7 +25,10 @@ export const stampable = (s: Shape): boolean => s.type === 'stroke' || s.type ==
  * The silhouette of the shapes as a stamp: every shape joined into one, outlines simplified until they fit the point
  * limit, centred and scaled so the longer side is 1. Null when there is nothing to make it from.
  */
-export function vectorStampFrom(shapes: readonly Shape[]): VectorStamp | null {
+export function vectorStampFrom(shapes: readonly Shape[], forTile = false): VectorStamp | null {
+  const maxPoints = forTile ? MAX_TILE_POINTS : MAX_CUSTOM_POINTS;
+  const maxRings = forTile ? MAX_TILE_RINGS : MAX_CUSTOM_RINGS;
+  const digits = forTile ? 10000 : 1000;
   const use = shapes.filter(stampable);
   const skipped = shapes.length - use.length;
   const geoms: Geom[] = [];
@@ -45,20 +48,20 @@ export function vectorStampFrom(shapes: readonly Shape[]): VectorStamp | null {
   for (const poly of all) for (const ring of poly) if (ring.length > 3) rings.push(ring.slice(0, -1).map(([x, y]) => ({ x: (x - cx) / side, y: (y - cy) / side })));
   if (!rings.length) return null;
   // Simplify, a little more each time, until it is small enough to keep in every line drawn with it.
-  let eps = 0.004;
+  let eps = forTile ? 0.0015 : 0.004;
   let out = rings;
   for (let i = 0; i < 14; i++) {
     out = rings.map((r) => simplifyRing(r, eps)).filter((r) => r.length >= 3);
     const total = out.reduce((n, r) => n + r.length, 0);
-    if (out.length <= MAX_CUSTOM_RINGS && total <= MAX_CUSTOM_POINTS) break;
+    if (out.length <= maxRings && total <= maxPoints) break;
     eps *= 1.5;
     // Too many rings: keep the biggest.
-    if (out.length > MAX_CUSTOM_RINGS) out = [...out].sort((a, b) => b.length - a.length).slice(0, MAX_CUSTOM_RINGS);
+    if (out.length > maxRings) out = [...out].sort((a, b) => b.length - a.length).slice(0, maxRings);
   }
-  while (out.reduce((n, r) => n + r.length, 0) > MAX_CUSTOM_POINTS && out.length > 1) out.pop();
-  const flat = out.map((r) => r.flatMap((p) => [Math.round(p.x * 1000) / 1000, Math.round(p.y * 1000) / 1000]));
+  while (out.reduce((n, r) => n + r.length, 0) > maxPoints && out.length > 1) out.pop();
+  const flat = out.map((r) => r.flatMap((p) => [Math.round(p.x * digits) / digits, Math.round(p.y * digits) / digits]));
   const points = flat.reduce((n, r) => n + r.length / 2, 0);
-  if (!flat.length || points > MAX_CUSTOM_POINTS) return null;
+  if (!flat.length || points > maxPoints) return null;
   return { rings: flat, side, skipped };
 }
 

@@ -98,3 +98,29 @@
   border-radius: 4px;
   background: var(--raised);
 }
+
+/* The parts of an edged brush: a name and the buttons that take it from the selection. */
+.tp-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tp-part {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.tp-part-name {
+  flex: 0 0 96px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.tp-part[data-set='true'] .tp-part-name {
+  color: var(--text);
+}
+.tp-part[data-set='true'] .tp-part-name::after {
+  content: ' \2713';
+  color: var(--accent);
+}

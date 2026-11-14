@@ -692,7 +692,7 @@ export interface BrushSettings {
 }
 
 /** The kinds of tip a brush can have besides plain. */
-export type TipKind = 'chalk' | 'charcoal' | 'watercolour' | 'stamp';
+export type TipKind = 'chalk' | 'charcoal' | 'watercolour' | 'stamp' | 'nib' | 'along' | 'edged' | 'bristle';
 /** The built-in stamps, and `custom` for one made from a selection. */
 export type StampShape = 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'custom';
 /** How stamps turn: along the line, always upright, or every which way. */
@@ -719,8 +719,32 @@ export interface BrushTip {
   scatter?: number;
   /** A custom stamp: closed outlines as flat lists [x, y, x, y, ...], centred on 0 and 1 unit across. */
   custom?: number[][];
-  /** Keeps the random parts (stamp jitter and scatter) the same every time the line is drawn. Set when the line is drawn. */
+  /** Keeps the random parts (stamp jitter and scatter, bristle wobble and gaps) the same every time the line is drawn. Set when the line is drawn. */
   seed?: number;
+  /** Stamp: how far each stamp may spin on top of `angle`, 0 (none) to 1 (any way). */
+  turn?: number;
+  /** Stamp: true keeps every stamp the same size whatever the pen pressure (missing = pressure sizes them). */
+  fixedSize?: boolean;
+  /** Stamp: how much the gap between stamps varies, 0 to 1. */
+  gapVary?: number;
+  /** Nib (a flat or oval pen point): how thin it is next to its length, 0.05 (a blade) to 1 (round), and its angle in degrees. `angle` 'upright' keeps the angle fixed, 'follow' measures it from the way the line runs. */
+  roundness?: number;
+  nibAngle?: number;
+  /** Along the stroke: 'stretch' (missing) stretches the drawing down the whole line, 'repeat' lays copies end to end. */
+  fit?: 'stretch' | 'repeat';
+  /** Edged: the drawings for the two ends and the inner and outer corners. `custom` is the drawing for the sides. Each is closed outlines like `custom`. */
+  pieces?: TipPieces;
+  /** Bristle: how many bristles (3 to 60) and how stiff they are, 0 (floppy, wander) to 1 (stay in line). `amount` is how many gaps (dry brush). */
+  count?: number;
+  stiffness?: number;
+}
+
+/** The extra drawings of an edged brush (see `BrushTip.pieces`). Any can be missing: the sides are used instead. */
+export interface TipPieces {
+  start?: number[][];
+  end?: number[][];
+  inner?: number[][];
+  outer?: number[][];
 }
 
 /**

@@ -6,6 +6,7 @@ import { showPanel } from '../ui/dock';
 import { pickTool } from '../tools/pick';
 import './help';
 import { TIPS } from '../geometry/tip';
+import { flattenBrushLines, makeAlongBrush, setEdgedPiece, EDGED_SLOTS } from './own';
 import { clearPixelStamp, makeBrushFromSelection, pixelBrushStamp, setTipKind, stepTip } from './tips';
 import {
   activeOwn,
@@ -30,6 +31,17 @@ function showBrushOptions(): void {
   pickTool('brush');
   showPanel('tool-options');
 }
+
+const KEYWORDS: Record<string, string[]> = {
+  stamp: ['stamp', 'leaf', 'star', 'repeat', 'pattern', 'scatter', 'scattered'],
+  watercolour: ['watercolor', 'wash', 'paint'],
+  chalk: ['grain', 'dusty', 'rough', 'sketch'],
+  charcoal: ['grain', 'dusty', 'rough', 'sketch'],
+  nib: ['calligraphy', 'calligraphic', 'nib', 'flat', 'italic', 'pen', 'shaped', 'illustrator'],
+  along: ['art brush', 'along', 'stretch', 'ribbon', 'rope', 'illustrator', 'own drawing'],
+  edged: ['pattern brush', 'edged', 'border', 'chain', 'corner', 'illustrator', 'own drawing'],
+  bristle: ['bristle', 'dry brush', 'paintbrush', 'hairs', 'illustrator'],
+};
 
 registerCommands([
   {
@@ -152,7 +164,7 @@ registerCommands([
     category: 'Draw',
     description: t.hint,
     help: 'brush-tips',
-    keywords: ['brush', 'tip', 'texture', t.label.toLowerCase(), ...(t.id === 'stamp' ? ['stamp', 'leaf', 'star', 'repeat', 'pattern'] : t.id === 'watercolour' ? ['watercolor', 'wash', 'paint'] : ['grain', 'dusty', 'rough', 'sketch'])],
+    keywords: ['brush', 'tip', 'texture', t.label.toLowerCase(), ...(KEYWORDS[t.id] ?? [])],
     run: () => {
       showBrushOptions();
       setTipKind(t.id);
@@ -163,7 +175,7 @@ registerCommands([
     label: 'Next brush tip',
     category: 'Draw',
     keys: ['Alt+Shift+ArrowDown'],
-    description: 'Switch the brush to the next tip: Plain, Chalk, Charcoal, Watercolour, Stamp.',
+    description: 'Switch the brush to the next tip: Plain, Chalk, Charcoal, Watercolour, Stamp, Pen nib, Along the line, Edged, Bristles.',
     help: 'brush-tips',
     keywords: ['brush', 'tip', 'texture', 'next', 'cycle'],
     run: () => {
@@ -193,6 +205,34 @@ registerCommands([
     help: 'brush-tips',
     keywords: ['brush', 'custom brush', 'stamp', 'selection', 'make brush', 'pixel brush', 'pattern'],
     run: () => void makeBrushFromSelection(),
+  },
+  {
+    id: 'brush.makeAlong',
+    label: 'Make a brush that goes along the line, from the selection',
+    category: 'Draw',
+    keys: ['Mod+Alt+Shift+B'],
+    description: 'Use the shapes you have selected as one drawing that stretches or repeats down every line you draw.',
+    help: 'brush-own',
+    keywords: ['brush', 'art brush', 'along', 'stretch', 'ribbon', 'rope', 'illustrator', 'make brush', 'custom brush', 'own brush'],
+    run: () => void makeAlongBrush(),
+  },
+  ...EDGED_SLOTS.map((p) => ({
+    id: `brush.edged.${p.id}`,
+    label: `Edged brush: ${p.id === 'sides' ? 'sides' : p.label.toLowerCase()} from the selection`,
+    category: 'Draw',
+    description: `${p.hint} Select a drawing, then run this. ${p.id === 'sides' ? 'It starts a new edged brush.' : 'The sides come first.'}`,
+    help: 'brush-own',
+    keywords: ['brush', 'pattern brush', 'edged', 'border', 'chain', 'corner', p.label.toLowerCase(), 'illustrator', 'make brush', 'own brush'],
+    run: () => void setEdgedPiece(p.id),
+  })),
+  {
+    id: 'brush.flatten',
+    label: 'Turn brush lines into plain shapes',
+    category: 'Draw',
+    description: 'Fix the selected chalk, stamp, nib, bristle and drawing-along-the-line strokes as ordinary shapes, so they no longer follow the brush or its settings.',
+    help: 'brush-own',
+    keywords: ['brush', 'flatten', 'expand', 'outline', 'plain shapes', 'expand appearance', 'illustrator', 'bake'],
+    run: () => void flattenBrushLines(),
   },
   {
     id: 'brush.pixelReset',

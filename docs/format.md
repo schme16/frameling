@@ -327,7 +327,13 @@ when comparing two drawings for "same look" (as `id` is ignored).
   strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | custom`), `spacing` (a share of the
   brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
   outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is
-  drawn, so the random parts stay put). A tip is read by `readTip` (`src/geometry/tip.ts`), on open and when a saved brush is
+  drawn, so the random parts stay put). Four more kinds are the brushes you build yourself (`src/geometry/tipRibbon.ts`), each
+  field optional: `'nib'` (`roundness` 0.05 to 1, `nibAngle` -90 to 90 degrees, `angle` `upright` = fixed on the page or
+  `follow` = measured from the line), `'bristle'` (`count` 3 to 60, `stiffness` 0 to 1, `amount` = dry gaps, `seed`), `'along'`
+  (`custom` is the drawing, up to 240 points, 4 digits, and `fit` `stretch | repeat`) and `'edged'` (`custom` is the sides,
+  `pieces: { start?, end?, inner?, outer? }` the other drawings). A stamp also takes `turn` (0 to 1, random spin), `fixedSize`
+  (true ignores pen pressure) and `gapVary` (0 to 1). `along` and `edged` with no usable drawing read back as a plain line.
+  A tip is read by `readTip` (`src/geometry/tip.ts`), on open and when a saved brush is
   read: anything that is not a tip makes the line plain, numbers are held to their range. The line keeps its points; the
   fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them
   in, see `src/core/tips.ts`), never stored. A saved brush (`src/brushes`) and a shared brush file hold the same `tip`.
