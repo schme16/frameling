@@ -83,12 +83,4 @@ registerHelpTopics([
     summary: 'Export one SVG file that plays your animation by itself in any browser, even inside an image tag.',
     keywords: ['animated svg', 'svg animation', 'css animation', 'smil', 'web', 'img', 'vector animation'],
   },
-  {
-    id: 'export-interactives',
-    title: 'Using animations in Interactives',
-    section: 'Exporting',
-    media: 'export-interactives.png',
-    summary: 'Make one file to drop onto an Interactives page, then play your clips with clicks, timelines and scripts.',
-    keywords: ['interactives', 'flplay', 'package', 'playable', 'course', 'web', 'layer', 'clips', 'markers', 'atlas'],
-  },
 ]);

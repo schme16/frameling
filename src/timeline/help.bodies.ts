@@ -1,4 +1,5 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
+import { ix } from '../features/flags';
 export const bodies: Record<string, string> = {
   timeline: `The timeline is the strip along the bottom. Time runs left to right, one square for each frame. Your layers are stacked on the left, the top layer in front.
 
@@ -333,10 +334,9 @@ Pick the clip and press play. It plays the way you set it, so you see what a gam
 - **GIF, APNG, video, Lottie and dotLottie:** exporting one clip bakes the order in.
 - **PNG sequence, PDF and Illustrator pages:** these show each frame once, in the order the clip starts (a back and forth clip comes out 1 2 3 4, not 1 2 3 4 3 2 1), however often it repeats.
 - **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own back and forth loop instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
-- **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.
-
+${ix('- **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.\n')}
 A clip with nothing set plays forward.`,
-  'timeline-markers': `A **marker** is a little flag on one frame with a name. It doesn't change what you see. It tells a game (or Interactives) *when* something should happen: play the footstep sound, flash the screen, spawn a puff of dust.
+  'timeline-markers': `A **marker** is a little flag on one frame with a name. It doesn't change what you see. It tells a game${ix(' (or Interactives)')} *when* something should happen: play the footstep sound, flash the screen, spawn a puff of dust.
 
 ## Adding one
 

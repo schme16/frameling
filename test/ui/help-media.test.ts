@@ -10,11 +10,13 @@ import { describe, expect, it } from 'vitest';
 import { allHelp } from '../../src/core/registry';
 import { HELP_MODES, isVideo, mediaFiles, modeFile, posterFor, useHelpMode } from '../../src/ui/help/media';
 import '../../src/renderer/features';
+import { hiddenFeatureHelp } from '../../src/features/host';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const helpDir = path.resolve(here, '../../public/help');
 const captureDir = path.resolve(here, '../../scripts/docs/help');
-const withMedia = () => allHelp().filter((t) => t.media);
+// The topics of features kept out of sight (Interactives) still have their pictures and capture entries.
+const withMedia = () => [...allHelp(), ...hiddenFeatureHelp()].filter((t) => t.media);
 
 describe('help media', () => {
   it('has media on some topics', () => {

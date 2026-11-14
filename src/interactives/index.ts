@@ -3,6 +3,7 @@
 import type { Command, HelpTopic } from '../core/registry';
 import { openExportDialog } from '../export/open';
 import { defineFeature } from '../features/feature';
+import { interactivesEnabled } from '../features/flags';
 import { interactivesExporter } from './exporter';
 import { currentLink, interactivesChoices, isPlayablePath, openPlayable, registerRoundTrip, toggleUpdate, updatePlayable } from './roundtrip';
 
@@ -55,6 +56,14 @@ const commands: Command[] = [
 
 const help: HelpTopic[] = [
   {
+    id: 'export-interactives',
+    title: 'Using animations in Interactives',
+    section: 'Exporting',
+    media: 'export-interactives.png',
+    summary: 'Make one file to drop onto an Interactives page, then play your clips with clicks, timelines and scripts.',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'course', 'web', 'layer', 'clips', 'markers', 'atlas'],
+  },
+  {
     id: 'edit-in-frameling',
     title: 'Edit in Frameling (Interactives round trip)',
     section: 'Exporting',
@@ -69,6 +78,8 @@ export const interactivesFeature = defineFeature({
   name: 'Interactives',
   about: 'Export for Interactives (.flplay), open one to change the drawing inside it, and save your changes back into it.',
   optional: true,
+  // Off for everyone for now: see flag.ts. Hidden means nothing is registered or listed, and the code stays.
+  hidden: () => !interactivesEnabled(),
   commands,
   help,
   exporters: [interactivesExporter],

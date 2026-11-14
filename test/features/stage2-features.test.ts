@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Audio, Clip flow and Interactives as switchable features: what goes when they are off, what a file keeps, the question
 // when a file uses one, and Lip sync needing Audio.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { audioFeature } from '../../src/audio';
 import { flowFeature } from '../../src/flow';
 import { startTrying, tryingClip } from '../../src/flow/ops';
@@ -20,6 +20,11 @@ import { paletteItems } from '../../src/ui/palette';
 import { timelineParts } from '../../src/timeline/slots';
 import { rigFeature } from '../../src/rig';
 import { tilesFeature } from '../../src/tiles';
+import { _forceInteractivesForTests } from '../../src/features/flags';
+
+// These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
+beforeAll(() => _forceInteractivesForTests(true));
+afterAll(() => _forceInteractivesForTests(undefined));
 
 const all = () => registerFeatures([rigFeature, tilesFeature, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]);
 const clip = (): AudioClip => ({ id: 'a1', name: 'Voice', start: 0, data: new Uint8Array([1, 2, 3]), mime: 'audio/wav', duration: 1 });

@@ -1,10 +1,12 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
+import { ix } from '../features/flags';
+
 export const bodies: Record<string, string> = {
   exporting: `Saving keeps your drawing editable. **Exporting** makes something to share or use somewhere else, and leaves your drawing as it is.
 
 Press **Ctrl+E** (**Cmd+E** on a Mac), or choose **File > Export**, pick a format card, tweak the options if you like, and press **Export**. Frameling asks where to put it, then draws every frame and shows a progress bar. You can cancel any time.
 
-The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**. The others are under **More formats**. Every export is also in the **File > Export** submenu.
+${ix('The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**.', 'The four formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence** and **Sprite sheet**.')} The others are under **More formats**. Every export is also in the **File > Export** submenu.
 
 ## Which one?
 
@@ -18,8 +20,7 @@ The five formats most people want come first: **Animated GIF**, **MP4 video**, *
 | One picture per frame, for a video editor | **PNG sequence** |
 | Vector art that stays sharp at any size | **SVG drawing** |
 | Use it in a game or on a web page | **Sprite sheet** |
-| Put it on an Interactives page and control it there | **Interactives** |
-| An app or website, as a small vector animation | **Lottie animation** |
+${ix('| Put it on an Interactives page and control it there | **Interactives** |\n')}| An app or website, as a small vector animation | **Lottie animation** |
 | A web page, one file that plays by itself | **Moving SVG** |
 | Edit it in a video editor, with a see-through background | **ProRes video** |
 | Keep working on this frame in Photoshop, Krita or Affinity | **Photoshop layers** |
@@ -42,7 +43,7 @@ The five formats most people want come first: **Animated GIF**, **MP4 video**, *
 
 Every export looks exactly like the canvas, and a slow computer makes the same file as a fast one.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), [Interactives](help:export-interactives), [ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
   'export-video-gif-apng': `## MP4 video
 
 Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background. If your animation has sound, see [Sound](help:sound) for how it plays on Apple devices.
@@ -296,33 +297,4 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 - **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate is left out.
 - Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
-  'export-interactives': `Interactives builds clickable pages for courses. A Frameling animation can live on one of those pages as its own layer, and the page can play it, stop it, or wait for a moment in it.
-
-## In Frameling
-
-1. Name your clips in the timeline (idle, wave, run...). Each one becomes something Interactives can play. Add **markers** for moments the page should react to (a footstep, the ball landing).
-2. Press **Ctrl+E** and pick **Interactives**, or choose **File > Export > Export for Interactives**.
-3. Pick the size. Pixel art starts at real size (**Art size**): Interactives scales it up itself and keeps every pixel sharp.
-4. Press **Export** and save the \`.flplay\` file.
-
-## In Interactives
-
-1. Drag the \`.flplay\` file onto the canvas (or add it in **Assets** and press **Place**). It becomes a **Frameling animation** layer.
-2. In the inspector, pick the **clip** to show, and whether it **plays** when the page starts.
-3. To control it, use the nodes **Play a Frameling clip**, **Stop a Frameling animation** and **Show a Frameling frame**, and the events **When a Frameling clip ends** and **When a Frameling animation reaches a marker**. A timeline can also scrub its **Frameling frame**.
-
-## What's in the file
-
-- Every frame, with frames that look the same stored only once (a drawing held for 6 frames is one picture held for 6 frames).
-- Your clips, with their loop settings, and your markers. Interactives plays a clip forward, looping or once, so a clip that plays [backward, back and forth or a set number of times](help:timeline-clip-play) is written out frame by frame in the order it plays, after the animation's own frames, and the clip points at that. It plays right in any Interactives. (An animation layer with no clip chosen plays every frame, written-out clips included, until Interactives learns to skip them; pick a clip to avoid that. A clip that would come to more than 5000 frames stays forward, and the Export dialog tells you which.) The settings also stay in the editable drawing inside the package.
-- The frame rate, size, and whether it is pixel art.
-- Your editable drawing too, unless you untick **Include the editable drawing**. Leave it in if you might change the animation later; take it out for the smallest file.
-
-## Good to know
-
-- Transparent background is on to start with, so the page shows through. Turn it off to keep your background colour.
-- [Reference layers](help:reference-layers) are left out, like every export.
-- Change the animation? Export again with **Ctrl+Shift+E** and replace the file in Interactives' Assets. Layers using it keep their settings.
-
-Interactives' own help has more: search it for **Frameling animations**.`,
 };

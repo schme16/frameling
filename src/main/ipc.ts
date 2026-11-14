@@ -12,6 +12,7 @@ import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, library
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
 import type { LastCrash } from './crashMarker';
+import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
 import { saveChangesQuestion } from './saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
@@ -101,7 +102,7 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof p !== 'string') return { error: 'That is not a file path.' };
     // Opened by double-click, a recent entry or a drop: anything that ends in .frameling, or that was picked before.
     const ext = path.extname(p).toLowerCase();
-    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay' && ext !== '.aseprite' && ext !== '.ase') return { error: 'Frameling only opens .frameling, .flplay and Aseprite files.' };
+    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay' && ext !== '.aseprite' && ext !== '.ase') return { error: INTERACTIVES_ENABLED ? 'Frameling only opens .frameling, .flplay and Aseprite files.' : 'Frameling only opens .frameling and Aseprite files.' };
     return readFile(p);
   });
 

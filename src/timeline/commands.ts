@@ -16,6 +16,7 @@ import * as pb from './playback';
 import { setTl, tl } from './state';
 import type { Clip, ClipDirection } from '../core/format';
 import { clipDirection, clipPlays } from '../core/clipPlay';
+import { ix } from '../features/flags';
 
 /** Runs an op and, when it was refused for a reason worth knowing, says so gently. */
 export function say(o: ops.Outcome): ops.Outcome {
@@ -265,7 +266,7 @@ registerCommands([
     id: 'timeline.addMarker',
     label: 'Add a marker here',
     category: 'Timeline',
-    description: 'Name this moment (a footstep, a hit). Games and Interactives get it as an event.',
+    description: ix('Name this moment (a footstep, a hit). Games and Interactives get it as an event.', 'Name this moment (a footstep, a hit). Games get it as an event.'),
     help: 'timeline-markers',
     keywords: ['event', 'flag', 'note'],
     run: () => {

@@ -10,6 +10,7 @@ import { ClipPlayFields } from '../timeline/ClipPlay';
 import { playWords } from '../core/clipPlay';
 import { connectClips, deleteTransition, editTransition, fireTrigger, makeStart, placeBox, startTrying, stopTrying, subscribeTry, tryingClip } from './ops';
 import './flow.css';
+import { ix } from '../features/flags';
 
 const BOX_W = 132;
 const BOX_H = 44;
@@ -243,7 +244,7 @@ export function FlowPanel() {
             value={sel.when}
             options={[
               { value: 'end', label: 'At the end', title: `When ${nameOf(sel.from)} finishes (a looping clip finishes each time round)` },
-              { value: 'trigger', label: 'On a trigger', title: 'When the game or Interactives fires a named trigger (a key press, a jump, a hit)' },
+              { value: 'trigger', label: 'On a trigger', title: ix('When the game or Interactives fires a named trigger (a key press, a jump, a hit)', 'When the game fires a named trigger (a key press, a jump, a hit)') },
             ]}
             onChange={(v) => editTransition(sel.id, { when: v })}
           />

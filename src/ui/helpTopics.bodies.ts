@@ -274,7 +274,7 @@ Pressing the dim area beside a dialog closes it, unless you have typed or change
 
 Open **Preferences** (**Ctrl+,**) and choose **Features**, or search the command palette (**Ctrl+K**) for **Features**. Each feature has a switch and a line about what it does. Changes happen at once. You never need to restart.
 
-For example, turning **Interactives** off also takes **Export for Interactives** out of the Export window, the File menu and the command palette. Turn it back on and it returns.
+For example, turning **Particles** off also takes its panel and commands out of the menus and the command palette. Turn it back on and they return.
 
 ## Your drawings are safe
 

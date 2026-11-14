@@ -8,7 +8,7 @@ import { removeOwned, withOwner } from '../core/owners';
 import { registerQuest } from '../quests/registry';
 import { registerMenuItems } from '../ui/menus';
 import { registerPanelInfo } from '../ui/panelInfo';
-import { isSwitchable, type FeatureDescriptor } from './feature';
+import { isHidden, isSwitchable, type FeatureDescriptor } from './feature';
 
 const KEY = 'frameling.features.v1';
 
@@ -94,6 +94,8 @@ export function registerFeatures(list: FeatureDescriptor[]): void {
   for (const d of orderFeatures(list)) {
     if (features.has(d.id)) continue;
     features.set(d.id, d);
+    // A hidden feature stays unregistered whatever was saved: there is nothing to switch.
+    if (isHidden(d)) continue;
     const needsOff = (d.requires ?? []).some((r) => !live.has(r) && isSwitchable(features.get(r)!));
     if (isSwitchable(d) && (turnedOff.has(d.id) || needsOff)) {
       if (needsOff) turnedOff.add(d.id);
@@ -125,6 +127,26 @@ const notify = (e: FeatureChange) => {
 export function announceUiChange(): void {
   notify({ id: 'plugins', on: true });
 }
+
+/** Features kept out of sight (see `hidden` on the descriptor): not listed anywhere, never offered. */
+export const hiddenFeatures = (): FeatureDescriptor[] => allFeatures().filter(isHidden);
+
+/** The hidden features that `doc` holds data of, so opening it can say so in plain words. */
+export function hiddenFeaturesUsedBy(doc: Doc): FeatureDescriptor[] {
+  return hiddenFeatures().filter((d) => {
+    try {
+      return !!d.usedBy?.(doc);
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** The hidden feature that opens this kind of file, if any. */
+export const hiddenFeatureOpening = (path: string): FeatureDescriptor | undefined => hiddenFeatures().find((d) => d.opens?.(path));
+
+/** Help topics that exist but are kept out of sight for now: those of hidden features, and any an active feature holds back. For the help audit, which counts their pictures as used. */
+export const hiddenFeatureHelp = (): HelpTopic[] => [...hiddenFeatures().flatMap((d) => d.help ?? []), ...allFeatures().flatMap((d) => (isHidden(d) ? [] : d.heldBackHelp?.() ?? []))];
 
 /** The feature that is on and needs this one, if any (so this one cannot be turned off yet). */
 export const needsIt = (id: string): FeatureDescriptor | undefined => [...features.values()].find((x) => live.has(x.id) && (x.requires ?? []).includes(id));
