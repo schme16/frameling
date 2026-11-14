@@ -4,7 +4,7 @@ import { findLayer } from '../../core/doc';
 import type { BrushSettings } from '../../core/format';
 import { drawShape } from '../../core/render';
 import { store, useStore } from '../../core/store';
-import { Choice, Slider, Tip, Toggle } from '../../canvas/controls';
+import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls';
 import { buildStroke } from '../vectorStroke';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
@@ -56,15 +56,17 @@ function VectorBrushOptions() {
   const pressure = brush.thinning !== 0;
   return (
     <div className="cv-options">
-      <DrawModeToggle />
       <BrushPreview brush={brush} color={color} />
       <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
-      <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
-      <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
-      {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
-      <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
-      <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
-      <PenOptions tool="brush" opacity />
+      <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends and the stabilizer.">
+        <DrawModeToggle />
+        <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
+        <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
+        {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
+        <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
+        <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+        <PenOptions tool="brush" opacity />
+      </MoreOptions>
     </div>
   );
 }

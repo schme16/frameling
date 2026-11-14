@@ -1,6 +1,8 @@
 // Small form controls shared by the tool options and the colour panel. Plain words, big targets, theme tokens only.
 import { platformKeysText } from '../ui/keys';
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { Icon } from '../ui/icons';
+import { setFold, useFold } from './folds';
 import './canvas.css';
 
 export function Field({ label, value, children, hint }: { label: string; value?: ReactNode; children: ReactNode; hint?: string }) {
@@ -158,5 +160,28 @@ export function ActionButton({ children, onClick, disabled, title }: { children:
     <button type="button" className="cv-action" onClick={onClick} disabled={disabled} title={title}>
       {children}
     </button>
+  );
+}
+
+/**
+ * A fold for the settings most people leave alone: a button that opens and shuts them, remembered per `name`.
+ * `hint` says what's inside while it's shut, so nothing is a mystery.
+ */
+export function MoreOptions({ name, label, hint, children }: { name: string; label: string; hint?: string; children: ReactNode }) {
+  const open = useFold(name);
+  const id = `cv-more-${name}`;
+  return (
+    <div className="cv-more" data-open={open}>
+      <button type="button" className="cv-more-btn" aria-expanded={open} aria-controls={id} onClick={() => setFold(name, !open)}>
+        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
+        <span>{label}</span>
+      </button>
+      {!open && hint && <div className="cv-field-hint cv-more-hint">{hint}</div>}
+      {open && (
+        <div className="cv-more-body" id={id}>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
