@@ -401,3 +401,16 @@
   display: none;
 }
 
+
+/* A small screen (screenFit.ts): the rail's places sit a little closer, so they all show without scrolling. */
+:root[data-fit='compact'] .rd-item {
+  padding: 4px 2px 3px;
+  gap: 1px;
+}
+:root[data-fit='compact'] .rd-rgroup + .rd-rgroup {
+  margin-top: 3px;
+  padding-top: 2px;
+}
+:root[data-fit='compact'] .rd-sep {
+  margin: 2px 8px;
+}

@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import type { DockZone } from '../core/registry';
 import { createStore } from './mini';
+import { fitZoneSize, useCompact } from './screenFit';
 
 export type RoomFolds = Record<DockZone, boolean>;
 export const roomFolds = createStore<RoomFolds>({ left: false, right: false, bottom: false, top: false });
@@ -18,13 +19,19 @@ export function setRoomFolds(next: Partial<RoomFolds>): void {
   roomFolds.set(merged);
 }
 
-/** A zone as it is shown: the saved state, with `collapsed` also true while it is folded for lack of room. */
-export function shownZone<Z extends { collapsed: boolean }>(z: Z, folded: boolean): Z {
-  return folded && !z.collapsed ? { ...z, collapsed: true } : z;
+/**
+ * A zone as it is shown: the saved state, with `collapsed` also true while it is folded for lack of room, and on a small
+ * screen a size the workspace started with a little smaller (see screenFit.ts). The saved layout is never changed.
+ */
+export function shownZone<Z extends { collapsed: boolean; size: number }>(z: Z, folded: boolean, zone: DockZone, compact = false): Z {
+  const size = fitZoneSize(zone, z.size, compact);
+  const shown = size === z.size ? z : { ...z, size };
+  return folded && !shown.collapsed ? { ...shown, collapsed: true } : shown;
 }
 
 /** Re-renders when the zone's room-fold changes, and gives the zone as it is shown. */
-export function useShownZone<Z extends { collapsed: boolean }>(z: Z, zone: DockZone): Z {
+export function useShownZone<Z extends { collapsed: boolean; size: number }>(z: Z, zone: DockZone): Z {
   const folded = roomFolds.use((f) => f[zone]);
-  return useMemo(() => shownZone(z, folded), [z, folded]);
+  const compact = useCompact();
+  return useMemo(() => shownZone(z, folded, zone, compact), [z, folded, zone, compact]);
 }

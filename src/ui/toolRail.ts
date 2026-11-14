@@ -6,6 +6,7 @@ import { pickTool } from '../tools/pick';
 import { defaultRailWidthOf, dock, flushDock, setLock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
 import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
+import { fitRailSaved, fitToolSize, isCompact } from './screenFit';
 import { toast } from './toast';
 import { refuseDrag, run } from './dockDrag';
 import { askRename, whenLocked, type DockMenuItem } from './dockMenus';
@@ -177,13 +178,13 @@ export const toolbarIsChanged = (): boolean => {
 // ---------------------------------------------------------------- the rail's width
 
 /** The pixel sizes of the rail's buttons now (button size and look). */
-export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, getPrefs().toolSize);
+export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, fitToolSize(getPrefs().toolSize, isCompact()));
 
 /** True when the person has pulled this workspace's rail to a width of their own. */
 export const isCustomWidth = (): boolean => dock.get().railWidths?.[dock.get().workspaceId] !== undefined;
 
 /** How wide the rail is now, in pixels: the one saved for this workspace, or its natural width. */
-export const toolRailWidth = (): number => railWidthNow(railWidthOf(dock.get()), railSizesNow(), getPrefs().toolRail, getPrefs().toolNames);
+export const toolRailWidth = (): number => railWidthNow(fitRailSaved(railWidthOf(dock.get()), railSizesNow(), isCompact()), railSizesNow(), getPrefs().toolRail, getPrefs().toolNames);
 
 /** How many buttons fit across a group at the rail's width now. */
 export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizesNow(), getPrefs().toolRail);

@@ -27,6 +27,17 @@
   color: var(--text);
 }
 
+/* A small screen (screenFit.ts): slimmer bars and gaps so the canvas gets the room. Crisp has none to slim. */
+:root[data-fit='compact']:not([data-look='crisp']) .ui-app {
+  --ui-gap: 6px;
+  --ui-pad: 6px;
+  --ui-bar-h: 40px;
+  --ui-tab-h: 32px;
+}
+:root[data-fit='compact'] .ui-status {
+  height: 26px;
+}
+
 :root[data-look='crisp'] .ui-app {
   --ui-gap: 0px;
   --ui-pad: 0px;
