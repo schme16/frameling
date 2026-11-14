@@ -45,7 +45,8 @@ import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
 import { roughNow, setKeptProbe, subscribeScrubbing } from '../gpu/settings';
 import { watchPixelRatio } from './pixelRatio';
-import { boxOffset, getTurn, isTurned, resetTurn, setTurn, subscribeTurn, turnAngleFor, turnBox, turnCss, unturnVector, windowToBox, type Turn } from './turn';
+import { boxOffset, dragAngle, getTurn, isTurned, resetTurn, setTurn, subscribeTurn, turnAngleFor, turnBox, turnCss, unturnVector, windowToBox, type Turn } from './turn';
+import { altPressMoved, altPressReleased, altTurnPress } from './altPress';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -59,6 +60,8 @@ export interface EngineElements {
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
   | { kind: 'turn'; pointerId: number; from: number; swung: number; start: Turn }
+  /** Alt is down on a free tool: a click picks a colour, a drag turns the view. Waits to see which (see altPress.ts). */
+  | { kind: 'altwait'; pointerId: number; down: PointerEvent; startX: number; startY: number }
   | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
   | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab }
   | { kind: 'pinch'; pointerId: number; ids: [number, number]; start: PinchStart };
@@ -95,6 +98,8 @@ export class CanvasEngine {
   private spaceDown = false;
   private spaceTap = new SpaceTap();
   private altDown = false;
+  /** True while a waiting Alt press is being replayed as the plain press it turned out to be. */
+  private altReplay = false;
   private inside = false;
   private cursorOverride: string | null = null;
   /** The cursor for a canvas handle under the pointer (a vanishing point), or null. */
@@ -722,6 +727,13 @@ export class CanvasEngine {
       this.updateCursor();
       return;
     }
+    // Alt on a free tool: wait to see whether this is a click (picks a colour, or the tool's own click) or a drag (turns).
+    if (!this.altReplay && !penEraser && !pick && altTurnPress({ alt: e.altKey, shift: e.shiftKey, mod: e.ctrlKey || e.metaKey, button, tool: ui.tool, pointerType: e.pointerType })) {
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'altwait', pointerId: e.pointerId, down: e, startX: e.clientX, startY: e.clientY };
+      return;
+    }
     const wantPan = button === 1 || (button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser && !pick);
     if (wantPan) {
       e.preventDefault();
@@ -807,7 +819,8 @@ export class CanvasEngine {
     if (g && e.pointerId === g.pointerId && this.releaseWentMissing(g, e)) {
       // The release never came (a button let go outside the window, a tip lifted with a barrel button held): end the
       // stroke where it last was, as a normal release would, then take this move as a hover.
-      this.finishGesture(g, null);
+      // A waiting Alt press that never got its release is still a click, so it is carried out rather than lost.
+      this.finishGesture(g, g.kind === 'altwait' ? e : null);
       this.onPointerMove(e);
       return;
     }
@@ -838,12 +851,21 @@ export class CanvasEngine {
       this.invalidate(false, true);
       return;
     }
+    if (g.kind === 'altwait') {
+      // Not yet a drag: the first move past the small distance makes it one, turning from where the pointer is now.
+      if (altPressMoved('waiting', e.clientX - g.startX, e.clientY - g.startY, e.pointerType) === 'turning') {
+        this.gesture = { kind: 'turn', pointerId: g.pointerId, from: this.pointerAngle(e), swung: 0, start: getTurn() };
+        this.updateCursor();
+      }
+      return;
+    }
     if (g.kind === 'turn') {
       // A mirrored view turns the other way on screen, so the drag reverses to keep the page following the pointer.
+      // Any angle, settling straight near a quarter turn; Shift while dragging gives 15 degree steps instead.
       const now = this.pointerAngle(e);
       g.swung += turnAngleFor(g.from, now);
       g.from = now;
-      setTurn({ angle: g.start.angle + (g.start.flip ? -g.swung : g.swung), flip: g.start.flip });
+      setTurn({ angle: dragAngle(g.start.angle, g.swung, g.start.flip, e.shiftKey), flip: g.start.flip });
       return;
     }
     if (g.kind === 'pan') {
@@ -912,6 +934,10 @@ export class CanvasEngine {
       } else g.tool.cancel?.(this.ctx);
       this.stab = null;
       this.restoreTool(g);
+    } else if (g.kind === 'altwait') {
+      // Let go without moving far: not a turn after all, so the press is made as the tool would have taken it (a pick
+      // on a pixel layer). A press that is cancelled or loses the pointer (no release) does nothing.
+      if (e && altPressReleased('waiting') === 'pick') this.replayAltPress(g, e);
     } else if (g.kind === 'grab') {
       const at = e ? this.toDocPoint(e, true) : this.grabPt;
       if (at) g.grab.up(at);
@@ -921,6 +947,18 @@ export class CanvasEngine {
     this.grabPt = null;
     this.updateCursor();
     this.invalidate(false, true);
+  }
+
+  /** Makes a waiting Alt press as the plain press it was: down at the first point, up at the release. */
+  private replayAltPress(g: Extract<Gesture, { kind: 'altwait' }>, up: PointerEvent): void {
+    this.altReplay = true;
+    try {
+      this.onPointerDown(g.down);
+      const made = this.gesture as Gesture | null;
+      if (made && made.kind !== 'pinch') this.finishGesture(made, up);
+    } finally {
+      this.altReplay = false;
+    }
   }
 
   /** A move with no release before it: the button is no longer down, or a pen's tip has lifted but a barrel button is held. */

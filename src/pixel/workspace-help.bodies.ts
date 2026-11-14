@@ -17,7 +17,7 @@ What changes:
 The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off with the grid switch on the pixel bar.`,
   'pixel-aseprite-habits': `If you know Aseprite, your fingers already know most of this.
 
-- **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. The line, rectangle and ellipse keep Alt for drawing from the middle.
+- **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. **Hold Alt and drag** instead and the page turns, to any angle ([more](help:turn-flip-view)). The line, rectangle and ellipse keep Alt for drawing from the middle.
 - **+** makes the pencil, eraser, dither or spray one pixel bigger and **_** (Shift and minus) one pixel smaller. With **Aseprite keys**, **=** and **-** do too. (In Frameling's own keys **=** adds a frame and **-** removes one.)
 - **[ and ]** paint with the colour before or after this one in the [palette](help:palette). After the last it starts again at the first.
 - **1 to 6** zoom to 100%, 200%, 400%, 800%, 1600% and 3200%. Zoom is how many screen pixels each pixel of your sprite takes, so 800% shows every art pixel 8 screen pixels wide. The number is in the status bar.

@@ -10,7 +10,7 @@ import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
 import { SnapButton } from '../canvas/SnapOptions';
-import { describeTurn, isTurned, resetTurn, useTurn } from '../canvas/turn';
+import { describeTurn, getTurn, isTurned, resetTurn, setTurn, turnedBy, useTurn } from '../canvas/turn';
 import { hasArtboards } from '../artboards/model';
 import { artSizeOf, artZoomPercent } from '../pixel/units';
 import { dock, inPixelWorkspace, showPanel } from './dock';
@@ -74,6 +74,19 @@ export function StatusBar() {
         <Icon name="zoom" size={14} />
         {pixelWs ? artZoomPercent(zoom, pixel) : Math.round(zoom * 100)}%
       </button>
+      {!isTurned(turn) && (
+        <button
+          type="button"
+          className="ui-status-item ui-status-btn"
+          onClick={() => setTurn(turnedBy(getTurn(), 1))}
+          data-tip="Turn the page"
+          data-tip-desc="Hold Alt and drag on the canvas to turn the page to any angle, like a sheet on your desk. Press here to turn it a little. Only the view changes."
+          aria-label="Turn the page. Hold Alt and drag on the canvas, or press here to turn it a little."
+        >
+          <Icon name="rotate" size={14} />
+          Straight
+        </button>
+      )}
       {isTurned(turn) && (
         <button type="button" className="ui-status-item ui-status-btn" onClick={() => resetTurn()} data-tip="The view is turned" data-tip-desc="Only how you look at the page: your drawing and exports aren't changed. Press to turn it back straight.">
           <Icon name={turn.flip ? 'mirror' : 'rotate'} size={14} />

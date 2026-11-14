@@ -1,5 +1,5 @@
-// Help clip for turning and flipping the view: a lopsided face, the view flipped to show it, turned, drawn on while it is
-// turned, then put straight. Window coordinates as in drawing.cjs: the canvas viewport is 764 x 444 at (113, 47).
+// Help clip for turning and flipping the view: a lopsided face, the view flipped to show it, turned with Alt and a drag,
+// drawn on while it is turned, then put straight with the Straighten button. Window coordinates as in drawing.cjs: the canvas viewport is 764 x 444 at (113, 47).
 const T = (id) => ({ eval: `__frameling.template(${JSON.stringify(id)})` });
 const UI = (o) => ({ eval: `__frameling.store().setUi(${JSON.stringify(o)})` });
 const cmd = (id) => ({ eval: `__frameling.run(${JSON.stringify(id)})` });
@@ -30,7 +30,8 @@ const FACE = [
   line(520, 520, 780, 470, '#d3445f', 12),
   line(640, 380, 625, 450, INK, 6),
 ];
-const turnRight = (n) => Array.from({ length: n }, () => [cmd('view.turnRight'), { wait: 110 }]).flat();
+// Points round the middle of the canvas (495, 269) at radius 230, from one angle to another, for an Alt drag.
+const ARC = (from, to, n) => Array.from({ length: n }, (_, i) => { const a = ((from + ((to - from) * i) / (n - 1)) * Math.PI) / 180; return [Math.round(495 + 230 * Math.cos(a)), Math.round(269 + 230 * Math.sin(a))]; });
 const fitHalf = UI({ zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5 });
 
 module.exports = [
@@ -44,10 +45,11 @@ module.exports = [
       { rec: '@', crop: CV, every: 70 }, { wait: 900 },
       // Flip: the eyes and the mouth look lopsided at once.
       cmd('view.flip'), { wait: 1800 }, cmd('view.flip'), { wait: 900 },
-      // Turn it round to a comfortable angle, and draw a stroke while it is turned.
-      ...turnRight(6), { wait: 600 },
+      // Hold Alt and drag round the middle: the page turns to any angle with the pointer.
+      { drag: ARC(0, 38, 7), mods: ['alt'], steps: 3, delay: 28 }, { wait: 900 },
+      // Draw a stroke while it is turned, then press Straighten on the note.
       { drag: [[395, 300], [430, 240], [490, 215], [560, 240], [595, 300]], steps: 8, delay: 20 }, { wait: 1300 },
-      cmd('view.resetTurn'), { wait: 1800 },
+      { clickOn: '.tv-chip-reset', text: 'Straighten', after: 1800 },
       { rec: 'stop' },
     ],
   },

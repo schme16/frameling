@@ -26,9 +26,9 @@ registerCommands([
     label: 'Turn view left',
     category: 'View',
     keys: ['Alt+,'],
-    description: 'Turn the page a little anticlockwise (15 degrees), to reach a stroke comfortably. Only the view.',
+    description: 'Turn the page a little anticlockwise (15 degrees), to reach a stroke comfortably. Only the view. To turn it to any angle, hold Alt and drag on the canvas.',
     help: 'turn-flip-view',
-    keywords: ['rotate', 'rotate canvas', 'turn canvas', 'anticlockwise', 'counterclockwise', 'angle'],
+    keywords: ['rotate', 'rotate canvas', 'turn canvas', 'anticlockwise', 'counterclockwise', 'angle', 'turn the page', 'alt drag', 'any angle'],
     run: () => {
       setTurn(turnedBy(getTurn(), -1));
       nudge();
@@ -39,9 +39,9 @@ registerCommands([
     label: 'Turn view right',
     category: 'View',
     keys: ['Alt+.'],
-    description: 'Turn the page a little clockwise (15 degrees), to reach a stroke comfortably. Only the view.',
+    description: 'Turn the page a little clockwise (15 degrees), to reach a stroke comfortably. Only the view. To turn it to any angle, hold Alt and drag on the canvas.',
     help: 'turn-flip-view',
-    keywords: ['rotate', 'rotate canvas', 'turn canvas', 'clockwise', 'angle'],
+    keywords: ['rotate', 'rotate canvas', 'turn canvas', 'clockwise', 'angle', 'turn the page', 'alt drag', 'any angle'],
     run: () => {
       setTurn(turnedBy(getTurn(), 1));
       nudge();
@@ -52,9 +52,9 @@ registerCommands([
     label: 'Reset view turn',
     category: 'View',
     keys: ['Mod+Shift+0'],
-    description: 'Put the page back straight and unflipped.',
+    description: 'Put the page back straight and unflipped. The note at the top of the canvas has a button for it too.',
     help: 'turn-flip-view',
-    keywords: ['unflip', 'straighten', 'reset rotation', 'upright', 'reset flip'],
+    keywords: ['unflip', 'straighten', 'reset rotation', 'upright', 'reset flip', 'straighten the page'],
     enabled: () => isTurned(getTurn()),
     run: () => {
       resetTurn();

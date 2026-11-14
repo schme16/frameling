@@ -61,7 +61,7 @@ See also [The four ways to build a sprite](help:pixel-ways) and [Artboards](help
 - **Click a swatch** in the [Palette](help:palette) to set Paint. Click a big square to pick any colour for it.
 - **X** swaps Paint and Back. The squares do a little pop.
 - **Right-click** on the canvas paints with Back, for that one stroke.
-- **Hold Alt** and click to pick a colour from the canvas, then let go to carry on drawing (the temporary eyedropper).
+- **Hold Alt** and click to pick a colour from the canvas, then let go to carry on drawing (the temporary eyedropper). Drag instead of clicking and the page turns ([see how](help:turn-flip-view)).
 - The [dither](help:tool-dither) brush uses Paint and Back as its two colours. Shapes are drawn in Paint, and filled in Paint when you turn on **Filled** in their options.
 
 The **Draw** and **Animate** workspaces keep the Fill and Stroke boxes, see [Fill and stroke colours](help:fill-and-stroke). The files are the same either way: Paint is the stroke colour and Back is the fill colour.`,

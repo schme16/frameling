@@ -611,6 +611,10 @@
     "text": "You added a Wave, so the letters keep bobbing after they land.",
     "where": "The Great work card in the quest \"Say it with text\", after the step \"wave\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
   },
+  "quests.did.turn-the-page.turn": {
+    "text": "You turned the page, so a stroke can come at you from a comfortable angle.",
+    "where": "The Great work card in the quest \"Turn the page\", after the step \"turn\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
   "quests.did.camera-move.add": {
     "text": "You added a camera. Whatever's inside its frame is what the audience sees.",
     "where": "The Great work card in the quest \"Camera move\", after the step \"add\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
