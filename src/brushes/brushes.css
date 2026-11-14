@@ -1,0 +1,100 @@
+/* The saved-brush row in the brush options. Theme tokens only. */
+.bp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+.bp-chip:hover {
+  background: var(--hover-bg);
+}
+.bp-chip[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.bp-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-dot {
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+.bp-changed {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--chosen-bg);
+}
+.bp-actions,
+.bp-share,
+.bp-name-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bp-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bp-name-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.bp-name-label input {
+  font: inherit;
+  font-weight: 500;
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.bp-fold summary {
+  cursor: pointer;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.bp-fold summary:hover {
+  color: var(--text);
+}
+.bp-fold[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bp-fold-hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}

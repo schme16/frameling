@@ -3,6 +3,7 @@
 // for their side effects: each one hands over a descriptor (src/features) and the host registers it, tagged, below.
 import '../core/commands';
 import '../history';
+import '../brushes';
 import '../ui';
 import '../canvas';
 import '../tools';
@@ -24,6 +25,7 @@ import { installBeta } from '../beta';
 import { installUpdates } from '../update';
 import { registerFeatures } from '../features/host';
 import { startRememberingUi } from '../tools/rememberUi';
+import { startBrushPresets } from '../brushes';
 
 // Beta reports: a panel and a command. Nothing is sent without the person pressing Send.
 installBeta();
@@ -46,3 +48,6 @@ registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, intera
 
 // Brush, colours, loop playback and onion skin: put back as they were, and saved from here on.
 startRememberingUi();
+
+// Saved brushes: one palette command each, and the "save every change" choice.
+startBrushPresets();
