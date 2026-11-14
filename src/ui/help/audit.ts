@@ -20,6 +20,8 @@ export interface HelpAuditInput {
   extraKeys?: string[];
   /** Topics of features that are turned off: links to them are fine and their pictures still count as used. */
   hiddenTopics?: HelpTopic[];
+  /** Topics kept out of sight for good (a hidden feature's): their pictures count as used, but a link to one is a broken link. */
+  keptOut?: HelpTopic[];
 }
 
 export interface HelpAudit {
@@ -87,7 +89,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
   const used = new Set<string>();
   const missingMedia: string[] = [];
   const have = new Set(files);
-  for (const t of hidden) if (t.media) for (const f of mediaFiles(t.media)) used.add(f);
+  for (const t of [...hidden, ...(input.keptOut ?? [])]) if (t.media) for (const f of mediaFiles(t.media)) used.add(f);
   for (const t of topics) {
     if (!t.media) continue;
     const need = mediaFiles(t.media);

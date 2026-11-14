@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
 import { MENUS, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { _forceInteractivesForTests } from '../../src/features/flags';
+
+// These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
+_forceInteractivesForTests(true);
 
 const c = (id: string, label = id, category = 'Test'): Command => ({ id, label, category, run: () => {} });
 const registry = (list: Command[]) => ({ lookup: (id: string) => list.find((x) => x.id === id), all: () => list });

@@ -1,6 +1,7 @@
 // "Open with" for Aseprite files, on every desktop, without Frameling taking over the double-click.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
@@ -12,7 +13,8 @@ import { fileFromArgs } from '../../src/main/library';
 import { ASEPRITE_MIME, desktopEntry, installIntegration, mimeDataDirs, mimeDefined } from '../../scripts/linux-integration.mjs';
 
 const root = path.resolve(__dirname, '../..');
-const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+// The installer settings (electron-builder.cjs, once "build" in package.json), held under `build` as they were.
+const pkg = { build: createRequire(import.meta.url)(path.join(root, 'electron-builder.cjs')) };
 const nsh = fs.readFileSync(path.join(root, 'build/installer.nsh'), 'utf8');
 const mimeXml = path.join(root, 'build/linux/application-x-aseprite.xml');
 

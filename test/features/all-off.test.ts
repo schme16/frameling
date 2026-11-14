@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allCommands, allHelp, allPanels, allTools, getCommand, getHelp, getPanel } from '../../src/core/registry';
-import { hiddenHelp, isFeatureOn, setFeatureOn, switchableFeatures } from '../../src/features/host';
+import { hiddenFeatureHelp, hiddenHelp, isFeatureOn, setFeatureOn, switchableFeatures } from '../../src/features/host';
 import { auditHelp } from '../../src/ui/help/audit';
 import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { allConflicts, comboLabel } from '../../src/ui/keys';
@@ -64,7 +64,7 @@ describe('every optional feature turned off', () => {
   });
 
   it('the help audit is clean', () => {
-    const a = auditHelp({ topics: allHelp(), hiddenTopics: hiddenHelp().map((h) => h.topic), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
+    const a = auditHelp({ topics: allHelp(), keptOut: hiddenFeatureHelp(), hiddenTopics: hiddenHelp().map((h) => h.topic), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
     expect(a.commandsWithoutHelp).toEqual([]);
     expect(a.topicsWithoutMedia).toEqual([]);
     expect(a.missingMedia).toEqual([]);

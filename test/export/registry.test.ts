@@ -2,7 +2,7 @@
 // The export format registry: every built-in format is there in the order the cards have always had, the plan rules
 // come from the registered formats, a feature's format goes when the feature is turned off, and Audio owns the
 // sound question while the sound itself still goes into a video.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { audioFeature } from '../../src/audio';
 import { getChoiceDef, setChoice } from '../../src/core/choices';
 import { newDoc } from '../../src/core/doc';
@@ -13,6 +13,11 @@ import { extensionFor, filtersFor } from '../../src/export/plan';
 import { allExporters, exporterOf, exportUiOf, hasExporter, loadExportUis, registerExporter, splitExporters } from '../../src/export/registry';
 import { allFormats, splitFormats } from '../../src/export/types';
 import { defaultSettings } from '../../src/export/plan';
+import { _forceInteractivesForTests } from '../../src/features/flags';
+
+// These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
+beforeAll(() => _forceInteractivesForTests(true));
+afterAll(() => _forceInteractivesForTests(undefined));
 
 vi.mock('../../src/io/desktop', async (orig) => ({ ...(await orig<object>()), desktop: () => ({ media: { aacAvailable: async () => false } }) }));
 const encoders = vi.hoisted(() => ({ opus: true }));

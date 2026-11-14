@@ -149,6 +149,9 @@ export async function openPath(path: string): Promise<boolean> {
   }
   let other = openers.find((o) => o.test(r.path));
   if (!other) {
+    // A kind of file that belongs to a feature kept out of sight for now: say so plainly instead of failing oddly.
+    const { explainHiddenFile } = await import('../features/prompt');
+    if (explainHiddenFile(r.path, baseName(r.path))) return false;
     // A kind of file that needs a feature that is turned off: offer to turn it on, then open it.
     const [{ offFeatureOpening }, { offerTurnOnForFile }] = await Promise.all([import('../features/host'), import('../features/prompt')]);
     const feature = offFeatureOpening(r.path);

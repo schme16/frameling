@@ -76,7 +76,6 @@ describe('onboarding flow', () => {
     expect(planFor(['sprites']).quest).toBe('pixel-pal');
     expect(planFor(['sprites'], ['pixel-pal']).quest).toBe(FIRST_QUEST);
     expect(planFor(['cartoons', 'sprites']).quest).toBe(FIRST_QUEST);
-    expect(planFor(['interactives'], [FIRST_QUEST]).quest).toBe('share-it');
   });
 
   it('every suggested template, quest and help topic is real', async () => {

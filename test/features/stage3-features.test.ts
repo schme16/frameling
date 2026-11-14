@@ -2,7 +2,7 @@
 // Godot exports, Camera, Particles and Text as switchable features: what goes when they are off (commands, panels,
 // tools, help, choices, quest, templates, the Godot engine card), what a drawing keeps (the data, and how it draws
 // and exports), and the question when a file uses one.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cameraFeature } from '../../src/camera';
 import { godotFeature } from '../../src/export/godot';
 import { particlesFeature } from '../../src/particles';
@@ -29,6 +29,11 @@ import { rigFeature } from '../../src/rig';
 import { tilesFeature } from '../../src/tiles';
 import { newTextShape } from '../../src/text/model';
 import { frameToSvg } from '../../src/export/svg';
+import { _forceInteractivesForTests } from '../../src/features/flags';
+
+// These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
+beforeAll(() => _forceInteractivesForTests(true));
+afterAll(() => _forceInteractivesForTests(undefined));
 
 const ALL = [rigFeature, tilesFeature, audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, textFeature];
 const off = (id: string) => expect(setFeatureOn(id, false, { remember: false }).ok, id).toBe(true);

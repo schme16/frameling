@@ -26,6 +26,15 @@ export interface FeatureDescriptor {
    * listed here to say what is planned, and left out of Preferences > Features until it moves onto this descriptor.
    */
   legacy?: boolean;
+  /**
+   * True while the feature is switched off for everyone and kept out of sight: nothing of it is registered, it is not
+   * in Preferences > Features, and nothing offers to turn it on. Its code stays, so flipping the switch it reads (for
+   * Interactives, src/interactives/flag.ts) brings it back whole. `opens` and `usedBy` still work, so a file that
+   * needs it can be told so in plain words.
+   */
+  hidden?: () => boolean;
+  /** Help topics this feature keeps back while something else is hidden (the Godot add-on reads .flplay files, which only Interactives makes). The help audit still counts them. */
+  heldBackHelp?: () => HelpTopic[];
   /** Feature ids this one needs. Turning one of them off needs this one off first; turning this on turns them on. */
   requires?: string[];
 
@@ -59,5 +68,7 @@ export interface FeatureDescriptor {
 /** Reads better than a bare object at the call site, and checks the shape. */
 export const defineFeature = (d: FeatureDescriptor): FeatureDescriptor => d;
 
-/** Can a person switch it? Optional, and moved onto a descriptor. */
-export const isSwitchable = (d: FeatureDescriptor): boolean => !!d.optional && !d.legacy;
+export const isHidden = (d: FeatureDescriptor): boolean => d.hidden?.() === true;
+
+/** Can a person switch it? Optional, moved onto a descriptor, and not hidden. */
+export const isSwitchable = (d: FeatureDescriptor): boolean => !!d.optional && !d.legacy && !isHidden(d);

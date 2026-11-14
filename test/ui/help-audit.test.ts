@@ -11,6 +11,7 @@ import { allCommands, allHelp, allPanels, allTools, loadHelpBodies } from '../..
 import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { auditHelp, formatAudit, helpLinksIn, shortcutsIn } from '../../src/ui/help/audit';
 import '../../src/renderer/features';
+import { hiddenFeatureHelp } from '../../src/features/host';
 import { KEYMAP_SETS } from '../../src/ui/keymapSets';
 
 const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/help');
@@ -19,7 +20,7 @@ const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.
 // Plus every key a shortcut set gives (the shortcut-sets topic names them).
 const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2', ...KEYMAP_SETS.flatMap((s) => Object.values(s.keys).flat())];
 
-const run = () => auditHelp({ topics: allHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
+const run = () => auditHelp({ topics: allHelp(), keptOut: hiddenFeatureHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
 
 describe('help audit (the real app)', () => {
   // The topics' words load on demand, so the audit waits for them.
