@@ -82,11 +82,22 @@ function over(dst: RawImage, src: RawImage, opacity: number): void {
   }
 }
 
-/** The pixel layers that make up a frame: visible ones, bottom first. Hidden layers are for reference and are left out. */
+/** True when the layer sits in a folder that is switched off (or in a folder inside one). */
+function inHiddenFolder(doc: Doc, l: Layer): boolean {
+  for (let id = l.folder, depth = 0; id && depth < 10; depth++) {
+    const f = doc.folders?.[id];
+    if (!f) return false;
+    if (!f.visible) return true;
+    id = f.parent;
+  }
+  return false;
+}
+
+/** The pixel layers that make up a frame: visible ones, bottom first. Hidden layers and folders are for reference and are left out. */
 function sourceLayers(doc: Doc, warnings: string[]): PixelLayer[] {
   const out: PixelLayer[] = [];
   for (const l of doc.layers) {
-    if (!l.visible) continue;
+    if (!l.visible || inHiddenFolder(doc, l)) continue;
     if (l.kind !== 'pixel') {
       warnings.push(`Layer "${l.name}" is a vector layer, so it was left out (the mascot is pixel art).`);
       continue;
@@ -172,6 +183,54 @@ export function docToSheet(doc: Doc, columns = SHEET_COLUMNS): BuiltSheet {
   const image = blankImage(columns * doc.width, Math.max(1, Math.ceil(tiles.length / columns)) * doc.height);
   tiles.forEach((t, i) => paste(image, t, (i % columns) * doc.width, Math.floor(i / columns) * doc.height));
   return { image, meta: { frameW: doc.width, frameH: doc.height, anims }, warnings };
+}
+
+// ---------------------------------------------------------------- copying a clip
+
+/**
+ * Adds a copy of a clip after the last frame, under a new name, to draw over. Every cel is copied on its layer and every
+ * drawing in it is cloned (a drawing shown twice inside the clip stays one drawing), so painting on the copy never
+ * touches the original. Returns the new clip. Throws, in plain words, if the clip is missing or the name is taken.
+ */
+export function copyClip(doc: Doc, from: string, to: string): Clip {
+  const src = doc.clips.find((c) => c.name === from);
+  if (!src) throw new Error(`There is no clip called "${from}". The clips are: ${doc.clips.map((c) => c.name).join(', ')}.`);
+  const name = to.trim();
+  if (!name) throw new Error('Give the new clip a name.');
+  if (doc.clips.some((c) => c.name === name)) throw new Error(`There is already a clip called "${name}".`);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'copy';
+  const shift = doc.length - src.start;
+  const celIds = new Set(doc.layers.flatMap((l) => l.cels.map((c) => c.id)));
+  for (const layer of doc.layers) {
+    const clones = new Map<string, string>();
+    let n = 0;
+    const made: Cel[] = [];
+    for (const cel of layer.cels) {
+      const a = Math.max(cel.start, src.start);
+      const b = Math.min(cel.start + cel.length - 1, src.end);
+      if (b < a) continue;
+      let did = clones.get(cel.drawingId);
+      if (!did) {
+        const base = `${layer.id.replace(/^layer-/, '')}-${slug}`;
+        did = `${base}-${++n}`;
+        while (doc.drawings[did]) did = `${base}-${++n}`;
+        const d = doc.drawings[cel.drawingId];
+        if (d?.kind === 'pixel') doc.drawings[did] = { ...d, id: did, pixels: d.pixels.slice() };
+        else if (d) doc.drawings[did] = { ...d, id: did } as typeof d;
+        clones.set(cel.drawingId, did);
+      }
+      let cid = `${cel.id}-${slug}`;
+      while (celIds.has(cid)) cid += '-2';
+      celIds.add(cid);
+      made.push({ id: cid, start: a + shift, length: b - a + 1, drawingId: did });
+    }
+    layer.cels.push(...made);
+  }
+  doc.length += src.end - src.start + 1;
+  const clip: Clip = { ...src, id: `clip-${slug}`, name, start: src.start + shift, end: src.end + shift };
+  while (doc.clips.some((c) => c.id === clip.id)) clip.id += '-2';
+  doc.clips.push(clip);
+  return clip;
 }
 
 // ---------------------------------------------------------------- the other way (one-time conversion)
