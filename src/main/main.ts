@@ -10,6 +10,7 @@ import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
 import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
 import { PROFILE } from './profileName';
+import { saveChangesQuestion } from './saveQuestion';
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
@@ -107,9 +108,7 @@ function createWindow() {
     void (async () => {
       const r = await dialog.showMessageBox(win!, {
         type: 'question',
-        message: `Save changes to "${docState.name.slice(0, 80)}"?`,
-        detail: `If you don't save, your latest changes will be lost.`,
-        buttons: ['Save', `Don't save`, 'Cancel'],
+        ...saveChangesQuestion(docState.name, !docState.filePath),
         defaultId: 0,
         cancelId: 2,
         noLink: true,

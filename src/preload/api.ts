@@ -211,6 +211,6 @@ export interface FramelingApi {
     /** Called when the window is closing and they chose "Don't save": put the work aside, then resolve. */
     onKeepUnsaved(handler: () => Promise<void>): () => void;
     /** The "Save changes?" question as a native dialog. */
-    askSaveChanges(name: string): Promise<SaveChoice>;
+    askSaveChanges(name: string, neverSaved?: boolean): Promise<SaveChoice>;
   };
 }

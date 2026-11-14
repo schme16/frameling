@@ -22,7 +22,8 @@ export const MIN_CW = 5;
 export const MAX_CW = 64;
 export const DEFAULT_CW = 22;
 
-let state: TlState = { cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() };
+const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() });
+let state: TlState = freshTl();
 const listeners = new Set<() => void>();
 
 export function tl(): TlState {
@@ -33,6 +34,12 @@ export function setTl(patch: Partial<TlState>): void {
   const next = { ...state, ...patch };
   next.cw = Math.max(MIN_CW, Math.min(MAX_CW, Math.round(next.cw * 100) / 100));
   state = next;
+  for (const fn of listeners) fn();
+}
+
+/** Back to a new window's timeline: default zoom, no clip picked, nothing open or selected. */
+export function resetTl(): void {
+  state = freshTl();
   for (const fn of listeners) fn();
 }
 

@@ -953,3 +953,13 @@ asks the real board's health address when the computer is online (`BETA_NET_OFFL
 `npm run beta:check` (after `npm run build`, or pointed at an unpacked `app.asar`) says whether a build carries an ingest key
 and which board it sends to, without printing the key; `--expect-key` makes it exit 1 when there is none, so run it before
 handing a build to a tester. `FRAMELING_BETA=1` on the build itself stops with an error if `FRAMELING_INGEST_KEY` is missing.
+
+### Clips with a native question: scripts/ab/close-drawing.cjs
+
+For anything whose point includes a native dialog (the "Save changes?" question), which a page capture can't see. It runs the
+real built app (`npm run build` first), draws, picks **File > Close drawing**, and records the whole virtual screen with ffmpeg
+(x11grab, H.264) while xdotool presses the dialog's button. Used for brand/ab/close-drawing/.
+
+```bash
+xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/close-drawing.cjs dark out.mp4
+```
