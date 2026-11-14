@@ -318,6 +318,37 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // Lock the tools: right-click the strip, Lock the tools, try to carry it (it says why), then Unlock and carry it.
+  {
+    name: 'lock-layout',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(900),
+      { rclick: [50, 420] },
+      wait(1200),
+      { clickOn: '.ui-menu-item', text: 'Lock the tools', after: 700 },
+      { move: [620, 420] },
+      wait(900),
+      // Locked: carrying the grip goes nowhere, and a message says why.
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 400, steps: 12, delay: 45, hold: 600, after: 300 },
+      { move: [620, 420] },
+      wait(3200),
+      // The menu now offers Unlock, with the rest greyed and a reason under each.
+      { rclick: [50, 420] },
+      wait(2200),
+      { clickOn: '.ui-menu-item', text: 'Unlock the tools', after: 700 },
+      { move: [620, 420] },
+      wait(900),
+      // Unlocked: the same drag works.
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 610, steps: 12, delay: 45, hold: 1000, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 900, after: 1300 },
+      { rec: 'stop' },
+    ],
+  },
   // The View menu open under the menu bar.
   {
     name: 'menus',

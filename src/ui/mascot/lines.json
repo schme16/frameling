@@ -109,6 +109,11 @@
     "where": "A toast with Yes and No after Reset layout on a workspace that comes with the app, only when you have rearranged its tools. Yes puts its tools back the way it comes.",
     "vars": ["workspace"]
   },
+  "lock.teach": {
+    "text": "Did that move by accident? I can lock the {what}, so they stay exactly where you put them.",
+    "where": "A toast with Quill and a Lock it button, once ever: the first time a tool, the tool rail or a panel is moved in a quick or short drag, which looks like a slip. {what} is tools or panels.",
+    "vars": ["what"]
+  },
   "sillyNames.pattern": {
     "text": "The {adjective} {noun}",
     "where": "First-run hello, 'Name your first animation': how a silly name is put together (and what Roll makes).",

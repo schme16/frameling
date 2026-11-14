@@ -209,6 +209,14 @@ registerHelpTopics([
     keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'move', 'dock', 'float', 'undock', 'grip', 'drag', 'left', 'right', 'top', 'bottom', 'side', 'put back', 'where it was', 'return', 'unfloat', 'over the canvas'],
   },
   {
+    id: 'lock-layout',
+    title: 'Lock the tools and panels',
+    section: 'Basics',
+    media: 'lock-layout.mp4',
+    summary: 'Keep the tool strip or the panels exactly where they are, so a slip of the mouse moves nothing. Everything still works.',
+    keywords: ['lock', 'unlock', 'locked', 'freeze', 'stuck', 'stop moving', 'accident', 'pin', 'keep in place', 'tools', 'panels', 'tool strip', 'tool rail', 'greyed', 'cannot move', 'cant move'],
+  },
+  {
     id: 'tool-builder',
     title: 'Change the tools',
     section: 'Basics',

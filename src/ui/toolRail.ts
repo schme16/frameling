@@ -1,13 +1,14 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
 import { allTools, getTool } from '../core/registry';
-import { defaultRailWidthOf, dock, flushDock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
+import { defaultRailWidthOf, dock, flushDock, setLock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
 import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
-import { run } from './dockDrag';
-import { askRename, type DockMenuItem } from './dockMenus';
+import { refuseDrag, run } from './dockDrag';
+import { askRename, whenLocked, type DockMenuItem } from './dockMenus';
 import { createStore } from './mini';
+import { railLocked, refuseIfLocked, teachLock } from './lockState';
 import { canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
@@ -20,6 +21,7 @@ export const isCustomArrangement = (): boolean => !!dock.get().rails?.[dock.get(
 
 /** Saves what a pure move made of the arrangement. Nothing happens when it hands the same one back. */
 export function arrange(fn: (g: ToolGroup[]) => ToolGroup[]): boolean {
+  if (refuseIfLocked('tools', 'arrange')) return false;
   const now = currentGroups();
   const next = fn(now);
   if (next === now) return false;
@@ -86,14 +88,14 @@ export function groupMenu(groupId: string, at?: { x: number; y: number }, visibl
   if (!g) return [];
   const folded = !!g.fold;
   const above = groupAbove(groupId, visible);
-  return [
+  return whenLocked('tools', [
     { heading: groupName(g, groups) },
     { label: 'Rename group...', onClick: () => askGroupRename(groupId, at) },
     ...(hasOwnName(g, groups) ? [{ label: 'Use the usual name again', onClick: () => renameToolGroup(groupId, '') } satisfies DockMenuItem] : []),
     { separator: true },
     { label: folded ? 'Show every tool in this group' : 'Fold this group into one button', disabled: getPrefs().toolRail === 'stacked', onClick: () => foldToolGroup(groupId, !folded) },
     { label: 'Join the group above', disabled: !above, onClick: () => joinToolGroupAbove(groupId, visible) },
-  ];
+  ]);
 }
 
 /** The menu for one tool: where to move it, putting it away, dividing and folding its group. */
@@ -111,14 +113,24 @@ export function toolMenu(id: string, visible: (id: string) => boolean): DockMenu
   }
   items.push({ label: 'Hide this tool', onClick: () => putToolAway(id) });
   if (here) items.push({ separator: true }, { label: `Rename ${groupName(here, groups)}...`, onClick: () => askGroupRename(here.id) });
-  return items;
+  return whenLocked('tools', items);
 }
 
 // ---------------------------------------------------------------- the builder: change the tools
 
 /** True while the rail is being changed (the Change the tools panel is open). */
 export const toolbarEditing = createStore(false);
-export const setToolbarEditing = (on = !toolbarEditing.get()): void => toolbarEditing.set(on);
+export const setToolbarEditing = (on = !toolbarEditing.get()): void => {
+  if (on && refuseIfLocked('tools', 'edit')) return;
+  toolbarEditing.set(on);
+};
+// Locking while the tools are being changed (or moving to a locked workspace) puts the rail away from editing.
+dock.subscribe(() => {
+  if (toolbarEditing.get() && railLocked()) toolbarEditing.set(false);
+});
+
+/** Locks or unlocks the tool rail. */
+export const setRailLock = (on: boolean): void => setLock('tools', on);
 
 /** The group above one on the rail as it shows now (the groups with nothing showing do not count), or undefined. */
 export function groupAbove(groupId: string, visible: (id: string) => boolean = () => true): ToolGroup | undefined {
@@ -179,6 +191,7 @@ export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizes
  * `persist` false while the edge is being dragged; call flushDock() at the end.
  */
 export function setToolRailWidth(px: number, persist = true): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const style = getPrefs().toolRail;
   const d = dock.get();
@@ -187,13 +200,14 @@ export function setToolRailWidth(px: number, persist = true): void {
 }
 
 /** The width back to this workspace's own default (what it was saved with, or the natural width). */
-export const resetToolRailWidth = (): void => setRailWidth(undefined);
+export const resetToolRailWidth = (): void => void (!refuseIfLocked('tools', 'size') && setRailWidth(undefined));
 
 /** Ends a drag of the rail's edge: what was set on the way is saved. */
 export const endToolRailPull = (): void => flushDock();
 
 /** One more button across (1) or one fewer (-1). Says so when it is as wide or as narrow as it goes. */
 export function stepToolRail(dir: 1 | -1): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const before = toolRailWidth();
   setToolRailWidth(before + dir * columnStep(s));
@@ -221,6 +235,7 @@ export function wantedNamesWidth(nav: HTMLElement | null = document.querySelecto
  * natural width, so one gesture (double-click on the edge) is both ways.
  */
 export function fitToolRailNames(): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const style = getPrefs().toolRail;
   const wanted = wantedNamesWidth();
@@ -237,6 +252,7 @@ const TOOL_PREF_KEYS = ['toolSize', 'toolNames', 'toolRail', 'toolsOffLayer'] as
  * size, group names, rail style and what to do with tools that do not work on the layer. A toast offers Undo, because it undoes more than one thing.
  */
 export function putToolsBack(): void {
+  if (refuseIfLocked('tools', 'reset')) return;
   const d = dock.get();
   const id = d.workspaceId;
   const before = d.rails?.[id];
@@ -312,6 +328,8 @@ export function hitTool(x: number, y: number, groups: ToolGroup[], dragged: stri
 
 /** Pointer down on a tool: a click still picks it; carrying it past a few pixels lifts it to be put somewhere else. */
 export function startToolDrag(e: React.PointerEvent, id: string, groups: () => ToolGroup[], visible: (id: string) => boolean, onLift?: () => void): void {
+  // A locked rail still lets you press a tool to use it; carrying one is where it says no.
+  if (railLocked()) return refuseDrag(e, 'tools', 'arrange');
   run(
     e,
     (ev) => {
@@ -321,7 +339,10 @@ export function startToolDrag(e: React.PointerEvent, id: string, groups: () => T
     (_ev, ok) => {
       const d = toolDrag.get();
       toolDrag.set(null);
-      if (ok && d?.drop) moveToolTo(id, d.drop, visible);
+      if (ok && d?.drop) {
+        moveToolTo(id, d.drop, visible);
+        teachLock('tools', () => setRailLock(true));
+      }
     },
     onLift,
   );

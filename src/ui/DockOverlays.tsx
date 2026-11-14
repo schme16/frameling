@@ -2,7 +2,8 @@
 // and the little name box. One of these is mounted by the app shell.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel } from '../core/registry';
-import { dock, panelTitle, renameFloat, renamePanel } from './dock';
+import { dock, panelTitle } from './dock';
+import { renameFloat, renamePanel } from './lockedDock';
 import { dragState, dropNote, railGeometry, type DragState } from './dockDrag';
 import { railBands } from './railDrop';
 import { closeDockMenu, dockMenu, renaming } from './dockMenus';
@@ -154,7 +155,7 @@ function DockMenuView() {
             key={i}
             type="button"
             role="menuitem"
-            className={`ui-menu-item${it.disabled ? ' is-disabled' : ''}${it.danger ? ' is-danger' : ''}`}
+            className={`ui-menu-item${it.disabled ? ' is-disabled' : ''}${it.why ? ' has-why' : ''}${it.danger ? ' is-danger' : ''}`}
             disabled={it.disabled}
             onClick={() => {
               closeDockMenu();
@@ -162,7 +163,10 @@ function DockMenuView() {
             }}
           >
             <span className="ui-menu-tick">{it.checked && <Icon name="check" size={13} />}</span>
-            <span className="ui-menu-label">{it.label}</span>
+            <span className="ui-menu-label">
+              {it.label}
+              {it.why && <span className="ui-menu-why">{it.why}</span>}
+            </span>
           </button>
         );
       })}

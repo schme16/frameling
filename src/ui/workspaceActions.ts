@@ -2,6 +2,7 @@
 // step to the next. The model is in dock.ts and workspaceFile.ts; this adds the file picker, the clipboard and the toasts.
 import { download, pickUpload } from '../platform';
 import { applyWorkspace, currentWorkspace, dock, importWorkspace, listWorkspaces, resetLayout, workspaceText } from './dock';
+import { railLocked, refuseIfLocked } from './lockState';
 import { line } from './mascot/lines';
 import { isCustomArrangement, resetToolArrangement } from './toolRail';
 import { MAX_WORKSPACE_BYTES, workspaceFileName } from './workspaceFile';
@@ -92,9 +93,11 @@ export function stepWorkspace(by: 1 | -1): void {
  * tools back the way it comes. One of your own workspaces already takes its tools back with the panels.
  */
 export function resetLayoutAndAsk(): void {
+  if (refuseIfLocked('panels', 'reset')) return;
   resetLayout();
+  // A locked rail keeps its tools: Reset layout is about the panels then.
   const w = currentWorkspace();
-  if (!w?.builtin || !isCustomArrangement()) return void toast('Panels are back where they started.', { kind: 'success' });
+  if (!w?.builtin || !isCustomArrangement() || railLocked()) return void toast('Panels are back where they started.', { kind: 'success' });
   const id = w.id;
   toast(line('workspaces.resetTools', { workspace: w.name }), {
     kind: 'info',

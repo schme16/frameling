@@ -1,16 +1,17 @@
 // Commands for the dock: float and move panels, move the tool rail, hide all panels, step between workspaces, share one.
 // "This panel" is the one you last clicked in or tabbed into.
 import { getPanel, registerCommand, registerCommands } from '../core/registry';
-import { dock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
+import { dock, setLock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
 import { SPLIT_WORDS } from './dockDrag';
 import { groupCount, groupTabs, MAX_GROUPS, toolsHome, ZONES, type DockZone, type ToolsPlace } from './dockModel';
 import { askRename } from './dockMenus';
+import { isLocked, refuseIfLocked } from './lockState';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { store } from '../core/store';
-import { askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
+import { setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -33,6 +34,7 @@ registerCommands([
     help: 'floating-windows',
     keywords: ['window', 'detach', 'undock', 'pop out', 'panel'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -60,6 +62,7 @@ registerCommands([
     help: 'panels',
     keywords: ['stack', 'split', 'group', 'tabs', 'below', 'beside', 'panel', 'layers', 'colours'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -79,6 +82,7 @@ registerCommands([
     help: 'panels',
     keywords: ['stack', 'merge', 'group', 'tabs', 'unstack', 'panel'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -94,7 +98,7 @@ registerCommands([
     help: 'floating-windows',
     keywords: ['windows', 'float', 'tidy', 'panels'],
     enabled: () => dock.get().layout.floats.length > 0,
-    run: () => dockEverythingBack(),
+    run: () => void (!refuseIfLocked('panels', 'move') && dockEverythingBack()),
   },
   {
     id: 'view.hidePanels',
@@ -185,6 +189,7 @@ for (const z of ZONES) {
     help: 'floating-windows',
     keywords: ['dock', 'panel', 'place', z],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       placePanel(id, { zone: z });
@@ -203,7 +208,7 @@ for (const p of [...ZONES, 'float'] as ToolsPlace[]) {
     help: 'floating-windows',
     keywords: ['tools', 'toolbar', 'strip', 'move', p],
     checked: () => dock.get().layout.tools.place === p,
-    run: () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined),
+    run: () => void (!refuseIfLocked('tools', 'move') && placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined)),
   });
 }
 
@@ -215,7 +220,7 @@ registerCommand({
   help: 'tool-strip',
   keywords: ['tools', 'toolbar', 'strip', 'dock', 'float', 'back', 'return', 'undock', 'home'],
   enabled: () => dock.get().layout.tools.place === 'float',
-  run: () => placeTools(toolsHome(dock.get().layout)),
+  run: () => void (!refuseIfLocked('tools', 'move') && placeTools(toolsHome(dock.get().layout))),
 });
 
 registerCommand({
@@ -241,6 +246,28 @@ registerCommand({
   keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange', 'reset', 'default', 'restore', 'undo changes'],
   enabled: () => toolbarIsChanged(),
   run: putToolsBack,
+});
+
+registerCommand({
+  id: 'view.lockTools',
+  label: 'Lock the tools',
+  category: 'View',
+  description: 'Keep the tool rail where it is: it can\'t be moved, resized, rearranged or changed until you unlock it. Every tool still works. A tick means it is locked; run it again to unlock.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'rail', 'lock', 'unlock', 'freeze', 'stop moving', 'accident', 'fix', 'pin'],
+  checked: () => isLocked('tools'),
+  run: () => setRailLock(!isLocked('tools')),
+});
+
+registerCommand({
+  id: 'view.lockPanels',
+  label: 'Lock the panels',
+  category: 'View',
+  description: 'Keep the panels and windows where they are: they can\'t be moved, resized, closed, renamed or regrouped until you unlock them. Everything in them still works. A tick means it is locked; run it again to unlock.',
+  help: 'panels',
+  keywords: ['panels', 'windows', 'dock', 'lock', 'unlock', 'freeze', 'stop moving', 'accident', 'fix', 'pin'],
+  checked: () => isLocked('panels'),
+  run: () => setLock('panels', !isLocked('panels')),
 });
 
 registerCommand({

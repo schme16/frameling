@@ -1,6 +1,7 @@
 // The docked zones (left, right, bottom, top): tabs you can drag, splitters you can pull, zones that fold away.
 import { type DockZone } from '../core/registry';
-import { clampSize, DEFAULT_SIZE, dock, MAX_SIZE, MIN_SIZE, panelsAway, resizeZone } from './dock';
+import { clampSize, DEFAULT_SIZE, dock, MAX_SIZE, MIN_SIZE, panelsAway } from './dock';
+import { resizeZone } from './lockedDock';
 import { TabGroupView, ZoneStack } from './DockGroup';
 import { useEdgeDrag } from './dockShared';
 import { RightDock } from './RightDock';

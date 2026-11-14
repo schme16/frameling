@@ -1,15 +1,18 @@
 // The right-click menus of the dock (a panel's tab, a floating window's title, the tool rail) and the little name box,
 // as plain data, so the same lists serve the mouse and the keyboard (the menu key) and the commands.
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
+import { closeFloatWindow, dock, setLock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
 import { floatTitle, groupCount, groupTabs, MAX_GROUPS, toolsHome, type DockZone } from './dockModel';
 import { SPLIT_WORDS, ZONE_NAMES } from './dockDrag';
 import { createStore } from './mini';
 import { openHelp } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
-import { putToolsBack, setToolbarEditing, toolbarIsChanged } from './toolRail';
+import { lockedWhy, type LockKind } from './dockLock';
+import { isLocked, refuseIfLocked } from './lockState';
+import { putToolsBack, setRailLock, setToolbarEditing, toolbarIsChanged } from './toolRail';
 
-export type DockMenuItem = { label: string; onClick: () => void; disabled?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
+/** `why` is a line under a greyed entry that says why it is greyed. */
+export type DockMenuItem = { label: string; onClick: () => void; disabled?: boolean; why?: string; stays?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
 
 export const dockMenu = createStore<{ x: number; y: number; items: DockMenuItem[] } | null>(null);
 export const openDockMenu = (x: number, y: number, items: DockMenuItem[]): void => dockMenu.set({ x, y, items });
@@ -17,7 +20,10 @@ export const closeDockMenu = (): void => dockMenu.set(null);
 
 /** The name box: which panel, window or tool group it is renaming and where it hangs. */
 export const renaming = createStore<{ kind: 'panel' | 'float' | 'group'; id: string; x: number; y: number } | null>(null);
-export const askRename = (kind: 'panel' | 'float' | 'group', id: string, x: number, y: number): void => renaming.set({ kind, id, x, y });
+export const askRename = (kind: 'panel' | 'float' | 'group', id: string, x: number, y: number): void => {
+  if (refuseIfLocked(kind === 'group' ? 'tools' : 'panels', 'arrange')) return;
+  renaming.set({ kind, id, x, y });
+};
 
 const WHERE: Record<DockZone, string> = { left: 'the left side', right: 'the right side', bottom: 'the bottom', top: 'the top' };
 
@@ -25,6 +31,18 @@ const WHERE: Record<DockZone, string> = { left: 'the left side', right: 'the rig
 export const menuPoint = (el: Element): { x: number; y: number } => {
   const r = el.getBoundingClientRect();
   return { x: r.left + 8, y: r.bottom + 2 };
+};
+
+/** Greys entries that are locked, each saying why. Separators and headings pass through. */
+export function whenLocked(kind: LockKind, items: DockMenuItem[]): DockMenuItem[] {
+  if (!isLocked(kind)) return items;
+  return items.map((it) => ('label' in it && it.stays ? it : 'label' in it && !it.disabled ? { ...it, disabled: true, why: lockedWhy(kind) } : 'label' in it && it.disabled && !it.why ? { ...it, why: lockedWhy(kind) } : it));
+}
+
+/** The entry that locks or unlocks the tool rail or the panels. */
+export const lockItem = (kind: LockKind): DockMenuItem => {
+  const on = isLocked(kind);
+  return { label: `${on ? 'Unlock' : 'Lock'} the ${kind}`, onClick: () => (kind === 'tools' ? setRailLock(!on) : setLock('panels', !on)) };
 };
 
 /** What can be done with a panel: where it lives, what it's called, closing it. */
@@ -54,8 +72,8 @@ export function panelMenu(id: string, at: { x: number; y: number }): DockMenuIte
   }
   items.push({ separator: true }, { label: 'Rename...', onClick: () => askRename('panel', id, at.x, at.y) });
   if (l.names?.[id]) items.push({ label: 'Use its own name again', onClick: () => renamePanel(id, '') });
-  items.push({ separator: true }, { label: `Close ${panelTitle(id, l)}`, onClick: () => hidePanel(id) }, { label: 'What is this panel?', onClick: () => openHelp(p?.help ?? 'panels') });
-  return items;
+  items.push({ separator: true }, { label: `Close ${panelTitle(id, l)}`, onClick: () => hidePanel(id) }, { label: 'What is this panel?', stays: true, onClick: () => openHelp(p?.help ?? 'panels') });
+  return [items[0], lockItem('panels'), { separator: true }, ...whenLocked('panels', items.slice(1))];
 }
 
 /** What can be done with a window: rename it, dock it somewhere, close it. */
@@ -68,20 +86,26 @@ export function floatMenu(floatId: string, at: { x: number; y: number }): DockMe
   items.push({ separator: true }, { label: 'Make it bigger', onClick: () => resizeFloatBy(floatId, 64, 48) }, { label: 'Make it smaller', onClick: () => resizeFloatBy(floatId, -64, -48) }, { label: 'Back to the usual size', onClick: () => resetFloatSize(floatId) });
   items.push({ separator: true }, { label: 'Dock back where it started', onClick: () => dockFloatBack(floatId) });
   items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });
-  items.push({ label: 'What are windows?', onClick: () => openHelp('floating-windows') });
-  return items;
+  items.push({ label: 'What are windows?', stays: true, onClick: () => openHelp('floating-windows') });
+  return [items[0], lockItem('panels'), { separator: true }, ...whenLocked('panels', items.slice(1))];
 }
 
-/** The tool rail: it is moved by dragging its grip, so one line says so (or, floating, puts it back on its side). */
+/** The tool rail: it is moved by dragging its grip, so one line says so (or, floating, puts it back on its side). Locking it stops all of that. */
 export function toolsMenu(): DockMenuItem[] {
   const l = dock.get().layout;
   const home = toolsHome(l);
-  return [
-    { heading: 'Tools' },
+  const locked = isLocked('tools');
+  const rest: DockMenuItem[] = [
     l.tools.place === 'float' ? { label: `Dock them back on ${WHERE[home]}`, onClick: () => placeTools(home) } : { label: 'To move them, drag the grip', onClick: () => openHelp('tool-strip') },
     { separator: true },
     { label: 'Change the tools...', onClick: () => setToolbarEditing(true) },
     { label: 'Put the tools back', disabled: !toolbarIsChanged(), onClick: putToolsBack },
+  ];
+  return [
+    { heading: 'Tools' },
+    lockItem('tools'),
+    { separator: true },
+    ...(locked ? whenLocked('tools', rest) : rest),
     { label: getPrefs().toolRail === 'two' ? 'Show one button per group' : 'Show every tool, two wide', onClick: () => setPrefs({ toolRail: getPrefs().toolRail === 'two' ? 'stacked' : 'two' }) },
     { separator: true },
     { label: 'What is the tool strip?', onClick: () => openHelp('tool-strip') },

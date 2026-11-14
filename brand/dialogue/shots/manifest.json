@@ -315,5 +315,9 @@
   },
   "save.ask.never": {
     "file": "shots/save.ask.never.png"
+  },
+  "lock.teach": {
+    "file": "shots/lock.teach.png",
+    "note": "Shown the first time the rail, a tool or a panel moves in a quick or short drag, once ever. Here {what} is tools."
   }
 }

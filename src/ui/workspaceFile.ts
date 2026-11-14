@@ -20,11 +20,13 @@ export interface WorkspaceFile {
   rail?: Workspace['rail'];
   /** How wide the tool rail is, in pixels. Optional, so a file from before it still opens. */
   railWidth?: number;
+  /** Which of the tool rail and the panels are locked. Optional, so a file from before it still opens. */
+  locks?: Workspace['locks'];
 }
 
 /** The text to save or copy for a workspace. */
 export function workspaceToText(w: Workspace): string {
-  const file: WorkspaceFile = { format: WORKSPACE_FORMAT, version: WORKSPACE_VERSION, name: w.name, ...(w.about ? { about: w.about } : {}), layout: w.layout, ...(w.pixel ? { pixel: true } : {}), ...(w.tools ? { tools: w.tools } : {}), ...(w.rail ? { rail: w.rail } : {}), ...(w.railWidth ? { railWidth: w.railWidth } : {}) };
+  const file: WorkspaceFile = { format: WORKSPACE_FORMAT, version: WORKSPACE_VERSION, name: w.name, ...(w.about ? { about: w.about } : {}), layout: w.layout, ...(w.pixel ? { pixel: true } : {}), ...(w.tools ? { tools: w.tools } : {}), ...(w.rail ? { rail: w.rail } : {}), ...(w.railWidth ? { railWidth: w.railWidth } : {}), ...(w.locks ? { locks: w.locks } : {}) };
   return JSON.stringify(file, null, 2);
 }
 
@@ -50,7 +52,7 @@ export function parseWorkspaceText(text: unknown): ImportResult {
   const f = raw as Record<string, unknown>;
   if (typeof f.version === 'number' && f.version > WORKSPACE_VERSION) return { ok: false, error: 'That workspace is from a newer Frameling. Update Frameling to use it.' };
   if (!f.layout || typeof f.layout !== 'object') return { ok: false, error: 'That workspace has no layout in it.' };
-  const ws = sanitizeWorkspace({ id: 'import', name: f.name, about: f.about, pixel: f.pixel, tools: f.tools, rail: f.rail, railWidth: f.railWidth, layout: normaliseLayout(f.layout) });
+  const ws = sanitizeWorkspace({ id: 'import', name: f.name, about: f.about, pixel: f.pixel, tools: f.tools, rail: f.rail, railWidth: f.railWidth, locks: f.locks, layout: normaliseLayout(f.layout) });
   if (!ws) return { ok: false, error: 'That workspace has no name.' };
   return { ok: true, workspace: ws };
 }

@@ -3,6 +3,7 @@
 // live state and the workspaces; DockView.tsx and friends draw it.
 import type { LayerKind } from '../core/format';
 import type { DockZone } from '../core/registry';
+import { cleanLocks, savedLocks, type Locks } from './dockLock';
 import { sanitizeGroups, type ToolGroup } from './toolArrange';
 import { cleanRailWidth } from './toolRailWidth';
 
@@ -84,6 +85,8 @@ export interface Workspace {
   rail?: ToolGroup[];
   /** How wide the tool rail is for this workspace, in pixels (missing = its natural width). */
   railWidth?: number;
+  /** What is locked in this workspace (missing = nothing): the tool rail and the panels stay where they are put. */
+  locks?: { tools?: true; panels?: true };
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom', 'top'];
@@ -227,6 +230,8 @@ export function sanitizeWorkspace(raw: unknown): Workspace | null {
   if (rail) ws.rail = rail;
   const railWidth = cleanRailWidth(raw.railWidth);
   if (railWidth) ws.railWidth = railWidth;
+  const locks = savedLocks(cleanLocks(raw.locks, true));
+  if (locks) ws.locks = locks;
   const about = cleanName(raw.about, 140);
   if (about) ws.about = about;
   if (raw.pixel === true) ws.pixel = true;

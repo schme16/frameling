@@ -34,6 +34,7 @@ import type { RightStyle } from '../ui/rightStyle';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
 import { recovery } from '../io/recovery';
+import * as lockState from '../ui/lockState';
 import { setViewSettings } from '../canvas/viewSettings';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
@@ -85,6 +86,12 @@ if (new URLSearchParams(location.search).has('debug')) {
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),
     // The dock (panels, floating windows, workspaces), for shots and checks.
     dock: { ...dockApi, chrome: dockFloats.setFloatChrome },
+    // Quill's lock lesson, for the dialogue shots: pretend a quick slip, then teach it.
+    teachLock: (kind: 'tools' | 'panels' = 'tools') => {
+      lockState.lastDrag.ms = 120;
+      lockState.lastDrag.px = 30;
+      return lockState.teachLock(kind, () => dockApi.setLock(kind, true));
+    },
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {
       start: startQuest,
