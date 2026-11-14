@@ -4,7 +4,7 @@ import type { PathShape } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
 import { resetChoices, setChoice } from '../../src/core/choices';
 import { DRAWN_CHOICE, PAGE_CHOICE, _resetNudges, installNudges } from '../../src/nudge';
-import { line } from '../../src/ui/mascot/lines';
+import { lines } from '../../src/ui/mascot/lines';
 import { resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { clearToasts, toasts } from '../../src/ui/toast';
 
@@ -48,7 +48,8 @@ describe('the first-drawing watcher', () => {
     vi.advanceTimersByTime(150);
     const t = toasts.get();
     expect(t.length).toBe(1);
-    expect(t[0].message).toBe(line('nudge.drawn'));
+    // One of his first-drawing lines, picked at random each time it shows.
+    expect(lines('nudge.drawn')).toContain(t[0].message);
     expect(t[0].action?.label).toBe('Play it');
     expect(t[0].decline?.label).toBe('Not now');
     // A second stroke in the same file says nothing more.

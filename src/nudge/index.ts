@@ -10,7 +10,7 @@ import { store, type Store } from '../core/store';
 import { registerDecoration } from '../canvas/decorations';
 import { requestOverlay } from '../canvas/controller';
 import { inHarness } from '../pixel/harness';
-import { line } from '../ui/mascot/lines';
+import { line, lines } from '../ui/mascot/lines';
 import { getPrefs } from '../ui/prefs';
 import { strokeIsOn } from '../tablet/check/state';
 import { toast } from '../ui/toast';
@@ -84,13 +84,33 @@ function fresh(doc: Doc): boolean {
 
 const hasShapes = (doc: Doc): boolean => Object.values(doc.drawings).some((d) => d.kind === 'vector' && d.shapes.length > 0);
 
+// Which of the lines this drawing gets. Picked once per drawing, so the page says the same thing while you look at it
+// and something else on the next one, and so the canvas redrawing never makes it flicker.
+const picked = new Map<string, number>();
+function pageLine(docId: Id, id: 'nudge.page' | 'nudge.page.other', vars: Record<string, string>): string {
+  const all = id === 'nudge.page' ? lines('nudge.page', vars) : lines('nudge.page.other');
+  const key = `${docId}:${id}`;
+  let at = picked.get(key);
+  if (at === undefined || at >= all.length) {
+    at = Math.floor(Math.random() * all.length);
+    picked.set(key, at);
+  }
+  return all[at];
+}
+
+/** One of Quill's lines for the first drawing, a different one each time it shows. */
+const drawnLine = (): string => {
+  const all = lines('nudge.drawn');
+  return all[Math.floor(Math.random() * all.length)];
+};
+
 /** The faint line on the page, in document coordinates: sized to read at any zoom, and shrunk to fit a small page. */
 registerDecoration((g, ctx) => {
   const { doc, ui } = store().get();
   if (!pageLineShows({ ...mood(PAGE_CHOICE), fresh: fresh(doc), drawnOn: drawnOn.has(doc.id), playing: ui.playing, stroking: strokeIsOn() })) return;
   const tool = getTool(ui.tool);
   const named = drawsStraightAway(tool?.id ?? '');
-  const text = named ? line('nudge.page', { tool: (tool?.label ?? 'brush').toLowerCase() }) : line('nudge.page.other');
+  const text = pageLine(doc.id, named ? 'nudge.page' : 'nudge.page.other', { tool: (tool?.label ?? 'brush').toLowerCase() });
   let px = 22 / ctx.zoom;
   g.font = `500 ${px}px system-ui, sans-serif`;
   const w = g.measureText(text).width;
@@ -110,7 +130,7 @@ function sayDrawn(s: Store): void {
   const shown = shownCount();
   if (!drawnNudgeShows({ ...mood(DRAWN_CHOICE), firstStroke: true, shown, frames: doc.length, playing: ui.playing })) return;
   setShown(shown + 1);
-  toast(line('nudge.drawn'), {
+  toast(drawnLine(), {
     kind: 'info',
     quill: 'cheer',
     duration: 10000,

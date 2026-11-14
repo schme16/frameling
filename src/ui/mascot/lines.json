@@ -443,14 +443,52 @@
     "where": "File > Recover with nothing in it."
   },
   "nudge.page": {
-    "text": "Draw something. The {tool} is ready.",
-    "where": "A faint line on the page itself while a new drawing is still empty, with the Brush or Pencil picked. It goes at the first stroke and never comes back for that file. Never printed in an export. Not Quill speaking, but his words to edit.",
+    "text": [
+      "Draw something. The {tool} is ready.",
+      "A whole empty page! The {tool} is ready when you are.",
+      "Nothing here yet. The {tool} is waiting.",
+      "Blank page, fresh start. The {tool} is in your hand.",
+      "Go on, make a mark. The {tool} is ready.",
+      "Squiggle something. The {tool} will not mind.",
+      "This page is far too tidy. The {tool} is ready.",
+      "Draw a blob. Blobs are allowed, and the {tool} is ready.",
+      "Nobody is watching. The {tool} is ready.",
+      "Start anywhere. The {tool} is ready.",
+      "A doodle counts. The {tool} is ready.",
+      "Put something here. The {tool} is keen.",
+      "First mark of the day? The {tool} is ready.",
+      "One line is enough to begin. The {tool} is ready."
+    ],
+    "where": "A faint line on the page itself while a new drawing is still empty, with the Brush or Pencil picked. One of the list is picked per drawing, so it reads differently each time, and it stays put while that file is open. It goes at the first stroke and never comes back for that file. Never printed in an export. Not Quill speaking out loud, but his words to edit.",
     "vars": ["tool"]
   },
-  "nudge.page.other": { "text": "Draw something. Pick a tool and have a go.", "where": "The same faint line on an empty page when some other tool is picked (Select, Hand, Zoom and so on)." },
+  "nudge.page.other": {
+    "text": [
+      "Draw something. Pick a tool and have a go.",
+      "Empty page! Pick a tool and make a mark.",
+      "Nothing here yet. Grab a tool from the left.",
+      "Pick a tool first, then squiggle away.",
+      "A blank page and nothing in hand. Pick a tool from the left.",
+      "Choose something to draw with, then have a go.",
+      "Pick up the brush and make a lovely mess.",
+      "Tool first, doodle second.",
+      "Grab a tool and put something here.",
+      "The page is waiting. Pick a tool to start."
+    ],
+    "where": "The same faint line on an empty page when some other tool is picked (Select, Hand, Zoom and so on). One of the list is picked per drawing, so it reads differently each time."
+  },
   "nudge.drawn": {
-    "text": "Ooh, your first drawing! Press Play to watch it, or draw on frame 2 to make it move.",
-    "where": "A toast with Quill after the first drawing in a new file, with Play it and Not now buttons. Shows at most three times ever, and never again after Not now or Play it."
+    "text": [
+      "Ooh, your first drawing! Press Play to watch it, or draw on frame 2 to make it move.",
+      "There it is! Press Play to watch it, or draw on frame 2 and it starts moving.",
+      "Lovely. Press Play to see it, or draw on frame 2 to give it a wiggle.",
+      "A drawing, at last! Press Play to watch it, or draw on frame 2 to make it move.",
+      "Nice one. Play it back, or draw on frame 2 and it comes to life.",
+      "That is a start! Press Play, or draw on frame 2 to make it move.",
+      "Look at that. Press Play to watch it, or draw on frame 2 for a wiggle.",
+      "First mark done. Press Play, or draw on frame 2 and watch it move."
+    ],
+    "where": "A toast with Quill after the first drawing in a new file, with Play it and Not now buttons. One of the list is picked each time it shows. Shows at most three times ever, and never again after Not now or Play it."
   },
   "pixel.chooser.title": { "text": "Pixel time! What are we making?", "where": "Pixel chooser (New > Pixel art): the heading beside Quill." },
   "pixel.chooser.lead": { "text": "Pick the one that sounds most like it, but don't stress too hard, you can change your mind later.", "where": "Pixel chooser: the line under the heading." },
