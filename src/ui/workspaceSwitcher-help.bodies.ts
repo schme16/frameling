@@ -24,9 +24,9 @@ The command search has them too: type "workspace switcher".
 
 The menus are not the workspaces, so they are named for what is in them:
 
-- **Tools and layers** has the drawing tools, flips, arranging and layers.
+- **Tools and layers** has the drawing tools, flips, arranging, layers, effects and masks.
 - **Pixel tools** has the pixel art tools, outlines, the palette and the Preview.
-- **Frames and motion** has playing, stepping between frames, onion skin, keys, the camera, lip sync and one-click motions.
+- **Frames and motion** has playing, stepping between frames, onion skin, keys, the camera, the skeleton (rig), artboards, lip sync and one-click motions.
 
 Good to know: switching workspace only moves your panels around. Your drawing, your selection and your undo steps stay exactly as they were.
 

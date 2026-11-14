@@ -61,13 +61,13 @@ Also in the command palette (Ctrl+K): type "blend".`,
 
 **Clip to the layer below** (a clipping mask) shows a layer only where the layer under it has drawing. Perfect for shading: colour the character on one layer, put a shading layer above it, clip it, and scribble shadows without going over the edge.
 
-Pick the layer, then **Effects > Clip to the layer below** (Ctrl+Alt+G). A clipped layer shows a little bent arrow in the timeline.
+Pick the layer, then **Tools and layers > Masks and folders > Clip to the layer below** (Ctrl+Alt+G). A clipped layer shows a little bent arrow in the timeline.
 
 ## Masks
 
 A **mask** is a layer that decides where the layer under it shows. You paint where it shows, instead of rubbing bits out, and you can change your mind any time.
 
-- **Add one:** pick the layer, then press **Mask** in the Layers panel (or **Effects > Add a mask to this layer**, Ctrl+Alt+Shift+M). A purple mask layer appears above it, picked and ready. The first time, Frameling asks whether a new mask starts as **Paint where it shows** or **Paint where it hides**.
+- **Add one:** pick the layer, then press **Mask** in the Layers panel (or **Tools and layers > Masks and folders > Add a mask to this layer**, Ctrl+Alt+Shift+M). A purple mask layer appears above it, picked and ready. The first time, Frameling asks whether a new mask starts as **Paint where it shows** or **Paint where it hides**.
 - **Paint on it** with any tool. What the mask hides shows faintly on the canvas, and what you've painted shows in purple. The eraser undoes a bit.
 - **Switch between the mask and the layer:** Ctrl+Alt+J, or click the little mask mark on either row. The next stroke goes on the one you picked.
 - **See which is which:** a mask row is purple and names the layers it masks, and those layers have a purple edge.
@@ -78,18 +78,18 @@ A **mask** is a layer that decides where the layer under it shows. You paint whe
 **Good to know:**
 
 - A mask only reaches the layers under it in its own [folder](help:layer-folders), so it never cuts into the rest of your picture. Drag a mask out of its folder and Frameling asks once whether to keep it a mask or make it a plain layer.
-- To mask with a layer you already drew, use **Effects > More about masks > Use layer as a mask**.
+- To mask with a layer you already drew, use **Tools and layers > Masks and folders > Use layer as a mask**.
 - Masks work the same on vector and pixel layers, and every export agrees with the canvas. An off mask exports as off.
 - Masks animate like any layer, and a [Soften effect](help:effects) on the mask gives soft edges.`,
   'layer-folders': `A **folder** (layer group) holds layers that belong together, like the parts of a character. Folders can hold other folders, up to 8 levels deep: a **Scene** folder can hold a **Character** folder, which holds an **Arm** folder.
 
-- **Make one:** pick a layer, then **Effects > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.
+- **Make one:** pick a layer, then **Tools and layers > Masks and folders > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.
 - **Add layers:** drag a layer onto a layer inside the folder, or onto the folder's row to put it at the top. You can also use **Move layer up** / **Move layer down** to step it in at the folder's edge.
-- **Take layers out:** drag a layer onto a layer outside, or step it past the folder's edge. **Effects > Take layer out of its folder** moves it just above the folder.
+- **Take layers out:** drag a layer onto a layer outside, or step it past the folder's edge. **Tools and layers > Masks and folders > Take layer out of its folder** moves it just above the folder.
 - **Folder in a folder:** drag the folder's row onto another folder's row (the middle of the row puts it inside; the top edge puts it above). Dragging a folder moves everything in it. **Put this folder in the folder next to it** does the same from the keyboard or the command palette.
 - **Fold it:** click the arrow on the folder's row to hide what is in it in the timeline. It still shows on the canvas.
 - **Hide it:** the eye on the folder's row hides everything in it, folders inside it too.
-- **Remove it:** **Effects > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
+- **Remove it:** **Tools and layers > Masks and folders > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
 
 **Keyboard:** with a layer or folder row picked in the list, the up and down arrows walk the rows, left folds a folder (or jumps to the folder it is in) and right unfolds it. Hold **Alt** and press an arrow to move the row itself: up and down step it through the list (into and out of folders as they come), left takes it out of its folder, right puts it into the folder next to it.
 

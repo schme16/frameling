@@ -294,7 +294,7 @@ Frames outside the range are dimmed on the ruler, and there's a bracket at each 
 
 ## Clear it
 
-Click the **x** beside the range in the top bar, or use **Frames and motion > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
+Click the **x** beside the range in the top bar, or use **Frames and motion > Play range > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
 
 ## Good to know
 

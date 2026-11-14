@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 ## Install one
 
 1. Get the plugin. It's a **.zip** file.
-2. Choose **Plugins > Install a plugin...** and pick the file.
+2. Choose **Edit > Plugins > Install a plugin...** and pick the file.
 3. Frameling shows what the plugin asks to do. Read it, then choose **Install**.
 
 Its commands turn up in the **Plugins** menu and the command palette (**Ctrl+K**). Exports go in the **File** menu. Panels open from **View**. Tools join the toolbox.
@@ -23,7 +23,7 @@ Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can'
 
 ## Turn plugins on and off
 
-**Plugins > Manage plugins...** (or **Preferences > Plugins**) lists them. Use the switch to turn one off for a while, or the bin to remove it. Turning one off takes away everything it added.
+**Edit > Plugins > Manage plugins...** (or **Preferences > Plugins**) lists them. Use the switch to turn one off for a while, or the bin to remove it. Turning one off takes away everything it added.
 
 If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe either way.
 
@@ -73,7 +73,7 @@ Switch on only what you trust the plugin with. If you leave something off, the p
 
 ## Change your mind
 
-Open **Plugins > Manage plugins...**. Each plugin lists its powers with a switch. Turn one off and it stops at once. Turn one on and Frameling tells you what it could do and asks again.
+Open **Edit > Plugins > Manage plugins...**. Each plugin lists its powers with a switch. Turn one off and it stops at once. Turn one on and Frameling tells you what it could do and asks again.
 
 ## Updates
 
@@ -107,7 +107,7 @@ Shapes and tools snap to the straight lines and boxes of a plugin's guide too. I
 
 ## Turn them off
 
-**Plugins > Manage plugins...** has a switch for each power. Turning off **Add its own tools** takes the tool out of the toolbox straight away. See [What a plugin may ask for](help:plugin-permissions).`,
+**Edit > Plugins > Manage plugins...** has a switch for each power. Turning off **Add its own tools** takes the tool out of the toolbox straight away. See [What a plugin may ask for](help:plugin-permissions).`,
   'making-plugins': `A plugin is a folder (or a **.zip** of it) with two files:
 
 **manifest.json** says who it is and what it needs:
@@ -130,7 +130,7 @@ Add \`"apiVersion": 2\` for the newer powers: **tools**, **canvas**, **shapes** 
 
 **main.js** is plain JavaScript. It runs in a worker, with no page and no files, and gets a **frameling** object:
 
-- \`frameling.commands.register({ id, label }, run)\` adds a command to the Plugins menu.
+- \`frameling.commands.register({ id, label }, run)\` adds a command to **Edit > Plugins**.
 - \`await frameling.document.get()\` gives the drawing, \`await frameling.document.state()\` the frame and layer you're on.
 - \`await frameling.document.edit('Label', [ops])\` changes it, as one Undo step. Ops include **flipDrawing**, **transformDrawing**, **setPixels**, **setLayer**, **setShapeStyle**, **addMarker** and **addClip** (which can also set how it plays: direction and repeat).
 - \`frameling.exporters.register({ id, label, extension }, (frames, info) => files)\` adds an export. Frames are RGBA pictures. Hand back \`[{ name, bytes }]\`, \`{ name, text }\` or \`{ name, image }\` (Frameling makes the PNG).

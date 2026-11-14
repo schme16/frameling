@@ -1,4 +1,4 @@
-// Blend modes, effects, clipping, masks and folders as commands: the palette, the Effects menu and shortcuts.
+// Blend modes, effects, clipping, masks and folders as commands: the palette, Tools and layers > Effects and Masks and folders, and shortcuts.
 import { registerChoice, withChoice } from '../core/choices';
 import { findLayer } from '../core/doc';
 import type { Layer } from '../core/format';

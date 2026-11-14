@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   artboards: `An **artboard** is a canvas of its own inside your file, with its own name, size, background, layers, timeline and speed. Put a hero's idle, run and jump side by side, a set of icons, or the shots of a film. They all share the palette, swatches, symbols and tiles, so a colour change shows up everywhere.
 
-**Add one:** pick **Artboards > New artboard**, or pick the **Artboard** tool (**Shift+W**) and drag a box on the empty space round the page.
+**Add one:** pick **Frames and motion > Artboards > New artboard**, or pick the **Artboard** tool (**Shift+W**) and drag a box on the empty space round the page.
 
 **Draw on any of them:** just click one with any tool. It opens, and you draw there. The others stay on show around it, each on the frame you left it on. The timeline and onion skin follow you: they always show the artboard you have open, and clicking another one (or its name) opens it and brings its timeline with it.
 
@@ -16,7 +16,7 @@ export const bodies: Record<string, string> = {
 
 Underneath the list, set the open one's **Name**, **Export as** (the file name it exports with), **W** and **H**, **Speed** (see [a speed for each artboard](help:artboards-speed)), and **Background** (or **See-through**).
 
-**Getting around:** **Alt+PageDown** and **Alt+PageUp** go to the next and previous artboard. **Ctrl+Alt+0** fits them all in the window. **Artboards > Zoom to artboard** fills the window with the open one. **Line up** puts them in a tidy row.
+**Getting around:** **Alt+PageDown** and **Alt+PageUp** go to the next and previous artboard. **Ctrl+Alt+0** fits them all in the window. **Frames and motion > Artboards > Zoom to artboard** fills the window with the open one. **Line up** puts them in a tidy row.
 
 To export them, see [exporting artboards](help:artboards-export). For animation, see [artboards as shots](help:artboards-shots). For copies that follow an original, see [variations](help:variations).`,
   'artboards-shots': `For animation, think of each [artboard](help:artboards) as a **shot**: it has its own layers, its own timeline and its own length, so a 12 frame close-up and a 48 frame wide shot live happily in one file. Characters made into [symbols](help:symbols) can appear in every shot.
@@ -68,7 +68,7 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 See [artboards as shots](help:artboards-shots) and [exporting artboards](help:artboards-export).`,
   variations: `A **variation (linked copy)** is an [artboard](help:artboards) that follows another one. It shows everything its **original** shows, except for the things you change in it. Change the hero's drawing in the original and the variation changes too. Change the hero's colour in the variation and only the variation turns that colour.
 
-**Make one:** press **Variation** at the top of the Artboards panel, or **Make a variation** under the list, or **Artboards > Variations > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original, indented under it in the list with a small link tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
+**Make one:** press **Variation** at the top of the Artboards panel, or **Make a variation** under the list, or **Frames and motion > Artboards > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original, indented under it in the list with a small link tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
 
 **Colourways:** press **Recolour this variation** and pick new colours: every frame changes, only in the variation. See [recolour a variation](help:variations-recolour).
 
@@ -111,5 +111,5 @@ Every frame changes at once, and it is one step: **Undo** takes it all back. The
 - **All in order, as one**, with **Sprite sheet** picked, makes one sprite: each artboard is a frame, in the order of the list, and they play as one animation in Godot, Unity, Phaser, PixiJS and the web. Use it when you draw a frame on each board. The boards' own clips are left out, so it stays one animation. See [Sprite sheets](help:export-sprite-sheets).
 - **Packed onto one sheet** (with **Sprite sheet** picked) is for a cast: it puts every frame of every ticked artboard on one picture, packed tightly, with a JSON atlas. Each artboard is an animation named after it, and its clips come along as "artboard/clip". Each animation keeps its own speed.
 
-**Artboards > Export artboards...** and **Artboards > Pack artboards into one sprite sheet...** (also under **File > Export**) open the dialog already set up.`,
+**Frames and motion > Artboards > Export artboards...** and **Frames and motion > Artboards > Pack artboards into one sprite sheet...** (also under **File > Export**) open the dialog already set up.`,
 };

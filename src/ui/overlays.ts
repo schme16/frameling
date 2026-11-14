@@ -3,7 +3,7 @@ import { store } from '../core/store';
 import { createStore } from './mini';
 import { saveAsking } from '../io/saveAsk';
 
-export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins' | 'features' | 'snapping' | 'pen' | 'performance' | 'diagnostics';
+export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'menus' | 'plugins' | 'features' | 'snapping' | 'pen' | 'performance' | 'diagnostics';
 
 export interface Overlays {
   palette: boolean;

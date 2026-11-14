@@ -56,7 +56,7 @@ export function currentView(s: State = store().get()): CameraView | undefined {
 export function setView(view: Partial<CameraView>, label = 'Move the camera', coalesce?: string): Result {
   const s = store().get();
   const cam = stageCamera(s.doc);
-  if (!cam) return say('Add a camera first (Frames and motion > Add a camera).');
+  if (!cam) return say('Add a camera first (Frames and motion > Camera > Add a camera).');
   if (cam.locked) return say('The camera layer is locked. Unlock it in the timeline to move it.');
   const now = cameraViewOn(s.doc, cam, s.ui.frame) ?? plainView(s.doc);
   const next: CameraView = { ...now, ...view, zoom: clampZoom(view.zoom ?? now.zoom) };

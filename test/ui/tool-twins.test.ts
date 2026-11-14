@@ -17,7 +17,9 @@ import { oneOfEach } from '../../src/ui/toolTwins';
 const labels = (items: MenuItem[]) => items.filter((i): i is Extract<MenuItem, { kind: 'command' }> => i.kind === 'command').map((i) => i.command.label);
 const drawMenu = () => {
   syncDynamicCommands();
-  return labels(resolveMenu(MENUS.find((m) => m.label === 'Draw')!));
+  // The tools are in the Tools submenu of the Draw menu.
+  const tools = resolveMenu(MENUS.find((m) => m.label === 'Draw')!).find((i) => i.kind === 'submenu' && i.label === 'Tools');
+  return labels(tools && tools.kind === 'submenu' ? tools.items : []);
 };
 const dupes = (xs: string[]) => xs.filter((x, i) => xs.indexOf(x) !== i);
 

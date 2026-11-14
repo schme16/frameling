@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   symbols: `A **symbol** is a drawing you can reuse. Each copy of it on the canvas (an *instance*) can have its own size, turn, fade and colour wash, but they all share one drawing. Fix a line inside the symbol and every copy is fixed.
 
-**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol. Pixel art works too: see [Symbols from pixel art](help:symbols-pixel).
+**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Symbols > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol. Pixel art works too: see [Symbols from pixel art](help:symbols-pixel).
 
 **The Library** lists every symbol in your document (**View > Panels > Library**):
 - **Drag** a symbol onto the canvas to place a copy, or press its **+** button to drop one in the middle.
@@ -15,7 +15,7 @@ export const bodies: Record<string, string> = {
 Symbols can go inside other symbols, as deep as you like (just never inside themselves). They are what [in-betweens](help:tweens) move.`,
   'symbols-pixel': `A pixel sprite can be a symbol, so you can place it again and again, and move, turn, fade and tween it like any other. Put the same coin on a level ten times and animate it once.
 
-**Make one:** pick the pixel layer, go to the frame with the sprite, and press **F8** (**Tools and layers > Make a reusable symbol**). The sprite stays exactly where it is and stays pixels.
+**Make one:** pick the pixel layer, go to the frame with the sprite, and press **F8** (**Tools and layers > Symbols > Make a reusable symbol**). The sprite stays exactly where it is and stays pixels.
 
 **Where it goes:** symbols sit on vector layers, so if the pixel layer held only this drawing it becomes that layer, in the same place with the same name and look. If it held other drawings, the symbol gets a new layer just above and the rest stay put. Undo puts it all back.
 
@@ -131,7 +131,7 @@ Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they
   'motion-paths': `Out of the box, in-betweens move in a straight line. To send them along a curve:
 
 1. Go to a frame with in-betweens.
-2. In **Symbol and motion**, press **Draw a path** (or choose **Frames and motion > Draw a path to follow**).
+2. In **Symbol and motion**, press **Draw a path** (or choose **Frames and motion > In-betweens and easing > Draw a path to follow**).
 3. Drag the route on the canvas. That's it: press play.
 
 The path keeps its shape, and bends just enough that it still starts and ends exactly where your two keys are. So you can move either key afterwards and the path follows along.
@@ -146,7 +146,7 @@ Make a key partway along (draw on an in-between, or drop a timeline diamond ther
   'shape-tweens': `**Morphing** turns one drawing into another: a square into a circle, a closed eye into an open one, a puddle into a splash. Animators call it a *shape tween*.
 
 1. Draw the first shape and hold it for a few frames.
-2. Press **Ctrl+Shift+M** (or **Frames and motion > Morph between shapes**, or **Morph between shapes** in the **Symbol and motion** panel).
+2. Press **Ctrl+Shift+M** (or **Frames and motion > In-betweens and easing > Morph between shapes**, or **Morph between shapes** in the **Symbol and motion** panel).
 3. Frameling makes an end key and takes you there. Change the drawing: reshape it, recolour it, or rub it out and draw something new.
 4. Press play.
 

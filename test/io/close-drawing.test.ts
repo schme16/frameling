@@ -59,7 +59,8 @@ describe('Close drawing', () => {
     expect(getCommand('file.close')).toMatchObject({ label: 'Close drawing', keys: ['Mod+W'], help: 'saving-and-opening' });
     const file = MENUS.find((m) => m.label === 'File')!;
     const i = file.items.indexOf('file.close');
-    expect(file.items.slice(i - 2, i + 3)).toEqual(['audio.import', '-', 'file.close', '-', 'file.quit']);
+    // Restart Frameling comes right after Close drawing once that command is there (it is named in the menu already).
+    expect(file.items.slice(i - 2, i + 4)).toEqual(['audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit']);
   });
 
   it('asks when there is unsaved work, and a cancel keeps everything as it was', async () => {
