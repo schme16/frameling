@@ -287,7 +287,7 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
 
   return (
     <>
-      <div className="ui-tabbar" ref={bar} data-dock-strip="" data-dock-zone={zone} data-dock-group={group} data-dock-tabs={g.tabs.join(',')} data-dock-axis={z.collapsed && !horizontal ? 'y' : 'x'}>
+      <div className="ui-tabbar" data-scrolls ref={bar} data-dock-strip="" data-dock-zone={zone} data-dock-group={group} data-dock-tabs={g.tabs.join(',')} data-dock-axis={z.collapsed && !horizontal ? 'y' : 'x'}>
         <div className="ui-tabbar-tabs" role="tablist" aria-label={where} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
           {tabs}
         </div>

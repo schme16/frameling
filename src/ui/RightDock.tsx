@@ -326,7 +326,7 @@ function Inspector({ sections, active }: { sections: string[]; active: string | 
             const p = getPanel(id);
             if (!p) return null;
             return (
-              <button key={id} type="button" className="rd-idle-item" data-tip={p.title} data-tip-desc={infoFor(p).blurb} data-help={p.help ?? 'properties'} onClick={() => setActive('right', id)}>
+              <button key={id} type="button" data-wraps className="rd-idle-item" data-tip={p.title} data-tip-desc={infoFor(p).blurb} data-help={p.help ?? 'properties'} onClick={() => setActive('right', id)}>
                 <Icon name={p.icon} size={15} />
                 <span className="rd-idle-name">{p.title}</span>
                 <span className="rd-idle-why">{PANEL_INFO[id]?.idle}</span>

@@ -2,6 +2,7 @@
 import { platformKeysText } from '../ui/keys';
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { Icon } from '../ui/icons';
+import { useStackWhenTight } from '../ui/fitRow';
 import { setFold, useFold } from './folds';
 import './canvas.css';
 
@@ -137,9 +138,12 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
 }
 
 export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string }[]; onChange: (v: T) => void }) {
+  // The words stay on one line; when they do not fit side by side the buttons stack one per line instead.
+  const row = useRef<HTMLDivElement>(null);
+  useStackWhenTight(row, [options.map((o) => o.label).join('|')]);
   return (
     <Field label={label}>
-      <div className="cv-choice" role="radiogroup" aria-label={label}>
+      <div className="cv-choice" role="radiogroup" aria-label={label} ref={row}>
         {options.map((o) => (
           <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} title={o.title} onClick={() => onChange(o.value)}>
             {o.label}

@@ -224,9 +224,14 @@
 
 /* Adding effects: A is a grid of tiles, B a single button with a menu. */
 .fx-add-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Each tile keeps its name whole; tiles flow onto the next line when the panel is narrow. */
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+.fx-add-grid > .fx-add-tile {
+  flex: 1 1 64px;
+  min-width: max-content;
 }
 .fx-add-tile {
   display: flex;

@@ -217,6 +217,7 @@ export function PreviewPanel() {
   };
   const nameNow = kind === 'boards' ? (slots.every((b) => b.length === 1) ? '' : playing?.name) : kind === 'sprites' ? (artboardsList(root).find((b) => b.id === stripOn)?.name ?? '') : '';
   const lengthNow = kind === 'boards' ? total : sdoc.length;
+  const infoText = `${nameNow ? `${nameNow}, ` : ''}${clipNote}frame ${shown + 1} of ${lengthNow}, ${fps} fps, ${artW} x ${artH} ${base !== 1 ? 'art pixels' : 'pixels'}${mainPlaying ? '. Following the timeline.' : ''}`;
 
   return (
     <div className="cv-panel px-preview" data-help="pixel-preview">
@@ -289,9 +290,21 @@ export function PreviewPanel() {
         </button>
       </div>
       )}
-      <p className="px-preview-info" aria-live="off">
-        {nameNow ? `${nameNow}, ` : ''}{clipNote}frame {shown + 1} of {lengthNow}, {fps} fps, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}
-        {mainPlaying ? '. Following the timeline.' : ''}
+      {/* One line that never wraps, so the panel keeps its height as the numbers grow. When it is tight, the extras go in
+          this order: "Following the timeline", the name and clip, the size, the speed; the frame number stays. */}
+      <p className="px-preview-info" aria-live="off" data-one-line title={infoText}>
+        {nameNow || clipNote ? (
+          <span className="pi-name">
+            {nameNow ? `${nameNow}, ` : ''}
+            {clipNote}
+          </span>
+        ) : null}
+        <span className="pi-frame">
+          frame <span className="pi-n" style={{ minWidth: `${String(lengthNow).length}ch` }}>{shown + 1}</span> of {lengthNow}
+        </span>
+        <span className="pi-fps">, {fps} fps</span>
+        <span className="pi-size">, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}</span>
+        {mainPlaying ? <span className="pi-follow">. Following the timeline.</span> : null}
       </p>
     </div>
   );

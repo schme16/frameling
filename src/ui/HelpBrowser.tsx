@@ -100,7 +100,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
           <ul>
             {g.topics.map((t) => (
               <li key={t.id}>
-                <button type="button" className={`ui-help-link${nav.topic === t.id ? ' is-chosen' : ''}`} aria-current={nav.topic === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
+                <button type="button" data-wraps className={`ui-help-link${nav.topic === t.id ? ' is-chosen' : ''}`} aria-current={nav.topic === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
                   {t.title}
                 </button>
               </li>

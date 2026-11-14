@@ -28,7 +28,7 @@ export function SourceCards({ source, onPick, thumb }: { source: TemplateSource;
     <div className="ui-example-list tpl-list">
       {list.map((t) => (
         <div key={t.id} className="tpl-card-wrap">
-          <button type="button" className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())} data-tip={t.author ? `By ${t.author}` : undefined} data-tip-desc={t.tags?.length ? t.tags.join(', ') : undefined}>
+          <button type="button" data-wraps className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())} data-tip={t.author ? `By ${t.author}` : undefined} data-tip-desc={t.tags?.length ? t.tags.join(', ') : undefined}>
             <span className="ui-example-art">
               {thumb(t)}
               <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>
@@ -54,7 +54,7 @@ export function SourceCards({ source, onPick, thumb }: { source: TemplateSource;
         </div>
       ))}
       {yours && (
-        <button type="button" className="ui-example tpl-import" onClick={() => void importTemplate()}>
+        <button type="button" data-wraps className="ui-example tpl-import" onClick={() => void importTemplate()}>
           <span className="tpl-import-art">
             <Icon name="plus" size={22} />
           </span>

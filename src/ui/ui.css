@@ -1186,7 +1186,10 @@ body.ui-resizing .ui-group-split:active::after {
   flex: none;
   min-height: var(--ui-tab-h);
   padding: 4px 4px 0;
-  overflow: hidden;
+  /* Too many tabs for the width: the strip scrolls sideways, each tab keeps its name whole. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   border-bottom: 1px solid var(--line-soft);
 }
 /* Tabs that don't fit go behind this "+N" button (see tabFit.ts); the list opens fixed under it. */
@@ -2182,7 +2185,7 @@ body.ui-resizing * {
 }
 .ui-keyrow {
   display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(120px, 1.4fr) auto;
+  grid-template-columns: minmax(90px, 1.1fr) minmax(80px, 1.4fr) auto;
   align-items: center;
   gap: 12px;
   min-height: 38px;

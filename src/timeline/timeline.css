@@ -283,6 +283,8 @@
 .tl-layer-new,
 .tl-layer-actions {
   display: inline-flex;
+  /* The buttons keep their words whole; in a narrow column they flow onto the next line. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
@@ -1053,7 +1055,10 @@
 /* The header stays on one row: chips and labels fold to short forms as the timeline gets narrower. */
 .tl-header {
   flex-wrap: nowrap;
-  overflow: hidden;
+  /* The fold keeps it on one row; in a timeline too narrow even for that, the row scrolls sideways. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 .tl-header > * {
   flex-shrink: 0;
