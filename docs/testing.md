@@ -888,6 +888,23 @@ saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `N
 (copy it before a change to get the before numbers). It exits 1 when anything wraps or jumps. The edge of the window itself
 is left to the dock's layout, not judged here: at 200% on a 1280 screen the app has only 640 pixels to share.
 
+## Real presses on menus: scripts/e2e/real-menus.cjs
+
+Every unit test opens a menu with `element.click()` and looks for it in the page. That passed while the menu a Themes card opens
+in Preferences sat **behind the dialog's dimmed backdrop**: it was in the page, so every test was happy, and nobody could reach it.
+This harness presses with a real mouse (`sendInputEvent`) and counts a menu as open only when the element under the middle of
+**every entry** is that entry, so a covered menu fails. It covers the Themes cards (the art and the name, in dark and light, then a
+real press on "Use it at night" and on "Make a copy"), the tool rail's layer line, the rail's right press menu and a tool's menu while
+the tools are being changed. Add a case here for any new button that opens a dock menu, and above all for one that opens from a dialog.
+Exits 1 on any failure. `test/ui/dock-menu-layer.test.ts` holds the stacking order that broke (menu above a dialog backdrop).
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/real-menus.cjs
+```
+
+`REALMENUS_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `REALMENUS_SHOTS=<dir>`
+saves a picture of each open menu.
+
 ## The tool rail's width and names: scripts/e2e/rail-width.cjs
 
 Checks the rail the way a new person meets it, in the real app. For both looks, the three tool sizes, the draw, animate and
