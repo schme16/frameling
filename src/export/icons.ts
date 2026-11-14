@@ -225,7 +225,11 @@ export interface StickerService {
   maxBytes: number;
 }
 
-/** The sizes the messaging apps ask for today. They change now and then, so the help says to check the app. */
+/**
+ * The sizes the messaging apps ask for today. They change now and then, so the help says to check the app.
+ * Last checked 2026-11-14 against Telegram's sticker page, WhatsApp's stickers repo, Slack's emoji help, and Discord, Signal and
+ * Teams guides. Nothing had drifted. test/export/stickerLimits.test.ts pins every number, so a change here is a deliberate one.
+ */
 export const STICKER_SERVICES: StickerService[] = [
   { id: 'slack', title: 'Slack emoji', size: 128, type: 'png', maxBytes: 128 * 1024 },
   { id: 'teams', title: 'Microsoft Teams emoji', size: 128, type: 'png', maxBytes: 256 * 1024 },
@@ -255,6 +259,12 @@ export function stickerToggle(raw: string | undefined, id: string, on: boolean):
 
 /** WebP qualities to try, best first, until the picture is light enough. */
 export const STICKER_QUALITIES = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
+
+/** The apps and what each one gets, as a help table: size, type and weight limit, straight from the list above. */
+export function stickerTable(): string {
+  const rows = STICKER_SERVICES.map((s) => `| ${s.title} | ${s.size} x ${s.size} | ${s.type === 'webp' ? 'WebP' : 'PNG'} | ${kilobytes(s.maxBytes)} |`);
+  return ['| App | Size in pixels | Picture | Up to |', '| --- | --- | --- | --- |', ...rows].join('\n');
+}
 
 /** "130 KB" style size in plain words. */
 export function kilobytes(n: number): string {

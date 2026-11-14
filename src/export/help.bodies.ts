@@ -1,5 +1,6 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 import { ix } from '../features/flags';
+import { stickerTable } from './icons';
 
 export const bodies: Record<string, string> = {
   exporting: `Saving keeps your drawing editable. **Exporting** makes something to share or use somewhere else, and leaves your drawing as it is.
@@ -392,7 +393,9 @@ See also: [Exporting](help:exporting), [Sticker and emoji packs](help:export-sti
 3. Pick **A clip** or **This frame** for just one sticker, or **Whole animation** for one per frame.
 4. Press **Export**.
 
-Slack, Teams and Discord get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit.
+Slack, Teams and Discord get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit. This is what each app gets:
+
+${stickerTable()}
 
 ## Good to know
 
