@@ -45,6 +45,33 @@ function stats(xs) {
   return { n: s.length, mean: r(mean), p50: r(q(0.5)), p95: r(q(0.95)), p99: r(q(0.99)), max: r(s[s.length - 1]) };
 }
 
+// BRUSH_PROFILE=1 prints a CPU profile of every stroke: the top functions by self and inclusive time (build the renderer
+// with --minify false first, or the names are mangled).
+function analyse(prof) {
+  const nodes = new Map(prof.nodes.map((n) => [n.id, n]));
+  const dt = prof.timeDeltas;
+  const self = new Map();
+  for (let i = 0; i < prof.samples.length; i++) self.set(prof.samples[i], (self.get(prof.samples[i]) || 0) + (dt[i] || 0));
+  const parent = new Map();
+  for (const n of prof.nodes) for (const c of n.children || []) parent.set(c, n.id);
+  const key = (n) => `${n.callFrame.functionName || '(anon)'} ${path.basename(n.callFrame.url)}:${n.callFrame.lineNumber + 1}`;
+  const bySelf = new Map();
+  const byIncl = new Map();
+  for (const [id, t] of self) {
+    const n = nodes.get(id);
+    bySelf.set(key(n), (bySelf.get(key(n)) || 0) + t);
+    const seen = new Set();
+    for (let c = id; c !== undefined; c = parent.get(c)) {
+      const k = key(nodes.get(c));
+      if (seen.has(k)) continue;
+      seen.add(k);
+      byIncl.set(k, (byIncl.get(k) || 0) + t);
+    }
+  }
+  const top = (m, n) => [...m].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `${(v / 1000).toFixed(1).padStart(8)} ms  ${k}`).join('\n');
+  console.log('--- self time\n' + top(bySelf, 18) + '\n--- inclusive time\n' + top(byIncl, 30));
+}
+
 // Runs inside the page: builds big documents, records rAF timestamps, and reads the ?perf collector.
 const PRELUDE = `
 window.__h = (() => {
@@ -240,6 +267,13 @@ async function main() {
   // One stroke, EVENTS pointer moves one frame apart. Stops sending early when the page is clearly stuck (the numbers say so).
   async function oneStroke(pts) {
     await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+    const dbg = process.env.BRUSH_PROFILE ? win.webContents.debugger : null;
+    if (dbg) {
+      if (!dbg.isAttached()) dbg.attach('1.3');
+      await dbg.sendCommand('Profiler.enable');
+      await dbg.sendCommand('Profiler.setSamplingInterval', { interval: 200 });
+      await dbg.sendCommand('Profiler.start');
+    }
     const t0 = Date.now();
     send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
     send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
@@ -257,6 +291,7 @@ async function main() {
     // Everything sent is handled before the pen lifts, so the last moves are timed too.
     const waited = await js(`(async () => { const t = performance.now(); await new Promise((r) => setTimeout(r, 0)); return performance.now() - t; })()`);
     const raf = await js('window.__h.stopRaf()');
+    if (dbg) analyse((await dbg.sendCommand('Profiler.stop')).profile);
     const l = pts[Math.min(sent, pts.length - 1)];
     const tUp = Date.now();
     send({ type: 'mouseUp', x: l[0], y: l[1], button: 'left', clickCount: 1 });
@@ -272,6 +307,9 @@ async function main() {
       // Time between frames while the pen moves: the page is smooth when this stays at the screen's own frame time.
       frameDeltaMs: stats(deltas(raf)),
       latency: stats(bag.latency),
+      // The first few, raw: the first one is the press itself (the first dab).
+      firstLatencyMs: bag.latency.slice(0, 3).map((v) => Math.round(v * 100) / 100),
+      firstOverlayMs: bag.overlayMs.slice(0, 3).map((v) => Math.round(v * 100) / 100),
       overlayDrawMs: stats(bag.overlayMs),
       overlayLastThird: stats(bag.overlayMs.slice(-Math.max(1, Math.floor(bag.overlayMs.length / 3)))),
       mainDrawMsMax: bag.mainMs.length ? Math.round(Math.max(...bag.mainMs) * 100) / 100 : 0,

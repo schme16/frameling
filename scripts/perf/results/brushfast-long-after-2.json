@@ -1,0 +1,92 @@
+{
+  "env": {
+    "label": "long-after-2",
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "disabled_off",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan disabled_off | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "events": 400,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/brush-fast/dist/renderer",
+    "when": "2026-11-14T22:32:36.543Z"
+  },
+  "vector": {
+    "canvas": [
+      4000,
+      3000
+    ],
+    "chalk": {
+      "120": {
+        "moves": 399,
+        "aborted": false,
+        "wallMs": 6612,
+        "frameDeltaMs": {
+          "n": 385,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "latency": {
+          "n": 361,
+          "mean": 13.19,
+          "p50": 13.2,
+          "p95": 20.7,
+          "p99": 22.4,
+          "max": 28.6
+        },
+        "firstLatencyMs": [
+          12.2,
+          13.1,
+          14.9
+        ],
+        "firstOverlayMs": [
+          0.7,
+          1.4,
+          1.9
+        ],
+        "overlayDrawMs": {
+          "n": 361,
+          "mean": 5.1,
+          "p50": 5,
+          "p95": 6.4,
+          "p99": 7.6,
+          "max": 9.6
+        },
+        "overlayLastThird": {
+          "n": 120,
+          "mean": 5.11,
+          "p50": 5,
+          "p95": 6.2,
+          "p99": 6.7,
+          "max": 8
+        },
+        "mainDrawMsMax": 6.5,
+        "liftToSettledMs": 179,
+        "longTasks": 1,
+        "longTaskMaxMs": 57,
+        "pageBusyAfterMs": 0
+      }
+    }
+  },
+  "consoleErrors": []
+}
