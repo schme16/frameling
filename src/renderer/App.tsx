@@ -14,6 +14,7 @@ import { installKeyboard } from '../ui/keyboard';
 import { installRovingKeys } from '../ui/roving';
 import { watchFirstDrawing } from '../ui/firstDrawing';
 import { startScreenWatch } from '../ui/screenSize';
+import { startFitWatch } from '../ui/screenFit';
 import { startCrashWatch } from '../beta/crashAsk';
 import { CrashOffer } from '../beta/CrashOffer';
 import { UpdateOffer } from '../update/UpdateOffer';
@@ -68,6 +69,8 @@ export function App() {
     welcomed = true;
     // Quill offers a better interface size on a very dense screen, and again on a new one the window is dragged to.
     startScreenWatch();
+    // A small screen gets a tighter layout, said once in a toast.
+    startFitWatch();
     // After a crash, a dazed Quill offers to send the crash notes (once, and only if you say so).
     startCrashWatch();
     // A quiet look for a newer release (when Preferences allows), offered at a calm moment.

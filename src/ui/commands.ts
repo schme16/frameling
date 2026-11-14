@@ -7,6 +7,7 @@ import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './over
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { suggestForThisScreen } from './screenSize';
+import { toggleFit } from './screenFit';
 import { BUILT_IN_THEMES } from './themes/builtIn';
 import { selectTheme, themeById } from './themes/library';
 
@@ -83,6 +84,16 @@ registerCommands([
     keywords: ['interface size', 'bigger', 'smaller', '4k', 'tablet', 'dense', 'tiny', 'small text', 'dpi', 'display'],
     global: true,
     run: () => void suggestForThisScreen(),
+  },
+  {
+    id: 'view.tightLayout',
+    label: 'Tighten the layout for a small screen (or relax it)',
+    category: 'View',
+    description: 'On a small screen Frameling shrinks the tool buttons and panels to give your drawing the room. This turns that on or off for the screen you are on.',
+    help: 'small-screens',
+    keywords: ['small screen', 'laptop', 'compact', 'tight', 'roomy', 'cramped', '720', '1366', 'squeezed', 'canvas room', 'fit', 'tool rail scrolls'],
+    global: true,
+    run: () => toggleFit(),
   },
   {
     id: 'view.features',

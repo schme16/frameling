@@ -95,6 +95,15 @@ registerHelpTopics([
     keywords: ['bigger', 'smaller', 'tiny', 'small text', '4k', 'tablet', 'dense', 'hidpi', 'dpi', 'display', 'monitor', 'screen', 'second screen', 'slider'],
   },
   {
+    id: 'small-screens',
+    order: 2.5,
+    title: 'Small screens',
+    section: 'Settings',
+    media: 'small-screens.png',
+    summary: 'On a laptop screen Frameling tightens up by itself, so your drawing gets the room.',
+    keywords: ['small screen', 'laptop', '720', '768', '1366', '1280', 'cramped', 'squeezed', 'compact', 'tight', 'roomy', 'tool rail', 'scrolls', 'canvas room', 'netbook', 'high dpi', 'scaling', '125%', '150%', 'display', 'monitor'],
+  },
+  {
     id: 'installing',
     title: 'Installing Frameling',
     section: 'Getting started',

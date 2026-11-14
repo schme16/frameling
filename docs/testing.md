@@ -964,8 +964,48 @@ file is a JSON array run in order with real input events:
 
 Environment: `SHOT_SHOW=1` puts the window on the screen (use it under xvfb); `SHOT_SCALE=2` shoots at twice the
 pixel density; `SHOT_LOG=1` prints console errors as they happen; `SHOT_W`, `SHOT_H` set the window size (default 1400
-x 900). Console errors are printed after each shot anyway. A step can open a real file with
+x 900), `SHOT_DISPLAY` a JSON screen (what the desktop side reports) so the app knows which screen it is on, as `screen-shoot.cjs` below sets it. Console errors are printed after each shot anyway. A step can open a real file with
 `{"eval": "__framelingIo.openPath('/abs/path.frameling')"}`.
+
+## A pretend screen of any size: scripts/screen-shoot.cjs
+
+Shoots the interface as it looks on a particular screen, such as a 16 inch 4K laptop, without that screen. It wraps
+`scripts/shoot.cjs` (same variants, same steps files), so it starts its own xvfb at the screen's pixel size, sizes the
+window to fill it like a maximised one, sets the device pixel ratio, and tells the app which screen it is on (so the
+small-screen fit in `src/ui/screenFit.ts` sees what it would on the real thing). No `xvfb-run` needed from you.
+
+```bash
+npm run build
+node scripts/screen-shoot.cjs <outDir> --screen 4k16 name:cosy:dark:scripts/steps/draw-workspace.json
+node scripts/screen-shoot.cjs <outDir> --size 1366x768 --dpr 1 name:cosy:light
+node scripts/screen-shoot.cjs --list          # the presets
+```
+
+`--screen` picks a preset and puts its name in front of each shot's name. `4k16` is 3840 x 2160 at a device pixel ratio of
+2.5 (what Windows recommends for a 16 inch 4K panel, about 275 pixels an inch), so the interface sees 1536 x 864 units and
+the picture is 3840 pixels wide. `4k16-200` and `4k16-300` are the same panel at 200% and 300%. `--size` (real pixels) and
+`--dpr` set any other screen, and `--window WxH` uses a window smaller than the screen (in the screen's own units). Without
+a `--screen` or `--size` it is 1280 x 720 at 1x. `scripts/steps/draw-workspace.json` opens the Bouncing ball in the Draw
+workspace, in whichever theme the variant names (a step can read it from `window.__shotTheme`, which shoot.cjs sets: the page's own theme pref wins over the variant's `data-theme` as soon as the app redraws).
+
+## The Draw workspace on small screens: scripts/e2e/screen-fit.cjs
+
+Opens the app at each screen size from 1024 x 640 to 2560 x 1440 (as if the window were the whole screen), loads the
+Bouncing ball in a workspace, and prints the room the canvas keeps, the panel sizes, whether the left tool rail or the right
+panel rail scrolls, whether anything runs off the window or the page scrolls sideways, and the timeline's own scroll. It
+exits 1 for a screen of 1280 x 720 or more where the canvas gets under 30% of the window, the page scrolls sideways,
+something runs off the window, a rail scrolls or the timeline's three rows are cut off. The thresholds in `src/ui/screenFit.ts` (`SMALL_BELOW`, the tool rail's 902 px
+need) come from its numbers.
+
+```bash
+npm run build && SHOT_SHOW=1 xvfb-run -a -s "-screen 0 2600x1500x24" npx electron scripts/e2e/screen-fit.cjs
+```
+
+`FIT_FIT=off` tells the app the screen is a roomy one, which is the layout from before the fit (the "before" numbers and
+pictures). `FIT_SIZES=1280x720,1366x768` picks the screens, `FIT_WS=animate` another workspace, `FIT_PREFS='{"toolSize":"large"}'`
+sets preferences first, `FIT_EVAL=<js>` runs a line in the page to try a change before building it, `FIT_SHOTS=<dir>` saves each
+size in dark and light, `FIT_DIST=<dir>` checks another copy of `dist/`, `FIT_JSON=<file>` saves every row. The timeline's
+own sideways scroll is not counted: it is there for animations longer than it shows, and it keeps some room after the last frame.
 
 ## Help pictures and clips: scripts/docs/record.cjs and encode.sh
 

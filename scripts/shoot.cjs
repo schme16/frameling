@@ -12,6 +12,7 @@
 //   {"wait": 300}                       wait in ms
 //   {"shot": "name"}                    save an extra screenshot mid-way
 //   {"down": [x, y]} / {"move": [x, y]} / {"up": [x, y]}   press, move (held if pressed) and release, for shots mid-drag
+// SHOT_DISPLAY='{"width":1536,...}' tells the app which screen it is on (what the desktop side reports; scripts/screen-shoot.cjs sets it).
 // SHOT_SCALE=2 shoots at twice the pixel density. SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
 const { app, BrowserWindow, ipcMain } = require('electron');
 // Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
@@ -93,6 +94,7 @@ app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history (stand-ins in scripts/ipc-stubs.cjs).
   // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"}.
   installIpcStubs(ipcMain, {
+    ...(process.env.SHOT_DISPLAY ? { 'app:display': () => JSON.parse(process.env.SHOT_DISPLAY) } : {}),
     'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && fs.existsSync(p) ? { bytes: new Uint8Array(fs.readFileSync(p)), path: p } : { error: 'No such file.' }),
   });
   fs.mkdirSync(outDir, { recursive: true });
@@ -126,7 +128,7 @@ app.whenReady().then(async () => {
     await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'), { query: { debug: '1' } });
     await win.webContents.executeJavaScript(`
       ${look ? `document.documentElement.dataset.look = ${JSON.stringify(look)};` : ''}
-      ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)};` : ''}
+      ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)}; window.__shotTheme = ${JSON.stringify(theme)};` : ''}
       true;
     `);
     await sleep(Number(process.env.SHOT_WAIT || 900));

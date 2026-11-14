@@ -21,6 +21,7 @@ import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getFullQuest, loadQuests, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { considerScreen } from '../ui/screenSize';
+import * as screenFit from '../ui/screenFit';
 import { crashDialog, crashReport } from '../beta/crashAsk';
 import { askSaveInPage } from '../io/saveAsk';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
@@ -80,6 +81,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     // Ask-the-first-time questions, for their shots and the no-wrap check: ask one by id, or forget the answers.
     choices: { ask: askAgain, forget: forgetAnswers, all: () => allChoices().map((c) => c.id) },
     // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.
+    // The small-screen fit: tell it a screen (a harness has no real one), and ask what it decided.
+    fit: { consider: (d: Omit<Parameters<typeof screenFit.considerFit>[0], 'windowWidth' | 'windowHeight'>, quiet = true) => screenFit.considerFit({ windowWidth: 1280, windowHeight: 720, ...d }, { quiet }), toggle: screenFit.toggleFit, isCompact: screenFit.isCompact },
     screenOffer: (d: Omit<Parameters<typeof considerScreen>[0], 'windowWidth' | 'windowHeight'>) => void considerScreen({ windowWidth: 1400, windowHeight: 900, ...d }, { force: true }),
     // Quill's offer after a crash, for a pretend crash (shots, checks): 'ask' offers to send, 'tell' only says what happened.
     crashOffer: (mode: 'ask' | 'tell' = 'ask') => {

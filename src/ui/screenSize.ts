@@ -147,7 +147,7 @@ export async function considerScreen(d: DisplayInfo, o: { atStart?: boolean; for
 }
 
 /** What the page can see of its own screen when there is no desktop shell (a browser tab). */
-function browserDisplay(): DisplayInfo | null {
+export function browserDisplay(): DisplayInfo | null {
   if (typeof window === 'undefined' || !window.screen) return null;
   const s = window.screen;
   return {
@@ -162,7 +162,7 @@ function browserDisplay(): DisplayInfo | null {
   };
 }
 
-async function currentDisplay(): Promise<DisplayInfo | null> {
+export async function currentDisplay(): Promise<DisplayInfo | null> {
   const api = (window as { frameling?: { app?: { getDisplay?: () => Promise<DisplayInfo | null> } } }).frameling;
   try {
     if (api?.app?.getDisplay) return await api.app.getDisplay();

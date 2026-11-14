@@ -181,7 +181,7 @@ The pages down the left include:
 - **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
-- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read. [Quill can suggest a size](help:interface-size) for each screen.
+- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read. [Quill can suggest a size](help:interface-size) for each screen, and a [small screen](help:small-screens) gets a tighter layout by itself.
 - **Your settings** (on the General page): **Backup** saves everything you have set into one small file. **Restore** reads one back in: it tells you which backup it is and what it will replace, and only goes ahead when you say yes. Then it says what changed and starts Frameling again. Handy for a new computer.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
@@ -209,6 +209,31 @@ A typo still finds it (**stablizer**), and colour and color, stabiliser and stab
 Then it says so, and offers to search the help for the same words instead. The answer may be a way of drawing and not a setting: **symmetry** is a [drawing tool](help:mirror-drawing), for example, not something in Preferences.
 
 Good to know: the command palette (**Ctrl+K**) finds these settings too, below the commands and help. Press one and Preferences opens right at it. See also [Preferences](help:preferences) and [keyboard shortcuts](help:keyboard-shortcuts).`,
+  'small-screens': `On a laptop screen the usual layout leaves your drawing a small patch of room, and the tool rail can run off the bottom. So when Frameling sees a small screen, it **tightens up** by itself: the drawing gets more of the window, and everything is still there.
+
+## What changes
+
+- The tool buttons are one size smaller, and sit four across, so every group shows without scrolling.
+- The side panels and the timeline start a little smaller, and the top and bottom bars are a bit slimmer.
+- The panels on the right sit closer together on their rail, so all of them show.
+
+Nothing is taken away. A panel you dragged to a size of your own keeps it, and a tool size you picked yourself (Small or Large) stays as it is.
+
+## What counts as small
+
+Under about 1450 across or 990 down, counted the way Frameling draws: a computer that scales a 4k laptop to 250% shows 1536 x 864, which is small. Making the [interface size](help:interface-size) bigger can make a screen count as small too. Full HD at 100% and bigger screens keep the roomy layout.
+
+## Say yes or no
+
+The first time on a small screen, a message says it tightened up, with a **Change** button. Press it to keep the roomy layout for that screen instead. Frameling remembers the answer for each screen, so moving the window to another screen never asks twice, and a bigger screen gets the roomy layout back by itself.
+
+## Change it any time
+
+Search the command palette (**Ctrl+K**) for **Tighten the layout for a small screen**, or find it in the **View** menu. It flips between tight and roomy for the screen you're on. The answers are also listed in **Preferences** under **Behaviour**.
+
+Good to know: a small timeline scrolls sideways when the animation is longer than it shows. That's the timeline, not the page.
+
+See also [workspaces](help:workspaces) and [panels](help:panels).`,
   'interface-size': `On a very sharp screen, like a 4k drawing tablet, everything can look tiny. **Interface size** draws the whole of Frameling bigger (or smaller): menus, panels, the timeline and the canvas, all still crisp.
 
 ## Set it yourself

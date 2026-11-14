@@ -8,6 +8,7 @@ import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
 import { useLocked } from './lockState';
+import { fitRailSaved, fitToolSize, useCompact } from './screenFit';
 import { currentWorkspace, dock, railOf, railWidthOf } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { useEdgeDrag } from './dockShared';
@@ -41,11 +42,12 @@ export function ToolSlot({ at }: { at: DockZone }) {
 function RailSplitter({ at }: { at: 'left' | 'right' }) {
   const saved = dock.use((d) => railWidthOf(d));
   const style = usePrefs((p) => p.toolRail);
-  const size = usePrefs((p) => p.toolSize);
+  const compact = useCompact();
+  const size = fitToolSize(usePrefs((p) => p.toolSize), compact);
   const look = usePrefs((p) => p.look);
   const names = usePrefs((p) => p.toolNames);
   const sizes = railSizes(look, size);
-  const width = railWidthNow(saved, sizes, style, names);
+  const width = railWidthNow(fitRailSaved(saved, sizes, compact), sizes, style, names);
   // A rail on the left grows when pulled right; on the right, when pulled left.
   const drag = useEdgeDrag({ horizontal: false, sign: at === 'left' ? 1 : -1, size: () => width, set: (n) => setToolRailWidth(n, false), end: endToolRailPull });
   const to = (n: number) => setToolRailWidth(clampRailWidth(n, sizes));
@@ -214,14 +216,15 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const locked = useLocked('tools');
   const style = usePrefs((p) => p.toolRail);
   const stacked = style === 'stacked';
-  const size = usePrefs((p) => p.toolSize);
+  const compact = useCompact();
+  const size = fitToolSize(usePrefs((p) => p.toolSize), compact);
   const showNames = usePrefs((p) => p.toolNames);
   const look = usePrefs((p) => p.look);
-  const savedWidth = dock.use((d) => railWidthOf(d));
+  const sizes = railSizes(look, size);
+  const savedWidth = fitRailSaved(dock.use((d) => railWidthOf(d)), sizes, compact);
   const editing = toolbarEditing.use((e) => e);
   const iconPx = iconSizeFor(size);
   // A width the person pulled (docked at a side): the rail takes it, and the buttons across follow it.
-  const sizes = railSizes(look, size);
   const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style, showNames) : undefined;
   // No width of their own: the rail starts as wide as its longest group name needs, still two buttons across.
   const startWidth = pulledWidth === undefined && showNames && !sideways ? naturalRailWidth(sizes, style, true) : undefined;
