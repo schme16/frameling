@@ -7,6 +7,7 @@ import { store } from '../core/store';
 import { defineFeature } from '../features/feature';
 import { picked } from '../ui/panelInfo';
 import './kind';
+import { textChoices } from './choices';
 import { textCommands } from './commands';
 import { preloadFonts } from './fonts';
 import { textHelp } from './help';
@@ -21,6 +22,7 @@ export const textFeature = defineFeature({
   about: 'Words on your drawing that stay editable and can be animated.',
   optional: true,
   commands: textCommands,
+  choices: textChoices,
   panels: [{ id: 'text', title: 'Text', icon: 'text', component: lazyPanel(() => import('./TextPanel').then((m) => m.TextPanel)), zone: 'right', order: 37, help: 'text' }],
   tools: [textTool],
   help: textHelp,

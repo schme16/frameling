@@ -50,4 +50,29 @@ Want the letters to move one by one? See [Text animations](help:text-animators).
 Add more than one and they add together: a Fade and a Slide make letters drift in as they appear. The eye button turns one off for a moment.
 
 Animations are worked out from the frame, so scrubbing and every export show exactly the same thing.`,
+  'text-swap-fonts': `Opened a drawing and the words look wrong? The font it asks for may not be on this computer, so Frameling shows a stand-in. **Swap fonts** lists every font the drawing uses and lets you change them.
+
+## Open it
+
+**Edit > Swap fonts**, or press **Ctrl+K** and type "swap fonts".
+
+## What you see
+
+Each font is one row:
+
+- Its name, and a red note when it is **not on this computer**.
+- How many texts use it, and which boards and layers they are on, so you know what you are about to change.
+- A **Swap to** list of the fonts you can use here, and a sample of your words in the font you pick.
+
+At the top, **Only the missing fonts** leaves the fonts you have alone. **Every font** lets any row change. Below the list, **Or use one font for all of these** gives every row the same one.
+
+## Swap
+
+1. Pick a replacement on each row you want to change.
+2. Check **Now** and **After** under the list.
+3. Click **Swap fonts**.
+
+All of it is one undo step: one **Ctrl+Z** puts every font back. Size, weight, colour and animations stay as they are.
+
+Nunito and Inter come with Frameling, so they look the same on every computer. The fonts on this computer are only here for you; see [Text](help:text) for what that means when you share a file.`,
 };

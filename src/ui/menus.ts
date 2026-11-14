@@ -37,7 +37,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Edit',
     categories: ['Edit'],
-    items: ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins'],
+    items: ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins'],
   },
   {
     label: 'View',
