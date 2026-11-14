@@ -6,6 +6,7 @@
  */
 import type { BlendMode } from '../core/format';
 import type { Canvas2, Ctx } from './apply';
+import { ROUND_NUDGE } from './pixelBlend';
 
 const MODES: Partial<Record<BlendMode, number>> = { 'linear-dodge': 0, subtract: 1, divide: 2 };
 
@@ -16,8 +17,9 @@ void main() {
 }`;
 
 // Textures hold premultiplied colour. Un-premultiply, mix with the W3C formula, premultiply again.
-const FRAG = `#version 300 es
+export const FRAG = `#version 300 es
 precision highp float;
+const float NUDGE = ${ROUND_NUDGE.toFixed(6)};
 uniform sampler2D uBack;
 uniform sampler2D uTop;
 uniform int uMode;
@@ -34,18 +36,21 @@ void main() {
   ivec2 p = ivec2(int(gl_FragCoord.x), size.y - 1 - int(gl_FragCoord.y));
   vec4 b = texelFetch(uBack, p, 0);
   vec4 t = texelFetch(uTop, p, 0);
-  float as = t.a * uAlpha;
+  ivec4 bi = ivec4(floor(b * 255.0 + 0.5));
+  ivec4 ti = ivec4(floor(t * 255.0 + 0.5));
+  float as = float(ti.a) / 255.0 * uAlpha;
   if (as <= 0.0) { o = b; return; }
-  float ab = b.a;
-  // Straight colour in whole bytes, as the CPU path (and Aseprite) see it; Divide magnifies the rounding at soft edges.
-  vec3 cb = ab > 0.0 ? floor(min(b.rgb / ab, 1.0) * 255.0 + 0.5) / 255.0 : vec3(0.0);
-  vec3 cs = t.a > 0.0 ? floor(min(t.rgb / t.a, 1.0) * 255.0 + 0.5) / 255.0 : vec3(0.0);
+  float ab = float(bi.a) / 255.0;
+  // Straight colour in whole bytes by the one rule both paths share (straightByte in pixelBlend.ts, half up, whole
+  // numbers): the canvas's own rounding of exact ties varies, and Divide magnifies a one level slip.
+  vec3 cb = bi.a > 0 ? vec3(min((510 * bi.rgb + bi.a) / (2 * bi.a), 255)) / 255.0 : vec3(0.0);
+  vec3 cs = ti.a > 0 ? vec3(min((510 * ti.rgb + ti.a) / (2 * ti.a), 255)) / 255.0 : vec3(0.0);
   float ar = as + ab - as * ab;
   float k = as / ar;
   vec3 v = (1.0 - k) * cb + k * ((1.0 - ab) * cs + ab * mixed(cb, cs));
-  // Round the straight result to bytes first, like the CPU path, then premultiply for the canvas.
-  float aq = floor(ar * 255.0 + 0.5) / 255.0;
-  o = vec4(floor(v * 255.0 + 0.5) / 255.0 * aq, aq);
+  // Round the straight result to bytes first, like the CPU path (same tie rule, see ROUND_NUDGE), then premultiply for the canvas.
+  float aq = floor(ar * 255.0 + 0.5 + NUDGE) / 255.0;
+  o = vec4(floor(v * 255.0 + 0.5 + NUDGE) / 255.0 * aq, aq);
 }`;
 
 interface Gpu {

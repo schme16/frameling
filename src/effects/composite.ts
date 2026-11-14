@@ -9,7 +9,7 @@
 import type { BlendMode, Doc, Layer, LayerEffect } from '../core/format';
 import { applyEffect, BufferPool, ctx2, makeCanvas, type Canvas2, type Ctx } from './apply';
 import { activeEffects, compositeOp, isPixelBlend } from './model';
-import { blendPixels } from './pixelBlend';
+import { blendPixels, settleCanvasBytes } from './pixelBlend';
 import { blitPixelsGpu } from './pixelBlendGL';
 import type { PlanNode, PlanStep } from './plan';
 
@@ -164,6 +164,8 @@ function blitPixels(g: Ctx, c: Canvas2, blend: BlendMode, alpha: number): void {
   const h = c.height;
   const back = g.getImageData(0, 0, w, h);
   const top = ctx2(c).getImageData(0, 0, w, h);
+  settleCanvasBytes(back.data);
+  settleCanvasBytes(top.data);
   blendPixels(back.data, top.data, blend, alpha);
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);
