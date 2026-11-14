@@ -78,7 +78,7 @@ export async function apply(req: ImportRequest, name: string): Promise<boolean> 
 
 /** Takes the picture's colours as the drawing's palette: added to it, or in its place. */
 function colours(req: ImportRequest, name: string): void {
-  const p = spritePalette(req.sprite, name);
+  const p = req.picked ?? spritePalette(req.sprite, name);
   if (!p) return notify('The picture has no solid colours to take.', 'warn');
   const doc = store().get().doc;
   const next = req.paletteMode === 'add' ? { ...docPalette(doc), ...mergePalette(docPalette(doc), p) } : { ...p };

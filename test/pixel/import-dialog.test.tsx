@@ -102,13 +102,88 @@ describe('the dialog', () => {
     expect(r.sprite.groups.map((g) => g.frames.length)).toEqual([3, 3]);
   });
 
+  /** Waits until the palette dialog has worked out the colours (the Take button comes on). */
+  const untilReady = async () => {
+    for (let i = 0; i < 200; i++) {
+      await flush();
+      const b = document.querySelector<HTMLButtonElement>('[data-testid="import.go"]');
+      if (b && !b.disabled) return;
+    }
+    throw new Error('the colours were never ready');
+  };
+  const setMax = async (v: string) => {
+    const i = document.querySelector<HTMLInputElement>('[data-testid="palette.max"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(i, v);
+      i.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    // The pick waits a moment for typing to settle.
+    await act(async () => void (await new Promise((r) => setTimeout(r, 250))));
+    await untilReady();
+  };
+
   it('cancelling hands nothing over, and palette mode only takes colours', async () => {
     let got: ImportRequest | null = null;
     mountDialog(sheetPng(2, 1), 'palette', (r) => (got = r));
     expect(document.querySelector('.im-ways')).toBeNull();
     await click('Replace my palette');
+    await untilReady();
     await click('Take the colours');
-    expect((got as unknown as ImportRequest).paletteMode).toBe('replace');
+    const r = got as unknown as ImportRequest;
+    expect(r.paletteMode).toBe('replace');
+    expect(r.picked!.colors.sort()).toEqual(['#010000', '#020000']);
+  });
+
+  it('palette mode: the most colours to take starts at 32, is honoured, and is remembered', async () => {
+    // A picture with 40 different greys.
+    const px = new Uint8ClampedArray(40 * 4);
+    for (let i = 0; i < 40; i++) px.set([i * 6, i * 6, i * 6, 255], i * 4);
+    const bytes = { img: { width: 40, height: 1, pixels: px }, bytes: new Uint8Array() };
+    let got: ImportRequest | null = null;
+    mountDialog(bytes, 'palette', (r) => (got = r));
+    await untilReady();
+    const input = () => document.querySelector<HTMLInputElement>('[data-testid="palette.max"]')!;
+    expect(input().value).toBe('32');
+    await setMax('10');
+    expect(document.querySelectorAll('.im-swatches i').length).toBeLessThanOrEqual(10);
+    expect(document.querySelector('.im-summary')?.textContent).toMatch(/40 colours in the picture: \d+ colours that stand for it best/);
+    await click('Take the colours');
+    expect((got as unknown as ImportRequest).picked!.colors.length).toBeLessThanOrEqual(10);
+    expect(JSON.parse(localStorage.getItem('frameling.import.v1')!).maxColours).toBe(10);
+
+    // The next time the dialog opens it starts at the last number.
+    act(() => root?.unmount());
+    host?.remove();
+    mountDialog(bytes, 'palette', () => {});
+    await untilReady();
+    expect(input().value).toBe('10');
+  });
+
+  it('palette mode: a limit out of range is brought back into range', async () => {
+    mountDialog(sheetPng(2, 1), 'palette', () => {});
+    await untilReady();
+    await setMax('9999');
+    expect(document.querySelector<HTMLInputElement>('[data-testid="palette.max"]')!.value).toBe('9999');
+    // Leaving the field shows the number really used.
+    await act(async () => document.querySelector<HTMLInputElement>('[data-testid="palette.max"]')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    expect(document.querySelector<HTMLInputElement>('[data-testid="palette.max"]')!.value).toBe('256');
+  });
+
+  it('palette mode: Cancel while it is still working stops the work and hands nothing over', async () => {
+    let got: ImportRequest | null = null;
+    let closed = false;
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    const big = sheetPng(1, 1).img;
+    const pic = { width: big.width, height: big.height, frames: [{ pixels: big.pixels }], kind: 'png' as const, notes: [] };
+    act(() => root!.render(<ImportDialog pic={pic} fileName="x" mode="palette" hasDrawing companion={null} pickJson={async () => null} finish={(r) => (got = r)} close={() => (closed = true)} />));
+    // Straight after opening, the colours are not ready: the button is off and there is a progress bar.
+    expect(document.querySelector<HTMLButtonElement>('[data-testid="import.go"]')!.disabled).toBe(true);
+    expect(document.querySelector('.im-progress progress')).not.toBeNull();
+    await click('Cancel');
+    expect(closed).toBe(true);
+    expect(got).toBeNull();
   });
 
   it('a single small picture is one picture, not cut', async () => {

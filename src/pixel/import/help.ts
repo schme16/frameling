@@ -11,6 +11,15 @@ registerHelpTopics([
     keywords: ['import', 'png', 'gif', 'animated gif', 'apng', 'animated png', 'webp', 'animated webp', 'open image', 'drop', 'colours', 'palette', 'picture'],
   },
   {
+    id: 'palette-picture',
+    order: 14,
+    media: 'palette-picture.png',
+    title: 'Taking the colours from a picture',
+    section: 'Pixel art',
+    summary: 'Turn a photo or a painting into a palette. You set the most colours to take, and big pictures never hold Frameling up.',
+    keywords: ['palette', 'colours', 'colors', 'picture', 'photo', 'image', 'extract', 'quantise', 'quantize', 'reduce', 'limit colours', 'most colours', 'median cut', 'swatches', 'import'],
+  },
+  {
     id: 'pixel-sheets',
     order: 13,
     media: 'pixel-import-sheet.png',

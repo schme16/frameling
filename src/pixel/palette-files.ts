@@ -32,19 +32,6 @@ function pickFile(accept: string): Promise<File | null> {
   });
 }
 
-async function imagePixels(file: File): Promise<Uint8ClampedArray> {
-  const bmp = await createImageBitmap(file);
-  // Big photos are shrunk first: a palette doesn't need every pixel, and it keeps this quick.
-  const scale = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
-  const w = Math.max(1, Math.round(bmp.width * scale));
-  const h = Math.max(1, Math.round(bmp.height * scale));
-  const c = new OffscreenCanvas(w, h);
-  const g = c.getContext('2d')!;
-  g.imageSmoothingEnabled = false;
-  g.drawImage(bmp, 0, 0, w, h);
-  return g.getImageData(0, 0, w, h).data;
-}
-
 /** Uses an Adobe swatch file (.ase) as the drawing's palette. False when the bytes are not one. */
 export function swatchesIntoPalette(bytes: Uint8Array, fileName: string): boolean {
   if (!isAdobeSwatches(bytes)) return false;
@@ -69,8 +56,12 @@ export async function importPalette(): Promise<void> {
     if (/\.ase$/i.test(file.name)) {
       if (swatchesIntoPalette(new Uint8Array(await file.arrayBuffer()), file.name)) return;
       throw new PaletteProblem("That .ase file is an Aseprite drawing, not swatches. Use File > Open, or Use palette from an Aseprite file.");
-    } else if (IMAGE.test(file.name) || file.type.startsWith('image/')) p = paletteFromPixels(await imagePixels(file), file.name.replace(/\.[^.]+$/, ''), 32);
-    else p = parsePaletteFile(file.name, await file.text());
+    } else if (IMAGE.test(file.name) || file.type.startsWith('image/')) {
+      // A picture goes through the same dialog as "From a picture...": you set the most colours, and it never holds the page up.
+      const { paletteFromPictureBytes } = await import('./import/run');
+      await paletteFromPictureBytes(new Uint8Array(await file.arrayBuffer()), file.name);
+      return;
+    } else p = parsePaletteFile(file.name, await file.text());
     setDocPalette(p, 'Load palette');
     notify(`Loaded "${p.name}": ${p.colors.length} colour${p.colors.length === 1 ? '' : 's'}.`, 'success');
   } catch (e) {
