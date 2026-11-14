@@ -668,6 +668,21 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/variations.cjs [outDir]
 ```
 
+## Turn into pixels and shapes end to end: scripts/e2e/convert.cjs
+
+Opens the real Turn into pixels and Turn into shapes dialogs from their commands and presses their buttons: a vector
+character into pixels beside the original (the original hidden, the new layer at 8x) and in its place, each undone in one
+step; pixel art (a mushroom) into five shapes that end up selected; and a made-up photo, which must get the plain
+warning before any work and a button that says "anyway". The pictures it uses are `scripts/docs/help/_convert-art.cjs`,
+shared with the help pictures (`scripts/docs/help/convert.cjs`) and the A/B entries (`scripts/docs/ab-convert`, built
+into captioned pairs by `scripts/ab/convert-montage.sh`). The pure parts (size maths, colour separation, the trace to shapes,
+what goes where) are `test/convert/`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/convert.cjs [outDir]
+```
+
 ## Selection end to end: scripts/e2e/selection.cjs
 
 Picks shapes with real mouse clicks (Select, and Shift for several) and scrubs the playhead across keys made by the real

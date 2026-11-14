@@ -837,6 +837,16 @@ const ICONS: Record<string, ReactNode> = {
       {dot(13, 12, 1.8)}
     </>
   ),
+  // shapes into pixels and back: a round shape, an arrow, and a few pixels
+  convert: (
+    <>
+      <circle cx="7" cy="12" r="4" />
+      <path d="M13 12h3.5" />
+      <path d="M15 10l2 2-2 2" />
+      <rect x="18" y="9" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="18" y="12" width="3" height="3" fill="currentColor" stroke="none" opacity="0.5" />
+    </>
+  ),
   'pt-dust': (
     <>
       <circle cx="6" cy="8" r="1" fill="currentColor" />
