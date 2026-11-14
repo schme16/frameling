@@ -201,6 +201,14 @@ registerHelpTopics([
     keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout', 'greyed out', 'grey', 'disabled', 'pixel layer', 'vector layer', 'moves', 'same place'],
   },
   {
+    id: 'tool-move',
+    title: 'Move the tool strip',
+    section: 'Basics',
+    media: 'tool-move.mp4',
+    summary: 'Drag the strip by its grip to any side, or out over the canvas. Let go nowhere and it goes back.',
+    keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'move', 'dock', 'float', 'undock', 'grip', 'drag', 'left', 'right', 'top', 'bottom', 'side', 'put back', 'where it was', 'return', 'unfloat', 'over the canvas'],
+  },
+  {
     id: 'tool-builder',
     title: 'Change the tools',
     section: 'Basics',

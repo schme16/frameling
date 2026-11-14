@@ -294,6 +294,7 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
     Views mark drop places with `data-dock-strip`, `-tab`, `-tabs`, `-axis`, `-area`, `-zone`, `-float` and `-edge`, and
     `targetAt` reads what is under the pointer. `dockMenus.ts` holds the menus as data; `dockCommands.ts` the
     commands ("this panel" is the last one clicked in, `lastPanel`).
+  - `railDrop.ts` is the tool rail's drop rules as plain functions: a band along each outer edge of the work area docks it, the canvas floats it, anywhere else (or Esc) puts it back where it was picked up. The rail keeps `tools.home` (the side it was last docked on) and a floating window keeps `back` (the side, group and place each panel came from), both optional in saved layouts. `railLocked()` and `panelsLocked()` in `dockDrag.ts` are the seam for the lock card.
 - **Right side** (`src/ui/RightDock.tsx`), chosen by preference (`src/ui/rightStyle.ts`): `inspector` (default),
   `rail` or `tabs`. The rail is a vertical labelled strip. In inspector mode, panels marked as sections (tool options,
   colours, palette, tileset, motion, effects, text, particles, camera, bones) show as one stack of foldable sections

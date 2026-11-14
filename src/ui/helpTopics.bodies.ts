@@ -567,7 +567,7 @@ Drag the title bar to move a window. Pull any edge or corner to resize it, or us
 
 ## Dock it again
 
-Drag a tab, or a whole window by its title bar, towards a side of the canvas. Bands light up to say **Dock left**, **Dock right**, **Dock at the top** and **Dock at the bottom**. Let go on one, or on another zone's tabs, to dock there. **Dock back** on the window's bar sends its panels home.
+Drag a tab, or a whole window by its title bar, towards a side of the canvas. Bands light up to say **Dock left**, **Dock right**, **Dock at the top** and **Dock at the bottom**. Let go on one, on another zone's tabs, or anywhere over a zone's panels, to dock there. **Dock back** on the window's bar sends its panels back to the side, group and place they came from. There is no list of sides in the tab's menu: dragging is the way, and the command search has them for the keyboard.
 
 ## Names
 
@@ -575,7 +575,7 @@ Right-click a tab and choose **Rename** to call a panel what you like. Double-cl
 
 ## The tools
 
-The tool strip has a small grip at its top. Drag it to float the tools, or onto a side of the canvas to put them there, even along the top or bottom. Right-click the strip for the same as a list. You can also drag tools into other groups, see [Arrange your tools](help:tool-arrange).
+The tool strip has a small grip at its top. Drag it to move the strip: [Move the tool strip](help:tool-move) says where it can go.
 
 ## Room to draw
 
@@ -606,13 +606,32 @@ Tilemap and camera layers are different jobs, so on those the strip shows only t
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider, so the group names show whole. Right-click the strip to move it to another side, or to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider, so the group names show whole. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
 
 ## One button per group
 
 If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
+  'tool-move': `Pick the tool strip up by the little grip at its top and carry it. Where it would land lights up as you go, and letting go puts it there. There's no menu to hunt through.
+
+## Where it can go
+
+- **Any side:** a band lights up along the left, the right, the top and the bottom of your work area. Let go on one and the strip docks there.
+- **Over the canvas:** the canvas gets an outline. Let go there and the strip floats where you let go, as a little window you can drag about.
+- **Back where it was:** the band for the side it came from says **Back on the left, as it was** (or whichever side it was). A floating strip you pick up can go back there too, with the same width and the same arrangement of tools.
+
+## Changed your mind?
+
+Let go anywhere that isn't a band or the canvas (over the panels, the top bar, or off the window) and the strip goes back to exactly where you picked it up. So does **Esc**. Nothing is left floating by accident.
+
+## Good to know
+
+- The strip's inner edge, the thin line beside the canvas, is for making it wider. Drag that to change the width, and the grip to move it. They don't get in each other's way.
+- With the keyboard: while it floats, press the arrow keys on the grip to nudge it. **Dock the tools back where they were** is in the command search, and so is every side.
+- Panels move the same way: drag a tab to a side, or out over the canvas for a window. See [Floating windows](help:floating-windows).
+
+See also [The tool strip](help:tool-strip) and [Change the tools](help:tool-builder).`,
   'tool-builder': `**Change the tools** lets you set the strip up the way you work: name your groups, make your own, put away the tools you never touch and fold a whole group into one button. Nothing is lost: every tool still has its key and its place in the command search.
 
 **Open it:** **View > Change the tools > Change the tools**, or right-click the strip, or search for it. A gold edge shows the strip is open for changes, and **Done** (or **Escape**) closes it.

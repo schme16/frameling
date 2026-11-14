@@ -1,8 +1,8 @@
 // The right-click menus of the dock (a panel's tab, a floating window's title, the tool rail) and the little name box,
 // as plain data, so the same lists serve the mouse and the keyboard (the menu key) and the commands.
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, moveFloatTo, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
-import { floatTitle, groupCount, groupTabs, MAX_GROUPS, ZONES, type DockZone, type ToolsPlace } from './dockModel';
+import { closeFloatWindow, dock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
+import { floatTitle, groupCount, groupTabs, MAX_GROUPS, toolsHome, type DockZone } from './dockModel';
 import { SPLIT_WORDS, ZONE_NAMES } from './dockDrag';
 import { createStore } from './mini';
 import { openHelp } from './overlays';
@@ -35,7 +35,7 @@ export function panelMenu(id: string, at: { x: number; y: number }): DockMenuIte
   const zone = here && 'zone' in here ? here.zone : null;
   const items: DockMenuItem[] = [{ heading: panelTitle(id, l) }];
   const group = here && 'zone' in here ? (here.group ?? 0) : 0;
-  for (const z of ZONES) items.push({ label: `Move to ${WHERE[z]}`, disabled: zone === z && group === 0, onClick: () => placePanel(id, { zone: z }) });
+  items.push({ label: 'To move it, drag its tab', onClick: () => openHelp('floating-windows') });
   if (zone) {
     // Groups stack inside a side: each with its own tabs.
     const words = SPLIT_WORDS[zone];
@@ -67,20 +67,18 @@ export function floatMenu(floatId: string, at: { x: number; y: number }): DockMe
   if (f.name) items.push({ label: 'Name it after its panel again', onClick: () => renameFloat(floatId, '') });
   items.push({ separator: true }, { label: 'Make it bigger', onClick: () => resizeFloatBy(floatId, 64, 48) }, { label: 'Make it smaller', onClick: () => resizeFloatBy(floatId, -64, -48) }, { label: 'Back to the usual size', onClick: () => resetFloatSize(floatId) });
   items.push({ separator: true }, { label: 'Dock back where it started', onClick: () => dockFloatBack(floatId) });
-  for (const z of ZONES) items.push({ label: `Dock all of it on ${WHERE[z]}`, onClick: () => moveFloatTo(floatId, { zone: z }) });
   items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });
   items.push({ label: 'What are windows?', onClick: () => openHelp('floating-windows') });
   return items;
 }
 
-/** Where the tool rail goes. */
+/** The tool rail: it is moved by dragging its grip, so one line says so (or, floating, puts it back on its side). */
 export function toolsMenu(): DockMenuItem[] {
-  const place = dock.get().layout.tools.place;
-  const to = (p: ToolsPlace) => () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined);
+  const l = dock.get().layout;
+  const home = toolsHome(l);
   return [
     { heading: 'Tools' },
-    ...ZONES.map((z): DockMenuItem => ({ label: `Dock on ${WHERE[z]}`, disabled: place === z, onClick: to(z) })),
-    { label: 'Float over the canvas', disabled: place === 'float', onClick: to('float') },
+    l.tools.place === 'float' ? { label: `Dock them back on ${WHERE[home]}`, onClick: () => placeTools(home) } : { label: 'To move them, drag the grip', onClick: () => openHelp('tool-strip') },
     { separator: true },
     { label: 'Change the tools...', onClick: () => setToolbarEditing(true) },
     { label: 'Put the tools back', disabled: !toolbarIsChanged(), onClick: putToolsBack },

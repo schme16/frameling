@@ -3,7 +3,7 @@
 import { getPanel, registerCommand, registerCommands } from '../core/registry';
 import { dock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
 import { SPLIT_WORDS } from './dockDrag';
-import { groupCount, groupTabs, MAX_GROUPS, ZONES, type DockZone, type ToolsPlace } from './dockModel';
+import { groupCount, groupTabs, MAX_GROUPS, toolsHome, ZONES, type DockZone, type ToolsPlace } from './dockModel';
 import { askRename } from './dockMenus';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
@@ -206,6 +206,17 @@ for (const p of [...ZONES, 'float'] as ToolsPlace[]) {
     run: () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined),
   });
 }
+
+registerCommand({
+  id: 'view.toolsHome',
+  label: 'Dock the tools back where they were',
+  category: 'View',
+  description: 'Put a floating tool strip back on the side it was last docked on. You can also drag its grip there.',
+  help: 'tool-strip',
+  keywords: ['tools', 'toolbar', 'strip', 'dock', 'float', 'back', 'return', 'undock', 'home'],
+  enabled: () => dock.get().layout.tools.place === 'float',
+  run: () => placeTools(toolsHome(dock.get().layout)),
+});
 
 registerCommand({
   id: 'view.toolGroupRename',

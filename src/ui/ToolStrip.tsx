@@ -367,7 +367,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       className="ui-tools-grip"
       aria-label="Move the tools. Arrow keys nudge them while they float."
       data-tip="Move the tools"
-      data-tip-desc="Drag to float them, or onto a side of the canvas to dock them there. Right-click for more."
+      data-tip-desc="Drag to dock them on any side, or onto the canvas to float them. Let go anywhere else and they go back. Right-click for more."
       data-help="tool-strip"
       onPointerDown={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
@@ -394,6 +394,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       ref={navRef}
       className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showNames && !sideways ? ' has-names' : ''} is-size-${size}`}
       aria-label="Tools"
+      data-place={place}
       style={pulled}
       aria-describedby="tool-rail-hint"
       data-help="tool-strip"

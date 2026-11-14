@@ -149,7 +149,7 @@ describe('names and the tool rail', () => {
     expect(l().tools.place).toBe('top');
     const ws = saveWorkspace('Tools up')!;
     placeTools('float', { x: 300, y: 200 });
-    expect(l().tools).toEqual({ place: 'float', x: 300, y: 200 });
+    expect(l().tools).toEqual({ place: 'float', x: 300, y: 200, home: 'top' });
     applyWorkspace(ws.id);
     expect(l().tools.place).toBe('top');
   });
