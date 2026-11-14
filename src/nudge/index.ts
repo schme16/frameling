@@ -83,7 +83,13 @@ function fresh(doc: Doc): boolean {
   return f;
 }
 
-const hasShapes = (doc: Doc): boolean => Object.values(doc.drawings).some((d) => d.kind === 'vector' && d.shapes.length > 0);
+const hasShapes = (doc: Doc): boolean => {
+  for (const id in doc.drawings) {
+    const d = doc.drawings[id];
+    if (d.kind === 'vector' && d.shapes.length > 0) return true;
+  }
+  return false;
+};
 
 // Which of the lines this drawing gets. Picked once per drawing, so the page says the same thing while you look at it
 // and something else on the next one, and so the canvas redrawing never makes it flicker.

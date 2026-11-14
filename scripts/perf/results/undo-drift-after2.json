@@ -1,0 +1,141 @@
+{
+ "label": "after2",
+ "when": "2026-11-14T22:13:37.423Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 143.6,
+   "runs": [
+    168.4,
+    143.4,
+    143.6,
+    182.8,
+    135.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 11.97,
+   "topSelf": [
+    [
+     "(program) :0",
+     108.7
+    ],
+    [
+     "xle index-C2H56yHM.js:142",
+     5.8
+    ],
+    [
+     "ep index-C2H56yHM.js:10",
+     3
+    ],
+    [
+     "Zf index-C2H56yHM.js:10",
+     1.5
+    ],
+    [
+     "(anon) index-C2H56yHM.js:166",
+     1.4
+    ],
+    [
+     "Ud index-C2H56yHM.js:9",
+     1.3
+    ],
+    [
+     "l index-C2H56yHM.js:9",
+     1.2
+    ],
+    [
+     "h index-C2H56yHM.js:9",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     108.7
+    ],
+    [
+     "(anon) index-C2H56yHM.js:9",
+     34.1
+    ],
+    [
+     "jd index-C2H56yHM.js:9",
+     27
+    ],
+    [
+     "Df index-C2H56yHM.js:9",
+     27
+    ],
+    [
+     "Sf index-C2H56yHM.js:9",
+     27
+    ],
+    [
+     "wf index-C2H56yHM.js:9",
+     27
+    ],
+    [
+     "Ud index-C2H56yHM.js:9",
+     18.6
+    ],
+    [
+     "Hd index-C2H56yHM.js:9",
+     18.6
+    ],
+    [
+     "nl index-C2H56yHM.js:9",
+     16.7
+    ],
+    [
+     "Fc index-C2H56yHM.js:9",
+     10.9
+    ],
+    [
+     "(anon) :0",
+     10.5
+    ],
+    [
+     "run debug-C2ctTOp-.js:10",
+     10.3
+    ],
+    [
+     "run index-C2H56yHM.js:10",
+     10.2
+    ],
+    [
+     "(anon) index-C2H56yHM.js:166",
+     9.7
+    ],
+    [
+     "afterHistory index-C2H56yHM.js:10",
+     9.7
+    ],
+    [
+     "emit index-C2H56yHM.js:10",
+     9.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
