@@ -82,6 +82,7 @@ Repaired, with a warning:
 - A symbol that can't be read is dropped (its instances then draw nothing).
 - Tiles with a bad or duplicate key, or no frame whose drawing is a pixel drawing of exactly the tile size, are
   dropped. A tileset with a tile size outside 1 to 1024 is dropped. An optional `gridX`/`gridY` (0 to tile size minus 1, where a tile edge sits from the stage corner) outside that range is dropped. `nextKey` is raised past the highest key.
+- Tile extras are all optional and checked on the way in, so an odd or hand-edited file still opens: a tile's `collision` keeps only boxes and polygons with real numbers, clamped to the tile, with at least three corners enclosing some area; a tile's `data` keeps only names the tileset's `dataLayers` lists, fitted to their type; a tile's `terrain` is dropped when its terrain doesn't exist, and edges that touch a terrain that doesn't exist are dropped. An unknown `terrainMode` is dropped (the default is `corners-and-sides`). `nextTerrain` is raised past the highest terrain id.
 - A sound whose bytes are missing, or with a duplicate id, is dropped.
 - A variation whose original is missing (or is itself a variation) is dropped with a warning. Inside its overrides,
   anything malformed is left out: unknown or badly typed properties in a patch, `__proto__` style keys, layers
@@ -409,8 +410,13 @@ See `docs/effects.md`.
   the same as the baked list (each end once, checked in the real engine).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
-- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys
+- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?, dataLayers?, terrains?, terrainMode?, nextTerrain?}`. `Tile`: `{key, name, frames: {drawingId, duration}[], collision?, data?, terrain?}`. Keys
   are never reused, so maps keep pointing at the right tile.
+  - `collision`: `{shapes, oneWay?}`; a shape is `{kind: 'box', x, y, w, h}` or `{kind: 'polygon', points}` in art pixels from the tile's top-left corner.
+  - `dataLayers`: `{name, type: 'bool' | 'int' | 'float' | 'string'}[]`, the named values every tile can carry; a tile's `data` is `{[name]: value}`.
+  - `terrains`: `{id, name, color}[]` (ids are never reused); `terrainMode`: `'corners-and-sides'` (the default, missing), `'corners'` or `'sides'`. A tile's `terrain` is `{id, bits?}`, where `bits` says which terrain touches each of `right`, `bottom-right`, `bottom`, `bottom-left`, `left`, `top-left`, `top`, `top-right`.
+  - While a tile is open for editing, these three live in the tile document's `ext['tiles.props']` and are written back with Done.
+  - The Godot export writes them as a physics layer, custom data layers and one terrain set (see `src/tiles/export.ts`).
 
 ### Clip flow (`f587827`)
 

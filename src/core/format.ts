@@ -564,6 +564,53 @@ export interface Tileset {
   tiles: Tile[];
   /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */
   nextKey: number;
+  /** The named values every tile can carry (damage, solid), each with one type. Tiles hold the values in `Tile.data`. Missing = none. */
+  dataLayers?: TileDataLayer[];
+  /** The terrains tiles can belong to (grass, water), for edges that pick themselves as you paint. Missing = none. */
+  terrains?: Terrain[];
+  /** What the terrains' edges are matched on: sides only, corners only, or both (missing = both, which is Godot's "corners and sides"). */
+  terrainMode?: TerrainMode;
+  /** The key the next new terrain gets (missing = one more than the highest). Ids are never reused. */
+  nextTerrain?: number;
+}
+
+/** The type of a custom value on tiles. */
+export type TileDataType = 'bool' | 'int' | 'float' | 'string';
+export type TileDataValue = boolean | number | string;
+
+export interface TileDataLayer {
+  name: string;
+  type: TileDataType;
+}
+
+export type TerrainMode = 'corners-and-sides' | 'corners' | 'sides';
+
+export interface Terrain {
+  /** Stays the same when terrains are deleted, so tiles keep pointing at the right one. */
+  id: number;
+  name: string;
+  /** Hex colour, how the terrain shows in the panel and in Godot's editor. */
+  color: string;
+}
+
+/** The eight neighbours of a square tile, clockwise from the right side. */
+export type PeeringBit = 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left' | 'top' | 'top-right';
+
+/** A shape a tile blocks things with, in art pixels from the tile's top-left corner. */
+export type TileShape = { kind: 'box'; x: number; y: number; w: number; h: number } | { kind: 'polygon'; points: { x: number; y: number }[] };
+
+export interface TileCollision {
+  shapes: TileShape[];
+  /** Solid only from above: things land on it but jump up through it (a platform). */
+  oneWay?: boolean;
+}
+
+/** Which terrain a tile belongs to, and which terrain sits against each of its sides and corners. */
+export interface TileTerrain {
+  /** The terrain the tile is made of. */
+  id: number;
+  /** For each side or corner that touches a terrain, which one (a side missing touches nothing). */
+  bits?: Partial<Record<PeeringBit, number>>;
 }
 
 export interface Tile {
@@ -572,6 +619,12 @@ export interface Tile {
   name: string;
   /** One frame for a still tile, more for an animated one (water, torches). Each is a pixel drawing in `drawings`. */
   frames: TileFrame[];
+  /** What the tile blocks (missing = nothing, the tile is only a picture). */
+  collision?: TileCollision;
+  /** Custom values by the name of a `Tileset.dataLayers` entry (missing = none set). */
+  data?: Record<string, TileDataValue>;
+  /** The terrain it belongs to and what its edges touch (missing = none). */
+  terrain?: TileTerrain;
 }
 
 export interface TileFrame {

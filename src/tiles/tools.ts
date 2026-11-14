@@ -12,6 +12,11 @@ import { pixelCanvas } from '../core/render';
 import { drawTileAt } from './map';
 import { store } from '../core/store';
 import { getHover, setLive } from '../canvas/controller';
+import { currentChoice, withChoice } from '../core/choices';
+import { AUTO_EDGES, type AutoEdgesChoice } from './choices';
+import { drawMapCollision } from './collisionView';
+import { changedBox, hasTerrainTiles, healCells } from './terrain';
+import { tileShapeTool } from './shapeTool';
 import { activeLayer, EDIT_HINTS, editActiveDrawing } from '../tools/edit';
 import { cellFlags, clampGrid, cellKey, cellLine, docToCell, fillCellRect, findTile, floodCells, getCell, makeCell, setCell, tileDrawingAt } from './model';
 import { setTileGrid } from './ops';
@@ -49,6 +54,16 @@ function brushValue(ctx: ToolContext): number {
   return makeCell(brush, flags);
 }
 
+/** Do edges pick themselves right now? */
+function autoEdgesOn(doc: Doc): boolean {
+  return hasTerrainTiles(doc.tileset) && currentChoice<AutoEdgesChoice>(AUTO_EDGES) === 'on';
+}
+
+/** The first time you paint with a terrain tile, say edges are being picked (with a Change button), and remember the answer. */
+function tellAboutEdges(doc: Doc, brush: number): void {
+  if (findTile(doc.tileset, brush)?.terrain) withChoice<AutoEdgesChoice>(AUTO_EDGES, () => undefined, { gently: true });
+}
+
 /** A map edit in progress: a private copy of the cells, shown live, committed as one step. */
 class MapSession {
   readonly columns: number;
@@ -56,6 +71,11 @@ class MapSession {
   readonly cells: Uint32Array;
   private base: TilemapDrawing | null;
   changed = false;
+  /** Edges pick themselves (the tileset has terrains and the choice is on). */
+  readonly auto: boolean;
+  private readonly original: Uint32Array;
+  /** The slots set since the edges were last picked. */
+  private pending: { x0: number; y0: number; x1: number; y1: number } | null = null;
 
   constructor(
     readonly doc: Doc,
@@ -75,6 +95,8 @@ class MapSession {
       this.rows = g.rows;
       this.cells = new Uint32Array(g.columns * g.rows);
     }
+    this.original = new Uint32Array(this.cells);
+    this.auto = autoEdgesOn(doc);
   }
 
   cell(x: number, y: number) {
@@ -82,17 +104,30 @@ class MapSession {
   }
 
   set(x: number, y: number, v: number): void {
-    if (setCell(this.cells, this.columns, this.rows, x, y, v)) this.changed = true;
+    if (!setCell(this.cells, this.columns, this.rows, x, y, v)) return;
+    this.changed = true;
+    const p = this.pending;
+    this.pending = p ? { x0: Math.min(p.x0, x), y0: Math.min(p.y0, y), x1: Math.max(p.x1, x), y1: Math.max(p.y1, y) } : { x0: x, y0: y, x1: x, y1: y };
+  }
+
+  /** Picks the edge and corner tiles around what was just painted. */
+  private heal(box: { x0: number; y0: number; x1: number; y1: number } | null): void {
+    if (!this.auto || !box) return;
+    healCells(this.cells, this.columns, this.rows, this.doc.tileset!, box.x0 - 1, box.y0 - 1, box.x1 + 1, box.y1 + 1);
   }
 
   /** Shows the cells as they are now. A fresh array each time, so the map's bitmap knows what changed. */
   flush(): void {
+    this.heal(this.pending);
+    this.pending = null;
     setLive({ layerId: this.layer.id, kind: 'tilemap', drawing: { id: this.base?.id ?? `live-${this.layer.id}`, kind: 'tilemap', columns: this.columns, rows: this.rows, cells: new Uint32Array(this.cells) } });
   }
 
   commit(label: string, ctx: ToolContext): void {
     setLive(null);
     if (!this.changed) return;
+    // Rectangles and fills change slots without `set`: find what changed and pick the edges around it.
+    if (this.auto) this.heal(changedBox(this.original, this.cells, this.columns));
     const cells = this.cells;
     const { columns, rows } = this;
     const r = editActiveDrawing(label, 'tilemap', (d) => {
@@ -205,6 +240,7 @@ function paintTool(erase: boolean): Tool {
       value = erase ? 0 : brushValue(ctx);
       if (!erase && !value) return;
       const { doc, ui } = store().get();
+      if (!erase) tellAboutEdges(doc, cellKey(value));
       s = new MapSession(doc, layer, ui.frame);
       const here = s.cell(e.x, e.y);
       // Shift+click: a straight line from where the last stroke ended.
@@ -261,6 +297,7 @@ export const tileRectTool: Tool = {
     const value = e.alt ? 0 : brushValue(ctx);
     if (!e.alt && !value) return;
     const { doc, ui } = store().get();
+    if (value) tellAboutEdges(doc, cellKey(value));
     const s = new MapSession(doc, layer, ui.frame);
     rect = { s, from: s.cell(e.x, e.y), value };
   },
@@ -302,6 +339,7 @@ export const tileFillTool: Tool = {
     const value = brushValue(ctx);
     if (!value) return;
     const { doc, ui } = store().get();
+    tellAboutEdges(doc, cellKey(value));
     const s = new MapSession(doc, layer, ui.frame);
     const c = s.cell(e.x, e.y);
     if (c.x < 0 || c.y < 0 || c.x >= s.columns || c.y >= s.rows) return ctx.hint('Click inside the map to fill.');
@@ -441,6 +479,7 @@ function withGridHandle(tool: Tool): Tool {
       tool.overlay?.(g, ctx);
       overlayCtx = ctx;
       const h = handleLayer();
+      if (h && getTileUi().showShapes) for (const l of h.doc.layers) if (l.kind === 'tilemap' && l.visible) drawMapCollision(g, h.doc, l, store().get().ui.frame, ctx.zoom);
       if (!h || (!gridDrag && !handleOn())) return;
       const { doc, layer } = h;
       const ps = layer.pixelSize;
@@ -473,4 +512,4 @@ function withGridHandle(tool: Tool): Tool {
   };
 }
 
-export const tileTools: Tool[] = [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool].map(withGridHandle);
+export const tileTools: Tool[] = [...[tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool].map(withGridHandle), tileShapeTool];

@@ -8,6 +8,7 @@ import { findTile, tileDrawingAt } from './model';
 import * as ops from './ops';
 import { getTileUi, setTileUi, useTileUi } from './state';
 import { TileThumb } from './TileThumb';
+import { TileProps } from './TileProps';
 import './tiles.css';
 
 const run = (id: string) => void getCommand(id)?.run();
@@ -130,7 +131,7 @@ export function TilesetPanel() {
                 aria-selected={t.key === chosen}
                 tabIndex={0}
                 className={`tz-tile${t.key === chosen ? ' is-chosen' : ''}${t.key === editing ? ' is-editing' : ''}${mark ? ' is-drop' : ''}`}
-                title={`${t.name}${t.frames.length > 1 ? ` (${t.frames.length} frames)` : ''}. Click to paint with it, double-click to draw it.`}
+                title={`${t.name}${t.frames.length > 1 ? ` (${t.frames.length} frames)` : ''}${t.collision?.shapes.length ? ', blocks things' : ''}${t.terrain ? ', part of a terrain' : ''}. Click to paint with it, double-click to draw it.`}
                 draggable={renaming !== t.key}
                 onClick={() => ops.pickTile(t.key)}
                 onDoubleClick={() => ops.editTile(t.key)}
@@ -163,6 +164,12 @@ export function TilesetPanel() {
                 onDragEnd={() => setDrag(null)}
               >
                 <TileThumb drawing={d} size={48} label={t.name} />
+                {!!(t.collision?.shapes.length || t.terrain) && (
+                  <span className="tz-mark" aria-hidden="true">
+                    {t.collision?.shapes.length ? <i title="Blocks things" /> : null}
+                    {t.terrain ? <i className="is-terrain" style={{ background: ts?.terrains?.find((x) => x.id === t.terrain!.id)?.color }} /> : null}
+                  </span>
+                )}
                 {renaming === t.key ? (
                   <input
                     className="tz-name-input"
@@ -208,6 +215,7 @@ export function TilesetPanel() {
           <ActionButton onClick={() => run('tiles.addLayer')}>Add a tilemap layer</ActionButton>
         </div>
       )}
+      {tiles.length > 0 && <TileProps doc={doc} tile={findTile(ts, editing || chosen)} />}
       {tiles.length > 0 && (
         <Tip stays>
           Click a tile to paint with it. Double-click to draw it. Drag to reorder.{' '}

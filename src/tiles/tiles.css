@@ -209,3 +209,160 @@
   background: repeating-conic-gradient(var(--line-soft) 0 25%, transparent 0 50%) 0 0 / 8px 8px;
   border-radius: 4px;
 }
+
+/* The picked tile's collision, values and terrain. */
+.tz-props {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.tz-props-title {
+  font-size: var(--fs-small);
+}
+.tz-sec {
+  border-radius: var(--radius-small);
+  background: var(--raised);
+}
+.tz-sec > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.tz-sec > summary small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.tz-sec-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 8px 8px;
+}
+.tz-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tz-check {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: var(--fs-small);
+}
+.tz-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-small);
+}
+.tz-field select {
+  flex: 1;
+  max-width: 60%;
+}
+.tz-value-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tz-value-input {
+  width: 96px;
+}
+.tz-value-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.tz-value-edit input {
+  flex: 1;
+  min-width: 80px;
+}
+.tz-terrains {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tz-terrain {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  border: 2px solid transparent;
+}
+.tz-terrain.is-chosen {
+  border-color: var(--chosen-bg);
+}
+.tz-terrain input[type='color'] {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: none;
+}
+.tz-terrain-name {
+  flex: 1;
+  min-width: 0;
+}
+.tz-edges {
+  display: grid;
+  grid-template-columns: repeat(3, 30px);
+  grid-template-rows: repeat(3, 30px);
+  gap: 3px;
+  align-self: center;
+  padding: 4px;
+}
+.tz-edge {
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.tz-edge.is-corner {
+  border-radius: 50%;
+}
+.tz-edge.is-on {
+  border-style: solid;
+  border-color: var(--text);
+}
+.tz-edge:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.tz-edge:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.tz-edge-centre {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+}
+.tz-mark {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  gap: 2px;
+}
+.tz-mark i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1.5px solid #ff4d7a;
+  background: rgba(255, 77, 122, 0.35);
+}
+.tz-mark i.is-terrain {
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}

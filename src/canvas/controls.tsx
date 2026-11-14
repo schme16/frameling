@@ -184,9 +184,9 @@ export function Tip({ children, stays }: { children: ReactNode; stays?: boolean 
   return stays ? <p className="cv-tip">{words}</p> : <Explainer>{words}</Explainer>;
 }
 
-export function ActionButton({ children, onClick, disabled, title }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {
+export function ActionButton({ children, onClick, disabled, title, pressed }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
   return (
-    <button type="button" className="cv-action" onClick={onClick} disabled={disabled} title={title}>
+    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed}>
       {children}
     </button>
   );
