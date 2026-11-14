@@ -4,6 +4,7 @@
 //   npm run help:media -- --only select,tour     just those names (base names, as a topic's `media` says, no extension)
 //   npm run help:media -- --theme light          one theme only
 //   npm run help:media -- --list                 print the names and what each makes
+//   [--entries <dir>]                            capture the entries of another folder (a before/after look) instead of scripts/docs/help
 //   [--renderer <dir>]  [--out <dir>]            a private `vite build --outDir`; write somewhere other than public/help
 //
 // Run it inside xvfb, never on the desktop: SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron ...
@@ -44,6 +45,7 @@ const flag = (name) => {
 };
 const rendererDir = opt('renderer', path.join(root, 'dist/renderer'));
 const outDir = opt('out', path.join(root, 'public/help'));
+const entriesDir = opt('entries', path.join(__dirname, 'help'));
 const onlyArg = opt('only', '');
 const only = onlyArg ? onlyArg.split(',') : null;
 const themeArg = opt('theme', 'both');
@@ -54,7 +56,7 @@ const DEFAULT_THEME = { dark: 'midnight-sketchbook', light: 'paper-and-honey' };
 
 /** Every entry from scripts/docs/help/*.cjs, with the file it came from. */
 function loadEntries() {
-  const dir = path.join(__dirname, 'help');
+  const dir = path.resolve(entriesDir);
   const out = [];
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.cjs') && !x.startsWith('_')).sort()) {
     for (const e of require(path.join(dir, f))) out.push({ ...e, file: f });

@@ -48,17 +48,22 @@ export function sizeBoxTo(b: Rect, w: number | null, h: number | null, keep: boo
   return scaleAbout(sx, sy, b.x, b.y);
 }
 
-/** Turns the box by some degrees (clockwise, as the Turn handle does) about its middle. */
-export function turnBoxBy(b: Rect, degrees: number): Matrix | null {
+/** Turns the box by some degrees (clockwise, as the Turn handle does) about its middle, or about `pivot` (the Transform tool's own point). */
+export function turnBoxBy(b: Rect, degrees: number, pivot?: { x: number; y: number }): Matrix | null {
   if (!Number.isFinite(degrees) || same(degrees % 360, 0)) return null;
-  return rotateAbout((degrees * Math.PI) / 180, b.x + b.w / 2, b.y + b.h / 2);
+  const c = pivot ?? { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+  return rotateAbout((degrees * Math.PI) / 180, c.x, c.y);
 }
 
-/** Slants the box sideways by some degrees about its middle (the top goes left and the bottom right for a positive number, as a symbol's Slant does). */
-export function slantBoxBy(b: Rect, degrees: number): Matrix | null {
+/**
+ * Slants the box sideways by some degrees about its middle, or about `pivot` (the top goes left and the bottom right for a
+ * positive number, as a symbol's Slant does). `axis: 'y'` slants up and down instead: the right side goes down.
+ */
+export function slantBoxBy(b: Rect, degrees: number, pivot?: { x: number; y: number }, axis: 'x' | 'y' = 'x'): Matrix | null {
   if (!Number.isFinite(degrees) || same(degrees, 0)) return null;
   const k = Math.tan((Math.max(-MAX_SLANT, Math.min(MAX_SLANT, degrees)) * Math.PI) / 180);
-  return about([1, 0, k, 1, 0, 0], b.x + b.w / 2, b.y + b.h / 2);
+  const c = pivot ?? { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+  return about(axis === 'x' ? [1, 0, k, 1, 0, 0] : [1, k, 0, 1, 0, 0], c.x, c.y);
 }
 
 // ---------------------------------------------------------------- pixels

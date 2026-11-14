@@ -22,6 +22,7 @@ import {
   PIXEL_SELECT_TOOL,
   pixelSelection,
   setPixelSelection,
+  shownSelection,
 } from './pixel-state';
 import { clingReach, getSelectSettings } from './settings';
 import { MagneticTrace, PixelEdges, pixelSource } from './magnetic';
@@ -353,7 +354,7 @@ function antsPath(m: Mask, size: number): Path2D {
 }
 
 addStageOverlay((gx, zoom) => {
-  const m = pixelSelection();
+  const m = shownSelection();
   const a = activePixelGrid();
   if (!m || !a || typeof Path2D === 'undefined') return;
   const path = antsPath(m, a.layer.pixelSize);

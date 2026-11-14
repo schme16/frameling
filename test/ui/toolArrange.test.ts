@@ -11,7 +11,7 @@ const PLACES: Record<string, string[]> = {
   extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray'],
   shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
   // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
-  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'points', 'pen', 'slice'],
+  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'transform', 'points', 'pen', 'slice'],
   rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
   view: ['hand', 'zoom', 'camera', 'artboard'],
 };
