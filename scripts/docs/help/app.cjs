@@ -170,6 +170,19 @@ const entries = [
       ...shotOf('.ui-choice', null, 16),
     ],
   },
+  // The tightened layout on a 1280 x 720 screen (the capture window is that size, and told it is that screen).
+  {
+    name: 'small-screens',
+    prefs: CALM,
+    size: [1280, 720],
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.fit.consider({ id: 7, width: 1280, height: 720, scaleFactor: 1, workWidth: 1280, workHeight: 720 })`),
+      wait(1200),
+      ...settle,
+      { shot: '@' },
+    ],
+  },
   // Preferences, General: the top of the page (mode, theme, look).
   {
     name: 'look-and-feel',
