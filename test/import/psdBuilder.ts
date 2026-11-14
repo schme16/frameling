@@ -238,3 +238,120 @@ export function solid(w: number, h: number, r: number, g: number, b: number, a =
     { id: 2, plane: f(b), compression },
   ];
 }
+
+// ---------------------------------------------------------------- type layers
+
+const enc = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 255);
+const cat = (...parts: Uint8Array[]): Uint8Array => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0;
+  for (const p of parts) (out.set(p, o), (o += p.length));
+  return out;
+};
+const be32 = (n: number) => new Uint8Array([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]);
+const be16 = (n: number) => new Uint8Array([(n >> 8) & 255, n & 255]);
+const f64 = (n: number) => {
+  const b = new Uint8Array(8);
+  new DataView(b.buffer).setFloat64(0, n);
+  return b;
+};
+const utf16be = (s: string) => {
+  const b = new Uint8Array(s.length * 2);
+  for (let i = 0; i < s.length; i++) (b[i * 2] = s.charCodeAt(i) >> 8), (b[i * 2 + 1] = s.charCodeAt(i) & 255);
+  return b;
+};
+/** A 4 character code, or a length-prefixed name. */
+const key4 = (k: string) => (k.length === 4 ? cat(be32(0), enc(k)) : cat(be32(k.length), enc(k)));
+const descriptor = (items: [string, Uint8Array][]) => cat(be32(0), key4('TxLr'), be32(items.length), ...items.map(([k, v]) => cat(key4(k), v)));
+const vText = (s: string) => cat(enc('TEXT'), be32(s.length + 1), utf16be(s + '\0'));
+const vEnum = (t: string, v: string) => cat(enc('enum'), key4(t), key4(v));
+const vTdta = (b: Uint8Array) => cat(enc('tdta'), be32(b.length), b);
+
+/** A string as the engine data keeps it: UTF-16 with a byte order mark, in parentheses. */
+const engineString = (s: string) => {
+  let out = '(þÿ';
+  for (const ch of s) {
+    const c = ch.charCodeAt(0);
+    for (const b of [c >> 8, c & 255]) out += [40, 41, 92].includes(b) ? '\\' + String.fromCharCode(b) : String.fromCharCode(b);
+  }
+  return out + ')';
+};
+
+export interface TypeRun {
+  /** How many characters of the text this run covers. */
+  length: number;
+  /** The style sheet body, e.g. `/Font 0 /FontSize 20 /FillColor << /Type 1 /Values [ 1 1 0 0 ] >>`. */
+  style: string;
+}
+
+export interface TypeOptions {
+  /** The text, with `\r` between paragraphs (Photoshop ends the last one with a `\r` too). */
+  text?: string;
+  /** xx, xy, yx, yy, tx, ty. */
+  transform?: number[];
+  /** 0 point text, 1 paragraph text (with a box). */
+  shapeType?: 0 | 1;
+  box?: number[];
+  /** 0 left, 1 right, 2 centre, 3 and up justified. */
+  justification?: number;
+  warp?: boolean;
+  vertical?: boolean;
+  /** Fonts by index, as PostScript names. */
+  fonts?: string[];
+  runs?: TypeRun[];
+  /** Leave the engine data out, the way a damaged block would. */
+  noEngine?: boolean;
+}
+
+/** The bytes of a real `TySh` block: a transform, the text descriptor with its engine data, and the warp descriptor. */
+export function typeBlock(o: TypeOptions = {}): Uint8Array {
+  const text = o.text ?? 'Hello\rWorld\r';
+  const fonts = o.fonts ?? ['Montserrat-SemiBold', 'SomeCustomFont-Italic'];
+  const runs = o.runs ?? [
+    { length: 6, style: '/Font 0 /FontSize 20 /FillColor << /Type 1 /Values [ 1 1 0 0 ] >>' },
+    { length: 6, style: '/Font 1 /FontSize 30 /FauxBold true /Tracking 100 /Underline true /FillColor << /Type 1 /Values [ 1 0 0 1 ] >>' },
+  ];
+  const engine = `
+/EngineDict <<
+  /Editor << /Text ${engineString(text)} >>
+  /ParagraphRun << /RunArray [ << /ParagraphSheet << /Properties << /Justification ${o.justification ?? 0} >> >> >> ] /RunLengthArray [ ${text.length} ] >>
+  /StyleRun << /RunArray [ ${runs.map((r) => `<< /StyleSheet << /StyleSheetData << ${r.style} >> >> >>`).join(' ')} ] /RunLengthArray [ ${runs.map((r) => r.length).join(' ')} ] >>
+  /Rendered << /Shapes << /Children [ << /ShapeType ${o.shapeType ?? 0} /Cookie << /Photoshop << /BoxBounds [ ${(o.box ?? [0, 0, 0, 0]).join(' ')} ] >> >> >> ] >> >>
+>>
+/ResourceDict <<
+  /FontSet [ ${fonts.map((f) => `<< /Name ${engineString(f)} >>`).join(' ')} ]
+  /StyleSheetSet [ << /Name ${engineString('Normal')} /StyleSheetData << /Font 0 /FontSize 12 /AutoLeading true /Tracking 0 /FillColor << /Type 1 /Values [ 1 0 0 0 ] >> >> >> ]
+  /TheNormalStyleSheet 0
+>>
+`;
+  const main = descriptor([
+    ['Txt ', vText(text)],
+    ...(o.noEngine ? [] : ([['EngineData', vTdta(enc(engine))]] as [string, Uint8Array][])),
+    ['Ornt', vEnum('Ornt', o.vertical ? 'Vrtc' : 'Hrzn')],
+  ]);
+  const warp = descriptor([['warpStyle', vEnum('warpStyle', o.warp ? 'warpArc' : 'warpNone')]]);
+  const t = o.transform ?? [1, 0, 0, 1, 10, 20];
+  return cat(be16(1), ...t.map(f64), be16(50), be32(16), main, be16(1), be32(16), warp, ...[0, 0, 100, 40].map(f64));
+}
+
+/** A style sheet body for one run: font index, size, and the usual extras. */
+export function runStyle(o: { font?: number; size: number; color?: [number, number, number]; tracking?: number; leading?: number; fauxBold?: boolean; underline?: boolean; strike?: boolean; caps?: number }): string {
+  const [r, g, b] = o.color ?? [0, 0, 0];
+  return [
+    `/Font ${o.font ?? 0} /FontSize ${o.size}`,
+    o.leading ? `/AutoLeading false /Leading ${o.leading}` : '',
+    o.tracking ? `/Tracking ${o.tracking}` : '',
+    o.fauxBold ? '/FauxBold true' : '',
+    o.underline ? '/Underline true' : '',
+    o.strike ? '/Strikethrough true' : '',
+    o.caps ? `/FontCaps ${o.caps}` : '',
+    `/FillColor << /Type 1 /Values [ 1 ${r} ${g} ${b} ] >>`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** A text layer: its picture is a flat block (what Photoshop shows when the type is not read), its type block is real. */
+export function typeLayer(name: string, o: TypeOptions, extra: Partial<TestLayer> = {}): TestLayer {
+  return { name, top: 4, left: 8, bottom: 6, right: 12, channels: solid(4, 2, 0, 0, 255), tags: [{ key: 'TySh', data: typeBlock(o) }], ...extra };
+}

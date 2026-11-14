@@ -36,6 +36,14 @@ export function systemFonts(): string[] {
   return found;
 }
 
+let probe: OffscreenCanvasRenderingContext2D | null | undefined;
+
+/** Is this one font installed here? Works in a plain browser tab too (the page can only see what the browser can draw). */
+export function fontLooksInstalled(family: string): boolean {
+  if (probe === undefined) probe = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(4, 4).getContext('2d') : null;
+  return probe ? installed(probe, family) : false;
+}
+
 /** Load the shipped fonts before anything draws with them, then redraw text measured with a fallback. */
 export function preloadFonts(onReady: () => void): void {
   if (typeof document === 'undefined' || !document.fonts?.load) return;

@@ -105,6 +105,14 @@ export function centreOn(p: Pieces, stage: Stage): { pieces: Pieces; cutOff: boo
   const drawings: Record<Id, Drawing> = {};
   let cutOff = p.width > stage.width || p.height > stage.height;
   const layers = p.layers.map((l) => {
+    if (l.kind === 'vector') {
+      // Vector layers (text from a layered file) move with the picture: the same shift, shapes and all.
+      for (const c of l.cels) {
+        const v = p.drawings[c.drawingId];
+        if (v?.kind === 'vector') drawings[v.id] = { ...v, shapes: v.shapes.map((sh) => mapShape(sh, 1, dx, dy)) };
+      }
+      return l;
+    }
     if (l.kind !== 'pixel') return l;
     const cels: Cel[] = [];
     for (const c of l.cels) {

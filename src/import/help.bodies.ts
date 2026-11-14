@@ -28,35 +28,21 @@ To go the other way, see [Exporting](help:exporting).`,
 **Bring one in:** choose **File > Import > SVG or logo...**, or open it with **File > Open**, or drag it onto the window. An **.svgz** (a packed SVG) works too.
 
 **What comes across:**
-- Paths, rectangles, circles, ellipses, lines and polygons, with fills, outlines, line ends and corners.
-- Linear and radial gradients.
-- Groups, kept as groups that select and move together.
-- Inkscape layers and Illustrator layers, kept as layers with their names. Hidden ones stay hidden.
-- Moves, turns, scales and skews, built into the shapes.
-- Colours written any way (names, #hex, rgb, hsl) and styles from the file's own style sheet, which is how Illustrator writes them.
-- Text, as text you can still edit.
-
-**What it can't carry, and says so:** filters (blurs and shadows), masks, clipping paths, pattern fills (they come in grey), pictures inside the SVG, arrowheads and other line markers, dashed lines (they come in solid) and animation inside the file. After the import, a message says **See what was left out** and lists each kind with how many there were. The shapes themselves still come in.
-
-Good to know:
-- It comes in the size it was drawn. Added to an open drawing, it sits in the middle, and is made smaller if it wouldn't fit.
-- Text uses the font name from the file. If this computer doesn't have that font, another shows in its place.
-- The first time you bring one in while the drawing already has something on it, Frameling asks whether to add it to this drawing or open it as a new one, then remembers. Change it any time in **Preferences > Behaviour**.
-- A file that isn't an SVG, or is damaged, gives a plain message saying why and changes nothing.
-
-Going the other way? See [Exporting](help:exporting).`,
-
-  'import-layered': `A layered Photoshop (**.psd**) or OpenRaster (**.ora**) file opens with every layer on its own, so nothing is flattened. Krita, GIMP and MyPaint write .ora, and Krita and Procreate can export .psd. Frameling's own **Export Photoshop layers (PSD)** comes back in the same way.
-
-**Open one:** choose **File > Open** and pick the file, drag it onto the window, or choose **File > Import > Layered file (Photoshop, OpenRaster)...** to add its layers to the drawing you have open.
-
-**What comes across:**
 - Every picture layer, as a pixel layer, with its name, order, opacity, blend mode and whether it is showing.
+- **Photoshop text, as text you can still edit.** Each text layer becomes a text layer with its words, font, size, colour, letter spacing, line spacing and alignment, sitting where it was. Click it with the **Text** tool to change the words.
 - Groups, as layer folders, with their own opacity and blend mode.
 - Clipping (a layer that only shows where the one under it does), and layer masks, which are applied to the picture.
 - Layers that hang over the edge of the picture are cut at the edge.
 
-**What can't, and is said:** adjustment layers (levels, curves and the like), layer styles (shadows, glows, strokes), and blend modes Frameling doesn't have (they come in as normal). Text layers, smart objects and shape layers come in as pictures of what they show, so the words and shapes can't be edited. A message says **See what was left out** and names the layers.
+**If a font isn't on your computer,** the text isn't dropped. It uses the nearest font you do have (a serif for a serif, a typewriter font for a typewriter font, otherwise **Inter**), and the list says which font was missing. Install it, then pick it in the **Text** panel to get the look back.
+
+**What can't, and is said:**
+- A Frameling text has one look for all its words, so words in mixed fonts, sizes or colours use the longest part's look. Underline, strikethrough, small capitals and fully justified text aren't there either. All capitals are typed out as capitals.
+- Text in a box is broken into lines where the box broke it, since Frameling text has no box.
+- Warped text, text running top to bottom or along a line, and text under a layer mask come in as a picture of the words.
+- Adjustment layers (levels, curves and the like), layer styles (shadows, glows, strokes), and blend modes Frameling doesn't have (they come in as normal). Smart objects and shape layers come in as pictures of what they show.
+
+A message says **See what was left out** and names the layers.
 
 Good to know:
 - RGB and greyscale files, in 8 or 16 bits, are read. For CMYK, use Image > Mode > RGB Color in Photoshop first. Frameling tells you if that's the case.

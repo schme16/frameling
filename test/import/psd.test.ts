@@ -179,7 +179,7 @@ describe('what a PSD has that does not come across', () => {
     const s = f.left.join('\n');
     expect(s).toMatch(/2 adjustment layers \("Levels 1", "Curves 1"\)/);
     expect(s).toMatch(/1 fill layer \("Colour fill"\)/);
-    expect(s).toMatch(/1 text layer \("Title"\) came in as a picture/);
+    expect(s).toMatch(/1 text layer \("Title"\) has text settings Frameling couldn't read, so it came in as a picture of the words/);
     expect(s).toMatch(/1 smart object \("Logo"\) came in as a picture/);
     expect(s).toMatch(/Layer styles .* on 1 layer \("Glow"\)/);
     expect(s).toMatch(/1 shape layer or vector mask \("Shape 1"\)/);
@@ -304,7 +304,9 @@ describe('the scene the help pictures open', async () => {
     expect(raster(f.nodes[1])).toMatchObject({ blend: 'multiply' });
     expect(raster(f.nodes[1]).opacity).toBeCloseTo(0.6, 2);
     expect(f.left.join(' ')).toMatch(/1 adjustment layer \("Levels 1"\)/);
-    expect(f.left.join(' ')).toMatch(/1 text layer \("Title"\)/);
+    // The title is real text, not a picture of the words (these tests have no font folders, so the list may name the font).
+    expect(f.nodes[3]).toMatchObject({ type: 'text', text: 'SLIME TIME', color: '#ffffff' });
+    expect(f.left.join(' ')).not.toMatch(/picture of the words/);
   });
 
   it('reads as an OpenRaster file with the same layers', async () => {

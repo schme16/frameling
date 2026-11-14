@@ -9,7 +9,7 @@ import { strToU8, zipSync } from 'fflate';
 import fs from 'node:fs';
 import path from 'node:path';
 import { encodePng } from '../../src/io/png';
-import { buildPsd, type TestLayer } from '../../test/import/psdBuilder';
+import { buildPsd, runStyle, typeBlock, type TestLayer } from '../../test/import/psdBuilder';
 
 const W = 192;
 const H = 120;
@@ -59,13 +59,15 @@ interface Piece {
   psdBlend?: string;
   oraOp?: string;
   tags?: string[];
+  /** Real data for a `TySh` tag (a text layer that comes in as words). */
+  tysh?: Uint8Array;
 }
 const pieces: Record<string, Piece> = {
   sky: { name: 'Sky', rgba: sky, opacity: 1 },
   hills: { name: 'Hills', rgba: hills, opacity: 1 },
   shadow: { name: 'Shadow', rgba: shadow, opacity: 0.6, psdBlend: 'mul ', oraOp: 'svg:multiply' },
   hero: { name: 'Hero', rgba: hero, opacity: 1 },
-  title: { name: 'Title', rgba: title, opacity: 1, tags: ['TySh'] },
+  title: { name: 'Title', rgba: title, opacity: 1, tags: ['TySh'], tysh: typeBlock({ text: 'SLIME TIME\r', transform: [1, 0, 0, 1, 36, 30], fonts: ['DejaVuSans-Bold'], runs: [{ length: 11, style: runStyle({ size: 17, color: [1, 1, 1], tracking: 40 }) }] }) },
 };
 
 /** The smallest box with any picture in it. */
@@ -87,7 +89,7 @@ function psdLayer(p: Piece): TestLayer {
   const b = bounds(p.rgba);
   const px = crop(p.rgba, b);
   const plane = (c: number) => Uint8Array.from({ length: b.w * b.h }, (_, i) => px[i * 4 + c]);
-  return { name: p.name, top: b.y, left: b.x, bottom: b.y + b.h, right: b.x + b.w, opacity: Math.round(p.opacity * 255), blend: p.psdBlend, tags: p.tags?.map((key) => ({ key })), channels: [{ id: -1, plane: plane(3) }, { id: 0, plane: plane(0) }, { id: 1, plane: plane(1) }, { id: 2, plane: plane(2) }] };
+  return { name: p.name, top: b.y, left: b.x, bottom: b.y + b.h, right: b.x + b.w, opacity: Math.round(p.opacity * 255), blend: p.psdBlend, tags: p.tags?.map((key) => ({ key, ...(key === 'TySh' && p.tysh ? { data: p.tysh } : {}) })), channels: [{ id: -1, plane: plane(3) }, { id: 0, plane: plane(0) }, { id: 1, plane: plane(1) }, { id: 2, plane: plane(2) }] };
 }
 
 const outDir = path.join(process.cwd(), 'scripts/docs/help/assets');
