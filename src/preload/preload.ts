@@ -82,6 +82,18 @@ const api: FramelingApi = {
   },
   beta: { request: (req) => call('beta:request', req) },
   clipboard: { readPicture: () => call('clipboard:readPicture'), writePicture: (png) => call('clipboard:writePicture', png), writeText: (text) => call('clipboard:writeText', text) },
+  update: {
+    facts: () => call('update:facts'),
+    releases: () => call('update:releases'),
+    install: (tag) => call('update:install', tag),
+    openPage: (url) => call('update:openPage', url),
+    finish: () => call('update:finish'),
+    onProgress: (handler) => {
+      const fn = (_: unknown, pct: number) => handler(pct);
+      ipcRenderer.on('update:progress', fn);
+      return () => void ipcRenderer.removeListener('update:progress', fn);
+    },
+  },
   gpu: { report: () => call('gpu:report'), setHardware: (on) => call('gpu:setHardware', on), restart: () => call('gpu:restart') },
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.

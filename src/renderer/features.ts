@@ -20,11 +20,14 @@ import '../quests';
 import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';
+import { installUpdates } from '../update';
 import { registerFeatures } from '../features/host';
 import { startRememberingUi } from '../tools/rememberUi';
 
 // Beta reports: a panel and a command. Nothing is sent without the person pressing Send.
 installBeta();
+// New versions: a quiet check of this project's releases, an offer, and a command. Nothing is downloaded until you press Update now.
+installUpdates();
 import '../features/sync';
 import { audioFeature } from '../audio';
 import { cameraFeature } from '../camera';

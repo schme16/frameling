@@ -80,7 +80,7 @@ describe('the index keeps up with the pages', () => {
     workspaces: ['src/ui/WorkspacesPage.tsx'],
     plugins: ['src/plugins/PluginsPage.tsx'],
     features: ['src/features/FeaturesPage.tsx'],
-    diagnostics: ['src/tablet/check/DiagnosticsPage.tsx', 'src/beta/BetaPanel.tsx', 'src/plugins/DiagnosticsSwitch.tsx'],
+    diagnostics: ['src/tablet/check/DiagnosticsPage.tsx', 'src/beta/BetaPanel.tsx', 'src/update/UpdatePanel.tsx', 'src/plugins/DiagnosticsSwitch.tsx'],
     behaviour: ['src/ui/ChoiceDialog.tsx'],
   };
   it('has a row for every labelled row on the pages', () => {

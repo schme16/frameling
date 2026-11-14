@@ -4,6 +4,7 @@ import { QuillSays } from '../../ui/mascot';
 import { line } from '../../ui/mascot/lines';
 import { DiagnosticsSwitch } from '../../plugins/DiagnosticsSwitch';
 import { BetaPanel } from '../../beta/BetaPanel';
+import { UpdatePanel } from '../../update/UpdatePanel';
 import { checkMemory, startPenCheck } from './state';
 import '../tablet.css';
 
@@ -15,6 +16,8 @@ export function DiagnosticsPage() {
       <p className="ui-pref-intro">Checks that find out what is going on when something is not working, and save a small file you can send to whoever is helping.</p>
       <h4>Telling the makers</h4>
       <BetaPanel />
+      <h4>New versions</h4>
+      <UpdatePanel />
       <h4>Plugins</h4>
       <DiagnosticsSwitch />
       <h4>Pen and tablet</h4>

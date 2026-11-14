@@ -111,6 +111,22 @@ export interface BetaBridge {
   request(req: { url: string; method?: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }): Promise<{ status: number; type: string; text: string } | { code: string; message?: string }>;
 }
 
+/** Looking for a newer release and putting it in (src/main/update.ts, src/update). Missing in the web build. */
+export interface UpdateBridge {
+  /** What this copy is and how an update would be put in. */
+  facts(): Promise<import('../update/logic').UpdateFacts>;
+  /** This project's releases from GitHub. Only asked when the switch is on (or you pressed Check for updates). */
+  releases(): Promise<{ ok: true; releases: import('../update/logic').Release[] } | { ok: false; message: string }>;
+  /** Update now: gets the file for that release and puts it in. Nothing is downloaded before this. */
+  install(tag: string): Promise<{ ok: true; next: 'restart' | 'installer' } | { ok: false; message: string }>;
+  /** Opens a release's page in the browser. */
+  openPage(url: string): Promise<void>;
+  /** The new copy is in place: open it (or close, so an installer can run). */
+  finish(): Promise<void>;
+  /** How far the download has got, 0 to 100. Returns an unsubscribe function. */
+  onProgress(handler: (pct: number) => void): () => void;
+}
+
 /** One graphics card the computer has, as Electron reports it. */
 export interface GpuDevice {
   vendorId: number;
@@ -244,6 +260,8 @@ export interface FramelingApi {
   };
   /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
   beta?: BetaBridge;
+  /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */
+  update?: UpdateBridge;
   /** Pictures and text to and from the system clipboard (desktop only). */
   clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */
