@@ -29,7 +29,9 @@ describe('built-in workspaces', () => {
   it('differ the way they promise', () => {
     const [draw, animate, pixel] = builtinWorkspaces();
     expect(draw.layout.zones.right.tabs).toEqual(['colours', 'layers', 'help']);
-    expect(animate.layout.zones.right.tabs[0]).toBe('layers');
+    // The timeline's own column lists the layers, so the Layers panel does not lead Animate's right side (it is a tab).
+    expect(animate.layout.zones.right.tabs[0]).not.toBe('layers');
+    expect(animate.layout.zones.right.tabs).toContain('layers');
     expect(animate.layout.zones.bottom.size).toBeGreaterThan(draw.layout.zones.bottom.size);
     expect(pixel.layout.zones.left.tabs).toEqual(['colours']);
   });

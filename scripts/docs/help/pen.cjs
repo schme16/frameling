@@ -40,9 +40,30 @@ module.exports = [
   {
     name: 'pen-tablet',
     prefs: CALM,
-    // Scrolled to the pressure curve with its Reset button under it, and the feel and press settings beside it.
-    size: [1280, 1180],
-    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('pen')`), wait(1500), penStroke('.tb-pad'), wait(300), js("(() => { const pg = document.querySelector('.ui-prefs-page'); pg.scrollTop += document.querySelector('.tb-curve-row').getBoundingClientRect().top - pg.getBoundingClientRect().top - 24; return true; })()"), wait(300), ...shotOf('.ui-prefs', 10)],
+    // The page is taller than a picture: a short clip that draws on the pad, then scrolls down past the pressure curve
+    // and its Reset, the leaning and press rows, to Swap my two pen buttons.
+    size: [1280, 800],
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.overlays.openPrefs('pen')`),
+      wait(1500),
+      ...settle,
+      { rec: '@', el: '.ui-prefs', pad: 10, every: 100 },
+      wait(500),
+      penStroke('.tb-pad'),
+      wait(1600),
+      // Scroll in small, eased steps until the Swap row is in view, then rest there.
+      js(`(() => {
+        const pg = document.querySelector('.ui-prefs-page');
+        const row = [...document.querySelectorAll('.ui-prefs-page *')].find((e) => e.children.length === 0 && e.textContent.trim() === 'Swap my two pen buttons');
+        const to = pg.scrollTop + row.getBoundingClientRect().bottom - pg.getBoundingClientRect().bottom + 40;
+        const from = pg.scrollTop, t0 = performance.now(), ms = 4200;
+        const tick = () => { const k = Math.min(1, (performance.now() - t0) / ms); pg.scrollTop = from + (to - from) * (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2); if (k < 1) setTimeout(tick, 30); };
+        tick(); return true;
+      })()`),
+      wait(5600),
+      { rec: 'stop' },
+    ],
   },
   {
     name: 'pen-check',

@@ -241,9 +241,8 @@ You can mix both in one animation.
 
 ## Where the list is
 
-Layers show in two places, and they are the same list: the **Layers** panel in the right rail, and down the left
-side of the timeline, where each row lines up with that layer's keys. Use whichever is closer to what you are
-doing. Anything you change in one shows in the other at once. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
+Layers show in two places, and they are the same list: down the left side of the timeline, where each row lines up with that layer's keys, and in the **Layers** panel in the right rail. Use whichever is closer to what you are
+doing. Anything you change in one shows in the other at once. The Animate workspace shows only the timeline's column, so you never see the same list twice; the Layers panel is one press away in the rail, handy for a drawing with a great many layers. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
 
 ## The layer list
 

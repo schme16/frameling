@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // The Layers panel in the right rail: the same layers the timeline shows, in a list of its own, and the two stay
-// in step. Also where it sits: above Artboards, and leading the right side in the Animate workspace.
+// in step. Also where it sits: above Artboards, and not leading the right side in the Animate workspace, where the timeline's own column already lists the layers.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -129,9 +129,15 @@ describe('where the Layers panel sits', () => {
     expect(next.zones.bottom.tabs).toContain('timeline');
   });
 
-  it('adds a layers list the dock can lead the Animate workspace with', async () => {
+  it('keeps the Animate workspace from showing the layer list twice: Layers is a tab, not the one in front', async () => {
     const { builtinWorkspaces } = await import('../../src/ui/dock');
     const animate = builtinWorkspaces().find((w) => w.id === 'animate')!;
-    expect(animate.layout.zones.right.tabs[0]).toBe('layers');
+    expect(animate.layout.zones.right.tabs).toContain('layers');
+    expect(animate.layout.zones.right.tabs[0]).not.toBe('layers');
+    expect(animate.layout.zones.right.active).not.toBe('layers');
+    expect(animate.layout.zones.bottom.tabs).toContain('timeline');
+    // The right side starts the way Draw's does.
+    const draw = builtinWorkspaces().find((w) => w.id === 'draw')!;
+    expect(animate.layout.zones.right.tabs).toEqual(draw.layout.zones.right.tabs);
   });
 });

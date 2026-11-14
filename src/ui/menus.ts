@@ -83,7 +83,7 @@ export const MENUS: MenuDef[] = [
     // Nothing joins by category: shortcut sets live in Preferences > Keyboard, the quest controls with the Quests panel
     // and the pen check in Preferences. They stay in the command palette.
     categories: [],
-    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', 'quill.nudges', '-', 'help.sendReport', 'help.sendCrashNotes', '-', 'help.about'],
+    items: ['help.contents', 'quests.open', 'quests.tuckCard', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', 'quill.nudges', '-', 'help.sendReport', 'help.sendCrashNotes', '-', 'help.about'],
   },
 ];
 
