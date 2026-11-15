@@ -37,38 +37,35 @@ You should get \`{"ok":true,"outcome":"ran"}\` and see the vote land. If that wo
 Every answer is in [The actions door: what it can do](help:actions-door-reference).`,
   'chat-commands-firebot': `Firebot reads your Twitch chat and has an **HTTP Request** effect that sends exactly what the door needs, with no code. It has Linux builds (.deb, .rpm and .tar.gz) on its [releases page](https://github.com/crowbartools/Firebot/releases). Read [Chat commands](help:chat-commands) first if you haven't.
 
-## Make the !vote command
-1. In Firebot, connect your Twitch account, open **Commands** and press **New Custom Command**. Switch on **Advanced Mode**: only it has an effects list.
-2. **Trigger:** \`!vote\`. Leave the cooldowns at 0, because Frameling already counts one vote each.
-3. Press **Add Effect**, choose **HTTP Request**, and fill in:
-   - **URL:** \`http://127.0.0.1:47213/v1/actions/vote.cast\`
-   - **Method:** POST
-   - **Headers:** a header named \`Authorization\` with the value \`Bearer \` and then your key
-   - **Body:**
+## The quick way: import the setup file
+Frameling can write all three commands for Firebot in one file.
+1. In Frameling, open **Preferences > Streaming**, find **Firebot setup file** under **Actions door** and press **Save setup file**. (Or search the palette for "Firebot setup".)
+2. In Firebot, connect your Twitch account, then open Firebot's **File** menu, choose **Firebot Setups**, then **Import Firebot Setup**, and pick the file.
+3. Firebot asks two **Import Questions**. **Frameling address** is already filled in. For **Frameling key**, go back to Frameling, press **Copy** beside **Key (token)**, and paste it in. Press **Import Setup**.
+4. Start a vote, type **!vote 1** in your chat, and watch the panel.
+
+**The file does not hold your key**, so it is safe to keep or share. Firebot puts the key into the three commands when you import. If you make a new key in Frameling, import the file again and paste the new one. It replaces the three commands, it doesn't add copies. If Frameling moved to another port, fix the address when Firebot asks.
+
+## By hand instead
+Make a command for each: on the **Commands** tab press **New Custom Command**, switch on **Advanced Mode**, set the **Trigger**, then press **Add Effect**, choose **HTTP Request** and set the method to **POST**, a header \`Authorization\` with the value \`Bearer \` and your key, and the URL and body below. Frameling already counts one vote each, so leave the cooldowns at 0.
+
+**!vote**, URL ending \`/vote.cast\`:
 \`\`\`
 {"option": $convertToJSON[$arg[1]], "voter": $convertToJSON[$userId]}
 \`\`\`
-\`$arg[1]\` is the first word after the command and \`$userId\` is who typed it. \`$convertToJSON\` adds the quote marks and escapes anything odd, so what a viewer types can't break the request or add fields of its own. Don't add quote marks round it.
-
-Start a vote, type **!vote 1** in your chat, and watch the panel.
-
-## The other two
-Make two more commands the same way, each with its own URL and body.
-
 **!guess**, URL ending \`/guess.send\`:
 \`\`\`
 {"guess": $convertToJSON[$arg[all]], "player": $convertToJSON[$userId], "name": $convertToJSON[$userDisplayName]}
 \`\`\`
-**!prompt**, URL ending \`/jar.add\`:
+**!prompt**, URL ending \`/jar.add\`, with a **global cooldown** of 8 seconds, the same as Frameling's:
 \`\`\`
 {"text": $convertToJSON[$arg[all]]}
 \`\`\`
-Give **!prompt** a **global cooldown** of 8 seconds, the same as Frameling's, so Firebot handles the wait itself.
+The whole URL is the address, then \`/v1/actions/\`, then that ending, for example \`http://127.0.0.1:47213/v1/actions/vote.cast\`. \`$arg[1]\` is the first word after the command and \`$userId\` is who typed it. \`$convertToJSON\` adds the quote marks and escapes anything odd, so what a viewer types can't break the request or add fields of its own. Don't add quote marks round it.
 
 ## Good to know
 - To tell a viewer their prompt wasn't taken, tick **Run effects on error** in the HTTP Request effect and add a **Chat** effect there. A cooldown and a refusal both land in it, and we couldn't confirm it can read which one, so keep the message general.
 - Firebot and Frameling have to be on the same computer.
-- Made a new key in Frameling? Paste it into each command's header.
 - Checked against Firebot v5.67.0, November 2026.`,
   'chat-commands-streamerbot': `Streamer.bot reads chat, but its built-in **Fetch URL** only does GET, and the door needs POST. So sending is a few lines of C#, pasted once for all three commands. Read [Chat commands](help:chat-commands) first if you haven't.
 

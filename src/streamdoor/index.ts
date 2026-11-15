@@ -20,7 +20,7 @@ export const streamDoorFeature = defineFeature({
   commands: streamDoorCommands,
   help: streamDoorHelp,
   choices: doorChoices,
-  menus: [{ menu: 'sub:streamdoor', items: ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.roll'] }],
+  menus: [{ menu: 'sub:streamdoor', items: ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.firebotSetup', 'streamdoor.roll'] }],
   activate: () => {
     registerAudienceDoor({ id: 'door.local', label: 'Local actions', open: () => doorLink.open(), close: () => doorLink.close() });
     registerDoorActions();

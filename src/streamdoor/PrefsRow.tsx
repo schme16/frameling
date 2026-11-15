@@ -13,6 +13,7 @@ import { toast } from '../ui/toast';
 import { validDoorPort } from '../shared/streamDoor';
 import { rollKey } from './commands';
 import { copyAddress, copyKey, fetchKey } from './copy';
+import { saveFirebotSetup } from './firebotFile';
 import { doorLink } from './instance';
 import { doorStatus, preferredPort, setPreferredPort } from './state';
 import './streamdoor.css';
@@ -124,9 +125,23 @@ export function StreamDoorPrefsRow() {
           </button>
         </div>
       </div>
+      <div className="ui-pref-row">
+        <div className="ui-pref-text">
+          <strong>Firebot setup file</strong>
+          <span>Adds !vote, !guess and !prompt to Firebot in one import. It has the address but not the key: Firebot asks you to paste that.</span>
+        </div>
+        <div className="ui-pref-control sd-control">
+          <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.firebotSetup" onClick={() => void saveFirebotSetup()}>
+            Save setup file
+          </button>
+        </div>
+      </div>
       <div>
         <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp('actions-door')}>
           <Icon name="help" size={14} /> How to point Streamer.bot or Firebot at it
+        </button>{' '}
+        <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.firebotHelp" onClick={() => openHelp('chat-commands-firebot')}>
+          <Icon name="help" size={14} /> Using the Firebot setup file
         </button>
       </div>
     </div>
