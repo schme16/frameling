@@ -13,8 +13,8 @@ import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
-import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
-import { MAX_UNZIPPED } from './ioJobs';
+import { decodePngsInWorkers, encodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
+import { MAX_UNZIPPED, PNG_SAVE_LEVEL } from './ioJobs';
 import { readExports } from '../export/saved';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
@@ -68,13 +68,100 @@ export interface LoadedFile {
 // runs every minute and most drawings are not touched between runs).
 const pngCache = new WeakMap<Uint8ClampedArray, Uint8Array>();
 
-function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray }): Uint8Array {
+type Img = { width: number; height: number; pixels: Uint8ClampedArray };
+
+/** Where a PNG comes from while a save is put together: `done` hears the bytes once they exist. */
+type PngSink = (img: Img, done?: (png: Uint8Array) => void) => Uint8Array;
+
+/** The PNG of a drawing's pixels, encoded here (the page) unless it has been before. */
+const pngFor: PngSink = (d, done) => {
   let png = pngCache.get(d.pixels);
   if (!png) {
-    png = encodePng({ width: d.width, height: d.height, pixels: d.pixels }, { level: 6 });
+    png = encodePng({ width: d.width, height: d.height, pixels: d.pixels }, { level: PNG_SAVE_LEVEL });
     pngCache.set(d.pixels, png);
   }
+  done?.(png);
   return png;
+};
+
+// A drawing with see-through margins is saved as just its painted part, which is a new pixel array every time, so the
+// cache above can't know it. This remembers, by the drawing's own array, which block was cut out and its PNG, so a
+// second save doesn't cut it out and encode it again. The cut-out pixels themselves are not kept.
+interface TrimMemo {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  /** The block that was cut out (width and height 0 when nothing was painted). */
+  rect: { x: number; y: number; width: number; height: number };
+  /** Its PNG; empty when there is no block. */
+  png: Uint8Array;
+}
+const trimMemo = new WeakMap<Uint8ClampedArray, TrimMemo>();
+const NO_PNG = new Uint8Array(0);
+
+/** The drawing with its block replaced by `rect` the way `trimmedDrawing` would (pixels are left as they were). */
+function withRect<T extends { x?: number; y?: number; width: number; height: number }>(d: T, rect: TrimMemo['rect']): T {
+  const out = { ...d, width: rect.width, height: rect.height } as T;
+  if (rect.x) out.x = rect.x;
+  else delete out.x;
+  if (rect.y) out.y = rect.y;
+  else delete out.y;
+  return out;
+}
+
+/** What `saveFileAsync` needs while the PNGs are made elsewhere: a stand-in for each PNG still to come. */
+interface PendingPng {
+  stand: Uint8Array;
+  img: Img;
+  done?: (png: Uint8Array) => void;
+}
+
+/** A sink that hands back an empty stand-in for each PNG it does not have yet, and lists what it still wants. */
+function collectingSink(pending: PendingPng[]): PngSink {
+  return (img, done) => {
+    const have = pngCache.get(img.pixels);
+    if (have) {
+      done?.(have);
+      return have;
+    }
+    const stand = new Uint8Array(0);
+    pending.push({ stand, img, done });
+    return stand;
+  };
+}
+
+/**
+ * Makes the PNGs `collectingSink` was asked for, on workers where it can (the page stays free to draw), and puts them
+ * in place of their stand-ins in `files`. Whatever a worker can't or won't do is encoded here, the same call as ever.
+ */
+async function fillPendingPngs(files: Zippable, pending: PendingPng[]): Promise<void> {
+  // One job per pixel array, however many entries want it.
+  const byPixels = new Map<Uint8ClampedArray, PendingPng[]>();
+  for (const p of pending) {
+    const list = byPixels.get(p.img.pixels);
+    if (list) list.push(p);
+    else byPixels.set(p.img.pixels, [p]);
+  }
+  const groups = [...byPixels.values()];
+  const made = await encodePngsInWorkers(groups.map((g) => g[0].img));
+  const byStand = new Map<Uint8Array, Uint8Array>();
+  groups.forEach((g, i) => {
+    const img = g[0].img;
+    const png = made[i] ?? encodePng(img, { level: PNG_SAVE_LEVEL });
+    pngCache.set(img.pixels, png);
+    for (const p of g) {
+      byStand.set(p.stand, png);
+      p.done?.(png);
+    }
+  });
+  for (const name of Object.keys(files)) {
+    const f = files[name];
+    if (Array.isArray(f)) {
+      const png = byStand.get(f[0] as Uint8Array);
+      if (png) files[name] = [png, f[1]] as typeof f;
+    }
+  }
 }
 
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
@@ -169,7 +256,7 @@ function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): U
 }
 
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
-function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions = {}): Zippable {
+function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions = {}, png: PngSink = pngFor): Zippable {
   const reuse = !!opts.reuse;
   const preview = opts.preview;
   // Saved as if no symbol were open for editing.
@@ -181,16 +268,20 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
   const keep = (id: string, d: Drawing, value: () => unknown): DrawingEntry => (reuse ? cachedEntry(id, d, value) : { id, value });
   const used = new Set<string>();
   // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
-  const diffs = variationDiffs(doc, files, pngFor);
+  const diffs = variationDiffs(doc, files, png);
   const tileFrames = new Set((doc.tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
     if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
       // Only the painted part is stored (tile frames are always whole tiles).
-      const t = tileFrames.has(id) ? d : trimmedDrawing(d);
+      const whole = tileFrames.has(id);
+      const memo = whole ? undefined : trimMemo.get(d.pixels);
+      const known = memo && memo.width === d.width && memo.height === d.height && memo.x === (d.x ?? 0) && memo.y === (d.y ?? 0) ? memo : undefined;
+      const t = known ? withRect(d, known.rect) : whole ? d : trimmedDrawing(d);
       if (t.width < 1 || t.height < 1) {
         // Nothing painted: no picture entry at all.
+        if (!known && !whole && t !== d) trimMemo.set(d.pixels, { width: d.width, height: d.height, x: d.x ?? 0, y: d.y ?? 0, rect: { x: 0, y: 0, width: 0, height: 0 }, png: NO_PNG });
         const empty = { ...t, width: 0, height: 0, pixels: '' };
         entries.push({ id, value: () => empty });
         continue;
@@ -198,7 +289,14 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
       used.add(name);
-      files[name] = [pngFor(t), { level: 0 }];
+      if (known) files[name] = [known.png, { level: 0 }];
+      else {
+        const cut = !whole && t !== d;
+        files[name] = [
+          png(t, cut ? (bytes) => trimMemo.set(d.pixels, { width: d.width, height: d.height, x: d.x ?? 0, y: d.y ?? 0, rect: { x: t.x ?? 0, y: t.y ?? 0, width: t.width, height: t.height }, png: bytes }) : undefined),
+          { level: 0 },
+        ];
+      }
       const saved = { ...t, pixels: name };
       entries.push({ id, value: () => saved });
     } else if (d.kind === 'tilemap') {
@@ -262,15 +360,22 @@ export interface SaveOptions {
  * versions use this.
  */
 export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
-  let files = filesToSave(open, appVersion, now, opts);
+  // The drawings' PNGs are the slow part of a first save, so they are made on workers too (see fillPendingPngs).
+  const make = async (): Promise<Zippable> => {
+    const pending: PendingPng[] = [];
+    const made = filesToSave(open, appVersion, now, opts, collectingSink(pending));
+    if (pending.length) await fillPendingPngs(made, pending);
+    return made;
+  };
+  let files = await make();
   // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
   const size = doc instanceof Uint8Array ? doc.length : 0;
   const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
   if (made) return made;
-  // No worker (or it failed): the handed over buffer is gone, so make the files again.
-  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts);
+  // No worker (or it failed): the handed over buffer is gone, so make the files again (the PNGs are cached by now).
+  if (doc instanceof Uint8Array && doc.length !== size) files = await make();
   return new Promise((resolve, reject) => zip(files, { level: 6, mtime: now.getTime() }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 

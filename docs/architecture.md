@@ -415,7 +415,7 @@ Writers:
   out (all within an hour, hourly for a day, daily for 14 days, at most 60 automatic and 400 MB). Restore or open as a
   copy.
 - `ioClient.ts`, `ioWorker.ts`, `ioJobs.ts`, `workerPool.ts`: worker threads (a bundled module worker, up to 4, let go after 20 s idle)
-  that zip a save (`saveFileAsync`) and decode the pictures of a big pixel document in parallel (`loadFileAsync`, used
+  that encode the pictures of a big pixel document to PNG side by side and then zip a save (`saveFileAsync`), and decode the pictures of a big pixel document in parallel (`loadFileAsync`, used
   by `loadBytes`). Without a worker (Node tests, a page that cannot start one) or when one fails, the same code runs
   on the calling thread, so nothing depends on them. Autosave and versions (`saveFileAsync(..., { reuse: true })`) also keep
   each vector drawing's `doc.json` text, already UTF-8 encoded, in a `WeakMap` by drawing object (`file.ts`), relying on

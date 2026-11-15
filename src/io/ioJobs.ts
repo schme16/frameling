@@ -4,17 +4,21 @@
  */
 import { unzipSync, zipSync, type Zippable } from 'fflate';
 import { findZipEntry, inflateNative } from './zipPeek';
-import { decodePng, type RawImage } from './png';
+import { decodePng, encodePng, type RawImage } from './png';
 
 /** The most one entry of a file may inflate to (a zip bomb stops here). */
 export const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
-export type IoRequest = { id: number; kind: 'zip'; files: Zippable; level: number; mtime?: number } | { id: number; kind: 'png'; bytes: Uint8Array } | { id: number; kind: 'inflate'; bytes: Uint8Array };
+export type IoRequest = { id: number; kind: 'zip'; files: Zippable; level: number; mtime?: number } | { id: number; kind: 'png'; bytes: Uint8Array } | { id: number; kind: 'encodepng'; image: RawImage } | { id: number; kind: 'inflate'; bytes: Uint8Array };
 export type IoReply =
   | { id: number; ok: true; zip: Uint8Array }
   | { id: number; ok: true; image: RawImage }
+  | { id: number; ok: true; png: Uint8Array }
   | { id: number; ok: true; text: Uint8Array }
   | { id: number; ok: false; error: string };
+
+/** The deflate level a saved drawing's PNG is made at, here and on a worker. */
+export const PNG_SAVE_LEVEL = 6;
 
 /** Does one job and says which buffers can be handed over rather than copied. */
 export function runJob(req: IoRequest): { reply: IoReply; transfer: ArrayBuffer[] } {
@@ -23,6 +27,11 @@ export function runJob(req: IoRequest): { reply: IoReply; transfer: ArrayBuffer[
     if (req.kind === 'zip') {
       const zip = zipSync(req.files, { level: req.level as 6, mtime: req.mtime });
       return { reply: { id: req.id, ok: true, zip }, transfer: [zip.buffer as ArrayBuffer] };
+    }
+    if (req.kind === 'encodepng') {
+      // The same call, with the same settings, as saving on the page makes (see pngFor in file.ts), so the bytes match.
+      const png = encodePng(req.image, { level: PNG_SAVE_LEVEL });
+      return { reply: { id: req.id, ok: true, png }, transfer: [png.buffer as ArrayBuffer] };
     }
     const image = decodePng(req.bytes);
     return { reply: { id: req.id, ok: true, image }, transfer: [image.pixels.buffer as ArrayBuffer] };

@@ -81,6 +81,33 @@ export async function decodePngsInWorkers(entries: Record<string, Uint8Array>, p
 }
 
 /**
+ * PNGs of these pictures, made on workers side by side (up to four at once), in the same order. A picture whose PNG a
+ * worker could not make is null, and so is every one when they are all small (or there are no workers): the caller
+ * encodes those itself with `encodePng`. Each picture's pixels are copied before they go across, so the live drawing
+ * is never shared with a worker or emptied by one.
+ */
+export async function encodePngsInWorkers(images: { width: number; height: number; pixels: Uint8ClampedArray }[]): Promise<(Uint8Array | null)[]> {
+  const out: (Uint8Array | null)[] = images.map(() => null);
+  const p = getPool();
+  if (!p || images.reduce((s, im) => s + im.width * im.height, 0) < WORKER_MIN_PIXELS) return out;
+  // Biggest first, so the last job to start is a small one.
+  const order = images.map((_, i) => i).sort((a, b) => images[b].pixels.length - images[a].pixels.length);
+  await Promise.all(
+    order.map(async (i) => {
+      const im = images[i];
+      try {
+        const pixels = im.pixels.slice();
+        const r = await p.run<IoReply>({ kind: 'encodepng', image: { width: im.width, height: im.height, pixels } }, [pixels.buffer as ArrayBuffer]);
+        if (r.ok && 'png' in r) out[i] = r.png;
+      } catch {
+        // Left for the caller to encode itself.
+      }
+    }),
+  );
+  return out;
+}
+
+/**
  * `doc.json` of a file inflated on a worker (with the platform's own zlib where it has one, which is several times
  * quicker than fflate), its bytes handed over without a copy. Parsing stays on the page: the parsed object costs as
  * much to hand across as it does to parse. Null when there is no worker or anything went wrong (a damaged file too):
