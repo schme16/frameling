@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "A friendly desktop tool for drawing and animating 2D art, vector and pixel alike.",
   "author": "Shane Gadsby",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "main": "dist/main/main.cjs",

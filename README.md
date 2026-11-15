@@ -342,3 +342,11 @@ Releases are signed the cheap way for now, like Godot's own builds:
 
 The in-app help topic "Installing Frameling" walks people through the first-run prompts. Moving to paid certificates
 later means setting `CSC_LINK`/`CSC_KEY_PASSWORD` (and Apple's notarisation variables) and removing the ad-hoc hook.
+
+## Licence
+
+Frameling is [MIT licensed](LICENSE): use it, change it, build on it, ship it, for free or for money. Keep the
+copyright line and the permission notice with any substantial piece you take, and that is the whole of it.
+
+The packages Frameling depends on keep their own licences, and so does anything it reads or writes: a file format
+being readable is not a licence to copy somebody's code for reading it.
