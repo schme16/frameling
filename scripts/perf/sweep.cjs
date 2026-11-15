@@ -207,6 +207,33 @@ const DOCS = {
       return window.__sw.pileHistory(2000);
     })()`,
   },
+  // A 1024 x 1024 pixel drawing with 60 big strokes behind it (each step keeps the before and after pixels of the part it
+  // changed, so the file's history fills its 16 MB cap): the corner where the history's bytes are the big thing in a
+  // save. Not in the default list: ask for it with --docs history-pixel.
+  'history-pixel': {
+    kind: 'pixel', optIn: true,
+    make: `(() => {
+      ${pixelDoc('history pixel', 1024, 1024, 1, 1024, 1024, 0, 0)};
+      const S = window.__sw.F.store();
+      const did = Object.values(S.get().doc.drawings)[0].id;
+      for (let i = 0; i < 60; i++) {
+        S.update('Draw', (d) => {
+          const dr = d.drawings[did];
+          const px = new Uint8ClampedArray(dr.pixels);
+          const W = dr.width, ox = 80 + (i * 37) % 500, oy = 220 + (i * 53) % 300;
+          for (let k = 0; k < 400; k++) {
+            const cx = ox + k, cy = oy + Math.round(180 * Math.sin(k / 60 + i));
+            for (let t = -4; t <= 4; t++) for (let u = -4; u <= 4; u++) {
+              const o = ((cy + t) * W + cx + u) * 4;
+              px[o] = (i * 41 + k) & 255; px[o + 1] = (i * 17 + k * 3) & 255; px[o + 2] = (i * 91) & 255; px[o + 3] = 255;
+            }
+          }
+          dr.pixels = px;
+        });
+      }
+      return { steps: S.historyList().done.length, weightMB: Math.round(S.historyWeight() / 1e6) };
+    })()`,
+  },
   // 40 layers x 240 keys AND a deep history: the corner where both are big at once.
   'stress-vector-history': {
     kind: 'vector',

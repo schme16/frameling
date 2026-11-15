@@ -322,10 +322,16 @@ function withPatches(e: HistoryEntry, before: Doc): HistoryEntry {
   return { ...e, patches, inverse, rerun: undefined };
 }
 
+/** What a step was encoded as last time, when it still holds what it did then. */
+function cachedEncoding(e: HistoryEntry): Encoded | undefined {
+  const hit = encoded.get(e);
+  return hit && hit.sig === sigOf(e) ? hit.enc : undefined;
+}
+
 function encodeStep(source: HistoryEntry, before: Doc, after: Doc): Encoded {
-  const hit = encoded.get(source);
+  const cached = cachedEncoding(source);
+  if (cached) return cached;
   const sig = sigOf(source);
-  if (hit && hit.sig === sig) return hit.enc;
   const e = withPatches(source, before);
   const bytes = new Bytes();
   const ids = diffable(e, before, after);
@@ -369,43 +375,55 @@ export function historyFitsFile(doc: Doc): boolean {
 }
 
 /**
+ * Walks a stack of steps from the newest one back (the redo stack's last step is its next one, the undo stack's last is
+ * the latest) and encodes each, stopping once `limit` bytes are used. A step that can't be run stops the walk there.
+ *
+ * The document each step needs (the one either side of it) is worked out only when a step has to be encoded for the
+ * first time. A step already encoded is taken from its cache and the document is left alone, since running every step
+ * of a long history against a big drawing on every autosave held the page for hundreds of milliseconds. The steps that
+ * were skipped are run later, in order, if an older step turns out to need the document.
+ */
+function walkSteps(list: HistoryEntry[], start: Doc, dir: 'undo' | 'redo', used: number, limit: number): { out: Encoded[]; used: number } {
+  const out: Encoded[] = [];
+  // The document as of the newest step not yet in `skipped`.
+  let cur = start;
+  const skipped: HistoryEntry[] = [];
+  try {
+    for (let k = list.length - 1; k >= 0; k--) {
+      const e = list[k];
+      let enc = cachedEncoding(e);
+      if (!enc) {
+        for (const q of skipped) cur = runStep(cur, q, dir).doc;
+        skipped.length = 0;
+        const next = runStep(cur, e, dir).doc;
+        enc = dir === 'undo' ? encodeStep(e, next, cur) : encodeStep(e, cur, next);
+        cur = next;
+      } else {
+        skipped.push(e);
+      }
+      if (used + enc.size > limit) break;
+      out.push(enc);
+      used += enc.size;
+    }
+  } catch {
+    // The steps from here on stay out.
+  }
+  return { out, used };
+}
+
+/**
  * The steps ready for the file, newest kept first and the oldest dropped once the cap is full. Null when there is nothing
  * to keep (or nothing fits). A step that can't be written stops there: it and everything older are left out, since a
  * step is no use without the ones after it.
  */
 export function encodeHistory(src: HistorySource, cap = FILE_HISTORY_BYTES): HistorySaved | null {
   if (!historyFitsFile(src.doc)) return null;
-  let used = 0;
-  const redo: Encoded[] = [];
-  const undo: Encoded[] = [];
-  try {
-    let s = src.doc;
-    for (let k = src.redo.length - 1; k >= 0; k--) {
-      const e = src.redo[k];
-      const next = runStep(s, e, 'redo').doc;
-      const enc = encodeStep(e, s, next);
-      if (used + enc.size > cap * REDO_SHARE) break;
-      redo.push(enc);
-      used += enc.size;
-      s = next;
-    }
-  } catch {
-    // The redo steps from here on stay out.
-  }
-  try {
-    let a = src.doc;
-    for (let k = src.undo.length - 1; k >= 0; k--) {
-      const e = src.undo[k];
-      const before = runStep(a, e, 'undo').doc;
-      const enc = encodeStep(e, before, a);
-      if (used + enc.size > cap) break;
-      undo.push(enc);
-      used += enc.size;
-      a = before;
-    }
-  } catch {
-    // The undo steps from here on stay out.
-  }
+  // Newest step first, redo then undo, sharing one byte budget.
+  const redoWalk = walkSteps(src.redo, src.doc, 'redo', 0, cap * REDO_SHARE);
+  const undoWalk = walkSteps(src.undo, src.doc, 'undo', redoWalk.used, cap);
+  const redo = redoWalk.out;
+  const undo = undoWalk.out;
+  const used = undoWalk.used;
   undo.reverse();
   if (!undo.length && !redo.length) return null;
   let at = 0;

@@ -108,6 +108,9 @@ export interface Entry {
   list: Entry[];
 }
 
+/** How many other scales of a drawing stay in the cache once a new one is made (see `dropOtherScales`). */
+export const KEEP_OTHER_SCALES = 2;
+
 export class BitmapCache {
   private map = new WeakMap<Drawing, Entry[]>();
   private all = new Set<Entry>();
@@ -269,11 +272,16 @@ export class BitmapCache {
     return g;
   }
 
-  /** Drops bitmaps of other scales for a drawing (after a zoom settles). */
-  dropOtherScales(d: Drawing, w: number, h: number): void {
+  /**
+   * Drops bitmaps of other scales for a drawing (after a zoom settles), except the few used most recently: switching
+   * workspace resizes the canvas, and going back to a layout seen a moment ago finds its bitmaps still here. The memory
+   * budget still evicts the oldest first, so the ones kept never push out anything fresher.
+   */
+  dropOtherScales(d: Drawing, w: number, h: number, keep = KEEP_OTHER_SCALES): void {
     const list = this.map.get(d);
     if (!list) return;
-    for (const e of [...list]) if (e.w !== w || e.h !== h) this.remove(e);
+    const others = list.filter((e) => e.w !== w || e.h !== h).sort((a, b) => b.used - a.used);
+    for (const e of others.slice(keep)) this.remove(e);
   }
 
   private remove(e: Entry): void {
@@ -749,6 +757,17 @@ export class FramePainter {
     }
     this.lastVector.set(layerId, d);
     return e;
+  }
+
+  /**
+   * The canvas changed size (a panel opened, a workspace switched). The layer bitmaps are made for the stage's own size
+   * on screen, not the canvas's, so they stay: a zoomed view finds every one still good, and a fitted one finds the
+   * sizes it just left. What is picture-sized (effects, onion skin, scratch canvases) is for the old size and goes.
+   */
+  resized(): void {
+    this.effects.clear();
+    this.onionCache = [];
+    this.scratch = this.scratch2 = null;
   }
 
   clear(): void {

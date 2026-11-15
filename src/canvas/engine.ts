@@ -275,7 +275,7 @@ export class CanvasEngine {
     if (changed) {
       main.width = overlay.width = dw;
       main.height = overlay.height = dh;
-      this.painter.clear();
+      this.painter.resized();
     }
     ctl.setViewport({ w, h, dpr, room: isTurned(t) ? { w: winW, h: winH, angle: t.angle } : undefined });
     if (keep.x || keep.y) {
