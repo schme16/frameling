@@ -1,10 +1,14 @@
 /**
  * Telling a mouse wheel from a trackpad pinch by watching the run of events, not by how big one of them is. A
  * high-resolution wheel sends lots of small whole-number events, which used to look like a pinch and zoom far too
- * fast. A real pinch arrives as Ctrl+wheel with fractional deltas, so that is what counts. Pure, so it can be tested.
+ * fast. A real pinch arrives as Ctrl+wheel with fractional deltas, so that is what counts. It also lets a
+ * NotchLearner hear the plain wheel events, so a notch zooms the same on a wheel that says 45 as on one that says 100.
+ * Nothing here adds events up: the zoom is e to the power of the distance turned, so a burst of small events multiplies
+ * out to the same zoom as one big one. Pure, so it can be tested.
  */
 import type { ZoomStep } from './input';
 import { wheelPixels, wheelZoomFactor } from './view';
+import { NotchLearner } from './wheelNotch';
 
 /** How far back the stream looks. */
 export const STREAM_WINDOW_MS = 250;
@@ -32,10 +36,19 @@ export interface WheelReading {
   factor: number;
   /** Events in the window, this one included. */
   burst: number;
+  /** How many pixels this wheel says for one notch, as learned so far. */
+  notch: number;
 }
 
 export class WheelStream {
   private seen: { t: number; fractional: boolean }[] = [];
+
+  constructor(private learner: NotchLearner = new NotchLearner()) {}
+
+  /** The notch learned so far. */
+  get notch(): number {
+    return this.learner.notch;
+  }
 
   /** Take one event, returning what it is and how much it zooms. `dpr` is the screen scaling, `t` the time in ms. */
   read(e: WheelEventLike, t: number, opts: { step?: ZoomStep; dpr?: number; speed?: number } = {}): WheelReading {
@@ -46,7 +59,10 @@ export class WheelStream {
     this.seen.push({ t, fractional });
     const ctrl = e.ctrlKey || !!e.metaKey;
     const kind: WheelKind = ctrl && e.deltaMode === 0 && this.seen.some((s) => s.fractional) ? 'pinch' : 'wheel';
-    return { kind, factor: wheelZoomFactor(e.deltaY, e.deltaMode, opts.step ?? 'normal', kind, dpr, opts.speed ?? 1), burst: this.seen.length };
+    // Only a plain wheel teaches the notch: not a pinch, and not a fractional trackpad scroll.
+    if (kind === 'wheel' && !fractional) this.learner.see(wheelPixels(e.deltaY, e.deltaMode, dpr));
+    const notch = this.learner.notch;
+    return { kind, factor: wheelZoomFactor(e.deltaY, e.deltaMode, opts.step ?? 'normal', kind, dpr, opts.speed ?? 1, notch), burst: this.seen.length, notch };
   }
 
   reset(): void {

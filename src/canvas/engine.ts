@@ -35,6 +35,7 @@ import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCa
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, zoomAbout, type Pt } from './view';
+import { sharedNotch } from './wheelNotch';
 import { WheelStream, ZOOM_SPEED_SCALE, type ZoomSpeed } from './wheelStream';
 import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
 import { meaningOfPress } from '../tablet/buttons';
@@ -1054,7 +1055,7 @@ export class CanvasEngine {
   // ---------------------------------------------------------------- wheel and keys
 
   /** Watches the run of wheel events, to tell a mouse wheel from a pinch. */
-  private wheelStream = new WheelStream();
+  private wheelStream = new WheelStream(sharedNotch());
 
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault();
