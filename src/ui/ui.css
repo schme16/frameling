@@ -1683,16 +1683,25 @@ body.ui-resizing * {
 
 /* ------------------------------------------------------------ tooltips and toasts */
 
+/* A tip is a label about something, not something you can click, so it has its own surface: the theme's text colour
+   as the background and its page colour as the text. Dark theme gives a cream label, light theme an ink one, and a
+   custom theme follows its own colours. Menus and panels are all --raised or --panel, so a tip never reads as one. */
 .ui-tip {
+  --tip-bg: color-mix(in srgb, var(--text) 94%, var(--accent));
+  --tip-fg: var(--bg);
+  --tip-soft: color-mix(in srgb, var(--tip-fg) 72%, var(--tip-bg));
+  --tip-line: color-mix(in srgb, var(--tip-fg) 28%, var(--tip-bg));
   position: fixed;
   z-index: 200;
   max-width: 280px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
+  padding: 8px 11px;
+  border: 1px solid var(--tip-line);
   border-radius: var(--radius-small);
-  background: var(--raised);
-  color: var(--text);
-  box-shadow: var(--shadow);
+  background: var(--tip-bg);
+  color: var(--tip-fg);
+  box-shadow:
+    0 6px 16px rgb(0 0 0 / 28%),
+    0 1px 3px rgb(0 0 0 / 25%);
   font-size: var(--fs-small);
   animation: ui-fade 0.12s var(--ease);
 }
@@ -1707,27 +1716,63 @@ body.ui-resizing * {
 }
 .ui-tip-why {
   margin-top: 3px;
-  color: var(--text);
+  color: var(--tip-fg);
   line-height: 1.4;
   font-weight: 700;
 }
 .ui-tip-desc {
   margin-top: 3px;
-  color: var(--muted);
+  color: var(--tip-soft);
   line-height: 1.4;
+}
+.ui-tip kbd {
+  border-color: var(--tip-line);
+  background: color-mix(in srgb, var(--tip-fg) 10%, var(--tip-bg));
+  color: var(--tip-fg);
 }
 .ui-tip-more {
   margin-top: 6px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 55%, var(--tip-fg));
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-:root[data-theme='dark'] .ui-tip-more {
-  color: color-mix(in srgb, var(--accent) 70%, white);
+/* The arrow: a small diamond on the tip's edge nearest the thing, same fill and line as the tip so the two read as one
+   shape. Its position along the edge is set from code and eases, so it slides rather than jumps when the tip is nudged. */
+.ui-tip-arrow {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  background: var(--tip-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+  transition:
+    left 0.1s var(--ease),
+    top 0.1s var(--ease);
+}
+.ui-tip[data-side='above'] .ui-tip-arrow {
+  top: 100%;
+  border-right: 1px solid var(--tip-line);
+  border-bottom: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='below'] .ui-tip-arrow {
+  top: 0;
+  border-left: 1px solid var(--tip-line);
+  border-top: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='right'] .ui-tip-arrow {
+  left: 0;
+  border-left: 1px solid var(--tip-line);
+  border-bottom: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='left'] .ui-tip-arrow {
+  left: 100%;
+  border-top: 1px solid var(--tip-line);
+  border-right: 1px solid var(--tip-line);
 }
 
 .ui-toasts {
@@ -2843,8 +2888,7 @@ body.ui-resizing * {
   color: color-mix(in srgb, var(--accent) 70%, white);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .ui-md-link,
-  :root:not([data-theme='light']) .ui-tip-more {
+  :root:not([data-theme='light']) .ui-md-link {
     color: color-mix(in srgb, var(--accent) 70%, white);
   }
 }

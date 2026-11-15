@@ -11,6 +11,7 @@ import { commandEnabled, commandReason } from './palette';
 import { effectiveKeys, platformKeysText } from './keys';
 import { openHelp } from './overlays';
 import { Keys } from './ShortcutChip';
+import { placeTip, type TipSide } from './tipPlace';
 
 export interface TipContent {
   title: string;
@@ -76,7 +77,7 @@ interface Shown {
 
 export function TooltipLayer() {
   const [shown, setShown] = useState<Shown | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; side: TipSide; arrow: number | null } | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const showTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
@@ -227,32 +228,35 @@ export function TooltipLayer() {
     }
   }, [shown, pos]);
 
-  // Place it under the thing, or over it when there's no room, and keep it on screen.
+  // Place it just above the thing (under it only when there's no room up there), keep it on screen, and point its
+  // arrow at the middle of the thing.
   useLayoutEffect(() => {
     if (!shown || !box.current) return;
     const b = box.current.getBoundingClientRect();
     const r = shown.rect;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // A menu row's tip goes beside every open menu, on whichever side has room, level with the row. Never over the
-    // menu, and never on the diagonal between a row and its submenu.
-    const menus = shown.aside ? menuBox() : null;
-    if (menus) {
-      const gap = 10;
-      const left = menus.right + gap + b.width <= vw - 8 ? menus.right + gap : Math.max(8, menus.left - gap - b.width);
-      setPos({ left, top: Math.max(8, Math.min(vh - b.height - 8, r.top - 6)) });
-      return;
-    }
-    let top = r.bottom + 8;
-    if (top + b.height > vh - 8) top = Math.max(8, r.top - b.height - 8);
-    // Tools sit at the left edge: put the tip beside them rather than over the canvas edge.
-    let left = r.left + r.width / 2 - b.width / 2;
-    if (r.width < 60 && r.left < 70 && r.height < 60) {
-      left = r.right + 8;
-      top = Math.max(8, Math.min(vh - b.height - 8, r.top + r.height / 2 - b.height / 2));
-    }
-    left = Math.max(8, Math.min(vw - b.width - 8, left));
-    setPos({ left, top });
+    const p = placeTip(r, { width: b.width, height: b.height }, { width: window.innerWidth, height: window.innerHeight }, shown.aside ? menuBox() : null, !!shown.aside);
+    setPos({ left: p.left, top: p.top, side: p.side, arrow: p.arrow });
+  }, [shown]);
+
+  // The thing can move while its tip is up (a panel opens beside it, the window is resized). The tip follows, and the
+  // arrow slides with it.
+  useEffect(() => {
+    if (!shown) return;
+    let raf = 0;
+    const watch = () => {
+      const el = current.current;
+      if (el && document.contains(el)) {
+        const n = el.getBoundingClientRect();
+        const o = shown.rect;
+        if (Math.abs(n.left - o.left) > 0.5 || Math.abs(n.top - o.top) > 0.5 || Math.abs(n.width - o.width) > 0.5 || Math.abs(n.height - o.height) > 0.5) {
+          setShown((s) => (s ? { ...s, rect: n } : s));
+          return;
+        }
+      }
+      raf = requestAnimationFrame(watch);
+    };
+    raf = requestAnimationFrame(watch);
+    return () => cancelAnimationFrame(raf);
   }, [shown]);
 
   if (!shown) return null;
@@ -261,6 +265,7 @@ export function TooltipLayer() {
     <div
       ref={box}
       className={`ui-tip${shown.aside ? ' is-aside' : ''}${shown.pinned ? ' is-pinned' : ''}`}
+      data-side={pos?.side}
       role="tooltip"
       style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden' }}
       onMouseEnter={() => (overTip.current = true)}
@@ -269,6 +274,13 @@ export function TooltipLayer() {
         if (!pinnedBy.current) setShown(null);
       }}
     >
+      {pos && pos.arrow !== null && pos.side !== 'aside' && (
+        <span
+          className="ui-tip-arrow"
+          aria-hidden="true"
+          style={pos.side === 'above' || pos.side === 'below' ? { left: pos.arrow } : { top: pos.arrow }}
+        />
+      )}
       <div className="ui-tip-head">
         <strong>{tip.title}</strong>
         {tip.keys[0] && <Keys shortcut={tip.keys[0]} />}

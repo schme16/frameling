@@ -1833,3 +1833,18 @@ npx vitest run test/twitch
 - `prefs.test.tsx` the settings block, and that stream-safe mode never draws or fetches the code.
 
 The pictures (`twitch`, `twitch-links`) come from `npm run help:media -- --only twitch,twitch-links`. The harness stubs the desktop side (`scripts/ipc-stubs.cjs`) with a made-up code and two made-up rewards, and `__framelingTwitch` (only with `?debug`) sets what the screen shows. A build signs in with `FRAMELING_TWITCH_CLIENT_ID` from the environment (a Public app at dev.twitch.tv); without it the screen says so and takes a pasted Client ID.
+
+## Tooltip placement looks: scripts/docs/ab-tooltips/tips.cjs
+
+The same tip over a toolbar button, a layers-list icon, a menu row and near the left, right, top and bottom edges, plus a clip of a
+button gliding to the right edge with its tip up (the arrow sliding as the tip is held on screen). Run it against two builds into two
+folders and compare; the `--renderer` path must be absolute:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs \
+  --entries scripts/docs/ab-tooltips --renderer <abs dist/renderer> --out <dir>
+```
+
+Each picture takes a throwaway shot and a pause first: without it a fresh tip can come out with no words in it (the old build does too, it
+is the software-drawn capture). The placement and arrow maths is `src/ui/tipPlace.ts`, tested in `test/ui/tipPlace.test.ts`; the tip in
+the page (above, arrow, following its thing, no arrow when it can't be near) in `test/ui/tip-arrow.test.tsx`.
