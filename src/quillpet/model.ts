@@ -6,6 +6,7 @@
 // month and he's delighted, not sulking. Every function below is written so that stays true, and the tests check it.
 import type { QuillAnim } from '../ui/mascot/timing';
 import type { ThingSource } from './crayon';
+import type { Lately } from './whileAway';
 
 /** A thing you gave him: a drawing of yours, kept as a small picture. */
 export interface PetThing {
@@ -60,6 +61,8 @@ export interface PetState {
   presents: Present[];
   /** When he last made you something, ms since epoch. 0 = never. */
   lastPresentAt: number;
+  /** What he got up to the last time you came back to find him busy. Only what he did, never how long it took. */
+  lately?: Lately;
 }
 
 export const FRESH_PET: PetState = { metAt: 0, closeness: 0, days: 0, lastDay: '', things: [], colours: [], seen: [], presents: [], lastPresentAt: 0 };

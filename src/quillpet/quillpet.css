@@ -344,3 +344,51 @@
     transition: none;
   }
 }
+
+/* What he got up to: a short list under him. News, not a to-do, so nothing here is a button. */
+.qp-lately {
+  margin: 0;
+}
+.qp-lately-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qp-lately-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text);
+}
+.qp-lately-item:not(:has(.qp-lately-pic)) {
+  padding-left: 52px;
+  min-height: 33px;
+}
+.qp-lately-pic {
+  flex: none;
+  width: 44px;
+  height: 33px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+/* A toy he moved sits where he left it, on the floor of his room. */
+.qp-toy {
+  position: absolute;
+  left: calc(var(--qp-half) + (100% - 2 * var(--qp-half)) * var(--x));
+  bottom: 17px;
+  width: 22px;
+  height: 22px;
+  /* beside the spot, not on it, so he can stand there without hiding it */
+  transform: translateX(22px);
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}

@@ -1166,6 +1166,21 @@
     "text": "He keeps the drawings you give him and makes nothing from them.",
     "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Quill's presents\"."
   },
+  "choice.quill.lately.title": { "text": "Quill gets up to things", "where": "Name of this choice in Preferences > Behaviour (group: Quill)." },
+  "choice.quill.lately.question": {
+    "text": "When you come back to Frameling, should Quill have been up to something?",
+    "where": "The question the \"Quill gets up to things\" choice asks. It is never shown as a dialog: it is a setting in Preferences > Behaviour."
+  },
+  "choice.quill.lately.yes.label": { "text": "Yes, he's been busy", "where": "Preferences: the button for the answer \"yes\" in \"Quill gets up to things\"." },
+  "choice.quill.lately.yes.detail": {
+    "text": "He might have drawn something, moved a toy or fallen asleep somewhere new. It shows on his Room tab, and it is never anything sad.",
+    "where": "Preferences: the small line under the \"yes\" answer in \"Quill gets up to things\"."
+  },
+  "choice.quill.lately.no.label": { "text": "No, keep the room as it is", "where": "Preferences: the button for the answer \"no\" in \"Quill gets up to things\"." },
+  "choice.quill.lately.no.detail": {
+    "text": "Nothing in his room changes while you are out. He still says hello.",
+    "where": "Preferences: the small line under the \"no\" answer in \"Quill gets up to things\"."
+  },
   "choice.audio.scrub.title": { "text": "Hear the sound while you drag the playhead", "where": "Name of this choice in Preferences > Behaviour (group: Sound)." },
   "choice.audio.scrub.question": { "text": "Play a short bit of the sound as you move the playhead?", "where": "The question the \"Hear the sound while you drag the playhead\" dialog asks." },
   "choice.audio.scrub.on.label": { "text": "Yes, play a snippet", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Hear the sound while you drag the playhead\"." },

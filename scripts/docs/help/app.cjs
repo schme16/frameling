@@ -746,6 +746,30 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // The Room after a long break: what he got up to, with the toy he moved on the floor and him found asleep somewhere new.
+  {
+    name: 'quill-lately',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      wait(900),
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
+      js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } for (const c of ['#ff6f91', '#4cc9a0', '#5b8def']) __framelingQuillPet.tell({ kind: 'noticed', colour: c }); return true; })()`),
+      wait(2200),
+      js(`__framelingQuillPet.comeBack(400, 11)`),
+      // Let the fuss of giving settle first, so he is still asleep where he was found when the Room opens.
+      wait(4600),
+      clickText('.qp-tabs .ui-seg', 'Room'),
+      wait(900),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
+      ...settle,
+      tag('.qp-panel'),
+      shotEl(2),
+    ],
+  },
   // Quill waking from a nap: left alone for a minute he dozes off, then a nudge of the mouse wakes him with a stretch.
   {
     name: 'quill-wake',

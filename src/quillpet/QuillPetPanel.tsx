@@ -8,7 +8,10 @@ import { showPanel } from '../ui/dock';
 import { line, lines } from '../ui/mascot/lines';
 import { sinceInput } from '../ui/mascot/runtime';
 import { useStore } from '../core/store';
-import { daysAway, petStore, tellQuill } from './store';
+import { petStore, tellQuill } from './store';
+import { claimHello, greeting, napStore, wakeNap } from './welcome';
+import { movedToy, QuillLately } from './QuillLately';
+import { sleptWords, TOY_PLACE } from './whileAway';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
 import { QuillPresents, QuillThings } from './QuillShelves';
 import { HOUSE_TABS, houseStore, setHouseTab, stepTab, unopenedCount, type HouseTab } from './house';
@@ -16,14 +19,6 @@ import { SPOT_X, type Spot } from './potter';
 import { useQuillClock } from './usePotter';
 import { lastFuss, noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
 import './quillpet.css';
-
-/** "a day", "3 days", "about 2 weeks": how long he'd say it's been. */
-export function sayDays(days: number): string {
-  if (days <= 1) return 'a day';
-  if (days < 14) return `${days} days`;
-  if (days < 60) return `about ${Math.round(days / 7)} weeks`;
-  return `about ${Math.round(days / 30)} months`;
-}
 
 /** Where along the room a spot is, as a custom property the stylesheet turns into a position. */
 const xOf = (spot: Spot): CSSProperties => ({ ['--x' as string]: SPOT_X[spot] });
@@ -45,7 +40,9 @@ export function QuillHim() {
   const room = useRef<HTMLDivElement>(null);
   const playing = useStore((st) => st.ui.playing);
   const [said, setSaid] = useState<string>(() => line('pet.hello'));
-  const away = useRef(daysAway()).current;
+  // Found asleep somewhere new (only on a return, and only until you give him a scratch or draw something).
+  const nap = napStore.use((n) => n.spot);
+  const napping = showQuill && !elsewhere ? nap : null;
 
   const { mood, anim } = moodNow({
     sinceInput: sinceInput(),
@@ -54,11 +51,12 @@ export function QuillHim() {
     justFinished: sinceFinished() < 6000,
     justFussed: sinceFuss() < 4000,
     fuss: lastFuss(),
-    daysAway: away,
+    // Waving hello for a few seconds on a return, as a yes or no: nothing here knows how long it has been.
+    daysAway: greeting() ? 1 : 0,
   });
 
   // Only while he's just being cosy does he potter. Anything louder (you drawing, a fuss, sleepiness) is his mood's.
-  const pottering = mood === 'cosy';
+  const pottering = mood === 'cosy' && !napping;
   const { potter } = useQuillClock({
     shown,
     playing,
@@ -66,9 +64,10 @@ export function QuillHim() {
     stepping: pottering,
     ctx: () => ({ hasColours: petStore.get().colours.length > 0, sinceInput: sinceInput() }),
   });
-  const spot: Spot = mood === 'asleep' || mood === 'sleepy' ? 'bed' : potter.move.spot;
+  const spot: Spot = napping ?? (mood === 'asleep' || mood === 'sleepy' ? 'bed' : potter.move.spot);
   const facingLeft = useFacing(spot);
 
+  const toy = movedToy(pet.lately, pet.things);
   const colour = useStore((st) => st.ui.color);
   const hasColour = !!colour && !pet.colours.some((c) => c.toLowerCase() === colour.toLowerCase());
   const stage = stageOf(pet.closeness);
@@ -77,10 +76,16 @@ export function QuillHim() {
 
   // Back after a break: he says hello before anything else.
   useEffect(() => {
-    if (away >= 1) setSaid(line('pet.hello.again', { days: sayDays(away) }));
-  }, [away]);
+    if (claimHello()) setSaid(line('pet.hello.again'));
+  }, []);
+
+  // Once you draw something he's up and joining in.
+  useEffect(() => {
+    if (nap && (mood === 'happy' || mood === 'proud')) wakeNap();
+  }, [nap, mood]);
 
   const pat = () => {
+    wakeNap();
     tellQuill({ kind: 'petted' });
     noteFuss('stroked');
     const all = lines('pet.petted');
@@ -89,6 +94,7 @@ export function QuillHim() {
 
   const feed = () => {
     if (!colour) return;
+    wakeNap();
     tellQuill({ kind: 'fed', colour });
     noteFuss('fed');
     setSaid(line('pet.fed'));
@@ -103,12 +109,13 @@ export function QuillHim() {
             <span className="qp-bed" style={xOf('bed')} aria-hidden="true" />
             <span className="qp-desk" style={xOf('desk')} aria-hidden="true" />
             <span className="qp-bowl" style={xOf('bowl')} aria-hidden="true" />
+            {toy && <img className="qp-toy" style={xOf(toy.spot.to)} src={toy.src} alt="" title={`${toy.alt}, ${TOY_PLACE[toy.spot.to]}`} />}
             {elsewhere ? (
               <p className="qp-away qp-out">Quill's out helping with something, so his house is quiet for a moment. He'll be right back.</p>
             ) : (
               <div className="qp-him-at" style={xOf(spot)}>
                 <button type="button" className="qp-pat" onClick={pat} title="Give him a scratch" aria-label="Give Quill a scratch">
-                  <Quill surface="house" anim={pottering ? potter.move.beats : anim} then="idle" size={112} flip={facingLeft} />
+                  <Quill surface="house" anim={napping ? 'deep-sleep' : pottering ? potter.move.beats : anim} then="idle" size={112} flip={facingLeft} />
                 </button>
               </div>
             )}
@@ -116,7 +123,7 @@ export function QuillHim() {
         ) : (
           <p className="qp-away">Quill is switched off in Preferences, so he isn't here. Turn Show Quill back on and he'll come straight back.</p>
         )}
-        {showQuill && !elsewhere && <p className="qp-mood">{pottering ? potter.move.words : MOOD_WORDS[mood as Mood]}</p>}
+        {showQuill && !elsewhere && <p className="qp-mood">{napping ? sleptWords(napping) : pottering ? potter.move.words : MOOD_WORDS[mood as Mood]}</p>}
       </div>
 
       {showQuill && <p className="qp-says">{said}</p>}
@@ -206,6 +213,7 @@ export function QuillPetPanel() {
         {tab === 'room' && (
           <>
             <QuillHim />
+            <QuillLately />
             <QuillLessons />
           </>
         )}

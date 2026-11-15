@@ -47,6 +47,15 @@ export const quillPetCommands: Command[] = [
     run: () => openHouse('presents'),
   },
   {
+    id: 'quillPet.lately',
+    label: 'Quill: what he got up to',
+    category: 'View',
+    description: 'Opens his Room, where what he got up to (a drawing, a toy moved, a nap somewhere new) shows when you come back to Frameling.',
+    keywords: ['quill', 'pet', 'lately', 'got up to', 'drew', 'nap', 'toy', 'news', 'hedgehog'],
+    help: 'quill-lately',
+    run: () => openHouse('room'),
+  },
+  {
     id: 'quillPet.pat',
     label: 'Give Quill a scratch',
     category: 'View',

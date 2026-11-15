@@ -7,7 +7,7 @@ import { quillPetCommands, quillPetPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
 import { watchForPresents } from './gifts';
-import { registerPresentChoice } from './choices';
+import { registerLatelyChoice, registerPresentChoice } from './choices';
 
 let stop: (() => void) | null = null;
 let stopGifts: (() => void) | null = null;
@@ -30,6 +30,7 @@ export const quillPetFeature = defineFeature({
   },
   activate: () => {
     registerPresentChoice();
+    registerLatelyChoice();
     stop = startWatching();
     stopGifts = watchForPresents();
   },

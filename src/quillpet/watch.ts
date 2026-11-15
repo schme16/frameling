@@ -8,6 +8,7 @@ import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
 import { noteSeen } from './store';
 import { stageOf } from './model';
+import { settleIn } from './welcome';
 
 const now = (): number => (typeof performance === 'undefined' ? Date.now() : performance.now());
 
@@ -65,6 +66,8 @@ export function startWatching(): () => void {
   const s = store();
   let prev = s.get();
   let loads = s.loads;
+  // Before he notes that you're here: the day still reads as new, so he can have news if you've been out.
+  settleIn();
   if (firstVisitToday()) tellQuill({ kind: 'visited' });
   const off = s.subscribe(() => {
     const next = s.get();

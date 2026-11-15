@@ -10,6 +10,14 @@ export const quillPetHelp: HelpTopic[] = [
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'companion', 'corner', 'scratch', 'stroke', 'pat', 'closeness'],
   },
   {
+    id: 'quill-lately',
+    title: 'What Quill got up to',
+    section: 'Getting around',
+    media: 'quill-lately.png',
+    summary: "When you open Frameling and he has been busy, his Room shows what he got up to: a drawing of his own, a toy he moved, a nap somewhere new. The longer it has been, the more there is to see. It is always good news, and he remembers what you gave him by the date, never by how long ago.",
+    keywords: ['quill', 'lately', 'got up to', 'drew', 'drawing', 'nap', 'toy', 'moved', 'remember', 'remembers', 'gave', 'date', 'busy', 'pet', 'hello'],
+  },
+  {
     id: 'quill-naps',
     title: 'Quill dozing off and waking up',
     section: 'Getting around',

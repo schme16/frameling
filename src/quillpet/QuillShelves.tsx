@@ -4,24 +4,14 @@ import { useState } from 'react';
 import { QuillSays, useShowQuill } from '../ui/mascot';
 import { line } from '../ui/mascot/lines';
 import { giveToQuill } from './give';
+import { whenGiven } from './whileAway';
 import { openPresentDoc } from './gifts';
 import { letGoOf, letGoOfPresentNamed, petStore } from './store';
 import { noteFuss } from './watch';
 import './quillpet.css';
 
-/** "today", "yesterday", "3 days ago": when he was given it. */
-export function sayWhen(givenAt: number, now = Date.now()): string {
-  const day = (ms: number) => {
-    const d = new Date(ms);
-    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-  };
-  const days = Math.max(0, Math.round((day(now) - day(givenAt)) / 86400000));
-  if (days === 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 14) return `${days} days ago`;
-  if (days < 60) return `about ${Math.round(days / 7)} weeks ago`;
-  return `about ${Math.round(days / 30)} months ago`;
-}
+/** "today", "yesterday", "on 3 March": when he was given it. A date, never "3 days ago" (see whenGiven). */
+export const sayWhen = whenGiven;
 
 /** His things: the drawings you have given him, and the way to give him another. */
 export function QuillThings() {
@@ -60,7 +50,7 @@ export function QuillThings() {
                   title={`${t.name}, given ${sayWhen(t.givenAt)}`}
                   onClick={() => {
                     noteFuss('given');
-                    setSaid(line('pet.thing', { name: t.name }));
+                    setSaid(line('pet.thing', { name: t.name, when: whenGiven(t.givenAt) }));
                   }}
                 >
                   <img src={t.picture} alt={t.name} />

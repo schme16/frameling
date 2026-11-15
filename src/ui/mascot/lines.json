@@ -933,9 +933,66 @@
     "where": "Quill's panel: you stroked him (the app picks one)."
   },
   "pet.hello.again": {
-    "text": "There you are! It's been {days}. I kept your seat warm.",
-    "where": "Quill's panel: your first visit of the day after a day or more away. {days} is \"a day\", \"3 days\" and so on.",
-    "vars": ["days"]
+    "text": "There you are! I kept your seat warm.",
+    "where": "The Room tab of his house: what he says the first time you open it after coming back to Frameling. It never says how long it has been, and it never will."
+  },
+  "pet.lately.drew": {
+    "text": [
+      "I did a drawing at my desk. I'm quite pleased with it.",
+      "I drew something! You tell me what it is.",
+      "Had a go at a drawing. The pencils did most of it."
+    ],
+    "where": "The Room tab of his house, under \"What he got up to\": one of the things he did when you came back to Frameling. A drawing of his own shows beside it. The app picks the wording when he does it, and it never changes after."
+  },
+  "pet.lately.moved": {
+    "text": [
+      "I moved {name}. It lives {place} now.",
+      "Did a bit of rearranging: {name} is {place} now. Much better.",
+      "{name} has a new spot, {place}. I had a feeling about it."
+    ],
+    "where": "The Room tab, under \"What he got up to\": he moved one of the drawings you gave him to somewhere else in the room. {name} is what it was called, {place} is where it ended up, like \"by the window\" or \"on the desk\".",
+    "vars": ["name", "place"]
+  },
+  "pet.lately.slept": {
+    "text": [
+      "Fell asleep {place}. Highly recommended.",
+      "Had a lovely nap {place}. Don't tell my bed.",
+      "Dozed off {place} and had the nicest dream. It involved pencils."
+    ],
+    "where": "The Room tab, under \"What he got up to\": he fell asleep somewhere that isn't his bed. {place} is where, like \"on the windowsill\" or \"at the desk\". He is found there asleep until you give him a scratch.",
+    "vars": ["place"]
+  },
+  "pet.lately.watched": {
+    "text": [
+      "Watched a whole sunset out of the window. Ten out of ten.",
+      "Counted the clouds. There were a lot of clouds.",
+      "A bird landed on the windowsill. We had a good look at each other.",
+      "Watched the rain on the window. Very good rain."
+    ],
+    "where": "The Room tab, under \"What he got up to\": he spent some time at the window."
+  },
+  "pet.lately.sorted": {
+    "text": [
+      "Put my pencils in a better order. They look the same, but I know.",
+      "Sorted my pencils by how they make me feel."
+    ],
+    "where": "The Room tab, under \"What he got up to\": he tidied his pencils. Only when he has more than one colour."
+  },
+  "pet.lately.found": {
+    "text": [
+      "Found a very good feather. It's in my pocket.",
+      "Found a button under the bed. I'm keeping it.",
+      "Found a pebble that looks a bit like a hedgehog. Obviously I'm keeping it."
+    ],
+    "where": "The Room tab, under \"What he got up to\": a rarer thing he found. It is only ever there when there was more time for him to get up to things."
+  },
+  "pet.lately.remembered": {
+    "text": [
+      "Had a look at {name}, the one you gave me {when}. It's a good one.",
+      "Thought about {name} for a bit. You gave it to me {when}."
+    ],
+    "where": "The Room tab, under \"What he got up to\": he looked at something you gave him. {name} is what it was called and {when} is the day you gave it, like \"today\", \"yesterday\" or \"on 3 March\". It is always a date, never how long ago.",
+    "vars": ["name", "when"]
   },
   "pet.closer": {
     "text": "Look at us, {stage} now. I'd have brought a cake if I had hands for it.",
@@ -951,7 +1008,11 @@
     ],
     "where": "Quill's panel: you gave him the colour you're drawing with (the app picks one)."
   },
-  "pet.thing": { "text": "{name}! One of my favourites.", "where": "Quill's panel: you pressed one of the things you gave him. {name} is what it was called.", "vars": ["name"] },
+  "pet.thing": {
+    "text": "{name}! You gave me this {when}. One of my favourites.",
+    "where": "Quill's panel: you pressed one of the things you gave him. {name} is what it was called and {when} is the day you gave it, like \"today\", \"yesterday\" or \"on 3 March\".",
+    "vars": ["name", "when"]
+  },
   "pet.present.made": {
     "text": [
       "I made you something out of {name}. It's in my things when you want it.",
