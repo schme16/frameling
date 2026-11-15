@@ -1,0 +1,10 @@
+The Pixels | Vectors switch at the top of the tool rail, before and after. Pictures are the top of the rail, enlarged four times, dark and light.
+
+Before: the rail was sized for its buttons and its group names but not for the switch, so with the group names off the rail (96px) cut the words to "Pix..." and "Vec...". At 100% with the names showing it only just fitted (Vectors with 2px to spare), and in the crisp look (a wider font) it was cut there too.
+After: the natural width is the largest of the buttons, the switch and, with names showing, the longest group name.
+
+switch-slim-cosy-before-*.png / -after-*.png     group names off, cosy look: rail 96px cut, then 126px whole
+switch-slim-crisp-before-*.png / -after-*.png    group names off, crisp look: rail 84px cut, then 134px whole (Inter is wider than Nunito)
+switch-pulled-110-cosy-before-*.png / -after-*.png  a rail you pulled to 110px: before the words were cut, after the switch is two icons (the count is the tools waiting on the other kind of layer) and goes back to words once the rail is wide enough (124px cosy, 132px crisp)
+
+Not shown, unchanged: the one-per-group rail (44 to 60px). It was already one button wide with the switch as two icons, so it has no word to cut and the rail did not widen.

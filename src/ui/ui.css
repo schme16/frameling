@@ -1006,8 +1006,9 @@ kbd {
   border-color: var(--sunny-deep, var(--sunny));
   background: color-mix(in srgb, var(--sunny) 14%, transparent);
 }
-/* One button wide, or lying along the top: icons only, and the count on the side that has the missing tools. */
+/* One button wide, pulled in too narrow for the words, or lying along the top: icons only, and the count on the side that has the missing tools. */
 .ui-tools.is-stacked:not(.has-names) .ui-tool-switch,
+.ui-tools.is-switch-short .ui-tool-switch,
 .ui-tools.is-sideways .ui-tool-switch {
   width: auto;
   flex-direction: column;
@@ -1018,20 +1019,24 @@ kbd {
   margin: 0 6px 0 2px;
 }
 .ui-tools.is-stacked:not(.has-names) .ui-tool-side,
+.ui-tools.is-switch-short .ui-tool-side,
 .ui-tools.is-sideways .ui-tool-side {
   flex: none;
   width: calc(var(--tool) - 8px);
   padding: 6px 0;
 }
 .ui-tools.is-stacked:not(.has-names) .ui-tool-side svg,
+.ui-tools.is-switch-short .ui-tool-side svg,
 .ui-tools.is-sideways .ui-tool-side svg {
   display: block;
 }
 .ui-tools.is-stacked:not(.has-names) .ui-tool-side-word,
+.ui-tools.is-switch-short .ui-tool-side-word,
 .ui-tools.is-sideways .ui-tool-side-word {
   display: none;
 }
 .ui-tools.is-stacked:not(.has-names) .ui-tool-layer-count,
+.ui-tools.is-switch-short .ui-tool-layer-count,
 .ui-tools.is-sideways .ui-tool-layer-count {
   position: absolute;
   top: -4px;

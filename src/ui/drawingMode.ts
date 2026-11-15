@@ -15,6 +15,7 @@ import { getPrefs, setPrefs, subscribePrefs, type OffLayerPref } from './prefs';
 import { openPrefs } from './overlays';
 import { toast } from './toast';
 import type { WaitingTool } from './toolArrange';
+import { SIDE_WORDS } from './toolRailWidth';
 import { choiceWord } from '../words/choices';
 
 const WORDS: Record<LayerKind, string> = { vector: 'Vector layer', pixel: 'Pixel layer', tilemap: 'Tile layer', camera: 'Camera layer' };
@@ -104,7 +105,7 @@ export type Side = 'pixel' | 'vector';
 export const SIDES: readonly Side[] = ['pixel', 'vector'];
 
 /** The word on a side of the switch. */
-export const sideWord = (side: Side): string => (side === 'pixel' ? 'Pixels' : 'Vectors');
+export const sideWord = (side: Side): string => SIDE_WORDS[side];
 
 /** Which side of the switch a layer lights: pixel or vector. Tile and camera layers light neither. */
 export function sideOf(kind: LayerKind | null): Side | null {

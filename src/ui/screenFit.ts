@@ -21,7 +21,7 @@ import { getPrefs, subscribePrefs, type ToolSizePref } from './prefs';
 import { anyOverlayOpen } from './overlays';
 import { browserDisplay, currentDisplay, screenKey } from './screenSize';
 import { toast } from './toast';
-import type { RailSizes } from './toolRailWidth';
+import { switchRoom, type RailSizes } from './toolRailWidth';
 
 /**
  * A screen is small when it is under this many units across or down. Worked out from the real interface (scripts/e2e/screen-fit.cjs):
@@ -50,8 +50,8 @@ export function fitToolSize(size: ToolSizePref, compact: boolean): ToolSizePref 
 /** How many buttons across the rail starts with on a small screen, so every group is a row or two and the rail does not scroll. */
 export const COMPACT_ACROSS = 4;
 
-/** The rail's starting width on a small screen: four buttons across. A width you pulled to yourself is kept (see `fitRailSaved`). */
-export const compactRailWidth = (s: RailSizes): number => s.tool * COMPACT_ACROSS + s.gap * (COMPACT_ACROSS - 1) + s.pad;
+/** The rail's starting width on a small screen: four buttons across, and never less than the Pixels | Vectors switch needs. A width you pulled to yourself is kept (see `fitRailSaved`). */
+export const compactRailWidth = (s: RailSizes): number => Math.max(s.tool * COMPACT_ACROSS + s.gap * (COMPACT_ACROSS - 1) + s.pad, switchRoom(s.look));
 
 /** The rail width saved for the workspace, or on a small screen the compact starting width when none is saved. */
 export function fitRailSaved(saved: number | undefined, sizes: RailSizes, compact: boolean): number | undefined {

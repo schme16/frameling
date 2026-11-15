@@ -19,7 +19,7 @@ import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, waitingFor, waitingWords, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
-import { acrossFor, clampRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
+import { acrossFor, buttonsRailWidth, clampRailWidth, minRailWidth, naturalRailWidth, switchRoom, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
 import { pairOf } from '../core/pairs';
 import { whyNoHalf } from '../timeline/pairs';
@@ -229,15 +229,17 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const iconPx = iconSizeFor(size);
   // A width the person pulled (docked at a side): the rail takes it, and the buttons across follow it.
   const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style, showNames) : undefined;
-  // No width of their own: the rail starts as wide as its longest group name needs, still two buttons across.
-  const startWidth = pulledWidth === undefined && showNames && !sideways ? naturalRailWidth(sizes, style, true) : undefined;
+  // No width of their own: the rail starts as wide as its Pixels | Vectors switch and (with names showing) its longest group name need, still two buttons across.
+  const startWidth = pulledWidth === undefined && !sideways ? naturalRailWidth(sizes, style, showNames) : undefined;
   const pulled =
     pulledWidth !== undefined
       ? ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties)
-      : startWidth !== undefined && startWidth > naturalRailWidth(sizes, style)
+      : startWidth !== undefined && startWidth > buttonsRailWidth(sizes, style)
         ? ({ width: startWidth, '--tool-cols': 2 } as React.CSSProperties)
         : undefined;
   // The one-per-group rail is one button wide: a name has no room there until the rail is pulled wider.
+  // The switch shows its words when the rail has the room for them; narrower (one button wide, or pulled in) it shows two icons, never a word cut short.
+  const switchShort = !sideways && (pulledWidth ?? startWidth ?? 0) < switchRoom(sizes.look);
   const showHeads = showNames && !sideways && (!stacked || pulledWidth !== undefined);
   const kind = useActiveKind();
   const current = useStore((s) => s.ui.tool);
@@ -451,7 +453,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   return (
     <nav
       ref={navRef}
-      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showHeads ? ' has-names' : ''} is-size-${size}`}
+      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showHeads ? ' has-names' : ''}${switchShort ? ' is-switch-short' : ''} is-size-${size}`}
       aria-label="Tools"
       data-place={place}
       style={pulled}

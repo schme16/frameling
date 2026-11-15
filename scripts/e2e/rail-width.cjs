@@ -7,7 +7,7 @@
 //
 // RAILW_DIST=<dir> checks another copy of dist/ (a copy made before a change, for the before numbers).
 // RAILW_SHOTS=<dir> saves a picture of the rail and its neighbourhood for each pass (dark and light).
-// RAILW_SIZE=<w>x<h> sets the window (default 1280x720). RAILW_QUICK=1 runs one look and one workspace.
+// RAILW_MODE=names|slim|stacked picks the rail style (the Pixels | Vectors switch is checked in each). RAILW_SIZE=<w>x<h> sets the window (default 1280x720). RAILW_QUICK=1 runs one look and one workspace.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const gpu = require('../lib/gpu.cjs');
 gpu.use('software', { noGpu: true });
@@ -32,6 +32,9 @@ const SCALES = [1, 1.25, 1.5, 2];
 const SIZES = ['small', 'medium', 'large'];
 const LOOKS = process.env.RAILW_QUICK ? ['cosy'] : ['cosy', 'crisp'];
 const WORKSPACES = process.env.RAILW_QUICK ? ['draw'] : ['draw', 'animate', 'pixel'];
+// RAILW_MODE: names (the default: group names showing, two across), slim (names off, the buttons alone) or stacked (one per group).
+const MODE = { names: { names: true, rail: 'two' }, slim: { names: false, rail: 'two' }, stacked: { names: true, rail: 'stacked' } }[process.env.RAILW_MODE || 'names'];
+if (!MODE) throw new Error('RAILW_MODE is names, slim or stacked');
 const shots = process.env.RAILW_SHOTS;
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
@@ -49,9 +52,19 @@ const MEASURE = `(() => {
     const cut = h.scrollWidth > h.clientWidth + 1 || h.scrollHeight > h.clientHeight + 1;
     return { text: h.textContent, lines, cut };
   });
+  // The Pixels | Vectors switch: each word's room (its button less the button's padding), how wide the word is drawn, and whether it is cut short.
+  const sides = [...nav.querySelectorAll('.ui-tool-side')].filter((b) => b.offsetParent && getComputedStyle(b.querySelector('.ui-tool-side-word')).display !== 'none').map((b) => {
+    const w = b.querySelector('.ui-tool-side-word');
+    const range = document.createRange();
+    range.selectNodeContents(w);
+    const cs = getComputedStyle(b);
+    const room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const drawn = range.getBoundingClientRect().width;
+    return { text: w.textContent, room: Math.round(room * 100) / 100, drawn: Math.round(drawn * 100) / 100, cut: w.scrollWidth > w.clientWidth || drawn > room + 0.5 };
+  });
   const cv = document.querySelector('.ui-canvas')?.getBoundingClientRect();
   const cols = getComputedStyle(nav.querySelector('.ui-tool-group') ?? nav).getPropertyValue('--tool-cols') || '';
-  return { rail: Math.round(r.width * 10) / 10, railH: Math.round(r.height), scrolls: nav.scrollHeight > nav.clientHeight + 1, heads, canvas: cv ? { w: Math.round(cv.width), h: Math.round(cv.height) } : null, cols: cols.trim(), x: Math.round(r.left), y: Math.round(r.top) };
+  return { rail: Math.round(r.width * 10) / 10, sides, railH: Math.round(r.height), scrolls: nav.scrollHeight > nav.clientHeight + 1, heads, canvas: cv ? { w: Math.round(cv.width), h: Math.round(cv.height) } : null, cols: cols.trim(), x: Math.round(r.left), y: Math.round(r.top) };
 })()`;
 
 app.whenReady().then(async () => {
@@ -80,7 +93,7 @@ app.whenReady().then(async () => {
     for (const ws of WORKSPACES) {
       for (const size of SIZES) {
         for (const scale of SCALES) {
-          await js(`__frameling.prefs.set({ look: '${look}', toolSize: '${size}', uiScale: ${scale}, toolNames: true, toolRail: 'two' }); __frameling.dock.applyWorkspace('${ws}'); __frameling.template('${ws === 'pixel' ? 'blank-pixel' : 'bouncing-ball'}'); document.querySelector('.ui-choice') && document.querySelector('.ui-choice').click(); return true`);
+          await js(`__frameling.prefs.set({ look: '${look}', toolSize: '${size}', uiScale: ${scale}, toolNames: ${MODE.names}, toolRail: '${MODE.rail}' }); __frameling.dock.applyWorkspace('${ws}'); __frameling.template('${ws === 'pixel' ? 'blank-pixel' : 'bouncing-ball'}'); document.querySelector('.ui-choice') && document.querySelector('.ui-choice').click(); return true`);
           await sleep(350);
           const m = await js(`return ${MEASURE}`);
           if (!m) {
@@ -89,10 +102,11 @@ app.whenReady().then(async () => {
           }
           const two = m.heads.filter((h) => h.lines > 1).map((h) => h.text);
           const cut = m.heads.filter((h) => h.cut).map((h) => h.text);
+          cut.push(...m.sides.filter((q) => q.cut).map((q) => q.text));
           const roomBad = !m.canvas || m.canvas.w < 280 || m.canvas.h < 190;
           if (cut.length || roomBad) bad++;
           rows.push({ look, ws, size, scale, ...m });
-          console.log(`${look} ${ws} ${size} ${Math.round(scale * 100)}%: rail ${m.rail}px, ${m.cols || '?'} across${m.scrolls ? ', SCROLLS' : ''}, canvas ${m.canvas ? m.canvas.w + ' x ' + m.canvas.h : 'none'}${two.length ? `, two lines: ${two.join(' | ')}` : ''}${cut.length ? `, CUT: ${cut.join(' | ')}` : ''}${roomBad ? ', NOT ENOUGH ROOM' : ''}`);
+          console.log(`${look} ${ws} ${size} ${Math.round(scale * 100)}%: rail ${m.rail}px,${m.sides.length ? ' switch ' + m.sides.map((q) => `${q.text} ${q.drawn}/${q.room}`).join(' ') + ',' : ''} ${m.cols || '?'} across${m.scrolls ? ', SCROLLS' : ''}, canvas ${m.canvas ? m.canvas.w + ' x ' + m.canvas.h : 'none'}${two.length ? `, two lines: ${two.join(' | ')}` : ''}${cut.length ? `, CUT: ${cut.join(' | ')}` : ''}${roomBad ? ', NOT ENOUGH ROOM' : ''}`);
           if (shots && ws === 'draw' && look === 'cosy' && size === 'medium') {
             for (const theme of ['dark', 'light']) {
               await js(`__frameling.prefs.set({ theme: '${theme}' }); return true`);
