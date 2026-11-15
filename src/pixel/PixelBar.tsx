@@ -147,8 +147,10 @@ function WayChip() {
 export function PictureStrip() {
   const wsId = dock.use((d) => d.workspaceId);
   const picture = useStore((s) => isPixelDoc(s.doc) && wayOf(s.doc) === 'picture');
-  const quill = useQuillShown('ambient');
-  if (!wsId || !inPixelWorkspace() || !picture) return null;
+  const here = !!wsId && inPixelWorkspace() && picture;
+  // Only claims him while the strip is actually there, or his house would always say he is out.
+  const quill = useQuillShown('ambient', { wanted: here });
+  if (!here) return null;
   return (
     <div className="px-picture-strip" role="group" aria-label="One picture" data-help="pixel-ways">
       {quill && <Quill surface="ambient" anim="idle" size={32} />}

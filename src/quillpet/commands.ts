@@ -2,11 +2,11 @@
 // and Quill carries on being the mascot.
 import { lazyPanel } from '../core/lazy';
 import type { Command, PanelDef } from '../core/registry';
-import { showPanel } from '../ui/dock';
 import { getPrefs } from '../ui/prefs';
 import { noteFuss } from './watch';
 import { giveToQuill } from './give';
 import { tellQuill } from './store';
+import { openHouse } from './house';
 
 export const quillPetPanel: PanelDef = {
   id: 'quill-pet',
@@ -23,10 +23,28 @@ export const quillPetCommands: Command[] = [
     id: 'quillPet.open',
     label: 'Quill',
     category: 'View',
-    description: 'Opens Quill: how he is, the things you and he have given each other, and his lessons.',
+    description: "Opens Quill's house on the room: how he is, how well you know each other, and the way to his lessons. His things and his presents are tabs beside it.",
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'corner', 'companion'],
     help: 'quill-pet',
-    run: () => showPanel('quill-pet'),
+    run: () => openHouse('room'),
+  },
+  {
+    id: 'quillPet.things',
+    label: 'Quill: his things',
+    category: 'View',
+    description: 'Opens his house on the things you have given him, with the button to give him another.',
+    keywords: ['quill', 'pet', 'things', 'shelf', 'shelves', 'collection', 'given', 'gifts', 'keep', 'hedgehog'],
+    help: 'quill-things',
+    run: () => openHouse('things'),
+  },
+  {
+    id: 'quillPet.presents',
+    label: 'Quill: his presents',
+    category: 'View',
+    description: 'Opens his house on the presents he has made you. Press one and it opens as a drawing of your own.',
+    keywords: ['quill', 'pet', 'presents', 'gifts', 'crayon', 'surprise', 'made', 'hedgehog'],
+    help: 'quill-presents',
+    run: () => openHouse('presents'),
   },
   {
     id: 'quillPet.pat',
@@ -39,7 +57,7 @@ export const quillPetCommands: Command[] = [
     run: () => {
       tellQuill({ kind: 'petted' });
       noteFuss('stroked');
-      showPanel('quill-pet');
+      openHouse('room');
     },
   },
   {
@@ -52,7 +70,7 @@ export const quillPetCommands: Command[] = [
     enabled: () => getPrefs().showQuill,
     run: () =>
       void giveToQuill().then((got) => {
-        if (got) showPanel('quill-pet');
+        if (got) openHouse('things');
       }),
   },
 ];

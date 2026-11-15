@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'popout.toggle', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'popout.toggle', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'sub:quillhouse'],
   },
   {
     label: 'Draw',
@@ -113,6 +113,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Snapping',
     items: ['view.snap', 'view.snapOptions', '-', 'view.snap.grid', 'view.snap.guides', 'view.snap.page', 'view.snap.centre', 'view.snap.shapes', 'view.snap.allLayers', 'view.snap.artboards', 'view.snap.spacing', 'view.snap.angles', 'view.snap.perspective', 'view.snap.cells', 'view.snap.plugins'],
     prefixes: ['view.snap.'],
+  },
+  quillhouse: {
+    label: "Quill's house",
+    items: ['quillPet.things', 'quillPet.presents', '-', 'quillPet.give', 'quillPet.pat'],
   },
   notes: {
     label: 'Notes',

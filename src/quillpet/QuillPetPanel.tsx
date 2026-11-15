@@ -1,8 +1,8 @@
 // Quill's home: the one panel where he lives when the pet is turned on, called Quill everywhere. He gets on with
-// whatever he's doing, you can give him a scratch, and it shows how well you two know each other, then his shelves
-// (presents from him, things from you) and the way to his lessons. Nothing here nags, and nothing here goes down.
-// Each part reads only the stores, so a bigger home (a window of his own) can lay the same parts out as rooms or tabs.
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+// whatever he's doing, you can give him a scratch, and it shows how well you two know each other. The house has three
+// tabs: the room (him and the way to his lessons), his things (from you) and the presents (from him). Nothing here nags, and nothing here goes down.
+// Each part reads only the stores, so a bigger home (a window of his own) can lay the same parts out as it likes.
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { Quill, useQuillElsewhere, useQuillShown, useShowQuill } from '../ui/mascot';
 import { showPanel } from '../ui/dock';
 import { line, lines } from '../ui/mascot/lines';
@@ -10,7 +10,8 @@ import { sinceInput } from '../ui/mascot/runtime';
 import { useStore } from '../core/store';
 import { daysAway, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
-import { QuillShelves } from './QuillShelves';
+import { QuillPresents, QuillThings } from './QuillShelves';
+import { HOUSE_TABS, houseStore, setHouseTab, stepTab, unopenedCount, type HouseTab } from './house';
 import { SPOT_X, type Spot } from './potter';
 import { useQuillClock } from './usePotter';
 import { lastFuss, noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
@@ -162,13 +163,55 @@ export function QuillLessons() {
   );
 }
 
-/** Quill's home in the right rail: all of him in one tab. */
+/** The three tabs along the top of his house. Arrow keys move between them, as tabs do. */
+function HouseTabs({ tab }: { tab: HouseTab }) {
+  const waiting = petStore.use((st) => unopenedCount(st.presents));
+  const keys = (e: KeyboardEvent) => {
+    const by = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!by) return;
+    e.preventDefault();
+    const next = stepTab(tab, by);
+    setHouseTab(next);
+    requestAnimationFrame(() => document.getElementById(`qp-tab-${next}`)?.focus());
+  };
+  return (
+    <div className="ui-segmented qp-tabs" role="tablist" aria-label="Quill's house" onKeyDown={keys}>
+      {HOUSE_TABS.map((t) => (
+        <button
+          key={t.id}
+          id={`qp-tab-${t.id}`}
+          type="button"
+          role="tab"
+          aria-selected={tab === t.id}
+          aria-controls="qp-tabpanel"
+          tabIndex={tab === t.id ? 0 : -1}
+          className={`ui-seg${tab === t.id ? ' is-chosen' : ''}`}
+          onClick={() => setHouseTab(t.id)}
+        >
+          {t.label}
+          {t.id === 'presents' && waiting > 0 && <span className="qp-tab-new" role="img" aria-label={waiting === 1 ? '1 not opened yet' : `${waiting} not opened yet`} />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Quill's house in the right rail: the room first, then his things and his presents as tabs. */
 export function QuillPetPanel() {
+  const tab = houseStore.use((s) => s.tab);
   return (
     <div className="cv-panel cv-options qp-panel" data-help="quill-pet">
-      <QuillHim />
-      <QuillShelves />
-      <QuillLessons />
+      <HouseTabs tab={tab} />
+      <div className="qp-tabpanel" id="qp-tabpanel" role="tabpanel" aria-labelledby={`qp-tab-${tab}`}>
+        {tab === 'room' && (
+          <>
+            <QuillHim />
+            <QuillLessons />
+          </>
+        )}
+        {tab === 'things' && <QuillThings />}
+        {tab === 'presents' && <QuillPresents />}
+      </div>
     </div>
   );
 }

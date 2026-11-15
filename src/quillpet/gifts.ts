@@ -11,7 +11,7 @@ import { thumbnailOf } from '../io/thumb';
 import { toast } from '../ui/toast';
 import { line } from '../ui/mascot/lines';
 import { getPrefs } from '../ui/prefs';
-import { showPanel } from '../ui/dock';
+import { openHouse } from './house';
 import { askAboutUnsavedChanges } from '../io/document';
 import { currentChoice, withChoice } from '../core/choices';
 import { crayonDoc } from './crayon';
@@ -60,7 +60,7 @@ function sayMade(present: Present, reason: PresentReason): void {
     duration: 8000,
     action: {
       label: 'Have a look',
-      run: () => showPanel('quill-pet'),
+      run: () => openHouse('presents'),
     },
   });
   // The first time, ask whether he should carry on doing this. The present is already made: the question is about

@@ -1,6 +1,5 @@
-// Quill's shelves: the presents he has made you and the drawings you have given him. One part of his home (the Quill
-// panel); it reads only the pet store, so the same part can sit anywhere he gets a room. He keeps a little picture of
-// each thing, never the drawing itself.
+// Quill's shelves, as two tabs of his house: the drawings you have given him (His things) and the presents he has made
+// you (Presents). Each reads only the pet store. He keeps a little picture of each thing, never the drawing itself.
 import { useState } from 'react';
 import { QuillSays, useShowQuill } from '../ui/mascot';
 import { line } from '../ui/mascot/lines';
@@ -24,9 +23,9 @@ export function sayWhen(givenAt: number, now = Date.now()): string {
   return `about ${Math.round(days / 30)} months ago`;
 }
 
-export function QuillShelves() {
+/** His things: the drawings you have given him, and the way to give him another. */
+export function QuillThings() {
   const things = petStore.use((s) => s.things);
-  const presents = petStore.use((s) => s.presents);
   const showQuill = useShowQuill();
   const [said, setSaid] = useState<string | null>(null);
 
@@ -41,7 +40,51 @@ export function QuillShelves() {
         </button>
       </div>
 
-      {(presents.length > 0 || things.length > 0) && (
+      {said && showQuill && (
+        <QuillSays surface="house" surfaceId="shelves" anim="cheer" then="idle" size={56} whenHidden={null}>
+          {said}
+        </QuillSays>
+      )}
+
+      {things.length === 0 ? (
+        <p className="qp-none">Press <b>Give him this drawing</b> and Quill keeps a little picture of the frame you're on. He'll hang on to it for as long as you like.</p>
+      ) : (
+        <>
+          <h3 className="qt-shelf-title">Yours, that he keeps</h3>
+          <ul className="qp-thing-list qt-list" aria-label="Things you have given Quill">
+            {[...things].reverse().map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  className="qp-thing qt-thing"
+                  title={`${t.name}, given ${sayWhen(t.givenAt)}`}
+                  onClick={() => {
+                    noteFuss('given');
+                    setSaid(line('pet.thing', { name: t.name }));
+                  }}
+                >
+                  <img src={t.picture} alt={t.name} />
+                </button>
+                <button type="button" className="qp-thing-back" title={`Give ${t.name} back`} aria-label={`Give ${t.name} back`} onClick={() => letGoOf(t.id)}>
+                  x
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Presents: what he has made you, newest first. Opens as a drawing of your own. */
+export function QuillPresents() {
+  const presents = petStore.use((s) => s.presents);
+  const showQuill = useShowQuill();
+  const [said, setSaid] = useState<string | null>(null);
+
+  return (
+    <div className="qt-panel" data-help="quill-presents">
       <section className="qt-shelf" aria-label="Presents from Quill">
         <h3 className="qt-shelf-title">From Quill</h3>
         {presents.length === 0 ? (
@@ -67,40 +110,11 @@ export function QuillShelves() {
           </ul>
         )}
       </section>
-      )}
 
       {said && showQuill && (
         <QuillSays surface="house" surfaceId="shelves" anim="cheer" then="idle" size={56} whenHidden={null}>
           {said}
         </QuillSays>
-      )}
-
-      {things.length === 0 ? (
-        <p className="qp-none">Press <b>Give him this drawing</b> and Quill keeps a little picture of the frame you're on. He'll hang on to it for as long as you like.</p>
-      ) : (
-        <>
-        <h3 className="qt-shelf-title">Yours, that he keeps</h3>
-        <ul className="qp-thing-list qt-list" aria-label="Things you have given Quill">
-          {[...things].reverse().map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                className="qp-thing qt-thing"
-                title={`${t.name}, given ${sayWhen(t.givenAt)}`}
-                onClick={() => {
-                  noteFuss('given');
-                  setSaid(line('pet.thing', { name: t.name }));
-                }}
-              >
-                <img src={t.picture} alt={t.name} />
-              </button>
-              <button type="button" className="qp-thing-back" title={`Give ${t.name} back`} aria-label={`Give ${t.name} back`} onClick={() => letGoOf(t.id)}>
-                x
-              </button>
-            </li>
-          ))}
-        </ul>
-        </>
       )}
     </div>
   );

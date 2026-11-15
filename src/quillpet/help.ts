@@ -6,7 +6,7 @@ export const quillPetHelp: HelpTopic[] = [
     title: 'Quill',
     section: 'Getting around',
     media: 'quill-pet.mp4',
-    summary: "Quill has one home in the right rail. He gets on with things while you draw, you can give him a scratch, and the two of you get closer the more you make together. His shelves and the way to his lessons are in there too. He never minds being left alone.",
+    summary: "Quill has one house in the right rail, with three tabs: Room, His things and Presents. In the Room he gets on with things while you draw, you can give him a scratch, and the two of you get closer the more you make together. He never minds being left alone.",
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'companion', 'corner', 'scratch', 'stroke', 'pat', 'closeness'],
   },
   {
@@ -22,7 +22,7 @@ export const quillPetHelp: HelpTopic[] = [
     title: 'Things you give Quill',
     section: 'Getting around',
     media: 'quill-things.png',
-    summary: "The drawings you have given Quill, on his shelves in the Quill tab. He keeps a little picture of each one, for as long as you like, and gives one back whenever you ask.",
+    summary: "The drawings you have given Quill, on the His things tab of his house. He keeps a little picture of each one, for as long as you like, and gives one back whenever you ask.",
     keywords: ['quill', 'things', 'collection', 'gifts', 'presents', 'keep', 'given', 'pet'],
   },
   {
@@ -31,7 +31,7 @@ export const quillPetHelp: HelpTopic[] = [
     section: 'Getting around',
     media: 'quill-presents.png',
     summary:
-      'Now and then Quill redraws one of your drawings with a wobbly hand and leaves it on his shelf. It opens as a drawing of your own. Nothing is generated: it is your shapes, played with.',
+      'Now and then Quill redraws one of your drawings with a wobbly hand and leaves it for you on the Presents tab. It opens as a drawing of your own. Nothing is generated: it is your shapes, played with.',
     keywords: ['quill', 'present', 'presents', 'gift', 'crayon', 'copy', 'wobbly', 'made', 'surprise', 'pet'],
   },
 ];

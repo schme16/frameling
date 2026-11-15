@@ -208,7 +208,31 @@
   box-shadow: 0 0 0 2px var(--panel);
 }
 
-/* One home, three parts under each other: him, his shelves, the way to his lessons. */
+/* One house, three tabs. The room tab has him over the way to his lessons; the other two are a shelf each. */
+.qp-tabs {
+  display: flex;
+  align-self: stretch;
+}
+.qp-tabs .ui-seg {
+  flex: 1;
+  justify-content: center;
+  position: relative;
+}
+.qp-tab-new {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+.qp-tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
 .qp-him,
 .qt-panel,
 .qp-lessons {
@@ -219,7 +243,6 @@
 .qp-him {
   gap: 12px;
 }
-.qt-panel,
 .qp-lessons {
   padding-top: 12px;
   border-top: 1px solid var(--line-soft);
