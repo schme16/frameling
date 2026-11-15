@@ -1,0 +1,43 @@
+/* A page or group title with its on/off switch hard right, opposite the heading (PrefTitle). */
+.ui-pref-title {
+  margin: 0 0 12px;
+}
+.ui-pref-title.is-page {
+  margin-top: 12px;
+}
+.ui-pref-title.is-group {
+  margin: 22px 0 8px;
+}
+.ui-pref-title-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ui-pref-title-head .ui-pref-title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.ui-pref-title.is-group .ui-pref-title-text {
+  font-size: 15px;
+}
+.ui-pref-title-switch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+.ui-pref-title-state {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.ui-pref-title .ui-pref-intro {
+  margin: 6px 0 0;
+}
+.ui-pref-title-status {
+  margin: 8px 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}

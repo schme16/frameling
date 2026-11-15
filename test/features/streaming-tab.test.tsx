@@ -57,7 +57,10 @@ describe('the Streaming tab', () => {
   it('has the master switch, every stream switch, every detail block and the sharing rows', async () => {
     await tab();
     expect(host.querySelector('h3')?.textContent).toBe('Streaming');
-    expect(group().querySelector('[data-testid="streaming-switch"]')).not.toBeNull();
+    // The master switch is opposite the title, not down in the folded group.
+    expect(host.querySelector('.ui-pref-title-head h3')?.textContent).toBe('Streaming');
+    expect(host.querySelector('.ui-pref-title-head [data-testid="streaming-switch"]')).not.toBeNull();
+    expect(group().querySelector('[data-testid="streaming-switch"]')).toBeNull();
     for (const id of STREAM_FEATURES) expect(group().querySelector(`[data-testid="feature-switch-${id}"]`), id).not.toBeNull();
     for (const t of ['audience.prefs', 'dares.prefs', 'audience.switch', 'audience.drawing']) expect(group().querySelector(`[data-testid="${t}"]`), t).not.toBeNull();
     expect(host.querySelector('[data-testid="streaming-sharing"] [data-testid="sharing-rows"]')).not.toBeNull();
@@ -77,7 +80,7 @@ describe('the Streaming tab', () => {
 
   it('says once that none of it does anything until audience features are on, and not on every row', async () => {
     await tab();
-    expect(group().querySelector('[data-testid="streaming-status"]')!.textContent).toContain('Audience features are off, so none of these does anything yet');
+    expect(host.querySelector('[data-testid="streaming-status"]')!.textContent).toContain('Audience features are off, so none of these does anything yet');
     expect(host.textContent).not.toContain('Only while audience features are on');
   });
 
@@ -86,7 +89,20 @@ describe('the Streaming tab', () => {
     expect(fold().hasAttribute('open')).toBe(false);
     await act(async () => audience.setOn(true));
     expect(fold().hasAttribute('open')).toBe(true);
-    expect(group().querySelector('[data-testid="streaming-status"]')!.textContent).toBe('Audience features are on.');
+    expect(host.querySelector('[data-testid="streaming-status"]')!.textContent).toBe('Audience features are on.');
+  });
+
+  it('puts the audience features switch opposite its group title, and says what off means', async () => {
+    await tab();
+    const head = host.querySelector('[data-testid="audience.prefs"] .ui-pref-title-head')!;
+    expect(head.querySelector('h4')?.textContent).toBe('Audience features');
+    const sw = head.querySelector('[data-testid="audience.switch"]')!;
+    expect(sw.getAttribute('aria-label')).toBe('Audience features on or off');
+    expect(sw.getAttribute('aria-checked')).toBe('false');
+    expect(host.querySelector('[data-testid="audience.prefs"] .ui-pref-title-status')!.textContent).toContain('Nothing from your viewers');
+    // Switching it on asks its first-time questions, so the test turns it on directly.
+    await act(async () => audience.setOn(true));
+    expect(host.querySelector('[data-testid="audience.prefs"] .ui-pref-title-status')!.textContent).toMatch(/^On\./);
   });
 
   it('opens when a search points at a row inside it', async () => {

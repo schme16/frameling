@@ -1,7 +1,7 @@
 // Finding a row on a Preferences page by the words it carries, and lighting it for a moment so you learn where it lives.
 const CANDIDATES = '.ui-pref-text strong, .ui-keyrow-name span, h3, h4, th, strong, legend, button, label, [aria-label]';
 /** What to light: the row round the words, or the heading itself when it is one. */
-const BLOCK = '.ui-pref-row, .ui-keyrow, .ui-ws-list > li, .th-section, .th-current, .sn-master, .sn-distance, .sn-all-layers, .plugin-page-actions';
+const BLOCK = '.ui-pref-row, .ui-pref-title, .ui-keyrow, .ui-ws-list > li, .th-section, .th-current, .sn-master, .sn-distance, .sn-all-layers, .plugin-page-actions';
 
 const tidy = (s: string): string =>
   s

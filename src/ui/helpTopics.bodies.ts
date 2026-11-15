@@ -186,6 +186,8 @@ The pages down the left include:
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
+**A switch opposite a title** turns a whole part on or off: **Streaming**, **Snapping**, and **Audience features** inside Streaming. Off, the page says in plain words what that means, and nothing you set is lost.
+
 Changes happen straight away and are remembered for next time.`,
   'preferences-search': `The box at the top of **Preferences** finds a setting when you only half remember it. Open Preferences (**Ctrl+,**), or run **Search settings...** from the command palette, and start typing. The box is ready as soon as the window opens.
 
@@ -344,7 +346,7 @@ The first time you press the dim area beside a dialog, Frameling asks whether th
 
 **New to streaming with Frameling?** Press **Show me how** at the top of the tab for the whole route, from a Twitch channel to a first vote.
 
-**Streaming tools.** The switch at the top is for people who stream. Switch it off if you never do, and dares, votes, the prompt jar, Twitch, the stream overlay and the rest go out of sight, and the **Streaming** menu leaves the menu bar. Nothing is lost. **Choose one by one** opens each tool with its own settings, and your usual answers to the questions they ask.
+**Streaming tools.** The switch opposite the **Streaming** title, at the top right, is for people who stream. Switch it off if you never do, and dares, votes, the prompt jar, Twitch, the stream overlay and the rest go out of sight, and the **Streaming** menu leaves the menu bar. Nothing is lost. **Choose one by one** opens each tool with its own settings, and your usual answers to the questions they ask.
 
 **Sharing your screen.** These stay on the tab even when the streaming tools are tucked away, because they are for anybody who shares a screen: **Stream-safe mode**, **Going live with OBS**, and the capture view (its background, mouse pointer and size). Their commands are in **View > Sharing your screen**.
 
@@ -365,7 +367,7 @@ If some are off and you want the lot, press **Turn everything back on** at the b
 
 ## The streaming tools are one switch
 
-Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they have a tab of their own, **Preferences > Streaming**, with one switch at the top. (**Features** has a button that takes you there.) Switch it off and all of them go out of the menu bar, the palette, Preferences and the help index. The Stream-safe, OBS and capture view settings stay, for anybody who shares a screen. Switch it on and they all come back. See [The Streaming tab](help:streaming).
+Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they have a tab of their own, **Preferences > Streaming**, with one switch opposite its title. (**Features** has a button that takes you there.) Switch it off and all of them go out of the menu bar, the palette, Preferences and the help index. The Stream-safe, OBS and capture view settings stay, for anybody who shares a screen. Switch it on and they all come back. See [The Streaming tab](help:streaming).
 
 You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer to **Do you stream?** is on the Streaming tab too.
 

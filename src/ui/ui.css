@@ -2299,7 +2299,9 @@ body.ui-resizing * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  /* In a narrow window the controls drop under the words, right-aligned, rather than squeezing them to a thin column. */
+  flex-wrap: wrap;
+  gap: 8px 20px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -2308,6 +2310,21 @@ body.ui-resizing * {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+.ui-pref-row > .ui-pref-text {
+  flex: 1 1 150px;
+}
+/* The controls at the right of a row: one switch, or several buttons side by side with a gap. Never squashed by a long
+   description beside it (the words on the buttons stay on one line); wraps only when the row itself has run out of room. */
+.ui-pref-control {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+  margin-left: auto;
 }
 .ui-pref-text span {
   color: var(--muted);

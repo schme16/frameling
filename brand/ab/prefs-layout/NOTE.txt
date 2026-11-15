@@ -1,0 +1,13 @@
+prefs-layout: before and after, both themes. Every picture exists as <name>-dark and <name>-light.
+before/<name>-<theme>.png: the Preferences window before the change (development at c6d0078c, with only a one-brace fix to review.css so it builds).
+after/<name>-<theme>.png: the same window after.
+<name>-<theme>-ab.png: before on the left, after on the right.
+Window sizes: wide 1280x900; narrow 820x800; narrowest 660x760.
+streaming-top: Streaming page, streaming tools on. The switch moves opposite the title; the tools row it left behind is gone.
+streaming-top-narrow, streaming-top-narrowest: the same at narrow windows. "Show me how" and "Walk me through it" sit side by side with a gap, and drop under their words when there is no room.
+streaming-tucked, streaming-tucked-narrow: streaming tools tucked away. The page says what off means in words under the title.
+streaming-audience, streaming-audience-narrow: the Audience features group, switch opposite its group title, with the line about what off means.
+streaming-dares-narrow, streaming-dares-narrowest, streaming-penmods-narrow: rows that had their own page-scoped rule; they look the same now from the shared one.
+streaming-overlay-narrow, streaming-door-narrow: rows with several buttons (Show, Copy, Make a new one); they wrap in order.
+snapping, snapping-off: the Snapping page, switch opposite the title, and the off state with its plain line.
+features, general-narrow, performance-narrow: pages that were not meant to change, to show the shared row rule leaves them alone.

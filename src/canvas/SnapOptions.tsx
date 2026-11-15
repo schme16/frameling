@@ -31,7 +31,7 @@ function Name({ t }: { t: SnapTargetInfo }) {
 }
 
 /** The master switch, the ticks, and the reset. */
-export function SnapPanel({ wide = false }: { wide?: boolean }) {
+export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /** False when the page shows the master switch opposite its own title (Preferences > Snapping). */ master?: boolean }) {
   const on = useViewSettings((v) => v.snap);
   const picks = useViewSettings((v) => v.snapPicks);
   const distance = useViewSettings((v) => v.snapDistance);
@@ -44,15 +44,17 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
   const col = (c: SnapContext) => (here === c ? ' is-here' : '');
   return (
     <div className={`sn-panel${wide ? ' is-wide' : ''}${on ? '' : ' is-off'}`}>
-      <label className="sn-master">
-        <button type="button" role="switch" aria-checked={on} aria-label="Snapping" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => setSnapOn(!on)}>
-          <span className="ui-switch-knob" />
-        </button>
-        <span>
-          <strong>Snapping {on ? 'is on' : 'is off'}</strong>
-          <small>Hold Ctrl while dragging to skip it for a moment.</small>
-        </span>
-      </label>
+      {master && (
+        <label className="sn-master">
+          <button type="button" role="switch" aria-checked={on} aria-label="Snapping" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => setSnapOn(!on)}>
+            <span className="ui-switch-knob" />
+          </button>
+          <span>
+            <strong>Snapping {on ? 'is on' : 'is off'}</strong>
+            <small>Hold Ctrl while dragging to skip it for a moment.</small>
+          </span>
+        </label>
+      )}
       <div className="sn-grid" role="group" aria-label="What to snap to">
         <span />
         <b className={`sn-head${col('vector')}`}>Vector layers</b>

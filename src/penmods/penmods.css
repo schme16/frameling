@@ -61,12 +61,3 @@
     animation: none;
   }
 }
-
-/* The list in Preferences > Streaming. */
-.pm-prefs .ui-pref-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}

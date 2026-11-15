@@ -75,7 +75,7 @@ export function StreamDoorPrefsRow() {
           <strong>Address</strong>
           <span>Where Streamer.bot, Firebot or a Stream Deck sends its requests.</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <code className="sd-code" data-testid="streamdoor.address">
             {status.running ? status.address : `http://127.0.0.1:${status.port}`}
           </code>
@@ -89,7 +89,7 @@ export function StreamDoorPrefsRow() {
           <strong>Key (token)</strong>
           <span>{safe ? 'Stream-safe mode is on, so the key stays hidden. You can still copy it.' : 'Hidden until you press Show. Every request has to carry it.'}</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <code className="sd-code sd-key" data-testid="streamdoor.key" aria-label={shown === null ? 'The key, hidden' : 'The key, shown'}>
             {shown === null ? HIDDEN : displaySecret(shown)}
           </code>
@@ -118,7 +118,7 @@ export function StreamDoorPrefsRow() {
           <strong>Port</strong>
           <span>If another program has it, Frameling asks whether to use the next free one.</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <input className="sd-port" type="number" min={1024} max={65535} value={port} data-testid="streamdoor.port" aria-label="Port" onChange={(e) => setPort(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && usePort()} />
           <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.usePort" onClick={usePort}>
             Use this port
@@ -130,7 +130,7 @@ export function StreamDoorPrefsRow() {
           <strong>Try it</strong>
           <span>Copies one line to paste into a terminal, with your address and key in it. If the door works, you get a list of actions back. It is copied, never shown.</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.copyTest" onClick={() => void copyTestCommand()} disabled={!status.running}>
             Copy a test command
           </button>
@@ -141,7 +141,7 @@ export function StreamDoorPrefsRow() {
           <strong>Firebot setup file</strong>
           <span>Adds !vote, !guess and !prompt to Firebot in one import. It has the address but not the key: Firebot asks you to paste that.</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.firebotSetup" onClick={() => void saveFirebotSetup()}>
             Save setup file
           </button>

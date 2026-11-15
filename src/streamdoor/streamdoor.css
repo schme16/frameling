@@ -4,13 +4,6 @@
   flex-direction: column;
   gap: 6px;
 }
-.sd-control {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
 .sd-code {
   padding: 4px 8px;
   border-radius: var(--radius-small);

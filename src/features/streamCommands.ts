@@ -1,5 +1,5 @@
 // Two palette commands for the streaming family as one thing: tuck it away, bring it back. They are what typing "turn
-// off stream stuff" finds, and the Streaming tools row on Preferences > Streaming runs the same two.
+// off stream stuff" finds, and the switch opposite the title on Preferences > Streaming runs the same two.
 import { registerCommands } from '../core/registry';
 import { toast } from '../ui/toast';
 import { STREAM_FEATURES, streamingCount, STREAMING_NAME } from './streamFamily';
