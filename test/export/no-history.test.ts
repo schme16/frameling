@@ -19,8 +19,8 @@ function sources(dir: string, out: string[] = []): string[] {
 }
 
 describe('exports and history', () => {
-  it('only Save and Save as reach for the history to write', () => {
-    const allowed = new Set(['src/io/document.ts', 'src/io/file.ts', 'src/core/historyFile.ts', 'src/core/store.ts']);
+  it('only Save, Save as and Send a copy reach for the history to write', () => {
+    const allowed = new Set(['src/io/document.ts', 'src/io/sendCopy.ts', 'src/io/file.ts', 'src/core/historyFile.ts', 'src/core/store.ts']);
     const users = sources('src')
       .filter((f) => /\b(historyForSave|encodeHistory|onHistory)\b/.test(readFileSync(f, 'utf8')))
       .filter((f) => !allowed.has(f.replace(/\\/g, '/')));

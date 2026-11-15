@@ -35,6 +35,28 @@ Frameling tells you why in plain words. If a file looks damaged, check whether y
 ---
 
 Want to share your work as a video, a GIF or pictures? That's **Export**, a different thing from Save. See [Exporting](help:exporting).`,
+  'send-a-copy': `**Send a copy** is the plain way to give somebody a drawing: it saves a copy where you pick, and shows you the file, ready to attach, drop in a chat or put on a memory stick. No account, no link, nothing to keep running, so it works when the other person is asleep.
+
+**Send one**
+1. Pick **File > Send a copy...**, or press **Ctrl+Alt+E** (**Cmd+Alt+E** on a Mac).
+2. Choose where it goes and what to call it.
+3. Frameling shows the file in your file manager. Send it however you like.
+
+It copies what you see right now, saved or not. Your own drawing isn't touched: its file, its **unsaved** dot and **Open recent** all stay as they were, and the copy doesn't turn up in **Open recent** either. If you pick your own file's name, Frameling stops you rather than replace it.
+
+**Your undo history: the first time, it asks**
+If you've been drawing, there's a trail of steps behind you. Should they travel with the copy?
+- **Just the drawing** is the usual pick. The file is as small as it gets, and nobody can step back to something you took out.
+- **Send my undo history too** lets whoever opens it use **Undo** back through your steps. The file is bigger, and anything you drew and then rubbed out can still be found in it.
+
+The question shows the real sizes for your drawing, so you can see what you're choosing. It remembers your answer. Change it any time in **Preferences > Behaviour**.
+
+**Good to know**
+- The copy has its own identity, so its [versions](help:version-history) start fresh, separate from your drawing's.
+- Only the newest steps go in with the history, so it never swells without limit.
+- While [Stream-safe](help:stream-safe) is on, Frameling doesn't open your file manager by itself, because it would show your folders. The message has a **Show in folder** button for when you're ready.
+- Want to keep working in a new file instead? That's **Save as...**, see [Saving and opening](help:saving-and-opening).
+`,
   'recent-drawings': `**Open recent** shows each drawing you had open lately with a little picture of it, so you know your own work at a glance.
 
 **Open it:** **File > Open recent...**, or search the command palette (**Ctrl+K**) for **Open recent**. Pick a row and the drawing opens. The start screen's **Pick up where you left off** shows the same pictures.

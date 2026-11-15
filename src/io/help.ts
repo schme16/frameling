@@ -11,6 +11,15 @@ registerHelpTopics([
     keywords: ['save', 'open', 'file', 'load', 'recent', 'frameling file'],
   },
   {
+    id: 'send-a-copy',
+    order: 2,
+    media: 'send-a-copy.mp4',
+    title: 'Send a copy of your drawing',
+    section: 'Files',
+    summary: 'Save a copy to hand to somebody, with no fuss. You choose whether your undo history goes with it.',
+    keywords: ['send', 'share', 'give', 'email', 'attach', 'friend', 'copy', 'hand over', 'undo history', 'history', 'file size', 'Mod+Alt+E'],
+  },
+  {
     id: 'autosave',
     media: 'autosave.png',
     title: 'Autosave',

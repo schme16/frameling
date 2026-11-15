@@ -32,7 +32,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'pixel.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit'],
+    items: ['file.new', 'pixel.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.sendCopy', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit'],
   },
   {
     label: 'Edit',
