@@ -131,6 +131,7 @@ registerCommands([
     category: 'Edit',
     keys: ['Mod+A'],
     description: 'Select everything on this frame of the active layer.',
+    keywords: ['everything', 'every thing'],
     help: 'selecting',
     enabled: () => !!vectorDrawing()?.shapes.length,
     run: () => setSelection(vectorDrawing()?.shapes.map((s) => s.id) ?? []),

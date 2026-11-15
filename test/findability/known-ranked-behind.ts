@@ -5,22 +5,10 @@
 
 /** A sentence whose right answer is not first. `rank` is where it sits now (2 means one wrong answer above it). */
 export const RANKED_BEHIND: Record<string, { rank: number; why: string }> = {
-  "rub out": { rank: 2, why: "Erase marks (the notes tool) says 'erase' in its name and beats the eraser." },
-  "draw a circle": { rank: 3, why: "The marks circle and the Marks tool outrank the ellipse tool." },
-  "draw a square": { rank: 3, why: "Artboard variation Square and the square grid outrank the rectangle tool." },
-  "fill it in": { rank: 3, why: "The Fill help topic and 'no colour' outrank the paint bucket." },
-  "move the page around": { rank: 2, why: "The canvas navigation help topic outranks the hand tool." },
-  "select everything": { rank: 2, why: "Invert selection outranks Select all." },
-  "copy and paste": { rank: 2, why: "Two help topics outrank each other, and Copy the stream overlay address is third: a keyword match from the audience family." },
-  "make a symbol": { rank: 3, why: "Make one and Make frames outrank Make a symbol." },
-  "add a new layer": { rank: 3, why: "New folder and Add a mask outrank adding a drawing layer." },
-  "open a file": { rank: 2, why: "Open an Aseprite file outranks Open." },
-  "export a video": { rank: 2, why: "Export ProRes outranks Export." },
-  "import a picture": { rank: 2, why: "Palette from a picture outranks the import." },
-  "rename my drawing": { rank: 2, why: "Name this drawing on the timeline outranks the document name help." },
-  "turn on dark mode": { rank: 2, why: "The Color burn blend mode outranks the theme switch." },
-  "go to the next frame": { rank: 2, why: "Duplicate drawing outranks Next frame." },
-  "import a gif": { rank: 3, why: "Palette from a picture and Open a picture outrank the import." },
+  "import a gif": { rank: 2, why: "Open a picture or sprite sheet has the same keywords as the import and 'a' in its name, which the filler bonus rewards. The import lives in the Import menu, which the palette does not count as part of its name." },
+  "pan": { rank: 3, why: "All panels and the Skeleton panel start with 'pan', and a name that starts with the word still outranks an exact synonym (the hand tool's 'pan')." },
+  "colour it in": { rank: 3, why: "The colour commands say 'colour' in their own names, and the paint bucket only has it as a keyword." },
+  "flip it": { rank: 3, why: "Flip view, and flipping a layer's mask, both say 'flip' plainly; flipping the drawing comes third." },
 };
 
 /** The plain words the crowding audit asks about: what somebody types before they know what anything is called. */

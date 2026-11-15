@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Command, HelpTopic } from '../../src/core/registry';
-import { notNowMessage, paletteItems, rankPalette, scoreItem, STARTER_COMMANDS, STARTERS_UNTIL_RECENT } from '../../src/ui/palette';
+import { keywordIsPhrase, nameIsTyped, nameShare, notNowMessage, paletteItems, rankPalette, scoreItem, STARTER_COMMANDS, STARTERS_UNTIL_RECENT } from '../../src/ui/palette';
 import { editDistance, inOrder, scoreWord, wordsOf } from '../../src/ui/match';
 
 const c = (id: string, label: string, extra: Partial<Command> = {}): Command => ({ id, label, category: 'Test', run: () => {}, ...extra });
@@ -98,5 +98,45 @@ describe('filler words', () => {
   it('finds the command in a plain sentence', () => {
     expect(top('how do i make it play')[0]).toBe('command:timeline.play');
     expect(top('the undo')[0]).toBe('command:edit.undo');
+  });
+});
+
+describe('plain names beat specialised ones, and a phrase somebody chose beats a lucky word', () => {
+  const typed = (q: string) => wordsOf(q);
+  it('counts how much of a name was typed, in order, the last word may be half typed', () => {
+    expect(nameShare('Open...', typed('open'))).toBe(1);
+    expect(nameShare('Open Aseprite file...', typed('open'))).toBeCloseTo(1 / 3);
+    expect(nameShare('Make a reusable symbol', typed('make a symbol'))).toBe(0.75);
+    expect(nameShare('Rectangle', typed('rect'))).toBe(1);
+    expect(nameShare('Square grid', typed('draw a square'))).toBe(0);
+    expect(nameShare('Blend mode: Burn dark (Colour burn)', typed('dark mode'))).toBe(0);
+  });
+  it('knows a whole name typed inside a sentence, and ignores the words in brackets', () => {
+    expect(nameIsTyped('Open...', typed('open a file'))).toBe(true);
+    expect(nameIsTyped('Next frame', typed('go to the next frame'))).toBe(true);
+    expect(nameIsTyped('Add shadow (Drop shadow)', typed('add shadow'))).toBe(true);
+    expect(nameIsTyped('Open Aseprite file...', typed('open a file'))).toBe(false);
+  });
+  it('knows a keyword phrase typed in any order, and wants at least two words of it', () => {
+    expect(keywordIsPhrase(['rub out', 'rubber'], typed('rub out'))).toBe(true);
+    expect(keywordIsPhrase(['add layer'], typed('add a new layer'))).toBe(true);
+    expect(keywordIsPhrase(['rubber'], typed('rubber'))).toBe(false);
+    expect(keywordIsPhrase(['dark mode'], typed('dark'))).toBe(false);
+  });
+  it('puts the plain command ahead of the one with extra words in its name', () => {
+    const list = paletteItems([c('file.open', 'Open...', { category: 'File', keywords: ['file'] }), c('file.openAseprite', 'Open Aseprite file...', { category: 'File' }), c('file.exportProres', 'Export ProRes video...', { category: 'File' }), c('file.export', 'Export...', { category: 'File', keywords: ['video'] })], []);
+    const ids = (q: string) => rankPalette(q, list, []).map((h) => h.item.id);
+    expect(ids('open a file')[0]).toBe('file.open');
+    expect(ids('export a video')[0]).toBe('file.export');
+    expect(ids('prores')[0]).toBe('file.exportProres');
+  });
+  it('lets a keyword phrase lift a command above its help page', () => {
+    const list = paletteItems([c('tools.fill', 'Paint bucket', { category: 'Tools', keywords: ['fill in'] })], [t('fill', 'Fill', 'Colour a shape in.')]);
+    expect(rankPalette('fill it in', list, []).map((h) => h.item.id)[0]).toBe('tools.fill');
+  });
+  it('says draw means a tool and my means your', () => {
+    const list = paletteItems([c('view.gridSquare', 'Square grid', { category: 'View' }), c('tools.rect', 'Rectangle', { category: 'Tools', keywords: ['square'] })], [t('document-name', 'Naming your drawing', '', ['rename']), t('other', 'Drawing tips', '', ['rename'])]);
+    expect(rankPalette('draw a square', list, []).map((h) => h.item.id)[0]).toBe('tools.rect');
+    expect(rankPalette('rename my drawing', list, []).map((h) => h.item.id)[0]).toBe('document-name');
   });
 });
