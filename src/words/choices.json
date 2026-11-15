@@ -1633,6 +1633,46 @@
     "text": "Leave it on this time and ask again next time.",
     "where": "Dialog and Preferences: the small line under the \"wait\" answer in \"When OBS stops streaming\"."
   },
+  "choice.streamoverlay.quill.title": { "text": "Quill on the stream overlay", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamoverlay.quill.question": {
+    "text": "When chat makes Quill cheer, hop or hold up a sign, should he show on the stream overlay too?",
+    "where": "The question the \"Quill on the stream overlay\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.streamoverlay.quill.show.label": { "text": "Show him", "where": "Preferences: the answer \"show\" in \"Quill on the stream overlay\"." },
+  "choice.streamoverlay.quill.show.detail": {
+    "text": "Your viewers see Quill react on stream, with his words beside him.",
+    "where": "Preferences: the small line under the \"show\" answer in \"Quill on the stream overlay\"."
+  },
+  "choice.streamoverlay.quill.show.did": { "text": "Quill shows on the stream overlay.", "where": "Toast when \"show\" is used without asking (\"Quill on the stream overlay\"), in the past tense." },
+  "choice.streamoverlay.quill.hide.label": { "text": "Keep him off it", "where": "Preferences: the answer \"hide\" in \"Quill on the stream overlay\"." },
+  "choice.streamoverlay.quill.hide.detail": {
+    "text": "Quill still reacts on your screen, but nothing of him goes to the overlay.",
+    "where": "Preferences: the small line under the \"hide\" answer in \"Quill on the stream overlay\"."
+  },
+  "choice.streamoverlay.quill.hide.did": { "text": "Quill stays off the stream overlay.", "where": "Toast when \"hide\" is used without asking (\"Quill on the stream overlay\"), in the past tense." },
+  "choice.streamoverlay.prompt.title": { "text": "Prompts on the stream overlay", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamoverlay.prompt.question": {
+    "text": "When you pull a prompt out of the jar, should it go up on the stream overlay straight away, or wait until you press Show on stream?",
+    "where": "The question the \"Prompts on the stream overlay\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.streamoverlay.prompt.ask.label": { "text": "Wait for me", "where": "Preferences: the answer \"ask\" in \"Prompts on the stream overlay\"." },
+  "choice.streamoverlay.prompt.ask.detail": {
+    "text": "You read it first. It only goes on stream when you press Show on stream on the jar card.",
+    "where": "Preferences: the small line under the \"ask\" answer in \"Prompts on the stream overlay\"."
+  },
+  "choice.streamoverlay.prompt.ask.did": {
+    "text": "A prompt you pull waits for Show on stream.",
+    "where": "Toast when \"ask\" is used without asking (\"Prompts on the stream overlay\"), in the past tense."
+  },
+  "choice.streamoverlay.prompt.now.label": { "text": "Straight away", "where": "Preferences: the answer \"now\" in \"Prompts on the stream overlay\"." },
+  "choice.streamoverlay.prompt.now.detail": {
+    "text": "A prompt goes up the moment you pull it. With Stream-safe on, it still waits for Show it.",
+    "where": "Preferences: the small line under the \"now\" answer in \"Prompts on the stream overlay\"."
+  },
+  "choice.streamoverlay.prompt.now.did": {
+    "text": "A prompt you pull goes straight onto the stream overlay.",
+    "where": "Toast when \"now\" is used without asking (\"Prompts on the stream overlay\"), in the past tense."
+  },
   "choice.streamdoor.portBusy.title": { "text": "When the actions door's port is taken", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
   "choice.streamdoor.portBusy.question": {
     "text": "Another program is already using the actions door's port. Use the next free one, or leave the door closed?",

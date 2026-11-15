@@ -16,6 +16,9 @@ const NOT_PLAIN = /[^\p{L}\p{N} .,!?'’":;()\-&+%#$*/~]/gu;
 // Any one character repeated more than three times in a row.
 const RUNS = /(.)\1{3,}/gsu;
 
+/** Web addresses and @mentions swapped for a space. For the places that clean in their own way but must never show either. */
+export const withoutLinksAndMentions = (text: string): string => text.replace(LINKS, ' ').replace(MENTIONS, ' ');
+
 /** Plain words cut to `max` characters (by whole code points), or null when nothing worth keeping is left. Pure. */
 export function cleanChatText(raw: unknown, max: number): { text: string } | null {
   const v = typeof raw === 'string' ? raw : raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { text?: unknown }).text : undefined;

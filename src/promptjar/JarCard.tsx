@@ -12,7 +12,8 @@ import { toast } from '../ui/toast';
 import { audience } from '../audience';
 import { currentChoice } from '../core/choices';
 import { emptyJar, jar, passOn, pullOne, putBack, addToJar } from './jar';
-import { hideJar, jarCardOpen, jarFeatureOn, jarFocusAdd } from './card';
+import { hideJar, jarCardOpen, jarFeatureOn, jarFocusAdd, jarShown } from './card';
+import { isFeatureOn } from '../features/host';
 import { JAR_MAX, cleanPrompt, promptsFromText } from './logic';
 import { useSyncExternalStore } from 'react';
 import './jar.css';
@@ -39,7 +40,10 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
   const focus = jarFocusAdd.use((v) => v);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
-  const [shown, setShown] = useState<number | null>(null);
+  const shown = jarShown.use((v) => v);
+  const setShown = (id: number | null) => jarShown.set(id);
+  // With the stream overlay on, a pulled prompt waits for "Show on stream" unless the streamer chose to send it straight away.
+  const overlayAsks = isFeatureOn('stream-overlay') && currentChoice('streamoverlay.prompt') !== 'now';
   const [shaking, setShaking] = useState(false);
   usePopover(ref, hideJar);
   useEffect(() => {
@@ -113,6 +117,11 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
             <p className="jar-slip-text" data-testid="promptjar.text">
               {scrubText(s.hand.text)}
             </p>
+          )}
+          {!hidden && overlayAsks && (
+            <button type="button" className="ui-btn" data-testid="promptjar.onStream" onClick={() => setShown(shown === s.hand!.id ? null : s.hand!.id)}>
+              {shown === s.hand.id ? 'Take it off the stream' : 'Show on stream'}
+            </button>
           )}
         </div>
       )}

@@ -10,6 +10,10 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { handleDoorRequest, MAX_BODY, type DoorResponse } from './doorHandler';
+import { handleOverlayRequest, isOverlayPath, type OverlayDeps } from './overlayHandler';
+import { createOverlayHub, privateWordsOf } from './overlayHub';
+import os from 'node:os';
+import { OVERLAY_PREFIX } from '../shared/streamOverlay';
 import { closedStatus, DEFAULT_DOOR_PORT, DOOR_PORT_TRIES, validDoorPort, type DoorAsk, type DoorStatus } from '../shared/streamDoor';
 
 export const KEY_FILE = 'stream-door-key.txt';
@@ -50,6 +54,12 @@ export interface DoorServerDeps {
   dir: string;
   /** Asks the page. Resolves to whatever it said, or null when it did not say in time. */
   ask(op: DoorAsk): Promise<unknown>;
+  /**
+   * The stream overlay (src/main/overlayHandler.ts), served on its own path by this same server. It has its own rules
+   * and shares none of the door's: a request for /overlay never reaches the door's handler, and no other path reaches
+   * the overlay's. Left out, the server has no overlay at all.
+   */
+  overlay?: OverlayDeps;
 }
 
 export interface DoorServer {
@@ -96,6 +106,14 @@ export function createDoorServer(deps: DoorServerDeps): DoorServer {
 
   const make = (portOf: () => number): http.Server => {
     const srv = http.createServer((req, res) => {
+      if (deps.overlay && isOverlayPath(req.url ?? '')) {
+        // A read-only page with a token of its own. Never the door's handler, so the door's Origin rule is untouched.
+        req.resume();
+        const r = handleOverlayRequest({ method: req.method ?? '', url: req.url ?? '', headers: req.headers, port: portOf() }, deps.overlay);
+        res.writeHead(r.status, r.headers);
+        res.end(req.method === 'HEAD' ? undefined : r.body);
+        return;
+      }
       let body = '';
       let tooBig = false;
       req.setEncoding('utf8');
@@ -183,13 +201,25 @@ type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => 
  * The page's side of the door: it opens and closes it (the gate does, from the page), reads the key to show or copy,
  * and answers the questions the door asks it. A question goes out as `door:ask` with a number and comes back as `door:answer`.
  */
-export function registerDoorIpc(handle: Handle, win: () => Electron.BrowserWindow | null, dir: () => string): { close(): Promise<void> } {
+export function registerDoorIpc(handle: Handle, win: () => Electron.BrowserWindow | null, dir: () => string, mascotDir: () => string | null = () => null): { close(): Promise<void> } {
   const waiting = new Map<number, (v: unknown) => void>();
   let n = 0;
   let door: DoorServer | null = null;
+  const hub = createOverlayHub({
+    dir: dir(),
+    mascotDir: mascotDir(),
+    privateWords: (() => {
+      try {
+        return privateWordsOf(os.userInfo().username, os.hostname());
+      } catch {
+        return [];
+      }
+    })(),
+  });
   const get = (): DoorServer =>
     (door ??= createDoorServer({
       dir: dir(),
+      overlay: hub,
       ask: (op) =>
         new Promise((resolve) => {
           const w = win();
@@ -205,6 +235,7 @@ export function registerDoorIpc(handle: Handle, win: () => Electron.BrowserWindo
   handle('door:open', (_e, port: unknown, fallback: unknown) => get().open(validDoorPort(port) ? port : DEFAULT_DOOR_PORT, fallback === true));
   handle('door:close', async () => {
     await get().close();
+    hub.setOn(false);
   });
   handle('door:status', () => get().status());
   handle('door:key', () => get().key());
@@ -216,5 +247,25 @@ export function registerDoorIpc(handle: Handle, win: () => Electron.BrowserWindo
       r(answer);
     }
   });
-  return { close: () => (door ? door.close() : Promise.resolve()) };
+  // The stream overlay's side of the page's link: it says whether the overlay is wanted, and what is going on for it to show.
+  handle('overlay:on', (_e, on: unknown) => {
+    hub.setOn(on === true);
+  });
+  handle('overlay:push', (_e, raw: unknown) => {
+    hub.push(raw);
+  });
+  // The full address, or '' while the door is closed. The token is in it: the page draws it hidden, and copies it.
+  handle('overlay:url', () => {
+    const a = get().status().address;
+    return a ? `${a}${OVERLAY_PREFIX}/${hub.token()}/` : '';
+  });
+  handle('overlay:roll', () => {
+    hub.roll();
+  });
+  return {
+    close: async () => {
+      hub.setOn(false);
+      if (door) await door.close();
+    },
+  };
 }

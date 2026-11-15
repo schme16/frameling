@@ -60,6 +60,11 @@ function invokeStubs(library) {
     'door:key': () => 'fld_PretendKeyForPicturesOnlyNotReal0123',
     'door:roll': () => 'fld_AnotherPretendKeyForPicturesOnly4567',
     'door:answer': () => undefined,
+    // The stream overlay: no real server either. A made-up address that opens nothing.
+    'overlay:on': () => undefined,
+    'overlay:push': () => undefined,
+    'overlay:url': () => 'http://127.0.0.1:47213/overlay/ov_PretendTokenForPicturesOnlyNotReal01/',
+    'overlay:roll': () => undefined,
     'library:list': (_e, kind) => own(kind).map((k) => ({ id: k.slice(kind.length + 1), size: library.get(k).length, modified: 0 })),
     'library:read': (_e, kind, id) => library.get(`${kind}/${id}`) ?? null,
     'library:write': (_e, kind, id, bytes) => void library.set(`${kind}/${id}`, bytes),
