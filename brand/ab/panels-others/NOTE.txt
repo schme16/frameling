@@ -1,0 +1,9 @@
+Board card panels-how-others-do-it, doc panels-others. Every picture exists as -dark and -light. The A, B and C mocks are static pages in the app's own colours with stand-in icons, not a rebuilt dock.
+real-top-*.png: the real built app, Properties with the Ball selected on a vector layer, top of the panel (Symbol and motion open).
+real-bottom-*.png: the same panel scrolled to the end: Colours, then the ALSO HERE block listing 8 sections that are not showing, beside the rail of 11 more.
+real-top-window-*.png: the whole window for the same moment, so the rail and the panel can be seen in place.
+compare-*.png: today, A, B and C side by side (the one to look at first).
+now-mock-*.png: today's panel redrawn as a mock, same content as the three shapes so the comparison is fair (the real one is real-top and real-bottom).
+A-only-whats-here-*.png: Shape A, Figma, Godot and Unity style. The panel only holds what applies; the Panels list says when each other one turns up.
+B-tabs-*.png: Shape B, Blender style. A strip of icons for the kinds that apply, one shown at a time, plus a choice of which tabs show.
+C-one-line-*.png: Shape C, the smallest change. The block of 8 becomes one line that opens the old list.
