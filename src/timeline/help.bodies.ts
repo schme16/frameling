@@ -234,7 +234,7 @@ Whichever you pick is remembered. Change it any time in **Preferences > Behaviou
 
 ## Do it yourself
 
-Open the command palette and run **Tidy the end**, or use **Frames and motion > Tidy the end**. It works whatever you chose above, and you can undo it.
+Open the command palette and run **Tidy the end**, or use **Frames and motion > More frame tools > Tidy the end**. It works whatever you chose above, and you can undo it.
 
 ## What it never touches
 
@@ -262,7 +262,7 @@ Click the little arrow beside the onion for:
 - **Strength:** how strong the nearest ghost is. Ones further away fade.
 - **Colours:** frames before are tinted rose and frames after mint, so you can tell them apart. Turn the tint off to see them in their own colours.
 
-- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses before and after this one, not copies of the drawing you're on. Also in **Frames and motion > Onion skin shows only keys**.
+- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses around this one, not copies of it. Also in **Frames and motion > Onion skin options**.
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
@@ -270,11 +270,11 @@ On the ruler, the frames being ghosted are softly shaded in the same colours.
 
 Your file has [clips](help:timeline-clips), like idle, run and jump? The ghosts **stop at the edge of the clip you're in**, so the first frame of a jump is never drawn against the last frame of the run before it, and you never trace a limb that belongs to another animation. The ruler's shading stops there too.
 
-The first time an edge hides a ghost, a note says so, with a **Change** button. Making one long scene out of clips back to back? Choose **Carry on into the next clip**, or switch it any time with **Onion skin carries on into the next clip** in the **Frames and motion** menu, or in **Preferences > Behaviour**. A frame that is in no clip has no edge, so nothing is hidden there.
+The first time an edge hides a ghost, a note says so, with a **Change** button. Making one long scene out of clips back to back? Choose **Carry on into the next clip**, or switch it any time with **Frames and motion > Onion skin options > Onion skin carries on into the next clip**, or in **Preferences > Behaviour**. A frame that is in no clip has no edge, so nothing is hidden there.
 
 ## Boards either side
 
-Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Frames and motion > Onion skin shows the boards either side**.
+Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Frames and motion > Onion skin options > Onion skin shows the boards either side**.
 
 Board ghosts sit under this board's own frame ghosts, and a board of another size is fitted into yours and centred. Variations are left out: a variation is another take on a board, not the next one.
 

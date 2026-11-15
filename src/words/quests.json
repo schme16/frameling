@@ -141,7 +141,7 @@
     "where": "Quest \"Particle party\", step 1 (add): the quiet line under it saying why."
   },
   "quest.particle-party.add.hint": {
-    "text": "Tools and layers > Effects > Add particles: Confetti in the menu does it too.",
+    "text": "Skeleton, effects and more > Effects > Add particles: Confetti in the menu does it too.",
     "where": "Quest \"Particle party\", step 1 (add): said when nothing has happened for a while."
   },
   "quest.particle-party.motion.say": {
@@ -549,7 +549,7 @@
     "where": "Quest \"Bones and a pose\", step 1 (add): the quiet line under it saying why."
   },
   "quest.bones-and-pose.add.hint": {
-    "text": "It is in the Rig panel on the right, or Frames and motion > Skeleton (rig) > Add a skeleton to this drawing in the menu.",
+    "text": "It is in the Rig panel on the right, or Skeleton, effects and more > Skeleton (rig) > Add a skeleton to this drawing in the menu.",
     "where": "Quest \"Bones and a pose\", step 1 (add): said when nothing has happened for a while."
   },
   "quest.bones-and-pose.draw.say": { "text": "Drag from the shoulder to the elbow, then from the elbow to the hand.", "where": "Quest \"Bones and a pose\", step 2 (draw): what the guide says." },
@@ -567,7 +567,7 @@
     "where": "Quest \"Bones and a pose\", step 3 (attach): the quiet line under it saying why."
   },
   "quest.bones-and-pose.attach.hint": {
-    "text": "Frames and motion > Skeleton (rig) > Attach parts to bones does the same.",
+    "text": "Skeleton, effects and more > Skeleton (rig) > Attach parts to bones does the same.",
     "where": "Quest \"Bones and a pose\", step 3 (attach): said when nothing has happened for a while."
   },
   "quest.bones-and-pose.pose.say": {
