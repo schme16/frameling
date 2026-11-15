@@ -146,7 +146,14 @@ export function hiddenFeaturesUsedBy(doc: Doc): FeatureDescriptor[] {
 export const hiddenFeatureOpening = (path: string): FeatureDescriptor | undefined => hiddenFeatures().find((d) => d.opens?.(path));
 
 /** Help topics that exist but are kept out of sight for now: those of hidden features, and any an active feature holds back. For the help audit, which counts their pictures as used. */
-export const hiddenFeatureHelp = (): HelpTopic[] => [...hiddenFeatures().flatMap((d) => d.help ?? []), ...allFeatures().flatMap((d) => (isHidden(d) ? [] : d.heldBackHelp?.() ?? []))];
+export const hiddenFeatureHelp = (): HelpTopic[] => [
+  ...hiddenFeatures().flatMap((d) => d.help ?? []),
+  ...allFeatures().flatMap((d) => (isHidden(d) ? [] : d.heldBackHelp?.() ?? [])),
+  ...keptOutSources.flatMap((f) => f()),
+];
+const keptOutSources: (() => HelpTopic[])[] = [];
+/** For help that belongs to something that is not a feature (the audience gate) and is taken away with the streaming tools: lists what is out of sight now. */
+export const addKeptOutHelp = (f: () => HelpTopic[]): void => void keptOutSources.push(f);
 
 /** The feature that is on and needs this one, if any (so this one cannot be turned off yet). */
 export const needsIt = (id: string): FeatureDescriptor | undefined => [...features.values()].find((x) => live.has(x.id) && (x.requires ?? []).includes(id));

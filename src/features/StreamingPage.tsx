@@ -43,6 +43,19 @@ export function StreamingPage({ sharing }: { sharing: ReactNode }) {
     <div className="streaming-page" data-help="streaming" data-testid="streaming-page">
       <h3>Streaming</h3>
       <p className="ui-pref-intro">Everything for streaming and sharing your screen. The tools for streamers can be tucked away, and the sharing settings stay for anybody.</p>
+      {on && (
+        <div className="ui-pref-row streaming-start" data-testid="streaming-start">
+          <div className="ui-pref-text">
+            <strong>Getting your viewers taking part</strong>
+            <span>Twitch events need only a connection. Votes, guesses and typed prompts need a chat bot as well. The whole route, in order, is one page.</span>
+          </div>
+          <div className="ui-pref-control">
+            <button type="button" className="ui-btn" data-testid="streaming-start-help" onClick={() => openHelp('viewers-take-part')}>
+              <Icon name="help" size={14} /> Show me how
+            </button>
+          </div>
+        </div>
+      )}
       <section className="features-streaming" data-testid="features-streaming" aria-labelledby="streaming-tools-title">
         <h4 id="streaming-tools-title">The streaming tools</h4>
         <div className="ui-pref-row">

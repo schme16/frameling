@@ -24,6 +24,8 @@ module.exports = [
     prefs: { reduceMotion: true },
     steps: [
       template('bouncing-ball'),
+      js('__framelingAudience.on(0)'),
+      wait(400),
       js(`${F}.overlays.openPrefs('streaming')`),
       wait(700),
       js('__framelingTwitch.waiting()'),
@@ -37,6 +39,8 @@ module.exports = [
     prefs: { reduceMotion: true },
     steps: [
       template('bouncing-ball'),
+      js('__framelingAudience.on(0)'),
+      wait(400),
       js(`${F}.overlays.openPrefs('streaming')`),
       wait(700),
       js(`__framelingTwitch.connected('quillfan'); __framelingTwitch.rules(${links})`),

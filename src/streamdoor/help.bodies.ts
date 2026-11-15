@@ -1,6 +1,6 @@
 // The words of the topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'chat-commands': `Frameling never reads your chat, on purpose. So when a viewer types **!vote 2**, a small program on your computer has to read it and pass it to Frameling's [actions door](help:actions-door). Channel Points and cheers work without this. **Votes, guesses and typed prompts need it.**
+  'chat-commands': `Frameling never reads your chat, on purpose. So when a viewer types **!vote 2**, a small program on your computer has to read it and pass it to Frameling's [actions door](help:actions-door). Channel Points and cheers work without this, once [Twitch is connected](help:twitch). **Votes, guesses and typed prompts need it.** The whole route in order is in [Getting your viewers taking part](help:viewers-take-part).
 
 **Pick the program.** On Linux, use **Firebot**: it runs natively and sends the request with no code ([Firebot setup](help:chat-commands-firebot)). Streamer.bot on Linux runs through Wine, which its makers call experimental, and it needs a little C# to send anything ([Streamer.bot setup](help:chat-commands-streamerbot)). On Windows both are fine, and Streamer.bot also reads YouTube and Kick.
 
@@ -156,7 +156,7 @@ public class CPHInline
 - Made a new key in Frameling? Paste it into the code.
 - Streamer.bot and Frameling have to be on the same computer.
 - Checked against Streamer.bot v1.0.7, August 2026.`,
-  'actions-door': `Streamer.bot, Firebot and a Stream Deck already hear from Twitch, YouTube and Kick: Channel Points, chat commands, subs. They can also send a message to a program on your own computer. The **actions door** is where that message lands. Frameling never signs in to anything.
+  'actions-door': `Streamer.bot, Firebot and a Stream Deck already hear from Twitch, YouTube and Kick: Channel Points, chat commands, subs. They can also send a message to a program on your own computer. The **actions door** is where that message lands. The door itself never signs in to anything, and it is how chat reaches Frameling, since Frameling never reads chat. New to all this? Start with [Getting your viewers taking part](help:viewers-take-part).
 
 **It opens with audience features.** Switch them on in **Preferences > Streaming > Audience features**. The red **On air** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
 

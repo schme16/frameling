@@ -218,6 +218,19 @@ export function TwitchPrefsRow() {
       <div className="tw-linkbox" data-testid="twitch.linkBox">
         <h4>Links: what each event does</h4>
         <p className="ui-pref-intro">When a Twitch event arrives, Frameling asks the audience gate to run the action you pick. Your switches, cooldowns, queue and Stop all apply.</p>
+        <div className="tw-split" data-testid="twitch.split">
+          <p>
+            <strong>From Twitch events, no other program:</strong> channel point rewards, cheers, follows, subs and raids. They can set off anything in the list below.
+          </p>
+          <p>
+            <strong>Needs a chat bot:</strong> votes, guesses and prompts typed in chat. They aren't in the list below because Frameling never reads your chat: a bot such as Firebot reads it and passes it on.
+          </p>
+          <div>
+            <button type="button" className="ui-btn ui-btn-quiet" data-testid="twitch.chatHelp" onClick={() => openHelp('viewers-take-part')}>
+              <Icon name="help" size={14} /> How to add votes and guesses
+            </button>
+          </div>
+        </div>
         <div className="tw-links" data-testid="twitch.links">
           {saved.rules.length === 0 && <p className="tw-note">No links yet. Nothing happens for any Twitch event.</p>}
           {saved.rules.map((r) => (

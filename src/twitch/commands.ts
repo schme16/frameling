@@ -10,7 +10,7 @@ export const twitchCommands: Command[] = [
     id: 'twitch.connect',
     label: 'Connect Twitch',
     category: 'Audience',
-    description: 'Sign in to Twitch with a short code, so channel point rewards, cheers, follows, subs and raids can make Quill and your audience tools react. No other program needed.',
+    description: 'Sign in to Twitch with a short code, so channel point rewards, cheers, follows, subs and raids can make Quill and your audience tools react. No other program needed for those; votes and guesses come from chat and need a bot.',
     help: 'twitch',
     keywords: KEYWORDS,
     global: true,

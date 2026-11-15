@@ -11,14 +11,15 @@
 import { currentChoice, onChoiceChange, registerChoice, withChoice } from '../core/choices';
 import { ownedUndo, removeOwned, withOwner } from '../core/owners';
 import { registerCommands, registerHelpTopics, type Command } from '../core/registry';
-import { onFeaturesChange } from '../features/host';
+import { addKeptOutHelp, onFeaturesChange } from '../features/host';
 import { streamingOn } from '../features/streamFamily';
 import { store } from '../core/store';
 import { readJson, writeJson } from '../ui/mini';
+import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { audienceChoices } from './choices';
 import { createGate, limitsFor, lasts, type AudienceActionDef, type AudienceDoorDef, type Gate, type Verdict } from './gate';
-import { audienceHelp } from './help';
+import { audienceHelp, startHelp } from './help';
 import { desktop } from '../io/desktop';
 import { globalStop, showAudienceCard } from './card';
 import { registerQuietFamily } from '../ui/palette';
@@ -99,11 +100,19 @@ let gateShown = false;
  * is on, and takes them out while all are tucked away, so somebody who never streams does not see them. The gate and
  * its help stay, and switching any streaming feature on brings the commands back.
  */
+// The route page's picture is still in use while it is tucked away, so the help audit counts it.
+addKeptOutHelp(() => (gateShown ? [] : startHelp));
+
 export function syncGateCommands(): void {
   const want = streamingOn();
   if (want === gateShown) return;
   gateShown = want;
-  if (want) withOwner(GATE_OWNER, () => registerCommands(gateCommands));
+  if (want) {
+    withOwner(GATE_OWNER, () => {
+      registerCommands(gateCommands);
+      registerHelpTopics(startHelp);
+    });
+  }
   else {
     removeOwned(GATE_OWNER);
     // Nothing is left that could use it, so the switch goes off with the last of them.
@@ -168,6 +177,16 @@ export function installAudience(): void {
       enabled: () => audience.snapshot().queue.length > 0,
       reason: () => 'Nothing is waiting.',
       run: () => void emptyAudienceQueue(),
+    },
+    {
+      id: 'audience.start',
+      label: 'How to get your viewers taking part',
+      category: 'Audience',
+      description: 'The whole route in one page: connect Twitch for rewards and cheers, add a chat bot for votes and guesses, import the setup file, run your first vote.',
+      help: 'viewers-take-part',
+      keywords: ['stream', 'streamer', 'twitch', 'viewers', 'audience', 'chat', 'vote', 'voting', 'guess', 'prompt', 'suggest', 'suggestions', 'interact', 'interaction', 'participate', 'get started', 'start', 'set up', 'setup', 'how do i', 'firebot', 'streamer.bot', 'bot', 'go live', 'first time'],
+      global: true,
+      run: () => openHelp('viewers-take-part'),
     },
     {
       id: 'audience.show',
