@@ -74,7 +74,7 @@ registerHelpTopics([
     title: 'Hand',
     section: 'Drawing',
     summary: 'Drag the page around.',
-    keywords: ['pan', 'move', 'scroll', 'grab'],
+    keywords: ['pan', 'move', 'scroll', 'grab', 'page', 'drag'],
   },
   {
     id: 'tool-zoom',

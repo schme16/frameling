@@ -15,7 +15,7 @@ registerCommands([
     category: 'File',
     description: 'Quill asks what you are making: one picture, an animation, frames on boards or sprites on a sheet. Then you pick a size.',
     help: 'pixel-new',
-    keywords: ['pixel', 'sprite', 'new', 'chooser', 'aseprite', 'animation', 'tile', 'sheet', 'game'],
+    keywords: ['pixel', 'art', 'start', 'sprite', 'new', 'chooser', 'aseprite', 'animation', 'tile', 'sheet', 'game'],
     run: openPixelChooser,
   },
   {

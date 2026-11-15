@@ -31,7 +31,7 @@ registerCommands([
     keys: ['Mod+0'],
     description: 'Show the whole page, as big as fits.',
     help: 'canvas-navigation',
-    keywords: ['reset view', 'whole'],
+    keywords: ['reset view', 'whole', 'screen'],
     run: () => fit(),
   },
   {

@@ -1,7 +1,7 @@
 // Commands that depend on what else is registered: one per tool (`tools.<id>`), one per panel (`view.panel.<id>`)
 // and one per workspace. Tools and panels can register after this file loads, so this runs lazily: when the keymap
 // is built, when the palette or a menu opens, and at startup. It's cheap to call again and again.
-import { allPanels, allTools, getCommand, registerCommand, unregisterCommand, type Command } from '../core/registry';
+import { allPanels, allTools, getCommand, getHelp, registerCommand, unregisterCommand, type Command } from '../core/registry';
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
@@ -17,7 +17,7 @@ export const isDynamicCommand = (id: string) => mine.has(id);
 export const isStaleCommand = (id: string) => stale.has(id);
 
 function ensure(cmd: Command): void {
-  const sig = JSON.stringify([cmd.label, cmd.keys, cmd.description, cmd.help]);
+  const sig = JSON.stringify([cmd.label, cmd.keys, cmd.description, cmd.help, cmd.keywords]);
   const existing = getCommand(cmd.id);
   // Someone else registered this id themselves (a tool with its own richer command): leave theirs alone.
   if (existing && !mine.has(cmd.id)) return;
@@ -42,7 +42,8 @@ export function syncDynamicCommands(): void {
       keys: t.key ? [t.key] : [],
       description: `Switch to the ${t.label.toLowerCase()} tool.`,
       help: t.help,
-      keywords: ['tool'],
+      // A tool is found by what its help page is found by (the eraser by "rub" and "rubber"), so the words live in one place.
+      keywords: ['tool', ...(t.help ? getHelp(t.help)?.keywords ?? [] : [])],
       layers: t.layers,
       enabled: () => toolEnabled(t.layers),
       checked: (s) => s.ui.tool === t.id,
