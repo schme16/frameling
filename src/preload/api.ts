@@ -174,6 +174,8 @@ export interface ReviewBridge {
   ack(seat: number, ids: string[]): Promise<void>;
   /** Opens a review window for somebody else's code. `ok` is false when the words are not a code. */
   join(code: string, name: string): Promise<{ ok: boolean }>;
+  /** Asks the review window you used last to save the picture it holds as a PNG. `ok` is false when no review window is open. */
+  savePicture(): Promise<{ ok: boolean }>;
   onEvent(handler: (e: import('../main/reviewHost').HostUiEvent) => void): () => void;
 }
 

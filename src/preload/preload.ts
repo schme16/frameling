@@ -115,6 +115,7 @@ const api: FramelingApi = {
     pointer: (x, y, off) => call('review:pointer', x, y, off),
     ack: (seat, ids) => call('review:ack', seat, ids),
     join: (code, name) => call('review:join', code, name),
+    savePicture: () => call('review:savePicture'),
     onEvent: (handler) => {
       const fn = (_: unknown, e: Parameters<typeof handler>[0]) => handler(e);
       ipcRenderer.on('review:event', fn);

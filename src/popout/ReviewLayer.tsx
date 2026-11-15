@@ -13,7 +13,8 @@ import { structureSig } from '../review/drift';
 import { colourOfSeat, PointerSender } from '../review/pointer';
 import { newItemId, type ReviewItem } from '../review/wire';
 import type { Painted } from './painter';
-import { linkWords, type ReviewBus } from './reviewBus';
+import { isOver, linkWords, overWords, type ReviewBus } from './reviewBus';
+import { SAVE_PICTURE_NOTE, pictureFrame, picturePng } from './picture';
 import { NO_VIEW, pageOf, shownFrame, zoomedAbout } from './show';
 
 type Tool = 'look' | 'note' | 'text' | MarkKind;
@@ -60,6 +61,7 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
   const [local, setLocal] = useState(0);
   const [free, setFree] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [pictureFailed, setPictureFailed] = useState(false);
   const sender = useMemo(() => new PointerSender(), []);
   const drag = useRef<{ kind: 'pan' | 'draw'; x: number; y: number; pts: number[]; id: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -217,13 +219,42 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
     setLocal((n) => n + 1);
   };
 
+  // Saves the picture on screen as a PNG (the desktop side asks for the file name and writes it). Works live and once it is over.
+  const savePicture = () => {
+    const r = bus.replica;
+    if (!r?.doc || !r.look) return;
+    const d = r.doc;
+    const f = pictureFrame(d, r.look.frame, r.freeFrame);
+    const name = r.look.name;
+    setPictureFailed(false);
+    picturePng(d, f).then(
+      (png) => bus.say({ t: 'savePicture', png, name }),
+      () => setPictureFailed(true),
+    );
+  };
+  useEffect(() => {
+    bus.onSavePicture = savePicture;
+  });
+  const over = isOver(s.link);
+  // Nothing more can be sent, so a note half written or a pen left chosen is put away.
+  useEffect(() => {
+    if (!over) return;
+    setTool('look');
+    setTyping(null);
+    setDraft(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [over]);
+
   const onLeave = () => sendPointer(sender.move(performance.now(), 0, 0, true));
 
   // Keys: Escape drops what is being typed or goes back to Look; arrows step frames; 0 fits the picture.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (typing) return;
-      if (e.key === 'Escape') setTool('look');
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        savePicture();
+      } else if (e.key === 'Escape') setTool('look');
       else if (e.key === '0') fit();
       else if (e.key === 'ArrowRight' && animated) setFrame((free ?? frame) + 1);
       else if (e.key === 'ArrowLeft' && animated) setFrame((free ?? frame) - 1);
@@ -237,7 +268,8 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typing, animated, free, frame]);
 
-  const bar = linkWords(s);
+  const bar = over ? null : linkWords(s);
+  const ended = overWords(s.link);
   const shownMarks = doc ? visibleMarks({ ...pageOf(doc), marks, notes: undefined }, frame) : [];
   const dot = bus.sharer.visible(performance.now())[0];
   const sx = (x: number) => (view ? x * view.zoom + view.panX : 0);
@@ -247,9 +279,10 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
   const style = { '--rv-pen': color } as CSSProperties;
 
   return (
-    <div className="rv-win" style={style} data-testid="review.win" data-link={s.link}>
+    <div className="rv-win" style={style} data-testid="review.win" data-link={s.link} data-over={over ? '' : undefined}>
       {/* The surface that takes the pointer: nothing under it can be touched, and nothing it does reaches the drawing. */}
       <div className="rv-surface" data-tool={tool} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onLeave} onWheel={onWheel} data-testid="review.surface" />
+      {over && <div className="rv-veil" aria-hidden="true" data-testid="review.veil" />}
       {view && (
         <svg className="po-marks" aria-hidden="true">
           {shownMarks.map((m) => (
@@ -293,10 +326,33 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
           data-testid="review.typing"
         />
       )}
-      {view && dot && (
+      {view && dot && !over && (
         <div className="rv-pointer" style={{ transform: `translate(${sx(dot.dot.x)}px, ${sy(dot.dot.y)}px)`, opacity: dot.alpha }} data-testid="review.sharerPointer">
           <i style={{ background: colourOfSeat(0) }} />
           <span>{s.name ? 'Sharer' : ''}</span>
+        </div>
+      )}
+      {ended && (
+        <div className="rv-over" role="status" data-testid="review.over">
+          <div className="rv-over-text">
+            <b className="rv-over-title">{ended.title}</b>
+            <span>{ended.text}</span>
+          </div>
+          <div className="rv-over-actions">
+            <button type="button" className="rv-btn rv-btn-main" onClick={savePicture} title={SAVE_PICTURE_NOTE} data-testid="review.savePicture">
+              Save this picture (PNG)
+            </button>
+            <button type="button" className="rv-btn" onClick={() => bus.say({ t: 'save' })} data-testid="review.save">
+              Save my comments
+            </button>
+          </div>
+          <span className="rv-over-note" data-testid="review.over.note">
+            {SAVE_PICTURE_NOTE}
+            {s.waiting > 0 ? ` ${s.waiting} of your notes did not get through: Save my comments keeps them to send another way.` : ''}
+            {s.pictureSaved === true ? ' Picture saved.' : ''}
+            {s.saved === true ? ' Comments saved.' : ''}
+            {pictureFailed ? ' Could not make the picture.' : ''}
+          </span>
         </div>
       )}
       {bar && (
@@ -312,22 +368,27 @@ export function ReviewLayer({ bus, shown, rootRef }: { bus: ReviewBus; shown: Pa
       )}
       <div className="rv-tools" role="toolbar" aria-label="Review tools" data-testid="review.tools">
         {TOOLS.map((t) => (
-          <button key={t.id} type="button" className="rv-btn" aria-pressed={tool === t.id} title={t.tip} data-testid={`review.tool.${t.id}`} onClick={() => setTool(t.id)}>
+          <button key={t.id} type="button" className="rv-btn" aria-pressed={tool === t.id} disabled={over && t.id !== 'look'} title={over && t.id !== 'look' ? 'The review has ended, so nothing more can be sent.' : t.tip} data-testid={`review.tool.${t.id}`} onClick={() => setTool(t.id)}>
             {t.label}
           </button>
         ))}
         <span className="rv-swatches" role="group" aria-label="Pen colour">
           {MARK_COLORS.slice(0, 6).map((c) => (
-            <button key={c.value} type="button" className="rv-swatch" aria-pressed={color === c.value} aria-label={c.name} title={c.name} style={{ background: c.value }} onClick={() => setColor(c.value)} />
+            <button key={c.value} type="button" className="rv-swatch" aria-pressed={color === c.value} disabled={over} aria-label={c.name} title={c.name} style={{ background: c.value }} onClick={() => setColor(c.value)} />
           ))}
         </span>
         <button type="button" className="rv-btn" title="Put the picture back to fit the window (0)" onClick={fit} data-testid="review.fit">
           Fit
         </button>
+        {!over && (
+          <button type="button" className="rv-btn" title={`${SAVE_PICTURE_NOTE} (Ctrl+S)`} onClick={savePicture} data-testid="review.savePictureLive">
+            Save picture
+          </button>
+        )}
         {animated && (
           <>
             <span className="rv-chipmode" data-testid="review.mode" data-following={following ? '' : undefined}>
-              {following ? 'Following them' : `Free: frame ${(free ?? 0) + 1}`}
+              {following ? (over ? 'Their last frame' : 'Following them') : `Free: frame ${(free ?? 0) + 1}`}
             </span>
             <input type="range" min={0} max={Math.max(0, length - 1)} value={free ?? frame} aria-label="Frame" onChange={(e) => setFrame(Number(e.target.value))} data-testid="review.scrub" />
             <button type="button" className="rv-btn" aria-pressed={playing} onClick={() => setPlaying((p) => !p)} data-testid="review.play">

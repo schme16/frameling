@@ -8,6 +8,7 @@
 import type { CanvasMark, CanvasNote, Doc, Id, NoteReply } from '../core/format';
 import { MAX_NOTES, MAX_REPLIES, MAX_TEXT, boardOf } from '../notes/model';
 import { MAX_MARKS } from '../notes/marks';
+import { QUIET_PREFIX } from '../core/quiet';
 import { itemId, type ReviewItem } from './wire';
 
 export interface InboxEntry {
@@ -93,17 +94,23 @@ export class Inbox {
  * Writes entries into a draft of the document, as notes, marks, answers and ticks, each stamped with who and when. Merging
  * is by id: an entry already there is left alone, so keeping twice changes nothing. Returns how many things were written.
  * Frame notes land on the frame the reviewer was looking at; everything else on the page (a reviewer cannot pin to a layer).
+ *
+ * `quiet` is for the ones that go in without a step in Undo (see src/core/quiet.ts): their ids start with `rq`, which is
+ * how Undo knows to leave them be. Either kind is found when an answer or a tick looks for its note.
  */
-export function keepInto(d: Doc, entries: readonly InboxEntry[]): number {
+export function keepInto(d: Doc, entries: readonly InboxEntry[], quiet = false): number {
   let wrote = 0;
   const board = boardOf(d);
-  const noteIdOf = (e: InboxEntry): Id => `rv${e.seat}-${e.item.t === 'note' || e.item.t === 'reply' || e.item.t === 'tick' ? e.item.id : itemId(e.item)}`;
+  const tag = quiet ? QUIET_PREFIX : 'rv';
+  const rawId = (e: InboxEntry, own: string): string => `${e.seat}-${own}`;
+  const ids = (e: InboxEntry, own: string): [string, string] => [`${tag}${rawId(e, own)}`, `${quiet ? 'rv' : QUIET_PREFIX}${rawId(e, own)}`];
+  const noteFor = (e: InboxEntry, to: string) => d.notes?.find((n) => n.id === `rv${rawId(e, to)}` || n.id === `${QUIET_PREFIX}${rawId(e, to)}`);
   for (const e of entries) {
     const it = e.item;
     if (it.t === 'note') {
       d.notes ??= [];
-      const id = noteIdOf(e);
-      if (d.notes.some((n) => n.id === id) || d.notes.length >= MAX_NOTES) continue;
+      const [id, other] = ids(e, it.id);
+      if (d.notes.some((n) => n.id === id || n.id === other) || d.notes.length >= MAX_NOTES) continue;
       const n: CanvasNote = { id, x: it.x, y: it.y, text: it.text.slice(0, MAX_TEXT), by: e.by.slice(0, 80), at: e.at };
       if (it.frame !== undefined) {
         n.pin = 'frame';
@@ -113,22 +120,22 @@ export function keepInto(d: Doc, entries: readonly InboxEntry[]): number {
       d.notes.push(n);
       wrote++;
     } else if (it.t === 'reply') {
-      const note = d.notes?.find((n) => n.id === `rv${e.seat}-${it.to}`);
-      const rid = `rv${e.seat}-${it.id}`;
-      if (!note || note.replies?.some((r) => r.id === rid) || (note.replies?.length ?? 0) >= MAX_REPLIES) continue;
+      const note = noteFor(e, it.to);
+      const [rid, other] = ids(e, it.id);
+      if (!note || note.replies?.some((r) => r.id === rid || r.id === other) || (note.replies?.length ?? 0) >= MAX_REPLIES) continue;
       const r: NoteReply = { id: rid, text: it.text.slice(0, MAX_TEXT), by: e.by.slice(0, 80), at: e.at };
       (note.replies ??= []).push(r);
       wrote++;
     } else if (it.t === 'tick') {
-      const note = d.notes?.find((n) => n.id === `rv${e.seat}-${it.to}`);
+      const note = noteFor(e, it.to);
       if (!note || (note.done === true) === it.done) continue;
       if (it.done) note.done = true;
       else delete note.done;
       wrote++;
     } else {
       d.marks ??= [];
-      const id = `rv${e.seat}-${it.mark.id}`;
-      if (d.marks.some((m) => m.id === id) || d.marks.length >= MAX_MARKS) continue;
+      const [id, other] = ids(e, it.mark.id);
+      if (d.marks.some((m) => m.id === id || m.id === other) || d.marks.length >= MAX_MARKS) continue;
       const m: CanvasMark = { ...it.mark, id, by: e.by.slice(0, 80), at: e.at };
       if (it.mark.pin === 'frame' && it.mark.frame !== undefined) m.frame = Math.min(Math.max(0, d.length - 1), it.mark.frame);
       if (board) m.board = board;

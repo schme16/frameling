@@ -20,17 +20,21 @@ export interface BusState {
   tick: number;
   /** The last answer to Save my comments: null until asked. */
   saved: boolean | null;
+  /** The last answer to Save picture: null until asked. */
+  pictureSaved: boolean | null;
 }
 
 export class ReviewBus {
   say: (m: unknown) => void = () => {};
+  /** The window's way of saving the picture it holds (set by the review layer); the desktop side can ask for it too. */
+  onSavePicture: () => void = () => {};
   replica: Replica | null = null;
   repaint: () => void = () => {};
   /** The sharer's pointer, as one dot. */
   readonly sharer = new Pointers();
   /** Ids of what this reviewer sent that the sharer has acknowledged (for ticking things "arrived"). */
   readonly arrived = new Set<string>();
-  private s: BusState = { link: 'starting', name: '', seat: -1, secondsLeft: null, waiting: 0, tick: 0, saved: null };
+  private s: BusState = { link: 'starting', name: '', seat: -1, secondsLeft: null, waiting: 0, tick: 0, saved: null, pictureSaved: null };
   private subs = new Set<() => void>();
 
   subscribe = (fn: () => void): (() => void) => {
@@ -55,6 +59,14 @@ export class ReviewBus {
     }
     if (t === 'waiting') {
       this.set({ waiting: (m as { count: number }).count });
+      return true;
+    }
+    if (t === 'savePictureNow') {
+      this.onSavePicture();
+      return true;
+    }
+    if (t === 'pictureSaved') {
+      this.set({ pictureSaved: (m as { ok: boolean | null }).ok ?? null });
       return true;
     }
     if (t === 'saved') {
@@ -111,10 +123,28 @@ export function linkWords(s: Pick<BusState, 'link' | 'secondsLeft' | 'name' | 'w
     case 'offline':
       return { text: 'Could not reach the peer network. Check your connection.', tone: 'warn' };
     case 'ended':
-      return { text: 'The review has ended. This is the last picture they sent.', tone: 'info' };
+      return { text: 'The review has ended. Nothing more will arrive. This is the last picture they sent.', tone: 'info' };
     case 'removed':
-      return { text: 'You were taken out of this review. This is the last picture they sent.', tone: 'warn' };
+      return { text: 'You were taken out of this review. Nothing more will arrive. This is the last picture they sent.', tone: 'warn' };
     case 'stopped':
       return { text: 'You left the review.', tone: 'info' };
   }
+}
+
+/** The review is over for good: the sharer stopped, or sent this reviewer away. Nothing more will arrive and nothing more can be sent. */
+export const isOver = (link: LinkState): boolean => link === 'ended' || link === 'removed';
+
+/** What the window is called: it says so in the title bar when the review is over, so it cannot be mistaken for a live one. */
+export function reviewTitle(link: LinkState, name: string): string {
+  const what = name || 'a drawing';
+  if (link === 'ended') return `Review ended: ${what}`;
+  if (link === 'removed') return `Removed from the review: ${what}`;
+  return `Live review: ${what}`;
+}
+
+/** The headline and the line under it across the top of a window whose review is over, or null while it is not. */
+export function overWords(link: LinkState): { title: string; text: string } | null {
+  if (link === 'ended') return { title: 'This review has ended', text: 'They stopped sharing, so nothing more will arrive. You are looking at the last picture they sent.' };
+  if (link === 'removed') return { title: 'You were taken out of this review', text: 'Nothing more will arrive. You are looking at the last picture they sent.' };
+  return null;
 }

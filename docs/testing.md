@@ -926,11 +926,16 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-media.cj
 ```
 
 - `review.cjs` is the check (exit code 1 on any failure): off by default, the code, a knock and Let in, strokes following, pointers
-  both ways, a note and a mark arriving in the inbox with the drawing and the sharer's undo untouched, names and words covered
-  while Stream-safe is on, Keep as one undo step, and Stop.
+  both ways, a note and a mark going straight into the drawing with the sharer's Undo and Redo untouched (`store().updateQuiet`,
+  `src/core/quiet.ts`), names and words covered while Stream-safe is on with the comment waiting and then going in when the cover
+  lifts, Show me first with Keep as one undo step, Stop, the reviewer's window saying the review has ended (strip, title, greyed
+  picture, tools off) and Save this picture writing a real PNG without the layers the sharer hid (the save dialog is stubbed).
 - `review-media.cjs` records both windows with ffmpeg: `--ab` writes `brand/ab/live-review/live-review-<theme>.mp4`, `--help` writes
   `public/help/live-review-<theme>.mp4` and its poster. Run it once per theme. The help runner skips the `live-review` entry
   (`scripts/docs/help/live-review.cjs`). Both are always H.264.
+- `review-ended-media.cjs` shoots a reviewer's window live and after Stop: `--help` writes `public/help/review-ended-<theme>.png`,
+  `--ab DIR` writes `live-<theme>.png` and `ended-<theme>.png` there. It reads only what both builds have, so copy it into a worktree
+  of an older commit to shoot a "before".
 
 ## What is remembered between launches: scripts/e2e/remember.cjs
 

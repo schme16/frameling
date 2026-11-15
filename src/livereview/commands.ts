@@ -4,7 +4,8 @@ import { registerCommands } from '../core/registry';
 import { openJoinDialog } from './JoinDialog';
 import { toast } from '../ui/toast';
 import { desktop } from '../io/desktop';
-import { bringInComments, inbox, isLive, keepNow, review, setCard, startReview, stopReview } from './state';
+import { currentChoice, setChoice } from '../core/choices';
+import { bringInComments, inbox, isLive, keepNow, landWaiting, review, setCard, startReview, stopReview } from './state';
 
 const HELP = 'live-review';
 const bridge = () => window.frameling?.review;
@@ -49,6 +50,17 @@ registerCommands([
     run: () => setCard(true),
   },
   {
+    id: 'review.savePicture',
+    label: 'Save the picture from a live review...',
+    category: 'File',
+    description: 'In a live review you joined: saves the picture you can see as one flat PNG. It works while the review is on and after it has ended, and it is not their layered drawing. In the review window, press Ctrl+S.',
+    help: 'review-ended',
+    keywords: ['live review', 'review', 'save', 'picture', 'image', 'png', 'final', 'last picture', 'ended', 'reviewer', 'export'],
+    enabled: () => !!bridge(),
+    reason: needsDesktop,
+    run: () => void savePictureNow(),
+  },
+  {
     id: 'review.bringIn',
     label: 'Bring in review comments...',
     category: 'File',
@@ -61,10 +73,25 @@ registerCommands([
     run: () => void bringInFile(),
   },
   {
+    id: 'review.addAsTheyCome',
+    label: 'Add reviewers\' comments to my drawing as they come',
+    category: 'File',
+    description: 'On: a note or mark a reviewer leaves goes straight into your drawing with their name on, and your Undo is not touched. Off: comments wait in the live review card until you keep them. While you stream they stay covered either way.',
+    help: HELP,
+    keywords: ['live review', 'review', 'comments', 'notes', 'inbox', 'keep', 'add', 'automatic', 'as they come', 'show me first', 'stream'],
+    checked: () => currentChoice('review.keep') === 'all',
+    run: () => {
+      const on = currentChoice('review.keep') === 'all';
+      setChoice('review.keep', on ? 'look' : 'all');
+      if (!on) landWaiting();
+      toast(on ? 'Comments will wait in the card until you keep them.' : 'Comments will go straight into your drawing.', { kind: 'info' });
+    },
+  },
+  {
     id: 'review.keep',
     label: 'Keep reviewers\' comments in my drawing',
     category: 'File',
-    description: 'Writes every comment reviewers left, as notes and marks with their name on, into your drawing. It is one step, so Undo takes them all back.',
+    description: 'Writes every comment still waiting in the card, as notes and marks with the reviewer\'s name on, into your drawing. It is one step, so Undo takes them all back. Comments go in by themselves unless you chose to see them first.',
     help: HELP,
     keywords: ['live review', 'review', 'comments', 'keep', 'save', 'notes', 'marks', 'inbox', 'merge'],
     enabled: () => inbox.waiting > 0,
@@ -73,6 +100,11 @@ registerCommands([
   },
 ]);
 
+
+async function savePictureNow(): Promise<void> {
+  const r = await bridge()?.savePicture();
+  if (!r?.ok) toast('There is no live review window open to save from. Join one first.', { kind: 'info' });
+}
 
 async function bringInFile(): Promise<void> {
   const r = await desktop()?.files.openOther?.({ title: 'Bring in review comments', filters: [{ name: 'Review comments', extensions: ['json'] }] });

@@ -11,6 +11,7 @@ import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
 import { existingSelection, followSelection, type FollowMemory } from './followSelection';
+import { applyKeepingQuiet } from './quiet';
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
@@ -246,7 +247,7 @@ export function runStep(doc: Doc, e: HistoryEntry, dir: 'undo' | 'redo'): { doc:
     return { doc: next, patches };
   }
   const patches = dir === 'undo' ? e.inverse : e.patches;
-  return { doc: applyPatches(doc, patches), patches };
+  return { doc: applyKeepingQuiet(doc, patches, dir === 'undo' ? e.patches : e.inverse), patches };
 }
 
 export const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
@@ -373,6 +374,23 @@ export class Store {
     // Looking around leaves the file as clean as it was.
     this.state = { doc: next, ui: { ...this.state.ui, dirty: opts.view ? this.state.ui.dirty : true } };
     this.emit();
+  }
+
+  /**
+   * Changes the document without a step in the history: Undo and Redo stay exactly as they were, and the next Undo is still
+   * the person's own last action. For what somebody else puts into the drawing while you work (a live reviewer's notes, see
+   * src/core/quiet.ts: Undo never cuts those out). Does nothing, and returns false, while a tile or symbol is open for
+   * editing, since the change would land in that and not in the drawing. Returns true when something changed.
+   */
+  updateQuiet(recipe: (doc: Draft<Doc>) => void): boolean {
+    if (this.nested) return false;
+    const [next, patches] = produceWithPatches(this.state.doc, recipe);
+    if (!patches.length) return false;
+    this.change = { from: this.state.doc, to: next, patches };
+    this.viewChange = false;
+    this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
+    this.emit();
+    return true;
   }
 
   private joinTo: number | null = null;
