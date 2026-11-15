@@ -4,6 +4,7 @@ import type { Doc } from '../../core/format';
 import { encodePng } from '../../io/png';
 import { drawFrame, readPixels, type BackgroundMode } from '../draw';
 import { fitRect, type IconFit } from '../icons';
+import { exportContextOptions } from '../readback';
 
 export interface SquareSource {
   doc: Doc;
@@ -28,7 +29,7 @@ export function boxCanvas(src: SquareSource, width: number, height: number): Off
   drawFrame(inner, doc, src.frame, { width: box.width, height: box.height, scale: box.scale, background: src.bg, crisp: src.crisp && box.scale >= 1 });
   if (box.width === width && box.height === height) return inner;
   const out = new OffscreenCanvas(width, height);
-  const g = out.getContext('2d', { willReadFrequently: true })!;
+  const g = out.getContext('2d', exportContextOptions)!;
   // The margins of a drawing that doesn't match the box take the page colour too, so a coloured icon is coloured all over.
   if (src.bg === 'white') {
     g.fillStyle = '#ffffff';

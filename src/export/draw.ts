@@ -3,6 +3,7 @@
 import type { Doc } from '../core/format';
 import { renderFrame } from '../core/render';
 import type { RawImage } from '../io/png';
+import { exportContextOptions } from './readback';
 
 export type BackgroundMode = 'doc' | 'none' | 'white';
 
@@ -36,7 +37,7 @@ export function makeCanvas(width: number, height: number): OffscreenCanvas {
 
 /** Draws one frame onto `canvas` (cleared first). */
 export function drawFrame(canvas: OffscreenCanvas, doc: Doc, frame: number, t: DrawTarget): OffscreenCanvas {
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  const g = canvas.getContext('2d', exportContextOptions)!;
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, canvas.width, canvas.height);
   // Videos need even sizes, so the canvas can be a pixel bigger than the drawing. That extra edge gets the background too.
@@ -59,7 +60,7 @@ export function drawFrame(canvas: OffscreenCanvas, doc: Doc, frame: number, t: D
 
 /** The canvas as plain RGBA bytes. */
 export function readPixels(canvas: OffscreenCanvas): RawImage {
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  const g = canvas.getContext('2d', exportContextOptions)!;
   const d = g.getImageData(0, 0, canvas.width, canvas.height);
   return { width: d.width, height: d.height, pixels: d.data };
 }

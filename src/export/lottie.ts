@@ -45,6 +45,7 @@ import { sortedStops } from '../core/gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 import { nativeTrim, trimSpan } from './trimNative';
 import type { PosedMesh } from '../core/layerKinds';
+import { exportContextOptions } from './readback';
 
 export interface LottieOptions {
   /** Frames to include (inclusive, document frame numbers). Default: the whole animation. */
@@ -1695,7 +1696,7 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   const W = Math.round(area.w * SCALE);
   const H = Math.round(area.h * SCALE);
   const c = new OffscreenCanvas(W, H);
-  const g = c.getContext('2d', { willReadFrequently: true });
+  const g = c.getContext('2d', exportContextOptions);
   if (!g) return null;
   const out: Json[] = [];
   // One bank for the whole file, so a layer baked twice (a clipping base and its copy) stores its pictures once.
