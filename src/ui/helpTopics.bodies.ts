@@ -524,7 +524,7 @@ A shared workspace moves panels around (including any [stacked groups](help:pane
 
 ## Reset
 
-**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. Your tool arrangement is separate: **Put the tools back** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
+**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. **Put the panels back** does the same for the panels alone, with **Undo** (see [Put the panels back](help:panels-back)). Your tool arrangement is separate: **Put the tools back** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
 
 See also [Panels](help:panels).`,
   properties: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
@@ -589,13 +589,13 @@ Press the little arrow at the end of a tab bar, or at the bottom of the rail, to
 
 ## Show and hide
 
-Press the **x** on a tab (or by a panel's name on the right) to close it, or press **Delete** while its tab has the keyboard. Bring it back from **Panels** or the **View** menu. Panels with a tick are showing.
+Press the **x** on a tab (or by a panel's name on the right) to close it, or press **Delete** while its tab has the keyboard. Bring it back from **Panels** or the **View** menu.
 
 ## With the keyboard
 
 **Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs (up and down on the rail), **Home** and **End** jump to the first and last.
 
-Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
+Your layout is remembered. Save arrangements as [workspaces](help:workspaces), or [put the panels back](help:panels-back).`,
   'panel-groups': `Sometimes you want two panels in view at once, not one behind the other. Give each its own **group**: a side can hold up to four, one over the other (or side by side along the bottom and top), and each group has its own tabs.
 
 ## Make a group
@@ -627,6 +627,36 @@ The right side has one rail for all its groups. Each group gets a heading on the
 Groups are part of the layout, so they are saved in your [workspaces](help:workspaces) and travel in the files you share. A layout from an older Frameling opens as one group per side, just as it was.
 
 See also [Panels](help:panels).`,
+  'panels-back': `Dragged the panels about, closed a few, stacked some and renamed others, and now it's a muddle? **Put the panels back** sets the workspace you're in the way it comes, in one go.
+
+**Do it:** right-click a panel's tab (or a window's title) and choose **Put the panels back**. It's also in **View**, **Panel windows and tools**, and in the command search. A message says it's done, and has **Undo** on it, because it changes more than one thing.
+
+## What it puts back
+
+- Which panels are open and which are closed.
+- Which group each panel sits in, and the order of the tabs in it.
+- How wide or tall each side is, and how a side is shared between its groups.
+- A side you folded away, opened again.
+- Any name you gave a panel or a window.
+
+## What it leaves alone
+
+- The tool strip. **Put the tools back** does that: see [Change the tools](help:tool-builder).
+- Your other workspaces. Only the one you're in changes.
+- Which tab is in front, and your drawing.
+- Anything locked. If the panels are locked, it says so and does nothing until you unlock them: see [Lock the tools and panels](help:lock-layout).
+
+## Panels in a window of their own
+
+The first time there is one, Frameling asks whether to dock it too, then remembers. **Dock them too** sends every panel back where the workspace puts it. **Leave the windows alone** keeps them where they are, and **Dock every window back** does those on their own. Change your answer any time in **Preferences**, **Behaviour**.
+
+## Good to know
+
+- One of your own workspaces goes back to how you saved it. One that comes with the app goes back to how it comes.
+- With nothing to put back, it says so instead of doing nothing quietly.
+- **Reset layout** (in **Your workspaces**) is the older way to start over, and it also asks about the tools.
+
+See also [Panels](help:panels), [Floating windows](help:floating-windows) and [Workspaces](help:workspaces).`,
   'floating-windows': `Any panel can float over the canvas in a window of its own. Handy for keeping the **Preview** next to your drawing, or a panel out of the way.
 
 ## Pop a panel out

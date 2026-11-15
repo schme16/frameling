@@ -1,7 +1,10 @@
 // The right-click menus of the dock (a panel's tab, a floating window's title, the tool rail) and the little name box,
 // as plain data, so the same lists serve the mouse and the keyboard (the menu key) and the commands.
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, setLock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
+import { registerChoice, rememberedChoice, withChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
+import { closeFloatWindow, dock, setLock, setPanelLayout, workspaceLayoutNow, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
+import { panelsBackLayout, panelsDiffer, panelsRestored, type WindowsBack } from './dockBack';
 import { floatTitle, groupCount, groupTabs, MAX_GROUPS, toolsHome, type DockZone } from './dockModel';
 import { SPLIT_WORDS, ZONE_NAMES } from './dockDrag';
 import { createStore } from './mini';
@@ -9,6 +12,7 @@ import { openHelp } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { lockedWhy, type LockKind } from './dockLock';
 import { isLocked, refuseIfLocked } from './lockState';
+import { toast } from './toast';
 import { putToolsBack, setRailLock, setToolbarEditing, toolbarIsChanged } from './toolRail';
 
 /** `why` is a line under a greyed entry that says why it is greyed. */
@@ -45,6 +49,65 @@ export const lockItem = (kind: LockKind): DockMenuItem => {
   return { label: `${on ? 'Unlock' : 'Lock'} the ${kind}`, onClick: () => (kind === 'tools' ? setRailLock(!on) : setLock('panels', !on)) };
 };
 
+/** What Put the panels back does with panels that were moved out to a window of their own. */
+export const PANELS_BACK_WINDOWS = 'panels.putBackWindows';
+
+registerChoice<WindowsBack>({
+  id: PANELS_BACK_WINDOWS,
+  title: choiceWord('choice.panels.putBackWindows.title'),
+  question: choiceWord('choice.panels.putBackWindows.question'),
+  category: 'Workspaces',
+  help: 'panels-back',
+  default: 'dock',
+  options: [
+    { value: 'dock', label: choiceWord('choice.panels.putBackWindows.dock.label'), detail: choiceWord('choice.panels.putBackWindows.dock.detail'), did: choiceWord('choice.panels.putBackWindows.dock.did') },
+    { value: 'leave', label: choiceWord('choice.panels.putBackWindows.leave.label'), detail: choiceWord('choice.panels.putBackWindows.leave.detail'), did: choiceWord('choice.panels.putBackWindows.leave.did') },
+  ],
+});
+
+/** True when the panels are not the way this workspace comes: opened, closed, moved, reordered, resized, renamed, or in windows. */
+export const panelsAreChanged = (): boolean => panelsDiffer(dock.get().layout, workspaceLayoutNow(), rememberedChoice(PANELS_BACK_WINDOWS) === 'leave' ? 'leave' : 'dock');
+
+const ALREADY = 'The panels are already the way they come.';
+
+function putBack(windows: WindowsBack): void {
+  const d = dock.get();
+  const id = d.workspaceId;
+  const before = d.layout;
+  const target = workspaceLayoutNow();
+  if (!panelsDiffer(before, target, windows)) return void toast(before.floats.length && windows === 'leave' ? `${ALREADY} The windows are left alone.` : ALREADY, { duration: 1800 });
+  setPanelLayout((now) => panelsBackLayout(now, target, windows));
+  toast('The panels are back the way they come.', {
+    kind: 'success',
+    action: {
+      label: 'Undo',
+      run: () => {
+        // Only in the workspace it was done in: if you moved on, leave that one alone.
+        if (dock.get().workspaceId === id) setPanelLayout((now) => panelsRestored(now, before));
+      },
+    },
+  });
+}
+
+/**
+ * Puts this workspace's panels back the way it comes: which are open, which group each is in, the order of the tabs,
+ * the size of each side and group, and every name. Panels in a window of their own are docked too, or left, as you
+ * answer the first time. A toast offers Undo, because it undoes more than one thing.
+ */
+export function putPanelsBack(): void {
+  if (refuseIfLocked('panels', 'reset')) return;
+  const l = dock.get().layout;
+  // Only ask when the answer changes what happens: a window that is not there has nothing to dock.
+  if (!l.floats.length) return putBack('dock');
+  withChoice<WindowsBack>(PANELS_BACK_WINDOWS, putBack, { matters: panelsDiffer(l, workspaceLayoutNow(), 'dock') !== panelsDiffer(l, workspaceLayoutNow(), 'leave') });
+}
+
+/** The menu entry, greyed with its reason when there is nothing to put back. */
+export const putBackItem = (): Extract<DockMenuItem, { label: string }> => {
+  const changed = panelsAreChanged();
+  return { label: 'Put the panels back', disabled: !changed, why: changed || isLocked('panels') ? undefined : ALREADY, onClick: putPanelsBack };
+};
+
 /** What can be done with a panel: where it lives, what it's called, closing it. */
 export function panelMenu(id: string, at: { x: number; y: number }): DockMenuItem[] {
   const l = dock.get().layout;
@@ -72,6 +135,7 @@ export function panelMenu(id: string, at: { x: number; y: number }): DockMenuIte
   }
   items.push({ separator: true }, { label: 'Rename...', onClick: () => askRename('panel', id, at.x, at.y) });
   if (l.names?.[id]) items.push({ label: 'Use its own name again', onClick: () => renamePanel(id, '') });
+  items.push({ separator: true }, putBackItem());
   items.push({ separator: true }, { label: `Close ${panelTitle(id, l)}`, onClick: () => hidePanel(id) }, { label: 'What is this panel?', stays: true, onClick: () => openHelp(p?.help ?? 'panels') });
   return [items[0], lockItem('panels'), { separator: true }, ...whenLocked('panels', items.slice(1))];
 }
@@ -85,6 +149,7 @@ export function floatMenu(floatId: string, at: { x: number; y: number }): DockMe
   if (f.name) items.push({ label: 'Name it after its panel again', onClick: () => renameFloat(floatId, '') });
   items.push({ separator: true }, { label: 'Make it bigger', onClick: () => resizeFloatBy(floatId, 64, 48) }, { label: 'Make it smaller', onClick: () => resizeFloatBy(floatId, -64, -48) }, { label: 'Back to the usual size', onClick: () => resetFloatSize(floatId) });
   items.push({ separator: true }, { label: 'Dock back where it started', onClick: () => dockFloatBack(floatId) });
+  items.push({ separator: true }, putBackItem());
   items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });
   items.push({ label: 'What are windows?', stays: true, onClick: () => openHelp('floating-windows') });
   return [items[0], lockItem('panels'), { separator: true }, ...whenLocked('panels', items.slice(1))];

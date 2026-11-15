@@ -316,6 +316,7 @@ export const COMMAND_REASONS: Record<string, Reason> = {
   'view.toolRailWidthReset': say('The tool rail is already its usual width.'),
   'view.toolsHome': say('The tools are already docked.'),
   'view.toolsReset': say('The tool rail is as it came.'),
+  'view.panelsReset': say('The panels are as they came.'),
   'view.toolsShowAll': say('No tools are hidden.'),
   'popout.front': say('Open the second window first.'),
   'popout.toggle': say('The second window needs the desktop app.'),

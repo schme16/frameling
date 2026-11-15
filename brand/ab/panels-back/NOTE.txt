@@ -1,0 +1,1 @@
+Panels dragged into a mess (a window pulled out, one stacked, one renamed, one closed, the side pulled wide), then Put the panels back from a panel's right-click menu, its Undo, and put back again; dark and light.

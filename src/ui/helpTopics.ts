@@ -220,6 +220,15 @@ registerHelpTopics([
     keywords: ['float', 'window', 'detach', 'undock', 'dock', 'pop out', 'tabs', 'group', 'rename', 'name', 'tools', 'tool strip', 'toolbar', 'move tools', 'top', 'second', 'hide all', 'panels away'],
   },
   {
+    id: 'panels-back',
+    order: 4,
+    media: 'panels-back.mp4',
+    title: 'Put the panels back',
+    section: 'Workspace',
+    summary: 'Panels dragged about, closed or renamed? One press sets this workspace\'s panels the way it comes, with Undo.',
+    keywords: ['reset', 'put back', 'restore', 'default', 'tidy', 'mess', 'undo changes', 'panels', 'dock', 'tabs', 'groups', 'windows', 'lost panel', 'panel gone', 'rearrange', 'order', 'sizes'],
+  },
+  {
     id: 'tool-strip',
     title: 'The tool strip',
     section: 'Basics',

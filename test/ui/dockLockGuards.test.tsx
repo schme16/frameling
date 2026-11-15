@@ -227,7 +227,7 @@ describe('locked panels', () => {
   it('Reset layout refuses', () => {
     dock.set({ ...dock.get(), layout: { ...dock.get().layout, hidden: ['layers'] } });
     resetLayoutAndAsk();
-    expect(said()[0]).toMatch(/layout can't be reset/);
+    expect(said()[0]).toMatch(/can't be put back/);
     expect(dock.get().layout.hidden).toContain('layers');
   });
   it('and the rail is not locked by it', () => {

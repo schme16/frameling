@@ -4,7 +4,7 @@ import { getPanel, registerCommand, registerCommands } from '../core/registry';
 import { dock, setLock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
 import { SPLIT_WORDS } from './dockDrag';
 import { groupCount, groupTabs, MAX_GROUPS, toolsHome, ZONES, type DockZone, type ToolsPlace } from './dockModel';
-import { askRename } from './dockMenus';
+import { askRename, panelsAreChanged, putPanelsBack } from './dockMenus';
 import { isLocked, refuseIfLocked } from './lockState';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
@@ -262,6 +262,17 @@ registerCommand({
   keywords: ['tools', 'toolbar', 'rail', 'lock', 'unlock', 'freeze', 'stop moving', 'accident', 'fix', 'pin'],
   checked: () => isLocked('tools'),
   run: () => setRailLock(!isLocked('tools')),
+});
+
+registerCommand({
+  id: 'view.panelsReset',
+  label: 'Put the panels back',
+  category: 'View',
+  description: 'Put this workspace\'s panels back the way it comes: which are open, which group each is in, the order of the tabs, the size of each side and group, and any names you gave. Panels in a window of their own are docked too, or left, as you choose the first time. Undo is on the message.',
+  help: 'panels-back',
+  keywords: ['panels', 'dock', 'tabs', 'windows', 'arrange', 'rearrange', 'tidy', 'mess', 'order', 'default', 'restore', 'undo changes', 'lost panel', 'panel gone'],
+  enabled: () => panelsAreChanged(),
+  run: putPanelsBack,
 });
 
 registerCommand({

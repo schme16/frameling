@@ -449,6 +449,39 @@ const entries = [
     ],
   },
 
+  // Put the panels back: a window dragged out, a panel stacked, two renamed or closed, the side pulled wide; then the menu entry, and its Undo.
+  {
+    name: 'panels-back',
+    prefs: CALM,
+    choices: { 'panels.putBackWindows': 'dock' },
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(1000),
+      ...dragSlow([[1233, 338], [1100, 320], [600, 235]], { n: 9, after: 70, hold: 900 }),
+      wait(600),
+      ...dragSlow([[1233, 290], [1150, 480], [1090, 700], [1090, 712]], { n: 8, after: 70, hold: 700 }),
+      wait(500),
+      js(`${F}.dock.resizeZone('right', 440); ${F}.dock.renamePanel('layers', 'My layers'); ${F}.dock.hidePanel('history'); true`),
+      wait(1500),
+      { rclick: [1233, 165] },
+      wait(1300),
+      { clickOn: '.ui-menu-item', text: 'Put the panels back', after: 900 },
+      { move: [640, 420] },
+      wait(2600),
+      { clickOn: '.ui-toast button', text: 'Undo', after: 900 },
+      wait(1600),
+      { rclick: [1233, 165] },
+      wait(900),
+      { clickOn: '.ui-menu-item', text: 'Put the panels back', after: 900 },
+      { move: [640, 420] },
+      wait(2200),
+      { rec: 'stop' },
+    ],
+  },
+
   // Undo and redo: three strokes drawn, taken back one at a time, then put back.
   {
     name: 'undo',

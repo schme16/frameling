@@ -778,6 +778,17 @@ export function applyWorkspace(id: string): boolean {
   return true;
 }
 
+/** The panels of the current workspace as it comes (or was saved), made to fit the panels there are. Nothing is changed. */
+export function workspaceLayoutNow(): Layout {
+  const w = currentWorkspace() ?? builtinWorkspaces().find((x) => x.id === 'draw')!;
+  return reconcile(w.layout);
+}
+
+/** Replaces the layout with one made by a pure function from the layout there is now, and saves it. */
+export function setPanelLayout(fn: (now: Layout) => Layout): void {
+  apply(fn);
+}
+
 /** Back to the current workspace as it was saved (or as it came with the app). */
 export function resetLayout(): void {
   const id = dock.get().workspaceId;

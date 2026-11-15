@@ -66,7 +66,7 @@ const NOT: Record<LockKind, Record<Doing, string>> = {
     size: "panels and windows can't be resized",
     arrange: "panels can't be closed, renamed or regrouped",
     edit: "they can't be changed",
-    reset: "the layout can't be reset",
+    reset: "they can't be put back",
   },
 };
 const WAY_OUT: Record<LockKind, string> = { tools: "Unlock them from the rail's right-click menu.", panels: "Unlock them from a panel's right-click menu." };
