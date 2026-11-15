@@ -3,7 +3,7 @@
 import { parseAst } from 'rolldown/parseAst';
 
 /** Calls that make a value safe to show. Anything inside one of these is fine. */
-export const SAFE_CALLS = new Set(['displayPath', 'displayFile', 'displayFolder', 'displayName', 'displaySecret', 'scrubText', 'shownRecent']);
+export const SAFE_CALLS = new Set(['displayPath', 'displayFile', 'displayFolder', 'displayName', 'displaySecret', 'scrubText', 'shownRecent', 'shownMade']);
 
 /** Words that, as a property or a plain name, mean "this holds a place on the computer, a person's name or a secret". */
 export const RISKY_NAME = /^(path|paths|filePath|filePaths|folderPath|dirPath|fileName|filename|author|authorName|userName|profileName|contact|betaContact|accessToken|authToken|apiKey|secret|password|reportKey|sourcePath)$/;

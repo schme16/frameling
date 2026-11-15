@@ -34,6 +34,8 @@ const TAKES_PART: Record<string, string[]> = {
   'ui/Welcome.tsx': ['shownRecent', 'useStreamSafe'],
   'io/RecentDialog.tsx': ['shownRecent', 'useStreamSafe'],
   'io/RecentPicture.tsx': ['useStreamSafe'],
+  'quillpet/QuillYours.tsx': ['shownMade', 'useStreamSafe'],
+  'quillpet/made.ts': ['displayPath'],
   'io/document.ts': ['displayPath'],
   'io/autosave.ts': ['subscribeStreamSafe'],
   'popout/link.ts': ['subscribeStreamSafe'],

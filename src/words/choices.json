@@ -1166,6 +1166,21 @@
     "text": "He keeps the drawings you give him and makes nothing from them.",
     "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Quill's presents\"."
   },
+  "choice.quill.yours.title": { "text": "Your work in Quill's room", "where": "Name of this choice in Preferences > Behaviour (group: Quill)." },
+  "choice.quill.yours.question": {
+    "text": "Should Quill's room show what you have made?",
+    "where": "The question the \"Your work in Quill's room\" choice asks (it is a setting, so it is not normally asked)."
+  },
+  "choice.quill.yours.show.label": { "text": "Show it", "where": "Preferences: the button for the answer \"show\" in \"Your work in Quill's room\"." },
+  "choice.quill.yours.show.detail": {
+    "text": "Your newest drawings hang on his wall and your newest sprite is a toy on his floor. Only work you really made, and it updates when you save something new.",
+    "where": "Preferences: the small line under the \"show\" answer in \"Your work in Quill's room\"."
+  },
+  "choice.quill.yours.hide.label": { "text": "Keep the room plain", "where": "Preferences: the button for the answer \"hide\" in \"Your work in Quill's room\"." },
+  "choice.quill.yours.hide.detail": {
+    "text": "His room stays his own. Nothing is lost: turn it back on and your work is there again.",
+    "where": "Preferences: the small line under the \"hide\" answer in \"Your work in Quill's room\"."
+  },
   "choice.audio.scrub.title": { "text": "Hear the sound while you drag the playhead", "where": "Name of this choice in Preferences > Behaviour (group: Sound)." },
   "choice.audio.scrub.question": { "text": "Play a short bit of the sound as you move the playhead?", "where": "The question the \"Hear the sound while you drag the playhead\" dialog asks." },
   "choice.audio.scrub.on.label": { "text": "Yes, play a snippet", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Hear the sound while you drag the playhead\"." },

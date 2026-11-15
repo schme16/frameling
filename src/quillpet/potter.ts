@@ -10,9 +10,9 @@
 //    where he goes and for how long both vary, and a few doings have more than one way of being done.
 import type { Beat } from '../ui/mascot/timing';
 
-export type Doing = 'wander' | 'draw' | 'window' | 'eat' | 'nap' | 'hop' | 'admire' | 'rest';
+export type Doing = 'wander' | 'draw' | 'window' | 'eat' | 'nap' | 'hop' | 'admire' | 'rest' | 'play';
 
-export const DOINGS: readonly Doing[] = ['wander', 'draw', 'window', 'eat', 'nap', 'hop', 'admire', 'rest'];
+export const DOINGS: readonly Doing[] = ['wander', 'draw', 'window', 'eat', 'nap', 'hop', 'admire', 'rest', 'play'];
 
 /** The places in his room, as how far along it they are (0 is the left wall, 1 the right). */
 export type Spot = 'bed' | 'window' | 'middle' | 'desk' | 'bowl';
@@ -41,6 +41,8 @@ export interface PotterCtx {
   hasColours: boolean;
   /** Milliseconds since anyone touched anything: the longer it's been quiet, the more he fancies a nap. */
   sinceInput: number;
+  /** Whether a toy of yours is on his floor. Without one he has nothing to play with, so play is not on the list. */
+  hasToy?: boolean;
 }
 
 export interface Potter {
@@ -54,7 +56,7 @@ export interface Potter {
 /** How many of his recent doings count against doing the same again. */
 export const MEMORY = 6;
 
-const WEIGHT: Record<Doing, number> = { wander: 3, draw: 2.5, window: 2.5, eat: 1.5, nap: 1.2, hop: 1, admire: 1.2, rest: 2 };
+const WEIGHT: Record<Doing, number> = { wander: 3, draw: 2.5, window: 2.5, eat: 1.5, nap: 1.2, hop: 1, admire: 1.2, rest: 2, play: 2 };
 
 /** How long each doing lasts, in whole seconds [min, max]. */
 const SECONDS: Record<Doing, [number, number]> = {
@@ -66,6 +68,7 @@ const SECONDS: Record<Doing, [number, number]> = {
   hop: [2, 4],
   admire: [6, 10],
   rest: [4, 10],
+  play: [6, 12],
 };
 
 /** A nap this long is a proper curl-up. */
@@ -83,6 +86,8 @@ export function weights(history: Doing[], ctx: PotterCtx): Partial<Record<Doing,
     if (d === recent[recent.length - 1]) continue;
     // Eating and admiring are about the colours he's tasted, so without any they aren't on the list.
     if ((d === 'eat' || d === 'admire') && !ctx.hasColours) continue;
+    // Play is with the toy of yours on his floor, so with none there is nothing to play with.
+    if (d === 'play' && !ctx.hasToy) continue;
     let w = WEIGHT[d] * 0.35 ** recent.filter((r) => r === d).length;
     if (d === 'nap') w *= ctx.sinceInput > 30_000 ? 2 : ctx.sinceInput < 8_000 ? 0.4 : 1;
     out[d] = w;
@@ -112,6 +117,7 @@ const WORDS = {
   hop: ['Hopping for no reason'],
   admire: ['Admiring a pencil'],
   rest: ['Having a sit', 'Thinking about nothing'],
+  play: ['Playing with your sprite', 'Having a go with your toy', 'Batting your sprite about'],
 } as const;
 
 /** One way of doing a thing, so the same doing doesn't look the same every time. */
@@ -137,6 +143,8 @@ function variant(doing: Doing, ms: number, rng: () => number): { anim: Beat[]; w
       return { anim: [{ anim: 'holding' }], words: pick(WORDS.admire, rng) };
     case 'rest':
       return { anim: [{ anim: 'idle' }], words: pick(WORDS.rest, rng) };
+    case 'play':
+      return { anim: [{ anim: 'hop' }, { anim: rng() < 0.5 ? 'point' : 'idle' }], words: pick(WORDS.play, rng) };
   }
 }
 
@@ -151,6 +159,8 @@ function spotFor(doing: Doing, from: Spot, rng: () => number): Spot {
       return 'bowl';
     case 'nap':
       return 'bed';
+    case 'play':
+      return 'middle';
     case 'wander':
       return pick(
         SPOTS.filter((s) => s !== from),

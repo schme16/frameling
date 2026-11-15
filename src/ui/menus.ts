@@ -120,7 +120,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   quillhouse: {
     label: "Quill's house",
-    items: ['quillPet.things', 'quillPet.presents', '-', 'quillPet.give', 'quillPet.pat'],
+    items: ['quillPet.things', 'quillPet.presents', '-', 'quillPet.give', 'quillPet.pat', 'quillPet.yours'],
   },
   notes: {
     label: 'Notes',

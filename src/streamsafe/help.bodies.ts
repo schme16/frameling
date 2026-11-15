@@ -9,7 +9,7 @@ Press **Ctrl+Alt+Shift+H** (**Cmd+Alt+Shift+H** on a Mac), or choose **View > Lo
 ## What it hides
 
 - **File paths and file names.** Your drawing's name in the window's title bar, Open recent, the Welcome sheet, messages, and questions that name a file all show **My drawing**, **My picture**, **A folder** and so on instead of the real thing. Recent files are numbered (My drawing 1, My drawing 2) so you can still tell them apart.
-- **Little pictures of your recent drawings.** They show a plain icon instead.
+- **Little pictures of your recent drawings.** They show a plain icon instead. The same goes for the drawings and sprite in Quill's room, which go blank and get names like My drawing 1.
 - **Your name.** The name you sign templates with shows as **Me**, and the box where you type it shows dots.
 - **Keys and contact details**, such as the way to reach you in a beta report. They show as dots.
 

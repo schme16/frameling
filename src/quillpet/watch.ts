@@ -14,6 +14,7 @@ const now = (): number => (typeof performance === 'undefined' ? Date.now() : per
 let lastEdit = -Infinity;
 let fussedAt = -Infinity;
 let finishedAt = -Infinity;
+let edited = false;
 
 /** Milliseconds since your last edit. Infinity until you've drawn something this run. */
 export const sinceEdit = (): number => now() - lastEdit;
@@ -21,6 +22,9 @@ export const sinceEdit = (): number => now() - lastEdit;
 export const sinceFuss = (): number => now() - fussedAt;
 /** Milliseconds since you last finished something. */
 export const sinceFinished = (): number => now() - finishedAt;
+
+/** True once you have drawn in the document that is open. Opening a file, a template or a new page starts it at false, so only work you actually made counts as yours. */
+export const editedByYou = (): boolean => edited;
 
 /** What the last fuss was, so he can answer it in kind: a munch, a nuzzle, or holding up what you gave him. */
 export type FussKind = 'fed' | 'stroked' | 'given';
@@ -45,6 +49,7 @@ export function forgetNow(): void {
   lastEdit = -Infinity;
   fussedAt = -Infinity;
   finishedAt = -Infinity;
+  edited = false;
 }
 
 /**
@@ -72,10 +77,12 @@ export function startWatching(): () => void {
     if (s.loads !== loads) {
       loads = s.loads;
       prev = next;
+      edited = false;
       return;
     }
     if (next.doc !== prev.doc) {
       lastEdit = now();
+      edited = true;
       tellQuill({ kind: 'drew' });
       // The colour you drew with goes in his quills. Worth no closeness: that would be paying you to change colour.
       if (next.ui.color) tellQuill({ kind: 'noticed', colour: next.ui.color });

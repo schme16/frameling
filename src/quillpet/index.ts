@@ -7,7 +7,9 @@ import { quillPetCommands, quillPetPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
 import { watchForPresents } from './gifts';
-import { registerPresentChoice } from './choices';
+import { registerPresentChoice, registerYoursChoice } from './choices';
+import { registerSaveHook } from '../io/document';
+import { noteMade } from './madeNow';
 
 let stop: (() => void) | null = null;
 let stopGifts: (() => void) | null = null;
@@ -15,7 +17,7 @@ let stopGifts: (() => void) | null = null;
 export const quillPetFeature = defineFeature({
   id: 'quill-pet',
   name: 'Quill',
-  about: 'A house for Quill in the right rail, with three tabs: his room (how he is, and how well you know each other), his things (the drawings you have given him) and the presents he makes you. Off, he is still your guide.',
+  about: 'A house for Quill in the right rail, with three tabs: his room (how he is, how well you know each other, and the drawings and sprites you have made), his things (the drawings you have given him) and the presents he makes you. Off, he is still your guide.',
   optional: true,
   commands: quillPetCommands,
   panels: [quillPetPanel],
@@ -25,11 +27,14 @@ export const quillPetFeature = defineFeature({
     'quill-pet': {
       blurb: 'Quill, how he is, how well the two of you know each other, and the things you have given each other.',
       group: 'learn',
-      keywords: ['quill', 'pet', 'hedgehog', 'friend', 'things', 'collection', 'gifts', 'presents', 'crayon', 'surprise'],
+      keywords: ['quill', 'pet', 'hedgehog', 'friend', 'things', 'collection', 'gifts', 'presents', 'crayon', 'surprise', 'wall', 'toy', 'sprite', 'yours'],
     },
   },
   activate: () => {
     registerPresentChoice();
+    registerYoursChoice();
+    // Whatever you make and save goes in his room, with no question asked.
+    registerSaveHook({ after: async (doc) => void (await noteMade(doc)) });
     stop = startWatching();
     stopGifts = watchForPresents();
   },

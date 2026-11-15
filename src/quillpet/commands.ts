@@ -2,11 +2,14 @@
 // and Quill carries on being the mascot.
 import { lazyPanel } from '../core/lazy';
 import type { Command, PanelDef } from '../core/registry';
+import { currentChoice, setChoice } from '../core/choices';
 import { getPrefs } from '../ui/prefs';
+import { toast } from '../ui/toast';
 import { noteFuss } from './watch';
 import { giveToQuill } from './give';
 import { tellQuill } from './store';
 import { openHouse } from './house';
+import { YOURS_CHOICE } from './made';
 
 export const quillPetPanel: PanelDef = {
   id: 'quill-pet',
@@ -72,5 +75,19 @@ export const quillPetCommands: Command[] = [
       void giveToQuill().then((got) => {
         if (got) openHouse('things');
       }),
+  },
+  {
+    id: 'quillPet.yours',
+    label: 'Quill: show or hide my work in his room',
+    category: 'View',
+    description: 'His room shows what you have made: your newest drawings on his wall and your newest sprite as a toy on his floor. This turns that off, or back on. Nothing is lost either way.',
+    keywords: ['quill', 'pet', 'room', 'wall', 'toy', 'sprite', 'drawing', 'yours', 'mine', 'work', 'hedgehog'],
+    help: 'quill-yours',
+    run: () => {
+      const hiding = currentChoice(YOURS_CHOICE) !== 'hide';
+      setChoice(YOURS_CHOICE, hiding ? 'hide' : 'show');
+      toast(hiding ? 'His room is plain for now. Your work is still kept.' : 'Your work is back on his wall and floor.', { duration: 3000 });
+      if (!hiding) openHouse('room');
+    },
   },
 ];
