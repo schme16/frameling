@@ -1,0 +1,161 @@
+/* The On air pill, its Stop button and the card that hangs from it. Red on purpose, and the same in both themes: it
+   must read as "live" at a glance, and white on this red passes contrast in light and dark. */
+.aud-onair {
+  --aud-red: #c62828;
+  --aud-red-deep: #a51f1f;
+  display: inline-flex;
+  align-items: stretch;
+  margin-right: 6px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aud-red) 70%, transparent);
+}
+.aud-pill,
+.aud-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--aud-red);
+  color: #fff;
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.aud-pill {
+  padding-left: 11px;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+}
+.aud-stop {
+  padding-right: 11px;
+  border-left: 1px solid rgb(255 255 255 / 40%);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--aud-red-deep);
+}
+.aud-pill:hover,
+.aud-stop:hover {
+  filter: brightness(1.12);
+}
+.aud-pill:focus-visible,
+.aud-stop:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.aud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  animation: aud-pulse 1.8s ease-in-out infinite;
+}
+@keyframes aud-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+:root[data-motion='reduce'] .aud-dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aud-dot {
+    animation: none;
+  }
+}
+.aud-n {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--aud-red-deep);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.aud-card {
+  position: fixed;
+  left: auto;
+  width: 320px;
+  min-width: 0;
+  padding: 12px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text);
+  transform-origin: top right;
+}
+.aud-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+.aud-sub,
+.aud-doors,
+.aud-empty,
+.aud-counts,
+.aud-key {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.aud-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.aud-count {
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  font-weight: 700;
+}
+.aud-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.aud-queue li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 9px;
+  font-size: var(--fs-small);
+}
+.aud-queue li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.aud-wait {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.aud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.aud-actions .ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.aud-stop-wide {
+  margin-left: auto;
+  border-color: var(--aud-red, #c62828);
+  background: #c62828;
+  color: #fff;
+  font-weight: 800;
+}
+.aud-learn {
+  align-self: flex-start;
+}

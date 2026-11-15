@@ -1496,5 +1496,57 @@
   "choice.popout.captureSize.s1080x1920.detail": {
     "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
     "where": "Dialog and Preferences: the small line under the \"1080x1920\" answer in \"Capture view size\"."
+  },
+  "choice.audience.strictness.title": { "text": "How careful audience features are", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.audience.strictness.question": {
+    "text": "How careful should Frameling be with what your audience can do?",
+    "where": "The question the \"How careful audience features are\" dialog asks, the first time audience features are switched on."
+  },
+  "choice.audience.strictness.relaxed.label": { "text": "Relaxed", "where": "Dialog and Preferences: the button for the answer \"relaxed\" in \"How careful audience features are\"." },
+  "choice.audience.strictness.relaxed.detail": {
+    "text": "Up to 20 things a minute, a short wait between them, and short cooldowns. For a friendly small stream.",
+    "where": "Dialog and Preferences: the small line under the \"relaxed\" answer in \"How careful audience features are\"."
+  },
+  "choice.audience.strictness.relaxed.did": {
+    "text": "Audience features are relaxed.",
+    "where": "Toast when \"relaxed\" is used without asking (\"How careful audience features are\"), in the past tense."
+  },
+  "choice.audience.strictness.balanced.label": { "text": "Balanced", "where": "Dialog and Preferences: the button for the answer \"balanced\" in \"How careful audience features are\"." },
+  "choice.audience.strictness.balanced.detail": {
+    "text": "Up to 10 things a minute, a few seconds between them. A good place to start.",
+    "where": "Dialog and Preferences: the small line under the \"balanced\" answer in \"How careful audience features are\"."
+  },
+  "choice.audience.strictness.balanced.did": {
+    "text": "Audience features are balanced.",
+    "where": "Toast when \"balanced\" is used without asking (\"How careful audience features are\"), in the past tense."
+  },
+  "choice.audience.strictness.strict.label": { "text": "Strict", "where": "Dialog and Preferences: the button for the answer \"strict\" in \"How careful audience features are\"." },
+  "choice.audience.strictness.strict.detail": {
+    "text": "Up to 4 things a minute, a good wait between them, and long cooldowns. For a big, busy chat.",
+    "where": "Dialog and Preferences: the small line under the \"strict\" answer in \"How careful audience features are\"."
+  },
+  "choice.audience.strictness.strict.did": {
+    "text": "Audience features are strict.",
+    "where": "Toast when \"strict\" is used without asking (\"How careful audience features are\"), in the past tense."
+  },
+  "choice.audience.startup.title": { "text": "Audience features when Frameling opens", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.audience.startup.question": {
+    "text": "When Frameling opens, should audience features be on or off?",
+    "where": "The question the \"Audience features when Frameling opens\" choice asks. It is a preference, so it is not put as a dialog."
+  },
+  "choice.audience.startup.off.label": { "text": "Always start off", "where": "Preferences: the button for the answer \"off\" in \"Audience features when Frameling opens\"." },
+  "choice.audience.startup.off.detail": {
+    "text": "You switch them on when you go live. Safest.",
+    "where": "Preferences: the small line under the \"off\" answer in \"Audience features when Frameling opens\"."
+  },
+  "choice.audience.startup.off.did": { "text": "Audience features start off.", "where": "Toast when \"off\" is used without asking (\"Audience features when Frameling opens\"), in the past tense." },
+  "choice.audience.startup.keep.label": { "text": "Start as I left them", "where": "Preferences: the button for the answer \"keep\" in \"Audience features when Frameling opens\"." },
+  "choice.audience.startup.keep.detail": {
+    "text": "If they were on when you closed Frameling, they are on again.",
+    "where": "Preferences: the small line under the \"keep\" answer in \"Audience features when Frameling opens\"."
+  },
+  "choice.audience.startup.keep.did": {
+    "text": "Audience features start as you left them.",
+    "where": "Toast when \"keep\" is used without asking (\"Audience features when Frameling opens\"), in the past tense."
   }
 }

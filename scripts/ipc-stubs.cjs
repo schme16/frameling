@@ -52,6 +52,7 @@ function invokeStubs(library) {
     'app:display': () => null,
     'app:lastCrash': () => null,
     'app:askSaveChanges': () => 'discard',
+    'app:panicKey': () => false,
     'library:list': (_e, kind) => own(kind).map((k) => ({ id: k.slice(kind.length + 1), size: library.get(k).length, modified: 0 })),
     'library:read': (_e, kind, id) => library.get(`${kind}/${id}`) ?? null,
     'library:write': (_e, kind, id, bytes) => void library.set(`${kind}/${id}`, bytes),

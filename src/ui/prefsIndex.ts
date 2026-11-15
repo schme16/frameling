@@ -119,6 +119,10 @@ export const SETTING_ROWS: PrefRow[] = [
   // Features (the switches themselves are added from the app's list)
   row('features', 'Turn parts of Frameling on or off', 'Switch off what you do not use, to keep things simple.', ['turn off', 'modules', 'hide features', 'simple mode', 'simplify', 'disable', 'enable', 'optional', 'extensions', 'minimal', 'beginner mode', 'declutter'], { find: 'Features' }),
 
+  row('features', 'Audience features', 'Let viewers and stream tools join in, in small safe ways. Off until you switch it on, with a red On air pill and a Stop button.', ['stream', 'streamer', 'streaming', 'twitch', 'youtube', 'chat', 'viewers', 'on air', 'live', 'obs', 'kill switch', 'panic', 'queue', 'cooldown', 'interactive', 'audience participation'], { find: 'Audience features' }),
+
+  row('features', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
+
   // Diagnostics
   row('diagnostics', 'Telling the makers', 'Send a bug report or crash notes, only when you press Send.', ['report a bug', 'bug report', 'feedback', 'send report', 'crash report', 'telemetry', 'analytics', 'privacy', 'beta', 'error report', 'logs', 'crash notes', 'contact'], { find: 'Telling the makers' }),
   row('diagnostics', 'Look for new versions', 'Quietly check for a newer Frameling, and say what is sent. Off means it never looks by itself.', ['update', 'updates', 'auto update', 'automatic update', 'check for updates', 'new version', 'upgrade', 'new release', 'latest version', 'skip version', 'github', 'privacy', 'offline'], { find: 'Look for new versions' }),

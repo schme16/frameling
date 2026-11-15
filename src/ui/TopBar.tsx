@@ -7,6 +7,7 @@ import { commandEnabled, explainNotNow, runCommand } from './palette';
 import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
+import { OnAir } from '../audience/OnAir';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -88,6 +89,7 @@ export function TopBar() {
         <DocName />
       </div>
       <div className="ui-topbar-end">
+        <OnAir />
         <StreamSafeBadge />
         <WorkspaceSwitcher />
         <CmdButton id="edit.undo" icon="undo" label="Undo" />

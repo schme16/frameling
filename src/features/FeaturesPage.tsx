@@ -5,6 +5,7 @@ import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { isFeatureOn, needsIt, offFeatures, setFeatureOn, switchableFeatures } from './host';
 import { useFeaturesVersion } from './use';
+import { AudiencePrefsRow } from '../audience/PrefsRow';
 
 export function FeaturesPage() {
   useFeaturesVersion();
@@ -43,6 +44,7 @@ export function FeaturesPage() {
           );
         })}
       </div>
+      <AudiencePrefsRow />
       {offFeatures().length > 0 && (
         <div>
           <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>

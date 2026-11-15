@@ -12,6 +12,7 @@ import '../pixel/debug';
 import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
+import '../audience/debug';
 import { uid } from '../core/doc';
 import { activeDrawing } from '../tools/edit';
 import { store } from '../core/store';
