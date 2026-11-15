@@ -256,21 +256,22 @@ export function forgetAnswers(ids: string[]): void {
   emit();
 }
 
-let deferral: (() => boolean) | null = null;
+let deferral: ((id: string) => boolean) | null = null;
 
 /**
- * While `fn` says true (a lesson is playing), a choice nobody has answered yet takes its default without a question and
- * without remembering it, so it is asked the first time it matters after the lesson.
+ * While `fn` says true for a choice (a lesson is playing), one nobody has answered yet takes its default without a
+ * question and without remembering it, so it is asked the first time it matters after the lesson. `fn` gets the
+ * choice's id, so a lesson that is about a question can let that one through.
  */
-export function setChoiceDeferral(fn: (() => boolean) | null): void {
+export function setChoiceDeferral(fn: ((id: string) => boolean) | null): void {
   deferral = fn;
 }
 
-const deferred = (): boolean => !!deferral?.();
+const deferred = (id: string): boolean => !!deferral?.(id);
 
 /** Whether a question can be put to the person at all right now (there is an asker, and nothing is holding questions). */
 export function canAsk(id: string): boolean {
-  return !!asker && !defs.get(id)?.silent && !deferred();
+  return !!asker && !defs.get(id)?.silent && !deferred(id);
 }
 
 /**
@@ -282,7 +283,7 @@ export function choose<V extends string = string>(id: string): Promise<V> {
   if (!def) throw new Error(`Unknown choice ${id}`);
   const known = answers[id];
   if (known !== undefined) return Promise.resolve(known as V);
-  if (def.silent || !asker || deferred()) return Promise.resolve(def.default as V);
+  if (def.silent || !asker || deferred(id)) return Promise.resolve(def.default as V);
   if (isWeary(closed.get(id) ?? 0, def)) {
     // Closed twice already: do what closing does, and say so, without a sheet.
     wearyNotice?.(def, wearyAnswer(def));
@@ -315,7 +316,7 @@ export function withChoice<V extends string = string>(id: string, fn: (value: V)
   const plan = planAsk({
     remembered: answers[id] !== undefined,
     canAsk: !!asker,
-    silent: !!def?.silent || deferred(),
+    silent: !!def?.silent || deferred(id),
     matters: opts.matters !== false,
     gently,
     mustAsk: !!def?.mustAsk,

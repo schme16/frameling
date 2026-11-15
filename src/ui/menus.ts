@@ -79,7 +79,7 @@ export const MENUS: MenuDef[] = [
     label: 'Streaming',
     categories: ['Audience'],
     items: [
-      'audience.start', '-', 'heading:Audience features', 'audience.toggle', 'audience.drawing', 'audience.view', 'audience.show', 'streamboard.toggle', 'audience.clearQueue', 'audience.kill', '-',
+      'audience.start', 'audience.walk', '-', 'heading:Audience features', 'audience.toggle', 'audience.drawing', 'audience.view', 'audience.show', 'streamboard.toggle', 'audience.clearQueue', 'audience.kill', '-',
       'sub:streamdoor', 'sub:streamoverlay', 'sub:twitch', 'sub:promptjar', 'sub:votes', 'sub:guess', 'sub:quillreacts', 'sub:dares', 'sub:penmods',
     ],
   },

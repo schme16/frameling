@@ -19,6 +19,7 @@ import { streamSafe, subscribeStreamSafe } from '../core/streamSafe';
 import { createStore } from '../ui/mini';
 import { getPrefs, subscribePrefs } from '../ui/prefs';
 import { emptyOverlay, type OverlayState } from '../shared/streamOverlay';
+import { noteStreamMark } from '../features/streamMarks';
 
 /** A vote, as the overlay takes it. The shape of the votes feature's own view, so the adapter below is a few lines. */
 export interface OverlayVoteInput {
@@ -46,6 +47,7 @@ let testTimer: ReturnType<typeof setTimeout> | undefined;
 /** Shows a made-up Quill, banner and prompt on the overlay for a few seconds. */
 export function startOverlayTest(): void {
   clearTimeout(testTimer);
+  noteStreamMark('overlayTest');
   const until = Date.now() + TEST_MS;
   overlayTest.set({ until });
   testTimer = setTimeout(() => overlayTest.set((t) => (t && t.until === until ? null : t)), TEST_MS + 50);

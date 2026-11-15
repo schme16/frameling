@@ -1160,5 +1160,29 @@
       "No takers! Maybe it was the word's fault."
     ],
     "where": "A toast when a guessing round ends and nobody got the word. The app picks one."
+  },
+  "quests.did.go-live.audience": {
+    "text": "You switched on audience features, so viewers can join in in small, safe ways.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"audience\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.go-live.door": {
+    "text": "You gave your stream tool a way to reach Frameling.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"door\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.go-live.obs": {
+    "text": "You connected OBS, so I can tell when you go live.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"obs\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.go-live.safe": {
+    "text": "You turned on Stream-safe, so paths, names and keys show as stand-ins.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"safe\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.go-live.twitch": {
+    "text": "You connected your Twitch channel, so rewards and cheers can reach me.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"twitch\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
+  },
+  "quests.did.go-live.overlay": {
+    "text": "You copied the overlay address, ready for OBS.",
+    "where": "The Great work card in the quest \"Go live\", after the step \"overlay\": what you just did, in your words. A draft for you to edit. A quest's last step has no card, because the badge card follows it."
   }
 }

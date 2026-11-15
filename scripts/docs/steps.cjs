@@ -258,6 +258,9 @@ function mockMain(ipcMain) {
     'video:probe': () => ({ ok: true }),
     // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"} (as in shoot.cjs).
     // Send a copy gets a pretend place to land (nothing is written), so the clip can show what you see afterwards.
+    // SHOT_STREAM_OK=1: the clipboard takes a copy and the Save dialog picks a place, so a clip can show the streaming setup
+    // working (a copy that fails, as in the plain stub, is what the quest would wait on forever).
+    ...(process.env.SHOT_STREAM_OK ? { 'clipboard:writeText': () => true, 'files:pickExportFile': () => '/home/me/Documents/frameling.firebotsetup' } : {}),
     'files:save': (_e, o) => (o && o.copy ? { path: '/home/me/Pictures/Sunny day.frameling' } : null),
     'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && require('node:fs').existsSync(p) ? { bytes: new Uint8Array(require('node:fs').readFileSync(p)), path: p } : { error: 'No such file.' }),
   });

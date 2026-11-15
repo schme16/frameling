@@ -42,6 +42,7 @@ import { PARTICLES_QUEST } from '../particles/quest';
 import { TEXT_QUEST } from '../text/quest';
 import { CAMERA_QUEST } from '../camera/quest';
 import { TURN_QUEST } from '../canvas/quest';
+import { GO_LIVE_QUEST } from '../golive/quest';
 import { registerQuest } from './registry';
 import type { Quest } from './types';
 import { questWord } from '../words/quests';
@@ -361,6 +362,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST, ...PIXEL_WAY_QUESTS, TURN_QUEST];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST, ...PIXEL_WAY_QUESTS, TURN_QUEST, GO_LIVE_QUEST];
 
 for (const q of QUESTS) registerQuest(q);

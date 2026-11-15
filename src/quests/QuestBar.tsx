@@ -12,6 +12,8 @@ import { isCoveredByDialog, resolveTarget } from './target';
 
 /** The drawing area: the card never covers it. */
 const CANVAS = '.cv-root';
+/** A question Frameling is asking (a quest that is about one, like Go live): its buttons must stay clickable. */
+const QUESTION = '.ui-choice';
 /** The card's widths, widest first, and the small bar it tucks down to. */
 const WIDE = 420;
 const NARROW = 320;
@@ -81,7 +83,7 @@ export function QuestBar() {
       const target = el && !isCoveredByDialog(el) ? boxOf(el) : null;
       const canvas = boxOf(document.querySelector(CANVAS));
       const st = cardState.get();
-      const input = { view, insets: insets(), sizes: widths.map((w) => ({ w, h: heightAt(w) })), bar: BAR, target, avoid: canvas ? [canvas] : [], current: cur, pinned: st.pinned };
+      const input = { view, insets: insets(), sizes: widths.map((w) => ({ w, h: heightAt(w) })), bar: BAR, target, avoid: [canvas, boxOf(document.querySelector(QUESTION))].filter((b): b is Box => !!b), current: cur, pinned: st.pinned };
       seen.current = { target, canvas, noRoom: placeCard({ ...input, pinned: null }).mode === 'bar' };
       const next = placeCard({ ...input, tucked: st.tucked, peek: st.peek });
       if (!same(cur, next)) {

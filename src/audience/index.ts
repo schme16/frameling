@@ -15,6 +15,7 @@ import { addKeptOutHelp, onFeaturesChange } from '../features/host';
 import { streamingOn } from '../features/streamFamily';
 import { store } from '../core/store';
 import { readJson, writeJson } from '../ui/mini';
+import { startQuest } from '../quests/registry';
 import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { audienceChoices } from './choices';
@@ -201,6 +202,18 @@ export function installAudience(): void {
       keywords: ['stream', 'streamer', 'twitch', 'viewers', 'audience', 'chat', 'vote', 'voting', 'guess', 'prompt', 'suggest', 'suggestions', 'interact', 'interaction', 'participate', 'get started', 'start', 'set up', 'setup', 'how do i', 'firebot', 'streamer.bot', 'bot', 'go live', 'first time'],
       global: true,
       run: () => openHelp('viewers-take-part'),
+    },
+    {
+      id: 'audience.walk',
+      label: 'Walk me through going live',
+      category: 'Audience',
+      description: 'A guided quest through setting up a stream: audience features, the actions door, OBS, Stream-safe, Twitch and the overlay, checking each one really works. Skip any you do not use.',
+      help: 'viewers-take-part',
+      keywords: ['stream', 'streamer', 'go live', 'going live', 'set up', 'setup', 'get started', 'start', 'quest', 'guide', 'walk', 'tutorial', 'step by step', 'guided', 'twitch', 'obs', 'overlay', 'firebot', 'viewers', 'audience', 'how do i'],
+      global: true,
+      run: () => {
+        if (!startQuest('go-live')) toast('Go live needs the actions door, the overlay and Twitch switched on. Preferences > Streaming brings them back.', { kind: 'info' });
+      },
     },
     {
       id: 'audience.show',

@@ -70,6 +70,18 @@ describe('choices', () => {
     expect(asked).toBe(1);
   });
 
+  it('lets a lesson ask the questions it is about, and defers the rest', async () => {
+    registerChoice({ ...def, id: 't.about' });
+    let asked = 0;
+    setChoiceAsker(async () => (asked++, { value: 'copy', remember: true }));
+    setChoiceDeferral((id) => id !== 't.about');
+    expect(await choose('t.n')).toBe('blank');
+    expect(await choose('t.about')).toBe('copy');
+    expect(asked).toBe(1);
+    expect(rememberedChoice('t.n')).toBeUndefined();
+    expect(rememberedChoice('t.about')).toBe('copy');
+  });
+
   it('a remembered answer still wins during a lesson', async () => {
     setChoice('t.n', 'copy');
     setChoiceDeferral(() => true);

@@ -15,6 +15,9 @@ import { audioFeature } from '../../src/audio';
 import { cameraFeature } from '../../src/camera';
 import { particlesFeature } from '../../src/particles';
 import { textFeature } from '../../src/text';
+import { streamDoorFeature } from '../../src/streamdoor';
+import { streamOverlayFeature } from '../../src/streamoverlay';
+import { twitchFeature } from '../../src/twitch';
 import { flowFeature } from '../../src/flow';
 import { interactivesFeature } from '../../src/interactives';
 import type { Quest } from '../../src/quests/types';
@@ -52,7 +55,7 @@ describe('quests of a feature that is off', () => {
 });
 
 describe('the built-in quests', () => {
-  const known = new Set([rigFeature, tilesFeature, lipsyncFeature, audioFeature, cameraFeature, flowFeature, interactivesFeature, particlesFeature, textFeature].map((f) => f.id));
+  const known = new Set([rigFeature, tilesFeature, lipsyncFeature, audioFeature, cameraFeature, flowFeature, interactivesFeature, particlesFeature, textFeature, streamDoorFeature, streamOverlayFeature, twitchFeature].map((f) => f.id));
 
   it('only name features that exist', () => {
     for (const q of QUESTS) for (const f of q.features ?? []) expect(known.has(f), `${q.id} names ${f}`).toBe(true);
@@ -65,10 +68,11 @@ describe('the built-in quests', () => {
     expect(by['tiles']).toEqual(['tiles']);
     expect(by['bones-and-pose']).toEqual(['rig']);
     expect(by['camera-move']).toEqual(['camera']);
+    expect(by['go-live']).toEqual(['stream-door', 'stream-overlay', 'stream-twitch']);
   });
 
   it('are all offered while every feature is on', () => {
-    registerFeatures([rigFeature, tilesFeature, cameraFeature, particlesFeature, textFeature]);
+    registerFeatures([rigFeature, tilesFeature, cameraFeature, particlesFeature, textFeature, streamDoorFeature, streamOverlayFeature, twitchFeature]);
     expect(QUESTS.every(questFeaturesOn)).toBe(true);
   });
 });

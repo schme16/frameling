@@ -3,6 +3,7 @@ import { desktop } from '../io/desktop';
 import { toast } from '../ui/toast';
 import { FIREBOT_SETUP_FILE, firebotSetupText } from './firebotSetup';
 import { doorStatus, preferredPort } from './state';
+import { noteStreamMark } from '../features/streamMarks';
 
 export type SaveResult = 'saved' | 'cancelled' | 'failed';
 
@@ -42,6 +43,7 @@ export async function writeFirebotSetup(): Promise<SaveResult> {
 /** The button and the palette command: save the file, then say what comes next. */
 export async function saveFirebotSetup(): Promise<SaveResult> {
   const r = await writeFirebotSetup();
+  if (r === 'saved') noteStreamMark('setupFile');
   if (r === 'saved') toast('Saved. Your key is not in the file. In Firebot, open the File menu, then Firebot Setups, then Import Firebot Setup. Paste the key when it asks (Copy beside Key here).', { kind: 'success' });
   else if (r === 'failed') toast('Could not save the Firebot setup file.', { kind: 'warn' });
   return r;

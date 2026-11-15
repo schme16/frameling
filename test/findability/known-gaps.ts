@@ -88,11 +88,13 @@ export const STREAM_LOAD = {
   /** 75: How to get your viewers taking part (audience.start), the one page that walks from a Twitch channel to viewers voting. Somebody asking "how do I get my viewers to vote" finds it by that, in the palette, the Streaming menu and the top of the Streaming tab. */
   /** 76: What can your viewers see? (audience.view), the one answer that decides whether secret words, pulled prompts and unread chat words are covered. It has to be findable by a streamer who wants to change it, in the palette and in the Audience features menu, and it goes with the gate commands so it leaves when the streaming tools are tucked away. */
   /** 77: Stream control (streamboard.toggle), the window of buttons for a second screen. It is the one way to open the board, so it has to be in the palette and the Streaming menu, found by "stream control", "second screen" and "buttons". There is no second command: moving the buttons and putting them back are buttons inside the window. */
-  palette: 77,
+  /** 78: Walk me through going live (audience.walk), the Go live quest. The route page is for reading and the quest is for doing it with the buttons rung and each part checked, and somebody who asks "how do I set up my stream" or "go live" has to find it in the palette, in the Streaming menu beside the route page, and on the Streaming tab. It goes with the gate commands so it leaves when the streaming tools are tucked away. */
+  palette: 78,
   /** Commands in the menus (View holds all of them). 75, the same three commands as the palette: the two in the Actions door submenu and the first entry of the Streaming menu. */
   /** 76: the same command, in the Audience features menu next to the switch it belongs with. */
   /** 77: the same command, in the Streaming menu with the audience switch and the card it sits beside. */
-  menu: 77,
+  /** 78: the same command, in the Streaming menu under How to get your viewers taking part. */
+  menu: 78,
   /** Switches in Preferences > Features. */
   switches: 9,
   /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */

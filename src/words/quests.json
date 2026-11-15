@@ -682,5 +682,87 @@
   },
   "quest.tiles.stamp.say": { "text": "With the tile brush (B), click a few times on the canvas to stamp your tile.", "where": "Quest \"Tiles\", step 6 (stamp): what the guide says." },
   "quest.tiles.stamp.why": { "text": "Drag to paint a row. Change the tile later and every copy changes with it.", "where": "Quest \"Tiles\", step 6 (stamp): the quiet line under it saying why." },
-  "quest.tiles.stamp.hint": { "text": "Three tiles is enough. Side by side they join up with no seam.", "where": "Quest \"Tiles\", step 6 (stamp): said when nothing has happened for a while." }
+  "quest.tiles.stamp.hint": { "text": "Three tiles is enough. Side by side they join up with no seam.", "where": "Quest \"Tiles\", step 6 (stamp): said when nothing has happened for a while." },
+  "quest.go-live.title": { "text": "Go live", "where": "Quest \"Go live\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.go-live.summary": {
+    "text": "Set up your stream a piece at a time, and check each piece really works.",
+    "where": "Quest \"Go live\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.go-live.badge": { "text": "Showrunner", "where": "Quest \"Go live\": the name of the badge you earn for finishing it." },
+  "quest.go-live.finish": {
+    "text": "Everything is in place. Ctrl+Alt+K stops it all at once if chat gets silly. Next, Getting your viewers taking part has your first vote, and Stream control (Ctrl+Alt+I) puts the buttons on a second screen.",
+    "where": "Quest \"Go live\": the line on the Great work card once you have finished it."
+  },
+  "quest.go-live.audience.say": {
+    "text": "Switch on Audience features. I'll ask two quick things first: how careful to be, and what your viewers can see.",
+    "where": "Quest \"Go live\", step 1 (audience): what the guide says."
+  },
+  "quest.go-live.audience.why": {
+    "text": "Nothing from chat can reach Frameling until this is on. A yellow pill says so while it is, and pressing the pill turns it off again.",
+    "where": "Quest \"Go live\", step 1 (audience): the quiet line under it saying why."
+  },
+  "quest.go-live.audience.hint": {
+    "text": "The switch is under Audience features. If you can't see it, open the list called Choose one by one.",
+    "where": "Quest \"Go live\", step 1 (audience): said when nothing has happened for a while."
+  },
+  "quest.go-live.door.say": {
+    "text": "Using Firebot? Press Save setup file under Actions door, then import it in Firebot. Using something else? Press Copy beside the address.",
+    "where": "Quest \"Go live\", step 2 (door): what the guide says."
+  },
+  "quest.go-live.door.why": {
+    "text": "The actions door is how a chat bot hands your viewers' votes and guesses to Frameling. The Firebot file sets up !vote, !guess and !prompt in one import, and Firebot asks for your key then (Copy beside Key).",
+    "where": "Quest \"Go live\", step 2 (door): the quiet line under it saying why."
+  },
+  "quest.go-live.door.hint": {
+    "text": "Only want rewards and cheers from Twitch? They don't need a bot, so skip this one.",
+    "where": "Quest \"Go live\", step 2 (door): said when nothing has happened for a while."
+  },
+  "quest.go-live.obs.say": { "text": "Switch on Going live with OBS, with OBS open. Type its password here if it has one.", "where": "Quest \"Go live\", step 3 (obs): what the guide says." },
+  "quest.go-live.obs.why": {
+    "text": "Then I turn Stream-safe on by myself the moment you start streaming or recording, and ask before turning it off again.",
+    "where": "Quest \"Go live\", step 3 (obs): the quiet line under it saying why."
+  },
+  "quest.go-live.obs.hint": {
+    "text": "In OBS, open Tools, then WebSocket Server Settings, and tick Enable. No OBS yet? Skip this one.",
+    "where": "Quest \"Go live\", step 3 (obs): said when nothing has happened for a while."
+  },
+  "quest.go-live.safe.say": { "text": "Turn on Stream-safe mode.", "where": "Quest \"Go live\", step 4 (safe): what the guide says." },
+  "quest.go-live.safe.why": {
+    "text": "File paths, your name and keys show as stand-ins, so nothing private reaches the stream. Only what shows changes, never your drawing.",
+    "where": "Quest \"Go live\", step 4 (safe): the quiet line under it saying why."
+  },
+  "quest.go-live.safe.hint": {
+    "text": "It's the Stream-safe mode switch here, or press Ctrl+Alt+Shift+H (Cmd on a Mac).",
+    "where": "Quest \"Go live\", step 4 (safe): said when nothing has happened for a while."
+  },
+  "quest.go-live.twitch.say": {
+    "text": "Press Connect Twitch and approve the short code. Tick the kinds of event you want to hear first.",
+    "where": "Quest \"Go live\", step 5 (twitch): what the guide says."
+  },
+  "quest.go-live.twitch.why": {
+    "text": "Rewards, cheers, follows, subs and raids reach me straight from Twitch, and nothing else needs installing.",
+    "where": "Quest \"Go live\", step 5 (twitch): the quiet line under it saying why."
+  },
+  "quest.go-live.twitch.hint": { "text": "Not on Twitch, or not today? Skip this one.", "where": "Quest \"Go live\", step 5 (twitch): said when nothing has happened for a while." },
+  "quest.go-live.overlay.say": {
+    "text": "Press Copy under Stream overlay, then in OBS add a Browser source and paste it in the URL box.",
+    "where": "Quest \"Go live\", step 6 (overlay): what the guide says."
+  },
+  "quest.go-live.overlay.why": {
+    "text": "The overlay is what your viewers see of me: Quill, dares, prompts and votes, and nothing else. The address stays hidden on screen. I can see that you copied it, not that OBS has it, so the next step checks.",
+    "where": "Quest \"Go live\", step 6 (overlay): the quiet line under it saying why."
+  },
+  "quest.go-live.overlay.hint": {
+    "text": "In OBS: Sources, the plus, then Browser. Set the width and height to match your stream, usually 1920 by 1080.",
+    "where": "Quest \"Go live\", step 6 (overlay): said when nothing has happened for a while."
+  },
+  "quest.go-live.test.say": { "text": "Press Show a test, then look for me in OBS.", "where": "Quest \"Go live\", step 7 (test): what the guide says." },
+  "quest.go-live.test.why": {
+    "text": "A made-up Quill, banner and prompt show for a few seconds. Nothing from your viewers is used, so it's safe to try with the stream running.",
+    "where": "Quest \"Go live\", step 7 (test): the quiet line under it saying why."
+  },
+  "quest.go-live.test.hint": {
+    "text": "Nothing in OBS? Check the address is pasted into the Browser source, and that audience features are still on.",
+    "where": "Quest \"Go live\", step 7 (test): said when nothing has happened for a while."
+  }
 }

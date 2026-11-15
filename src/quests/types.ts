@@ -83,10 +83,12 @@ export interface Quest {
   badge?: Badge;
   /** Feature ids (src/features) it needs. Turning one off puts the quest down politely if it is being played. */
   features?: string[];
+  /** Ids of the ask-once questions (src/core/choices.ts) this quest is about. They are asked as usual while it plays; every other question waits until it is over. */
+  asks?: string[];
   /** Quests to do first. The panel shows the quest as locked until they're done (with a way round it). */
   requires?: string[];
   /** The Quests panel heading it sits under (src/quests/groups.ts). Looked up by id when left out. */
-  group?: 'start' | 'drawing' | 'motion' | 'rigging' | 'sharing' | 'more';
+  group?: 'start' | 'drawing' | 'motion' | 'rigging' | 'sharing' | 'streaming' | 'more';
   /** Gets the document ready (a template, a pixel page). Resolves false when the person said no to losing their work. */
   prepare?: () => boolean | Promise<boolean>;
   /** Is the open document suitable for picking this quest up half way? */

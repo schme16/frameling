@@ -102,7 +102,9 @@ export const PHRASES: Phrase[] = [
   P('set the frame rate', 'document.settings'),
   P('start some pixel art', 'pixel.new'),
   // Streaming and sharing: the family that arrived in one day, asked the way a person would say it
-  P('go live', 'stream.obsLink', 'help:obs-golive'),
+  P('go live', 'audience.walk', 'stream.obsLink', 'help:obs-golive'),
+  P('walk me through setting up my stream', 'audience.walk'),
+  P('set up my stream step by step', 'audience.walk'),
   P('hide my file name', 'view.streamSafe', 'help:stream-safe'),
   P('record a timelapse', 'timelapse.record'),
   P('show only my drawing', 'capture.toggle', 'help:stream-capture'),
