@@ -106,6 +106,21 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('share:event', fn);
     },
   },
+  review: {
+    start: (name) => call('review:start', { name }),
+    stop: () => call('review:stop'),
+    admit: (conn) => call('review:admit', conn),
+    refuse: (conn) => call('review:refuse', conn),
+    remove: (seat) => call('review:remove', seat),
+    pointer: (x, y, off) => call('review:pointer', x, y, off),
+    ack: (seat, ids) => call('review:ack', seat, ids),
+    join: (code, name) => call('review:join', code, name),
+    onEvent: (handler) => {
+      const fn = (_: unknown, e: Parameters<typeof handler>[0]) => handler(e);
+      ipcRenderer.on('review:event', fn);
+      return () => void ipcRenderer.removeListener('review:event', fn);
+    },
+  },
   twitch: {
     status: () => call('twitch:status'),
     signIn: (kinds) => call('twitch:signIn', kinds),
@@ -266,6 +281,8 @@ const api: FramelingApi = {
 
 // The port to the picture window arrives here and is passed on to the page as a window message (ports cannot go across the bridge).
 ipcRenderer.on('popout:port', (e) => window.postMessage('frameling-popout-port', '*', e.ports));
+// The same for the live review you are sharing: the port the drawing window's mirror talks to.
+ipcRenderer.on('review:port', (e) => window.postMessage('frameling-review-port', '*', e.ports));
 
 ipcRenderer.on('streamboard:port', (e) => window.postMessage('frameling-streamboard-port', '*', e.ports));
 

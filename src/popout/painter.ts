@@ -9,7 +9,7 @@ import type { Live } from '../canvas/controller';
 import type { PixelPatch } from './protocol';
 import { FramePainter } from '../canvas/pipeline';
 import type { Replica } from './replica';
-import { cameraAt, fitPage, inkMatrix, liveOf, pageOf, shownFrame, withoutPictures } from './show';
+import { cameraAt, fitPage, inkMatrix, liveOf, pageOf, shownFrame, viewRect, withoutPictures } from './show';
 import type { Rect } from '../canvas/view';
 
 const NO_ONION: OnionSettings = { enabled: false, before: 0, after: 0, opacity: 0, beforeColor: '#000000', afterColor: '#000000', tint: false };
@@ -105,24 +105,25 @@ export class PicturePainter {
     }
     const look = r.look;
     const page = withoutPictures(pageOf(r.doc));
-    const frame = shownFrame(r.doc, look.frame);
+    const frame = shownFrame(r.doc, r.freeFrame ?? look.frame);
     const camera = look.camera ? cameraAt(r.doc, frame) : undefined;
     this.takePixels(r, page, frame);
-    const rect = fitPage(width, height, page, dpr);
+    const rect = viewRect(fitPage(width, height, page, dpr), r.userView, width, height, dpr);
     this.painter.paint(g, {
       doc: page,
       frame,
       rect,
       width,
       height,
-      live: r.doc.editing?.length ? null : (this.pixelLive() ?? liveOf(r.live, r.doc)),
+      // A reviewer looking at a frame of their own is not shown the sharer's stroke in progress: it belongs to another frame.
+      live: r.doc.editing?.length || r.freeFrame !== null ? null : (this.pixelLive() ?? liveOf(r.live, r.doc)),
       onion: NO_ONION,
       playing,
       zooming: false,
       camera,
       activeLayerId: null,
     });
-    if (r.ink && !r.doc.editing?.length) this.paintInk(r, page, rect, frame, camera);
+    if (r.ink && !r.doc.editing?.length && r.freeFrame === null) this.paintInk(r, page, rect, frame, camera);
     return { box: { x: rect.x / dpr, y: rect.y / dpr, w: rect.w / dpr, h: rect.h / dpr }, zoom: rect.w / dpr / page.width, frame, background: page.background ?? undefined };
   }
 
@@ -143,10 +144,10 @@ export class PicturePainter {
   warmAhead(r: Replica, dpr: number, budgetMs: number): void {
     if (!r.doc || !r.look) return;
     const page = withoutPictures(pageOf(r.doc));
-    const rect = fitPage(this.canvas.width, this.canvas.height, page, dpr);
+    const rect = viewRect(fitPage(this.canvas.width, this.canvas.height, page, dpr), r.userView, this.canvas.width, this.canvas.height, dpr);
     const depth = this.painter.warmDepth(page, rect);
     if (!depth) return;
-    const here = shownFrame(r.doc, r.look.frame);
+    const here = shownFrame(r.doc, r.freeFrame ?? r.look.frame);
     const frames: number[] = [];
     for (let k = 1; k <= depth; k++) frames.push((here + k) % Math.max(1, page.length));
     this.painter.warm(page, frames, rect, this.canvas.width, this.canvas.height, performance.now() + budgetMs);

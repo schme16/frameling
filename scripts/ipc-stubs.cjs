@@ -121,6 +121,18 @@ function invokeStubs(library) {
       return { ok: true };
     },
     'share:cancel': () => undefined,
+    // Live review in a harness: a made-up code after a moment and nobody else. The real link is src/main/review.ts.
+    'review:start': (e) => {
+      setTimeout(() => !e.sender.isDestroyed() && e.sender.send('review:event', { type: 'ready', code: 'ocean-tiger-maple-spoon' }), 400);
+      return { ok: true };
+    },
+    'review:stop': () => undefined,
+    'review:admit': () => undefined,
+    'review:refuse': () => undefined,
+    'review:remove': () => undefined,
+    'review:pointer': () => undefined,
+    'review:ack': () => undefined,
+    'review:join': () => ({ ok: true }),
     // No Twitch in a harness: nothing is signed in and no app is set up.
     'twitch:status': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
     'twitch:signIn': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),

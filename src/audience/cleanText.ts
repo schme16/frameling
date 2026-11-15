@@ -70,3 +70,35 @@ export function cleanDisplayName(raw: unknown, max = 25): string | null {
     .trim();
   return /[\p{L}\p{N}]/u.test(text) ? text : null;
 }
+
+// ---- A reviewer's words (live review). Same single place, lighter touch: a reviewer writing "see https://..." or a thumbs
+// up is saying something real, and it goes to the person who asked them in, not onto a stream. So this keeps links and
+// emoji and takes out only what could hurt: control characters, text-direction and zero-width marks, long runs.
+
+// Control characters (but not new lines or tabs), zero width and text direction marks, and the byte order mark.
+const HIDDEN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]/g;
+
+/** A reviewer's note or answer: cut to `max` code points, hidden characters gone, long runs shortened. Null when empty. */
+export function cleanReviewText(raw: unknown, max: number): string | null {
+  if (typeof raw !== 'string') return null;
+  const text = Array.from(
+    raw
+      .slice(0, max * 4)
+      .normalize('NFC')
+      .replace(HIDDEN, '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/(.)\1{19,}/gsu, (m, c: string) => c.repeat(20))
+      .replace(/\n{4,}/g, '\n\n\n')
+      .trim(),
+  )
+    .slice(0, max)
+    .join('')
+    .trim();
+  return text || null;
+}
+
+/** The name a reviewer joins with: one short plain line. Falls back to `fallback` when nothing usable is left. */
+export function cleanReviewerName(raw: unknown, fallback = 'Reviewer'): string {
+  const c = typeof raw === 'string' ? cleanChatText(withoutLinksAndMentions(raw), 24) : null;
+  return c?.text ?? fallback;
+}

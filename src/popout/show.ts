@@ -63,6 +63,32 @@ export function fitPage(width: number, height: number, doc: Doc, dpr: number): R
   return stageDeviceRect(v, doc.width, doc.height, dpr);
 }
 
+/** A reviewer's own zoom and pan of what they look at: scaled by `k` about the middle of the window, then moved by (`dx`, `dy`) CSS pixels. The sharer's view is never touched. */
+export interface UserView {
+  k: number;
+  dx: number;
+  dy: number;
+}
+export const NO_VIEW: UserView = { k: 1, dx: 0, dy: 0 };
+export const MIN_ZOOM = 0.25;
+export const MAX_ZOOM = 32;
+
+/** Where the fitted page sits once the reviewer's own zoom and pan are applied (device pixels in and out). Pure. */
+export function viewRect(rect: Rect, v: UserView, width: number, height: number, dpr: number): Rect {
+  if (v.k === 1 && v.dx === 0 && v.dy === 0) return rect;
+  const cx = width / 2;
+  const cy = height / 2;
+  return { x: cx + (rect.x - cx) * v.k + v.dx * dpr, y: cy + (rect.y - cy) * v.k + v.dy * dpr, w: rect.w * v.k, h: rect.h * v.k };
+}
+
+/** The view after zooming by `factor` with the pointer at (`px`, `py`) CSS pixels from the window's top left, so the spot under it stays put. */
+export function zoomedAbout(v: UserView, factor: number, px: number, py: number, cssW: number, cssH: number): UserView {
+  const k = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v.k * factor));
+  if (k === v.k) return v;
+  const r = k / v.k;
+  return { k, dx: px - cssW / 2 - (px - cssW / 2 - v.dx) * r, dy: py - cssH / 2 - (py - cssH / 2 - v.dy) * r };
+}
+
 /** The same page with reference pictures left out: like an export, they are for tracing, not part of the picture. */
 const noPics = new WeakMap<Doc, Doc>();
 export function withoutPictures(doc: Doc): Doc {

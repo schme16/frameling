@@ -32,21 +32,21 @@ export interface ShareStream {
   once?(event: 'drain', fn: () => void): unknown;
 }
 
-const VERSION = 1;
-const T = { HELLO: 1, REPLY: 2, CONFIRM_A: 3, CONFIRM_B: 4, OFFER: 5, DATA: 6, DONE: 7 } as const;
+export const VERSION = 1;
+export const T = { HELLO: 1, REPLY: 2, CONFIRM_A: 3, CONFIRM_B: 4, OFFER: 5, DATA: 6, DONE: 7 } as const;
 /** Before the code has been proved, nothing a stranger sends may be bigger than this. */
 const PRE_AUTH_MAX = 256;
 /** A piece of the drawing. */
 const CHUNK = 32 * 1024;
 /** Frames after the code is proved: a chunk plus a little. */
-const POST_AUTH_MAX = CHUNK + 64;
+export const POST_AUTH_MAX = CHUNK + 64;
 
 /** The most a copy may be, so a confused or hostile peer cannot ask for the whole memory. */
 export const MAX_BYTES = 512 * 1024 * 1024;
 
 const utf8 = (s: string) => new TextEncoder().encode(s);
 
-function channelBinding(stream: ShareStream): Uint8Array | null {
+export function channelBinding(stream: ShareStream): Uint8Array | null {
   const h = stream.handshakeHash;
   if (!h || h.length === 0) return null;
   const label = utf8('frameling share v1 channel');
@@ -57,7 +57,7 @@ function channelBinding(stream: ShareStream): Uint8Array | null {
 }
 
 /** Reads length-prefixed frames off a stream and writes them. Closes the stream on anything malformed. */
-class Wire {
+export class Wire {
   private buf = Buffer.alloc(0);
   /** The biggest frame it will accept right now. */
   max = PRE_AUTH_MAX;

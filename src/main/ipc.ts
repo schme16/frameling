@@ -13,7 +13,8 @@ import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
 import { registerObsIpc } from './obs';
-import { registerShareIpc } from './share';
+import { makeHyperswarm, registerShareIpc } from './share';
+import { registerReviewIpc, type ReviewControl } from './review';
 import { registerTwitchIpc } from './twitch';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { forgetSeen, keepPreview, previewOf } from './preview';
@@ -106,6 +107,10 @@ function automationTarget(suggestedName: string, forceExt?: string): string | nu
 }
 
 let doorIpc: { close(): Promise<void> } | null = null;
+let review: ReviewControl | null = null;
+/** The drawing window is going: every live review ends with it. */
+export const stopReviews = (): void => review?.stopAll();
+export const stopReviewHost = (): void => review?.stopHost();
 /** Closes the actions door if it is open (the page reloaded or the app is quitting: it must not outlive what answers it). */
 export const closeActionsDoor = (): Promise<void> => doorIpc?.close() ?? Promise.resolve();
 
@@ -345,6 +350,7 @@ export function registerIpc(hooks: IpcHooks): void {
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);
   registerObsIpc(handle, hooks.window);
   registerShareIpc(handle, hooks.window);
+  review = registerReviewIpc(handle, hooks.window, { dir: __dirname, dataDir: () => app.getPath('userData'), makeSwarm: makeHyperswarm });
   registerTwitchIpc(handle, hooks.window);
   // ------------------------------------------------ plugins, templates and Interactives packages
 

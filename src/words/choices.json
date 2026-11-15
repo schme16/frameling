@@ -2123,5 +2123,31 @@
   "choice.streamboard.front.stay.did": {
     "text": "Frameling stayed where it was for the setup window.",
     "where": "Toast when \"stay\" is used without asking (\"Buttons that open a setup window\"), in the past tense."
+  },
+  "choice.review.keep.title": { "text": "Comments left in a live review", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.review.keep.question": {
+    "text": "The review is over and some comments have not been kept. What should happen to them?",
+    "where": "The question the \"Comments left in a live review\" dialog asks when you stop a live review."
+  },
+  "choice.review.keep.all.label": { "text": "Keep them all", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Comments left in a live review\"." },
+  "choice.review.keep.all.detail": {
+    "text": "They go into your drawing as notes and marks with the reviewer's name on, in one step that Undo takes back.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Comments left in a live review\"."
+  },
+  "choice.review.keep.all.did": { "text": "Kept every comment in your drawing.", "where": "Toast when \"all\" is used without asking (\"Comments left in a live review\"), in the past tense." },
+  "choice.review.keep.none.label": { "text": "Leave them behind", "where": "Dialog and Preferences: the button for the answer \"none\" in \"Comments left in a live review\"." },
+  "choice.review.keep.none.detail": {
+    "text": "Nothing is written to your drawing and the comments are forgotten when the card closes.",
+    "where": "Dialog and Preferences: the small line under the \"none\" answer in \"Comments left in a live review\"."
+  },
+  "choice.review.keep.none.did": { "text": "Left the comments behind.", "where": "Toast when \"none\" is used without asking (\"Comments left in a live review\"), in the past tense." },
+  "choice.review.keep.look.label": { "text": "Show me first", "where": "Dialog and Preferences: the button for the answer \"look\" in \"Comments left in a live review\"." },
+  "choice.review.keep.look.detail": {
+    "text": "The card stays open with every comment, and you keep the ones you want. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"look\" answer in \"Comments left in a live review\"."
+  },
+  "choice.review.keep.look.did": {
+    "text": "Left the comments in the card for you to look at.",
+    "where": "Toast when \"look\" is used without asking (\"Comments left in a live review\"), in the past tense."
   }
 }

@@ -1,0 +1,214 @@
+/* Live review: the chip in the title bar, the card that hangs from it, and the reviewers' pointers over the picture. */
+.rv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-right: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+.rv-chip:hover {
+  background: var(--hover-bg);
+}
+.rv-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.rv-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.rv-n {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.rv-card {
+  position: fixed;
+  top: 46px;
+  right: 12px;
+  left: auto;
+  min-width: 0;
+  z-index: 60;
+  width: 340px;
+  max-height: calc(100vh - 70px);
+  overflow: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text);
+}
+.rv-head,
+.rv-row,
+.rv-knock,
+.rv-seat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rv-head {
+  justify-content: space-between;
+}
+.rv-row {
+  flex-wrap: wrap;
+}
+.rv-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+.rv-sec {
+  margin: 4px 0;
+  font-size: 12px;
+  font-weight: 800;
+}
+.rv-sub,
+.rv-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.rv-warn {
+  margin: 0;
+  font-size: var(--fs-small);
+}
+.rv-code {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+  user-select: all;
+}
+.rv-knock {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+.rv-seats,
+.rv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rv-seat-name {
+  font-weight: 700;
+  flex: 1;
+}
+.rv-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+.rv-seat .rv-dot {
+  margin-top: 0;
+  align-self: center;
+}
+.rv-entry {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.rv-entry[data-kept] {
+  opacity: 0.6;
+}
+.rv-entry-body {
+  min-width: 0;
+  flex: 1;
+}
+.rv-words {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.rv-cover {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.rv-entry-actions {
+  display: flex;
+  gap: 6px;
+}
+.rv-foot {
+  justify-content: flex-end;
+}
+
+/* The pointers: a dot in the reviewer's colour and, when names are not covered, their name. */
+.rv-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+.rv-pointer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.06s linear, opacity 0.2s linear;
+  will-change: transform;
+}
+.rv-pointer i {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.rv-pointer span {
+  margin-top: 8px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-pointer {
+    transition: none;
+  }
+}
