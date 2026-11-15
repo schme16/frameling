@@ -1,0 +1,176 @@
+/* The prompt jar chip in the title bar, and the card that hangs from it. Calm colours: it is yours, not the audience's. */
+.jar-chip {
+  display: inline-flex;
+  margin-right: 6px;
+}
+.jar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+.jar-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent);
+}
+.jar-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.jar-n {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.jar-card {
+  position: fixed;
+  left: auto;
+  width: 330px;
+  min-width: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text);
+  transform-origin: top right;
+}
+.jar-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+.jar-sub,
+.jar-note,
+.jar-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.jar-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.jar-art {
+  position: relative;
+  flex: none;
+  color: var(--accent);
+  transform-origin: 50% 90%;
+}
+.jar-slips {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 22px;
+  height: 14px;
+  transform: translateX(-50%) rotate(-8deg);
+  border-radius: 2px;
+  background: var(--panel);
+  border: 2px solid currentColor;
+  z-index: -1;
+}
+.jar-shake {
+  animation: jar-shake 0.5s ease-in-out;
+}
+@keyframes jar-shake {
+  15% {
+    transform: rotate(-9deg);
+  }
+  35% {
+    transform: rotate(8deg);
+  }
+  55% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+.jar-slip {
+  padding: 12px 14px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  animation: jar-slip-in 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+@keyframes jar-slip-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) rotate(-3deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.jar-slip-text {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+.jar-slip-hidden {
+  letter-spacing: 0.15em;
+  color: var(--muted);
+}
+.jar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.jar-actions .ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.jar-learn {
+  margin-left: auto;
+}
+.jar-add {
+  display: flex;
+  gap: 6px;
+}
+.jar-add .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+:root[data-motion='reduce'] .jar-shake,
+:root[data-motion='reduce'] .jar-slip {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jar-shake,
+  .jar-slip {
+    animation: none;
+  }
+}
+.jar-input {
+  height: var(--ui-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-btn-radius);
+  background: var(--bg);
+  color: var(--text);
+  user-select: text;
+  font: inherit;
+}

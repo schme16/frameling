@@ -562,6 +562,14 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M12 6.6v13.2" />
     </>
   ),
+  // A jar with a lid and a slip of paper standing out of it.
+  jar: (
+    <>
+      <path d="M7.5 6.5h9M8.5 6.5V4.5h7v2" />
+      <path d="M7.5 6.5c-1.6 1.2-2.5 2.6-2.5 4.4v6.6A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-6.6c0-1.8-.9-3.2-2.5-4.4" />
+      <path d="M9.5 14.5h5" />
+    </>
+  ),
   heart: <path d="M12 20s-7.7-4.7-7.7-10.4a4.3 4.3 0 0 1 7.7-2.5 4.3 4.3 0 0 1 7.7 2.5C19.7 15.3 12 20 12 20z" />,
   film: (
     <>
