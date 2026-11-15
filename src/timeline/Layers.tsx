@@ -20,7 +20,7 @@ import { moveNode } from '../effects/ops';
 import type { Drop, Node } from '../effects/edit';
 import { rowKey } from '../effects/rowKeys';
 import { LAYER_LABELS, type LayerLabel } from '../core/format';
-import { CLEAN_ROW_H, type Layout, type LayoutRow } from './layout';
+import { CLEAN_ROW_H, type Layout, type LayoutRow, type RowWindow } from './layout';
 import { useLayout } from './view';
 import { isSolo, LABEL_WORDS, setLayerLabel, toggleSolo } from './layerExtras';
 import { layerColorClass } from './Detail';
@@ -213,10 +213,12 @@ interface RowProps {
   onDrop: (id: Id) => void;
   onDragEnd: () => void;
   onMenu: (layer: Layer, x: number, y: number) => void;
+  /** Scrolled out of view: only the row itself is drawn (see PieceRow). */
+  shell?: boolean;
 }
 
-const LayerRow = memo(function LayerRow({ layer, half, activeId, onHalfMenu, h, detailed, tracks, open, inFolder, depth, active, editing, mask, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
-  if (half) return <PairRow layer={layer} half={half} activeId={activeId} h={h} depth={depth} inFolder={inFolder} active={active} editing={editing} dropMark={dropMark} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onMenu={onMenu} onHalfMenu={onHalfMenu} />;
+const LayerRow = memo(function LayerRow({ layer, half, activeId, onHalfMenu, h, detailed, tracks, open, inFolder, depth, active, editing, mask, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu, shell }: RowProps) {
+  if (half) return <PairRow layer={layer} half={half} activeId={activeId} h={h} depth={depth} inFolder={inFolder} active={active} editing={editing} shell={shell} dropMark={dropMark} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onMenu={onMenu} onHalfMenu={onHalfMenu} />;
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
@@ -224,6 +226,7 @@ const LayerRow = memo(function LayerRow({ layer, half, activeId, onHalfMenu, h, 
       id={layer.id}
       attr="data-layer"
       h={h}
+      shell={shell}
       active={active}
       dim={!layer.visible}
       className={`${detailed ? `is-detailed ${layerColorClass(layer)}` : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${layer.pair ? ` is-paired is-${layer.kind}-half` : ''}`}
@@ -368,7 +371,7 @@ function PairChips({ layer, half, activeId, onMenu }: { layer: Layer; half: Laye
 }
 
 /** A pair as one row: its name, a chip for each half, and the eye and padlock for both. */
-function PairRow({ layer, half: other, activeId, h, depth, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu, onHalfMenu }: Omit<RowProps, 'detailed' | 'tracks' | 'open' | 'mask'>) {
+function PairRow({ layer, half: other, activeId, h, depth, inFolder, active, editing, shell, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu, onHalfMenu }: Omit<RowProps, 'detailed' | 'tracks' | 'open' | 'mask'>) {
   const half = other as Layer;
   const both = [layer, half];
   const hiddenCount = both.filter((l) => !l.visible).length;
@@ -385,6 +388,7 @@ function PairRow({ layer, half: other, activeId, h, depth, inFolder, active, edi
       id={layer.id}
       attr="data-layer"
       h={h}
+      shell={shell}
       active={active}
       dim={hiddenCount === 2}
       className={`is-pair${lockedCount === 2 ? ' is-locked' : ''}`}
@@ -430,7 +434,7 @@ function PairRow({ layer, half: other, activeId, h, depth, inFolder, active, edi
  * The layer list, top layer first. The timeline lays its rows out to line up with the keys; the Layers panel passes
  * its own even-height layout instead (see LayersPanel).
  */
-export function LayerList({ layout: given }: { layout?: Layout } = {}) {
+export function LayerList({ layout: given, window: win }: { layout?: Layout; /** Only these rows are drawn in full; the others are shells (see PieceRow). Left out, every row is full. */ window?: RowWindow } = {}) {
   const layers = useStore((s) => s.doc.layers);
   const folders = useStore((s) => s.doc.folders);
   // Which layer is a mask and what it cuts, worked out from the same plan the picture is drawn from.
@@ -459,7 +463,8 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
 
   return (
     <div className={`tl-layers${detailed ? ' is-detailed' : ''}`} role="tree" aria-label="Layers, top layer first">
-      {layout.rows.map((r: LayoutRow) => {
+      {layout.rows.map((r: LayoutRow, i: number) => {
+        const shell = !!win && (i < win.lo || i > win.hi);
         if (r.kind === 'folder') {
           const id = r.row.folder.id;
           return (
@@ -467,6 +472,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
               key={r.key}
               row={r.row}
               height={r.h}
+              shell={shell}
               drag={{
                 dropMark: mark(`f:${id}`, !!drag.node && 'folder' in drag.node && drag.node.folder === id),
                 onDragStart: (fid) => dnd.start({ folder: fid }),
@@ -477,7 +483,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
             />
           );
         }
-        if (r.kind === 'prop') return <PropLabel key={r.key} layer={r.layer} track={r.track} h={r.h} last={r.last} depth={r.depth} />;
+        if (r.kind === 'prop') return <PropLabel key={r.key} layer={r.layer} track={r.track} h={r.h} last={r.last} depth={r.depth} shell={shell} />;
         const l = r.layer;
         return (
         <LayerRow
@@ -494,6 +500,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
           depth={r.depth}
           active={l.id === activeId || (!!r.half && r.half.id === activeId)}
           editing={editing === l.id}
+          shell={shell && editing !== l.id}
           mask={maskInfo?.get(l.id)}
           dropMark={mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id)}
           onDragStart={(id) => dnd.start({ layer: id })}
@@ -534,7 +541,7 @@ function SoloButton({ layer }: { layer: Layer }) {
 }
 
 /** A property row's name under an opened layer. */
-const PropLabel = memo(function PropLabel({ layer, track, h, last, depth }: { layer: Layer; track: Track; h: number; last: boolean; depth: number }) {
+const PropLabel = memo(function PropLabel({ layer, track, h, last, depth, shell }: { layer: Layer; track: Track; h: number; last: boolean; depth: number; shell?: boolean }) {
   return (
     <div
       className={`tl-prop ${layerColorClass(layer)}${last ? ' is-last' : ''}`}
@@ -548,9 +555,13 @@ const PropLabel = memo(function PropLabel({ layer, track, h, last, depth }: { la
         pickTrackKeys(track, e.shiftKey);
       }}
     >
-      <Icon name={track.icon} size={12} />
-      <span className="tl-prop-name">{track.label}</span>
-      <span className="tl-prop-count">{track.keys.length}</span>
+      {shell ? null : (
+        <>
+          <Icon name={track.icon} size={12} />
+          <span className="tl-prop-name">{track.label}</span>
+          <span className="tl-prop-count">{track.keys.length}</span>
+        </>
+      )}
     </div>
   );
 });

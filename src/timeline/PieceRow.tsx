@@ -187,6 +187,11 @@ export interface PieceRowProps {
   /** Extra attributes for the row (aria-level and the like). */
   extra?: Record<string, string | number | boolean | undefined>;
   style?: CSSProperties;
+  /**
+   * Scrolled out of view: only the row itself is drawn (its name, level and state for screen readers, its keys and
+   * drag), none of what is inside it. The element stays, so focus, a drag in flight and the arrow keys carry on.
+   */
+  shell?: boolean;
 }
 
 /** One row: grip, picture, name (double-click to rename), what it says, its buttons and the "..." menu. */
@@ -239,6 +244,14 @@ export function PieceRow(p: PieceRowProps) {
       onDragEnd={drag.onDragEnd}
       {...p.extra}
     >
+      {p.shell ? null : <PieceRowBody {...p} />}
+    </div>
+  );
+}
+
+function PieceRowBody(p: PieceRowProps) {
+  return (
+    <>
       <span className="tl-grip" aria-hidden="true">
         <Icon name="grip" size={12} />
       </span>
@@ -270,7 +283,7 @@ export function PieceRow(p: PieceRowProps) {
       >
         <Icon name="more" size={16} />
       </button>
-    </div>
+    </>
   );
 }
 

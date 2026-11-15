@@ -435,7 +435,11 @@ const ACTIONS = {
   'delete-key': {
     edits: true,
     kinds: ['vector', 'pixel'], unit: 'keys', units: 3,
-    async setup() { await ev(`(() => { const S = window.__frameling.store(); const d = S.get().doc; S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`); },
+    async setup() { await ev(`(() => { const S = window.__frameling.store(); const d = S.get().doc; S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      // The timeline only draws the rows on screen (the rest are empty shells that still carry data-layer), so bring this layer's row into view and give it a moment to fill in.
+      await ev(`(() => { const r = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); return true; })()`);
+      await sleep(250);
+    },
     async act() {
       // Click the key in the timeline (real input), then Delete the picked key.
       for (let i = 0; i < 3; i++) {
