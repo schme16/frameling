@@ -360,10 +360,6 @@ export interface CanvasMark {
   layer?: Id;
   /** The artboard it was drawn on (missing = shows on every artboard, or the document has none). */
   board?: Id;
-  /** Who drew it, when that is known (missing = nobody said). Set by a name in Notes and by a reviewer's comments file. */
-  by?: string;
-  /** When, as milliseconds since 1970, when that is known. */
-  at?: number;
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */

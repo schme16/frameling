@@ -7,7 +7,6 @@ import { withChoice } from '../core/choices';
 import { store } from '../core/store';
 import { boardOf, type NotePin } from './model';
 import { DEFAULT_COLOR, MARK_LABELS, MAX_MARK_TEXT, capPoints, makeMark, markAt, simplify, visibleMarks, worthKeeping, type MarkKind } from './marks';
-import { noteName } from './state';
 import { getMarksState, setMarksLive, setMarksSaved } from './marksState';
 import type { MarksPinChoice } from './marksChoices';
 
@@ -96,7 +95,7 @@ const doing = (m: CanvasMark) => (m.kind === 'text' ? 'Add words' : `Draw ${/^[a
 export function keepMark(m: CanvasMark, pin: NotePin): void {
   const { ui } = store().get();
   const where = pin === 'layer' && !(m.layer ?? ui.activeLayerId) ? 'page' : pin;
-  const kept = makeMark({ id: m.id, kind: m.kind, pts: m.pts, color: m.color, w: m.w, text: m.text, pin: where, frame: m.frame ?? ui.frame, layer: m.layer ?? ui.activeLayerId ?? undefined, board: m.board, by: noteName(), at: Date.now() });
+  const kept = makeMark({ id: m.id, kind: m.kind, pts: m.pts, color: m.color, w: m.w, text: m.text, pin: where, frame: m.frame ?? ui.frame, layer: m.layer ?? ui.activeLayerId ?? undefined, board: m.board });
   store().update(doing(m), (d) => void (d.marks ??= []).push(kept as never));
 }
 

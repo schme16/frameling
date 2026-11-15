@@ -259,14 +259,6 @@ function mockMain(ipcMain) {
     // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"} (as in shoot.cjs).
     // Send a copy gets a pretend place to land (nothing is written), so the clip can show what you see afterwards.
     'files:save': (_e, o) => (o && o.copy ? { path: '/home/me/Pictures/Sunny day.frameling' } : null),
-    // Send for review and Bring in comments: a pretend place to save, a pretend comments file (see ./review-demo.cjs). The page's
-    // bytes go to REVIEW_PAGE_OUT when it is set, so a look can open the real page.
-    'files:pickExportFile': (_e, o) => (o && o.title === 'Save the review page' ? '/home/me/Pictures/Sunny face review.html' : null),
-    'files:write': (_e, p, bytes) => {
-      if (process.env.REVIEW_PAGE_OUT && typeof p === 'string' && p.endsWith('review.html')) require('node:fs').writeFileSync(process.env.REVIEW_PAGE_OUT, Buffer.from(bytes));
-      return { ok: true };
-    },
-    'files:openOther': (_e, o) => (o && o.title === 'Bring in comments' ? { path: '/home/me/Downloads/Sunny face comments.json', bytes: require('./review-demo.cjs').commentsBytes() } : null),
     'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && require('node:fs').existsSync(p) ? { bytes: new Uint8Array(require('node:fs').readFileSync(p)), path: p } : { error: 'No such file.' }),
   });
   return stubs.clearLibrary;

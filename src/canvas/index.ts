@@ -13,7 +13,6 @@ import './gridView';
 import './lightTable';
 import '../reference';
 import '../notes';
-import '../review';
 import './help';
 import './turn-help';
 import './seeThrough-help';
