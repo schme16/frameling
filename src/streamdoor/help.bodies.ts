@@ -32,9 +32,7 @@ A list of actions means the door works, and any trouble left is in the chat prog
 - **400 \`invalid\`:** the answer says why in \`detail\` and has a \`say\` sentence for chat, like "No vote is running right now." The list is in [what it can do](help:actions-door-reference).
 - **400 \`bad-request\`:** the body isn't JSON, usually a quote mark someone typed. Both setups here guard against it.
 - **429:** too soon. Wait the **Retry-After** seconds. Prompts take one every 3 seconds across the whole channel, which you can change in **Preferences > Streaming**.
-- **503:** the drawing window isn't open.
-
-Every answer is in [The actions door: what it can do](help:actions-door-reference).`,
+- **503:** the drawing window isn't open.`,
   'chat-commands-firebot': `Firebot reads your Twitch chat and has an **HTTP Request** effect that sends exactly what the door needs, with no code. It has Linux builds (.deb, .rpm and .tar.gz) on its [releases page](https://github.com/crowbartools/Firebot/releases). Read [Chat commands](help:chat-commands) first if you haven't.
 
 ## The quick way: import the setup file
