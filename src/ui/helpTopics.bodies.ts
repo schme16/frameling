@@ -131,7 +131,7 @@ See also [Using help](help:using-help), [Panels](help:panels) and [Preferences](
 2. Use the **up and down arrows** to move through the results.
 3. Press **Enter** to do it, or **Esc** to close.
 
-Each command shows its shortcut on the right, so you can learn it for next time. Greyed out ones can't be used right now.
+Each command shows its shortcut on the right, so you can learn it for next time. Greyed out ones can't be used right now: point at one, or click it, and it tells you what to do first.
 
 Help pages show up in the list too. Choose one to read it.
 
@@ -812,7 +812,7 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
   menus: `The menu bar is along the top. Press a name to open it, then press a choice.
 
 - A **tick** means it is switched on.
-- **Greyed** choices can't be used right now (nothing to undo yet, for example).
+- **Greyed** choices can't be used right now (nothing to undo yet, for example). Point at one, or click it, and it says what would turn it on.
 - Shortcuts are shown on the right.
 - Along the top: **File**, **Edit**, **View**, **Tools and layers**, **Pixel tools**, **Frames and motion** and **Help**. The three in the middle are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
 - A **small arrow** on the right opens a smaller menu beside it. Related things are grouped that way: Snapping and Panels in View, Effects and Masks and folders in Tools and layers, Skeleton (rig) and Artboards in Frames and motion, Plugins in Edit.

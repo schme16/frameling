@@ -3,8 +3,8 @@ import { store, useStore } from '../core/store';
 import { getCommand } from '../core/registry';
 import { Icon, Logo } from './icons';
 import { MenuBar } from './MenuBar';
-import { commandEnabled, runCommand } from './palette';
-import { openPalette } from './overlays';
+import { commandEnabled, explainNotNow, runCommand } from './palette';
+import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 function DocName() {
@@ -69,7 +69,7 @@ function CmdButton({ id, icon, label }: { id: string; icon: string; label: strin
   });
   const c = getCommand(id);
   return (
-    <button type="button" className={`ui-icon-btn${enabled ? '' : ' is-disabled'}`} aria-label={label} aria-disabled={!enabled} data-command={id} onClick={() => c && runCommand(c)}>
+    <button type="button" className={`ui-icon-btn${enabled ? '' : ' is-disabled'}`} aria-label={label} aria-disabled={!enabled} data-command={id} onClick={() => c && (enabled ? runCommand(c) : explainNotNow(c, openHelp))}>
       <Icon name={icon} />
     </button>
   );
