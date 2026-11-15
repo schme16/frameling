@@ -907,6 +907,19 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/stream-door.cjs
 ```
 
+
+## The chat commands guide, end to end: scripts/e2e/chat-commands.cjs
+
+The real built app, a started vote and round, and the exact requests the chat commands guide gives for `!vote`,
+`!guess` and `!prompt`, with every answer its failure table promises (400 invalid, 400 bad-request, 401, 403 with an
+Origin, 429 with `retryInMs`, and the door closed with audience features off). `test/streamdoor/chat-commands.test.ts`
+holds the guide's Firebot bodies against the real parsers and checks a viewer's quote mark can't break or add to them.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/chat-commands.cjs
+```
+
 ## The stream overlay, end to end: scripts/e2e/overlay-clip.cjs
 
 The overlay is a page on the actions door's server, with its own path, token and rules (`src/main/overlayHandler.ts`, the

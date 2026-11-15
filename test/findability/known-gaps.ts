@@ -104,8 +104,8 @@ export const STREAM_LOAD = {
   menu: 72,
   /** Switches in Preferences > Features. */
   switches: 9,
-  /** Help topics. */
-  help: 15,
+  /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */
+  help: 18,
 };
 
 /**

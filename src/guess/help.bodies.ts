@@ -17,7 +17,7 @@ Only in the box that starts the round, and in the reveal. Your window may be on 
 Forgetful? **Preferences > Streaming > Peeking at the word** can be **Let me peek**: a **Peek** button shows it for three seconds. It never works while Stream-safe is on.
 
 ## Getting the guesses in
-Your stream tool sends each guess to the [actions door](help:actions-door):
+Your stream tool sends each guess to the [actions door](help:actions-door), and [Chat commands](help:chat-commands) sets up typing **!guess** for viewers:
 - **URL:** \`http://127.0.0.1:47213/v1/actions/guess.send\`
 - **Body:** \`{"guess":"%rawInput%","player":"%userId%","name":"%user%"}\`
 
