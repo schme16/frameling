@@ -107,6 +107,33 @@ export interface Doc {
   ext?: Ext;
   /** How this drawing was last exported, and the named ways it can leave (missing = none yet). See src/export/saved.ts. */
   exports?: DocExports;
+  /**
+   * The undo and redo steps saved with the drawing, so whoever opens the file can step back through them (missing = none).
+   * Only ever in a file: the reader takes the steps out and gives them to the store, so a document in memory never has
+   * it and no export writes it. This is just the note in `doc.json`; the steps are in the `history/` entries. See `DocHistory`.
+   */
+  history?: DocHistory;
+}
+
+/**
+ * What `doc.json` says about the history in the file. The steps are in `history/steps.json` (the patches, as JSON) and
+ * `history/data.bin` (the pixels they hold, as bytes), see src/core/historyFile.ts. A pixel step holds only the
+ * rectangle it changed.
+ *
+ * Unlike `offset`, history does NOT raise the file's version (see `OFFSET_FORMAT_VERSION`). A file is raised so an older
+ * build refuses it when reading it wrongly would draw the wrong picture. An older build that skips the history draws the
+ * right picture, and a bump would stop it opening every file that has steps, so the file stays at its normal version:
+ * an older build opens the drawing and leaves the steps out (and drops them if it saves again).
+ */
+export interface DocHistory {
+  /** How the entries are laid out. A reader that doesn't know the number leaves the history out. */
+  v: 1;
+  /** Steps that Undo goes back through, oldest first in the file. */
+  undo: number;
+  /** Steps that Redo goes forward through, the next one first in the file. */
+  redo: number;
+  /** Older steps that were left out to keep the file small (missing = none). */
+  dropped?: number;
 }
 
 /** Export choices as plain data (the Export window's settings, with nothing but strings, numbers and yes/no inside). */

@@ -126,7 +126,7 @@ export interface DocChange {
   patches: Patch[];
 }
 
-interface HistoryEntry {
+export interface HistoryEntry {
   /** Stays the same through undo and redo, so other parts can remember things about a step. */
   id: number;
   patches: Patch[];
@@ -145,6 +145,22 @@ interface HistoryEntry {
   undoUi?: Partial<UiState>;
   /** And what it goes to when the step is done again. */
   redoUi?: Partial<UiState>;
+}
+
+/** A step as a file hands it back: what it did, and how to take it back. Gets an id and a weight when it joins the history. */
+export interface RestoredStep {
+  label: string;
+  at: number;
+  patches: Patch[];
+  inverse: Patch[];
+  /** A look at another artboard (see `HistoryEntry.view`). */
+  view?: boolean;
+}
+
+/** The steps a file carried: `undo` oldest first, `redo` with the next step to redo first. */
+export interface RestoredHistory {
+  undo: RestoredStep[];
+  redo: RestoredStep[];
 }
 
 /** One step of the history as the History panel shows it. */
@@ -209,7 +225,7 @@ export function weighValue(v: unknown, depth = 0): number {
   return n;
 }
 
-const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
+export const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
 /** How long a step waits for the change that is to join it (a layer made for a stroke waits for the stroke, which can wait on a question). */
@@ -568,13 +584,31 @@ export class Store {
     return out;
   }
 
-  /** Replaces the whole document (new or opened file). Clears history. */
-  load(doc: Doc, filePath: string | null = null): void {
+  /**
+   * The undo and redo steps with the document they belong to, for saving them in the file. Null when there is nothing
+   * to save, or while a tile is open for editing (the steps then belong to the tile, not to the file's drawing).
+   */
+  historyForSave(): { doc: Doc; undo: HistoryEntry[]; redo: HistoryEntry[] } | null {
+    if (this.nested || (!this.undoStack.length && !this.redoStack.length)) return null;
+    // The newest step can still grow (a stroke joins it), so it is copied; the rest never change once they are not the newest.
+    const top = this.undoStack.length - 1;
+    const undo = this.undoStack.map((e, i) => (i === top ? { ...e, patches: [...e.patches], inverse: [...e.inverse] } : e));
+    return { doc: this.state.doc, undo, redo: [...this.redoStack] };
+  }
+
+  /**
+   * Replaces the whole document (new or opened file). Clears history, unless the file carried its own: then Undo and
+   * Redo pick up where the last session left off (`history` as `readHistory` in src/core/historyFile.ts gives it).
+   */
+  load(doc: Doc, filePath: string | null = null, history?: RestoredHistory): void {
     this.nested = null;
     this.merged = null;
     this.follow = null;
-    this.undoStack = [];
-    this.redoStack = [];
+    const entry = (s: RestoredStep): HistoryEntry => ({ id: nextEntryId++, patches: s.patches, inverse: s.inverse, label: s.label, at: s.at, weight: weighPatches(s.patches) + weighPatches(s.inverse), ...(s.view ? { view: true } : {}) });
+    this.undoStack = history ? history.undo.map(entry) : [];
+    // The stack's top is the next step to redo, so the file's list (next first) goes in reversed.
+    this.redoStack = history ? history.redo.map(entry).reverse().slice(-historySteps) : [];
+    this.trimHistory();
     this.loads++;
     const u = this.state.ui;
     this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool, loopPlayback: u.loopPlayback, pingPong: u.pingPong, onion: u.onion } };
