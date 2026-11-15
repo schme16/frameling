@@ -131,7 +131,11 @@ audit passed the whole time a panel could not be found.
   "save a gif"), each paired with what they meant. Every one must put the right command or topic in the top three of the
   command palette, as the palette shows them. **Add a row every time anybody can't find something.** When a row misses,
   fix it with a single-word keyword on the command, not a multi-word one. A sentence that misses and can't be fixed yet
-  goes in `KNOWN_MISSES` in the same file, where the test checks it still misses, so a fix is noticed.
+  goes in `KNOWN_MISSES` in the same file, where the test checks it still misses, so a fix is noticed. The right answer
+  must also be FIRST: a row with wrong answers above it goes in `RANKED_BEHIND` (`known-ranked-behind.ts`) with its
+  exact rank, so the palette cannot get worse while the test stays green. A second check asks about thirty plain words
+  ("settings", "test", "address") and fails when more than one of the top five is a stream command
+  (`CROWDED_WORDS` holds today's, exact, and can only shrink).
 - **Reachability** (`reachability.test.ts`): every way into every command (palette, menu, tool rail, key, something on
   screen). A command that only the palette reaches, or that only a key reaches, fails, unless it is in
   `known-unreachable.ts`, which can only shrink. "On screen" is read from the source (a component that names the
@@ -142,6 +146,19 @@ audit passed the whole time a panel could not be found.
   A greyed command must also say what would turn it on (`reason` on the command, or `src/core/commandReasons.ts`),
   checked in every state it greys in; the ones that don't yet are on `known-no-reason.ts`, which can only shrink.
   The small-screen layout and a panel that is on screen but empty need the running app, so they are not in here.
+- **Feature states** (`feature-states.test.ts`): state coverage only knows document situations. This sets up the states
+  a FEATURE has (`FEATURE_STATES` in `app.ts`: no desktop, just installed, live, a vote going, a round going, a prompt
+  in hand, a dare on, Quill hidden, a sound, a camera, text selected) and looks at every command of every optional
+  feature in each one: each state must turn on and grey what it says it does, a greyed command must say a true,
+  one-line sentence there, and every command must be on in at least one state (`NEVER_SEEN_WORKING`, only shrinks).
+  Each feature is also switched off on its own: its commands, panels and help must go, no menu list may be left
+  empty, "Turn on" must be offered, and switching it back on must restore the palette and menus exactly. **A new
+  feature adds a state here** for whatever it has (something running, something picked).
+- **Crowding and depth** (`crowding.test.ts`): how deep a menu entry is (cap 3 clicks, `DEEP_IN_MENUS`), how long any
+  menu or submenu is (cap 30 entries, `LONG_LISTS`), how much a whole top-level menu holds (cap 150, `BIG_MENUS`), and
+  how much of the palette, menus, feature switches and help belongs to the stream family (`STREAM_LOAD`, exact).
+  Lists made of the person's own things (saved brushes) are named exceptions; everything else over a cap is on a list
+  in `known-gaps.ts` that can only shrink.
 
 `FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
 rail and how many greyed commands say why.

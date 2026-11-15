@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 // The phrase table: plain sentences a real person would type into the command palette, each paired with what they
-// were looking for. Every one must find it in the top three results, exactly as the palette would show them.
+// were looking for. Every one must find it in the top three results, exactly as the palette would show them, and
+// FIRST unless the row is written down in known-ranked-behind.ts: a right answer with wrong ones above it still
+// makes a person read past them, and a test that accepts that lets the palette get worse while staying green.
 //
 // This is the only test that measures findability from a person's own words. The other audits prove a command
 // exists; this one proves somebody can get to it without knowing what Frameling calls it.
@@ -10,11 +12,12 @@
 // failed where "upside" and "invert" both worked.
 //
 // A `wants` entry is a command id ("tools.eraser"), a help topic ("help:undo") or a setting ("setting:<row id>").
-// Any one of them in the top three passes.
+// Any one of them counts as right.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { allCommands, getHelp, loadHelpBodies } from '../../src/core/registry';
 import { isStaleCommand, syncDynamicCommands } from '../../src/ui/dynamic';
 import { paletteItems, rankPalette, settingRows, withSettings, type PaletteItem } from '../../src/ui/palette';
+import { RANKED_BEHIND, EVERYDAY_WORDS, CROWDED_WORDS, STREAM_WORDS } from './known-ranked-behind';
 import '../../src/renderer/features';
 
 interface Phrase {
@@ -107,6 +110,14 @@ export const PHRASES: Phrase[] = [
   P('ask my audience', 'votes.start', 'help:votes'),
   P('let chat vote', 'votes.start', 'help:votes'),
   P('send to a friend', 'file.sendCopy', 'help:send-a-copy'),
+  // One row per streaming feature, said the way somebody who has never seen the feature would say it
+  P('let viewers dare me', 'dares.list', 'help:dares'),
+  P('pull a random prompt', 'promptjar.pull', 'help:prompt-jar'),
+  P('connect twitch', 'twitch.connect', 'help:twitch'),
+  P('make my pen shaky', 'penmods.try.shaky', 'penmods.list', 'help:pen-modifiers'),
+  P('obs overlay', 'streamoverlay.settings', 'help:stream-overlay'),
+  P('use a stream deck', 'streamdoor.settings', 'help:actions-door'),
+  P('make quill cheer', 'quillreacts.cheer', 'help:quill-reacts'),
 ];
 
 /**
@@ -128,13 +139,18 @@ export const KNOWN_MISSES: Phrase[] = [
   // one stream feature (Stream-safe, the overlay settings) before the master switch or Preferences > Features.
   P('turn off stream stuff', 'audience.toggle', 'view.features'),
   P('hide stream features', 'audience.toggle', 'view.features'),
+  // The command says "Start a guessing game" and the palette needs every word, so "play" finds nothing at all.
+  P('play a guessing game', 'guess.start', 'help:guess'),
 ];
 
 let items: PaletteItem[] = [];
-const top = (say: string): string[] =>
+const ranked = (say: string, n: number): string[] =>
   withSettings(rankPalette(say, items, []), say)
-    .slice(0, 3)
+    .slice(0, n)
     .map((h) => (h.item.kind === 'command' ? h.item.id : `${h.item.kind}:${h.item.id}`));
+const top = (say: string): string[] => ranked(say, 3);
+/** Where the first right answer sits, 1 for the top, or 0 when it is not in the first ten. */
+const rankOf = (p: Phrase): number => ranked(p.say, 10).findIndex((id) => p.wants.includes(id)) + 1;
 
 beforeAll(async () => {
   await loadHelpBodies();
@@ -166,8 +182,48 @@ describe('the phrase table', () => {
     expect(missed).toEqual([]);
   });
 
+  it('puts the right answer FIRST, unless the row is written down as ranked behind wrong ones', () => {
+    const behind = PHRASES.map((p) => ({ p, rank: rankOf(p) })).filter((x) => x.rank !== 1);
+    const unwritten = behind.filter((x) => !(x.p.say in RANKED_BEHIND)).map((x) => `"${x.p.say}" is ${x.rank || 'past 10th'}: ${ranked(x.p.say, Math.max(x.rank, 3)).join(' | ')}`);
+    expect(unwritten, 'wrong answers outrank the right one: fix the keywords, or write the row into known-ranked-behind.ts').toEqual([]);
+  });
+
+  it('the ranked-behind list is exact: a row that moved up, or slipped down, says so here', () => {
+    const now = (say: string) => rankOf(PHRASES.find((p) => p.say === say)!);
+    const stale = Object.entries(RANKED_BEHIND).filter(([say]) => !PHRASES.some((p) => p.say === say)).map(([say]) => say);
+    expect(stale, 'not in the phrase table any more: delete the line').toEqual([]);
+    const moved = Object.entries(RANKED_BEHIND).filter(([say, e]) => now(say) !== e.rank).map(([say, e]) => `"${say}" is ${now(say) || 'past 10th'} now, the list says ${e.rank}: ${now(say) > e.rank || now(say) === 0 ? 'it got worse' : 'it got better, update the line (delete it at 1)'}`);
+    expect(moved).toEqual([]);
+  });
+
   it('keeps the known misses honest: each still misses, so a fixed one moves up into the table', () => {
     const fixed = KNOWN_MISSES.filter((p) => top(p.say).some((id) => p.wants.includes(id))).map((p) => p.say);
     expect(fixed).toEqual([]);
+  });
+});
+
+describe('crowding: a plain word is not answered by a feature you are not using', () => {
+  // The words a person says before they know what anything is called. For each one that is not the stream family's own
+  // word (stream, obs, vote, twitch...), at most one of the top five may be a stream command. Otherwise "settings",
+  // "test" and "address" show the actions door, the overlay and OBS to somebody who only wants to draw. The family is
+  // the Audience category, the OBS commands (stream.*) and Stream capture (capture.*).
+  const inFamily = (id: string): boolean => {
+    const c = allCommands().find((x) => x.id === id);
+    return !!c && (c.category === 'Audience' || /^(stream|capture)\./.test(c.id));
+  };
+  const crowd = (word: string): string[] => (STREAM_WORDS.includes(word) ? [] : ranked(word, 5).filter(inFamily));
+
+  it('there are enough words to mean something', () => expect(EVERYDAY_WORDS.length).toBeGreaterThanOrEqual(25));
+
+  it('no plain word lets more than one stream command into its top five, except the known ones', () => {
+    const over = EVERYDAY_WORDS.filter((w) => crowd(w).length > 1 && !(w in CROWDED_WORDS)).map((w) => `${w}: ${crowd(w).join(', ')}`);
+    expect(over, 'a plain word is showing somebody stream features they did not ask for: fix the keywords').toEqual([]);
+  });
+
+  it('the crowded-word list is exact: a word that is clear now is deleted, and one that got worse is caught', () => {
+    const stale = Object.keys(CROWDED_WORDS).filter((w) => crowd(w).length <= 1);
+    expect(stale, 'no longer crowded: delete the line').toEqual([]);
+    const moved = Object.entries(CROWDED_WORDS).filter(([w, n]) => crowd(w).length !== n.count).map(([w, n]) => `${w}: ${crowd(w).length} now, the list says ${n.count}`);
+    expect(moved).toEqual([]);
   });
 });

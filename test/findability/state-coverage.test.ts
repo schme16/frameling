@@ -12,8 +12,9 @@
 // What this cannot do: it reads the registry, the menus, the tool rail's rules and the dock layouts, not pixels. It
 // cannot see a panel that is on screen but empty, a button greyed with no tooltip, or the narrow-screen layout (that
 // is the window's width, which only the running app has). Those are the running-app half of this audit, in
-// docs/testing.md. And "nothing open" is not a state of its own: Frameling always has a drawing, so the nearest state
-// is a new empty one with the welcome sheet on top.
+// docs/testing.md. It also never turns a FEATURE on, off or busy (a vote going, OBS linked, no desktop): that is
+// feature-states.test.ts, and the "0 silent" below says nothing about those states. And "nothing open" is not a state
+// of its own: Frameling always has a drawing, so the nearest state is a new empty one with the welcome sheet on top.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allCommands, allPanels, allTools, type Command } from '../../src/core/registry';
 import { findLayer } from '../../src/core/doc';

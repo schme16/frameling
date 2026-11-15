@@ -29,3 +29,87 @@ export const CEILINGS = {
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   menuCommandsVanish: { blank: 7, vector: 7, 'vector-selected': 7, pixel: 8, tilemap: 27, 'symbol-open': 7, playing: 7, 'has-clips': 7 } as Record<string, number>,
 };
+
+/**
+ * Commands of an optional feature that no document situation and no feature state (test/findability/app.ts) ever turns
+ * on, so the audit has never seen them work. Like the other lists here it can only shrink: add a state that makes the
+ * command work and delete its line. Do not add a line to get a new command past the audit.
+ */
+export const NEVER_SEEN_WORKING: Record<string, string> = {
+  // These need something the store does not hold: a tile or bone picked in a panel, a clip picked in the Clips panel.
+  // Each needs a state that builds the thing (a tileset with a tile in it, a skeleton with a bone picked) and says so.
+  ...group('Needs a tile picked in the Tileset panel, which lives in the panel and not the store', [
+    'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', 'tiles.flipX', 'tiles.flipY', 'tiles.rotate', 'tiles.nextTile', 'tiles.prevTile',
+    'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.clearShapes', 'tiles.oneWay', 'tiles.showShapes', 'tiles.addValue', 'tiles.addTerrain',
+    'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', 'tiles.export',
+  ]),
+  ...group('Needs a skeleton with a bone picked, and a layer attached to it', [
+    'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', 'rig.savePose', 'rig.mirrorPose',
+    'rig.swapSides', 'rig.resetPose', 'rig.togglePin', 'rig.deleteBone', 'rig.deleteBranch', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild',
+  ]),
+  'flow.fromAny': 'Needs a clip picked in the Clips panel, which lives in the panel and not the store',
+  'particles.shuffle': 'Needs a particle emitter selected on the canvas',
+  'text.pixelSmaller': 'Needs pixel text sized above its smallest',
+};
+
+function group(why: string, ids: string[]): Record<string, string> {
+  return Object.fromEntries(ids.map((id) => [id, why]));
+}
+
+// ---------------------------------------------------------------- crowding and depth (crowding.test.ts)
+
+/**
+ * A command whose shallowest way in through the menus is more than MAX_MENU_STEPS clicks deep. Each is still on the
+ * palette and its own panel, but a person looking in the menus has to open three lists to get to it. Like the lists
+ * above it can only shrink: flatten the menu, move the entry up, or give it a button, then delete the line.
+ */
+export const DEEP_IN_MENUS: Record<string, string> = {
+  ...group('View > Audience features > Try Quill reacting to chat: four clicks for a thing you only try', ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign']),
+  ...group('View > Audience features > Audience dares: four clicks, and the list is fifteen long', [
+    'dares.list', 'dares.stop', 'dares.try.budge', 'dares.try.colour', 'dares.try.shape', 'dares.try.flip', 'dares.try.grey', 'dares.try.googly', 'dares.try.jelly',
+    'dares.try.splat', 'dares.try.shake', 'dares.try.challenge', 'dares.try.spin', 'dares.try.countdown', 'dares.try.zoom',
+  ]),
+  ...group('View > Audience features > Pen modifiers: four clicks', ['penmods.list', 'penmods.stop', 'penmods.try.fat', 'penmods.try.rope', 'penmods.try.shaky', 'penmods.try.steady', 'penmods.try.thin']),
+};
+
+/**
+ * Menus and submenus with more than MAX_LIST_ENTRIES entries, with how many they have at most in any situation. A
+ * person reads a list top to bottom; past about thirty it no longer fits a 900 pixel window and the bottom is out of
+ * sight. Exact, and only meant to go down: a longer list fails, and a shorter one fails until the line is updated.
+ */
+export const LONG_LISTS: Record<string, number> = {
+  'Draw': 38,
+  'View': 39,
+  'Animate': 35,
+  'View > Audience features': 34,
+  'Draw > Tools': 35,
+};
+
+/** Lists that are as long as the person's own things, which is content and not design. */
+export const LISTS_OF_YOUR_THINGS = ['Draw > Saved brushes'];
+
+/**
+ * Everything under one top-level menu, submenus and all: how much a person has to read to know what is in it. Menus
+ * over MAX_MENU_COMMANDS are listed with their count (their own saved brushes taken out). Exact, only meant to go down.
+ */
+export const BIG_MENUS: Record<string, number> = {
+  View: 242,
+  Draw: 199,
+  Animate: 172,
+};
+
+/**
+ * What a person who does not stream has to wade through: the stream family (the Audience category, the OBS commands
+ * and Stream capture) in each place it shows up. Exact. It can only go down once the first-run hello can tuck the
+ * stream features away (board task ux-stream-first-run); until then raising a number needs a reason written here.
+ */
+export const STREAM_LOAD = {
+  /** Commands in the palette. */
+  palette: 72,
+  /** Commands in the menus (View holds all of them). */
+  menu: 72,
+  /** Switches in Preferences > Features. */
+  switches: 9,
+  /** Help topics. */
+  help: 15,
+};

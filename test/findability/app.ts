@@ -13,6 +13,20 @@ import { resolveMenus, type MenuItem } from '../../src/ui/menus';
 import { paletteItems } from '../../src/ui/palette';
 import { railFor, type RailTool } from '../../src/ui/toolArrange';
 import { addTilemapLayer } from '../../src/tiles/ops';
+import { audience, setAudienceOn } from '../../src/audience';
+import { setChoice } from '../../src/core/choices';
+import { dareScreen } from '../../src/dares/fx';
+import { penEffect } from '../../src/penmods/active';
+import { jar, addToJar, pullOne } from '../../src/promptjar/jar';
+import { overlayReady } from '../../src/streamoverlay/state';
+import { doorStatus } from '../../src/streamdoor/state';
+import { twitchStatus } from '../../src/twitch/state';
+import { closeVote, endVote, startVote } from '../../src/votes/state';
+import { closeRound, startRound } from '../../src/guess/state';
+import { closedStatus } from '../../src/shared/streamDoor';
+import { signedOutStatus } from '../../src/shared/twitch';
+import { addCamera } from '../../src/camera/ops';
+import { setPrefs } from '../../src/ui/prefs';
 import { editSymbol, makeSymbolFromSelection } from '../../src/symbols/ops';
 import '../../src/renderer/features';
 
@@ -100,6 +114,299 @@ export const SITUATIONS: Situation[] = [
     },
   },
 ];
+
+// ---------------------------------------------------------------- feature states
+
+/**
+ * A state of a FEATURE, as opposed to a state of the document: a vote is going, the jar holds a prompt, OBS is
+ * linked, there is no desktop at all. The document situations above never set one of these up, so for a long time the
+ * commands of the audience family were only ever looked at while every one of them was idle, or greyed for the one
+ * reason a test run has (no desktop). Each state says what it must turn on and what it must leave off, so a state
+ * that set up nothing cannot pass for one that did.
+ */
+export interface FeatureState {
+  id: string;
+  /** In plain words, for the report. */
+  about: string;
+  /** Is the desktop app there? Matters for any reason that says "needs the desktop app". */
+  desktop: boolean;
+  /** Puts the app in this state, starting from the quiet one (see `quietWorld`). */
+  set(): void;
+  /** What this state exists to show: commands that must be on, and ones that must be grey. */
+  proves: { on?: string[]; grey?: string[] };
+}
+
+type FramelingWindow = { frameling?: unknown };
+
+/** The app as an idle viewer-less session has it: no desktop, no vote, no round, jar empty, nothing linked, audience off. */
+export function quietWorld(): void {
+  delete (window as FramelingWindow).frameling;
+  setAudienceOn(false);
+  audience.kill();
+  closeVote();
+  closeRound();
+  jar.set({ slips: [], hand: null, saidFull: false });
+  dareScreen.set({ held: [], banner: null, countdown: null });
+  penEffect.set(null);
+  doorStatus.set(closedStatus());
+  overlayReady.set(false);
+  twitchStatus.set(signedOutStatus());
+  setPrefs({ showQuill: true });
+  setChoice('guess.peek', undefined);
+  SITUATIONS[0].set();
+}
+
+/** A plain desktop app with the audience side switched off: what a streamer has just after install. */
+const withDesktop = (): void => {
+  (window as FramelingWindow).frameling = { files: {}, door: {}, overlay: {}, twitch: {} };
+};
+/** Audience features on, the actions door and the overlay up. */
+const live = (): void => {
+  withDesktop();
+  setChoice('audience.strictness', 'balanced');
+  setAudienceOn(true);
+  doorStatus.set({ running: true, port: 47213, address: 'http://127.0.0.1:47213', moved: false, problem: '' });
+  overlayReady.set(true);
+};
+
+export const FEATURE_STATES: FeatureState[] = [
+  {
+    id: 'no-desktop',
+    about: 'Frameling in a plain browser tab: no desktop app, so nothing that needs one can work.',
+    desktop: false,
+    set: () => {},
+    proves: { on: ['streamdoor.settings', 'votes.start', 'promptjar.add'], grey: ['streamdoor.copyKey', 'twitch.connect', 'votes.end'] },
+  },
+  {
+    id: 'desktop-just-installed',
+    about: 'The desktop app, just installed: audience features off, nothing linked.',
+    desktop: true,
+    set: withDesktop,
+    proves: { on: ['streamdoor.copyKey', 'twitch.connect', 'streamoverlay.settings'], grey: ['streamdoor.copyAddress', 'streamoverlay.test', 'twitch.disconnect'] },
+  },
+  {
+    id: 'audience-live',
+    about: 'Audience features on, the actions door and the overlay running.',
+    desktop: true,
+    set: live,
+    proves: { on: ['streamdoor.copyAddress', 'streamoverlay.test', 'streamoverlay.copyAddress'], grey: ['votes.end', 'guess.end'] },
+  },
+  {
+    id: 'twitch-waiting',
+    about: 'Twitch sign-in is open, waiting for the streamer to approve it.',
+    desktop: true,
+    set: () => {
+      live();
+      twitchStatus.set({ ...signedOutStatus(), state: 'signing-in' });
+    },
+    proves: { on: ['twitch.cancel', 'twitch.disconnect'], grey: ['twitch.connect'] },
+  },
+  {
+    id: 'twitch-connected',
+    about: 'Signed in to Twitch and listening.',
+    desktop: true,
+    set: () => {
+      live();
+      twitchStatus.set({ ...signedOutStatus(), state: 'signed-in', login: 'someone', listening: 'listening' });
+    },
+    proves: { on: ['twitch.disconnect'], grey: ['twitch.connect', 'twitch.cancel'] },
+  },
+  {
+    id: 'vote-going',
+    about: 'A chat vote is open.',
+    desktop: true,
+    set: () => {
+      live();
+      startVote({ question: 'Which colour next?', options: ['Red', 'Blue', 'Green'], seconds: null });
+    },
+    proves: { on: ['votes.end', 'votes.close'], grey: ['votes.start'] },
+  },
+  {
+    id: 'vote-result',
+    about: 'The vote is over and its result is on screen.',
+    desktop: true,
+    set: () => {
+      live();
+      startVote({ question: 'Which colour next?', options: ['Red', 'Blue', 'Green'], seconds: null });
+      endVote();
+    },
+    proves: { on: ['votes.close'], grey: ['votes.start', 'votes.end'] },
+  },
+  {
+    id: 'round-going',
+    about: 'A guessing round is open.',
+    desktop: true,
+    set: () => {
+      live();
+      startRound({ word: 'elephant', seconds: null, ending: 'first' });
+    },
+    proves: { on: ['guess.end', 'guess.close'], grey: ['guess.start'] },
+  },
+  {
+    id: 'jar-has-prompts',
+    about: 'The prompt jar holds a few prompts.',
+    desktop: true,
+    set: () => {
+      live();
+      addToJar('a sleepy fox');
+      addToJar('a tiny castle');
+    },
+    proves: { on: ['promptjar.pull', 'promptjar.empty'], grey: ['promptjar.pass', 'promptjar.putBack'] },
+  },
+  {
+    id: 'jar-prompt-in-hand',
+    about: 'A prompt has been pulled out of the jar.',
+    desktop: true,
+    set: () => {
+      live();
+      addToJar('a sleepy fox');
+      pullOne(() => 0);
+    },
+    proves: { on: ['promptjar.pass', 'promptjar.putBack'], grey: [] },
+  },
+  {
+    id: 'dare-going',
+    about: 'A dare is holding the view (a flipped canvas).',
+    desktop: true,
+    set: () => {
+      live();
+      dareScreen.set({ held: [{ resource: 'view', id: 'dare.flip', label: 'Flipped view', startedAt: 0, endsAt: 1 }], banner: null, countdown: null });
+    },
+    proves: { on: ['dares.stop'], grey: ['penmods.stop'] },
+  },
+  {
+    id: 'pen-modifier-on',
+    about: 'A pen modifier is on (a shaky hand).',
+    desktop: true,
+    set: () => {
+      live();
+      dareScreen.set({ held: [{ resource: 'pen', id: 'penmod.shaky', label: 'Shaky hand', startedAt: 0, endsAt: 1 }], banner: null, countdown: null });
+    },
+    proves: { on: ['penmods.stop'], grey: [] },
+  },
+  {
+    id: 'round-peek-allowed',
+    about: 'A guessing round is open and the streamer allows peeking at the word.',
+    desktop: true,
+    set: () => {
+      live();
+      setChoice('guess.peek', 'allow');
+      startRound({ word: 'elephant', seconds: null, ending: 'first' });
+    },
+    proves: { on: ['guess.peek'], grey: ['guess.start'] },
+  },
+  {
+    id: 'has-sound',
+    about: 'The drawing has a sound clip on its audio track.',
+    desktop: false,
+    set: () => {
+      const doc = vectorDoc();
+      doc.audio = [{ id: 'audio-a', name: 'Beat', start: 0, data: new Uint8Array(4), mime: 'audio/wav', duration: 1 }];
+      fresh(doc);
+    },
+    proves: { on: ['audio.startHere', 'audio.mute', 'audio.remove'], grey: [] },
+  },
+  {
+    id: 'has-camera',
+    about: 'The drawing has a camera layer.',
+    desktop: false,
+    set: () => {
+      fresh(vectorDoc());
+      addCamera();
+    },
+    proves: { on: ['camera.lookThrough', 'camera.reset', 'camera.pick'], grey: ['camera.add'] },
+  },
+  {
+    id: 'text-selected',
+    about: 'A piece of text is selected.',
+    desktop: false,
+    set: () => {
+      const doc = vectorDoc();
+      (Object.values(doc.drawings)[0] as unknown as { shapes: unknown[] }).shapes.push({ id: 'text-a', type: 'text', text: 'Hi', font: 'Nunito', size: 24, weight: 400, color: '#000000', align: 'left', opacity: 1, transform: { x: 20, y: 20, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 } } as never);
+      fresh(doc);
+      store().setUi({ selection: ['text-a'] });
+    },
+    proves: { on: ['text.toShapes', 'text.animate.fade'], grey: [] },
+  },
+  {
+    id: 'quill-hidden',
+    about: 'Quill is switched off in Preferences, so there is no hedgehog to fuss over.',
+    desktop: false,
+    set: () => setPrefs({ showQuill: false }),
+    proves: { on: [], grey: ['quillPet.pat', 'quillPet.give'] },
+  },
+];
+
+/** Runs `fn` with the app in this feature state, then puts the quiet world back. */
+export function inFeatureState<T>(state: FeatureState, fn: () => T): T {
+  quietWorld();
+  state.set();
+  syncDynamicCommands();
+  try {
+    return fn();
+  } finally {
+    quietWorld();
+    syncDynamicCommands();
+  }
+}
+
+// ---------------------------------------------------------------- menu shape
+
+export interface MenuList {
+  /** "View > Audience features", the names a person clicks through. */
+  path: string[];
+  /** Entries a person reads in this list: commands and submenus, not separators or headings. */
+  entries: number;
+  /** Commands directly in it. */
+  commands: string[];
+}
+
+/** Every list in every menu (the menu itself and each submenu, however deep), in the current state. */
+export function menuLists(): MenuList[] {
+  const out: MenuList[] = [];
+  const walk = (items: MenuItem[], path: string[]): void => {
+    out.push({
+      path,
+      entries: items.filter((i) => i.kind === 'command' || i.kind === 'submenu').length,
+      commands: items.flatMap((i) => (i.kind === 'command' ? [i.command.id] : [])),
+    });
+    for (const i of items) if (i.kind === 'submenu') walk(i.items, [...path, i.label]);
+  };
+  for (const m of resolveMenus()) walk(m.items, [m.menu.label]);
+  return out;
+}
+
+/** Every list, with the most entries it has in any situation, and every command that is ever in it. */
+export function menuListsWorstCase(): Map<string, { entries: number; commands: Set<string> }> {
+  const worst = new Map<string, { entries: number; commands: Set<string> }>();
+  for (const s of SITUATIONS) {
+    s.set();
+    syncDynamicCommands();
+    for (const l of menuLists()) {
+      const key = l.path.join(' > ');
+      const w = worst.get(key) ?? { entries: 0, commands: new Set<string>() };
+      w.entries = Math.max(w.entries, l.entries);
+      for (const id of l.commands) w.commands.add(id);
+      worst.set(key, w);
+    }
+  }
+  SITUATIONS[0].set();
+  return worst;
+}
+
+/**
+ * The fewest clicks from the menu bar to each command, over every situation: "View" is one, "View > Zoom in" is two.
+ * A command in several menus counts at its shallowest.
+ */
+export function menuDepths(): Map<string, { steps: number; path: string[] }> {
+  const best = new Map<string, { steps: number; path: string[] }>();
+  for (const s of SITUATIONS) {
+    s.set();
+    syncDynamicCommands();
+    for (const l of menuLists()) for (const id of l.commands) if (!best.has(id) || l.path.length + 1 < best.get(id)!.steps) best.set(id, { steps: l.path.length + 1, path: l.path });
+  }
+  return best;
+}
 
 // ---------------------------------------------------------------- ways in
 
