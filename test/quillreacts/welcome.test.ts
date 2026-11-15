@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Quill welcoming somebody new. The pure parts (cleaning a name, gathering a crowd into turns, the words), and the flow on
-// the real gate and the real toasts: a name is covered and asked about first, only a yes puts it anywhere a viewer can
-// see, a crowd is welcomed together and never dropped, and Stop ends it all.
+// the real gate and the real toasts: by default the name is just said, under Ask me first it is covered and asked about and
+// only a yes puts it anywhere a viewer can see, a crowd is welcomed together and never dropped, and Stop ends it all.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setChoice, setChoiceAsker } from '../../src/core/choices';
 import { audience, installAudience, setAudienceOn, submitAudience } from '../../src/audience';
@@ -11,7 +11,7 @@ import { streamDoorFeature } from '../../src/streamdoor';
 import { quillReactsFeature } from '../../src/quillreacts';
 import { SIGN_ASK_MS, quillMoment } from '../../src/quillreacts/react';
 import { NAMES_CHOICE } from '../../src/quillreacts/choices';
-import { GAP_MS, resetWelcomes } from '../../src/quillreacts/welcomeFlow';
+import { GAP_MS, namesMode, resetWelcomes } from '../../src/quillreacts/welcomeFlow';
 import { addArrival, addName, askWords, MAX_NAMES, MAX_RAIDS, newNames, newPile, newRecent, parseArrival, pileSize, takeTurn, welcomeWords, WELCOME_ACTIONS, isWelcomeAction, type Arrival } from '../../src/quillreacts/welcome';
 import { starterRules, payloadFor, sampleEvent, newRule, welcomePayload } from '../../src/twitch/rules';
 import { normaliseNotice } from '../../src/shared/twitch';
@@ -255,7 +255,90 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 afterAll(() => setAudienceOn(false));
 
-describe('a named welcome', () => {
+describe('a named welcome by default', () => {
+  it('says the name with no question: not covered, on the screen and on the overlay', async () => {
+    expect(namesMode()).toBe('say');
+    expect(welcome('follow', { name: 'Mika' })).toMatchObject({ ok: true });
+    await settle();
+    expect(ask()).toBeUndefined();
+    expect(shown()[0].message).toContain('Mika');
+    expect(shown()[0].covered).toBeFalsy();
+    expect(quillMoment.get()!.words).toContain('Mika');
+    expect(quillMoment.get()!.anim).toBe('wave');
+  });
+
+  it('is the same when Say the name is picked outright', async () => {
+    setChoice(NAMES_CHOICE, 'say');
+    welcome('sub', { name: 'Mika' });
+    await settle();
+    expect(ask()).toBeUndefined();
+    expect(shown()[0].message).toContain('Mika');
+  });
+
+  it('still cleans the name first, and a name that cleans down to nothing gets a nameless welcome', async () => {
+    welcome('follow', { name: 'Mika🔥🔥' });
+    await settle();
+    expect(shown()[0].message).toContain('Mika');
+    expect(shown()[0].message).not.toMatch(/🔥/);
+    await vi.advanceTimersByTimeAsync(3800 + GAP_MS + 10);
+    clearToasts();
+    welcome('raid', { name: '🔥🔥🔥', amount: 12 });
+    await settle();
+    expect(ask()).toBeUndefined();
+    expect(shown()).toHaveLength(1);
+    expect(shown()[0].message).toContain('12');
+  });
+
+  it('a crowd is one welcome with the first name and a count, never one per person and never asked about', async () => {
+    for (let i = 0; i < 90; i++) welcome('follow', { name: `viewer${i}` });
+    await settle();
+    expect(ask()).toBeUndefined();
+    expect(shown()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(3800 + GAP_MS + 10);
+    expect(ask()).toBeUndefined();
+    expect(shown()[0].message).toMatch(/viewer1/);
+    expect(shown()[0].message).toMatch(/88/);
+    expect(shown()[0].message.match(/viewer\d+/g)!.length).toBeLessThanOrEqual(MAX_NAMES);
+  });
+
+  it('Stop still drops everyone waiting', async () => {
+    welcome('follow', { name: 'Mika' });
+    for (let i = 0; i < 20; i++) welcome('follow', { name: `viewer${i}` });
+    await settle();
+    expect(shown()).toHaveLength(1);
+    audience.kill();
+    await settle();
+    expect(on()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(on()).toHaveLength(0);
+  });
+
+  it('forgets the names left out under Ask me first as soon as the answer is anything else', async () => {
+    setChoice(NAMES_CHOICE, 'ask');
+    welcome('follow', { name: 'Rude One' });
+    await settle();
+    press('welcome-no');
+    await settle();
+    await vi.advanceTimersByTimeAsync(3800 + GAP_MS + 10);
+    setChoice(NAMES_CHOICE, 'say');
+    later(60_000);
+    welcome('raid', { name: 'rude one', amount: 30 });
+    await settle();
+    expect(ask()).toBeUndefined();
+    expect(shown().at(-1)!.message).toMatch(/rude one/i);
+    // And back to asking: the old left-out list is not quietly still there.
+    setChoice(NAMES_CHOICE, 'ask');
+    await vi.advanceTimersByTimeAsync(6000 + GAP_MS + 10);
+    later(60_000);
+    welcome('raid', { name: 'RUDE ONE', amount: 31 });
+    await settle();
+    expect(ask()).toBeTruthy();
+  });
+});
+
+describe('a named welcome, with Ask me first', () => {
+  beforeEach(() => setChoice(NAMES_CHOICE, 'ask'));
+
   it('asks first, with the name covered, and nothing reaches the stream overlay yet', async () => {
     expect(welcome('follow', { name: 'Mika' })).toMatchObject({ ok: true });
     await settle();
@@ -325,6 +408,7 @@ describe('a named welcome', () => {
 
   it('with names set to Never, nothing is asked and no name is ever used', async () => {
     setChoice(NAMES_CHOICE, 'never');
+    expect(namesMode()).toBe('never');
     welcome('follow', { name: 'Mika' });
     await settle();
     expect(ask()).toBeUndefined();
@@ -340,7 +424,8 @@ describe('a named welcome', () => {
 });
 
 describe('a crowd', () => {
-  it('every follower is accepted: none is turned away by a cooldown, and they come out as one welcome with a number', async () => {
+  it('every follower is accepted (asking first): none is turned away by a cooldown, and they come out as one welcome with a number', async () => {
+    setChoice(NAMES_CHOICE, 'ask');
     for (let i = 0; i < 90; i++) expect(welcome('follow', { name: `viewer${i}` }), `${i}`).toMatchObject({ ok: true });
     await settle();
     // The first is being asked about alone; the other 89 wait together.
@@ -380,6 +465,7 @@ describe('a crowd', () => {
   });
 
   it('the same follower twice is welcomed once', async () => {
+    setChoice(NAMES_CHOICE, 'ask');
     welcome('follow', { name: 'Mika' });
     await settle();
     press('welcome-yes');
@@ -395,7 +481,8 @@ describe('a crowd', () => {
 });
 
 describe('Stop and what is kept', () => {
-  it('Stop ends the welcome on screen, drops everyone waiting, and nobody comes back after', async () => {
+  it('Stop ends the question, drops everyone waiting, and nobody comes back after (asking first)', async () => {
+    setChoice(NAMES_CHOICE, 'ask');
     welcome('follow', { name: 'Mika' });
     for (let i = 0; i < 20; i++) welcome('follow');
     await settle();
@@ -408,6 +495,7 @@ describe('Stop and what is kept', () => {
   });
 
   it('keeps no trace of a name once it is over: not on screen, not in storage, not in the counts', async () => {
+    setChoice(NAMES_CHOICE, 'ask');
     welcome('follow', { name: 'Zebracake Fan' });
     await settle();
     press('welcome-yes');

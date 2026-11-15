@@ -61,6 +61,13 @@ function clearMoment(): void {
   quillMoment.set(null);
 }
 
+/** Stop: whatever Quill is showing the audience (a welcome with a name in it, say) comes down now, on screen and on the overlay. */
+export function endReaction(): void {
+  if (current !== null) dismissToast(current);
+  current = null;
+  clearMoment();
+}
+
 const MOMENT_ANIM: Record<Reaction, QuillMoment['anim']> = { cheer: 'cheer', hop: 'hop', snack: 'eat', nuzzle: 'nuzzle', wave: 'wave' };
 
 /** The toast on screen now. There is one of him, so a new reaction takes the place of the last one instead of piling up. */

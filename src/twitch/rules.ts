@@ -110,7 +110,7 @@ export function sampleEvent(rule: TwitchRule): TwitchEvent {
 
 /**
  * The links a new connection starts with: small, view-only reactions from Quill, for the actions that exist. A follow, sub,
- * cheer or raid is a welcome (he asks you before he says a name); the rest are the plain reactions, which is also what a
+ * cheer or raid is a welcome (he says the name unless you ask him to check first); the rest are the plain reactions, which is also what a
  * build without welcomes falls back to.
  */
 export function starterRules(have: (id: string) => boolean): TwitchRule[] {

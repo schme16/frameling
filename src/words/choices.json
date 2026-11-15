@@ -1772,12 +1772,18 @@
   "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." },
   "choice.quillreacts.names.title": { "text": "Names in welcomes", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.quillreacts.names.question": {
-    "text": "When somebody follows, subscribes, cheers or raids, Quill can welcome them by name. Ask you before he says a name, or never use names?",
+    "text": "When somebody follows, subscribes, cheers or raids, Quill can welcome them by name. Say the name, ask you before he says it, or never use names?",
     "where": "The question the \"Names in welcomes\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
   },
+  "choice.quillreacts.names.say.label": { "text": "Say the name", "where": "Preferences: the answer \"say\" in \"Names in welcomes\"." },
+  "choice.quillreacts.names.say.detail": {
+    "text": "Quill greets people by name, with no question. A crude display name can reach your screen and the overlay before you have read it.",
+    "where": "Preferences: the small line under the \"say\" answer in \"Names in welcomes\"."
+  },
+  "choice.quillreacts.names.say.did": { "text": "Quill says names without asking.", "where": "Toast when \"say\" is used without asking (\"Names in welcomes\"), in the past tense." },
   "choice.quillreacts.names.ask.label": { "text": "Ask me first", "where": "Preferences: the answer \"ask\" in \"Names in welcomes\"." },
   "choice.quillreacts.names.ask.detail": {
-    "text": "A name waits for your yes, covered until you press Read it. Say nothing and Quill welcomes them without it.",
+    "text": "A name waits for your yes, covered until you press Read it. Say nothing and Quill welcomes them without it. The safest answer if you stream to people you do not know.",
     "where": "Preferences: the small line under the \"ask\" answer in \"Names in welcomes\"."
   },
   "choice.quillreacts.names.ask.did": { "text": "Quill asks before he says a name.", "where": "Toast when \"ask\" is used without asking (\"Names in welcomes\"), in the past tense." },
