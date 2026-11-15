@@ -180,7 +180,7 @@ export interface GateSnapshot {
   limits: GateLimits;
   doors: { id: string; label: string }[];
   /** `available` is what a door may list: false for a `touchesDrawing` action while interruptions are not allowed. */
-  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean }[];
+  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean; /** False when the streamer switched this one off (see `setActionEnabled`). */ enabled: boolean }[];
 }
 
 /** The parts of the outside world the gate needs. */
@@ -249,6 +249,9 @@ export interface Gate {
   /** What a door calls with what it heard. Never throws. `raw` is untrusted and only reaches the action through its `parse`. */
   submit(id: string, raw?: unknown): Verdict;
   isOn(): boolean;
+  /** Switches one action off or on by hand. Off: refused as `unavailable`, dropped from the queue, and any run of it is stopped. Remembered by the caller, not here. */
+  setActionEnabled(id: string, enabled: boolean): void;
+  isActionEnabled(id: string): boolean;
   /** Allows or forbids actions that reach the drawing. Forbidding drops the waiting ones and stops the running ones of that kind. */
   setDrawingAllowed(allowed: boolean): void;
   /** Switching off is the same as kill, without the count: queue cleared, effects aborted, doors closed. */
@@ -278,6 +281,7 @@ export function createGate(env: GateEnv): Gate {
   let lastRunAt: number | null = null;
   let on = false;
   let drawingOk = false;
+  const switchedOff = new Set<string>();
   let ticket = 0;
   let counts = emptyCounts();
   let cancelWake: (() => void) | null = null;
@@ -373,7 +377,7 @@ export function createGate(env: GateEnv): Gate {
       const w = queue.shift()!;
       moved = true;
       // Taken off the allowlist while it waited (a feature was switched off): drop it.
-      if (actions.get(w.def.id) !== w.def || (w.def.touchesDrawing && !drawingOk)) {
+      if (actions.get(w.def.id) !== w.def || (w.def.touchesDrawing && !drawingOk) || switchedOff.has(w.def.id)) {
         counts.cleared++;
         continue;
       }
@@ -443,7 +447,7 @@ export function createGate(env: GateEnv): Gate {
       if (!on) return reject('off');
       const def = typeof id === 'string' ? actions.get(id) : undefined;
       if (!def) return reject('unknown');
-      if (def.touchesDrawing && !drawingOk) return reject('unavailable');
+      if ((def.touchesDrawing && !drawingOk) || switchedOff.has(def.id)) return reject('unavailable');
       let payload: unknown;
       if (def.parse) {
         try {
@@ -485,6 +489,21 @@ export function createGate(env: GateEnv): Gate {
       } else shutDown();
       changed();
     },
+
+    setActionEnabled(id, enabled) {
+      if (enabled === !switchedOff.has(id)) return;
+      if (enabled) switchedOff.delete(id);
+      else {
+        switchedOff.add(id);
+        const left = queue.filter((w) => w.def.id !== id);
+        counts.cleared += queue.length - left.length;
+        queue = left;
+        wake();
+      }
+      changed();
+    },
+
+    isActionEnabled: (id) => !switchedOff.has(id),
 
     setDrawingAllowed(allowed) {
       if (allowed === drawingOk) return;
@@ -538,7 +557,7 @@ export function createGate(env: GateEnv): Gate {
         counts: { ...counts, rejected: { ...counts.rejected }, byKind: { ...counts.byKind } },
         limits: env.limits(),
         doors: [...doors.values()].map((d) => ({ id: d.id, label: d.label })),
-        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: !a.touchesDrawing || drawingOk })),
+        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: (!a.touchesDrawing || drawingOk) && !switchedOff.has(a.id), enabled: !switchedOff.has(a.id) })),
       });
     },
 

@@ -226,6 +226,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Audience features',
     items: ['audience.toggle', 'audience.drawing', 'audience.show', '-', 'audience.clearQueue', 'audience.kill'],
   },
+  dares: {
+    label: 'Audience dares',
+    items: ['dares.list', 'dares.stop', '-'],
+    prefixes: ['dares.try.'],
+  },
   pixturn: {
     label: 'Flip and turn',
     items: ['pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],

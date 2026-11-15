@@ -1655,5 +1655,22 @@
   "choice.streamdoor.portBusy.stay.did": {
     "text": "The actions door stays closed when its port is taken.",
     "where": "Toast when \"stay\" is used without asking (\"When the actions door's port is taken\"), in the past tense."
-  }
+  },
+  "choice.dares.length.title": { "text": "How long a dare lasts", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.dares.length.question": {
+    "text": "When a dare lasts for a while (a flipped view, a countdown), how long should it last?",
+    "where": "The question the \"How long a dare lasts\" choice asks. It is a preference, so it is not put as a dialog."
+  },
+  "choice.dares.length.short.label": { "text": "Short", "where": "Preferences: the button for the answer \"short\" in \"How long a dare lasts\"." },
+  "choice.dares.length.short.detail": { "text": "About 15 seconds. Quick and light.", "where": "Preferences: the small line under the \"short\" answer in \"How long a dare lasts\"." },
+  "choice.dares.length.short.did": { "text": "Dares last about 15 seconds.", "where": "Toast when \"short\" is used without asking (\"How long a dare lasts\"), in the past tense." },
+  "choice.dares.length.normal.label": { "text": "Normal", "where": "Preferences: the button for the answer \"normal\" in \"How long a dare lasts\"." },
+  "choice.dares.length.normal.detail": { "text": "About 30 seconds. Long enough to be funny.", "where": "Preferences: the small line under the \"normal\" answer in \"How long a dare lasts\"." },
+  "choice.dares.length.normal.did": { "text": "Dares last about 30 seconds.", "where": "Toast when \"normal\" is used without asking (\"How long a dare lasts\"), in the past tense." },
+  "choice.dares.length.long.label": { "text": "Long", "where": "Preferences: the button for the answer \"long\" in \"How long a dare lasts\"." },
+  "choice.dares.length.long.detail": {
+    "text": "About a minute, for a streamer who likes a proper challenge.",
+    "where": "Preferences: the small line under the \"long\" answer in \"How long a dare lasts\"."
+  },
+  "choice.dares.length.long.did": { "text": "Dares last about a minute.", "where": "Toast when \"long\" is used without asking (\"How long a dare lasts\"), in the past tense." }
 }

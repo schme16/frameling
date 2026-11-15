@@ -7,6 +7,7 @@ import { isFeatureOn, needsIt, offFeatures, setFeatureOn, switchableFeatures } f
 import { useFeaturesVersion } from './use';
 import { AudiencePrefsRow } from '../audience/PrefsRow';
 import { StreamDoorPrefsRow } from '../streamdoor/PrefsRow';
+import { DaresPrefsRow } from '../dares/PrefsRow';
 
 export function FeaturesPage() {
   useFeaturesVersion();
@@ -47,6 +48,7 @@ export function FeaturesPage() {
       </div>
       <AudiencePrefsRow />
       <StreamDoorPrefsRow />
+      <DaresPrefsRow />
       {offFeatures().length > 0 && (
         <div>
           <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>

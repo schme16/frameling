@@ -41,7 +41,7 @@ describe('registering', () => {
 
   it('takes a well formed action and lists it', () => {
     g.registerAction(act('quill.cheer'));
-    expect(g.snapshot().actions).toEqual([{ id: 'quill.cheer', label: 'quill.cheer', kind: 'quill', cooldown: 0, touchesDrawing: false, available: true }]);
+    expect(g.snapshot().actions).toEqual([{ id: 'quill.cheer', label: 'quill.cheer', kind: 'quill', cooldown: 0, touchesDrawing: false, available: true, enabled: true }]);
   });
   it('lists the default cooldown for one that did not say', () => {
     g.registerAction(act('quill.cheer', 'quill', { cooldown: undefined }));

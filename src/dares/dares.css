@@ -1,0 +1,159 @@
+/* Dares: the banner, the countdown and the chips laid over the window, and the two marks on the page (grey, shake). */
+.dr-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Below the title bar. Banner, countdown and chips stack in this order and never cover the drawing's tools. */
+  padding-top: 44px;
+}
+.dr-banner {
+  position: relative;
+  width: 100%;
+  padding: 14px 24px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  box-shadow: var(--shadow);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  animation: dr-in 280ms ease-out;
+}
+.dr-tag {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+.dr-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.45;
+  transform-origin: left center;
+}
+.dr-count {
+  margin-top: 22px;
+  min-width: 180px;
+  padding: 10px 28px 14px;
+  border-radius: calc(var(--radius) * 2);
+  background: var(--raised);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: dr-in 280ms ease-out;
+}
+.dr-count.is-over {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.dr-count-n {
+  display: block;
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.dr-count-t {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  opacity: 0.85;
+}
+.dr-chips {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+.dr-chip {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+.dr-chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--chosen-bg);
+}
+.dr-chip-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.dr-chip-stop {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+@keyframes dr-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+/* The page marks (see fx.ts). Only the drawing area, never the panels, and always taken off again. */
+:root[data-dare~='grey'] .cv-turn {
+  filter: grayscale(1);
+}
+:root[data-dare~='shake'] .cv-turn {
+  animation: dr-shake 0.45s linear infinite;
+}
+@keyframes dr-shake {
+  0% { translate: 0 0; }
+  12% { translate: -5px 3px; }
+  25% { translate: 4px -4px; }
+  37% { translate: -3px -3px; }
+  50% { translate: 5px 2px; }
+  62% { translate: -4px 4px; }
+  75% { translate: 3px -2px; }
+  87% { translate: -2px 3px; }
+  100% { translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-dare~='shake'] .cv-turn {
+    animation: none;
+  }
+}
+
+/* The list in Preferences > Features. */
+.dr-prefs .dr-group {
+  margin: 14px 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.dr-prefs .ui-pref-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
