@@ -1988,5 +1988,25 @@
   "choice.send.names.keep.detail": {
     "text": "Useful when you are working with somebody and it matters who said what.",
     "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Your name on a copy you send\"."
+  },
+  "choice.share.expiry.title": { "text": "How long a share code lasts", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.share.expiry.question": {
+    "text": "When you send a drawing with a code, how long should the code keep working if nobody uses it?",
+    "where": "The question the \"How long a share code lasts\" dialog asks."
+  },
+  "choice.share.expiry.5.label": { "text": "5 minutes", "where": "Dialog and Preferences: the button for the answer \"5\" in \"How long a share code lasts\"." },
+  "choice.share.expiry.5.detail": {
+    "text": "A short window. Good when you are on the phone with them right now.",
+    "where": "Dialog and Preferences: the small line under the \"5\" answer in \"How long a share code lasts\"."
+  },
+  "choice.share.expiry.10.label": { "text": "10 minutes", "where": "Dialog and Preferences: the button for the answer \"10\" in \"How long a share code lasts\"." },
+  "choice.share.expiry.10.detail": {
+    "text": "Long enough to tell them and for them to open Frameling.",
+    "where": "Dialog and Preferences: the small line under the \"10\" answer in \"How long a share code lasts\"."
+  },
+  "choice.share.expiry.30.label": { "text": "30 minutes", "where": "Dialog and Preferences: the button for the answer \"30\" in \"How long a share code lasts\"." },
+  "choice.share.expiry.30.detail": {
+    "text": "For when they are not at their computer yet. Your window has to stay open the whole time.",
+    "where": "Dialog and Preferences: the small line under the \"30\" answer in \"How long a share code lasts\"."
   }
 }

@@ -96,6 +96,16 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('obs:event', fn);
     },
   },
+  share: {
+    send: (bytes, opts) => call('share:send', bytes, opts),
+    receive: (code) => call('share:receive', code),
+    cancel: () => call('share:cancel'),
+    onEvent: (handler) => {
+      const fn = (_: unknown, e: Parameters<typeof handler>[0]) => handler(e);
+      ipcRenderer.on('share:event', fn);
+      return () => void ipcRenderer.removeListener('share:event', fn);
+    },
+  },
   twitch: {
     status: () => call('twitch:status'),
     signIn: (kinds) => call('twitch:signIn', kinds),

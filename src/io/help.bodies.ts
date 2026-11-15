@@ -59,6 +59,30 @@ The question shows the real sizes for your drawing, so you can see what you're c
 - While [Stream-safe](help:stream-safe) is on, Frameling doesn't open your file manager by itself, because it would show your folders. The message has a **Show in folder** button for when you're ready.
 - Want to keep working in a new file instead? That's **Save as...**, see [Saving and opening](help:saving-and-opening).
 `,
+  'share-with-a-code': `**Send with a code** gets a drawing to a friend without a file, a link or an account. You get four words, you tell them, they type them in, and the drawing goes straight from your computer to theirs.
+
+**Send one**
+1. Pick **File > Send with a code...**, or press **Ctrl+Alt+Shift+E** (**Cmd+Alt+Shift+E** on a Mac).
+2. Frameling shows a code like **ocean-tiger-maple-spoon**. Say it, text it, whatever you like.
+3. **Keep the window open** until it says **Sent**.
+
+**Receive one**
+1. Pick **File > Receive with a code...**, or press **Ctrl+Alt+Shift+G**.
+2. Type the four words and press **Connect**. The drawing opens as a new, unsaved drawing, and you decide where to save it.
+
+**Both of you need to be online at the same time.** Nothing is stored anywhere, not even for a minute: the drawing is never parked on a server, so if you close the window before they've typed the code, there is nothing to pick up later. For that, use [Send a copy](help:send-a-copy).
+
+**How long it lasts.** A code stops working after 10 minutes (change that in **Preferences > Behaviour**), once it's been used, or when you close the window. The last two words are a secret and are never sent over the network. If somebody guesses wrong three times, the code stops and nothing is sent, so a stranger can't walk off with your drawing by trying words.
+
+**When it can't connect**
+Some networks, like a lot of offices, schools and mobile connections, don't let two computers connect to each other directly, and Frameling has no go-between to help. That is on purpose: nothing of ours sits in the middle. If you and your friend are both on networks like that, it won't connect, and Frameling says so rather than leaving you waiting. Then use [Send a copy](help:send-a-copy), which works anywhere.
+
+**Good to know**
+- The drawing goes as the same copy **Send a copy** makes: your name comes off the notes, and it asks about your undo history the first time.
+- While you connect, the two of you can see each other's internet address, the same as in any call between two computers. Nobody else is told who you are.
+- While [Stream-safe](help:stream-safe) is on, the code is hidden until you press **Show the code**.
+- Frameling doesn't keep the code, who you sent to, or what you sent.
+`,
   'recent-drawings': `**Open recent** shows each drawing you had open lately with a little picture of it, so you know your own work at a glance.
 
 **Open it:** **File > Open recent...**, or search the command palette (**Ctrl+K**) for **Open recent**. Pick a row and the drawing opens. The start screen's **Pick up where you left off** shows the same pictures.

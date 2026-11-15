@@ -132,6 +132,18 @@ export interface ObsBridge {
   onEvent(handler: (e: { type: 'output'; kind: 'stream' | 'record'; active: boolean } | { type: 'closed' }) => void): () => void;
 }
 
+/** Sending a drawing with a code over the peer network (src/share, src/main/share.ts). The network lives on the desktop side. */
+export interface ShareBridge {
+  /** Makes a code and waits for somebody to use it. Everything after that arrives as events. */
+  send(bytes: Uint8Array, opts: { minutes: number }): Promise<{ ok: boolean }>;
+  /** Looks for the sender by the code and checks the secret words with them. `ok` is false when the words are not a code. */
+  receive(code: string): Promise<{ ok: boolean }>;
+  /** Stops whatever is running and lets the network go. */
+  cancel(): Promise<void>;
+  /** What is happening, as it happens. Returns the way to stop listening. */
+  onEvent(handler: (e: import('../share/types').ShareEvent) => void): () => void;
+}
+
 /** Connecting to Twitch (src/twitch, src/main/twitch*.ts). The sign-in and the connection live on the desktop side; no token and no viewer's name ever comes up to the page. Missing in the web build. */
 export interface TwitchBridge {
   status(): Promise<import('../shared/twitch').TwitchStatus>;
@@ -366,6 +378,8 @@ export interface FramelingApi {
   beta?: BetaBridge;
   /** Watching OBS for going live (desktop only). */
   obs?: ObsBridge;
+  /** Send and receive a drawing with a code (desktop only). */
+  share?: ShareBridge;
   /** Connect Twitch (desktop only). */
   twitch?: TwitchBridge;
   /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */

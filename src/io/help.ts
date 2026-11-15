@@ -20,6 +20,15 @@ registerHelpTopics([
     keywords: ['send', 'share', 'give', 'email', 'attach', 'friend', 'copy', 'hand over', 'undo history', 'history', 'file size', 'Mod+Alt+E'],
   },
   {
+    id: 'share-with-a-code',
+    order: 3,
+    media: 'share-with-a-code.mp4',
+    title: 'Send a drawing with a code',
+    section: 'Files',
+    summary: 'Get a four word code, tell a friend, and your drawing goes straight to their computer. You both need Frameling open at the same time.',
+    keywords: ['share', 'send', 'receive', 'code', 'four words', 'friend', 'peer', 'direct', 'online', 'live', 'give', 'hand over', 'type in', 'Mod+Alt+Shift+E', 'Mod+Alt+Shift+G'],
+  },
+  {
     id: 'autosave',
     media: 'autosave.png',
     title: 'Autosave',

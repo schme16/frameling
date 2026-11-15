@@ -98,6 +98,25 @@ function invokeStubs(library) {
     'obs:setPassword': () => ({ hasPassword: false, saved: false }),
     'obs:connect': () => ({ ok: false, why: 'unreachable' }),
     'obs:disconnect': () => undefined,
+    // No peer network in a harness. Sending with a code shows a made-up code after a moment, and receiving looks for a
+    // little while, then reports nobody answered (a code with "piano" in it is told it did not match). It is all for pictures.
+    'share:send': (e) => {
+      const say = (ev, ms) => setTimeout(() => !e.sender.isDestroyed() && e.sender.send('share:event', { side: 'send', ...ev }), ms);
+      say({ type: 'starting' }, 0);
+      say({ type: 'ready', code: 'ocean-tiger-maple-spoon', expiresAt: Date.now() + 10 * 60000 }, 500);
+      return { ok: true };
+    },
+    'share:receive': (e, text) => {
+      const say = (ev, ms) => setTimeout(() => !e.sender.isDestroyed() && e.sender.send('share:event', { side: 'receive', ...ev }), ms);
+      say({ type: 'starting' }, 0);
+      say({ type: 'looking' }, 200);
+      if (String(text).includes('piano')) {
+        say({ type: 'checking' }, 1200);
+        say({ type: 'wrong', tries: 1, left: 2 }, 2200);
+      } else say({ type: 'noOne' }, 3500);
+      return { ok: true };
+    },
+    'share:cancel': () => undefined,
     // No Twitch in a harness: nothing is signed in and no app is set up.
     'twitch:status': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
     'twitch:signIn': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
