@@ -25,8 +25,9 @@ That gives you **!vote**, **!guess** and **!prompt**. Or use Streamer.bot. See [
   'cover-spoilers': `Two things should never reach your viewers by surprise: **a secret** (the word in a guessing game, a prompt you have pulled) and **words a viewer typed that you have not read yet**. Frameling covers both until you press to read them.
 
 **You tell it once what your viewers can see.** The first time you switch on [audience features](help:audience), or open a guessing game, it asks:
-- **My screen or my whole window**: anything that could spoil or shock stays covered until you press. Pick this if you are not sure.
-- **Only the capture window**: your viewers see the [capture window](help:stream-capture) and nothing else, so this window is private and nothing is covered.
+- **All my screens, or I am not sure**: anything that could spoil or shock stays covered until you press. Pick this if you are not sure.
+- **One screen, the one Frameling is on**: your viewers see that screen. This window stays covered, and [Stream control](help:stream-control) on your other screen is private and shows everything plainly.
+- **Only the capture window**: your viewers see the [capture window](help:stream-capture) and nothing else, so this window and Stream control are private and nothing is covered.
 
 Frameling can't tell which one you do, so it asks, and that one answer covers every screen below. Change it any time with **What can your viewers see?** in the command palette or the **Audience features** menu, or in **Preferences > Behaviour**. Until you answer, it covers.
 

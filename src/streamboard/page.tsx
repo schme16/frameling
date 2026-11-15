@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { bringBack, moveOnto, nudge, putAway, resize, SIZE_STEPS, type Layout } from './layout';
 import type { BoardTheme, BoardView, TileView } from './model';
 import type { FromBoard, ToBoard } from './protocol';
+import { PrivateSide } from './sideView';
 import './streamboard.css';
 
 const FALLBACK: BoardTheme = { dark: true, bg: '#17151f', panel: '#211e2c', text: '#f4efe6', muted: '#b3aac4', accent: '#9b7bff', raised: '#322d43', line: '#2e2a40' };
@@ -186,6 +187,7 @@ export function BoardPage() {
         </div>
       ) : null}
 
+      <div className="sb-body">
       <main className="sb-grid" data-testid="sb.grid">
         {view.tiles.map((t) => (
           <button
@@ -206,6 +208,8 @@ export function BoardPage() {
         ))}
         {view.tiles.length === 0 ? <p className="sb-empty">Every button is put away. Press Arrange to bring some back.</p> : null}
       </main>
+      {arranging ? null : <PrivateSide view={view} tell={tell} />}
+      </div>
 
       {arranging && view.tray.length ? (
         <section className="sb-tray" data-testid="sb.tray" aria-label="Buttons put away">

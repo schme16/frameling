@@ -95,7 +95,7 @@ export const TILES: readonly TileDef[] = [
   {
     id: 'guess',
     name: 'Guessing game',
-    about: 'Starts a guessing round, reveals the word, then puts the result away. The word is never shown on this board.',
+    about: 'Starts a guessing round, reveals the word, then puts the result away. The word shows on the board below only while the board is private.',
     tone: 'action',
     defaultOn: true,
     face: (s) =>

@@ -57,7 +57,7 @@ export interface IpcHooks {
   /** The picture window (a second window showing the drawing big). */
   popout: { open(o?: OpenOpts): void; close(): void; isOpen(): boolean };
   /** The Stream control board: a window of buttons for a second screen. */
-  streamboard: { open(top: boolean): void; close(): void; isOpen(): boolean; raiseMain(): void };
+  streamboard: { open(top: boolean): void; close(): void; isOpen(): boolean; raiseMain(): void; apart(): boolean };
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -299,6 +299,7 @@ export function registerIpc(hooks: IpcHooks): void {
   handle('streamboard:close', () => hooks.streamboard.close());
   handle('streamboard:isOpen', () => hooks.streamboard.isOpen());
   handle('streamboard:raiseMain', () => hooks.streamboard.raiseMain());
+  handle('streamboard:apart', () => hooks.streamboard.apart());
   handle('app:launchFile', () => hooks.takeLaunchFile());
   handle('app:restart', (_e, view: unknown, carry: unknown) => hooks.restart(cleanView(view), carry === true));
   handle('app:restore', () => hooks.takeRestore());

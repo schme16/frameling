@@ -4,7 +4,7 @@
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/streamboard.cjs --theme dark [--ab] [--help] [--clip]
 //
 // --ab    writes brand/ab/stream-control/: the board in <theme> (captioned) and a clip of a button being moved and a vote started
-// --help  writes public/help/stream-control-<theme>.png (the picture the help topic shows)
+// --help  is now made by scripts/e2e/streamboard-private.cjs (the picture shows the private side)
 // With neither, only the checks run. Exit code 1 when a check fails.
 const { app } = require('electron');
 const { spawn, execFileSync } = require('node:child_process');
@@ -264,14 +264,6 @@ const check = (ok, what) => {
     caption(arr, path.join(out, `arranging-${theme}.png`), `Arranging (${theme} theme): the streamer tapped Start a guessing game to pick it up. Tapping another button puts it in that spot. No dragging, so a pen or a finger does the same as a mouse.`);
     await tap('[data-testid="sb.arrange"]');
     console.log(`wrote ${out}/board-${theme}.png and arranging-${theme}.png`);
-  }
-  if (wantHelp) {
-    const out = path.join(root, 'public/help');
-    const left = path.join(tmp, 'left.png');
-    run('convert', [mainShot, '-resize', 'x800', left]);
-    run('convert', [left, pic, '-background', theme === 'dark' ? '#121019' : '#f4efe6', '-gravity', 'center', '+append', '-bordercolor', theme === 'dark' ? '#121019' : '#f4efe6', '-border', '14', both]);
-    run('convert', [both, '-resize', '1000x>', '-colors', '256', '-dither', 'None', '-strip', '-define', 'png:compression-level=9', `PNG8:${path.join(out, `stream-control-${theme}.png`)}`]);
-    console.log(`wrote ${out}/stream-control-${theme}.png`);
   }
   fs.rmSync(tmp, { recursive: true, force: true });
   app.exit(failed ? 1 : 0);

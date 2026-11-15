@@ -24,6 +24,7 @@ export const audienceChoices: ChoiceDef<string>[] = [
     question: choiceWord('choice.audience.view.question'),
     options: [
       { value: 'screen', label: choiceWord('choice.audience.view.screen.label'), detail: choiceWord('choice.audience.view.screen.detail'), did: choiceWord('choice.audience.view.screen.did') },
+      { value: 'display', label: choiceWord('choice.audience.view.display.label'), detail: choiceWord('choice.audience.view.display.detail'), did: choiceWord('choice.audience.view.display.did') },
       { value: 'capture', label: choiceWord('choice.audience.view.capture.label'), detail: choiceWord('choice.audience.view.capture.detail'), did: choiceWord('choice.audience.view.capture.did') },
     ],
     default: 'screen',

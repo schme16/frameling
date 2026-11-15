@@ -52,6 +52,7 @@ function invokeStubs(library) {
     'streamboard:close': () => undefined,
     'streamboard:isOpen': () => false,
     'streamboard:raiseMain': () => undefined,
+    'streamboard:apart': () => false,
     'app:launchFile': () => null,
     'app:display': () => null,
     'app:lastCrash': () => null,

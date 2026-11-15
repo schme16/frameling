@@ -39,7 +39,7 @@ export const boardCommands: Command[] = [
     label: 'Stream control',
     category: 'Audience',
     keys: ['Mod+Alt+I'],
-    description: 'A window of big buttons for your second screen: start a vote, pull a prompt, switch audience participation on or off, and stop everything. It works while you keep drawing. Press Arrange in it to move the buttons.',
+    description: 'The private side of your stream, for your second screen: big buttons to start a vote, pull a prompt, switch audience participation on or off and stop everything, plus the vote being written, the secret word, the guesses and every waiting prompt. It works while you keep drawing. Press Arrange in it to move the buttons.',
     help: HELP,
     keywords: ['stream control', 'streamer tools', 'buttons', 'board', 'second screen', 'second monitor', 'other screen', 'control panel', 'vote', 'guess', 'prompt', 'obs', 'popout', 'pop out', 'window', 'stream', 'streamer', 'live', 'twitch', 'arrange buttons', 'move buttons'],
     global: true,

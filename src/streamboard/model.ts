@@ -6,6 +6,8 @@
 // the source while it is covered, so its words are never in a message and cannot reach the board's page at all.
 import { STOP_COMMAND, STOP_LABEL, TILES, tileById, type Situation, type TileTone } from './tiles';
 import { defaultLayout, MIN_TILE_PX, sameLayout, type Layout } from './layout';
+import { privacyLine, privacyOf, type PrivacyFacts, type PrivacyWhy } from './privacy';
+import type { GuessSide, JarSide, VoteSide } from './side';
 
 /** What the registry says about one command. */
 export interface CommandInfo {
@@ -45,6 +47,17 @@ export interface BoardTheme {
   line: string;
 }
 
+/** Whether the board is private, and why, in the words it says about itself. */
+export interface PrivacyView {
+  private: boolean;
+  why: PrivacyWhy;
+  line: string;
+  /** The streamer put the board on stream on purpose. */
+  onStream: boolean;
+  /** The answer to "What can your viewers see?", so the board can say which one it follows. */
+  answer: string;
+}
+
 export type ObsWord = { word: string; colour: 'green' | 'red' | 'plain' | 'fix' } | null;
 
 export interface PromptView {
@@ -68,6 +81,11 @@ export interface BoardView {
   obs: ObsWord;
   audience: { on: boolean; waiting: number };
   prompt: PromptView | null;
+  privacy: PrivacyView;
+  /** The private side: null for a part whose streaming tool is switched off. */
+  vote: VoteSide | null;
+  guess: GuessSide | null;
+  jar: JarSide | null;
   /** True when the layout is the one the board starts with (so there is nothing to put back). */
   isDefault: boolean;
   theme: BoardTheme;
@@ -89,13 +107,21 @@ export function promptView(hand: { id: number; text: string } | null, covers: bo
   return { id: hand.id, covered, text: covered ? null : scrub(hand.text) };
 }
 
+export function privacyView(f: PrivacyFacts): PrivacyView {
+  const p = privacyOf(f);
+  return { private: p.private, why: p.why, line: privacyLine(p), onStream: f.onStream, answer: f.answer ?? 'screen' };
+}
+
 export interface ViewInput {
   situation: Situation;
   layout: Layout;
   info: (command: string) => CommandInfo | undefined;
-  covers: boolean;
   hand: { id: number; text: string } | null;
   readId: number | null;
+  privacy: PrivacyFacts;
+  vote: VoteSide | null;
+  guess: GuessSide | null;
+  jar: JarSide | null;
   scrub?: (t: string) => string;
   obs: ObsWord;
   theme: BoardTheme;
@@ -124,7 +150,11 @@ export function boardView(i: ViewInput): BoardView {
     stop: { label: STOP_LABEL, why: whyNot(i.info(STOP_COMMAND)) },
     obs: i.obs,
     audience: { on: i.situation.audienceOn, waiting: i.situation.waiting },
-    prompt: promptView(i.hand, i.covers, i.readId, i.scrub),
+    prompt: promptView(i.hand, !privacyOf(i.privacy).private, i.readId, i.scrub),
+    privacy: privacyView(i.privacy),
+    vote: i.vote,
+    guess: i.guess,
+    jar: i.jar,
     isDefault: sameLayout(i.layout, defaultLayout()),
     theme: i.theme,
   };

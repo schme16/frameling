@@ -331,6 +331,10 @@ export interface StreamboardBridge {
   isOpen(): Promise<boolean>;
   /** Brings the drawing window forward, for a button that opens a setup dialog there. */
   raiseMain(): Promise<void>;
+  /** True while the board is on a different screen from the drawing window. */
+  apart(): Promise<boolean>;
+  /** Called when the board moves to another screen, or back. Returns an unsubscribe function. */
+  onApart(handler: (apart: boolean) => void): () => void;
   /** Called when the board has gone, however it went. Returns an unsubscribe function. */
   onClosed(handler: () => void): () => void;
 }

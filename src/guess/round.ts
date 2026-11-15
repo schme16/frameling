@@ -90,13 +90,24 @@ export interface RoundView {
   turnedAway: Record<Turned, number>;
 }
 
-/** What `prepare` hands back: the verdict on the guess and the person's mark. The guess text is not in it. */
+/** What `prepare` hands back: the verdict on the guess and the person's mark. The guess text rides along only so the round can keep its short list of recent guesses (see `recent`). */
 export interface Prepared {
+  /** The guess, cleaned. Never the person. */
+  text: string;
   mark: string;
   right: boolean;
   alike: number;
   how: How | null;
   name: string | null;
+}
+
+/** How many recent guesses a round keeps for the private side. */
+export const RECENT_MAX = 30;
+
+/** One guess as the private side may list it: the words, and whether they were right. Never who sent it. */
+export interface RecentGuess {
+  text: string;
+  right: boolean;
 }
 
 export interface Round {
@@ -112,10 +123,12 @@ export interface Round {
   end(reason: Reason, now: number): void;
   /** The word. Only for the streamer's peek (when allowed) and nothing else: the screen's view never carries it. */
   secret(): string;
+  /** The last few guesses, newest last: the cleaned words and whether they were right, never who. Gone when the round ends. For the private side only. */
+  recent(): readonly RecentGuess[];
   /** Forgets the word and the name too. For when the result is closed. */
   forget(): void;
   /** For tests only: what is held in memory right now. */
-  _held(): { salt: Uint8Array | null; marks: string[]; word: string; name: string | null };
+  _held(): { salt: Uint8Array | null; marks: string[]; word: string; name: string | null; recent: number };
 }
 
 export interface RoundDeps {
@@ -142,6 +155,7 @@ export function createRound(setup: RoundSetup, deps: RoundDeps): Round {
   let solvers = 0;
   let warmth: Warmth = 'none';
   let winner: { name: string | null; afterMs: number } | null = null;
+  let recent: RecentGuess[] = [];
 
   const refuse = (why: Turned): Turned => {
     turned[why]++;
@@ -185,7 +199,7 @@ export function createRound(setup: RoundSetup, deps: RoundDeps): Round {
       const m = matchGuess(text.text, word);
       // A name is read only from a right guess, and only when names are allowed.
       const name = m.right && opts.names ? (cleanChatText(nameRaw, NAME_MAX)?.text ?? null) : null;
-      return { mark, right: m.right, alike: m.alike, how: m.how ?? null, name };
+      return { text: text.text, mark, right: m.right, alike: m.alike, how: m.how ?? null, name };
     },
 
     cast(p) {
@@ -201,6 +215,7 @@ export function createRound(setup: RoundSetup, deps: RoundDeps): Round {
       }
       entry.n++;
       guesses++;
+      recent = [...recent, { text: p.text, right: p.right }].slice(-RECENT_MAX);
       if (p.right) {
         entry.solved = true;
         solvers++;
@@ -228,11 +243,14 @@ export function createRound(setup: RoundSetup, deps: RoundDeps): Round {
       reason = why;
       marks?.clear();
       marks = null;
+      recent = [];
       salt?.fill(0);
       salt = null;
     },
 
     secret: () => word,
+
+    recent: () => recent.map((g) => ({ ...g })),
 
     forget() {
       round.end('revealed', deps.now());
@@ -241,7 +259,7 @@ export function createRound(setup: RoundSetup, deps: RoundDeps): Round {
       given.clear();
     },
 
-    _held: () => ({ salt: salt ? new Uint8Array(salt) : null, marks: marks ? [...marks.keys()] : [], word, name: winner?.name ?? null }),
+    _held: () => ({ salt: salt ? new Uint8Array(salt) : null, marks: marks ? [...marks.keys()] : [], word, name: winner?.name ?? null, recent: recent.length }),
   };
   return round;
 }

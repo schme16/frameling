@@ -72,6 +72,16 @@ export function pullOne(rand: () => number = Math.random): Slip | null {
   return picked;
 }
 
+/** Takes this very slip out into the streamer's hand (chosen from the waiting list). A slip already in hand is done with and goes. Null when it is not in the jar. */
+export function pullSlip(id: number): Slip | null {
+  const s = jar.get();
+  const picked = s.slips.find((x) => x.id === id);
+  if (!picked) return null;
+  jar.set({ slips: s.slips.filter((x) => x !== picked), hand: picked, saidFull: false });
+  remember();
+  return picked;
+}
+
 /** Puts the slip in hand back in the jar. */
 export function putBack(): void {
   const s = jar.get();

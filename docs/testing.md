@@ -892,10 +892,19 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   back), the layout surviving a close and open, the window's size and place being remembered, a vote started from the board (the
   setup dialog opens in the drawing window), Stop everything, and the board and its command going with the streaming tools.
   Exit code 1 when a check fails. `--ab` writes `brand/ab/stream-control/` (`board-` and `arranging-<theme>.png`), `--clip` the
-  `stream-control-<theme>.mp4` clip (a button moved, a vote started), `--help` `public/help/stream-control-<theme>.png`. Run it once
-  per theme. The help runner skips the `stream-control` entry (`scripts/docs/help/stream-control.cjs`). The pure rules (the
+  `stream-control-<theme>.mp4` clip (a button moved, a vote started). Run it once per theme. Its `--help` picture was replaced by the
+  one below. The pure rules (the
   buttons, the layout, what the board is told, what a press does) are in `test/streamboard/`. Not testable on the virtual screen:
   there is no window manager, so "a press lands while another window has the focus" (`acceptFirstMouse`) and "stays on top" are not seen.
+- `scripts/e2e/streamboard-private.cjs` is the private side of Stream control in the real app (the vote written and counted on
+  the board, the secret word, the guesses, the whole waiting list of the prompt jar). It checks that an answer of "capture" gives a
+  private board with everything in full, that "screen" leaves no secret word, guess or waiting prompt anywhere in the board's page
+  until Read it, that "one screen" is private only after the board is told it moved to another screen (it sends the `streamboard:apart`
+  message by hand, as the virtual screen has one display), the **This board is on my stream** switch, that the word is never in the
+  drawing window, and that Stop everything still ends the round. Exit code 1 when a check fails. `--ab` writes
+  `brand/ab/stream-private/` (`board-private-` and `board-covered-<theme>.png`, and the `stream-private-<theme>.mp4` clip), `--help`
+  writes `public/help/stream-control-<theme>.png`. Run it once per theme. The help runner skips the `stream-control` entry
+  (`scripts/docs/help/stream-control.cjs`). The pure rules are in `test/streamboard/` (`privacy`, `side`, and `link` with the real stores).
 - `scripts/docs/ab-golive-quest/run.sh` walks the Go live quest as a person would, in both themes, in the harness (a pretend OBS and
   Twitch from the `?debug` hooks, the door and overlay from `scripts/ipc-stubs.cjs`, with `SHOT_STREAM_OK=1` so a copy and the Save
   dialog work). It writes `brand/ab/golive-quest/golive-quest-<theme>.mp4` (H.264) and a picture per step, the two questions and
