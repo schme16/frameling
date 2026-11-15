@@ -132,6 +132,27 @@ describe('the real menus', async () => {
     const mine = items.find((i) => i.kind === 'submenu' && i.label === 'Your workspaces');
     expect(flat(mine && mine.kind === 'submenu' ? mine.items : [])).toEqual(expect.arrayContaining(['view.saveWorkspace', 'view.manageWorkspaces', 'view.resetLayout', 'view.exportWorkspace', 'view.workspaceSwitcher.tabs']));
   });
+  // A submenu is a menu too, and the cap above only ever counted TOP-LEVEL entries: a submenu counted as one line
+  // however much was inside it. So the whole of the audience work could land in View and the check stayed green while
+  // the thing it exists for (a list you can see without scrolling) quietly stopped being true. This counts every list.
+  it('no submenu grows into a list you cannot see at once', () => {
+    // Lists built from the person's own things rather than from the design. A brush list is as long as your brushes,
+    // and capping it would mean hiding brushes you made. Nothing else belongs here: a long list of COMMANDS is a
+    // design problem and splitting it is the fix.
+    const madeOfYourThings = ['Saved brushes'];
+    const tooLong: string[] = [];
+    const walk = (items: Item[], path: string): void => {
+      for (const i of items) {
+        if (i.kind !== 'submenu') continue;
+        const n = depth(i.items);
+        if (n >= 41 && !madeOfYourThings.includes(i.label)) tooLong.push(`${path} > ${i.label} has ${n} entries`);
+        walk(i.items, `${path} > ${i.label}`);
+      }
+    };
+    for (const m of resolveMenus()) walk(m.items, m.menu.label);
+    expect(tooLong).toEqual([]);
+  });
+
   it('there are seven menus, and the long ones sort their entries into submenus rather than one long list', () => {
     expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
     for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
