@@ -31,6 +31,8 @@ import { paintWellsOn } from './pixelWells';
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
   leak: "That area isn't closed in. Try a bigger gap setting, or close the gap.",
+  // Not "try a bigger gap setting": a bigger setting needs even more room around the click.
+  cramped: "There isn't room to check that area from this spot. Click in a roomier part of the shape, or close the gap with a line.",
   'on-line': 'You clicked right on a line. Click inside the area you want to fill.',
   outside: "That spot is off the canvas. Click inside the area you want to fill.",
   'no-drawing': 'There is nothing to fill on this frame yet. Draw some lines first.',
@@ -156,7 +158,7 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     return;
   }
   // Paint is already here and the lines around it have not changed (or have leaked since): recolour it.
-  if (hit && (res.kind === 'leak' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
+  if (hit && (res.kind === 'leak' || res.kind === 'cramped' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
     const current = hit.type === 'fill' ? hit.color : hit.fill;
     // With a gradient in the fill box, the area takes the gradient laid over its own size.
     const grad = gradientFor('fill', hit.paths);
@@ -196,8 +198,8 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     else startPop(e.x, e.y, color, ctx);
     return;
   }
-  if (res.kind === 'leak') {
-    ctx.hint(FILL_HINTS.leak);
+  if (res.kind === 'leak' || res.kind === 'cramped') {
+    ctx.hint(FILL_HINTS[res.kind]);
     return;
   }
   const shape: FillShape = withWellGradients({ id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 });

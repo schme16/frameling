@@ -8,7 +8,7 @@ import { EDIT_HINTS } from '../../src/tools/edit';
 import { FILL_HINTS, indexBelowLines } from '../../src/tools/fill';
 import { setFillOptions } from '../../src/tools/fill-options';
 import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settings';
-import { arc, brokenCircle, stroke } from './helpers';
+import { arc, brokenCircle, pan, stroke } from './helpers';
 
 function ptr(x: number, y: number): ToolPointer {
   return { x, y, pressure: 0.5, hasPressure: false, shift: false, alt: false, mod: false, button: 0, pointerType: 'mouse', time: 0 };
@@ -69,6 +69,24 @@ describe('paint bucket tool', () => {
     expect(u.drawing().shapes).toHaveLength(4);
     expect(u.hints).toEqual([FILL_HINTS.leak]);
     expect(FILL_HINTS.leak).toBe("That area isn't closed in. Try a bigger gap setting, or close the gap.");
+  });
+
+  it('tells a tight spot from a real gap: no "bigger gap setting" when the click had no room for the one you have', () => {
+    setFillOptions({ gap: 'medium' });
+    // A 24px break in the rim, clicked from the narrow handle: the gap setting has to be cut down to start there.
+    const t = setup(pan(0.2));
+    tool().down!(ptr(450, 300), t.ctx);
+    expect(t.hints).toEqual([FILL_HINTS.cramped]);
+    expect(t.drawing().shapes).toHaveLength(5);
+    // The same shape from the middle just fills.
+    const u = setup(pan(0.2));
+    tool().down!(ptr(300, 300), u.ctx);
+    expect(u.hints).toEqual([]);
+    expect(u.drawing().shapes[0].type).toBe('fill');
+    // A break too big for the setting, from the middle: the ordinary hint.
+    const v = setup(pan(0.3));
+    tool().down!(ptr(300, 300), v.ctx);
+    expect(v.hints).toEqual([FILL_HINTS.leak]);
   });
 
   it('says so when the click is on a line', () => {

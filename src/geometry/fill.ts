@@ -47,12 +47,16 @@ export interface FillStats {
   height: number;
   /** The gap radius actually used in mask pixels (it shrinks if the click is boxed into a tiny pocket). */
   radius: number;
+  /** The gap radius the setting asked for, in mask pixels. Bigger than `radius` when the click had no room for it. */
+  wanted: number;
   ms: number;
 }
 
 export type FillResult =
   | { kind: 'ok'; paths: SubPath[]; area: number; box: Rect; stats: FillStats }
   | { kind: 'leak'; stats: FillStats }
+  /** Leaked, but only after the gap closing was cut down because the click had no room for all of it. */
+  | { kind: 'cramped'; stats: FillStats }
   | { kind: 'on-line'; stats: FillStats }
   | { kind: 'outside'; stats: FillStats };
 
@@ -131,7 +135,7 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   const scale = maskScale(bounds.width, bounds.height, opts.maxPixels);
   const w = Math.max(1, Math.ceil(bounds.width * scale));
   const h = Math.max(1, Math.ceil(bounds.height * scale));
-  const stats: FillStats = { scale, width: w, height: h, radius: 0, ms: 0 };
+  const stats: FillStats = { scale, width: w, height: h, radius: 0, wanted: 0, ms: 0 };
   const done = <T extends FillResult>(r: T): T => {
     stats.ms = now() - t0;
     return r;
@@ -143,26 +147,42 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   const { mask: walls } = rasteriseBarrier(shapes, bounds, scale, opts.includeFills);
   if (walls[cy * w + cx]) return done({ kind: 'on-line', stats });
 
-  // Gap closing. If the click is boxed into a pocket smaller than the gap, try half the gap, and so on.
-  let r = Math.max(0, (opts.gap ?? 0) * 0.5 * scale);
-  let fat = walls;
-  let seed = cy * w + cx;
-  for (;;) {
-    fat = r >= 1 ? dilate(walls, w, h, r) : walls;
-    if (!fat[cy * w + cx]) {
-      seed = cy * w + cx;
-      break;
+  // Gap closing. The walls are fattened by the gap radius and flooded from the click. If the click is inside the
+  // fattened lines and there is no open ground near it (a narrow handle, a tight pocket), the radius has to come
+  // down. It comes down as little as it can, not by halves, so the gaps stay closed as far as the room allows.
+  const wanted = Math.max(0, (opts.gap ?? 0) * 0.5 * scale);
+  stats.wanted = wanted >= 1 ? wanted : 0;
+  const seedAt = (rad: number): { fat: Uint8Array; seed: number } => {
+    const f = rad >= 1 ? dilate(walls, w, h, rad) : walls;
+    if (!f[cy * w + cx]) return { fat: f, seed: cy * w + cx };
+    return { fat: f, seed: findSeed(walls, f, w, h, cx, cy, rad) };
+  };
+  let r = wanted;
+  let found = seedAt(r);
+  if (found.seed < 0) {
+    // Biggest whole radius under the wanted one that leaves room to start. A radius of 0 always does.
+    let lo = 0;
+    let hi = Math.ceil(wanted) - 1;
+    let best: { fat: Uint8Array; seed: number } | null = null;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const t = seedAt(mid);
+      if (t.seed >= 0) {
+        lo = mid;
+        best = t;
+      } else hi = mid - 1;
     }
-    seed = findSeed(walls, fat, w, h, cx, cy, r);
-    if (seed >= 0) break;
-    r = r > 2 ? Math.floor(r / 2) : 0;
+    r = lo;
+    found = best && lo >= 1 ? best : seedAt(r);
   }
+  const fat = found.fat;
+  const seed = found.seed;
   stats.radius = r >= 1 ? r : 0;
   const sx = seed % w;
   const sy = (seed / w) | 0;
 
   const first = floodSpans(fat, w, h, sx, sy);
-  if (first.touchesEdge) return done({ kind: 'leak', stats });
+  if (first.touchesEdge) return done({ kind: r < wanted - 0.5 ? 'cramped' : 'leak', stats });
 
   let region = first;
   if (r >= 1) {
