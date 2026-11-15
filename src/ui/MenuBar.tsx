@@ -60,6 +60,12 @@ export function MenuBar() {
   useEffect(() => {
     if (!folded) setMoreOpen(false);
   }, [folded]);
+  // One menu at a time. More is also the panel that shows a FOLDED menu's contents, so More and an open menu are both
+  // true together only when that menu is a folded one. An open menu that is on the bar takes the place of More, however
+  // it got opened (click, hover along the bar, a key), so this is kept here rather than in each of those paths.
+  useLayoutEffect(() => {
+    if (moreOpen && open !== null && open < firstFolded) setMoreOpen(false);
+  }, [moreOpen, open, firstFolded]);
   // Where the pointer was and is, the open submenu's box, and the change we are holding back while the pointer is
   // still on its way to that box. Moving diagonally into a submenu crosses the rows below it; without this, each of
   // those rows would close the submenu out from under you.
@@ -97,7 +103,7 @@ export function MenuBar() {
   // Escape closes an open menu wherever the keyboard happens to be, and never reaches the canvas behind it (where it
   // would drop the selection). A submenu goes first, so Escape walks back out one level at a time.
   useEffect(() => {
-    if (open === null) return;
+    if (open === null && !moreOpen) return;
     const key = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       e.preventDefault();
@@ -107,15 +113,22 @@ export function MenuBar() {
         setSub(null);
         return;
       }
+      // A folded menu goes back to the More list; Escape again closes the list.
+      if (open === null) {
+        setMoreOpen(false);
+        bar.current?.querySelector<HTMLElement>('.ui-menu-more [data-top]')?.focus();
+        return;
+      }
       setOpen(null);
-      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[open]?.focus();
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[Math.min(open, firstFolded)]?.focus();
     };
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
-  }, [open]);
+  }, [open, moreOpen, firstFolded]);
 
+  // A press anywhere outside the bar closes whatever is open: a menu on the bar, More, or a folded menu shown in More.
   useEffect(() => {
-    if (open === null) return;
+    if (open === null && !moreOpen) return;
     const away = (e: PointerEvent) => {
       if (!bar.current?.contains(e.target as Node)) {
         setOpen(null);
@@ -124,16 +137,7 @@ export function MenuBar() {
     };
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
-  }, [open]);
-
-  useEffect(() => {
-    if (!moreOpen || open !== null) return;
-    const away = (e: PointerEvent) => {
-      if (!bar.current?.contains(e.target as Node)) setMoreOpen(false);
-    };
-    document.addEventListener('pointerdown', away, true);
-    return () => document.removeEventListener('pointerdown', away, true);
-  }, [moreOpen, open]);
+  }, [open, moreOpen]);
 
   const focusItem = (menu: number, which: 'first' | 'last' | number) => {
     requestAnimationFrame(() => {
@@ -149,6 +153,8 @@ export function MenuBar() {
       e.preventDefault();
       const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + n) % n;
       const wasOpen = open !== null && open < firstFolded;
+      // Moving along the bar leaves More behind.
+      setMoreOpen(false);
       if (wasOpen && next < firstFolded) setOpen(next);
       else if (wasOpen) setOpen(null);
       bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[next]?.focus();
@@ -189,7 +195,10 @@ export function MenuBar() {
       setOpen(next);
       bar.current?.querySelectorAll<HTMLElement>('[data-top]:not([data-folded])')[next]?.focus();
       focusItem(next, 'first');
-    } else if (e.key === 'Tab') setOpen(null);
+    } else if (e.key === 'Tab') {
+      setOpen(null);
+      setMoreOpen(false);
+    }
   };
 
   const subItems = () => [...(bar.current?.querySelectorAll<HTMLElement>('.ui-submenu [role^="menuitem"]:not([aria-disabled="true"])') ?? [])];
@@ -210,7 +219,10 @@ export function MenuBar() {
       const label = sub;
       setSub(null);
       bar.current?.querySelector<HTMLElement>(`[data-menu="${menu}"] [data-sub="${label}"]`)?.focus();
-    } else if (e.key === 'Tab') setOpen(null);
+    } else if (e.key === 'Tab') {
+      setOpen(null);
+      setMoreOpen(false);
+    }
   };
 
   const row = (it: MenuItem, i: number, menu: number, inSub = false): React.ReactNode => {
@@ -303,7 +315,7 @@ export function MenuBar() {
             aria-expanded={open === index}
             className={`ui-menu-top${open === index ? ' is-open' : ''}`}
             onClick={() => setOpen(open === index ? null : index)}
-            onMouseEnter={() => open !== null && setOpen(index)}
+            onMouseEnter={() => (open !== null || moreOpen) && setOpen(index)}
             onKeyDown={(e) => onBarKey(e, index)}
           >
             {menuTitle(menu)}
@@ -326,6 +338,13 @@ export function MenuBar() {
             aria-expanded={moreOpen}
             aria-label="More menus"
             className={`ui-menu-top${moreOpen ? ' is-open' : ''}`}
+            onMouseEnter={() => {
+              // Along the bar from an open menu: More opens in its place. A folded menu already showing in More stays.
+              if (open !== null && open < firstFolded) {
+                setOpen(null);
+                setMoreOpen(true);
+              }
+            }}
             onClick={() => {
               setOpen(null);
               setMoreOpen(!moreOpen);
@@ -387,7 +406,8 @@ export function MenuBar() {
                       e.preventDefault();
                       setOpen(firstFolded + k);
                       requestAnimationFrame(() => focusItem(firstFolded + k, 'first'));
-                    } else if (e.key === 'Escape') {
+                    } else if (e.key === 'Tab') setMoreOpen(false);
+                    else if (e.key === 'Escape') {
                       e.preventDefault();
                       e.stopPropagation();
                       setMoreOpen(false);
