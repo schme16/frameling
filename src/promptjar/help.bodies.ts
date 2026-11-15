@@ -16,7 +16,7 @@ export const bodies: Record<string, string> = {
 
 **Does it survive closing Frameling?** Not by default. The jar lives in memory only, so closing Frameling empties it and nothing is written to your computer. If you would rather keep a good prompt for next stream, set **Keep the prompt jar** to **Keep them for next time** in Preferences > Streaming. Then the words (and only the words) are saved on this computer. Either way, **Empty the jar** wipes everything, and the saved copy too, in one click.
 
-**Sending prompts in.** The action is \`jar.add\`, on the [actions door](help:actions-door). Body \`{"text":"a frog in a teacup"}\`. A reward in Streamer.bot, Firebot or a Stream Deck can send it. There is nothing that reads the jar or shows a prompt from outside: only you pull.
+**Sending prompts in.** The action is \`jar.add\`, on the [actions door](help:actions-door). Body \`{"text":"a frog in a teacup"}\`. A reward in Streamer.bot, Firebot or a Stream Deck can send it, and so can a **!prompt** chat command: see [Chat commands](help:chat-commands). There is nothing that reads the jar or shows a prompt from outside: only you pull.
 
 **Stopping it.** It is part of [audience features](help:audience), so switching those off or pressing **Stop** closes the way in. What is already in the jar stays until you empty it.
 

@@ -1,5 +1,164 @@
 // The words of the topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'chat-commands': `Frameling never reads your chat, on purpose. So when a viewer types **!vote 2**, a small program on your computer has to read it and pass it to Frameling's [actions door](help:actions-door). Channel Points and cheers work without this. **Votes, guesses and typed prompts need it.**
+
+**Pick the program.** On Linux, use **Firebot**: it runs natively and sends the request with no code ([Firebot setup](help:chat-commands-firebot)). Streamer.bot on Linux runs through Wine, which its makers call experimental, and it needs a little C# to send anything ([Streamer.bot setup](help:chat-commands-streamerbot)). On Windows both are fine, and Streamer.bot also reads YouTube and Kick.
+
+## Before you start
+1. **Same computer.** The door only answers the machine Frameling runs on.
+2. **Audience features on**, in **Preferences > Streaming**. The red **On air** pill shows. Off, nothing is listening.
+3. **A vote or round running**: **Streaming > Votes**, **Streaming > Guess the drawing**. With nothing to join, a vote or guess is turned away.
+4. **The address and key**, under **Actions door** in the same place. **Copy** copies the key without showing it.
+
+## What your program sends
+Each chat command becomes one **POST** to the address plus an action name, with the header \`Authorization: Bearer <your key>\` and a JSON body. The key goes in the header, never in the address.
+- **!vote 2** or **!vote blue** goes to \`/v1/actions/vote.cast\` with \`{"option":"2","voter":"<user id>"}\`.
+- **!guess a cat** goes to \`/v1/actions/guess.send\` with \`{"guess":"a cat","player":"<user id>","name":"<name>"}\`.
+- **!prompt a frog in a teacup** goes to \`/v1/actions/jar.add\` with \`{"text":"a frog in a teacup"}\`.
+
+The **user id** is the number Twitch gives each person, not their name. It is how Frameling counts one vote each without keeping who it was.
+
+## Test the door first
+Start a vote, then run this in a terminal, with your key in place of KEY:
+\`\`\`
+curl -X POST http://127.0.0.1:47213/v1/actions/vote.cast -H "Authorization: Bearer KEY" -d '{"option":1,"voter":"test"}'
+\`\`\`
+You should get \`{"ok":true,"outcome":"ran"}\` and see the vote land. If that works, any trouble left is in the chat program.
+
+## When it doesn't work
+- **Could not connect:** Frameling isn't open, audience features are off, or the port moved. Check the address in Preferences.
+- **401:** the key is wrong, or you made a new one. Copy it again.
+- **403:** the request came from a web page (a browser source can't call the door), or used a name other than \`127.0.0.1\` or \`localhost\`.
+- **400 \`invalid\`:** no vote or round is running, the option doesn't exist, the voter id is missing, or they have voted already. Frameling doesn't say which.
+- **400 \`bad-request\`:** the body isn't JSON, usually a quote mark someone typed. Both setups here guard against it.
+- **429:** too soon. Wait the **Retry-After** seconds. Prompts take one every 8 seconds across the whole channel.
+- **503:** the drawing window isn't open.
+
+Every answer is in [The actions door: what it can do](help:actions-door-reference).`,
+  'chat-commands-firebot': `Firebot reads your Twitch chat and has an **HTTP Request** effect that sends exactly what the door needs, with no code. It has Linux builds (.deb, .rpm and .tar.gz) on its [releases page](https://github.com/crowbartools/Firebot/releases). Read [Chat commands](help:chat-commands) first if you haven't.
+
+## Make the !vote command
+1. In Firebot, connect your Twitch account, open **Commands** and press **New Custom Command**. Switch on **Advanced Mode**: only it has an effects list.
+2. **Trigger:** \`!vote\`. Leave the cooldowns at 0, because Frameling already counts one vote each.
+3. Press **Add Effect**, choose **HTTP Request**, and fill in:
+   - **URL:** \`http://127.0.0.1:47213/v1/actions/vote.cast\`
+   - **Method:** POST
+   - **Headers:** a header named \`Authorization\` with the value \`Bearer \` and then your key
+   - **Body:**
+\`\`\`
+{"option": $convertToJSON[$arg[1]], "voter": $convertToJSON[$userId]}
+\`\`\`
+\`$arg[1]\` is the first word after the command and \`$userId\` is who typed it. \`$convertToJSON\` adds the quote marks and escapes anything odd, so what a viewer types can't break the request or add fields of its own. Don't add quote marks round it.
+
+Start a vote, type **!vote 1** in your chat, and watch the panel.
+
+## The other two
+Make two more commands the same way, each with its own URL and body.
+
+**!guess**, URL ending \`/guess.send\`:
+\`\`\`
+{"guess": $convertToJSON[$arg[all]], "player": $convertToJSON[$userId], "name": $convertToJSON[$userDisplayName]}
+\`\`\`
+**!prompt**, URL ending \`/jar.add\`:
+\`\`\`
+{"text": $convertToJSON[$arg[all]]}
+\`\`\`
+Give **!prompt** a **global cooldown** of 8 seconds, the same as Frameling's, so Firebot handles the wait itself.
+
+## Good to know
+- To tell a viewer their prompt wasn't taken, tick **Run effects on error** in the HTTP Request effect and add a **Chat** effect there. A cooldown and a refusal both land in it, and we couldn't confirm it can read which one, so keep the message general.
+- Firebot and Frameling have to be on the same computer.
+- Made a new key in Frameling? Paste it into each command's header.
+- Checked against Firebot v5.67.0, November 2026.`,
+  'chat-commands-streamerbot': `Streamer.bot reads chat, but its built-in **Fetch URL** only does GET, and the door needs POST. So sending is a few lines of C#, pasted once for all three commands. Read [Chat commands](help:chat-commands) first if you haven't.
+
+**On Linux** Streamer.bot runs through Wine, and its makers call that experimental and not officially supported. Their install page asks for Wine 11.9 or newer with winetricks \`dotnet48\` and \`d3dcompiler_47\`, and offers an install script, Bottles or Lutris. If that is more than you want, [Firebot](help:chat-commands-firebot) does the same without it.
+
+## Set it up
+1. **Commands:** right-click, **Add**. Command text \`!vote\`, Location **Start**. Add \`!guess\` and \`!prompt\` as two more commands the same way. Cooldowns 0, except 8 seconds global on **!prompt**.
+2. **Actions:** add an action called **Frameling chat**. Give it the trigger **Command Triggered** (under Core, then Commands), and pick all three commands.
+3. Add the sub-action **Execute C# Code** (under Core, then C# Code), paste this, put your key between the quotes, and compile:
+\`\`\`
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+public class CPHInline
+{
+    // Paste your key between the quotes (Preferences > Streaming > Actions door > Copy).
+    const string Key = "PASTE-THE-KEY-HERE";
+    // The address Frameling shows there. Change the port if it moved.
+    const string Address = "http://127.0.0.1:47213";
+
+    static readonly HttpClient Http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+
+    public bool Execute()
+    {
+        string command, said, userId, name;
+        CPH.TryGetArg("command", out command);
+        CPH.TryGetArg("rawInput", out said);
+        CPH.TryGetArg("userId", out userId);
+        CPH.TryGetArg("user", out name);
+        said = (said ?? "").Trim();
+        string who = name ?? "";
+
+        string action;
+        object body;
+        switch ((command ?? "").TrimStart('!').ToLowerInvariant())
+        {
+            case "vote":
+                action = "vote.cast";
+                body = new { option = said.Split(' ')[0], voter = userId };
+                break;
+            case "guess":
+                action = "guess.send";
+                body = new { guess = said, player = userId, name = who };
+                break;
+            case "prompt":
+                action = "jar.add";
+                body = new { text = said };
+                break;
+            default:
+                CPH.LogWarn("Frameling: no idea what to do with the command " + command);
+                return false;
+        }
+
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, Address + "/v1/actions/" + action);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Key);
+            req.Content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+            var res = Http.SendAsync(req).GetAwaiter().GetResult();
+            int code = (int)res.StatusCode;
+            if (code == 200 || code == 202) return true;
+
+            var answer = JObject.Parse(res.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+            string reason = (string)answer["reason"];
+            if (action == "jar.add" && reason == "cooldown")
+                CPH.SendMessage("@" + who + " the jar needs a few seconds, try again soon.");
+            else if (reason != "invalid" && reason != "cooldown")
+                CPH.LogWarn("Frameling said " + code + " " + reason);
+        }
+        catch (Exception e)
+        {
+            CPH.LogWarn("Frameling door: " + e.Message);
+        }
+        return true;
+    }
+}
+\`\`\`
+4. Start a vote, type **!vote 1** in your chat, and watch the panel.
+
+## Good to know
+- It reads \`command\`, \`rawInput\`, \`userId\` and \`user\`, which Streamer.bot sets when a chat command fires. The body is built with a JSON library, so a quote mark in chat can't break it.
+- If the editor can't find System.Net.Http or Newtonsoft.Json, add them on its References tab.
+- A wrong key, a shut door or Frameling being closed show up in Streamer.bot's log as a Frameling warning, and stay quiet in chat. Only a prompt on cooldown answers the viewer.
+- Made a new key in Frameling? Paste it into the code.
+- Streamer.bot and Frameling have to be on the same computer.
+- Checked against Streamer.bot v1.0.7, August 2026.`,
   'actions-door': `Streamer.bot, Firebot and a Stream Deck already hear from Twitch, YouTube and Kick: Channel Points, chat commands, subs. They can also send a message to a program on your own computer. The **actions door** is where that message lands. Frameling never signs in to anything.
 
 **It opens with audience features.** Switch them on in **Preferences > Streaming > Audience features**. The red **On air** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
@@ -8,20 +167,17 @@ export const bodies: Record<string, string> = {
 
 **The key.** Every request carries a key, so only your tools can use the door. It is under **Actions door** in **Preferences > Streaming**, hidden. **Show** reveals it for a few seconds, **Copy** copies it without showing it. With stream-safe mode on it can only be copied. If it was ever seen on a stream, press **Make a new one**: the old key stops working at once.
 
-## Streamer.bot
-In an action, add the sub-action **Fetch URL** (it sits under Network), and fill in:
+## Streamer.bot and Firebot
+Both can call the door, and both can read chat, which is what lets viewers vote, guess and suggest prompts by typing. The step-by-step is in [Chat commands](help:chat-commands). The short version of what to send:
 - **URL:** \`http://127.0.0.1:47213/v1/actions/door.message\`
 - **Method:** POST
 - **Header:** \`Authorization\` with the value \`Bearer \` and then your key
 - **Body:** \`{"text":"Thanks for the follow!"}\`
 
-Streamer.bot on Linux is still experimental. On Windows it is the usual choice.
-
-## Firebot
-Add the effect **HTTP Request** to an event or a Channel Points reward, with the same four things. Firebot has native Linux builds, so it runs happily beside Frameling here.
+**Firebot** has an **HTTP Request** effect with exactly those boxes, and native Linux builds, so it is the easy match for Frameling here ([Firebot setup](help:chat-commands-firebot)). **Streamer.bot**'s **Fetch URL** only does GET, so sending to the door takes a few lines of C# ([Streamer.bot setup](help:chat-commands-streamerbot)). Streamer.bot on Linux runs through Wine and is still experimental. On Windows it is the usual choice.
 
 ## A Stream Deck, or anything else
-Anything that can send an HTTP request works: a Stream Deck plugin, Touch Portal, a script. Same four things.
+Anything that can send an HTTP request with a header and a body works: a Stream Deck plugin, Touch Portal, a script. Same four things.
 
 What you can ask for, and what comes back, is in [The actions door: what it can do](help:actions-door-reference).
 

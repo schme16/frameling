@@ -11,7 +11,7 @@ export const bodies: Record<string, string> = {
 Starting a vote turns audience features on, so the red **On air** pill appears. **Stop** (**Ctrl+Alt+K**) drops a vote that's going.
 
 ## Getting the votes in
-Your stream tool (Streamer.bot, Firebot, a Stream Deck) sends each vote to the [actions door](help:actions-door). Same setup as any action, with this address and body:
+Your stream tool (Streamer.bot, Firebot, a Stream Deck) sends each vote to the [actions door](help:actions-door). To let viewers type **!vote 2** in chat, follow [Chat commands](help:chat-commands). The address and body:
 - **URL:** \`http://127.0.0.1:47213/v1/actions/vote.cast\`
 - **Body:** \`{"option":2,"voter":"%userId%"}\`
 
