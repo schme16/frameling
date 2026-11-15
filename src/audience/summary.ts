@@ -1,4 +1,4 @@
-// Plain-words summaries of what the gate has kept, for the On air card. Pure, so the wording is tested.
+// Plain-words summaries of what the gate has kept, for the audience card. Pure, so the wording is tested.
 import type { AudienceCounts, RejectReason } from './gate';
 
 const WHY: Record<RejectReason, string> = {

@@ -1967,12 +1967,12 @@
   },
   "choice.twitch.refusedNote.title": { "text": "When your limits turn a Twitch event away", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.twitch.refusedNote.question": {
-    "text": "Sometimes a Twitch event arrives while a cooldown or the queue says no. Tell you with a small note each time, or just count it on the On air card?",
+    "text": "Sometimes a Twitch event arrives while a cooldown or the queue says no. Tell you with a small note each time, or just count it on the audience card?",
     "where": "The question the \"When your limits turn a Twitch event away\" dialog asks, the first time it happens."
   },
   "choice.twitch.refusedNote.count.label": { "text": "Just count it", "where": "Dialog and Preferences: the button for the answer \"count\" in \"When your limits turn a Twitch event away\"." },
   "choice.twitch.refusedNote.count.detail": {
-    "text": "Nothing pops up. The On air card shows how many were turned away and why.",
+    "text": "Nothing pops up. The audience card shows how many were turned away and why.",
     "where": "Dialog and Preferences: the small line under the \"count\" answer in \"When your limits turn a Twitch event away\"."
   },
   "choice.twitch.refusedNote.count.did": {

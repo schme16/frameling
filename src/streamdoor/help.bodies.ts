@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 ## Before you start
 1. **Same computer.** The door only answers the machine Frameling runs on.
-2. **Audience features on**, in **Preferences > Streaming**. The red **On air** pill shows. Off, nothing is listening.
+2. **Audience features on**, in **Preferences > Streaming**. The yellow **Audience participation: on** pill shows. Off, nothing is listening.
 3. **A vote or round running**: **Streaming > Votes**, **Streaming > Guess the drawing**. With nothing to join, a vote or guess is turned away.
 4. **The address and key**, under **Actions door** in the same place. **Copy** copies the key without showing it.
 
@@ -157,7 +157,7 @@ public class CPHInline
 - Checked against Streamer.bot v1.0.7, August 2026.`,
   'actions-door': `Streamer.bot, Firebot and a Stream Deck already hear from Twitch, YouTube and Kick: Channel Points, chat commands, subs. They can also send a message to a program on your own computer. The **actions door** is where that message lands. The door itself never signs in to anything, and it is how chat reaches Frameling, since Frameling never reads chat. New to all this? Start with [Getting your viewers taking part](help:viewers-take-part).
 
-**It opens with audience features.** Switch them on in **Preferences > Streaming > Audience features**. The red **On air** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
+**It opens with audience features.** Switch them on in **Preferences > Streaming > Audience features**. The yellow **Audience participation: on** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
 
 **Where it is.** Only on your own computer, at \`http://127.0.0.1:47213\`. Nobody on your network and no web page can reach it. If another program has that port, Frameling asks once whether to use the next free one or stay closed, and always shows the address it got. You can pick another port in **Preferences > Streaming**.
 
@@ -177,7 +177,7 @@ Anything that can send an HTTP request with a header and a body works: a Stream 
 
 What you can ask for, and what comes back, is in [The actions door: what it can do](help:actions-door-reference).
 
-See also [Audience features and the On air pill](help:audience).`,
+See also [Audience features and the pill](help:audience).`,
   'actions-door-reference': `Everything the actions door does, for when you are setting up a tool. The address is \`http://127.0.0.1:47213\` (or the one Frameling shows), and every request sends \`Authorization: Bearer <your key>\`. Setting up is in [The actions door](help:actions-door).
 
 ## What is on offer

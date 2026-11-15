@@ -1,10 +1,12 @@
-// The one Live pill in the title bar: what it says for every mix of "audience features are on" and "what OBS is doing".
+// The one Live pill in the title bar: what it says for every mix of "audience participation is on" and "what OBS is doing".
 // Plain decisions only (no window, no timers), so each combination can be tested on its own. The pill itself is LivePill.tsx.
 //
 // Two different things share it, and the pill never blurs them:
-//  - The audience part (red, with a pulsing dot, the waiting count and Stop) means somebody outside can reach Frameling.
-//    It shows whenever audience features are on, whatever OBS is doing, and Stop belongs to it alone.
-//  - The OBS part says what OBS is doing, in its own segment. It never turns the pill red unless OBS really is live.
+//  - The audience part (yellow, a plain information colour) says audience participation is on. Pressing it turns it off.
+//    A small arrow part beside it opens the card, with the waiting count. It shows whenever audience participation is
+//    on, whatever OBS is doing, and it is never red: it does not know whether you are going out to the world.
+//  - The OBS part says what OBS is doing, in its own segment with its own colour. Green when OBS is connected and ready,
+//    red only while OBS is really recording or streaming.
 import type { ObsLinkState, ObsState } from '../streamsafe/obsLogic';
 
 export type ObsKind = 'live' | 'rec' | 'ready' | 'looking' | 'quiet' | 'fix';
@@ -16,15 +18,50 @@ export interface LivePillInput {
   waiting: number;
   /** What OBS is doing. link 'off' means Going live with OBS is switched off, so there is nothing to say. */
   obs: Pick<ObsState, 'link' | 'streaming' | 'recording'>;
+  /** The stop key as the person sees it ("Ctrl+Alt+K"), for the tooltip. Optional so tests need not know it. */
+  stopKey?: string;
+}
+
+/** What the audience part says. Exactly these words, so nobody takes it for a broadcast light. */
+export const AUDIENCE_WORD = 'Audience participation: on';
+
+/** The colour of the OBS segment. Green is connected and ready, red is recording or streaming, nothing else is either. */
+export type ObsColour = 'green' | 'red' | 'plain' | 'fix';
+
+export function obsColour(kind: ObsKind): ObsColour {
+  switch (kind) {
+    case 'ready':
+      return 'green';
+    case 'live':
+    case 'rec':
+      return 'red';
+    case 'fix':
+      return 'fix';
+    default:
+      return 'plain';
+  }
+}
+
+export interface AudiencePart {
+  waiting: number;
+  /** The words on the part that turns audience participation off. */
+  word: string;
+  /** Tooltip and detail for that part. Pressing it turns audience participation off. */
+  tip: string;
+  tipDetail: string;
+  /** The small part that opens the card: its tooltip, detail and screen reader name. */
+  openTip: string;
+  openDetail: string;
+  openLabel: string;
 }
 
 export interface LivePillModel {
-  /** The look of the whole pill: red for audience on, otherwise whatever OBS is. */
-  tone: 'air' | ObsKind;
-  /** The On air part, with the waiting count and Stop. Null while audience features are off. */
-  audience: { waiting: number } | null;
+  /** The look of the whole pill's edge: yellow for audience on, otherwise whatever OBS is. */
+  tone: 'audience' | ObsKind;
+  /** The audience part and the arrow that opens the card. Null while audience participation is off. */
+  audience: AudiencePart | null;
   /** The OBS part. Null while Going live with OBS is off. */
-  obs: { kind: ObsKind; word: string; fix: boolean } | null;
+  obs: { kind: ObsKind; colour: ObsColour; word: string; fix: boolean } | null;
   /** The sentence for the tooltip and for screen readers. */
   label: string;
   /** The line under it in the tooltip. */
@@ -48,7 +85,7 @@ export function obsKind(obs: LivePillInput['obs']): ObsKind | null {
   }
 }
 
-// The words on the pill. Short next to On air (the card and tooltip carry the rest), fuller when OBS is alone. Every
+// The words on the pill. Short next to the audience part (the card and tooltip carry the rest), fuller when OBS is alone. Every
 // state has its own words, so none can be mistaken for another at a glance.
 const wordBeside = (kind: ObsKind, link: ObsLinkState): string => {
   switch (kind) {
@@ -108,21 +145,32 @@ export function livePill(input: LivePillInput): LivePillModel | null {
   if (!input.audience && !kind) return null;
   const { link, streaming, recording } = input.obs;
   const waiting = Math.max(0, input.waiting);
-  const obs = kind ? { kind, word: input.audience ? wordBeside(kind, link) : wordAlone(kind, link), fix: kind === 'fix' } : null;
-  const audience = input.audience ? { waiting } : null;
+  const obs = kind ? { kind, colour: obsColour(kind), word: input.audience ? wordBeside(kind, link) : wordAlone(kind, link), fix: kind === 'fix' } : null;
+  const key = input.stopKey ?? 'Ctrl+Alt+K';
+  const audience: AudiencePart | null = input.audience
+    ? {
+        waiting,
+        word: AUDIENCE_WORD,
+        tip: `${AUDIENCE_WORD}. Press to turn it off`,
+        tipDetail: `Empties the queue and stops every effect. ${key} does the same. It does not touch OBS.`,
+        openTip: waiting ? `${waiting} waiting. See the queue` : 'See the queue and the counts',
+        openDetail: 'Opens the card: what is waiting, what the audience has done, and the OBS settings.',
+        openLabel: waiting ? `See the queue, ${waiting} waiting` : 'See the queue and the counts',
+      }
+    : null;
   const said = kind ? obsSaid(kind, link, streaming, recording) : '';
 
   let label: string;
   let detail: string;
   if (audience && kind) {
-    label = `Audience features are on${waiting ? `, ${waiting} waiting` : ''}. ${SHORT_SAID[kind]}`;
-    detail = `${said}. Press for the queue and OBS. Stop ends audience features, not your stream.`;
+    label = `${AUDIENCE_WORD}${waiting ? `, ${waiting} waiting` : ''}. ${SHORT_SAID[kind]}`;
+    detail = `${said}. Press for the queue and OBS. Turning audience participation off does not stop your stream.`;
   } else if (audience) {
-    label = `Audience features are on${waiting ? `, ${waiting} waiting` : ''}`;
-    detail = 'Press to see what is waiting.';
+    label = `${AUDIENCE_WORD}${waiting ? `, ${waiting} waiting` : ''}`;
+    detail = 'Press the arrow to see what is waiting.';
   } else {
     label = obs!.word;
     detail = `${said}. Press for more.`;
   }
-  return { tone: audience ? 'air' : kind!, audience, obs, label, detail };
+  return { tone: audience ? 'audience' : kind!, audience, obs, label, detail };
 }

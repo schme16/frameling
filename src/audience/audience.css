@@ -1,60 +1,65 @@
-/* The Live pill: the red On air part with its Stop, and the OBS part beside it. Red on purpose, and the same in both
-   themes: it must read as "live" at a glance, and white on this red passes contrast in light and dark. The pill clips
-   its parts to one rounded shape, so every part is a plain rectangle. */
+/* The Live pill: the yellow audience part (press it to turn audience participation off) with its small arrow, and the
+   OBS part beside it. Yellow is a plain "information" colour that is the same in both themes, with dark text on it. Red is
+   kept for OBS really recording or streaming, and green for OBS connected and ready, so no part wears a colour that
+   belongs to another. Every part paints its own background, so none shows what is behind it. The pill clips its parts to
+   one rounded shape, so every part is a plain rectangle. */
 .live-pill {
+  --aud-info: #f6c93b;
+  --aud-info-deep: #d9a914;
+  --aud-ink: #2a2100;
   --aud-red: #c62828;
   --aud-red-deep: #a51f1f;
+  --aud-green: #1d7a3c;
   display: inline-flex;
   align-items: stretch;
   height: 26px;
   margin-right: 6px;
   border-radius: var(--radius-pill);
   overflow: hidden;
+  background: var(--panel);
   box-shadow: 0 0 0 1px var(--live-ring, transparent);
   flex: none;
 }
-.live-pill[data-tone='air'] {
-  background: var(--aud-red);
-  --live-ring: color-mix(in srgb, var(--aud-red) 70%, transparent);
-}
 .aud-pill,
-.aud-stop {
+.aud-more {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 26px;
   padding: 0 10px;
   border: 0;
-  background: var(--aud-red);
-  color: #fff;
+  background: var(--aud-info);
+  color: var(--aud-ink);
   font: inherit;
   font-size: var(--fs-small);
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   cursor: pointer;
 }
 .aud-pill {
   padding-left: 11px;
 }
-.aud-stop {
-  padding-right: 11px;
-  border-left: 1px solid rgb(255 255 255 / 40%);
-  background: var(--aud-red-deep);
+.aud-more {
+  padding: 0 8px 0 7px;
+  gap: 4px;
+  border-left: 1px solid rgb(42 33 0 / 30%);
+  background: var(--aud-info-deep);
 }
 .aud-pill:hover,
-.aud-stop:hover {
-  filter: brightness(1.12);
+.aud-more:hover {
+  filter: brightness(1.08);
 }
 .aud-pill:focus-visible,
-.aud-stop:focus-visible {
-  outline: 2px solid var(--focus);
+.aud-more:focus-visible {
+  outline: 2px solid var(--aud-ink);
   outline-offset: -3px;
 }
 .aud-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--aud-ink);
   animation: aud-pulse 1.8s ease-in-out infinite;
 }
 @keyframes aud-pulse {
@@ -74,8 +79,8 @@
   min-width: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: #fff;
-  color: var(--aud-red-deep);
+  background: var(--aud-ink);
+  color: var(--aud-info);
   font-size: 11px;
   line-height: 18px;
   text-align: center;
