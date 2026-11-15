@@ -11,6 +11,7 @@ import { useStore } from '../core/store';
 import { daysAway, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
 import { QuillPresents, QuillThings } from './QuillShelves';
+import { RoomToy, RoomWall, useYours } from './QuillYours';
 import { HOUSE_TABS, houseStore, setHouseTab, stepTab, unopenedCount, type HouseTab } from './house';
 import { SPOT_X, type Spot } from './potter';
 import { useQuillClock } from './usePotter';
@@ -46,6 +47,11 @@ export function QuillHim() {
   const playing = useStore((st) => st.ui.playing);
   const [said, setSaid] = useState<string>(() => line('pet.hello'));
   const away = useRef(daysAway()).current;
+  // What you have made: drawings on his wall, a sprite on his floor. Empty until you have made something.
+  const yours = useYours();
+  // Read fresh at each tick, so a new sprite is something he can play with straight away.
+  const hasToyRef = useRef(false);
+  hasToyRef.current = !!yours.toy;
 
   const { mood, anim } = moodNow({
     sinceInput: sinceInput(),
@@ -64,10 +70,11 @@ export function QuillHim() {
     playing,
     within: room,
     stepping: pottering,
-    ctx: () => ({ hasColours: petStore.get().colours.length > 0, sinceInput: sinceInput() }),
+    ctx: () => ({ hasColours: petStore.get().colours.length > 0, sinceInput: sinceInput(), hasToy: hasToyRef.current }),
   });
   const spot: Spot = mood === 'asleep' || mood === 'sleepy' ? 'bed' : potter.move.spot;
   const facingLeft = useFacing(spot);
+  const playingToy = pottering && potter.move.doing === 'play' && spot === 'middle';
 
   const colour = useStore((st) => st.ui.color);
   const hasColour = !!colour && !pet.colours.some((c) => c.toLowerCase() === colour.toLowerCase());
@@ -87,6 +94,10 @@ export function QuillHim() {
     setSaid(all[Math.floor(Math.random() * all.length)]);
   };
 
+  const touchYours = (kind: 'wall' | 'toy') => {
+    setSaid(line(kind === 'wall' ? 'pet.wall' : 'pet.toy'));
+  };
+
   const feed = () => {
     if (!colour) return;
     tellQuill({ kind: 'fed', colour });
@@ -103,6 +114,8 @@ export function QuillHim() {
             <span className="qp-bed" style={xOf('bed')} aria-hidden="true" />
             <span className="qp-desk" style={xOf('desk')} aria-hidden="true" />
             <span className="qp-bowl" style={xOf('bowl')} aria-hidden="true" />
+            <RoomWall items={yours.wall} onPress={touchYours} />
+            {yours.toy && <RoomToy item={yours.toy} playing={playingToy} onPress={touchYours} />}
             {elsewhere ? (
               <p className="qp-away qp-out">Quill's out helping with something, so his house is quiet for a moment. He'll be right back.</p>
             ) : (

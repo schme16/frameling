@@ -723,6 +723,27 @@ const entries = [
       shotEl(2),
     ],
   },
+  // The Room tab once you have made things: a drawing of yours on his wall and a sprite of yours as a toy on his floor.
+  {
+    name: 'quill-yours',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      js(`window.__framelingQuillPet.made.clear()`),
+      panel('quill-pet'),
+      wait(900),
+      js(`window.__framelingQuillPet.made.fromOpen('Bouncing ball', 6)`),
+      template('hero-sprites'),
+      wait(800),
+      js(`window.__framelingQuillPet.made.fromOpen('Hero', 0)`),
+      wait(900),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
+      ...settle,
+      tag('.qp-panel'),
+      shotEl(2),
+    ],
+  },
   // The Quill tab: he potters about, you give him a stroke, and the bar shows how well you know each other.
   {
     name: 'quill-pet',

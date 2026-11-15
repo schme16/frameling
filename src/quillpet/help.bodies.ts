@@ -5,8 +5,9 @@ export const bodies: Record<string, string> = {
 **Open it:** **View > Quill**, or press the **Quill** button on the panel rail. It opens on the **Room**, and after that it stays on whichever tab you last chose. **View > Quill's house > Quill: his things** and **View > Quill's house > Quill: his presents** open it on those tabs.
 
 **Room** is where he lives:
-- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, watches when you stop, [dozes off](help:quill-naps) when nothing's happened for a minute, and is proud of you when you finish something. In between he potters round his room: a wander, a doodle at his desk, a look out of the window, a snack, a nap. He only does it while you can see him, and with **Reduce motion** on he sits still.
+- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, [dozes off](help:quill-naps) when it's quiet, and is proud when you finish something. In between he potters round his room. He only does it while you can see him, and with **Reduce motion** on he sits still.
 - **His pencils.** The quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five.
+- **Your work.** The room fills up with what you have made: your newest drawings hang on his wall and your newest sprite is a [toy on his floor](help:quill-yours) that he plays with. Press either for a word from him.
 - **How well you know each other.** The bar fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
 - **Lessons with Quill.** **Open Quests** takes you to the [Quests](help:quests) panel, which keeps its own tab because the list is long.
 
@@ -17,12 +18,30 @@ export const bodies: Record<string, string> = {
 **Good to know:**
 - He never minds being left alone. Come back after a week, a month or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross.
 - There's only one of him. If a message, a lesson or the welcome wants him, he steps out of his room for a moment and comes back when it's done.
-- Drawing is what he likes best, so you feed him by getting on with your work. There's nothing to remember to do.
 - Nothing you make depends on him, and giving something back never touches your file.
-- Had enough of the panel? Turn **Quill** off in **Preferences > Features** and he goes back to being just the mascot, saying hello and lending a hand where he always did.
-- Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included, and anything you actually need to read stays as a plain note.
+- Had enough of the panel? Turn **Quill** off in **Preferences > Features** and he goes back to being just the mascot.
+- Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included.
 
-help:quill-things help:quill-presents help:quill-naps help:quests help:preferences`,
+help:quill-things help:quill-presents help:quill-yours help:quill-naps help:quests help:preferences`,
+  'quill-yours': `**Quill's room is yours as much as his.** The more you make, the more it shows: your newest drawings hang on his wall, and your newest sprite lies on his floor as a toy he plays with.
+
+**What goes in:** only work you really made. When you **save** a drawing you have drawn in, a small picture of it goes up. A template, an example, or a file you opened and left alone never does. A sprite is pixel art up to 256 pixels across, and a bigger picture goes on the wall. If you have made nothing yet, the room is simply emptier, and that is fine.
+
+**It looks after itself:** save something new and it appears, with no question asked. Save the same drawing again and its picture is refreshed instead of added twice. The wall shows your newest three, the floor your newest sprite.
+
+**Play:** he potters over to the toy now and then and bats it about. Press it to give it a push, or press a picture on the wall for a word from him.
+
+**Nothing is ever taken away.** Not because time went by, and not because you were out. He keeps a small picture of everything you have saved, so the room is always as full as your work is.
+
+**Stream-safe:** while [Stream-safe](help:stream-safe) is on, the names of your drawings become plain stand-ins like **My drawing 1** and the little pictures go blank, so nothing gives a drawing away.
+
+**Turn it off:** **Quill: show or hide my work in his room** in the command palette, or **Your work in Quill's room** in **Preferences > Behaviour**. Hiding it loses nothing, and turning it back on brings it all back.
+
+**Good to know:**
+- It is a small picture drawn once, when you save. Having the room open costs a few tiny images and nothing else.
+- Nothing you make depends on him, and your files are never touched.
+
+help:quill-pet help:quill-things help:stream-safe`,
   'quill-naps': `Leave Frameling alone for about a minute and **Quill** nods off, curled up with a little **Z** over his head. He's not bored, just resting.
 
 **Waking him:** move the mouse or press any key. He doesn't jump up. He stirs, peeks out, sits up, gives a big yawning stretch, blinks, and settles back to his usual self. It takes a second or so and happens once.

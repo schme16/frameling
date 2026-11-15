@@ -10,6 +10,14 @@ export const quillPetHelp: HelpTopic[] = [
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'companion', 'corner', 'scratch', 'stroke', 'pat', 'closeness'],
   },
   {
+    id: 'quill-yours',
+    title: 'Your work in Quill\'s room',
+    section: 'Getting around',
+    media: 'quill-yours.png',
+    summary: "Quill's room fills up with what you have made: your newest drawings hang on his wall and your newest sprite is a toy on his floor. Only real work of yours, it updates when you save something new, and nothing is ever taken away because you have been gone.",
+    keywords: ['quill', 'room', 'wall', 'toy', 'sprite', 'drawing', 'yours', 'mine', 'made', 'pet', 'thumbnail'],
+  },
+  {
     id: 'quill-naps',
     title: 'Quill dozing off and waking up',
     section: 'Getting around',

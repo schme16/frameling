@@ -195,10 +195,37 @@ describe('it does not read as a loop', () => {
     expect(words.size).toBeGreaterThanOrEqual(12);
   });
 
-  it('uses all five new clips, and every one of the eight doings turns up', () => {
+  it('uses all five new clips, and every one of the doings he can do with no toy turns up', () => {
     const anims = new Set(runs.flatMap((run) => run.flatMap((r) => r.move.beats.map((b) => b.anim))));
     for (const c of EXTRA_CLIPS) expect(anims.has(c), c).toBe(true);
-    expect(new Set(runs.flatMap((run) => run.map((r) => r.move.doing)))).toEqual(new Set(DOINGS));
+    expect(new Set(runs.flatMap((run) => run.map((r) => r.move.doing)))).toEqual(new Set(DOINGS.filter((d) => d !== 'play')));
+  });
+});
+
+describe('playing with a toy of yours', () => {
+  const WITH_TOY: PotterCtx = { ...CALM, hasToy: true };
+
+  it('never plays when there is no toy, so there is nothing to play with', () => {
+    expect(Object.keys(weights([], CALM))).not.toContain('play');
+    expect(Object.keys(weights([], { ...CALM, hasToy: false }))).not.toContain('play');
+    for (const seed of SEEDS) for (const { move } of simulate(seed, TEN_MINUTES)) expect(move.doing).not.toBe('play');
+  });
+
+  it('plays now and then when there is one, in the middle of the room where the toy lies, and every doing turns up', () => {
+    const all = SEEDS.flatMap((seed) => simulate(seed, TEN_MINUTES, WITH_TOY));
+    const plays = all.filter((r) => r.move.doing === 'play');
+    expect(plays.length).toBeGreaterThan(0);
+    for (const { move } of plays) expect(move.spot).toBe('middle');
+    // Now and then, not all the time.
+    expect(plays.length / all.length).toBeLessThan(0.3);
+    expect(new Set(all.map((r) => r.move.doing))).toEqual(new Set(DOINGS));
+  });
+
+  it('is never twice in a row, like everything else he does', () => {
+    for (const seed of SEEDS) {
+      const run = simulate(seed, TEN_MINUTES, WITH_TOY);
+      for (let i = 1; i < run.length; i++) expect(run[i].move.doing).not.toBe(run[i - 1].move.doing);
+    }
   });
 });
 

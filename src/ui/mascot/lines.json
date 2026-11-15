@@ -951,6 +951,22 @@
     ],
     "where": "Quill's panel: you gave him the colour you're drawing with (the app picks one)."
   },
+  "pet.wall": {
+    "text": [
+      "That one's yours. I like having it up.",
+      "Your drawing, on my wall. It makes the room feel like ours.",
+      "I look at that one a lot."
+    ],
+    "where": "Quill's panel, Room tab: you pressed one of your drawings on his wall."
+  },
+  "pet.toy": {
+    "text": [
+      "Your sprite! Best toy I have.",
+      "Oh, a go with your sprite. Yes please.",
+      "I do like it when you make me something to play with."
+    ],
+    "where": "Quill's panel, Room tab: you pressed your sprite on his floor."
+  },
   "pet.thing": { "text": "{name}! One of my favourites.", "where": "Quill's panel: you pressed one of the things you gave him. {name} is what it was called.", "vars": ["name"] },
   "pet.present.made": {
     "text": [
