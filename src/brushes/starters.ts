@@ -1,8 +1,8 @@
 // The brushes that come with Frameling: the ones artists reach for most in other drawing apps, grouped by what they
 // draw. Each is a plain brush or one of the tips (chalk, charcoal, watercolour, stamp), so every one of them stays a
 // vector shape on the way out. They never change and can't be deleted; save a copy to make it your own.
-// Left out on purpose, because the brush engine can't do them honestly yet: airbrush and soft round (a soft edge), a
-// highlighter that lets the line underneath show, and smudge or blend.
+// Soft edges, the highlighter and smudge are not brushes here: they are pixel tools (src/soft), since a vector shape
+// can't carry a fading edge.
 import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { defaultTip, startBattlements, startLink, startRibbon, startVine } from '../geometry/tip';

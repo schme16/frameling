@@ -13,7 +13,7 @@ import { altitudeOf, azimuthOf } from './tilt';
 import { cssVar } from '../canvas/theme';
 import './tablet.css';
 
-const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither' };
+const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither', 'soft-brush': 'Soft brush', airbrush: 'Airbrush', highlighter: 'Highlighter', 'soft-eraser': 'Soft eraser', smudge: 'Smudge' };
 /** Which columns make sense for which tool. */
 const HAS: Record<PenTool, { size: boolean; opacity: boolean; flow: boolean }> = {
   brush: { size: true, opacity: false, flow: false },
@@ -22,6 +22,11 @@ const HAS: Record<PenTool, { size: boolean; opacity: boolean; flow: boolean }> =
   spray: { size: true, opacity: false, flow: true },
   shade: { size: true, opacity: false, flow: false },
   dither: { size: true, opacity: false, flow: false },
+  'soft-brush': { size: true, opacity: false, flow: true },
+  airbrush: { size: true, opacity: false, flow: true },
+  highlighter: { size: true, opacity: false, flow: true },
+  'soft-eraser': { size: true, opacity: false, flow: true },
+  smudge: { size: true, opacity: false, flow: true },
 };
 
 interface Reading {

@@ -10,6 +10,7 @@ import '../plugins/debug';
 import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
+import '../soft/debug';
 import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
@@ -39,6 +40,7 @@ import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runti
 import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
+import { setCheckMemory } from '../tablet/check/state';
 import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/settings';
 import { penTools } from '../tablet/tool';
 import { showPanel } from '../ui/dock';
@@ -66,6 +68,8 @@ if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
+    // Turns down Quill's offer of the pen check, so a shot drawn with a pretend pen is not covered by it.
+    declinePenCheck: () => setCheckMemory({ declined: true }),
     // A review link that arrives from another computer (the harness has one window that is both sharer and friend): { elsewhere: true }.
     reviewLink: pretendReviewLink,
     // Grids, light table and the tween offer, for their help shots and A/Bs.

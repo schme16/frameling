@@ -2198,5 +2198,25 @@
   "choice.review.linkShape.message.did": {
     "text": "Copied a message with the link and the four words.",
     "where": "Toast when \"message\" is used without asking (\"What Copy the link copies\"), in the past tense."
-  }
+  },
+  "choice.soft.edge.title": { "text": "Soft paint with Pixel perfect on", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.soft.edge.question": {
+    "text": "Pixel perfect is on, which keeps every pixel all or nothing. How should the soft brushes make a soft edge?",
+    "where": "The question the \"Soft paint with Pixel perfect on\" dialog asks."
+  },
+  "choice.soft.edge.crisp.label": { "text": "Dither it, keep pixels crisp", "where": "Dialog and Preferences: the button for the answer \"crisp\" in \"Soft paint with Pixel perfect on\"." },
+  "choice.soft.edge.crisp.detail": {
+    "text": "The edge becomes a pattern of dots, so no see-through or new colours are made. Best for pixel art. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"crisp\" answer in \"Soft paint with Pixel perfect on\"."
+  },
+  "choice.soft.edge.crisp.did": {
+    "text": "Dithered the soft edge to keep pixels crisp.",
+    "where": "Toast when \"crisp\" is used without asking (\"Soft paint with Pixel perfect on\"), in the past tense."
+  },
+  "choice.soft.edge.smooth.label": { "text": "Smooth it, with see-through pixels", "where": "Dialog and Preferences: the button for the answer \"smooth\" in \"Soft paint with Pixel perfect on\"." },
+  "choice.soft.edge.smooth.detail": {
+    "text": "A true soft edge, the way a paint program does it. A layer with a locked palette still dithers, since it can only hold its own colours.",
+    "where": "Dialog and Preferences: the small line under the \"smooth\" answer in \"Soft paint with Pixel perfect on\"."
+  },
+  "choice.soft.edge.smooth.did": { "text": "Made the soft edge smooth.", "where": "Toast when \"smooth\" is used without asking (\"Soft paint with Pixel perfect on\"), in the past tense." }
 }

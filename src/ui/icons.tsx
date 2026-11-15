@@ -679,6 +679,44 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="15" y="15" width="2.5" height="2.5" fill="currentColor" stroke="none" />
     </>
   ),
+  'soft-brush': (
+    <>
+      <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity="0.16" stroke="none" />
+      <circle cx="12" cy="12" r="6.2" fill="currentColor" fillOpacity="0.34" stroke="none" />
+      <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  airbrush: (
+    <>
+      <path d="M4 20l4.5-4.5 2.2 2.2L6.2 22z" />
+      <path d="M8.5 15.5l2.6-2.6" />
+      <circle cx="14.5" cy="9.5" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="6" r="1.1" fill="currentColor" fillOpacity="0.7" stroke="none" />
+      <circle cx="19.5" cy="11" r="0.9" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="11" cy="6" r="0.9" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="15.5" cy="3.8" r="0.7" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
+  highlighter: (
+    <>
+      <path d="M14.5 3.5l6 6-8 8-6-6z" />
+      <path d="M6.5 11.5L4 19l7.5-2" />
+      <rect x="3" y="20" width="12" height="2.4" rx="1" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
+  'soft-eraser': (
+    <>
+      <path d="M7.5 19.5l-4-4L14 5l6.5 6.5-8 8z" />
+      <path d="M9 11l6.5 6.5" />
+      <path d="M14.5 20.5H21" strokeDasharray="1 2.2" />
+    </>
+  ),
+  smudge: (
+    <>
+      <circle cx="6.5" cy="12" r="3" fill="currentColor" stroke="none" />
+      <path d="M10 9.5c3.5-1 6.5 0 10-1M10 12h10M10 14.5c3.5 1 6.5 0 10 1" />
+    </>
+  ),
   mirror: (
     <>
       <path d="M12 3v18" strokeDasharray="2 2.6" />
