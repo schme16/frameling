@@ -38,6 +38,7 @@ See also [Audience features and the On air pill](help:audience).`,
 - \`door.fit-view\`: fits the drawing in the window. No body.
 - \`quill.cheer\`, \`quill.hop\`, \`quill.snack\`, \`quill.nuzzle\`, \`quill.wave\`: Quill reacts on your screen. No body. See [Quill reacts to your audience](help:quill-reacts).
 - \`quill.sign\`: Quill holds up a sign, once you say yes. Body \`{"text":"hello"}\`, cut to 60 plain characters.
+- \`vote.cast\`: one vote in the vote you started. Body \`{"option":2,"voter":"12345678"}\`. Only counted, never acted on, and not held back by the cooldowns. See [Votes](help:votes).
 
 ## What comes back
 Frameling always says what happened, as JSON with a **reason** your tool can act on:

@@ -1,0 +1,2 @@
+Chat votes, dark and light, shot under xvfb with the help harness (scripts/docs/help/votes.cjs), H.264, captioned.
+A vote starts ("Which colour next?", three options, 11 seconds). About 70 pretend people vote through the real audience gate, the same call the actions door makes. The bars grow, the lead changes, the clock runs out and the result shows: the winner, with "Frameling only counts. What you do about it is up to you." Then Close. The drawing is not touched at any point.

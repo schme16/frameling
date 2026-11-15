@@ -1714,5 +1714,45 @@
     "text": "About a minute, for a streamer who likes a proper challenge.",
     "where": "Preferences: the small line under the \"long\" answer in \"How long a dare lasts\"."
   },
-  "choice.dares.length.long.did": { "text": "Dares last about a minute.", "where": "Toast when \"long\" is used without asking (\"How long a dare lasts\"), in the past tense." }
+  "choice.dares.length.long.did": { "text": "Dares last about a minute.", "where": "Toast when \"long\" is used without asking (\"How long a dare lasts\"), in the past tense." },
+  "choice.votes.again.title": { "text": "When someone votes twice", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.votes.again.question": {
+    "text": "A person sends a second vote in the same vote. Keep their first, or let them change their mind?",
+    "where": "The question the \"When someone votes twice\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.votes.again.first.label": { "text": "Keep their first vote", "where": "Preferences: the answer \"first\" in \"When someone votes twice\"." },
+  "choice.votes.again.first.detail": {
+    "text": "Each person counts once, and their first choice stands. The simplest and hardest to game.",
+    "where": "Preferences: the small line under the \"first\" answer in \"When someone votes twice\"."
+  },
+  "choice.votes.again.first.did": {
+    "text": "A second vote is turned away; the first stands.",
+    "where": "Toast when \"first\" is used without asking (\"When someone votes twice\"), in the past tense."
+  },
+  "choice.votes.again.latest.label": { "text": "Let them change their mind", "where": "Preferences: the answer \"latest\" in \"When someone votes twice\"." },
+  "choice.votes.again.latest.detail": {
+    "text": "Their newest choice replaces the old one, still one vote each. Good for a long, chatty vote.",
+    "where": "Preferences: the small line under the \"latest\" answer in \"When someone votes twice\"."
+  },
+  "choice.votes.again.latest.did": { "text": "A person can change their vote.", "where": "Toast when \"latest\" is used without asking (\"When someone votes twice\"), in the past tense." },
+  "choice.votes.noId.title": { "text": "A vote that comes with no voter id", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.votes.noId.question": {
+    "text": "Frameling can only keep to one vote each when your stream tool sends who is voting, as an id. Turn away votes with no id, or count them anyway?",
+    "where": "The question the \"A vote that comes with no voter id\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.votes.noId.refuse.label": { "text": "Turn them away", "where": "Preferences: the answer \"refuse\" in \"A vote that comes with no voter id\"." },
+  "choice.votes.noId.refuse.detail": {
+    "text": "Only votes with a voter id count, so nobody can vote twice. Frameling tells you how many it turned away.",
+    "where": "Preferences: the small line under the \"refuse\" answer in \"A vote that comes with no voter id\"."
+  },
+  "choice.votes.noId.refuse.did": {
+    "text": "Votes with no voter id are turned away.",
+    "where": "Toast when \"refuse\" is used without asking (\"A vote that comes with no voter id\"), in the past tense."
+  },
+  "choice.votes.noId.count.label": { "text": "Count them anyway", "where": "Preferences: the answer \"count\" in \"A vote that comes with no voter id\"." },
+  "choice.votes.noId.count.detail": {
+    "text": "Every request counts as one vote. Your tool has to make sure each person only sends one.",
+    "where": "Preferences: the small line under the \"count\" answer in \"A vote that comes with no voter id\"."
+  },
+  "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." }
 }

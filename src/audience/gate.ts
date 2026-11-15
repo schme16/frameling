@@ -29,6 +29,9 @@
  *   - Global rate limit. At most `maxPerMinute` actions start in any minute and at least `minGapMs` apart. Anything
  *     over that waits in the queue and starts in order as soon as it may.
  *   - Queue. Short, oldest first, visible to the streamer, emptied with one click. Waiting too long drops an item.
+ *   - Bulk. A view-only action many people send at once and that is only counted (a vote) says `bulk: true`: it skips
+ *     the cooldown, the gap and the queue (they would turn a vote into ten voters a minute), and keeps a ceiling of
+ *     `BULK_PER_SECOND` a second instead. It still obeys the switch, the allowlist, `parse`, its own switch and kill.
  *   - Kill. Clears the queue, aborts every running effect (`ctx.signal`), closes every door, switches the master
  *     switch off. Anything can still be switched back on by hand. It stops both kinds of action, below.
  *   - Two kinds of action. Most only change the view, Quill or on-screen words. One that reaches the DOCUMENT (a dare
@@ -80,6 +83,14 @@ export interface AudienceActionDef<P = undefined> {
    * changes the view, moves Quill or shows words.
    */
   touchesDrawing?: boolean;
+  /**
+   * For an action whose whole point is that MANY people send it in a short time, and each is cheap and only counted
+   * (a vote). It skips the kind's cooldown, the gap between actions and the queue, and runs the moment it is taken, so
+   * a hundred people can vote in the same minute. It is still refused when the switch is off, when it is switched off,
+   * when `parse` says no, and after kill; it still counts in `ran` and `byKind`; and a hard ceiling of `BULK_PER_SECOND`
+   * a second applies, whatever the strictness. It can never touch the drawing: registering it with `touchesDrawing` throws.
+   */
+  bulk?: boolean;
   /** Stable, `area.name` in lower case, like a command id: `quill.cheer`, `dare.flipView`. */
   id: string;
   /** Plain words, shown in the queue and the counts ("Quill cheers"). */
@@ -134,6 +145,9 @@ export const STRICTNESS: Record<Strictness, GateLimits> = {
 };
 
 export const DEFAULT_COOLDOWN_MS = 10_000;
+
+/** The most `bulk` requests taken in any one second. Past it the gate says `cooldown`, so a flood costs almost nothing. */
+export const BULK_PER_SECOND = 100;
 
 /** Reads `STRICTNESS` by a name that may be anything (an old or hand-edited setting): unknown names get balanced. */
 export function limitsFor(name: unknown): GateLimits {
@@ -279,6 +293,7 @@ export function createGate(env: GateEnv): Gate {
   let queue: Waiting[] = [];
   let runs: number[] = [];
   let lastRunAt: number | null = null;
+  let bulkTimes: number[] = [];
   let on = false;
   let drawingOk = false;
   const switchedOff = new Set<string>();
@@ -306,10 +321,13 @@ export function createGate(env: GateEnv): Gate {
     }
   };
 
-  function start(w: Waiting, now: number): void {
-    lastRunAt = now;
-    runs = runs.filter((t) => t > now - 60_000);
-    runs.push(now);
+  function start(w: Waiting, now: number, paced = true): void {
+    // A bulk request is not part of the pace: it neither waits for it nor moves it.
+    if (paced) {
+      lastRunAt = now;
+      runs = runs.filter((t) => t > now - 60_000);
+      runs.push(now);
+    }
     counts.ran++;
     counts.byKind[w.def.kind] = (counts.byKind[w.def.kind] ?? 0) + 1;
     const ctl = new AbortController();
@@ -405,6 +423,7 @@ export function createGate(env: GateEnv): Gate {
       if (!ID_RE.test(def.id)) throw new Error(`Audience action id "${def.id}" must be like "area.name", in lower case.`);
       if (!KIND_RE.test(def.kind)) throw new Error(`Audience action "${def.id}" needs a kind in lower case, like "quill" or "dare".`);
       if (!def.label?.trim()) throw new Error(`Audience action "${def.id}" needs a label in plain words.`);
+      if (def.bulk && def.touchesDrawing) throw new Error(`Audience action "${def.id}" is bulk, so it cannot touch the drawing.`);
       if (def.cooldown !== undefined && !(Number.isFinite(def.cooldown) && def.cooldown >= 0)) throw new Error(`Audience action "${def.id}" has a cooldown that is not a number of milliseconds.`);
       if (actions.has(def.id)) throw new Error(`Audience action "${def.id}" is already registered.`);
       const stored = def as unknown as AudienceActionDef<unknown>;
@@ -459,6 +478,14 @@ export function createGate(env: GateEnv): Gate {
         }
       }
       const now = env.now();
+      if (def.bulk) {
+        bulkTimes = bulkTimes.filter((t) => t > now - 1000);
+        if (bulkTimes.length >= BULK_PER_SECOND) return reject('cooldown', bulkTimes[0] + 1000 - now);
+        bulkTimes.push(now);
+        start({ ticket: ++ticket, def, payload, at: now }, now, false);
+        changed();
+        return { ok: true, outcome: 'ran' };
+      }
       const lim = env.limits();
       const left = cooldownLeft(now, lastByKind.get(def.kind), (def.cooldown ?? DEFAULT_COOLDOWN_MS) * lim.cooldownScale);
       if (left > 0) return reject('cooldown', left);

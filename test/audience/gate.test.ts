@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cooldownLeft, createGate, DEFAULT_COOLDOWN_MS, lasts, limitsFor, nextRunAt, STRICTNESS, type AudienceActionDef, type Gate, type GateLimits } from '../../src/audience/gate';
+import { BULK_PER_SECOND, cooldownLeft, createGate, DEFAULT_COOLDOWN_MS, lasts, limitsFor, nextRunAt, STRICTNESS, type AudienceActionDef, type Gate, type GateLimits } from '../../src/audience/gate';
 
 // A clock we move by hand, and timers that only fire when we say.
 function world(limits: Partial<GateLimits> = {}, edits: string[] = []) {
@@ -679,5 +679,58 @@ describe('actions that reach the drawing', () => {
     w.gate.setDrawingAllowed(false);
     w.advance(10_000);
     expect(edits).toEqual([]);
+  });
+});
+
+describe('bulk actions (a vote)', () => {
+  it('cannot touch the drawing', () => {
+    const { gate } = world();
+    expect(() => gate.registerAction(act('vote.cast', 'vote', { bulk: true, touchesDrawing: true }))).toThrow(/bulk/);
+  });
+  it('runs every request at once, with no cooldown, gap or queue in the way', () => {
+    const { gate } = world({ minGapMs: 6000, maxPerMinute: 4, maxQueue: 1 });
+    const log: string[] = [];
+    gate.registerAction(act('vote.cast', 'vote', { bulk: true, cooldown: 60_000 }, log));
+    gate.setOn(true);
+    for (let i = 0; i < 50; i++) expect(gate.submit('vote.cast')).toEqual({ ok: true, outcome: 'ran' });
+    expect(log).toHaveLength(50);
+    expect(gate.snapshot().queue).toEqual([]);
+    expect(gate.snapshot().counts.ran).toBe(50);
+    expect(gate.snapshot().counts.byKind.vote).toBe(50);
+  });
+  it('does not use up the pace of the other actions', () => {
+    const { gate } = world({ minGapMs: 6000, maxPerMinute: 4 });
+    const log: string[] = [];
+    gate.registerAction(act('vote.cast', 'vote', { bulk: true }, log));
+    gate.registerAction(act('quill.cheer', 'quill', {}, log));
+    gate.setOn(true);
+    for (let i = 0; i < 20; i++) gate.submit('vote.cast');
+    expect(gate.submit('quill.cheer')).toEqual({ ok: true, outcome: 'ran' });
+  });
+  it('keeps a ceiling a second, and takes more the next second', () => {
+    const w = world();
+    const log: string[] = [];
+    w.gate.registerAction(act('vote.cast', 'vote', { bulk: true }, log));
+    w.gate.setOn(true);
+    for (let i = 0; i < BULK_PER_SECOND; i++) expect(w.gate.submit('vote.cast').ok).toBe(true);
+    const over = w.gate.submit('vote.cast');
+    expect(over.ok === false && over.reason).toBe('cooldown');
+    w.advance(1001);
+    expect(w.gate.submit('vote.cast').ok).toBe(true);
+  });
+  it('still obeys the switch, parse, its own switch and kill', () => {
+    const { gate } = world();
+    const log: string[] = [];
+    gate.registerAction(act('vote.cast', 'vote', { bulk: true, parse: (r: unknown) => (r === 1 ? (1 as never) : null) } as never, log));
+    expect(gate.submit('vote.cast', 1)).toEqual({ ok: false, reason: 'off' });
+    gate.setOn(true);
+    expect(gate.submit('vote.cast', 2)).toEqual({ ok: false, reason: 'invalid' });
+    expect(gate.submit('vote.cast', 1).ok).toBe(true);
+    gate.setActionEnabled('vote.cast', false);
+    expect(gate.submit('vote.cast', 1)).toEqual({ ok: false, reason: 'unavailable' });
+    gate.setActionEnabled('vote.cast', true);
+    gate.kill();
+    expect(gate.submit('vote.cast', 1)).toEqual({ ok: false, reason: 'off' });
+    expect(log).toHaveLength(1);
   });
 });
