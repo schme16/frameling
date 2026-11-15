@@ -34,7 +34,7 @@ import { framesWithNotes } from '../notes/model';
 import '../notes/notes.css';
 import { setScrubbing } from '../gpu/settings';
 import { CelName, DetailRow, PropRow } from './Detail';
-import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
+import { rowAtY, rowOfLayerIn, rowWindow, type Layout, type LayoutRow, type RowWindow } from './layout';
 import { currentLayout, useLayout } from './view';
 import { celRef, layerTracks, type KeyRef } from './tracks';
 import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } from './keys';
@@ -57,6 +57,9 @@ const D_MARKS_H = 18;
 const D_CLIPS_H = 18;
 /** Empty frames shown past the end, so there is room to drag the end further out. */
 const SLACK = 24;
+/** Up and down scrolling is noticed in steps this tall, and rows this far past the edge are drawn in full too. */
+const SCROLL_STEP = 56;
+const ROW_SPARE = 56;
 
 type Drag =
   | { kind: 'scrub'; pause: boolean }
@@ -389,7 +392,7 @@ function rowKeys(r: LayoutRow): { frame: number; ref: KeyRef }[] {
 }
 
 /** Keys inside a box of rows and frames. */
-function keysIn(layout: Layout, y0: number, y1: number, f0: number, f1: number): KeyRef[] {
+export function keysIn(layout: Layout, y0: number, y1: number, f0: number, f1: number): KeyRef[] {
   const out = new Set<KeyRef>();
   for (const r of layout.rows) {
     if (r.y + r.h <= y0 || r.y >= y1) continue;
@@ -434,7 +437,9 @@ export function TimelineBody() {
   const [cursorRow, setCursorRow] = useState<string | null>(null);
   const anchor = useRef<{ frame: number; y: number } | null>(null);
   const [ghost, setGhost] = useState<Ghost | null>(null);
-  const [view, setView] = useState({ left: 0, width: 800 });
+  // The scroll position and size. `top` moves in steps of SCROLL_STEP, so scrolling up and down only draws again when a
+  // new row is about to show, not on every pixel. A `height` of 0 is "not measured yet": every row is drawn.
+  const [view, setView] = useState({ left: 0, width: 800, top: 0, height: 600 });
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [panning, setPanning] = useState(false);
   const keepScroll = useRef<number | null>(null);
@@ -443,6 +448,14 @@ export function TimelineBody() {
   const { from, to } = visibleFrames(view.left, view.width - sideW, cw);
   const contentEnd = useMemo(() => layers.reduce((n, l) => Math.max(n, l.cels.length ? l.cels[l.cels.length - 1].start + l.cels[l.cels.length - 1].length : 0), 0), [layers]);
   const total = Math.max(length, contentEnd) + SLACK;
+  // Which rows to draw in full: the ones on screen and a few either side. The rest are empty shells of the same height,
+  // so the rows still add up to the same scroll length and the layer list still has every row for keyboard and screen
+  // readers. The rows start below the ruler, the markers and the clips.
+  const headH = rulerH + marksH + clipsH;
+  const win = useMemo(
+    () => (view.height > 0 ? rowWindow(layout, view.top - headH - ROW_SPARE, view.top + SCROLL_STEP + view.height - headH + ROW_SPARE) : { lo: 0, hi: layout.rows.length - 1 }),
+    [layout, view.top, view.height, headH],
+  );
   const activeRow = (cursorRow ? layout.rows.find((r) => r.key === cursorRow && r.kind === 'prop' && r.layer.id === activeId) : undefined) ?? rowOfLayerIn(layout, activeId);
   const cursor = activeRow ? { y: activeRow.y, h: activeRow.h } : null;
 
@@ -453,7 +466,8 @@ export function TimelineBody() {
     let raf = 0;
     const read = () => {
       raf = 0;
-      setView((v) => (v.left === el.scrollLeft && v.width === el.clientWidth ? v : { left: el.scrollLeft, width: el.clientWidth }));
+      const top = Math.floor(el.scrollTop / SCROLL_STEP) * SCROLL_STEP;
+      setView((v) => (v.left === el.scrollLeft && v.width === el.clientWidth && v.top === top && v.height === el.clientHeight ? v : { left: el.scrollLeft, width: el.clientWidth, top, height: el.clientHeight }));
     };
     const queue = () => {
       if (!raf) raf = requestAnimationFrame(read);
@@ -1036,7 +1050,7 @@ export function TimelineBody() {
         <div className="tl-corner" style={{ height: rulerH + marksH + clipsH }}>
           <LayerTools />
         </div>
-        <LayerList />
+        <LayerList window={win} />
         <TimelineSlot slot="side" />
       </div>
       <div
@@ -1073,8 +1087,11 @@ export function TimelineBody() {
           {dragClip ? <i className="tl-ghost-clip" style={{ left: dragClip.start * cw, width: (dragClip.end - dragClip.start + 1) * cw, top: rulerH + marksH, height: clipsH }} /> : null}
         </div>
         <div ref={rows} className="tl-rows" data-region="rows" style={{ height: layout.height }}>
-          {layout.rows.map((r) =>
-            r.kind === 'folder' ? (
+          {layout.rows.map((r, i) =>
+            i < win.lo || i > win.hi ? (
+              // Scrolled out of view: an empty row of the same height, drawn in full when it comes near.
+              <div key={r.key} className={`tl-row${r.kind === 'folder' ? ' is-folder' : ''}`} style={{ height: r.h }} data-layer={r.kind === 'folder' ? undefined : r.layer.id} />
+            ) : r.kind === 'folder' ? (
               <div key={r.key} className={`tl-row is-folder${r.row.folder.visible ? '' : ' is-hidden'}`} style={{ height: r.h }} />
             ) : r.kind === 'prop' ? (
               <PropRow key={r.key} layer={r.layer} track={r.track} cw={cw} from={from} to={to} picked={picked} h={r.h} last={r.last} />
@@ -1089,7 +1106,7 @@ export function TimelineBody() {
           <Playhead part="rows" cw={cw} cursor={cursor} />
           <TweenOfferView cw={cw} layout={layout} />
           {ghostCel && ghostRow ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + celGap(cw) / 2, width: Math.max(1, ghostCel.length * cw - celGap(cw)), top: ghostRow.y + 3, height: ghostRow.h - 6 }} /> : null}
-          {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} /> : null}
+          {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} win={win} from={from} to={to} /> : null}
           {box ? <i className="tl-box" style={{ left: Math.min(box.x0, box.x1), top: Math.min(box.y0, box.y1), width: Math.abs(box.x1 - box.x0), height: Math.abs(box.y1 - box.y0) }} /> : null}
         </div>
         <TimelineSlot slot="main" cw={cw} from={from} to={to} />
@@ -1109,14 +1126,19 @@ function fxTracks(tracks: ReturnType<typeof layerTracks>) {
 }
 
 /** Picked keys where they'll land while they're dragged, with how far they've gone. */
-function KeysGhost({ layout, refs, map, text, cw }: { layout: Layout; refs: ReadonlySet<KeyRef>; map: (f: number) => number; text: string; cw: number }) {
+function KeysGhost({ layout, refs, map, text, cw, win, from, to }: { layout: Layout; refs: ReadonlySet<KeyRef>; map: (f: number) => number; text: string; cw: number; win: RowWindow; from: number; to: number }) {
   const spots = keySpots(layout, refs);
   if (!spots.length) return null;
   const top = Math.min(...spots.map((s) => s.y));
   const left = Math.min(...spots.map((s) => map(s.frame)));
+  // The tag goes by every picked key, but only the ones that land in view are drawn (all of them could be thousands).
+  const y0 = layout.rows[win.lo]?.y ?? 0;
+  const last = layout.rows[win.hi];
+  const y1 = last ? last.y + last.h : Infinity;
+  const near = spots.filter((s) => s.y >= y0 && s.y <= y1 && map(s.frame) >= from && map(s.frame) <= to);
   return (
     <>
-      {spots.map((s) => (
+      {near.map((s) => (
         <i key={s.ref + s.y} className={`tl-ghost-key${s.small ? ' is-small' : ''}`} style={{ left: (map(s.frame) + 0.5) * cw, top: s.y }} />
       ))}
       <span className="tl-ghost-tag" style={{ left: left * cw, top: Math.max(0, top - 26) }}>

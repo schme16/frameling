@@ -25,7 +25,18 @@ export interface FolderDragProps {
 }
 
 /** A folder's header row in the layer list: fold, name, show or hide, more. Drag it to move the folder and all in it. */
-export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { type: 'folder' }>; height: number; drag: FolderDragProps }) {
+export function FolderRow({
+  row,
+  height,
+  drag,
+  shell = false,
+}: {
+  row: Extract<TimelineRow, { type: 'folder' }>;
+  height: number;
+  drag: FolderDragProps;
+  /** Scrolled out of view: only the row itself (its name for screen readers, keys, drag), none of what is inside it. */
+  shell?: boolean;
+}) {
   const f = row.folder;
   const [editing, setEditing] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -78,6 +89,25 @@ export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { t
       }}
       onDragEnd={drag.onDragEnd}
     >
+      {shell ? null : <FolderBody row={row} look={look} n={n} editing={editing} setEditing={setEditing} menu={menu} setMenu={setMenu} />}
+    </div>
+  );
+}
+
+type FolderBodyProps = {
+  row: Extract<TimelineRow, { type: 'folder' }>;
+  look: string;
+  n: number;
+  editing: boolean;
+  setEditing: (v: boolean) => void;
+  menu: { x: number; y: number } | null;
+  setMenu: (v: { x: number; y: number } | null) => void;
+};
+
+function FolderBody({ row, look, n, editing, setEditing, menu, setMenu }: FolderBodyProps) {
+  const f = row.folder;
+  return (
+    <>
       <button type="button" className="tl-folder-twisty" aria-expanded={!row.collapsed} title={row.collapsed ? 'Unfold: show this folder\'s layers' : 'Fold: hide this folder\'s layers in the timeline (they still show on the canvas)'} onClick={() => toggleFolderCollapsed(f.id)}>
         <Icon name={row.collapsed ? 'chevron-right' : 'chevron-down'} size={14} />
       </button>
@@ -142,7 +172,7 @@ export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { t
           ]}
         />
       )}
-    </div>
+    </>
   );
 }
 
