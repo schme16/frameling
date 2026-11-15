@@ -7,7 +7,7 @@
 // The grain sits on a grid fixed to the page, not to the line, so two lines over each other show the same paper.
 // Pure, no DOM. The outline of the line itself comes in as a function (render.ts), which keeps this file free of it.
 import polygonClipping, { type Pair } from 'polygon-clipping';
-import type { BrushSettings, FillShape, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
+import type { BrushSettings, BrushTip, FillShape, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
 import { plainBrush, resolveTip, type ResolvedTip } from './tip';
 import { alongShapes, bristleShapes, edgedShapes, nibShapes } from './tipRibbon';
 
@@ -227,7 +227,84 @@ function grainFor(kind: 'chalk' | 'charcoal', t: ResolvedTip, size: number, area
   return kind === 'chalk' ? { g: base, edge: 0.3 * base, clump: 5 } : { g: base, edge: 0.7 * base, clump: 3 };
 }
 
-function grainShape(s: StrokeShape, outline: number[][], kind: 'chalk' | 'charcoal', t: ResolvedTip): Shape[] | null {
+/**
+ * Ways to make the grain less all-or-nothing, tried out in the chalk and charcoal investigation (`tip.trial`, see
+ * `parseTrial`). Every one stays inside the current model: a fill with holes in it, and fills that are see-through.
+ */
+export interface GrainTrial {
+  /** More and bigger holes towards the edge of the line, so it thins out instead of stopping. */
+  edge: boolean;
+  /** More holes where the pen was pressed lightly, fewer where it was pressed hard. */
+  press: boolean;
+  /** Each line has its own holes, so a second pass fills in the first one's gaps. */
+  seed: boolean;
+  /** The line is several see-through fills, a wide pale one and narrower, darker ones where the pen was pressed. */
+  layers: boolean;
+}
+
+export function parseTrial(v: string | undefined): GrainTrial | null {
+  if (!v) return null;
+  const all = v === 'all';
+  return { edge: all || v.includes('edge'), press: all || v.includes('press'), seed: all || v.includes('seed'), layers: all || v.includes('layers') };
+}
+
+interface GrainOpts {
+  trial?: GrainTrial;
+  /** A whole number that moves this line's holes about (from the line's id). */
+  seedOff?: number;
+  /** A layer of a layered line: its own opacity, hole share and hole seed. */
+  opacity?: number;
+  holeScale?: number;
+  layerSeed?: number;
+  /** The pressure (0 to 1) of the pen nearest a point on the page. */
+  pressureAt?: (x: number, y: number) => number;
+  /** How far in from the edge the thinning reaches, in pixels. */
+  edgeWidth?: number;
+}
+
+/** A whole number from a line's id, steady from one drawing of the line to the next. */
+export function idSeed(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return h | 0;
+}
+
+/** The pressure of the pen sample nearest to a point, looked up through a coarse grid. */
+export function pressureLookup(points: readonly { x: number; y: number; p: number }[], cell: number): (x: number, y: number) => number {
+  const c = Math.max(4, cell);
+  const grid = new Map<number, number[]>();
+  const key = (i: number, j: number) => i * 73856093 + j * 19349663;
+  points.forEach((q, n) => {
+    const k = key(Math.floor(q.x / c), Math.floor(q.y / c));
+    const a = grid.get(k);
+    if (a) a.push(n);
+    else grid.set(k, [n]);
+  });
+  return (x, y) => {
+    const i = Math.floor(x / c);
+    const j = Math.floor(y / c);
+    let best = Infinity;
+    let p = 0.5;
+    for (let r = 1; r <= 3 && best === Infinity; r++) {
+      for (let di = -r; di <= r; di++) {
+        for (let dj = -r; dj <= r; dj++) {
+          const a = grid.get(key(i + di, j + dj));
+          if (!a) continue;
+          for (const n of a) {
+            const d = (points[n].x - x) ** 2 + (points[n].y - y) ** 2;
+            if (d < best) {
+              best = d;
+              p = points[n].p;
+            }
+          }
+        }
+      }
+    }
+    return p;
+  };
+}
+
+function grainShape(s: StrokeShape, outline: number[][], kind: 'chalk' | 'charcoal', t: ResolvedTip, opts: GrainOpts = {}): Shape[] | null {
   const size = s.brush.size;
   const base = ringFrom(outline, 2);
   if (base.length < 4) return null;
@@ -247,13 +324,37 @@ function grainShape(s: StrokeShape, outline: number[][], kind: 'chalk' | 'charco
   const step = Math.max(0.7, gr.g * 0.6);
   const rough = clean.map((r) => roughen(resample(r, step), gr.edge, gr.g * 2.5, kind === 'chalk' ? 3 : 5));
   const paths: SubPath[] = rough.filter((r) => r.length >= 3).map(toPath);
-  const holes = grainHoles(rough, gr, t.amount, kind);
+  const holes = grainHoles(rough, gr, t.amount * (opts.holeScale ?? 1), kind, opts);
   for (const h of holes) paths.push(h);
-  const fill: FillShape = { id: `${s.id}~t`, type: 'fill', paths, color: s.color, opacity: s.opacity };
+  const fill: FillShape = { id: `${s.id}~t`, type: 'fill', paths, color: s.color, opacity: s.opacity * (opts.opacity ?? 1) };
   return [fill];
 }
 
-function grainHoles(rings: readonly V[][], gr: Grain, amount: number, kind: 'chalk' | 'charcoal'): SubPath[] {
+/** How far each cell is from the edge of the shape, in cells (a two-pass chamfer over the fine grid). */
+function edgeDistance(c: Cover): Float32Array {
+  const { nx, ny, inside } = c;
+  const d = new Float32Array(nx * ny);
+  const BIG = 1e6;
+  for (let i = 0; i < nx * ny; i++) d[i] = inside[i] ? BIG : 0;
+  const at = (i: number, j: number) => (i < 0 || j < 0 || i >= nx || j >= ny ? 0 : d[j * nx + i]);
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const k = j * nx + i;
+      if (d[k] === 0) continue;
+      d[k] = Math.min(d[k], at(i - 1, j) + 1, at(i, j - 1) + 1, at(i - 1, j - 1) + 1.41, at(i + 1, j - 1) + 1.41);
+    }
+  }
+  for (let j = ny - 1; j >= 0; j--) {
+    for (let i = nx - 1; i >= 0; i--) {
+      const k = j * nx + i;
+      if (d[k] === 0) continue;
+      d[k] = Math.min(d[k], at(i + 1, j) + 1, at(i, j + 1) + 1, at(i + 1, j + 1) + 1.41, at(i - 1, j + 1) + 1.41);
+    }
+  }
+  return d;
+}
+
+function grainHoles(rings: readonly V[][], gr: Grain, amount: number, kind: 'chalk' | 'charcoal', opts: GrainOpts = {}): SubPath[] {
   // A finer grid than the grain's own says what is inside, so a hole can sit right up to the edge without crossing it.
   const fine = cover(rings, gr.g / 3, true);
   if (!fine) return [];
@@ -268,7 +369,20 @@ function grainHoles(rings: readonly V[][], gr: Grain, amount: number, kind: 'cha
   const gx1 = Math.ceil(((fine.gx0 + fine.nx) * fine.g) / g);
   const gy1 = Math.ceil(((fine.gy0 + fine.ny) * fine.g) / g);
   const nx = gx1 - gx0;
-  const seed = kind === 'chalk' ? 17 : 29;
+  const trial = opts.trial;
+  const seed = (kind === 'chalk' ? 17 : 29) + (trial?.seed ? opts.seedOff ?? 0 : 0) + (opts.layerSeed ?? 0);
+  const dist = trial?.edge ? edgeDistance(fine) : null;
+  // How wide the thinning towards the edge is, in the page's pixels.
+  const fall = Math.max(gr.g * 2, (opts.edgeWidth ?? gr.g * 6) / 3);
+  const edgeAt = (x: number, y: number): number => {
+    if (!dist) return 0;
+    const i = Math.floor(x / fine.g) - fine.gx0;
+    const j = Math.floor(y / fine.g) - fine.gy0;
+    if (i < 0 || j < 0 || i >= fine.nx || j >= fine.ny) return 1;
+    const d = dist[j * fine.nx + i] * fine.g;
+    const u = Math.min(1, d / (fall * 3));
+    return 1 - u * u * (3 - 2 * u);
+  };
   // A bigger line has more cells than it can keep holes for: thin them evenly rather than stopping part way.
   let candidates = 0;
   for (let gy = gy0; gy < gy1; gy++) for (let gx = gx0; gx < gx1; gx++) if (inside((gx + 0.5) * g, (gy + 0.5) * g)) candidates++;
@@ -296,7 +410,12 @@ function grainHoles(rings: readonly V[][], gr: Grain, amount: number, kind: 'cha
       const at = (gy - gy0) * nx + (gx - gx0);
       if (used.has(at) || !inside((gx + 0.5) * g, (gy + 0.5) * g)) continue;
       const clump = vnoise(gx / gr.clump, gy / gr.clump, seed);
-      const p = Math.min(0.95, amount * (kind === 'chalk' ? 2.1 : 2.2) * (0.25 + 1.1 * clump));
+      let mult = 1;
+      const cx = (gx + 0.5) * g;
+      const cy = (gy + 0.5) * g;
+      if (trial?.edge) mult *= 1 + 5 * edgeAt(cx, cy);
+      if (trial?.press && opts.pressureAt) mult *= 2.4 - 2.05 * Math.min(1, opts.pressureAt(cx, cy));
+      const p = Math.min(0.95, amount * mult * (kind === 'chalk' ? 2.1 : 2.2) * (0.25 + 1.1 * clump));
       if (hash3(gx, gy, seed + 2) >= p) continue;
       if (keep < 1 && hash3(gx, gy, seed + 9) >= keep) continue;
       // Now and then a bigger gap, over four cells, where the grain is thick.
@@ -308,11 +427,70 @@ function grainHoles(rings: readonly V[][], gr: Grain, amount: number, kind: 'cha
           continue;
         }
       }
-      const small = make((gx + 0.5 + (hash3(gx, gy, seed + 4) - 0.5) * 0.4) * g, (gy + 0.5 + (hash3(gx, gy, seed + 5) - 0.5) * 0.4) * g, g * (0.26 + 0.18 * hash3(gx, gy, seed + 6)), gx, gy, 60);
+      const small = make((gx + 0.5 + (hash3(gx, gy, seed + 4) - 0.5) * 0.4) * g, (gy + 0.5 + (hash3(gx, gy, seed + 5) - 0.5) * 0.4) * g, g * (0.26 + 0.18 * hash3(gx, gy, seed + 6)) * (1 + 0.9 * edgeAt(cx, cy)), gx, gy, 60);
       if (small) out.push(small);
     }
   }
   return out;
+}
+
+/** The stretches of a line where the pen was pressed at least `min`, each cut exactly where the pressure crosses it. */
+export function pressureRuns(points: readonly { x: number; y: number; p: number }[], min: number): { x: number; y: number; p: number }[][] {
+  const runs: { x: number; y: number; p: number }[][] = [];
+  let cur: { x: number; y: number; p: number }[] = [];
+  const flush = () => {
+    if (cur.length >= 2) runs.push(cur);
+    cur = [];
+  };
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    if (a.p >= min) cur.push(a);
+    else if (cur.length) {
+      const prev = points[i - 1];
+      const u = (min - prev.p) / (a.p - prev.p || 1);
+      cur.push({ x: prev.x + (a.x - prev.x) * u, y: prev.y + (a.y - prev.y) * u, p: min });
+      flush();
+    }
+    if (a.p >= min && i > 0 && points[i - 1].p < min) {
+      const prev = points[i - 1];
+      const u = (min - prev.p) / (a.p - prev.p || 1);
+      cur.unshift({ x: prev.x + (a.x - prev.x) * u, y: prev.y + (a.y - prev.y) * u, p: min });
+    }
+  }
+  flush();
+  return runs;
+}
+
+/** The layers of a layered line: from what pressure up it shows, how wide it is next to the line, and how see-through it is. */
+export const GRAIN_LAYERS: readonly { from: number; width: number; opacity: number; holes: number }[] = [
+  { from: 0, width: 1, opacity: 0.14, holes: 1.4 },
+  { from: 0.1, width: 0.88, opacity: 0.16, holes: 1.1 },
+  { from: 0.25, width: 0.76, opacity: 0.2, holes: 0.8 },
+  { from: 0.4, width: 0.64, opacity: 0.22, holes: 0.6 },
+  { from: 0.55, width: 0.52, opacity: 0.3, holes: 0.4 },
+  { from: 0.75, width: 0.4, opacity: 0.5, holes: 0.3 },
+];
+
+function trialShapes(s: StrokeShape, outlineOf: OutlineFn, kind: 'chalk' | 'charcoal', t: ResolvedTip, trial: GrainTrial): Shape[] | null {
+  const size = s.brush.size;
+  const base: GrainOpts = { trial, seedOff: idSeed(s.id), pressureAt: pressureLookup(s.points, size), edgeWidth: size * 0.35 };
+  if (!trial.layers) {
+    const o = outlineOf(s, s.brush);
+    return o.length < 3 ? null : grainShape(s, o, kind, t, base);
+  }
+  const plain = plainBrush(s.brush);
+  const out: Shape[] = [];
+  GRAIN_LAYERS.forEach((L, i) => {
+    const runs = L.from === 0 ? [s.points] : pressureRuns(s.points, L.from);
+    runs.forEach((run, r) => {
+      const ls: StrokeShape = { ...s, id: `${s.id}~L${i}.${r}`, points: run as StrokeShape['points'], brush: { ...plain, size: size * L.width } };
+      const o = outlineOf(ls, ls.brush);
+      if (o.length < 3) return;
+      const part = grainShape(ls, o, kind, t, { ...base, opacity: L.opacity, holeScale: L.holes, layerSeed: i * 101 + r * 7, edgeWidth: size * 0.2 });
+      if (part) out.push(...part);
+    });
+  });
+  return out.length ? out : null;
 }
 
 // ---------------------------------------------------------------- watercolour
@@ -561,5 +739,7 @@ export function tipShapes(s: StrokeShape, outlineOf: OutlineFn): Shape[] | null 
   if (t.kind === 'bristle') return bristleShapes(s, t);
   const o = outlineOf(s, s.brush);
   if (o.length < 3) return null;
-  return t.kind === 'watercolour' ? watercolourShapes(s, o, t) : grainShape(s, o, t.kind, t);
+  if (t.kind === 'watercolour') return watercolourShapes(s, o, t);
+  const trial = parseTrial((tip as BrushTip & { trial?: string }).trial);
+  return trial ? trialShapes(s, outlineOf, t.kind, t, trial) : grainShape(s, o, t.kind, t);
 }
