@@ -2,6 +2,7 @@
 // (the desktop side makes it); this dialog only starts that and closes.
 import { useMemo, useState } from 'react';
 import { parseCode } from '../share/code';
+import { codeFromPaste, looksLikeLink } from '../share/link';
 import { codeHint } from '../io/shareState';
 import { Modal, mountModal } from '../io/mount';
 import { noteName } from '../notes/state';
@@ -11,13 +12,15 @@ function JoinDialog({ close }: { close: () => void }) {
   const [text, setText] = useState('');
   const [name, setName] = useState(noteName());
   const [busy, setBusy] = useState(false);
-  const parsed = useMemo(() => parseCode(text), [text]);
-  const hint = parsed.ok || text.trim() === '' ? '' : codeHint(parsed.why, parsed.ok ? undefined : parsed.word);
+  // A pasted frameling:// link works too, for chats that will not open it.
+  const typed = useMemo(() => codeFromPaste(text), [text]);
+  const parsed = useMemo(() => parseCode(typed), [typed]);
+  const hint = parsed.ok || text.trim() === '' ? '' : looksLikeLink(text) ? 'That link is not a review link from Frameling.' : codeHint(parsed.why, parsed.ok ? undefined : parsed.word);
   const go = () => {
     const api = window.frameling?.review;
     if (!parsed.ok || !api || busy) return;
     setBusy(true);
-    void api.join(text, name.trim()).then((r) => {
+    void api.join(typed, name.trim()).then((r) => {
       if (r.ok) close();
       else setBusy(false);
     });
@@ -32,10 +35,10 @@ function JoinDialog({ close }: { close: () => void }) {
             go();
           }}
         >
-          <p>Type the code they gave you. It's four words. A window opens where you can look at their drawing, point, and leave notes. You cannot change their drawing.</p>
+          <p>Type the code they gave you, or paste their link. The code is four words. A window opens where you can look at their drawing, point, and leave notes. You cannot change their drawing.</p>
           <label className="share-field">
             <span>Their code</span>
-            <input data-autofocus="" data-testid="review.joinCode" value={text} spellCheck={false} autoComplete="off" autoCapitalize="off" maxLength={80} placeholder="four words, like ocean-tiger-maple-spoon" aria-describedby="review-join-hint" onChange={(e) => setText(e.target.value)} />
+            <input data-autofocus="" data-testid="review.joinCode" value={text} spellCheck={false} autoComplete="off" autoCapitalize="off" maxLength={200} placeholder="four words, like ocean-tiger-maple-spoon" aria-describedby="review-join-hint" onChange={(e) => setText(e.target.value)} />
           </label>
           <p id="review-join-hint" className="share-hint" role="status">
             {hint}

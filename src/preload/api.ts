@@ -174,6 +174,10 @@ export interface ReviewBridge {
   ack(seat: number, ids: string[]): Promise<void>;
   /** Opens a review window for somebody else's code. `ok` is false when the words are not a code. */
   join(code: string, name: string): Promise<{ ok: boolean }>;
+  /** The code from a frameling://review link that is waiting to be asked about, once. It joins nothing: ask the person first, then `join`. */
+  takeLink(): Promise<string | null>;
+  /** Called when a review link has come in (then call `takeLink`). Returns an unsubscribe function. */
+  onLink(handler: () => void): () => void;
   onEvent(handler: (e: import('../main/reviewHost').HostUiEvent) => void): () => void;
 }
 

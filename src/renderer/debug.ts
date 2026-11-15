@@ -57,6 +57,7 @@ import { offerTweenAt } from '../timeline/tweenOffer';
 import { setTl } from '../timeline/state';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
 import { allChoices, askAgain, forgetAnswers } from '../core/choices';
+import { pretend as pretendReviewLink } from '../livereview/link';
 
 if (new URLSearchParams(location.search).has('debug')) {
   // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
@@ -65,6 +66,8 @@ if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
+    // A review link that arrives from another computer (the harness has one window that is both sharer and friend): { elsewhere: true }.
+    reviewLink: pretendReviewLink,
     // Grids, light table and the tween offer, for their help shots and A/Bs.
     anim: {
       view: setViewSettings,

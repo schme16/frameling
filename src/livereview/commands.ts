@@ -2,6 +2,7 @@
 // Stop, close the window or quit.
 import { registerCommands } from '../core/registry';
 import { openJoinDialog } from './JoinDialog';
+import { copyReviewLink } from './link';
 import { toast } from '../ui/toast';
 import { desktop } from '../io/desktop';
 import { bringInComments, inbox, isLive, keepNow, review, setCard, startReview, stopReview } from './state';
@@ -36,6 +37,17 @@ registerCommands([
     enabled: () => !!bridge(),
     reason: needsDesktop,
     run: () => void openJoinDialog(),
+  },
+  {
+    id: 'review.copyLink',
+    label: 'Copy the live review link',
+    category: 'File',
+    description: 'Copies a frameling:// link to your live review. Whoever opens it is asked whether to join, then you let them in. The four word code still works for anybody who would rather type it.',
+    help: 'review-link',
+    keywords: ['live review', 'review', 'link', 'copy', 'url', 'invite', 'share', 'join', 'send', 'frameling://', 'code'],
+    enabled: () => review.get().phase === 'live',
+    reason: () => (review.get().phase === 'live' ? undefined : 'Start a live review first, then there is a link to copy.'),
+    run: copyReviewLink,
   },
   {
     id: 'review.card',

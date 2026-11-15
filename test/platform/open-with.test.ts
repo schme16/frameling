@@ -91,6 +91,8 @@ describe.skipIf(process.platform === 'win32')('Linux', () => {
       expect(execFileSync('xdg-mime', ['query', 'default', ASEPRITE_MIME], { env }).toString().trim()).toBe('aseprite.desktop');
       expect(fs.readFileSync(path.join(apps, 'mimeinfo.cache'), 'utf8')).toMatch(/application\/x-aseprite=.*frameling\.desktop/);
       expect(fs.existsSync(path.join(tmp, 'config/mimeapps.list'))).toBe(false);
+      // Listing the link type is enough for the desktop to send frameling:// links here.
+      expect(execFileSync('xdg-mime', ['query', 'default', 'x-scheme-handler/frameling'], { env }).toString().trim()).toBe('frameling.desktop');
       // Run again (an update): still fine, still no default.
       expect(installIntegration({ target: exe, icon: path.join(tmp, 'f.png'), mimeXml, env, home: tmp }).stolen).toBe(false);
     },

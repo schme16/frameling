@@ -8,6 +8,7 @@ import { DRIFT_NOTE, type InboxEntry } from '../review/inbox';
 import { colourOfSeat } from '../review/pointer';
 import { COVERED_NAME, COVER_NOTE, coveredCount } from './cover';
 import { admit, goToFrame, inbox, isRevealed, keepNow, refuse, removeSeat, review, reveal, setCard, stopReview, useCovered } from './state';
+import { copyReviewLink } from './link';
 import './review.css';
 
 async function copy(text: string): Promise<void> {
@@ -110,6 +111,9 @@ export function ReviewCard() {
           <div className="rv-row">
             <button type="button" className="ui-btn" data-testid="review.copy" onClick={() => void copy(s.code)}>
               Copy the code
+            </button>
+            <button type="button" className="ui-btn" data-testid="review.copyLink" onClick={copyReviewLink}>
+              Copy the link
             </button>
           </div>
         </>

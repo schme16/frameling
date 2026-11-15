@@ -932,6 +932,23 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-media.cj
   `public/help/live-review-<theme>.mp4` and its poster. Run it once per theme. The help runner skips the `live-review` entry
   (`scripts/docs/help/live-review.cjs`). Both are always H.264.
 
+### Review links: scripts/e2e/review-link-media.cjs
+
+`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-link-media.cjs --theme dark [--help] [--ab]` runs the real
+app and records a `frameling://review?code=...` link: Copy the link on the card, the link arriving the way a second launch hands it
+over (`app.emit('second-instance', ...)`, the same path Linux and Windows use, and the one `open-url` ends in on macOS), the question
+"Join a live review?" with nothing connected, Join, the window opening, Let in. After the recording it checks (exit code 1 on a
+failure): a link for something else or a broken one asks nothing; your own link says so; a second link does not swap the code of a
+question already up; Not now connects nothing; and while Stream-safe is on the code in the question is covered until Show.
+It does not start a real second computer: one window is both sharer and friend (`window.__frameling.reviewLink.elsewhere`), and the
+peer network is the in-process loopback. `--ab` writes `brand/ab/review-link/review-link-<theme>.mp4`, `--help` writes
+`public/help/review-link-<theme>.mp4` and its poster (the help runner skips the entry in `scripts/docs/help/review-link.cjs`).
+
+Unit tests: `test/share/link.test.ts` (what a link may carry), `test/livereview/link-logic.test.ts` (what is copied, when Join may be
+pressed, the cover), `test/main/review-link.test.ts` (the main process keeps the code until the window asks, only the window can ask),
+`test/main/link-handler.test.ts` (the Linux launcher plan, and the real `xdg-mime` against a throwaway home where it is installed;
+the installer and app settings that Windows and macOS rely on are checked as files only, never on a real Windows or Mac).
+
 ## What is remembered between launches: scripts/e2e/remember.cjs
 
 The brush, the stroke and fill colours, loop playback and the onion skin are kept between launches (src/core/uiMemory.ts

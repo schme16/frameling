@@ -25,4 +25,24 @@ export const bodies: Record<string, string> = {
 - **Your own notes and marks are not sent.** They are often "fix this" to yourself.
 - Reviewers cannot toggle layers or see the timeline or history. Their words are cleaned, and stay in memory on your side until you keep them.
 - **No account, no server.** The code is checked with a password handshake, and three wrong tries stop it letting new people in. Two people on strict networks may not connect: try [Send a copy](help:send-a-copy).`,
+  'review-link': `A **review link** is your live review's code, wrapped up so one click does the joining. It looks like \`frameling://review?code=...\`. You send it instead of reading four words down a call.
+
+**Send one:**
+- Start a [live review](help:live-review). On the card, press **Copy the link**, or choose **File > Copy the live review link**.
+- The first time, Frameling asks what to copy: **just the link**, or **a message with the link and the four words**. Chat apps often won't make a \`frameling://\` link clickable, so the message is the safer one. Change it any time in **Preferences > Behaviour**.
+- Paste it into your chat, email or note.
+
+**When somebody opens it:**
+1. Frameling starts, or comes forward if it is already open.
+2. It asks **Join a live review?** with their name to use. **Nothing has connected yet.** They press **Join**, or **Not now**.
+3. You see them knock on your card, and you press **Let in**. The link never skips that.
+
+**If the link won't click:** they can paste it into **File > Join a live review**, where the code box takes a link as well as the four words.
+
+**Good to know:**
+- Joining opens a window of its own, so whatever they were drawing stays exactly as it was, unsaved or not.
+- A link carries the code and nothing else. It can't open files, change anything or pick the name they use.
+- A link is a code. Anybody who sees it can try to join, so send it only to the people you mean, and remember you still choose who comes in. While you stream, the code in their question is covered until they press **Show**, and **Copy the link** never puts the link on screen.
+- Frameling sets itself up to open these links each time it starts (the installer does too on Windows, and a Mac app has it built in). If a link does nothing, run Frameling once, then try again.
+`,
 };

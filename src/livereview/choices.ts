@@ -20,3 +20,20 @@ registerChoice<KeepChoice>({
   category: 'Streaming',
   help: 'live-review',
 });
+
+export type LinkShapeChoice = 'link' | 'message';
+
+// The other: what Copy the link copies. Many chat apps do not make a frameling:// link clickable, so a message with the four
+// words beside it is the safer thing to send; the link alone is tidier for an address bar or a note.
+registerChoice<LinkShapeChoice>({
+  id: 'review.linkShape',
+  title: choiceWord('choice.review.linkShape.title'),
+  question: choiceWord('choice.review.linkShape.question'),
+  options: [
+    { value: 'link', label: choiceWord('choice.review.linkShape.link.label'), detail: choiceWord('choice.review.linkShape.link.detail'), did: choiceWord('choice.review.linkShape.link.did') },
+    { value: 'message', label: choiceWord('choice.review.linkShape.message.label'), detail: choiceWord('choice.review.linkShape.message.detail'), did: choiceWord('choice.review.linkShape.message.did') },
+  ],
+  default: 'message',
+  category: 'Streaming',
+  help: 'review-link',
+});
