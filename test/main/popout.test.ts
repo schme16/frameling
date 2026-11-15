@@ -14,6 +14,8 @@ class FakeWindow implements PopoutWindow {
   constructor(public events: WindowEvents) {}
   alive = () => !this.dead;
   raise = () => void this.raised++;
+  applied: unknown[] = [];
+  apply = (o: unknown) => void this.applied.push(o);
   close = () => {
     if (this.dead) return;
     this.events.placed(this.at);

@@ -2,6 +2,7 @@
 // crosses a message port as it is. The logic on each side is in mirror.ts (the sender) and replica.ts (the receiver).
 import type { Patch } from 'immer';
 import type { Doc, Drawing, Id, StrokeShape } from '../core/format';
+import type { CaptureLook } from './capture';
 
 /** The few theme colours the picture window wears, so it matches the drawing window in dark and light. */
 export interface PopoutTheme {
@@ -15,7 +16,7 @@ export interface PopoutTheme {
 
 /** Everything about what to show that is not the drawing itself. Small, so it is sent whenever any part of it changes. */
 export interface Look {
-  /** The drawing's name, for the window title. */
+  /** The drawing's name, for the window title. Empty in the capture view: the name is never sent there. */
   name: string;
   /** The playhead in the drawing window (inside a symbol this is the symbol's own frame; see `shownFrame`). */
   frame: number;
@@ -27,6 +28,8 @@ export interface Look {
   /** Draw the marks over the picture (they are only ever shown while paused and not looking through the camera). */
   marks: boolean;
   theme: PopoutTheme;
+  /** Set when the window is the capture view: how it looks. Missing or null for the plain second window. */
+  capture?: CaptureLook | null;
 }
 
 /** A layer showing something other than its saved drawing: a move or an erase half done. */

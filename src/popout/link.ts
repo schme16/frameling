@@ -9,6 +9,7 @@ import { cssVar, subscribeTheme } from '../canvas/theme';
 import { lookingThrough } from '../camera/ops';
 import { documentTitle } from '../io/document';
 import { getMarksState, subscribeMarksState } from '../notes/marksState';
+import { backgroundColour, type BackgroundChoice } from './capture';
 import { setInkTap, setLiveTap } from './ink';
 import { Mirror } from './mirror';
 import type { FromPopout, Look, LiveDrawing, PopoutTheme, ToPopout } from './protocol';
@@ -24,6 +25,11 @@ let session: Session | null = null;
 const listeners = new Set<() => void>();
 
 export const isPopoutOpen = (): boolean => session !== null;
+
+// Which kind of window the desktop side linked us to (it says so just before the port arrives).
+let capture = false;
+/** Is the window that is open the capture view? */
+export const isCaptureOpen = (): boolean => session !== null && capture;
 
 /** Calls `fn` when the picture window opens or goes (for menu ticks). Returns the unsubscribe. */
 export function subscribePopout(fn: () => void): () => void {
@@ -62,14 +68,19 @@ function start(port: MessagePort): void {
 
   const lookOf = (s: State): Look => {
     const camera = throughCamera(currentChoice<CameraChoice>('popout.camera'), s.doc, lookingThrough(s));
+    const cap = capture
+      ? { bg: backgroundColour(currentChoice<BackgroundChoice>('popout.captureBackground')), hideCursor: currentChoice('popout.captureCursor') === 'hide' }
+      : null;
     return {
-      name: documentTitle(),
+      // The capture view is never told the drawing's name, so it cannot show it anywhere.
+      name: cap ? '' : documentTitle(),
       frame: s.ui.frame,
       playing: s.ui.playing,
       activeLayerId: s.ui.activeLayerId,
       camera,
       marks: marksVisible(currentChoice<MarksChoice>('popout.marks'), s.ui.playing, camera, getMarksState().show),
       theme,
+      ...(cap ? { capture: cap } : {}),
     };
   };
 
@@ -168,5 +179,11 @@ export function installPopoutLink(): void {
     if (e.source !== window || e.data !== 'frameling-popout-port' || !e.ports[0]) return;
     start(e.ports[0]);
   });
-  api.onClosed(() => stopFollowing());
+  api.onMode?.((m) => {
+    capture = m === 'capture';
+  });
+  api.onClosed(() => {
+    capture = false;
+    stopFollowing();
+  });
 }

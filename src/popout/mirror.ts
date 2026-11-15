@@ -4,6 +4,7 @@
 // window can never drift. Nothing here touches the DOM or Electron, so it is tested on its own.
 import type { Doc, StrokeShape } from '../core/format';
 import type { DocChange, State } from '../core/store';
+import { sameCapture } from './capture';
 import type { Look, LiveDrawing, ToPopout } from './protocol';
 
 export interface MirrorSource {
@@ -12,7 +13,7 @@ export interface MirrorSource {
 }
 
 export const sameLook = (a: Look | null, b: Look): boolean =>
-  !!a && a.name === b.name && a.frame === b.frame && a.playing === b.playing && a.activeLayerId === b.activeLayerId && a.camera === b.camera && a.marks === b.marks && a.theme === b.theme;
+  !!a && a.name === b.name && a.frame === b.frame && a.playing === b.playing && a.activeLayerId === b.activeLayerId && a.camera === b.camera && a.marks === b.marks && a.theme === b.theme && sameCapture(a.capture, b.capture);
 
 export class Mirror {
   private sent: Doc | null = null;

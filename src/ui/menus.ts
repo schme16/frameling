@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'popout.toggle', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'sub:secondwindow', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
   },
   {
     label: 'Draw',
@@ -96,7 +96,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['popout.front', '-', 'view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
+    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.'],
   },
   toolrail: {
@@ -205,6 +205,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   turnview: {
     label: 'Turn and flip the view',
     items: ['view.flip', 'view.turnLeft', 'view.turnRight', 'view.resetTurn'],
+  },
+  secondwindow: {
+    label: 'Second window and capture view',
+    items: ['popout.toggle', 'popout.front', '-', 'capture.toggle', 'capture.background', 'capture.cursor', '-', 'capture.size.free', 'capture.size.1920x1080', 'capture.size.1280x720', 'capture.size.2560x1440', 'capture.size.3840x2160', 'capture.size.1080x1080', 'capture.size.1080x1920'],
   },
   lighttable: {
     label: 'Light table',
