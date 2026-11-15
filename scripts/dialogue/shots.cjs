@@ -335,6 +335,28 @@ const GROUPS = {
     { wait: 900 },
     { shot: ['stream.sign.ask'], crop: TOAST, pad: 60, note: 'With the words of the sign after it, and nothing shown on stream until you say yes.' },
   ],
+  // Quill in the guessing game: a near miss, a win, a win with a name, and nobody getting it. Pretend guesses from the debug hook.
+  guess: [
+    { js: `__frameling.template('bouncing-ball'); __framelingAudience.on(0); __framelingGuess.names(false); __framelingGuess.start({ word: 'horse' })` },
+    { wait: 1000 },
+    { js: `__framelingGuess.guess('house', 'p1')` },
+    { wait: 900 },
+    { shot: ['stream.guess.close'], crop: TOAST, pad: 60, note: 'One of the set, picked at random. Said once a round, when the closest guess gets very close.' },
+    { js: `__framelingGuess.guess('horse', 'p2')` },
+    { wait: 900 },
+    { shot: ['stream.guess.win'], crop: TOAST, pad: 60, note: 'One of the set, picked at random. Shown when names are off.' },
+    { js: `__framelingGuess.close(); __framelingGuess.names(true); __framelingGuess.start({ word: 'horse' })` },
+    { wait: 600 },
+    { js: `__framelingGuess.guess('horse', 'p3', 'Mika')` },
+    { wait: 900 },
+    { shot: ['stream.guess.winNamed'], crop: TOAST, pad: 60, note: 'One of the set, picked at random. Shown only when you chose to show the winner\'s name.' },
+    { js: `__framelingGuess.close(); __framelingGuess.start({ word: 'horse' })` },
+    { wait: 600 },
+    { js: `__framelingGuess.end()` },
+    { wait: 900 },
+    { shot: ['stream.guess.nobody'], crop: TOAST, pad: 60, note: 'One of the set, picked at random. Shown when a round ends and nobody got the word.' },
+    { js: `__framelingGuess.close(); __framelingGuess.names(false)` },
+  ],
   // The empty page and the tip after the first drawing. The page line is quiet in the harness unless asked for.
   nudge: [
     { js: `window.__framelingAsk = true; __frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },

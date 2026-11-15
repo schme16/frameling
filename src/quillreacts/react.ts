@@ -44,6 +44,11 @@ export function react(which: Reaction, rand: () => number = Math.random): string
   return words;
 }
 
+/** Quill says something at a moment of his own (a game round, say), taking the place of the one on screen. The words are his, from lines.json. */
+export function quillSays(words: string, anim: Script, ms = 4200): void {
+  replaceCurrent(toast(words, { quill: anim, duration: ms, sound: null }));
+}
+
 /** How long a sign stays up, in ms. */
 export const SIGN_UP_MS = 9000;
 /** How long the question "hold up this sign?" waits for a yes before it is dropped, in ms. */

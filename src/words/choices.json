@@ -1809,5 +1809,68 @@
     "text": "Every request counts as one vote. Your tool has to make sure each person only sends one.",
     "where": "Preferences: the small line under the \"count\" answer in \"A vote that comes with no voter id\"."
   },
-  "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." }
+  "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." },
+  "choice.guess.ending.title": { "text": "When a guessing round ends", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.ending.question": {
+    "text": "Should a round end as soon as someone gets the word, or keep going until the time is up?",
+    "where": "The question the \"When a guessing round ends\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
+  },
+  "choice.guess.ending.first.label": { "text": "When someone gets it", "where": "Preferences: the answer \"first\" in \"When a guessing round ends\"." },
+  "choice.guess.ending.first.detail": {
+    "text": "The first right guess ends the round and shows the word. Quick, and a good moment.",
+    "where": "Preferences: the small line under the \"first\" answer in \"When a guessing round ends\"."
+  },
+  "choice.guess.ending.first.did": {
+    "text": "A guessing round ends as soon as someone gets it.",
+    "where": "Toast when \"first\" is used without asking (\"When a guessing round ends\"), in the past tense."
+  },
+  "choice.guess.ending.timer.label": { "text": "When the time is up", "where": "Preferences: the answer \"timer\" in \"When a guessing round ends\"." },
+  "choice.guess.ending.timer.detail": {
+    "text": "Everyone who gets it counts, and the word shows at the end. Best with a timer.",
+    "where": "Preferences: the small line under the \"timer\" answer in \"When a guessing round ends\"."
+  },
+  "choice.guess.ending.timer.did": {
+    "text": "A guessing round runs until the time is up.",
+    "where": "Toast when \"timer\" is used without asking (\"When a guessing round ends\"), in the past tense."
+  },
+  "choice.guess.winnerName.title": { "text": "Showing the winner's name", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.winnerName.question": {
+    "text": "Your stream tool can send the name of whoever gets the word. Show it in the result, or keep the winner anonymous?",
+    "where": "The question the \"Showing the winner's name\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
+  },
+  "choice.guess.winnerName.hide.label": { "text": "Keep them anonymous", "where": "Preferences: the answer \"hide\" in \"Showing the winner's name\"." },
+  "choice.guess.winnerName.hide.detail": {
+    "text": "The result says someone got it. No name is read, shown or kept.",
+    "where": "Preferences: the small line under the \"hide\" answer in \"Showing the winner's name\"."
+  },
+  "choice.guess.winnerName.hide.did": {
+    "text": "The winner of a guessing round stays anonymous.",
+    "where": "Toast when \"hide\" is used without asking (\"Showing the winner's name\"), in the past tense."
+  },
+  "choice.guess.winnerName.show.label": { "text": "Show their name", "where": "Preferences: the answer \"show\" in \"Showing the winner's name\"." },
+  "choice.guess.winnerName.show.detail": {
+    "text": "The result names the winner, then forgets the name when you close it. Nothing is written down.",
+    "where": "Preferences: the small line under the \"show\" answer in \"Showing the winner's name\"."
+  },
+  "choice.guess.winnerName.show.did": {
+    "text": "The winner's name shows in a guessing round's result.",
+    "where": "Toast when \"show\" is used without asking (\"Showing the winner's name\"), in the past tense."
+  },
+  "choice.guess.peek.title": { "text": "Peeking at the word", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.peek.question": {
+    "text": "While a round runs, can you look at the word again for a moment? Your window may be on stream.",
+    "where": "The question the \"Peeking at the word\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
+  },
+  "choice.guess.peek.never.label": { "text": "Never show it again", "where": "Preferences: the answer \"never\" in \"Peeking at the word\"." },
+  "choice.guess.peek.never.detail": {
+    "text": "The word stays hidden from the moment the round starts until the result. The safest if your window is on stream.",
+    "where": "Preferences: the small line under the \"never\" answer in \"Peeking at the word\"."
+  },
+  "choice.guess.peek.never.did": { "text": "The word stays hidden until the result.", "where": "Toast when \"never\" is used without asking (\"Peeking at the word\"), in the past tense." },
+  "choice.guess.peek.allow.label": { "text": "Let me peek", "where": "Preferences: the answer \"allow\" in \"Peeking at the word\"." },
+  "choice.guess.peek.allow.detail": {
+    "text": "A button shows it for three seconds. Never while Stream-safe is on.",
+    "where": "Preferences: the small line under the \"allow\" answer in \"Peeking at the word\"."
+  },
+  "choice.guess.peek.allow.did": { "text": "You can peek at the word for a moment.", "where": "Toast when \"allow\" is used without asking (\"Peeking at the word\"), in the past tense." }
 }

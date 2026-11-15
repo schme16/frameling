@@ -1049,5 +1049,38 @@
   "stream.sign.ask": {
     "text": "Chat would like me to hold up a sign:",
     "where": "A toast while you are on air, with two buttons (Hold it up, Not that one): someone in chat sent words for a sign. The words follow in quotes. Nothing shows on stream unless you say yes."
+  },
+  "stream.guess.close": {
+    "text": [
+      "Ooh, somebody's close!",
+      "Warm! Somebody's nearly there.",
+      "That's a near miss. Chat can smell it."
+    ],
+    "where": "A toast while a guessing round runs: the closest guess just got very close. Said once a round. The app picks one."
+  },
+  "stream.guess.win": {
+    "text": [
+      "Got it! Chat got it!",
+      "Somebody got it! Look at that.",
+      "Nailed it. Your drawing worked!"
+    ],
+    "where": "A toast when someone in chat gets the guessing round's word and the streamer has not chosen to show names. The app picks one."
+  },
+  "stream.guess.winNamed": {
+    "text": [
+      "{name} got it!",
+      "{name} nailed it!",
+      "Ha! {name} got it."
+    ],
+    "where": "A toast when someone in chat gets the guessing round's word and the streamer chose to show the winner's name. The app picks one.",
+    "vars": ["name"]
+  },
+  "stream.guess.nobody": {
+    "text": [
+      "Nobody got that one. Tricky!",
+      "Chat was stumped. That's a hard one to draw.",
+      "No takers! Maybe it was the word's fault."
+    ],
+    "where": "A toast when a guessing round ends and nobody got the word. The app picks one."
   }
 }
