@@ -18,6 +18,7 @@ import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artbo
 import { rememberExport } from './savedOps';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 import { withoutNotes } from '../notes/model';
+import { displayFile } from '../core/streamSafe';
 
 const KEY = 'frameling.export.last';
 
@@ -147,7 +148,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     }
     saveLastSettings(settings);
     if (!only) rememberExport(settings);
-    notifySaved(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
+    notifySaved(`Exported ${displayFile(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
 
@@ -175,6 +176,6 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   saveLastSettings(picked);
   if (!only) rememberExport(picked);
   const note = result.kind === 'file' ? result.note : undefined;
-  notifySaved(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Exported ${displayFile(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }

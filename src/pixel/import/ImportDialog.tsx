@@ -12,6 +12,7 @@ import type { Picture } from './picture';
 import type { SheetData } from './sheetJson';
 import { ALIGNS, autoCells, defaultAuto, defaultGrid, gridCells, gridShape, looksLikeSheet, ORDERS, type Align, type AutoSpec, type CellOrder, type GridSpec } from './slicing';
 import './import.css';
+import { displayPath, useStreamSafe } from '../../core/streamSafe';
 
 export type ImportMode = 'new' | 'add' | 'palette';
 export type PaletteMode = 'none' | 'replace' | 'add';
@@ -132,6 +133,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
   finish: (r: ImportRequest) => void;
   close: () => void;
 }) {
+  useStreamSafe();
   const saved = useMemo(recall, []);
   const animated = pic.frames.length > 1;
   const [json, setJson] = useState<SheetData | null>(companion);
@@ -262,7 +264,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
         <Preview pic={pic} frame={frame} cells={cellBoxes} boxes={cutControls && how !== 'whole'} />
         <div className="im-controls">
           <p className="im-file">
-            <b>{fileName}</b>
+            <b>{displayPath(fileName)}</b>
             <span className="io-muted">
               {' '}
               {pic.width} x {pic.height}

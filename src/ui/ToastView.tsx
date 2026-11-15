@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons';
 import { Quill, useQuillShown } from './mascot';
 import { dismissToast, toasts, toastTestId, type ToastItem } from './toast';
+import { scrubText, useStreamSafe } from '../core/streamSafe';
 
 const KIND_ICON = { info: 'info', success: 'check', warn: 'warning', error: 'warning' } as const;
 
 function ToastCard({ t }: { t: ToastItem }) {
+  useStreamSafe();
   const [paused, setPaused] = useState(false);
   // A farewell Quill shows until his goodbye is done, then the toast carries on without him.
   const [gone, setGone] = useState(false);
@@ -21,7 +23,7 @@ function ToastCard({ t }: { t: ToastItem }) {
   return (
     <div className={`ui-toast ui-toast-${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       {quill ? <Quill surface={surface} surfaceId={String(t.id)} anim={t.quill!} then={t.farewell ? undefined : 'idle'} force={t.farewell && !gone} onDone={t.farewell ? () => setGone(true) : undefined} size={48} className="ui-toast-quill" /> : <Icon name={KIND_ICON[t.kind]} size={16} />}
-      <span className="ui-toast-text">{t.message}</span>
+      <span className="ui-toast-text">{scrubText(t.message)}</span>
       {t.action && (
         <button
           type="button"

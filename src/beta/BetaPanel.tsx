@@ -15,6 +15,7 @@ import { buildReport, docShape, reportText, type IngestReport } from './report';
 import { BETA_PAGE, canSend, checkBoard, lastSendFailure, sayFailure, sendReport } from './send';
 import { recentProblems } from './problems';
 import './beta.css';
+import { displaySecret, useMaskedType } from '../core/streamSafe';
 
 /**
  * How we can reach you. It is not a field of the report you are writing: it is about you, so it is kept on this computer
@@ -23,6 +24,7 @@ import './beta.css';
  */
 function ContactRow() {
   const contact = usePrefs((p) => p.betaContact);
+  const maskedType = useMaskedType();
   // Open for typing while there is nothing saved, and while you are changing it.
   const [editing, setEditing] = useState(!contact);
   const input = useRef<HTMLInputElement>(null);
@@ -46,7 +48,7 @@ function ContactRow() {
             <span className="bt-remembered">Remembered on this computer</span>
           </div>
           <div className="bt-contact-value" data-testid="beta.contactValue">
-            {contact}
+            {displaySecret(contact)}
           </div>
           <div className="bt-contact-buttons">
             <button type="button" className="tb-clear" onClick={edit}>
@@ -63,7 +65,8 @@ function ContactRow() {
             <span>How can we reach you? (optional)</span>
             <input
               ref={input}
-              value={contact}
+              type={maskedType}
+              value={contact /* stream-safe-ok: typed here, shown as dots while stream-safe */}
               onChange={(e) => setPrefs({ betaContact: e.target.value })}
               onBlur={done}
               onKeyDown={(e) => e.key === 'Enter' && done()}

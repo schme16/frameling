@@ -10,6 +10,7 @@ import { ask } from '../platform/ask';
 import { fileSafe } from '../export/plan';
 import { importUserTemplate, removeUserTemplate, saveUserTemplate, userTemplateBytes } from './user';
 import type { TemplateMeta } from './community';
+import { displayFile } from '../core/streamSafe';
 
 export const TEMPLATE_FILTERS = [{ name: 'Frameling templates', extensions: ['frameling'] }];
 
@@ -60,7 +61,7 @@ export async function shareTemplate(cardId: string, name: string): Promise<void>
   if (!target) return;
   const w = await api.files.write(target, bytes);
   if ('error' in w) return notify(w.error, 'error');
-  notifySaved(`Saved ${baseName(target)}. Anyone can add it with Import template.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 8000);
+  notifySaved(`Saved ${displayFile(target)}. Anyone can add it with Import template.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 8000);
 }
 
 export async function importTemplate(): Promise<boolean> {

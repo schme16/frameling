@@ -2,7 +2,7 @@
 // into a Godot project. With it switched on, Godot reads .flplay packages straight in and imports them again when
 // they change. The add-on's own files are the source; they're bundled here as text.
 import { strToU8, zipSync, type Zippable } from 'fflate';
-import { baseName, desktop } from '../io/desktop';
+import { desktop } from '../io/desktop';
 import { notify, notifySaved } from '../io/notify';
 import { can } from '../platform';
 import pluginCfg from '../../godot/addons/frameling_importer/plugin.cfg?raw';
@@ -10,6 +10,7 @@ import pluginGd from '../../godot/addons/frameling_importer/plugin.gd?raw';
 import flplayGd from '../../godot/addons/frameling_importer/flplay.gd?raw';
 import framesGd from '../../godot/addons/frameling_importer/frames_importer.gd?raw';
 import sceneGd from '../../godot/addons/frameling_importer/scene_importer.gd?raw';
+import { displayFile } from '../core/streamSafe';
 
 export const GODOT_ADDON_DIR = 'addons/frameling_importer';
 
@@ -43,5 +44,5 @@ export async function saveGodotAddon(): Promise<void> {
   if (!target) return;
   const r = await api.files.write(target, bytes);
   if ('error' in r) return notify(r.error, 'error');
-  notifySaved(`Saved ${baseName(target)}. Unzip it into your Godot project, then switch it on in Project Settings, Plugins.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Saved ${displayFile(target)}. Unzip it into your Godot project, then switch it on in Project Settings, Plugins.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 9000, 'cheer', 'exported');
 }

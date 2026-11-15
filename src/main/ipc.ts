@@ -289,7 +289,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
     if (e.sender !== hooks.window()?.webContents) return;
-    hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null });
+    hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null, hidePath: s?.hidePath === true });
   });
   ipcMain.on('app:crashOffered', (e) => {
     if (e.sender !== hooks.window()?.webContents) return;

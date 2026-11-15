@@ -15,7 +15,7 @@ export function EditBar() {
   const path = editPath(doc);
   return (
     <nav className="sy-editbar" aria-label="Where you are">
-      {path.map((p, i) => {
+      {path /* stream-safe-ok: breadcrumbs inside a symbol */.map((p, i) => {
         const last = i === path.length - 1;
         return (
           <span key={i} className="sy-crumb-wrap">

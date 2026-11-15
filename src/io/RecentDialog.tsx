@@ -2,8 +2,9 @@ import { line } from '../ui/mascot/lines';
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { QuillEmpty } from '../ui/mascot';
-import { describePlace } from '../platform';
-import { desktop, dirName } from './desktop';
+import { useStreamSafe } from '../core/streamSafe';
+import { desktop } from './desktop';
+import { shownRecent } from './recentShown';
 import { clearRecentFiles, listRecentFiles, openPath } from './document';
 import { Modal, mountModal } from './mount';
 import { RecentPicture, useRecentPictures } from './RecentPicture';
@@ -21,6 +22,7 @@ function when(t: number): string {
 }
 
 function RecentDialog({ close }: { close: () => void }) {
+  useStreamSafe();
   const [files, setFiles] = useState<RecentFile[] | null>(null);
   useEffect(() => {
     void listRecentFiles().then(setFiles);
@@ -37,7 +39,7 @@ function RecentDialog({ close }: { close: () => void }) {
           <QuillEmpty anim="draw" className="io-empty" whenHidden="Nothing here yet. Drawings you open or save show up here.">{line('empty.recent')}</QuillEmpty>
         ) : (
           <ul className="io-recent">
-            {files.map((f) => (
+            {shownRecent(files).map(({ file: f, name, place }) => (
               <li key={f.path} className={f.missing ? 'is-missing' : undefined}>
                 <button
                   type="button"
@@ -49,12 +51,12 @@ function RecentDialog({ close }: { close: () => void }) {
                   }}
                 >
                   <RecentPicture preview={pics[f.path]} />
-                  <b>{f.name}</b>
-                  <small title={f.path}>
-                    {f.missing ? "Can't find this file. It was" : when(f.openedAt)} {describePlace(f.path, dirName)}
+                  <b>{name}</b>
+                  <small>
+                    {f.missing ? "Can't find this file. It was" : when(f.openedAt)} {place}
                   </small>
                 </button>
-                <button type="button" className="io-recent-remove" aria-label={`Remove ${f.name} from the list`} title="Remove from the list (the file itself stays where it is)" onClick={() => remove(f)}>
+                <button type="button" className="io-recent-remove" aria-label={`Remove ${name} from the list`} title="Remove from the list (the file itself stays where it is)" onClick={() => remove(f)}>
                   <Icon name="close" size={14} />
                 </button>
               </li>

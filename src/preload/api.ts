@@ -36,6 +36,8 @@ export interface DocumentState {
   dirty: boolean;
   name: string;
   filePath: string | null;
+  /** Stream-safe is on: keep the file's path out of the window's title bar (the Mac icon). */
+  hidePath?: boolean;
 }
 
 export interface AutosaveMeta {

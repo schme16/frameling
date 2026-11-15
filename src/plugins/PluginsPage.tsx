@@ -89,7 +89,7 @@ export function PluginsPage() {
                 </button>
               </div>
               {m.description && <p className="plugin-item-desc">{m.description}</p>}
-              {m.author && <p className="plugin-item-by">By {m.author}</p>}
+              {m.author && <p className="plugin-item-by">By {m.author /* stream-safe-ok: a plugin maker's name, not yours */}</p>}
               {m.permissions.includes('network') && (
                 <div className="plugin-powers">
                   <div className="plugin-power">

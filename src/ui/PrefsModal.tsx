@@ -304,6 +304,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Reduce motion" hint="Stops the bouncing and fading. Frameling also does this when your computer asks for calm.">
         <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
       </Row>
+      <Row label="Stream-safe mode" hint="For sharing your screen or streaming: file paths, your name and keys show as friendly stand-ins. Only what shows changes, never your drawing.">
+        <Switch label="Stream-safe mode" on={p.streamSafe} onChange={(streamSafe) => setPrefs({ streamSafe })} />
+      </Row>
       <Row label="Welcome sheet" hint="Show the start page when Frameling opens.">
         <Switch label="Welcome sheet" on={p.showWelcome} onChange={(showWelcome) => setPrefs({ showWelcome })} />
       </Row>

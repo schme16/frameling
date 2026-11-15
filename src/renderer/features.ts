@@ -17,6 +17,7 @@ import '../symbols';
 import '../artboards';
 import '../io';
 import '../aseprite';
+import '../streamsafe';
 import '../import';
 import '../export';
 import '../effects';

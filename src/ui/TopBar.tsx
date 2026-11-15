@@ -6,6 +6,7 @@ import { MenuBar } from './MenuBar';
 import { commandEnabled, explainNotNow, runCommand } from './palette';
 import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -87,6 +88,7 @@ export function TopBar() {
         <DocName />
       </div>
       <div className="ui-topbar-end">
+        <StreamSafeBadge />
         <WorkspaceSwitcher />
         <CmdButton id="edit.undo" icon="undo" label="Undo" />
         <CmdButton id="edit.redo" icon="redo" label="Redo" />

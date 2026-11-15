@@ -1,0 +1,24 @@
+/* The pill that says Stream-safe is on. Warm and clear, never loud. */
+.ss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+  padding: 3px 10px 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ss-badge:hover {
+  background: var(--sunny-deep);
+}
+.ss-badge:focus-visible {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: 2px;
+}

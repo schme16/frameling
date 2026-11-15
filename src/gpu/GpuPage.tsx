@@ -13,8 +13,10 @@ import { copyGpuReport } from './copy';
 import { canReadGpu, refreshReport, reportStore } from './report';
 import { CACHE_CHOICES, FPS_CAPS, capEffect, isDefaultPerf, keptBytes, perfStore, resetPerf, setPerf, type ScrubQuality } from './settings';
 import './gpu.css';
+import { displayFolder, useStreamSafe } from '../core/streamSafe';
 
 export function GpuPage({ onGeneral }: { onGeneral: () => void }) {
+  useStreamSafe();
   const report = reportStore.use((r) => r);
   const perf = perfStore.use((p) => p);
   const [busy, setBusy] = useState(false);
@@ -65,7 +67,7 @@ export function GpuPage({ onGeneral }: { onGeneral: () => void }) {
             <dt>Driver</dt>
             <dd>{reading.driver}</dd>
             <dt>Drawing path</dt>
-            <dd>{reading.path}</dd>
+            <dd>{reading.path /* stream-safe-ok: the drawing path is hardware or software, not a file */}</dd>
             <dt>Card memory</dt>
             <dd>{reading.cardMemory}</dd>
             <dt>Memory held</dt>
@@ -102,7 +104,7 @@ export function GpuPage({ onGeneral }: { onGeneral: () => void }) {
           )}
           {report && (
             <p className="gp-note">
-              If Frameling ever will not open with hardware drawing on, make an empty file called <b>gpu-off</b> in <code>{report.off.path.replace(/[\\/]gpu-off$/, '')}</code>, or start it with <code>FRAMELING_GPU=off</code>. Either way it starts in software, and you can turn the card back on here.
+              If Frameling ever will not open with hardware drawing on, make an empty file called <b>gpu-off</b> in <code>{displayFolder(report.off.path.replace(/[\\/]gpu-off$/, ''))}</code>, or start it with <code>FRAMELING_GPU=off</code>. Either way it starts in software, and you can turn the card back on here.
             </p>
           )}
         </>

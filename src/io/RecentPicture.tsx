@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { desktop } from './desktop';
 import type { RecentFile, RecentPreview } from '../preload/api';
+import { useStreamSafe } from '../core/streamSafe';
 
 /** What is known about each file's picture so far, by path. A path not in the map is still being read. */
 export function useRecentPictures(files: RecentFile[] | null): Record<string, RecentPreview> {
@@ -37,6 +38,8 @@ export function useRecentPictures(files: RecentFile[] | null): Record<string, Re
 
 /** One picture, or the folder icon in the same box. `size` is the box's width in pixels (4:3). */
 export function RecentPicture({ preview, size = 72 }: { preview?: RecentPreview; size?: number }) {
+  // A little picture of a drawing can give it away, so while stream-safe it is the plain icon.
+  if (useStreamSafe()) preview = undefined;
   const h = Math.round((size * 3) / 4);
   return (
     <span className={`io-pic${preview?.state === 'picture' ? ' has-pic' : ''}`} style={{ width: size, height: h }} aria-hidden="true">

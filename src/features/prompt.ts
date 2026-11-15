@@ -5,6 +5,7 @@ import { notify } from '../io/notify';
 import { ask } from '../platform/ask';
 import type { FeatureDescriptor } from './feature';
 import { hiddenFeatureOpening, hiddenFeaturesUsedBy, offFeaturesUsedBy, setFeatureOn } from './host';
+import { displayFile } from '../core/streamSafe';
 
 const list = (names: string[]): string => (names.length < 3 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
 
@@ -30,7 +31,7 @@ export const hiddenFileText = (name: string, fileName: string): string =>
 export function explainHiddenFile(path: string, fileName: string): boolean {
   const f = hiddenFeatureOpening(path);
   if (!f) return false;
-  notify(hiddenFileText(f.name, fileName), 'warn', undefined, 9000);
+  notify(hiddenFileText(f.name, displayFile(fileName)), 'warn', undefined, 9000);
   return true;
 }
 
@@ -39,7 +40,7 @@ export async function offerTurnOnForFile(feature: FeatureDescriptor, fileName: s
   const answer = await ask({
     id: 'feature-off',
     title: 'A feature is turned off',
-    message: `"${fileName}" needs ${feature.name}, which is turned off. Turn it on?`,
+    message: `"${displayFile(fileName)}" needs ${feature.name}, which is turned off. Turn it on?`,
     detail: `You can turn it on or off any time in Preferences, Features.`,
     buttons: [{ value: 'on', label: 'Turn on', primary: true }, { value: 'off', label: 'Not now' }],
     cancel: 'off',

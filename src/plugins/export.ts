@@ -2,7 +2,7 @@
 // which hands back files. Frameling asks where to save and writes them; the plugin never touches the disk.
 import { sceneOf } from '../core/symbols';
 import { store } from '../core/store';
-import { baseName, desktop } from '../io/desktop';
+import { desktop } from '../io/desktop';
 import { notifySaved } from '../io/notify';
 import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
@@ -11,6 +11,7 @@ import { emitPluginEvent } from './bus';
 import { runtimeOf } from './manager';
 import { cleanValues, rememberValues, type OptionValues } from './options';
 import { exportClips, type ExportFrame, type PluginExporterDef } from './runtime';
+import { displayFile } from '../core/streamSafe';
 
 export interface PluginExportJob {
   pluginId: string;
@@ -102,6 +103,6 @@ async function exportWithPlugin(job: PluginExportJob, choice: PluginExportChoice
     const w = await api.files.write(target, files[0].bytes);
     if ('error' in w) throw new Error(w.error);
   }
-  notifySaved(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  notifySaved(`Exported ${displayFile(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';
 }

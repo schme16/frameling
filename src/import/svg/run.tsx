@@ -10,6 +10,7 @@ import { pickFiles } from '../pick';
 import { reportImport } from '../report';
 import { hasDrawing, whereToPut, type ImportWhere } from '../where';
 import { importSvg, svgTextOf, SvgProblem, type SvgImport } from './convert';
+import { displayFile } from '../../core/streamSafe';
 
 const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
@@ -33,7 +34,7 @@ export async function importSvgBytes(bytes: Uint8Array, path: string, asked = tr
     return false;
   }
   if (!svg.counts.shapes) {
-    notify(`There is nothing drawn in "${baseName(path)}" that Frameling can bring in.${svg.left.length ? ' ' + svg.left[0] : ''}`, 'warn', undefined, 9000);
+    notify(`There is nothing drawn in "${displayFile(path)}" that Frameling can bring in.${svg.left.length ? ' ' + svg.left[0] : ''}`, 'warn', undefined, 9000);
     return false;
   }
   const doc = store().get().doc;
