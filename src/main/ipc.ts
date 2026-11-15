@@ -131,32 +131,37 @@ export function registerIpc(hooks: IpcHooks): void {
     return readFile(p);
   });
 
-  handle('files:save', async (_e, opts: { bytes: Uint8Array; path: string | null; suggestedName: string }) => {
+  handle('files:save', async (_e, opts: { bytes: Uint8Array; path: string | null; suggestedName: string; copy?: { avoid: string | null } }) => {
+    // A copy to send: it never replaces the drawing in use, and is not a file you are working on, so no recent list and no remembered folder.
+    const copy = opts.copy;
     let target = opts.path;
     if (target && !granted.has(key(target))) target = null;
     if (!target) {
       const auto = automationTarget(opts.suggestedName.replace(/\.frameling$/i, '') + '.frameling');
       if (auto) {
         target = auto;
-        grantFile(target);
+        if (!copy) grantFile(target);
       } else {
         const r = await dialog.showSaveDialog(hooks.window()!, {
-          title: 'Save your drawing',
+          title: copy ? 'Send a copy of your drawing' : 'Save your drawing',
           defaultPath: path.join(lastDir(), safeFileName(opts.suggestedName).replace(/\.frameling$/i, '') + '.frameling'),
           filters: FILTERS,
         });
         if (r.canceled || !r.filePath) return null;
         target = /\.frameling$/i.test(r.filePath) ? r.filePath : r.filePath + '.frameling';
-        grantFile(target);
-        rememberDir(target);
+        if (!copy) {
+          grantFile(target);
+          rememberDir(target);
+        }
       }
     }
+    if (copy?.avoid && key(target) === key(copy.avoid)) return { error: "That is the drawing you're working on, and a copy would replace it. Pick a different name or place for the copy." };
     try {
       writeFileAtomic(target, Buffer.from(opts.bytes));
     } catch (e) {
       return { error: friendly(e, 'save') };
     }
-    addRecent(target);
+    if (!copy) addRecent(target);
     return { path: target };
   });
 

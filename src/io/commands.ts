@@ -2,6 +2,7 @@ import { registerCommand, registerCommands } from '../core/registry';
 import { desktop } from './desktop';
 import { closeDrawing } from './close';
 import { openDocument, saveDocument, saveDocumentAs } from './document';
+import { sendCopy } from './sendCopy';
 import { openRecentDialog } from './RecentDialog';
 import { openRecoverDialog } from './RecoverDialog';
 import { isMacPlatform } from '../ui/keys';
@@ -58,6 +59,17 @@ registerCommands([
     keywords: ['copy', 'rename', 'duplicate'],
     global: true,
     run: () => void saveDocumentAs(),
+  },
+  {
+    id: 'file.sendCopy',
+    label: 'Send a copy...',
+    category: 'File',
+    keys: ['Mod+Alt+E'],
+    description: 'Save a copy of your drawing to send to someone, then show it in your file manager. Your drawing, its file and its history are left alone.',
+    help: 'send-a-copy',
+    keywords: ['share', 'send', 'email', 'give', 'friend', 'copy', 'export a copy', 'duplicate', 'hand over', 'attach', 'upload', 'history', 'undo history'],
+    global: true,
+    run: () => void sendCopy(),
   },
 ]);
 

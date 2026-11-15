@@ -257,6 +257,8 @@ function mockMain(ipcMain) {
     // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
     'video:probe': () => ({ ok: true }),
     // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"} (as in shoot.cjs).
+    // Send a copy gets a pretend place to land (nothing is written), so the clip can show what you see afterwards.
+    'files:save': (_e, o) => (o && o.copy ? { path: '/home/me/Pictures/Sunny day.frameling' } : null),
     'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && require('node:fs').existsSync(p) ? { bytes: new Uint8Array(require('node:fs').readFileSync(p)), path: p } : { error: 'No such file.' }),
   });
   return stubs.clearLibrary;

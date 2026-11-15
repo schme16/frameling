@@ -256,7 +256,7 @@ export interface FramelingApi {
     /** Reads a `.frameling` file (a recent file, a file dropped on the app...). */
     read(path: string): Promise<OpenedFile | FileFailure>;
     /** Writes the bytes to `path`, or asks where first when `path` is null. null means they cancelled. */
-    save(opts: { bytes: Uint8Array; path: string | null; suggestedName: string }): Promise<{ path: string } | FileFailure | null>;
+    save(opts: { bytes: Uint8Array; path: string | null; suggestedName: string; copy?: { avoid: string | null } }): Promise<{ path: string } | FileFailure | null>;
     /** Asks where an export should go. null means they cancelled. */
     pickExportFile(opts: { suggestedName: string; filters: FileFilter[]; title?: string }): Promise<string | null>;
     /** `suggestedName` names the zip a browser without folder access downloads instead. */
