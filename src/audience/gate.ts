@@ -59,7 +59,38 @@ export type RejectReason = 'off' | 'unknown' | 'unavailable' | 'invalid' | 'cool
 export type Verdict =
   | { ok: true; outcome: 'ran' }
   | { ok: true; outcome: 'queued'; position: number }
-  | { ok: false; reason: RejectReason; /** For `cooldown`: how long until the same kind is taken again. */ retryInMs?: number };
+  | {
+      ok: false;
+      reason: RejectReason;
+      /** For `cooldown`: how long until the same kind is taken again. */
+      retryInMs?: number;
+      /** A short word for WHY, when the action that said no knows (`closed`, `no-option`). Safe to pass on to a caller as is. */
+      detail?: string;
+    };
+
+/**
+ * What `parse` hands back to say no AND say why. A plain `null` still means "invalid" with no reason, so every existing
+ * action works unchanged. The detail is passed on to whoever asked, so it must never depend on something secret (the
+ * word in a guessing round) and it is a short lower-case word. `reason` is `invalid` unless the action paces itself
+ * (`cooldown`, with how long to wait).
+ */
+export interface Refusal {
+  readonly refused: true;
+  readonly detail: string;
+  readonly reason: 'invalid' | 'cooldown';
+  readonly retryInMs?: number;
+}
+
+const DETAIL_RE = /^[a-z][a-z0-9-]{0,23}$/;
+
+/** Makes a refusal for `parse` to return. */
+export function refusal(detail: string, opts: { reason?: 'invalid' | 'cooldown'; retryInMs?: number } = {}): Refusal {
+  const reason = opts.reason ?? 'invalid';
+  const retryInMs = reason === 'cooldown' && typeof opts.retryInMs === 'number' && Number.isFinite(opts.retryInMs) ? Math.max(0, Math.round(opts.retryInMs)) : undefined;
+  return { refused: true, detail: DETAIL_RE.test(detail) ? detail : 'refused', reason, ...(retryInMs === undefined ? {} : { retryInMs }) };
+}
+
+const isRefusal = (v: unknown): v is Refusal => !!v && typeof v === 'object' && (v as Refusal).refused === true && typeof (v as Refusal).detail === 'string';
 
 /** Handed to `run`. */
 export interface AudienceContext {
@@ -103,7 +134,12 @@ export interface AudienceActionDef<P = undefined> {
    * Checks what came from outside and returns the cleaned payload, or null to refuse it. Without this function the
    * action gets no payload at all. It runs before anything is queued, so rubbish never waits in line. Keep names out.
    */
-  parse?(raw: unknown): P | null;
+  parse?(raw: unknown): P | Refusal | null;
+  /**
+   * Whether it would be taken right now, apart from the switches and the pace: a vote is only ready while one is
+   * running. Doors say so in their list, so a bot can ask before it sends. Leave it out and it is always ready.
+   */
+  ready?(): boolean;
   /**
    * Does the thing. Runs at most once per accepted request, never while the switch is off. Throwing or rejecting is
    * counted and otherwise ignored. If it returns a promise, the effect counts as running until it settles, and kill
@@ -145,6 +181,16 @@ export const STRICTNESS: Record<Strictness, GateLimits> = {
 };
 
 export const DEFAULT_COOLDOWN_MS = 10_000;
+
+/** An action's own "would you take it now", never throwing. Without one it is always ready. */
+function readyNow(a: AudienceActionDef<unknown>): boolean {
+  if (typeof a.ready !== 'function') return true;
+  try {
+    return a.ready() !== false;
+  } catch {
+    return true;
+  }
+}
 
 /** The most `bulk` requests taken in any one second. Past it the gate says `cooldown`, so a flood costs almost nothing. */
 export const BULK_PER_SECOND = 100;
@@ -194,7 +240,7 @@ export interface GateSnapshot {
   limits: GateLimits;
   doors: { id: string; label: string }[];
   /** `available` is what a door may list: false for a `touchesDrawing` action while interruptions are not allowed. */
-  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean; /** False when the streamer switched this one off (see `setActionEnabled`). */ enabled: boolean; /** True when it reads a payload (it has a `parse`), so a door may offer to send words with it. */ takesDetails: boolean; /** True for a counted-only action many people send at once (a vote). */ bulk: boolean }[];
+  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean; /** False when the streamer switched this one off (see `setActionEnabled`). */ enabled: boolean; /** True when it reads a payload (it has a `parse`), so a door may offer to send words with it. */ takesDetails: boolean; /** True for a counted-only action many people send at once (a vote). */ bulk: boolean; /** False while the thing it joins is not going (no vote running). True when it does not say. */ ready: boolean }[];
 }
 
 /** The parts of the outside world the gate needs. */
@@ -458,10 +504,10 @@ export function createGate(env: GateEnv): Gate {
 
     submit(id, raw) {
       counts.received++;
-      const reject = (reason: RejectReason, retryInMs?: number): Verdict => {
+      const reject = (reason: RejectReason, retryInMs?: number, detail?: string): Verdict => {
         counts.rejected[reason]++;
         changed();
-        return retryInMs === undefined ? { ok: false, reason } : { ok: false, reason, retryInMs };
+        return { ok: false, reason, ...(retryInMs === undefined ? {} : { retryInMs }), ...(detail === undefined ? {} : { detail }) };
       };
       if (!on) return reject('off');
       const def = typeof id === 'string' ? actions.get(id) : undefined;
@@ -472,7 +518,8 @@ export function createGate(env: GateEnv): Gate {
         try {
           const p = def.parse(raw);
           if (p === null || p === undefined) return reject('invalid');
-          payload = p;
+          if (isRefusal(p)) return reject(p.reason, p.retryInMs, p.detail);
+          payload = p as unknown;
         } catch {
           return reject('invalid');
         }
@@ -584,7 +631,7 @@ export function createGate(env: GateEnv): Gate {
         counts: { ...counts, rejected: { ...counts.rejected }, byKind: { ...counts.byKind } },
         limits: env.limits(),
         doors: [...doors.values()].map((d) => ({ id: d.id, label: d.label })),
-        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: (!a.touchesDrawing || drawingOk) && !switchedOff.has(a.id), enabled: !switchedOff.has(a.id), takesDetails: typeof a.parse === 'function', bulk: a.bulk === true })),
+        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: (!a.touchesDrawing || drawingOk) && !switchedOff.has(a.id), enabled: !switchedOff.has(a.id), takesDetails: typeof a.parse === 'function', bulk: a.bulk === true, /* Read live when asked: a vote can start while this snapshot is held. */ get ready() { return readyNow(a); } })),
       });
     },
 

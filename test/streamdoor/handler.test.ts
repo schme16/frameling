@@ -18,7 +18,7 @@ const req = (over: Partial<DoorRequest> & { auth?: string | null } = {}): DoorRe
   };
 };
 
-const LIST = { on: true, actions: [{ id: 'door.message', label: 'Show a message', kind: 'door', cooldownMs: 6000, touchesDrawing: false }] };
+const LIST = { on: true, actions: [{ id: 'door.message', label: 'Show a message', kind: 'door', cooldownMs: 6000, touchesDrawing: false, ready: true }] };
 
 function deps(answer: (op: DoorAsk) => unknown, seen: DoorAsk[] = []) {
   return {
@@ -152,11 +152,28 @@ describe('running', () => {
     for (const [v, status, body] of cases) {
       const out = await run(v);
       expect(out.status, JSON.stringify(v)).toBe(status);
-      expect(out.body).toEqual(body);
+      // A refusal also carries a sentence for chat; everything an older caller read is still there, unchanged.
+      expect(out.body).toEqual((body as { ok: boolean }).ok ? body : { ...body, say: expect.any(String) });
     }
     const cd = await run({ ok: false, reason: 'cooldown', retryInMs: 4200 });
     expect(cd.headers['Retry-After']).toBe('5');
     expect((await run({ ok: false, reason: 'cooldown', retryInMs: 0 })).headers['Retry-After']).toBe('1');
+  });
+
+  it('a refusal says why and what to tell chat, with the status and reason as before', async () => {
+    const out = await run({ ok: false, reason: 'invalid', detail: 'closed' }, '{"option":1}', 'vote.cast');
+    expect(out.status).toBe(400);
+    expect(out.body).toEqual({ ok: false, reason: 'invalid', detail: 'closed', say: 'No vote is running right now.' });
+    const wait = await run({ ok: false, reason: 'cooldown', detail: 'channel-wait', retryInMs: 2100 }, '{"text":"x"}', 'jar.add');
+    expect(wait.status).toBe(429);
+    expect(wait.headers['Retry-After']).toBe('3');
+    expect(wait.body).toEqual({ ok: false, reason: 'cooldown', detail: 'channel-wait', retryInMs: 2100, say: 'The prompt jar just took one. Try again in 3 seconds.' });
+  });
+
+  it('a refusal with no detail still has a sentence, and a success has none', async () => {
+    expect((await run({ ok: false, reason: 'invalid' })).body).toEqual({ ok: false, reason: 'invalid', say: 'Frameling could not use that.' });
+    expect(await run({ ok: true, outcome: 'ran' })).toMatchObject({ body: { ok: true, outcome: 'ran' } });
+    expect((await run({ ok: true, outcome: 'ran' })).body).not.toHaveProperty('say');
   });
 
   it('keeps only the verdict fields (a page cannot smuggle more through)', async () => {
@@ -212,6 +229,10 @@ describe('the shared helpers', () => {
   it('cleans verdicts and lists', () => {
     expect(cleanVerdict({ ok: false, reason: 'cooldown', retryInMs: -5 })).toEqual({ ok: false, reason: 'cooldown', retryInMs: 0 });
     expect(cleanList({ on: false, actions: [] })).toEqual({ on: false, actions: [] });
-    expect(cleanList({ on: true, actions: [{ id: 'a.b', label: 'x', kind: 'k', cooldownMs: 1, touchesDrawing: 1, extra: 'no' }] })?.actions[0]).toEqual({ id: 'a.b', label: 'x', kind: 'k', cooldownMs: 1, touchesDrawing: false });
+    expect(cleanList({ on: true, actions: [{ id: 'a.b', label: 'x', kind: 'k', cooldownMs: 1, touchesDrawing: 1, extra: 'no' }] })?.actions[0]).toEqual({ id: 'a.b', label: 'x', kind: 'k', cooldownMs: 1, touchesDrawing: false, ready: true });
+    expect(cleanList({ on: true, actions: [{ id: 'a.b', label: 'x', kind: 'k', cooldownMs: 1, ready: false }] })?.actions[0].ready).toBe(false);
+    // A detail is one short word and nothing a viewer wrote can ride along in it.
+    expect(cleanVerdict({ ok: false, reason: 'invalid', detail: 'closed' })).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
+    for (const bad of ['No vote is running', 'x'.repeat(40), 'Closed', '', 5, null]) expect(cleanVerdict({ ok: false, reason: 'invalid', detail: bad }), String(bad)).toEqual({ ok: false, reason: 'invalid' });
   });
 });

@@ -1,13 +1,15 @@
 // The actions door's request handling, as one pure function: a request in, an answer out. No sockets and no Electron
 // here, so every rule (the key, the Origin refusal, what each verdict becomes) is tested by calling it.
 //
-//   GET  /v1/actions        what can be run right now           { ok, on, actions: [{ id, label, kind, cooldownMs, touchesDrawing }] }
+//   GET  /v1/actions        what can be run right now           { ok, on, actions: [{ id, label, kind, cooldownMs, touchesDrawing, ready }] }
 //   POST /v1/actions/<id>   run one; the body, if any, is JSON  the gate's verdict, as is: { ok: true, outcome: 'ran' | 'queued', position? }
-//                                                                or { ok: false, reason, retryInMs? }
+//                                                                or { ok: false, reason, detail?, retryInMs?, say }
+//                                                                (`detail` says why, when the action knows: closed, no-option, again...; `say` is a sentence for chat)
 //
 // Every request needs the key (`Authorization: Bearer <key>`, or `X-Frameling-Key: <key>`), never in the address. A
 // request that carries an Origin header comes from a web page, and is refused before the key is even looked at.
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { sayFor } from '../shared/doorSay';
 import { cleanList, cleanVerdict, statusForVerdict, type DoorAsk, type DoorFault } from '../shared/streamDoor';
 
 export interface DoorRequest {
@@ -115,7 +117,8 @@ export async function handleDoorRequest(req: DoorRequest, deps: DoorDeps): Promi
       if (!verdict) return fault(503, 'not-ready', 'Frameling did not answer. Is the drawing window open?');
       const headers: Record<string, string> = {};
       if (!verdict.ok && verdict.retryInMs !== undefined) headers['Retry-After'] = String(Math.max(1, Math.ceil(verdict.retryInMs / 1000)));
-      return json(statusForVerdict(verdict), verdict, headers);
+      // A refusal also carries a sentence a bot can say to chat. The status, `reason` and `retryInMs` are as before.
+      return json(statusForVerdict(verdict), verdict.ok ? verdict : { ...verdict, say: sayFor(id, verdict) }, headers);
     }
 
     return fault(404, 'no-such-route', 'No such address. Try GET /v1/actions.');

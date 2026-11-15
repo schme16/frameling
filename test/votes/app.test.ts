@@ -82,6 +82,15 @@ describe('registered', () => {
     expect(audience.snapshot().actions.filter((x) => x.id.startsWith('vote.'))).toHaveLength(1);
   });
 
+  it('says it is not ready until a vote is running, so a bot can ask before it sends', () => {
+    const ready = () => audience.snapshot().actions.find((x) => x.id === VOTE_ACTION)!.ready;
+    expect(ready()).toBe(false);
+    startVote(SETUP);
+    expect(ready()).toBe(true);
+    endVote();
+    expect(ready()).toBe(false);
+  });
+
   it('goes with the feature: no action, no commands, and a vote that was going is dropped', () => {
     startVote(SETUP);
     setFeatureOn('stream-votes', false);
@@ -125,8 +134,8 @@ describe('running a vote', () => {
   it('takes the first vote from each person; a second is turned away', () => {
     startVote(SETUP);
     expect(cast(1, 'ann').ok).toBe(true);
-    expect(cast(2, 'ann')).toEqual({ ok: false, reason: 'invalid' });
-    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    expect(cast(2, 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'again' });
+    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'again' });
     expect(view().view.counts).toEqual([1, 0, 0]);
   });
 
@@ -141,7 +150,7 @@ describe('running a vote', () => {
 
   it('turns away an option that does not exist, by place or by words', () => {
     startVote(SETUP);
-    for (const bad of [0, 4, 99, -1, 'purple', '', null, { x: 1 }]) expect(cast(bad, 'ann'), String(bad)).toEqual({ ok: false, reason: 'invalid' });
+    for (const bad of [0, 4, 99, -1, 'purple', '', null, { x: 1 }]) expect(cast(bad, 'ann'), String(bad)).toEqual({ ok: false, reason: 'invalid', detail: 'no-option' });
     expect(view().view.total).toBe(0);
     expect(cast('blue', 'ann').ok).toBe(true);
     expect(view().view.counts).toEqual([0, 1, 0]);
@@ -149,8 +158,8 @@ describe('running a vote', () => {
 
   it('turns away a vote with no voter id and counts how many, unless the choice says count them', () => {
     startVote(SETUP);
-    expect(cast(1)).toEqual({ ok: false, reason: 'invalid' });
-    expect(cast(1, '   ')).toEqual({ ok: false, reason: 'invalid' });
+    expect(cast(1)).toEqual({ ok: false, reason: 'invalid', detail: 'no-voter' });
+    expect(cast(1, '   ')).toEqual({ ok: false, reason: 'invalid', detail: 'no-voter' });
     expect(view().view.total).toBe(0);
     expect(view().view.turnedAway['no-voter']).toBe(2);
     setChoice('votes.noId', 'count');
@@ -160,10 +169,10 @@ describe('running a vote', () => {
   });
 
   it('turns away votes when no vote is going, and after it ended', () => {
-    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
     startVote(SETUP);
     endVote();
-    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    expect(cast(1, 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
     expect(view().view.total).toBe(0);
   });
 

@@ -63,7 +63,7 @@ afterEach(() => vi.useRealTimers());
 describe('the door as a feature', () => {
   it('is a switchable feature, on by default, with commands, help and a menu home', () => {
     expect(isFeatureOn('stream-door')).toBe(true);
-    for (const id of ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.roll']) {
+    for (const id of ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.copyTest', 'streamdoor.roll']) {
       const c = getCommand(id)!;
       expect(c, id).toBeTruthy();
       expect(getHelp(c.help!), id).toBeTruthy();
@@ -130,7 +130,7 @@ describe('what the door is told', () => {
     let list = await ask({ op: 'list' });
     expect(list.on).toBe(true);
     expect(list.actions.map((a: { id: string }) => a.id)).not.toContain('test.mess');
-    expect(list.actions.find((a: { id: string }) => a.id === 'door.message')).toEqual({ id: 'door.message', label: 'Show a message', kind: 'door', cooldownMs: 6000, touchesDrawing: false });
+    expect(list.actions.find((a: { id: string }) => a.id === 'door.message')).toEqual({ id: 'door.message', label: 'Show a message', kind: 'door', cooldownMs: 6000, touchesDrawing: false, ready: true });
     setAudienceDrawing(true);
     list = await ask({ op: 'list' });
     expect(list.actions.find((a: { id: string }) => a.id === 'test.mess')).toMatchObject({ touchesDrawing: true, cooldownMs: 1000 });
@@ -152,6 +152,14 @@ describe('what the door is told', () => {
     expect(again).toMatchObject({ ok: false, reason: 'cooldown' });
     expect(again.retryInMs).toBeGreaterThan(0);
     off();
+  });
+
+  it('says a door action is ready, and a refusal from a real action carries its detail', async () => {
+    setAudienceOn(true);
+    vi.useFakeTimers({ now: Date.now() + 600_000, toFake: ['Date'] });
+    const list = await ask({ op: 'list' });
+    expect(list.actions.every((x: { ready: boolean }) => x.ready === true)).toBe(true);
+    expect(await ask({ op: 'run', id: 'door.message', payload: { nope: 1 } })).toEqual({ ok: false, reason: 'invalid' });
   });
 
   it('answers something that is not a question with nothing, and never throws', async () => {

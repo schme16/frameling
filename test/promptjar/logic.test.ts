@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { cleanChatText } from '../../src/audience/cleanText';
 import { cleanSign, SIGN_MAX } from '../../src/quillreacts/sign';
-import { canAdd, cleanPrompt, fromStored, JAR_MAX, pickSlip, promptsFromText, PROMPT_MAX, sameWords, toStored, type Slip } from '../../src/promptjar/logic';
+import { canAdd, cleanPrompt, DEFAULT_PACE_SECONDS, fromStored, JAR_MAX, pickSlip, PACE_CHOICES, paceLeft, paceMs, promptsFromText, PROMPT_MAX, sameWords, toStored, type Slip } from '../../src/promptjar/logic';
+import { turnAway } from '../../src/promptjar/actions';
 
 const slips = (...t: string[]): Slip[] => t.map((text, i) => ({ id: i + 1, text }));
 
@@ -104,5 +105,50 @@ describe('the folder keeps to itself', () => {
       const text = fs.readFileSync(path.join(dir, f), 'utf8');
       for (const m of text.matchAll(/toast\(([^)]*)\)/g)) expect(m[1], `${f}: ${m[1]}`).not.toMatch(/\btext\b|\bhand\b|\bslips?\b|words/);
     }
+  });
+});
+
+describe('the pause between prompts', () => {
+  it('offers pauses from 1 to 30 seconds, with 3 as the usual', () => {
+    expect([...PACE_CHOICES]).toEqual([1, 3, 8, 15, 30]);
+    expect(DEFAULT_PACE_SECONDS).toBe(3);
+    expect(PACE_CHOICES).toContain(DEFAULT_PACE_SECONDS);
+  });
+
+  it('turns an answer into milliseconds, and anything else into the usual pause', () => {
+    expect(paceMs('1')).toBe(1000);
+    expect(paceMs('30')).toBe(30000);
+    for (const odd of [undefined, '', '0', '-5', '2', '999', 'soon', 'NaN']) expect(paceMs(odd), String(odd)).toBe(3000);
+  });
+
+  it('says how long is left, and 0 once it is over or when there was no last one', () => {
+    expect(paceLeft(10_000, null, 3000)).toBe(0);
+    expect(paceLeft(10_000, 9_000, 3000)).toBe(2000);
+    expect(paceLeft(12_000, 9_000, 3000)).toBe(0);
+    expect(paceLeft(20_000, 9_000, 3000)).toBe(0);
+    // A clock that went backwards waits at most the pause.
+    expect(paceLeft(5_000, 9_000, 3000)).toBe(3000);
+  });
+
+  it('one pause for the whole channel is the same for the 2nd and the 20th person: it only looks at when the last prompt went in', () => {
+    expect(paceLeft(1_500, 1_000, 3000)).toBe(2500);
+    expect(paceLeft(1_500, 1_000, 8000)).toBe(7500);
+  });
+});
+
+describe('turning a prompt away', () => {
+  const free = () => 'added' as const;
+  it('lets one in when the jar has room and the pause is over', () => {
+    expect(turnAway('a frog', 10_000, 5_000, 3000, free)).toBeNull();
+    expect(turnAway('a frog', 10_000, null, 3000, free)).toBeNull();
+  });
+  it('says full before it says wait, because waiting will not help', () => {
+    expect(turnAway('a frog', 10_000, 9_900, 3000, () => 'full')).toMatchObject({ detail: 'full', reason: 'invalid' });
+  });
+  it('says how long to wait, as a cooldown', () => {
+    expect(turnAway('a frog', 10_000, 9_000, 3000, free)).toMatchObject({ detail: 'channel-wait', reason: 'cooldown', retryInMs: 2000 });
+  });
+  it('a repeat is not turned away: it is quietly ignored, as before', () => {
+    expect(turnAway('a frog', 10_000, null, 3000, () => 'duplicate')).toBeNull();
   });
 });

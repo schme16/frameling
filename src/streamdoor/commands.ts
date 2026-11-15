@@ -3,7 +3,7 @@ import { desktop } from '../io/desktop';
 import { ask } from '../platform/ask';
 import { openPrefs } from '../ui/overlays';
 import { toast } from '../ui/toast';
-import { copyAddress, copyKey } from './copy';
+import { copyAddress, copyKey, copyTestCommand } from './copy';
 import { saveFirebotSetup } from './firebotFile';
 import { doorStatus } from './state';
 
@@ -63,6 +63,18 @@ export const streamDoorCommands: Command[] = [
     enabled: hasDoor,
     reason: () => 'The actions door needs the desktop app.',
     run: () => void copyKey(),
+  },
+  {
+    id: 'streamdoor.copyTest',
+    label: 'Copy a test command for the actions door',
+    category: 'Audience',
+    description: 'Copies one line to paste into a terminal. It has your address and key in it and asks the door for its list, so you see it working before you set anything up.',
+    help: 'chat-commands',
+    keywords: ['test', 'try', 'check', 'curl', 'terminal', 'command line', 'does it work', 'proves', 'streamer.bot', 'firebot', 'address', 'key', 'token', 'copy', 'http', 'local'],
+    global: true,
+    enabled: () => hasDoor() && doorStatus.get().running,
+    reason: () => (hasDoor() ? 'Switch audience features on first (Preferences > Streaming).' : 'The actions door needs the desktop app.'),
+    run: () => void copyTestCommand(),
   },
   {
     id: 'streamdoor.firebotSetup',

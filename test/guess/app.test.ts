@@ -111,7 +111,7 @@ describe('registered', () => {
     setAudienceOn(false);
     expect(guessScreen.get().phase).toBe('none');
     setAudienceOn(true);
-    expect(send('elephant', 'a')).toEqual({ ok: false, reason: 'invalid' });
+    expect(send('elephant', 'a')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
   });
 });
 
@@ -173,16 +173,16 @@ describe('a round', () => {
   });
 
   it('turns away guesses when no round is going, and after it ended', () => {
-    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
     startRound(SETUP);
     endRound();
-    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
   });
 
   it('turns away a guess with no player id, and says how many', () => {
     startRound(SETUP);
-    expect(send('elephant')).toEqual({ ok: false, reason: 'invalid' });
-    expect(send('elephant', '  ')).toEqual({ ok: false, reason: 'invalid' });
+    expect(send('elephant')).toEqual({ ok: false, reason: 'invalid', detail: 'no-player' });
+    expect(send('elephant', '  ')).toEqual({ ok: false, reason: 'invalid', detail: 'no-player' });
     expect(view().view.turnedAway['no-player']).toBe(2);
     expect(view().view.guesses).toBe(0);
   });
@@ -192,7 +192,8 @@ describe('a round', () => {
     startRound({ ...SETUP, ending: 'timer' });
     send('nope', 'ann');
     send('elephant', 'ann');
-    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid' });
+    // Already got it: the same word as running out of guesses, so it never says the word was right.
+    expect(send('elephant', 'ann')).toEqual({ ok: false, reason: 'invalid', detail: 'again' });
     const v = view().view;
     expect(v.players).toBe(1);
     expect(v.guesses).toBe(2);

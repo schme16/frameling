@@ -12,7 +12,7 @@ import { streamDoorFeature } from '../../src/streamdoor';
 import { promptJarFeature, ADD_ACTION } from '../../src/promptjar';
 import { jarCardOpen } from '../../src/promptjar/card';
 import { addToJar, emptyJar, jar, JAR_KEY, loadKept, passOn, pullOne, putBack } from '../../src/promptjar/jar';
-import { ADD_COOLDOWN, JAR_MAX } from '../../src/promptjar/logic';
+import { DEFAULT_PACE_SECONDS, JAR_MAX } from '../../src/promptjar/logic';
 import { JarChip, emptyTheJar } from '../../src/promptjar/JarCard';
 import { setStreamSafe } from '../../src/core/streamSafe';
 import { clearToasts, toasts } from '../../src/ui/toast';
@@ -45,6 +45,7 @@ beforeEach(() => {
   audience.resetCounts();
   clearToasts();
   setChoice('promptjar.keep', undefined);
+  setChoice('promptjar.pace', undefined);
   emptyJar();
   jarCardOpen.set(false);
   setStreamSafe(false);
@@ -66,7 +67,7 @@ describe('registered', () => {
     }
     expect(getCommand('promptjar.pull')!.keys).toEqual(['Mod+Alt+Shift+J']);
     expect(getHelp('prompt-jar')!.media).toBe('prompt-jar.mp4');
-    expect(promptJarFeature.choices!.map((c) => c.id)).toEqual(['promptjar.keep']);
+    expect(promptJarFeature.choices!.map((c) => c.id)).toEqual(['promptjar.keep', 'promptjar.pace']);
     expect(promptJarFeature.choices![0].silent).toBe(true);
     expect(promptJarFeature.choices![0].default).toBe('forget');
   });
@@ -80,13 +81,14 @@ describe('registered', () => {
     setFeatureOn('prompt-jar', true);
   });
 
-  it('has one action, view only, with a cooldown, listed by its label and nothing else', () => {
+  it('has one action, view only, paced by the jar itself (counted only, so the gate lets many through), listed by its label and nothing else', () => {
     expect(mine()).toHaveLength(1);
     const a = mine()[0];
     expect(a.touchesDrawing).toBe(false);
     expect(a.available).toBe(true);
-    expect(a.cooldown).toBe(ADD_COOLDOWN);
-    expect(a.cooldown).toBeGreaterThanOrEqual(5000);
+    expect(a.bulk).toBe(true);
+    expect(a.cooldown).toBe(0);
+    expect(a.ready).toBe(true);
     expect(a.label).toBe('Add a prompt to the jar');
     expect(audience.snapshot().actions.filter((x) => /jar/.test(x.id))).toHaveLength(1);
   });
@@ -117,11 +119,51 @@ describe('arriving', () => {
     expect(audience.snapshot().counts.rejected.invalid).toBeGreaterThan(0);
   });
 
-  it('applies the cooldown between prompts, and says so', () => {
+  it('says why an empty prompt was turned away', () => {
+    expect(send('!!!')).toEqual({ ok: false, reason: 'invalid', detail: 'no-prompt' });
+  });
+
+  it('keeps one pause for the whole channel: a second person soon after is told to wait, and says how long', () => {
     expect(send('first idea').ok).toBe(true);
-    const v = submitAudience(ADD_ACTION, { text: 'second idea' });
-    expect(v.ok === false || v.outcome === 'queued').toBe(true);
+    later(1000);
+    const v = submitAudience(ADD_ACTION, { text: 'second idea from somebody else' });
+    expect(v).toEqual({ ok: false, reason: 'cooldown', detail: 'channel-wait', retryInMs: DEFAULT_PACE_SECONDS * 1000 - 1000 });
     expect(words()).toEqual(['first idea']);
+    later(2000);
+    expect(submitAudience(ADD_ACTION, { text: 'second idea from somebody else' }).ok).toBe(true);
+    expect(words()).toHaveLength(2);
+  });
+
+  it('lets a busy chat in: about 20 a minute by default, not 7, and more when the pause is shorter', () => {
+    const run = (pause: string | undefined): number => {
+      setChoice('promptjar.pace', pause);
+      emptyJar();
+      later();
+      let got = 0;
+      for (let i = 0; i < 60; i++) {
+        later(1000);
+        if (submitAudience(ADD_ACTION, { text: `idea ${pause} ${i}` }).ok) got++;
+      }
+      return got;
+    };
+    expect(run(undefined)).toBe(JAR_MAX >= 20 ? 20 : JAR_MAX);
+    expect(run('8')).toBe(8);
+    expect(run('1')).toBe(JAR_MAX);
+  });
+
+  it('a pause that is not one of the offered ones is the usual one', () => {
+    setChoice('promptjar.pace', '999');
+    expect(send('first idea').ok).toBe(true);
+    later(1000);
+    expect(submitAudience(ADD_ACTION, { text: 'another one' })).toMatchObject({ reason: 'cooldown', retryInMs: 2000 });
+  });
+
+  it('a prompt that bounced does not restart the pause', () => {
+    expect(send('first idea').ok).toBe(true);
+    later(2000);
+    expect(submitAudience(ADD_ACTION, { text: 'too soon' }).ok).toBe(false);
+    later(1000);
+    expect(submitAudience(ADD_ACTION, { text: 'on time' }).ok).toBe(true);
   });
 
   it('ignores repeats quietly', () => {
@@ -132,10 +174,10 @@ describe('arriving', () => {
 
   it('holds only so many, turns the rest away, and counts them as not done', () => {
     for (let i = 0; i < JAR_MAX; i++) expect(addToJar(`idea number ${i}`)).toBe('added');
-    send('one too many');
+    expect(send('one too many')).toEqual({ ok: false, reason: 'invalid', detail: 'full' });
     expect(words()).toHaveLength(JAR_MAX);
     expect(words()).not.toContain('one too many');
-    expect(audience.snapshot().counts.failed).toBe(1);
+    expect(jar.get().saidFull).toBe(true);
     expect(addToJar('and another')).toBe('full');
     // Room again: it goes in.
     pullOne();

@@ -3,6 +3,7 @@
 // every component, so the tests do the same swap and then check what Firebot would end up running.
 import { describe, expect, it } from 'vitest';
 import { bodies } from '../../src/streamdoor/help.bodies';
+import { DEFAULT_PACE_SECONDS } from '../../src/promptjar/logic';
 import { ADDRESS_TOKEN, buildFirebotSetup, cleanAddress, FIREBOT_COMMANDS, firebotSetupText, KEY_TOKEN } from '../../src/streamdoor/firebotSetup';
 
 const ADDRESS = 'http://127.0.0.1:47213';
@@ -89,11 +90,11 @@ describe('Firebot setup file: shape', () => {
     }
   });
 
-  it('only the first command waits on a cooldown the way Frameling does: !prompt, 8 seconds, global', () => {
+  it('only !prompt waits: the channel pause Frameling uses, and a longer one for each viewer', () => {
     const [vote, guess, prompt] = setup.components.commands;
     expect(vote.cooldown).toEqual({});
     expect(guess.cooldown).toEqual({});
-    expect(prompt.cooldown).toEqual({ global: 8 });
+    expect(prompt.cooldown).toEqual({ global: DEFAULT_PACE_SECONDS, user: 30 });
   });
 
   it('has no em dashes anywhere a person reads it', () => {

@@ -8,7 +8,9 @@ export const bodies: Record<string, string> = {
 
 **Add your own.** Type a prompt in the box at the bottom, or paste a list with one on each line. Yours go through the same cleaning as everyone else's.
 
-**What gets in.** Chat's words are cut to 80 plain characters first: no links, no @names, no emoji or odd symbols. A prompt with no real words is turned away, and so is one that is already in the jar. The jar holds 50. When it is full, new ones are turned away until you make room, and the **On air** card counts them as "did not work".
+**What gets in.** Chat's words are cut to 80 plain characters first: no links, no @names, no emoji or odd symbols. A prompt with no real words is turned away, and so is one that is already in the jar. The jar holds 50. When it is full, new ones are turned away until you make room.
+
+**How fast.** The jar takes one prompt from anyone, then waits 3 seconds. Change that under **Pause between prompts** in Preferences > Streaming. A pause for each person is your chat program's job.
 
 **You choose when it shows.** With [Stream-safe mode](help:stream-safe) on, a pulled prompt stays hidden until you press **Show it**. With the [stream overlay](help:stream-overlay) on, it waits for **Show on stream**.
 
@@ -16,7 +18,7 @@ export const bodies: Record<string, string> = {
 
 **Does it survive closing Frameling?** Not by default. The jar lives in memory only, so closing Frameling empties it and nothing is written to your computer. If you would rather keep a good prompt for next stream, set **Keep the prompt jar** to **Keep them for next time** in Preferences > Streaming. Then the words (and only the words) are saved on this computer. Either way, **Empty the jar** wipes everything, and the saved copy too, in one click.
 
-**Sending prompts in.** The action is \`jar.add\`, on the [actions door](help:actions-door). Body \`{"text":"a frog in a teacup"}\`. A reward in Streamer.bot, Firebot or a Stream Deck can send it, and so can a **!prompt** chat command: see [Chat commands](help:chat-commands). There is nothing that reads the jar or shows a prompt from outside: only you pull.
+**Sending prompts in.** The action is \`jar.add\`, on the [actions door](help:actions-door). Body \`{"text":"a frog in a teacup"}\`. A **!prompt** chat command can send it: see [Chat commands](help:chat-commands). There is nothing that reads the jar or shows a prompt from outside: only you pull.
 
 **Stopping it.** It is part of [audience features](help:audience), so switching those off or pressing **Stop** closes the way in. What is already in the jar stays until you empty it.
 

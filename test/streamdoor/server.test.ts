@@ -72,7 +72,7 @@ describe('the server', () => {
     expect((await call(port, { headers: auth })).body).toEqual({ ok: true, on: true, actions: [] });
     const r = await call(port, { method: 'POST', path: '/v1/actions/door.message', headers: auth, body: '{"text":"hi"}' });
     expect(r.status).toBe(429);
-    expect(r.body).toEqual({ ok: false, reason: 'cooldown', retryInMs: 1500 });
+    expect(r.body).toEqual({ ok: false, reason: 'cooldown', retryInMs: 1500, say: 'That was too soon after the last one. Try again in 2 seconds.' });
     expect(r.headers['retry-after']).toBe('2');
     expect(asked.at(-1)).toEqual({ op: 'run', id: 'door.message', payload: { text: 'hi' } });
   });

@@ -99,10 +99,11 @@ export const BIG_MENUS: Record<string, number> = {
  */
 export const STREAM_LOAD = {
   /** Commands in the palette. 73: Save the Firebot setup file (streamdoor.firebotSetup). One command, because searching "firebot" or "import" has to find the thing that turns the three chat commands into one import and a key paste. It sits in the Actions door submenu beside Copy the key, which it needs. */
-  /** Plus one since: How to get your viewers taking part (audience.start), the one page that walks from a Twitch channel to viewers voting. Somebody asking "how do I get my viewers to vote" finds it by that, in the palette, the Streaming menu and the top of the Streaming tab. */
-  palette: 74,
-  /** Commands in the menus (View holds all of them). 74, the same one command as the palette: the first entry of the Streaming menu. */
-  menu: 74,
+  /** 74: Copy a test command for the actions door (streamdoor.copyTest), the one line that proves the address and key before anything is set up, so step 2 of the chat commands guide is one click instead of a hand-built curl. Searching "test", "curl" or "does it work" has to find it, and it sits beside Copy the address and Copy the key in the Actions door menu. */
+  /** 75: How to get your viewers taking part (audience.start), the one page that walks from a Twitch channel to viewers voting. Somebody asking "how do I get my viewers to vote" finds it by that, in the palette, the Streaming menu and the top of the Streaming tab. */
+  palette: 75,
+  /** Commands in the menus (View holds all of them). 75, the same three commands as the palette: the two in the Actions door submenu and the first entry of the Streaming menu. */
+  menu: 75,
   /** Switches in Preferences > Features. */
   switches: 9,
   /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */

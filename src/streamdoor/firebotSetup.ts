@@ -15,7 +15,15 @@ export const KEY_TOKEN = '%%FRAMELING_KEY%%';
 
 export const FIREBOT_SETUP_FILE = 'frameling-chat-commands.firebotsetup';
 /** Bumped when the commands in the file change, so Firebot's Import window shows which one it is. */
-export const FIREBOT_SETUP_VERSION = 1;
+export const FIREBOT_SETUP_VERSION = 2;
+
+/**
+ * The pause between !prompt from anyone: the same as Frameling's usual one (src/promptjar/logic.ts DEFAULT_PACE_SECONDS, which
+ * a test keeps equal). Frameling enforces it too, so this only saves viewers a refused request.
+ */
+export const PROMPT_CHANNEL_SECONDS = 3;
+/** The pause between one viewer's own prompts. Only Firebot knows who typed, so this one lives here and not in Frameling. */
+export const PROMPT_PERSON_SECONDS = 30;
 
 /** The three chat-driven actions and the body each sends. Firebot fills the $variables in before it sends. */
 export const FIREBOT_COMMANDS = [
@@ -28,6 +36,7 @@ export const FIREBOT_COMMANDS = [
     description: 'Casts a vote in the Frameling vote that is running. Viewers type !vote 2, or !vote and the name of the option.',
     body: '{"option": $convertToJSON[$arg[1]], "voter": $convertToJSON[$userId]}',
     globalCooldown: undefined as number | undefined,
+    userCooldown: undefined as number | undefined,
   },
   {
     id: 'b4c2d9f1-6e80-4a34-8c82-1a6e80534b02',
@@ -38,6 +47,7 @@ export const FIREBOT_COMMANDS = [
     description: 'Sends a guess to the Frameling guessing round that is running.',
     body: '{"guess": $convertToJSON[$arg[all]], "player": $convertToJSON[$userId], "name": $convertToJSON[$userDisplayName]}',
     globalCooldown: undefined as number | undefined,
+    userCooldown: undefined as number | undefined,
   },
   {
     id: 'c5d3eaa2-7f91-4b45-9d93-2b7f91645c03',
@@ -45,9 +55,10 @@ export const FIREBOT_COMMANDS = [
     listId: '57ca201a-1239-486f-9645-608bf2a9612b',
     trigger: '!prompt',
     action: 'jar.add',
-    description: 'Adds what a viewer types to the Frameling prompt jar. One every 8 seconds for the whole channel, the same as Frameling.',
+    description: 'Adds what a viewer types to the Frameling prompt jar. One every 3 seconds across the whole channel, the same pause as Frameling, and one every 30 seconds from each viewer.',
     body: '{"text": $convertToJSON[$arg[all]]}',
-    globalCooldown: 8 as number | undefined,
+    globalCooldown: PROMPT_CHANNEL_SECONDS as number | undefined,
+    userCooldown: PROMPT_PERSON_SECONDS as number | undefined,
   },
 ];
 
@@ -83,7 +94,7 @@ function command(c: (typeof FIREBOT_COMMANDS)[number]) {
     sendCooldownMessageAsReply: false,
     useCustomCooldownMessage: false,
     cooldownMessage: 'This command is still on cooldown for: {timeLeft}',
-    cooldown: c.globalCooldown === undefined ? {} : { global: c.globalCooldown },
+    cooldown: { ...(c.globalCooldown === undefined ? {} : { global: c.globalCooldown }), ...(c.userCooldown === undefined ? {} : { user: c.userCooldown }) },
     effects: {
       id: c.listId,
       list: [

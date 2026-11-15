@@ -12,7 +12,7 @@ import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { validDoorPort } from '../shared/streamDoor';
 import { rollKey } from './commands';
-import { copyAddress, copyKey, fetchKey } from './copy';
+import { copyAddress, copyKey, copyTestCommand, fetchKey } from './copy';
 import { saveFirebotSetup } from './firebotFile';
 import { doorLink } from './instance';
 import { doorStatus, preferredPort, setPreferredPort } from './state';
@@ -122,6 +122,17 @@ export function StreamDoorPrefsRow() {
           <input className="sd-port" type="number" min={1024} max={65535} value={port} data-testid="streamdoor.port" aria-label="Port" onChange={(e) => setPort(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && usePort()} />
           <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.usePort" onClick={usePort}>
             Use this port
+          </button>
+        </div>
+      </div>
+      <div className="ui-pref-row">
+        <div className="ui-pref-text">
+          <strong>Try it</strong>
+          <span>Copies one line to paste into a terminal, with your address and key in it. If the door works, you get a list of actions back. It is copied, never shown.</span>
+        </div>
+        <div className="ui-pref-control sd-control">
+          <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamdoor.copyTest" onClick={() => void copyTestCommand()} disabled={!status.running}>
+            Copy a test command
           </button>
         </div>
       </div>
