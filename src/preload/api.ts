@@ -144,6 +144,25 @@ export interface ShareBridge {
   onEvent(handler: (e: import('../share/types').ShareEvent) => void): () => void;
 }
 
+/** Live review (src/review, src/main/review*.ts): a reviewer follows your drawing and sends a pointer and notes back. The link, the port and the reviewer's window are on the desktop side. */
+export interface ReviewBridge {
+  /** Makes a code and waits. `name` is the drawing's name, told to a reviewer who comes in. Everything after arrives as events. */
+  start(name: string): Promise<{ ok: boolean }>;
+  stop(): Promise<void>;
+  /** Let in somebody who knocked (`conn` is from their knock event). */
+  admit(conn: number): Promise<void>;
+  refuse(conn: number): Promise<void>;
+  /** Send a reviewer away. */
+  remove(seat: number): Promise<void>;
+  /** Your pointer, in stage pixels. Fire and forget: it is allowed to be dropped. */
+  pointer(x: number, y: number, off?: boolean): Promise<void>;
+  /** These things of a reviewer's are safe in the inbox. */
+  ack(seat: number, ids: string[]): Promise<void>;
+  /** Opens a review window for somebody else's code. `ok` is false when the words are not a code. */
+  join(code: string, name: string): Promise<{ ok: boolean }>;
+  onEvent(handler: (e: import('../main/reviewHost').HostUiEvent) => void): () => void;
+}
+
 /** Connecting to Twitch (src/twitch, src/main/twitch*.ts). The sign-in and the connection live on the desktop side; no token and no viewer's name ever comes up to the page. Missing in the web build. */
 export interface TwitchBridge {
   status(): Promise<import('../shared/twitch').TwitchStatus>;
@@ -380,6 +399,8 @@ export interface FramelingApi {
   obs?: ObsBridge;
   /** Send and receive a drawing with a code (desktop only). */
   share?: ShareBridge;
+  /** Live review (desktop only). */
+  review?: ReviewBridge;
   /** Connect Twitch (desktop only). */
   twitch?: TwitchBridge;
   /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */

@@ -9,6 +9,7 @@ import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
 import { LivePill } from './LivePill';
 import { JarChip } from '../promptjar/JarCard';
+import { ReviewChip } from '../livereview/ReviewCard';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -91,6 +92,7 @@ export function TopBar() {
       </div>
       <div className="ui-topbar-end">
         <LivePill />
+        <ReviewChip />
         <JarChip />
         <StreamSafeBadge />
         <WorkspaceSwitcher />

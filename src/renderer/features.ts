@@ -24,6 +24,7 @@ import '../timelapse';
 import '../effects';
 import '../quests';
 import '../popout';
+import '../livereview';
 import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';

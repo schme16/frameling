@@ -70,6 +70,8 @@ export function readMarks(raw: unknown): CanvasMark[] | undefined {
       mark.layer = m.layer;
     }
     if (typeof m.board === 'string' && m.board) mark.board = m.board;
+    if (typeof m.by === 'string' && m.by.trim()) mark.by = m.by.slice(0, 80);
+    if (finite(m.at) && m.at > 0) mark.at = m.at;
     out.push(mark);
     if (out.length >= MAX_MARKS) break;
   }

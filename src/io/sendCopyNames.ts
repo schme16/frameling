@@ -3,7 +3,7 @@
 // taken out" means this, so a copy loses those stamps unless you say otherwise.
 //
 // What it does NOT touch: the drawing's own name, which you chose and probably want, and the words of the notes
-// themselves, which are the point of sending it. Marks carry no name today, so there is nothing to take off them.
+// themselves, which are the point of sending it. Marks carry a name only when a reviewer drew them in a live review, and lose it the same way.
 // Pure: no store, no screen, and the drawing passed in is never changed.
 import type { CanvasNote, Doc, NoteReply } from '../core/format';
 
@@ -28,12 +28,13 @@ const noteWithout = (n: CanvasNote): CanvasNote => ({
  * when nothing is stamped, so a drawing with no notes costs nothing.
  */
 export function withNamesOff(doc: Doc): Doc {
-  if (!doc.notes?.length) return doc;
-  return { ...doc, notes: doc.notes.map(noteWithout) };
+  if (!doc.notes?.length && !doc.marks?.some(stamped)) return doc;
+  return { ...doc, ...(doc.notes?.length ? { notes: doc.notes.map(noteWithout) } : {}), ...(doc.marks?.some(stamped) ? { marks: doc.marks.map(withoutNames) } : {}) };
 }
+
+const stamped = (x: { by?: string; at?: number }): boolean => x.by !== undefined || x.at !== undefined;
 
 /** True when a drawing has anybody's name or time stamped on it, so the work is only worth doing then. */
 export function hasNames(doc: Doc): boolean {
-  const stamped = (x: { by?: string; at?: number }): boolean => x.by !== undefined || x.at !== undefined;
-  return !!doc.notes?.some((n) => stamped(n) || !!n.replies?.some(stamped));
+  return !!doc.notes?.some((n) => stamped(n) || !!n.replies?.some(stamped)) || !!doc.marks?.some(stamped);
 }

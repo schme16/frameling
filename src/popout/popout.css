@@ -29,3 +29,32 @@ body { background: #121019; font-family: 'Nunito Variable', 'Nunito', system-ui,
 .po-capture { -webkit-app-region: drag; }
 .po-capture .po-stage { box-shadow: none; }
 .po-nocursor, .po-nocursor * { cursor: none; }
+
+/* The reviewer's window: a toolbar, a bar for how the link is doing, and the reviewer's own pins and words over the picture. */
+.rv-win { position: absolute; inset: 0; pointer-events: none; font-size: 13px; }
+.rv-surface { position: absolute; inset: 0; pointer-events: auto; touch-action: none; cursor: grab; }
+.rv-surface[data-tool='look'] { cursor: grab; }
+.rv-surface:not([data-tool='look']) { cursor: crosshair; }
+.rv-tools { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; padding: 6px 8px; max-width: calc(100% - 24px); pointer-events: auto; border-radius: 14px;
+  background: color-mix(in srgb, var(--po-raised) 92%, transparent); border: 1px solid color-mix(in srgb, var(--po-text) 16%, transparent); box-shadow: 0 6px 22px rgb(0 0 0 / 30%); }
+.rv-btn { font: inherit; font-weight: 700; padding: 4px 10px; border-radius: 999px; cursor: pointer; color: var(--po-text); background: transparent; border: 1px solid color-mix(in srgb, var(--po-text) 22%, transparent); }
+.rv-btn:hover { background: color-mix(in srgb, var(--po-text) 10%, transparent); }
+.rv-btn[aria-pressed='true'] { background: var(--po-accent); border-color: var(--po-accent); color: #fff; }
+.rv-btn:focus-visible, .rv-swatch:focus-visible { outline: 2px solid var(--po-accent); outline-offset: 2px; }
+.rv-swatches { display: inline-flex; gap: 4px; padding: 0 4px; }
+.rv-swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.rv-swatch[aria-pressed='true'] { border-color: var(--po-text); }
+.rv-chipmode { padding: 2px 8px; border-radius: 999px; font-weight: 700; color: var(--po-muted); border: 1px dashed color-mix(in srgb, var(--po-text) 30%, transparent); }
+.rv-chipmode:not([data-following]) { color: var(--po-text); border-style: solid; border-color: var(--po-accent); }
+.rv-tools input[type='range'] { width: 140px; accent-color: var(--po-accent); }
+.rv-bar { position: absolute; left: 50%; transform: translateX(-50%); top: 12px; display: flex; align-items: center; gap: 10px; padding: 6px 14px; max-width: calc(100% - 24px); border-radius: 12px; pointer-events: auto; font-weight: 700;
+  background: color-mix(in srgb, var(--po-raised) 94%, transparent); border: 1px solid color-mix(in srgb, var(--po-text) 18%, transparent); color: var(--po-text); }
+.rv-bar[data-tone='warn'] { border-color: #e0a020; }
+.rv-pin { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.rv-pin b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--rv-pen, #ff3b5c); color: #fff; font-size: 12px; box-shadow: 0 0 0 2px rgb(255 255 255 / 80%), 0 2px 6px rgb(0 0 0 / 35%); }
+.rv-pin-text { max-width: 220px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--po-raised) 94%, transparent); color: var(--po-text); font-weight: 600; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgb(0 0 0 / 25%); }
+.rv-typing { position: absolute; z-index: 5; min-width: 180px; max-width: 320px; padding: 6px 8px; font: inherit; font-weight: 600; color: var(--po-text); background: var(--po-raised); border: 2px solid var(--rv-pen, #ff3b5c); border-radius: 8px; resize: none; pointer-events: auto; }
+.rv-pointer { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 4px; pointer-events: none; transition: transform 0.06s linear, opacity 0.2s linear; will-change: transform; }
+.rv-pointer i { display: block; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 45%), 0 2px 6px rgb(0 0 0 / 35%); }
+.rv-pointer span { margin-top: 8px; padding: 1px 6px; border-radius: 999px; background: rgb(0 0 0 / 72%); color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .rv-pointer { transition: none; } }

@@ -4,6 +4,7 @@
 import { applyPatches, enablePatches } from 'immer';
 import type { Doc, Shape } from '../core/format';
 import type { Look, LiveDrawing, PixelPatch, ToPopout } from './protocol';
+import { NO_VIEW, type UserView } from './show';
 
 enablePatches();
 
@@ -17,6 +18,12 @@ export class Replica {
   /** Pixel pieces waiting for the painter to put on its canvas, in order (null ends the pixels in progress). */
   pixelQueue: (PixelPatch | null)[] = [];
   live: LiveDrawing | null = null;
+  /** A reviewer's own zoom and pan (the picture window itself never sets it). */
+  userView: UserView = NO_VIEW;
+  /** A reviewer who has left the sharer's frame and looks at one of their own (null = following). */
+  freeFrame: number | null = null;
+  /** A reviewer is writing on the picture: it holds still so what they annotate is what they were looking at. */
+  held = false;
   /** Counts up on every message that could change the picture, so the painter knows when to draw again. */
   version = 0;
   private seq = -1;
@@ -67,6 +74,11 @@ export class Replica {
   }
 
   /** Nothing to show yet. */
+  /** The reviewer changed their own view or frame: draw again. */
+  touch(): void {
+    this.version++;
+  }
+
   get empty(): boolean {
     return !this.doc || !this.look;
   }

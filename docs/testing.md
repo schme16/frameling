@@ -878,6 +878,27 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, alternating closed, an animated control window, the
   real window not painting (messages only) and the real window, and printing the median of each. See `scripts/perf/README.md`.
 
+## Live review: scripts/e2e/review.cjs and review-media.cjs
+
+Live review (`src/review` the rules, `src/livereview` the sharer's side, `src/popout/ReviewLayer.tsx` the reviewer's window,
+`src/main/review*.ts` the link, `src/share/live.ts` the transport) is checked at four levels. The unit tests are in `test/review/`
+(codec, lanes, wire readers, inbox, pointers, the transport over the in-memory network, a whole review through both bridges in
+one process, and an import-graph audit that the reviewer's window cannot reach the store, a file writer or the desktop calls).
+The two harnesses run the real built app with `FRAMELING_REVIEW_LOOPBACK=1`, which swaps Hyperswarm for an in-process peer
+network (`src/share/loopback.ts`), so a sharer's window and a reviewer's window really join, with the real handshake and no sockets:
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review.cjs [--theme light]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-media.cjs --theme dark [--help] [--ab]
+```
+
+- `review.cjs` is the check (exit code 1 on any failure): off by default, the code, a knock and Let in, strokes following, pointers
+  both ways, a note and a mark arriving in the inbox with the drawing and the sharer's undo untouched, names and words covered
+  while Stream-safe is on, Keep as one undo step, and Stop.
+- `review-media.cjs` records both windows with ffmpeg: `--ab` writes `brand/ab/live-review/live-review-<theme>.mp4`, `--help` writes
+  `public/help/live-review-<theme>.mp4` and its poster. Run it once per theme. The help runner skips the `live-review` entry
+  (`scripts/docs/help/live-review.cjs`). Both are always H.264.
+
 ## What is remembered between launches: scripts/e2e/remember.cjs
 
 The brush, the stroke and fill colours, loop playback and the onion skin are kept between launches (src/core/uiMemory.ts

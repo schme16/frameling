@@ -2,7 +2,7 @@ import './profile';
 import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import { closeActionsDoor, grantFile, registerIpc } from './ipc';
+import { closeActionsDoor, grantFile, registerIpc, stopReviewHost, stopReviews } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { watchDisplay } from './display';
@@ -258,9 +258,13 @@ function createWindow() {
   // The picture window goes with the drawing window, and gets a fresh link if the page is loaded again.
   win.webContents.on('did-finish-load', () => popout.mainReloaded());
   // The actions door is answered by the page, so it closes when the page goes (it opens again when the page asks).
-  win.webContents.on('did-start-loading', () => void closeActionsDoor());
+  win.webContents.on('did-start-loading', () => {
+    void closeActionsDoor();
+    stopReviewHost();
+  });
   win.on('closed', () => {
     void closeActionsDoor();
+    stopReviews();
     win = null;
     popout.mainClosed();
   });

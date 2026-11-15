@@ -4,4 +4,6 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/nunito';
 import { PopoutPage } from '../popout/page';
 
-createRoot(document.getElementById('root')!).render(<PopoutPage />);
+// ?review=1 is the reviewer's window (made by the desktop side for a live review): the same page with the review layer on.
+const review = new URLSearchParams(window.location.search).has('review');
+createRoot(document.getElementById('root')!).render(<PopoutPage review={review} />);

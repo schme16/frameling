@@ -16,20 +16,26 @@ import type { FromPopout, Look, LiveDrawing, PopoutTheme, ToPopout } from './pro
 import { marksVisible, throughCamera, type CameraChoice, type MarksChoice } from './show';
 import { subscribeStreamSafe } from '../core/streamSafe';
 
-interface Session {
+/** The two things that can follow the drawing: the picture window, and a live review (see src/review). */
+type Kind = 'popout' | 'review';
+
+interface Out {
+  kind: Kind;
   port: MessagePort;
   stop(): void;
 }
 
-let session: Session | null = null;
+const outs: Record<Kind, Out | null> = { popout: null, review: null };
 const listeners = new Set<() => void>();
 
-export const isPopoutOpen = (): boolean => session !== null;
+export const isPopoutOpen = (): boolean => outs.popout !== null;
+/** Is a live review you are sharing following the drawing? */
+export const isReviewFollowing = (): boolean => outs.review !== null;
 
 // Which kind of window the desktop side linked us to (it says so just before the port arrives).
 let capture = false;
 /** Is the window that is open the capture view? */
-export const isCaptureOpen = (): boolean => session !== null && capture;
+export const isCaptureOpen = (): boolean => outs.popout !== null && capture;
 
 /** Calls `fn` when the picture window opens or goes (for menu ticks). Returns the unsubscribe. */
 export function subscribePopout(fn: () => void): () => void {
@@ -55,27 +61,99 @@ export function isDarkColour(c: string): boolean {
   return 0.299 * r + 0.587 * g + 0.114 * b < 128;
 }
 
-function start(port: MessagePort): void {
-  session?.stop();
+// What is being drawn right now is one thing, however many ports follow it: the strokes in progress are read once per screen
+// frame and handed to each. The tools have one tap each (ink.ts), which the first follower installs and the last one removes.
+let ink: InkShapes | InkMaker = null;
+let feed: PixelFeed | null = null;
+let pixelsDirty = false;
+let pixelsRestart = false;
+let pixelsAt = 0;
+let live: LiveDrawing | null = null;
+let inkDirty = false;
+let liveDirty = false;
+let raf = 0;
+const mirrors = new Set<Mirror>();
+let tapped = false;
+
+// Strokes and half-done changes go once per screen frame at most: the picture window cannot show more anyway.
+const flush = () => {
+  raf = 0;
+  if (inkDirty) {
+    const i = typeof ink === 'function' ? ink() : ink;
+    for (const m of mirrors) m.setInk(i);
+  }
+  if (liveDirty) for (const m of mirrors) m.setLive(live);
+  inkDirty = liveDirty = false;
+  if (feed && pixelsDirty) {
+    if (performance.now() < pixelsAt) later();
+    else {
+      pixelsDirty = false;
+      const p = feed.take(pixelsRestart);
+      pixelsRestart = false;
+      if (p) {
+        for (const m of mirrors) m.setPixels(p);
+        pixelsAt = performance.now() + waitAfter(p.data.byteLength);
+      }
+    }
+  }
+};
+const later = () => {
+  if (!raf) raf = requestAnimationFrame(flush);
+};
+
+function installTaps(): void {
+  if (tapped) return;
+  tapped = true;
+  setInkTap((s) => {
+    ink = s;
+    inkDirty = true;
+    // The end of a stroke goes straight away (the finished line is arriving as an edit); growth waits for the next screen frame.
+    if (s === null) flush();
+    else later();
+  });
+  setPixelTap((f) => {
+    if (f === null) {
+      feed = null;
+      pixelsDirty = false;
+      pixelsRestart = false;
+      pixelsAt = 0;
+      for (const m of mirrors) m.setPixels(null);
+      return;
+    }
+    feed = f;
+    pixelsDirty = true;
+    later();
+  });
+  setLiveTap((l) => {
+    live = l;
+    liveDirty = true;
+    if (l === null) flush();
+    else later();
+  });
+}
+
+function removeTaps(): void {
+  if (!tapped || mirrors.size) return;
+  tapped = false;
+  setInkTap(null);
+  setLiveTap(null);
+  setPixelTap(null);
+  if (raf) cancelAnimationFrame(raf);
+  raf = 0;
+}
+
+function start(port: MessagePort, kind: Kind): void {
+  outs[kind]?.stop();
   let theme = readTheme();
-  let raf = 0;
-  let ink: InkShapes | InkMaker = null;
-  // The pixels being painted on: what to ask for, whether something is waiting, and when the port may be used again.
-  let feed: PixelFeed | null = null;
-  let pixelsDirty = false;
-  let pixelsRestart = false;
-  let pixelsAt = 0;
-  let live: LiveDrawing | null = null;
-  let inkDirty = false;
-  let liveDirty = false;
   let mirror: Mirror | null = null;
   const unsubs: (() => void)[] = [];
 
   const lookOf = (s: State): Look => {
     const camera = throughCamera(currentChoice<CameraChoice>('popout.camera'), s.doc, lookingThrough(s));
-    const cap = capture
-      ? { bg: backgroundColour(currentChoice<BackgroundChoice>('popout.captureBackground')), hideCursor: currentChoice('popout.captureCursor') === 'hide' }
-      : null;
+    const cap =
+      kind === 'popout' && capture
+        ? { bg: backgroundColour(currentChoice<BackgroundChoice>('popout.captureBackground')), hideCursor: currentChoice('popout.captureCursor') === 'hide' }
+        : null;
     return {
       // The capture view is never told the drawing's name, so it cannot show it anywhere.
       name: cap ? '' : documentTitle(),
@@ -89,34 +167,11 @@ function start(port: MessagePort): void {
     };
   };
 
-  // Strokes and half-done changes go once per screen frame at most: the picture window cannot show more anyway.
-  const flush = () => {
-    raf = 0;
-    if (inkDirty) mirror?.setInk(typeof ink === 'function' ? ink() : ink);
-    if (liveDirty) mirror?.setLive(live);
-    inkDirty = liveDirty = false;
-    if (feed && pixelsDirty) {
-      if (performance.now() < pixelsAt) later();
-      else {
-        pixelsDirty = false;
-        const p = feed.take(pixelsRestart);
-        pixelsRestart = false;
-        if (p) {
-          mirror?.setPixels(p);
-          pixelsAt = performance.now() + waitAfter(p.data.byteLength);
-        }
-      }
-    }
-  };
-  const later = () => {
-    if (!raf) raf = requestAnimationFrame(flush);
-  };
-
   const begin = () => {
-    // The picture window said hello: from here on, follow everything.
+    // The other end said hello: from here on, follow everything.
     if (!mirror) {
       // A message that cannot be sent (something odd in a drawing that cannot be copied) must never get in the way of the
-      // drawing window: it stops following, and the second window says the link is gone.
+      // drawing window: it stops following, and the other end says the link is gone.
       const send = (m: ToPopout) => {
         try {
           port.postMessage(m);
@@ -126,8 +181,10 @@ function start(port: MessagePort): void {
       };
       mirror = new Mirror({ get: () => store().get(), lastChange: () => store().lastChange() }, send, lookOf);
       const m = mirror;
+      mirrors.add(m);
+      installTaps();
       unsubs.push(store().subscribe(() => m.sync()));
-      // The second window's title follows Stream-safe going on or off.
+      // The window's title follows Stream-safe going on or off.
       unsubs.push(subscribeStreamSafe(() => m.sync()));
       unsubs.push(subscribeViewSettings(() => m.sync()));
       unsubs.push(subscribeMarksState(() => m.sync()));
@@ -138,35 +195,9 @@ function start(port: MessagePort): void {
           m.sync();
         }),
       );
-      setInkTap((s) => {
-        ink = s;
-        inkDirty = true;
-        // The end of a stroke goes straight away (the finished line is arriving as an edit); growth waits for the next screen frame.
-        if (s === null) flush();
-        else later();
-      });
-      setPixelTap((f) => {
-        if (f === null) {
-          feed = null;
-          pixelsDirty = false;
-          pixelsRestart = false;
-          pixelsAt = 0;
-          mirror?.setPixels(null);
-          return;
-        }
-        feed = f;
-        pixelsDirty = true;
-        later();
-      });
-      setLiveTap((l) => {
-        live = l;
-        liveDirty = true;
-        if (l === null) flush();
-        else later();
-      });
     }
     mirror.hello();
-    // The second window starts again, so the pixels in progress go again from the start.
+    // The other end starts again, so the pixels in progress go again from the start.
     if (feed) {
       pixelsRestart = true;
       pixelsDirty = true;
@@ -181,13 +212,12 @@ function start(port: MessagePort): void {
   port.addEventListener('close', () => stop());
 
   function stop(): void {
-    if (session?.port !== port) return;
-    session = null;
+    if (outs[kind]?.port !== port) return;
+    outs[kind] = null;
     for (const u of unsubs.splice(0)) u();
-    setInkTap(null);
-    setLiveTap(null);
-    setPixelTap(null);
-    if (raf) cancelAnimationFrame(raf);
+    if (mirror) mirrors.delete(mirror);
+    mirror = null;
+    removeTaps();
     try {
       port.close();
     } catch {
@@ -196,13 +226,18 @@ function start(port: MessagePort): void {
     tell();
   }
 
-  session = { port, stop };
+  outs[kind] = { kind, port, stop };
   tell();
 }
 
 /** Stops following (the picture window is gone). */
 export function stopFollowing(): void {
-  session?.stop();
+  outs.popout?.stop();
+}
+
+/** Stops following for a live review (it ended). */
+export function stopReviewFollowing(): void {
+  outs.review?.stop();
 }
 
 let installed = false;
@@ -213,8 +248,9 @@ export function installPopoutLink(): void {
   if (!api) return;
   installed = true;
   window.addEventListener('message', (e) => {
-    if (e.source !== window || e.data !== 'frameling-popout-port' || !e.ports[0]) return;
-    start(e.ports[0]);
+    if (e.source !== window || !e.ports[0]) return;
+    if (e.data === 'frameling-popout-port') start(e.ports[0], 'popout');
+    else if (e.data === 'frameling-review-port' && window.frameling?.review) start(e.ports[0], 'review');
   });
   api.onMode?.((m) => {
     capture = m === 'capture';
