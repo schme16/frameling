@@ -32,8 +32,10 @@
     "words:list": "node scripts/words/list.mjs"
   },
   "dependencies": {
+    "@noble/curves": "2.4.0",
     "fflate": "^0.8.3",
     "gifenc": "^1.0.3",
+    "hyperswarm": "4.17.2",
     "immer": "^11.2.10",
     "mediabunny": "^1.65.2",
     "obs-websocket-js": "5.0.8",
@@ -55,6 +57,7 @@
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.8",
+    "hyperdht": "6.36.0",
     "jsdom": "^31.0.0",
     "lottie-web": "^5.13.0",
     "typescript": "^7.0.2",
