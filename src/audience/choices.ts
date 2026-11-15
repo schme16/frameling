@@ -1,4 +1,5 @@
-// The two answers audience features ask for or remember: how careful the gate is, and whether it starts switched off.
+// The answers audience features ask for or remember: how careful the gate is, what your viewers can see (so secrets and
+// unread words stay covered), and whether it starts switched off.
 // Their words are in src/words/choices.json with the rest.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';
@@ -16,6 +17,20 @@ export const audienceChoices: ChoiceDef<string>[] = [
     default: 'balanced',
     category: 'Streaming',
     help: 'audience',
+  },
+  {
+    id: 'audience.view',
+    title: choiceWord('choice.audience.view.title'),
+    question: choiceWord('choice.audience.view.question'),
+    options: [
+      { value: 'screen', label: choiceWord('choice.audience.view.screen.label'), detail: choiceWord('choice.audience.view.screen.detail'), did: choiceWord('choice.audience.view.screen.did') },
+      { value: 'capture', label: choiceWord('choice.audience.view.capture.label'), detail: choiceWord('choice.audience.view.capture.detail'), did: choiceWord('choice.audience.view.capture.did') },
+    ],
+    default: 'screen',
+    // Closing the question never means "uncover": it stays on the careful answer.
+    dismiss: 'screen',
+    category: 'Streaming',
+    help: 'cover-spoilers',
   },
   {
     id: 'audience.startup',

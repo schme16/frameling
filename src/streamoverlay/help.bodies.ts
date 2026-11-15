@@ -14,7 +14,7 @@ Not sure it works? **Show a test on the stream overlay** (in the **Audience feat
 **What shows.** Each piece shows only while it is happening, then goes by itself. If nothing is happening, the overlay is empty, so it can stay in your scene all stream.
 - **Quill**: when chat makes him cheer, hop, snack, cuddle or wave, or hold up a sign you said yes to.
 - **Dares**: the challenge banner, the countdown (and **Time!**), and a small chip for each lasting dare.
-- **Prompt**: the one you pulled from the [prompt jar](help:prompt-jar). By default it waits until you press **Show on stream** on the jar card, so you read it first. Nothing else in the jar ever shows.
+- **Prompt**: the one you pulled from the [prompt jar](help:prompt-jar). By default it waits until you read it and press **Send to the overlay** on the jar card. Nothing else in the jar ever shows.
 - **Votes**: when you run a chat vote, its bars and then its result.
 
 **Nothing private reaches it.** It is on camera, so it works like [Stream-safe mode](help:stream-safe) that cannot be switched off. It is only handed a few plain facts: words, times and counts. Never a file name or folder, your name, a key, a link or an @name. Words from chat are boiled down to plain text first.

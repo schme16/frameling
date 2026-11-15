@@ -3,9 +3,10 @@
 // (word dots under Stream-safe), and that the word is in the page only in the start box and the reveal.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setChoice, setChoiceAsker } from '../../src/core/choices';
 import { setStreamSafe } from '../../src/core/streamSafe';
+import { REVEAL_MS } from '../../src/audience/spoilers';
 import { audience, installAudience, setAudienceOn, submitAudience } from '../../src/audience';
 import { GuessLayer, WARMTH_WORDS, clock, resultLine, secondsLeft } from '../../src/guess/GuessLayer';
 import { _resetGuessForTests, closeRound, endRound, flushRound, peekUntil, startRound } from '../../src/guess/state';
@@ -54,6 +55,8 @@ beforeEach(async () => {
   localStorage.clear();
   for (const id of ['guess.ending', 'guess.winnerName', 'guess.peek']) setChoice(id, undefined);
   setChoice('audience.strictness', 'balanced');
+  // Viewers see only the capture window unless a test says otherwise, so the word is plain in this window.
+  setChoice('audience.view', 'capture');
   setStreamSafe(false);
   _resetGuessForTests();
   clearToasts();
@@ -123,9 +126,9 @@ describe('the panel', () => {
     expect(document.body.textContent).not.toContain('zeppelin');
   });
 
-  it('under Stream-safe there is no Peek button even when allowed', async () => {
+  it('when your viewers can see this window there is no Peek button even when allowed', async () => {
     setChoice('guess.peek', 'allow');
-    setStreamSafe(true);
+    setChoice('audience.view', 'screen');
     await act(async () => void startRound({ word: 'zeppelin', seconds: null, ending: 'first' }));
     expect(q('peek')).toBeNull();
   });
@@ -179,16 +182,49 @@ describe('the box that starts a round', () => {
     expect(kept[0][1]).not.toContain(picked);
   });
 
-  it('under Stream-safe the word is dots until you press Show', async () => {
-    setStreamSafe(true);
+  it('while your viewers can see this window the word is dots until you press the eye', async () => {
+    setChoice('audience.view', 'screen');
     await act(async () => openGuessSetup());
     await typeIn('setup.word', 'zeppelin');
     expect((q('setup.word') as HTMLInputElement).type).toBe('password');
     await act(async () => q('setup.pick')!.click());
-    expect(text('setup.note')).toContain('Stream-safe is on');
+    expect(text('setup.note')).toContain('It is covered');
     expect((q('setup.word') as HTMLInputElement).type).toBe('password');
     await act(async () => q('setup.show')!.click());
     expect((q('setup.word') as HTMLInputElement).type).toBe('text');
+    await act(async () => q('setup.show')!.click());
+    expect((q('setup.word') as HTMLInputElement).type).toBe('password');
+  });
+
+  it('is covered before the question has ever been answered, and the intro says what is true', async () => {
+    setChoice('audience.view', undefined);
+    await act(async () => openGuessSetup());
+    expect((q('setup.word') as HTMLInputElement).type).toBe('password');
+    expect(q('setup.show')).toBeTruthy();
+    expect(host.textContent).toContain('shows as dots');
+    expect(host.textContent).not.toContain('hidden from the moment the round starts');
+  });
+
+  it('shows the word plainly, with no eye, when viewers see only the capture window', async () => {
+    await act(async () => openGuessSetup());
+    expect((q('setup.word') as HTMLInputElement).type).toBe('text');
+    expect(q('setup.show')).toBeNull();
+    expect(host.textContent).toContain('only see the capture window');
+  });
+
+  it('the eye lets go again by itself, so a word left showing does not stay on screen', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      setChoice('audience.view', 'screen');
+      await act(async () => openGuessSetup());
+      await typeIn('setup.word', 'zeppelin');
+      await act(async () => q('setup.show')!.click());
+      expect((q('setup.word') as HTMLInputElement).type).toBe('text');
+      await act(async () => void vi.advanceTimersByTime(REVEAL_MS + 100));
+      expect((q('setup.word') as HTMLInputElement).type).toBe('password');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('the ending and the winner name are set in the box and remembered as choices', async () => {

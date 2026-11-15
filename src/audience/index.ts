@@ -8,7 +8,7 @@
 //   submitAudience(id, raw?)                                             what a door calls when it hears something
 //   lasts(ms, signal)                                                    wait for an effect that ends by itself
 // Register inside your feature's `activate()` (or at the top level of its descriptor) and it goes when the feature does.
-import { currentChoice, onChoiceChange, registerChoice, withChoice } from '../core/choices';
+import { askAgain, currentChoice, onChoiceChange, registerChoice, setChoice, withChoice } from '../core/choices';
 import { ownedUndo, removeOwned, withOwner } from '../core/owners';
 import { registerCommands, registerHelpTopics, type Command } from '../core/registry';
 import { addKeptOutHelp, onFeaturesChange } from '../features/host';
@@ -18,8 +18,9 @@ import { readJson, writeJson } from '../ui/mini';
 import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { audienceChoices } from './choices';
+import { VIEW_CHOICE } from './spoilers';
 import { createGate, limitsFor, lasts, refusal, type AudienceActionDef, type AudienceDoorDef, type Gate, type Verdict } from './gate';
-import { audienceHelp, startHelp } from './help';
+import { audienceHelp, coverHelp, startHelp } from './help';
 import { desktop } from '../io/desktop';
 import { globalStop, showAudienceCard } from './card';
 import { registerQuietFamily } from '../ui/palette';
@@ -76,7 +77,8 @@ export const setAudienceDrawing = (allowed: boolean): void => audience.setDrawin
 /** Turns audience features on, asking the first time how careful to be. Off needs no question. */
 export function setAudienceOn(on: boolean): void {
   if (!on) return audience.setOn(false);
-  withChoice('audience.strictness', () => audience.setOn(true));
+  // Two first-time questions, both before anything can arrive: how careful, then what your viewers can see.
+  withChoice('audience.strictness', () => withChoice(VIEW_CHOICE, () => audience.setOn(true)));
 }
 
 /** The big red button: queue cleared, effects stopped, doors closed, switch off. Says so, with a way back. */
@@ -101,7 +103,7 @@ let gateShown = false;
  * its help stay, and switching any streaming feature on brings the commands back.
  */
 // The route page's picture is still in use while it is tucked away, so the help audit counts it.
-addKeptOutHelp(() => (gateShown ? [] : startHelp));
+addKeptOutHelp(() => (gateShown ? [] : [...startHelp, ...coverHelp]));
 
 export function syncGateCommands(): void {
   const want = streamingOn();
@@ -110,7 +112,9 @@ export function syncGateCommands(): void {
   if (want) {
     withOwner(GATE_OWNER, () => {
       registerCommands(gateCommands);
+      // The cover page goes with the command that opens it, so it leaves when the streaming tools are tucked away.
       registerHelpTopics(startHelp);
+      registerHelpTopics(coverHelp);
     });
   }
   else {
@@ -153,6 +157,16 @@ export function installAudience(): void {
       global: true,
       checked: () => audience.snapshot().drawingAllowed,
       run: () => setAudienceDrawing(!audience.snapshot().drawingAllowed),
+    },
+    {
+      id: 'audience.view',
+      label: 'What can your viewers see?',
+      category: 'Audience',
+      description: 'Tell Frameling whether your viewers can see your screen or only the capture window. Secret words, pulled prompts and words from chat stay covered until you press to read them, unless only the capture window is seen.',
+      help: 'cover-spoilers',
+      keywords: ['viewers', 'see', 'cover', 'covered', 'hide', 'hidden', 'secret', 'spoiler', 'spoilers', 'surprise', 'privacy', 'private', 'capture', 'screen', 'stream', 'streamer', 'word', 'words', 'prompt', 'prompts', 'chat', 'crude', 'rude', 'showing', 'swear', 'swearing', 'viewer', 'stop'],
+      global: true,
+      run: () => void askAgain(VIEW_CHOICE, currentChoice(VIEW_CHOICE)).then((r) => r && setChoice(VIEW_CHOICE, r.value)),
     },
     {
       id: 'audience.kill',

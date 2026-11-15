@@ -10,7 +10,7 @@ import { audience, installAudience, setAudienceOn, submitAudience } from '../../
 import { _resetFeaturesForTests, isFeatureOn, registerFeatures, setFeatureOn } from '../../src/features/host';
 import { streamDoorFeature } from '../../src/streamdoor';
 import { promptJarFeature, ADD_ACTION } from '../../src/promptjar';
-import { jarCardOpen } from '../../src/promptjar/card';
+import { hideJar, jarCardOpen, jarRead } from '../../src/promptjar/card';
 import { addToJar, emptyJar, jar, JAR_KEY, loadKept, passOn, pullOne, putBack } from '../../src/promptjar/jar';
 import { DEFAULT_PACE_SECONDS, JAR_MAX } from '../../src/promptjar/logic';
 import { JarChip, emptyTheJar } from '../../src/promptjar/JarCard';
@@ -48,6 +48,9 @@ beforeEach(() => {
   setChoice('promptjar.pace', undefined);
   emptyJar();
   jarCardOpen.set(false);
+  jarRead.set(null);
+  // Viewers see only the capture window unless a test says otherwise, so a pulled prompt is plain in this window.
+  setChoice('audience.view', 'capture');
   setStreamSafe(false);
   setAudienceOn(true);
   later();
@@ -214,8 +217,8 @@ describe('nothing arrives on screen unasked', () => {
     host.remove();
   });
 
-  it('with Stream-safe on, a pulled prompt stays hidden until Show it is pressed', () => {
-    setStreamSafe(true);
+  it('while your viewers can see this window, a pulled prompt stays covered until Read it is pressed', () => {
+    setChoice('audience.view', 'screen');
     const host = document.createElement('div');
     document.body.append(host);
     const root: Root = createRoot(host);
@@ -224,18 +227,60 @@ describe('nothing arrives on screen unasked', () => {
     act(() => root.render(<JarChip />));
     act(() => void pullOne());
     expect(document.body.textContent).not.toContain('a hidden idea');
-    const show = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Show it')!;
-    expect(show).toBeTruthy();
-    act(() => show.click());
+    const read = document.querySelector<HTMLButtonElement>('[data-testid="promptjar.read"]')!;
+    expect(read).toBeTruthy();
+    // The press that reveals it is the whole covered slip, with a plain label.
+    expect(read.textContent).toContain('Read it');
+    act(() => read.click());
     expect(document.body.textContent).toContain('a hidden idea');
-    // Hidden again for the next one.
+    // One press covers it again.
+    act(() => document.querySelector<HTMLButtonElement>('[data-testid="promptjar.cover"]')!.click());
+    expect(document.body.textContent).not.toContain('a hidden idea');
+    act(() => document.querySelector<HTMLButtonElement>('[data-testid="promptjar.read"]')!.click());
+    // Closing the card covers it again, so opening it later never shows it by surprise.
+    act(() => hideJar());
+    act(() => jarCardOpen.set(true));
+    expect(document.body.textContent).not.toContain('a hidden idea');
+    act(() => document.querySelector<HTMLButtonElement>('[data-testid="promptjar.read"]')!.click());
+    // Covered again for the next one.
     act(() => passOn());
     addToJar('the next idea');
     act(() => void pullOne());
     expect(document.body.textContent).not.toContain('the next idea');
     act(() => root.unmount());
     host.remove();
-    setStreamSafe(false);
+  });
+
+  it('is covered before the question has ever been answered', () => {
+    setChoice('audience.view', undefined);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root: Root = createRoot(host);
+    addToJar('an unanswered idea');
+    act(() => jarCardOpen.set(true));
+    act(() => root.render(<JarChip />));
+    act(() => void pullOne());
+    expect(document.body.textContent).not.toContain('an unanswered idea');
+    expect(document.querySelector('[data-testid="promptjar.read"]')).toBeTruthy();
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it('shows a pulled prompt at once, with nothing to press, when viewers see only the capture window', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root: Root = createRoot(host);
+    addToJar('a plain idea');
+    act(() => jarCardOpen.set(true));
+    act(() => root.render(<JarChip />));
+    act(() => void pullOne());
+    expect(document.body.textContent).toContain('a plain idea');
+    expect(document.querySelector('[data-testid="promptjar.read"]')).toBeNull();
+    expect(document.querySelector('[data-testid="promptjar.cover"]')).toBeNull();
+    // The card no longer promises a privacy it cannot keep: it says why it is plain.
+    expect(document.body.textContent).toContain('your viewers do not see');
+    act(() => root.unmount());
+    host.remove();
   });
 
   it('there is no door action that reads the jar or shows a prompt', () => {

@@ -3,6 +3,7 @@
 //
 // No answer in time, "Not that one", the question being closed and Stop all mean no. A new question drops the old one.
 // The words live in this closure while the question is up, and nowhere else: nothing is stored and no sender is read.
+import { UNREAD_TOAST } from '../audience/spoilers';
 import { dismissToast, toast } from '../ui/toast';
 
 /** How long the question waits before it answers no for you. */
@@ -30,6 +31,8 @@ export function askToShowWords(text: string, signal: AbortSignal, waitMs = ASK_W
     if (signal.aborted) return finish(false);
     if (current !== null) dismissToast(current);
     id = toast(`Chat would like this on your screen: “${text}”`, {
+      // The words are covered until you press Read it: the question is on screen before you have decided, and a rude one must not be.
+      covered: UNREAD_TOAST.words,
       quill: 'think',
       duration: 0,
       sound: null,

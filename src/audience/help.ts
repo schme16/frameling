@@ -11,6 +11,18 @@ export const audienceHelp: HelpTopic[] = [
   },
 ];
 
+export const coverHelp: HelpTopic[] = [
+  {
+    id: 'cover-spoilers',
+    title: 'Covering secrets and unread words',
+    section: 'Streaming',
+    media: 'cover-spoilers.png',
+    summary: 'Secret words, pulled prompts and words from chat stay covered until you press to read them, so nothing crude or spoiled lands on stream. You say once what your viewers can see.',
+    keywords: ['cover', 'covered', 'hide', 'hidden', 'secret', 'spoiler', 'spoilers', 'surprise', 'privacy', 'private', 'viewers', 'see', 'capture', 'capture window', 'screen', 'stream', 'streamer', 'word', 'prompt', 'chat', 'crude', 'rude', 'eye', 'read it', 'show', 'reveal', 'peek'],
+    order: 24,
+  },
+];
+
 /** Goes with the gate commands: it is for people who stream, so it leaves when the streaming tools are tucked away. */
 export const startHelp: HelpTopic[] = [
   {

@@ -185,7 +185,7 @@ See also [Audience features and the On air pill](help:audience).`,
 
 ## Running one
 \`POST /v1/actions/<id>\`, with the details (if it needs any) as JSON in the body. These come with the door, and none touch your drawing:
-- \`door.message\`: shows a short message on screen. Body \`{"text":"hello"}\`, up to 80 letters.
+- \`door.message\`: shows a short message on screen, covered until you press **Read it**. Body \`{"text":"hello"}\`, up to 80 letters.
 - \`door.zoom\`: zooms the view. Body \`{"direction":"in"}\` or \`{"direction":"out"}\`.
 - \`door.fit-view\`: fits the drawing in the window. No body.
 - \`quill.cheer\`, \`quill.hop\`, \`quill.snack\`, \`quill.nuzzle\`, \`quill.wave\`: Quill reacts on your screen. No body. See [Quill reacts to your audience](help:quill-reacts).

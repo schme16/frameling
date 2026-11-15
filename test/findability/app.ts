@@ -153,6 +153,7 @@ export function quietWorld(): void {
   twitchStatus.set(signedOutStatus());
   setPrefs({ showQuill: true });
   setChoice('guess.peek', undefined);
+  setChoice('audience.view', undefined);
   SITUATIONS[0].set();
 }
 
@@ -291,6 +292,8 @@ export const FEATURE_STATES: FeatureState[] = [
     set: () => {
       live();
       setChoice('guess.peek', 'allow');
+      // Peeking only works when your viewers cannot see this window.
+      setChoice('audience.view', 'capture');
       startRound({ word: 'elephant', seconds: null, ending: 'first' });
     },
     proves: { on: ['guess.peek'], grey: ['guess.start'] },
