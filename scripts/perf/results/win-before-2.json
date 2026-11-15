@@ -1,0 +1,308 @@
+{
+ "label": "sweep",
+ "when": "2026-11-15T02:08:13.578Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 8154,
+   "timelineNodes": 7280,
+   "keys": 1400,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 106.4,
+   "runs": [
+    106.4,
+    106.4,
+    101.8
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 26.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     79.1
+    ],
+    [
+     "Xxe index-DMnlo2tq.js:155",
+     8.6
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "emit index-DMnlo2tq.js:10",
+     0.7
+    ],
+    [
+     "Yo index-DMnlo2tq.js:9",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     79.1
+    ],
+    [
+     "(anon) index-DMnlo2tq.js:9",
+     19.4
+    ],
+    [
+     "Fd index-DMnlo2tq.js:9",
+     18.5
+    ],
+    [
+     "Df index-DMnlo2tq.js:9",
+     18.5
+    ],
+    [
+     "Sf index-DMnlo2tq.js:9",
+     18.5
+    ],
+    [
+     "wf index-DMnlo2tq.js:9",
+     18.5
+    ],
+    [
+     "mee index-DMnlo2tq.js:9",
+     11.7
+    ],
+    [
+     "tf index-DMnlo2tq.js:9",
+     11.7
+    ],
+    [
+     "Id index-DMnlo2tq.js:9",
+     11.7
+    ],
+    [
+     "(anon) index-DMnlo2tq.js:155",
+     9.1
+    ],
+    [
+     "uu index-DMnlo2tq.js:9",
+     8.6
+    ],
+    [
+     "Au index-DMnlo2tq.js:9",
+     8.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 54.7,
+   "runs": [
+    56.8,
+    54.7,
+    52.8
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     36
+    ],
+    [
+     "Ze index-DMnlo2tq.js:10",
+     1.8
+    ],
+    [
+     "Xxe index-DMnlo2tq.js:155",
+     1.8
+    ],
+    [
+     "ds index-DMnlo2tq.js:132",
+     1
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "(anon) index-DMnlo2tq.js:155",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36
+    ],
+    [
+     "(anon) index-DMnlo2tq.js:9",
+     6.9
+    ],
+    [
+     "wf index-DMnlo2tq.js:9",
+     6.5
+    ],
+    [
+     "Df index-DMnlo2tq.js:9",
+     6.4
+    ],
+    [
+     "Sf index-DMnlo2tq.js:9",
+     6.4
+    ],
+    [
+     "Fd index-DMnlo2tq.js:9",
+     6.4
+    ],
+    [
+     "frame index-DMnlo2tq.js:156",
+     5.1
+    ],
+    [
+     "drawMain index-DMnlo2tq.js:156",
+     4.1
+    ],
+    [
+     "wDe index-DMnlo2tq.js:156",
+     4
+    ],
+    [
+     "paintStage index-DMnlo2tq.js:156",
+     4
+    ],
+    [
+     "paint index-DMnlo2tq.js:156",
+     4
+    ],
+    [
+     "as index-DMnlo2tq.js:132",
+     3.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 471.1,
+   "runs": [
+    436,
+    549.4,
+    471.1
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 5.89,
+   "topSelf": [
+    [
+     "(program) :0",
+     276.6
+    ],
+    [
+     "drawImage :0",
+     103.8
+    ],
+    [
+     "P index-DMnlo2tq.js:10",
+     23.2
+    ],
+    [
+     "Dh index-DMnlo2tq.js:134",
+     8.5
+    ],
+    [
+     "getContext :0",
+     5.4
+    ],
+    [
+     "warm index-DMnlo2tq.js:156",
+     3.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     276.6
+    ],
+    [
+     "t index-DMnlo2tq.js:156",
+     144.6
+    ],
+    [
+     "warm index-DMnlo2tq.js:156",
+     144
+    ],
+    [
+     "build index-DMnlo2tq.js:156",
+     123.6
+    ],
+    [
+     "drawImage :0",
+     103.8
+    ],
+    [
+     "frame index-DMnlo2tq.js:156",
+     34.7
+    ],
+    [
+     "drawMain index-DMnlo2tq.js:156",
+     32.3
+    ],
+    [
+     "Ch index-DMnlo2tq.js:134",
+     31.8
+    ],
+    [
+     "paint index-DMnlo2tq.js:156",
+     27.1
+    ],
+    [
+     "paintStage index-DMnlo2tq.js:156",
+     26.4
+    ],
+    [
+     "wDe index-DMnlo2tq.js:156",
+     26
+    ],
+    [
+     "(anon) index-DMnlo2tq.js:9",
+     25.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
