@@ -100,6 +100,59 @@ function quietFactor(it: PaletteItem, queryWords: string[]): number {
   return 1;
 }
 
+/** Doing beats reading: what a command gains over a help topic that matches just as well. */
+export const COMMAND_EDGE = 8;
+
+/** What a name typed in full, or a keyword phrase typed in full, adds: less than being the start of the name, more than a lucky word. */
+export const NAMED_BOOST = 25;
+
+/**
+ * A keyword of several words that the person typed all of, in any order ("rub out", "fill in", "dark mode", "add
+ * layer"). Somebody chose that phrase on purpose as another name for the thing, so it counts like the start of its name.
+ */
+export function keywordIsPhrase(keywords: string[], typed: string[]): boolean {
+  return keywords.some((k) => {
+    const w = wordsOf(k);
+    return w.length > 1 && w.every((x) => typed.includes(x));
+  });
+}
+
+/** The part of the app a verb points at: "draw a square" is a tool, "import a picture" is in the File menu. */
+const VERB_HOMES: Record<string, string> = { draw: 'Tools', import: 'File' };
+/** How much a command in the part of the app the verb points at gains. */
+export const HOME_BOOST = 12;
+/** What the app says where a person says "my": "Naming your drawing" is the answer to "rename my drawing". */
+const SAME_FILLER: Record<string, string> = { my: 'your', me: 'you' };
+
+/** The words of a name, without what is in brackets, which is only another name for it. */
+const nameWords = (label: string): string[] => wordsOf(label.replace(/\([^)]*\)/g, ' '));
+
+/**
+ * How much of a name was typed: 0 when what was typed is not in it, in order, otherwise the typed words over the name's
+ * words. "Open" typed is all of Open and a third of "Open Aseprite file", so the plain one comes first. The last word
+ * may be half typed.
+ */
+export function nameShare(label: string, typed: string[]): number {
+  const name = nameWords(label);
+  if (!name.length || !typed.length) return 0;
+  let at = 0;
+  for (let i = 0; i < typed.length; i++) {
+    const last = i === typed.length - 1;
+    while (at < name.length && !(name[at] === typed[i] || (last && name[at].startsWith(typed[i])))) at++;
+    if (at >= name.length) return 0;
+    at++;
+  }
+  return Math.min(1, typed.length / name.length);
+}
+
+/** The whole name of a command, typed somewhere in a sentence: "open a file" has Open in it, "go to the next frame" has Next frame. */
+export function nameIsTyped(label: string, typed: string[]): boolean {
+  const name = nameWords(label);
+  if (!name.length) return false;
+  for (let i = 0; i + name.length <= typed.length; i++) if (name.every((w, j) => typed[i + j] === w)) return true;
+  return false;
+}
+
 export function scoreItem(query: string, it: PaletteItem): number {
   const all = wordsOf(query);
   const meant = all.filter((w) => !FILLER.has(w));
@@ -117,12 +170,19 @@ export function scoreItem(query: string, it: PaletteItem): number {
   const labelLower = it.label.toLowerCase();
   // Things whose whole name starts with what was typed come first, then commands ahead of help.
   const q = query.trim().toLowerCase();
-  if (labelLower.startsWith(q)) total += it.kind === 'command' ? 40 : 20;
+  // Doing beats reading, so only commands get this: the help page for a tool never rides in on its phrase ahead of the tool.
+  const named = it.kind === 'command' && (keywordIsPhrase(it.command.keywords ?? [], all) || nameIsTyped(it.label, all));
+  const share = nameShare(it.label, all) || (labelLower.startsWith(q) ? Math.min(1, all.length / nameWords(it.label).length) : 0);
+  if (share > 0) total += (it.kind === 'command' ? 40 : 20) * share;
+  else if (named) total += NAMED_BOOST;
   // Doing beats reading: a command with a word starting with it ("Choose themes" for "theme") outranks its help page.
   else if (it.kind === 'command' && labelLower.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) total += 30;
-  if (it.kind === 'command') total += 5;
+  if (it.kind === 'command') total += COMMAND_EDGE;
   // Filler words are not needed to match, but a name that has them ('Make a reusable symbol' for 'make a symbol') is closer.
-  total += qs.length * all.filter((w) => FILLER.has(w) && label.includes(w)).length * 3;
+  total += qs.length * all.filter((w) => FILLER.has(w) && (label.includes(w) || label.includes(SAME_FILLER[w]))).length * 3;
+  // The verb says which part of the app: somebody who says "draw" wants a tool, and "import" is in the File menu.
+  const home = all.map((w) => VERB_HOMES[w]).find((c) => c && it.kind === 'command' && it.category === c);
+  if (home) total += qs.length * HOME_BOOST;
   return (total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0)) * quietFactor(it, all);
 }
 

@@ -137,6 +137,12 @@ export const PHRASES: Phrase[] = [
   // Ordinary words find ordinary things first: these used to put three stream settings ahead of Preferences
   P('preferences', 'view.preferences'),
   P('test my pen', 'pen.check', 'help:pen-check'),
+  // These were known misses until the palette learned to prefer a plain name over a specialised one.
+  P('pan', 'tools.hand'),
+  P('light mode', 'view.toggleTheme'),
+  P('colour it in', 'tools.fill'),
+  P('flip it', 'select.flipH', 'select.flipV'),
+  P('turn off stream stuff', 'features.streamingOff'),
 ];
 
 /**
@@ -146,16 +152,6 @@ export const PHRASES: Phrase[] = [
 export const KNOWN_MISSES: Phrase[] = [
   // The fill and stroke colour commands name "fill" and "colour" in their labels, which beats the paint bucket's synonyms.
   P('fill with colour', 'tools.fill'),
-  // "Panels" starts with "pan", and a name that starts with the word outranks an exact synonym (the hand tool's "pan").
-  P('pan', 'tools.hand'),
-  // The twenty blend modes ("Soft light", "Hard light") are named with "light" and "mode" and outrank the theme switch.
-  P('light mode', 'view.toggleTheme'),
-  // "Colour" is in the fill and stroke colour commands' own labels, so they beat the paint bucket here too.
-  P('colour it in', 'tools.fill'),
-  // Flipping the view and flipping a layer's mask both say "flip" plainly; flipping the drawing loses to them.
-  P('flip it', 'select.flipH', 'select.flipV'),
-  // Stream-safe and the overlay settings still outrank the one command that tucks the whole family away.
-  P('turn off stream stuff', 'features.streamingOff'),
 ];
 
 let items: PaletteItem[] = [];

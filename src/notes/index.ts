@@ -13,6 +13,15 @@ import './marksTool';
 import './marksHelp';
 import { registerPanel } from '../core/registry';
 import { lazyPanel } from '../core/lazy';
+import { registerQuietFamily } from '../ui/palette';
+
+// Notes and marks are for reviewing: they say "erase", "circle" and "draw" too, but they are not what somebody means by
+// "rub out" or "draw a circle". They step back for ordinary drawing words and come forward for their own.
+registerQuietFamily({
+  has: (c) => /^(notes|marks)\./.test(c.id) || c.id === 'tools.marks' || c.id === 'tools.notes',
+  words: ['note', 'notes', 'mark', 'marks', 'markup', 'annotate', 'annotation', 'annotations', 'comment', 'comments', 'review', 'feedback', 'redline', 'highlight', 'arrow', 'arrows', 'scribble', 'sticky', 'remark'],
+  quiet: () => true,
+});
 
 registerPanel({
   id: 'notes',
