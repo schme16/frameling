@@ -3,7 +3,7 @@
 import { choose, type ChoiceDef } from '../core/choices';
 import { store } from '../core/store';
 import { sceneOf } from '../core/symbols';
-import { baseName, desktop } from '../io/desktop';
+import { desktop } from '../io/desktop';
 import { clearAutosaveCopy, loadBytes, registerOpener, registerSaveHook } from '../io/document';
 import { FileProblem, saveFile } from '../io/file';
 import { notify } from '../io/notify';
@@ -11,6 +11,7 @@ import { withoutNotes } from '../notes/model';
 import { defaultSettings } from '../export/plan';
 import { getLink, readPlayable, setLink, type PlayableLink } from './link';
 import { choiceWord } from '../words/choices';
+import { displayFile } from '../core/streamSafe';
 
 export const PLAYABLE_FILTERS = [{ name: 'Interactives animations', extensions: ['flplay'] }];
 export const isPlayablePath = (p: string): boolean => /\.flplay$/i.test(p);
@@ -40,7 +41,7 @@ export async function openPlayableBytes(bytes: Uint8Array, path: string): Promis
     return false;
   }
   if (!p.source) {
-    notify(`"${baseName(path)}" was exported without the editable drawing, so there's nothing to edit. Next time, tick "Include the editable drawing" when exporting for Interactives.`, 'warn', undefined, 10000);
+    notify(`"${displayFile(path)}" was exported without the editable drawing, so there's nothing to edit. Next time, tick "Include the editable drawing" when exporting for Interactives.`, 'warn', undefined, 10000);
     return false;
   }
   if (!(await loadBytes(p.source, null))) return false;
@@ -48,7 +49,7 @@ export async function openPlayableBytes(bytes: Uint8Array, path: string): Promis
   const old = getLink(doc.id);
   setLink(doc.id, { path, update: old && old.path === path ? old.update : true, scale: p.manifest.scale, transparent: p.manifest.background === null });
   void desktop()?.files.linkPlayable?.(path).catch(() => undefined);
-  notify(`Editing the drawing from ${baseName(path)}. Saving updates it.`, 'info', undefined, 6000);
+  notify(`Editing the drawing from ${displayFile(path)}. Saving updates it.`, 'info', undefined, 6000);
   return true;
 }
 
@@ -75,7 +76,7 @@ export function toggleUpdate(): void {
   const l = getLink(doc.id);
   if (!l) return;
   setLink(doc.id, { ...l, update: !l.update });
-  notify(l.update ? `Saving won't change ${baseName(l.path)} now.` : `Saving updates ${baseName(l.path)} too.`, 'info', undefined, 3000);
+  notify(l.update ? `Saving won't change ${displayFile(l.path)} now.` : `Saving updates ${displayFile(l.path)} too.`, 'info', undefined, 3000);
   // Menus and the palette read the tick from the store; nudge them.
   store().setUi({});
 }
@@ -93,10 +94,10 @@ export async function updatePlayable(link: PlayableLink): Promise<boolean> {
     if (r.kind !== 'file') throw new Error('unexpected');
     const w = await api.files.write(link.path, r.bytes);
     if ('error' in w) throw new FileProblem(w.error);
-    notify(`Updated ${baseName(link.path)}.`, 'success', undefined, 2500);
+    notify(`Updated ${displayFile(link.path)}.`, 'success', undefined, 2500);
     return true;
   } catch (e) {
-    notify(`${baseName(link.path)} wasn't updated${e instanceof FileProblem ? `: ${e.message}` : '. Try File > Export > Export for Interactives.'}`, 'error', undefined, 9000);
+    notify(`${displayFile(link.path)} wasn't updated${e instanceof FileProblem ? `: ${e.message}` : '. Try File > Export > Export for Interactives.'}`, 'error', undefined, 9000);
     return false;
   }
 }

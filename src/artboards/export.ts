@@ -21,6 +21,7 @@ import { artboardDoc, artboardsOf, exportNameOf, hasArtboards, joinShots } from 
 import { rememberedFrame } from './ops';
 import { packArtboardAtlas } from './pack';
 import { choiceWord } from '../words/choices';
+import { displayFile } from '../core/streamSafe';
 
 export type ArtboardExportMode = 'one' | 'each' | 'joined' | 'atlas';
 
@@ -267,7 +268,7 @@ export async function exportArtboards(
     shown = w.paths[0];
   }
   const what = `${ids.length} artboard${ids.length === 1 ? '' : 's'} as ${info.title}`;
-  notifySaved(`Exported ${what}${where === 'zip' ? ` in ${baseName(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Exported ${what}${where === 'zip' ? ` in ${displayFile(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }
 

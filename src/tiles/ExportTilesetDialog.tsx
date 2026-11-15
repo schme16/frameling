@@ -2,7 +2,7 @@
 import { ExNote } from '../export/ExNote';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
-import { baseName, desktop } from '../io/desktop';
+import { desktop } from '../io/desktop';
 import { can } from '../platform';
 import { Modal, mountModal } from '../io/mount';
 import { notify, notifySaved } from '../io/notify';
@@ -10,6 +10,7 @@ import { Icon } from '../ui/icons';
 import { buildTileAtlas, DEFAULT_TILESET_EXPORT, tilesetFiles, tilesetTexturePath, type TilesetExportSettings } from './export';
 import '../export/export.css';
 import './tiles.css';
+import { displayFile } from '../core/streamSafe';
 
 const KEY = 'frameling.export.tileset';
 
@@ -82,7 +83,7 @@ function ExportTilesetDialog({ close }: { close: () => void }) {
       if ('error' in w) return notify(w.error, 'error');
       saveSettings(s);
       const shown = w.paths.find((p) => p.endsWith('.png')) ?? w.paths[0];
-      notifySaved(`Exported ${baseName(shown)}${w.paths.length > 1 ? ` and ${w.paths.length - 1} more` : ''}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+      notifySaved(`Exported ${displayFile(shown)}${w.paths.length > 1 ? ` and ${w.paths.length - 1} more` : ''}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
       close();
     } finally {
       setBusy(false);

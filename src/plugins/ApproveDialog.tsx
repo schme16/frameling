@@ -46,7 +46,7 @@ function Approve({ m, verb, answer }: { m: PluginManifest; verb: string; answer:
           </span>
           <div>
             <strong>{m.name}</strong> <span className="ui-tag">{m.version}</span>
-            {m.author && <p className="plugin-item-by">By {m.author}</p>}
+            {m.author && <p className="plugin-item-by">By {m.author /* stream-safe-ok: a plugin maker's name, not yours */}</p>}
           </div>
         </div>
         {m.description && <p className="plugin-item-desc">{m.description}</p>}

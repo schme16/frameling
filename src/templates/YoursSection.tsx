@@ -6,6 +6,7 @@ import { Icon } from '../ui/icons';
 import { importTemplate, removeTemplate, shareTemplate } from './actions';
 import { templateSources, userTemplatesVersion, type TemplateCard, type TemplateSource } from './user';
 import './templates.css';
+import { displayName } from '../core/streamSafe';
 
 function useSource(s: TemplateSource): TemplateCard[] | null {
   const version = userTemplatesVersion.use((v) => v);
@@ -28,7 +29,7 @@ export function SourceCards({ source, onPick, thumb }: { source: TemplateSource;
     <div className="ui-example-list tpl-list">
       {list.map((t) => (
         <div key={t.id} className="tpl-card-wrap">
-          <button type="button" data-wraps className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())} data-tip={t.author ? `By ${t.author}` : undefined} data-tip-desc={t.tags?.length ? t.tags.join(', ') : undefined}>
+          <button type="button" data-wraps className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())} data-tip={t.author ? `By ${displayName(t.author)}` : undefined} data-tip-desc={t.tags?.length ? t.tags.join(', ') : undefined}>
             <span className="ui-example-art">
               {thumb(t)}
               <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>

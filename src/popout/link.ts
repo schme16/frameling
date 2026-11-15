@@ -13,6 +13,7 @@ import { setInkTap, setLiveTap } from './ink';
 import { Mirror } from './mirror';
 import type { FromPopout, Look, LiveDrawing, PopoutTheme, ToPopout } from './protocol';
 import { marksVisible, throughCamera, type CameraChoice, type MarksChoice } from './show';
+import { subscribeStreamSafe } from '../core/streamSafe';
 
 interface Session {
   port: MessagePort;
@@ -98,6 +99,8 @@ function start(port: MessagePort): void {
       mirror = new Mirror({ get: () => store().get(), lastChange: () => store().lastChange() }, send, lookOf);
       const m = mirror;
       unsubs.push(store().subscribe(() => m.sync()));
+      // The second window's title follows Stream-safe going on or off.
+      unsubs.push(subscribeStreamSafe(() => m.sync()));
       unsubs.push(subscribeViewSettings(() => m.sync()));
       unsubs.push(subscribeMarksState(() => m.sync()));
       unsubs.push(onChoiceChange((id) => id.startsWith('popout.') && m.sync()));

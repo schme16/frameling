@@ -6,6 +6,7 @@ import '../../pixel/import/import.css';
 import '../import.css';
 import { foundSummary, gapsIn, picturesOf, type SequencePlan } from './plan';
 import type { Decoded, DecodedPicture, SequenceTiming } from './read';
+import { displayFile, useStreamSafe } from '../../core/streamSafe';
 
 export interface SequenceRequest {
   pictures: DecodedPicture[];
@@ -48,6 +49,7 @@ export function SequenceDialog({ name, plan, decoded, into, docFps, finish, clos
   finish: (r: SequenceRequest) => void;
   close: () => void;
 }) {
+  useStreamSafe();
   const [runKey, setRunKey] = useState<string | 'all'>('all');
   const [fps, setFps] = useState(12);
   const [hold, setHold] = useState(1);
@@ -95,7 +97,7 @@ export function SequenceDialog({ name, plan, decoded, into, docFps, finish, clos
               {pictures.length ? `${Math.min(frame, pictures.length - 1) + 1} of ${pictures.length}` : ''}
             </span>
           </div>
-          {shown && <p className="im-hint">{shown.path.slice(shown.path.lastIndexOf('/') + 1)}</p>}
+          {shown && <p className="im-hint">{displayFile(shown.path)}</p>}
         </div>
         <div className="im-controls">
           <p className="im-file">
@@ -133,7 +135,7 @@ export function SequenceDialog({ name, plan, decoded, into, docFps, finish, clos
                 {plan.runs.slice(0, 6).map((r) => (
                   <button key={r.key} type="button" role="radio" aria-checked={runKey === r.key} className={`im-way${runKey === r.key ? ' on' : ''}`} onClick={() => (setRunKey(r.key), setFrame(0))}>
                     <b>{r.label}</b>
-                    <span>{r.paths.length}</span>
+                    <span>{r.paths.length /* stream-safe-ok: a count */}</span>
                   </button>
                 ))}
               </div>

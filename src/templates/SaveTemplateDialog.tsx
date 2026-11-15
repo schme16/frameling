@@ -8,6 +8,7 @@ import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { cleanTags, guessKind, LICENCES } from './community';
 import { rememberedAuthor, saveTemplate, templateDoc } from './actions';
+import { useMaskedType } from '../core/streamSafe';
 
 export function openSaveTemplate(): void {
   mountModal((close) => <SaveTemplate close={close} />);
@@ -16,6 +17,7 @@ export function openSaveTemplate(): void {
 function SaveTemplate({ close }: { close: () => void }) {
   const doc = templateDoc();
   const you = rememberedAuthor();
+  const maskedType = useMaskedType();
   const [name, setName] = useState(doc.name || 'My template');
   const [blurb, setBlurb] = useState('');
   const [tags, setTags] = useState('');
@@ -60,7 +62,7 @@ function SaveTemplate({ close }: { close: () => void }) {
         <div className="tpl-save-row">
           <label className="ui-field">
             <span>Made by</span>
-            <input type="text" value={author} maxLength={80} placeholder="Your name" onChange={(e) => setAuthor(e.target.value)} />
+            <input type={maskedType} value={author /* stream-safe-ok: typed here, shown as dots while stream-safe */} maxLength={80} placeholder="Your name" onChange={(e) => setAuthor(e.target.value)} />
           </label>
           <label className="ui-field">
             <span>Licence</span>

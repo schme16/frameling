@@ -9,6 +9,7 @@ import { isSwitcherLook, type SwitcherLook } from './switcherModel';
 import { canSend } from '../beta/send';
 import { showExplanationsDefault } from './explainModel';
 import { DEFAULT_HISTORY_STEPS, HISTORY_STEPS_RANGE, setHistorySteps } from '../core/store';
+import { setStreamSafe } from '../core/streamSafe';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -105,6 +106,8 @@ export interface Prefs {
   themePicking: 'basic' | 'advanced';
   /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
+  /** Stream-safe mode: show friendly stand-ins for file paths, your name and keys, so a shared screen gives nothing away. Display only; off by default. See src/core/streamSafe.ts. */
+  streamSafe: boolean;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -152,6 +155,7 @@ export const DEFAULT_PREFS: Prefs = {
   pixelOutlineWidth: DEFAULT_OUTLINE,
   newPixelSize: 8,
   pluginDiagnostics: false,
+  streamSafe: false,
 };
 
 /**
@@ -207,6 +211,7 @@ export function migratePrefs(raw: unknown): Prefs {
     cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
     pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
     pluginDiagnostics: bool(r.pluginDiagnostics, DEFAULT_PREFS.pluginDiagnostics),
+    streamSafe: bool(r.streamSafe, DEFAULT_PREFS.streamSafe),
     pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
     newPixelSize: typeof r.newPixelSize === 'number' && Number.isFinite(r.newPixelSize) ? Math.min(64, Math.max(1, Math.round(r.newPixelSize))) : DEFAULT_PREFS.newPixelSize,
   };
@@ -262,6 +267,7 @@ export function applyPrefs(): void {
   applyUiScale(p.uiScale);
   // The store keeps its own copy, so undo works the same in tests and harnesses with no DOM.
   setHistorySteps(p.historySteps);
+  setStreamSafe(p.streamSafe);
   if (typeof document === 'undefined') return;
   watchSystem();
   const root = document.documentElement;

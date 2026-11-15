@@ -24,6 +24,8 @@ import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 import { hiddenTemplateIds } from '../features/host';
 import { openPixelChooser, PixelStarters } from '../pixel/Chooser';
+import { shownRecent } from '../io/recentShown';
+import { useStreamSafe } from '../core/streamSafe';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -37,6 +39,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const units = usePrefs((p) => p.units);
   const [custom, setCustom] = useState(false);
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
+  useStreamSafe();
   const [recent, setRecent] = useState<RecentFile[]>([]);
   const pics = useRecentPictures(recent);
   const open = getCommand('file.open');
@@ -123,19 +126,19 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         <div className="ui-recent" data-help="saving-and-opening">
           <h3>Pick up where you left off</h3>
           <div className="ui-recent-list">
-            {recent.map((r) => (
+            {shownRecent(recent).map(({ file: r, name, tip }) => (
               <button
                 key={r.path}
                 type="button"
                 className="ui-recent-item"
-                data-tip={r.path}
+                data-tip={tip}
                 onClick={() => {
                   closeSheet();
                   window.setTimeout(() => void openPath(r.path), 0);
                 }}
               >
                 <RecentPicture preview={pics[r.path]} size={44} />
-                <span>{r.name}</span>
+                <span>{name}</span>
               </button>
             ))}
           </div>

@@ -9,6 +9,7 @@ import { notify } from './notify';
 import { closeSheet, overlays } from '../ui/overlays';
 import { recovery, restorePending } from './recovery';
 import { bringBack } from './restart';
+import { streamSafe, subscribeStreamSafe } from '../core/streamSafe';
 
 export { autosaveNow };
 
@@ -70,14 +71,16 @@ export function startFileServices(): void {
     const { ui } = store().get();
     const name = documentTitle();
     document.title = `${ui.dirty ? '● ' : ''}${name} - Frameling`;
-    const key = `${ui.dirty}|${name}|${ui.filePath}`;
+    const key = `${ui.dirty}|${name}|${ui.filePath}|${streamSafe()}`;
     if (key === last) return;
     last = key;
-    api.app.setDocumentState({ dirty: ui.dirty, name, filePath: ui.filePath });
+    api.app.setDocumentState({ dirty: ui.dirty, name, filePath: ui.filePath, hidePath: streamSafe() });
   };
   sync();
   // The store swaps its whole object when the document changes, so subscribing is cheap to filter.
   store().subscribe(sync);
+  // Turning stream-safe on or off changes the title right away.
+  subscribeStreamSafe(sync);
 
   api.app.onOpenFile((p) => void openPath(p));
   api.app.onSaveBeforeClose(() => saveDocument());

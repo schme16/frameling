@@ -12,6 +12,7 @@ import { hasDrawing, whereToPut, type ImportWhere } from '../where';
 import { layeredPieces, countNodes, countText } from './build';
 import { LayeredProblem, plural, type LayeredFile } from './model';
 import { LAYERED_ACCEPT, readLayered } from './read';
+import { displayFile } from '../../core/streamSafe';
 
 /** What came in, in a sentence. Pure. */
 export function layeredHeadline(name: string, where: ImportWhere, file: LayeredFile, cutOff: boolean): string {
@@ -39,7 +40,7 @@ export async function importLayeredBytes(bytes: Uint8Array, path: string, asked 
   }
   let pieces = layeredPieces(file, where === 'add' ? doc.length : STILL_LENGTH);
   if (!pieces.layers.length) {
-    notify(`There are no picture layers in "${baseName(path)}" that Frameling can bring in.${file.left.length ? ' ' + file.left[0] : ''}`, 'warn', undefined, 10000);
+    notify(`There are no picture layers in "${displayFile(path)}" that Frameling can bring in.${file.left.length ? ' ' + file.left[0] : ''}`, 'warn', undefined, 10000);
     return false;
   }
   let cutOff = false;
@@ -47,7 +48,7 @@ export async function importLayeredBytes(bytes: Uint8Array, path: string, asked 
     const c = centreOn(pieces, { width: doc.width, height: doc.height });
     pieces = c.pieces;
     cutOff = c.cutOff;
-    store().update(`Add layers from "${baseName(path)}"`, (d) => addPieces(d, pieces));
+    store().update(`Add layers from "${displayFile(path)}"`, (d) => addPieces(d, pieces));
     const added = pieces.layers[pieces.layers.length - 1];
     if (added) store().setUi({ activeLayerId: added.id as Id });
   } else {

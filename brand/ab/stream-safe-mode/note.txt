@@ -1,0 +1,1 @@
+A is Stream-safe off (Open recent shows real names and folders, the top bar has no pill); B is Stream-safe on (the same list as My drawing 1 to 3, in a folder, with a plain icon instead of each picture, and the Stream-safe pill in the top bar). Dark theme, same window, made with scripts/docs/record.cjs under xvfb.

@@ -16,12 +16,15 @@ import { askSaveInPage, saveAskAvailable } from './saveAsk';
 import { thumbnailOf } from './thumb';
 import { previewBytes } from './preview';
 import { handoverFits } from '../shared/handover';
+import { displayPath, streamSafe } from '../core/streamSafe';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
   const { ui } = store().get();
   const doc = store().rootDoc();
-  return ui.filePath ? stripExt(baseName(ui.filePath)) : doc.name || 'Untitled';
+  // While stream-safe, the file's own name is not shown: it stands in as "My drawing".
+  if (ui.filePath) return streamSafe() ? displayPath(ui.filePath) : stripExt(baseName(ui.filePath));
+  return doc.name || 'Untitled';
 }
 
 export async function clearAutosaveCopy(): Promise<void> {

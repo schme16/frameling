@@ -265,7 +265,7 @@ registerIpc({
     if (!win) return;
     // The Mac title bar shows the little dot and the file's icon.
     win.setDocumentEdited(s.dirty);
-    win.setRepresentedFilename(s.filePath ?? '');
+    win.setRepresentedFilename(s.hidePath ? '' : (s.filePath ?? ''));
   },
   keepUnsavedDone: () => keepDone?.(),
   lastCrash: () => readLast(dataDir()),
