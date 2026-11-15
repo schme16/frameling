@@ -1,0 +1,4 @@
+A = before (development at 29c3c844), B = after (this branch). Same pan, same Medium gap setting, a click in the round part, cropped on the handle's neck.
+A: the colour only reaches the mouth of the neck and leaves it hollow. B: the colour runs the whole neck out to the real line.
+a-before / b-after are the single shots at 3x, pair is the two side by side. Each in -dark and -light.
+Made by scripts/docs/ab-fill-neck/fill-neck.cjs.
