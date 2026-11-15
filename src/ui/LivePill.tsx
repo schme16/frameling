@@ -1,7 +1,7 @@
-// The Live pill in the title bar, and the card that hangs from it. One pill for two things: the red On air part (audience
-// features are on: what is waiting, the counts, Stop) and the OBS part (what OBS is doing). What it says for each mix is
-// decided in liveState.ts. Press either part and the same card opens, with the queue and the OBS settings in it, so nothing
-// that used to be a separate pill is out of reach. It never shows a name, because the gate never keeps one.
+// The Live pill in the title bar, and the card that hangs from it. One pill for two things: the yellow audience part
+// (audience participation is on; pressing it turns it off, and the small arrow beside it opens the card with the waiting
+// count) and the OBS part (what OBS is doing; pressing it opens the card). What it says for each mix is decided in
+// liveState.ts. The card has the queue and the OBS settings in it, so nothing that used to be a separate pill is out of reach. It never shows a name, because the gate never keeps one.
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Icon } from './icons';
 import { openHelp, openPrefs } from './overlays';
@@ -67,7 +67,7 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
     <div className="ui-menu aud-card" role="dialog" aria-label={s.on ? 'Audience features' : 'OBS'} ref={ref} style={style} data-testid="audience.card">
       {s.on && (
         <>
-          <h2 className="aud-title">Audience features are on</h2>
+          <h2 className="aud-title">Audience participation is on</h2>
           <p className="aud-sub">Everything from outside goes through here first. Frameling does not keep who sent what, only how many.</p>
           {s.doors.length > 0 && <p className="aud-doors">Open to: {s.doors.map((d) => d.label).join(', ')}</p>}
           <p className="aud-doors" data-testid="audience.interrupts">
@@ -114,7 +114,7 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
           {s.on ? <h3 className="aud-head">OBS</h3> : <h2 className="aud-title">OBS</h2>}
           <p className="aud-doors" data-testid="obs.line" data-state={o.link}>
             {look.detail}
-            {s.on && o.streaming && ' Stop above ends audience features only. It does not touch your stream.'}
+            {s.on && o.streaming && ' Turning audience participation off does not touch your stream.'}
           </p>
           <div className="aud-actions">
             {o.link === 'waiting' && (
@@ -140,7 +140,7 @@ export function LivePill() {
   const o = useObsState();
   const open = cardOpen.use((v) => v);
   const pill = useRef<HTMLDivElement>(null);
-  const m = livePill({ audience: s.on, waiting: s.queue.length, obs: o });
+  const m = livePill({ audience: s.on, waiting: s.queue.length, obs: o, stopKey: killKey() });
   if (!m) return null;
   const toggle = () => cardOpen.set(!open);
   const kind = m.obs?.kind;
@@ -150,25 +150,17 @@ export function LivePill() {
       <div className="live-pill" ref={pill} role="group" aria-label={m.label} data-tone={m.tone} data-testid="live.pill" data-help={m.audience ? 'audience' : 'obs-golive'}>
         {m.audience && (
           <>
-            <button type="button" className="aud-pill" data-testid="audience.onair" aria-haspopup="dialog" aria-expanded={open} data-tip={m.label} data-tip-desc={m.detail} onClick={toggle}>
+            <button type="button" className="aud-pill" data-testid="audience.pill" aria-label={m.audience.tip} data-tip={m.audience.tip} data-tip-desc={m.audience.tipDetail} onClick={stopAudience}>
               <span className="aud-dot" aria-hidden="true" />
-              On air
+              {m.audience.word}
+            </button>
+            <button type="button" className="aud-more" data-testid="audience.more" aria-haspopup="dialog" aria-expanded={open} aria-label={m.audience.openLabel} data-tip={m.audience.openTip} data-tip-desc={m.audience.openDetail} onClick={toggle}>
               {m.audience.waiting > 0 && (
-                <span className="aud-n" aria-label={`${m.audience.waiting} waiting`}>
+                <span className="aud-n" aria-hidden="true">
                   {m.audience.waiting}
                 </span>
               )}
-            </button>
-            <button
-              type="button"
-              className="aud-stop"
-              data-testid="audience.stop"
-              data-tip={`Stop everything from the audience (${killKey()})`}
-              data-tip-desc="This ends audience features only. It does not touch OBS."
-              aria-label="Stop everything from the audience"
-              onClick={stopAudience}
-            >
-              Stop
+              <Icon name="chevron-down" size={12} />
             </button>
           </>
         )}

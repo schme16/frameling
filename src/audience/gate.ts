@@ -116,7 +116,7 @@ export interface AudienceActionDef<P = undefined> {
 /** A way in from outside. The gate opens it with the switch and closes it on kill. `open` and `close` must be safe to call twice. */
 export interface AudienceDoorDef {
   id: string;
-  /** Plain words ("Local actions"), shown on the On air pill. */
+  /** Plain words ("Local actions"), shown on the audience card. */
   label: string;
   open(): void;
   close(): void;

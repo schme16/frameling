@@ -14,7 +14,7 @@ export function registerJarActions(): void {
     kind: 'jar',
     cooldown: ADD_COOLDOWN,
     parse: cleanPrompt,
-    // A repeat is quietly ignored. A full jar says so, which the On air card counts as "did not work".
+    // A repeat is quietly ignored. A full jar says so, which the audience card counts as "did not work".
     run: ({ text }) => {
       if (addToJar(text) === 'full') throw new Error('The prompt jar is full.');
     },

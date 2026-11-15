@@ -19,7 +19,7 @@ export function AudiencePrefsRow() {
       <div className="ui-pref-row">
         <div className="ui-pref-text">
           <strong>Audience features</strong>
-          <span>Let viewers and stream tools join in, in small safe ways. Off until you switch it on, and a red On air pill shows while it is on.</span>
+          <span>Let viewers and stream tools join in, in small safe ways. Off until you switch it on, and a yellow Audience participation: on pill shows while it is on, and pressing it turns it off.</span>
         </div>
         <div className="ui-pref-control">
           <button type="button" role="switch" aria-checked={on} aria-label="Audience features on or off" data-testid="audience.switch" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => setAudienceOn(!on)}>

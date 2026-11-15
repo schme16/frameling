@@ -8,7 +8,7 @@ export const bodies: Record<string, string> = {
 3. **End the vote** (**Ctrl+Alt+Shift+Y**) when you like, or let the clock do it. The panel shows the winner, or says it's a tie, or that nobody voted.
 4. **Close** puts it all away.
 
-Starting a vote turns audience features on, so the red **On air** pill appears. **Stop** (**Ctrl+Alt+K**) drops a vote that's going.
+Starting a vote turns audience features on, so the yellow **Audience participation: on** pill appears. **Stop** (**Ctrl+Alt+K**) drops a vote that's going.
 
 ## Getting the votes in
 Your stream tool (Streamer.bot, Firebot, a Stream Deck) sends each vote to the [actions door](help:actions-door). To let viewers type **!vote 2** in chat, follow [Chat commands](help:chat-commands). The address and body:
@@ -30,5 +30,5 @@ If a vote has no voter id, Frameling turns it away and tells you how many. You c
 
 **Good to know:** a vote for an option that doesn't exist is turned away, and so is a vote when none is going. Up to 5000 people can vote in one.
 
-See also [Audience features and the On air pill](help:audience).`,
+See also [Audience features and the pill](help:audience).`,
 };

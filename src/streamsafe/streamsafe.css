@@ -23,10 +23,12 @@
   outline-offset: 2px;
 }
 
-/* The OBS part of the Live pill. On its own it is the whole pill and takes its look from the tone; beside On air it is
-   a segment in the same pill. Calm unless OBS is live or needs you. Connected is mint, never the yellow of "picked". */
+/* The OBS part of the Live pill. It always paints its own background, so its colour is its own whatever the audience part
+   beside it is doing. Green is connected and ready, red is recording or streaming, and nothing else is either. Looking and
+   not found are plain and quiet. Needs-you is plain with a heavy ring and a warning mark, a look no other part has, so
+   it is never taken for the yellow audience part. */
 .live-pill[data-tone='ready'] {
-  --live-ring: var(--ok);
+  --live-ring: var(--aud-green);
 }
 .live-pill[data-tone='quiet'],
 .live-pill[data-tone='looking'] {
@@ -34,14 +36,11 @@
   opacity: 0.8;
 }
 .live-pill[data-tone='fix'] {
-  --live-ring: var(--sunny-deep);
+  --live-ring: var(--text);
 }
-.live-pill[data-tone='rec'] {
-  --live-ring: var(--aud-red);
-}
+.live-pill[data-tone='rec'],
 .live-pill[data-tone='live'] {
   --live-ring: var(--aud-red);
-  background: var(--aud-red);
 }
 .live-obs {
   display: inline-flex;
@@ -50,13 +49,16 @@
   height: 26px;
   padding: 0 11px 0 9px;
   border: 0;
-  background: transparent;
+  background: var(--panel);
   color: var(--text);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+}
+.live-obs:hover {
+  background: var(--panel-2);
 }
 .live-obs:focus-visible {
   outline: 2px solid var(--focus, currentColor);
@@ -66,73 +68,58 @@
 .live-obs-looking {
   color: var(--muted);
 }
-.live-obs-ready .ui-icon,
-.live-obs-ready svg {
-  color: var(--ok);
+.live-obs-ready,
+.live-obs-ready:hover {
+  background: var(--aud-green);
+  color: #fff;
+  font-weight: 700;
 }
-.live-obs-live {
+.live-obs-ready:hover {
+  filter: brightness(1.12);
+}
+.live-obs-live,
+.live-obs-rec,
+.live-obs-live:hover,
+.live-obs-rec:hover {
+  background: var(--aud-red);
   color: #fff;
   font-weight: 800;
 }
-.live-obs-rec {
-  font-weight: 700;
+.live-obs-live:hover,
+.live-obs-rec:hover {
+  filter: brightness(1.12);
+}
+.live-obs-fix {
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+.live-obs:focus-visible.live-obs-ready,
+.live-obs:focus-visible.live-obs-live,
+.live-obs:focus-visible.live-obs-rec {
+  outline-color: #fff;
 }
 .live-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aud-red);
-}
-.live-obs-live .live-dot {
   background: #fff;
   animation: aud-pulse 1.8s ease-in-out infinite;
 }
-:root[data-motion='reduce'] .live-obs-live .live-dot {
+:root[data-motion='reduce'] .live-dot {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .live-obs-live .live-dot {
+  .live-dot {
     animation: none;
   }
 }
 
-/* Beside On air: a segment in the same pill, set off by a hairline. The red is On air's, so a calm OBS is a passenger
-   on the pill's own surface and never wears it. Only Live and Rec go white on red, because only they mean OBS is on the
-   air. Every state here sets its own background: the pill behind is red, and a transparent segment would show it. */
+/* Beside the audience part: the same segment, set off by a hairline. It keeps its own colour from the rules above. */
 .live-obs.is-beside {
-  padding: 0 11px 0 9px;
-  border-left: 1px solid rgb(255 255 255 / 40%);
-  background: var(--panel);
-  color: var(--text);
-  font-weight: 600;
-}
-.live-obs.is-beside:hover {
-  background: var(--panel-2);
-}
-.live-obs.is-beside.live-obs-quiet,
-.live-obs.is-beside.live-obs-looking {
-  color: var(--muted);
-}
-.live-obs.is-beside.live-obs-live,
-.live-obs.is-beside.live-obs-rec {
-  background: #fff;
-  color: var(--aud-red-deep);
-  font-weight: 800;
-}
-.live-obs.is-beside.live-obs-live:hover,
-.live-obs.is-beside.live-obs-rec:hover {
-  background: #fdeaea;
-}
-.live-obs.is-beside.live-obs-live .live-dot,
-.live-obs.is-beside.live-obs-rec .live-dot {
-  background: var(--aud-red);
+  border-left: 1px solid rgb(0 0 0 / 30%);
 }
 .live-obs.is-beside.live-obs-fix {
   border-left: 0;
-  box-shadow: inset 0 0 0 2px var(--sunny-deep);
-}
-.live-obs.is-beside.live-obs-fix svg {
-  color: var(--sunny-deep);
 }
 .obs-panel {
   display: flex;

@@ -25,7 +25,7 @@ Frameling never reads a viewer's name, id or chat. Each event is cut down to wha
 ## Disconnect
 **Disconnect from Twitch** stops listening, tells Twitch to cancel the sign-in, and forgets it here. You can double check at twitch.tv/settings/connections.
 
-Next: [Twitch links](help:twitch-links). See also [Audience features and the On air pill](help:audience).`,
+Next: [Twitch links](help:twitch-links). See also [Audience features and the pill](help:audience).`,
   'twitch-links': `A **link** says "when this happens on Twitch, do that in Frameling". Make them in Preferences > Streaming > **Twitch**. The list starts with a few small Quill reactions if you said yes when asked, and you can change or delete any of them.
 
 **Add a link:** press **Add a link**, then pick the event, a filter if it has one, and the action. The actions are the ones Frameling can do for your audience right now: Quill reactions, dares, a message, a prompt in the jar and so on. Ones that reach your drawing are marked, and only run while **Let the audience interrupt your drawing** is on.

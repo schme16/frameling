@@ -32,5 +32,5 @@ Capitals, punctuation, accents and spaces don't matter: **a cat**, **is it a cat
 - A winner's name is read only if you turn on **Show the winner's name**, and is gone when you close the result.
 - Nothing is written to a file. Only how long you last let a round run is remembered.
 
-See also [Audience features and the On air pill](help:audience).`,
+See also [Audience features and the pill](help:audience).`,
 };

@@ -38,7 +38,7 @@ import { startBrushPresets } from '../brushes';
 installBeta();
 // New versions: a quiet check of this project's releases, an offer, and a command. Nothing is downloaded until you press Update now.
 installUpdates();
-// Audience features: the gate, the switch (off after install), the On air pill's commands and help.
+// Audience features: the gate, the switch (off after install), the audience pill's commands and help.
 installAudience();
 import '../features/sync';
 import { audioFeature } from '../audio';

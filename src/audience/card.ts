@@ -1,4 +1,4 @@
-// Whether the On air card (the queue, the counts and the Stop button, hanging from the pill) is open.
+// Whether the audience card (the queue, the counts and the Stop button, hanging from the pill) is open.
 import { createStore } from '../ui/mini';
 
 export const cardOpen = createStore(false);

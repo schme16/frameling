@@ -27,5 +27,5 @@ Your own size and smoothing settings are **never changed**. The modifier sits ov
 - **End it:** **Put it back** on the chip, or **Put my pen back** in the palette. **Stop** (Ctrl+Alt+K) ends everything from the audience.
 - **How long:** about 30 seconds, set by **How long a dare lasts** in Preferences > Streaming. Shaky hand and Long rope last two thirds of that.
 
-See [Audience features and the On air pill](help:audience) and [Dares](help:dares) for the limits.`,
+See [Audience features and the pill](help:audience) and [Dares](help:dares) for the limits.`,
 };

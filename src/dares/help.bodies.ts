@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   dares: `A **dare** is a small thing your audience can set off while you draw. Say a viewer spends their Channel Points: your view flips, or a banner drops down saying *draw with your other hand*. You laugh, you draw on, and a little later it all goes back.
 
-**Dares are part of audience features.** They only come in while the red **On air** pill is up (Preferences > Streaming > Audience features), and **Stop** (Ctrl+Alt+K) ends them all at once.
+**Dares are part of audience features.** They only come in while the yellow **Audience participation: on** pill is up (Preferences > Streaming > Audience features), and **Stop** (Ctrl+Alt+K) ends them all at once.
 
 ## The dares that only change the screen
 These work for everyone. They never touch your drawing or your file.
@@ -25,7 +25,7 @@ Only one dare that changes the view goes at a time, and a new one takes over fro
 - **Try one yourself.** **Try it** (or *Try the dare* in the palette and the Audience menu) fires one at you so you can see it. It does not need audience features on.
 - **How long.** A dare that lasts for a while lasts about 30 seconds. Change it in Preferences > Streaming (**How long a dare lasts**): short, normal or long.
 
-There are limits too: a cooldown for each kind of dare, a limit on how many can start in a minute, and a short queue. See [Audience features and the On air pill](help:audience).
+There are limits too: a cooldown for each kind of dare, a limit on how many can start in a minute, and a short queue. See [Audience features and the pill](help:audience).
 
 Some dares reach your drawing. Those have their own topic, and their own switch: [Dares that reach your drawing](help:dares-drawing).`,
   'dares-drawing': `Some dares go further than the screen: they put something into your drawing. That is fun, and it can also be a surprise in the middle of a stroke, so it is **off until you turn it on**.

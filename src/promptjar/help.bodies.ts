@@ -8,7 +8,7 @@ export const bodies: Record<string, string> = {
 
 **Add your own.** Type a prompt in the box at the bottom, or paste a list with one on each line. Yours go through the same cleaning as everyone else's.
 
-**What gets in.** Chat's words are cut to 80 plain characters first: no links, no @names, no emoji or odd symbols. A prompt with no real words is turned away, and so is one that is already in the jar. The jar holds 50. When it is full, new ones are turned away until you make room, and the **On air** card counts them as "did not work".
+**What gets in.** Chat's words are cut to 80 plain characters first: no links, no @names, no emoji or odd symbols. A prompt with no real words is turned away, and so is one that is already in the jar. The jar holds 50. When it is full, new ones are turned away until you make room, and the audience card counts them as "did not work".
 
 **You choose when it shows.** With [Stream-safe mode](help:stream-safe) on, a pulled prompt stays hidden until you press **Show it**. With the [stream overlay](help:stream-overlay) on, it waits for **Show on stream**.
 

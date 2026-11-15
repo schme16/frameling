@@ -1,5 +1,5 @@
 // Audience features, the app's side: the one gate (see ./gate.ts for the rules and how to register against it), the
-// master switch's memory, the commands, the choices and the help. The On air pill and its card are in ../ui/LivePill.tsx.
+// master switch's memory, the commands, the choices and the help. The audience pill and its card are in ../ui/LivePill.tsx.
 //
 // FOR OTHER FEATURES, the whole surface is these four things:
 //   registerAudienceAction({ id, label, kind, cooldown, touchesDrawing?, parse?, run })   what the audience may make happen
@@ -127,7 +127,7 @@ export function installAudience(): void {
       id: 'audience.toggle',
       label: 'Audience features',
       category: 'Audience',
-      description: 'Let viewers and stream tools take part in a small, safe way. Off until you switch it on. Shows a red On air pill while it is on.',
+      description: 'Let viewers and stream tools take part in a small, safe way. Off until you switch it on. Shows a yellow Audience participation: on pill while it is on. Press the pill to turn it off.',
       help: 'audience',
       keywords: ['stream', 'streamer', 'twitch', 'youtube', 'chat', 'viewers', 'audience', 'on air', 'live', 'switch', 'obs', 'interactive'],
       global: true,
@@ -173,7 +173,7 @@ export function installAudience(): void {
       id: 'audience.show',
       label: 'Show the audience queue and counts',
       category: 'Audience',
-      description: 'Opens the On air card: what is waiting, what the audience has done, and the Stop button.',
+      description: 'Opens the card from the pill: what is waiting, what the audience has done, and the Stop button.',
       help: 'audience',
       keywords: ['queue', 'counts', 'on air', 'stream', 'what is waiting', 'log'],
       global: true,
