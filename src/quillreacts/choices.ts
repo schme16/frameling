@@ -4,7 +4,7 @@
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';
 
-/** Whether Quill may say the name of somebody he welcomes: after a question to you, or never. */
+/** Whether Quill may say the name of somebody he welcomes: said straight out (the default), after a question to you, or never. */
 export const NAMES_CHOICE = 'quillreacts.names';
 
 export const reactChoices: ChoiceDef<string>[] = [
@@ -26,10 +26,11 @@ export const reactChoices: ChoiceDef<string>[] = [
     title: choiceWord('choice.quillreacts.names.title'),
     question: choiceWord('choice.quillreacts.names.question'),
     options: [
+      { value: 'say', label: choiceWord('choice.quillreacts.names.say.label'), detail: choiceWord('choice.quillreacts.names.say.detail'), did: choiceWord('choice.quillreacts.names.say.did') },
       { value: 'ask', label: choiceWord('choice.quillreacts.names.ask.label'), detail: choiceWord('choice.quillreacts.names.ask.detail'), did: choiceWord('choice.quillreacts.names.ask.did') },
       { value: 'never', label: choiceWord('choice.quillreacts.names.never.label'), detail: choiceWord('choice.quillreacts.names.never.detail'), did: choiceWord('choice.quillreacts.names.never.did') },
     ],
-    default: 'ask',
+    default: 'say',
     category: 'Streaming',
     help: 'quill-welcomes',
     silent: true,

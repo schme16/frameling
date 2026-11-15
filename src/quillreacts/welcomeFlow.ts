@@ -1,15 +1,26 @@
 // Quill welcoming somebody on air: the part that shows it. Arrivals come in through the audience gate (see actions.ts),
 // are gathered into turns (welcome.ts) and played one at a time, so a crowd is a number and never a pile of him. A name
-// is somebody else's words: it is cleaned, asked about covered (the same question as a sign), and only a yes puts it on
-// the screen or the stream overlay. Without a yes, the same turn is welcomed with no name. Nothing is written anywhere.
+// is somebody else's words: it is always cleaned. By default Quill just says it. With the answer Ask me first it is asked
+// about covered (the same question as a sign), and only a yes puts it on the screen or the stream overlay; without a yes
+// the same turn is welcomed with no name. Nothing is written anywhere.
 import { currentChoice } from '../core/choices';
 import { lasts } from '../audience/gate';
 import { NAMES_CHOICE } from './choices';
-import { askToSayName, showWelcome } from './react';
+import { askToSayName, endReaction, showWelcome } from './react';
 import { addArrival, askWords, DECLINED_CAP, addName, newRecent, lookFor, newNames, newPile, parseArrival, pileSize, takeTurn, welcomeWords, type Arrival, type Turn, type WelcomeKind } from './welcome';
 
+/** How names are handled: `say` (the default) just says them, `ask` asks first, `never` uses none and reads none. */
+export type NamesMode = 'say' | 'ask' | 'never';
+export const namesMode = (): NamesMode => {
+  const v = currentChoice(NAMES_CHOICE);
+  return v === 'ask' || v === 'never' ? v : 'say';
+};
+
 /** Whether Quill may say names at all right now. The answer `never` also stops Frameling reading names from Twitch. */
-export const namesAllowed = (): boolean => currentChoice(NAMES_CHOICE) !== 'never';
+export const namesAllowed = (): boolean => namesMode() !== 'never';
+
+/** Always empty: what the short "left out" check sees when nobody is being asked, so it does no work. */
+const noNames = newNames(0);
 
 let pile = newPile();
 const recent = newRecent();
@@ -37,6 +48,7 @@ export function stopWelcomes(): void {
   stop = new AbortController();
   for (const fns of waiting.values()) for (const f of fns) f();
   waiting = new Map();
+  endReaction();
 }
 
 /**
@@ -45,7 +57,10 @@ export function stopWelcomes(): void {
  */
 export function arrive(a: Arrival, signal: AbortSignal): Promise<void> {
   const kind = a.kind;
-  if (!addArrival(pile, a, recent, declined)) return Promise.resolve();
+  // The names left out only mean something while names are asked about, so under any other answer the list is dropped.
+  const asking = namesMode() === 'ask';
+  if (!asking && declined.list.length > 0) declined.list = [];
+  if (!addArrival(pile, a, recent, asking ? declined : noNames)) return Promise.resolve();
   // Remembered as soon as it is taken, so the same person coming round again is skipped even while the first still waits.
   // In memory only, up to RECENT_CAP names, gone when Frameling closes.
   if (a.name && (kind === 'follow' || kind === 'sub')) addName(recent[kind], a.name);
@@ -86,10 +101,10 @@ async function pump(): Promise<void> {
   if (!stop.signal.aborted && pileSize(pile) > 0) void pump();
 }
 
-/** One turn: ask about the name if there is one, then show the welcome with or without it. */
+/** One turn: say the name if there is one (asking first only under Ask me first), then show the welcome. */
 async function play(t: Turn, signal: AbortSignal): Promise<void> {
-  let named = false;
-  if (t.name) {
+  let named = !!t.name && namesMode() === 'say';
+  if (t.name && namesMode() === 'ask') {
     const answer = await askToSayName(askWords(t), signal);
     if (signal.aborted) return;
     named = answer === 'yes';
