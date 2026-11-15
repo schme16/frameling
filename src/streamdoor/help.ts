@@ -15,8 +15,8 @@ export const streamDoorHelp: HelpTopic[] = [
     title: 'Chat commands with Firebot',
     section: 'Streaming',
     media: 'chat-commands-firebot.png',
-    summary: 'Step by step in Firebot: a !vote, !guess and !prompt command, each sending to the actions door with the HTTP Request effect. No code, and it runs on Linux.',
-    keywords: ['firebot', 'http request', 'effect', 'custom command', '$arg', '$userid', 'convertToJSON', 'linux', 'deb', 'rpm', 'chat', 'vote', 'guess', 'prompt', 'twitch'],
+    summary: 'Import one file into Firebot and !vote, !guess and !prompt work: Frameling writes it for you, with your address in it and no key. Or make the commands by hand with the HTTP Request effect. No code, and it runs on Linux.',
+    keywords: ['firebot', 'firebotsetup', 'import', 'setup file', 'http request', 'effect', 'custom command', '$arg', '$userid', 'convertToJSON', 'linux', 'deb', 'rpm', 'chat', 'vote', 'guess', 'prompt', 'twitch'],
     order: 22,
   },
   {

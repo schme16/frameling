@@ -26,7 +26,7 @@ module.exports = [
       ...mark('[data-testid="votes.panel"]', 12),
     ],
   },
-  // A guessing round mid-play: blanks, a warmth meter, nobody has it yet.
+  // The Firebot topic leads with the setup file, so its picture is the button that writes it, in the actions door block.
   {
     name: 'chat-commands-firebot',
     size: [1280, 800],
@@ -34,15 +34,13 @@ module.exports = [
     steps: [
       template('flour-sack-hop'),
       js('__framelingAudience.on(0)'),
-      wait(800),
+      wait(400),
+      js(`__frameling.overlays.openPrefs('streaming')`),
+      wait(700),
+      js(`(() => { const b = document.querySelector('[data-testid="streamdoor.firebotSetup"]'); const el = b && b.closest('.ui-pref-row'); if (!el) throw new Error('no Firebot setup row'); el.scrollIntoView({ block: 'center' }); document.querySelectorAll('[data-shot]').forEach((e) => e.removeAttribute('data-shot')); el.setAttribute('data-shot', '1'); return true; })()`),
       { shot: 'kick', crop: [0, 0, 8, 8] },
-      js(`__framelingGuess.start({ word: 'elephant', seconds: 120 })`),
-      wait(900),
-      js(`__framelingGuess.guess('giraffe', 'p1')`),
       wait(500),
-      js(`__framelingGuess.guess('an elefunt', 'p2')`),
-      wait(1400),
-      ...mark('[data-testid="guess.panel"]', 12),
+      { shot: '@', el: '[data-shot]', pad: 12 },
     ],
   },
   // The jar with a few prompts in it, open.

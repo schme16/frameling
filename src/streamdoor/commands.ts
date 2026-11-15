@@ -4,6 +4,7 @@ import { ask } from '../platform/ask';
 import { openPrefs } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { copyAddress, copyKey } from './copy';
+import { saveFirebotSetup } from './firebotFile';
 import { doorStatus } from './state';
 
 /** Makes a new key, after saying what it breaks. Returns whether it did. */
@@ -13,7 +14,7 @@ export async function rollKey(): Promise<boolean> {
   const a = await ask({
     id: 'streamdoor.roll',
     title: 'Make a new key?',
-    message: 'The old key stops working at once. Every stream tool you set up needs the new one pasted in.',
+    message: 'The old key stops working at once. Every stream tool you set up needs the new one pasted in. For Firebot, import the setup file again and paste the new key when it asks.',
     buttons: [
       { value: 'roll', label: 'Make a new key', primary: true },
       { value: 'keep', label: 'Keep the old one' },
@@ -62,6 +63,16 @@ export const streamDoorCommands: Command[] = [
     enabled: hasDoor,
     reason: () => 'The actions door needs the desktop app.',
     run: () => void copyKey(),
+  },
+  {
+    id: 'streamdoor.firebotSetup',
+    label: 'Save the Firebot setup file',
+    category: 'Audience',
+    description: 'Saves a file that adds !vote, !guess and !prompt to Firebot in one import. It has your address but not your key.',
+    help: 'chat-commands-firebot',
+    keywords: ['firebot', 'import', 'setup', 'firebotsetup', 'chat commands', '!vote', '!guess', '!prompt', 'viewers type', 'twitch', 'bot'],
+    global: true,
+    run: () => void saveFirebotSetup(),
   },
   {
     id: 'streamdoor.roll',
