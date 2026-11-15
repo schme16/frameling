@@ -96,47 +96,43 @@
   }
 }
 
-/* Beside On air: a segment in the red pill, set off by a hairline. */
+/* Beside On air: a segment in the same pill, set off by a hairline. The red is On air's, so a calm OBS is a passenger
+   on the pill's own surface and never wears it. Only Live and Rec go white on red, because only they mean OBS is on the
+   air. Every state here sets its own background: the pill behind is red, and a transparent segment would show it. */
 .live-obs.is-beside {
   padding: 0 11px 0 9px;
   border-left: 1px solid rgb(255 255 255 / 40%);
-  background: var(--aud-red);
-  color: #fff;
-  font-weight: 800;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
 }
 .live-obs.is-beside:hover {
-  filter: brightness(1.12);
+  background: var(--panel-2);
 }
 .live-obs.is-beside.live-obs-quiet,
 .live-obs.is-beside.live-obs-looking {
-  color: rgb(255 255 255 / 70%);
-  font-weight: 600;
-}
-.live-obs.is-beside.live-obs-ready {
-  font-weight: 600;
-}
-.live-obs.is-beside.live-obs-ready svg {
-  color: #fff;
+  color: var(--muted);
 }
 .live-obs.is-beside.live-obs-live,
 .live-obs.is-beside.live-obs-rec {
   background: #fff;
   color: var(--aud-red-deep);
+  font-weight: 800;
+}
+.live-obs.is-beside.live-obs-live:hover,
+.live-obs.is-beside.live-obs-rec:hover {
+  background: #fdeaea;
 }
 .live-obs.is-beside.live-obs-live .live-dot,
 .live-obs.is-beside.live-obs-rec .live-dot {
   background: var(--aud-red);
 }
 .live-obs.is-beside.live-obs-fix {
-  height: 22px;
-  margin: 2px 3px 2px 2px;
   border-left: 0;
-  border-radius: var(--radius-pill);
-  background: var(--aud-red-deep);
-  box-shadow: inset 0 0 0 2px #fff;
+  box-shadow: inset 0 0 0 2px var(--sunny-deep);
 }
 .live-obs.is-beside.live-obs-fix svg {
-  color: #fff;
+  color: var(--sunny-deep);
 }
 .obs-panel {
   display: flex;
