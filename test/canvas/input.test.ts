@@ -28,6 +28,32 @@ describe('wheel', () => {
   });
 });
 
+describe('what Ctrl does when the wheel already zooms', () => {
+  it('can be made the same as the plain wheel, so a habitual Ctrl never doubles the step', () => {
+    expect(zoomStep(wheel({ ctrlKey: true }), 'zoom', 'same')).toBe('normal');
+    expect(zoomStep(wheel({ ctrlKey: true }), 'zoom', 'bigger')).toBe('coarse');
+    expect(zoomStep(wheel({ ctrlKey: true }), 'zoom')).toBe('coarse');
+  });
+  it('Ctrl and Shift still takes big steps, and Alt still takes small ones, either way', () => {
+    expect(zoomStep(wheel({ ctrlKey: true, shiftKey: true }), 'zoom', 'same')).toBe('coarse');
+    expect(zoomStep(wheel({ ctrlKey: true, shiftKey: true }), 'scroll', 'same')).toBe('coarse');
+    expect(zoomStep(wheel({ altKey: true, ctrlKey: true }), 'zoom', 'same')).toBe('fine');
+  });
+  it('with the wheel on scroll, plain Ctrl zooms at the usual size', () => {
+    expect(zoomStep(wheel({ ctrlKey: true }), 'scroll', 'bigger')).toBe('normal');
+  });
+  it('the wheel intent carries it', () => {
+    const i = wheelIntent(wheel({ ctrlKey: true }), 'zoom', 'same');
+    expect(i).toMatchObject({ kind: 'zoom', step: 'normal' });
+  });
+  it('is registered: same by default, quietly', () => {
+    const d = getChoiceDef('canvas.wheelCtrl')!;
+    expect(d.default).toBe('same');
+    expect(d.silent).toBe(true);
+    expect(getChoiceDef('canvas.zoomSpeed')!.default).toBe('normal');
+  });
+});
+
 describe('space tap', () => {
   it('a quick press and release is a tap', () => {
     const t = new SpaceTap();
@@ -125,6 +151,6 @@ describe('three sizes of zoom step', () => {
     expect(fine).toBeLessThan(normal);
     expect(normal).toBeLessThan(coarse);
     // A trackpad pinch keeps its own size: its fingers are already careful.
-    expect(wheelZoomFactor(-8, 0, 'coarse')).toBe(wheelZoomFactor(-8, 0));
+    expect(wheelZoomFactor(-8, 0, 'coarse', 'pinch')).toBe(wheelZoomFactor(-8, 0, 'fine', 'pinch'));
   });
 });

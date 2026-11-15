@@ -159,6 +159,26 @@
     "text": "The wheel moves the drawing up and down. Hold Ctrl to zoom.",
     "where": "Dialog and Preferences: the small line under the \"scroll\" answer in \"Mouse wheel\"."
   },
+  "choice.canvas.wheelCtrl.title": { "text": "Ctrl with the wheel", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.canvas.wheelCtrl.question": { "text": "When the wheel already zooms, should Ctrl make the zoom steps bigger?", "where": "The question the \"Ctrl with the wheel\" dialog asks." },
+  "choice.canvas.wheelCtrl.same.label": { "text": "Same as the wheel", "where": "Dialog and Preferences: the button for the answer \"same\" in \"Ctrl with the wheel\"." },
+  "choice.canvas.wheelCtrl.same.detail": {
+    "text": "Ctrl does nothing extra, so pressing it out of habit never zooms further than the wheel alone. Ctrl and Shift still takes big steps.",
+    "where": "Dialog and Preferences: the small line under the \"same\" answer in \"Ctrl with the wheel\"."
+  },
+  "choice.canvas.wheelCtrl.bigger.label": { "text": "Bigger steps", "where": "Dialog and Preferences: the button for the answer \"bigger\" in \"Ctrl with the wheel\"." },
+  "choice.canvas.wheelCtrl.bigger.detail": {
+    "text": "Ctrl and the wheel takes big sweeping steps, more than twice the size.",
+    "where": "Dialog and Preferences: the small line under the \"bigger\" answer in \"Ctrl with the wheel\"."
+  },
+  "choice.canvas.zoomSpeed.title": { "text": "Wheel zoom speed", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.canvas.zoomSpeed.question": { "text": "How fast should the mouse wheel zoom?", "where": "The question the \"Wheel zoom speed\" dialog asks." },
+  "choice.canvas.zoomSpeed.slow.label": { "text": "Slower", "where": "Dialog and Preferences: the button for the answer \"slow\" in \"Wheel zoom speed\"." },
+  "choice.canvas.zoomSpeed.slow.detail": { "text": "A notch zooms about 14%.", "where": "Dialog and Preferences: the small line under the \"slow\" answer in \"Wheel zoom speed\"." },
+  "choice.canvas.zoomSpeed.normal.label": { "text": "Usual", "where": "Dialog and Preferences: the button for the answer \"normal\" in \"Wheel zoom speed\"." },
+  "choice.canvas.zoomSpeed.normal.detail": { "text": "A notch zooms about 25%.", "where": "Dialog and Preferences: the small line under the \"normal\" answer in \"Wheel zoom speed\"." },
+  "choice.canvas.zoomSpeed.fast.label": { "text": "Faster", "where": "Dialog and Preferences: the button for the answer \"fast\" in \"Wheel zoom speed\"." },
+  "choice.canvas.zoomSpeed.fast.detail": { "text": "A notch zooms about 42%.", "where": "Dialog and Preferences: the small line under the \"fast\" answer in \"Wheel zoom speed\"." },
   "choice.canvas.spaceTap.title": { "text": "Tapping Space", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
   "choice.canvas.spaceTap.question": { "text": "Should a quick tap of Space play and pause your animation?", "where": "The question the \"Tapping Space\" dialog asks." },
   "choice.canvas.spaceTap.play.label": { "text": "Play or pause", "where": "Dialog and Preferences: the button for the answer \"play\" in \"Tapping Space\"." },

@@ -68,4 +68,18 @@ describe('the mouse wheel readout', () => {
     expect(read(host, 'wheel-dpr')).toBe(String(window.devicePixelRatio));
     act(() => root.unmount());
   });
+
+  it('keeps the last few events, newest first, and counts a pinch as one', () => {
+    const { host, root } = mount();
+    const box = host.querySelector('[data-testid="wheel-check"]')!;
+    for (let i = 0; i < 8; i++) scroll(host, -100 - i, 0);
+    const rows = host.querySelectorAll('[data-testid="wheel-history"] tbody tr');
+    expect(rows.length).toBe(6);
+    expect(rows[0].textContent).toContain('-107.0 pixels');
+    act(() => {
+      box.dispatchEvent(new WheelEvent('wheel', { deltaY: -2.37, deltaMode: 0, ctrlKey: true, bubbles: true, cancelable: true }));
+    });
+    expect(read(host, 'wheel-kind')).toBe('a trackpad pinch');
+    act(() => root.unmount());
+  });
 });

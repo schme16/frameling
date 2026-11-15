@@ -127,14 +127,30 @@ export function clampPan(v: View, vw: number, vh: number, dw: number, dh: number
 /** How much smaller or bigger a careful or a sweeping wheel step is than the usual one. */
 export const ZOOM_STEP_SCALE: Record<ZoomStep, number> = { fine: 0.4, normal: 1, coarse: 2.2 };
 
+/** How much one wheel unit zooms: a 100 pixel notch is about +25%. A pinch's units are tiny, so each counts for more. */
+export const WHEEL_ZOOM_RATE = 0.0022;
+export const PINCH_ZOOM_RATE = 0.01;
+/** The most one single wheel event may change the zoom by, either way (x1.8 in, or the same step out). */
+export const MAX_WHEEL_EVENT_FACTOR = 1.8;
+
+/** What an event says in pixels. Lines and pages are made into pixels; pixels are divided back down by the screen scaling. */
+export function wheelPixels(deltaY: number, deltaMode: number, dpr = 1): number {
+  if (deltaMode === 1) return deltaY * 16;
+  if (deltaMode === 2) return deltaY * 400;
+  return deltaY / (dpr > 0 ? dpr : 1);
+}
+
 /**
- * Wheel zoom: how much one wheel event changes the zoom. Trackpad pinches send small deltas, mouse wheels big ones,
- * and a pinch keeps its own size however the keys are held (it is already as fine as a finger can be).
+ * Wheel zoom: how much one wheel event changes the zoom. A mouse wheel notch is about +25% whatever the screen
+ * scaling, because the scaling is divided back out. A pinch keeps its own size however the keys are held (it is
+ * already as fine as a finger can be); whether an event is one is the caller's call (see WheelStream). The
+ * `speed` is the person's own multiplier. One event never changes the zoom by more than MAX_WHEEL_EVENT_FACTOR.
  */
-export function wheelZoomFactor(deltaY: number, deltaMode: number, step: ZoomStep = 'normal'): number {
-  const px = deltaMode === 1 ? deltaY * 16 : deltaMode === 2 ? deltaY * 400 : deltaY;
-  const pinch = deltaMode === 0 && Math.abs(deltaY) < 40;
-  return Math.exp(-px * (pinch ? 0.01 : 0.0022 * ZOOM_STEP_SCALE[step]));
+export function wheelZoomFactor(deltaY: number, deltaMode: number, step: ZoomStep = 'normal', kind: 'wheel' | 'pinch' = 'wheel', dpr = 1, speed = 1): number {
+  const px = wheelPixels(deltaY, deltaMode, dpr);
+  const rate = kind === 'pinch' ? PINCH_ZOOM_RATE * speed : WHEEL_ZOOM_RATE * ZOOM_STEP_SCALE[step] * speed;
+  const f = Math.exp(-px * rate);
+  return Math.min(MAX_WHEEL_EVENT_FACTOR, Math.max(1 / MAX_WHEEL_EVENT_FACTOR, f));
 }
 
 /** Where the stage lands on the device-pixel canvas: whole pixels, so edges are crisp. */

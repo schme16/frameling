@@ -1,0 +1,1 @@
+A (before): the pan outlined in paint on one layer and closed by a line on another, filled on the colour layer under them with Use lines from all layers on: 'not closed in', nothing fills. B (after): paint on a layer above is a wall too, so just the inside of the pan fills. Made by scripts/docs/ab-fill-layers.
