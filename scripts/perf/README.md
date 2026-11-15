@@ -200,7 +200,8 @@ Documents (`--docs a,b`): `bouncing-ball`, `puppet`, `walk-cycle`, `hero-sprites
 stage), `history-deep` (a small document with 2000 real undo steps behind it) and `stress-vector-history` (the 40 x 240
 document with 600 steps behind it). The last two are the deep-history corners: `window.__sw.pileHistory(n)` piles the
 steps by adding a line to the drawing on the active layer n times, the shape of edit a person actually makes, and
-reports the steps and the memory the history holds.
+reports the steps and the memory the history holds. `stress-pixel-hd` (twelve 1920 x 1080 frames, painted edge to
+edge, so nothing is trimmed away on save) is only run when asked for with `--docs`.
 
 Each result file also carries `pages`: how many elements each document puts on screen, and how many of those are the
 timeline's. Browser style, layout and paint is most of what a click costs on a big document, and that is decided by how
@@ -218,7 +219,12 @@ played, so it rises when the warm-ahead manages more work. Judge playback on `la
 Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
 `select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
 `undo-redo`, `switch-artboard`, `export-dialog` (warm), `save-file` (the path Save uses), `open-file`, `autosave`,
-`workspaces`. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
+`workspaces`. Saving has a warm and a first kind, and they are very different on a pixel document: `save-file` and
+`autosave` are saves after an earlier save, where the encoded PNGs are cached by pixel array (so they cost almost nothing,
+because the unmeasured warm-up run fills the cache), and `save-file-first` and `autosave-first` give every pixel drawing a
+fresh pixel array before each run (as opening a file does), so the PNG encoding is paid. The saves also report `wall`, the
+page's own clock for the whole awaited call: the CPU profile (and so `busy`) only sees the page's thread, so a wait on the
+zip worker counts as idle there. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
 leaves the document as it found it (the history is rewound), and an action that was meant to edit and did not
 fails loudly, so a harness that stopped driving the app never prints a good-looking number.
 
