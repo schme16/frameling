@@ -38,7 +38,6 @@ export function PixelPencilOptions() {
     <div className="cv-options">
       <SizeSlider />
       <PixelPerfectToggle />
-      <PenOptions tool="shade" size />
       <MirrorOptions />
       <PenOptions tool="pencil" size />
       <Tip>Size 1 is the plain pencil, and bigger sizes are the same pencil with a thicker tip. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
@@ -94,6 +93,7 @@ export function ShadeOptions() {
       <SizeSlider />
       <PixelPerfectToggle />
       <MirrorOptions />
+      <PenOptions tool="shade" size />
       <Tip>Shading moves each pixel one step along its colour ramp in the Palette panel. Go over it again to go further. Pixels that aren't palette colours are left alone.</Tip>
     </div>
   );
