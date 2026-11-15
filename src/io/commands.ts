@@ -43,6 +43,7 @@ registerCommands([
     category: 'File',
     keys: ['Mod+S'],
     description: 'Save your drawing.',
+    keywords: ['work', 'keep', 'store'],
     help: 'saving-and-opening',
     global: true,
     run: () => void saveDocument(),

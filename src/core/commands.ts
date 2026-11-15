@@ -9,6 +9,7 @@ registerCommands([
     category: 'Edit',
     keys: ['Mod+Z'],
     description: 'Take back the last change.',
+    keywords: ['go back', 'step back', 'mistake', 'oops', 'revert'],
     help: 'undo',
     enabled: () => store().canUndo(),
     run: () => store().undo(),

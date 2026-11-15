@@ -120,6 +120,28 @@ letter when they belong to different layer kinds, like the Brush and the Tile br
 name for the palette, and each shortcut set in `src/ui/keymapSets.ts` is clash-free, names only real commands, and
 keeps the person's own changes on top. The clash logic is `allConflicts` and `sameContext` in `src/ui/keys.ts`.
 
+### Findability audits: test/findability/
+
+The help audit proves a thing exists. These prove somebody can get to it, which is a different question: the help
+audit passed the whole time a panel could not be found.
+
+- **The phrase table** (`phrases.test.ts`): plain sentences a person would type ("rub out", "turn it upside down",
+  "save a gif"), each paired with what they meant. Every one must put the right command or topic in the top three of the
+  command palette, as the palette shows them. **Add a row every time anybody can't find something.** When a row misses,
+  fix it with a single-word keyword on the command, not a multi-word one. A sentence that misses and can't be fixed yet
+  goes in `KNOWN_MISSES` in the same file, where the test checks it still misses, so a fix is noticed.
+- **Reachability** (`reachability.test.ts`): every way into every command (palette, menu, tool rail, key, something on
+  screen). A command that only the palette reaches, or that only a key reaches, fails, unless it is in
+  `known-unreachable.ts`, which can only shrink. "On screen" is read from the source (a component that names the
+  command), so it cannot tell a button behind a closed panel from one in view.
+- **State coverage** (`state-coverage.test.ts`): for a new drawing, a vector drawing with and without a selection, pixel
+  art, a tilemap, a symbol open, playing, a drawing with clips, and every optional feature switched off, what is
+  present, greyed or absent. It fails on absent and unexplained, and counts what still goes quiet (`known-gaps.ts`).
+  The small-screen layout and a panel that is on screen but empty need the running app, so they are not in here.
+
+`FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
+rail and every command greyed with only the shared sentence.
+
 ### Case-sensitive imports
 
 `test/case-sensitive-imports.test.ts` checks every relative import in `src/` and `test/` names the file with exactly

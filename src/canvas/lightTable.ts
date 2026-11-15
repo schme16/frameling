@@ -65,7 +65,7 @@ registerCommands([
     category: 'View',
     description: 'Show this whole frame faintly on every frame, to trace over. It stays put while you move around, unlike the onion skin. Run it again to take it off.',
     help: 'light-table',
-    keywords: ['light table', 'lightbox', 'trace', 'tracing', 'reference', 'pin frame', 'see through'],
+    keywords: ['light table', 'lightbox', 'trace', 'tracing', 'reference', 'picture', 'pin frame', 'see through'],
     checked: (s) => !!s.ui.lightTable,
     run: () => {
       const { ui } = store().get();

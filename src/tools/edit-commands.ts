@@ -262,6 +262,7 @@ registerCommands([
     category: 'Arrange',
     keys: ['Mod+Shift+]'],
     description: 'Move the selection in front of everything else.',
+    keywords: ['top', 'on top', 'above'],
     help: 'arrange',
     enabled: hasSelection,
     run: () => reorder('Bring to front', bringToFront),

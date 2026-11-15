@@ -383,7 +383,7 @@ registerCommands([
     category: 'Layers',
     description: 'You still see it while drawing, but videos, pictures and sprite sheets leave it out. Good for ground lines and sketches.',
     help: 'reference-layers',
-    keywords: ['guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper', 'reference'],
+    keywords: ['guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper', 'reference', 'trace', 'picture'],
     checked: (s) => !!findLayer(s.doc, s.ui.activeLayerId)?.reference,
     run: () => void ops.toggleLayerReference(),
   },

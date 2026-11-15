@@ -31,7 +31,7 @@ export function turnOnCommands(off: FeatureDescriptor[] = offFeatures()): Comman
     label: `Turn on ${f.name}`,
     category: 'Features',
     description: f.about,
-    keywords: [...new Set([...(f.commands ?? []).flatMap((c) => [c.label, ...(c.keywords ?? [])]), ...(f.help ?? []).flatMap((h) => [h.title, ...(h.keywords ?? [])]), ...Object.values(f.sections ?? {}).flatMap((s) => s.keywords ?? [])])],
+    keywords: [...new Set([...(f.commands ?? []).flatMap((c) => [c.label, ...(c.keywords ?? [])]), ...(f.tools ?? []).map((t) => t.label), ...(f.panels ?? []).map((p) => p.title), ...(f.help ?? []).flatMap((h) => [h.title, ...(h.keywords ?? [])]), ...Object.values(f.sections ?? {}).flatMap((s) => s.keywords ?? [])])],
     run: () => {
       if (!setFeatureOn(f.id, true).ok) return;
       toast(`${f.name} is on. Its commands are in the command palette now.`, { kind: 'success' });
@@ -53,29 +53,31 @@ export function paletteItems(commands: Command[] = allCommands(), topics: HelpTo
   return items;
 }
 
-function itemText(it: PaletteItem): { label: string[]; extra: string[] } {
+function itemText(it: PaletteItem): { label: string[]; keywords: string[]; extra: string[] } {
   const keywords = it.kind === 'command' ? it.command.keywords ?? [] : it.topic.keywords ?? [];
   return {
     label: wordsOf(it.label),
-    extra: wordsOf(`${it.category} ${it.description} ${keywords.join(' ')} ${it.kind === 'command' ? it.id.replace(/\./g, ' ') : ''}`),
+    // Keywords are words somebody chose on purpose, so they count for more than a word that happens to be in the description.
+    keywords: wordsOf(keywords.join(' ')),
+    extra: wordsOf(`${it.category} ${it.description} ${it.kind === 'command' ? it.id.replace(/\./g, ' ') : ''}`),
   };
 }
 
 /** Scores one item for a query: every word has to match somewhere, and words in the label count most. 0 means no match. */
 /** Words people type around what they mean ("how do I make it loop"), skipped when something else was typed. */
-const FILLER = new Set(['a', 'an', 'the', 'it', 'i', 'my', 'me', 'to', 'do', 'how', 'can', 'want', 'please', 'make', 'this', 'that']);
+const FILLER = new Set(['a', 'an', 'the', 'it', 'i', 'my', 'me', 'to', 'do', 'how', 'can', 'want', 'please', 'make', 'this', 'that', 'with', 'some', 'from', 'over', 'around', 'of', 'for', 'and', 'into', 'draw', 'add', 'turn', 'on', 'off', 'out', 'go', 'get', 'use', 'put', 'after']);
 
 export function scoreItem(query: string, it: PaletteItem): number {
   const all = wordsOf(query);
   const meant = all.filter((w) => !FILLER.has(w));
   const qs = meant.length ? meant : all;
   if (!qs.length) return 0;
-  const { label, extra } = itemText(it);
+  const { label, keywords, extra } = itemText(it);
   let total = 0;
   for (const q of qs) {
     const inLabel = scoreWord(q, label);
     const inExtra = scoreWord(q, extra) * 0.5;
-    const s = Math.max(inLabel, inExtra);
+    const s = Math.max(inLabel, scoreWord(q, keywords) * 0.9, inExtra);
     if (s <= 0) return 0;
     total += s;
   }
@@ -86,6 +88,8 @@ export function scoreItem(query: string, it: PaletteItem): number {
   // Doing beats reading: a command with a word starting with it ("Choose themes" for "theme") outranks its help page.
   else if (it.kind === 'command' && labelLower.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) total += 30;
   if (it.kind === 'command') total += 5;
+  // Filler words are not needed to match, but a name that has them ('Make a reusable symbol' for 'make a symbol') is closer.
+  total += qs.length * all.filter((w) => FILLER.has(w) && label.includes(w)).length * 3;
   return total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0);
 }
 

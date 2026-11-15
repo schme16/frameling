@@ -9,7 +9,7 @@ registerCommands([
     keys: ['Mod+E'],
     description: 'Make a video, GIF, pictures, an SVG or a sprite sheet to share or use in a game.',
     help: 'exporting',
-    keywords: ['video', 'gif', 'mp4', 'png', 'share', 'render', 'sprite sheet', 'godot', 'svg', 'apng', 'webm', 'lottie', 'animated svg', 'jpeg', 'webp', 'icon', 'favicon', 'contact sheet'],
+    keywords: ['save', 'video', 'gif', 'mp4', 'png', 'share', 'render', 'sprite sheet', 'godot', 'svg', 'apng', 'webm', 'lottie', 'animated svg', 'jpeg', 'webp', 'icon', 'favicon', 'contact sheet'],
     global: true,
     run: () => openExportDialog(),
   },
