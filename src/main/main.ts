@@ -6,6 +6,8 @@ import path from 'node:path';
 import { closeActionsDoor, grantFile, registerIpc, stopReviewHost, stopReviews } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
+import { makeReviewLinks } from './reviewLink';
+import { registerLinkHandler } from './linkHandler';
 import { watchDisplay } from './display';
 import { clearAutosave, keepAutosave, pruneKept, writeFileAtomic } from './store';
 import type { DocumentState } from '../preload/api';
@@ -106,11 +108,10 @@ let keepDone: (() => void) | null = null;
 // build/installer.nsh), so a dev run never takes it over. The Windows portable build runs from a temporary copy of
 // itself, so it registers the .exe the person actually has. A profile copy (the beta one) never claims it, so the
 // ordinary copy keeps the links.
-if (app.isPackaged && !PROFILE) {
-  const portable = process.env.PORTABLE_EXECUTABLE_FILE;
-  if (process.platform === 'win32' && portable) app.setAsDefaultProtocolClient(PROTOCOL, portable, []);
-  else app.setAsDefaultProtocolClient(PROTOCOL);
-}
+if (app.isPackaged && !PROFILE) registerLinkHandler(app, PROTOCOL);
+
+// frameling://review?code=... asks the drawing window whether to join a live review (see reviewLink.ts). It never joins by itself.
+const reviewLinks = makeReviewLinks({ window: () => win });
 
 function openFileInWindow(file: string) {
   grantFile(file);
@@ -322,6 +323,7 @@ registerIpc({
 });
 
 app.on('second-instance', (_e, argv, cwd) => {
+  if (reviewLinks.fromArgs(argv.slice(1))) return;
   const f = fileFromArgs(argv.slice(1), cwd);
   if (f) openFileInWindow(f);
   else if (win) {
@@ -339,6 +341,7 @@ app.on('open-file', (e, file) => {
 // macOS hands frameling:// links over this way.
 app.on('open-url', (e, url) => {
   e.preventDefault();
+  if (reviewLinks.fromUrl(url)) return;
   const f = fileFromUrl(url);
   if (f) openFileInWindow(f);
 });
@@ -370,6 +373,8 @@ app.whenReady().then(() => {
     if (!restoring?.carry) launchFile = f;
   }
   createWindow();
+  // Started by a review link: the page asks about it once it is up.
+  reviewLinks.fromArgs(process.argv.slice(1));
   void logDrawingPath();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

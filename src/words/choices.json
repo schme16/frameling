@@ -2155,5 +2155,28 @@
   "choice.review.keep.look.did": {
     "text": "Left the comments in the card for you to look at.",
     "where": "Toast when \"look\" is used without asking (\"Comments left in a live review\"), in the past tense."
+  },
+  "choice.review.linkShape.title": { "text": "What Copy the link copies", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.review.linkShape.question": {
+    "text": "Copy the link for your live review. Do you want just the link, or a short message with the link and the four words?",
+    "where": "The question the \"What Copy the link copies\" dialog asks the first time you copy a live review link."
+  },
+  "choice.review.linkShape.link.label": { "text": "Just the link", "where": "Dialog and Preferences: the button for the answer \"link\" in \"What Copy the link copies\"." },
+  "choice.review.linkShape.link.detail": {
+    "text": "Tidy, for an address bar or a note. Some chat apps won't make it clickable.",
+    "where": "Dialog and Preferences: the small line under the \"link\" answer in \"What Copy the link copies\"."
+  },
+  "choice.review.linkShape.link.did": { "text": "Copied just the link.", "where": "Toast when \"link\" is used without asking (\"What Copy the link copies\"), in the past tense." },
+  "choice.review.linkShape.message.label": {
+    "text": "A message with the link and the words",
+    "where": "Dialog and Preferences: the button for the answer \"message\" in \"What Copy the link copies\"."
+  },
+  "choice.review.linkShape.message.detail": {
+    "text": "Ready to paste into a chat. If the link doesn't open for them, the four words are right there. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"message\" answer in \"What Copy the link copies\"."
+  },
+  "choice.review.linkShape.message.did": {
+    "text": "Copied a message with the link and the four words.",
+    "where": "Toast when \"message\" is used without asking (\"What Copy the link copies\"), in the past tense."
   }
 }
