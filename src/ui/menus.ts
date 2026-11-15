@@ -126,8 +126,8 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
   'tools.notes', 'tools.marks',
-  // The pixel tools that fade at the edge sit in Pixel > Spray and soft paint.
-  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge',
+  // The pixel tools that fade at the edge, and chalk and charcoal, sit in Pixel > Spray, soft paint and charcoal.
+  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal',
 ];
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
@@ -302,8 +302,14 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['pixel.showSlices', 'pixel.deleteSlice', 'view.panel.slices'],
   },
   soft: {
-    label: 'Spray and soft paint',
-    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge'],
+    label: 'Spray, soft paint and charcoal',
+    items: [
+      'tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-',
+      'tools.charcoal',
+      'charcoal.medium.vine-charcoal', 'charcoal.medium.compressed-charcoal', 'charcoal.medium.chalk', 'charcoal.medium.soft-pastel', 'charcoal.medium.oil-pastel', 'charcoal.medium.crayon',
+      'charcoal.medium.sketch-pencil', 'charcoal.medium.soft-pencil', 'charcoal.medium.colour-pencil', '-',
+      'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough',
+    ],
   },
   pixgrad: {
     label: 'Pixel gradient style',

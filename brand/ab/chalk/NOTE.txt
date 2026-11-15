@@ -13,3 +13,4 @@ Crayon use a colour so tone and build-up show in a hue.
 Made with: npm run build; xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/chalk.cjs <rawDir> <brushes.json> <label>;
 then python3 scripts/ab/chalk-sheets.py <rawDir> brand/ab/chalk before=Now cheap=Holes\ only layers=Layered all=Layered\ +\ grain
 No preset was changed. The trials are reached only by the optional tip.trial word.
+Update: this was a dead end (the user's verdict: none of them look much like charcoal). tip.trial, its tests and this harness were removed; the replacement is the pixel-layer Chalk and charcoal tool, see brand/ab/charcoal.

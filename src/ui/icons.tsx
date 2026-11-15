@@ -697,6 +697,17 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="15.5" cy="3.8" r="0.7" fill="currentColor" fillOpacity="0.4" stroke="none" />
     </>
   ),
+  charcoal: (
+    <>
+      <path d="M5 19.5l9.5-9.5 3.5 3.5L8.5 23z" transform="translate(0 -3)" />
+      <path d="M14.5 7l3.5 3.5" transform="translate(0 -0.5)" />
+      <circle cx="19.5" cy="6.5" r="0.9" fill="currentColor" fillOpacity="0.8" stroke="none" />
+      <circle cx="21" cy="10" r="0.7" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="17" cy="3.8" r="0.7" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="6" cy="21.5" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="10" cy="22" r="0.6" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
   highlighter: (
     <>
       <path d="M14.5 3.5l6 6-8 8-6-6z" />

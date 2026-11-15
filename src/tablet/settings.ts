@@ -7,8 +7,8 @@ import { CURVE_PRESETS, cleanCurve, cleanRange, type Curve } from './curve';
 import type { StabMode } from './stabilizer';
 
 /** Tools that draw by dragging, and so can use a pen's pressure and tilt and the stabilizer. */
-export type PenTool = 'brush' | 'pencil' | 'eraser' | 'spray' | 'shade' | 'dither' | 'soft-brush' | 'airbrush' | 'highlighter' | 'soft-eraser' | 'smudge';
-export const PEN_TOOLS: PenTool[] = ['brush', 'pencil', 'eraser', 'spray', 'shade', 'dither', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge'];
+export type PenTool = 'brush' | 'pencil' | 'eraser' | 'spray' | 'shade' | 'dither' | 'soft-brush' | 'airbrush' | 'highlighter' | 'soft-eraser' | 'smudge' | 'charcoal';
+export const PEN_TOOLS: PenTool[] = ['brush', 'pencil', 'eraser', 'spray', 'shade', 'dither', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal'];
 
 export interface ToolPen {
   /** Pressing harder makes the mark bigger. */
@@ -72,7 +72,7 @@ const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: fal
 export const DEFAULT_PEN: PenSettings = {
   pen: { curve: CURVE_PRESETS.normal, min: 0, max: 1, tiltAmount: 60, eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan', swapButtons: false },
   touch: { oneFinger: 'draw', twoFingers: true, palmRejection: true },
-  tools: { brush: tool(), pencil: tool(), eraser: tool(), spray: tool({ flow: true }), shade: tool(), dither: tool(), 'soft-brush': tool({ size: true, flow: true }), airbrush: tool({ size: true, flow: true }), highlighter: tool(), 'soft-eraser': tool({ size: true, flow: true }), smudge: tool({ size: true }) },
+  tools: { brush: tool(), pencil: tool(), eraser: tool(), spray: tool({ flow: true }), shade: tool(), dither: tool(), 'soft-brush': tool({ size: true, flow: true }), airbrush: tool({ size: true, flow: true }), highlighter: tool(), 'soft-eraser': tool({ size: true, flow: true }), smudge: tool({ size: true }), charcoal: tool({ flow: true }) },
   seen: false,
 };
 

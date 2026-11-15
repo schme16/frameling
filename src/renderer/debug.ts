@@ -11,6 +11,7 @@ import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
 import '../soft/debug';
+import '../dry/debug';
 import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
