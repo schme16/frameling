@@ -1,0 +1,7 @@
+Not an A/B: proof for the board look on stream-golive (going live turns Stream-safe on). Both themes, from the built app under xvfb, with a pretend OBS (?debug __framelingObs) standing in for the desktop side.
+connected: the top-bar pill once Frameling can see OBS. Stream-safe is still off.
+live: OBS starts streaming. The pill says OBS: live, Stream-safe switches itself on, and two toasts say what happened.
+recent: the same moment in Open recent, with real file names showing as stand-ins.
+offer: OBS stops. Frameling asks before turning Stream-safe off (the ask-once choice, so it is remembered).
+waiting: OBS is not running, the normal case. A dim pill, no message, quiet retries.
+Settings picture (Preferences > General): public/help/obs-golive-dark.png and -light.png.

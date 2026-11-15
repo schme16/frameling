@@ -11,6 +11,7 @@ import { registerBetaIpc } from './beta';
 import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
+import { registerObsIpc } from './obs';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { forgetSeen, keepPreview, previewOf } from './preview';
 import { isRecent, previewDir } from './store';
@@ -319,6 +320,7 @@ export function registerIpc(hooks: IpcHooks): void {
   registerGpuIpc(handle);
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);
+  registerObsIpc(handle, hooks.window);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

@@ -40,6 +40,8 @@ import { SnapPanel } from '../canvas/SnapOptions';
 import { PenPage } from '../tablet/PenPage';
 import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
 import { GpuPage } from '../gpu/GpuPage';
+import { ObsPanel } from '../streamsafe/ObsPanel';
+import { setObsLink } from '../streamsafe/obs';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -307,6 +309,16 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Stream-safe mode" hint="For sharing your screen or streaming: file paths, your name and keys show as friendly stand-ins. Only what shows changes, never your drawing.">
         <Switch label="Stream-safe mode" on={p.streamSafe} onChange={(streamSafe) => setPrefs({ streamSafe })} />
       </Row>
+      <div data-obs-section>
+        <Row label="Going live with OBS" hint="Frameling watches OBS on your own computer and turns Stream-safe on by itself when you start streaming or recording. It asks before turning it off again. Off until you switch it on.">
+          <Switch label="Going live with OBS" on={p.obsLink} onChange={setObsLink} />
+        </Row>
+        {p.obsLink && (
+          <div className="ui-pref-row obs-row">
+            <ObsPanel />
+          </div>
+        )}
+      </div>
       <Row label="Welcome sheet" hint="Show the start page when Frameling opens.">
         <Switch label="Welcome sheet" on={p.showWelcome} onChange={(showWelcome) => setPrefs({ showWelcome })} />
       </Row>

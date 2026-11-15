@@ -216,7 +216,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   look: {
     label: 'Look and sound',
-    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.interfaceSize', 'view.tightLayout', 'view.explanations', 'view.cleanTimeline', '-', 'view.streamSafe'],
+    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.interfaceSize', 'view.tightLayout', 'view.explanations', 'view.cleanTimeline', '-', 'view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings'],
   },
   pixturn: {
     label: 'Flip and turn',

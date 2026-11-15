@@ -22,3 +22,79 @@
   outline: 2px solid var(--focus, currentColor);
   outline-offset: 2px;
 }
+
+/* The pill that says whether Frameling can see OBS. Calm unless you are live or it needs you. */
+.obs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+  padding: 3px 10px 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, currentColor);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.obs-badge.obs-waiting {
+  border-color: var(--line, currentColor);
+  opacity: 0.8;
+}
+.obs-badge.obs-ready {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.obs-badge.obs-live {
+  background: var(--danger, #d64545);
+  color: #fff;
+}
+.obs-badge.obs-attention {
+  border-color: var(--sunny-deep, currentColor);
+  color: var(--text, currentColor);
+}
+.obs-badge:focus-visible {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: 2px;
+}
+.obs-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+.obs-panel .obs-line {
+  margin: 0;
+  font-size: 12px;
+  text-align: right;
+}
+.obs-panel input {
+  width: 220px;
+}
+.obs-panel .obs-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ui-pref-row.obs-row {
+  justify-content: flex-end;
+  border-top: 0;
+}
+.obs-panel .ui-pref-text {
+  align-items: flex-end;
+  font-size: 12px;
+}
+.obs-panel input[type='text'],
+.obs-panel input[type='password'] {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+}
