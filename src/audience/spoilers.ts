@@ -1,6 +1,8 @@
 // What to cover on screen, and when. One answer decides it for every streaming screen: "What can your viewers see?"
 // Capture the popout capture window alone and the main window is private; capture the screen or the whole app and
 // nothing is. Frameling cannot tell which, so it asks once (the choice below) and every screen follows the answer.
+// A third answer, one screen, keeps the drawing window covered (it is on that screen) and leaves a second screen to Stream
+// control: see src/streamboard/privacy.ts.
 // Unanswered counts as "screen", so nothing is out in the open before the question has been put.
 //
 // This is a different axis from Stream-safe (paths, names and keys). It is about two things a streamer must not have
@@ -9,7 +11,7 @@ import { currentChoice, useChoice } from '../core/choices';
 
 export const VIEW_CHOICE = 'audience.view';
 
-export type ViewersSee = 'screen' | 'capture';
+export type ViewersSee = 'screen' | 'display' | 'capture';
 
 /** Cover unless the streamer said their viewers see only the capture window. A pure function of the answer. */
 export const coversFor = (answer: string | undefined): boolean => answer !== 'capture';

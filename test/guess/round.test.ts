@@ -1,7 +1,7 @@
 // A round with nothing else around it: the setup rules, the word kept out of the view, one person one place, the guess
 // cap, the winner, hints, the end, and that nothing that identifies a guesser is held once the round is over.
 import { describe, expect, it } from 'vitest';
-import { cleanPlayer, cleanSetup, createRound, GUESS_MAX, MAX_GUESSES_EACH, MAX_PLAYERS, took, type Round } from '../../src/guess/round';
+import { cleanPlayer, cleanSetup, createRound, GUESS_MAX, MAX_GUESSES_EACH, MAX_PLAYERS, RECENT_MAX, took, type Round } from '../../src/guess/round';
 
 const salt = (n: number) => new Uint8Array(16).fill(n);
 let clock = 1000;
@@ -150,9 +150,9 @@ describe('guessing', () => {
   });
   it('turns away new people past the cap, but not those already in', () => {
     const r = make();
-    for (let i = 0; i < MAX_PLAYERS; i++) r.cast({ mark: `m${i}`, right: false, alike: 0, how: null, name: null });
+    for (let i = 0; i < MAX_PLAYERS; i++) r.cast({ text: 'x', mark: `m${i}`, right: false, alike: 0, how: null, name: null });
     expect(guess(r, 'x1', 'late')).toBe('full');
-    expect(r.cast({ mark: 'm0', right: false, alike: 0, how: null, name: null })).toBe('wrong');
+    expect(r.cast({ text: 'x', mark: 'm0', right: false, alike: 0, how: null, name: null })).toBe('wrong');
   });
   it('warmth only goes up, and says nothing of the guess', () => {
     const r = make('horse');
@@ -269,5 +269,33 @@ describe('how long it took', () => {
     expect(took(60_000)).toBe('1 minute');
     expect(took(65_000)).toBe('1 minute 5 seconds');
     expect(took(125_000)).toBe('2 minutes 5 seconds');
+  });
+});
+
+describe('recent guesses for the private side', () => {
+  it('keeps the cleaned words and whether they were right, never who', () => {
+    const r = make();
+    guess(r, 'giraffe', 'ann');
+    guess(r, '  Elephant!! ', 'bob');
+    const seen = r.recent();
+    expect(seen).toEqual([
+      { text: 'giraffe', right: false },
+      { text: 'Elephant!!', right: true },
+    ]);
+    expect(JSON.stringify(seen)).not.toMatch(/ann|bob/);
+  });
+  it('keeps only the last few, and forgets them all when the round ends', () => {
+    const r = make('elephant', { ending: 'timer' });
+    for (let i = 0; i < 40; i++) guess(r, `guess ${i}`, `p${i}`);
+    expect(r.recent()).toHaveLength(RECENT_MAX);
+    expect(r.recent().at(-1)?.text).toBe('guess 39');
+    r.end('revealed', 5);
+    expect(r.recent()).toEqual([]);
+    expect(r._held().recent).toBe(0);
+  });
+  it('does not list a guess that was turned away', () => {
+    const r = make();
+    guess(r, '   ', 'ann');
+    expect(r.recent()).toEqual([]);
   });
 });

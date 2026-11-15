@@ -1,28 +1,26 @@
 // The words of the topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'stream-control': `**Stream control** is a window of big buttons for another screen, so you can run your stream without leaving your drawing. Open it from **Streaming > Stream control** or press **Ctrl+Alt+I**.
+  'stream-control': `**Stream control** is the private side of your stream: a window for your second screen where you read and choose what is not agreed to yet, while the drawing window stays the thing your viewers see. Open it from **Streaming > Stream control** or press **Ctrl+Alt+I**. It keeps working while you draw: one tap does the job even with the drawing window in front.
 
-It keeps working while you draw: press a button with the drawing window still in front, and one tap does the job. Frameling remembers where you put it.
+**Below the buttons**
+- **Vote.** Press **Write a vote**, type the question and options, read them over, then **Start the vote**. While it runs you see each count and the time left. See [Votes](help:votes).
+- **Guessing game.** The secret word, the blanks your viewers see and the guesses coming in, newest first. **Pick a word here** starts a round without the word ever touching the drawing window. See [Guess the drawing](help:guess).
+- **Prompt jar.** Every prompt waiting, not one pulled blind. **Pull this one** puts your choice in your hand. See [the prompt jar](help:prompt-jar).
 
-**The buttons**
-- **Start a vote** starts one. While it runs it becomes **End the vote** and counts the votes, then **Put the result away**. See [Votes](help:votes).
-- **Start a guessing game** works the same way and turns into **Reveal the word**. **Give a hint** shows one more letter. The secret word is never on this board. See [Guess the drawing](help:guess).
-- **Pull a prompt** takes one from the [prompt jar](help:prompt-jar). **Pass on this prompt** throws it away.
-- **Audience participation** switches it on or off. It is yellow while on, an information colour and not a broadcast light. See [Audience features](help:audience).
-- **Empty the queue**, **Put every dare back** and **Put my pen back** are for when chaos is too much. **Stream-safe** hides paths and names.
-- At the top, a chip says what **OBS** is doing: green when it is ready, red only while it is really live or recording.
+It shows counts and never who sent anything.
 
-A button that cannot work right now is dimmed and says why.
+**Is this screen private?** A line at the top says. It follows the answer you already gave to **What can your viewers see?**, so you are never asked twice:
+- **Only the capture window**: private.
+- **One screen, the one Frameling is on**: private while the board is on your other screen, covered on the same one.
+- **All my screens, or I am not sure**: covered.
 
-**Stop everything** is the red bar at the bottom, in the same place every time and never among the other buttons. One press empties the queue, stops every effect and switches audience participation off. Press **Audience participation** to turn it back on.
+**Private** shows the word, the guesses and the waiting prompts plainly. **Covered** shows dots with **Read it**, since words from chat are unread until you read them, and the secret word is not sent here at all. If you show the board to your viewers as a panel, press **This board is on my stream**: it covers whatever the answer was. See [Covering secrets and unread words](help:cover-spoilers).
 
-**Moving the buttons.** Press **Arrange**. Tap a button to pick it up, then tap where it goes: it takes that spot and the others shuffle along. **Earlier** and **Later** nudge it a place, **Put away** moves it to a tray where **Add** brings it back, and **Smaller** and **Bigger** resize them all. Nothing to drag or hold, so a mouse, a finger and a tablet pen all work. **Put them back** starts again. Your layout is saved with your other settings.
+**The buttons** start and end a vote or a round, give a hint, pull a prompt, switch **Audience participation** on or off, and clear dares and the queue. A button that cannot work now is dimmed and says why. A chip at the top says what **OBS** is doing.
 
-**Covered words stay covered here too.** This screen is often one you share, so a prompt you pulled shows as dots with **Read it**, just like the main window, and reading it in one reads it in both. The secret word of a guessing game is never sent to this window, and the board shows counts, never who. Tell Frameling once what your viewers can see with **What can your viewers see?** (see [Covering secrets and unread words](help:cover-spoilers)).
+**Stop everything** is the red bar at the bottom, in the same place every time. One press empties the queue, stops every effect and switches audience participation off.
 
-**Buttons that open a setup window.** **Start a vote** and **Start a guessing game** need a question or a word typed in Frameling. The first time, Frameling asks if it should come forward for you. Change it in **Preferences > Behaviour**.
+**Moving the buttons.** Press **Arrange**, tap a button, then tap where it goes. **Put away** tucks one into a tray, **Smaller** and **Bigger** resize them all, **Put them back** starts again.
 
-**On top of OBS?** The first time, Frameling asks if the board should stay above your other windows.
-
-It goes when the streaming tools are tucked away.`,
+**Good to know:** nothing here goes on your drawing. Frameling asks once whether the board stays on top of OBS, and whether a setup window should come forward.`,
 };

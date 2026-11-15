@@ -3,29 +3,38 @@
 // its buttons ask. Every button runs a command from the registry, the same one the palette and the menus run; nothing
 // here does a streaming job by itself.
 //
-// What stays covered in the main window stays covered here (src/audience/spoilers.ts): the pulled prompt's words are
-// left out of the message while they are covered, and the secret word of a guessing game is never sent at all.
+// The board is private or it is not (privacy.ts), and that decides what may be in a message at all. On a private board the
+// vote, the secret word, the guesses and the whole waiting list of the prompt jar go across plainly. When it is not
+// private, the same covering rules the main window keeps apply (src/audience/spoilers.ts): viewers' words and the secret
+// word are left out of the message, so they never reach the board's page until the streamer presses to read them.
 import { audience } from '../audience';
-import { covering, VIEW_CHOICE } from '../audience/spoilers';
-import { onChoiceChange, rememberedChoice, withChoice } from '../core/choices';
+import { VIEW_CHOICE } from '../audience/spoilers';
+import { currentChoice, onChoiceChange, rememberedChoice, setChoice, withChoice } from '../core/choices';
 import { getCommand } from '../core/registry';
 import { scrubText, subscribeStreamSafe } from '../core/streamSafe';
 import { cssVar, subscribeTheme } from '../canvas/theme';
 import { onFeaturesChange } from '../features/host';
 import { dareScreen } from '../dares/fx';
-import { guessScreen } from '../guess/state';
+import { cleanSetup as cleanRound } from '../guess/round';
+import { LENGTHS as GUESS_LENGTHS, lastLength as lastGuessLength, rememberLength as rememberGuessLength } from '../guess/setup';
+import { currentRound, guessScreen, roundIsOpen, startRound, withAudienceOn as withAudienceOnForRound } from '../guess/state';
 import { isDarkColour, subscribePopout } from '../popout/link';
-import { jar } from '../promptjar/jar';
+import { jar, pullSlip } from '../promptjar/jar';
+import { JAR_MAX } from '../promptjar/logic';
 import { jarRead, jarShown } from '../promptjar/card';
 import { obs } from '../streamsafe/obs';
 import { livePill } from '../ui/liveState';
 import { commandEnabled, commandReason, runCommand } from '../ui/palette';
-import { voteScreen } from '../votes/state';
+import { LENGTHS as VOTE_LENGTHS, lastLength as lastVoteLength, rememberLength as rememberVoteLength } from '../votes/setup';
+import { cleanSetup as cleanVote } from '../votes/tally';
+import { startVote, voteScreen, withAudienceOn as withAudienceOnForVote } from '../votes/state';
 import { FRONT_CHOICE } from './choices';
+import { boardCovers, ONSTREAM_CHOICE, onStreamNow, type PrivacyFacts } from './privacy';
+import { guessSide, jarSide, keepRead, voteSide, type GuessSide, type JarSide, type VoteSide } from './side';
 import { layoutStore, resetLayout, setLayout } from './layoutStore';
 import { boardView, MISSING_WHY, pressPlan, type BoardTheme, type BoardView, type CommandInfo, type FrontChoice, type ObsWord } from './model';
 import type { FromBoard, ToBoard } from './protocol';
-import { readSituation } from './situation';
+import { audienceWouldAsk, readSituation } from './situation';
 import { STOP_COMMAND, tileById } from './tiles';
 
 interface Session {
@@ -37,6 +46,19 @@ let session: Session | null = null;
 const listeners = new Set<() => void>();
 
 export const isBoardOpen = (): boolean => session !== null;
+
+// Whether the board is on a different screen from the drawing window (Electron tells us when it moves).
+let apart = false;
+// Waiting prompts and guesses the streamer pressed to read while the board was not private. Ids and a flag, never words.
+let readSlips = new Set<number>();
+let guessRead = false;
+const coverAgain = () => {
+  readSlips = new Set();
+  guessRead = false;
+};
+
+/** What is known about whether the board is private right now. */
+export const privacyFacts = (): PrivacyFacts => ({ answer: currentChoice<string>(VIEW_CHOICE), onStream: onStreamNow(), apart });
 
 /** Calls `fn` when the board opens or goes (for the menu tick). Returns the unsubscribe. */
 export function subscribeBoard(fn: () => void): () => void {
@@ -75,12 +97,39 @@ function obsWord(): ObsWord {
   return m ? { word: m.word, colour: m.colour } : null;
 }
 
+const scrubOrNull = (t: string | undefined): string | null => (t ? scrubText(t) : null);
+
+/** The vote, the guessing game and the waiting prompts as the board may see them. A part whose command is missing is left out. */
+function sides(covers: boolean): { vote: VoteSide | null; guess: GuessSide | null; jar: JarSide | null } {
+  const has = (id: string) => infoFor(id).exists;
+  const round = currentRound();
+  const j = jar.get();
+  readSlips = keepRead(readSlips, j.slips);
+  return {
+    vote: has('votes.start') ? voteSide(voteScreen.get(), { lengths: VOTE_LENGTHS, seconds: lastVoteLength() }) : null,
+    guess: has('guess.start')
+      ? guessSide({
+          screen: guessScreen.get(),
+          secret: !covers && roundIsOpen() ? scrubOrNull(round?.secret()) : null,
+          recent: round?.recent() ?? [],
+          covers,
+          read: guessRead,
+          scrub: scrubText,
+          setup: { lengths: GUESS_LENGTHS, seconds: lastGuessLength() },
+        })
+      : null,
+    jar: has('promptjar.pull') ? jarSide(j.slips, JAR_MAX, covers, readSlips, scrubText) : null,
+  };
+}
+
 export function currentView(): BoardView {
+  const privacy = privacyFacts();
   return boardView({
     situation: readSituation(),
     layout: layoutStore.get(),
     info: infoFor,
-    covers: covering(),
+    privacy,
+    ...sides(boardCovers(privacy)),
     hand: jar.get().hand,
     readId: jarRead.get(),
     scrub: scrubText,
@@ -91,8 +140,22 @@ export function currentView(): BoardView {
 
 const bridge = () => window.frameling?.streamboard;
 
+const apartListeners = new Set<() => void>();
+const onApart = (fn: () => void): (() => void) => {
+  apartListeners.add(fn);
+  return () => void apartListeners.delete(fn);
+};
+/** Electron says the board moved to another screen, or back. Everything read is covered again, as the privacy changed. */
+export function setApart(now: boolean): void {
+  if (apart === now) return;
+  apart = now;
+  coverAgain();
+  for (const f of apartListeners) f();
+}
+
 function start(port: MessagePort): void {
   session?.stop();
+  coverAgain();
   const unsubs: (() => void)[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   let last = '';
@@ -167,6 +230,56 @@ function start(port: MessagePort): void {
       case 'reset':
         resetLayout();
         break;
+      case 'slip': {
+        if (m.do === 'read') readSlips = new Set([...readSlips, m.id]);
+        else if (pullSlip(m.id)) jarRead.set(null), jarShown.set(null);
+        later();
+        break;
+      }
+      case 'slips':
+        if (m.do === 'read') readSlips = new Set(jar.get().slips.map((x) => x.id));
+        else readSlips = new Set();
+        later();
+        break;
+      case 'guesses':
+        guessRead = m.do === 'read';
+        later();
+        break;
+      case 'vote': {
+        const cleaned = cleanVote({ question: m.question, options: m.options, seconds: m.seconds || null });
+        if (!cleaned.ok) return say(cleaned.reason);
+        rememberVoteLength(m.seconds);
+        if (audienceWouldAsk()) void bridge()?.raiseMain();
+        withAudienceOnForVote(() => {
+          const r = startVote(cleaned.setup);
+          say(r.ok ? 'The vote is on. It is counting now.' : r.reason, r.ok);
+          later();
+        });
+        break;
+      }
+      case 'round': {
+        // The word is typed here only while the board is private. Anything else would put it on a screen somebody may see.
+        if (boardCovers(privacyFacts())) return say('This board is not private, so the word is not typed here. Press Start a guessing game and type it in Frameling.');
+        const cleaned = cleanRound({ word: m.word, seconds: m.seconds || null, ending: currentChoice('guess.ending') });
+        if (!cleaned.ok) return say(cleaned.reason);
+        rememberGuessLength(m.seconds);
+        if (audienceWouldAsk()) void bridge()?.raiseMain();
+        withAudienceOnForRound(() => {
+          const r = startRound(cleaned.setup);
+          say(r.ok ? 'The game is on. Chat is guessing.' : r.reason, r.ok);
+          later();
+        });
+        break;
+      }
+      case 'onstream':
+        setChoice(ONSTREAM_CHOICE, m.on ? 'onstream' : 'private');
+        break;
+      case 'viewers': {
+        void bridge()?.raiseMain();
+        const c = getCommand('audience.view');
+        if (c) runCommand(c);
+        break;
+      }
       case 'prompt': {
         const hand = jar.get().hand;
         // Only the slip in hand can be read, so a stale message about an old one does nothing.
@@ -196,7 +309,12 @@ function start(port: MessagePort): void {
     subscribePopout(later),
     subscribeTheme(later),
     onFeaturesChange(later),
-    onChoiceChange((id) => (id === VIEW_CHOICE || id.startsWith('audience.')) && later()),
+    onChoiceChange((id) => {
+      // A different answer about who can see this board covers everything again, so nothing read before stays read.
+      if (id === VIEW_CHOICE || id === ONSTREAM_CHOICE) coverAgain();
+      if (id === VIEW_CHOICE || id === ONSTREAM_CHOICE || id.startsWith('audience.') || id.startsWith('guess.')) later();
+    }),
+    onApart(later),
   );
 
   function stop(): void {
@@ -233,4 +351,6 @@ export function installBoardLink(): void {
     start(e.ports[0]);
   });
   api.onClosed(stopBoard);
+  api.onApart?.(setApart);
+  void api.apart?.().then(setApart);
 }

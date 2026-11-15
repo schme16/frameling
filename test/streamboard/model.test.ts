@@ -4,8 +4,10 @@ import { defaultLayout, moveOnto } from '../../src/streamboard/layout';
 import { QUIET, STOP_COMMAND, TILES, type Situation } from '../../src/streamboard/tiles';
 
 const THEME = { dark: true, bg: '#000', panel: '#111', text: '#fff', muted: '#999', accent: '#90f', raised: '#222', line: '#333' };
+const COVERED = { answer: 'screen', onStream: false, apart: false };
+const PRIVATE = { answer: 'capture', onStream: false, apart: false };
 const ok: CommandInfo = { exists: true, enabled: true };
-const input = (over: Partial<ViewInput> = {}): ViewInput => ({ situation: QUIET, layout: defaultLayout(), info: () => ok, covers: true, hand: null, readId: null, obs: null, theme: THEME, ...over });
+const input = (over: Partial<ViewInput> = {}): ViewInput => ({ situation: QUIET, layout: defaultLayout(), info: () => ok, privacy: COVERED, vote: null, guess: null, jar: null, hand: null, readId: null, obs: null, theme: THEME, ...over });
 
 describe('why a button will not work', () => {
   it('says so when the command is not there', () => {
@@ -45,7 +47,7 @@ describe('the pulled prompt, covered by the same rules as the main window', () =
     expect(promptView(null, true, null)).toBeNull();
   });
   it('the whole view carries no trace of a covered prompt', () => {
-    const v = boardView(input({ hand, covers: true, situation: { ...QUIET, jarHand: true } }));
+    const v = boardView(input({ hand, privacy: COVERED, situation: { ...QUIET, jarHand: true } }));
     expect(JSON.stringify(v)).not.toContain('rude');
   });
 });
@@ -91,7 +93,7 @@ describe('what the board is told', () => {
     expect(at(0)).toBeGreaterThanOrEqual(150);
   });
   it('can be sent over a message port as plain data', () => {
-    const v = boardView(input({ hand: { id: 1, text: 'x' }, covers: false }));
+    const v = boardView(input({ hand: { id: 1, text: 'x' }, privacy: PRIVATE }));
     expect(JSON.parse(JSON.stringify(v))).toEqual(v);
   });
 });

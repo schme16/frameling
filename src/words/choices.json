@@ -1967,25 +1967,34 @@
   },
   "choice.audience.view.title": { "text": "What your viewers can see", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.audience.view.question": {
-    "text": "What can your viewers see of Frameling? Secret words and prompts from chat can stay covered until you press to read them.",
+    "text": "What can your viewers see of Frameling? Secret words and prompts from chat can stay covered until you press to read them. If they only see one screen, Stream control on your other screen can show everything plainly.",
     "where": "The question the \"What your viewers can see\" dialog asks, the first time audience features are switched on, or a guessing game or the prompt jar is opened."
   },
-  "choice.audience.view.screen.label": { "text": "My screen or my whole window", "where": "Dialog and Preferences: the button for the answer \"screen\" in \"What your viewers can see\"." },
+  "choice.audience.view.screen.label": { "text": "All my screens, or I am not sure", "where": "Dialog and Preferences: the button for the answer \"screen\" in \"What your viewers can see\"." },
   "choice.audience.view.screen.detail": {
-    "text": "Secret words, pulled prompts and words from chat stay covered until you press to read them. Pick this if you are not sure.",
+    "text": "Secret words, pulled prompts and words from chat stay covered until you press to read them, in every Frameling window. Pick this if you are not sure.",
     "where": "Dialog and Preferences: the small line under the \"screen\" answer in \"What your viewers can see\"."
   },
   "choice.audience.view.screen.did": {
-    "text": "Secret words and words from chat stay covered until you press to read them.",
+    "text": "Secret words and words from chat stay covered everywhere until you press to read them.",
     "where": "Toast when \"screen\" is used without asking (\"What your viewers can see\"), in the past tense."
+  },
+  "choice.audience.view.display.label": { "text": "One screen, the one Frameling is on", "where": "Dialog and Preferences: the button for the answer \"display\" in \"What your viewers can see\"." },
+  "choice.audience.view.display.detail": {
+    "text": "Your viewers see that one screen. Stream control on your other screen is private and shows everything plainly. The drawing window stays covered.",
+    "where": "Dialog and Preferences: the small line under the \"display\" answer in \"What your viewers can see\"."
+  },
+  "choice.audience.view.display.did": {
+    "text": "Secret words stay covered in the drawing window, and show plainly on Stream control when it is on your other screen.",
+    "where": "Toast when \"display\" is used without asking (\"What your viewers can see\"), in the past tense."
   },
   "choice.audience.view.capture.label": { "text": "Only the capture window", "where": "Dialog and Preferences: the button for the answer \"capture\" in \"What your viewers can see\"." },
   "choice.audience.view.capture.detail": {
-    "text": "Your viewers see the capture window and nothing else, so this window is private. Secret words and prompts show plainly here.",
+    "text": "Your viewers see the capture window and nothing else, so this window and Stream control are private. Secret words and prompts show plainly in both.",
     "where": "Dialog and Preferences: the small line under the \"capture\" answer in \"What your viewers can see\"."
   },
   "choice.audience.view.capture.did": {
-    "text": "Secret words and prompts show plainly in this window.",
+    "text": "Secret words and prompts show plainly in this window and in Stream control.",
     "where": "Toast when \"capture\" is used without asking (\"What your viewers can see\"), in the past tense."
   },
   "choice.guess.peek.title": { "text": "Peeking at the word", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
@@ -2149,6 +2158,29 @@
   "choice.streamboard.front.stay.did": {
     "text": "Frameling stayed where it was for the setup window.",
     "where": "Toast when \"stay\" is used without asking (\"Buttons that open a setup window\"), in the past tense."
+  },
+  "choice.streamboard.onstream.title": { "text": "Stream control on your stream", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.streamboard.onstream.question": {
+    "text": "Is Stream control shown on your stream, as a panel your viewers can see? Most people keep it on a screen only they see.",
+    "where": "The question for \"Stream control on your stream\". It is never asked: it is a switch on the board and in Preferences."
+  },
+  "choice.streamboard.onstream.private.label": { "text": "Only I see it", "where": "Preferences: the button for the answer \"private\" in \"Stream control on your stream\"." },
+  "choice.streamboard.onstream.private.detail": {
+    "text": "Stream control follows what your viewers can see: private when they only see the capture window, or one screen that it is not on.",
+    "where": "Preferences: the small line under the \"private\" answer in \"Stream control on your stream\"."
+  },
+  "choice.streamboard.onstream.private.did": {
+    "text": "Stream control is private again, if your viewers cannot see its screen.",
+    "where": "Toast when \"private\" is used without asking (\"Stream control on your stream\"), in the past tense."
+  },
+  "choice.streamboard.onstream.onstream.label": { "text": "It is on my stream", "where": "Preferences: the button for the answer \"onstream\" in \"Stream control on your stream\"." },
+  "choice.streamboard.onstream.onstream.detail": {
+    "text": "Your viewers can see it, so secret words and chat words stay covered on it until you press to read them.",
+    "where": "Preferences: the small line under the \"onstream\" answer in \"Stream control on your stream\"."
+  },
+  "choice.streamboard.onstream.onstream.did": {
+    "text": "Stream control is on your stream, so it covers secrets and chat words.",
+    "where": "Toast when \"onstream\" is used without asking (\"Stream control on your stream\"), in the past tense."
   },
   "choice.review.keep.title": { "text": "Comments left in a live review", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
   "choice.review.keep.question": {

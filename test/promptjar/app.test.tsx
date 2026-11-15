@@ -11,7 +11,7 @@ import { _resetFeaturesForTests, isFeatureOn, registerFeatures, setFeatureOn } f
 import { streamDoorFeature } from '../../src/streamdoor';
 import { promptJarFeature, ADD_ACTION } from '../../src/promptjar';
 import { hideJar, jarCardOpen, jarRead } from '../../src/promptjar/card';
-import { addToJar, emptyJar, jar, JAR_KEY, loadKept, passOn, pullOne, putBack } from '../../src/promptjar/jar';
+import { addToJar, emptyJar, jar, JAR_KEY, loadKept, passOn, pullOne, pullSlip, putBack } from '../../src/promptjar/jar';
 import { DEFAULT_PACE_SECONDS, JAR_MAX } from '../../src/promptjar/logic';
 import { JarChip, emptyTheJar } from '../../src/promptjar/JarCard';
 import { setStreamSafe } from '../../src/core/streamSafe';
@@ -186,6 +186,27 @@ describe('arriving', () => {
     pullOne();
     expect(send('now there is room').ok).toBe(true);
     expect(words()).toContain('now there is room');
+  });
+});
+
+describe('choosing one slip from the waiting list', () => {
+  it('puts that very slip in hand, and a slip already in hand is done with', () => {
+    expect(addToJar('first one')).toBe('added');
+    expect(addToJar('second one')).toBe('added');
+    expect(addToJar('third one')).toBe('added');
+    const [a, b, c] = jar.get().slips;
+    expect(pullSlip(b.id)?.text).toBe('second one');
+    expect(jar.get().hand?.id).toBe(b.id);
+    expect(jar.get().slips.map((s) => s.id)).toEqual([a.id, c.id]);
+    expect(pullSlip(c.id)?.text).toBe('third one');
+    expect(jar.get().hand?.id).toBe(c.id);
+    expect(jar.get().slips.map((s) => s.id)).toEqual([a.id]);
+  });
+  it('does nothing for a slip that is not in the jar', () => {
+    addToJar('only one');
+    expect(pullSlip(9999)).toBeNull();
+    expect(jar.get().hand).toBeNull();
+    expect(jar.get().slips).toHaveLength(1);
   });
 });
 

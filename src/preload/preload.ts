@@ -202,6 +202,12 @@ const api: FramelingApi = {
     close: () => call('streamboard:close'),
     isOpen: () => call('streamboard:isOpen'),
     raiseMain: () => call('streamboard:raiseMain'),
+    apart: () => call('streamboard:apart'),
+    onApart: (handler) => {
+      const fn = (_e: unknown, apart: unknown) => handler(apart === true);
+      ipcRenderer.on('streamboard:apart', fn);
+      return () => void ipcRenderer.removeListener('streamboard:apart', fn);
+    },
     onClosed: (handler) => {
       const fn = () => handler();
       ipcRenderer.on('streamboard:closed', fn);

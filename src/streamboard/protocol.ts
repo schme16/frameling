@@ -16,4 +16,16 @@ export type FromBoard =
   | { t: 'layout'; layout: Layout }
   | { t: 'reset' }
   /** Read the covered prompt, or cover it again. */
-  | { t: 'prompt'; do: 'read' | 'cover'; id: number };
+  | { t: 'prompt'; do: 'read' | 'cover'; id: number }
+  /** Waiting prompts: read one, read them all, cover them again, or choose one to pull into your hand. */
+  | { t: 'slip'; do: 'read' | 'pull'; id: number }
+  | { t: 'slips'; do: 'read' | 'cover' }
+  /** The guesses: read them (when covered) or cover them again. */
+  | { t: 'guesses'; do: 'read' | 'cover' }
+  /** Start a vote or a round from what was written on the board. The drawing window cleans it again and says why not. */
+  | { t: 'vote'; question: string; options: string[]; seconds: number }
+  | { t: 'round'; word: string; seconds: number }
+  /** Put the board on stream, or keep it private (the switch on the board). */
+  | { t: 'onstream'; on: boolean }
+  /** Open the "What can your viewers see?" question again. */
+  | { t: 'viewers' };

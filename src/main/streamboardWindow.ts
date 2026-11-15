@@ -14,7 +14,7 @@ interface Host {
   dir: string;
 }
 
-export const BOARD_SIZE = { width: 660, height: 780 };
+export const BOARD_SIZE = { width: 1000, height: 780 };
 export const BOARD_MIN = { width: 320, height: 380 };
 
 export interface Streamboard {
@@ -26,6 +26,8 @@ export interface Streamboard {
   mainClosed(): void;
   /** Brings the drawing window forward (a button on the board opened a setup dialog there). */
   raiseMain(): void;
+  /** True when the board is open on a different screen from the drawing window. */
+  apart(): boolean;
 }
 
 export function makeStreamboard(host: Host): Streamboard {
@@ -36,6 +38,31 @@ export function makeStreamboard(host: Host): Streamboard {
   };
   let top = false;
   let live: BrowserWindow | null = null;
+
+  // Whether the board and the drawing window are on different screens. The drawing window is told when it changes, so the
+  // board can be private on a screen the viewers do not see (src/streamboard/privacy.ts).
+  const apart = (): boolean => {
+    const m = host.main();
+    if (!live || live.isDestroyed() || !m || m.isDestroyed()) return false;
+    return screen.getDisplayMatching(live.getBounds()).id !== screen.getDisplayMatching(m.getBounds()).id;
+  };
+  let lastApart: boolean | null = null;
+  let tellTimer: ReturnType<typeof setTimeout> | null = null;
+  const tellApart = (force = false) => {
+    if (tellTimer) clearTimeout(tellTimer);
+    tellTimer = setTimeout(() => {
+      tellTimer = null;
+      const now = apart();
+      if (!force && now === lastApart) return;
+      lastApart = now;
+      mainPage()?.send('streamboard:apart', now);
+    }, 150);
+  };
+  const onMainMove = () => tellApart();
+  const watchMain = () => {
+    host.main()?.removeListener('move', onMainMove);
+    host.main()?.on('move', onMainMove);
+  };
 
   const popout = createPopout({
     defaultSize: BOARD_SIZE,
@@ -60,7 +87,13 @@ export function makeStreamboard(host: Host): Streamboard {
         },
       });
       live = win;
-      win.once('ready-to-show', () => win.show());
+      lastApart = null;
+      watchMain();
+      win.on('move', () => tellApart());
+      win.once('ready-to-show', () => {
+        win.show();
+        tellApart(true);
+      });
       const wc = win.webContents;
       const note = () => {
         if (win.isDestroyed() || win.isMinimized() || win.isFullScreen() || win.isMaximized()) return;
@@ -82,6 +115,7 @@ export function makeStreamboard(host: Host): Streamboard {
       win.once('closed', () => {
         if (live === win) live = null;
         events.closed();
+        mainPage()?.send('streamboard:apart', false);
       });
       const dev = process.env.FRAMELING_DEV_URL;
       if (dev) void win.loadURL(new URL('streamboard.html', dev).toString());
@@ -146,6 +180,7 @@ export function makeStreamboard(host: Host): Streamboard {
     isOpen: () => popout.isOpen(),
     mainReloaded: () => popout.mainReloaded(),
     mainClosed: () => popout.mainClosed(),
+    apart,
     raiseMain() {
       const w = host.main();
       if (!w || w.isDestroyed()) return;
