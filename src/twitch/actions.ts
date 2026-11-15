@@ -9,6 +9,7 @@ import type { TwitchProblem, TwitchStatus } from '../shared/twitch';
 import { twitchLink } from './instance';
 import { markSeeded, setRules, currentRules, twitchSaved, twitchStatus, wantedKinds } from './state';
 import { starterRules } from './rules';
+import { openPrefs } from '../ui/overlays';
 
 export const hasTwitch = (): boolean => !!desktop()?.twitch;
 
@@ -16,7 +17,17 @@ export const hasTwitch = (): boolean => !!desktop()?.twitch;
 export async function connect(): Promise<void> {
   const b = desktop()?.twitch;
   if (!b) return void toast('Connect Twitch needs the desktop app.', { kind: 'warn' });
-  twitchStatus.set(await b.signIn(wantedKinds()));
+  const after = await b.signIn(wantedKinds());
+  twitchStatus.set(after);
+  // No Twitch app means no sign-in can even start, and the answer is a box in Preferences. Take them to it rather than
+  // leaving them pressing a button that does nothing, which is exactly how this was found.
+  if (after.problem === 'no-app') {
+    toast(PROBLEM_WORDS['no-app']!, {
+      kind: 'warn',
+      duration: 12_000,
+      action: { label: 'Open Twitch settings', id: 'twitch-no-app', run: () => openPrefs('streaming', undefined, 'Use my own Twitch app') },
+    });
+  }
 }
 
 export async function cancelConnect(): Promise<void> {
@@ -41,6 +52,7 @@ const PROBLEM_WORDS: Partial<Record<TwitchProblem, string>> = {
   failed: 'Could not start connecting to Twitch. Check your internet and try again.',
   offline: 'Could not reach Twitch. Check your internet and try again.',
   'needs-sign-in': 'Twitch ended the sign-in, so Frameling stopped listening. Connect again when you are ready.',
+  'no-app': 'This copy of Frameling has no Twitch app of its own, so it cannot start a sign-in. Preferences > Streaming takes a Twitch app id.',
 };
 
 /** Watches the status for the moments worth a word. Returns the way to stop. */
@@ -63,7 +75,7 @@ export function watchTwitch(): () => void {
         });
       }
     }
-    if (s.problem && s.problem !== was.problem && PROBLEM_WORDS[s.problem] && s.problem !== 'no-app') toast(PROBLEM_WORDS[s.problem]!, { kind: 'warn' });
+    if (s.problem && s.problem !== was.problem && PROBLEM_WORDS[s.problem]) toast(PROBLEM_WORDS[s.problem]!, { kind: 'warn' });
     if (s.listening === 'reconnecting' && was.listening === 'listening') toast('Lost the line to Twitch. Frameling is trying again.', { quill: null, sound: null });
   });
 }

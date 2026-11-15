@@ -14,6 +14,8 @@ export const twitchCommands: Command[] = [
     help: 'twitch',
     keywords: KEYWORDS,
     global: true,
+    // It stays pressable with no Twitch app set, because pressing it should take you to where you fix that. Greying it
+    // would be true but useless: the answer is a box in Preferences and you would have no way of knowing.
     enabled: () => hasTwitch() && twitchStatus.get().state === 'signed-out',
     reason: () => (hasTwitch() ? 'Already connected. Use Disconnect from Twitch first.' : 'Connect Twitch needs the desktop app.'),
     run: () => void connect(),
