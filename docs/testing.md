@@ -1695,3 +1695,20 @@ compared. Before the worker: 1028 ms (JPEG) and 5678 ms (PNG, plus 842 ms decodi
 `test/review/model.test.ts` (reading a comments file, junk refused, merging by id with two reviewers, `done` ticked by either side, drift) and `format.test.ts` (marks' optional `by` and `at`, old files unchanged, the picture sizes) are plain functions. `page.test.ts` runs the real review page in jsdom: it shows the drawing and the existing notes, a note, answer, mark and tick are made with real events, and the comments text it hands back is read by `readReview` and merged. `flow.test.ts` runs Send for review and Bring in comments on the real store (no file path in the page, the question about your own notes, one undo step, the question when frames have moved, stream-safe toasts).
 
 The look: run the help clip with `REVIEW_PAGE_OUT=<file>` (the runner's pretend desktop writes the real page there), then `THEME=dark REVIEW_PAGE=<file> OUT=brand/ab/share-review SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/ab-share-review/review-page.cjs` once per theme. It opens the page in a plain window and drives it with real mouse events. The clip itself is `scripts/docs/help/review-page.cjs`.
+
+## Connect Twitch: test/twitch and the pictures
+
+Everything is tested against a pretend Twitch (`test/twitch/fake.ts`: the sign-in and Helix calls, an EventSub socket you drive by hand, a clock you move by hand, and a key store that "encrypts" so a test can see plain text is not on disk). Nothing talks to real Twitch, and nothing in this repo has been run against it.
+
+```bash
+npx vitest run test/twitch
+```
+
+- `auth.test.ts` the device code flow: pending, slow down, denied, expired, cancelled, refresh, revoke.
+- `tokens.test.ts` the token store: encrypted, memory only without a key store, forgotten for real.
+- `eventsub.test.ts` the socket: welcome, subscribing, repeats, a dropped line, a quiet line, Twitch moving us, being signed out.
+- `session.test.ts` the desktop side as a whole, including the permissions asked for and that no token or code goes up to the page.
+- `rules.test.ts`, `link.test.ts`, `app.test.ts` the links, and each event reaching its action through the real gate (switch, cooldown, queue, interrupt switch, Stop).
+- `prefs.test.tsx` the settings block, and that stream-safe mode never draws or fetches the code.
+
+The pictures (`twitch`, `twitch-links`) come from `npm run help:media -- --only twitch,twitch-links`. The harness stubs the desktop side (`scripts/ipc-stubs.cjs`) with a made-up code and two made-up rewards, and `__framelingTwitch` (only with `?debug`) sets what the screen shows. A build signs in with `FRAMELING_TWITCH_CLIENT_ID` from the environment (a Public app at dev.twitch.tv); without it the screen says so and takes a pasted Client ID.

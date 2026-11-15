@@ -1,0 +1,79 @@
+/* Connect Twitch's block in Preferences > Features. */
+.tw-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tw-connect,
+.tw-linkbox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tw-kinds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tw-kind {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: start;
+}
+.tw-kind > span {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.tw-code-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+}
+.tw-code {
+  font-family: ui-monospace, monospace;
+  font-size: 1.9rem;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+}
+.tw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tw-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tw-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line-soft);
+}
+.tw-link.is-off {
+  opacity: 0.6;
+}
+.tw-arrow {
+  color: var(--muted);
+}
+.tw-narrow {
+  width: 6rem;
+}
+.tw-note {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}

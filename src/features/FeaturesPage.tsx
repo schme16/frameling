@@ -8,6 +8,7 @@ import { useFeaturesVersion } from './use';
 import { AudiencePrefsRow } from '../audience/PrefsRow';
 import { StreamDoorPrefsRow } from '../streamdoor/PrefsRow';
 import { StreamOverlayPrefsRow } from '../streamoverlay/PrefsRow';
+import { TwitchPrefsRow } from '../twitch/PrefsRow';
 import { DaresPrefsRow } from '../dares/PrefsRow';
 import { PenModsPrefsRow } from '../penmods/PrefsRow';
 
@@ -51,6 +52,7 @@ export function FeaturesPage() {
       <AudiencePrefsRow />
       <StreamDoorPrefsRow />
       <StreamOverlayPrefsRow />
+      <TwitchPrefsRow />
       <DaresPrefsRow />
       <PenModsPrefsRow />
       {offFeatures().length > 0 && (

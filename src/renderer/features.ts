@@ -59,10 +59,9 @@ import { promptJarFeature } from '../promptjar';
 import { votesFeature } from '../votes';
 import { guessFeature } from '../guess';
 import { penModsFeature } from '../penmods';
+import { twitchFeature } from '../twitch';
 
-
-
-registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature, streamDoorFeature, quillReactsFeature, daresFeature, promptJarFeature, votesFeature, penModsFeature, streamOverlayFeature, guessFeature]);
+registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature, streamDoorFeature, quillReactsFeature, daresFeature, promptJarFeature, votesFeature, penModsFeature, streamOverlayFeature, guessFeature, twitchFeature]);
 
 // Brush, colours, loop playback and onion skin: put back as they were, and saved from here on.
 startRememberingUi();

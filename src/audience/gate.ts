@@ -194,7 +194,7 @@ export interface GateSnapshot {
   limits: GateLimits;
   doors: { id: string; label: string }[];
   /** `available` is what a door may list: false for a `touchesDrawing` action while interruptions are not allowed. */
-  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean; /** False when the streamer switched this one off (see `setActionEnabled`). */ enabled: boolean }[];
+  actions: { id: string; label: string; kind: string; cooldown: number; touchesDrawing: boolean; available: boolean; /** False when the streamer switched this one off (see `setActionEnabled`). */ enabled: boolean; /** True when it reads a payload (it has a `parse`), so a door may offer to send words with it. */ takesDetails: boolean; /** True for a counted-only action many people send at once (a vote). */ bulk: boolean }[];
 }
 
 /** The parts of the outside world the gate needs. */
@@ -584,7 +584,7 @@ export function createGate(env: GateEnv): Gate {
         counts: { ...counts, rejected: { ...counts.rejected }, byKind: { ...counts.byKind } },
         limits: env.limits(),
         doors: [...doors.values()].map((d) => ({ id: d.id, label: d.label })),
-        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: (!a.touchesDrawing || drawingOk) && !switchedOff.has(a.id), enabled: !switchedOff.has(a.id) })),
+        actions: [...actions.values()].map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldown: a.cooldown ?? DEFAULT_COOLDOWN_MS, touchesDrawing: a.touchesDrawing === true, available: (!a.touchesDrawing || drawingOk) && !switchedOff.has(a.id), enabled: !switchedOff.has(a.id), takesDetails: typeof a.parse === 'function', bulk: a.bulk === true })),
       });
     },
 

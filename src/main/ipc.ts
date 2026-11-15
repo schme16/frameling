@@ -13,6 +13,7 @@ import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
 import { registerObsIpc } from './obs';
+import { registerTwitchIpc } from './twitch';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { forgetSeen, keepPreview, previewOf } from './preview';
 import { isRecent, previewDir } from './store';
@@ -336,6 +337,7 @@ export function registerIpc(hooks: IpcHooks): void {
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);
   registerObsIpc(handle, hooks.window);
+  registerTwitchIpc(handle, hooks.window);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {
