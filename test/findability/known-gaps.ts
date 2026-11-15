@@ -74,6 +74,8 @@ export const BIG_MENUS: Record<string, number> = {
   // OBS and the capture view help anybody who shares a screen, so they came back to View > Sharing your screen rather
   // than leaving with the rest. That is 16 more commands under View, and it is the price of that choice, not drift.
   // Two more for the pen, pencil and brush snapping: Snap to line ends and points, and Snap the pen, pencil and brush.
+  // One more for Put the panels back, which sits beside Dock every window back under View > Panel windows and tools.
+  // It is the panels' half of a pair the tool strip already had, so it is the price of matching them, not drift.
   View: 188,
   // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
 };
