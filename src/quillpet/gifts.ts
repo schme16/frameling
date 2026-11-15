@@ -92,7 +92,7 @@ export async function openPresentDoc(id: string): Promise<boolean> {
   if (!(await askAboutUnsavedChanges())) return false;
   store().load(docOfPresent(present), null);
   notePresentOpened(id);
-  noteFuss();
+  noteFuss('given');
   return true;
 }
 

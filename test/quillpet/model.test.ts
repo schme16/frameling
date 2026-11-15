@@ -10,6 +10,7 @@ import {
   MAX_COLOURS,
   MAX_THINGS,
   MOOD_WORDS,
+  DEEP_SLEEP_MS,
   moodNow,
   nextStage,
   NO_NOW,
@@ -196,5 +197,34 @@ describe('days', () => {
 
   it('writes a day the way a person would', () => {
     expect(dayKey(new Date(2026, 0, 5, 23, 30).getTime())).toBe('2026-01-05');
+  });
+});
+
+describe('the pet animations answer what you did', () => {
+  const base = { ...NO_NOW, sinceEdit: Infinity };
+
+  it('munches when fed, nuzzles when stroked, and holds up what you gave him', () => {
+    expect(moodNow({ ...base, justFussed: true, fuss: 'fed' }).anim).toBe('eat');
+    expect(moodNow({ ...base, justFussed: true, fuss: 'stroked' }).anim).toBe('nuzzle');
+    expect(moodNow({ ...base, justFussed: true, fuss: 'given' }).anim).toBe('holding');
+  });
+
+  it('treats a fuss with no kind as a stroke, so an older caller still works', () => {
+    expect(moodNow({ ...base, justFussed: true }).anim).toBe('nuzzle');
+  });
+
+  it('hops along while the animation plays', () => {
+    expect(moodNow({ ...base, playing: true }).anim).toBe('hop');
+  });
+
+  it('dozes first and only goes properly under after a quarter of an hour', () => {
+    expect(moodNow({ ...base, sinceInput: 200_000 }).anim).toBe('sleep');
+    expect(moodNow({ ...base, sinceInput: DEEP_SLEEP_MS + 1 }).anim).toBe('deep-sleep');
+    // Both are still asleep, so nothing else in the app has to learn a new mood.
+    expect(moodNow({ ...base, sinceInput: DEEP_SLEEP_MS + 1 }).mood).toBe('asleep');
+  });
+
+  it('still puts finishing something above any of it', () => {
+    expect(moodNow({ ...base, justFinished: true, justFussed: true, fuss: 'fed' }).anim).toBe('cheer');
   });
 });

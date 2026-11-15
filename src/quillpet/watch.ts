@@ -22,10 +22,18 @@ export const sinceFuss = (): number => now() - fussedAt;
 /** Milliseconds since you last finished something. */
 export const sinceFinished = (): number => now() - finishedAt;
 
+/** What the last fuss was, so he can answer it in kind: a munch, a nuzzle, or holding up what you gave him. */
+export type FussKind = 'fed' | 'stroked' | 'given';
+let fussKind: FussKind = 'stroked';
+
 /** Stroking him, feeding him, giving him something: he notices for a few seconds. */
-export function noteFuss(): void {
+export function noteFuss(kind: FussKind = 'stroked'): void {
   fussedAt = now();
+  fussKind = kind;
 }
+
+/** What the last fuss was. Only means anything while `sinceFuss()` is still small. */
+export const lastFuss = (): FussKind => fussKind;
 /** An export, a save, a quest finished: he's proud of you for a few seconds. */
 export function noteFinished(): void {
   finishedAt = now();

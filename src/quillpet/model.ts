@@ -238,20 +238,28 @@ export interface NowCtx {
   justFinished: boolean;
   /** You just gave him something, fed him or stroked him. */
   justFussed: boolean;
+  /** Which of those it was, so he can answer in kind. Missing is treated as a stroke. */
+  fuss?: 'fed' | 'stroked' | 'given';
   /** Days since you were last here. */
   daysAway: number;
 }
+
+/** Left alone this long and the doze becomes a proper sleep. */
+export const DEEP_SLEEP_MS = 15 * 60 * 1000;
 
 export const NO_NOW: NowCtx = { sinceInput: 0, sinceEdit: Infinity, playing: false, justFinished: false, justFussed: false, daysAway: 0 };
 
 /** His mood, and the animation that goes with it. Order matters: the loudest thing wins. */
 export function moodNow(ctx: NowCtx): { mood: Mood; anim: QuillAnim } {
   if (ctx.justFinished) return { mood: 'proud', anim: 'cheer' };
-  if (ctx.justFussed) return { mood: 'happy', anim: 'cheer' };
+  // He answers a fuss in kind: a munch for food, a nuzzle for a stroke, and he holds up what you gave him.
+  if (ctx.justFussed) return { mood: 'happy', anim: ctx.fuss === 'fed' ? 'eat' : ctx.fuss === 'given' ? 'holding' : 'nuzzle' };
   // Back after a break is a happy thing. This is the line that keeps him from ever sulking about it.
   if (ctx.daysAway >= 1 && ctx.sinceInput < 20000) return { mood: 'excited', anim: 'wave' };
-  if (ctx.playing) return { mood: 'excited', anim: 'cheer' };
+  if (ctx.playing) return { mood: 'excited', anim: 'hop' };
   if (ctx.sinceEdit < 4000) return { mood: 'happy', anim: 'draw' };
+  // Right under is a doze; left alone for a quarter of an hour he goes properly under.
+  if (ctx.sinceInput > DEEP_SLEEP_MS) return { mood: 'asleep', anim: 'deep-sleep' };
   if (ctx.sinceInput > 180000) return { mood: 'asleep', anim: 'sleep' };
   if (ctx.sinceInput > 60000) return { mood: 'sleepy', anim: 'idle' };
   if (ctx.sinceEdit < 60000) return { mood: 'curious', anim: 'think' };

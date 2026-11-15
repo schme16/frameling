@@ -88,7 +88,7 @@ export function QuillShelves() {
                 className="qp-thing qt-thing"
                 title={`${t.name}, given ${sayWhen(t.givenAt)}`}
                 onClick={() => {
-                  noteFuss();
+                  noteFuss('given');
                   setSaid(line('pet.thing', { name: t.name }));
                 }}
               >

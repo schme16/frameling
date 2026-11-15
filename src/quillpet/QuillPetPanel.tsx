@@ -11,7 +11,7 @@ import { useStore } from '../core/store';
 import { daysAway, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
 import { QuillShelves } from './QuillShelves';
-import { noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
+import { lastFuss, noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
 import './quillpet.css';
 
 /** "a day", "3 days", "about 2 weeks": how long he'd say it's been. */
@@ -46,6 +46,7 @@ export function QuillHim() {
     playing: false,
     justFinished: sinceFinished() < 6000,
     justFussed: sinceFuss() < 4000,
+    fuss: lastFuss(),
     daysAway: away,
   });
 
@@ -62,7 +63,7 @@ export function QuillHim() {
 
   const pat = () => {
     tellQuill({ kind: 'petted' });
-    noteFuss();
+    noteFuss('stroked');
     const all = lines('pet.petted');
     setSaid(all[Math.floor(Math.random() * all.length)]);
   };
@@ -70,7 +71,7 @@ export function QuillHim() {
   const feed = () => {
     if (!colour) return;
     tellQuill({ kind: 'fed', colour });
-    noteFuss();
+    noteFuss('fed');
     setSaid(line('pet.fed'));
   };
 

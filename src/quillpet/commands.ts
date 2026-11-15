@@ -38,7 +38,7 @@ export const quillPetCommands: Command[] = [
     enabled: () => getPrefs().showQuill,
     run: () => {
       tellQuill({ kind: 'petted' });
-      noteFuss();
+      noteFuss('stroked');
       showPanel('quill-pet');
     },
   },

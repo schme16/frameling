@@ -19,7 +19,8 @@ describe('mascot.frameling (the source of the app mascot)', () => {
   // Until someone saves it from Frameling, the file is exactly what the one-time conversion wrote.
   const unedited = manifest.app === 'convert-from-quill';
 
-  const NAMES = ['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake'];
+  // The contract clips every mascot draws, then the optional pet extras (see EXTRA_CLIPS in timing.ts).
+  const NAMES = ['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake', 'deep-sleep', 'eat', 'hop', 'nuzzle', 'holding'];
   const clipOf = (name: string) => contentOf(doc, artboardsOf(doc).find((a) => a.name === name)!.id)!.clips[0];
 
   it('opens cleanly with one artboard per animation, each with its one clip', () => {

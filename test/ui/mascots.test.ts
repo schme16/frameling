@@ -6,7 +6,7 @@ import { decodePng } from '../../src/io/png';
 import { mapPencils, PENCILS } from '../../src/quillpet/quills';
 import { line, lines } from '../../src/ui/mascot/lines';
 import { currentMascot, DEFAULT_MASCOT, getMascot, hasChoice, isMascotId, mascots, registerMascot, type Mascot } from '../../src/ui/mascot/mascots';
-import { CLIPS, parseSheet, sheetProblems } from '../../src/ui/mascot/timing';
+import { CLIPS, clipOr, EXTRA_CLIPS, EXTRA_FALLBACK, LOOPING_EXTRA_CLIPS, parseSheet, sheetProblems } from '../../src/ui/mascot/timing';
 import { migratePrefs, resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { FAKE_SHEET } from '../fixtures/quill-sheet';
 
@@ -115,7 +115,9 @@ describe('the clip contract', () => {
     };
     walk(join(ROOT, 'src'));
     expect(asked.size).toBeGreaterThan(5);
-    for (const name of asked) expect(CLIPS as readonly string[]).toContain(name);
+    // An anim name in the source must be one every mascot draws, or one of the optional extras that falls back.
+    const known = [...(CLIPS as readonly string[]), ...(EXTRA_CLIPS as readonly string[])];
+    for (const name of asked) expect(known, name).toContain(name);
   });
 });
 
@@ -159,5 +161,32 @@ describe('the manifest', () => {
 
   it('makes the app icon from exactly one mascot, since the icon belongs to the app', () => {
     expect(manifest.mascots.filter((m) => m.appIcon)).toHaveLength(1);
+  });
+});
+
+describe('the extra pet clips', () => {
+  const quillSheet = () => parseSheet(JSON.parse(readFileSync(join(ROOT, 'public/mascot/mascot.json'), 'utf8')))!;
+  const without = (sheet: ReturnType<typeof quillSheet>) =>
+    ({ ...sheet, anims: Object.fromEntries(Object.entries(sheet.anims).filter(([k]) => !(EXTRA_CLIPS as readonly string[]).includes(k))) }) as typeof sheet;
+
+  it('are optional, so a mascot that has not drawn them still keeps the contract', () => {
+    expect(sheetProblems(without(quillSheet()))).toEqual([]);
+  });
+
+  it('every fallback is a clip every mascot has, so asking for an extra always resolves', () => {
+    for (const c of EXTRA_CLIPS) expect(CLIPS as readonly string[]).toContain(EXTRA_FALLBACK[c]);
+  });
+
+  it('falls back to the nearest ordinary clip, and gives the real one where it exists', () => {
+    const bare = without(quillSheet());
+    expect(clipOr(bare, 'deep-sleep')).toBe('sleep');
+    expect(clipOr(bare, 'eat')).toBe('talk');
+    expect(clipOr(quillSheet(), 'deep-sleep')).toBe('deep-sleep');
+  });
+
+  it('Quill has drawn all of them, and the ones that rest loop', () => {
+    const sheet = quillSheet();
+    for (const c of EXTRA_CLIPS) expect(sheet.anims[c], c).toBeTruthy();
+    for (const c of LOOPING_EXTRA_CLIPS) expect(sheet.anims[c].loop, c).toBe(true);
   });
 });
