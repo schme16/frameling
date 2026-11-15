@@ -226,7 +226,7 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
   // Reference pictures the same way, in `pictures/` (only those a layer still shows).
   const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  // The undo steps, when asked for (never for exports, autosave or versions, which don't pass them).
+  // The undo steps, when asked for (never for exports or versions, which don't pass them; autosave does, so a recovery keeps them).
   const history = opts.history ? encodeHistory(opts.history) : null;
   opts.onHistory?.(history);
   if (history) Object.assign(files, history.files);

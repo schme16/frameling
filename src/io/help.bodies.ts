@@ -70,7 +70,7 @@ help:saving-and-opening help:version-history`,
 help:updates help:performance help:autosave`,
   autosave: `Every minute, if you have unsaved changes, Frameling tucks a copy of your work away in its own private folder.
 
-It **never touches your own file**. It's only a safety net.
+It **never touches your own file**. It's only a safety net. The copy holds your recent undo steps too (the same amount a saved file can keep), so a restored drawing still has its history.
 
 ## Getting your work back
 
@@ -78,7 +78,7 @@ If Frameling closes unexpectedly (a power cut, a crash), the next time you start
 says **Your unsaved work from today at 22:50** (with your own time). If the welcome sheet is turned off, a message at
 the bottom asks instead.
 
-Press **Restore** and you're back where you were. **Not now** leaves it in Recover unsaved work. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
+Press **Restore** and you're back where you were, **Undo** and the **History** panel included, so you can step back through the work you did before it closed. **Not now** leaves it in Recover unsaved work. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
 
 Frameling only offers this when the safety copy is newer than your saved file.
 

@@ -27,13 +27,12 @@ describe('exports and history', () => {
     expect(users).toEqual([]);
   });
 
-  it('autosave and versions, which write often and for safekeeping, do not pass it', () => {
-    for (const f of ['src/io/autosave.ts', 'src/io/versions.ts', 'src/io/recovery.ts']) expect(readFileSync(f, 'utf8')).not.toMatch(/saveFileAsync\([^)]*\bhistory\b/);
+  it('versions, which are copies of the drawing alone, do not pass it; autosave does, through autosaveBytes', () => {
+    for (const f of ['src/io/versions.ts', 'src/io/recovery.ts']) expect(readFileSync(f, 'utf8')).not.toMatch(/saveFileAsync\([^)]*\bhistory\b/);
+    expect(readFileSync('src/io/autosave.ts', 'utf8')).not.toMatch(/\b(historyForSave|encodeHistory)\b/);
     const doc = readFileSync('src/io/document.ts', 'utf8');
-    const from = doc.indexOf('export async function autosaveNow');
-    const autosave = doc.slice(from, doc.indexOf('\n}\n', from));
-    expect(autosave).toContain('saveFileAsync');
-    expect(autosave).not.toMatch(/history/);
+    const from = doc.indexOf('export async function autosaveBytes');
+    expect(doc.slice(from, doc.indexOf('\n}\n', from))).toContain('historyForSave');
   });
 
   it('a drawing taken out of a store with history, as every exporter takes it, holds none', () => {

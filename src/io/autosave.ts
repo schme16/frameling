@@ -25,6 +25,8 @@ export async function offerRecovery(): Promise<void> {
     await clearAutosaveCopy();
     return;
   }
+  // A check that the copy opens at all. Restoring goes through loadBytes, which puts the copy's undo and redo steps
+  // back too (store.load takes them), so Undo, Redo and the History panel carry on from before the crash.
   try {
     await loadFileAsync(found.bytes);
   } catch {

@@ -6,6 +6,7 @@ import { historyFitsFile, type HistorySaved } from '../core/historyFile';
 import { ownedUndo } from '../core/owners';
 import { rootDoc } from '../core/symbols';
 import { uid } from '../core/doc';
+import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
@@ -64,13 +65,25 @@ export function forgetAutosaved(): void {
   lastDoc = null;
 }
 
+/**
+ * The bytes of an autosave copy: the drawing and its undo and redo steps, so a recovery after a crash can still step
+ * back through the work. The steps are encoded once each and remembered (see `encodeHistory`), so a minute later only the
+ * new steps cost anything. It is the same byte cap as a saved file, so the copy can't grow without limit. A tile open for
+ * editing, or a variation, has no steps that fit the file's drawing, and then the copy goes without them.
+ */
+export async function autosaveBytes(doc: Doc, appVersion: string, withHistory = true): Promise<Uint8Array> {
+  const steps = withHistory ? store().historyForSave() : null;
+  const history = steps && steps.doc === doc && historyFitsFile(doc) ? steps : null;
+  return saveFileAsync(doc, appVersion, new Date(), { reuse: true, ...(history ? { history } : {}) });
+}
+
 export async function autosaveNow(): Promise<void> {
   const api = desktop();
   const { ui } = store().get();
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
-    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
+    const bytes = await autosaveBytes(doc, api.versions.app);
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });
     lastDoc = doc;
   } catch {
@@ -90,7 +103,9 @@ export async function handOverUnsavedWork(): Promise<Handover> {
   const { ui } = store().get();
   const doc = store().rootDoc();
   try {
-    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
+    let bytes = await autosaveBytes(doc, api.versions.app);
+    // Too big to carry with its steps: the drawing goes across on its own rather than not at all.
+    if (!handoverFits(bytes.length)) bytes = await autosaveBytes(doc, api.versions.app, false);
     if (!handoverFits(bytes.length)) return { ok: false, why: 'big' };
     if ((await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id })) === false) return { ok: false, why: 'failed' };
     lastDoc = doc;
