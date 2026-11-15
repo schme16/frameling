@@ -126,6 +126,8 @@ export const SETTING_ROWS: PrefRow[] = [
 
   row('features', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
 
+  row('features', 'Pen modifiers', 'Let your audience make your pen steadier, shakier, thinner or fatter for a while. Off until you allow interruptions, with a switch for each and a Try it button.', ['steady hand', 'shaky hand', 'thin brush', 'fat brush', 'long rope', 'wobble', 'tremor', 'debuff', 'debuffs', 'buff', 'brush size', 'stream', 'viewers', 'channel points', 'audience participation'], { find: 'Pen modifiers' }),
+
   // Diagnostics
   row('diagnostics', 'Telling the makers', 'Send a bug report or crash notes, only when you press Send.', ['report a bug', 'bug report', 'feedback', 'send report', 'crash report', 'telemetry', 'analytics', 'privacy', 'beta', 'error report', 'logs', 'crash notes', 'contact'], { find: 'Telling the makers' }),
   row('diagnostics', 'Look for new versions', 'Quietly check for a newer Frameling, and say what is sent. Off means it never looks by itself.', ['update', 'updates', 'auto update', 'automatic update', 'check for updates', 'new version', 'upgrade', 'new release', 'latest version', 'skip version', 'github', 'privacy', 'offline'], { find: 'Look for new versions' }),

@@ -6,9 +6,18 @@ import { store } from '../core/store';
 import { canvasCamera } from '../camera/ops';
 import { pixelSizeThroughCamera } from '../canvas/pixels';
 import { activeLayer } from './edit';
+import { penSizeFactor } from '../penmods/active';
 
-/** Stage length per unit of tool size right now (1 unless the canvas is looking through the camera). */
+/**
+ * Stage length per unit of tool size right now: 1 unless the canvas is looking through the camera, times the size factor
+ * of a pen modifier when one is on (thin or fat brush, see src/penmods). Every tool's size goes through here, so the
+ * modifier changes the person's tools without touching their own size settings.
+ */
 export function viewSizeFactor(): number {
+  return cameraSizeFactor() * penSizeFactor();
+}
+
+function cameraSizeFactor(): number {
   const cam = canvasCamera();
   if (!cam) return 1;
   const layer = activeLayer().layer;

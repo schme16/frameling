@@ -40,7 +40,7 @@ import { meaningOfPress } from '../tablet/buttons';
 import { penFields } from '../tablet/input';
 import { penTools } from '../tablet/tool';
 import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
-import { Stabilizer } from '../tablet/stabilizer';
+import { PenFilter } from '../penmods/filter';
 import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
@@ -118,8 +118,8 @@ export class CanvasEngine {
   private grabPt: Pt | null = null;
   /** The pen's eraser end is the one hovering, so the eraser's ring shows. */
   private hoverEraser = false;
-  /** Steadies the stroke in progress (pull string or average), when the tool has the stabilizer on. */
-  private stab: Stabilizer | null = null;
+  /** Steadies the stroke in progress (the stabilizer: pull string or average) and, for a pen modifier, shakes it. Null when neither is on. */
+  private penFilter: PenFilter | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
   private idleHandle = 0;
@@ -799,12 +799,11 @@ export class CanvasEngine {
     this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool, swapped };
     const ptr = this.toPointer(e);
     this.lastPtr = ptr;
-    this.stab = null;
+    this.penFilter = null;
     const tp = PEN_TOOLS.includes(tool.id as PenTool) && !pick && !rightClick ? getPen().tools[tool.id as PenTool] : null;
-    if (tp && tp.stabilizer > 0) {
-      this.stab = new Stabilizer(tp.stabMode, tp.stabilizer, ui.zoom);
-      this.stab.start({ x: ptr.x, y: ptr.y, pressure: ptr.pressure });
-    }
+    // A pen modifier (src/penmods) lies over the person's own settings for this stroke; their settings are never changed.
+    const filter = tp ? new PenFilter(tp, ui.zoom, { x: ptr.x, y: ptr.y, pressure: ptr.pressure }) : null;
+    if (filter?.active) this.penFilter = filter;
     ctl.setHover(null);
     tool.down?.(ptr, this.ctx);
     this.invalidate(false, true);
@@ -891,15 +890,15 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     // The pen's predicted path draws ahead of the line for less lag, but not when the stabilizer holds the brush back.
-    const pred = !this.stab && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
+    const pred = !this.penFilter && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
     ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe, true))));
     this.invalidate(false, true);
   };
 
   /** The pointer sample as the stabilizer's brush sees it (unchanged when the stabilizer is off). */
   private steady(p: ToolPointer): ToolPointer {
-    if (!this.stab) return p;
-    const s = this.stab.push({ x: p.x, y: p.y, pressure: p.pressure });
+    if (!this.penFilter) return p;
+    const s = this.penFilter.push({ x: p.x, y: p.y, pressure: p.pressure });
     return { ...p, x: s.x, y: s.y, pressure: s.pressure };
   }
 
@@ -933,14 +932,16 @@ export class CanvasEngine {
       const raw = e ? this.toPointer(e) : last;
       const up = raw && last && (!e || e.pointerType === 'pen') ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
       if (up) {
-        if (this.stab) {
+        let lift = up;
+        if (this.penFilter) {
           // The brush walks the rest of the way to where the pen lifted.
-          const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
-          for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+          const end = this.penFilter.finish({ x: up.x, y: up.y, pressure: up.pressure });
+          for (const s of end.before) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+          lift = { ...up, x: end.last.x, y: end.last.y };
         }
-        g.tool.up?.(up, this.ctx);
+        g.tool.up?.(lift, this.ctx);
       } else g.tool.cancel?.(this.ctx);
-      this.stab = null;
+      this.penFilter = null;
       this.restoreTool(g);
     } else if (g.kind === 'altwait') {
       // Let go without moving far: not a turn after all, so the press is made as the tool would have taken it (a pick
@@ -1033,7 +1034,7 @@ export class CanvasEngine {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
-    this.stab = null;
+    this.penFilter = null;
     if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
     if (g.kind === 'grab') g.grab.cancel?.();
     if (g.kind === 'tool') {

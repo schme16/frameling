@@ -235,6 +235,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['dares.list', 'dares.stop', '-'],
     prefixes: ['dares.try.'],
   },
+  penmods: {
+    label: 'Pen modifiers',
+    items: ['penmods.list', 'penmods.stop', '-'],
+    prefixes: ['penmods.try.'],
+  },
   pixturn: {
     label: 'Flip and turn',
     items: ['pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],

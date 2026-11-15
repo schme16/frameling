@@ -8,6 +8,7 @@ import { useFeaturesVersion } from './use';
 import { AudiencePrefsRow } from '../audience/PrefsRow';
 import { StreamDoorPrefsRow } from '../streamdoor/PrefsRow';
 import { DaresPrefsRow } from '../dares/PrefsRow';
+import { PenModsPrefsRow } from '../penmods/PrefsRow';
 
 export function FeaturesPage() {
   useFeaturesVersion();
@@ -49,6 +50,7 @@ export function FeaturesPage() {
       <AudiencePrefsRow />
       <StreamDoorPrefsRow />
       <DaresPrefsRow />
+      <PenModsPrefsRow />
       {offFeatures().length > 0 && (
         <div>
           <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>
