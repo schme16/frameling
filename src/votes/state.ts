@@ -12,6 +12,7 @@ import { currentChoice } from '../core/choices';
 import { createStore } from '../ui/mini';
 import { cleanSetup, createVote, type Vote, type VoteView, type Ways } from './tally';
 import { fromVoteView, overlayVote } from '../streamoverlay';
+import { toast } from '../ui/toast';
 
 export type VoteScreen = { phase: 'none' } | { phase: 'open' | 'result'; view: VoteView };
 
@@ -84,16 +85,29 @@ export function closeVote(): void {
   publish();
 }
 
-/** Turns audience features on if they are off (asking how careful the first time), then runs `then`. A vote nobody can reach is no use. */
+/**
+ * Runs `then` when a vote can actually reach anybody. A vote with audience features off is no use, but the master
+ * switch is the streamer's, so this never reaches for it: it says so and offers the switch, and the vote starts only
+ * once they press it themselves.
+ */
 export function withAudienceOn(then: () => void): void {
   if (audience.isOn()) return then();
-  setAudienceOn(true);
-  // The first time, the question about how careful to be may be showing; go ahead once it is answered.
-  if (audience.isOn()) return then();
-  const off = audience.subscribe(() => {
-    if (!audience.isOn()) return;
-    off();
-    then();
+  toast('Audience features are off, so nobody can vote yet.', {
+    duration: 12_000,
+    action: {
+      label: 'Switch them on',
+      id: 'votes-switch-on',
+      run: () => {
+        setAudienceOn(true);
+        // The first time, the question about how careful to be is showing; wait for the answer.
+        if (audience.isOn()) return then();
+        const off = audience.subscribe(() => {
+          if (!audience.isOn()) return;
+          off();
+          then();
+        });
+      },
+    },
   });
 }
 

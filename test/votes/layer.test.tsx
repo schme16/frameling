@@ -11,6 +11,7 @@ import { _resetVotesForTests, closeVote, endVote, flushVotes, startVote } from '
 import { closeVoteSetup, openVoteSetup } from '../../src/votes/setupState';
 import { registerVoteAction } from '../../src/votes/actions';
 import { outcomeOf } from '../../src/votes/tally';
+import { toasts } from '../../src/ui/toast';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 installAudience();
@@ -100,6 +101,13 @@ describe('the box that writes a vote', () => {
     await set('setup.option.2', 'Blue');
     expect(audience.isOn()).toBe(false);
     await act(async () => q('setup.start')!.click());
+    await settle();
+    // The master switch is the streamer's: a vote says it cannot reach anybody and offers the switch, never flips it.
+    expect(audience.isOn()).toBe(false);
+    expect(q('question')).toBeNull();
+    const ask = toasts.get().find((x) => x.action?.id === 'votes-switch-on')!;
+    expect(ask.message).toContain('nobody can vote yet');
+    await act(async () => ask.action!.run());
     await settle();
     expect(audience.isOn()).toBe(true);
     expect(text('question')).toBe('Next?');
