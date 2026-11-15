@@ -19,7 +19,6 @@ export const RANKED_BEHIND: Record<string, { rank: number; why: string }> = {
   "import a picture": { rank: 2, why: "Palette from a picture outranks the import." },
   "rename my drawing": { rank: 2, why: "Name this drawing on the timeline outranks the document name help." },
   "turn on dark mode": { rank: 2, why: "The Color burn blend mode outranks the theme switch." },
-  "put it on top of everything": { rank: 2, why: "The audience Stop button (audience.kill) outranks Bring to front: a stream emergency brake shown to a painter." },
   "go to the next frame": { rank: 2, why: "Duplicate drawing outranks Next frame." },
   "import a gif": { rank: 3, why: "Palette from a picture and Open a picture outrank the import." },
 };
@@ -35,13 +34,6 @@ export const STREAM_WORDS: string[] = ['stream', 'obs', 'audience', 'twitch', 'v
 
 /** Plain words where more than one of the top five is a stream command, with how many. */
 export const CROWDED_WORDS: Record<string, { count: number; why: string }> = {
-  settings: { count: 3, why: 'Actions door settings, OBS settings and Stream overlay settings sit above Preferences-style settings like the grid.' },
-  test: { count: 3, why: 'Test the overlay and two Try the dare commands match on test, the keyword for try it yourself.' },
-  address: { count: 5, why: 'All five are stream commands: two Copy the address, a Roll and the two settings screens. Nobody else has an address.' },
-  list: { count: 3, why: 'What the audience can dare, Add to the prompt jar and What the audience can do to your pen all say list.' },
-  key: { count: 2, why: 'Copy the actions door key and Make a new key sit beside Next key and Previous key on the timeline.' },
-  roll: { count: 3, why: 'Make a new door key, Pull a prompt and Make a new overlay address all say roll.' },
-  start: { count: 2, why: 'Start a vote and Start a guessing game sit among the timeline and audio starts.' },
-  close: { count: 2, why: 'Close the vote and Close the round sit beside Close the file.' },
-  connect: { count: 4, why: 'Connect Twitch is right, but Cancel the Twitch sign-in and two OBS commands come along with it.' },
+  address: { count: 3, why: 'Three stream commands: the two Copy the address and a Roll. Nobody else has an address, so this is the palette being right.' },
+  connect: { count: 3, why: 'Connect Twitch is right, but Cancel the Twitch sign-in and an OBS command come along with it.' },
 };

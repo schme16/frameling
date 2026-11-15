@@ -15,13 +15,13 @@ let unwatch: (() => void) | null = null;
 export const guessFeature = defineFeature({
   id: 'stream-guess',
   name: 'Guess the drawing',
-  about: 'Lets you draw a secret word while your audience guesses it in chat. Frameling checks the guesses and shows who got it. The word never shows on screen while a round runs. Needs the actions door, and only while audience features are on.',
+  about: 'Lets you draw a secret word while your audience guesses it in chat. Frameling checks the guesses and shows who got it. The word never shows on screen while a round runs. Needs the actions door.',
   optional: true,
   requires: ['stream-door'],
   commands: guessCommands,
   help: guessHelp,
   choices: guessChoices,
-  menus: [{ menu: 'sub:audience', items: guessMenuItems }],
+  menus: [{ menu: 'sub:guess', items: guessMenuItems }],
   activate: () => {
     registerGuessAction();
     unwatch = watchGate();

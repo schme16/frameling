@@ -16,12 +16,12 @@ let stops: (() => void)[] = [];
 export const twitchFeature = defineFeature({
   id: 'stream-twitch',
   name: 'Connect Twitch',
-  about: 'Signs in to Twitch with a short code, so channel point rewards, cheers, follows, subs and raids can make Quill and your audience tools react. No other program needed. Only while audience features are on.',
+  about: 'Signs in to Twitch with a short code, so channel point rewards, cheers, follows, subs and raids can make Quill and your audience tools react. No other program needed.',
   optional: true,
   commands: twitchCommands,
   help: twitchHelp,
   choices: twitchChoices,
-  menus: [{ menu: 'sub:audience', items: ['twitch.connect', 'twitch.cancel', 'twitch.disconnect', 'twitch.links'] }],
+  menus: [{ menu: 'sub:twitch', items: ['twitch.connect', 'twitch.cancel', 'twitch.disconnect', 'twitch.links'] }],
   activate: () => {
     registerAudienceDoor({ id: 'door.twitch', label: 'Twitch', open: () => twitchLink.open(), close: () => twitchLink.close() });
     stops = [twitchLink.listen(), watchTwitch()];

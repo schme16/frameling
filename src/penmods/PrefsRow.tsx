@@ -19,7 +19,7 @@ export function PenModsPrefsRow() {
   const drawingOn = snap.drawingAllowed;
   return (
     <div className="pm-prefs" data-testid="penmods.prefs">
-      <h3>Pen modifiers</h3>
+      <h4>Pen modifiers</h4>
       <p className="ui-pref-intro" data-testid="penmods.drawingNote">
         {drawingOn
           ? 'You have allowed these. For a while, your pen steadies, shakes or changes size, and every line you draw meanwhile is yours to keep. Each line is a normal step, so Undo takes it back. Your own settings are never changed.'

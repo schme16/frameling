@@ -67,7 +67,7 @@ describe('registered', () => {
     }
     expect(getCommand('votes.start')!.keys).toEqual(['Mod+Alt+Y']);
     expect(getHelp('votes')!.media).toBe('votes.mp4');
-    expect(votesFeature.menus![0].menu).toBe('sub:audience');
+    expect(votesFeature.menus![0].menu).toBe('sub:votes');
     const find = (items: MenuItem[]): string[] => items.flatMap((it) => (it.kind === 'submenu' ? find(it.items) : it.kind === 'command' ? [it.command.id] : []));
     const ids = find(resolveMenus().flatMap((m) => m.items));
     for (const id of ['votes.start', 'votes.end', 'votes.close']) expect(ids, id).toContain(id);

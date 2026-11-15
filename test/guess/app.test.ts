@@ -72,7 +72,7 @@ describe('registered', () => {
     expect(getCommand('guess.start')!.keys).toEqual(['Mod+Alt+Q']);
     expect(getCommand('guess.end')!.keys).toEqual(['Mod+Alt+Shift+Q']);
     expect(getHelp('guess')!.media).toBe('guess.mp4');
-    expect(guessFeature.menus![0].menu).toBe('sub:audience');
+    expect(guessFeature.menus![0].menu).toBe('sub:guess');
     const find = (items: MenuItem[]): string[] => items.flatMap((it) => (it.kind === 'submenu' ? find(it.items) : it.kind === 'command' ? [it.command.id] : []));
     const ids = find(resolveMenus().flatMap((m) => m.items));
     for (const id of ['guess.start', 'guess.hint', 'guess.peek', 'guess.end', 'guess.close']) expect(ids, id).toContain(id);

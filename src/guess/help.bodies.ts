@@ -3,7 +3,7 @@ export const bodies: Record<string, string> = {
   guess: `A **guessing game** is you drawing a secret word while your audience guesses it in chat. Frameling checks the guesses, counts them and shows who got it. **Nothing in your drawing changes, and the word never shows on screen while the round runs.**
 
 ## Run a round
-1. Open **View > Audience features > Start a guessing game** (**Ctrl+Alt+Q**). Type a word, or press **Pick one for me**, or **From the jar** to use a prompt from your [prompt jar](help:prompt-jar).
+1. Open **Streaming > Guess the drawing > Start a guessing game** (**Ctrl+Alt+Q**). Type a word, or press **Pick one for me**, or **From the jar** to use a prompt from your [prompt jar](help:prompt-jar).
 2. Choose how long it runs, and whether it ends when someone gets it or when the time is up. **Start the round.**
 3. Draw. The panel shows blanks for the letters, how many people are guessing, and how close the nearest guess is: **Cold, Cool, Warm, Hot**. That is about spelling, and never shows the guess.
 4. **Hint** shows one more letter, for everyone to see. **Reveal** (**Ctrl+Alt+Shift+Q**) ends it when you like.

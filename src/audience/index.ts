@@ -21,6 +21,8 @@ import { createGate, limitsFor, lasts, type AudienceActionDef, type AudienceDoor
 import { audienceHelp } from './help';
 import { desktop } from '../io/desktop';
 import { globalStop, showAudienceCard } from './card';
+import { registerQuietFamily } from '../ui/palette';
+import { STREAM_WORDS } from '../ui/streamWords';
 
 export { lasts };
 export type { AudienceActionDef, AudienceContext, AudienceDoorDef, AudienceCounts, GateLimits, RejectReason, Strictness, Verdict } from './gate';
@@ -112,6 +114,12 @@ export function syncGateCommands(): void {
 export function installAudience(): void {
   if (installed) return;
   installed = true;
+  // Until audience features are on, ordinary words ("settings", "test", "stop") find ordinary things first.
+  registerQuietFamily({
+    has: (c) => c.category === 'Audience',
+    words: STREAM_WORDS,
+    quiet: () => !audience.isOn(),
+  });
   registerHelpTopics(audienceHelp);
   for (const c of audienceChoices) registerChoice(c);
   gateCommands = [

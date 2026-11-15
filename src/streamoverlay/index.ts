@@ -12,13 +12,13 @@ import { overlayLink } from './instance';
 export const streamOverlayFeature = defineFeature({
   id: 'stream-overlay',
   name: 'Stream overlay',
-  about: 'A page for OBS with a see-through background that shows Quill, the running dare and the prompt you pulled to your viewers, and nothing else. Needs the actions door, and only while audience features are on.',
+  about: 'A page for OBS with a see-through background that shows Quill, the running dare and the prompt you pulled to your viewers, and nothing else. Needs the actions door.',
   optional: true,
   requires: ['stream-door'],
   commands: streamOverlayCommands,
   help: streamOverlayHelp,
   choices: overlayChoices,
-  menus: [{ menu: 'sub:audience', items: streamOverlayMenuItems }],
+  menus: [{ menu: 'sub:streamoverlay', items: streamOverlayMenuItems }],
   activate: () => overlayLink.start(),
   deactivate: () => overlayLink.stop(),
 });

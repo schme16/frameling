@@ -68,6 +68,38 @@ function itemText(it: PaletteItem): { label: string[]; keywords: string[]; extra
 /** Words people type around what they mean ("how do I make it loop"), skipped when something else was typed. */
 const FILLER = new Set(['a', 'an', 'the', 'it', 'i', 'my', 'me', 'to', 'do', 'how', 'can', 'want', 'please', 'make', 'this', 'that', 'with', 'some', 'from', 'over', 'around', 'of', 'for', 'and', 'into', 'draw', 'add', 'turn', 'on', 'off', 'out', 'go', 'get', 'use', 'put', 'after', 'let', 'stuff', 'things']);
 
+/**
+ * A family of commands that has its own words (stream, overlay, dare...) and sits behind everyone else's for ordinary
+ * ones ("settings", "test", "stop") while it is quiet. Typing one of its words, or switching the family on, lifts it.
+ * The streamer's vocabulary still wins for a streamer; somebody who never streams is not buried in it.
+ */
+export interface QuietFamily {
+  /** Which commands belong to the family. */
+  has: (c: Command) => boolean;
+  /** Words only this family uses. One of them in the query means the person is asking for it. */
+  words: readonly string[];
+  /** True while the family should step back (audience features are off). */
+  quiet: () => boolean;
+}
+const quietFamilies: QuietFamily[] = [];
+/** How much of its score a quiet family keeps when the query is about something else. */
+export const QUIET_KEEPS = 0.5;
+
+/** Registers a family. Returns the way to take it back out. */
+export function registerQuietFamily(f: QuietFamily): () => void {
+  quietFamilies.push(f);
+  return () => void quietFamilies.splice(quietFamilies.indexOf(f), 1);
+}
+
+const asksFor = (words: readonly string[], q: string[]): boolean => q.some((w) => words.some((x) => x === w || (w.length >= 4 && x.startsWith(w))));
+
+/** What a family holds on to for this query: 1 normally, less for a quiet family and a query that is not about it. */
+function quietFactor(it: PaletteItem, queryWords: string[]): number {
+  if (it.kind !== 'command') return 1;
+  for (const f of quietFamilies) if (f.has(it.command) && f.quiet() && !asksFor(f.words, queryWords)) return QUIET_KEEPS;
+  return 1;
+}
+
 export function scoreItem(query: string, it: PaletteItem): number {
   const all = wordsOf(query);
   const meant = all.filter((w) => !FILLER.has(w));
@@ -91,7 +123,7 @@ export function scoreItem(query: string, it: PaletteItem): number {
   if (it.kind === 'command') total += 5;
   // Filler words are not needed to match, but a name that has them ('Make a reusable symbol' for 'make a symbol') is closer.
   total += qs.length * all.filter((w) => FILLER.has(w) && label.includes(w)).length * 3;
-  return total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0);
+  return (total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0)) * quietFactor(it, all);
 }
 
 /**

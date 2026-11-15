@@ -65,7 +65,7 @@ export function StreamDoorPrefsRow() {
 
   return (
     <div className="sd-prefs" data-testid="streamdoor.prefs">
-      <h3>Actions door</h3>
+      <h4>Actions door</h4>
       <p className="ui-pref-intro" data-testid="streamdoor.status">
         {line}
       </p>

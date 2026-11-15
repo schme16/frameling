@@ -37,6 +37,13 @@ export function lightRow(root: ParentNode | null, text: string, hold = 2400): ()
       if (++tries < 12) frame = requestAnimationFrame(look);
       return;
     }
+    // The row is inside a folded group (Streaming): open it first, then light the row once it has room.
+    const folded = el.closest('details:not([open])');
+    if (folded) {
+      folded.setAttribute('open', '');
+      if (++tries < 12) frame = requestAnimationFrame(look);
+      return;
+    }
     el.classList.add('is-lit');
     el.scrollIntoView({ block: 'center' });
     lit = el;

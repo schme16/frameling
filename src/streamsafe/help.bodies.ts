@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## Turn it on
 
-Press **Ctrl+Alt+Shift+H** (**Cmd+Alt+Shift+H** on a Mac), or choose **View > Look and sound > Stream-safe mode on or off**, or search for it in the command palette (Ctrl+K). You can also flip it in **Preferences > General**. A small **Stream-safe** pill appears at the top right, so you always know it's on. Press the pill to turn it off again.
+Press **Ctrl+Alt+Shift+H** (**Cmd+Alt+Shift+H** on a Mac), or choose **Streaming > Stream-safe mode on or off**, or search for it in the command palette (Ctrl+K). You can also flip it in **Preferences > General**. A small **Stream-safe** pill appears at the top right, so you always know it's on. Press the pill to turn it off again.
 
 ## What it hides
 
@@ -46,7 +46,7 @@ This is the step people get stuck on. It is OBS's own door for other programs, b
 
 ## Step 2: tell Frameling
 
-1. Choose **View > Look and sound > Going live with OBS on or off**, press **Ctrl+Alt+Shift+O** (**Cmd+Alt+Shift+O** on a Mac), or use the switch in **Preferences > General**.
+1. Choose **Streaming > Going live with OBS on or off**, press **Ctrl+Alt+Shift+O** (**Cmd+Alt+Shift+O** on a Mac), or use the switch in **Preferences > General**.
 2. Leave the address as **localhost:4455**, or type the one OBS shows. OBS on another computer in your home? Type that computer's address.
 3. Type the password, if there is one, and press **Use this password**.
 

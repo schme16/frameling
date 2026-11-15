@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **This is only the view.** It's how you look at the page, like turning a sheet on your desk. Your drawing isn't changed, saving the file isn't affected, and exporting gives you the picture the right way round. A small note at the top of the canvas, and a button in the status bar, say so while the view is turned, with the angle.
 
-**Flip the view:** **View > Turn and flip the view > Flip view**, or **Ctrl+Alt+H**. The screen is mirrored left to right. A face that looks fine can suddenly look lopsided. Press it again to flip back.
+**Flip the view:** **View > Centre, turn and flip the view > Flip view**, or **Ctrl+Alt+H**. The screen is mirrored left to right. A face that looks fine can suddenly look lopsided. Press it again to flip back.
 
 **Turn the view to any angle:** hold **Alt** and drag round the middle of the canvas, with the Brush, Pencil, Eraser or Bucket. The page turns with your pointer, like a sheet of paper on your desk. Near straight it settles upright by itself, so getting back is easy. Hold **Shift** as you drag to turn in neat 15 degree steps instead.
 

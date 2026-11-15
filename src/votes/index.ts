@@ -14,13 +14,13 @@ let unwatch: (() => void) | null = null;
 export const votesFeature = defineFeature({
   id: 'stream-votes',
   name: 'Chat votes',
-  about: 'Lets you ask your audience a question and count their votes live. It only counts: nothing in your drawing ever changes because of a vote. Needs the actions door, and only while audience features are on.',
+  about: 'Lets you ask your audience a question and count their votes live. It only counts: nothing in your drawing ever changes because of a vote. Needs the actions door.',
   optional: true,
   requires: ['stream-door'],
   commands: votesCommands,
   help: votesHelp,
   choices: votesChoices,
-  menus: [{ menu: 'sub:audience', items: votesMenuItems }],
+  menus: [{ menu: 'sub:votes', items: votesMenuItems }],
   activate: () => {
     registerVoteAction();
     unwatch = watchGate();

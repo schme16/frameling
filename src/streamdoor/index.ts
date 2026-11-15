@@ -15,12 +15,12 @@ let stopListening: (() => void) | null = null;
 export const streamDoorFeature = defineFeature({
   id: 'stream-door',
   name: 'Actions door',
-  about: 'Lets Streamer.bot, Firebot or a Stream Deck ask Frameling for a few safe things, like showing a message. Only while audience features are on, and only from this computer.',
+  about: 'Lets Streamer.bot, Firebot or a Stream Deck ask Frameling for a few safe things, like showing a message. Only from this computer.',
   optional: true,
   commands: streamDoorCommands,
   help: streamDoorHelp,
   choices: doorChoices,
-  menus: [{ menu: 'sub:audience', items: ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.roll'] }],
+  menus: [{ menu: 'sub:streamdoor', items: ['streamdoor.settings', 'streamdoor.copyAddress', 'streamdoor.copyKey', 'streamdoor.roll'] }],
   activate: () => {
     registerAudienceDoor({ id: 'door.local', label: 'Local actions', open: () => doorLink.open(), close: () => doorLink.close() });
     registerDoorActions();

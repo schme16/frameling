@@ -2,7 +2,9 @@
 export const bodies: Record<string, string> = {
   audience: `Some people draw live. Audience features are the small, safe ways viewers or stream tools can join in, like cheering Quill on. This page is the switch, and the safety every one of them shares.
 
-**It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Features > Audience features**, or **Audience features** in the command palette.
+**It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Features > Audience features**, **Streaming > Audience features**, or **Audience features** in the command palette.
+
+**Not for you?** Everything for streaming lives in one place: the **Streaming** menu in the menu bar, and the **Streaming** heading in **Preferences > Features**. **Tuck away the streaming tools** (palette, or the **Streaming** menu) takes the whole family out of your menus in one go, and **Bring back the streaming tools** puts it back.
 
 **The On air pill.** While it is on, a red **On air** pill sits in the title bar and nothing can hide it. Press it to see what is waiting and what has happened. A little number says how many are waiting.
 

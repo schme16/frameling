@@ -1,5 +1,7 @@
 // Preferences > Features: the optional parts of Frameling, each with a switch. Quiet on purpose: nothing here is
 // needed to start drawing.
+import { useSyncExternalStore } from 'react';
+import { audience } from '../audience';
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
@@ -40,17 +42,24 @@ function FeatureRow({ f, change }: { f: FeatureDescriptor; change: (id: string, 
   );
 }
 
-/** The streaming family as one row with one switch, and the nine below it for anybody who wants to pick. */
+/**
+ * The streaming family under one heading: one switch for all of it, and the nine below it with each one's own settings.
+ * Folded for somebody who does not stream, open once audience features are on. The note about audience features is said
+ * once here, not on every row. Rows stay on the page while folded, so a search that points at one can open it.
+ */
 function StreamingGroup({ list, change }: { list: FeatureDescriptor[]; change: (id: string, on: boolean) => void }) {
   const count = streamingCount();
   const on = count > 0;
+  const audienceOn = useSyncExternalStore(audience.subscribe, () => audience.isOn());
   const run = (id: 'features.streamingOff' | 'features.streamingOn') => getCommand(id)?.run();
   return (
-    <div className="features-streaming" data-testid="features-streaming">
+    <section className="features-streaming" data-testid="features-streaming" aria-labelledby="features-streaming-title">
+      <h3 id="features-streaming-title">Streaming</h3>
       <div className="ui-pref-row">
         <div className="ui-pref-text">
           <strong>{STREAMING_NAME}</strong>
           <span>For people who stream: chat dares, votes, a prompt jar, Twitch, a stream overlay and more. Switch it off if you never stream, and all of it goes out of the menus, lists and help. Nothing is lost, and it comes back with this switch.</span>
+          <span data-testid="streaming-status">{audienceOn ? 'Audience features are on.' : 'Audience features are off, so none of these does anything yet. They only work once you switch on audience features, below.'}</span>
         </div>
         <div className="ui-pref-control">
           <button type="button" role="switch" aria-checked={on} aria-label={`${STREAMING_NAME} on or off`} data-testid="streaming-switch" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => run(on ? 'features.streamingOff' : 'features.streamingOn')}>
@@ -58,15 +67,21 @@ function StreamingGroup({ list, change }: { list: FeatureDescriptor[]; change: (
           </button>
         </div>
       </div>
-      <details className="features-streaming-more">
+      <details className="features-streaming-more" open={audienceOn || undefined}>
         <summary>
           Choose one by one ({count} of {STREAM_FEATURES.length} on)
         </summary>
+        <AudiencePrefsRow />
         {list.map((f) => (
           <FeatureRow key={f.id} f={f} change={change} />
         ))}
+        <StreamDoorPrefsRow />
+        <StreamOverlayPrefsRow />
+        <TwitchPrefsRow />
+        <DaresPrefsRow />
+        <PenModsPrefsRow />
       </details>
-    </div>
+    </section>
   );
 }
 
@@ -87,14 +102,8 @@ export function FeaturesPage() {
         {list.map((f) => (
           <FeatureRow key={f.id} f={f} change={change} />
         ))}
-        {stream.length > 0 && <StreamingGroup list={stream} change={change} />}
       </div>
-      <AudiencePrefsRow />
-      <StreamDoorPrefsRow />
-      <StreamOverlayPrefsRow />
-      <TwitchPrefsRow />
-      <DaresPrefsRow />
-      <PenModsPrefsRow />
+      <StreamingGroup list={stream} change={change} />
       {offFeatures().length > 0 && (
         <div>
           <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>

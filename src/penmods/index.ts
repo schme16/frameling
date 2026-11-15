@@ -13,11 +13,10 @@ let unwatch: (() => void) | null = null;
 export const penModsFeature = defineFeature({
   id: 'stream-penmods',
   name: 'Pen modifiers',
-  about: 'Your audience can make your pen steadier, shakier, thinner or fatter for a while. Only while audience features are on and you have allowed interruptions, each with its own switch.',
+  about: 'Your audience can make your pen steadier, shakier, thinner or fatter for a while. Each has its own switch, and they need you to allow interruptions.',
   optional: true,
   commands: penModCommands,
   help: penModHelp,
-  menus: [{ menu: 'sub:audience', items: ['sub:penmods'] }],
   activate: () => {
     registerPenMods();
     unwatch = watchGate();

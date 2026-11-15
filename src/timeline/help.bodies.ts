@@ -299,7 +299,7 @@ Start drawing and the ghost stays behind your new lines until you go to another 
 It's only for you: it never shows when you play or export. It hides while the [onion skin](help:timeline-onion) is on,
 since that already shows the frames around this one. Looking through the [camera](help:camera), it goes through it too.
 
-Turn it off or on in **View > Ghost on empty frames**.
+Turn it off or on in **View > More view tools > Ghost on empty frames**.
 
 Want to trace a particular frame, not just the last one? Put it on the [light table](help:light-table).`,
   'timeline-layers': `Layers are like sheets of tracing paper stacked on top of each other. Put the background on a low layer and your character on a higher one, and you can change one without touching the other.

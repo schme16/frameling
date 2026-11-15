@@ -3,7 +3,7 @@ export const bodies: Record<string, string> = {
   votes: `A **vote** asks your audience a question, like *which colour next?*, and counts the answers while you draw. When it ends you see who won. Then it's up to you: **Frameling only counts. It never does anything because of a vote.** If chat picks blue, you pick blue (or don't).
 
 ## Run one
-1. Open **View > Audience features > Start a vote** (**Ctrl+Alt+Y**). Write the question, give it two to six options, and pick how long it runs.
+1. Open **Streaming > Votes > Start a vote** (**Ctrl+Alt+Y**). Write the question, give it two to six options, and pick how long it runs.
 2. **Start the vote.** A panel shows the options with bars that grow as votes come in, and a clock if you gave it a time.
 3. **End the vote** (**Ctrl+Alt+Shift+Y**) when you like, or let the clock do it. The panel shows the winner, or says it's a tie, or that nobody voted.
 4. **Close** puts it all away.

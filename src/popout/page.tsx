@@ -179,7 +179,7 @@ export function PopoutPage() {
       {!ready && !cap ? (
         <div className="po-wait" role="status">
           <div className="po-wait-title">{lost ? 'The drawing window went away' : 'Waiting for your drawing'}</div>
-          <div className="po-wait-text">{lost ? 'Open Frameling again and choose View > Second window.' : 'It shows up here as soon as the drawing window sends it.'}</div>
+          <div className="po-wait-text">{lost ? 'Open Frameling again and choose View > Panel windows and tools > Second window.' : 'It shows up here as soon as the drawing window sends it.'}</div>
         </div>
       ) : null}
       {ready && lost && !cap ? (

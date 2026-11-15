@@ -52,7 +52,7 @@ export function StreamOverlayPrefsRow() {
 
   return (
     <div className="sd-prefs so-prefs" data-testid="streamoverlay.prefs">
-      <h3>Stream overlay</h3>
+      <h4>Stream overlay</h4>
       <p className="ui-pref-intro" data-testid="streamoverlay.status">
         {line}
       </p>

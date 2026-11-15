@@ -11,13 +11,12 @@ import { quillReactHelp } from './help';
 export const quillReactsFeature = defineFeature({
   id: 'quill-reacts',
   name: 'Quill reacts to chat',
-  about: 'Lets chat make Quill cheer, hop, eat a snack, take a cuddle, wave or hold up a sign you have said yes to. Needs the actions door, and only while audience features are on.',
+  about: 'Lets chat make Quill cheer, hop, eat a snack, take a cuddle, wave or hold up a sign you have said yes to. Needs the actions door.',
   optional: true,
   requires: ['stream-door'],
   commands: quillReactCommands,
   help: quillReactHelp,
   choices: reactChoices,
-  menus: [{ menu: 'sub:audience', items: quillReactMenuItems }],
   activate: registerReactionActions,
 });
 

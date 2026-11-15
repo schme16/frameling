@@ -1,0 +1,3 @@
+// The words only streamers use. A query with one of these in it is asking for the streaming family, so the palette
+// stops holding that family back (see registerQuietFamily in palette.ts).
+export const STREAM_WORDS: readonly string[] = ['stream', 'streams', 'streaming', 'streamer', 'obs', 'twitch', 'youtube', 'audience', 'viewer', 'viewers', 'chat', 'dare', 'dares', 'overlay', 'vote', 'votes', 'voting', 'poll', 'jar', 'guess', 'guessing', 'live', 'troll', 'trolls', 'prompt', 'prompts', 'door', 'raid', 'follower', 'followers', 'sub', 'subs', 'cheer', 'cheers', 'bits', 'reward', 'rewards', 'penmod', 'debuff', 'debuffs'];

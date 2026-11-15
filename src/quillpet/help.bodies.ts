@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'quill-pet': `**Quill** is the little hedgehog with coloured pencils for quills. His house is in the right rail, called **Quill** wherever you meet it, with three tabs along the top: **Room**, **His things** and **Presents**.
 
-**Open it:** **View > Quill**, or press the **Quill** button on the panel rail. It opens on the **Room**, and after that it stays on whichever tab you last chose. **View > Quill's house > Quill: his things** and **View > Quill's house > Quill: his presents** open it on those tabs.
+**Open it:** **View > Quill's house > Quill**, or press the **Quill** button on the panel rail. It opens on the **Room**, and after that it stays on whichever tab you last chose. **View > Quill's house > Quill: his things** and **View > Quill's house > Quill: his presents** open it on those tabs.
 
 **Room** is where he lives:
 - **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, [dozes off](help:quill-naps) when it's quiet, and is proud when you finish something. In between he potters round his room. He only does it while you can see him, and with **Reduce motion** on he sits still.

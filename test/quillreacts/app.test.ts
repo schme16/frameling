@@ -66,7 +66,8 @@ describe('registered', () => {
       expect(getHelp(c.help!), id).toBeTruthy();
     }
     expect(getHelp('quill-reacts')!.media).toBe('quill-reacts.mp4');
-    expect(quillReactsFeature.menus).toEqual([{ menu: 'sub:audience', items: ['sub:quillreacts'] }]);
+    // Its submenu is named in the Streaming submenu itself, so the feature adds no menu entry of its own.
+    expect(quillReactsFeature.menus).toBeUndefined();
   });
 
   it('shows up in the menu: Audience features > Try Quill reacting to chat, and is gone with the feature', () => {

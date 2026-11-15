@@ -55,8 +55,8 @@ describe('menu filtering', () => {
     const r = registry([c('file.new', 'New', 'File')]);
     expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
   });
-  it('the real menus are named File, Edit, View, Draw, Pixel, Animate and Help (Artboards, Rig, Effects and Plugins live inside others)', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Help']);
+  it('the real menus are named File, Edit, View, Draw, Pixel, Animate, Streaming and Help (Artboards, Rig, Effects and Plugins live inside others)', () => {
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Streaming', 'Help']);
   });
   it('a menu that moved inside another still takes what a feature adds by its old name', () => {
     expect(MENU_HOMES).toEqual({ Rig: 'sub:rig', Effects: 'sub:effects', Artboards: 'sub:artboards', Plugins: 'sub:plugins' });
@@ -122,6 +122,14 @@ describe('the real menus', async () => {
   const menu = (label: string) => resolveMenus().find((m) => m.menu.label === label)!.items;
   const depth = (items: Item[]): number => items.filter((i) => i.kind !== 'separator' && i.kind !== 'heading').length;
 
+  // A menu is as tall as its rows: 30px an entry, 11px a divider, 14px of padding. The window is 900px and the menu may be
+  // the window less 56px, so this is the real test of "can I see all of View", which counting entries could not be.
+  const heightOf = (items: Item[]): number => depth(items) * 30 + items.filter((i) => i.kind === 'separator').length * 11 + items.filter((i) => i.kind === 'heading').length * 28 + 14;
+  it('View fits a 900px window without scrolling, and nothing in it is more than a submenu deep', () => {
+    expect(heightOf(menu('View'))).toBeLessThanOrEqual(900 - 56);
+    const levels = (items: Item[]): number => 1 + Math.max(0, ...items.map((i) => (i.kind === 'submenu' ? levels(i.items) : 0)));
+    expect(levels(menu('View'))).toBeLessThanOrEqual(2);
+  });
   it('View is short enough to see, with workspaces near the top', () => {
     const items = menu('View');
     expect(depth(items)).toBeLessThan(41);
@@ -153,13 +161,36 @@ describe('the real menus', async () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('there are seven menus, and the long ones sort their entries into submenus rather than one long list', () => {
-    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
+  it('there are eight menus, and the long ones sort their entries into submenus rather than one long list', () => {
+    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Streaming', 'Help']);
     for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
     // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
     // same with its categories taken away.
     const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));
     for (const label of ['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate']) expect(flat(menu(label)), label).toEqual(bare(label));
+  });
+  it('Streaming is a menu of its own: stream-safe, OBS, the capture view and the audience tools, each part a group, every entry three clicks from the bar', () => {
+    const inside = menu('Streaming');
+    const own = flat(inside);
+    for (const id of ['features.streamingOff', 'features.streamingOn', 'view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'capture.toggle', 'capture.size.1920x1080', 'audience.toggle', 'audience.drawing', 'audience.kill', 'streamdoor.settings', 'streamoverlay.settings', 'twitch.connect', 'promptjar.pull', 'votes.start', 'guess.start', 'quillreacts.cheer', 'dares.list', 'penmods.list']) expect(own, id).toContain(id);
+    const groups = inside.filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
+    expect(groups).toEqual(expect.arrayContaining(['Capture view', 'Actions door', 'Stream overlay', 'Twitch', 'Prompt jar', 'Votes', 'Guess the drawing']));
+    // Streaming is not also spread over View: Look and sound is about looks and sounds.
+    const rest = flat(menu('View'));
+    expect(rest.filter((id) => /^(audience|streamdoor|streamoverlay|twitch|promptjar|votes|guess|quillreacts|dares|penmods|capture|stream)\./.test(id) || id === 'view.streamSafe')).toEqual([]);
+    // No submenu inside a submenu: a command is the bar, a submenu, then itself.
+    for (const g of inside) if (g.kind === 'submenu') expect(g.items.filter((i) => i.kind === 'submenu'), g.label).toEqual([]);
+    expect(depth(inside)).toBeLessThan(26);
+  });
+  it('the second window sits with the panel windows, not with streaming', () => {
+    const windows = menu('View').find((i) => i.kind === 'submenu' && i.label === 'Panel windows and tools');
+    expect(flat(windows && windows.kind === 'submenu' ? windows.items : [])).toEqual(expect.arrayContaining(['popout.toggle', 'popout.front']));
+  });
+  it('Quill is one entry in View, a submenu with his house inside, and every one of his commands is still in it', () => {
+    const quill = menu('View').filter((i) => i.kind === 'submenu' && i.label === "Quill's house");
+    expect(quill).toHaveLength(1);
+    expect(flat(quill[0].kind === 'submenu' ? quill[0].items : [])).toEqual(['quillPet.open', 'quillPet.things', 'quillPet.presents', 'quillPet.lately', 'quillPet.give', 'quillPet.pat', 'quillPet.yours']);
+    expect(flat(menu('View').filter((i) => i.kind === 'command'))).not.toContain('quillPet.open');
   });
   it('Snapping, panels and windows are their own submenus', () => {
     const subs = menu('View').filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));

@@ -16,13 +16,13 @@ let offChoice: (() => void) | null = null;
 export const promptJarFeature = defineFeature({
   id: 'prompt-jar',
   name: 'Prompt jar',
-  about: 'Lets your audience drop ideas to draw into a jar only you can see, and lets you pull one out. Nothing shows until you do. Needs the actions door, and only while audience features are on.',
+  about: 'Lets your audience drop ideas to draw into a jar only you can see, and lets you pull one out. Nothing shows until you do. Needs the actions door.',
   optional: true,
   requires: ['stream-door'],
   commands: promptJarCommands,
   help: promptJarHelp,
   choices: jarChoices,
-  menus: [{ menu: 'sub:audience', items: promptJarMenuItems }],
+  menus: [{ menu: 'sub:promptjar', items: promptJarMenuItems }],
   activate: () => {
     registerJarActions();
     loadKept();

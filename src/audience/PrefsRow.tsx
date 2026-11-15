@@ -15,7 +15,7 @@ export function AudiencePrefsRow() {
   if (!streamingOn()) return null;
   return (
     <div className="aud-prefs" data-testid="audience.prefs">
-      <h3>Audience features</h3>
+      <h4>Audience features</h4>
       <div className="ui-pref-row">
         <div className="ui-pref-text">
           <strong>Audience features</strong>

@@ -64,12 +64,7 @@ function group(why: string, ids: string[]): Record<string, string> {
  * above it can only shrink: flatten the menu, move the entry up, or give it a button, then delete the line.
  */
 export const DEEP_IN_MENUS: Record<string, string> = {
-  ...group('View > Audience features > Try Quill reacting to chat: four clicks for a thing you only try', ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign']),
-  ...group('View > Audience features > Audience dares: four clicks, and the list is fifteen long', [
-    'dares.list', 'dares.stop', 'dares.try.budge', 'dares.try.colour', 'dares.try.shape', 'dares.try.flip', 'dares.try.grey', 'dares.try.googly', 'dares.try.jelly',
-    'dares.try.splat', 'dares.try.shake', 'dares.try.challenge', 'dares.try.spin', 'dares.try.countdown', 'dares.try.zoom',
-  ]),
-  ...group('View > Audience features > Pen modifiers: four clicks', ['penmods.list', 'penmods.stop', 'penmods.try.fat', 'penmods.try.rope', 'penmods.try.shaky', 'penmods.try.steady', 'penmods.try.thin']),
+  // Empty since the stream family got its own Streaming menu: its dares, pen modifiers and Quill reactions are three clicks from the bar.
 };
 
 /**
@@ -79,9 +74,7 @@ export const DEEP_IN_MENUS: Record<string, string> = {
  */
 export const LONG_LISTS: Record<string, number> = {
   'Draw': 38,
-  'View': 39,
   'Animate': 35,
-  'View > Audience features': 34,
   'Draw > Tools': 35,
 };
 
@@ -93,7 +86,7 @@ export const LISTS_OF_YOUR_THINGS = ['Draw > Saved brushes'];
  * over MAX_MENU_COMMANDS are listed with their count (their own saved brushes taken out). Exact, only meant to go down.
  */
 export const BIG_MENUS: Record<string, number> = {
-  View: 242,
+  View: 169,
   Draw: 199,
   Animate: 172,
 };

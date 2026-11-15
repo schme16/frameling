@@ -4521,6 +4521,12 @@ body.dock-dragging .ui-tip {
   display: none;
 }
 /* Preferences > Features: the streaming tools are one row; the nine behind it are folded until asked for. */
+.features-streaming {
+  margin: 18px 0 8px;
+  padding: 4px 16px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
 .features-streaming-more > summary {
   cursor: pointer;
   color: var(--muted);
@@ -4529,4 +4535,9 @@ body.dock-dragging .ui-tip {
 }
 .features-streaming-more[open] > summary {
   border-bottom: 1px solid var(--line-soft);
+}
+/* The parts of the streaming group are headings one step down from its own. */
+.features-streaming-more h4 {
+  margin: 22px 0 8px;
+  font-size: 15px;
 }

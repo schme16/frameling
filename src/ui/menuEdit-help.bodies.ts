@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'change-the-menus': `The menus are yours to arrange. Put the things you use every day where you can reach them, take out the ones you never touch, and make a menu of your own for your favourites.
 
-Open **Preferences > Menus**, or use **View > Change the menus...**.
+Open **Preferences > Menus**, or use **View > Change the menus and features > Change the menus...**.
 
 ## Move and take out
 

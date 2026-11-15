@@ -39,7 +39,7 @@ Sizes are shown in your units (**Preferences > General > Units**). The chain but
 
 Each one is a normal step you can undo with **Ctrl+Z**. Frameling only mentions each one once per document, so it never nags. Things that fade or fly in on purpose (keys with in-betweens) are left alone.
 
-**Ask any time:** **View > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
+**Ask any time:** **View > More view tools > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
 
 **Locked layers:** click something on a locked layer with the Select tool and Frameling says it's locked, instead of doing nothing. Unlock it with the padlock in the timeline.
 
@@ -125,8 +125,8 @@ The perspective guides are saved with your drawing. Hide them with **View > Guid
   'light-table': `Animators trace on a light table: a glowing desk that shows the drawing underneath through the paper. Frameling's light table shows a frame you choose, faintly, on every frame you go to.
 
 **Put something on it**
-- **View > Light table > Put this frame on the light table** pins the whole frame you're on.
-- To pin just one drawing, right-click it in the timeline and pick **Put this drawing on the light table**. Or use **View > Light table > Put this layer's drawing on the light table**.
+- **View > More view tools > Put this frame on the light table** pins the whole frame you're on.
+- To pin just one drawing, right-click it in the timeline and pick **Put this drawing on the light table**. Or use **View > More view tools > Put this layer's drawing on the light table**.
 
 Now go to any other frame and draw over it. The timeline's top bar shows what's on the light table, with a slider for how strongly it shows, and an **x** to clear it. Click its name to jump back to that frame.
 

@@ -11,7 +11,7 @@ export const guessCommands: Command[] = [
     id: 'guess.start',
     label: 'Start a guessing game',
     description: 'Pick a secret word and draw it. Your audience guesses in chat, and Frameling checks the guesses and shows who got it. The word never shows on screen while the round runs.',
-    keywords: [...KEYS, 'start', 'new', 'round', 'draw this', 'secret word'],
+    keywords: [...KEYS, 'start', 'play', 'game', 'new', 'round', 'draw this', 'secret word'],
     keys: ['Mod+Alt+Q'],
     enabled: () => !roundIsShowing(),
     reason: () => (roundIsOpen() ? 'A round is already going. Reveal it first.' : 'Close the last result first.'),

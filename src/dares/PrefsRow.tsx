@@ -42,7 +42,7 @@ export function DaresPrefsRow() {
   const drawingOn = snap.drawingAllowed;
   return (
     <div className="dr-prefs" data-testid="dares.prefs">
-      <h3>Audience dares</h3>
+      <h4>Audience dares</h4>
       <p className="ui-pref-intro">Everything your audience can dare you to do, and a switch for each. Dares only come in while audience features are on. Try it fires one yourself, so you can see it.</p>
       <h4 className="dr-group">Only change how the screen looks</h4>
       {group('view').map((d) => (

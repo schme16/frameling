@@ -3,7 +3,7 @@ export const bodies: Record<string, string> = {
   'canvas-popout': `The **second window** shows your drawing big, in a window of its own. Put it on another screen and you can draw on your tablet while the whole picture sits in front of you, as large as the screen allows.
 
 **Open it:**
-- Press **Ctrl+Alt+P**, or choose **View > Second window and capture view > Second window**. Press it again to close it.
+- Press **Ctrl+Alt+P**, or choose **View > Panel windows and tools > Second window**. Press it again to close it.
 - Drag it to the screen you want. Frameling remembers where you left it, and if that screen isn't there next time it opens on the one you have.
 - **Double-click** it (or press **F**) for full screen. **Esc** comes back.
 
@@ -24,14 +24,14 @@ export const bodies: Record<string, string> = {
 - Everything you draw shows as you draw it, a moment behind: pixel and vector brush strokes, erasing, shapes dragged out, the pen, and moving or turning things. If your drawing is slow to follow, the second window drops frames rather than slow you down.
 - Picking things stays in your drawing window. The selection box, the lasso line and the little handles are the interface, not the drawing, so nobody watching sees you pick.
 - If you close the drawing window, the second window closes with it.
-- If the second window gets lost behind others, choose **View > Second window and capture view > Bring the second window forward**.
+- If the second window gets lost behind others, choose **View > Panel windows and tools > Bring the second window forward**.
 - It needs the Frameling desktop app.
 
 To see what a camera shows, see [Camera](help:camera). To check the picture as it will export, see [Exporting](help:exporting).`,
   'stream-capture': `The **capture view** is your drawing in a window with nothing else in it: no title bar, no panels, no buttons. OBS (or any streaming program) can capture it as a normal window, so your audience sees the drawing and none of the interface.
 
 **Open it:**
-- Press **Ctrl+Alt+Shift+P**, or choose **View > Second window and capture view > Capture view**. Press it again to close it.
+- Press **Ctrl+Alt+Shift+P**, or choose **Streaming > Capture view > Capture view**. Press it again to close it.
 - The first time, it asks what colour to put behind the drawing.
 - Drag the window to move it, and its edges to resize it.
 

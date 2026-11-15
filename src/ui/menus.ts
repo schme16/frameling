@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'sub:secondwindow', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'sub:audience', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'sub:quillhouse'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:moreview', 'sub:notes', 'sub:marks', '-', 'sub:look', 'sub:customise', 'view.searchSettings', 'view.commandPalette', '-', 'sub:quill'],
   },
   {
     label: 'Draw',
@@ -63,6 +63,19 @@ export const MENUS: MenuDef[] = [
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.makeOwnDrawing', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
   },
   {
+    // Everything for people who draw live, in one place. Each part (the door, the overlay, the jar...) is a submenu of its
+    // own, so every entry is three clicks from the bar and this list stays short however much streaming grows.
+    label: 'Streaming',
+    categories: ['Audience'],
+    items: [
+      'view.streamSafe', '-',
+      'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'sub:capture', '-',
+      'heading:Audience features', 'audience.toggle', 'audience.drawing', 'audience.show', 'audience.clearQueue', 'audience.kill', '-',
+      'sub:streamdoor', 'sub:streamoverlay', 'sub:twitch', 'sub:promptjar', 'sub:votes', 'sub:guess', 'sub:quillreacts', 'sub:dares', 'sub:penmods', '-',
+      'features.streamingOff', 'features.streamingOn',
+    ],
+  },
+  {
     label: 'Help',
     // Nothing joins by category: shortcut sets live in Preferences > Keyboard, the quest controls with the Quests panel
     // and the pen check in Preferences. They stay in the command palette.
@@ -75,7 +88,12 @@ export const MENUS: MenuDef[] = [
  * Menus that used to be on the bar and now live inside another, so a feature or plugin that still names the old menu
  * (`registerMenuItems('Rig', ...)`) lands in the right place. The ids underneath did not change.
  */
-export const MENU_HOMES: Record<string, string> = { Rig: 'sub:rig', Effects: 'sub:effects', Artboards: 'sub:artboards', Plugins: 'sub:plugins' };
+export const MENU_HOMES: Record<string, string> = {
+  Rig: 'sub:rig',
+  Effects: 'sub:effects',
+  Artboards: 'sub:artboards',
+  Plugins: 'sub:plugins',
+};
 
 /** A submenu, named in a menu as `sub:<key>`. */
 export interface SubmenuDef {
@@ -96,7 +114,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
+    items: ['popout.toggle', 'popout.front', '-', 'view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.'],
   },
   toolrail: {
@@ -118,9 +136,9 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Try Quill reacting to chat',
     items: ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign'],
   },
-  quillhouse: {
+  quill: {
     label: "Quill's house",
-    items: ['quillPet.things', 'quillPet.presents', 'quillPet.lately', '-', 'quillPet.give', 'quillPet.pat', 'quillPet.yours'],
+    items: ['quillPet.open', '-', 'quillPet.things', 'quillPet.presents', 'quillPet.lately', '-', 'quillPet.give', 'quillPet.pat', 'quillPet.yours'],
   },
   notes: {
     label: 'Notes',
@@ -211,24 +229,32 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     categories: ['Plugins'],
   },
   turnview: {
-    label: 'Turn and flip the view',
-    items: ['view.flip', 'view.turnLeft', 'view.turnRight', 'view.resetTurn'],
+    label: 'Centre, turn and flip the view',
+    items: ['view.center', '-', 'view.flip', 'view.turnLeft', 'view.turnRight', 'view.resetTurn'],
   },
-  secondwindow: {
-    label: 'Second window and capture view',
-    items: ['popout.toggle', 'popout.front', '-', 'capture.toggle', 'capture.background', 'capture.cursor', '-', 'capture.size.free', 'capture.size.1920x1080', 'capture.size.1280x720', 'capture.size.2560x1440', 'capture.size.3840x2160', 'capture.size.1080x1080', 'capture.size.1080x1920'],
-  },
-  lighttable: {
-    label: 'Light table',
-    items: ['view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable'],
+  capture: {
+    label: 'Capture view',
+    items: ['capture.toggle', 'capture.background', 'capture.cursor', '-', 'capture.size.free', 'capture.size.1920x1080', 'capture.size.1280x720', 'capture.size.2560x1440', 'capture.size.3840x2160', 'capture.size.1080x1080', 'capture.size.1080x1920'],
+    prefixes: ['capture.'],
   },
   look: {
     label: 'Look and sound',
-    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.interfaceSize', 'view.tightLayout', 'view.explanations', 'view.cleanTimeline', '-', 'view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings'],
+    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.interfaceSize', 'view.tightLayout', 'view.explanations', 'view.cleanTimeline'],
   },
-  audience: {
-    label: 'Audience features',
-    items: ['audience.toggle', 'audience.drawing', 'audience.show', '-', 'audience.clearQueue', 'audience.kill'],
+  streamdoor: { label: 'Actions door', items: [] },
+  streamoverlay: { label: 'Stream overlay', items: [] },
+  twitch: { label: 'Twitch', items: [] },
+  promptjar: { label: 'Prompt jar', items: [] },
+  votes: { label: 'Votes', items: [] },
+  guess: { label: 'Guess the drawing', items: [] },
+  moreview: {
+    label: 'More view tools',
+    items: ['view.emptyGhost', 'view.whereDidItGo', 'camera.lookThrough', 'camera.whilePlaying', 'tiles.tileMode', 'tiles.showShapes', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable'],
+    prefixes: ['view.lightTable'],
+  },
+  customise: {
+    label: 'Change the menus and features',
+    items: ['view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.features', 'view.featuresAllOn'],
   },
   dares: {
     label: 'Audience dares',

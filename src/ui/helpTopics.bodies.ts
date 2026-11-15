@@ -354,7 +354,7 @@ If some are off and you want the lot, press **Turn everything back on** at the b
 
 ## The streaming tools are one switch
 
-Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they sit under one row near the bottom of the list: **Streaming tools**. Switch it off and all of them go out of the View menu, the palette, Preferences and the help index. Switch it on and they all come back. **Choose one by one** under it opens the nine, for a streamer who wants only some.
+Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they sit together under one **Streaming** heading, with one row: **Streaming tools**. Switch it off and all of them go out of the View menu, the palette, Preferences and the help index. Switch it on and they all come back. **Choose one by one** under it opens the nine, and each one's own settings, for a streamer who wants only some. The heading says it once: none of it does anything until **Audience features** are on, and those start off.
 
 You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer is also in **Preferences > Behaviour**, as **Do you stream?**.
 

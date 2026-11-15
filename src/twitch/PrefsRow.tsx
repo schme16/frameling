@@ -92,7 +92,7 @@ export function TwitchPrefsRow() {
   return (
     <div className="tw-prefs" data-testid="twitch.prefs">
       <div className="tw-connect" data-testid="twitch.connectBox">
-        <h3>Twitch</h3>
+        <h4>Twitch</h4>
         <p className="ui-pref-intro" data-testid="twitch.status">
           {statusLine(status, snap.on)}
         </p>

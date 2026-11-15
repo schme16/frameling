@@ -16,6 +16,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { allCommands, getHelp, loadHelpBodies } from '../../src/core/registry';
 import { isStaleCommand, syncDynamicCommands } from '../../src/ui/dynamic';
+import { audience } from '../../src/audience';
 import { paletteItems, rankPalette, settingRows, withSettings, type PaletteItem } from '../../src/ui/palette';
 import { RANKED_BEHIND, EVERYDAY_WORDS, CROWDED_WORDS, STREAM_WORDS } from './known-ranked-behind';
 import '../../src/renderer/features';
@@ -86,7 +87,6 @@ export const PHRASES: Phrase[] = [
   P('cut this out', 'edit.cut'),
   P('delete this', 'edit.delete'),
   P('lock a layer', 'layers.toggleLocked'),
-  P('put it on top of everything', 'arrange.front'),
   P('make a copy of this', 'edit.copy', 'edit.duplicate', 'layers.duplicate'),
   P('go to the next frame', 'timeline.nextFrame'),
   P('open an example', 'file.openExample'),
@@ -122,6 +122,21 @@ export const PHRASES: Phrase[] = [
   P('hide stream features', 'features.streamingOff'),
   P('i never stream', 'features.streamingOff'),
   P('bring back the stream tools', 'features.streamingOn'),
+  // The streamer's own words keep working while audience features are off, as they start
+  P('test the overlay', 'streamoverlay.test'),
+  P('overlay settings', 'streamoverlay.settings'),
+  P('obs settings', 'stream.obsSettings'),
+  P('stream settings', 'streamoverlay.settings', 'streamdoor.settings', 'stream.obsSettings'),
+  P('try a dare', 'dares.list', ...allCommands().filter((c) => c.id.startsWith('dares.try.')).map((c) => c.id)),
+  P('put the dares back', 'dares.stop'),
+  P('stop the audience', 'audience.kill'),
+  // "play" is not in the command's name, so it is a keyword: the palette needs every word
+  P('play a guessing game', 'guess.start', 'help:guess'),
+  P('put it on top of everything', 'arrange.front'),
+  P('stop streaming', 'features.streamingOff', 'audience.kill', 'help:audience'),
+  // Ordinary words find ordinary things first: these used to put three stream settings ahead of Preferences
+  P('preferences', 'view.preferences'),
+  P('test my pen', 'pen.check', 'help:pen-check'),
 ];
 
 /**
@@ -141,8 +156,6 @@ export const KNOWN_MISSES: Phrase[] = [
   P('flip it', 'select.flipH', 'select.flipV'),
   // Stream-safe and the overlay settings still outrank the one command that tucks the whole family away.
   P('turn off stream stuff', 'features.streamingOff'),
-  // The command says "Start a guessing game" and the palette needs every word, so "play" finds nothing at all.
-  P('play a guessing game', 'guess.start', 'help:guess'),
 ];
 
 let items: PaletteItem[] = [];
@@ -160,6 +173,11 @@ beforeAll(async () => {
   syncDynamicCommands();
   items = paletteItems().filter((i) => !(i.kind === 'command' && isStaleCommand(i.id)));
 });
+
+// The words anybody types. While audience features are off (they start off) none of these may be led by the streaming
+// family: it used to put three stream settings ahead of Preferences for "settings", and eight dares in the top ten for "test".
+const ORDINARY = ['settings', 'test', 'stop', 'preferences', 'check', 'reset', 'show', 'hide', 'clear', 'new', 'play', 'options', 'list', 'copy'];
+const streamy = (id: string): boolean => /^(audience|streamdoor|streamoverlay|twitch|promptjar|votes|guess|quillreacts|dares|penmods|stream\.obs)/.test(id);
 
 describe('the phrase table', () => {
   it('has enough rows to mean something', () => expect(PHRASES.length).toBeGreaterThanOrEqual(25));
@@ -201,6 +219,31 @@ describe('the phrase table', () => {
   it('keeps the known misses honest: each still misses, so a fixed one moves up into the table', () => {
     const fixed = KNOWN_MISSES.filter((p) => top(p.say).some((id) => p.wants.includes(id))).map((p) => p.say);
     expect(fixed).toEqual([]);
+  });
+
+  it('does not let the streaming family lead ordinary words while audience features are off', () => {
+    expect(audience.isOn()).toBe(false);
+    const led = ORDINARY.filter((w) => top(w).some(streamy)).map((w) => `${w}: ${top(w).join(', ')}`);
+    expect(led).toEqual([]);
+  });
+
+  it('puts Preferences ahead of every stream setting for "settings", and no stream command above it', () => {
+    const ids = withSettings(rankPalette('settings', items, []), 'settings')
+      .slice(0, 12)
+      .map((h) => (h.item.kind === 'command' ? h.item.id : ''));
+    const at = ids.indexOf('view.preferences');
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(ids.slice(0, at).filter(streamy)).toEqual([]);
+  });
+
+  it('lets the family lead again once audience features are on, because then a streamer is probably after it', () => {
+    audience.setOn(true);
+    try {
+      expect(top('test')).toContain('streamoverlay.test');
+      expect(top('settings').some(streamy)).toBe(true);
+    } finally {
+      audience.setOn(false);
+    }
   });
 });
 

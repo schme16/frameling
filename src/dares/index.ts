@@ -11,12 +11,11 @@ let unwatch: (() => void) | null = null;
 export const daresFeature = defineFeature({
   id: 'stream-dares',
   name: 'Audience dares',
-  about: 'Small challenges your audience can set off while you draw: flip the view, a countdown, googly eyes. Only while audience features are on, each with its own switch.',
+  about: 'Small challenges your audience can set off while you draw: flip the view, a countdown, googly eyes. Each has its own switch.',
   optional: true,
   commands: daresCommands,
   help: daresHelp,
   choices: daresChoices,
-  menus: [{ menu: 'sub:audience', items: ['-', 'sub:dares'] }],
   activate: () => {
     registerDares();
     unwatch = watchGate();

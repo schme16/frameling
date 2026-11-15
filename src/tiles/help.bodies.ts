@@ -66,7 +66,7 @@ A tilemap layer is as big as the stage, in whole tiles. Its **pixel size** match
 To use the level in a game, see [Exporting a tileset](help:export-tileset).`,
   'tile-mode': `**Tile mode** shows eight copies of the stage around it, so you can see how your drawing looks when it repeats. A dashed frame marks the real one. The copies show at full strength, exactly as the tiles will repeat in a game. To make the tile you're drawing stand out, turn on **Fade tile copies** in **Preferences > General**.
 
-Turn it on with **View > Tile mode** or **Shift+T**. It comes on by itself when you open a tile from the [Tileset panel](help:tileset).
+Turn it on with **View > More view tools > Tile mode** or **Shift+T**. It comes on by itself when you open a tile from the [Tileset panel](help:tileset).
 
 While it's on, pixel drawing **wraps**: a line that goes off the right edge comes back on the left, and the paint bucket fills across the edges too. That makes seams easy to fix, because you can draw right over them. You can draw on the copies as well; your pixels land in the matching place on the real stage.
 
@@ -113,7 +113,7 @@ Tick **One-way platform** and things land on the tile from above but jump up thr
 
 ## See what is solid
 
-**View > Show collision shapes over the level** (**Alt+Shift+C**) draws every tile's shape over your tile map in pink. A dashed line means one-way. Turned or flipped tiles show their shape turned or flipped too.
+**View > More view tools > Show collision shapes over the level** (**Alt+Shift+C**) draws every tile's shape over your tile map in pink. A dashed line means one-way. Turned or flipped tiles show their shape turned or flipped too.
 
 ## Good to know
 
