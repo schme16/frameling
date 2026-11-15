@@ -38,6 +38,8 @@ export interface IpcHooks {
   /** The notes of the last crash found, and whether Quill has offered them. */
   lastCrash(): LastCrash | null;
   crashOffered(): void;
+  /** Listens for the audience Stop key from any window (or stops). Returns whether it is listening. */
+  setPanicKey(on: boolean): boolean;
   closeQuestionShown(id: number): void;
   closeQuestionAnswer(id: number, answer: unknown): void;
   /** Close the way closing does, then open again where the person was (see restart.ts). Says no when this copy can't open itself again. */
@@ -280,6 +282,8 @@ export function registerIpc(hooks: IpcHooks): void {
     const w = hooks.window();
     return w ? describeDisplay(w) : null;
   });
+
+  handle('app:panicKey', (_e, on: boolean) => hooks.setPanicKey(on === true));
 
   handle('app:askSaveChanges', async (_e, name: string, neverSaved?: boolean): Promise<SaveChoice> => {
     const q = saveChangesQuestion(name, neverSaved === true);

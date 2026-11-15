@@ -1,5 +1,5 @@
 import './profile';
-import { app, BrowserWindow, dialog, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
@@ -13,6 +13,7 @@ import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarke
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
+import { createPanicKey } from './panicKey';
 import { addFeatures, applyGpuOff, logDrawingPath } from './gpu';
 import { colourSwitches } from './gpuFlags';
 import { makePopout } from './popoutWindow';
@@ -71,6 +72,15 @@ const dataDir = () => app.getPath('userData');
 
 
 let win: BrowserWindow | null = null;
+
+// The audience Stop key, from any window, only while the person is on air (see panicKey.ts).
+const panicKey = createPanicKey({
+  register: (key, fn) => globalShortcut.register(key, fn),
+  unregister: (key) => globalShortcut.unregister(key),
+  send: () => {
+    if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send('app:panicKey');
+  },
+});
 // The picture window: a second window that shows the drawing big and follows the drawing window (see popout.ts).
 const popout = makePopout({ main: () => win, dataDir: () => app.getPath('userData'), dir: __dirname });
 let docState: DocumentState = { dirty: false, name: 'Untitled', filePath: null };
@@ -279,6 +289,7 @@ registerIpc({
     }
     finishClose();
   },
+  setPanicKey: (on) => panicKey.set(on),
   closeQuestionShown: (id) => closeAsker.shown(id),
   closeQuestionAnswer: (id, answer) => closeAsker.answered(id, answer),
   restart: (view, carry) => restarter.request(view, carry),
@@ -353,6 +364,7 @@ app.on('window-all-closed', () => {
 // stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
 app.on('will-quit', () => {
   quitting = true;
+  panicKey.set(false);
   restarter.quitting();
   if (watchCrashes) endRun(dataDir(), process.pid);
 });

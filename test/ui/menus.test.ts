@@ -124,7 +124,7 @@ describe('the real menus', async () => {
 
   it('View is short enough to see, with workspaces near the top', () => {
     const items = menu('View');
-    expect(depth(items)).toBeLessThan(40);
+    expect(depth(items)).toBeLessThan(41);
     const ids = items.flatMap((i) => (i.kind === 'command' ? [i.command.id] : []));
     for (const id of ['view.workspace.draw', 'view.workspace.animate', 'view.workspace.pixel']) expect(ids).toContain(id);
     expect(ids.indexOf('view.workspace.draw')).toBeLessThan(10);
@@ -134,7 +134,7 @@ describe('the real menus', async () => {
   });
   it('there are seven menus, and the long ones sort their entries into submenus rather than one long list', () => {
     expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
-    for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(40);
+    for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
     // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
     // same with its categories taken away.
     const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));

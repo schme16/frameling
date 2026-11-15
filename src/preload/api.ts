@@ -338,6 +338,10 @@ export interface FramelingApi {
      * couple of seconds the desktop side asks with the system box instead, and `onWithdraw` takes a function to run so
      * the page can take its dialog down. (A function, not an AbortSignal: only plain values cross the bridge.) Throw (or reject) when the page can't ask, and the system box is used at once.
      */
+    /** Asks the desktop to hear the audience Stop key from any window, while on air. Resolves whether it could. Best effort: some desktops say no. */
+    setPanicKey(on: boolean): Promise<boolean>;
+    /** Called when that key is pressed. Returns an unsubscribe function. */
+    onPanicKey(handler: () => void): () => void;
     onCloseQuestion(handler: (q: { name: string; neverSaved: boolean }, shown: () => void, onWithdraw: (fn: () => void) => void) => Promise<SaveChoice>): () => void;
   };
 }

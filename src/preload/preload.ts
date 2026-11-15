@@ -155,6 +155,12 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('app:keepUnsaved', fn);
     },
     askSaveChanges: (name, neverSaved) => call('app:askSaveChanges', name, neverSaved),
+    setPanicKey: (on) => call('app:panicKey', on === true),
+    onPanicKey: (handler) => {
+      const fn = () => handler();
+      ipcRenderer.on('app:panicKey', fn);
+      return () => void ipcRenderer.removeListener('app:panicKey', fn);
+    },
     onCloseQuestion: (handler) => {
       // What to do if the desktop side withdraws a question (it gave up on the page and asked another way).
       const withdrawals = new Map<number, () => void>();

@@ -26,6 +26,7 @@ import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';
 import { installUpdates } from '../update';
+import { installAudience } from '../audience';
 import { registerFeatures } from '../features/host';
 import { startRememberingUi } from '../tools/rememberUi';
 import { startBrushPresets } from '../brushes';
@@ -34,6 +35,8 @@ import { startBrushPresets } from '../brushes';
 installBeta();
 // New versions: a quiet check of this project's releases, an offer, and a command. Nothing is downloaded until you press Update now.
 installUpdates();
+// Audience features: the gate, the switch (off after install), the On air pill's commands and help.
+installAudience();
 import '../features/sync';
 import { audioFeature } from '../audio';
 import { cameraFeature } from '../camera';
