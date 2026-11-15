@@ -66,9 +66,11 @@ export const SETTING_ROWS: PrefRow[] = [
 
   // Snapping
   row('snapping', 'Snapping', 'Switch snapping on or off. Hold Ctrl to skip it for a moment.', ['snap', 'magnet', 'magnetic', 'sticky', 'smart guides', 'align', 'alignment', 'snap to grid', 'snap to guides', 'snap to pixel', 'grid', 'guides']),
-  row('snapping', 'What to snap to', 'The page, guides, the grid, other shapes, perspective lines, pixels.', ['grid', 'guides', 'smart guides', 'perspective', 'centre', 'center', 'pixel grid', 'cells', 'edges', 'midpoints', 'bounding box', 'snap to grid', 'snap to guides', 'snap to pixel'], { find: 'Vector layers' }),
+  row('snapping', 'What to snap to', 'The page, guides, the grid, line ends and points, other shapes, perspective lines, pixels.', ['grid', 'guides', 'smart guides', 'perspective', 'centre', 'center', 'pixel grid', 'cells', 'edges', 'midpoints', 'bounding box', 'snap to grid', 'snap to guides', 'snap to pixel'], { find: 'Vector layers' }),
   row('snapping', 'All layers, not just this one', 'Look at every visible layer, or the open one only.', ['other layers', 'snap to other layers', 'visible layers', 'every layer', 'smart guides']),
   row('snapping', 'Snap distance', 'How close something has to come before it snaps.', ['snap threshold', 'snap radius', 'tolerance', 'sensitivity', 'magnet strength', 'snap strength', 'how close', 'snap range']),
+  row('snapping', 'Pen, pencil and brush snap their start and end', 'The start and end of a line you draw pull onto the end of another line, guides, the grid and the page. Ctrl skips it.', ['snap while drawing', 'snap drawing', 'snap pen', 'snap pencil', 'snap brush', 'freehand', 'join lines', 'line ends', 'endpoints', 'meet', 'magnetic lines']),
+  row('snapping', 'Pull for drawing tools', 'How close the start or end of a line has to be before it is pulled.', ['drawing snap distance', 'snap strength', 'pen snap', 'brush snap', 'how close', 'sensitivity']),
   row('snapping', 'Back to the usual choices', 'Put the snapping ticks back how they came.', ['reset snapping', 'default snap', 'restore snap']),
 
   // Pen and tablet

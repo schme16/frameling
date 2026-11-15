@@ -43,6 +43,14 @@ registerHelpTopics([
     keywords: ['snap', 'snapping', 'magnet', 'align', 'guides', 'grid', 'page', 'edges', 'centre', 'center', 'other shapes', 'equal gaps', 'spacing', 'distance', 'how close', 'all layers', 'smart guides', 'perspective', 'plugin guides', 'pixel cells', 'angle', 'shift', 'artboard', 'ctrl', 'turn off snapping'],
   },
   {
+    id: 'snapping-lines',
+    title: 'Lines that meet',
+    section: 'Drawing',
+    media: 'snap-lines.mp4',
+    summary: 'The pen, pencil and brush settle the start and end of a line on the end of another line, a guide, the grid or the page, so lines meet exactly.',
+    keywords: ['snap', 'snapping', 'join', 'lines meet', 'gap', 'line ends', 'endpoints', 'connect', 'freehand', 'close a loop', 'magnet'],
+  },
+  {
     id: 'pixel-grid',
     title: 'Pixel grid',
     section: 'Drawing',

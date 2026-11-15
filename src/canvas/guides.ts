@@ -5,16 +5,17 @@ import { uid } from '../core/doc';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { addStageOverlay, hint, requestOverlay } from './controller';
-import { addLines, bumpSnap, getSnapGaps, getSnapLines, noTargets, setSnapGaps, setSnapLines, setSnapNotes, snapBox, snappedKinds, snapPoint, withGuide, type SnapLine, type SnapTargets } from './snap';
-import { activeTargets, snapColourVar, type SnapContext, type SnapTarget } from './snapModel';
+import { addLines, bumpSnap, getSnapGaps, getSnapLines, getSnapMark, noTargets, setSnapGaps, setSnapLines, setSnapMark, setSnapNotes, snapBox, snappedKinds, snapPoint, withGuide, type SnapLine, type SnapTargets } from './snap';
+import { activeTargets, drawTargets, snapColourVar, type SnapContext, type SnapTarget } from './snapModel';
 import { currentSnapContext } from './snapOps';
+import { farEnoughToClose, nearestOf, pointIndexFor, pullToLines } from './snapPoints';
 import { otherShapes } from './snapShapes';
 import { sourceLines } from './snapSources';
 import { spacingAxis, spacingFor, type Gap, type SpacingHit } from './snapSpacing';
 import { cssVar } from './theme';
 import { contrast, isHex } from '../ui/themes/color';
 import { constrainWithVanishing, isoRatio, snapIso, snapToVanishing, squareLines } from './grid';
-import { getViewSettings, setViewSettings, snapPx } from './viewSettings';
+import { getViewSettings, setViewSettings, snapDrawPx, snapPx } from './viewSettings';
 import type { Pt, Rect } from './view';
 
 // ---------------------------------------------------------------- the guide being dragged
@@ -120,6 +121,12 @@ function pulls(set: Set<SnapTarget>, moving: boolean): Pulls {
   return { t: t.x.length || t.y.length ? t : null, rects };
 }
 
+/** The nearest end of another line, or point of another path, within `tol` (see snapPoints.ts). `moving`: leave the selection out. */
+function endNear(p: Pt, tol: number, moving: boolean): Pt | null {
+  const { doc, ui } = store().get();
+  return pointIndexFor(doc, ui.frame, moving ? ui.selection : [], getViewSettings().snapAllLayers ? null : ui.activeLayerId).nearest(p.x, p.y, tol);
+}
+
 /** The line a snap result landed on for one axis, if any. */
 const lineOn = (lines: SnapLine[], axis: 'x' | 'y') => lines.find((l) => l.axis === axis);
 
@@ -168,6 +175,11 @@ export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false, fro
   if (set.has('grid') && v.grid === 'iso') {
     const q = snapIso(p, v.gridSize, isoRatio(v.isoStyle));
     if (Math.hypot(q.x - p.x, q.y - p.y) <= tol) return showSnap([], ['grid']), q;
+  }
+  // The end of another line or a path's point wins over any line: it fixes both ways at once.
+  if (set.has('points')) {
+    const q = endNear(p, tol, moving);
+    if (q) return showSnap([], [], [], q), q;
   }
   const { t, rects } = pulls(set, moving);
   if (!t && !rects.length) return showSnap([]), p;
@@ -236,6 +248,77 @@ export function snapMove(box: Rect | null, dx: number, dy: number, zoom: number,
   return { dx: dx + m.x, dy: dy + m.y };
 }
 
+// ---------------------------------------------------------------- the start and end of a freehand stroke
+
+/** Is a stroke's start and end pulled onto things right now (the switch, the tick for the drawing tools, and a vector layer)? Costs nothing when not. */
+export function drawSnapOn(): boolean {
+  const v = getViewSettings();
+  return v.snap && v.snapDraw && currentSnapContext() === 'vector';
+}
+
+export interface DrawSnap {
+  pt: Pt;
+  lines: SnapLine[];
+  /** The end or point it landed on (a ring is drawn round it), or null when it landed on lines only. */
+  mark: Pt | null;
+  /** Kinds with no line to draw (the isometric grid). */
+  notes: SnapTarget[];
+}
+
+/**
+ * Where the pen, pencil or brush's start or end would be pulled to from `p`, or null for nowhere. Lines and points only
+ * (see DRAW_TARGETS): a line end or path point wins over lines because it settles both ways at once. `own` is the stroke's
+ * own start, once it has gone far enough to be closing a loop. Changes nothing, so the overlay can ask.
+ */
+export function findDrawSnap(p: Pt, zoom: number, bypass: boolean, own: Pt | null = null): DrawSnap | null {
+  const v = getViewSettings();
+  if (bypass || !v.snap || !v.snapDraw) return null;
+  const set = drawTargets(active(false, 'vector'));
+  if (!set.size) return null;
+  const tol = snapDrawPx() / zoom;
+  if (set.has('points')) {
+    const { doc, ui } = store().get();
+    const idx = pointIndexFor(doc, ui.frame, [], v.snapAllLayers ? null : ui.activeLayerId);
+    const q = nearestOf(p, tol, idx.nearest(p.x, p.y, tol), own);
+    if (q) return { pt: q, lines: [], mark: q, notes: [] };
+  } else if (own) {
+    const q = nearestOf(p, tol, own);
+    if (q) return { pt: q, lines: [], mark: q, notes: [] };
+  }
+  const { doc } = store().get();
+  if (set.has('grid') && v.grid === 'iso') {
+    const q = snapIso(p, v.gridSize, isoRatio(v.isoStyle));
+    if (Math.hypot(q.x - p.x, q.y - p.y) <= tol) return { pt: q, lines: [], mark: null, notes: ['grid'] };
+  }
+  const plugins = set.has('plugins') ? sourceLines() : null;
+  const s = pullToLines(p, tol, {
+    width: doc.width,
+    height: doc.height,
+    page: set.has('page'),
+    centre: set.has('centre'),
+    guides: set.has('guides') ? doc.guides ?? null : null,
+    grid: set.has('grid') && v.grid === 'square' ? v.gridSize : null,
+    plugins,
+  });
+  return s.lines.length ? { pt: { x: s.x, y: s.y }, lines: s.lines, mark: null, notes: [] } : null;
+}
+
+/** Shows what a draw snap landed on (lines, ring, the "Snapped to" note); null clears it. */
+export function showDrawSnap(hit: DrawSnap | null): void {
+  if (!hit) return showSnap([]);
+  showSnap(hit.lines, hit.notes, [], hit.mark);
+}
+
+/** `findDrawSnap`, and what snapped is shown. Returns the pulled point, or `p` itself. */
+export function snapDrawPoint(p: Pt, zoom: number, bypass: boolean, own: Pt | null = null): Pt {
+  const hit = findDrawSnap(p, zoom, bypass, own);
+  showDrawSnap(hit);
+  return hit ? hit.pt : p;
+}
+
+/** The stroke has travelled this far (document pixels): is that far enough to close a loop on its own start? */
+export const closesLoop = (travelled: number, zoom: number): boolean => farEnoughToClose(travelled * zoom, snapDrawPx());
+
 /** The lines other artboards offer (edges and middles, on the pasteboard), or null when that target is off. */
 export function artboardTargets(others: readonly Rect[], bypass: boolean): SnapTargets | null {
   if (!active(bypass, 'artboard').has('artboards') || !others.length) return null;
@@ -251,17 +334,20 @@ export function clearSnap(): void {
 }
 
 /** Records what just snapped, for the overlay and the "Snapped to" note. `extra`: kinds with no line to draw. `gaps`: equal gaps to mark. */
-export function showSnap(lines: SnapLine[], extra: SnapTarget[] = [], gaps: Gap[] = []): void {
+export function showSnap(lines: SnapLine[], extra: SnapTarget[] = [], gaps: Gap[] = [], mark: Pt | null = null): void {
   const old = getSnapLines();
   const oldGaps = getSnapGaps();
+  const oldMark = getSnapMark();
+  const sameMark = oldMark === mark || (!!oldMark && !!mark && oldMark.x === mark.x && oldMark.y === mark.y);
   const sameLines = old.length === lines.length && old.every((l, i) => l.axis === lines[i].axis && l.at === lines[i].at && l.kind === lines[i].kind);
   const sameGaps = oldGaps.length === gaps.length && oldGaps.every((g, i) => g.axis === gaps[i].axis && g.from === gaps[i].from && g.to === gaps[i].to && g.at === gaps[i].at);
   const before = snappedKinds().join();
   if (!sameLines) setSnapLines(lines);
   if (!sameGaps) setSnapGaps(gaps);
-  if (!sameLines || !sameGaps) requestOverlay();
+  if (!sameMark) setSnapMark(mark);
+  if (!sameLines || !sameGaps || !sameMark) requestOverlay();
   setSnapNotes(extra);
-  if (!sameLines || !sameGaps || snappedKinds().join() !== before) bumpSnap();
+  if (!sameLines || !sameGaps || !sameMark || snappedKinds().join() !== before) bumpSnap();
 }
 
 // ---------------------------------------------------------------- drawing
@@ -349,6 +435,19 @@ addStageOverlay((g, zoom) => {
     line(g, s.axis, s.at, doc.width, doc.height);
   }
   for (const gap of getSnapGaps()) drawGap(g, gap, px);
+  const mark = getSnapMark();
+  if (mark) {
+    // A ring round the end or point something just landed on.
+    g.strokeStyle = kindColour('points');
+    g.lineWidth = 1.75 * px;
+    g.beginPath();
+    g.arc(mark.x, mark.y, 7 * px, 0, Math.PI * 2);
+    g.stroke();
+    g.fillStyle = kindColour('points');
+    g.beginPath();
+    g.arc(mark.x, mark.y, 2 * px, 0, Math.PI * 2);
+    g.fill();
+  }
   if (ray) {
     // The perspective line being followed, from the vanishing point out past the line's start.
     const dx = ray.from.x - ray.vp.x;

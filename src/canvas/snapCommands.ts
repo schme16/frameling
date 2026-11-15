@@ -1,7 +1,7 @@
 // Snapping commands: the options popover, and a toggle for each thing to snap to (so the palette can reach every one).
 import { registerCommands, type Command } from '../core/registry';
 import { SNAP_TARGETS, type SnapTarget } from './snapModel';
-import { isPicked, openSnapOptions, setSnapAllLayers, toggleSnapPick } from './snapOps';
+import { isPicked, openSnapOptions, setSnapAllLayers, setSnapDraw, toggleSnapPick } from './snapOps';
 import { getViewSettings } from './viewSettings';
 
 const WORDS: Record<SnapTarget, { label: string; description: string; keywords: string[] }> = {
@@ -9,6 +9,7 @@ const WORDS: Record<SnapTarget, { label: string; description: string; keywords: 
   centre: { label: 'Snap to page middle', description: 'Shapes jump onto the middle of the page, across and down, when they get close.', keywords: ['centre', 'center', 'middle', 'page'] },
   guides: { label: 'Snap to guides', description: 'Shapes jump onto the guide lines you dragged out of the rulers.', keywords: ['guide', 'ruler', 'lines'] },
   grid: { label: 'Snap to the grid', description: 'Shapes jump onto the grid lines (or the isometric grid corners) while the grid shows.', keywords: ['grid', 'squares', 'isometric'] },
+  points: { label: 'Snap to line ends and points', description: 'A line you draw starts and stops exactly on the end of another line or a point of another path when it gets close. Shape corners and pen points are pulled onto them too.', keywords: ['points', 'endpoints', 'end points', 'anchors', 'line ends', 'join', 'meet'] },
   shapes: { label: 'Snap to other shapes', description: 'Shapes line up with the edges, middles and corner points of the other shapes in the drawing.', keywords: ['shapes', 'objects', 'align', 'edges', 'points', 'smart guides'] },
   spacing: { label: 'Snap to equal gaps', description: 'Shapes settle where the gap to a neighbour matches a gap already there (or sits in the middle of one), and the distance shows.', keywords: ['spacing', 'gap', 'equal', 'distribute', 'even'] },
   perspective: { label: 'Snap to perspective lines', description: 'Lines and boxes follow the perspective guides toward their vanishing points, while those show.', keywords: ['perspective', 'vanishing', 'horizon'] },
@@ -39,6 +40,16 @@ registerCommands([
     keywords: ['snap', 'snapping', 'layers', 'all layers', 'this layer', 'only'],
     checked: () => getViewSettings().snapAllLayers,
     run: () => setSnapAllLayers(!getViewSettings().snapAllLayers),
+  },
+  {
+    id: 'view.snap.draw',
+    label: 'Snap the pen, pencil and brush',
+    category: 'View',
+    description: 'The start and end of a line you draw pulls onto the end of another line, a guide, the grid or the page when it gets close. The middle of the line is never moved. Hold Ctrl while drawing to skip it.',
+    help: 'snapping',
+    keywords: ['snap', 'snapping', 'magnet', 'draw', 'drawing', 'pen', 'pencil', 'brush', 'freehand', 'stroke', 'join', 'line end', 'meet'],
+    checked: () => getViewSettings().snapDraw,
+    run: () => setSnapDraw(!getViewSettings().snapDraw),
   },
   {
     id: 'view.snapOptions',

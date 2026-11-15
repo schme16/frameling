@@ -60,26 +60,47 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
 **Change it**
 - Press the **Snap** button at the bottom of the window (**View > Snapping > Snapping options...**, or **Preferences > Snapping**).
 - The big switch turns all snapping on or off (**View > Snapping**, **Ctrl+Shift+;**). Hold **Ctrl** while dragging to skip it for one shape.
-- Tick or untick any row. Each kind of layer has its own ticks, and the column for the layer you are on is shaded. Your choices are remembered.
+- Tick or untick any row. Each kind of layer has its own ticks, and your choices are remembered.
 - **Snap distance** is how close, in screen pixels, something has to come before it jumps. Drag it up if snapping feels shy, down if it grabs too eagerly.
-- Every row is also a command in the command palette (**Ctrl+K**): try "snap to guides".
+- **Pen, pencil and brush** have their own tick and **Pull for drawing tools** slider.
+- Every row is also a command in the palette (**Ctrl+K**): try "snap to guides".
 
 **What you can snap to**
 - **Page edges** and **Page middle**: the border of the page, and its middle across and down.
 - **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
 - **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
+- **Line ends and points**: the end of another line or a point of another path. [Lines that meet](help:snapping-lines) covers the pen, pencil and brush.
 - **Other shapes**: the edges, middles and corner points of the other shapes, so a new shape lines up with what is there. **All layers, not just this one** picks every visible layer (the usual) or only the layer you are on.
-- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, or sits in the middle of one, and little bars show the exact sizes. It works while you drag a shape and while you draw one, on the corner you are dragging and the far end of a line.
+- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, and little bars show the sizes. It works while you drag a shape and while you draw one.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
 - **Plugin guides**: the straight lines and boxes a [plugin](help:plugins) draws on your canvas, while it is on and allowed to draw there.
-- **Pixel cells** (pixel layers): drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it to snap pixel layers to those too.
+- **Pixel cells** (pixel layers): drawing stays on whole pixels. Untick it to snap pixel layers to guides, the grid and the page too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it.
 - **Other artboards**: moving or sizing an [artboard](help:artboards), its edges and middle line up with the other artboards'.
 
 **What snapped**
-A line shows what a shape landed on, and each kind has its own colour, in every theme. A note at the bottom of the canvas says it in words, with a dot in the same colour, like "Snapped to guide and page edge".
+A line shows what a shape landed on, in a colour of its own for each kind. A note at the bottom of the canvas says it in words, like "Snapped to guide and page edge".
 
-By default vector layers snap to the page, guides, the grid, perspective lines, plugin guides, other shapes and equal gaps, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
+By default vector layers snap to the page, guides, the grid, line ends and points, perspective lines, plugin guides, other shapes and equal gaps, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
+  'snapping-lines': `Draw a line, stop a little short of where another one ends, and let go: the line settles exactly on that end. That is what the pen, pencil and brush do when snapping is on, so lines can really meet.
+
+**What pulls, and when**
+- **The start of a line** is pulled onto the end of another line, a point of another path, a guide, the grid or the page's edge when you press close to one. Hover first and a ring shows where it would start.
+- **The end of a line** is pulled when you let go close to one of those. Close to the end of another line, you see your line reach it as you go, with a ring round it. Close to a guide or the grid, the line lights up and the pull happens as you lift.
+- **A long line closing a loop** lands exactly on its own start.
+- **The middle of a line is never touched.** Your hand drew it, so it stays yours. A brush that jumped onto the grid while you drew would be no fun.
+
+**Choose how it works**
+- **View > Snapping > Snap the pen, pencil and brush** turns it on or off for those three. The **Snap** button at the bottom has the same tick and a **Pull for drawing tools** slider: how close, in screen pixels, the start or end has to be. Drag it up if lines stop short, down if it grabs too eagerly.
+- **Line ends and points** is in the same list as the guides and the grid. Untick it and lines still settle on guides, the grid and the page.
+- Hold **Ctrl** while you draw to skip it for one line.
+
+**Good to know**
+- The pen and the shape tools use the same line ends for their points and corners.
+- Pixel layers are left alone: they already land on whole pixels.
+- Other shapes' edges and equal gaps are for moving shapes, so they don't pull a drawn line.
+
+See [Snapping](help:snapping) for everything else you can snap to.`,
   'pixel-grid': `When you're on a pixel layer and zoomed in close (each pixel at least 6 screen pixels wide, which is 600% for single-pixel art), Frameling draws thin lines between the pixels so you can see exactly where each one is.
 
 Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never shows up in exports.`,

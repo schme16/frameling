@@ -6,8 +6,8 @@ import { createPortal } from 'react-dom';
 import { useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { usePopover } from '../ui/popover';
-import { describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
-import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
+import { describeSnap, DRAW_DISTANCE, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
+import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapDraw, setSnapDrawDistance, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
 import { snappedKinds, snapVersion, subscribeSnap } from './snap';
 import { useViewSettings } from './viewSettings';
 
@@ -36,6 +36,8 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
   const picks = useViewSettings((v) => v.snapPicks);
   const distance = useViewSettings((v) => v.snapDistance);
   const allLayers = useViewSettings((v) => v.snapAllLayers);
+  const draw = useViewSettings((v) => v.snapDraw);
+  const drawDistance = useViewSettings((v) => v.snapDrawDistance);
   const here = useStore(() => currentSnapContext());
   const cellsOn = !!picks.pixel.cells;
   const layerRows = SNAP_TARGETS.filter((t) => t.contexts.includes('vector') || t.contexts.includes('pixel'));
@@ -86,6 +88,17 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
         <input type="range" className="cv-slider" min={SNAP_DISTANCE.min} max={SNAP_DISTANCE.max} step={1} value={distance} aria-label="Snap distance in pixels" aria-valuetext={`${distance} pixels`} onChange={(e) => setSnapDistance(Number(e.target.value))} />
         <span className="sn-distance-value">{distance} px</span>
       </div>
+      <label className="sn-row sn-draw" data-tip="Pen, pencil and brush" data-tip-desc="The start and end of a line you draw pull onto line ends, guides, the grid and the page. The middle of the line is never moved. Ctrl skips it.">
+        <Tick label="Pen, pencil and brush snap their start and end" on={draw} onChange={setSnapDraw} />
+        <span className="sn-name">
+          Pen, pencil and brush snap their start and end
+        </span>
+      </label>
+      <div className={`sn-distance sn-draw-distance${draw ? '' : ' is-off'}`} data-tip="Pull for drawing tools" data-tip-desc="How close, in screen pixels, the start or end of a line has to be before it is pulled.">
+        <span className="sn-name">Pull for drawing tools</span>
+        <input type="range" className="cv-slider" min={DRAW_DISTANCE.min} max={DRAW_DISTANCE.max} step={1} value={drawDistance} disabled={!draw} aria-label="Pull for pen, pencil and brush in pixels" aria-valuetext={`${drawDistance} pixels`} onChange={(e) => setSnapDrawDistance(Number(e.target.value))} />
+        <span className="sn-distance-value">{drawDistance} px</span>
+      </div>
       <div className="sn-extra">
         {SNAP_TARGETS.filter((t) => t.contexts.includes('artboard')).map((t) => (
           <label key={t.id} className="sn-row">
@@ -94,7 +107,7 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
           </label>
         ))}
       </div>
-      <Explainer className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Perspective lines and the grid only snap while they show.</Explainer>
+      <Explainer className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Pen, pencil and brush only pull the start and end of a line, never the middle. Perspective lines and the grid only snap while they show.</Explainer>
       <button type="button" className="ui-btn ui-btn-small ui-btn-quiet sn-reset" onClick={resetSnapPicks}>
         Back to the usual choices
       </button>

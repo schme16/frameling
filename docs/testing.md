@@ -823,6 +823,10 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
+## Snapping the pen, pencil and brush: test/tools/snap-draw.test.ts, scripts/perf/snapdraw.cjs, scripts/docs/ab-snap-draw/
+
+`test/canvas/snap-points.test.ts` is the pure side (what a shape offers, the bucket index checked against a plain search on random points, the lines a start or end can be pulled onto, the options), and `test/tools/snap-draw.test.ts` drives the real brush, pencil, clean line and pen. `SNAPDRAW_PERF=1 npx vitest run test/perf/snap-draw-cost.test.ts` prints what an index build and one question cost on 300, 3,000 and 20,000 strokes (it never asserts on time). `scripts/perf/snapdraw.cjs` draws a long stroke with real mouse events on those drawings with snapping off, the tick off and on (`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/snapdraw.cjs --out file.json`, `PERF_RENDERER`/`PERF_DIST` for another build); event-to-paint latency is frame-quantised, so it shows "no change", and the unit numbers are the cost. `scripts/docs/ab-snap-draw/` is the before and after clip (`caption.sh` burns the captions in): run `help-media.cjs --entries scripts/docs/ab-snap-draw` once with `--renderer` pointing at an older build and once without.
+
 ## Big brushes: scripts/perf/brushsize.cjs and scripts/ab/brush-size.cjs
 
 `scripts/perf/brushsize.cjs` times a stroke per tip at the old 120 px cap, the top of the size slider and past it, on a
