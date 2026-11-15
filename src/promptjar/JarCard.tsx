@@ -1,18 +1,19 @@
 // The prompt jar in the title bar: a small chip with a number on it, and the card that hangs from it. The chip shows how
 // many are waiting and never a word. The words are only ever on the card, and the card only opens when the streamer
-// opens it, so nothing a viewer sends can land in front of a camera. A prompt pulled out is hidden behind "Show it"
-// while Stream-safe is on.
+// opens it, so nothing a viewer sends can land in front of a camera. A prompt pulled out stays covered until the
+// streamer presses to read it, unless they said their viewers only see the capture window (src/audience/spoilers.ts).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { HIDDEN, scrubText, useStreamSafe } from '../core/streamSafe';
+import { scrubText, useStreamSafe } from '../core/streamSafe';
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { usePopover } from '../ui/popover';
 import { playCue } from '../ui/sounds';
 import { toast } from '../ui/toast';
 import { audience } from '../audience';
+import { COVER_DOTS, jarIntro, JAR_COVER_NOTE, READ_IT, useCovering } from '../audience/spoilers';
 import { currentChoice } from '../core/choices';
 import { emptyJar, jar, passOn, pullOne, putBack, addToJar } from './jar';
-import { hideJar, jarCardOpen, jarFeatureOn, jarFocusAdd, jarShown } from './card';
+import { hideJar, jarCardOpen, jarFeatureOn, jarFocusAdd, jarRead, jarShown } from './card';
 import { isFeatureOn } from '../features/host';
 import { JAR_MAX, cleanPrompt, promptsFromText } from './logic';
 import { useSyncExternalStore } from 'react';
@@ -35,15 +36,19 @@ export function emptyTheJar(): number {
 function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
   const s = jar.use((v) => v);
   const safe = useStreamSafe();
+  const covers = useCovering();
+  const readButton = useRef<HTMLButtonElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const focus = jarFocusAdd.use((v) => v);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const shown = jarShown.use((v) => v);
+  const read = jarRead.use((v) => v);
   const setShown = (id: number | null) => jarShown.set(id);
-  // With the stream overlay on, a pulled prompt waits for "Show on stream" unless the streamer chose to send it straight away.
-  const overlayAsks = isFeatureOn('stream-overlay') && currentChoice('streamoverlay.prompt') !== 'now';
+  // With the stream overlay on, a pulled prompt waits for "Send to the overlay" unless the streamer chose to send it straight away
+  // (and Stream-safe is off, the same rule the overlay itself uses).
+  const overlayAsks = isFeatureOn('stream-overlay') && (currentChoice('streamoverlay.prompt') !== 'now' || safe);
   const [shaking, setShaking] = useState(false);
   usePopover(ref, hideJar);
   useEffect(() => {
@@ -77,7 +82,14 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
     return () => clearTimeout(t);
   }, [handId]);
   const n = s.slips.length;
-  const hidden = safe && s.hand !== null && shown !== s.hand.id;
+  // A pulled prompt is covered until it is read, whenever somebody might see this window.
+  const hidden = covers && s.hand !== null && read !== s.hand.id;
+  // A new prompt in hand puts the cursor on the cover, so Enter reads it.
+  useEffect(() => {
+    if (handId !== null && hidden) readButton.current?.focus();
+    // Only a new slip moves focus, not every render of the same one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handId]);
   const add = (raw: string) => {
     const words = promptsFromText(raw);
     if (words.length === 0) return setNote(raw.trim() ? 'That needs a few words with letters in them.' : '');
@@ -90,7 +102,7 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
   return (
     <div className="ui-menu jar-card" role="dialog" aria-label="Prompt jar" ref={ref} style={style} data-testid="promptjar.card">
       <h2 className="jar-title">Prompt jar</h2>
-      <p className="jar-sub">Your audience drops ideas in here. Only you can see them, and nothing shows until you pull one out.</p>
+      <p className="jar-sub">{jarIntro(covers)}</p>
       <div className="jar-stage">
         <div className={`jar-art${shaking ? ' jar-shake' : ''}`} aria-hidden="true">
           <Icon name="jar" size={72} />
@@ -105,22 +117,31 @@ function Card({ at }: { at: React.RefObject<HTMLElement | null> }) {
         <div className="jar-slip" key={s.hand.id} data-testid="promptjar.slip">
           {hidden ? (
             <>
-              <p className="jar-slip-text jar-slip-hidden" aria-label="Hidden while Stream-safe is on">
-                {HIDDEN}
-              </p>
-              <p className="jar-note">Stream-safe is on, so it stays hidden until you say.</p>
-              <button type="button" className="ui-btn" onClick={() => setShown(s.hand!.id)}>
-                Show it
+              <button type="button" className="jar-cover" ref={readButton} data-testid="promptjar.read" onClick={() => jarRead.set(s.hand!.id)}>
+                <span className="jar-slip-text jar-slip-hidden" aria-hidden="true">
+                  {COVER_DOTS}
+                </span>
+                <span className="jar-cover-label">
+                  <Icon name="eye" size={16} /> {READ_IT}
+                </span>
               </button>
+              <p className="jar-note">{JAR_COVER_NOTE}</p>
             </>
           ) : (
-            <p className="jar-slip-text" data-testid="promptjar.text">
-              {scrubText(s.hand.text)}
-            </p>
+            <>
+              <p className="jar-slip-text" data-testid="promptjar.text">
+                {scrubText(s.hand.text)}
+              </p>
+              {covers && (
+                <button type="button" className="ui-btn ui-btn-quiet" data-testid="promptjar.cover" onClick={() => (jarRead.set(null), jarShown.set(null))}>
+                  <Icon name="eye-off" size={14} /> Cover it
+                </button>
+              )}
+            </>
           )}
           {!hidden && overlayAsks && (
             <button type="button" className="ui-btn" data-testid="promptjar.onStream" onClick={() => setShown(shown === s.hand!.id ? null : s.hand!.id)}>
-              {shown === s.hand.id ? 'Take it off the stream' : 'Show on stream'}
+              {shown === s.hand.id ? 'Take it off the overlay' : 'Send to the overlay'}
             </button>
           )}
         </div>
@@ -196,7 +217,7 @@ export function JarChip() {
   const n = s.slips.length;
   return (
     <div className="jar-chip" ref={chip} data-testid="promptjar.chip" data-help="prompt-jar">
-      <button type="button" className="jar-btn" aria-haspopup="dialog" aria-expanded={open} data-tip="Prompt jar: ideas from your audience. Only you can see them." onClick={() => jarCardOpen.set(!open)}>
+      <button type="button" className="jar-btn" aria-haspopup="dialog" aria-expanded={open} data-tip="Prompt jar: ideas from your audience. Each one stays covered until you read it." onClick={() => jarCardOpen.set(!open)}>
         <Icon name="jar" size={16} />
         Jar
         {n > 0 && (

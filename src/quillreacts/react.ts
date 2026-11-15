@@ -5,6 +5,7 @@ import { lines } from '../ui/mascot/lines';
 import type { Script } from '../ui/mascot/timing';
 import { createStore } from '../ui/mini';
 import { dismissToast, toast } from '../ui/toast';
+import { UNREAD_TOAST } from '../audience/spoilers';
 
 export const REACTIONS = ['cheer', 'hop', 'snack', 'nuzzle', 'wave'] as const;
 export type Reaction = (typeof REACTIONS)[number];
@@ -122,6 +123,8 @@ export function askToShowSign(text: string, signal: AbortSignal, waitMs = SIGN_A
     // The question takes his place on screen, so what he was doing for the audience is over.
     clearMoment();
     id = toast(`${lines('stream.sign.ask')[0]} “${text}”`, {
+      // Covered until you press Read it: the question is on screen before you have decided, and a rude sign must not be.
+      covered: UNREAD_TOAST.sign,
       quill: 'think',
       duration: 0,
       sound: null,

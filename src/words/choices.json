@@ -1922,6 +1922,29 @@
     "text": "The winner's name shows in a guessing round's result.",
     "where": "Toast when \"show\" is used without asking (\"Showing the winner's name\"), in the past tense."
   },
+  "choice.audience.view.title": { "text": "What your viewers can see", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.audience.view.question": {
+    "text": "What can your viewers see of Frameling? Secret words and prompts from chat can stay covered until you press to read them.",
+    "where": "The question the \"What your viewers can see\" dialog asks, the first time audience features are switched on, or a guessing game or the prompt jar is opened."
+  },
+  "choice.audience.view.screen.label": { "text": "My screen or my whole window", "where": "Dialog and Preferences: the button for the answer \"screen\" in \"What your viewers can see\"." },
+  "choice.audience.view.screen.detail": {
+    "text": "Secret words, pulled prompts and words from chat stay covered until you press to read them. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"screen\" answer in \"What your viewers can see\"."
+  },
+  "choice.audience.view.screen.did": {
+    "text": "Secret words and words from chat stay covered until you press to read them.",
+    "where": "Toast when \"screen\" is used without asking (\"What your viewers can see\"), in the past tense."
+  },
+  "choice.audience.view.capture.label": { "text": "Only the capture window", "where": "Dialog and Preferences: the button for the answer \"capture\" in \"What your viewers can see\"." },
+  "choice.audience.view.capture.detail": {
+    "text": "Your viewers see the capture window and nothing else, so this window is private. Secret words and prompts show plainly here.",
+    "where": "Dialog and Preferences: the small line under the \"capture\" answer in \"What your viewers can see\"."
+  },
+  "choice.audience.view.capture.did": {
+    "text": "Secret words and prompts show plainly in this window.",
+    "where": "Toast when \"capture\" is used without asking (\"What your viewers can see\"), in the past tense."
+  },
   "choice.guess.peek.title": { "text": "Peeking at the word", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.guess.peek.question": {
     "text": "While a round runs, can you look at the word again for a moment? Your window may be on stream.",
@@ -1935,7 +1958,7 @@
   "choice.guess.peek.never.did": { "text": "The word stays hidden until the result.", "where": "Toast when \"never\" is used without asking (\"Peeking at the word\"), in the past tense." },
   "choice.guess.peek.allow.label": { "text": "Let me peek", "where": "Preferences: the answer \"allow\" in \"Peeking at the word\"." },
   "choice.guess.peek.allow.detail": {
-    "text": "A button shows it for three seconds. Never while Stream-safe is on.",
+    "text": "A button shows it for three seconds, but only when your viewers cannot see this window (see What your viewers can see).",
     "where": "Preferences: the small line under the \"allow\" answer in \"Peeking at the word\"."
   },
   "choice.guess.peek.allow.did": { "text": "You can peek at the word for a moment.", "where": "Toast when \"allow\" is used without asking (\"Peeking at the word\"), in the past tense." },

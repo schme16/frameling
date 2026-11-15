@@ -1,11 +1,12 @@
 // What a round puts on the screen: the box where you pick the word, the live panel while it runs, and the reveal when it
 // ends. While it runs the panel shows blanks and any letters you gave away with a hint, never the word. The word comes
-// up in only two places: the box that starts the round (hidden behind "Show it" while Stream-safe is on) and the reveal.
-// The one other way is Peek, which you have to allow, which never works under Stream-safe, and which hides again by itself.
+// up in only two places: the box that starts the round (dots until you press the eye, unless you said your viewers see
+// only the capture window) and the reveal. The one other way is Peek, which you have to allow, which never works while
+// somebody might be watching this window, and which hides again by itself.
 import { useEffect, useId, useState } from 'react';
 import { setChoice, useChoice } from '../core/choices';
 import { isFeatureOn } from '../features/host';
-import { useStreamSafe } from '../core/streamSafe';
+import { REVEAL_MS, setupIntro, useCovering } from '../audience/spoilers';
 import { Icon } from '../ui/icons';
 import { Modal } from '../ui/Modal';
 import { openHelp } from '../ui/overlays';
@@ -92,12 +93,12 @@ function Peeked() {
 
 function Panel({ view, result }: { view: RoundView; result: boolean }) {
   const now = useNow(!result && view.endsAt !== null);
-  const safe = useStreamSafe();
+  const covers = useCovering();
   const left = view.endsAt === null ? null : secondsLeft(view.endsAt, now);
   const noId = view.turnedAway['no-player'];
   const peekChoice = useChoice('guess.peek');
   const canPeek = peekWhy() === null;
-  const hidden = peekChoice !== 'allow' || safe;
+  const hidden = peekChoice !== 'allow' || covers;
   return (
     <aside className={`gs-panel${result ? ' is-result' : ''}${view.winner ? ' is-won' : ''}`} data-testid="guess.panel" aria-label={result ? 'Guessing game result' : 'Guessing game going'}>
       <header className="gs-head">
@@ -177,7 +178,7 @@ function Panel({ view, result }: { view: RoundView; result: boolean }) {
 
 function SetupBox() {
   const hint = useId();
-  const safe = useStreamSafe();
+  const covers = useCovering();
   const [word, setWord] = useState('');
   const [shown, setShown] = useState(false);
   const [seconds, setSeconds] = useState(lastLength);
@@ -187,11 +188,18 @@ function SetupBox() {
   const jarOn = isFeatureOn('prompt-jar');
   const inJar = jar.use((s) => s.slips.length);
   const cleaned = cleanSetup({ word, seconds: seconds || null, ending });
-  // Under Stream-safe the word is dots until you say "Show it", so a window that is being shared never shows it by surprise.
-  const visible = !safe || shown;
+  // The word is dots until you press the eye, so a window that somebody may be watching never shows it by surprise. The
+  // eye lets go again by itself after a few seconds, so a word left showing cannot stay on screen.
+  const visible = !covers || shown;
+  useEffect(() => {
+    if (!shown) return;
+    const t = setTimeout(() => setShown(false), REVEAL_MS);
+    return () => clearTimeout(t);
+  }, [shown, word]);
   const take = (w: string, from: string) => {
     setWord(w.slice(0, WORD_MAX));
-    setNote(safe ? `${from} Stream-safe is on, so it is hidden. Press Show to see it.` : from);
+    setShown(false);
+    setNote(covers ? `${from} It is covered. Press the eye to see it.` : from);
   };
   const go = () => {
     if (!cleaned.ok) return;
@@ -212,14 +220,14 @@ function SetupBox() {
         }}
       >
         <p className="ui-pref-intro" id={hint}>
-          Pick a secret word and draw it. Chat guesses, Frameling checks. The word is hidden from the moment the round starts until the reveal.
+          {setupIntro(covers)}
         </p>
         <label className="ui-field">
           <span>What will you draw?</span>
           <span className="gs-wordrow">
             <input type={visible ? 'text' : 'password'} data-autofocus data-testid="guess.setup.word" value={word} maxLength={WORD_MAX} placeholder="A cat in a hat" autoComplete="off" spellCheck={false} onChange={(e) => (setWord(e.target.value), setNote(''))} />
-            {safe && (
-              <button type="button" className="ui-btn ui-btn-quiet" data-testid="guess.setup.show" aria-pressed={shown} onClick={() => setShown((s) => !s)}>
+            {covers && (
+              <button type="button" className="ui-btn ui-btn-quiet" data-testid="guess.setup.show" aria-pressed={shown} aria-label={shown ? 'Hide the word' : 'Show the word'} data-tip={shown ? 'Hide the word' : 'Show the word for a few seconds'} onClick={() => setShown((s) => !s)}>
                 <Icon name={shown ? 'eye-off' : 'eye'} size={14} /> {shown ? 'Hide' : 'Show'}
               </button>
             )}

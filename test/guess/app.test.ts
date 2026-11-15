@@ -44,6 +44,8 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'], now: (clock += 10_000_000) });
   for (const id of ['guess.ending', 'guess.winnerName', 'guess.peek']) setChoice(id, undefined);
   setChoice('audience.strictness', 'balanced');
+  // Viewers see only the capture window unless a test says otherwise, so the word is plain in this window.
+  setChoice('audience.view', 'capture');
   setStreamSafe(false);
   audience.kill();
   audience.resetCounts();
@@ -317,16 +319,16 @@ describe('the word is never on screen while the round runs', () => {
     expect(everything()).not.toContain(DOC_WORD);
   });
 
-  it('can not be peeked at by default, nor while Stream-safe is on', () => {
+  it('can not be peeked at by default, nor while your viewers can see this window', () => {
     startRound(SETUP);
     expect(peek()).toBe(false);
     expect(peekWord()).toBeNull();
     setChoice('guess.peek', 'allow');
-    setStreamSafe(true);
+    setChoice('audience.view', 'screen');
     expect(peek()).toBe(false);
     expect(peekWord()).toBeNull();
     expect(getCommand('guess.peek')!.enabled!(store().get())).toBe(false);
-    expect(getCommand('guess.peek')!.reason!(store().get())).toMatch(/Stream-safe/);
+    expect(getCommand('guess.peek')!.reason!(store().get())).toMatch(/viewers might see this window/);
   });
 
   it('can be peeked at for three seconds when you allow it, and then hides again', () => {
@@ -342,11 +344,11 @@ describe('the word is never on screen while the round runs', () => {
     expect(JSON.stringify(peekUntil.get())).not.toContain('elephant');
   });
 
-  it('cannot be peeked at after the round, and Stream-safe going on ends a peek', () => {
+  it('cannot be peeked at after the round, and saying viewers see your screen ends a peek', () => {
     setChoice('guess.peek', 'allow');
     startRound(SETUP);
     peek();
-    setStreamSafe(true);
+    setChoice('audience.view', 'screen');
     expect(peekWord()).toBeNull();
     endRound();
     expect(peekWord()).toBeNull();

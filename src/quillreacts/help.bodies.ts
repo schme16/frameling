@@ -12,7 +12,7 @@ export const bodies: Record<string, string> = {
 
 **See them yourself first.** **Try Quill reacting to chat** in the **Audience features** menu (or each one in the command palette, starting with **Try:**) plays it on your screen. It works with audience features off, and sends nothing anywhere.
 
-**Signs are your call.** Words from chat are words from a stranger, so a sign never just appears. Quill asks you first, with the words in the question: **Hold it up** or **Not that one**. Say nothing for 15 seconds and the answer is no. Before you ever see them, the words are cut to 60 characters and boiled down to plain text: no web addresses, no @names, no emoji or symbols, no odd characters, nothing stretched out. If you would rather chat never put words on your screen, set **Signs from chat** to **Never take signs** in **Preferences > Streaming**.
+**Signs are your call.** Words from chat are words from a stranger, so a sign never just appears. Quill asks you first. The words stay covered until you press **Read it**, then it is **Hold it up** or **Not that one**. Say nothing for 15 seconds and the answer is no. Before you ever see them, the words are cut to 60 characters and boiled down to plain text: no web addresses, no @names, no emoji or symbols, no odd characters, nothing stretched out. If you would rather chat never put words on your screen, set **Signs from chat** to **Never take signs** in **Preferences > Streaming**.
 
 Heads up: the question shows the words in the Frameling window. If you are sharing that window, viewers can see it while you decide.
 

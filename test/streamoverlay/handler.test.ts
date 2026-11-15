@@ -106,7 +106,10 @@ describe('the token', () => {
   it('is needed: no token, a wrong one, and the same one with a letter changed all say the same nothing', () => {
     const none = call('/overlay/');
     const wrong = call('/overlay/ov_nope/');
-    const near = call(`/overlay/${hub.token().slice(0, -1)}X/`);
+    // One character different, and never the same character by accident: a token already ending in X used to make
+    // this pass for the wrong reason.
+    const t = hub.token();
+    const near = call(`/overlay/${t.slice(0, -1)}${t.endsWith('X') ? 'Y' : 'X'}/`);
     for (const r of [none, wrong, near]) {
       expect(r.status).toBe(404);
       expect(r.body).toBe('Nothing here.');

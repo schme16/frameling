@@ -12,7 +12,7 @@
 // across runs is how long you last let a round run (see ./setup.ts).
 import { audience, setAudienceOn } from '../audience';
 import { currentChoice } from '../core/choices';
-import { streamSafe } from '../core/streamSafe';
+import { covering } from '../audience/spoilers';
 import { lines } from '../ui/mascot/lines';
 import { createStore } from '../ui/mini';
 import { quillSays } from '../quillreacts/react';
@@ -102,12 +102,12 @@ export const hintsLeft = (): number => (round?.isOpen() ? round.view().hintsLeft
 /** Why the word cannot be peeked at right now, in plain words, or null when it can. */
 export function peekWhy(): string | null {
   if (!roundIsOpen()) return 'No round is going right now.';
-  if (streamSafe()) return 'Stream-safe is on, so the word stays hidden.';
+  if (covering()) return 'Your viewers might see this window, so the word stays hidden. You can change that in Preferences > Streaming.';
   if (currentChoice('guess.peek') !== 'allow') return 'You chose to keep the word hidden while a round runs (Preferences > Streaming).';
   return null;
 }
 
-/** The word, for the peek button only, and only when you allow it and Stream-safe is off. Null otherwise. */
+/** The word, for the peek button only, and only when you allow it and your viewers cannot see this window. Null otherwise. */
 export function peekWord(): string | null {
   if (peekWhy() !== null) return null;
   return round?.secret() || null;

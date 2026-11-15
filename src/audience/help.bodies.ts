@@ -22,6 +22,26 @@ That gives you **!vote**, **!guess** and **!prompt**. Or use Streamer.bot. See [
 - **Votes and guesses aren't on the Twitch links list**, because they come from chat, not from an event.
 - Bot and Frameling must run on the same computer.
 - Only want rewards and cheers? Do steps 1 to 3.`,
+  'cover-spoilers': `Two things should never reach your viewers by surprise: **a secret** (the word in a guessing game, a prompt you have pulled) and **words a viewer typed that you have not read yet**. Frameling covers both until you press to read them.
+
+**You tell it once what your viewers can see.** The first time you switch on [audience features](help:audience), or open a guessing game, it asks:
+- **My screen or my whole window**: anything that could spoil or shock stays covered until you press. Pick this if you are not sure.
+- **Only the capture window**: your viewers see the [capture window](help:stream-capture) and nothing else, so this window is private and nothing is covered.
+
+Frameling can't tell which one you do, so it asks, and that one answer covers every screen below. Change it any time with **What can your viewers see?** in the command palette or the **Audience features** menu, or in **Preferences > Behaviour**. Until you answer, it covers.
+
+**What is covered**
+- **The word in a guessing game** shows as dots while you type it. Press the **eye** to check it: it shows for six seconds, then goes back to dots. See [Guess the drawing](help:guess).
+- **A prompt you pull from the jar** arrives as a covered bar. Press **Read it** (or **Enter**, it is already selected). **Cover it** puts it back. See [The prompt jar](help:prompt-jar).
+- **Words chat wants on your screen**, a Quill sign, a challenge banner, a message from your stream tool: the toast says chat sent something, with **Read it**. You read them first, then **Put it up** or **Not that one**.
+- **Peek** at the word in a round only works when your viewers cannot see this window.
+
+**What is not covered.** Counts, like the number on the **Jar** button, the **Audience participation: on** pill and how many are waiting. They hold no words. Votes, which are your own question and counted bars. The capture window itself, which only draws your drawing.
+
+**Good to know**
+- This is not [Stream-safe mode](help:stream-safe). That one hides file paths, your name and keys. This one hides secrets and unread words. They are separate switches on purpose.
+- A cover hides the words completely. Nothing is blurred, so nothing can be read through it, and its dots are always the same length.
+- With the [stream overlay](help:stream-overlay), a prompt only goes up when you press **Send to the overlay**, after you have read it.`,
   audience: `Some people draw live. Audience features are the small, safe ways viewers or stream tools can join in, like cheering Quill on. This page is the switch and the safety they share.
 
 **It starts off.** Nothing from outside can reach Frameling until you switch it on, in **Preferences > Streaming**, the **Streaming** menu, or the command palette.

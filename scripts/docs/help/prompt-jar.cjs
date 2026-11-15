@@ -1,5 +1,5 @@
 // Help clip for the prompt jar: prompts arrive and the title bar only gains a number (nothing shows), then the jar is
-// opened, one is pulled out (the shake and the slip), passed on, and another pulled. The first prompt goes through the
+// opened, one is pulled out (the shake and the slip, covered until Read it is pressed), passed on, and another pulled. The first prompt goes through the
 // real gate, the rest straight in. Motion is left on: the shake and the slip are the point.
 const { template, wait, js } = require('./_lib.cjs');
 
@@ -29,9 +29,12 @@ module.exports = [
       add('two snails racing'),
       wait(1200),
       { clickOn: '.jar-btn', after: 1400 },
-      { clickOn: '[data-testid="promptjar.pull"]', after: 2400 },
+      { clickOn: '[data-testid="promptjar.pull"]', after: 1500 },
+      // The slip arrives covered; one press reads it.
+      { clickOn: '[data-testid="promptjar.read"]', after: 1800 },
       { clickOn: '[data-testid="promptjar.pass"]', after: 900 },
-      { clickOn: '[data-testid="promptjar.pull"]', after: 2600 },
+      { clickOn: '[data-testid="promptjar.pull"]', after: 1500 },
+      { clickOn: '[data-testid="promptjar.read"]', after: 2000 },
       { rec: 'stop' },
     ],
   },

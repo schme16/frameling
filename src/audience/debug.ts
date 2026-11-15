@@ -19,9 +19,10 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       registerAudienceAction({ id: 'demo.banner', label: 'Show a challenge banner', kind: 'banner', cooldown: 0, run: none });
       registerAudienceAction({ id: 'demo.snack', label: 'Give Quill a snack', kind: 'snack', cooldown: 0, run: none });
     },
-    // Switches on without asking how careful (balanced unless told), and fills a few of the queue.
-    on: (n = 0, strictness = 'balanced') => {
+    // Switches on without asking how careful (balanced unless told) or what viewers see (the screen unless told), and fills a few of the queue.
+    on: (n = 0, strictness = 'balanced', view = 'screen') => {
       setChoice('audience.strictness', strictness);
+      setChoice('audience.view', view);
       setAudienceOn(true);
       const ids = ['demo.cheer', 'demo.hop', 'demo.flip', 'demo.banner', 'demo.snack'];
       for (let i = 0; i < n; i++) submitAudience(ids[i % ids.length]);

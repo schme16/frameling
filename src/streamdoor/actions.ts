@@ -8,6 +8,7 @@
 import { getCommand } from '../core/registry';
 import { runCommand } from '../ui/palette';
 import { toast } from '../ui/toast';
+import { UNREAD_TOAST } from '../audience/spoilers';
 import { registerAudienceAction } from '../audience';
 
 /** The most a shown message may be, in characters. */
@@ -45,7 +46,8 @@ export function registerDoorActions(): void {
     kind: 'door',
     cooldown: 6000,
     parse: cleanMessage,
-    run: ({ text }) => void toast(text, { duration: 6000, quill: null, sound: null }),
+    // Words from a stream tool are usually chat's: covered until you press Read it, unless only the capture window is seen.
+    run: ({ text }) => void toast(text, { duration: 6000, quill: null, sound: null, covered: UNREAD_TOAST.message }),
   });
   registerAudienceAction({
     id: 'door.zoom',

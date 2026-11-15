@@ -130,6 +130,10 @@ export const PHRASES: Phrase[] = [
   P('try a dare', 'dares.list', ...allCommands().filter((c) => c.id.startsWith('dares.try.')).map((c) => c.id)),
   P('put the dares back', 'dares.stop'),
   P('stop the audience', 'audience.kill'),
+  // The one answer behind every cover: what the viewers can see, so secret words and chat's unread words stay covered
+  P('what can my viewers see', 'audience.view', 'help:cover-spoilers'),
+  P('hide the secret word from chat', 'audience.view', 'help:cover-spoilers'),
+  P('stop rude prompts showing on stream', 'audience.view', 'help:cover-spoilers'),
   // "play" is not in the command's name, so it is a keyword: the palette needs every word
   P('play a guessing game', 'guess.start', 'help:guess'),
   P('put it on top of everything', 'arrange.front'),

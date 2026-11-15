@@ -43,14 +43,15 @@ describe('audience features, in the app', () => {
     expect(getChoiceDef('audience.startup')!.silent).toBe(true);
   });
 
-  it('asks how careful the first time it is switched on, and uses the answer', async () => {
+  it('asks how careful, then what viewers can see, the first time it is switched on, and uses the answers', async () => {
     _resetChoicesForTests();
     await installReregister();
-    let asked = 0;
-    setChoiceAsker(async () => (asked++, { value: 'strict', remember: true }));
+    const asked: string[] = [];
+    setChoiceAsker(async (def) => (asked.push(def.id), { value: def.id === 'audience.view' ? 'capture' : 'strict', remember: true }));
     setAudienceOn(true);
     await new Promise((r) => setTimeout(r, 0));
-    expect(asked).toBe(1);
+    expect(asked).toEqual(['audience.strictness', 'audience.view']);
+    expect(currentChoice('audience.view')).toBe('capture');
     expect(audience.isOn()).toBe(true);
     expect(audience.snapshot().limits.maxPerMinute).toBe(4);
     setChoiceAsker(null);
