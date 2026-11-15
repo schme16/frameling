@@ -14,10 +14,27 @@ import { dareScreen } from '../../src/dares/fx';
 import { isDareEnabled, setDareEnabled, stopDares, tryDare, _resetDaresForTests } from '../../src/dares/registry';
 import { getTurn, NO_TURN, setTurn } from '../../src/canvas/turn';
 import { fit, getView } from '../../src/canvas/controller';
+import { clearToasts, toasts as toastStore } from '../../src/ui/toast';
+import { ASK_WORDS_MS, _resetAskWords } from '../../src/dares/askWords';
 
 installAudience();
 
 const root = document.documentElement;
+
+/** What is on screen right now, as plain messages. */
+const toasts = (): string[] => toastStore.get().map((x) => x.message);
+
+/** Presses a button on the "chat would like this on your screen" question. */
+async function pressWords(id: string): Promise<void> {
+  const t = toastStore.get().find((x) => x.action?.id === id || x.decline?.id === id)!;
+  (t.action?.id === id ? t.action : t.decline)!.run();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+/** Says yes to the words question and lets the dare get going. */
+const sayYesToWords = (): Promise<void> => pressWords('words-yes');
+
 let clock = 1_000_000;
 
 function drawingDoc() {
@@ -54,6 +71,8 @@ beforeEach(() => {
   clock += 3_600_000;
   vi.setSystemTime(clock);
   _resetDaresForTests();
+  _resetAskWords();
+  clearToasts();
   setFeatureOn('stream-dares', true);
   audience.kill();
   audience.resetCounts();
@@ -68,6 +87,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   stopDares();
+  _resetAskWords();
+  clearToasts();
   vi.useRealTimers();
 });
 
@@ -176,6 +197,9 @@ describe('view dares leave no trace', () => {
 
   it('a banner and a countdown show words and clear again', async () => {
     submitAudience('dare.challenge', { text: 'Draw a hat' });
+    // Words from chat wait for the streamer's yes before they reach the screen.
+    expect(dareScreen.get().banner).toBeNull();
+    await sayYesToWords();
     expect(dareScreen.get().banner).toEqual({ text: 'Draw a hat' });
     await vi.advanceTimersByTimeAsync(31_000);
     expect(dareScreen.get().banner).toBeNull();
@@ -185,6 +209,34 @@ describe('view dares leave no trace', () => {
     expect(dareScreen.get().countdown?.over).toBe(true);
     await vi.advanceTimersByTimeAsync(3_000);
     expect(dareScreen.get().countdown).toBeNull();
+  });
+
+  it('a banner from chat asks first, and no answer means no', async () => {
+    submitAudience('dare.challenge', { text: 'Draw with your elbow' });
+    expect(dareScreen.get().banner).toBeNull();
+    // Nobody presses anything: the question answers no for you.
+    await vi.advanceTimersByTimeAsync(ASK_WORDS_MS + 100);
+    expect(dareScreen.get().banner).toBeNull();
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(dareScreen.get().banner).toBeNull();
+  });
+
+  it('a banner from chat can be turned down, and one of our own never asks', async () => {
+    submitAudience('dare.challenge', { text: 'Something rude' });
+    expect(toasts().some((m) => m.includes('Something rude'))).toBe(true);
+    await pressWords('words-no');
+    expect(dareScreen.get().banner).toBeNull();
+    await vi.advanceTimersByTimeAsync(31_000);
+    // A challenge of Frameling's own needs no asking: it goes straight up.
+    submitAudience('dare.challenge');
+    expect(dareScreen.get().banner).not.toBeNull();
+  });
+
+  it('a countdown carrying chat words asks on the same terms', async () => {
+    submitAudience('dare.countdown', { seconds: 5, text: 'Finish the face' });
+    expect(dareScreen.get().countdown).toBeNull();
+    await sayYesToWords();
+    expect(dareScreen.get().countdown).toEqual({ text: 'Finish the face', over: false });
   });
 
   it('rubbish for a banner is turned away before it queues', () => {

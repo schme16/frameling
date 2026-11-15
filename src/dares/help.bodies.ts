@@ -14,6 +14,8 @@ These work for everyone. They never touch your drawing or your file.
 - **Show a challenge banner**: a banner across the top with a small challenge. It is honour system, Frameling cannot make you.
 - **Start a countdown**: a big countdown. At zero it says *Time!*
 
+**Words from chat are your call.** A banner or a countdown can carry words somebody typed, and those never just appear. You are asked first, with the words in the question: **Put it up** or **Not that one**. Say nothing for 15 seconds and the answer is no. A challenge of Frameling's own goes straight up, since nobody wrote it at you.
+
 ## They always put it back
 Only one dare that changes the view goes at a time, and a new one takes over from the old one, so they never pile up. When one ends, the view is exactly as it was. The chip at the bottom of the window says what is going on and has a **Put it back** button, so you can end one early.
 

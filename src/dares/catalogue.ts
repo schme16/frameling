@@ -22,6 +22,7 @@ import { cleanMessage } from '../streamdoor/actions';
 import { addGiftLayer, giftProblem, googlyShapes, applyNudge, dropShape, nudgeStep, nudgeTarget, REFUSAL_WORDS, splatShapes, wobbleSetup, wobbleShapes, wobbleTarget, GIFT_COLOURS, type Rng } from './draw';
 import { dareScreen, hold, markPage } from './fx';
 import { lasts } from '../audience';
+import { askToShowWords } from './askWords';
 
 export type DareFamily = 'view' | 'drawing';
 
@@ -209,7 +210,9 @@ export const viewDares: DareDef<any>[] = [
     cooldown: 20_000,
     keywords: ['challenge', 'banner', 'prompt', 'honour', 'words'],
     parse: cleanChallenge,
-    run: ({ text }: { text: string | null }, ctx: AudienceContext) => {
+    run: async ({ text }: { text: string | null }, ctx: AudienceContext) => {
+      // Words from chat are asked about first, the same as Quill's signs. One of our own needs no asking.
+      if (text !== null && !(await askToShowWords(text, ctx.signal))) return;
       const words = text ?? pickOf(CHALLENGES);
       return hold('banner', { id: 'dare.challenge', label: 'Challenge', ms: dareMs() }, ctx.signal, () => {
         dareScreen.set((s) => ({ ...s, banner: { text: words } }));
@@ -227,6 +230,8 @@ export const viewDares: DareDef<any>[] = [
     keywords: ['countdown', 'timer', 'clock', 'time', 'beat the clock'],
     parse: cleanCountdown,
     run: async ({ text, seconds }: { text: string | null; seconds: number | null }, ctx: AudienceContext) => {
+      // The countdown can carry chat's words too, so it asks on the same terms.
+      if (text !== null && !(await askToShowWords(text, ctx.signal))) return;
       const ms = seconds ? seconds * 1000 : dareMs();
       const words = text ?? 'Beat the clock';
       await hold('countdown', { id: 'dare.countdown', label: 'Countdown', ms }, ctx.signal, () => {
