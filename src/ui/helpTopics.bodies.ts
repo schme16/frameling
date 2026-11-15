@@ -340,6 +340,15 @@ The first question you meet has a button, **Answer all 25 questions the usual wa
 ## Dialogs
 
 The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer. Change your mind in **Preferences > Behaviour**. A press that only just misses a dialog's edge never counts either way: every dialog has 24 pixels of dead space all round it, so a near miss does nothing at all. The save question ignores the dim area completely. **Esc** and the close button always work.`,
+  streaming: `The **Streaming** tab in Preferences has everything about streaming and sharing your screen, in one place. Open **Preferences** and pick **Streaming**, or press **Ctrl+K** and type "streaming".
+
+**Streaming tools.** The switch at the top is for people who stream. Switch it off if you never do, and dares, votes, the prompt jar, Twitch, the stream overlay and the rest go out of sight, and the **Streaming** menu leaves the menu bar. Nothing is lost. **Choose one by one** opens each tool with its own settings, and your usual answers to the questions they ask.
+
+**Sharing your screen.** These stay on the tab even when the streaming tools are tucked away, because they are for anybody who shares a screen: **Stream-safe mode**, **Going live with OBS**, and the capture view (its background, mouse pointer and size). Their commands are in **View > Sharing your screen**.
+
+**The way back.** The switch on this tab brings the streaming tools back. So does **Bring back the streaming tools** in the palette (Ctrl+K), and in **View > Change the menus and features**.
+
+See also [Turning parts on and off](help:features), [Audience features](help:audience) and [Stream-safe mode](help:stream-safe).`,
   features: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
 
 ## Switching one on or off
@@ -354,9 +363,9 @@ If some are off and you want the lot, press **Turn everything back on** at the b
 
 ## The streaming tools are one switch
 
-Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they sit together under one **Streaming** heading, with one row: **Streaming tools**. Switch it off and all of them go out of the View menu, the palette, Preferences and the help index. Switch it on and they all come back. **Choose one by one** under it opens the nine, and each one's own settings, for a streamer who wants only some. The heading says it once: none of it does anything until **Audience features** are on, and those start off.
+Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they have a tab of their own, **Preferences > Streaming**, with one switch at the top. (**Features** has a button that takes you there.) Switch it off and all of them go out of the menu bar, the palette, Preferences and the help index. The Stream-safe, OBS and capture view settings stay, for anybody who shares a screen. Switch it on and they all come back. See [The Streaming tab](help:streaming).
 
-You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer is also in **Preferences > Behaviour**, as **Do you stream?**.
+You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer to **Do you stream?** is on the Streaming tab too.
 
 ## Quill's hello puts some away
 

@@ -20,7 +20,7 @@ Your stream tool (Streamer.bot, Firebot, a Stream Deck) sends each vote to the [
 ## One vote each
 Frameling can't see your chat, so it can only keep to one vote each if your tool tells it who is voting. Send the viewer's **user id** (a number, not their name). Frameling mixes it with a secret made fresh for this vote and keeps only the mixed result, never the id. When the vote ends, the secret and every mixed result are thrown away, and the next vote can't be matched to this one.
 
-If a vote has no voter id, Frameling turns it away and tells you how many. You can change that in **Preferences > Behaviour**: **A vote that comes with no voter id** can count them anyway, and then your tool has to make sure nobody sends two. **When someone votes twice** keeps the first vote or lets people change their mind.
+If a vote has no voter id, Frameling turns it away and tells you how many. You can change that in **Preferences > Streaming**: **A vote that comes with no voter id** can count them anyway, and then your tool has to make sure nobody sends two. **When someone votes twice** keeps the first vote or lets people change their mind.
 
 ## What it keeps
 - No names, ever. Nothing is written to your drawing, a file or the log.

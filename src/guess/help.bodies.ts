@@ -14,7 +14,7 @@ export const bodies: Record<string, string> = {
 ## Where you see the word
 Only in the box that starts the round, and in the reveal. Your window may be on stream, so while the round runs the panel shows blanks and Quill never says it. With **Stream-safe** on, the word is dots in the start box until you press **Show**.
 
-Forgetful? **Preferences > Behaviour > Peeking at the word** can be **Let me peek**: a **Peek** button shows it for three seconds. It never works while Stream-safe is on.
+Forgetful? **Preferences > Streaming > Peeking at the word** can be **Let me peek**: a **Peek** button shows it for three seconds. It never works while Stream-safe is on.
 
 ## Getting the guesses in
 Your stream tool sends each guess to the [actions door](help:actions-door):

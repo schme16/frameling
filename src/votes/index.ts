@@ -1,6 +1,6 @@
 // Chat votes: counted, never applied. The streamer starts a vote with two to six options, the audience casts votes
 // through the audience gate (src/audience) and the actions door (src/streamdoor), Frameling counts them live and shows
-// a result, and that is where it stops. A feature you can turn off (Preferences > Features); off, there is no vote, no
+// a result, and that is where it stops. A feature you can turn off (Preferences > Streaming); off, there is no vote, no
 // action, no command and no help, and a vote that was going is dropped.
 import { defineFeature } from '../features/feature';
 import { registerVoteAction } from './actions';

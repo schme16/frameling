@@ -13,7 +13,7 @@ module.exports = [
       template('bouncing-ball'),
       js('__framelingAudience.on(0)'),
       wait(600),
-      js(`${F}.overlays.openPrefs('features')`),
+      js(`${F}.overlays.openPrefs('streaming')`),
       wait(700),
       js(`(() => { const el = document.querySelector('.so-prefs'); if (!el) throw new Error('no stream overlay block'); el.scrollIntoView({ block: 'center' }); document.querySelectorAll('[data-shot]').forEach((e) => e.removeAttribute('data-shot')); el.setAttribute('data-shot', '1'); return true; })()`),
       { shot: 'kick', crop: [0, 0, 8, 8] },

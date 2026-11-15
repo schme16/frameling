@@ -1,7 +1,7 @@
 // The streaming family: the features that are only for people who stream, taken as one thing. The first-run hello asks
-// whether you stream and tucks them away if not, the Features page has one switch for the lot, and the audience menu and
+// whether you stream and tucks them away if not, the Streaming tab in Preferences has one switch for the lot, and the audience menu and
 // switch only show while any of them is on. Nothing here deletes anything: tucked away is just switched off, and each one
-// is still in the palette as "Turn on ..." and on Preferences > Features.
+// is still in the palette as "Turn on ..." and on Preferences > Streaming.
 import { isFeatureOn, setFeatureOn } from './host';
 import { STREAM_FEATURES } from './streamIds';
 

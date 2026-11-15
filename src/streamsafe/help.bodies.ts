@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## Turn it on
 
-Press **Ctrl+Alt+Shift+H** (**Cmd+Alt+Shift+H** on a Mac), or choose **Streaming > Stream-safe mode on or off**, or search for it in the command palette (Ctrl+K). You can also flip it in **Preferences > General**. A small **Stream-safe** pill appears at the top right, so you always know it's on. Press the pill to turn it off again.
+Press **Ctrl+Alt+Shift+H** (**Cmd+Alt+Shift+H** on a Mac), or choose **View > Sharing your screen > Stream-safe mode on or off**, or search for it in the command palette (Ctrl+K). You can also flip it in **Preferences > Streaming**. A small **Stream-safe** pill appears at the top right, so you always know it's on. Press the pill to turn it off again.
 
 ## What it hides
 
@@ -30,7 +30,7 @@ help:saving-and-opening, help:recent-drawings, help:beta-reports
 ## What it does
 
 - **You start streaming or recording in OBS.** Stream-safe goes on and Frameling says so, before the first picture goes out.
-- **You stop.** Frameling asks whether to turn Stream-safe off again, because you might still be sharing your screen. Tick **Remember my choice** and it won't ask again. Change it any time in **Preferences > Behaviour**.
+- **You stop.** Frameling asks whether to turn Stream-safe off again, because you might still be sharing your screen. Tick **Remember my choice** and it won't ask again. Change it any time in **Preferences > Streaming**.
 - **Stream-safe was already on?** Frameling leaves it alone. It only offers to undo what it did itself.
 
 It works for any stream OBS sends (Twitch, YouTube, Kick and the rest), because it watches OBS, not the website. It never touches your drawing and never looks at your stream, chat or viewers.
@@ -46,7 +46,7 @@ This is the step people get stuck on. It is OBS's own door for other programs, b
 
 ## Step 2: tell Frameling
 
-1. Choose **Streaming > Going live with OBS on or off**, press **Ctrl+Alt+Shift+O** (**Cmd+Alt+Shift+O** on a Mac), or use the switch in **Preferences > General**.
+1. Choose **View > Sharing your screen > Going live with OBS on or off**, press **Ctrl+Alt+Shift+O** (**Cmd+Alt+Shift+O** on a Mac), or use the switch in **Preferences > Streaming**.
 2. Leave the address as **localhost:4455**, or type the one OBS shows. OBS on another computer in your home? Type that computer's address.
 3. Type the password, if there is one, and press **Use this password**.
 

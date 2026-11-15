@@ -25,7 +25,7 @@ export function obsStatusLine(s: ObsState): string {
 }
 
 /**
- * Preferences > General > Going live with OBS: the address, the password and a status line. The password goes straight to
+ * Preferences > Streaming > Going live with OBS: the address, the password and a status line. The password goes straight to
  * the desktop side and is kept there, encrypted by the computer's own key store: it never comes back here, so there is
  * nothing in this page to show on a stream. The box is always dots.
  */

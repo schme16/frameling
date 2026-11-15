@@ -14,7 +14,7 @@ export const bodies: Record<string, string> = {
 
 **Who sent it?** Frameling never knows. Prompts are kept as words only: no name, no time, nothing about who sent them.
 
-**Does it survive closing Frameling?** Not by default. The jar lives in memory only, so closing Frameling empties it and nothing is written to your computer. If you would rather keep a good prompt for next stream, set **Keep the prompt jar** to **Keep them for next time** in Preferences > Behaviour. Then the words (and only the words) are saved on this computer. Either way, **Empty the jar** wipes everything, and the saved copy too, in one click.
+**Does it survive closing Frameling?** Not by default. The jar lives in memory only, so closing Frameling empties it and nothing is written to your computer. If you would rather keep a good prompt for next stream, set **Keep the prompt jar** to **Keep them for next time** in Preferences > Streaming. Then the words (and only the words) are saved on this computer. Either way, **Empty the jar** wipes everything, and the saved copy too, in one click.
 
 **Sending prompts in.** The action is \`jar.add\`, on the [actions door](help:actions-door). Body \`{"text":"a frog in a teacup"}\`. A reward in Streamer.bot, Firebot or a Stream Deck can send it. There is nothing that reads the jar or shows a prompt from outside: only you pull.
 

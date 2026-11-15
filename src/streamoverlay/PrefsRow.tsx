@@ -1,4 +1,4 @@
-// Preferences > Features: the stream overlay's address and how to put it in OBS. The address has a secret in it, so it
+// Preferences > Streaming: the stream overlay's address and how to put it in OBS. The address has a secret in it, so it
 // is hidden until someone presses Show, hidden again after a few seconds, never shown while stream-safe mode is on (it
 // can still be copied), and every drawing of it goes through displaySecret.
 import { useEffect, useState, useSyncExternalStore } from 'react';

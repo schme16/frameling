@@ -52,9 +52,9 @@ export function createDoorLink(d: LinkDeps): DoorLink {
           d.portBusy((answer) => {
             if (!wanted) return;
             if (answer === 'next') enqueue(async () => void (await doOpen(true)));
-            else d.tell(`The actions door could not open: port ${st.port} is taken. Pick another in Preferences > Features.`);
+            else d.tell(`The actions door could not open: port ${st.port} is taken. Pick another in Preferences > Streaming.`);
           });
-        } else if (st?.problem === 'failed') d.tell('The actions door could not open. Try again from Preferences > Features.');
+        } else if (st?.problem === 'failed') d.tell('The actions door could not open. Try again from Preferences > Streaming.');
       });
     },
     close() {

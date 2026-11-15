@@ -1,87 +1,27 @@
 // Preferences > Features: the optional parts of Frameling, each with a switch. Quiet on purpose: nothing here is
 // needed to start drawing.
-import { useSyncExternalStore } from 'react';
-import { audience } from '../audience';
 import { Icon } from '../ui/icons';
-import { openHelp } from '../ui/overlays';
+import { openHelp, openPrefs } from '../ui/overlays';
 import { toast } from '../ui/toast';
-import { getCommand } from '../core/registry';
-import { isFeatureOn, needsIt, offFeatures, setFeatureOn, switchableFeatures } from './host';
-import type { FeatureDescriptor } from './feature';
-import { STREAMING_NAME, STREAM_FEATURES, streamingCount } from './streamFamily';
+import { FeatureRow } from './FeatureRow';
+import { offFeatures, setFeatureOn, switchableFeatures } from './host';
+import { STREAMING_NAME, STREAM_FEATURES } from './streamFamily';
 import { useFeaturesVersion } from './use';
-import { AudiencePrefsRow } from '../audience/PrefsRow';
-import { StreamDoorPrefsRow } from '../streamdoor/PrefsRow';
-import { StreamOverlayPrefsRow } from '../streamoverlay/PrefsRow';
-import { TwitchPrefsRow } from '../twitch/PrefsRow';
-import { DaresPrefsRow } from '../dares/PrefsRow';
-import { PenModsPrefsRow } from '../penmods/PrefsRow';
 
-/** One feature and its switch. A feature that something on needs keeps its switch, disabled, with the reason under it. */
-function FeatureRow({ f, change }: { f: FeatureDescriptor; change: (id: string, on: boolean) => void }) {
-  const on = isFeatureOn(f.id);
-  const user = on ? needsIt(f.id) : undefined;
-  const noteId = `feature-note-${f.id}`;
+/** Streaming has a tab of its own now, so the Features page only points at it. */
+function StreamingPointer() {
   return (
-    <div className="ui-pref-row">
+    <div className="ui-pref-row" data-testid="features-streaming-pointer">
       <div className="ui-pref-text">
-        <strong>{f.name}</strong>
-        <span>{f.about}</span>
-        {user && (
-          <span id={noteId} className="ui-pref-note">
-            {user.name} needs this. Turn off {user.name} first.
-          </span>
-        )}
+        <strong>{STREAMING_NAME}</strong>
+        <span>Dares, votes, the prompt jar, Twitch, the overlay and the rest have a tab of their own, with the switch for all of them.</span>
       </div>
       <div className="ui-pref-control">
-        <button type="button" role="switch" aria-checked={on} aria-label={`${f.name} on or off`} data-testid={`feature-switch-${f.id}`} aria-disabled={user ? true : undefined} aria-describedby={user ? noteId : undefined} className={`ui-switch${on ? ' is-on' : ''}${user ? ' is-disabled' : ''}`} onClick={() => !user && change(f.id, !on)}>
-          <span className="ui-switch-knob" />
+        <button type="button" className="ui-btn" data-testid="features-open-streaming" onClick={() => openPrefs('streaming')}>
+          Open the Streaming tab
         </button>
       </div>
     </div>
-  );
-}
-
-/**
- * The streaming family under one heading: one switch for all of it, and the nine below it with each one's own settings.
- * Folded for somebody who does not stream, open once audience features are on. The note about audience features is said
- * once here, not on every row. Rows stay on the page while folded, so a search that points at one can open it.
- */
-function StreamingGroup({ list, change }: { list: FeatureDescriptor[]; change: (id: string, on: boolean) => void }) {
-  const count = streamingCount();
-  const on = count > 0;
-  const audienceOn = useSyncExternalStore(audience.subscribe, () => audience.isOn());
-  const run = (id: 'features.streamingOff' | 'features.streamingOn') => getCommand(id)?.run();
-  return (
-    <section className="features-streaming" data-testid="features-streaming" aria-labelledby="features-streaming-title">
-      <h3 id="features-streaming-title">Streaming</h3>
-      <div className="ui-pref-row">
-        <div className="ui-pref-text">
-          <strong>{STREAMING_NAME}</strong>
-          <span>For people who stream: chat dares, votes, a prompt jar, Twitch, a stream overlay and more. Switch it off if you never stream, and all of it goes out of the menus, lists and help. Nothing is lost, and it comes back with this switch.</span>
-          <span data-testid="streaming-status">{audienceOn ? 'Audience features are on.' : 'Audience features are off, so none of these does anything yet. They only work once you switch on audience features, below.'}</span>
-        </div>
-        <div className="ui-pref-control">
-          <button type="button" role="switch" aria-checked={on} aria-label={`${STREAMING_NAME} on or off`} data-testid="streaming-switch" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => run(on ? 'features.streamingOff' : 'features.streamingOn')}>
-            <span className="ui-switch-knob" />
-          </button>
-        </div>
-      </div>
-      <details className="features-streaming-more" open={audienceOn || undefined}>
-        <summary>
-          Choose one by one ({count} of {STREAM_FEATURES.length} on)
-        </summary>
-        <AudiencePrefsRow />
-        {list.map((f) => (
-          <FeatureRow key={f.id} f={f} change={change} />
-        ))}
-        <StreamDoorPrefsRow />
-        <StreamOverlayPrefsRow />
-        <TwitchPrefsRow />
-        <DaresPrefsRow />
-        <PenModsPrefsRow />
-      </details>
-    </section>
   );
 }
 
@@ -89,7 +29,6 @@ export function FeaturesPage() {
   useFeaturesVersion();
   const all = switchableFeatures();
   const list = all.filter((f) => !STREAM_FEATURES.includes(f.id));
-  const stream = STREAM_FEATURES.map((id) => all.find((f) => f.id === id)).filter((f): f is FeatureDescriptor => !!f);
   const change = (id: string, on: boolean) => {
     const r = setFeatureOn(id, on);
     if (!r.ok) toast(r.reason, { kind: 'warn' });
@@ -103,7 +42,7 @@ export function FeaturesPage() {
           <FeatureRow key={f.id} f={f} change={change} />
         ))}
       </div>
-      <StreamingGroup list={stream} change={change} />
+      <StreamingPointer />
       {offFeatures().length > 0 && (
         <div>
           <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>

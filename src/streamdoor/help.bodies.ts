@@ -2,11 +2,11 @@
 export const bodies: Record<string, string> = {
   'actions-door': `Streamer.bot, Firebot and a Stream Deck already hear from Twitch, YouTube and Kick: Channel Points, chat commands, subs. They can also send a message to a program on your own computer. The **actions door** is where that message lands. Frameling never signs in to anything.
 
-**It opens with audience features.** Switch them on in **Preferences > Features > Audience features**. The red **On air** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
+**It opens with audience features.** Switch them on in **Preferences > Streaming > Audience features**. The red **On air** pill appears and the door opens. **Stop** (or **Ctrl+Alt+K**) shuts it at once. To remove the door altogether, turn off **Actions door** in the same list.
 
-**Where it is.** Only on your own computer, at \`http://127.0.0.1:47213\`. Nobody on your network and no web page can reach it. If another program has that port, Frameling asks once whether to use the next free one or stay closed, and always shows the address it got. You can pick another port in **Preferences > Features**.
+**Where it is.** Only on your own computer, at \`http://127.0.0.1:47213\`. Nobody on your network and no web page can reach it. If another program has that port, Frameling asks once whether to use the next free one or stay closed, and always shows the address it got. You can pick another port in **Preferences > Streaming**.
 
-**The key.** Every request carries a key, so only your tools can use the door. It is under **Actions door** in **Preferences > Features**, hidden. **Show** reveals it for a few seconds, **Copy** copies it without showing it. With stream-safe mode on it can only be copied. If it was ever seen on a stream, press **Make a new one**: the old key stops working at once.
+**The key.** Every request carries a key, so only your tools can use the door. It is under **Actions door** in **Preferences > Streaming**, hidden. **Show** reveals it for a few seconds, **Copy** copies it without showing it. With stream-safe mode on it can only be copied. If it was ever seen on a stream, press **Make a new one**: the old key stops working at once.
 
 ## Streamer.bot
 In an action, add the sub-action **Fetch URL** (it sits under Network), and fill in:

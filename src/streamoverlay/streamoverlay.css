@@ -1,4 +1,4 @@
-/* The stream overlay's block in Preferences > Features. Shares the actions door block's look (streamdoor.css). */
+/* The stream overlay's block in Preferences > Streaming. Shares the actions door block's look (streamdoor.css). */
 .so-prefs {
   display: flex;
   flex-direction: column;

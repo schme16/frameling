@@ -1,6 +1,6 @@
 // The prompt jar: ideas from the audience go into a jar only the streamer can see, and the streamer pulls one out when
 // they like. The action (src/promptjar/actions.ts) goes through the audience gate, so the switch, the cooldowns and Stop
-// apply, and the actions door lists it with nothing more to do. A feature you can turn off (Preferences > Features); off,
+// apply, and the actions door lists it with nothing more to do. A feature you can turn off (Preferences > Streaming); off,
 // there is no action, command, chip or help.
 import { onChoiceChange } from '../core/choices';
 import { defineFeature } from '../features/feature';

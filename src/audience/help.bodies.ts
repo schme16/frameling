@@ -2,9 +2,9 @@
 export const bodies: Record<string, string> = {
   audience: `Some people draw live. Audience features are the small, safe ways viewers or stream tools can join in, like cheering Quill on. This page is the switch, and the safety every one of them shares.
 
-**It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Features > Audience features**, **Streaming > Audience features**, or **Audience features** in the command palette.
+**It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Streaming > Audience features**, **Streaming > Audience features**, or **Audience features** in the command palette.
 
-**Not for you?** Everything for streaming lives in one place: the **Streaming** menu in the menu bar, and the **Streaming** heading in **Preferences > Features**. **Tuck away the streaming tools** (palette, or the **Streaming** menu) takes the whole family out of your menus in one go, and **Bring back the streaming tools** puts it back.
+**Not for you?** Everything for streaming lives in two places: the **Streaming** menu in the menu bar, and the **Streaming** tab in Preferences. **Tuck away the streaming tools** (the palette, **View > Change the menus and features**, or the switch on the Streaming tab) takes the whole family out of your menus in one go, and the **Streaming** menu goes from the bar with it. **Bring back the streaming tools** puts it all back.
 
 **The On air pill.** While it is on, a red **On air** pill sits in the title bar and nothing can hide it. Press it to see what is waiting and what has happened. A little number says how many are waiting.
 
@@ -15,7 +15,7 @@ export const bodies: Record<string, string> = {
 - **A limit on how often anything happens.** There is a pause between any two, and a most-per-minute.
 - **A queue.** Too many at once wait their turn, oldest first. A full queue turns the rest away, and anything that waits too long is dropped. **Empty the queue** clears it in one click.
 
-**How careful.** The first time you switch it on, Frameling asks if you want **Relaxed**, **Balanced** or **Strict**. Change it in **Preferences > Behaviour**, where you can also choose whether it always starts off (the default).
+**How careful.** The first time you switch it on, Frameling asks if you want **Relaxed**, **Balanced** or **Strict**. Change it in **Preferences > Streaming**, where you can also choose whether it always starts off (the default).
 
 **Interrupting your drawing.** Most actions only turn the view, move Quill or put words on the stream. Some, like dares and pen tricks, reach your drawing. A second switch, **Let the audience interrupt your drawing**, starts off. While it is off those are turned away, and your audience is told only that it is not available. When it is on, each one is a single step: one **Undo** takes it back, and the queue and limits still apply. **Stop** halts them too.
 

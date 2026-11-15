@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
+import { useFeaturesVersion } from '../features/use';
 import { menuTitle, resolveMenus, type MenuItem } from './menus';
 import { useMenuEdits } from './menuState';
 import { commandEnabled, explainNotNow, runCommand } from './palette';
@@ -20,6 +21,8 @@ export function MenuBar() {
   useStore((s) => (open === null ? null : s));
   // New menu changes, or another workspace (which has its own), redraw the bar even while no menu is open.
   useMenuEdits((e) => e);
+  // Turning features on or off (tucking the streaming tools away) takes menus off the bar and puts them back, menu open or not.
+  useFeaturesVersion();
   const menus = resolveMenus();
   const bar = useRef<HTMLElement>(null);
   // Menus that don't fit beside the rest of the top bar fold into a More menu at the end (see menuFold.ts).

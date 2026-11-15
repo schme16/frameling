@@ -1,5 +1,5 @@
 // The two answers a vote remembers: what happens when someone votes twice, and what happens to a vote that comes with no
-// voter id. Both are preferences (never asked in the middle of a stream), changed in Preferences > Behaviour. Their
+// voter id. Both are preferences (never asked in the middle of a stream), changed in Preferences > Streaming. Their
 // words are in src/words/choices.json.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';

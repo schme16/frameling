@@ -22,7 +22,7 @@ export async function rollKey(): Promise<boolean> {
   });
   if (a !== 'roll') return false;
   await d.roll();
-  toast('Made a new key. Copy it from Preferences > Features, or with Copy the actions door key.', { kind: 'success' });
+  toast('Made a new key. Copy it from Preferences > Streaming, or with Copy the actions door key.', { kind: 'success' });
   return true;
 }
 
@@ -37,7 +37,7 @@ export const streamDoorCommands: Command[] = [
     help: 'actions-door',
     keywords: ['streamer.bot', 'streamerbot', 'firebot', 'stream deck', 'http', 'endpoint', 'api', 'token', 'key', 'port', 'address', 'channel points', 'redeem', 'obs', 'local'],
     global: true,
-    run: () => openPrefs('features'),
+    run: () => openPrefs('streaming'),
   },
   {
     id: 'streamdoor.copyAddress',
@@ -48,7 +48,7 @@ export const streamDoorCommands: Command[] = [
     keywords: ['streamer.bot', 'firebot', 'stream deck', 'url', 'address', 'port', 'copy', 'http', 'local'],
     global: true,
     enabled: () => hasDoor() && doorStatus.get().running,
-    reason: () => (hasDoor() ? 'Switch audience features on first (Preferences > Features).' : 'The actions door needs the desktop app.'),
+    reason: () => (hasDoor() ? 'Switch audience features on first (Preferences > Streaming).' : 'The actions door needs the desktop app.'),
     run: () => void copyAddress(),
   },
   {

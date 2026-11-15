@@ -103,7 +103,7 @@ export const hintsLeft = (): number => (round?.isOpen() ? round.view().hintsLeft
 export function peekWhy(): string | null {
   if (!roundIsOpen()) return 'No round is going right now.';
   if (streamSafe()) return 'Stream-safe is on, so the word stays hidden.';
-  if (currentChoice('guess.peek') !== 'allow') return 'You chose to keep the word hidden while a round runs (Preferences > Behaviour).';
+  if (currentChoice('guess.peek') !== 'allow') return 'You chose to keep the word hidden while a round runs (Preferences > Streaming).';
   return null;
 }
 

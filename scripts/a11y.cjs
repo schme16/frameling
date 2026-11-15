@@ -88,6 +88,7 @@ const DIALOGS = [
   ['plugin-export-options', [installPlugin('export-report'), approve(false), waitMs(1500), run('plugin.export-report.export.report')]],
   ['prefs-plugins-powers', [installPlugin('star-kit'), approve(true), waitMs(1500), `__frameling.overlays.openPrefs('plugins')`]],
   ['prefs-features', `__frameling.overlays.openPrefs('features')`],
+  ['prefs-streaming', `__frameling.overlays.openPrefs('streaming')`],
   ['prefs-pen', `__frameling.overlays.openPrefs('pen')`],
   ['prefs-diagnostics', `__frameling.overlays.openPrefs('diagnostics')`],
   ['pen-check-offer', `__frameling.overlays.state.set((o) => ({ ...o, penCheck: 'offer' }))`],

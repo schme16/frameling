@@ -39,6 +39,6 @@ registerCommands([
     description: "Opens the Going live with OBS settings: OBS's address, its password, and the switch.",
     help: HELP,
     keywords: ['obs', 'websocket', 'password', 'address', 'port', 'connection', 'stream', 'settings'],
-    run: () => openPrefs('general', 'stream.obsLink'),
+    run: () => openPrefs('streaming', 'stream.obsLink'),
   },
 ]);

@@ -1,5 +1,5 @@
 // Dares: small challenges the audience can set off, through the audience gate (src/audience). A feature you can turn
-// off (Preferences > Features): off, there are no dares, no commands and no list. See ./catalogue.ts for every dare.
+// off (Preferences > Streaming): off, there are no dares, no commands and no list. See ./catalogue.ts for every dare.
 import { defineFeature } from '../features/feature';
 import { daresChoices } from './choices';
 import { daresCommands } from './commands';

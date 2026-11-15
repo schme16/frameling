@@ -1,7 +1,7 @@
 // Pen modifiers: the audience can change how your pen feels for a while (steady hand, shaky hand, thin brush, fat brush,
 // long rope), through the audience gate (src/audience). Not an edit to the drawing but a setting with a timer, laid over
 // the pen (see ./active.ts); the strokes you draw meanwhile are normal undoable strokes, which is why they all sit behind
-// "Let the audience interrupt your drawing". A feature you can turn off (Preferences > Features): off, there are no
+// "Let the audience interrupt your drawing". A feature you can turn off (Preferences > Streaming): off, there are no
 // modifiers, no commands, no chip and no list. See ./catalogue.ts for every one.
 import { defineFeature } from '../features/feature';
 import { penModCommands } from './commands';

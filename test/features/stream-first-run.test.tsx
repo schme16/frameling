@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { allCommands, allHelp, getCommand } from '../../src/core/registry';
 import { rememberedChoice, setChoice, setChoiceAsker, _resetChoicesForTests } from '../../src/core/choices';
 import { hiddenHelp, isFeatureOn, offFeatures, setFeatureOn, switchableFeatures } from '../../src/features/host';
-import { FeaturesPage } from '../../src/features/FeaturesPage';
+import { StreamingPage } from '../../src/features/StreamingPage';
 import { STREAM_FEATURES } from '../../src/features/streamIds';
 import { considerStreamOffer, markStreamOfferDone, noteHelloAnswer, offerAction, registerStreamOfferChoice, resetStreamOffer, STREAM_OFFER_ID, streamOfferDone, type OfferFacts } from '../../src/features/streamOffer';
 import { setStreaming, streamingCount, streamingOn } from '../../src/features/streamFamily';
@@ -192,9 +192,13 @@ describe('after answering no, as a non-streamer sees it', () => {
   it('has no Audience features in View, and no gate commands anywhere', () => {
     expect(viewLabels().join(' ')).not.toContain('Audience');
     expect(viewHas('audience.toggle')).toBe(false);
+    // The Streaming menu is off the bar, and what is for anybody who shares a screen is in View > Sharing your screen.
+    expect(resolveMenus().map((m) => m.menu.label)).not.toContain('Streaming');
+    const view = JSON.stringify(resolveMenus().find((m) => m.menu.label === 'View')!.items);
+    for (const id of ['view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'capture.toggle', 'capture.size.1920x1080', 'features.streamingOn', 'features.streamingOff']) expect(view, id).toContain(`"${id}"`);
     for (const id of ['audience.toggle', 'audience.kill', 'audience.show', 'audience.drawing', 'audience.clearQueue']) expect(getCommand(id), id).toBeUndefined();
     // The streaming help that stays is the core: Stream-safe, the OBS link, the capture view, and the audience page that says what it all is.
-    expect(allHelp().filter((h) => h.section === 'Streaming').map((h) => h.id).sort()).toEqual(['audience', 'obs-golive', 'stream-capture', 'stream-safe']);
+    expect(allHelp().filter((h) => h.section === 'Streaming').map((h) => h.id).sort()).toEqual(['audience', 'obs-golive', 'stream-capture', 'stream-safe', 'streaming']);
   });
 
   it('has none of the streaming commands in the palette except the way back', () => {
@@ -205,7 +209,7 @@ describe('after answering no, as a non-streamer sees it', () => {
     expect(getCommand('features.streamingOff')!.enabled?.({} as never)).toBe(false);
   });
 
-  it('keeps every streaming feature reachable: a Turn on entry each, help found through them, the group switch and the Features page', async () => {
+  it('keeps every streaming feature reachable: a Turn on entry each, help found through them, the group switch and the Streaming tab', async () => {
     const turnOn = new Set(paletteItems().map((i) => i.id));
     for (const id of STREAM_FEATURES) expect(turnOn.has(`features.turnOn.${id}`), id).toBe(true);
     expect(offFeatures().map((f) => f.id)).toEqual(expect.arrayContaining([...STREAM_FEATURES]));
@@ -215,8 +219,10 @@ describe('after answering no, as a non-streamer sees it', () => {
     const page = document.createElement('div');
     document.body.appendChild(page);
     const r = createRoot(page);
-    await act(async () => r.render(<FeaturesPage />));
+    await act(async () => r.render(<StreamingPage sharing={null} />));
     expect(page.querySelector<HTMLElement>('[data-testid="streaming-switch"]')!.getAttribute('aria-checked')).toBe('false');
+    // Tucked away, the tab still says so and is the way back.
+    expect(page.querySelector('[data-testid="streaming-status"]')!.textContent).toContain('tucked away');
     // Each of the nine still has its own switch inside the folded part.
     for (const id of STREAM_FEATURES) expect(page.querySelector(`[data-testid="feature-switch-${id}"]`), id).toBeTruthy();
     // The page lists the streaming tools as one row, not nine, until it is opened.

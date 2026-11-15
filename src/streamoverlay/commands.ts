@@ -38,7 +38,7 @@ export const streamOverlayCommands: Command[] = [
     description: 'The address to paste into OBS as a browser source, and how to add it. The overlay shows Quill, dares and prompts to your viewers, with nothing else.',
     keywords: [...KEYS, 'settings', 'url', 'address', 'add', 'setup'],
     ...common,
-    run: () => openPrefs('features'),
+    run: () => openPrefs('streaming'),
   },
   {
     id: 'streamoverlay.copyAddress',
@@ -47,7 +47,7 @@ export const streamOverlayCommands: Command[] = [
     keywords: [...KEYS, 'copy', 'url', 'address', 'link', 'paste'],
     ...common,
     enabled: () => hasOverlay() && overlayReady.get(),
-    reason: () => (hasOverlay() ? 'Switch audience features on first (Preferences > Features).' : 'The stream overlay needs the desktop app.'),
+    reason: () => (hasOverlay() ? 'Switch audience features on first (Preferences > Streaming).' : 'The stream overlay needs the desktop app.'),
     run: () => void copyOverlayUrl(),
   },
   {
@@ -57,7 +57,7 @@ export const streamOverlayCommands: Command[] = [
     keywords: [...KEYS, 'test', 'check', 'try', 'preview', 'working'],
     ...common,
     enabled: () => hasOverlay() && overlayReady.get(),
-    reason: () => (hasOverlay() ? 'Switch audience features on first (Preferences > Features).' : 'The stream overlay needs the desktop app.'),
+    reason: () => (hasOverlay() ? 'Switch audience features on first (Preferences > Streaming).' : 'The stream overlay needs the desktop app.'),
     run: () => startOverlayTest(),
   },
   {

@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **Add it to OBS.** About a minute:
 1. Switch on [audience features](help:audience). The overlay only exists while they are on.
-2. In **Preferences > Features**, find **Stream overlay** and press **Copy**. The address stays hidden on screen.
+2. In **Preferences > Streaming**, find **Stream overlay** and press **Copy**. The address stays hidden on screen.
 3. In OBS, under **Sources**, press **+** and pick **Browser**.
 4. Paste the address into **URL**, and set **Width** and **Height** to match your stream, usually **1920** and **1080**.
 5. Press **OK**, and drag it above your capture view.
@@ -19,7 +19,7 @@ Not sure it works? **Show a test on the stream overlay** (in the **Audience feat
 
 **Nothing private reaches it.** It is on camera, so it works like [Stream-safe mode](help:stream-safe) that cannot be switched off. It is only handed a few plain facts: words, times and counts. Never a file name or folder, your name, a key, a link or an @name. Words from chat are boiled down to plain text first.
 
-**Your choices.** In **Preferences > Behaviour**: **Quill on the stream overlay** (show him, or keep him off it) and **Prompts on the stream overlay** (wait for you, or go up straight away).
+**Your choices.** In **Preferences > Streaming**: **Quill on the stream overlay** (show him, or keep him off it) and **Prompts on the stream overlay** (wait for you, or go up straight away).
 
 **Is it safe?** The address only works from this computer, and it can only be read: it cannot press a button or change anything. It has its own secret in it, which is not your actions door key. Another web page in your browser cannot read it. If the address ever shows up on stream, press **Make a new stream overlay address**. The old one stops working at once.
 

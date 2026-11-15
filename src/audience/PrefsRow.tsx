@@ -1,4 +1,4 @@
-// Preferences > Features: the master switch for audience features. Apart from the list of parts above it, because it is
+// Preferences > Streaming: the master switch for audience features. Apart from the list of parts above it, because it is
 // not a part you turn off to simplify: it is the one switch that lets anything from outside reach Frameling.
 import { useSyncExternalStore } from 'react';
 import { Icon } from '../ui/icons';

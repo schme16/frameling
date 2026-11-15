@@ -1,6 +1,6 @@
 // The two things here with two reasonable answers: whether Quill is on the overlay, and whether a prompt you pull goes
 // up straight away or waits for you. Both silent, so neither is asked in the middle of a stream: they sit in
-// Preferences > Behaviour. Their words are in src/words/choices.json.
+// Preferences > Streaming. Their words are in src/words/choices.json.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';
 

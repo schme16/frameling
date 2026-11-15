@@ -20,7 +20,7 @@ export const daresCommands: Command[] = [
     help: 'dares',
     keywords: ['dares', 'dare', 'list', 'what can they do', 'audience', 'stream', 'challenges', 'switch off a dare', 'debuff', 'buff'],
     global: true,
-    run: () => openPrefs('features'),
+    run: () => openPrefs('streaming'),
   },
   {
     id: 'dares.stop',

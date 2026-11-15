@@ -1,5 +1,5 @@
 // The one thing here with two reasonable answers: does the jar survive closing Frameling? Silent, so it is never
-// asked in the middle of a stream: it sits in Preferences > Behaviour. Words are in src/words/choices.json.
+// asked in the middle of a stream: it sits in Preferences > Streaming. Words are in src/words/choices.json.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';
 

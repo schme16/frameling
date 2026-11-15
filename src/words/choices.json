@@ -1410,7 +1410,7 @@
     "text": "Keep my layout as it is. The workspace lines in the View menu switch any time.",
     "where": "Dialog and Preferences: the small line under the \"never\" answer in \"Workspace follows the drawing\"."
   },
-  "choice.popout.captureBackground.title": { "text": "Capture view background", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureBackground.title": { "text": "Capture view background", "where": "Name of this choice in Preferences > Streaming (group: Sharing your screen)." },
   "choice.popout.captureBackground.question": {
     "text": "What colour should sit behind your drawing in the capture view? A streaming program can key out green, blue or magenta so only the drawing shows.",
     "where": "The question the \"Capture view background\" dialog asks."
@@ -1463,7 +1463,7 @@
     "text": "The capture view has a white background.",
     "where": "Toast when \"white\" is used without asking (\"Capture view background\"), in the past tense."
   },
-  "choice.popout.captureCursor.title": { "text": "Capture view mouse pointer", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureCursor.title": { "text": "Capture view mouse pointer", "where": "Name of this choice in Preferences > Streaming (group: Sharing your screen)." },
   "choice.popout.captureCursor.question": { "text": "Should the mouse pointer show when it is over the capture view?", "where": "The question the \"Capture view mouse pointer\" dialog asks." },
   "choice.popout.captureCursor.hide.label": { "text": "Hide it", "where": "Dialog and Preferences: the button for the answer \"hide\" in \"Capture view mouse pointer\"." },
   "choice.popout.captureCursor.hide.detail": {
@@ -1475,7 +1475,7 @@
     "text": "The usual pointer, so you can see where it is when you move the window.",
     "where": "Dialog and Preferences: the small line under the \"show\" answer in \"Capture view mouse pointer\"."
   },
-  "choice.popout.captureSize.title": { "text": "Capture view size", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureSize.title": { "text": "Capture view size", "where": "Name of this choice in Preferences > Streaming (group: Sharing your screen)." },
   "choice.popout.captureSize.question": { "text": "What size should the capture view be?", "where": "The question the \"Capture view size\" dialog asks." },
   "choice.popout.captureSize.free.label": { "text": "Any size", "where": "Dialog and Preferences: the button for the answer \"free\" in \"Capture view size\"." },
   "choice.popout.captureSize.free.detail": {
@@ -1512,7 +1512,7 @@
     "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
     "where": "Dialog and Preferences: the small line under the \"1080x1920\" answer in \"Capture view size\"."
   },
-  "choice.audience.strictness.title": { "text": "How careful audience features are", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.audience.strictness.title": { "text": "How careful audience features are", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.audience.strictness.question": {
     "text": "How careful should Frameling be with what your audience can do?",
     "where": "The question the \"How careful audience features are\" dialog asks, the first time audience features are switched on."
@@ -1544,7 +1544,7 @@
     "text": "Audience features are strict.",
     "where": "Toast when \"strict\" is used without asking (\"How careful audience features are\"), in the past tense."
   },
-  "choice.audience.startup.title": { "text": "Audience features when Frameling opens", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.audience.startup.title": { "text": "Audience features when Frameling opens", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.audience.startup.question": {
     "text": "When Frameling opens, should audience features be on or off?",
     "where": "The question the \"Audience features when Frameling opens\" choice asks. It is a preference, so it is not put as a dialog."
@@ -1564,7 +1564,7 @@
     "text": "Audience features start as you left them.",
     "where": "Toast when \"keep\" is used without asking (\"Audience features when Frameling opens\"), in the past tense."
   },
-  "choice.streaming.offer.title": { "text": "Do you stream?", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streaming.offer.title": { "text": "Do you stream?", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.streaming.offer.question": {
     "text": "Frameling grew a lot of tools for streaming: chat dares, votes, a prompt jar, Twitch and more. Do you stream? If not, I'll tuck them away so the menus and lists stay short.",
     "where": "The question Quill asks once, a little while after Frameling opens, of anybody who finished the first-run hello before it asked about streaming."
@@ -1577,7 +1577,7 @@
   "choice.streaming.offer.yes.did": { "text": "Kept the streaming tools.", "where": "Toast when \"yes\" is used without asking (\"Do you stream?\"), in the past tense." },
   "choice.streaming.offer.no.label": { "text": "No, tuck them away", "where": "Dialog and Preferences: the button for the answer \"no\" in \"Do you stream?\"." },
   "choice.streaming.offer.no.detail": {
-    "text": "Puts the streaming tools out of sight. Preferences > Features, or the command palette, brings them back any time.",
+    "text": "Puts the streaming tools out of sight. The Streaming tab in Preferences, or the command palette, brings them back any time.",
     "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Do you stream?\"."
   },
   "choice.streaming.offer.no.did": { "text": "Tucked away the streaming tools.", "where": "Toast when \"no\" is used without asking (\"Do you stream?\"), in the past tense." },
@@ -1640,7 +1640,7 @@
     "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Timelapse when a drawing opens\"."
   },
   "choice.timelapse.autoStart.on.did": { "text": "Started recording a timelapse.", "where": "Toast when \"on\" is used without asking (\"Timelapse when a drawing opens\"), in the past tense." },
-  "choice.stream.golive.stop.title": { "text": "When OBS stops streaming", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.stream.golive.stop.title": { "text": "When OBS stops streaming", "where": "Name of this choice in Preferences > Streaming (group: Sharing your screen)." },
   "choice.stream.golive.stop.question": {
     "text": "OBS has stopped, and Frameling had turned Stream-safe on for you. Turn it off again? You may still be sharing your screen.",
     "where": "The question the \"When OBS stops streaming\" dialog asks."
@@ -1665,7 +1665,7 @@
     "text": "Leave it on this time and ask again next time.",
     "where": "Dialog and Preferences: the small line under the \"wait\" answer in \"When OBS stops streaming\"."
   },
-  "choice.streamoverlay.quill.title": { "text": "Quill on the stream overlay", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamoverlay.quill.title": { "text": "Quill on the stream overlay", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.streamoverlay.quill.question": {
     "text": "When chat makes Quill cheer, hop or hold up a sign, should he show on the stream overlay too?",
     "where": "The question the \"Quill on the stream overlay\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1682,7 +1682,7 @@
     "where": "Preferences: the small line under the \"hide\" answer in \"Quill on the stream overlay\"."
   },
   "choice.streamoverlay.quill.hide.did": { "text": "Quill stays off the stream overlay.", "where": "Toast when \"hide\" is used without asking (\"Quill on the stream overlay\"), in the past tense." },
-  "choice.streamoverlay.prompt.title": { "text": "Prompts on the stream overlay", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamoverlay.prompt.title": { "text": "Prompts on the stream overlay", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.streamoverlay.prompt.question": {
     "text": "When you pull a prompt out of the jar, should it go up on the stream overlay straight away, or wait until you press Show on stream?",
     "where": "The question the \"Prompts on the stream overlay\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1705,7 +1705,7 @@
     "text": "A prompt you pull goes straight onto the stream overlay.",
     "where": "Toast when \"now\" is used without asking (\"Prompts on the stream overlay\"), in the past tense."
   },
-  "choice.streamdoor.portBusy.title": { "text": "When the actions door's port is taken", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamdoor.portBusy.title": { "text": "When the actions door's port is taken", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.streamdoor.portBusy.question": {
     "text": "Another program is already using the actions door's port. Use the next free one, or leave the door closed?",
     "where": "The question the \"When the actions door's port is taken\" choice asks, the first time the port is busy."
@@ -1753,7 +1753,7 @@
     "where": "Dialog: the small line under the \"keep\" answer in \"Undo history in a copy you send\", with the real sizes of this drawing.",
     "vars": ["full", "plain"]
   },
-  "choice.quillreacts.signs.title": { "text": "Signs from chat", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.quillreacts.signs.title": { "text": "Signs from chat", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.quillreacts.signs.question": {
     "text": "Chat can send words for Quill to hold up on a sign. Take them, with a question to you first, or never take them?",
     "where": "The question the \"Signs from chat\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1770,7 +1770,7 @@
     "where": "Preferences: the small line under the \"off\" answer in \"Signs from chat\"."
   },
   "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." },
-  "choice.dares.length.title": { "text": "How long a dare lasts", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.dares.length.title": { "text": "How long a dare lasts", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.dares.length.question": {
     "text": "When a dare lasts for a while (a flipped view, a countdown), how long should it last?",
     "where": "The question the \"How long a dare lasts\" choice asks. It is a preference, so it is not put as a dialog."
@@ -1787,7 +1787,7 @@
     "where": "Preferences: the small line under the \"long\" answer in \"How long a dare lasts\"."
   },
   "choice.dares.length.long.did": { "text": "Dares last about a minute.", "where": "Toast when \"long\" is used without asking (\"How long a dare lasts\"), in the past tense." },
-  "choice.promptjar.keep.title": { "text": "Keep the prompt jar", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.promptjar.keep.title": { "text": "Keep the prompt jar", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.promptjar.keep.question": {
     "text": "Prompts from your audience wait in the jar. Forget them when you close Frameling, or keep them on this computer for next time?",
     "where": "The question the \"Keep the prompt jar\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1807,7 +1807,7 @@
     "where": "Preferences: the small line under the \"keep\" answer in \"Keep the prompt jar\"."
   },
   "choice.promptjar.keep.keep.did": { "text": "The prompt jar is kept for next time.", "where": "Toast when \"keep\" is used without asking (\"Keep the prompt jar\"), in the past tense." },
-  "choice.votes.again.title": { "text": "When someone votes twice", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.votes.again.title": { "text": "When someone votes twice", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.votes.again.question": {
     "text": "A person sends a second vote in the same vote. Keep their first, or let them change their mind?",
     "where": "The question the \"When someone votes twice\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1827,7 +1827,7 @@
     "where": "Preferences: the small line under the \"latest\" answer in \"When someone votes twice\"."
   },
   "choice.votes.again.latest.did": { "text": "A person can change their vote.", "where": "Toast when \"latest\" is used without asking (\"When someone votes twice\"), in the past tense." },
-  "choice.votes.noId.title": { "text": "A vote that comes with no voter id", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.votes.noId.title": { "text": "A vote that comes with no voter id", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.votes.noId.question": {
     "text": "Frameling can only keep to one vote each when your stream tool sends who is voting, as an id. Turn away votes with no id, or count them anyway?",
     "where": "The question the \"A vote that comes with no voter id\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
@@ -1847,7 +1847,7 @@
     "where": "Preferences: the small line under the \"count\" answer in \"A vote that comes with no voter id\"."
   },
   "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." },
-  "choice.guess.ending.title": { "text": "When a guessing round ends", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.ending.title": { "text": "When a guessing round ends", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.guess.ending.question": {
     "text": "Should a round end as soon as someone gets the word, or keep going until the time is up?",
     "where": "The question the \"When a guessing round ends\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
@@ -1870,7 +1870,7 @@
     "text": "A guessing round runs until the time is up.",
     "where": "Toast when \"timer\" is used without asking (\"When a guessing round ends\"), in the past tense."
   },
-  "choice.guess.winnerName.title": { "text": "Showing the winner's name", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.winnerName.title": { "text": "Showing the winner's name", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.guess.winnerName.question": {
     "text": "Your stream tool can send the name of whoever gets the word. Show it in the result, or keep the winner anonymous?",
     "where": "The question the \"Showing the winner's name\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
@@ -1893,7 +1893,7 @@
     "text": "The winner's name shows in a guessing round's result.",
     "where": "Toast when \"show\" is used without asking (\"Showing the winner's name\"), in the past tense."
   },
-  "choice.guess.peek.title": { "text": "Peeking at the word", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.guess.peek.title": { "text": "Peeking at the word", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.guess.peek.question": {
     "text": "While a round runs, can you look at the word again for a moment? Your window may be on stream.",
     "where": "The question the \"Peeking at the word\" choice asks. It is only ever shown in Preferences and in the guessing round box, never in the middle of a stream."
@@ -1910,7 +1910,7 @@
     "where": "Preferences: the small line under the \"allow\" answer in \"Peeking at the word\"."
   },
   "choice.guess.peek.allow.did": { "text": "You can peek at the word for a moment.", "where": "Toast when \"allow\" is used without asking (\"Peeking at the word\"), in the past tense." },
-  "choice.twitch.starter.title": { "text": "Links to start a new Twitch connection with", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.twitch.starter.title": { "text": "Links to start a new Twitch connection with", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.twitch.starter.question": {
     "text": "Start with a few small Quill reactions linked to Twitch events (a raid makes Quill wave, a follow makes Quill hop), or with an empty list?",
     "where": "The question the \"Links to start a new Twitch connection with\" dialog asks, the first time you connect Twitch."
@@ -1936,7 +1936,7 @@
     "text": "Started your Twitch links with an empty list.",
     "where": "Toast when \"empty\" is used without asking (\"Links to start a new Twitch connection with\"), in the past tense."
   },
-  "choice.twitch.refusedNote.title": { "text": "When your limits turn a Twitch event away", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.twitch.refusedNote.title": { "text": "When your limits turn a Twitch event away", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.twitch.refusedNote.question": {
     "text": "Sometimes a Twitch event arrives while a cooldown or the queue says no. Tell you with a small note each time, or just count it on the On air card?",
     "where": "The question the \"When your limits turn a Twitch event away\" dialog asks, the first time it happens."

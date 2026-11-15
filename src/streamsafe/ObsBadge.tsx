@@ -23,7 +23,7 @@ export function ObsBadge() {
       data-help="obs-golive"
       data-tip={look.label}
       data-tip-desc={look.detail}
-      onClick={() => (fix ? openPrefs('general', 'stream.obsLink') : obs.lookNow())}
+      onClick={() => (fix ? openPrefs('streaming', 'stream.obsLink') : obs.lookNow())}
     >
       <Icon name={look.tone === 'live' ? 'eye-off' : 'eye'} size={14} />
       {look.label}

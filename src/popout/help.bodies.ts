@@ -31,7 +31,7 @@ To see what a camera shows, see [Camera](help:camera). To check the picture as i
   'stream-capture': `The **capture view** is your drawing in a window with nothing else in it: no title bar, no panels, no buttons. OBS (or any streaming program) can capture it as a normal window, so your audience sees the drawing and none of the interface.
 
 **Open it:**
-- Press **Ctrl+Alt+Shift+P**, or choose **Streaming > Capture view > Capture view**. Press it again to close it.
+- Press **Ctrl+Alt+Shift+P**, or choose **View > Sharing your screen > Capture view**. Press it again to close it.
 - The first time, it asks what colour to put behind the drawing.
 - Drag the window to move it, and its edges to resize it.
 

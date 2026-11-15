@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { allChoices, askAgain, askMeAgain, forgetAnswers, setChoice, setChoiceAsker, setGentleTeller, setUsualAnswers, setWearyNotice, useChoices, usualAnswerIds, type ChoiceDef } from '../core/choices';
 import { store } from '../core/store';
+import { isStreamingChoice } from '../features/streamIds';
 import { Icon } from './icons';
 import { Modal } from './Modal';
 import { openHelp, openPrefs, overlays } from './overlays';
@@ -215,10 +216,10 @@ function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
 
 /** Preferences > Behaviour: every choice, with "Ask me" for ones not answered yet. */
 export function BehaviourPage() {
-  const answers = useChoices();
   const usualLeft = usualAnswerIds().length;
   const groups = new Map<string, ChoiceDef[]>();
-  for (const c of allChoices()) {
+  // The streaming ones are on Preferences > Streaming.
+  for (const c of allChoices().filter((x) => !isStreamingChoice(x))) {
     const list = groups.get(c.category) ?? [];
     list.push(c);
     groups.set(c.category, list);
@@ -238,27 +239,37 @@ export function BehaviourPage() {
       {[...groups].map(([cat, list]) => (
         <section key={cat}>
           <h3>{cat}</h3>
-          {list.map((c) => (
-            <div key={c.id} className="ui-pref-row">
-              <div className="ui-pref-text">
-                <strong>{c.title}</strong>
-                <span>{c.question}</span>
-              </div>
-              <div className="ui-pref-control">
-                <select value={answers[c.id] ?? ''} onChange={(e) => setChoice(c.id, e.target.value || undefined)} aria-label={c.title}>
-                  {!c.silent && <option value="">Ask me</option>}
-                  {c.silent && !answers[c.id] && <option value="">{c.options.find((o) => o.value === c.default)?.label} (default)</option>}
-                  {c.options.filter((o) => !o.once).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ))}
+          <ChoiceRows list={list} />
         </section>
       ))}
     </div>
+  );
+}
+
+/** The rows for a list of choices: each with its question and a menu of answers. Behaviour and Streaming both show them. */
+export function ChoiceRows({ list }: { list: ChoiceDef[] }) {
+  const answers = useChoices();
+  return (
+    <>
+      {list.map((c) => (
+        <div key={c.id} className="ui-pref-row" data-testid={`choice-row-${c.id}`}>
+          <div className="ui-pref-text">
+            <strong>{c.title}</strong>
+            <span>{c.question}</span>
+          </div>
+          <div className="ui-pref-control">
+            <select value={answers[c.id] ?? ''} onChange={(e) => setChoice(c.id, e.target.value || undefined)} aria-label={c.title}>
+              {!c.silent && <option value="">Ask me</option>}
+              {c.silent && !answers[c.id] && <option value="">{c.options.find((o) => o.value === c.default)?.label} (default)</option>}
+              {c.options.filter((o) => !o.once).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }

@@ -50,6 +50,6 @@ export const twitchCommands: Command[] = [
     help: 'twitch-links',
     keywords: [...KEYWORDS, 'map', 'mapping', 'links', 'rules', 'actions'],
     global: true,
-    run: () => openPrefs('features'),
+    run: () => openPrefs('streaming'),
   },
 ];

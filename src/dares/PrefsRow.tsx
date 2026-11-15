@@ -1,4 +1,4 @@
-// Preferences > Features: the list of every dare, so the streamer knows what they signed up for, with a switch for each
+// Preferences > Streaming: the list of every dare, so the streamer knows what they signed up for, with a switch for each
 // and a Try it button. The dares that reach the drawing sit in their own group, with the plain words about the switch
 // that lets them run at all (which lives in the Audience features block above).
 import { useSyncExternalStore } from 'react';

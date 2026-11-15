@@ -19,7 +19,7 @@ registerChoice({
   id: STOP_CHOICE,
   title: choiceWord('choice.stream.golive.stop.title'),
   question: choiceWord('choice.stream.golive.stop.question'),
-  category: 'Streaming',
+  category: 'Sharing your screen',
   help: 'obs-golive',
   default: 'keep',
   dismiss: 'keep',

@@ -35,6 +35,7 @@ import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
 import { FeaturesPage } from '../features/FeaturesPage';
+import { StreamingPage } from '../features/StreamingPage';
 import { UNITS, type Unit } from '../core/units';
 import { SnapPanel } from '../canvas/SnapOptions';
 import { PenPage } from '../tablet/PenPage';
@@ -57,6 +58,7 @@ export const PAGES: { id: Page; label: string; icon: string; help: string }[] = 
   { id: 'menus', label: 'Menus', icon: 'sliders', help: 'change-the-menus' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
+  { id: 'streaming', label: 'Streaming', icon: 'live', help: 'streaming' },
   { id: 'performance', label: 'Performance', icon: 'effects', help: 'performance' },
   { id: 'diagnostics', label: 'Diagnostics', icon: 'info', help: 'pen-check' },
 ];
@@ -116,9 +118,32 @@ function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string
           {current === 'menus' && <MenusPage />}
           {current === 'plugins' && <PluginsPage />}
           {current === 'features' && <FeaturesPage />}
+          {current === 'streaming' && <StreamingPage sharing={<SharingRows />} />}
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** The sharing settings on Preferences > Streaming: for anybody who shares a screen, not only streamers. */
+function SharingRows() {
+  const p = usePrefs((x) => x);
+  return (
+    <>
+      <Row label="Stream-safe mode" hint="For sharing your screen or streaming: file paths, your name and keys show as friendly stand-ins. Only what shows changes, never your drawing.">
+        <Switch label="Stream-safe mode" on={p.streamSafe} onChange={(streamSafe) => setPrefs({ streamSafe })} />
+      </Row>
+      <div data-obs-section>
+        <Row label="Going live with OBS" hint="Frameling watches OBS on your own computer and turns Stream-safe on by itself when you start streaming or recording. It asks before turning it off again. Off until you switch it on.">
+          <Switch label="Going live with OBS" on={p.obsLink} onChange={setObsLink} />
+        </Row>
+        {p.obsLink && (
+          <div className="ui-pref-row obs-row">
+            <ObsPanel />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -306,19 +331,6 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Reduce motion" hint="Stops the bouncing and fading. Frameling also does this when your computer asks for calm.">
         <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
       </Row>
-      <Row label="Stream-safe mode" hint="For sharing your screen or streaming: file paths, your name and keys show as friendly stand-ins. Only what shows changes, never your drawing.">
-        <Switch label="Stream-safe mode" on={p.streamSafe} onChange={(streamSafe) => setPrefs({ streamSafe })} />
-      </Row>
-      <div data-obs-section>
-        <Row label="Going live with OBS" hint="Frameling watches OBS on your own computer and turns Stream-safe on by itself when you start streaming or recording. It asks before turning it off again. Off until you switch it on.">
-          <Switch label="Going live with OBS" on={p.obsLink} onChange={setObsLink} />
-        </Row>
-        {p.obsLink && (
-          <div className="ui-pref-row obs-row">
-            <ObsPanel />
-          </div>
-        )}
-      </div>
       <Row label="Welcome sheet" hint="Show the start page when Frameling opens.">
         <Switch label="Welcome sheet" on={p.showWelcome} onChange={(showWelcome) => setPrefs({ showWelcome })} />
       </Row>

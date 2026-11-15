@@ -1,5 +1,5 @@
 // The three answers a guessing round remembers: when it ends, whether the winner's name shows, and whether you may peek
-// at the word. All preferences (never asked in the middle of a stream), changed in Preferences > Behaviour or, for the
+// at the word. All preferences (never asked in the middle of a stream), changed in Preferences > Streaming or, for the
 // first two, in the box that starts a round. Their words are in src/words/choices.json.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';

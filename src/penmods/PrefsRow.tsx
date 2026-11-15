@@ -1,4 +1,4 @@
-// Preferences > Features: the list of every pen modifier, so the streamer knows what they signed up for, with a switch for
+// Preferences > Streaming: the list of every pen modifier, so the streamer knows what they signed up for, with a switch for
 // each and a Try it button. They all reach the drawing (the strokes you draw while one is on are permanent), so the plain
 // words about the switch that lets them run at all sit at the top, with a button for it.
 import { useSyncExternalStore } from 'react';

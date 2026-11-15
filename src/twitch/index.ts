@@ -1,7 +1,7 @@
 // Connect Twitch: sign in with a short code, hear about channel point rewards, cheers, follows, subs and raids, and let
 // the streamer choose which action each one makes happen. It is one AudienceDoorDef on the audience gate (src/audience),
 // so the gate opens it with the master switch and shuts it on Stop, and every event it hears goes through the gate like
-// any other. A feature you can turn off (Preferences > Features); off, there is no door, no command and no row. The
+// any other. A feature you can turn off (Preferences > Streaming); off, there is no door, no command and no row. The
 // connection and the sign-in live in the desktop side: src/main/twitch*.ts.
 import { registerAudienceDoor } from '../audience';
 import { defineFeature } from '../features/feature';

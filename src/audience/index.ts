@@ -178,7 +178,7 @@ export function installAudience(): void {
       keywords: ['queue', 'counts', 'on air', 'stream', 'what is waiting', 'log'],
       global: true,
       enabled: () => audience.isOn(),
-      reason: () => 'Switch audience features on first (Preferences > Features).',
+      reason: () => 'Switch audience features on first (Preferences > Streaming).',
       run: showAudienceCard,
     },
   ];

@@ -1,7 +1,7 @@
 // Guess the drawing: you draw a secret word, your audience guesses in chat, and Frameling runs the game: it checks the
 // guesses (a fair match: capitals, plurals, a letter out), counts them, and shows who got it. The guesses come through
 // the audience gate (src/audience) and the actions door (src/streamdoor). It never touches the drawing, and the word is
-// never on screen while a round runs. A feature you can turn off (Preferences > Features); off, there is no round, no
+// never on screen while a round runs. A feature you can turn off (Preferences > Streaming); off, there is no round, no
 // action, no command and no help, and a round that was going is dropped.
 import { defineFeature } from '../features/feature';
 import { registerGuessAction } from './actions';

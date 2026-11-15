@@ -169,18 +169,43 @@ describe('the real menus', async () => {
     const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));
     for (const label of ['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate']) expect(flat(menu(label)), label).toEqual(bare(label));
   });
-  it('Streaming is a menu of its own: stream-safe, OBS, the capture view and the audience tools, each part a group, every entry three clicks from the bar', () => {
+  it('Streaming is a menu of its own: the audience tools, each part a group, every entry three clicks from the bar', () => {
     const inside = menu('Streaming');
     const own = flat(inside);
-    for (const id of ['features.streamingOff', 'features.streamingOn', 'view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'capture.toggle', 'capture.size.1920x1080', 'audience.toggle', 'audience.drawing', 'audience.kill', 'streamdoor.settings', 'streamoverlay.settings', 'twitch.connect', 'promptjar.pull', 'votes.start', 'guess.start', 'quillreacts.cheer', 'dares.list', 'penmods.list']) expect(own, id).toContain(id);
+    for (const id of ['audience.toggle', 'audience.drawing', 'audience.kill', 'streamdoor.']) expect(own.some((x) => x.startsWith(id)), id).toBe(true);
     const groups = inside.filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
-    expect(groups).toEqual(expect.arrayContaining(['Capture view', 'Actions door', 'Stream overlay', 'Twitch', 'Prompt jar', 'Votes', 'Guess the drawing']));
-    // Streaming is not also spread over View: Look and sound is about looks and sounds.
-    const rest = flat(menu('View'));
-    expect(rest.filter((id) => /^(audience|streamdoor|streamoverlay|twitch|promptjar|votes|guess|quillreacts|dares|penmods|capture|stream)\./.test(id) || id === 'view.streamSafe')).toEqual([]);
+    expect(groups).toEqual(expect.arrayContaining(['Actions door', 'Stream overlay', 'Twitch', 'Prompt jar', 'Votes', 'Guess the drawing']));
+    // What is for anybody who shares a screen is not in it: it is in View, so the menu can leave the bar.
+    for (const id of ['view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'capture.toggle', 'features.streamingOff', 'features.streamingOn']) expect(own, id).not.toContain(id);
     // No submenu inside a submenu: a command is the bar, a submenu, then itself.
     for (const g of inside) if (g.kind === 'submenu') expect(g.items.filter((i) => i.kind === 'submenu'), g.label).toEqual([]);
     expect(depth(inside)).toBeLessThan(26);
+  });
+  it('Stream-safe, OBS and the capture view are in View > Sharing your screen, and the way back is in View > Change the menus and features', () => {
+    const sub = (label: string) => {
+      const s = menu('View').find((i) => i.kind === 'submenu' && i.label === label);
+      return flat(s && s.kind === 'submenu' ? s.items : []);
+    };
+    expect(sub('Sharing your screen')).toEqual(expect.arrayContaining(['view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'capture.toggle', 'capture.background', 'capture.cursor', 'capture.size.free', 'capture.size.1920x1080']));
+    expect(sub('Change the menus and features')).toEqual(expect.arrayContaining(['features.streamingOff', 'features.streamingOn']));
+    // Look and sound is still about looks and sounds.
+    expect(sub('Look and sound').filter((id) => /stream|capture|obs/i.test(id))).toEqual([]);
+  });
+  it('the Streaming menu is off the bar while the streaming tools are tucked away, and back when they are on', async () => {
+    const { setStreaming } = await import('../../src/features/streamFamily');
+    try {
+      setStreaming(false, { remember: false });
+      const bar = resolveMenus().map((m) => menuTitle(m.menu));
+      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
+      // Everything of the streaming menu that is not a streaming tool is still in View.
+      const inView = flat(menu('View'));
+      for (const id of ['view.streamSafe', 'stream.obsLink', 'capture.toggle', 'features.streamingOn']) expect(inView, id).toContain(id);
+      expect(heightOf(menu('View'))).toBeLessThanOrEqual(900 - 56);
+      setStreaming(true, { remember: false });
+      expect(resolveMenus().map((m) => menuTitle(m.menu))).toContain('Streaming');
+    } finally {
+      setStreaming(true, { remember: false });
+    }
   });
   it('the second window sits with the panel windows, not with streaming', () => {
     const windows = menu('View').find((i) => i.kind === 'submenu' && i.label === 'Panel windows and tools');

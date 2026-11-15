@@ -1,5 +1,5 @@
 // The prompt jar itself: what is in it, and the one slip in the streamer's hand. It lives in memory. The words are
-// kept to disk only when the streamer chose "Keep the jar" (Preferences > Behaviour), and then it is the words and
+// kept to disk only when the streamer chose "Keep the jar" (Preferences > Streaming), and then it is the words and
 // nothing else. Nothing here ever puts words on screen by itself: the card in JarCard.tsx shows them when it is asked to.
 import { currentChoice } from '../core/choices';
 import { createStore, readRaw, writeJson } from '../ui/mini';

@@ -14,9 +14,9 @@ export const bodies: Record<string, string> = {
 
 Some parts of Frameling are for particular kinds of making: puppets and bones, lip sync, particles, tiles, a camera, and the streaming tools. On the last page, **Tuck away what you didn't pick** puts away the ones your picks don't need, so the menus and panels start small. It says which, and it's on unless you switch it off. Pick **Streaming it live** and the streaming tools stay. Pick **Just playing**, and the making areas all stay, but the streaming tools are still put away unless you picked them. Pick nothing, and nothing is put away.
 
-**If you finished the hello a while ago:** Quill asks once, a little after Frameling opens, whether you stream. Yes keeps everything. No tucks the streaming tools away. Closing the question counts as an answer, so it never comes back. You can change it any time in **Preferences > Features** (**Streaming tools**).
+**If you finished the hello a while ago:** Quill asks once, a little after Frameling opens, whether you stream. Yes keeps everything. No tucks the streaming tools away. Closing the question counts as an answer, so it never comes back. You can change it any time on the **Streaming** tab in Preferences (**Streaming tools**).
 
-**To get them back:** press **Bring them back** on the message that follows, or open **Preferences > Features** and press **Turn everything back on** (or switch one on). See [Turning parts on and off](help:features).
+**To get them back:** press **Bring them back** on the message that follows, or open **Preferences > Streaming** and switch **Streaming tools** on (or open **Preferences > Features** and press **Turn everything back on**). See [Turning parts on and off](help:features).
 
 ## Skipping
 

@@ -1,4 +1,4 @@
-// Preferences > Features: the actions door's address, its key and its port. The key is hidden until someone presses
+// Preferences > Streaming: the actions door's address, its key and its port. The key is hidden until someone presses
 // Show, hidden again after a few seconds, never shown while stream-safe mode is on (it can still be copied), and
 // every drawing of it goes through displaySecret.
 import { useEffect, useState } from 'react';

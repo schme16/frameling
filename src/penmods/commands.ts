@@ -17,7 +17,7 @@ export const penModCommands: Command[] = [
     help: 'pen-modifiers',
     keywords: ['pen modifiers', 'pen modifier', 'steady hand', 'shaky hand', 'thin brush', 'fat brush', 'debuff', 'buff', 'list', 'audience', 'stream', 'switch off'],
     global: true,
-    run: () => openPrefs('features'),
+    run: () => openPrefs('streaming'),
   },
   {
     id: 'penmods.stop',

@@ -1,5 +1,5 @@
 // The one answer dares remember: how long a dare that lasts lasts. A preference (never asked as a dialog), changed in
-// Preferences > Behaviour. Its words are in src/words/choices.json.
+// Preferences > Streaming. Its words are in src/words/choices.json.
 import type { ChoiceDef } from '../core/choices';
 import { choiceWord } from '../words/choices';
 

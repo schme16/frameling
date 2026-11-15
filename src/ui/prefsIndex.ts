@@ -6,6 +6,7 @@
 import { allCommands, type Command } from '../core/registry';
 import { allChoices, type ChoiceDef } from '../core/choices';
 import { switchableFeatures } from '../features/host';
+import { isStreamingChoice, STREAM_FEATURES } from '../features/streamIds';
 import type { FeatureDescriptor } from '../features/feature';
 import { hasChoice } from './mascot/mascots';
 import { isStaleCommand } from './dynamic';
@@ -30,8 +31,6 @@ export const SETTING_ROWS: PrefRow[] = [
   row('general', 'Sounds', 'Soft little sounds, or quiet.', ['audio feedback', 'sound effects', 'mute', 'silent', 'noises', 'beeps', 'clicks', 'quiet', 'sfx', 'ui sounds']),
   row('general', 'Volume', 'How loud the sounds are.', ['loudness', 'sound level', 'quieter', 'louder', 'sound volume']),
   row('general', 'Reduce motion', 'Stops the bouncing and fading.', ['animations off', 'accessibility', 'transitions', 'fade', 'calm', 'less animation', 'motion sickness', 'vestibular', 'no animation']),
-  row('general', 'Stream-safe mode', 'File paths, your name and keys show as friendly stand-ins while you share your screen.', ['streamer mode', 'streaming', 'twitch', 'obs', 'privacy', 'hide paths', 'hide name', 'share screen', 'screen sharing', 'recording', 'demo mode', 'presentation', 'private']),
-  row('general', 'Going live with OBS', 'Frameling watches OBS and turns Stream-safe on by itself when you start streaming or recording.', ['obs', 'obs studio', 'websocket', 'go live', 'streaming', 'twitch', 'youtube', 'recording', 'auto stream safe', 'obs password', 'obs address', 'streamer']),
   row('general', 'Welcome sheet', 'Show the start page when Frameling opens.', ['start page', 'start screen', 'splash', 'home screen', 'startup', 'launch screen', 'welcome screen', 'new document screen', 'open on start']),
   row('general', 'Tips', 'A friendly tip in the status bar.', ['hints', 'status bar tips', 'did you know', 'tip of the day', 'advice']),
   row('general', 'Explanations', 'The little lines that say what a panel or a setting is for, or tucked behind the ? icons.', ['hints', 'help icons', 'tooltips', 'descriptions', 'explainers', 'instructions', 'notes', 'clutter', 'show help text', 'question mark']),
@@ -120,14 +119,19 @@ export const SETTING_ROWS: PrefRow[] = [
   // Features (the switches themselves are added from the app's list)
   row('features', 'Turn parts of Frameling on or off', 'Switch off what you do not use, to keep things simple.', ['turn off', 'modules', 'hide features', 'simple mode', 'simplify', 'disable', 'enable', 'optional', 'extensions', 'minimal', 'beginner mode', 'declutter'], { find: 'Features' }),
 
-  row('features', 'Streaming tools', 'One switch for everything that is for streaming: audience features, the actions door, the overlay, Twitch, dares, votes and the rest. Off, they leave the menus and the command palette.', ['stream', 'streamer', 'streaming', 'stream stuff', 'twitch', 'obs', 'live', 'audience', 'dares', 'votes', 'hide stream', 'turn off streaming', 'tuck away', 'i do not stream'], { find: 'Streaming tools' }),
-  row('features', 'Audience features', 'Let viewers and stream tools join in, in small safe ways. Off until you switch it on, with a red On air pill and a Stop button.', ['stream', 'streamer', 'streaming', 'twitch', 'youtube', 'chat', 'viewers', 'on air', 'live', 'obs', 'kill switch', 'panic', 'queue', 'cooldown', 'interactive', 'audience participation'], { find: 'Audience features' }),
+  // Streaming: the family (its nine switches come from the app's list, the choices from theirs)
+  row('streaming', 'Streaming tools', 'One switch for everything that is for streaming: audience features, the actions door, the overlay, Twitch, dares, votes and the rest. Off, they leave the menus and the command palette.', ['stream', 'streamer', 'streaming', 'stream stuff', 'twitch', 'obs', 'live', 'audience', 'dares', 'votes', 'hide stream', 'turn off streaming', 'tuck away', 'i do not stream'], { find: 'Streaming tools' }),
+  row('streaming', 'Audience features', 'Let viewers and stream tools join in, in small safe ways. Off until you switch it on, with a red On air pill and a Stop button.', ['stream', 'streamer', 'streaming', 'twitch', 'youtube', 'chat', 'viewers', 'on air', 'live', 'obs', 'kill switch', 'panic', 'queue', 'cooldown', 'interactive', 'audience participation'], { find: 'Audience features' }),
 
-  row('features', 'Actions door', 'The address and key Streamer.bot, Firebot or a Stream Deck use to ask Frameling for a few safe things. Only on this computer, and only while audience features are on.', ['streamer.bot', 'streamerbot', 'firebot', 'stream deck', 'touch portal', 'http', 'api', 'endpoint', 'token', 'key', 'port', 'channel points', 'redeem', 'obs', 'local', 'address', 'copy key', 'new key'], { find: 'Actions door' }),
+  row('streaming', 'Actions door', 'The address and key Streamer.bot, Firebot or a Stream Deck use to ask Frameling for a few safe things. Only on this computer, and only while audience features are on.', ['streamer.bot', 'streamerbot', 'firebot', 'stream deck', 'touch portal', 'http', 'api', 'endpoint', 'token', 'key', 'port', 'channel points', 'redeem', 'obs', 'local', 'address', 'copy key', 'new key'], { find: 'Actions door' }),
 
-  row('features', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
+  row('streaming', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
 
-  row('features', 'Pen modifiers', 'Let your audience make your pen steadier, shakier, thinner or fatter for a while. Off until you allow interruptions, with a switch for each and a Try it button.', ['steady hand', 'shaky hand', 'thin brush', 'fat brush', 'long rope', 'wobble', 'tremor', 'debuff', 'debuffs', 'buff', 'brush size', 'stream', 'viewers', 'channel points', 'audience participation'], { find: 'Pen modifiers' }),
+  row('streaming', 'Pen modifiers', 'Let your audience make your pen steadier, shakier, thinner or fatter for a while. Off until you allow interruptions, with a switch for each and a Try it button.', ['steady hand', 'shaky hand', 'thin brush', 'fat brush', 'long rope', 'wobble', 'tremor', 'debuff', 'debuffs', 'buff', 'brush size', 'stream', 'viewers', 'channel points', 'audience participation'], { find: 'Pen modifiers' }),
+
+  // Streaming: Stream-safe and OBS, which are for anybody who shares a screen
+  row('streaming', 'Stream-safe mode', 'File paths, your name and keys show as friendly stand-ins while you share your screen.', ['streamer mode', 'streaming', 'twitch', 'obs', 'privacy', 'hide paths', 'hide name', 'share screen', 'screen sharing', 'recording', 'demo mode', 'presentation', 'private']),
+  row('streaming', 'Going live with OBS', 'Frameling watches OBS and turns Stream-safe on by itself when you start streaming or recording.', ['obs', 'obs studio', 'websocket', 'go live', 'streaming', 'twitch', 'youtube', 'recording', 'auto stream safe', 'obs password', 'obs address', 'streamer']),
 
   // Diagnostics
   row('diagnostics', 'Telling the makers', 'Send a bug report or crash notes, only when you press Send.', ['report a bug', 'bug report', 'feedback', 'send report', 'crash report', 'telemetry', 'analytics', 'privacy', 'beta', 'error report', 'logs', 'crash notes', 'contact'], { find: 'Telling the makers' }),
@@ -200,7 +204,7 @@ export const FEATURE_ALSO: Record<string, string[]> = {
 export function choiceRows(choices: ChoiceDef[] = allChoices()): PrefRow[] {
   return choices.map((c) => ({
     id: `behaviour.${c.id}`,
-    page: 'behaviour',
+    page: isStreamingChoice(c) ? 'streaming' : 'behaviour',
     label: c.title,
     hint: c.question,
     group: c.category,
@@ -210,7 +214,7 @@ export function choiceRows(choices: ChoiceDef[] = allChoices()): PrefRow[] {
 }
 
 export function featureRows(features: FeatureDescriptor[] = switchableFeatures()): PrefRow[] {
-  return features.map((f) => ({ id: `features.${f.id}`, page: 'features', label: f.name, hint: f.about, also: FEATURE_ALSO[f.id] ?? [], kind: 'feature' }));
+  return features.map((f) => ({ id: `features.${f.id}`, page: STREAM_FEATURES.includes(f.id) ? 'streaming' : 'features', label: f.name, hint: f.about, also: FEATURE_ALSO[f.id] ?? [], kind: 'feature' }));
 }
 
 /** The guide picker, which is only on the page once there is more than one mascot to pick from. */

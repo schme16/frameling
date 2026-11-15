@@ -144,6 +144,14 @@ registerHelpTopics([
     keywords: ['turn off', 'turn on', 'switch', 'hide', 'optional', 'simple', 'disable', 'enable', 'switch off'],
   },
   {
+    id: 'streaming',
+    title: 'The Streaming tab',
+    section: 'Streaming',
+    media: 'streaming.png',
+    summary: 'Everything about streaming and sharing your screen, on one tab of Preferences. The streaming tools can be tucked away, and the sharing settings stay.',
+    keywords: ['stream', 'streaming', 'streamer', 'twitch', 'obs', 'stream-safe', 'capture view', 'tuck away', 'bring back', 'audience', 'dares', 'votes', 'prompt jar', 'overlay', 'live', 'share screen', 'preferences'],
+  },
+  {
     id: 'look-and-feel',
     media: 'look-and-feel.png',
     title: 'Mode and look',

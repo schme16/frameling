@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:moreview', 'sub:notes', 'sub:marks', '-', 'sub:look', 'sub:customise', 'view.searchSettings', 'view.commandPalette', '-', 'sub:quill'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:moreview', 'sub:notes', 'sub:marks', '-', 'sub:look', 'sub:sharing', 'sub:customise', 'view.searchSettings', 'view.commandPalette', 'sub:quill'],
   },
   {
     label: 'Draw',
@@ -63,16 +63,14 @@ export const MENUS: MenuDef[] = [
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.makeOwnDrawing', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
   },
   {
-    // Everything for people who draw live, in one place. Each part (the door, the overlay, the jar...) is a submenu of its
-    // own, so every entry is three clicks from the bar and this list stays short however much streaming grows.
+    // Everything that is only for people who draw live: the audience tools, each part a submenu of its own so every entry
+    // is three clicks from the bar. The menu is not on the bar while the streaming tools are tucked away. What anybody
+    // who shares a screen can use (stream-safe, OBS, the capture view) is in View > Sharing your screen.
     label: 'Streaming',
     categories: ['Audience'],
     items: [
-      'view.streamSafe', '-',
-      'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', 'sub:capture', '-',
       'heading:Audience features', 'audience.toggle', 'audience.drawing', 'audience.show', 'audience.clearQueue', 'audience.kill', '-',
-      'sub:streamdoor', 'sub:streamoverlay', 'sub:twitch', 'sub:promptjar', 'sub:votes', 'sub:guess', 'sub:quillreacts', 'sub:dares', 'sub:penmods', '-',
-      'features.streamingOff', 'features.streamingOn',
+      'sub:streamdoor', 'sub:streamoverlay', 'sub:twitch', 'sub:promptjar', 'sub:votes', 'sub:guess', 'sub:quillreacts', 'sub:dares', 'sub:penmods',
     ],
   },
   {
@@ -232,9 +230,9 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Centre, turn and flip the view',
     items: ['view.center', '-', 'view.flip', 'view.turnLeft', 'view.turnRight', 'view.resetTurn'],
   },
-  capture: {
-    label: 'Capture view',
-    items: ['capture.toggle', 'capture.background', 'capture.cursor', '-', 'capture.size.free', 'capture.size.1920x1080', 'capture.size.1280x720', 'capture.size.2560x1440', 'capture.size.3840x2160', 'capture.size.1080x1080', 'capture.size.1080x1920'],
+  sharing: {
+    label: 'Sharing your screen',
+    items: ['view.streamSafe', 'stream.obsLink', 'stream.obsLook', 'stream.obsSettings', '-', 'capture.toggle', 'capture.background', 'capture.cursor', '-', 'capture.size.free', 'capture.size.1920x1080', 'capture.size.1280x720', 'capture.size.2560x1440', 'capture.size.3840x2160', 'capture.size.1080x1080', 'capture.size.1080x1920'],
     prefixes: ['capture.'],
   },
   look: {
@@ -254,7 +252,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   customise: {
     label: 'Change the menus and features',
-    items: ['view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.features', 'view.featuresAllOn'],
+    items: ['view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.features', 'view.featuresAllOn', 'features.streamingOff', 'features.streamingOn'],
   },
   dares: {
     label: 'Audience dares',

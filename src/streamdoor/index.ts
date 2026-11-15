@@ -1,6 +1,6 @@
 // The actions door: a little server on this computer that Streamer.bot, Firebot, a Stream Deck or a script can call to
 // make a short list of safe things happen. It is one AudienceDoorDef on the audience gate (src/audience), so the gate
-// opens it with the master switch and shuts it on Stop. A feature you can turn off (Preferences > Features); off, there
+// opens it with the master switch and shuts it on Stop. A feature you can turn off (Preferences > Streaming); off, there
 // is no server, no action, no command and no row. The server is in the desktop side: src/main/actionsDoor.ts.
 import { registerAudienceDoor } from '../audience';
 import { defineFeature } from '../features/feature';

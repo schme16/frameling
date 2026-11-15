@@ -25,7 +25,7 @@ export async function fetchOverlayUrl(): Promise<string> {
 export async function copyOverlayUrl(): Promise<boolean> {
   const u = await fetchOverlayUrl();
   if (!u) {
-    toast('The overlay is not open yet. Switch audience features on first (Preferences > Features).', { kind: 'warn' });
+    toast('The overlay is not open yet. Switch audience features on first (Preferences > Streaming).', { kind: 'warn' });
     return false;
   }
   if (!(await toClipboard(u))) {

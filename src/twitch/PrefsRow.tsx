@@ -1,4 +1,4 @@
-// Preferences > Features > Twitch: connect and disconnect, which kinds of event to hear, and the links from each to an
+// Preferences > Streaming > Twitch: connect and disconnect, which kinds of event to hear, and the links from each to an
 // audience action. The device code is drawn only while stream-safe mode is off, and is fetched only at the moment it is
 // drawn (like the actions door's key); with stream-safe on, nothing on this screen holds it. The sign-in is never here.
 import { useEffect, useState, useSyncExternalStore } from 'react';

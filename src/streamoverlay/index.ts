@@ -1,7 +1,7 @@
 // The stream overlay: a page OBS adds as a browser source, with a see-through background, that shows what your viewers
 // should see on top of your drawing (Quill reacting, the dare that is running, the prompt you pulled, a vote) and
 // nothing else. The server side is the actions door's own server, on its own path with its own rules
-// (src/main/overlayHandler.ts); this side feeds it. A feature you can turn off (Preferences > Features); off, there is no
+// (src/main/overlayHandler.ts); this side feeds it. A feature you can turn off (Preferences > Streaming); off, there is no
 // overlay, command or help, and the address answers as if it were not there.
 import { defineFeature } from '../features/feature';
 import { overlayChoices } from './choices';

@@ -15,7 +15,7 @@ module.exports = [
       js(`__framelingObs.fake({ password: true })`),
       js(`${F}.prefs.set({ obsLink: true })`),
       wait(900),
-      js(`${F}.overlays.openPrefs('general')`),
+      js(`${F}.overlays.openPrefs('streaming')`),
       wait(1600),
       js(`(() => { const el = document.querySelector('[data-obs-section]'); el.scrollIntoView({ block: 'center' }); el.setAttribute('data-shot', '1'); return true; })()`),
       ...settle,

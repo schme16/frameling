@@ -1,6 +1,6 @@
 // Quill reacts to the audience: cheer, hop, a snack, a cuddle, a wave, and a sign you say yes to. Everything goes through
 // the audience gate (src/audience), so the switch, the cooldowns, the queue and Stop apply to it, and the actions door
-// (src/streamdoor) lists it with nothing more to do. A feature you can turn off (Preferences > Features); off, there
+// (src/streamdoor) lists it with nothing more to do. A feature you can turn off (Preferences > Streaming); off, there
 // are no actions, commands or help, and Quill is just Quill.
 import { defineFeature } from '../features/feature';
 import { registerReactionActions } from './actions';

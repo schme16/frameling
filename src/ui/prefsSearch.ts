@@ -41,6 +41,7 @@ export const PAGE_NAMES: Record<PrefsPage, string> = {
   menus: 'Menus',
   plugins: 'Plugins',
   features: 'Features',
+  streaming: 'Streaming',
   diagnostics: 'Diagnostics',
 };
 

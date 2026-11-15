@@ -15,3 +15,9 @@ export const STREAM_FEATURES: readonly string[] = [
 
 /** The plain name for the lot, for switches, toasts and menus. */
 export const STREAMING_NAME = 'Streaming tools';
+
+/** The groups of remembered answers that are on Preferences > Streaming, not Behaviour. Sharing your screen is for anybody, not only streamers. */
+export const STREAM_CHOICE_GROUPS: readonly string[] = ['Streaming', 'Sharing your screen'];
+
+/** True for a remembered answer that lives on the Streaming tab of Preferences. */
+export const isStreamingChoice = (c: { category: string }): boolean => STREAM_CHOICE_GROUPS.includes(c.category);

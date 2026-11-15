@@ -81,6 +81,7 @@ const DIALOGS = [
   ['prefs workspaces', `__frameling.overlays.openPrefs('workspaces')`],
   ['prefs plugins', `__frameling.overlays.openPrefs('plugins')`],
   ['prefs features', `__frameling.overlays.openPrefs('features')`],
+  ['prefs streaming', `__frameling.overlays.openPrefs('streaming')`],
   ['prefs pen', `__frameling.overlays.openPrefs('pen')`],
   ['prefs diagnostics', `__frameling.overlays.openPrefs('diagnostics')`],
   // The ask-the-first-time questions: each option's detail is a sentence, so these are where words run off an edge.

@@ -81,7 +81,7 @@ const facts = (): OfferFacts => ({
 export function tuckStreaming(): number {
   const went = setStreaming(false);
   if (went.length) {
-    toast(`Tucked away the ${STREAMING_NAME.toLowerCase()}, so there's less in your way. Any of it comes back in Preferences > Features.`, {
+    toast(`Tucked away the ${STREAMING_NAME.toLowerCase()}, so there's less in your way. Any of it comes back in Preferences > Streaming.`, {
       kind: 'info',
       duration: 12_000,
       action: { label: 'Bring them back', id: 'streaming-undo', run: () => bringStreamingBack() },
