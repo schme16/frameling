@@ -7,8 +7,8 @@
 import { createStore } from '../ui/mini';
 import { lasts } from '../audience';
 
-/** The things a dare can hold. Only one dare may hold each at a time. */
-export type Resource = 'view' | 'banner' | 'countdown' | 'colour';
+/** The things a dare can hold. Only one dare may hold each at a time. `pen` is the one pen modifier (src/penmods) that is on. */
+export type Resource = 'view' | 'banner' | 'countdown' | 'colour' | 'pen';
 
 export interface Held {
   resource: Resource;
@@ -78,6 +78,11 @@ export async function hold(resource: Resource, info: { id: string; label: string
     signal.removeEventListener('abort', release);
     release();
   }
+}
+
+/** Lets go of one resource right now, if something holds it. Harmless when nothing does. */
+export function release(resource: Resource): void {
+  claims.get(resource)?.release();
 }
 
 /** Puts every lasting effect back right now. Kill, the switch and Put it back all end here. */

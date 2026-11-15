@@ -29,6 +29,7 @@ import { StatusBar } from '../ui/StatusBar';
 import { ToastView } from '../ui/ToastView';
 import { DareLayer } from '../dares/DareLayer';
 import { VoteLayer } from '../votes';
+import { PenModChip } from '../penmods/PenModChip';
 import { ToolFloat, ToolSlot } from '../ui/ToolStrip';
 import { DockOverlays } from '../ui/DockOverlays';
 import { FloatLayer } from '../ui/DockFloats';
@@ -142,6 +143,7 @@ export function App() {
       <ToastView />
       <DareLayer />
       <VoteLayer />
+      <PenModChip />
       <TooltipLayer />
     </div>
   );

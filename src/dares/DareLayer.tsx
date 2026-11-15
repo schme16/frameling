@@ -23,7 +23,8 @@ const heldOf = (held: Held[], id: string): Held | undefined => held.find((h) => 
 
 export function DareLayer() {
   const screen = dareScreen.use((s) => s);
-  const active = screen.held.length > 0;
+  // A pen modifier has its own chip (src/penmods), so it does not count here.
+  const active = screen.held.some((h) => h.resource !== 'pen');
   const now = useNow(active);
   if (!active && !screen.banner && !screen.countdown) return null;
   const banner = heldOf(screen.held, 'dare.challenge');
