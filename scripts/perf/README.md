@@ -143,12 +143,17 @@ barely change): `npx vite build --minify false --outDir /tmp/dev-renderer` then 
 Documents (`--docs a,b`): `bouncing-ball`, `puppet`, `walk-cycle`, `hero-sprites` (built-in templates), `stress-vector`
 (40 layers in nested folders, 240 keys each, three shapes per key), `stress-pixel` (2000 x 2000 stage, 100 frames of an
 800 x 800 painted block), `variations` (a drawing with four variations), `stress-symbols` (60 symbols, 120 instances on the
-stage).
+stage). `stress-pixel-hd` (twelve 1920 x 1080 frames, painted edge to edge) is only run when asked for with `--docs`.
 
 Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
 `select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
 `undo-redo`, `switch-artboard`, `export-dialog` (warm), `save-file` (the path Save uses), `open-file`, `autosave`,
-`workspaces`. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
+`workspaces`. Saving has a warm and a first kind, and they are very different on a pixel document: `save-file` and
+`autosave` are saves after an earlier save, where the encoded PNGs are cached by pixel array (so they cost almost nothing,
+because the unmeasured warm-up run fills the cache), and `save-file-first` and `autosave-first` give every pixel drawing a
+fresh pixel array before each run (as opening a file does), so the PNG encoding is paid. The saves also report `wall`, the
+page's own clock for the whole awaited call: the CPU profile (and so `busy`) only sees the page's thread, so a wait on the
+zip worker counts as idle there. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
 leaves the document as it found it (the history is rewound), and an action that was meant to edit and did not
 fails loudly, so a harness that stopped driving the app never prints a good-looking number.
 

@@ -110,6 +110,36 @@ const HELPERS = `(() => {
   window.__sw = { F, last, id, hex, blob, line, vlayer, fresh, finish };
 })()`;
 
+/** A pixel document: `frames` frames, each a `bw` x `bh` painted block (at x0, y0, drifting right a little) of flat 8 x 8 colour cells on a `w` x `h` stage. */
+function pixelDoc(name, w, h, frames, bw, bh, x0, y0) {
+  return `(() => {
+      const { id, F } = window.__sw;
+      F.template('blank-pixel');
+      const d = structuredClone(F.store().get().doc);
+      d.name = ${JSON.stringify(name)}; d.width = ${w}; d.height = ${h}; d.length = ${frames}; d.drawings = {};
+      const layer = d.layers.find((l) => l.kind === 'pixel');
+      layer.pixelSize = 1; layer.cels = [];
+      const PAL = Array.from({ length: 16 }, (_, k) => [(k * 53) & 255, (k * 97) & 255, (k * 29 + 60) & 255]);
+      const W = ${bw}, H = ${bh};
+      for (let f = 0; f < ${frames}; f++) {
+        const px = new Uint8ClampedArray(W * H * 4);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const c = ((x >> 3) + (y >> 3) + f) % 7 === 0 ? -1 : (((x >> 3) * 31 + (y >> 3) * 17 + f) % 16);
+          if (c < 0) continue;
+          const o = (y * W + x) * 4, p = PAL[c];
+          px[o] = p[0]; px[o + 1] = p[1]; px[o + 2] = p[2]; px[o + 3] = 255;
+        }
+        const dr = { id: id('p'), kind: 'pixel', x: ${x0} + (f % 5) * ${x0 ? 20 : 0}, y: ${y0}, width: W, height: H, pixels: px };
+        d.drawings[dr.id] = dr;
+        layer.cels.push({ id: id('c'), start: f, length: 1, drawingId: dr.id });
+      }
+      d.camera = undefined;
+      window.__sw.finish(d, layer.id);
+      F.store().setUi({ tool: 'pencil', color: '#ff2020' });
+      return true;
+    })()`;
+}
+
 const DOCS = {
   // Built-in templates.
   'bouncing-ball': { kind: 'vector', make: `(() => { window.__sw.F.template('bouncing-ball'); window.__sw.F.run('view.fit'); return true; })()` },
@@ -142,35 +172,10 @@ const DOCS = {
     })()`,
   },
   // A 2000 x 2000 stage with 100 frames: each frame holds an 800 x 800 painted block of flat 8 x 8 colour cells.
-  'stress-pixel': {
-    kind: 'pixel',
-    make: `(() => {
-      const { id, F } = window.__sw;
-      F.template('blank-pixel');
-      const d = structuredClone(F.store().get().doc);
-      d.name = 'stress pixel'; d.width = 2000; d.height = 2000; d.length = 100; d.drawings = {};
-      const layer = d.layers.find((l) => l.kind === 'pixel');
-      layer.pixelSize = 1; layer.cels = [];
-      const PAL = Array.from({ length: 16 }, (_, k) => [(k * 53) & 255, (k * 97) & 255, (k * 29 + 60) & 255]);
-      const W = 800, H = 800;
-      for (let f = 0; f < 100; f++) {
-        const px = new Uint8ClampedArray(W * H * 4);
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-          const c = ((x >> 3) + (y >> 3) + f) % 7 === 0 ? -1 : (((x >> 3) * 31 + (y >> 3) * 17 + f) % 16);
-          if (c < 0) continue;
-          const o = (y * W + x) * 4, p = PAL[c];
-          px[o] = p[0]; px[o + 1] = p[1]; px[o + 2] = p[2]; px[o + 3] = 255;
-        }
-        const dr = { id: id('p'), kind: 'pixel', x: 600 + (f % 5) * 20, y: 600, width: W, height: H, pixels: px };
-        d.drawings[dr.id] = dr;
-        layer.cels.push({ id: id('c'), start: f, length: 1, drawingId: dr.id });
-      }
-      d.camera = undefined;
-      window.__sw.finish(d, layer.id);
-      F.store().setUi({ tool: 'pencil', color: '#ff2020' });
-      return true;
-    })()`,
-  },
+  'stress-pixel': { kind: 'pixel', make: pixelDoc('stress pixel', 2000, 2000, 100, 800, 800, 600, 600) },
+  // Full-HD frames, each painted edge to edge (so nothing is trimmed away on save): the first-save PNG cost at its
+  // plainest. Not in the default list (it is only for the save actions): ask for it with --docs stress-pixel-hd.
+  'stress-pixel-hd': { kind: 'pixel', optIn: true, make: pixelDoc('stress pixel hd', 1920, 1080, 12, 1920, 1080, 0, 0) },
   // A vector animation with four linked variations (see src/artboards/variations.ts).
   'variations': {
     kind: 'vector',
@@ -265,6 +270,22 @@ const findShape = () => ev(`(() => {
 })()`);
 
 // ---------------------------------------------------------------- actions
+
+/** Fresh copies of every pixel drawing's pixels (and, with `rename`, a new layer name so autosave sees a change), so none of them is in the PNG cache. */
+async function freshPixels(rename) {
+  await ev(`(() => { const S = window.__frameling.store(); S.update('Fresh pixels', (d) => {
+    for (const dr of Object.values(d.drawings)) if (dr.kind === 'pixel' && dr.pixels instanceof Uint8ClampedArray) dr.pixels = new Uint8ClampedArray(dr.pixels);
+    ${rename ? "d.layers[d.layers.length - 1].name = 'Auto ' + Math.random();" : ''}
+  }); return true; })()`);
+  await sleep(500); // let the copy's garbage and the redraw settle before the measured window opens
+}
+
+/** One save through the path Save and autosave use, timed by the page's own clock (worker time included). */
+async function timedSave(self) {
+  const r = await ev(`(async () => { const A = window.__framelingArtboards; const t = performance.now(); const b = await (A.saveBytesAsync || (async () => A.saveBytes()))(); return { len: b.length, ms: performance.now() - t }; })()`);
+  self.len = r.len;
+  self.wall = r.ms;
+}
 
 // Each action: { kinds, units, setup?, act, cleanup? }. `act` is what is profiled; it returns nothing. `units` names the
 // thing "per" divides by and how many there are (a number, or a function of what setup returned).
@@ -440,9 +461,28 @@ const ACTIONS = {
     async act() { await run('file.export'); await sleep(900); await escape(1); await sleep(200); },
     async cleanup() { await escape(2); },
   },
+  // A save after an earlier save in the same session. The encoded PNGs are cached by pixel array (pngFor in
+  // src/io/file.ts) and the unmeasured warm-up run fills that cache, so every measured run of this one is a cache hit
+  // and costs almost nothing on a pixel document. That is real (it is what a second Save or an autosave costs) but it
+  // is NOT the cost of a first save: see save-file-first. `wall` is the page's clock for the whole awaited call, worker
+  // time included (the CPU profile only sees the page's own thread, a wait on a worker is idle to it).
   'save-file': {
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,
-    async act() { this.len = await ev(`(window.__framelingArtboards.saveBytesAsync || (async () => window.__framelingArtboards.saveBytes()))().then((b) => b.length)`); },
+    async act() { await timedSave(this); },
+  },
+  // A first save: every pixel drawing gets a fresh pixel array before each run (a copy, which is what opening a file
+  // leaves you with), so the PNG cache is cold and the encoding has to happen.
+  'save-file-first': {
+    kinds: ['pixel'], unit: 'saves', units: 1,
+    async setup() { await freshPixels(); },
+    async act() { await timedSave(this); await sleep(150); },
+  },
+  // The same through autosave, which also hands the bytes to the desktop side to write (so the trip across and the
+  // disk are in `wall`).
+  'autosave-first': {
+    kinds: ['pixel'], unit: 'saves', units: 1,
+    async setup() { await freshPixels(true); },
+    async act() { this.wall = await ev(`(async () => { const t = performance.now(); await window.__framelingIo.autosaveNow(); return performance.now() - t; })()`); await sleep(200); },
   },
   'open-file': {
     kinds: ['vector', 'pixel'], unit: 'opens', units: 1,
@@ -453,7 +493,7 @@ const ACTIONS = {
   'autosave': {
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,
     async setup() { await ev(`(() => { const S = window.__frameling.store(); S.update('Rename', (d) => { d.layers[d.layers.length - 1].name = 'Auto ' + Math.random(); }); return true; })()`); },
-    async act() { await ev(`window.__framelingIo.autosaveNow().then(() => true)`); await sleep(200); },
+    async act() { this.wall = await ev(`(async () => { const t = performance.now(); await window.__framelingIo.autosaveNow(); return performance.now() - t; })()`); await sleep(200); },
   },
   'workspaces': {
     kinds: ['vector', 'pixel'], unit: 'switches', units: 6,
@@ -508,10 +548,12 @@ async function restore(base) {
 async function measure(name, a, dbg) {
   const base = await ev('window.__frameling.store().historyIds().undo');
   if (a.setup) await a.setup();
-  await a.act(); // warm-up, not measured
+  await a.act(); // warm-up, not measured (it warms every cache too, so a measured run is a second run unless setup makes it cold)
+  a.wall = undefined;
   if (a.cleanup) await a.cleanup();
   await restore(base);
   const busys = [];
+  const walls = [];
   const self = new Map();
   const incl = new Map();
   let lastProfile = null;
@@ -527,6 +569,7 @@ async function measure(name, a, dbg) {
     else await a.act();
     const { profile } = await dbg.sendCommand('Profiler.stop');
     lastProfile = profile;
+    if (a.wall !== undefined) { walls.push(a.wall); a.wall = undefined; }
     if (c0) { const c1 = await cacheNow(); for (const k of ['builds', 'hits', 'evictions']) cstat[k] += (c1[k] - c0[k]) / reps; cstat.entries = c1.entries; cstat.mpix = c1.mpix; }
     if (a.edits) {
       const h = await ev('window.__frameling.store().historyIds().undo');
@@ -539,7 +582,7 @@ async function measure(name, a, dbg) {
     if (a.cleanup) await a.cleanup();
     await restore(base);
   }
-  return { cache: cacheStats ? cstat : null, busy: median(busys), all: busys, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
+  return { cache: cacheStats ? cstat : null, busy: median(busys), all: busys, wall: walls.length ? median(walls) : null, wallAll: walls, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
 }
 
 /** The layer bitmap cache's counters (page opened with ?perf). */
@@ -570,7 +613,7 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
 
 (async () => {
   await start();
-  const docNames = list('docs', Object.keys(DOCS));
+  const docNames = list('docs', Object.keys(DOCS).filter((k) => !DOCS[k].optIn));
   const actionNames = list('actions', Object.keys(ACTIONS));
   const dbg = win.webContents.debugger;
   dbg.attach('1.3');
@@ -599,9 +642,9 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
         const m = await measure(an, ctx, dbg);
         const units = typeof a.units === 'function' ? a.units(ctx) : a.units;
         const st = await state();
-        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, note: ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '' };
+        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
         results.push(row);
-        console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]  after: ${st.layers} layers, undo "${st.undo}"`);
+        console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]${m.wall === null ? '' : `  wall ${num(m.wall)} ms [${m.wallAll.map((x) => x.toFixed(0)).join(' ')}]`}  after: ${st.layers} layers, undo "${st.undo}"`);
         if (profDir && m.profile) fs.writeFileSync(path.join(profDir, `${dn}.${an}.cpuprofile`), JSON.stringify(m.profile));
         if (m.cache) console.error(`        bitmaps per run: ${m.cache.builds.toFixed(0)} built, ${m.cache.hits.toFixed(0)} found, ${m.cache.evictions.toFixed(0)} evicted; held ${m.cache.entries} (${m.cache.mpix.toFixed(1)} Mpx)`);
         if (trace && m.rendering.length) console.error('        page   ' + m.rendering.map(([k, v]) => `${k} ${v}`).join(', '));
