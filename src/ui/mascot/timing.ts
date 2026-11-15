@@ -110,6 +110,9 @@ export function totalMs(anim: SheetAnim): number {
 export function resolveAnim(sheet: Sheet, name: string, sleepy = false): string {
   if (name === 'idle' && sleepy && sheet.anims.sleep) return 'sleep';
   if (sheet.anims[name]) return name;
+  // A pet clip this mascot hasn't drawn plays as its nearest ordinary one (eat as talk), not as plain idle.
+  const near = clipOr(sheet, name as QuillAnim);
+  if (sheet.anims[near]) return near;
   if (sheet.anims.idle) return 'idle';
   return Object.keys(sheet.anims)[0];
 }

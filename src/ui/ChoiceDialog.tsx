@@ -131,7 +131,7 @@ function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
   const { def, resolve } = pending;
   const [value, setValue] = useState(def.highlight ?? def.default);
   const [remember, setRemember] = useState(true);
-  const quill = useQuillShown();
+  const quill = useQuillShown('dialog');
   const [first] = useState(() => sheetsMet() === 0);
   useEffect(metASheet, []);
   const learn = useRef<HTMLButtonElement>(null);
@@ -150,7 +150,7 @@ function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
     <Modal title={def.title} size="sm" className="ui-choice" onClose={() => finish(null)} initialFocus=".ui-choice-opt.is-chosen">
       {def.quill && quill ? (
         <div className="ui-choice-quill">
-          <Quill anim={[{ anim: 'wave', hold: 1400 }, { anim: 'idle' }]} size={64} />
+          <Quill surface="dialog" anim={[{ anim: 'wave', hold: 1400 }, { anim: 'idle' }]} size={64} />
           <p className="ui-choice-q">{def.question}</p>
         </div>
       ) : (

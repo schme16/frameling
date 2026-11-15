@@ -22,7 +22,7 @@ function ChangeWay({ close }: { close: () => void }) {
   return (
     <Modal title="Change how this sprite is built" onClose={close} wide className="px-changeway">
       <div className="io-body">
-        <QuillSays side="left" anim="think" size={56}>
+        <QuillSays surface="dialog" surfaceId="change-way" side="left" anim="think" size={56}>
           {line('pixel.way.change')}
         </QuillSays>
         <div className="px-way-cards px-way-cards-detail" role="radiogroup" aria-label="How this sprite is built">

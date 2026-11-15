@@ -35,7 +35,7 @@ export function Celebration() {
           ))}
         </div>
       )}
-      <Quill anim={[{ anim: 'cheer', hold: 2800 }, { anim: 'idle' }]} size={96} className="qc-quill" />
+      <Quill surface="quest" anim={[{ anim: 'cheer', hold: 2800 }, { anim: 'idle' }]} size={96} className="qc-quill" />
       {c.badge && <Medal badge={c.badge} size={56} />}
       <div className="qc-text">
         <strong>{c.badge ? line('quests.badge', { badge: c.badge.name }) : line('quests.finished')}</strong>

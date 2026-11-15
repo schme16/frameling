@@ -70,7 +70,7 @@ export function QuillShelves() {
       )}
 
       {said && showQuill && (
-        <QuillSays anim="cheer" then="idle" size={56} whenHidden={null}>
+        <QuillSays surface="house" surfaceId="shelves" anim="cheer" then="idle" size={56} whenHidden={null}>
           {said}
         </QuillSays>
       )}

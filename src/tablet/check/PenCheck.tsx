@@ -291,7 +291,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   return (
     <Modal title="Pen check with Quill" size="lg" className={`tb-check${flow.phase === 'offer' ? ' tb-check-asking' : ''}`} onClose={close} initialFocus="[data-autofocus]">
       <div className="tb-check-body">
-        <QuillSays anim={mood} then="idle" size={96} bubbleClassName="tb-check-bubble">
+        <QuillSays surface="check" anim={mood} then="idle" size={96} bubbleClassName="tb-check-bubble">
           <p aria-live="polite" data-testid="quill-says">
             {says}
           </p>

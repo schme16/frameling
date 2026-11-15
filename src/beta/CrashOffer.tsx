@@ -40,7 +40,7 @@ function Offer({ dialog }: { dialog: NonNullable<ReturnType<typeof crashDialog.g
   return (
     <Modal title="Frameling fell over" size="sm" className="bt-crash" onClose={close} initialFocus="[data-autofocus]">
       <div className="bt-crash-body">
-        <QuillSays anim={sent ? [{ anim: 'cheer' }, { anim: 'idle' }] : 'dazed'} size={96} side="top" className="bt-crash-says">
+        <QuillSays surface="dialog" anim={sent ? [{ anim: 'cheer' }, { anim: 'idle' }] : 'dazed'} size={96} side="top" className="bt-crash-says">
           {words.map((w) => (
             <p key={w}>{w}</p>
           ))}

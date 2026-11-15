@@ -13,12 +13,12 @@ export function AboutDialog() {
 }
 
 function About() {
-  const quill = useQuillShown();
+  const quill = useQuillShown('hello');
   const v = typeof window !== 'undefined' ? window.frameling?.versions : undefined;
   return (
     <Modal title="About Frameling" size="sm" className="ui-about" onClose={closeAbout} initialFocus=".ui-about-ok">
       <div className="ui-about-body">
-        {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} /> : <Logo size={64} />}
+        {quill ? <Quill surface="hello" anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} /> : <Logo size={64} />}
         <h2>Frameling{v?.app ? ` ${v.app}` : ''}</h2>
         <p>A friendly tool for drawing and animating, vector and pixel alike. Made with care, and a little bit of glitter.</p>
         {quill && <p className="ui-about-quill">{line('about.quill')}</p>}

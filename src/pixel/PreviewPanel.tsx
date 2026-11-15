@@ -49,7 +49,7 @@ export function PreviewPanel() {
   const doc = useStore((s) => s.doc);
   const mainFrame = useStore((s) => s.ui.frame);
   const mainPlaying = useStore((s) => s.ui.playing);
-  const quillOn = useQuillShown();
+  const quillOn = useQuillShown('ambient');
   const [shown, setShown] = useState(0);
   const [boxSize, setBoxSize] = useState({ w: 240, h: 200 });
   const [jump, setJump] = useState(0);
@@ -241,7 +241,7 @@ export function PreviewPanel() {
           <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
           {showQuill && (
             <span className="px-preview-quill" title={line('pixel.scale.hover')} style={{ height: QUILL_ART_HEIGHT * scale }}>
-              <Quill anim="idle" size={QUILL_ART_HEIGHT * scale} />
+              <Quill surface="ambient" anim="idle" size={QUILL_ART_HEIGHT * scale} />
             </span>
           )}
         </div>

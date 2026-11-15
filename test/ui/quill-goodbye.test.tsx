@@ -92,7 +92,7 @@ describe('switching Show Quill', () => {
 
   it('shows him being sad on the toast even though he is off, then he goes once the goodbye is done', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance', 'queueMicrotask'] });
-    await act(async () => root.render(<><Quill /><ToastView /></>));
+    await act(async () => root.render(<><Quill surface="empty" /><ToastView /></>));
     expect(host.querySelectorAll('.quill')).toHaveLength(1);
     await act(async () => setShowQuill(false));
     // The everyday Quill goes straight away; the one on the toast stays for his goodbye.

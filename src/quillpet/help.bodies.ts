@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 **Open it:** **View > Quill**, or press the **Quill** button on the panel rail.
 
 **What's in it, top to bottom:**
-- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, watches when you stop, [dozes off](help:quill-naps) when nothing's happened for a minute, and is proud of you when you finish something.
+- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, watches when you stop, [dozes off](help:quill-naps) when nothing's happened for a minute, and is proud of you when you finish something. In between he potters round his room: a wander, a doodle at his desk, a look out of the window, a snack, a nap. He only does it while you can see him, and with **Reduce motion** on he sits still.
 - **His pencils.** The quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five.
 - **How well you know each other.** The bar fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
 - **His shelves.** **From Quill** holds [the presents he makes you](help:quill-presents), and below it are [the drawings you give him](help:quill-things). Press **Give him this drawing** to add the frame you're on.
@@ -13,6 +13,7 @@ export const bodies: Record<string, string> = {
 
 **Good to know:**
 - He never minds being left alone. Come back after a week, a month or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross.
+- There's only one of him. If a message, a lesson or the welcome wants him, he steps out of his room for a moment and comes back when it's done.
 - Drawing is what he likes best, so you feed him by getting on with your work. There's nothing to remember to do.
 - Nothing you make depends on him, and giving something back never touches your file.
 - Had enough of the panel? Turn **Quill** off in **Preferences > Features** and he goes back to being just the mascot, saying hello and lending a hand where he always did.

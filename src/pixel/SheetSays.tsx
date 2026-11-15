@@ -17,7 +17,7 @@ export function SheetSays({ settings }: { settings: ExportSettings }) {
   const way = wayOf(doc);
   return (
     <div data-help="pixel-ways">
-    <QuillSays side="left" anim="talk" then="idle" size={48} className="px-sheet-says">
+    <QuillSays surface="dialog" surfaceId="sheet" side="left" anim="talk" then="idle" size={48} className="px-sheet-says">
       <span aria-live="polite">{sentence}</span>
       <span className="px-sheet-says-row">
         <span className="px-way-tag">{wayInfo(way).name}</span>
