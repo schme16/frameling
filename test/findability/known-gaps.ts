@@ -36,25 +36,10 @@ export const CEILINGS = {
  * command work and delete its line. Do not add a line to get a new command past the audit.
  */
 export const NEVER_SEEN_WORKING: Record<string, string> = {
-  // These need something the store does not hold: a tile or bone picked in a panel, a clip picked in the Clips panel.
-  // Each needs a state that builds the thing (a tileset with a tile in it, a skeleton with a bone picked) and says so.
-  ...group('Needs a tile picked in the Tileset panel, which lives in the panel and not the store', [
-    'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', 'tiles.flipX', 'tiles.flipY', 'tiles.rotate', 'tiles.nextTile', 'tiles.prevTile',
-    'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.clearShapes', 'tiles.oneWay', 'tiles.showShapes', 'tiles.addValue', 'tiles.addTerrain',
-    'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', 'tiles.export',
-  ]),
-  ...group('Needs a skeleton with a bone picked, and a layer attached to it', [
-    'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', 'rig.savePose', 'rig.mirrorPose',
-    'rig.swapSides', 'rig.resetPose', 'rig.togglePin', 'rig.deleteBone', 'rig.deleteBranch', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild',
-  ]),
-  'flow.fromAny': 'Needs a clip picked in the Clips panel, which lives in the panel and not the store',
-  'particles.shuffle': 'Needs a particle emitter selected on the canvas',
-  'text.pixelSmaller': 'Needs pixel text sized above its smallest',
+  // Empty: the tiles, rig, flow, particles and pixel text commands that were here are each on in a feature state now
+  // (tile-picked, tile-open, rig-bent-layer, clip-picked, particles-selected, pixel-text-big in app.ts), and
+  // test/findability/commands-run.test.ts runs every one of them there and checks something happened.
 };
-
-function group(why: string, ids: string[]): Record<string, string> {
-  return Object.fromEntries(ids.map((id) => [id, why]));
-}
 
 // ---------------------------------------------------------------- crowding and depth (crowding.test.ts)
 

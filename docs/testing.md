@@ -150,7 +150,11 @@ audit passed the whole time a panel could not be found.
   a FEATURE has (`FEATURE_STATES` in `app.ts`: no desktop, just installed, live, a vote going, a round going, a prompt
   in hand, a dare on, Quill hidden, a sound, a camera, text selected) and looks at every command of every optional
   feature in each one: each state must turn on and grey what it says it does, a greyed command must say a true,
-  one-line sentence there, and every command must be on in at least one state (`NEVER_SEEN_WORKING`, only shrinks).
+  one-line sentence there, and every command must be on in at least one state (`NEVER_SEEN_WORKING`, only shrinks, and
+  empty today). Being on is not the same as working, so `commands-run.test.ts` runs the tiles, rig, flow, particles and
+  pixel text commands in their state and checks each one did what it says. Two traps: `inFeatureState` puts the world
+  back the moment its body first awaits, so an async body must use its own set-up and tidy-up (see `inState` there); and
+  a state that makes a command's job already done (a tile already solid) needs a first step in `FIRST`.
   Each feature is also switched off on its own: its commands, panels and help must go, no menu list may be left
   empty, "Turn on" must be offered, and switching it back on must restore the palette and menus exactly. **A new
   feature adds a state here** for whatever it has (something running, something picked).
@@ -159,6 +163,16 @@ audit passed the whole time a panel could not be found.
   how much of the palette, menus, feature switches and help belongs to the stream family (`STREAM_LOAD`, exact).
   Lists made of the person's own things (saved brushes) are named exceptions; everything else over a cap is on a list
   in `known-gaps.ts` that can only shrink.
+
+- **Moved commands** (`places.test.ts`, `places-logic.test.ts`): every audit above asks "can it be reached?", which a
+  command passes before and after being moved. This asks "is it where it was?". `places.json` records, for every
+  command, its menu (and so its depth), name, shortcut, feature switch, whether it is in the palette, and the words
+  that found it. Any difference fails in plain words ("Capture view moved. It used to be in X; it is now in Y. That is
+  deeper: 3 clicks, it was 2.") with a paste-ready line, until the move is written in `known-moves.ts` with why. A
+  chain of moves (A to B to C) takes a line per step. Commands the record does not know are not checked, up to 10 percent
+  of them; `PLACES_WRITE=add npx vitest run test/findability/places.test.ts` records them (about a minute), and
+  `PLACES_WRITE=rebase` re-records everything and empties `known-moves.ts` when a release is cut. **The half no test
+  can do:** when a look moves something, say the old place and the new one in a sentence.
 
 `FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
 rail and how many greyed commands say why.

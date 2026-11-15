@@ -28,6 +28,14 @@ import { signedOutStatus } from '../../src/shared/twitch';
 import { addCamera } from '../../src/camera/ops';
 import { setPrefs } from '../../src/ui/prefs';
 import { editSymbol, makeSymbolFromSelection } from '../../src/symbols/ops';
+import { newTile, pickTile, solidTile, addTerrain, setTerrainOf } from '../../src/tiles/ops';
+import { addBone, ensureRig, bendLayer, currentRig } from '../../src/rig/ops';
+import { setRigUi } from '../../src/rig/state';
+import { setTl } from '../../src/timeline/state';
+import { setPixelText } from '../../src/text/pixel/settings';
+import { DEFAULT_PIXEL_TEXT } from '../../src/text/pixel/font';
+import { newParticles } from '../../src/particles/model';
+import { resetDrawingState } from '../../src/core/fresh';
 import '../../src/renderer/features';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -155,6 +163,10 @@ export function quietWorld(): void {
   setChoice('guess.peek', undefined);
   setChoice('audience.view', undefined);
   SITUATIONS[0].set();
+  // Things that live outside the store but belong to one drawing (a picked tile, a picked bone, a picked clip), and
+  // the pixel text size, which is kept in storage.
+  resetDrawingState();
+  setPixelText({ scale: DEFAULT_PIXEL_TEXT.scale });
 }
 
 /** A plain desktop app with the audience side switched off: what a streamer has just after install. */
@@ -338,9 +350,86 @@ export const FEATURE_STATES: FeatureState[] = [
     set: () => setPrefs({ showQuill: false }),
     proves: { on: [], grey: ['quillPet.pat', 'quillPet.give'] },
   },
+  {
+    id: 'tile-picked',
+    about: 'A tilemap layer is active and a tile is picked, with a solid shape and a terrain on it.',
+    desktop: false,
+    set: () => {
+      fresh(vectorDoc());
+      addTilemapLayer();
+      const key = newTile();
+      pickTile(key);
+      solidTile(key);
+      setTerrainOf(key, addTerrain('Grass'));
+    },
+    proves: { on: ['tiles.edit', 'tiles.flipX', 'tiles.rotate', 'tiles.nextTile', 'tiles.duplicate', 'tiles.clearShapes', 'tiles.autoEdges', 'tiles.export'], grey: ['tiles.done'] },
+  },
+  {
+    id: 'tile-open',
+    about: 'A tile is open on the canvas to be drawn.',
+    desktop: false,
+    set: () => {
+      fresh(vectorDoc());
+      addTilemapLayer();
+      newTile({ open: true });
+    },
+    proves: { on: ['tiles.done', 'tiles.drawBox'], grey: ['tiles.clearShapes'] },
+  },
+  {
+    id: 'rig-bent-layer',
+    about: 'A drawing with a three-bone skeleton, a bone picked, and the art layer bending with the bones.',
+    desktop: false,
+    set: () => {
+      fresh(vectorDoc());
+      const art = store().get().ui.activeLayerId!;
+      const rig = ensureRig();
+      const a = addBone(rig, { x: 30, y: 150 }, { x: 30, y: 100 }, null)!;
+      const b = addBone(rig, { x: 30, y: 100 }, { x: 30, y: 60 }, a)!;
+      addBone(rig, { x: 30, y: 60 }, { x: 30, y: 30 }, b);
+      store().setUi({ activeLayerId: art });
+      bendLayer(art, currentRig()!.id);
+      setRigUi({ selected: b });
+    },
+    proves: { on: ['rig.autoAttach', 'rig.paintWeights', 'rig.detachLayer', 'rig.deleteBranch', 'rig.pickParent', 'rig.pickChild'], grey: [] },
+  },
+  {
+    id: 'clip-picked',
+    about: 'A clip is picked in the Clips panel.',
+    desktop: false,
+    set: () => {
+      const doc = vectorDoc();
+      doc.clips.push({ id: 'clip-a', name: 'Walk', start: 0, end: 11 } as Doc['clips'][number]);
+      fresh(doc);
+      setTl({ clipId: 'clip-a' });
+    },
+    proves: { on: ['flow.fromAny'], grey: [] },
+  },
+  {
+    id: 'particles-selected',
+    about: 'A particle emitter is selected.',
+    desktop: false,
+    set: () => {
+      const doc = vectorDoc();
+      (Object.values(doc.drawings)[0] as unknown as { shapes: unknown[] }).shapes.push(newParticles('particles-a', 'sparkle', { x: 50, y: 50 }));
+      fresh(doc);
+      store().setUi({ selection: ['particles-a'] });
+    },
+    proves: { on: ['particles.shuffle'], grey: [] },
+  },
+  {
+    id: 'pixel-text-big',
+    about: 'New pixel text is set above its smallest size.',
+    desktop: false,
+    set: () => setPixelText({ scale: 3 }),
+    proves: { on: ['text.pixelSmaller'], grey: [] },
+  },
 ];
 
-/** Runs `fn` with the app in this feature state, then puts the quiet world back. */
+/**
+ * Runs `fn` with the app in this feature state, then puts the quiet world back. `fn` must be synchronous: given an async
+ * body this tidies up as soon as it first awaits, and everything after the await sees the quiet world (see `inState` in
+ * commands-run.test.ts).
+ */
 export function inFeatureState<T>(state: FeatureState, fn: () => T): T {
   quietWorld();
   state.set();
