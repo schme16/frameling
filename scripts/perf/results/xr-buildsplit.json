@@ -1,0 +1,500 @@
+{
+  "env": {
+    "label": "xr-buildsplit",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "dpr": 1,
+    "idleRafMs": 16.666666666666668,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling/dist/renderer",
+    "loadMs": [
+      168,
+      80,
+      79,
+      93
+    ],
+    "when": "2026-11-15T00:27:13.099Z"
+  },
+  "draw": {
+    "empty": {
+      "rafDelta": {
+        "n": 493,
+        "mean": 16.8,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 33.4
+      },
+      "latencyAll": {
+        "n": 447,
+        "mean": 7.94,
+        "p50": 7.7,
+        "p95": 15.4,
+        "p99": 16.3,
+        "max": 16.5
+      },
+      "latencyFirstQuarter": {
+        "n": 111,
+        "mean": 7.74,
+        "p50": 7.3,
+        "p95": 15.6,
+        "p99": 16.2,
+        "max": 16.2
+      },
+      "latencyLastQuarter": {
+        "n": 111,
+        "mean": 8.31,
+        "p50": 8,
+        "p95": 15.9,
+        "p99": 16.4,
+        "max": 16.4
+      },
+      "overlayDrawMs": {
+        "n": 449,
+        "mean": 0.21,
+        "p50": 0.2,
+        "p95": 0.5,
+        "p99": 0.6,
+        "max": 0.7
+      },
+      "overlayDrawMsLastQuarter": {
+        "n": 112,
+        "mean": 0.36,
+        "p50": 0.3,
+        "p95": 0.6,
+        "p99": 0.7,
+        "max": 0.7
+      },
+      "mainDrawMs": {
+        "n": 1,
+        "mean": 1.3,
+        "p50": 1.3,
+        "p95": 1.3,
+        "p99": 1.3,
+        "max": 1.3
+      },
+      "mainDrawMsMax": 1.3000000044703484,
+      "longTasks": 1,
+      "longTaskMaxMs": 50,
+      "bitmapBuilds": 3,
+      "bitmapEvictions": 0,
+      "buildSplit": {
+        "ink": 0.3999999985098839,
+        "paint": 0.8000000044703484,
+        "copy": 0,
+        "trim": 0,
+        "n": 1,
+        "appends": 0
+      }
+    },
+    "strokes300": {
+      "rafDelta": {
+        "n": 483,
+        "mean": 17.11,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "latencyAll": {
+        "n": 445,
+        "mean": 7.99,
+        "p50": 7.7,
+        "p95": 15.3,
+        "p99": 16.3,
+        "max": 22.7
+      },
+      "latencyFirstQuarter": {
+        "n": 111,
+        "mean": 7.75,
+        "p50": 7.7,
+        "p95": 15.4,
+        "p99": 15.8,
+        "max": 16
+      },
+      "latencyLastQuarter": {
+        "n": 111,
+        "mean": 8.23,
+        "p50": 7.9,
+        "p95": 15.8,
+        "p99": 16.3,
+        "max": 22.7
+      },
+      "overlayDrawMs": {
+        "n": 446,
+        "mean": 0.19,
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.4,
+        "max": 0.5
+      },
+      "overlayDrawMsLastQuarter": {
+        "n": 111,
+        "mean": 0.3,
+        "p50": 0.3,
+        "p95": 0.4,
+        "p99": 0.5,
+        "max": 0.5
+      },
+      "mainDrawMs": {
+        "n": 1,
+        "mean": 0.8,
+        "p50": 0.8,
+        "p95": 0.8,
+        "p99": 0.8,
+        "max": 0.8
+      },
+      "mainDrawMsMax": 0.7999999970197678,
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 5,
+      "bitmapEvictions": 0,
+      "buildSplit": {
+        "ink": 0.19999999552965164,
+        "paint": 0.3999999985098839,
+        "copy": 0,
+        "trim": 0,
+        "n": 1,
+        "appends": 1
+      }
+    },
+    "strokes3000": {
+      "rafDelta": {
+        "n": 494,
+        "mean": 16.77,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 33.5
+      },
+      "latencyAll": {
+        "n": 447,
+        "mean": 8.02,
+        "p50": 7.8,
+        "p95": 15.5,
+        "p99": 16.2,
+        "max": 16.4
+      },
+      "latencyFirstQuarter": {
+        "n": 111,
+        "mean": 7.61,
+        "p50": 7.2,
+        "p95": 14.9,
+        "p99": 15.9,
+        "max": 16
+      },
+      "latencyLastQuarter": {
+        "n": 111,
+        "mean": 8.12,
+        "p50": 8,
+        "p95": 15.6,
+        "p99": 16.4,
+        "max": 16.4
+      },
+      "overlayDrawMs": {
+        "n": 449,
+        "mean": 0.19,
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.4,
+        "max": 0.5
+      },
+      "overlayDrawMsLastQuarter": {
+        "n": 112,
+        "mean": 0.29,
+        "p50": 0.3,
+        "p95": 0.4,
+        "p99": 0.4,
+        "max": 0.4
+      },
+      "mainDrawMs": {
+        "n": 1,
+        "mean": 0.8,
+        "p50": 0.8,
+        "p95": 0.8,
+        "p99": 0.8,
+        "max": 0.8
+      },
+      "mainDrawMsMax": 0.7999999970197678,
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 7,
+      "bitmapEvictions": 0,
+      "buildSplit": {
+        "ink": 0.10000000149011612,
+        "paint": 0.3999999985098839,
+        "copy": 0,
+        "trim": 0,
+        "n": 1,
+        "appends": 1
+      }
+    },
+    "steadyLatencyStrokes300": {
+      "n": 206,
+      "mean": 7.74,
+      "p50": 7.7,
+      "p95": 15.3,
+      "p99": 15.9,
+      "max": 16.2
+    }
+  },
+  "playback": {
+    "onionOff": {
+      "secondsPlayed": 8,
+      "framesPainted": 190,
+      "framesSkipped": 2,
+      "paintIntervalMs": {
+        "n": 189,
+        "mean": 42.29,
+        "p50": 32.4,
+        "p95": 62.1,
+        "p99": 95.4,
+        "max": 107.3
+      },
+      "latePaints": 7,
+      "paintMs": {
+        "n": 190,
+        "mean": 0.2,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.4,
+        "max": 0.5
+      },
+      "rafDelta": {
+        "n": 284,
+        "mean": 28.05,
+        "p50": 33.3,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 83.3
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 1026,
+      "bitmapEvictions": 885,
+      "buildSplit": {
+        "ink": 7.900000058114529,
+        "paint": 323.70000000298023,
+        "copy": 0,
+        "trim": 1.7999999970197678,
+        "n": 1015,
+        "appends": 0
+      }
+    },
+    "onionOn": {
+      "secondsPlayed": 8,
+      "framesPainted": 192,
+      "framesSkipped": 0,
+      "paintIntervalMs": {
+        "n": 191,
+        "mean": 41.9,
+        "p50": 49.9,
+        "p95": 59.5,
+        "p99": 68.1,
+        "max": 94.3
+      },
+      "latePaints": 4,
+      "paintMs": {
+        "n": 192,
+        "mean": 0.21,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.4,
+        "max": 0.4
+      },
+      "rafDelta": {
+        "n": 302,
+        "mean": 26.54,
+        "p50": 33.3,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 50
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 2051,
+      "bitmapEvictions": 1910,
+      "buildSplit": {
+        "ink": 7.900000020861626,
+        "paint": 51.40000003576279,
+        "copy": 0,
+        "trim": 1.2999999970197678,
+        "n": 1010,
+        "appends": 0
+      }
+    },
+    "replayFirstSeconds": {
+      "framesPainted": 96,
+      "paintIntervalMs": {
+        "n": 95,
+        "mean": 41.89,
+        "p50": 51.2,
+        "p95": 62.5,
+        "p99": 68.7,
+        "max": 68.7
+      },
+      "latePaints": 4,
+      "paintMs": {
+        "n": 96,
+        "mean": 0.21,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.4,
+        "max": 0.4
+      }
+    },
+    "scrubWithOnion60": {
+      "paintMs": {
+        "n": 59,
+        "mean": 0.66,
+        "p50": 0.4,
+        "p95": 2.4,
+        "p99": 3.8,
+        "max": 3.8
+      },
+      "bitmapBuilds": 2921,
+      "bitmapEvictions": 2780,
+      "buildSplit": {
+        "ink": 1.8999999836087227,
+        "paint": 91.99999997019768,
+        "copy": 0,
+        "trim": 0.4999999925494194,
+        "n": 305,
+        "appends": 0
+      }
+    },
+    "stepPaused60": {
+      "paintMs": {
+        "n": 60,
+        "mean": 0.24,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.4,
+        "max": 0.4
+      },
+      "bitmapBuilds": 3246,
+      "bitmapEvictions": 3105,
+      "buildSplit": {
+        "ink": 1.599999986588955,
+        "paint": 92.39999997615814,
+        "copy": 0,
+        "trim": 0.20000000298023224,
+        "n": 300,
+        "appends": 0
+      }
+    },
+    "storeFrameUpdateMs": {
+      "n": 120,
+      "mean": 0.4,
+      "p50": 0.4,
+      "p95": 0.7,
+      "p99": 0.8,
+      "max": 0.9
+    }
+  },
+  "onioncam": {
+    "strokes300x2_pan": {
+      "rafDelta": {
+        "n": 240,
+        "mean": 17.43,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "mainDrawMs": {
+        "n": 120,
+        "mean": 0.35,
+        "p50": 0.3,
+        "p95": 0.5,
+        "p99": 0.6,
+        "max": 0.6
+      },
+      "longTasks": 0
+    },
+    "strokes300x2_scrub": {
+      "rafDelta": {
+        "n": 161,
+        "mean": 18.43,
+        "p50": 16.7,
+        "p95": 33.3,
+        "p99": 33.4,
+        "max": 50
+      },
+      "mainDrawMs": {
+        "n": 80,
+        "mean": 0.63,
+        "p50": 0.4,
+        "p95": 0.6,
+        "p99": 12.2,
+        "max": 12.2
+      },
+      "longTasks": 0
+    },
+    "strokes1000x2_pan": {
+      "rafDelta": {
+        "n": 240,
+        "mean": 22.57,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 50,
+        "max": 50.1
+      },
+      "mainDrawMs": {
+        "n": 120,
+        "mean": 0.98,
+        "p50": 1,
+        "p95": 1.1,
+        "p99": 1.2,
+        "max": 1.2
+      },
+      "longTasks": 0
+    },
+    "strokes1000x2_scrub": {
+      "rafDelta": {
+        "n": 159,
+        "mean": 21.59,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 50,
+        "max": 100
+      },
+      "mainDrawMs": {
+        "n": 80,
+        "mean": 1.99,
+        "p50": 1.2,
+        "p95": 1.6,
+        "p99": 44.7,
+        "max": 44.7
+      },
+      "longTasks": 0
+    }
+  },
+  "consoleErrors": []
+}

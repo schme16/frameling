@@ -28,6 +28,7 @@ import { GHOST_ALPHA, type GhostItem } from './ghost';
 import { onionBoards, onionFrames } from './onion';
 import { artboardDoc } from '../artboards/model';
 import { blitEntry, blitEntryStretched } from './bitmapBlit';
+import { perf } from './perf';
 import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
 
 export interface FrameParams {
@@ -170,6 +171,9 @@ export class BitmapCache {
     const grown = from && from.drawing.kind === 'vector' && d.kind === 'vector' ? from : undefined;
     const fw = Math.trunc(w);
     const fh = Math.trunc(h);
+    // Where the time in here goes, split four ways, only when the page was opened with ?perf (see canvas/perf.ts).
+    const mark = perf ? () => performance.now() : null;
+    let t = mark ? mark() : 0;
     let crop: CropRect | null = null;
     if (this.crop && d.kind === 'vector') {
       // Only the part of the frame the drawing can touch. When it grew from an earlier bitmap, that and the new shapes.
@@ -177,6 +181,10 @@ export class BitmapCache {
       const c = cropFor(shapesInk(added), doc.width, doc.height, w, h);
       if (c) crop = grown ? unionCrop({ x: grown.x, y: grown.y, w: grown.canvas.width, h: grown.canvas.height }, c) : c;
       if (crop && crop.w * crop.h * 2 > fw * fh) crop = null;
+    }
+    if (perf && mark) {
+      perf.build.ink += mark() - t;
+      t = mark();
     }
     let canvas: Canvas2;
     let at = { x: 0, y: 0 };
@@ -190,15 +198,28 @@ export class BitmapCache {
       sg.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
       this.paintInto(sg, doc, d, pixelSize, grown);
       sg.restore();
+      if (perf && mark) {
+        perf.build.paint += mark() - t;
+        t = mark();
+      }
       canvas = makeCanvas(crop.w, crop.h);
       ctxOf(canvas).drawImage(sg.canvas as CanvasImageSource, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
       at = { x: crop.x, y: crop.y };
+      if (perf && mark) {
+        perf.build.copy += mark() - t;
+        t = mark();
+      }
     } else {
       canvas = makeCanvas(w, h);
       const g = ctxOf(canvas);
       if (grown) g.drawImage(grown.canvas, grown.x, grown.y);
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
       this.paintInto(g, doc, d, pixelSize, grown);
+      // Nothing is lifted out on this path: the whole-frame canvas IS the bitmap.
+      if (perf && mark) {
+        perf.build.paint += mark() - t;
+        t = mark();
+      }
     }
     this.builds++;
     let list = this.map.get(d);
@@ -208,6 +229,11 @@ export class BitmapCache {
     this.all.add(e);
     this.total += e.pixels;
     this.trim(e);
+    if (perf && mark) {
+      perf.build.trim += mark() - t;
+      perf.build.n++;
+      if (grown) perf.build.appends++;
+    }
     return e;
   }
 
