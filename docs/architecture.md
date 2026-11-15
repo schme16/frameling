@@ -575,8 +575,8 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
   (`match.ts`); `runCommand` is the one runner menus and keys use too.
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
-  aren't listed are added at the bottom. Seven menus on the bar (File, Edit, View, Tools and layers, Pixel tools,
-  Frames and motion, Help); everything else is a one-level submenu (`SUBMENUS`, `sub:<key>`). A menu that moved
+  aren't listed are added at the bottom. Eight menus on the bar (File, Edit, View, Tools and layers, Pixel tools,
+  Frames and motion, Skeleton, effects and more, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu (`SUBMENUS`, `sub:<key>`). A menu that moved
   inside another keeps its old id for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to `sub:rig`, and
   `registerMenuItems('sub:keys', ...)` adds to a submenu directly. Submenus can also claim stray commands by
   `prefixes` or `categories`.

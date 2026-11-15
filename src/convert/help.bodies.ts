@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **Do it:**
 1. Pick a vector layer. Pick some shapes if you only want those, or pick none for the whole drawing.
-2. Click **Turn into pixels** in **Properties**, or find it in the command palette, or in **Tools and layers > Tidy and convert shapes**.
+2. Click **Turn into pixels** in **Properties**, or find it in the command palette, or in **Tools and layers > Shapes and colour**.
 3. Choose the settings, check **Now** and **After**, then click **Turn into pixels**.
 
 ## The settings
@@ -30,7 +30,7 @@ Going the other way? See [Turn pixels into shapes](help:convert-to-shapes). Want
 
 **Do it:**
 1. Pick a pixel layer. Select some pixels if you only want those, or select none for the whole drawing.
-2. Click **Turn into shapes** in **Properties**, or find it in the command palette, or in **Tools and layers > Tidy and convert shapes**.
+2. Click **Turn into shapes** in **Properties**, or find it in the command palette, or in **Tools and layers > Shapes and colour**.
 3. Check **Now** and **After**, nudge the settings, then click **Turn into shapes**.
 
 ## The settings

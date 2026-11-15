@@ -27,7 +27,7 @@ export const CEILINGS = {
    */
   railToolsVanish: { blank: 10, vector: 10, 'vector-selected': 10, pixel: 8, tilemap: 32, 'symbol-open': 10, playing: 10, 'has-clips': 10 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
-  menuCommandsVanish: { blank: 7, vector: 7, 'vector-selected': 7, pixel: 8, tilemap: 27, 'symbol-open': 7, playing: 7, 'has-clips': 7 } as Record<string, number>,
+  menuCommandsVanish: { blank: 7, vector: 7, 'vector-selected': 7, pixel: 6, tilemap: 23, 'symbol-open': 7, playing: 7, 'has-clips': 7 } as Record<string, number>,
 };
 
 /**
@@ -73,9 +73,8 @@ export const DEEP_IN_MENUS: Record<string, string> = {
  * sight. Exact, and only meant to go down: a longer list fails, and a shorter one fails until the line is updated.
  */
 export const LONG_LISTS: Record<string, number> = {
-  'Draw': 38,
-  'Animate': 35,
-  'Draw > Tools': 35,
+  // Empty: Draw is 24, Animate 23 and Draw > Tools 27 at their longest. The rare things went into submenus, and Skeleton,
+  // Artboards, Effects and Tiles went to a menu of their own (Extras).
 };
 
 /** Lists that are as long as the person's own things, which is content and not design. */
@@ -90,8 +89,7 @@ export const BIG_MENUS: Record<string, number> = {
   // OBS and the capture view help anybody who shares a screen, so they came back to View > Sharing your screen rather
   // than leaving with the rest. That is 16 more commands under View, and it is the price of that choice, not drift.
   View: 185,
-  Draw: 199,
-  Animate: 172,
+  // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
 };
 
 /**

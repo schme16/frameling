@@ -1,6 +1,6 @@
 // The words of the help topic in combine.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'combine-shapes': `Make a crescent from two circles, a speech bubble from a rounded box and a tail, a key hole. Pick two or more shapes, then choose one of four under **Tools and layers > Combine shapes** (or press **Ctrl+K** and type its name).
+  'combine-shapes': `Make a crescent from two circles, a speech bubble from a rounded box and a tail, a key hole. Pick two or more shapes, then choose one of four under **Tools and layers > Shapes and colour** (or press **Ctrl+K** and type its name).
 
 - **Join** (union): one shape that covers everywhere any of them did.
 - **Cut out** (subtract): the **top** shape punches its outline out of the shapes under it, and goes. A bite out of a moon.

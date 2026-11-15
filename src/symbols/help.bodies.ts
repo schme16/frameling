@@ -136,7 +136,7 @@ On the canvas, the dots along the motion trail show one in-between each. Bunched
 **How**
 1. Go to the frame where the motion should start.
 2. Select what should move with the Select tool (V). Nothing selected moves the whole drawing on this frame.
-3. Pick **Frames and motion > One-click motions**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
+3. Pick **Frames and motion > Ready-made motion**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
 
 **The motions**
 - **Bounce**: crouches, hops up and lands with a squash, like a ball.

@@ -25,6 +25,8 @@ export interface MenuDef {
   categories: string[];
   /** The list is already final (the person changed it, and what features added is in it): add nothing to it. */
   fixed?: boolean;
+  /** Tool ids a `group:tools` in this list skips, because each one is listed where its own feature is. */
+  leaveOut?: readonly string[];
 }
 
 /** `-` is a separator. `group:tools`, `group:panels` and `group:workspaces` expand to every one registered. */
@@ -47,8 +49,8 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Draw',
     title: 'Tools and layers',
-    categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange', 'Effects'],
-    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:brushtips', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'sub:pairs', 'tiles.addLayer', 'sub:tiles', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
+    categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange'],
+    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', 'sub:arrange', '-', 'sub:symbols', 'sub:shapes', 'sub:linestyle', '-', 'sub:brushes', 'sub:brushtips', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'sub:pairs', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:masks', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
@@ -60,7 +62,15 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.makeOwnDrawing', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'sub:onion', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'sub:moreframes', '-', 'sub:tween', 'sub:readymotion', 'sub:camera', 'sub:clips', '-', 'sub:sound', 'sub:reference'],
+  },
+  {
+    // The specialist kits, each a submenu of its own so Draw and Animate stay the menus you use all day. Every command in
+    // them is still on the palette, and these used to sit inside Draw and Animate (MENU_HOMES keeps the old names working).
+    label: 'Extras',
+    title: 'Skeleton, effects and more',
+    categories: [],
+    items: ['sub:rig', 'sub:artboards', 'sub:effects', 'sub:tiles'],
   },
   {
     // Everything that is only for people who draw live: the audience tools, each part a submenu of its own so every entry
@@ -103,7 +113,20 @@ export interface SubmenuDef {
   categories?: string[];
   /** The list is already final (the person changed it, and what features added is in it): add nothing to it. */
   fixed?: boolean;
+  /** Tool ids a `group:tools` in this list skips, because each one is listed where its own feature is. */
+  leaveOut?: readonly string[];
 }
+
+/**
+ * Tools that Draw > Tools leaves out, so that list is the ones you draw and select with. Each is in the menu of the
+ * feature it belongs to (the skeleton tools in Skeleton, the motion tools in In-betweens, Notes and Marks in View), and
+ * on the tool rail and in the palette as ever. A test checks each one is named somewhere else.
+ */
+export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
+  'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
+  'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
+  'tools.notes', 'tools.marks',
+];
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
   panels: {
@@ -153,10 +176,18 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   tools: {
     label: 'Tools',
     items: ['group:tools', '-', 'tiles.newAndDraw'],
+    // These are on the rail and in the palette as ever, and each is in the menu of the thing it is for.
+    leaveOut: TOOLS_WITH_THEIR_FEATURE,
   },
-  combine: {
-    label: 'Combine shapes',
-    items: ['shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch'],
+  arrange: {
+    label: 'Arrange, group and transform',
+    items: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle'],
+    prefixes: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'transform.'],
+  },
+  shapes: {
+    label: 'Shapes and colour',
+    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
+    prefixes: ['shapes.', 'colors.recolour'],
   },
   linestyle: {
     label: 'Line style',
@@ -165,22 +196,13 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tiles: {
     label: 'Tiles',
-    items: ['tiles.new', 'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', '-', 'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.oneWay', 'tiles.clearShapes', '-', 'tiles.addValue', '-', 'tiles.addTerrain', 'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', '-', 'tiles.gridStart', 'tiles.export'],
+    items: ['tiles.addLayer', '-', 'tiles.new', 'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', '-', 'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.oneWay', 'tiles.clearShapes', '-', 'tiles.addValue', '-', 'tiles.addTerrain', 'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', '-', 'tiles.gridStart', 'tiles.export'],
     prefixes: ['tiles.'],
   },
   symbols: {
     label: 'Symbols',
     items: ['symbols.make', 'symbols.makeFrames', 'symbols.makeOne', 'symbols.edit', 'symbols.exit', 'symbols.exitAll', '-', 'symbols.swap', 'symbols.resetTransform', 'symbols.deleteUnused'],
     prefixes: ['symbols.'],
-  },
-  tidy: {
-    label: 'Tidy and convert shapes',
-    items: ['draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes'],
-  },
-  recolour: {
-    label: 'Recolour',
-    items: ['colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
-    prefixes: ['colors.recolour'],
   },
   brushes: {
     label: 'Saved brushes',
@@ -298,11 +320,24 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   goto: {
     label: 'Move around the timeline',
-    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.findDrawing', 'timeline.showDrawings', '-', 'timeline.zoomFit', 'timeline.fitLayers', 'timeline.toggleProperties', 'perf.quickScrub'],
+    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.findDrawing', 'timeline.showDrawings', '-', 'timeline.addMarker', '-', 'timeline.zoomFit', 'timeline.fitLayers', 'timeline.toggleProperties', 'perf.quickScrub'],
+  },
+  onion: {
+    label: 'Onion skin options',
+    items: ['timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips'],
+  },
+  moreframes: {
+    label: 'More frame tools',
+    items: ['timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd'],
+  },
+  readymotion: {
+    label: 'Ready-made motion',
+    items: ['heading:One-click motions', 'motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn', 'heading:Make a line draw itself', 'trim.drawOn', 'trim.drawOff', 'trim.whole', 'view.panel.draw-on', 'heading:Animate text', 'text.animate.fade', 'text.animate.scale', 'text.animate.slide', 'text.animate.rotate', 'text.animate.typewriter', 'text.animate.wave'],
+    prefixes: ['motion.', 'trim.', 'text.animate.'],
   },
   keys: {
-    label: 'Copy, move and stretch keys',
-    items: ['timeline.copyKeys', 'timeline.cutKeys', 'timeline.pasteKeys', 'timeline.pasteKeysAtEnd', 'timeline.pasteKeysInPlace', '-', 'timeline.keysEarlier', 'timeline.keysLater', 'timeline.keysSpread', 'timeline.keysSqueeze'],
+    label: 'Copy, move, name and clear keys',
+    items: ['timeline.copyKeys', 'timeline.cutKeys', 'timeline.pasteKeys', 'timeline.pasteKeysAtEnd', 'timeline.pasteKeysInPlace', '-', 'timeline.keysEarlier', 'timeline.keysLater', 'timeline.keysSpread', 'timeline.keysSqueeze', '-', 'timeline.nameKey', 'timeline.makeOwnDrawing', 'timeline.clearKey'],
   },
   holds: {
     label: 'Hold a drawing',
@@ -315,23 +350,13 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tween: {
     label: 'In-betweens and easing',
-    items: ['tween.make', 'tween.morph', 'tween.remove', '-', 'tween.drawPath', 'tween.pathFromSelection', '-', 'tween.recordMove', 'tween.recordAgain', 'tween.recordPlay', '-', 'tween.hints', 'tween.hints.clear', '-', 'tween.ease.linear', 'tween.ease.easeIn', 'tween.ease.easeOut', 'tween.ease.easeInOut', 'tween.ease.backIn', 'tween.ease.backOut', 'tween.ease.bounceOut', 'tween.ease.elasticOut'],
+    items: ['tween.make', 'tween.morph', 'tween.remove', '-', 'tween.drawPath', 'tween.pathFromSelection', 'tools.motion-path', '-', 'tween.recordMove', 'tween.recordAgain', 'tween.recordPlay', 'tools.record-move', '-', 'tween.hints', 'tween.hints.clear', 'tools.shape-hints', '-', 'tween.ease.linear', 'tween.ease.easeIn', 'tween.ease.easeOut', 'tween.ease.easeInOut', 'tween.ease.backIn', 'tween.ease.backOut', 'tween.ease.bounceOut', 'tween.ease.elasticOut'],
     prefixes: ['tween.'],
-  },
-  drawon: {
-    label: 'Make a line draw itself',
-    items: ['trim.drawOn', 'trim.drawOff', 'trim.whole', '-', 'view.panel.draw-on'],
-    prefixes: ['trim.'],
   },
   camera: {
     label: 'Camera',
     items: ['camera.add', 'camera.pick', 'camera.reset'],
     prefixes: ['camera.add', 'camera.pick', 'camera.reset'],
-  },
-  atext: {
-    label: 'Animate text',
-    items: ['text.animate.fade', 'text.animate.scale', 'text.animate.slide', 'text.animate.rotate', 'text.animate.typewriter', 'text.animate.wave'],
-    prefixes: ['text.animate.'],
   },
   clips: {
     label: 'Clips and clip flow',
@@ -345,7 +370,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   rig: {
     label: 'Skeleton (rig)',
-    items: ['rig.addBones', 'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', '-', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'rig.deleteBone', 'rig.deleteBranch', 'rig.boneLook', 'view.panel.rig'],
+    items: ['rig.addBones', 'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights', '-', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'rig.deleteBone', 'rig.deleteBranch', 'rig.boneLook', 'view.panel.rig'],
     categories: ['Rig'],
   },
   reference: {
@@ -363,11 +388,6 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     ],
     prefixes: ['artboards.variation.', 'artboards.picture'],
     categories: ['Artboards'],
-  },
-  motions: {
-    label: 'One-click motions',
-    items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],
-    prefixes: ['motion.'],
   },
   import: {
     label: 'Import',
@@ -473,7 +493,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
     if (e.startsWith('sub:')) {
       const sub = subs[e.slice(4)];
       if (!sub) continue;
-      const inner = resolveMenu({ label: sub.label, categories: [], items: subItems(e.slice(4), subs), fixed: true }, menus, lookup, all, subs, hidden, named);
+      const inner = resolveMenu({ label: sub.label, categories: [], items: subItems(e.slice(4), subs), fixed: true, leaveOut: sub.leaveOut }, menus, lookup, all, subs, hidden, named);
       const extra = all()
         .filter((c) => ((sub.prefixes ?? []).some((p) => c.id.startsWith(p)) || (sub.categories ?? []).includes(c.category)) && !c.hidden && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
         .sort(byLabel);
@@ -483,7 +503,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
     }
     for (const id of expand(e, subs, true)) {
       const c = lookup(id);
-      if (!c || seen.has(id) || isStaleCommand(id)) continue;
+      if (!c || seen.has(id) || isStaleCommand(id) || menu.leaveOut?.includes(id)) continue;
       seen.add(id);
       out.push({ kind: 'command', command: c });
     }

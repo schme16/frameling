@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
-import { listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, TOOLS_WITH_THEIR_FEATURE, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
 // These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
@@ -55,8 +55,8 @@ describe('menu filtering', () => {
     const r = registry([c('file.new', 'New', 'File')]);
     expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
   });
-  it('the real menus are named File, Edit, View, Draw, Pixel, Animate, Streaming and Help (Artboards, Rig, Effects and Plugins live inside others)', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Streaming', 'Help']);
+  it('the real menus are named File, Edit, View, Draw, Pixel, Animate, Extras, Streaming and Help (Artboards, Rig, Effects and Plugins live inside others)', () => {
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Extras', 'Streaming', 'Help']);
   });
   it('a menu that moved inside another still takes what a feature adds by its old name', () => {
     expect(MENU_HOMES).toEqual({ Rig: 'sub:rig', Effects: 'sub:effects', Artboards: 'sub:artboards', Plugins: 'sub:plugins' });
@@ -161,8 +161,8 @@ describe('the real menus', async () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('there are eight menus, and the long ones sort their entries into submenus rather than one long list', () => {
-    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Streaming', 'Help']);
+  it('there are nine menus, and the long ones sort their entries into submenus rather than one long list', () => {
+    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Skeleton, effects and more', 'Streaming', 'Help']);
     for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
     // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
     // same with its categories taken away.
@@ -196,7 +196,7 @@ describe('the real menus', async () => {
     try {
       setStreaming(false, { remember: false });
       const bar = resolveMenus().map((m) => menuTitle(m.menu));
-      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Help']);
+      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Skeleton, effects and more', 'Help']);
       // Everything of the streaming menu that is not a streaming tool is still in View.
       const inView = flat(menu('View'));
       for (const id of ['view.streamSafe', 'stream.obsLink', 'capture.toggle', 'features.streamingOn']) expect(inView, id).toContain(id);
@@ -224,11 +224,32 @@ describe('the real menus', async () => {
     expect(flat(snap && snap.kind === 'submenu' ? snap.items : [])).toEqual(expect.arrayContaining(['view.snap', 'view.snapOptions', 'view.snap.guides', 'view.snap.artboards']));
     expect(flat(menu('View').filter((i) => i.kind === 'command'))).not.toContain('view.snap.guides');
   });
-  it('Artboards is a submenu of Frames and motion, and View carries no artboard commands', () => {
-    const sub = menu('Animate').find((i) => i.kind === 'submenu' && i.label === 'Artboards');
+  it('Artboards is a submenu of Skeleton, effects and more, and View carries no artboard commands', () => {
+    const sub = menu('Extras').find((i) => i.kind === 'submenu' && i.label === 'Artboards');
     const own = flat(sub && sub.kind === 'submenu' ? sub.items : []);
     for (const id of ['artboards.new', 'artboards.delete', 'artboards.makeVariation', 'artboards.fitFill', 'artboards.pictureFirst', 'artboards.zoomTo']) expect(own).toContain(id);
     expect(flat(menu('View')).filter((id) => id.startsWith('artboards.') && id !== 'view.panel.artboards')).toEqual([]);
+  });
+  it('Skeleton, Artboards, Effects and Tiles are in Extras, not in Draw or Animate, and each is a list of commands (a click, a submenu, a command)', () => {
+    const subs = (label: string) => menu(label).filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
+    expect(subs('Extras')).toEqual(['Skeleton (rig)', 'Artboards', 'Effects', 'Tiles']);
+    for (const gone of ['Skeleton (rig)', 'Artboards', 'Effects', 'Tiles']) {
+      expect(subs('Draw'), gone).not.toContain(gone);
+      expect(subs('Animate'), gone).not.toContain(gone);
+    }
+    for (const g of menu('Extras')) if (g.kind === 'submenu') expect(g.items.filter((i) => i.kind === 'submenu'), g.label).toEqual([]);
+    expect(flat(menu('Extras'))).toEqual(expect.arrayContaining(['tiles.addLayer', 'rig.addBones', 'effects.add.blur', 'artboards.new']));
+  });
+  it('Draw > Tools leaves out the tools that live with their feature, and every one of them is listed there instead', () => {
+    const tools = SUBMENUS.tools;
+    expect(tools.leaveOut).toBe(TOOLS_WITH_THEIR_FEATURE);
+    const elsewhere = new Set(Object.entries(SUBMENUS).filter(([k]) => k !== 'tools').flatMap(([, s]) => s.items));
+    expect(TOOLS_WITH_THEIR_FEATURE.filter((id) => !elsewhere.has(id)), 'each needs a home of its own').toEqual([]);
+    const drawTools = menu('Draw').find((i) => i.kind === 'submenu' && i.label === 'Tools');
+    const own = flat(drawTools && drawTools.kind === 'submenu' ? drawTools.items : []);
+    for (const id of TOOLS_WITH_THEIR_FEATURE) expect(own, id).not.toContain(id);
+    // The tools you draw and select with are still there.
+    expect(own).toEqual(expect.arrayContaining(['tools.brush', 'tools.pen', 'tools.eraser', 'tools.fill', 'tools.select', 'tools.text']));
   });
   it('every View and Artboards command is still in some menu (and in the palette)', () => {
     const everything = new Set(resolveMenus().flatMap((m) => flat(m.items)));

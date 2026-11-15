@@ -107,7 +107,7 @@ modes mix with it the same way exports do.
 - **Effects panel** (dockable, right side by default): opacity, blend picker with plain words and the industry term,
   clip and mask, the stack with on/off, animate, reorder, reset and remove, and Reset all. A/B of how effects are
   added: `brand/ab/effects-panel/`.
-- **Tools and layers > Effects** and **Masks and folders**, and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
+- **Skeleton, effects and more > Effects** and **Masks and folders**, and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
   out of a folder, reset. Every blend mode is a palette command too (`effects.blend.*`).
 - **Timeline**: folder header rows with fold, eye and menu; layers in a folder indented with a purple rule; one small
   mark per layer (mask, clipped, or blend/effects) with the details in its tooltip. Dragging a layer next to a layer
