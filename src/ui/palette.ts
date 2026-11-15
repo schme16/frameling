@@ -66,7 +66,7 @@ function itemText(it: PaletteItem): { label: string[]; keywords: string[]; extra
 
 /** Scores one item for a query: every word has to match somewhere, and words in the label count most. 0 means no match. */
 /** Words people type around what they mean ("how do I make it loop"), skipped when something else was typed. */
-const FILLER = new Set(['a', 'an', 'the', 'it', 'i', 'my', 'me', 'to', 'do', 'how', 'can', 'want', 'please', 'make', 'this', 'that', 'with', 'some', 'from', 'over', 'around', 'of', 'for', 'and', 'into', 'draw', 'add', 'turn', 'on', 'off', 'out', 'go', 'get', 'use', 'put', 'after']);
+const FILLER = new Set(['a', 'an', 'the', 'it', 'i', 'my', 'me', 'to', 'do', 'how', 'can', 'want', 'please', 'make', 'this', 'that', 'with', 'some', 'from', 'over', 'around', 'of', 'for', 'and', 'into', 'draw', 'add', 'turn', 'on', 'off', 'out', 'go', 'get', 'use', 'put', 'after', 'let', 'stuff', 'things']);
 
 export function scoreItem(query: string, it: PaletteItem): number {
   const all = wordsOf(query);
