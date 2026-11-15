@@ -1,7 +1,7 @@
 // Send a copy: saves a copy of the drawing where you pick, asks once whether your undo history goes with it, then shows
 // the file in your file manager. The drawing you are working on is not touched: its file, its place in memory, its
 // "unsaved" mark and the recent list stay exactly as they were. It saves what you see now, saved or not.
-import { choose, registerChoice, rememberedChoice } from '../core/choices';
+import { choose, currentChoice, registerChoice, rememberedChoice } from '../core/choices';
 import { historyFitsFile } from '../core/historyFile';
 import { store } from '../core/store';
 import { rootDoc } from '../core/symbols';
@@ -12,8 +12,12 @@ import { desktop } from './desktop';
 import { notify, notifySaved } from './notify';
 import { previewBytes } from './preview';
 import { packCopy, sizeWords, extraBytes, type CopySizes } from './sendCopyPlan';
+import { withNamesOff } from './sendCopyNames';
 
 export type SendHistoryChoice = 'plain' | 'keep';
+
+/** Whether a copy you send keeps your name and the time on the notes in it. */
+export type KeepNamesChoice = 'off' | 'keep';
 
 /** The two sizes of the copy being sent, while the question is open, so the answers can say the real numbers. */
 let asking: CopySizes | null = null;
@@ -45,6 +49,24 @@ registerChoice<SendHistoryChoice>({
   help: 'send-a-copy',
 });
 
+/**
+ * Your name on the notes in a copy you send. A preference rather than a question: somebody sending a copy means the
+ * drawing, not themselves, so the names come off and this is how to keep them. Never asked, so it adds no step.
+ */
+registerChoice<KeepNamesChoice>({
+  id: 'send.names',
+  title: choiceWord('choice.send.names.title'),
+  question: choiceWord('choice.send.names.question'),
+  options: [
+    { value: 'off', label: choiceWord('choice.send.names.off.label'), detail: choiceWord('choice.send.names.off.detail') },
+    { value: 'keep', label: choiceWord('choice.send.names.keep.label'), detail: choiceWord('choice.send.names.keep.detail') },
+  ],
+  default: 'off',
+  category: 'Files',
+  silent: true,
+  help: 'send-a-copy',
+});
+
 let sending = false;
 
 /** Saves a copy to send. Resolves true when the copy was written. */
@@ -58,7 +80,9 @@ export async function sendCopy(): Promise<boolean> {
   sending = true;
   try {
     // The drawing and its steps are taken together, before anything waits, so they stay a matching pair.
-    const doc = store().rootDoc();
+    // Your name and the time are stamped on any note you leave, so a copy would carry them out of the door. They come
+    // off unless the person has said to keep them: somebody sending a copy is sending the work, not themselves.
+    const doc = currentChoice<KeepNamesChoice>('send.names') === 'keep' ? store().rootDoc() : withNamesOff(store().rootDoc());
     const frame = store().get().ui.frame;
     const original = store().get().ui.filePath;
     const steps = store().historyForSave();

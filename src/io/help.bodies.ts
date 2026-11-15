@@ -51,6 +51,8 @@ If you've been drawing, there's a trail of steps behind you. Should they travel 
 
 The question shows the real sizes for your drawing, so you can see what you're choosing. It remembers your answer. Change it any time in **Preferences > Behaviour**.
 
+**Your name comes off.** A note you leave is stamped with your name and the time. A copy you send loses those stamps, so it carries the work and not you. The notes themselves still read exactly the same. If you are working with somebody and it matters who said what, **Your name on a copy you send** in **Preferences > Behaviour** keeps them.
+
 **Good to know**
 - The copy has its own identity, so its [versions](help:version-history) start fresh, separate from your drawing's.
 - Only the newest steps go in with the history, so it never swells without limit.
