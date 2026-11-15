@@ -867,6 +867,16 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   cropped and captioned); `--help` writes `public/help/stream-capture-<theme>.png`. Run it once per theme. The help runner skips the
   `stream-capture` entry (`scripts/docs/help/capture-view.cjs`). There is no window manager on the virtual screen, so no title bar is
   drawn in either picture. The pure rules are in `test/main/capture.test.ts`.
+- `scripts/e2e/streamboard.cjs` is Stream control (the window of buttons for a second screen) in the real app: both windows and the
+  message port. It checks the default buttons, a greyed button saying why, audience participation from the board, that a covered
+  prompt is nowhere in the board's page until Read it, moving a button by tapping (and putting away, adding back, putting them
+  back), the layout surviving a close and open, the window's size and place being remembered, a vote started from the board (the
+  setup dialog opens in the drawing window), Stop everything, and the board and its command going with the streaming tools.
+  Exit code 1 when a check fails. `--ab` writes `brand/ab/stream-control/` (`board-` and `arranging-<theme>.png`), `--clip` the
+  `stream-control-<theme>.mp4` clip (a button moved, a vote started), `--help` `public/help/stream-control-<theme>.png`. Run it once
+  per theme. The help runner skips the `stream-control` entry (`scripts/docs/help/stream-control.cjs`). The pure rules (the
+  buttons, the layout, what the board is told, what a press does) are in `test/streamboard/`. Not testable on the virtual screen:
+  there is no window manager, so "a press lands while another window has the focus" (`acceptFirstMouse`) and "stays on top" are not seen.
 - `scripts/perf/capture-live.cjs` is what the capture view costs the drawing window while you draw, and how live it is, per tool
   (brush, pencil, eraser, rectangle, line, ellipse, star, transform move) on a vector and a pixel document: real mouse events,
   the window closed and open alternately, the drawing window's main-thread time over the stroke (DevTools `TaskDuration`) and

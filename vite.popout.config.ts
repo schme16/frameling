@@ -33,6 +33,6 @@ export default defineConfig({
     outDir: '../../dist/popout',
     emptyOutDir: true,
     target: 'chrome140',
-    rolldownOptions: { input: 'src/renderer/popout.html' },
+    rolldownOptions: { input: ['src/renderer/popout.html', 'src/renderer/streamboard.html'] },
   },
 });

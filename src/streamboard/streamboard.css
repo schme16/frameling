@@ -1,0 +1,80 @@
+/* The Stream control board: big buttons, readable at a glance and hit without looking. */
+html, body, #root { margin: 0; height: 100%; }
+body { background: #17151f; font-family: 'Nunito Variable', 'Nunito', system-ui, sans-serif; overflow: hidden; }
+.sb-root {
+  --sb-info: #f6c93b;
+  --sb-info-ink: #2a2100;
+  --sb-red: #c62828;
+  --sb-red-deep: #a51f1f;
+  --sb-green: #1d7a3c;
+  position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px;
+  box-sizing: border-box; background: var(--sb-bg, #17151f); color: var(--sb-text, #f4efe6);
+  user-select: none; overflow-y: auto; overflow-x: hidden;
+}
+:where(.sb-root) button { font-family: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+:where(.sb-root) button:focus-visible { outline: 3px solid var(--sb-accent); outline-offset: 2px; }
+
+.sb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+.sb-chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.sb-chip { padding: 8px 14px; border-radius: 999px; font-size: 15px; font-weight: 800; border: 2px solid var(--sb-line); background: var(--sb-panel); white-space: nowrap; }
+.sb-aud-on { background: var(--sb-info); color: var(--sb-info-ink); border-color: var(--sb-info); }
+.sb-aud-off { color: var(--sb-muted); }
+.sb-obs-green { background: var(--sb-green); border-color: var(--sb-green); color: #fff; }
+.sb-obs-red { background: var(--sb-red); border-color: var(--sb-red); color: #fff; }
+.sb-obs-plain { color: var(--sb-muted); }
+.sb-obs-fix { box-shadow: inset 0 0 0 2px var(--sb-text); }
+.sb-arrange { flex: none; padding: 10px 18px; min-height: 44px; border-radius: 12px; border: 2px solid var(--sb-line); background: var(--sb-panel); font-weight: 800; font-size: 15px; }
+.sb-arrange.is-on { background: var(--sb-accent); border-color: var(--sb-accent); color: #fff; }
+
+.sb-prompt { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 2px dashed var(--sb-line); background: var(--sb-panel); }
+.sb-read { display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 8px 18px; border-radius: 12px; border: 2px solid var(--sb-accent); background: var(--sb-raised); }
+.sb-dots { font-size: 26px; letter-spacing: 4px; }
+.sb-read-label { font-size: 20px; font-weight: 800; }
+.sb-note { margin: 0; font-size: 13px; color: var(--sb-muted); flex: 1 1 14em; }
+.sb-prompt-text { margin: 0; flex: 1 1 14em; font-size: 26px; font-weight: 800; line-height: 1.2; user-select: text; }
+.sb-quiet { padding: 8px 14px; min-height: 44px; border-radius: 10px; border: 2px solid var(--sb-line); background: transparent; font-weight: 700; }
+
+.sb-arrange-bar { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--sb-panel); border: 2px solid var(--sb-accent); }
+.sb-arrange-help { margin: 0; font-size: 16px; font-weight: 700; }
+.sb-arrange-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sb-size { min-width: 4.5em; text-align: center; font-weight: 800; }
+.sb-small { min-height: 44px; padding: 8px 16px; border-radius: 10px; border: 2px solid var(--sb-line); background: var(--sb-raised); font-weight: 800; font-size: 15px; }
+.sb-small:disabled { opacity: 0.45; cursor: default; }
+
+.sb-grid { flex: 1 0 auto; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(var(--sb-min), 1fr)); grid-auto-rows: minmax(calc(var(--sb-min) * 0.55), auto); align-content: start; }
+.sb-tile {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left;
+  padding: 12px 16px; border-radius: 16px; border: 3px solid var(--sb-line); background: var(--sb-raised);
+  font-weight: 800; transition: transform 90ms ease-out, background 120ms;
+}
+.sb-tile:active { transform: scale(0.97); }
+.sb-label { font-size: calc(var(--sb-min) * 0.1 + 6px); line-height: 1.15; }
+.sb-caption { font-size: calc(var(--sb-min) * 0.065 + 5px); font-weight: 700; color: var(--sb-muted); }
+.sb-why { font-size: 13px; font-weight: 600; color: var(--sb-muted); line-height: 1.25; }
+.sb-tile.is-off { opacity: 0.62; border-style: dashed; }
+.sb-switch.is-on { background: var(--sb-accent); border-color: var(--sb-accent); color: #fff; }
+.sb-switch.is-on .sb-caption { color: #fff; }
+.sb-audience.is-on { background: var(--sb-info); border-color: var(--sb-info); color: var(--sb-info-ink); }
+.sb-audience.is-on .sb-caption { color: var(--sb-info-ink); }
+.sb-tile.is-held { outline: 4px solid var(--sb-accent); outline-offset: 3px; transform: scale(1.03); }
+[data-arranging] .sb-tile { border-style: dashed; border-color: var(--sb-accent); opacity: 1; }
+[data-arranging] .sb-tile.is-held { border-style: solid; }
+.sb-empty { grid-column: 1 / -1; margin: 12px 0; color: var(--sb-muted); font-size: 16px; }
+
+.sb-tray { flex: none; }
+.sb-tray h2 { margin: 0 0 6px; font-size: 14px; font-weight: 800; color: var(--sb-muted); }
+.sb-tray-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* The Stop button and the line above it stay at the bottom, in the same place every time, apart from the buttons. */
+.sb-foot { position: sticky; bottom: -12px; flex: none; margin: 0 -12px -12px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--sb-bg); border-top: 2px solid var(--sb-line); }
+.sb-said { margin: 0; min-height: 1.4em; font-size: 15px; font-weight: 700; color: var(--sb-muted); opacity: 0; transition: opacity 150ms; }
+.sb-said.is-shown { opacity: 1; color: var(--sb-text); }
+.sb-stop { min-height: 72px; border-radius: 16px; border: 0; background: var(--sb-red); color: #fff; font-size: 26px; font-weight: 900; letter-spacing: 0.02em; }
+.sb-stop:hover { background: var(--sb-red-deep); }
+.sb-stop:active { transform: scale(0.98); }
+
+.sb-wait { margin: auto; text-align: center; max-width: 28em; padding: 24px; }
+.sb-wait-title { font-size: 22px; font-weight: 800; }
+.sb-wait-text { margin-top: 6px; font-size: 15px; color: var(--sb-muted); }
+.sb-lost { position: absolute; left: 12px; right: 12px; top: 12px; padding: 10px 14px; border-radius: 12px; background: var(--sb-red); color: #fff; font-weight: 800; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .sb-tile, .sb-said { transition: none; } }

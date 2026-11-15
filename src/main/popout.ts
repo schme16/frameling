@@ -28,8 +28,8 @@ export function readPlace(raw: unknown): Place | null {
  * The bounds to open with: where it was if most of it is still on a screen (the screen it was on may be unplugged now,
  * which is the whole point of a second-screen window), otherwise just a size and the system picks the spot.
  */
-export function openBounds(saved: Place | null, screens: { x: number; y: number; width: number; height: number }[]): { x?: number; y?: number; width: number; height: number } {
-  if (!saved) return { ...DEFAULT_SIZE };
+export function openBounds(saved: Place | null, screens: { x: number; y: number; width: number; height: number }[], size: { width: number; height: number } = DEFAULT_SIZE): { x?: number; y?: number; width: number; height: number } {
+  if (!saved) return { ...size };
   return fitWindow({ ...saved, maximized: false, fullScreen: false }, screens, MIN_SIZE);
 }
 
@@ -74,6 +74,8 @@ export interface PopoutDeps {
   loadPlace(capture: boolean): Place | null;
   savePlace(p: Place, capture: boolean): void;
   screens(): { x: number; y: number; width: number; height: number }[];
+  /** The size to open at when there is no saved place (another kind of window, such as the stream control board, has its own). */
+  defaultSize?: { width: number; height: number };
 }
 
 export interface Popout {
@@ -135,7 +137,7 @@ export function createPopout(d: PopoutDeps): Popout {
       win = null;
       loaded = false;
       current = o;
-      const bounds = openBounds(d.loadPlace(o.capture), d.screens());
+      const bounds = openBounds(d.loadPlace(o.capture), d.screens(), d.defaultSize);
       let self: PopoutWindow | null = null;
       const events: WindowEvents = {
         loaded: () => {
