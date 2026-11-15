@@ -4,6 +4,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { STREAM_FEATURES } from '../../src/features/streamIds';
 import { isFeatureOn, setFeatureOn, switchableFeatures } from '../../src/features/host';
 import { FeaturesPage } from '../../src/features/FeaturesPage';
 import { featuresToTuck, INTEREST_KEEPS, nameList, reduceFlow, startFlow, TUCKABLE, type Interest, type TuckFeature } from '../../src/ui/onboarding/flow';
@@ -36,7 +37,7 @@ describe('featuresToTuck', () => {
   it('puts nothing away for no picks, or for Just playing', () => {
     expect(featuresToTuck([], all())).toEqual([]);
     expect(featuresToTuck(['play'], all())).toEqual([]);
-    // Play with anything else is still "no plan": keep everything.
+    // Play with anything else is still "no plan": every making area stays.
     expect(featuresToTuck(['cartoons', 'play'], all())).toEqual([]);
   });
 
@@ -103,7 +104,7 @@ const next = async (n: number) => {
   for (let i = 0; i < n; i++) await click(document.querySelector('.ob-next')!);
 };
 const card = (title: string) => [...document.querySelectorAll<HTMLElement>('.ob-card')].find((c) => c.textContent?.includes(title));
-const ALL_BACK = ['audio', 'camera', 'flow', 'godot-export', 'lipsync', 'particles', 'rig', 'text', 'tiles'];
+const ALL_BACK = ['audio', 'camera', 'flow', 'godot-export', 'lipsync', 'particles', 'rig', 'text', 'tiles', ...STREAM_FEATURES];
 
 beforeEach(async () => {
   localStorage.clear();
@@ -169,8 +170,16 @@ describe('the last page of the hello', () => {
     expect(toasts.get().some((x) => x.message.includes('Tucked away'))).toBe(false);
   });
 
-  it('leaves everything alone for Just playing, and shows no switch', async () => {
+  it('for Just playing keeps every making area and puts away only the streaming tools', async () => {
     await toLastPage('Just playing');
+    expect(document.querySelector('.ob-tuck')!.textContent).toContain('Streaming tools');
+    await finishBlank();
+    for (const id of ALL_BACK.filter((x) => !STREAM_FEATURES.includes(x))) expect(isFeatureOn(id), id).toBe(true);
+    for (const id of STREAM_FEATURES) expect(isFeatureOn(id), id).toBe(false);
+  });
+
+  it('leaves everything alone when nothing was picked', async () => {
+    await toLastPage();
     expect(document.querySelector('.ob-tuck')).toBeNull();
     await finishBlank();
     for (const id of ALL_BACK) expect(isFeatureOn(id), id).toBe(true);
@@ -220,7 +229,7 @@ describe('the command that brings it all back', () => {
 
 describe('the interests are still the ones in the table', () => {
   it('has a row for every interest', () => {
-    const picks: Interest[] = ['cartoons', 'sprites', 'tiles', 'motion', 'interactives', 'play'];
+    const picks: Interest[] = ['cartoons', 'sprites', 'tiles', 'motion', 'interactives', 'play', 'stream'];
     expect(Object.keys(INTEREST_KEEPS).sort()).toEqual([...picks].sort());
   });
 });

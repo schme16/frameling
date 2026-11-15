@@ -28,8 +28,9 @@ import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';
 import { installUpdates } from '../update';
-import { installAudience } from '../audience';
+import { installAudience, syncGateCommands } from '../audience';
 import { registerFeatures } from '../features/host';
+import '../features/streamCommands';
 import { startRememberingUi } from '../tools/rememberUi';
 import { startBrushPresets } from '../brushes';
 
@@ -62,6 +63,8 @@ import { penModsFeature } from '../penmods';
 import { twitchFeature } from '../twitch';
 
 registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature, streamDoorFeature, quillReactsFeature, daresFeature, promptJarFeature, votesFeature, penModsFeature, streamOverlayFeature, guessFeature, twitchFeature]);
+// The gate's own commands follow the streaming features: out of the lists when they are all tucked away.
+syncGateCommands();
 
 // Brush, colours, loop playback and onion skin: put back as they were, and saved from here on.
 startRememberingUi();

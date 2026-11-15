@@ -1,0 +1,15 @@
+[
+ {"wait": 800},
+ {"eval": "__frameling.overlays.openPrefs('features'); true"},
+ {"wait": 1500},
+ {"eval": "document.querySelector('.ui-prefs').style.height = '1500px'; document.querySelector('.ui-prefs').style.maxHeight = 'none'; document.querySelector('.ui-prefs').style.top = '0px'; true"},
+ {"shot": "kick", "crop": [0,0,8,8]},
+ {"wait": 500},
+ {"shot": "features", "el": ".ui-prefs", "pad": 10},
+ {"key": "Escape"},
+ {"wait": 500},
+ {"clickOn": ".ui-menubar [role=menuitem]", "text": "View", "after": 900},
+ {"shot": "kick2", "crop": [0,0,8,8]},
+ {"wait": 400},
+ {"shot": "view"}
+]

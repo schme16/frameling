@@ -4520,3 +4520,13 @@ body.dock-dragging .ui-tip {
 :root[data-lock-panels] .ui-group-split::after {
   display: none;
 }
+/* Preferences > Features: the streaming tools are one row; the nine behind it are folded until asked for. */
+.features-streaming-more > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  padding: 8px 0;
+}
+.features-streaming-more[open] > summary {
+  border-bottom: 1px solid var(--line-soft);
+}

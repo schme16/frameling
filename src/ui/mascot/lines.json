@@ -23,6 +23,7 @@
     "text": "A great way to get the creative juices flowing.\nJust watch out for that blank canvas!",
     "where": "First-run hello, 'What would you like to make?': you just picked Just playing."
   },
+  "onboarding.make.stream": { "text": "Live drawing! I'll keep the chat tools handy.", "where": "First-run hello, 'What would you like to make?': you just picked Streaming it live." },
   "onboarding.make.none": { "text": "Pick as many as you like, or none at all. No wrong answers here! (Probably...)", "where": "First-run hello, 'What would you like to make?': nothing picked yet." },
   "onboarding.make.some": { "text": "Still lots of great picks!", "where": "First-run hello, 'What would you like to make?': after un-picking a card, with one to three still picked." },
   "onboarding.make.lots": { "text": "Wow, still big plans, I love it.", "where": "First-run hello, 'What would you like to make?': after un-picking a card, with four or more still picked." },

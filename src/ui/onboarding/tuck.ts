@@ -1,7 +1,19 @@
 // Putting away the optional areas the hello's picks don't need, and bringing them back. The choosing is in flow.ts
 // (featuresToTuck); this is the part that talks to the features host.
 import { isFeatureOn, setFeatureOn, switchableFeatures } from '../../features/host';
+import { STREAMING_NAME, STREAM_FEATURES } from '../../features/streamIds';
 import { featuresToTuck, nameList, type Interest } from './flow';
+
+/** Plain names for areas, with the nine streaming ones read as one ("Streaming tools") so the list stays short. */
+export function tuckNames(ids: readonly string[]): string[] {
+  const list = switchableFeatures();
+  const names: string[] = [];
+  for (const id of ids) {
+    const name = STREAM_FEATURES.includes(id) ? STREAMING_NAME : (list.find((f) => f.id === id)?.name ?? id);
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
 
 /** The areas that would be put away for these picks, with their plain names. */
 export function tuckPlan(interests: readonly Interest[]): { ids: string[]; names: string[] } {
@@ -10,7 +22,7 @@ export function tuckPlan(interests: readonly Interest[]): { ids: string[]; names
     interests,
     list.map((f) => ({ id: f.id, on: isFeatureOn(f.id), requires: f.requires })),
   );
-  return { ids, names: ids.map((id) => list.find((f) => f.id === id)?.name ?? id) };
+  return { ids, names: tuckNames(ids) };
 }
 
 /** Switches the areas off (they are remembered as off, so Preferences > Features shows them off). Returns the ones that went. */

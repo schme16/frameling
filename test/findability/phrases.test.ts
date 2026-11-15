@@ -118,6 +118,10 @@ export const PHRASES: Phrase[] = [
   P('obs overlay', 'streamoverlay.settings', 'help:stream-overlay'),
   P('use a stream deck', 'streamdoor.settings', 'help:actions-door'),
   P('make quill cheer', 'quillreacts.cheer', 'help:quill-reacts'),
+  // The way out for somebody who does not stream: one command that tucks the whole family away, and one that brings it back.
+  P('hide stream features', 'features.streamingOff'),
+  P('i never stream', 'features.streamingOff'),
+  P('bring back the stream tools', 'features.streamingOn'),
 ];
 
 /**
@@ -135,10 +139,8 @@ export const KNOWN_MISSES: Phrase[] = [
   P('colour it in', 'tools.fill'),
   // Flipping the view and flipping a layer's mask both say "flip" plainly; flipping the drawing loses to them.
   P('flip it', 'select.flipH', 'select.flipV'),
-  // The way out for somebody who does not stream. Nothing says "the stream things" as a group, so each of these finds
-  // one stream feature (Stream-safe, the overlay settings) before the master switch or Preferences > Features.
-  P('turn off stream stuff', 'audience.toggle', 'view.features'),
-  P('hide stream features', 'audience.toggle', 'view.features'),
+  // Stream-safe and the overlay settings still outrank the one command that tucks the whole family away.
+  P('turn off stream stuff', 'features.streamingOff'),
   // The command says "Start a guessing game" and the palette needs every word, so "play" finds nothing at all.
   P('play a guessing game', 'guess.start', 'help:guess'),
 ];

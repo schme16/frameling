@@ -352,9 +352,15 @@ For example, turning **Particles** off also takes its panel and commands out of 
 
 If some are off and you want the lot, press **Turn everything back on** at the bottom of the list, or search the command palette (**Ctrl+K**) for **Turn every feature back on**. Both only work while something is off.
 
+## The streaming tools are one switch
+
+Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they sit under one row near the bottom of the list: **Streaming tools**. Switch it off and all of them go out of the View menu, the palette, Preferences and the help index. Switch it on and they all come back. **Choose one by one** under it opens the nine, for a streamer who wants only some.
+
+You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer is also in **Preferences > Behaviour**, as **Do you stream?**.
+
 ## Quill's hello puts some away
 
-On its last page, Quill's hello can tuck away the parts your picks don't need. It says which, and **Bring them back** on the message that follows undoes it. They show here as switched off like any other, so it's the same way back. See [Quill's hello](help:first-run).
+On its last page, Quill's hello can tuck away the parts your picks don't need, the streaming tools included unless you picked **Streaming it live**. It says which, and **Bring them back** on the message that follows undoes it. They show here as switched off like any other, so it's the same way back. See [Quill's hello](help:first-run).
 
 ## Your drawings are safe
 

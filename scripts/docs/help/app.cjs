@@ -149,7 +149,8 @@ const entries = [
   {
     name: 'features',
     size: [1280, 1000], // the list now has Camera, Particles, Text and Godot exports
-    steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
+    // With the streaming tools tucked away, scrolled to the bottom: the one Streaming tools switch, and the nine folded under it.
+    steps: [template('bouncing-ball'), js(`for (const id of ['stream-guess', 'stream-votes', 'stream-overlay', 'stream-twitch', 'prompt-jar', 'quill-reacts', 'stream-dares', 'stream-penmods', 'stream-door']) __framelingFeatures.set(id, false); true`), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), js(`(() => { let p = document.querySelector('.features-page'); while (p && p.scrollHeight <= p.clientHeight + 2) p = p.parentElement; if (p) p.scrollTop = p.scrollHeight; return true; })()`), wait(300), ...shotOf('.ui-prefs', null, 10)],
   },
 
   // Preferences, Behaviour: every choice listed, and the button that switches the questions off.

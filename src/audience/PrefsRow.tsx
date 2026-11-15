@@ -3,11 +3,16 @@
 import { useSyncExternalStore } from 'react';
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
+import { useFeaturesVersion } from '../features/use';
+import { streamingOn } from '../features/streamFamily';
 import { audience, setAudienceDrawing, setAudienceOn } from './index';
 
 export function AudiencePrefsRow() {
+  useFeaturesVersion();
   const on = useSyncExternalStore(audience.subscribe, () => audience.isOn());
   const drawing = useSyncExternalStore(audience.subscribe, () => audience.snapshot().drawingAllowed);
+  // Tucked away with the rest of the streaming tools; the Streaming tools row above brings it back.
+  if (!streamingOn()) return null;
   return (
     <div className="aud-prefs" data-testid="audience.prefs">
       <h3>Audience features</h3>

@@ -1564,6 +1564,23 @@
     "text": "Audience features start as you left them.",
     "where": "Toast when \"keep\" is used without asking (\"Audience features when Frameling opens\"), in the past tense."
   },
+  "choice.streaming.offer.title": { "text": "Do you stream?", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streaming.offer.question": {
+    "text": "Frameling grew a lot of tools for streaming: chat dares, votes, a prompt jar, Twitch and more. Do you stream? If not, I'll tuck them away so the menus and lists stay short.",
+    "where": "The question Quill asks once, a little while after Frameling opens, of anybody who finished the first-run hello before it asked about streaming."
+  },
+  "choice.streaming.offer.yes.label": { "text": "Yes, I stream", "where": "Dialog and Preferences: the button for the answer \"yes\" in \"Do you stream?\"." },
+  "choice.streaming.offer.yes.detail": {
+    "text": "Nothing changes. Every streaming tool stays where it is.",
+    "where": "Dialog and Preferences: the small line under the \"yes\" answer in \"Do you stream?\"."
+  },
+  "choice.streaming.offer.yes.did": { "text": "Kept the streaming tools.", "where": "Toast when \"yes\" is used without asking (\"Do you stream?\"), in the past tense." },
+  "choice.streaming.offer.no.label": { "text": "No, tuck them away", "where": "Dialog and Preferences: the button for the answer \"no\" in \"Do you stream?\"." },
+  "choice.streaming.offer.no.detail": {
+    "text": "Puts the streaming tools out of sight. Preferences > Features, or the command palette, brings them back any time.",
+    "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Do you stream?\"."
+  },
+  "choice.streaming.offer.no.did": { "text": "Tucked away the streaming tools.", "where": "Toast when \"no\" is used without asking (\"Do you stream?\"), in the past tense." },
   "choice.timelapse.startAgain.title": { "text": "Timelapse with old pictures waiting", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
   "choice.timelapse.startAgain.question": {
     "text": "You still have pictures from an earlier timelapse. Carry on with them, or start a new one?",

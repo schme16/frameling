@@ -9,8 +9,10 @@
 //   lasts(ms, signal)                                                    wait for an effect that ends by itself
 // Register inside your feature's `activate()` (or at the top level of its descriptor) and it goes when the feature does.
 import { currentChoice, onChoiceChange, registerChoice, withChoice } from '../core/choices';
-import { ownedUndo } from '../core/owners';
-import { registerCommands, registerHelpTopics } from '../core/registry';
+import { ownedUndo, removeOwned, withOwner } from '../core/owners';
+import { registerCommands, registerHelpTopics, type Command } from '../core/registry';
+import { onFeaturesChange } from '../features/host';
+import { streamingOn } from '../features/streamFamily';
 import { store } from '../core/store';
 import { readJson, writeJson } from '../ui/mini';
 import { toast } from '../ui/toast';
@@ -24,6 +26,7 @@ export { lasts };
 export type { AudienceActionDef, AudienceContext, AudienceDoorDef, AudienceCounts, GateLimits, RejectReason, Strictness, Verdict } from './gate';
 
 const KEY = 'frameling.audience.v1';
+const GATE_OWNER = 'audience-gate';
 
 /** The app's one gate, on the real clock, with the strictness the streamer chose. Everything below is this object. */
 export const audience: Gate = createGate({
@@ -86,13 +89,32 @@ export function emptyAudienceQueue(): number {
 }
 
 let installed = false;
+let gateCommands: Command[] = [];
+let gateShown = false;
+
+/**
+ * Puts the gate's own commands (the switch, Stop, the queue) in the palette and the menus while any streaming feature
+ * is on, and takes them out while all are tucked away, so somebody who never streams does not see them. The gate and
+ * its help stay, and switching any streaming feature on brings the commands back.
+ */
+export function syncGateCommands(): void {
+  const want = streamingOn();
+  if (want === gateShown) return;
+  gateShown = want;
+  if (want) withOwner(GATE_OWNER, () => registerCommands(gateCommands));
+  else {
+    removeOwned(GATE_OWNER);
+    // Nothing is left that could use it, so the switch goes off with the last of them.
+    if (audience.isOn()) audience.setOn(false);
+  }
+}
 
 export function installAudience(): void {
   if (installed) return;
   installed = true;
   registerHelpTopics(audienceHelp);
   for (const c of audienceChoices) registerChoice(c);
-  registerCommands([
+  gateCommands = [
     {
       id: 'audience.toggle',
       label: 'Audience features',
@@ -151,7 +173,10 @@ export function installAudience(): void {
       reason: () => 'Switch audience features on first (Preferences > Features).',
       run: showAudienceCard,
     },
-  ]);
+  ];
+  syncGateCommands();
+  // The commands and the View > Audience features menu are only there while a streaming feature is on.
+  onFeaturesChange(syncGateCommands);
 
   // The switch comes back on only when the person said that is what they want. By default every start is quiet.
   const was = saved();

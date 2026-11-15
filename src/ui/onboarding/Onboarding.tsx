@@ -22,7 +22,8 @@ import { getFeature, isFeatureOn } from '../../features/host';
 import { offerTurnOnForWish } from '../../features/prompt';
 import { useFeaturesVersion } from '../../features/use';
 import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, pickedButOff, planFor, reduceFlow, sillyName, startFlow, STEPS, stepIndex, strawberryFor, type FlowState, type StepId } from './flow';
-import { bringBack, nameList, tuckAway, tuckPlan } from './tuck';
+import { noteHelloAnswer } from '../../features/streamOffer';
+import { bringBack, nameList, tuckAway, tuckNames, tuckPlan } from './tuck';
 import './onboarding.css';
 
 /** True while this is the automatic first-run showing (a skip then still opens the welcome sheet). */
@@ -142,9 +143,11 @@ function Flow() {
     const name = s.name.trim() || 'Untitled';
     // Put away the areas none of the picks need, and say how to get them back.
     const tucked = s.tuck ? tuckAway(tuck.ids) : [];
+    // Whether they stream is answered here, so the one-time offer to existing users never comes to them.
+    noteHelloAnswer({ picked: s.interests.includes('stream'), answered: s.interests.length > 0 });
     end('done');
     if (tucked.length) {
-      toast(line('onboarding.tucked', { names: nameList(tuck.names.filter((_, n) => tucked.includes(tuck.ids[n]))) }), {
+      toast(line('onboarding.tucked', { names: nameList(tuckNames(tucked)) }), {
         kind: 'info',
         duration: 12_000,
         action: { label: 'Bring them back', id: 'tuck-undo', run: () => bringBack(tucked) },

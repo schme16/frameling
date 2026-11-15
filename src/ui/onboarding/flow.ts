@@ -2,6 +2,7 @@
 // afterwards. No DOM and no stores, so it's all easy to test. Onboarding.tsx draws it. Quill's words are in
 // ../mascot/lines.json.
 import { interactivesEnabled } from '../../features/flags';
+import { STREAM_FEATURES } from '../../features/streamIds';
 import { line, lines } from '../mascot/lines';
 
 // Five steps. The name for the first animation is asked on the last page, where there is room for it, and the
@@ -11,7 +12,7 @@ export type StepId = 'hello' | 'make' | 'themes' | 'prefs' | 'done';
 
 export const STEPS: StepId[] = ['hello', 'make', 'themes', 'prefs', 'done'];
 
-export type Interest = 'cartoons' | 'sprites' | 'tiles' | 'motion' | 'interactives' | 'play';
+export type Interest = 'cartoons' | 'sprites' | 'tiles' | 'motion' | 'interactives' | 'play' | 'stream';
 
 export interface InterestInfo {
   id: Interest;
@@ -30,6 +31,7 @@ export const INTERESTS: InterestInfo[] = ([
   { id: 'motion', title: 'Explainers and motion graphics', blurb: 'Logos, titles and smooth moves.', icon: 'tween', reaction: line('onboarding.make.motion') },
   { id: 'interactives', title: 'Things for Interactives', blurb: 'Art you can poke!', icon: 'play', reaction: line('onboarding.make.interactives') },
   { id: 'play', title: 'Just playing', blurb: 'No plan at all. The best kind of plan.', icon: 'heart', reaction: line('onboarding.make.play') },
+  { id: 'stream', title: 'Streaming it live', blurb: 'Chat joins in while you draw.', icon: 'live', reaction: line('onboarding.make.stream') },
 ] as InterestInfo[]).filter((i) => i.id !== 'interactives' || interactivesEnabled());
 
 export interface FlowState {
@@ -127,6 +129,8 @@ const PLANS: Record<Interest, Plan> = {
   motion: { workspace: 'animate', template: 'bouncing-logo', quest: 'bouncing-ball', help: ['tweens', 'easing', 'motion-paths'] },
   interactives: { workspace: 'animate', template: 'blink', quest: 'share-it', help: ['export-interactives', 'timeline-clips', 'symbols'] },
   play: { workspace: 'draw', template: 'blank-vector', quest: 'fill-it-in', help: ['tool-brush', 'command-palette', 'examples'] },
+  // Streaming is not a kind of art: it never leads the plan, it only adds its own help (see planFor).
+  stream: { workspace: 'draw', template: 'blank-vector', quest: 'fill-it-in', help: ['audience', 'stream-safe'] },
 };
 
 /** Interests that need a feature which is off, so the plan leaves them out. Each is a feature id. */
@@ -145,10 +149,14 @@ export const FIRST_QUEST = 'first-animation';
  * come from every pick, and the quest is the 60-second one until that's done (sprite and tile people get their own first).
  */
 export function planFor(interests: readonly Interest[], completedQuests: readonly string[] = []): Plan {
-  const picks = INTERESTS.map((x) => x.id).filter((id) => interests.includes(id));
+  const all = INTERESTS.map((x) => x.id).filter((id) => interests.includes(id));
+  // Streaming says how you share it, not what you make, so it never picks the workspace, template or quest.
+  const picks = all.filter((id) => id !== 'stream');
   const lead = PLANS[picks[0] ?? 'play'];
   const help: string[] = [];
   for (const id of picks.length ? picks : (['play'] as Interest[])) for (const h of PLANS[id].help) if (!help.includes(h)) help.push(h);
+  // A streamer's own help comes first, so it is not the one cut off.
+  if (all.includes('stream')) help.unshift(...PLANS.stream.help);
   let quest = FIRST_QUEST;
   // Sprite and tile people start with a quest in their own kind of art.
   const leadId = picks[0];
@@ -170,13 +178,15 @@ export const INTEREST_KEEPS: Record<Interest, string[]> = {
   tiles: ['tiles', 'audio', 'particles', 'flow', 'godot-export'],
   motion: ['audio', 'text', 'camera', 'particles'],
   interactives: ['audio', 'text', 'particles', 'flow'],
-  // No plan at all, so nothing is put away.
+  // No plan at all, so nothing is put away (except streaming, below).
   play: [],
+  // Streaming keeps the whole streaming family. Nothing else does, so anybody who did not pick it has it put away.
+  stream: [...STREAM_FEATURES],
 };
 
 /**
- * Every area the hello may put away: the ones above, plus Rig and Lip sync, which no pick keeps (a person who wants
- * a puppet or a talking mouth turns them on, and the Features page says where).
+ * Every area the hello may put away: the ones above (the streaming ones among them), plus Rig and Lip sync, which no
+ * pick keeps (a person who wants a puppet or a talking mouth turns them on, and the Features page says where).
  */
 export const TUCKABLE: readonly string[] = [...new Set([...Object.values(INTEREST_KEEPS).flat(), 'rig', 'lipsync'])];
 
@@ -188,13 +198,17 @@ export interface TuckFeature {
 }
 
 /**
- * The areas to put away for these picks, in the order to switch them off. Nothing for no picks or for "Just
- * playing", and an area that a kept area needs stays on (Lip sync needs Audio, say).
+ * The areas to put away for these picks, in the order to switch them off. Nothing for no picks (the question was not
+ * answered), and an area that a kept area needs stays on (Lip sync needs Audio, say). "Just playing" means no plan, so
+ * the making areas all stay; the streaming tools are the one exception, because not picking "Streaming it live" is
+ * the answer that it is not for you.
  */
 export function featuresToTuck(interests: readonly Interest[], features: readonly TuckFeature[]): string[] {
-  if (!interests.length || interests.includes('play')) return [];
+  if (!interests.length) return [];
+  const making = interests.filter((i) => i !== 'stream');
+  const noPlan = !making.length || making.includes('play');
   const keep = new Set(interests.flatMap((i) => INTEREST_KEEPS[i]));
-  let away = features.filter((f) => f.on && TUCKABLE.includes(f.id) && !keep.has(f.id));
+  let away = features.filter((f) => f.on && TUCKABLE.includes(f.id) && !keep.has(f.id) && (!noPlan || STREAM_FEATURES.includes(f.id)));
   // Whatever stays on keeps what it needs on too, so keep going until that settles.
   for (let again = true; again; ) {
     again = false;

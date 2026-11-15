@@ -51,6 +51,13 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   // record a move: a dotted trail with a filled dot at the end, like a hand being followed
+  live: (
+    <>
+      <circle cx="12" cy="12" r="1.8" />
+      <path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6" />
+      <path d="M5.4 5.4a9.4 9.4 0 0 0 0 13.2M18.6 5.4a9.4 9.4 0 0 1 0 13.2" />
+    </>
+  ),
   record: (
     <>
       <path d="M4 17c2-7 5-7 8-3s5 1 6-6" strokeDasharray="1 3.2" />

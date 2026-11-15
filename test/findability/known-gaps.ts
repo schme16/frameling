@@ -100,8 +100,8 @@ export const BIG_MENUS: Record<string, number> = {
 
 /**
  * What a person who does not stream has to wade through: the stream family (the Audience category, the OBS commands
- * and Stream capture) in each place it shows up. Exact. It can only go down once the first-run hello can tuck the
- * stream features away (board task ux-stream-first-run); until then raising a number needs a reason written here.
+ * and Stream capture) in each place it shows up, with every stream feature on (which is how Frameling starts). Exact.
+ * Raising a number needs a reason written here. STREAM_LOAD_TUCKED, below, is the same count after "I do not stream".
  */
 export const STREAM_LOAD = {
   /** Commands in the palette. */
@@ -113,3 +113,10 @@ export const STREAM_LOAD = {
   /** Help topics. */
   help: 15,
 };
+
+/**
+ * The same count for somebody who answered "I do not stream" (the first-run hello's Streaming it live card, or Quill's
+ * one-time offer): the nine streaming features and the audience gate are tucked away. What is left is core, for anybody
+ * who shares their screen: Stream-safe, the OBS link and the capture view. Exact, and it can only go down.
+ */
+export const STREAM_LOAD_TUCKED = { palette: 13, menu: 13, switches: 0, help: 2 };

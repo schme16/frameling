@@ -10,10 +10,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allCommands, allHelp } from '../../src/core/registry';
 import { switchableFeatures } from '../../src/features/host';
+import { setStreaming } from '../../src/features/streamFamily';
 import { paletteItems } from '../../src/ui/palette';
-import { isStaleCommand } from '../../src/ui/dynamic';
+import { isStaleCommand, syncDynamicCommands } from '../../src/ui/dynamic';
 import { loadApp, menuDepths, menuListsWorstCase, quietWorld, SITUATIONS } from './app';
-import { BIG_MENUS, DEEP_IN_MENUS, LISTS_OF_YOUR_THINGS, LONG_LISTS, STREAM_LOAD } from './known-gaps';
+import { BIG_MENUS, DEEP_IN_MENUS, LISTS_OF_YOUR_THINGS, LONG_LISTS, STREAM_LOAD, STREAM_LOAD_TUCKED } from './known-gaps';
 
 /** Clicks from the menu bar: "View" is 1, "View > Zoom in" is 2, "View > Audience features > Audience dares > Try the dare" is 4. */
 export const MAX_MENU_STEPS = 3;
@@ -100,11 +101,11 @@ describe('how much a menu holds', () => {
 });
 
 describe('what a person who does not stream has to wade through', () => {
-  const load = () => {
+  const load = (from = lists) => {
     const family = new Set(allCommands().filter((c) => !isStaleCommand(c.id) && inFamily(c)).map((c) => c.id));
     const palette = paletteItems().filter((i) => i.kind === 'command' && family.has(i.id)).length;
     const inMenus = new Set<string>();
-    for (const l of lists.values()) for (const id of l.commands) if (family.has(id)) inMenus.add(id);
+    for (const l of from.values()) for (const id of l.commands) if (family.has(id)) inMenus.add(id);
     const feats = switchableFeatures().filter((f) => (f.commands ?? []).some((c) => family.has(c.id)));
     const topics = new Set<string>();
     for (const f of feats) for (const h of f.help ?? []) topics.add(h.id);
@@ -121,5 +122,15 @@ describe('what a person who does not stream has to wade through', () => {
 
   it('the family is found by what it is, not by a list that goes stale', () => {
     expect(allCommands().filter(inFamily).length).toBeGreaterThan(50);
+  });
+
+  it('once somebody answers "I do not stream" the family left is only what is not for streamers alone: Stream-safe, the OBS link and the capture view', () => {
+    setStreaming(false, { remember: false });
+    syncDynamicCommands();
+    const tucked = load(menuListsWorstCase());
+    setStreaming(true, { remember: false });
+    syncDynamicCommands();
+    report.push(`Stream family after "I do not stream": ${tucked.palette} palette commands, ${tucked.menu} menu entries, ${tucked.switches} feature switches, ${tucked.help} help topics`);
+    expect(tucked).toEqual(STREAM_LOAD_TUCKED);
   });
 });
