@@ -1,13 +1,14 @@
 /**
  * Pen [Shift+P]: exact lines and curves, point by point (bezier paths). Click for a sharp corner, drag for a smooth
  * curve. Click the first point to close the shape; Enter, Escape or a double-click finishes an open line. Backspace
- * takes back the last point. Shift keeps a new point at 45 degree steps, Alt while dragging bends just the next side.
+ * or Ctrl+Z takes back the last point. Shift keeps a new point at 45 degree steps, Alt while dragging bends just the next side.
  *
  * The pure model (`PenPath`) is separate from the canvas tool so it can be tested on its own.
  */
 import type { PathShape } from '../core/format';
 import { strokeWithStyle } from '../geometry/lineStyle';
 import { uid } from '../core/doc';
+import { registerPointGesture } from '../core/pointUndo';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
@@ -160,6 +161,17 @@ function finishPath(ctx: ToolContext, closed: boolean): void {
   } else if (r !== 'nothing') reportEdit(ctx, r);
 }
 
+/** Takes the last point back (Backspace, and Ctrl+Z). The only one left cancels the path. */
+function backPoint(): void {
+  if (!path) return;
+  press = null;
+  path.closing = false;
+  if (!path.back()) path = null;
+  showPath();
+}
+
+registerPointGesture({ open: () => !!path, back: backPoint });
+
 const nearFirst = (p: P, zoom: number) => !!path && path.length >= 3 && Math.hypot(p.x - path.anchors[0].x, p.y - path.anchors[0].y) * zoom <= GRAB_PX;
 const nearLast = (p: P, zoom: number) => !!path && path.length >= 2 && Math.hypot(p.x - path.anchors[path.length - 1].x, p.y - path.anchors[path.length - 1].y) * zoom <= GRAB_PX;
 
@@ -250,8 +262,7 @@ export const penTool: Tool = {
       return true;
     }
     if (e.key === 'Backspace' || e.key === 'Delete') {
-      if (!path.back()) path = null;
-      showPath();
+      backPoint();
       ctx.requestOverlay();
       return true;
     }

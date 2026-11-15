@@ -8,6 +8,7 @@
 import type { TileShape } from '../core/format';
 import { getHover } from '../canvas/controller';
 import { type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { registerPointGesture } from '../core/pointUndo';
 import { store } from '../core/store';
 import { drawOutline, SHAPE_LINE } from './collisionView';
 import { addShape, editingTileKey, setShapes, tileProps } from './ops';
@@ -79,6 +80,9 @@ function closeDraft(key: number, ctx: ToolContext): void {
   } else ctx.hint('A shape needs at least three corners that are not in a line.');
   ctx.requestOverlay();
 }
+
+/** Ctrl+Z while corners are being placed takes the last one back. */
+registerPointGesture({ open: () => draft.length > 0 && store().get().ui.tool === 'tile-shape', back: () => void draft.pop() });
 
 export const tileShapeTool: Tool = {
   id: 'tile-shape',

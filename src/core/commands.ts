@@ -1,6 +1,7 @@
 // Core commands that belong to no single area: undo and redo.
 import { registerCommands, registerHelpTopics } from './registry';
 import { store } from './store';
+import { pointsInProgress, takePointBack } from './pointUndo';
 
 registerCommands([
   {
@@ -11,8 +12,9 @@ registerCommands([
     description: 'Take back the last change.',
     keywords: ['go back', 'step back', 'mistake', 'oops', 'revert'],
     help: 'undo',
-    enabled: () => store().canUndo(),
-    run: () => store().undo(),
+    // Half-made shapes (pen points, a polygon) come first: the drawing behind them is not what you meant to undo.
+    enabled: () => pointsInProgress() || store().canUndo(),
+    run: () => void (takePointBack() || store().undo()),
   },
   {
     id: 'edit.redo',
@@ -21,7 +23,8 @@ registerCommands([
     keys: ['Mod+Shift+Z', 'Mod+Y'],
     description: 'Put back the change you just undid.',
     help: 'undo',
-    enabled: () => store().canRedo(),
+    // Points taken back are not kept, so mid-shape Redo waits rather than putting a drawing step back under them.
+    enabled: () => !pointsInProgress() && store().canRedo(),
     run: () => store().redo(),
   },
 ]);
@@ -36,6 +39,8 @@ registerHelpTopics([
     summary: 'Every change can be taken back with Undo, and put back with Redo.',
     keywords: ['mistake', 'back', 'revert', 'go back', 'oops', 'take back'],
     body: `Made a mistake? Press **Ctrl+Z** (**Cmd+Z** on a Mac) to undo it. Press it again to keep going back.
+
+Placing points with the Pen, a Polygon or a Lasso? **Ctrl+Z** takes back the last point first, and only reaches your drawing once the shape is gone.
 
 Changed your mind? **Ctrl+Shift+Z** (or **Ctrl+Y**) puts the change back.
 

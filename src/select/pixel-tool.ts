@@ -27,8 +27,9 @@ import {
 import { clingReach, getSelectSettings } from './settings';
 import { MagneticTrace, PixelEdges, pixelSource } from './magnetic';
 import { modeOfTool, WAYS } from './ways';
+import { registerPointGesture } from '../core/pointUndo';
 import { store } from '../core/store';
-import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
+import { backLassoPoints, drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
 import { reducedMotion } from '../ui/prefs';
 import { choiceWord } from '../words/choices';
@@ -38,7 +39,7 @@ const DRAG_PX = 3;
 
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
-  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace }
+  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace; marks?: number[] }
   | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
@@ -183,6 +184,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     if (e.alt && s.op !== 'subtract') {
       // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
       s.open = true;
+      (s.marks ??= []).push(s.pts.length);
       ctx.requestOverlay();
       return;
     }
@@ -237,14 +239,13 @@ export function closeOpenPixelLasso(): boolean {
 /** How far (document pixels) the magnetic lasso reaches for an edge, from the cling setting. */
 const reachOf = (ctx: ToolContext): number => clingReach(getSelectSettings().cling) / ctx.zoom;
 
-/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
+/** Takes the last corner of an open polygon, magnetic or Alt lasso back. At the first one, it lets go of the whole thing. */
 export function backOpenPixelLasso(ctx?: ToolContext): boolean {
-  if (g?.kind !== 'lasso' || !g.open || !g.poly) return false;
+  if (g?.kind !== 'lasso' || !g.open) return false;
   if (g.mag) {
     if (!g.mag.back()) g = null;
     else if (ctx) g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
-  } else if (g.pts.length > 1) g.pts.pop();
-  else g = null;
+  } else if (!backLassoPoints(g.pts, g.marks ?? [], !!g.poly)) g = null;
   return true;
 }
 
@@ -254,6 +255,12 @@ function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {
   if (e.key !== 'Enter' || !pixelLassoIsOpen()) return false;
   return closeOpenPixelLasso();
 }
+
+/** Ctrl+Z while a polygon or lasso is open takes a corner back, like Backspace. */
+registerPointGesture({
+  open: () => pixelLassoIsOpen() && pixelSelectTools.some((t) => t.id === store().get().ui.tool),
+  back: () => void backOpenPixelLasso(),
+});
 
 function cancel(ctx: ToolContext): void {
   // A drag that already lifted pixels keeps them lifted where they were before it; anything else is dropped.
