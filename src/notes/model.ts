@@ -17,12 +17,12 @@ export type NotePin = 'page' | 'frame' | 'layer';
 export const MAX_NOTES = 2000;
 export const MAX_TEXT = 4000;
 export const MAX_REPLIES = 200;
-const MAX_NAME = 80;
+export const MAX_NAME = 80;
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-function readReplies(raw: unknown): NoteReply[] | undefined {
+export function readReplies(raw: unknown): NoteReply[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out: NoteReply[] = [];
   for (const r of raw) {

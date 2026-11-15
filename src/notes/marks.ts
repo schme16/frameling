@@ -2,7 +2,7 @@
 // frame, how an arrowhead and a scribble are worked out, and what a click lands on. Nothing here draws or touches the
 // store, so it is easy to test. `withoutNotes` in model.ts takes marks out of every export, the same as notes.
 import type { CanvasMark, Doc, Id } from '../core/format';
-import { onOpenBoard, shownAt, type NotePin } from './model';
+import { MAX_NAME, onOpenBoard, shownAt, type NotePin } from './model';
 
 export type MarkKind = CanvasMark['kind'];
 
@@ -70,6 +70,8 @@ export function readMarks(raw: unknown): CanvasMark[] | undefined {
       mark.layer = m.layer;
     }
     if (typeof m.board === 'string' && m.board) mark.board = m.board;
+    if (typeof m.by === 'string' && m.by.trim()) mark.by = m.by.trim().slice(0, MAX_NAME);
+    if (finite(m.at) && m.at > 0) mark.at = m.at;
     out.push(mark);
     if (out.length >= MAX_MARKS) break;
   }
@@ -106,6 +108,8 @@ export interface NewMarkSpec {
   frame: number;
   layer?: Id;
   board?: Id;
+  by?: string;
+  at?: number;
 }
 
 /** A new mark with only what differs from the defaults written down. A layer mark with no layer is a page mark. */
@@ -123,6 +127,8 @@ export function makeMark(s: NewMarkSpec): CanvasMark {
     m.layer = s.layer;
   }
   if (s.board) m.board = s.board;
+  if (s.by?.trim()) m.by = s.by.trim().slice(0, MAX_NAME);
+  if (s.at && s.at > 0) m.at = s.at;
   return m;
 }
 

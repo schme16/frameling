@@ -32,7 +32,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'pixel.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.sendCopy', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit'],
+    items: ['file.new', 'pixel.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.sendCopy', 'review.send', 'review.bring', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit'],
   },
   {
     label: 'Edit',
@@ -120,7 +120,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   notes: {
     label: 'Notes',
-    items: ['tools.notes', 'notes.add', 'notes.toggleShow', 'notes.hideDone', '-', 'notes.previous', 'notes.next', 'notes.toggleDone', 'notes.clearDone'],
+    items: ['tools.notes', 'notes.add', 'notes.toggleShow', 'notes.hideDone', '-', 'notes.previous', 'notes.next', 'notes.toggleDone', 'notes.clearDone', '-', 'review.send', 'review.bring', 'review.bringPaste'],
   },
   marks: {
     label: 'Marks',

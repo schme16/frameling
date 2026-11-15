@@ -1666,3 +1666,9 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/palettepic.cjs
 
 `PERF_RENDERER=dir` measures another renderer build (a private `vite build --outDir`), which is how a before and after are
 compared. Before the worker: 1028 ms (JPEG) and 5678 ms (PNG, plus 842 ms decoding it). After: 43 ms and 14 ms.
+
+## Send for review: test/review and scripts/docs/ab-share-review
+
+`test/review/model.test.ts` (reading a comments file, junk refused, merging by id with two reviewers, `done` ticked by either side, drift) and `format.test.ts` (marks' optional `by` and `at`, old files unchanged, the picture sizes) are plain functions. `page.test.ts` runs the real review page in jsdom: it shows the drawing and the existing notes, a note, answer, mark and tick are made with real events, and the comments text it hands back is read by `readReview` and merged. `flow.test.ts` runs Send for review and Bring in comments on the real store (no file path in the page, the question about your own notes, one undo step, the question when frames have moved, stream-safe toasts).
+
+The look: run the help clip with `REVIEW_PAGE_OUT=<file>` (the runner's pretend desktop writes the real page there), then `THEME=dark REVIEW_PAGE=<file> OUT=brand/ab/share-review SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/ab-share-review/review-page.cjs` once per theme. It opens the page in a plain window and drives it with real mouse events. The clip itself is `scripts/docs/help/review-page.cjs`.
