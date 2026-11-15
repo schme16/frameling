@@ -1,5 +1,8 @@
 // Opening, saving and the "unsaved changes?" question, on the page side. The bytes are made and read by file.ts; the
 // desktop side (src/main) does the dialogs and the disk.
+import { choose, registerChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
+import { historyFitsFile, type HistorySaved } from '../core/historyFile';
 import { ownedUndo } from '../core/owners';
 import { rootDoc } from '../core/symbols';
 import { uid } from '../core/doc';
@@ -26,6 +29,32 @@ export async function clearAutosaveCopy(): Promise<void> {
   } catch {
     // Nothing to clear is fine.
   }
+}
+
+export type SaveHistoryChoice = 'keep' | 'plain';
+
+// Asked the first time a save has undo steps to put in the file; the answer can be changed in Preferences > Behaviour.
+registerChoice<SaveHistoryChoice>({
+  id: 'save.history',
+  title: choiceWord('choice.save.history.title'),
+  question: choiceWord('choice.save.history.question'),
+  options: [
+    { value: 'keep', label: choiceWord('choice.save.history.keep.label'), detail: choiceWord('choice.save.history.keep.detail') },
+    { value: 'plain', label: choiceWord('choice.save.history.plain.label'), detail: choiceWord('choice.save.history.plain.detail') },
+  ],
+  default: 'keep',
+  dismiss: 'plain',
+  // Never settled by weariness: the answer decides whether what you took out travels with the file.
+  mustAsk: true,
+  category: 'Files',
+  help: 'saving-and-opening',
+});
+
+/** The sentence for a save that left older steps out to keep the file small, or null when all of them went in. */
+export function historyNote(saved: Pick<HistorySaved, 'kept' | 'dropped'> | null): string | null {
+  if (!saved || !saved.dropped) return null;
+  const n = saved.kept.undo;
+  return `Saved. The file keeps your last ${n} ${n === 1 ? 'step' : 'steps'} of history; older ones were left out to keep it small.`;
 }
 
 let lastDoc: unknown = null;
@@ -96,7 +125,7 @@ export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts
     return false;
   }
   if (opts.confirm !== false && !(await askAboutUnsavedChanges())) return false;
-  store().load(loaded.doc, filePath);
+  store().load(loaded.doc, filePath, loaded.history);
   if (opts.dirty) store().setUi({ dirty: true });
   if (loaded.warnings.length) notify(`Opened, with a few small repairs: ${[...new Set(loaded.warnings)].join(' ')}`, 'warn', undefined, 8000);
   // A drawing that uses a feature that is turned off offers to turn it on (it opens and keeps its data either way).
@@ -252,17 +281,24 @@ async function saveTo(path: string | null): Promise<boolean> {
   if (saving) return false;
   saving = true;
   try {
-    // While a tile is open for editing, the file gets the whole document with the tile as it is now.
+    // Asked here, before the file is made, and only when there are steps to keep.
+    const steps = store().historyForSave();
+    const wantHistory = steps && historyFitsFile(steps.doc) ? (await choose<SaveHistoryChoice>('save.history')) === 'keep' : false;
+    // The little picture that goes inside the file, for Open recent. Never a reason not to save.
+    const preview = await previewBytes(rootDoc(store().rootDoc()), store().get().ui.frame);
+    // While a tile is open for editing, the file gets the whole document with the tile as it is now. The steps are taken
+    // at the same moment, so they still fit this document if you keep drawing while the file is being made.
     const doc = store().rootDoc();
+    const history = wantHistory ? store().historyForSave() : null;
+    let kept: HistorySaved | null = null;
+    const saveOpts = history ? { history, onHistory: (h: HistorySaved | null) => void (kept = h) } : {};
     // Save as on a drawing that already has a file makes a separate copy, so the copy gets its own id (and its own
     // version history). The original keeps its id and history.
     const oldPath = store().get().ui.filePath;
     const copyId = path === null && oldPath ? uid('d') : null;
     let bytes: Uint8Array;
-    // The little picture that goes inside the file, for Open recent. Never a reason not to save.
-    const preview = await previewBytes(rootDoc(doc), store().get().ui.frame);
     try {
-      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app, new Date(), { preview });
+      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app, new Date(), { ...saveOpts, preview });
     } catch {
       notify("Something went wrong while packing up your drawing, so it wasn't saved. Please try again.", 'error');
       return false;
@@ -270,7 +306,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     let r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
     if (!r) return false;
     // Saved as over the same file after all: that's a plain save, so it keeps the drawing's own id.
-    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app, new Date(), { preview }), path: r.path, suggestedName: doc.name });
+    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app, new Date(), { ...saveOpts, preview }), path: r.path, suggestedName: doc.name });
     if (!r) return false;
     if ('error' in r) {
       notify(r.error, 'error');
@@ -284,7 +320,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     void clearAutosaveCopy();
     // Whatever was set aside for this drawing is in the file now.
     void api.autosave.removeKept(doc.id).catch(() => undefined);
-    notify('Saved.', 'success', undefined, 1600);
+    notify(historyNote(kept) ?? 'Saved.', 'success', undefined, historyNote(kept) ? 5000 : 1600);
     const saved = copyId && r.path !== oldPath ? store().rootDoc() : doc;
     for (const h of saveHooks) void h.after?.(saved, r.path)?.catch(() => undefined);
     return true;

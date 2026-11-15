@@ -10,6 +10,10 @@ Want a second copy, or a new version to try something risky on? Use **Save as...
 
 A dot next to the name at the top of the window means there are changes that aren't saved yet.
 
+## Your undo steps travel with the file
+
+Frameling can save your undo steps inside the file, so **Undo** still works after you reopen it, or when a friend opens it. It asks the first time. Anything you drew and then took out is still in the steps, so choose **Just the drawing** if you'd rather it wasn't. Change it any time in **Preferences > Behaviour**. Only the newest steps are kept, so the file never swells, and exports never include them.
+
 ## Opening
 
 Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frameling file in your file manager, and it opens in Frameling.

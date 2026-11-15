@@ -29,6 +29,8 @@ import { packArtboards, readArtboards } from '../artboards/io';
 import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
+import { encodeHistory, HISTORY_DATA_ENTRY, HISTORY_STEPS_ENTRY, readHistory, type HistorySaved, type HistorySource } from '../core/historyFile';
+import type { RestoredHistory } from '../core/store';
 import { readClip } from '../core/clipPlay';
 import { cleanStrokeStyle } from '../geometry/lineStyle';
 import { cleanTrim } from '../geometry/trim';
@@ -58,6 +60,8 @@ export interface LoadedFile {
   manifest: Manifest;
   /** Small repairs made while opening (a missing drawing dropped, and so on), in plain words. */
   warnings: string[];
+  /** The undo and redo steps the file carried, ready for `store().load` (missing = none, or none that fit the drawing). */
+  history?: RestoredHistory;
 }
 
 // Encoded PNGs by pixel array. Edits replace the array, so an unchanged drawing never gets encoded twice (autosave
@@ -165,7 +169,9 @@ function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): U
 }
 
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
-function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false, preview?: Uint8Array): Zippable {
+function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions = {}): Zippable {
+  const reuse = !!opts.reuse;
+  const preview = opts.preview;
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
@@ -220,12 +226,16 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false, pr
   // Reference pictures the same way, in `pictures/` (only those a layer still shows).
   const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = docJsonBytes({ ...doc, version, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
+  // The undo steps, when asked for (never for exports, autosave or versions, which don't pass them).
+  const history = opts.history ? encodeHistory(opts.history) : null;
+  opts.onHistory?.(history);
+  if (history) Object.assign(files, history.files);
+  files['doc.json'] = docJsonBytes({ ...doc, version, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}), ...(history ? { history: history.note } : {}) }, entries);
   return files;
 }
 
 export function saveFile(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Uint8Array {
-  return zipSync(filesToSave(open, appVersion, now, opts.reuse, opts.preview), { level: 6, mtime: now.getTime() });
+  return zipSync(filesToSave(open, appVersion, now, opts), { level: 6, mtime: now.getTime() });
 }
 
 export interface SaveOptions {
@@ -237,6 +247,13 @@ export interface SaveOptions {
   reuse?: boolean;
   /** A small PNG of the drawing, kept in the file as `preview.png` for lists of files (Open recent). Made by io/preview.ts; optional. */
   preview?: Uint8Array;
+  /**
+   * The undo and redo steps to put in the file (`store().historyForSave()`), so whoever opens it can step back through them.
+   * Left out, the file has none, which is what every export and every copy kept for later wants.
+   */
+  history?: HistorySource;
+  /** Told what went in: null when the file has no history (nothing to keep, or it can't be kept for this drawing). */
+  onHistory?: (saved: HistorySaved | null) => void;
 }
 
 /**
@@ -245,7 +262,7 @@ export interface SaveOptions {
  * versions use this.
  */
 export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
-  let files = filesToSave(open, appVersion, now, opts.reuse, opts.preview);
+  let files = filesToSave(open, appVersion, now, opts);
   // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
@@ -253,7 +270,7 @@ export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new 
   const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
   if (made) return made;
   // No worker (or it failed): the handed over buffer is gone, so make the files again.
-  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse, opts.preview);
+  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts);
   return new Promise((resolve, reject) => zip(files, { level: 6, mtime: now.getTime() }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
@@ -364,7 +381,7 @@ export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
 function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/')) });
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/') || f.name.startsWith('history/')) });
   } catch {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
@@ -389,7 +406,8 @@ function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, 
   const warnings: string[] = [];
   raw = migrate(raw, version);
   const doc = buildDoc(raw, entries, warnings, decoded);
-  return { doc, manifest, warnings };
+  const history = raw.history === undefined ? undefined : readHistory(doc, raw.history, entries[HISTORY_STEPS_ENTRY], entries[HISTORY_DATA_ENTRY]);
+  return { doc, manifest, warnings, ...(history ? { history } : {}) };
 }
 
 function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: string[], decoded?: Map<string, RawImage>): Doc {
