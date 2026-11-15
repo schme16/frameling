@@ -14,7 +14,7 @@ Options:
 | | |
 |---|---|
 | `--out file.json` | where to write the results (printed to the console when left out) |
-| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `pixelblend`, `pixellive`, `templates`, `zoompan`, `onioncam`, `memory`, `soak` (`soak` only runs when named) |
+| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `pixelblend`, `pixellive`, `templates`, `zoompan`, `onioncam`, `memory`, `soak`, `export` (`soak` and `export` only run when named) |
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |
@@ -122,8 +122,30 @@ The page is opened with `?debug&perf`. `?perf` switches on `src/canvas/perf.ts`,
 | `zoompan` | 180 ctrl+wheel ticks in and out, then a middle-button pan circle, on a 300 stroke document and a 5 layer one. | `rafDelta`, `mainDrawMs`, `bitmapBuilds` |
 | `memory` | 200 strokes drawn, 100 undone. JS heap after a forced GC at the start, after the strokes and after the undos. | `growthMB` |
 | `soak` | The kitchen sink at 600 frames, then a 600 frame, 5 layer stroke document. Each is put through rounds (4, or `PERF_SOAK_ROUNDS`) of: scrub every frame, play 5 s, export a GIF of the lot. JS heap after a full GC after each round, the bitmap cache size, and a heap snapshot comparison (by constructor) between round 2 and the last. About four minutes. | `heapMB` per round, `growthAfterRound2MB` (should be near 0), `snapshotDiffRound2ToLast.top` |
+| `export` | The frames of a GIF export drawn and read back the way `run.ts` does it, on the kitchen sink at 3x (96 frames of 960 x 576) and on a 48 frame, 5 layer stroke document (1280 x 720), then the whole GIF export by the clock. Takes about a minute. Built for the `willReadFrequently` question below. | `drawMsPerFrame`, `readMsPerFrame`, `drawPlusReadMsPerFrame` (the number that counts), `wallMs`, and `readbackFlag` (which way the canvases were made). |
 
 Every `stats` block is `{n, mean, p50, p95, p99, max}` in milliseconds.
+
+## Export: does `willReadFrequently` pay?
+
+Every export canvas is made with `willReadFrequently: true` (cheap to read back, but it can move the drawing from the card to
+the processor). One switch, in `src/export/readback.ts`, decides it for all of them: start the app with
+`FRAMELING_EXPORT_READBACK=0` and those canvases are made without the flag. Unset, nothing changes. The page reads the
+setting once, from the preload (`window.frameling.tuning`), and the run records it as `export.readbackFlag` and
+`env.exportReadbackEnv`.
+
+Run the pair on the real card, on a quiet machine, one after the other (the flag only means something with the card drawing,
+so not under `PERF_SOFTWARE_GL`):
+
+```bash
+npm run build
+npx electron scripts/perf/run.cjs --only export --label flag-on  --out scripts/perf/results/export-flag-on.json
+FRAMELING_EXPORT_READBACK=0 npx electron scripts/perf/run.cjs --only export --label flag-off --out scripts/perf/results/export-flag-off.json
+node scripts/perf/compare.cjs scripts/perf/results/export-flag-on.json scripts/perf/results/export-flag-off.json
+```
+
+Read `drawPlusReadMsPerFrame` and `wallMs`. On a canvas the card draws, `drawFrame` only queues the work and the read is where it
+is waited for, so `drawMs` and `readMs` move against each other and only their sum is a fair comparison. Run each side twice.
 
 ## Reading the results
 

@@ -10,6 +10,9 @@ import { setChoice } from '../core/choices';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
 import { runExport } from './run';
+import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
+import { READBACK_FLAG } from './readback';
+import { formatInfo } from './types';
 import { allExporters } from './registry';
 import { defaultSettings, planExport } from './plan';
 import type { ExportSettings } from './types';
@@ -122,6 +125,33 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       const r = await runExport({ doc: rootDoc(st.doc), settings: s, currentFrame: st.ui.frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'perf' });
       const bytes = r.kind === 'file' ? r.bytes.length : -1;
       return { bytes, ms: Math.round(performance.now() - t0) };
+    },
+    /**
+     * Draws and reads back every frame the export would, the way run.ts does (one canvas, drawFrame then readPixels), and
+     * adds up the two times apart (scripts/perf, test `export`). On a canvas the card draws, drawFrame only queues the
+     * work and readPixels is where it finishes, so read the sum (drawMs + readMs) as the true cost of a frame, and the
+     * split as where the time was waited for. `flag` is whether the canvases are made with willReadFrequently.
+     */
+    timeFrames: (s: ExportSettings) => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const plan = planExport(doc, s, st.ui.frame);
+      const bg = backgroundFor(doc, s.transparent, formatInfo(s.format).alpha);
+      const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig);
+      const target = { width: plan.width, height: plan.height, scale: s.scale, background: bg, crisp };
+      const canvas = makeCanvas(plan.width, plan.height);
+      let drawMs = 0;
+      let readMs = 0;
+      const t0 = performance.now();
+      for (let i = 0; i < plan.count; i++) {
+        const a = performance.now();
+        drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), target);
+        const b = performance.now();
+        readPixels(canvas);
+        readMs += performance.now() - b;
+        drawMs += b - a;
+      }
+      return { flag: READBACK_FLAG, frames: plan.count, width: plan.width, height: plan.height, drawMs, readMs, loopMs: performance.now() - t0 };
     },
     /** The PNG export of one frame, through the real exporter, as base64 (for A/B stills of an export beside the screen). */
     pngBase64: async (frame = 0, scale = 1) => {

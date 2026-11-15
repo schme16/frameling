@@ -766,7 +766,57 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
+  // ------------------------------------------------------------------ export (draw against read-back)
+  // Every export canvas is made with willReadFrequently (src/export/readback.ts), which makes reading cheap and may make
+  // drawing slow. So: the frames an export draws, timed as drawing and as reading back apart, then the whole GIF export
+  // by the clock. Run it twice, with and without FRAMELING_EXPORT_READBACK=0, and compare (README). Only when named.
+  // `drawMs + readMs` is the real cost of a frame: on a canvas the card draws, drawFrame only queues work and the read
+  // is where it is waited for, so a shift of time from one to the other is not a win or a loss by itself.
+  async function exportTest() {
+    const out = { readbackFlag: null };
+    const docs = {
+      // 320 x 192 at 3x: 960 x 576 frames of effects, masks, tiles, a symbol, a bending mesh and a pixel layer.
+      kitchenSink: { open: `window.__framelingExport.loadKitchenSinkPerf(96)`, scale: 3 },
+      // 1280 x 720, 5 layers of 40 strokes, a different drawing every frame.
+      strokes: { open: `window.__frameling.store().load(window.__h.mkDoc({ frames: 48, layers: 5, strokesPer: 40, pts: 10, fps: 24 }))`, scale: 1 },
+    };
+    const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+    const r1 = (v) => Math.round(v * 10) / 10;
+    for (const [name, spec] of Object.entries(docs)) {
+      await js(spec.open);
+      await js(`window.__frameling.store().setUi({ tool: 'brush', playing: false, frame: 0 })`);
+      await js('window.__h.raf2()');
+      await sleep(500);
+      const settings = `{ ...window.__framelingExport.defaults(), format: 'gif', range: 'all', scale: ${spec.scale} }`;
+      const time = () => js(`window.__framelingExport.timeFrames(${settings})`);
+      const wall = () => js(`(async () => { try { return await window.__framelingExport.encode(${settings}); } catch (e) { return { error: String(e) }; } })()`);
+      await time(); // warm-up: shaders, fonts and the first canvas
+      const laps = [];
+      for (let i = 0; i < 3; i++) laps.push(await time());
+      const walls = [];
+      for (let i = 0; i < 3; i++) {
+        const w = await wall(); // the first is a warm-up of the encoder as well, kept in the list
+        walls.push(w.error ? 'error: ' + w.error : w.ms);
+      }
+      out.readbackFlag = laps[0].flag;
+      const per = (k) => r1(median(laps.map((l) => l[k])) / laps[0].frames);
+      const nums = walls.filter((x) => typeof x === 'number');
+      out[name] = {
+        frames: laps[0].frames,
+        size: [laps[0].width, laps[0].height],
+        drawMsPerFrame: per('drawMs'),
+        readMsPerFrame: per('readMs'),
+        drawPlusReadMsPerFrame: r1(median(laps.map((l) => l.drawMs + l.readMs)) / laps[0].frames),
+        loopMs: r1(median(laps.map((l) => l.loopMs))),
+        lapsMs: laps.map((l) => r1(l.loopMs)),
+        wallMs: nums.length > 1 ? median(nums.slice(1)) : nums[0] ?? null, // median of the laps after the warm-up
+        wallLapsMs: walls,
+      };
+    }
+    return out;
+  }
+
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak, export: exportTest };
   await load();
   const feat = app.getGPUFeatureStatus();
   results.env = {
@@ -783,11 +833,12 @@ async function main() {
     dpr: await js('window.devicePixelRatio'),
     idleRafMs: await js(`new Promise((res) => { const ts = []; const l = (t) => { ts.push(t); if (ts.length < 40) requestAnimationFrame(l); else res((ts[39] - ts[0]) / 39); }; requestAnimationFrame(l); })`),
     renderer: rendererDir,
+    exportReadbackEnv: process.env.FRAMELING_EXPORT_READBACK ?? null,
     loadMs,
     when: new Date().toISOString(),
   };
   for (const [name, fn] of Object.entries(tests)) {
-    if (only ? !only.includes(name) : name === 'soak') continue; // soak is long, so only when asked for
+    if (only ? !only.includes(name) : name === 'soak' || name === 'export') continue; // soak and export are long and are for A/B pairs, so only when asked for
     process.stdout.write(`${name}... `);
     const t = Date.now();
     try {
