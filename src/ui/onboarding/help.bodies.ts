@@ -16,7 +16,7 @@ Some parts of Frameling are for particular kinds of making: puppets and bones, l
 
 **If you finished the hello a while ago:** Quill asks once, a little after Frameling opens, whether you stream. Yes keeps everything. No tucks the streaming tools away. Closing the question counts as an answer, so it never comes back. You can change it any time on the **Streaming** tab in Preferences (**Streaming tools**).
 
-**To get them back:** press **Bring them back** on the message that follows, or open **Preferences > Streaming** and switch **Streaming tools** on (or open **Preferences > Features** and press **Turn everything back on**). See [Turning parts on and off](help:features).
+**To get them back:** press **Bring them back** on the message that follows, or open **Preferences > Streaming** and turn on the switch opposite the **Streaming** title (or open **Preferences > Features** and press **Turn everything back on**). See [Turning parts on and off](help:features).
 
 ## Skipping
 

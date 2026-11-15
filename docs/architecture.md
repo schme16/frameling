@@ -574,6 +574,11 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
   reduced motion, welcome, tips, Quill, right side style, units, keymap and keymap set, clean timeline, and more.
   `applyPrefs` writes the theme's CSS variables and `data-theme`, `data-look`, `data-motion` on `<html>`.
   `src/ui/PrefsModal.tsx` has the pages (general, themes, behaviour, keyboard, workspaces, plugins).
+  Page rows are `.ui-pref-row` (words in `.ui-pref-text`, controls in `.ui-pref-control`, all based in `ui.css`: a
+  page-scoped copy of a row class is a bug, and `test/ui/pref-title.test.tsx` checks every `ui-pref-*` class has a
+  base rule). A whole feature that is turned on or off (Streaming, Audience features, Snapping) puts its switch
+  opposite its title with `PrefTitle` (`src/ui/PrefTitle.tsx`): heading left, switch right, an explaining line, and a
+  status line that says what off means, never a silent grey page.
 - **Themes** (`src/ui/themes/`): built-in themes (`builtIn.ts`), tokens and derived tokens (`tokens.ts`), custom themes
   and the theme file (`model.ts`, `library.ts`), contrast checks and fixes (`contrast.ts`), the editor.
 - **Keyboard** (`src/ui/keyboard.ts`): one listener; in a field or with an overlay open only `global` commands fire.

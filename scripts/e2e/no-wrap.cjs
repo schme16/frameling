@@ -130,6 +130,8 @@ const FIND = `((scopeSel) => {
     for (let p = el; p && p.nodeType === 1; p = p.parentElement) {
       const cs = getComputedStyle(p);
       if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+      // What is inside a closed <details> is not drawn (only its summary is), though the browser still reports a box for it.
+      if (p.tagName === 'DETAILS' && !p.open && el !== p && !el.closest('summary')) return false;
     }
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;

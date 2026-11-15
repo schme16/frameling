@@ -1,7 +1,7 @@
-// Preferences > Streaming: everything about streaming and sharing a screen, in one place. The Streaming tools switch is
-// first, with the sharing settings (Stream-safe, OBS, the capture view) next because they are for anybody who shares a
-// screen, streamer or not. The nine tools and their settings are folded under "Choose one by one", and stay on the page
-// while the family is tucked away, so this tab is always the way back.
+// Preferences > Streaming: everything about streaming and sharing a screen, in one place. The Streaming tools switch sits
+// opposite the page title (PrefTitle), with the sharing settings (Stream-safe, OBS, the capture view) below because they
+// are for anybody who shares a screen, streamer or not. The nine tools and their settings are folded under "Choose one by
+// one", and stay on the page while the family is tucked away, so this tab is always the way back.
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { audience } from '../audience';
 import { allChoices } from '../core/choices';
@@ -9,6 +9,7 @@ import { getCommand } from '../core/registry';
 import { ChoiceRows } from '../ui/ChoiceDialog';
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
+import { PrefTitle } from '../ui/PrefTitle';
 import { toast } from '../ui/toast';
 import { AudiencePrefsRow } from '../audience/PrefsRow';
 import { DaresPrefsRow } from '../dares/PrefsRow';
@@ -41,8 +42,16 @@ export function StreamingPage({ sharing }: { sharing: ReactNode }) {
   const sharingAnswers = allChoices().filter((c) => c.category === SHARING);
   return (
     <div className="streaming-page" data-help="streaming" data-testid="streaming-page">
-      <h3>Streaming</h3>
-      <p className="ui-pref-intro">Everything for streaming and sharing your screen. The tools for streamers can be tucked away, and the sharing settings stay for anybody.</p>
+      <PrefTitle
+        title="Streaming"
+        label={`${STREAMING_NAME} on or off`}
+        on={on}
+        onChange={() => run(on ? 'features.streamingOff' : 'features.streamingOn')}
+        switchTestId="streaming-switch"
+        statusTestId="streaming-status"
+        about={<p className="ui-pref-intro">Everything for streaming and sharing your screen. The switch is for the streaming tools: chat dares, votes, a prompt jar, Twitch, a stream overlay and more. Off, they go out of the menus, lists and help. Nothing is lost, and they come back with this switch. The sharing settings stay for anybody.</p>}
+        status={!on ? 'The streaming tools are tucked away. Switch it on to bring them all back, or pick single ones under Choose one by one.' : audienceOn ? 'Audience features are on.' : 'Audience features are off, so none of these does anything yet. They only work once you switch on audience features, below.'}
+      />
       {on && (
         <div className="ui-pref-row streaming-start" data-testid="streaming-start">
           <div className="ui-pref-text">
@@ -59,22 +68,7 @@ export function StreamingPage({ sharing }: { sharing: ReactNode }) {
           </div>
         </div>
       )}
-      <section className="features-streaming" data-testid="features-streaming" aria-labelledby="streaming-tools-title">
-        <h4 id="streaming-tools-title">The streaming tools</h4>
-        <div className="ui-pref-row">
-          <div className="ui-pref-text">
-            <strong>{STREAMING_NAME}</strong>
-            <span>For people who stream: chat dares, votes, a prompt jar, Twitch, a stream overlay and more. Switch it off if you never stream, and all of it goes out of the menus, lists and help. Nothing is lost, and it comes back with this switch.</span>
-            <span data-testid="streaming-status">
-              {!on ? 'The streaming tools are tucked away. Switch this on to bring them all back, or pick single ones under Choose one by one.' : audienceOn ? 'Audience features are on.' : 'Audience features are off, so none of these does anything yet. They only work once you switch on audience features, below.'}
-            </span>
-          </div>
-          <div className="ui-pref-control">
-            <button type="button" role="switch" aria-checked={on} aria-label={`${STREAMING_NAME} on or off`} data-testid="streaming-switch" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => run(on ? 'features.streamingOff' : 'features.streamingOn')}>
-              <span className="ui-switch-knob" />
-            </button>
-          </div>
-        </div>
+      <section className="features-streaming" data-testid="features-streaming" aria-label="The streaming tools, one by one">
         <details className="features-streaming-more" open={audienceOn || undefined}>
           <summary>
             Choose one by one ({count} of {STREAM_FEATURES.length} on)

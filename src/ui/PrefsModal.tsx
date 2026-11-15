@@ -38,6 +38,9 @@ import { FeaturesPage } from '../features/FeaturesPage';
 import { StreamingPage } from '../features/StreamingPage';
 import { UNITS, type Unit } from '../core/units';
 import { SnapPanel } from '../canvas/SnapOptions';
+import { setSnapOn } from '../canvas/snapOps';
+import { useViewSettings } from '../canvas/viewSettings';
+import { PrefTitle } from './PrefTitle';
 import { PenPage } from '../tablet/PenPage';
 import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
 import { GpuPage } from '../gpu/GpuPage';
@@ -189,11 +192,18 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
 // ---------------------------------------------------------------- snapping
 
 function SnappingPage() {
+  const on = useViewSettings((v) => v.snap);
   return (
     <>
-      <h3>Snapping</h3>
-      <Explainer className="ui-pref-intro">Pick what shapes jump onto when they get close. The Snap button at the bottom of the window opens the same choices.</Explainer>
-      <SnapPanel wide />
+      <PrefTitle
+        title="Snapping"
+        label="Snapping on or off"
+        on={on}
+        onChange={setSnapOn}
+        about={<Explainer className="ui-pref-intro">Pick what shapes jump onto when they get close. Hold Ctrl while dragging to skip it for a moment. The Snap button at the bottom of the window opens the same choices.</Explainer>}
+        status={on ? 'Snapping is on. Shapes jump onto what is ticked below.' : 'Snapping is off, so nothing jumps. Your ticks below are kept for when you switch it on.'}
+      />
+      <SnapPanel wide master={false} />
     </>
   );
 }
