@@ -289,6 +289,18 @@ export interface PopoutBridge {
   onClosed(handler: () => void): () => void;
 }
 
+/** The Stream control board: a window of buttons for a second screen. The link to the drawing window is a message port, handed over as a window message (see src/streamboard/link.ts). */
+export interface StreamboardBridge {
+  /** Opens the board, or brings it forward. `top` keeps it above other windows. */
+  open(top: boolean): Promise<void>;
+  close(): Promise<void>;
+  isOpen(): Promise<boolean>;
+  /** Brings the drawing window forward, for a button that opens a setup dialog there. */
+  raiseMain(): Promise<void>;
+  /** Called when the board has gone, however it went. Returns an unsubscribe function. */
+  onClosed(handler: () => void): () => void;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -394,6 +406,8 @@ export interface FramelingApi {
   gpu?: GpuBridge;
   /** The picture window: a second window that shows the drawing big (desktop only). The link between the two pages is a message port, handed over as a window message (see src/popout/link.ts). */
   popout?: PopoutBridge;
+  /** The Stream control board, a window of buttons for a second screen (desktop only). */
+  streamboard?: StreamboardBridge;
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;

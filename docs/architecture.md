@@ -469,6 +469,13 @@ can change the drawing.
   app's chunk) with its own preload (`src/preload/popout.ts`), which can pass on a message port and nothing else.
 - **The link.** A `MessageChannelMain` pair: one end to each page, so what crosses never goes through the main process. The
   drawing window's end is `src/popout/link.ts`, started by a window message; it does nothing until a picture window says hello.
+- **Stream control** (`src/streamboard/`) is a second window of this kind: the same rules in `src/main/popout.ts` (opening, linking, where it
+  was), its own page (`dist/popout/streamboard.html`, built with the picture window) and preload. Every button is a face on a registry
+  command: `tiles.ts` says which command a button runs for the state of the stream, `layout.ts` where the buttons sit (moved by
+  pick up and put down, no dragging), `model.ts` what the board is told and what a press does. All three are pure. `link.ts` is the
+  drawing window's end: it sends the board a view when any streaming store changes and runs the commands it is asked to. The board
+  holds no streaming logic. What is covered in the main window (`src/audience/spoilers.ts`) is covered here at the source: covered
+  words are left out of the message, and the secret word of a guessing game is never sent.
 - **What is sent.** `mirror.ts` watches the store: the whole drawing first, then immer patches (`store.lastChange()` says how the
   drawing got from the last value to this one; anything that is not a clean step sends the whole drawing again), a small
   `look` (playhead, playing, camera, marks, theme), and work in progress through the taps in `ink.ts` (below). A message that

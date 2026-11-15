@@ -2060,5 +2060,51 @@
   "choice.share.expiry.30.detail": {
     "text": "For when they are not at their computer yet. Your window has to stay open the whole time.",
     "where": "Dialog and Preferences: the small line under the \"30\" answer in \"How long a share code lasts\"."
+  },
+  "choice.streamboard.top.title": { "text": "Stream control above other windows", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.streamboard.top.question": {
+    "text": "Should the Stream control window stay on top of your other windows, such as OBS? It is for a second screen, where it is easy to lose behind things.",
+    "where": "The question the \"Stream control above other windows\" dialog asks, the first time the Stream control window opens."
+  },
+  "choice.streamboard.top.normal.label": { "text": "Like any other window", "where": "Dialog and Preferences: the button for the answer \"normal\" in \"Stream control above other windows\"." },
+  "choice.streamboard.top.normal.detail": {
+    "text": "Other windows can cover it. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"normal\" answer in \"Stream control above other windows\"."
+  },
+  "choice.streamboard.top.normal.did": {
+    "text": "Stream control sits like any other window.",
+    "where": "Toast when \"normal\" is used without asking (\"Stream control above other windows\"), in the past tense."
+  },
+  "choice.streamboard.top.top.label": { "text": "Always on top", "where": "Dialog and Preferences: the button for the answer \"top\" in \"Stream control above other windows\"." },
+  "choice.streamboard.top.top.detail": {
+    "text": "It floats above everything, so a full screen window cannot hide it.",
+    "where": "Dialog and Preferences: the small line under the \"top\" answer in \"Stream control above other windows\"."
+  },
+  "choice.streamboard.top.top.did": {
+    "text": "Stream control stays on top of your other windows.",
+    "where": "Toast when \"top\" is used without asking (\"Stream control above other windows\"), in the past tense."
+  },
+  "choice.streamboard.front.title": { "text": "Buttons that open a setup window", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.streamboard.front.question": {
+    "text": "Some buttons, like Start a vote, open a setup window in Frameling. Should Frameling come forward so you can fill it in?",
+    "where": "The question the \"Buttons that open a setup window\" dialog asks, the first time a Stream control button opens a setup window."
+  },
+  "choice.streamboard.front.front.label": { "text": "Bring Frameling forward", "where": "Dialog and Preferences: the button for the answer \"front\" in \"Buttons that open a setup window\"." },
+  "choice.streamboard.front.front.detail": {
+    "text": "The setup window is right there under your pen. Pick this if you are not sure.",
+    "where": "Dialog and Preferences: the small line under the \"front\" answer in \"Buttons that open a setup window\"."
+  },
+  "choice.streamboard.front.front.did": {
+    "text": "Frameling came forward for the setup window.",
+    "where": "Toast when \"front\" is used without asking (\"Buttons that open a setup window\"), in the past tense."
+  },
+  "choice.streamboard.front.stay.label": { "text": "Leave things where they are", "where": "Dialog and Preferences: the button for the answer \"stay\" in \"Buttons that open a setup window\"." },
+  "choice.streamboard.front.stay.detail": {
+    "text": "The setup window opens in Frameling, and you go to it when you are ready.",
+    "where": "Dialog and Preferences: the small line under the \"stay\" answer in \"Buttons that open a setup window\"."
+  },
+  "choice.streamboard.front.stay.did": {
+    "text": "Frameling stayed where it was for the setup window.",
+    "where": "Toast when \"stay\" is used without asking (\"Buttons that open a setup window\"), in the past tense."
   }
 }

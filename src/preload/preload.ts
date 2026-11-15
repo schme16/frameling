@@ -176,6 +176,17 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('popout:closed', fn);
     },
   },
+  streamboard: {
+    open: (top) => call('streamboard:open', top === true),
+    close: () => call('streamboard:close'),
+    isOpen: () => call('streamboard:isOpen'),
+    raiseMain: () => call('streamboard:raiseMain'),
+    onClosed: (handler) => {
+      const fn = () => handler();
+      ipcRenderer.on('streamboard:closed', fn);
+      return () => void ipcRenderer.removeListener('streamboard:closed', fn);
+    },
+  },
   gpu: { report: () => call('gpu:report'), setHardware: (on) => call('gpu:setHardware', on) },
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
@@ -255,5 +266,7 @@ const api: FramelingApi = {
 
 // The port to the picture window arrives here and is passed on to the page as a window message (ports cannot go across the bridge).
 ipcRenderer.on('popout:port', (e) => window.postMessage('frameling-popout-port', '*', e.ports));
+
+ipcRenderer.on('streamboard:port', (e) => window.postMessage('frameling-streamboard-port', '*', e.ports));
 
 contextBridge.exposeInMainWorld('frameling', api);
