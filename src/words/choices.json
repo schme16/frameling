@@ -1088,6 +1088,29 @@
     "text": "Your menus stay exactly as you made them. The new thing is still in the command search.",
     "where": "Dialog and Preferences: the small line under the \"leave\" answer in \"New things in a menu you changed\"."
   },
+  "choice.panels.putBackWindows.title": { "text": "Panels in their own window, when putting the panels back", "where": "Name of this choice in Preferences > Behaviour (group: Workspaces)." },
+  "choice.panels.putBackWindows.question": {
+    "text": "Some panels are in windows of their own. Should Put the panels back dock them too?",
+    "where": "The question the \"Panels in their own window, when putting the panels back\" dialog asks."
+  },
+  "choice.panels.putBackWindows.dock.label": {
+    "text": "Dock them too",
+    "where": "Dialog and Preferences: the button for the answer \"dock\" in \"Panels in their own window, when putting the panels back\"."
+  },
+  "choice.panels.putBackWindows.dock.detail": {
+    "text": "Every panel goes back where its workspace puts it, windows included.",
+    "where": "Dialog and Preferences: the small line under the \"dock\" answer in \"Panels in their own window, when putting the panels back\"."
+  },
+  "choice.panels.putBackWindows.dock.did": { "text": "Docked the windows too.", "where": "Toast when \"dock\" is used without asking, in the past tense." },
+  "choice.panels.putBackWindows.leave.label": {
+    "text": "Leave the windows alone",
+    "where": "Dialog and Preferences: the button for the answer \"leave\" in \"Panels in their own window, when putting the panels back\"."
+  },
+  "choice.panels.putBackWindows.leave.detail": {
+    "text": "Panels in a window of their own stay there. Dock every window back does those on its own.",
+    "where": "Dialog and Preferences: the small line under the \"leave\" answer in \"Panels in their own window, when putting the panels back\"."
+  },
+  "choice.panels.putBackWindows.leave.did": { "text": "Left the windows where they are.", "where": "Toast when \"leave\" is used without asking, in the past tense." },
   "choice.palette.recolour.title": { "text": "Changing a palette colour", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
   "choice.palette.recolour.question": {
     "text": "You changed a colour in the palette. Should the pixels already painted in that colour change too?",
