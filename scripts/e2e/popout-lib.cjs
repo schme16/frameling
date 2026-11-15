@@ -31,7 +31,7 @@ Module._load = function (request, ...rest) {
 };
 
 /** Boots the app with a fresh data folder. Resolves with helpers once the drawing window has loaded. */
-async function boot({ theme = 'dark', width = 1000, height = 880 } = {}) {
+async function boot({ theme = 'dark', width = 1000, height = 880, choices: more = {} } = {}) {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-popout-'));
   electron.app.setPath('userData', data);
   process.env.FRAMELING_CRASH_MARKER = '0';
@@ -57,7 +57,7 @@ async function boot({ theme = 'dark', width = 1000, height = 880 } = {}) {
   // Preferences and the two remembered answers, then a reload so they are in force from the start (this also checks that a reload
   // of the drawing window does not break the link, since the picture window is opened after it).
   const prefs = { theme, look: 'cosy', darkTheme: 'midnight-sketchbook', lightTheme: 'paper-and-honey', showWelcome: false, showTips: false, firstDrawn: true, showQuill: false };
-  const choices = { 'workspace.follow': 'never', 'popout.camera': 'camera', 'popout.marks': 'hide' };
+  const choices = { 'workspace.follow': 'never', 'popout.camera': 'camera', 'popout.marks': 'hide', ...more };
   await js(`localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify(choices))}); location.reload()`);
   await sleep(500);
   await ready();

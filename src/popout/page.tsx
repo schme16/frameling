@@ -6,6 +6,7 @@ import { watchPixelRatio } from '../canvas/pixelRatio';
 import { MarkShape } from '../notes/MarkShape';
 import { visibleMarks } from '../notes/marks';
 import type { CanvasMark } from '../core/format';
+import { safeBackground, windowTitle, type CaptureLook } from './capture';
 import { PicturePainter, type Painted } from './painter';
 import type { FromPopout, PopoutTheme, ToPopout } from './protocol';
 import { Replica } from './replica';
@@ -21,6 +22,8 @@ export function PopoutPage() {
   const [ready, setReady] = useState(false);
   const [lost, setLost] = useState(false);
   const [hint, setHint] = useState(true);
+  // Set in the capture view only: the page shows the drawing and nothing else, on the colour the streamer picked.
+  const [cap, setCap] = useState<CaptureLook | null>(null);
   const [shown, setShown] = useState<Painted | null>(null);
   const [marks, setMarks] = useState<CanvasMark[]>([]);
 
@@ -85,8 +88,10 @@ export function PopoutPage() {
         themeKey = key;
         setTheme(look.theme);
       }
-      const t = `${look.name} - second window`;
+      const t = windowTitle(!!look.capture, look.name);
       if (t !== title) document.title = title = t;
+      const lc = look.capture ? { bg: safeBackground(look.capture.bg), hideCursor: look.capture.hideCursor === true } : null;
+      setCap((p) => (p === lc || (p && lc && p.bg === lc.bg && p.hideCursor === lc.hideCursor) ? p : lc));
       setShown((p) => (p && p.box.x === painted.box.x && p.box.y === painted.box.y && p.box.w === painted.box.w && p.box.h === painted.box.h && p.background === painted.background ? p : painted));
       // Marks are a few lines of SVG: worked out only when something about them can have changed.
       setMarks(look.marks && !playing ? visibleMarks(pageOf(replica.doc), shownFrame(replica.doc, look.frame)) : NO_MARKS);
@@ -152,7 +157,7 @@ export function PopoutPage() {
   }, []);
 
   const vars = {
-    '--po-bg': theme.bg,
+    '--po-bg': cap ? cap.bg : theme.bg,
     '--po-text': theme.text,
     '--po-muted': theme.muted,
     '--po-accent': theme.accent,
@@ -161,8 +166,8 @@ export function PopoutPage() {
   const view = shown ? { zoom: shown.zoom, panX: shown.box.x, panY: shown.box.y } : null;
 
   return (
-    <div ref={root} className="po-root" style={vars} data-dark={theme.dark ? '' : undefined} data-ready={ready ? '' : undefined} data-testid="popout.root" onDoubleClick={toggleFullScreen}>
-      {shown ? <div className={shown.background ? 'po-stage' : 'po-stage po-checker'} style={{ left: shown.box.x, top: shown.box.y, width: shown.box.w, height: shown.box.h, background: shown.background || undefined }} /> : null}
+    <div ref={root} className={cap ? `po-root po-capture${cap.hideCursor ? ' po-nocursor' : ''}` : 'po-root'} style={vars} data-dark={theme.dark ? '' : undefined} data-ready={ready ? '' : undefined} data-testid="popout.root" onDoubleClick={toggleFullScreen}>
+      {shown ? <div className={shown.background || cap ? 'po-stage' : 'po-stage po-checker'} style={{ left: shown.box.x, top: shown.box.y, width: shown.box.w, height: shown.box.h, background: shown.background || undefined }} /> : null}
       <canvas ref={canvas} className="po-canvas" aria-label="Your drawing" />
       {view && marks.length ? (
         <svg className="po-marks" aria-hidden="true">
@@ -171,18 +176,18 @@ export function PopoutPage() {
           ))}
         </svg>
       ) : null}
-      {!ready ? (
+      {!ready && !cap ? (
         <div className="po-wait" role="status">
           <div className="po-wait-title">{lost ? 'The drawing window went away' : 'Waiting for your drawing'}</div>
           <div className="po-wait-text">{lost ? 'Open Frameling again and choose View > Second window.' : 'It shows up here as soon as the drawing window sends it.'}</div>
         </div>
       ) : null}
-      {ready && lost ? (
+      {ready && lost && !cap ? (
         <div className="po-note" role="status">
           The drawing window went away. This is the last picture it sent.
         </div>
       ) : null}
-      {ready && hint && !lost ? <div className="po-hint">Double-click for full screen</div> : null}
+      {ready && hint && !lost && !cap ? <div className="po-hint">Double-click for full screen</div> : null}
     </div>
   );
 }

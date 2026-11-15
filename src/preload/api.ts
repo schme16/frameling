@@ -197,8 +197,14 @@ export interface ClipboardBridge {
 }
 
 export interface PopoutBridge {
-  /** Opens the picture window, or brings it forward when it is already open. A fresh link to the drawing arrives as a window message. */
-  open(): Promise<void>;
+  /**
+   * Opens the picture window, or brings it forward when it is already open. A fresh link to the drawing arrives as a window
+   * message. With `capture` it is the capture view (no title bar, a name that does not show the drawing's); asking again with
+   * another `size` resizes it. Anything missing means the plain second window.
+   */
+  open(o?: { capture?: boolean; size?: { width: number; height: number } | null; background?: string }): Promise<void>;
+  /** Called with `capture` or `second` each time a link arrives, so the drawing window knows which kind of window it is talking to. */
+  onMode(handler: (mode: 'capture' | 'second') => void): () => void;
   close(): Promise<void>;
   isOpen(): Promise<boolean>;
   /** Called when the picture window has gone, however it went. Returns an unsubscribe function. */

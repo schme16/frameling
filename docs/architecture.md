@@ -475,6 +475,13 @@ can change the drawing.
   half-done vector changes (`setLive`). A message that does not follow on makes the other side ask again (`replica.ts`).
 - **How it paints.** `painter.ts` calls the canvas's own `FramePainter`, so it is the same renderer with its own bitmap cache.
   `show.ts` has the decisions (camera, marks, which frame, fitting the page), all pure.
+- **The capture view.** The same window dressed for OBS and the like: `frame: false`, a fixed name (`CAPTURE_TITLE`, never the drawing's),
+  a flat background colour, an optional hidden pointer and an optional fixed pixel size. `src/popout/capture.ts` holds the pure parts
+  (sizes, colours, the title, what the desktop side is asked to open) and is shared by the page, the desktop side and the tests
+  (`test/main/capture.test.ts`). The kind of window is `OpenOpts.capture`: asking for the other kind swaps the window, asking for another
+  size resizes it. The desktop side tells the drawing window which kind it is linked to (`popout:mode`, just before the port), and in
+  capture mode `Look.name` is empty and `Look.capture` carries the colour and pointer. Choices `popout.captureBackground` (asked once),
+  `popout.captureCursor` and `popout.captureSize` (silent preferences). It keeps its own saved place (`popout-capture-window.json`).
 - **Choices.** `popout.camera` and `popout.marks` (`src/popout/choices.ts`), asked once and only when the drawing has a camera
   or marks. Onion skin, light table, ghosts, grid, guides, handles, notes and reference pictures are never shown.
 

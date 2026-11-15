@@ -25,3 +25,7 @@ body { background: #121019; font-family: 'Nunito Variable', 'Nunito', system-ui,
 @media (prefers-reduced-motion: reduce) { .po-hint { animation: none; } }
 .mk-ghost { opacity: 0.85; }
 .mk-text { font-family: 'Nunito Variable', system-ui, sans-serif; font-weight: 650; user-select: none; }
+/* The capture view: a flat colour, the drawing, nothing else. The window has no frame, so dragging it anywhere moves it. */
+.po-capture { -webkit-app-region: drag; }
+.po-capture .po-stage { box-shadow: none; }
+.po-nocursor, .po-nocursor * { cursor: none; }

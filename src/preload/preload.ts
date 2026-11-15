@@ -99,7 +99,12 @@ const api: FramelingApi = {
     },
   },
   popout: {
-    open: () => call('popout:open'),
+    open: (o) => call('popout:open', o),
+    onMode: (handler) => {
+      const fn = (_e: unknown, m: unknown) => handler(m === 'capture' ? 'capture' : 'second');
+      ipcRenderer.on('popout:mode', fn);
+      return () => void ipcRenderer.removeListener('popout:mode', fn);
+    },
     close: () => call('popout:close'),
     isOpen: () => call('popout:isOpen'),
     onClosed: (handler) => {

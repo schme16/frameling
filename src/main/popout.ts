@@ -3,6 +3,9 @@
 // where the window was, and tidying up in every awkward case (closed, reopened, the drawing window closing or reloading,
 // the picture window's page crashing). Electron itself is handed in, so the rules are tested with stand-ins (test/main/popout.test.ts).
 import { fitWindow, type WindowPlace } from './restart';
+import { SECOND_WINDOW, sameOpen, windowUnits, type OpenOpts } from '../popout/capture';
+
+export { readOpen, type OpenOpts } from '../popout/capture';
 
 /** Where the window was, to put it back. */
 export type Place = Pick<WindowPlace, 'x' | 'y' | 'width' | 'height'> & { fullScreen?: boolean };
@@ -30,8 +33,15 @@ export function openBounds(saved: Place | null, screens: { x: number; y: number;
   return fitWindow({ ...saved, maximized: false, fullScreen: false }, screens, MIN_SIZE);
 }
 
+/** The bounds to open a capture view with a fixed size: the same place, the size in real pixels turned into window units for the screen it is on. */
+export function fixedBounds(b: ReturnType<typeof openBounds>, size: { width: number; height: number }, scale: number): ReturnType<typeof openBounds> {
+  return { ...b, ...windowUnits(size, scale) };
+}
+
 export interface PopoutWindow {
   alive(): boolean;
+  /** Capture view only: the size has changed (fixed, or free again). Nothing else about an open window changes. */
+  apply(o: OpenOpts): void;
   /** Bring it forward: un-minimise, show, focus. */
   raise(): void;
   close(): void;
@@ -53,20 +63,22 @@ export interface WindowEvents {
 }
 
 export interface PopoutDeps {
-  create(bounds: ReturnType<typeof openBounds>, events: WindowEvents): PopoutWindow;
+  create(bounds: ReturnType<typeof openBounds>, events: WindowEvents, opts: OpenOpts): PopoutWindow;
   /** A pair of connected message ports. */
   channel(): { a: unknown; b: unknown };
-  /** Hands the drawing window its end. */
-  toMain(port: unknown): void;
+  /** Hands the drawing window its end, and says which kind of window it is linked to (the capture view tells no one the drawing's name). */
+  toMain(port: unknown, capture: boolean): void;
   /** The drawing window should stop sending: the picture window is gone. */
   tellClosed(): void;
-  loadPlace(): Place | null;
-  savePlace(p: Place): void;
+  /** The capture view remembers its own place, apart from the second window's. */
+  loadPlace(capture: boolean): Place | null;
+  savePlace(p: Place, capture: boolean): void;
   screens(): { x: number; y: number; width: number; height: number }[];
 }
 
 export interface Popout {
-  open(): void;
+  /** Opens the window (the plain second window unless the capture view is asked for), or brings it forward. Asking for the other kind swaps the window; asking for another size resizes the capture view. */
+  open(o?: OpenOpts): void;
   close(): void;
   isOpen(): boolean;
   /** The drawing window's page was reloaded (or is new): it has lost its end of the port, so make a new pair. */
@@ -79,12 +91,13 @@ export function createPopout(d: PopoutDeps): Popout {
   let win: PopoutWindow | null = null;
   let loaded = false;
   let lastPlace: Place | null = null;
+  let current: OpenOpts = SECOND_WINDOW;
 
   const link = () => {
     if (!win || !win.alive() || !loaded) return;
     const { a, b } = d.channel();
     win.sendPort(b);
-    d.toMain(a);
+    d.toMain(a, current.capture);
   };
 
   const gone = (w: PopoutWindow) => {
@@ -93,21 +106,36 @@ export function createPopout(d: PopoutDeps): Popout {
     const at = lastPlace;
     win = null;
     loaded = false;
-    if (at) d.savePlace(at);
+    if (at) d.savePlace(at, current.capture);
     d.tellClosed();
   };
 
   return {
-    open() {
+    open(o = SECOND_WINDOW) {
       if (win?.alive()) {
-        win.raise();
-        // The drawing window may have lost its end (a reload): a fresh pair costs nothing and puts it right.
-        link();
-        return;
+        if (o.capture === current.capture) {
+          if (!sameOpen(o, current)) {
+            current = o;
+            win.apply(o);
+          } else current = o;
+          win.raise();
+          // The drawing window may have lost its end (a reload): a fresh pair costs nothing and puts it right.
+          link();
+          return;
+        }
+        // The other kind of window: a window cannot gain or lose its frame, so this one goes and a new one comes. The late
+        // events of the old one are ignored (`gone` only listens to the current window).
+        const old = win;
+        const at = old.place() ?? lastPlace;
+        if (at) d.savePlace(at, current.capture);
+        win = null;
+        loaded = false;
+        old.close();
       }
       win = null;
       loaded = false;
-      const bounds = openBounds(d.loadPlace(), d.screens());
+      current = o;
+      const bounds = openBounds(d.loadPlace(o.capture), d.screens());
       let self: PopoutWindow | null = null;
       const events: WindowEvents = {
         loaded: () => {
@@ -124,7 +152,7 @@ export function createPopout(d: PopoutDeps): Popout {
           if (self && win === self) lastPlace = p;
         },
       };
-      self = d.create(bounds, events);
+      self = d.create(bounds, events, o);
       win = self;
       // `placed` keeps this up to date as it moves, so a window closed by quitting (no chance to ask) still comes back in place.
       lastPlace = null;

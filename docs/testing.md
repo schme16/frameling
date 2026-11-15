@@ -841,6 +841,13 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   `--ab` writes `brand/ab/canvas-popout/canvas-popout-<theme>.mp4` and `rest-<theme>.png` (the window at rest, cropped, captioned);
   `--help` writes the help topic's `public/help/canvas-popout-<theme>.mp4` and poster. Run it once per theme. The help runner
   (`help-media.cjs`) skips the `canvas-popout` entry (`external:` in `scripts/docs/help/popout.cjs`) and says to use this script.
+- `scripts/e2e/capture-view.cjs` checks the capture view in the real app (frameless, named `Frameling capture`, flat colour, hidden pointer, fixed sizes exact and locked, swapping with the second window); exit code 1 on any failure.
+- `scripts/e2e/capture-view-media.cjs` is the capture view (the same window, frameless, on a flat colour, named `Frameling capture`) in
+  the real app: it opens the second window, swaps to the capture view, checks the window title shows nothing of the drawing and
+  makes the pictures. `--ab` writes `brand/ab/stream-capture-view/` (`a-second-window`, `b-capture-view` and `a-vs-b`, per theme,
+  cropped and captioned); `--help` writes `public/help/stream-capture-<theme>.png`. Run it once per theme. The help runner skips the
+  `stream-capture` entry (`scripts/docs/help/capture-view.cjs`). There is no window manager on the virtual screen, so no title bar is
+  drawn in either picture. The pure rules are in `test/main/capture.test.ts`.
 - `scripts/perf/popout.cjs` is the frame rate with and without the window, in one run: playback of a heavy drawing (240 frames,
   5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, alternating closed, an animated control window, the
   real window not painting (messages only) and the real window, and printing the median of each. See `scripts/perf/README.md`.

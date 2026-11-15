@@ -1394,5 +1394,107 @@
   "choice.workspace.follow.never.detail": {
     "text": "Keep my layout as it is. The workspace lines in the View menu switch any time.",
     "where": "Dialog and Preferences: the small line under the \"never\" answer in \"Workspace follows the drawing\"."
+  },
+  "choice.popout.captureBackground.title": { "text": "Capture view background", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureBackground.question": {
+    "text": "What colour should sit behind your drawing in the capture view? A streaming program can key out green, blue or magenta so only the drawing shows.",
+    "where": "The question the \"Capture view background\" dialog asks."
+  },
+  "choice.popout.captureBackground.green.label": { "text": "Green", "where": "Dialog and Preferences: the button for the answer \"green\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.green.detail": {
+    "text": "Chroma key green. In OBS, add a Chroma Key filter and pick Green.",
+    "where": "Dialog and Preferences: the small line under the \"green\" answer in \"Capture view background\"."
+  },
+  "choice.popout.captureBackground.green.did": {
+    "text": "The capture view has a green background.",
+    "where": "Toast when \"green\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureBackground.blue.label": { "text": "Blue", "where": "Dialog and Preferences: the button for the answer \"blue\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.blue.detail": {
+    "text": "Chroma key blue, for a drawing that uses a lot of green.",
+    "where": "Dialog and Preferences: the small line under the \"blue\" answer in \"Capture view background\"."
+  },
+  "choice.popout.captureBackground.blue.did": {
+    "text": "The capture view has a blue background.",
+    "where": "Toast when \"blue\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureBackground.magenta.label": { "text": "Magenta", "where": "Dialog and Preferences: the button for the answer \"magenta\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.magenta.detail": {
+    "text": "A bright pink, for a drawing that uses both green and blue.",
+    "where": "Dialog and Preferences: the small line under the \"magenta\" answer in \"Capture view background\"."
+  },
+  "choice.popout.captureBackground.magenta.did": {
+    "text": "The capture view has a magenta background.",
+    "where": "Toast when \"magenta\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureBackground.dark.label": { "text": "Dark", "where": "Dialog and Preferences: the button for the answer \"dark\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.dark.detail": {
+    "text": "The same dark as the second window. Nothing to key out.",
+    "where": "Dialog and Preferences: the small line under the \"dark\" answer in \"Capture view background\"."
+  },
+  "choice.popout.captureBackground.dark.did": {
+    "text": "The capture view has a dark background.",
+    "where": "Toast when \"dark\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureBackground.black.label": { "text": "Black", "where": "Dialog and Preferences: the button for the answer \"black\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.black.detail": { "text": "Plain black.", "where": "Dialog and Preferences: the small line under the \"black\" answer in \"Capture view background\"." },
+  "choice.popout.captureBackground.black.did": {
+    "text": "The capture view has a black background.",
+    "where": "Toast when \"black\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureBackground.white.label": { "text": "White", "where": "Dialog and Preferences: the button for the answer \"white\" in \"Capture view background\"." },
+  "choice.popout.captureBackground.white.detail": { "text": "Plain white.", "where": "Dialog and Preferences: the small line under the \"white\" answer in \"Capture view background\"." },
+  "choice.popout.captureBackground.white.did": {
+    "text": "The capture view has a white background.",
+    "where": "Toast when \"white\" is used without asking (\"Capture view background\"), in the past tense."
+  },
+  "choice.popout.captureCursor.title": { "text": "Capture view mouse pointer", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureCursor.question": { "text": "Should the mouse pointer show when it is over the capture view?", "where": "The question the \"Capture view mouse pointer\" dialog asks." },
+  "choice.popout.captureCursor.hide.label": { "text": "Hide it", "where": "Dialog and Preferences: the button for the answer \"hide\" in \"Capture view mouse pointer\"." },
+  "choice.popout.captureCursor.hide.detail": {
+    "text": "No pointer over the picture, so nothing drifts across the stream if the window is captured with the cursor.",
+    "where": "Dialog and Preferences: the small line under the \"hide\" answer in \"Capture view mouse pointer\"."
+  },
+  "choice.popout.captureCursor.show.label": { "text": "Show it", "where": "Dialog and Preferences: the button for the answer \"show\" in \"Capture view mouse pointer\"." },
+  "choice.popout.captureCursor.show.detail": {
+    "text": "The usual pointer, so you can see where it is when you move the window.",
+    "where": "Dialog and Preferences: the small line under the \"show\" answer in \"Capture view mouse pointer\"."
+  },
+  "choice.popout.captureSize.title": { "text": "Capture view size", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.captureSize.question": { "text": "What size should the capture view be?", "where": "The question the \"Capture view size\" dialog asks." },
+  "choice.popout.captureSize.free.label": { "text": "Any size", "where": "Dialog and Preferences: the button for the answer \"free\" in \"Capture view size\"." },
+  "choice.popout.captureSize.free.detail": {
+    "text": "Drag the edges of the window to whatever size you like.",
+    "where": "Dialog and Preferences: the small line under the \"free\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s1920x1080.label": { "text": "1920 x 1080 (full HD)", "where": "Dialog and Preferences: the button for the answer \"1920x1080\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s1920x1080.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"1920x1080\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s1280x720.label": { "text": "1280 x 720 (HD)", "where": "Dialog and Preferences: the button for the answer \"1280x720\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s1280x720.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"1280x720\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s2560x1440.label": { "text": "2560 x 1440 (QHD)", "where": "Dialog and Preferences: the button for the answer \"2560x1440\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s2560x1440.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"2560x1440\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s3840x2160.label": { "text": "3840 x 2160 (4K)", "where": "Dialog and Preferences: the button for the answer \"3840x2160\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s3840x2160.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"3840x2160\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s1080x1080.label": { "text": "1080 x 1080 (1:1)", "where": "Dialog and Preferences: the button for the answer \"1080x1080\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s1080x1080.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"1080x1080\" answer in \"Capture view size\"."
+  },
+  "choice.popout.captureSize.s1080x1920.label": { "text": "1080 x 1920 (tall, for phones)", "where": "Dialog and Preferences: the button for the answer \"1080x1920\" in \"Capture view size\"." },
+  "choice.popout.captureSize.s1080x1920.detail": {
+    "text": "The window is exactly this many pixels and stays that size, so your streaming program always sees the same picture.",
+    "where": "Dialog and Preferences: the small line under the \"1080x1920\" answer in \"Capture view size\"."
   }
 }

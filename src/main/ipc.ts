@@ -22,6 +22,7 @@ import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
+import { readOpen, type OpenOpts } from './popout';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
 // File > Open also takes Aseprite files, pictures (PNG, GIF, sprite sheets), SVG and layered files (PSD, ORA), which open as a new drawing.
@@ -47,7 +48,7 @@ export interface IpcHooks {
   /** An installer is about to run: just close, so it can work. */
   finishUpdate(): void;
   /** The picture window (a second window showing the drawing big). */
-  popout: { open(): void; close(): void; isOpen(): boolean };
+  popout: { open(o?: OpenOpts): void; close(): void; isOpen(): boolean };
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -269,7 +270,7 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof id === 'string') removeKept(id);
   });
 
-  handle('popout:open', () => hooks.popout.open());
+  handle('popout:open', (_e, o: unknown) => hooks.popout.open(readOpen(o)));
   handle('popout:close', () => hooks.popout.close());
   handle('popout:isOpen', () => hooks.popout.isOpen());
   handle('app:launchFile', () => hooks.takeLaunchFile());
