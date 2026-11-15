@@ -7,6 +7,7 @@
  */
 import type { Id, Shape, VectorDrawing } from '../core/format';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { registerPointGesture } from '../core/pointUndo';
 import { store } from '../core/store';
 import { cssVar } from '../canvas/theme';
 import { requestOverlay, setCursor, setLive } from '../canvas/controller';
@@ -39,7 +40,7 @@ import { reportEdit } from './util';
 import { activeIsMerge, pendingCut, setCut, withGroups } from './merge-mode';
 import { cutOut, mergeable, polygonGeom, shapeBox, shapeInsideArea, type Geom } from '../geometry/merge';
 import { modeOfTool, WAYS } from '../select/ways';
-import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
+import { backLassoPoints, drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { MagneticTrace, ringSource, type Ring } from '../select/magnetic';
 import { clingReach, getSelectSettings } from '../select/settings';
 import { outlinePath, strokeOutlineWhole, subPathsToPath2D } from '../core/render';
@@ -103,6 +104,8 @@ interface Gesture {
   lasso: Pt[] | null;
   /** A lasso left open between Alt+clicks (straight sides), or a polygon, waiting for the next corner. */
   open: boolean;
+  /** An Alt lasso: the length of the points at each Alt let-go, so one step back takes a whole side. */
+  marks?: number[];
   /** The Polygon way: every side is straight and each click is a corner, until you close it. */
   poly?: boolean;
   /** The Magnetic way: a polygon whose sides cling to the outlines of the shapes. `lasso` is its fastened points. */
@@ -317,6 +320,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
     if (e.alt) {
       s.open = true;
+      (s.marks ??= []).push(s.lasso.length);
       g = s;
       ctx.requestOverlay();
       return;
@@ -641,16 +645,21 @@ function polygon(gx: CanvasRenderingContext2D, pts: Pt[]): void {
   gx.closePath();
 }
 
-/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
-function backOpenLasso(ctx: ToolContext): boolean {
-  if (!g?.open || !g.poly || !g.lasso) return false;
+/** Takes the last corner of an open polygon, magnetic or Alt lasso back. At the first one, it lets go of the whole thing. */
+function backOpenLasso(ctx?: ToolContext): boolean {
+  if (!g?.open || !g.lasso) return false;
   if (g.mag) {
     if (!g.mag.back()) g = null;
-    else g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
-  } else if (g.lasso.length > 1) g.lasso.pop();
-  else g = null;
+    else if (ctx) g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
+  } else if (!backLassoPoints(g.lasso, g.marks ?? [], !!g.poly)) g = null;
   return true;
 }
+
+/** Ctrl+Z while a polygon or lasso is open takes a corner back, like Backspace. */
+registerPointGesture({
+  open: () => lassoIsOpen() && selectTools.some((t) => t.id === store().get().ui.tool),
+  back: () => void backOpenLasso(),
+});
 
 /** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. Backspace takes a corner back. */
 function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {

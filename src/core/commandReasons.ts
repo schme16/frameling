@@ -12,6 +12,7 @@
 import { findLayer } from './doc';
 import type { Command } from './registry';
 import type { State } from './store';
+import { pointsInProgress } from './pointUndo';
 import { needManyShapes, needPixelLayer, needShapes, nothingToRedo, nothingToUndo, pickKindReason, say, type Reason } from './reasons';
 
 const inSymbol = (s: State) => !!s.doc.editing?.length;
@@ -47,7 +48,8 @@ export const COMMAND_REASONS: Record<string, Reason> = {
   // ----- undo and redo
   'edit.undo': nothingToUndo,
   'history.back': nothingToUndo,
-  'edit.redo': nothingToRedo,
+  // Mid-shape, Undo takes a point back (so it is never grey then), and Redo waits for the shape to be finished.
+  'edit.redo': (s) => (pointsInProgress() ? 'Finish the shape you are drawing first, then Redo works again.' : nothingToRedo(s)),
   'history.forward': nothingToRedo,
 
   // ----- nothing picked

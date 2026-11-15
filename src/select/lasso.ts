@@ -64,3 +64,21 @@ export function drawLasso(g: CanvasRenderingContext2D, pts: Pt[], rubber: Pt | P
   }
   g.restore();
 }
+
+/**
+ * Takes the last corner back from an open polygon or lasso. A polygon's corners are its points. A lasso left open by
+ * Alt+click is a freehand stroke plus the straight sides added after it, so `marks` holds the length at each Alt let-go:
+ * one step back drops the last side, never one tiny sample of the stroke. False when that was all of it, so the whole
+ * thing should be let go.
+ */
+export function backLassoPoints(pts: Pt[], marks: number[], poly: boolean): boolean {
+  if (poly) {
+    if (pts.length <= 1) return false;
+    pts.pop();
+    return true;
+  }
+  marks.pop();
+  if (!marks.length) return false;
+  pts.length = marks[marks.length - 1];
+  return true;
+}
