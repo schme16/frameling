@@ -23,8 +23,21 @@ import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../p
 import { docPalette } from '../pixel/palette';
 import { getPixelSettings } from '../pixel/settings';
 import { pixelSelection } from '../select/pixel-state';
+import { notePixels, pixelsWanted, type PixelFeed } from '../popout/ink';
+import type { PixelPatch } from '../popout/protocol';
 
 type LiveCanvas = HTMLCanvasElement | OffscreenCanvas;
+type Box = { x0: number; y0: number; x1: number; y1: number };
+
+/** Takes row `y` from `x0` to `x1` into a rectangle (made when there is none yet). */
+function widen(b: Box | null, x0: number, x1: number, y: number): Box {
+  if (!b) return { x0, y0: y, x1, y1: y };
+  if (x0 < b.x0) b.x0 = x0;
+  if (y < b.y0) b.y0 = y;
+  if (x1 > b.x1) b.x1 = x1;
+  if (y > b.y1) b.y1 = y;
+  return b;
+}
 
 function makeLiveCanvas(w: number, h: number): LiveCanvas | null {
   if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
@@ -45,6 +58,8 @@ function makeLiveCanvas(w: number, h: number): LiveCanvas | null {
 const TS = 128;
 const SHIFT = 7;
 const MASK = TS - 1;
+/** A layer bigger than this many art pixels is not followed live in a second window (its copy there would be too big). */
+const MAX_FOLLOWED = 4096 * 4096;
 /** How far past the painted area the live canvas grows each time, so a long stroke does not rebuild it on every tile. */
 const MARGIN = 256;
 
@@ -78,6 +93,11 @@ export class PixelSession {
   /** Where the drawing's block sat when the session began (none when a new drawing starts). */
   private was: { x?: number; y?: number; width: number; height: number } = { width: 0, height: 0 };
   changed = false;
+  /** What changed since the second window (if one is open) was last given pixels, and whether it was given a start yet. */
+  private pending: Box | null = null;
+  private started = false;
+  /** Everything changed since the last reset (a rubber-band shape's current extent). */
+  private shapeBox: Box | null = null;
   /** Mirror drawing, read once when the session starts. */
   readonly mirror: Mirror;
   /** Turns an ink into one that snaps to the palette, when the layer has its palette lock on. */
@@ -349,6 +369,10 @@ export class PixelSession {
       if (x1 > d.x1) d.x1 = x1;
       if (y > d.y1) d.y1 = y;
     }
+    // For the second window: what the changes since the last reset cover (a rubber-band shape erases that area when it
+    // is redrawn), and what it has not been given yet. Tighter than `dirty`, which a reset widens to whole tiles.
+    this.shapeBox = widen(this.shapeBox, x0, x1, y);
+    if (pixelsWanted()) this.pending = widen(this.pending, x0, x1, y);
   }
 
   /** The pixels a stroke can reach: the picture, plus (with a mirror) where its far-side images come from. Unbounded in tile mode. */
@@ -377,6 +401,13 @@ export class PixelSession {
 
   /** Puts everything back to how it was when the session started (for rubber-band lines). */
   reset(): void {
+    // The shape drawn so far goes, so the second window must be given that area again too.
+    const sb = this.shapeBox;
+    if (sb && pixelsWanted()) {
+      this.pending = widen(this.pending, sb.x0, sb.x1, sb.y0);
+      this.pending = widen(this.pending, sb.x0, sb.x1, sb.y1);
+    }
+    this.shapeBox = null;
     let d: PixelSession['dirty'] = null;
     for (let ti = 0; ti < this.tiles.length; ti++) {
       const t = this.tiles[ti];
@@ -487,10 +518,37 @@ export class PixelSession {
     return { layerId: this.layerId, kind: 'pixel' as const, canvas: c, x: this.cx, y: this.cy, width: this.cw, height: this.ch, ...(this.filled ? {} : { sparse: { base: this.baseDrawing, tiles: this.liveTiles, fill: this.fill } }) };
   }
 
+  /**
+   * The second window's way in: hands over the pixels changed since the last time as a piece of the picture (the whole
+   * painted area the first time, or when asked to start again). The link calls this at most once per screen frame.
+   */
+  readonly feed: PixelFeed = {
+    take: (restart) => {
+      const first = !this.started || restart;
+      const area = first ? (this.touched ?? this.pending) : this.pending;
+      this.pending = null;
+      if (!area) return null;
+      const x0 = Math.max(0, area.x0);
+      const y0 = Math.max(0, area.y0);
+      const w = Math.min(this.width - 1, area.x1) - x0 + 1;
+      const h = Math.min(this.height - 1, area.y1) - y0 + 1;
+      if (w <= 0 || h <= 0) return null;
+      this.started = true;
+      const patch: PixelPatch = { layerId: this.layerId, width: this.width, height: this.height, start: first, base: this.baseDrawing !== null && this.src.width > 0, x: x0, y: y0, w, h, data: this.crop({ x: x0, y: y0, w, h }) };
+      return patch;
+    },
+  };
+
+  /** Tells the second window, if one is open, that there is something new. Costs one check and four numbers. */
+  private offer(): void {
+    if (pixelsWanted() && this.pending && this.width * this.height <= MAX_FOLLOWED) notePixels(this.feed);
+  }
+
   /** Sends what changed to the screen. */
   flush(): void {
     const d = this.dirty;
     if (!d) return;
+    this.offer();
     if (typeof OffscreenCanvas === 'undefined' && typeof document === 'undefined') return;
     const tx0 = d.x0 >> SHIFT;
     const tx1 = d.x1 >> SHIFT;

@@ -79,6 +79,12 @@ export function addDrawn(label: string, shapes: Shape[]): ReturnType<typeof addS
   return addShapes(label, m ? [...shapes, ...mirrorShapes(shapes, m)] : shapes);
 }
 
+/** A shape in progress and its reflections (just the shape when mirror drawing is off), for a second window to follow. */
+export function withMirror(shape: Shape): Shape | Shape[] {
+  const m = activeVectorMirror();
+  return m ? [shape, ...mirrorShapes([shape], m, () => shape.id)] : shape;
+}
+
 /** Draws a shape in progress, and its reflections, so the preview shows what will be committed. */
 export function drawWithMirror(g: CanvasRenderingContext2D, shape: Shape): void {
   drawShape(g, shape);

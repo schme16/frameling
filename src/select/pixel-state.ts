@@ -18,6 +18,7 @@ import { activeLayer, setActivePixels, EDIT_HINTS } from '../tools/edit';
 import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { clearPixels, extractPixels, maskEmpty, overlayPixels, shiftMask, type Mask } from './mask';
 import { reducedMotion } from '../ui/prefs';
+import { offerWholePixels } from '../popout/pixelFeed';
 
 /** The pixel Select tool's id. Lifted pixels drop when another tool is picked. */
 export const PIXEL_SELECT_TOOL = 'pixel-select';
@@ -406,6 +407,8 @@ function showLive(): void {
   const out = floatingComposite()!;
   g.putImageData(new ImageData(out as Uint8ClampedArray<ArrayBuffer>, f.width, f.height), 0, 0);
   setLive({ layerId: f.layerId, kind: 'pixel', canvas: c, width: f.width, height: f.height });
+  // A second window follows the move (the whole grid, at most once a frame; see popout/pixelFeed.ts).
+  offerWholePixels(f.layerId, f.width, f.height, out);
 }
 
 // ---------------------------------------------------------------- keeping up with the document

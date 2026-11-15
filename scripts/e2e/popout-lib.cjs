@@ -7,7 +7,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const root = path.join(__dirname, '../..');
+// POPOUT_ROOT measures another checkout's build (for a before and after) with this checkout's harness.
+const root = process.env.POPOUT_ROOT || path.join(__dirname, '../..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const windows = [];
 

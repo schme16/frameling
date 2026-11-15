@@ -511,6 +511,9 @@ function ghostOfTrim(gx: CanvasRenderingContext2D, shapes: readonly Shape[], px:
   gx.restore();
 }
 
+// Not followed by the second window or the capture view, on purpose: the marquee, the lasso line, the marching ants and
+// the handles are the interface, not the drawing, and an audience should not watch you pick things. What a move, scale or
+// rotate does to the shapes is drawing, and that does go across (through setLive, see popout/ink.ts).
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const px = 1 / ctx.zoom;
   const ink = cssVar('--grape', '#9b7bff');

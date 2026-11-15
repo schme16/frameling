@@ -2,7 +2,11 @@
 // drawn exactly the way the drawing window draws it, with its own bitmap cache for this window's size. What it leaves
 // out on purpose: onion skin, light table, empty-frame ghost, grid, guides, selection and every handle. It is the picture.
 import type { OnionSettings } from '../core/store';
-import { drawShape } from '../core/render';
+import { drawShape, pixelCanvas } from '../core/render';
+import { drawingAt } from '../core/doc';
+import type { Shape } from '../core/format';
+import type { Live } from '../canvas/controller';
+import type { PixelPatch } from './protocol';
 import { FramePainter } from '../canvas/pipeline';
 import type { Replica } from './replica';
 import { cameraAt, fitPage, inkMatrix, liveOf, pageOf, shownFrame, withoutPictures } from './show';
@@ -20,8 +24,17 @@ export interface Painted {
   background: string | undefined;
 }
 
+/** One canvas the size of the layer's grid, holding the pixels painted so far on the layer being painted on. */
+interface PixelCopy {
+  layerId: string;
+  canvas: HTMLCanvasElement;
+  width: number;
+  height: number;
+}
+
 export class PicturePainter {
   private painter = new FramePainter();
+  private pix: PixelCopy | null = null;
   private docId: string | null = null;
   private g: CanvasRenderingContext2D;
 
@@ -32,6 +45,53 @@ export class PicturePainter {
   /** The cache is for one drawing at one size: a different file, or a size change, starts it over. */
   forget(): void {
     this.painter.clear();
+  }
+
+  /** Puts the pixel pieces that arrived since the last paint on the copy of the layer being painted on. */
+  private takePixels(r: Replica, page: ReturnType<typeof pageOf>, frame: number): void {
+    const queue = r.pixelQueue;
+    if (!queue.length) return;
+    r.pixelQueue = [];
+    for (const p of queue) {
+      if (!p) {
+        this.pix = null;
+        continue;
+      }
+      if (p.start || !this.pix || this.pix.layerId !== p.layerId || this.pix.width !== p.width || this.pix.height !== p.height) {
+        // A piece that is not a start and has nothing to go on (the start was lost) is skipped; the sender is asked again.
+        if (!p.start) continue;
+        this.pix = this.startCopy(page, frame, p);
+      }
+      const c = this.pix;
+      if (!c || !p.w || !p.h) continue;
+      const g = c.canvas.getContext('2d')!;
+      g.putImageData(new ImageData(p.data as Uint8ClampedArray<ArrayBuffer>, p.w, p.h), p.x, p.y);
+    }
+  }
+
+  private startCopy(page: ReturnType<typeof pageOf>, frame: number, p: PixelPatch): PixelCopy | null {
+    // The same layer and size again (a whole picture every frame): the canvas is cleared and reused, not made anew.
+    const was = this.pix;
+    const same = was && was.layerId === p.layerId && was.width === p.width && was.height === p.height;
+    const canvas = same ? was.canvas : document.createElement('canvas');
+    if (same) canvas.getContext('2d')!.clearRect(0, 0, p.width, p.height);
+    else {
+      canvas.width = p.width;
+      canvas.height = p.height;
+    }
+    const layer = page.layers.find((l) => l.id === p.layerId);
+    if (!layer || layer.kind !== 'pixel') return null;
+    if (p.base) {
+      const d = drawingAt(page, layer, frame);
+      if (d && d.kind === 'pixel' && d.width > 0) canvas.getContext('2d')!.drawImage(pixelCanvas(d), d.x ?? 0, d.y ?? 0);
+    }
+    return { layerId: p.layerId, canvas, width: p.width, height: p.height };
+  }
+
+  /** The layer being painted on, as the painter takes it. */
+  private pixelLive(): Live | null {
+    const c = this.pix;
+    return c ? { layerId: c.layerId, kind: 'pixel', canvas: c.canvas, x: 0, y: 0, width: c.width, height: c.height } : null;
   }
 
   paint(r: Replica, dpr: number, playing: boolean): Painted | null {
@@ -47,6 +107,7 @@ export class PicturePainter {
     const page = withoutPictures(pageOf(r.doc));
     const frame = shownFrame(r.doc, look.frame);
     const camera = look.camera ? cameraAt(r.doc, frame) : undefined;
+    this.takePixels(r, page, frame);
     const rect = fitPage(width, height, page, dpr);
     this.painter.paint(g, {
       doc: page,
@@ -54,7 +115,7 @@ export class PicturePainter {
       rect,
       width,
       height,
-      live: liveOf(r.live, r.doc),
+      live: r.doc.editing?.length ? null : (this.pixelLive() ?? liveOf(r.live, r.doc)),
       onion: NO_ONION,
       playing,
       zooming: false,
@@ -74,7 +135,7 @@ export class PicturePainter {
     g.rect(0, 0, page.width, page.height);
     g.clip();
     for (const m of inkMatrix(page, r.look!.activeLayerId, frame, camera)) g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-    drawShape(g, r.ink!);
+    for (const s of ([] as readonly Shape[]).concat(r.ink!)) drawShape(g, s);
     g.restore();
   }
 

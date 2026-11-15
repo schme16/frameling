@@ -471,8 +471,21 @@ can change the drawing.
   drawing window's end is `src/popout/link.ts`, started by a window message; it does nothing until a picture window says hello.
 - **What is sent.** `mirror.ts` watches the store: the whole drawing first, then immer patches (`store.lastChange()` says how the
   drawing got from the last value to this one; anything that is not a clean step sends the whole drawing again), a small
-  `look` (playhead, playing, camera, marks, theme), the freehand stroke in progress (`ink.ts`, a tap in `VectorStroke`) and
-  half-done vector changes (`setLive`). A message that does not follow on makes the other side ask again (`replica.ts`).
+  `look` (playhead, playing, camera, marks, theme), and work in progress through the taps in `ink.ts` (below). A message that
+  does not follow on makes the other side ask again (`replica.ts`).
+- **Work in progress.** The shape of it: a tool hands over what it has, the link decides when to send (once per screen frame at
+  most, `link.ts` `flush`), and a tool never waits for the second window. `inkWanted()` and `pixelsWanted()` let a tool skip making
+  the message when nobody listens. Three taps. `noteInk` is a shape or a function that makes one (called by the link, once a frame,
+  not on every pointer move): freehand strokes, the shape tools, the pen, mirrored copies included. `noteLive` is the half-done
+  drawing a tool shows through `setLive`: vector and tile maps go on whole (small), which covers moving, scaling, rotating and the
+  eraser on vector layers. Pixel layers are pictures, so they go through `notePixels`: a `PixelFeed` whose `take()` gives the
+  changed rectangle as RGBA since the last call (`PixelSession.feed`, so every pixel tool that paints through a session is live:
+  brush, pencil, eraser, shapes, lines, gradient) or, for a whole picture the tool already has (a transform or a floating
+  selection), the grid (`pixelFeed.ts`). `pace.ts` spaces big pieces out (64 MB a second at most, never more than 250 ms), so
+  the second window falls behind on a huge move rather than the drawing window paying. The second window keeps a canvas the size
+  of the layer's grid (`painter.ts`), seeded from the saved drawing, and puts each rectangle on it. Left out on purpose:
+  selection and lasso (interface), and layers over 4096 x 4096 art pixels. Playback, scrubbing, tweens and edit-points follow
+  the store, not these taps.
 - **How it paints.** `painter.ts` calls the canvas's own `FramePainter`, so it is the same renderer with its own bitmap cache.
   `show.ts` has the decisions (camera, marks, which frame, fitting the page), all pure.
 - **The capture view.** The same window dressed for OBS and the like: `frame: false`, a fixed name (`CAPTURE_TITLE`, never the drawing's),

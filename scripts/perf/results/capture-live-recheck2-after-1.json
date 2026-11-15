@@ -1,0 +1,60 @@
+{
+  "env": {
+    "reps": 15,
+    "moves": 150,
+    "gapMs": 8,
+    "root": "this checkout",
+    "electron": "45.3.0",
+    "when": "2026-11-15T06:05:23.554Z"
+  },
+  "cases": [
+    {
+      "doc": "pixel",
+      "tool": "rect",
+      "closed": {
+        "taskMs": 690.7,
+        "scriptMs": 639.1,
+        "gapP95": 100.1,
+        "gapMax": 150
+      },
+      "open": {
+        "taskMs": 712,
+        "scriptMs": 677.7,
+        "gapP95": 133.3,
+        "gapMax": 200,
+        "popPaints": 24
+      },
+      "liveShare": [
+        6.5,
+        24.6,
+        52.8
+      ],
+      "liveFinal": 13846,
+      "costMs": 21.3
+    },
+    {
+      "doc": "pixel",
+      "tool": "line",
+      "closed": {
+        "taskMs": 57.8,
+        "scriptMs": 32.3,
+        "gapP95": 33.4,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 69.9,
+        "scriptMs": 50.8,
+        "gapP95": 33.4,
+        "gapMax": 50,
+        "popPaints": 38
+      },
+      "liveShare": [
+        23,
+        45.2,
+        62.3
+      ],
+      "liveFinal": 909,
+      "costMs": 12.1
+    }
+  ]
+}

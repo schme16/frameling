@@ -22,6 +22,7 @@ import { clearPixels, extractPixels, maskBounds, maskFromAlpha, maskToImage, ove
 import { frameOf, isIdentity, toArt, type Frame } from './box';
 import { isLossless, pixelOp, resamplePixels, type Resample } from './pixels';
 import { resampleWay } from './settings';
+import { offerWholePixels } from '../popout/pixelFeed';
 
 export type SessionKind = 'vector' | 'pixel';
 
@@ -198,6 +199,8 @@ function preview(): void {
   if (!c || !g) return;
   g.putImageData(new ImageData(out.pixels as Uint8ClampedArray<ArrayBuffer>, out.width, out.height), 0, 0);
   setLive({ layerId: s.layerId, kind: 'pixel', canvas: c, width: out.width, height: out.height });
+  // A second window follows the move (the whole grid, at most once a frame; see popout/pixelFeed.ts).
+  offerWholePixels(s.layerId, out.width, out.height, out.pixels);
   setSelectionShownAs(out.mask);
 }
 

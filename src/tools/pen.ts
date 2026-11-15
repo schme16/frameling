@@ -14,7 +14,8 @@ import { store } from '../core/store';
 import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
 import { activePixelLayer, commitPixelPath, currentOutline } from '../pixel/tools';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
+import { inkWanted, noteInk } from '../popout/ink';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { viewSizeFactor } from './view-size';
@@ -119,8 +120,23 @@ function preview(closed: boolean): PathShape | null {
   return s && withWellGradients(s);
 }
 
-/** Puts the path into the drawing (one undo step) and starts afresh. */
+/** What a second window sees while the path is being made (vector layers only: on a pixel layer the path lands as pixels). Made when the link asks, once a screen frame at most. */
+const penInk = () => {
+  if (activePixelLayer()) return null;
+  const s = preview(false);
+  return s && withMirror(s);
+};
+const showPath = () => {
+  if (inkWanted()) noteInk(penInk);
+};
+
+/** Puts the path into the drawing (one undo step) and starts afresh. The live copy goes after the edit, so the finished shape is already there. */
 function finish(ctx: ToolContext, closed: boolean): void {
+  finishPath(ctx, closed);
+  noteInk(null);
+}
+
+function finishPath(ctx: ToolContext, closed: boolean): void {
   const p = path;
   path = null;
   press = null;
@@ -188,6 +204,7 @@ export const penTool: Tool = {
     path ??= new PenPath();
     path.add(p);
     press = { at: p, dragged: false, time: e.time };
+    showPath();
   },
   move(e, ctx) {
     hover = { x: e.x, y: e.y };
@@ -195,6 +212,7 @@ export const penTool: Tool = {
     if (!press.dragged && Math.hypot(e.x - press.at.x, e.y - press.at.y) * ctx.zoom < DRAG_PX) return;
     press.dragged = true;
     path.pull(e, e.alt);
+    showPath();
   },
   up(e, ctx) {
     lastUp = { time: e.time, x: e.x, y: e.y };
@@ -233,6 +251,7 @@ export const penTool: Tool = {
     }
     if (e.key === 'Backspace' || e.key === 'Delete') {
       if (!path.back()) path = null;
+      showPath();
       ctx.requestOverlay();
       return true;
     }

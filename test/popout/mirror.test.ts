@@ -147,7 +147,7 @@ describe('keeping the second window\'s copy equal', () => {
 
   it('follows a stroke in progress and a half-done change, and clears them', () => {
     mirror.setInk(stroke('i'));
-    expect(replica.ink?.id).toBe('i');
+    expect((replica.ink as { id: string } | null)?.id).toBe('i');
     mirror.setInk(null);
     expect(replica.ink).toBeNull();
     const id = Object.keys(store().get().doc.drawings)[0];
