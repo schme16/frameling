@@ -50,7 +50,7 @@ This is the step people get stuck on. It is OBS's own door for other programs, b
 2. Leave the address as **localhost:4455**, or type the one OBS shows. OBS on another computer in your home? Type that computer's address.
 3. Type the password, if there is one, and press **Use this password**.
 
-A small pill at the top right shows where things are: **OBS: connected**, **OBS: live** or **OBS: recording**, and a quiet **OBS: not found** when OBS isn't running. Press it to look again.
+A small pill at the top right shows where things are: **OBS: connected**, **Live** or **Recording**, and a quiet **OBS: not found** when OBS isn't running. If you have audience features on too, it is the same pill as the red **On air**, with OBS as a part beside it. Press it to open a card with the OBS settings and a **Look for OBS now** button.
 
 ## OBS isn't running? That's fine
 

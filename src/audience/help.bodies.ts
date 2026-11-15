@@ -8,7 +8,9 @@ export const bodies: Record<string, string> = {
 
 **The On air pill.** While it is on, a red **On air** pill sits in the title bar and nothing can hide it. Press it to see what is waiting and what has happened. A little number says how many are waiting.
 
-**Stop.** The **Stop** button beside the pill, or **Ctrl+Alt+K**, drops everything at once: the queue is emptied, every effect stops, every way in is closed and the switch goes off. The key works from any window if your desktop allows it, and otherwise only while Frameling is the window you are in, so remember the button.
+**OBS shares the pill.** With [Going live with OBS](help:obs-golive) on, what OBS is doing (**Live**, **Rec**, **OBS ready**, **No OBS**) sits beside **Stop**. Press it for the same card, with the OBS settings.
+
+**Stop.** The **Stop** button beside **On air**, or **Ctrl+Alt+K**, drops everything at once: the queue is emptied, every effect stops, every way in is closed and the switch goes off. The key works from any window if your desktop allows it, and otherwise only while Frameling is the window you are in, so remember the button. Stop never touches OBS.
 
 **Kept in check.** Every audience action is on a short list, and anything not on it is turned away. Then:
 - **A cooldown for each kind.** After a Quill cheer, the next Quill action waits a little.

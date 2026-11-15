@@ -1,13 +1,21 @@
-/* The On air pill, its Stop button and the card that hangs from it. Red on purpose, and the same in both themes: it
-   must read as "live" at a glance, and white on this red passes contrast in light and dark. */
-.aud-onair {
+/* The Live pill: the red On air part with its Stop, and the OBS part beside it. Red on purpose, and the same in both
+   themes: it must read as "live" at a glance, and white on this red passes contrast in light and dark. The pill clips
+   its parts to one rounded shape, so every part is a plain rectangle. */
+.live-pill {
   --aud-red: #c62828;
   --aud-red-deep: #a51f1f;
   display: inline-flex;
   align-items: stretch;
+  height: 26px;
   margin-right: 6px;
   border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aud-red) 70%, transparent);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--live-ring, transparent);
+  flex: none;
+}
+.live-pill[data-tone='air'] {
+  background: var(--aud-red);
+  --live-ring: color-mix(in srgb, var(--aud-red) 70%, transparent);
 }
 .aud-pill,
 .aud-stop {
@@ -27,12 +35,10 @@
 }
 .aud-pill {
   padding-left: 11px;
-  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
 }
 .aud-stop {
   padding-right: 11px;
   border-left: 1px solid rgb(255 255 255 / 40%);
-  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
   background: var(--aud-red-deep);
 }
 .aud-pill:hover,
@@ -42,7 +48,7 @@
 .aud-pill:focus-visible,
 .aud-stop:focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: -3px;
 }
 .aud-dot {
   width: 8px;
@@ -158,4 +164,10 @@
 }
 .aud-learn {
   align-self: flex-start;
+}
+.aud-sep {
+  width: 100%;
+  margin: 8px 0 4px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
 }

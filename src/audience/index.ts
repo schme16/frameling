@@ -1,5 +1,5 @@
 // Audience features, the app's side: the one gate (see ./gate.ts for the rules and how to register against it), the
-// master switch's memory, the commands, the choices and the help. The On air pill and its card are in ./OnAir.tsx.
+// master switch's memory, the commands, the choices and the help. The On air pill and its card are in ../ui/LivePill.tsx.
 //
 // FOR OTHER FEATURES, the whole surface is these four things:
 //   registerAudienceAction({ id, label, kind, cooldown, touchesDrawing?, parse?, run })   what the audience may make happen

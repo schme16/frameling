@@ -23,42 +23,120 @@
   outline-offset: 2px;
 }
 
-/* The pill that says whether Frameling can see OBS. Calm unless you are live or it needs you. */
-.obs-badge {
+/* The OBS part of the Live pill. On its own it is the whole pill and takes its look from the tone; beside On air it is
+   a segment in the same pill. Calm unless OBS is live or needs you. Connected is mint, never the yellow of "picked". */
+.live-pill[data-tone='ready'] {
+  --live-ring: var(--ok);
+}
+.live-pill[data-tone='quiet'],
+.live-pill[data-tone='looking'] {
+  --live-ring: var(--line);
+  opacity: 0.8;
+}
+.live-pill[data-tone='fix'] {
+  --live-ring: var(--sunny-deep);
+}
+.live-pill[data-tone='rec'] {
+  --live-ring: var(--aud-red);
+}
+.live-pill[data-tone='live'] {
+  --live-ring: var(--aud-red);
+  background: var(--aud-red);
+}
+.live-obs {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-right: 8px;
-  padding: 3px 10px 3px 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  height: 26px;
+  padding: 0 11px 0 9px;
+  border: 0;
   background: transparent;
-  color: var(--muted, currentColor);
+  color: var(--text);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
   white-space: nowrap;
+  cursor: pointer;
 }
-.obs-badge.obs-waiting {
-  border-color: var(--line, currentColor);
-  opacity: 0.8;
+.live-obs:focus-visible {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: -3px;
 }
-.obs-badge.obs-ready {
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
+.live-obs-quiet,
+.live-obs-looking {
+  color: var(--muted);
 }
-.obs-badge.obs-live {
-  background: var(--danger, #d64545);
+.live-obs-ready .ui-icon,
+.live-obs-ready svg {
+  color: var(--ok);
+}
+.live-obs-live {
+  color: #fff;
+  font-weight: 800;
+}
+.live-obs-rec {
+  font-weight: 700;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aud-red);
+}
+.live-obs-live .live-dot {
+  background: #fff;
+  animation: aud-pulse 1.8s ease-in-out infinite;
+}
+:root[data-motion='reduce'] .live-obs-live .live-dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-obs-live .live-dot {
+    animation: none;
+  }
+}
+
+/* Beside On air: a segment in the red pill, set off by a hairline. */
+.live-obs.is-beside {
+  padding: 0 11px 0 9px;
+  border-left: 1px solid rgb(255 255 255 / 40%);
+  background: var(--aud-red);
+  color: #fff;
+  font-weight: 800;
+}
+.live-obs.is-beside:hover {
+  filter: brightness(1.12);
+}
+.live-obs.is-beside.live-obs-quiet,
+.live-obs.is-beside.live-obs-looking {
+  color: rgb(255 255 255 / 70%);
+  font-weight: 600;
+}
+.live-obs.is-beside.live-obs-ready {
+  font-weight: 600;
+}
+.live-obs.is-beside.live-obs-ready svg {
   color: #fff;
 }
-.obs-badge.obs-attention {
-  border-color: var(--sunny-deep, currentColor);
-  color: var(--text, currentColor);
+.live-obs.is-beside.live-obs-live,
+.live-obs.is-beside.live-obs-rec {
+  background: #fff;
+  color: var(--aud-red-deep);
 }
-.obs-badge:focus-visible {
-  outline: 2px solid var(--focus, currentColor);
-  outline-offset: 2px;
+.live-obs.is-beside.live-obs-live .live-dot,
+.live-obs.is-beside.live-obs-rec .live-dot {
+  background: var(--aud-red);
+}
+.live-obs.is-beside.live-obs-fix {
+  height: 22px;
+  margin: 2px 3px 2px 2px;
+  border-left: 0;
+  border-radius: var(--radius-pill);
+  background: var(--aud-red-deep);
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.live-obs.is-beside.live-obs-fix svg {
+  color: #fff;
 }
 .obs-panel {
   display: flex;
