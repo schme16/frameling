@@ -98,6 +98,15 @@ export const PHRASES: Phrase[] = [
   P('change the size of my canvas', 'document.settings'),
   P('set the frame rate', 'document.settings'),
   P('start some pixel art', 'pixel.new'),
+  // Streaming and sharing: the family that arrived in one day, asked the way a person would say it
+  P('go live', 'stream.obsLink', 'help:obs-golive'),
+  P('hide my file name', 'view.streamSafe', 'help:stream-safe'),
+  P('record a timelapse', 'timelapse.record'),
+  P('show only my drawing', 'capture.toggle', 'help:stream-capture'),
+  P('stop trolls', 'audience.kill'),
+  P('ask my audience', 'votes.start', 'help:votes'),
+  P('let chat vote', 'votes.start', 'help:votes'),
+  P('send to a friend', 'file.sendCopy', 'help:send-a-copy'),
 ];
 
 /**
@@ -115,6 +124,10 @@ export const KNOWN_MISSES: Phrase[] = [
   P('colour it in', 'tools.fill'),
   // Flipping the view and flipping a layer's mask both say "flip" plainly; flipping the drawing loses to them.
   P('flip it', 'select.flipH', 'select.flipV'),
+  // The way out for somebody who does not stream. Nothing says "the stream things" as a group, so each of these finds
+  // one stream feature (Stream-safe, the overlay settings) before the master switch or Preferences > Features.
+  P('turn off stream stuff', 'audience.toggle', 'view.features'),
+  P('hide stream features', 'audience.toggle', 'view.features'),
 ];
 
 let items: PaletteItem[] = [];
