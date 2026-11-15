@@ -132,6 +132,30 @@ export interface ObsBridge {
   onEvent(handler: (e: { type: 'output'; kind: 'stream' | 'record'; active: boolean } | { type: 'closed' }) => void): () => void;
 }
 
+/** Connecting to Twitch (src/twitch, src/main/twitch*.ts). The sign-in and the connection live on the desktop side; no token and no viewer's name ever comes up to the page. Missing in the web build. */
+export interface TwitchBridge {
+  status(): Promise<import('../shared/twitch').TwitchStatus>;
+  /** Starts signing in for these kinds of event. Resolves once there is a code to approve; the approval finishes by itself and arrives as a status. */
+  signIn(kinds: import('../shared/twitch').TwitchKind[]): Promise<import('../shared/twitch').TwitchStatus>;
+  /** The code to show while a sign-in waits. Only asked for when it is about to be drawn, and never while stream-safe mode is on. */
+  code(): Promise<{ userCode: string; expiresAt: number } | null>;
+  /** Opens Twitch's approval page (with the code filled in) in the browser. */
+  openApproval(): Promise<boolean>;
+  /** Copies that page's address, so it can be pasted into a browser on a screen that is not being shared. */
+  copyApproval(): Promise<boolean>;
+  cancelSignIn(): Promise<void>;
+  /** Tells Twitch to cancel the sign-in and forgets it here. `revoked` is false when Twitch could not be reached. */
+  signOut(): Promise<{ revoked: boolean }>;
+  /** Starts listening (the audience switch does this through the door). */
+  listen(kinds: import('../shared/twitch').TwitchKind[]): Promise<import('../shared/twitch').TwitchStatus>;
+  stop(): Promise<void>;
+  rewards(): Promise<import('../shared/twitch').TwitchRewardsAnswer>;
+  /** Signs in with the streamer's own Twitch app instead (a client id), or null for this build's own. */
+  setApp(clientId: string | null): Promise<import('../shared/twitch').TwitchStatus>;
+  onStatus(handler: (s: import('../shared/twitch').TwitchStatus) => void): () => void;
+  onEvent(handler: (e: import('../shared/twitch').TwitchEvent) => void): () => void;
+}
+
 /** Looking for a newer release and putting it in (src/main/update.ts, src/update). Missing in the web build. */
 export interface UpdateBridge {
   /** What this copy is and how an update would be put in. */
@@ -330,6 +354,8 @@ export interface FramelingApi {
   beta?: BetaBridge;
   /** Watching OBS for going live (desktop only). */
   obs?: ObsBridge;
+  /** Connect Twitch (desktop only). */
+  twitch?: TwitchBridge;
   /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */
   update?: UpdateBridge;
   /** The local actions door for stream tools (desktop only). */

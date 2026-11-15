@@ -7,6 +7,7 @@ import { isFeatureOn, needsIt, offFeatures, setFeatureOn, switchableFeatures } f
 import { useFeaturesVersion } from './use';
 import { AudiencePrefsRow } from '../audience/PrefsRow';
 import { StreamDoorPrefsRow } from '../streamdoor/PrefsRow';
+import { TwitchPrefsRow } from '../twitch/PrefsRow';
 import { DaresPrefsRow } from '../dares/PrefsRow';
 
 export function FeaturesPage() {
@@ -48,6 +49,7 @@ export function FeaturesPage() {
       </div>
       <AudiencePrefsRow />
       <StreamDoorPrefsRow />
+      <TwitchPrefsRow />
       <DaresPrefsRow />
       {offFeatures().length > 0 && (
         <div>

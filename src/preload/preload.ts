@@ -96,6 +96,29 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('obs:event', fn);
     },
   },
+  twitch: {
+    status: () => call('twitch:status'),
+    signIn: (kinds) => call('twitch:signIn', kinds),
+    code: () => call('twitch:code'),
+    openApproval: () => call('twitch:openApproval'),
+    copyApproval: () => call('twitch:copyApproval'),
+    cancelSignIn: () => call('twitch:cancelSignIn'),
+    signOut: () => call('twitch:signOut'),
+    listen: (kinds) => call('twitch:listen', kinds),
+    stop: () => call('twitch:stop'),
+    rewards: () => call('twitch:rewards'),
+    setApp: (clientId) => call('twitch:setApp', clientId),
+    onStatus: (handler) => {
+      const fn = (_: unknown, s: Parameters<typeof handler>[0]) => handler(s);
+      ipcRenderer.on('twitch:status', fn);
+      return () => void ipcRenderer.removeListener('twitch:status', fn);
+    },
+    onEvent: (handler) => {
+      const fn = (_: unknown, e: Parameters<typeof handler>[0]) => handler(e);
+      ipcRenderer.on('twitch:event', fn);
+      return () => void ipcRenderer.removeListener('twitch:event', fn);
+    },
+  },
   clipboard: { readPicture: () => call('clipboard:readPicture'), writePicture: (png) => call('clipboard:writePicture', png), writeText: (text) => call('clipboard:writeText', text) },
   update: {
     facts: () => call('update:facts'),

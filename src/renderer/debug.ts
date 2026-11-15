@@ -14,6 +14,7 @@ import '../brushes/debug';
 import '../quillpet/debug';
 import '../update/debug';
 import '../audience/debug';
+import '../twitch/debug';
 import '../quillreacts/debug';
 import '../promptjar/debug';
 import '../votes/debug';

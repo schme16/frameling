@@ -1809,5 +1809,54 @@
     "text": "Every request counts as one vote. Your tool has to make sure each person only sends one.",
     "where": "Preferences: the small line under the \"count\" answer in \"A vote that comes with no voter id\"."
   },
-  "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." }
+  "choice.votes.noId.count.did": { "text": "Votes with no voter id are counted.", "where": "Toast when \"count\" is used without asking (\"A vote that comes with no voter id\"), in the past tense." },
+  "choice.twitch.starter.title": { "text": "Links to start a new Twitch connection with", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.twitch.starter.question": {
+    "text": "Start with a few small Quill reactions linked to Twitch events (a raid makes Quill wave, a follow makes Quill hop), or with an empty list?",
+    "where": "The question the \"Links to start a new Twitch connection with\" dialog asks, the first time you connect Twitch."
+  },
+  "choice.twitch.starter.suggest.label": {
+    "text": "A few small reactions",
+    "where": "Dialog and Preferences: the button for the answer \"suggest\" in \"Links to start a new Twitch connection with\"."
+  },
+  "choice.twitch.starter.suggest.detail": {
+    "text": "Quill reacts on your screen and nothing else. You can change or remove each one in the list.",
+    "where": "Dialog and Preferences: the small line under the \"suggest\" answer in \"Links to start a new Twitch connection with\"."
+  },
+  "choice.twitch.starter.suggest.did": {
+    "text": "Added a few small Quill reactions to your Twitch links.",
+    "where": "Toast when \"suggest\" is used without asking (\"Links to start a new Twitch connection with\"), in the past tense."
+  },
+  "choice.twitch.starter.empty.label": { "text": "An empty list", "where": "Dialog and Preferences: the button for the answer \"empty\" in \"Links to start a new Twitch connection with\"." },
+  "choice.twitch.starter.empty.detail": {
+    "text": "Nothing happens for any Twitch event until you add a link yourself.",
+    "where": "Dialog and Preferences: the small line under the \"empty\" answer in \"Links to start a new Twitch connection with\"."
+  },
+  "choice.twitch.starter.empty.did": {
+    "text": "Started your Twitch links with an empty list.",
+    "where": "Toast when \"empty\" is used without asking (\"Links to start a new Twitch connection with\"), in the past tense."
+  },
+  "choice.twitch.refusedNote.title": { "text": "When your limits turn a Twitch event away", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.twitch.refusedNote.question": {
+    "text": "Sometimes a Twitch event arrives while a cooldown or the queue says no. Tell you with a small note each time, or just count it on the On air card?",
+    "where": "The question the \"When your limits turn a Twitch event away\" dialog asks, the first time it happens."
+  },
+  "choice.twitch.refusedNote.count.label": { "text": "Just count it", "where": "Dialog and Preferences: the button for the answer \"count\" in \"When your limits turn a Twitch event away\"." },
+  "choice.twitch.refusedNote.count.detail": {
+    "text": "Nothing pops up. The On air card shows how many were turned away and why.",
+    "where": "Dialog and Preferences: the small line under the \"count\" answer in \"When your limits turn a Twitch event away\"."
+  },
+  "choice.twitch.refusedNote.count.did": {
+    "text": "Twitch events turned away by your limits are only counted.",
+    "where": "Toast when \"count\" is used without asking (\"When your limits turn a Twitch event away\"), in the past tense."
+  },
+  "choice.twitch.refusedNote.toast.label": { "text": "Tell me each time", "where": "Dialog and Preferences: the button for the answer \"toast\" in \"When your limits turn a Twitch event away\"." },
+  "choice.twitch.refusedNote.toast.detail": {
+    "text": "A small note says which link was turned away and why. It can show on stream, so it never names a viewer. Good for setting up.",
+    "where": "Dialog and Preferences: the small line under the \"toast\" answer in \"When your limits turn a Twitch event away\"."
+  },
+  "choice.twitch.refusedNote.toast.did": {
+    "text": "You get a small note when your limits turn a Twitch event away.",
+    "where": "Toast when \"toast\" is used without asking (\"When your limits turn a Twitch event away\"), in the past tense."
+  }
 }
