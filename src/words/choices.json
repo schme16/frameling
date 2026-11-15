@@ -1734,5 +1734,40 @@
     "text": "The words are saved on this computer, with no names and no times, so a good prompt is still here next stream. Empty the jar wipes them.",
     "where": "Preferences: the small line under the \"keep\" answer in \"Keep the prompt jar\"."
   },
-  "choice.promptjar.keep.keep.did": { "text": "The prompt jar is kept for next time.", "where": "Toast when \"keep\" is used without asking (\"Keep the prompt jar\"), in the past tense." }
+  "choice.promptjar.keep.keep.did": { "text": "The prompt jar is kept for next time.", "where": "Toast when \"keep\" is used without asking (\"Keep the prompt jar\"), in the past tense." },
+  "choice.review.own.title": { "text": "Your notes on a review page", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.review.own.question": {
+    "text": "Show your own notes and marks on the review page? The other person sees what has already been said. Your notes are yours: pick a clean page if some are only for you.",
+    "where": "The question the \"Your notes on a review page\" dialog asks, the first time you send a drawing for review that has notes or marks."
+  },
+  "choice.review.own.show.label": { "text": "Show them", "where": "Dialog and Preferences: the button for the answer \"show\" in \"Your notes on a review page\"." },
+  "choice.review.own.show.detail": {
+    "text": "The page carries your notes and marks, so the other person can answer them and tick them off.",
+    "where": "Dialog and Preferences: the small line under the \"show\" answer in \"Your notes on a review page\"."
+  },
+  "choice.review.own.clean.label": { "text": "A clean page", "where": "Dialog and Preferences: the button for the answer \"clean\" in \"Your notes on a review page\"." },
+  "choice.review.own.clean.detail": {
+    "text": "Just the drawing. They start with nothing on it, and your notes stay in your file.",
+    "where": "Dialog and Preferences: the small line under the \"clean\" answer in \"Your notes on a review page\"."
+  },
+  "choice.review.drift.title": { "text": "Comments from an older version of a drawing", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.review.drift.question": {
+    "text": "Frames have moved since you sent this review page, so a comment pinned to a frame may land a frame off. Bring the comments in anyway?",
+    "where": "The question the \"Comments from an older version of a drawing\" dialog asks when somebody's comments come back for a version of your drawing whose frames have since moved."
+  },
+  "choice.review.drift.bring.label": { "text": "Bring them in anyway", "where": "Dialog and Preferences: the button for the answer \"bring\" in \"Comments from an older version of a drawing\"." },
+  "choice.review.drift.bring.detail": {
+    "text": "They come in as they are. Page notes are fine; check the ones pinned to a frame. Undo takes them all back out.",
+    "where": "Dialog and Preferences: the small line under the \"bring\" answer in \"Comments from an older version of a drawing\" (before the real versions are known)."
+  },
+  "choice.review.drift.bring.sized": {
+    "text": "They come in as they are. They were made on the version from {sent} ({was} frames; now {now}). Check the ones pinned to a frame. Undo takes them all back out.",
+    "where": "Dialog: the small line under the \"bring\" answer in \"Comments from an older version of a drawing\", with the real version and frame counts.",
+    "vars": ["sent", "was", "now"]
+  },
+  "choice.review.drift.skip.label": { "text": "Not now", "where": "Dialog: the button for the answer \"skip\" in \"Comments from an older version of a drawing\"." },
+  "choice.review.drift.skip.detail": {
+    "text": "Leave the comments out for now. Nothing changes.",
+    "where": "Dialog: the small line under the \"skip\" answer in \"Comments from an older version of a drawing\"."
+  }
 }

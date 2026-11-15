@@ -1,0 +1,7 @@
+Send for review and Bring in comments (File > Send for review..., Ctrl+Alt+Shift+E; File > Bring in comments..., Ctrl+Alt+Shift+I).
+review-page-as-received-{dark,light}.png: the real page Frameling wrote for the demo drawing (98 KB, 12 frames), opened in a plain browser window with no Frameling, as it arrives.
+review-page-commenting-{dark,light}.png: the same page after the other person (Anna) left a note, circled the mouth, answered one note and ticked another, driven with real mouse events.
+comments-arriving-{dark,light}.png: back in Frameling after File > Bring in comments...: her note, circle and tick are in, with the message about which version she looked at.
+comments-note-card-{dark,light}.png: a note she answered, opened, with her name and the time on her answer.
+review-page-{dark,light}.mp4: the Frameling side as a clip (H.264 yuv420p 1000x626): send, the one-time question about your own notes, the message with the size, then bring in her comments. The runner's pretend desktop answers the save and the open, so nothing was written.
+Made with scripts/docs/help/review-page.cjs (clip, and the real page via REVIEW_PAGE_OUT) and scripts/docs/ab-share-review/review-page.cjs (the page screenshots), under xvfb.
