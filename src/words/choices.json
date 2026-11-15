@@ -1548,5 +1548,28 @@
   "choice.audience.startup.keep.did": {
     "text": "Audience features start as you left them.",
     "where": "Toast when \"keep\" is used without asking (\"Audience features when Frameling opens\"), in the past tense."
+  },
+  "choice.streamdoor.portBusy.title": { "text": "When the actions door's port is taken", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.streamdoor.portBusy.question": {
+    "text": "Another program is already using the actions door's port. Use the next free one, or leave the door closed?",
+    "where": "The question the \"When the actions door's port is taken\" choice asks, the first time the port is busy."
+  },
+  "choice.streamdoor.portBusy.next.label": { "text": "Use the next free port", "where": "Dialog and Preferences: the button for the answer \"next\" in \"When the actions door's port is taken\"." },
+  "choice.streamdoor.portBusy.next.detail": {
+    "text": "The door opens anyway. Frameling shows the new port, so you can point your stream tool at it.",
+    "where": "Dialog and Preferences: the small line under the \"next\" answer in \"When the actions door's port is taken\"."
+  },
+  "choice.streamdoor.portBusy.next.did": {
+    "text": "The actions door uses the next free port.",
+    "where": "Toast when \"next\" is used without asking (\"When the actions door's port is taken\"), in the past tense."
+  },
+  "choice.streamdoor.portBusy.stay.label": { "text": "Leave it closed", "where": "Dialog and Preferences: the button for the answer \"stay\" in \"When the actions door's port is taken\"." },
+  "choice.streamdoor.portBusy.stay.detail": {
+    "text": "Your tools keep the address they have. Pick a different port in Preferences > Features when you are ready.",
+    "where": "Dialog and Preferences: the small line under the \"stay\" answer in \"When the actions door's port is taken\"."
+  },
+  "choice.streamdoor.portBusy.stay.did": {
+    "text": "The actions door stays closed when its port is taken.",
+    "where": "Toast when \"stay\" is used without asking (\"When the actions door's port is taken\"), in the past tense."
   }
 }

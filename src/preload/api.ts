@@ -135,6 +135,21 @@ export interface UpdateBridge {
   onProgress(handler: (pct: number) => void): () => void;
 }
 
+/** The actions door: a little web server on this computer that Streamer.bot, Firebot or a Stream Deck can call (src/main/actionsDoor.ts, src/streamdoor). Missing in the web build. */
+export interface DoorBridge {
+  /** Opens the door on a port. With `fallback` a busy port moves on to the next free one. */
+  open(port: number, fallback: boolean): Promise<import('../shared/streamDoor').DoorStatus>;
+  close(): Promise<void>;
+  status(): Promise<import('../shared/streamDoor').DoorStatus>;
+  /** The key a tool must send. Only the settings screen asks, when the person reveals or copies it. */
+  key(): Promise<string>;
+  /** Makes a new key; the old one stops working at once. */
+  roll(): Promise<string>;
+  /** Called with each question the door has for the page. Answer it with `answer`. Returns an unsubscribe function. */
+  onAsk(handler: (id: number, op: import('../shared/streamDoor').DoorAsk) => void): () => void;
+  answer(id: number, answer: unknown): Promise<void>;
+}
+
 /** One graphics card the computer has, as Electron reports it. */
 export interface GpuDevice {
   vendorId: number;
@@ -302,6 +317,8 @@ export interface FramelingApi {
   beta?: BetaBridge;
   /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */
   update?: UpdateBridge;
+  /** The local actions door for stream tools (desktop only). */
+  door?: DoorBridge;
   /** Pictures and text to and from the system clipboard (desktop only). */
   clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */

@@ -98,6 +98,19 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('update:progress', fn);
     },
   },
+  door: {
+    open: (port, fallback) => call('door:open', port, fallback === true),
+    close: () => call('door:close'),
+    status: () => call('door:status'),
+    key: () => call('door:key'),
+    roll: () => call('door:roll'),
+    onAsk: (handler) => {
+      const fn = (_: unknown, id: number, op: Parameters<typeof handler>[1]) => handler(id, op);
+      ipcRenderer.on('door:ask', fn);
+      return () => void ipcRenderer.removeListener('door:ask', fn);
+    },
+    answer: (id, answer) => call('door:answer', id, answer),
+  },
   popout: {
     open: (o) => call('popout:open', o),
     onMode: (handler) => {
