@@ -1005,5 +1005,49 @@
     "where": "Quill thinking it over in the Save changes? dialog: closing the window, Quit, New, Open or Close drawing while the drawing has unsaved changes. The question and Save, Don't save and Cancel sit under him."
   },
   "save.ask.never": { "text": "Hold on! This one has never been saved.", "where": "The same Save changes? dialog when the drawing has no file yet, so Save will ask where to put it." },
-  "crash.sent": { "text": "Sent! Thank you, that helps more than you'd think.", "where": "The dazed Quill again, once the crash notes have gone: he cheers up." }
+  "crash.sent": { "text": "Sent! Thank you, that helps more than you'd think.", "where": "The dazed Quill again, once the crash notes have gone: he cheers up." },
+  "stream.cheer": {
+    "text": [
+      "Chat is cheering for you!",
+      "Somebody out there is cheering. That's you!",
+      "Listen to that! Chat's on its feet for you."
+    ],
+    "where": "A toast while you are on air: someone in chat set off a cheer. The app picks one."
+  },
+  "stream.hop": {
+    "text": [
+      "Chat made me hop!",
+      "Boing! That one was from chat.",
+      "I couldn't help it. Chat said hop."
+    ],
+    "where": "A toast while you are on air: someone in chat made Quill hop. The app picks one."
+  },
+  "stream.snack": {
+    "text": [
+      "Chat sent me a snack. Mmm.",
+      "A snack from chat! Crunch.",
+      "Om nom. Thank you, chat."
+    ],
+    "where": "A toast while you are on air: someone in chat gave Quill a snack. The app picks one."
+  },
+  "stream.nuzzle": {
+    "text": [
+      "Chat sent a cuddle. I'm all warm.",
+      "Aww, a nuzzle from chat.",
+      "A cuddle from chat? Don't mind if I do."
+    ],
+    "where": "A toast while you are on air: someone in chat sent Quill a cuddle. The app picks one."
+  },
+  "stream.wave": {
+    "text": [
+      "Chat says hi!",
+      "Hello, chat! Hello, hello.",
+      "Somebody's waving at you. I'm waving back."
+    ],
+    "where": "A toast while you are on air: someone in chat waved. The app picks one."
+  },
+  "stream.sign.ask": {
+    "text": "Chat would like me to hold up a sign:",
+    "where": "A toast while you are on air, with two buttons (Hold it up, Not that one): someone in chat sent words for a sign. The words follow in quotes. Nothing shows on stream unless you say yes."
+  }
 }

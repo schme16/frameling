@@ -322,6 +322,19 @@ const GROUPS = {
     { wait: 1400 },
     { shot: ['pet.hello.again'], crop: '.qp-says', pad: 16, note: 'Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you.' },
   ],
+  // Quill reacting to chat: each toast, and the question before a sign. Pretend audience calls from the debug hook.
+  stream: [
+    { js: `__frameling.template('bouncing-ball'); __framelingAudience.on(0)` },
+    { wait: 1000 },
+    ...['cheer', 'hop', 'snack', 'nuzzle', 'wave'].flatMap((w) => [
+      { js: `__framelingQuillReacts.react('${w}')` },
+      { wait: 900 },
+      { shot: [`stream.${w}`], crop: TOAST, pad: 60, note: 'One of the set, picked at random.' },
+    ]),
+    { js: `__framelingQuillReacts.submit('quill.sign', { text: 'You are brilliant!' })` },
+    { wait: 900 },
+    { shot: ['stream.sign.ask'], crop: TOAST, pad: 60, note: 'With the words of the sign after it, and nothing shown on stream until you say yes.' },
+  ],
   // The empty page and the tip after the first drawing. The page line is quiet in the harness unless asked for.
   nudge: [
     { js: `window.__framelingAsk = true; __frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })` },

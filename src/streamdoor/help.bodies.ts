@@ -36,6 +36,8 @@ See also [Audience features and the On air pill](help:audience).`,
 - \`door.message\`: shows a short message on screen. Body \`{"text":"hello"}\`, up to 80 letters.
 - \`door.zoom\`: zooms the view. Body \`{"direction":"in"}\` or \`{"direction":"out"}\`.
 - \`door.fit-view\`: fits the drawing in the window. No body.
+- \`quill.cheer\`, \`quill.hop\`, \`quill.snack\`, \`quill.nuzzle\`, \`quill.wave\`: Quill reacts on your screen. No body. See [Quill reacts to your audience](help:quill-reacts).
+- \`quill.sign\`: Quill holds up a sign, once you say yes. Body \`{"text":"hello"}\`, cut to 60 plain characters.
 
 ## What comes back
 Frameling always says what happened, as JSON with a **reason** your tool can act on:

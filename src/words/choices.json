@@ -1655,5 +1655,22 @@
   "choice.streamdoor.portBusy.stay.did": {
     "text": "The actions door stays closed when its port is taken.",
     "where": "Toast when \"stay\" is used without asking (\"When the actions door's port is taken\"), in the past tense."
-  }
+  },
+  "choice.quillreacts.signs.title": { "text": "Signs from chat", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.quillreacts.signs.question": {
+    "text": "Chat can send words for Quill to hold up on a sign. Take them, with a question to you first, or never take them?",
+    "where": "The question the \"Signs from chat\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.quillreacts.signs.ask.label": { "text": "Ask me first", "where": "Preferences: the answer \"ask\" in \"Signs from chat\"." },
+  "choice.quillreacts.signs.ask.detail": {
+    "text": "A sign waits for you to say yes. Nothing from chat shows on stream until you do.",
+    "where": "Preferences: the small line under the \"ask\" answer in \"Signs from chat\"."
+  },
+  "choice.quillreacts.signs.ask.did": { "text": "Signs from chat wait for your yes.", "where": "Toast when \"ask\" is used without asking (\"Signs from chat\"), in the past tense." },
+  "choice.quillreacts.signs.off.label": { "text": "Never take signs", "where": "Preferences: the answer \"off\" in \"Signs from chat\"." },
+  "choice.quillreacts.signs.off.detail": {
+    "text": "Chat can still make Quill cheer, hop and eat, but no words from chat ever reach the screen.",
+    "where": "Preferences: the small line under the \"off\" answer in \"Signs from chat\"."
+  },
+  "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." }
 }

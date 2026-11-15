@@ -52,8 +52,9 @@ import { tilesFeature } from '../tiles';
 import { textFeature } from '../text';
 import { lipsyncFeature } from '../lipsync';
 import { streamDoorFeature } from '../streamdoor';
+import { quillReactsFeature } from '../quillreacts';
 
-registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature, streamDoorFeature]);
+registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature, streamDoorFeature, quillReactsFeature]);
 
 // Brush, colours, loop playback and onion skin: put back as they were, and saved from here on.
 startRememberingUi();

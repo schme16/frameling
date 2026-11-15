@@ -21,7 +21,7 @@ function ToastCard({ t }: { t: ToastItem }) {
     return () => window.clearTimeout(timer.current);
   }, [paused, t.duration, t.id]);
   return (
-    <div className={`ui-toast ui-toast-${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
+    <div className={`ui-toast ui-toast-${t.kind}${t.sign ? ' ui-toast-sign' : ''}`} role={t.kind === 'error' ? 'alert' : 'status'} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       {quill ? <Quill surface={surface} surfaceId={String(t.id)} anim={t.quill!} then={t.farewell ? undefined : 'idle'} force={t.farewell && !gone} onDone={t.farewell ? () => setGone(true) : undefined} size={48} className="ui-toast-quill" /> : <Icon name={KIND_ICON[t.kind]} size={16} />}
       <span className="ui-toast-text">{scrubText(t.message)}</span>
       {t.action && (

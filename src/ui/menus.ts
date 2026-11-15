@@ -114,6 +114,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['view.snap', 'view.snapOptions', '-', 'view.snap.grid', 'view.snap.guides', 'view.snap.page', 'view.snap.centre', 'view.snap.shapes', 'view.snap.allLayers', 'view.snap.artboards', 'view.snap.spacing', 'view.snap.angles', 'view.snap.perspective', 'view.snap.cells', 'view.snap.plugins'],
     prefixes: ['view.snap.'],
   },
+  quillreacts: {
+    label: 'Try Quill reacting to chat',
+    items: ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign'],
+  },
   quillhouse: {
     label: "Quill's house",
     items: ['quillPet.things', 'quillPet.presents', '-', 'quillPet.give', 'quillPet.pat'],
