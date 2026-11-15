@@ -129,6 +129,8 @@ export const ZOOM_STEP_SCALE: Record<ZoomStep, number> = { fine: 0.4, normal: 1,
 
 /** How much one wheel unit zooms: a 100 pixel notch is about +25%. A pinch's units are tiny, so each counts for more. */
 export const WHEEL_ZOOM_RATE = 0.0022;
+/** What a notch says on the usual wheel. A wheel that says something else is scaled to this (see wheelNotch.ts). */
+export const USUAL_NOTCH_PX = 100;
 export const PINCH_ZOOM_RATE = 0.01;
 /** The most one single wheel event may change the zoom by, either way (x1.8 in, or the same step out). */
 export const MAX_WHEEL_EVENT_FACTOR = 1.8;
@@ -142,13 +144,15 @@ export function wheelPixels(deltaY: number, deltaMode: number, dpr = 1): number 
 
 /**
  * Wheel zoom: how much one wheel event changes the zoom. A mouse wheel notch is about +25% whatever the screen
- * scaling, because the scaling is divided back out. A pinch keeps its own size however the keys are held (it is
+ * scaling (it is divided back out) and whatever the wheel calls a notch: `notch` is how many pixels this wheel says
+ * for one, so a wheel that says 45 zooms a quarter for 45, and a wheel that says 100 does the same for 100. A pinch keeps its own size however the keys are held (it is
  * already as fine as a finger can be); whether an event is one is the caller's call (see WheelStream). The
  * `speed` is the person's own multiplier. One event never changes the zoom by more than MAX_WHEEL_EVENT_FACTOR.
  */
-export function wheelZoomFactor(deltaY: number, deltaMode: number, step: ZoomStep = 'normal', kind: 'wheel' | 'pinch' = 'wheel', dpr = 1, speed = 1): number {
+export function wheelZoomFactor(deltaY: number, deltaMode: number, step: ZoomStep = 'normal', kind: 'wheel' | 'pinch' = 'wheel', dpr = 1, speed = 1, notch = USUAL_NOTCH_PX): number {
   const px = wheelPixels(deltaY, deltaMode, dpr);
-  const rate = kind === 'pinch' ? PINCH_ZOOM_RATE * speed : WHEEL_ZOOM_RATE * ZOOM_STEP_SCALE[step] * speed;
+  const unit = notch > 0 ? USUAL_NOTCH_PX / notch : 1;
+  const rate = kind === 'pinch' ? PINCH_ZOOM_RATE * speed : WHEEL_ZOOM_RATE * unit * ZOOM_STEP_SCALE[step] * speed;
   const f = Math.exp(-px * rate);
   return Math.min(MAX_WHEEL_EVENT_FACTOR, Math.max(1 / MAX_WHEEL_EVENT_FACTOR, f));
 }

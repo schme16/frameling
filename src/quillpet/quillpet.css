@@ -437,6 +437,7 @@
   height: 100%;
   border-radius: 3px;
   background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
 /* What he got up to: a short list under him. News, not a to-do, so nothing here is a button. */
 .qp-lately {
   margin: 0;
