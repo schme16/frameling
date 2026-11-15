@@ -1,0 +1,529 @@
+{
+ "label": "ws-before",
+ "when": "2026-11-15T09:07:10.862Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 6,
+ "pages": {
+  "bouncing-ball": {
+   "nodes": 1200,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "walk-cycle": {
+   "nodes": 1086,
+   "timelineNodes": 208,
+   "keys": 9,
+   "rows": 2,
+   "layers": 2
+  },
+  "stress-vector": {
+   "nodes": 3024,
+   "timelineNodes": 2146,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  },
+  "stress-vector-history": {
+   "nodes": 3042,
+   "timelineNodes": 2146,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 138.9,
+   "runs": [
+    134.2,
+    125.7,
+    143.5,
+    138.9,
+    133.1,
+    140.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 23.14,
+   "topSelf": [
+    [
+     "(program) :0",
+     51
+    ],
+    [
+     "(garbage collector) :0",
+     19.8
+    ],
+    [
+     "Ywe index-DmuIV4zG.js:155",
+     6.3
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.3
+    ],
+    [
+     "P6e index-DmuIV4zG.js:172",
+     2.7
+    ],
+    [
+     "Jf index-DmuIV4zG.js:10",
+     1.8
+    ],
+    [
+     "(anon) index-DmuIV4zG.js:174",
+     1.5
+    ],
+    [
+     "setAttribute :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     51
+    ],
+    [
+     "Ad index-DmuIV4zG.js:9",
+     47.4
+    ],
+    [
+     "(anon) index-DmuIV4zG.js:9",
+     43.2
+    ],
+    [
+     "yf index-DmuIV4zG.js:9",
+     41.8
+    ],
+    [
+     "wf index-DmuIV4zG.js:9",
+     41.7
+    ],
+    [
+     "xf index-DmuIV4zG.js:9",
+     41.6
+    ],
+    [
+     "Hd index-DmuIV4zG.js:9",
+     24.4
+    ],
+    [
+     "Ud index-DmuIV4zG.js:9",
+     24.3
+    ],
+    [
+     "Qd index-DmuIV4zG.js:9",
+     23
+    ],
+    [
+     "Zd index-DmuIV4zG.js:9",
+     23
+    ],
+    [
+     "jd index-DmuIV4zG.js:9",
+     23
+    ],
+    [
+     "(garbage collector) :0",
+     19.8
+    ],
+    [
+     "nl index-DmuIV4zG.js:9",
+     19.2
+    ],
+    [
+     "Fc index-DmuIV4zG.js:9",
+     15
+    ],
+    [
+     "dl index-DmuIV4zG.js:9",
+     14.6
+    ],
+    [
+     "Ko index-DmuIV4zG.js:9",
+     14.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "workspaces",
+   "busyMs": 119.9,
+   "runs": [
+    124.8,
+    116.5,
+    102.4,
+    119.9,
+    119,
+    120.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 19.99,
+   "topSelf": [
+    [
+     "(program) :0",
+     44.8
+    ],
+    [
+     "(garbage collector) :0",
+     14.7
+    ],
+    [
+     "Ywe index-DmuIV4zG.js:155",
+     6
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.2
+    ],
+    [
+     "P6e index-DmuIV4zG.js:172",
+     2.6
+    ],
+    [
+     "Jf index-DmuIV4zG.js:10",
+     1.8
+    ],
+    [
+     "setAttribute :0",
+     1.3
+    ],
+    [
+     "drawImage :0",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44.8
+    ],
+    [
+     "Ad index-DmuIV4zG.js:9",
+     42.4
+    ],
+    [
+     "(anon) index-DmuIV4zG.js:9",
+     38.9
+    ],
+    [
+     "yf index-DmuIV4zG.js:9",
+     37.9
+    ],
+    [
+     "wf index-DmuIV4zG.js:9",
+     37.9
+    ],
+    [
+     "xf index-DmuIV4zG.js:9",
+     37.5
+    ],
+    [
+     "Qd index-DmuIV4zG.js:9",
+     21.2
+    ],
+    [
+     "Zd index-DmuIV4zG.js:9",
+     21.2
+    ],
+    [
+     "jd index-DmuIV4zG.js:9",
+     21.2
+    ],
+    [
+     "Hd index-DmuIV4zG.js:9",
+     21.2
+    ],
+    [
+     "Ud index-DmuIV4zG.js:9",
+     21.1
+    ],
+    [
+     "nl index-DmuIV4zG.js:9",
+     16.4
+    ],
+    [
+     "(garbage collector) :0",
+     14.7
+    ],
+    [
+     "dl index-DmuIV4zG.js:9",
+     13.3
+    ],
+    [
+     "Fc index-DmuIV4zG.js:9",
+     12.7
+    ],
+    [
+     "Ko index-DmuIV4zG.js:9",
+     12.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 219.8,
+   "runs": [
+    179.3,
+    195.1,
+    238.5,
+    230.6,
+    219.8,
+    208.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 36.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     92.2
+    ],
+    [
+     "(garbage collector) :0",
+     23.3
+    ],
+    [
+     "drawImage :0",
+     13.7
+    ],
+    [
+     "Ywe index-DmuIV4zG.js:155",
+     6.5
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.4
+    ],
+    [
+     "P6e index-DmuIV4zG.js:172",
+     3
+    ],
+    [
+     "getContext :0",
+     2.9
+    ],
+    [
+     "Jf index-DmuIV4zG.js:10",
+     2.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     92.2
+    ],
+    [
+     "Ad index-DmuIV4zG.js:9",
+     56.6
+    ],
+    [
+     "(anon) index-DmuIV4zG.js:9",
+     44.8
+    ],
+    [
+     "yf index-DmuIV4zG.js:9",
+     41.7
+    ],
+    [
+     "wf index-DmuIV4zG.js:9",
+     41.6
+    ],
+    [
+     "xf index-DmuIV4zG.js:9",
+     41.3
+    ],
+    [
+     "Zd index-DmuIV4zG.js:9",
+     28.8
+    ],
+    [
+     "jd index-DmuIV4zG.js:9",
+     28.8
+    ],
+    [
+     "Qd index-DmuIV4zG.js:9",
+     28.6
+    ],
+    [
+     "Hd index-DmuIV4zG.js:9",
+     27.7
+    ],
+    [
+     "frame index-DmuIV4zG.js:156",
+     24.3
+    ],
+    [
+     "drawMain index-DmuIV4zG.js:156",
+     23.4
+    ],
+    [
+     "(garbage collector) :0",
+     23.3
+    ],
+    [
+     "paint index-DmuIV4zG.js:156",
+     23.2
+    ],
+    [
+     "paintStage index-DmuIV4zG.js:156",
+     22.9
+    ],
+    [
+     "nl index-DmuIV4zG.js:9",
+     21.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "workspaces",
+   "busyMs": 227.1,
+   "runs": [
+    174.3,
+    227.1,
+    240,
+    213.6,
+    199.1,
+    237.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 37.85,
+   "topSelf": [
+    [
+     "(program) :0",
+     92.2
+    ],
+    [
+     "(garbage collector) :0",
+     24.4
+    ],
+    [
+     "drawImage :0",
+     15.1
+    ],
+    [
+     "Ywe index-DmuIV4zG.js:155",
+     6.3
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.2
+    ],
+    [
+     "Yd index-DmuIV4zG.js:133",
+     2.8
+    ],
+    [
+     "P6e index-DmuIV4zG.js:172",
+     2.8
+    ],
+    [
+     "removeChild :0",
+     2.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     92.2
+    ],
+    [
+     "Ad index-DmuIV4zG.js:9",
+     55.3
+    ],
+    [
+     "(anon) index-DmuIV4zG.js:9",
+     44.5
+    ],
+    [
+     "yf index-DmuIV4zG.js:9",
+     42.1
+    ],
+    [
+     "wf index-DmuIV4zG.js:9",
+     42.1
+    ],
+    [
+     "xf index-DmuIV4zG.js:9",
+     41.5
+    ],
+    [
+     "Qd index-DmuIV4zG.js:9",
+     29.2
+    ],
+    [
+     "Zd index-DmuIV4zG.js:9",
+     29.2
+    ],
+    [
+     "jd index-DmuIV4zG.js:9",
+     29.2
+    ],
+    [
+     "frame index-DmuIV4zG.js:156",
+     27.7
+    ],
+    [
+     "drawMain index-DmuIV4zG.js:156",
+     27.2
+    ],
+    [
+     "paint index-DmuIV4zG.js:156",
+     27
+    ],
+    [
+     "paintStage index-DmuIV4zG.js:156",
+     26.6
+    ],
+    [
+     "Hd index-DmuIV4zG.js:9",
+     26.2
+    ],
+    [
+     "(garbage collector) :0",
+     24.4
+    ],
+    [
+     "build index-DmuIV4zG.js:156",
+     20.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

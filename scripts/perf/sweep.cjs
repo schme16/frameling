@@ -641,7 +641,11 @@ async function traced(dbg, fn) {
   dbg.removeListener('message', on);
   const main = events.find((e) => e.name === 'thread_name' && e.args && e.args.name === 'CrRendererMain');
   const kinds = new Map();
-  if (main) for (const e of events) if (e.ph === 'X' && e.tid === main.tid && e.pid === main.pid && /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|HitTest|UpdateLayer|ParseHTML|Decode Image|ImageDecodeTask|CompositeLayers|FireAnimationFrame|MajorGC|MinorGC|V8\.GC_.*|IntersectionObserverController::computeIntersections)$/.test(e.name)) kinds.set(e.name, (kinds.get(e.name) || 0) + e.dur / 1000);
+  if (main) for (const e of events) if (e.ph === 'X' && e.tid === main.tid && e.pid === main.pid && /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|HitTest|UpdateLayer|ParseHTML|Decode Image|ImageDecodeTask|CompositeLayers|FireAnimationFrame|MajorGC|MinorGC|V8\.GC_.*|IntersectionObserverController::computeIntersections)$/.test(e.name)) {
+    kinds.set(e.name, (kinds.get(e.name) || 0) + e.dur / 1000);
+    // How many times, not just how long: forced layouts show up as a count that is higher than the frames made.
+    if (e.name === 'Layout' || e.name === 'UpdateLayoutTree') kinds.set('#' + e.name, (kinds.get('#' + e.name) || 0) + 1);
+  }
   return kinds;
 }
 
