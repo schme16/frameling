@@ -12,6 +12,9 @@ export function showStreamingPage(...selectors: string[]): void {
   if (typeof document === 'undefined') return;
   for (const ms of TRIES) {
     setTimeout(() => {
+      // The last look is 800ms out, by which time the page can be gone (a window closed, a test torn down). The
+      // check at the top of the function was made before any of these were set, so it says nothing about now.
+      if (typeof document === 'undefined') return;
       const more = document.querySelector<HTMLDetailsElement>(MORE);
       if (more && !more.open) more.open = true;
       for (const sel of selectors) {

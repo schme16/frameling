@@ -56,7 +56,7 @@ export const MENUS: MenuDef[] = [
     label: 'Pixel',
     title: 'Pixel tools',
     categories: ['Pixel'],
-    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.gradient', 'sub:pixgrad', 'tools.spray', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', 'convert.toShapes', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
+    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.gradient', 'sub:pixgrad', 'sub:soft', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', 'convert.toShapes', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
   },
   {
     label: 'Animate',
@@ -126,6 +126,8 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
   'tools.notes', 'tools.marks',
+  // The pixel tools that fade at the edge sit in Pixel > Spray and soft paint.
+  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge',
 ];
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
@@ -298,6 +300,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   slices: {
     label: 'Slices',
     items: ['pixel.showSlices', 'pixel.deleteSlice', 'view.panel.slices'],
+  },
+  soft: {
+    label: 'Spray and soft paint',
+    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge'],
   },
   pixgrad: {
     label: 'Pixel gradient style',

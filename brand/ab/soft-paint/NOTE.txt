@@ -1,0 +1,1 @@
+Soft paint on a pixel layer, tool by tool (soft brush, airbrush, highlighter, soft eraser, smudge), each drawing a firm stroke, a light stroke, a pen pressure ramp and two crossing strokes, in dark and light: -smooth is a true soft edge, -crisp is the same strokes dithered (what a locked palette or Pixel perfect gives), and -clip is the drawing happening (H.264).

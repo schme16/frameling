@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 **Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
 
-**Not here yet:** airbrush, a see-through highlighter and smudge. The brush can't make those honestly yet.
+**Soft edges:** airbrush, highlighter, soft brush and smudge are [pixel tools](help:soft-paint), since a vector line can't fade.
 
 **Save your own:**
 1. Set the brush how you like it.
