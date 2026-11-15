@@ -914,6 +914,8 @@ The real built app, a started vote and round, and the exact requests the chat co
 `!guess` and `!prompt`, with every answer its failure table promises (400 invalid, 400 bad-request, 401, 403 with an
 Origin, 429 with `retryInMs`, and the door closed with audience features off). `test/streamdoor/chat-commands.test.ts`
 holds the guide's Firebot bodies against the real parsers and checks a viewer's quote mark can't break or add to them.
+It also checks the test command (a GET of the list, with each action's `ready`), the `detail` and `say` on each refusal, and the
+prompt jar's channel pause. It asks for its own port, so it runs while a Frameling you are really using holds the usual one.
 
 ```bash
 npm run build

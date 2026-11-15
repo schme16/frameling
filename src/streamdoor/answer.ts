@@ -17,7 +17,7 @@ export function listFor(g: GateLike): DoorList {
     on: s.on,
     actions: s.actions
       .filter((a) => a.available)
-      .map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldownMs: Math.round(a.cooldown * s.limits.cooldownScale), touchesDrawing: a.touchesDrawing })),
+      .map((a) => ({ id: a.id, label: a.label, kind: a.kind, cooldownMs: Math.round(a.cooldown * s.limits.cooldownScale), touchesDrawing: a.touchesDrawing, ready: a.ready })),
   };
 }
 

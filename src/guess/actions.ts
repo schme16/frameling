@@ -13,9 +13,9 @@
 // It never says whether a guess was right: the door answers "ran" for a right guess and a wrong one alike, so nobody
 // can use it to test words. It is view-only (`touchesDrawing` is left out), so the gate gives it no way to reach the
 // document at all.
-import { registerAudienceAction } from '../audience';
+import { refusal, registerAudienceAction, type Refusal } from '../audience';
 import { afterGuess, currentRound, namesAllowed, schedulePublish } from './state';
-import type { Prepared, Round } from './round';
+import type { Prepared, Round, Turned } from './round';
 
 export const GUESS_ACTION = 'guess.send';
 
@@ -24,15 +24,21 @@ interface Sent {
   prepared: Prepared;
 }
 
-/** Checks a request against the round that is going. Null (the gate says "invalid") when there is none, the guess is empty or too odd, the player has no id, or has used up their guesses or already got it. */
-export function parseGuess(raw: unknown): Sent | null {
+/**
+ * Why a guess was turned away, as the short word the door passes on. A person who has already got it and one who has used
+ * up their guesses both hear `again`, so the door never says a word was right.
+ */
+export const guessDetail = (t: Turned): string => (t === 'solved' || t === 'too-many' ? 'again' : t);
+
+/** Checks a request against the round that is going. A refusal (the gate says "invalid", with the reason as `detail`) when there is none, the guess is empty or too odd, the player has no id, or has used up their guesses or already got it. */
+export function parseGuess(raw: unknown): Sent | Refusal | null {
   const round = currentRound();
-  if (!round?.isOpen()) return null;
+  if (!round?.isOpen()) return refusal(guessDetail('closed'));
   const body = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : { guess: raw };
   const prepared = round.prepare(body.guess, body.player, body.name, { names: namesAllowed() });
   if (typeof prepared === 'string') {
     schedulePublish();
-    return null;
+    return refusal(guessDetail(prepared));
   }
   return { round, prepared };
 }
@@ -46,6 +52,7 @@ export function registerGuessAction(): void {
     cooldown: 0,
     bulk: true,
     parse: parseGuess,
+    ready: () => !!currentRound()?.isOpen(),
     run: ({ round, prepared }) => {
       const result = round.cast(prepared);
       if (result === 'right' || result === 'wrong') afterGuess(result);

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BULK_PER_SECOND, cooldownLeft, createGate, DEFAULT_COOLDOWN_MS, lasts, limitsFor, nextRunAt, STRICTNESS, type AudienceActionDef, type Gate, type GateLimits } from '../../src/audience/gate';
+import { BULK_PER_SECOND, cooldownLeft, createGate, DEFAULT_COOLDOWN_MS, lasts, limitsFor, nextRunAt, refusal, STRICTNESS, type AudienceActionDef, type Gate, type GateLimits } from '../../src/audience/gate';
 
 // A clock we move by hand, and timers that only fire when we say.
 function world(limits: Partial<GateLimits> = {}, edits: string[] = []) {
@@ -41,7 +41,7 @@ describe('registering', () => {
 
   it('takes a well formed action and lists it', () => {
     g.registerAction(act('quill.cheer'));
-    expect(g.snapshot().actions).toEqual([{ id: 'quill.cheer', label: 'quill.cheer', kind: 'quill', cooldown: 0, touchesDrawing: false, available: true, enabled: true, takesDetails: false, bulk: false }]);
+    expect(g.snapshot().actions).toEqual([{ id: 'quill.cheer', label: 'quill.cheer', kind: 'quill', cooldown: 0, touchesDrawing: false, available: true, enabled: true, takesDetails: false, bulk: false, ready: true }]);
   });
   it('lists the default cooldown for one that did not say', () => {
     g.registerAction(act('quill.cheer', 'quill', { cooldown: undefined }));
@@ -142,6 +142,34 @@ describe('payloads', () => {
     expect(gate.submit('vote.cast')).toEqual({ ok: false, reason: 'invalid' });
     expect(gate.submit('vote.cast', 1)).toEqual({ ok: true, outcome: 'ran' });
     expect(ran).toBe(1);
+  });
+  it('lets parse say why: a refusal carries a short detail, and a plain null still says nothing more', () => {
+    const { gate } = world();
+    gate.registerAction({ ...act('vote.cast', 'vote'), parse: (r: unknown) => (r === 'closed' ? refusal('closed') : r === 'odd' ? refusal('Not A Word!') : null) } as AudienceActionDef);
+    gate.setOn(true);
+    expect(gate.submit('vote.cast', 'closed')).toEqual({ ok: false, reason: 'invalid', detail: 'closed' });
+    // A detail that is not one short lower-case word is not passed on as it is.
+    expect(gate.submit('vote.cast', 'odd')).toEqual({ ok: false, reason: 'invalid', detail: 'refused' });
+    expect(gate.submit('vote.cast', 'other')).toEqual({ ok: false, reason: 'invalid' });
+    expect(gate.snapshot().counts.rejected.invalid).toBe(3);
+  });
+  it('lets parse pace itself: a cooldown refusal says how long, and counts as a cooldown', () => {
+    const { gate } = world();
+    gate.registerAction({ ...act('jar.add', 'jar'), bulk: true, parse: () => refusal('channel-wait', { reason: 'cooldown', retryInMs: 2400.4 }) } as AudienceActionDef);
+    gate.setOn(true);
+    expect(gate.submit('jar.add', {})).toEqual({ ok: false, reason: 'cooldown', detail: 'channel-wait', retryInMs: 2400 });
+    expect(gate.snapshot().counts.rejected.cooldown).toBe(1);
+  });
+  it('lists whether an action is ready, and an action that cannot say is ready', () => {
+    const { gate } = world();
+    let going = false;
+    gate.registerAction({ ...act('vote.cast', 'vote'), ready: () => going } as AudienceActionDef);
+    gate.registerAction({ ...act('quill.hop', 'quill'), ready: () => { throw new Error('boom'); } } as AudienceActionDef);
+    gate.registerAction(act('quill.wave', 'quill'));
+    const ready = () => Object.fromEntries(gate.snapshot().actions.map((a) => [a.id, a.ready]));
+    expect(ready()).toEqual({ 'vote.cast': false, 'quill.hop': true, 'quill.wave': true });
+    going = true;
+    expect(ready()['vote.cast']).toBe(true);
   });
   it('treats a parse that throws as invalid', () => {
     const { gate } = world();

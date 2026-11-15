@@ -17,13 +17,15 @@ export interface DoorAction {
   /** How long after one of this kind runs before another is taken, with the streamer's strictness already applied. */
   cooldownMs: number;
   touchesDrawing: boolean;
+  /** False while the thing it joins is not going (a vote action with no vote running), so a bot can ask first. True when an action does not say. */
+  ready: boolean;
 }
 
 /** What the gate said, in the shape the page sends back. The same as the gate's Verdict. */
 export type DoorVerdict =
   | { ok: true; outcome: 'ran' }
   | { ok: true; outcome: 'queued'; position: number }
-  | { ok: false; reason: 'off' | 'unknown' | 'unavailable' | 'invalid' | 'cooldown' | 'queue-full'; retryInMs?: number };
+  | { ok: false; reason: 'off' | 'unknown' | 'unavailable' | 'invalid' | 'cooldown' | 'queue-full'; retryInMs?: number; detail?: string };
 
 /** What the desktop side asks the page. */
 export type DoorAsk = { op: 'list' } | { op: 'run'; id: string; payload?: unknown };
@@ -69,6 +71,8 @@ export function statusForVerdict(v: DoorVerdict): number {
   }
 }
 
+/** A detail is one short lower-case word, so nothing a viewer wrote can ride along in it. */
+const DETAIL = /^[a-z][a-z0-9-]{0,23}$/;
 const REASONS = new Set(['off', 'unknown', 'unavailable', 'invalid', 'cooldown', 'queue-full']);
 
 /** Checks what came back from the page is a verdict, and keeps only its known fields. Anything else is null. */
@@ -82,7 +86,10 @@ export function cleanVerdict(v: unknown): DoorVerdict | null {
   }
   if (o.ok === false && typeof o.reason === 'string' && REASONS.has(o.reason)) {
     const reason = o.reason as Extract<DoorVerdict, { ok: false }>['reason'];
-    return typeof o.retryInMs === 'number' && Number.isFinite(o.retryInMs) ? { ok: false, reason, retryInMs: Math.max(0, Math.round(o.retryInMs)) } : { ok: false, reason };
+    const out: Extract<DoorVerdict, { ok: false }> = { ok: false, reason };
+    if (typeof o.retryInMs === 'number' && Number.isFinite(o.retryInMs)) out.retryInMs = Math.max(0, Math.round(o.retryInMs));
+    if (typeof o.detail === 'string' && DETAIL.test(o.detail)) out.detail = o.detail;
+    return out;
   }
   return null;
 }
@@ -97,7 +104,7 @@ export function cleanList(v: unknown): DoorList | null {
     if (!a || typeof a !== 'object') return null;
     const x = a as Record<string, unknown>;
     if (typeof x.id !== 'string' || typeof x.label !== 'string' || typeof x.kind !== 'string' || typeof x.cooldownMs !== 'number') return null;
-    actions.push({ id: x.id, label: x.label, kind: x.kind, cooldownMs: x.cooldownMs, touchesDrawing: x.touchesDrawing === true });
+    actions.push({ id: x.id, label: x.label, kind: x.kind, cooldownMs: x.cooldownMs, touchesDrawing: x.touchesDrawing === true, ready: x.ready !== false });
   }
   return { on: o.on, actions };
 }

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setStreamSafe } from '../../src/core/streamSafe';
 import { _resetFeaturesForTests, registerFeatures } from '../../src/features/host';
 import { streamDoorFeature } from '../../src/streamdoor';
+import { copyTestCommand } from '../../src/streamdoor/copy';
 import { StreamDoorPrefsRow, SHOW_FOR_MS } from '../../src/streamdoor/PrefsRow';
 import { doorStatus } from '../../src/streamdoor/state';
 import { closedStatus } from '../../src/shared/streamDoor';
@@ -90,6 +91,27 @@ describe('the key on the settings screen', () => {
   it('copies the address', async () => {
     await click('copyAddress');
     expect(copied).toEqual(['http://127.0.0.1:47213']);
+  });
+
+  it('copies a test command with the live address and the key, and never shows it', async () => {
+    await act(async () => setStreamSafe(true));
+    await click('copyTest');
+    expect(copied).toEqual([`curl -H "Authorization: Bearer ${KEY}" http://127.0.0.1:47213/v1/actions`]);
+    expect(host.textContent).not.toContain(KEY);
+    expect(document.body.textContent).not.toContain(KEY);
+  });
+
+  it('copies the moved address in the test command when the port moved', async () => {
+    await act(async () => doorStatus.set({ running: true, port: 47220, address: 'http://127.0.0.1:47220', moved: true, problem: '' }));
+    await click('copyTest');
+    expect(copied[0]).toContain('http://127.0.0.1:47220/v1/actions');
+  });
+
+  it('cannot copy a test command while the door is closed, and says what to do', async () => {
+    await act(async () => doorStatus.set(closedStatus()));
+    expect(q('copyTest').hasAttribute('disabled')).toBe(true);
+    expect(await copyTestCommand()).toBe(false);
+    expect(copied).toEqual([]);
   });
 
   it('says plainly when the port was taken and it moved', async () => {

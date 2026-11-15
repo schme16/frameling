@@ -9,9 +9,9 @@
 // A name, a message or anything else in the body is never read.
 //
 // It is view-only (`touchesDrawing` is left out), so the gate gives it no way to reach the document at all.
-import { registerAudienceAction } from '../audience';
+import { refusal, registerAudienceAction, type Refusal } from '../audience';
 import { currentVote, currentWays, schedulePublish } from './state';
-import type { Prepared, Vote } from './tally';
+import type { Prepared, Turned, Vote } from './tally';
 
 export const VOTE_ACTION = 'vote.cast';
 
@@ -20,16 +20,19 @@ interface Cast {
   prepared: Prepared;
 }
 
-/** Checks a request against the vote that is going. Null (the gate says "invalid") when there is none, the option is not one of its options, the voter has no id (unless that is allowed) or has voted already. */
-export function parseCast(raw: unknown): Cast | null {
+/** Why a vote was turned away, as the short word the door passes on. Every one is about the vote and the request, never about who else voted. */
+export const voteDetail = (t: Turned): string => t;
+
+/** Checks a request against the vote that is going. A refusal (the gate says "invalid", with the reason as `detail`) when there is none, the option is not one of its options, the voter has no id (unless that is allowed) or has voted already. */
+export function parseCast(raw: unknown): Cast | Refusal | null {
   const vote = currentVote();
-  if (!vote?.isOpen()) return null;
+  if (!vote?.isOpen()) return refusal(voteDetail('closed'));
   const body = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : { option: raw };
   // Only `option` and `voter` are read. Everything else in the body is ignored, unread.
   const prepared = vote.prepare(body.option, body.voter, currentWays());
   if (typeof prepared === 'string') {
     schedulePublish();
-    return null;
+    return refusal(voteDetail(prepared));
   }
   return { vote, prepared };
 }
@@ -43,6 +46,7 @@ export function registerVoteAction(): void {
     cooldown: 0,
     bulk: true,
     parse: parseCast,
+    ready: () => !!currentVote()?.isOpen(),
     run: ({ vote, prepared }) => {
       vote.cast(prepared, currentWays());
       schedulePublish();

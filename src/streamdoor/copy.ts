@@ -2,6 +2,7 @@
 import { desktop } from '../io/desktop';
 import { toast } from '../ui/toast';
 import { doorStatus } from './state';
+import { testCommand } from './testCommand';
 
 async function toClipboard(text: string): Promise<boolean> {
   try {
@@ -40,5 +41,24 @@ export async function copyAddress(): Promise<boolean> {
     return false;
   }
   toast(`Copied ${a}. Paste it into your stream tool.`, { kind: 'success' });
+  return true;
+}
+
+/**
+ * A ready curl line with the live address and the current key in it, to paste into a terminal. It asks the door for its
+ * list, so it proves the address and the key and changes nothing. Copy only: the key is never drawn on the screen.
+ */
+export async function copyTestCommand(): Promise<boolean> {
+  const a = doorStatus.get().address;
+  if (!a) {
+    toast('The actions door is not open, so there is nothing to test yet. Switch audience features on first.', { kind: 'warn' });
+    return false;
+  }
+  const line = testCommand(a, await fetchKey());
+  if (!line || !(await toClipboard(line))) {
+    toast('Could not copy a test command.', { kind: 'warn' });
+    return false;
+  }
+  toast('Copied a test command. Paste it into a terminal. If the door is working you get a list of actions back. It has your key in it, so keep it off the stream.', { kind: 'success' });
   return true;
 }

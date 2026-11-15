@@ -6,8 +6,27 @@ import { cleanChatText } from '../audience/cleanText';
 export const PROMPT_MAX = 80;
 /** The most prompts the jar holds. Past this it turns new ones away until there is room. */
 export const JAR_MAX = 50;
-/** Seconds between prompts from the audience, as the gate's cooldown (ms). The streamer's strictness scales it. */
-export const ADD_COOLDOWN = 8000;
+/**
+ * The pause between one prompt and the next from ANYONE in the channel, in seconds, when the streamer has not picked
+ * one. Frameling never knows who sent a prompt, so this is for the whole channel; a pause for each person belongs in the
+ * chat program, which does know (the Firebot setup file has one).
+ */
+export const DEFAULT_PACE_SECONDS = 3;
+/** The pauses Preferences offers, in seconds. */
+export const PACE_CHOICES = [1, 3, 8, 15, 30] as const;
+
+/** The pause for a remembered answer, in milliseconds. Anything that is not one of the offered pauses is the usual one. */
+export function paceMs(answer: string | undefined): number {
+  const n = Number(answer);
+  return (PACE_CHOICES as readonly number[]).includes(n) ? n * 1000 : DEFAULT_PACE_SECONDS * 1000;
+}
+
+/** How long until a prompt may go in, in milliseconds: 0 when it may now. `last` is when the previous one went in, or null. */
+export function paceLeft(now: number, last: number | null, waitMs: number): number {
+  if (last === null) return 0;
+  // A clock that went backwards never makes anyone wait longer than the pause.
+  return Math.min(waitMs, Math.max(0, last + waitMs - now));
+}
 
 /** What is in the jar. `id` only tells two slips apart on screen; it says nothing about who wrote one. */
 export interface Slip {

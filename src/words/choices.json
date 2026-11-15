@@ -1807,6 +1807,35 @@
     "where": "Preferences: the small line under the \"keep\" answer in \"Keep the prompt jar\"."
   },
   "choice.promptjar.keep.keep.did": { "text": "The prompt jar is kept for next time.", "where": "Toast when \"keep\" is used without asking (\"Keep the prompt jar\"), in the past tense." },
+  "choice.promptjar.pace.title": { "text": "Pause between prompts", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.promptjar.pace.question": {
+    "text": "After a prompt goes in the jar, how long before the next one is taken from anyone in your chat?",
+    "where": "The question the \"Pause between prompts\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.promptjar.pace.1.label": { "text": "1 second", "where": "Preferences: the answer \"1\" in \"Pause between prompts\"." },
+  "choice.promptjar.pace.1.detail": {
+    "text": "A busy chat fills the jar fast, up to about 60 prompts a minute. The jar still stops at 50.",
+    "where": "Preferences: the small line under the \"1\" answer in \"Pause between prompts\"."
+  },
+  "choice.promptjar.pace.1.did": { "text": "The jar takes a prompt every second.", "where": "Toast when \"1\" is used without asking (\"Pause between prompts\"), in the past tense." },
+  "choice.promptjar.pace.3.label": { "text": "3 seconds (usual)", "where": "Preferences: the answer \"3\" in \"Pause between prompts\"." },
+  "choice.promptjar.pace.3.detail": {
+    "text": "Up to about 20 prompts a minute across the whole channel. Plenty for a lively chat, and the jar fills at a pace you can keep up with.",
+    "where": "Preferences: the small line under the \"3\" answer in \"Pause between prompts\"."
+  },
+  "choice.promptjar.pace.3.did": { "text": "The jar takes a prompt every 3 seconds.", "where": "Toast when \"3\" is used without asking (\"Pause between prompts\"), in the past tense." },
+  "choice.promptjar.pace.8.label": { "text": "8 seconds", "where": "Preferences: the answer \"8\" in \"Pause between prompts\"." },
+  "choice.promptjar.pace.8.detail": {
+    "text": "About 7 prompts a minute across the whole channel. Quiet and slow, for a jar you want to fill gently.",
+    "where": "Preferences: the small line under the \"8\" answer in \"Pause between prompts\"."
+  },
+  "choice.promptjar.pace.8.did": { "text": "The jar takes a prompt every 8 seconds.", "where": "Toast when \"8\" is used without asking (\"Pause between prompts\"), in the past tense." },
+  "choice.promptjar.pace.15.label": { "text": "15 seconds", "where": "Preferences: the answer \"15\" in \"Pause between prompts\"." },
+  "choice.promptjar.pace.15.detail": { "text": "About 4 prompts a minute across the whole channel.", "where": "Preferences: the small line under the \"15\" answer in \"Pause between prompts\"." },
+  "choice.promptjar.pace.15.did": { "text": "The jar takes a prompt every 15 seconds.", "where": "Toast when \"15\" is used without asking (\"Pause between prompts\"), in the past tense." },
+  "choice.promptjar.pace.30.label": { "text": "30 seconds", "where": "Preferences: the answer \"30\" in \"Pause between prompts\"." },
+  "choice.promptjar.pace.30.detail": { "text": "About 2 prompts a minute across the whole channel.", "where": "Preferences: the small line under the \"30\" answer in \"Pause between prompts\"." },
+  "choice.promptjar.pace.30.did": { "text": "The jar takes a prompt every 30 seconds.", "where": "Toast when \"30\" is used without asking (\"Pause between prompts\"), in the past tense." },
   "choice.votes.again.title": { "text": "When someone votes twice", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.votes.again.question": {
     "text": "A person sends a second vote in the same vote. Keep their first, or let them change their mind?",

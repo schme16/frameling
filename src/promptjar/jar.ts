@@ -47,6 +47,18 @@ export function addToJar(text: string): AddResult {
   return r;
 }
 
+/** What adding these words would do, without doing it. */
+export function wouldAdd(text: string): AddResult {
+  const s = jar.get();
+  return canAdd(s.hand ? [...s.slips, s.hand] : s.slips, text, s.slips.length);
+}
+
+/** Notes that something was turned away for a full jar, so the card says so once. */
+export function noteFull(): void {
+  const s = jar.get();
+  if (!s.saidFull) jar.set({ ...s, saidFull: true });
+}
+
 /** How many are in the jar (the one in your hand is out of it). */
 export const jarCount = (): number => jar.get().slips.length;
 

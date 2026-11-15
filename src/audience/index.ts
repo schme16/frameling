@@ -17,15 +17,15 @@ import { store } from '../core/store';
 import { readJson, writeJson } from '../ui/mini';
 import { toast } from '../ui/toast';
 import { audienceChoices } from './choices';
-import { createGate, limitsFor, lasts, type AudienceActionDef, type AudienceDoorDef, type Gate, type Verdict } from './gate';
+import { createGate, limitsFor, lasts, refusal, type AudienceActionDef, type AudienceDoorDef, type Gate, type Verdict } from './gate';
 import { audienceHelp } from './help';
 import { desktop } from '../io/desktop';
 import { globalStop, showAudienceCard } from './card';
 import { registerQuietFamily } from '../ui/palette';
 import { STREAM_WORDS } from '../ui/streamWords';
 
-export { lasts };
-export type { AudienceActionDef, AudienceContext, AudienceDoorDef, AudienceCounts, GateLimits, RejectReason, Strictness, Verdict } from './gate';
+export { lasts, refusal };
+export type { AudienceActionDef, AudienceContext, AudienceDoorDef, AudienceCounts, GateLimits, RejectReason, Strictness, Refusal, Verdict } from './gate';
 
 const KEY = 'frameling.audience.v1';
 const GATE_OWNER = 'audience-gate';

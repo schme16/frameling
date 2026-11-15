@@ -19,19 +19,19 @@ Each chat command becomes one **POST** to the address plus an action name, with 
 The **user id** is the number Twitch gives each person, not their name. It is how Frameling counts one vote each without keeping who it was.
 
 ## Test the door first
-Start a vote, then run this in a terminal, with your key in place of KEY:
+In **Preferences > Streaming > Actions door**, press **Copy a test command**, then paste it into a terminal. It already has your address and key, and it only asks the door for its list, so nothing changes:
 \`\`\`
-curl -X POST http://127.0.0.1:47213/v1/actions/vote.cast -H "Authorization: Bearer KEY" -d '{"option":1,"voter":"test"}'
+curl -H "Authorization: Bearer <your key>" http://127.0.0.1:47213/v1/actions
 \`\`\`
-You should get \`{"ok":true,"outcome":"ran"}\` and see the vote land. If that works, any trouble left is in the chat program.
+A list of actions means the door works, and any trouble left is in the chat program. Keep that command off the stream, because it holds your key.
 
 ## When it doesn't work
 - **Could not connect:** Frameling isn't open, audience features are off, or the port moved. Check the address in Preferences.
 - **401:** the key is wrong, or you made a new one. Copy it again.
 - **403:** the request came from a web page (a browser source can't call the door), or used a name other than \`127.0.0.1\` or \`localhost\`.
-- **400 \`invalid\`:** no vote or round is running, the option doesn't exist, the voter id is missing, or they have voted already. Frameling doesn't say which.
+- **400 \`invalid\`:** the answer says why in \`detail\` and has a \`say\` sentence for chat, like "No vote is running right now." The list is in [what it can do](help:actions-door-reference).
 - **400 \`bad-request\`:** the body isn't JSON, usually a quote mark someone typed. Both setups here guard against it.
-- **429:** too soon. Wait the **Retry-After** seconds. Prompts take one every 8 seconds across the whole channel.
+- **429:** too soon. Wait the **Retry-After** seconds. Prompts take one every 3 seconds across the whole channel, which you can change in **Preferences > Streaming**.
 - **503:** the drawing window isn't open.
 
 Every answer is in [The actions door: what it can do](help:actions-door-reference).`,
@@ -57,14 +57,14 @@ Make a command for each: on the **Commands** tab press **New Custom Command**, s
 \`\`\`
 {"guess": $convertToJSON[$arg[all]], "player": $convertToJSON[$userId], "name": $convertToJSON[$userDisplayName]}
 \`\`\`
-**!prompt**, URL ending \`/jar.add\`, with a **global cooldown** of 8 seconds, the same as Frameling's:
+**!prompt**, URL ending \`/jar.add\`, with a **global cooldown** of 3 seconds, the same as Frameling's, and a **per-user cooldown** of 30 seconds if you like (only the chat program knows who typed, so that part is its job):
 \`\`\`
 {"text": $convertToJSON[$arg[all]]}
 \`\`\`
 The whole URL is the address, then \`/v1/actions/\`, then that ending, for example \`http://127.0.0.1:47213/v1/actions/vote.cast\`. \`$arg[1]\` is the first word after the command and \`$userId\` is who typed it. \`$convertToJSON\` adds the quote marks and escapes anything odd, so what a viewer types can't break the request or add fields of its own. Don't add quote marks round it.
 
 ## Good to know
-- To tell a viewer their prompt wasn't taken, tick **Run effects on error** in the HTTP Request effect and add a **Chat** effect there. A cooldown and a refusal both land in it, and we couldn't confirm it can read which one, so keep the message general.
+- To tell a viewer their prompt wasn't taken, tick **Run effects on error** in the HTTP Request effect and add a **Chat** effect there. A cooldown and a refusal both land in it. Frameling's answer has a \`say\` sentence ready for chat, but we couldn't confirm Firebot can read it there, so keep the message general.
 - Firebot and Frameling have to be on the same computer.
 - Checked against Firebot v5.67.0, November 2026.`,
   'chat-commands-streamerbot': `Streamer.bot reads chat, but its built-in **Fetch URL** only does GET, and the door needs POST. So sending is a few lines of C#, pasted once for all three commands. Read [Chat commands](help:chat-commands) first if you haven't.
@@ -72,7 +72,7 @@ The whole URL is the address, then \`/v1/actions/\`, then that ending, for examp
 **On Linux** Streamer.bot runs through Wine, and its makers call that experimental and not officially supported. Their install page asks for Wine 11.9 or newer with winetricks \`dotnet48\` and \`d3dcompiler_47\`, and offers an install script, Bottles or Lutris. If that is more than you want, [Firebot](help:chat-commands-firebot) does the same without it.
 
 ## Set it up
-1. **Commands:** right-click, **Add**. Command text \`!vote\`, Location **Start**. Add \`!guess\` and \`!prompt\` as two more commands the same way. Cooldowns 0, except 8 seconds global on **!prompt**.
+1. **Commands:** right-click, **Add**. Command text \`!vote\`, Location **Start**. Add \`!guess\` and \`!prompt\` as two more commands the same way. Cooldowns 0, except 3 seconds global on **!prompt**.
 2. **Actions:** add an action called **Frameling chat**. Give it the trigger **Command Triggered** (under Core, then Commands), and pick all three commands.
 3. Add the sub-action **Execute C# Code** (under Core, then C# Code), paste this, put your key between the quotes, and compile:
 \`\`\`
@@ -134,8 +134,9 @@ public class CPHInline
 
             var answer = JObject.Parse(res.Content.ReadAsStringAsync().GetAwaiter().GetResult());
             string reason = (string)answer["reason"];
-            if (action == "jar.add" && reason == "cooldown")
-                CPH.SendMessage("@" + who + " the jar needs a few seconds, try again soon.");
+            string say = (string)answer["say"];
+            if (!string.IsNullOrEmpty(say) && (reason == "invalid" || reason == "cooldown"))
+                CPH.SendMessage("@" + who + " " + say);
             else if (reason != "invalid" && reason != "cooldown")
                 CPH.LogWarn("Frameling said " + code + " " + reason);
         }
@@ -152,7 +153,7 @@ public class CPHInline
 ## Good to know
 - It reads \`command\`, \`rawInput\`, \`userId\` and \`user\`, which Streamer.bot sets when a chat command fires. The body is built with a JSON library, so a quote mark in chat can't break it.
 - If the editor can't find System.Net.Http or Newtonsoft.Json, add them on its References tab.
-- A wrong key, a shut door or Frameling being closed show up in Streamer.bot's log as a Frameling warning, and stay quiet in chat. Only a prompt on cooldown answers the viewer.
+- A wrong key, a shut door or Frameling being closed show up in Streamer.bot's log as a Frameling warning, and stay quiet in chat. A refused vote, guess or prompt answers the viewer with Frameling's own sentence, like "No vote is running right now." Delete the \`SendMessage\` line if you would rather chat stayed quiet.
 - Made a new key in Frameling? Paste it into the code.
 - Streamer.bot and Frameling have to be on the same computer.
 - Checked against Streamer.bot v1.0.7, August 2026.`,
@@ -182,7 +183,7 @@ See also [Audience features and the On air pill](help:audience).`,
   'actions-door-reference': `Everything the actions door does, for when you are setting up a tool. The address is \`http://127.0.0.1:47213\` (or the one Frameling shows), and every request sends \`Authorization: Bearer <your key>\`. Setting up is in [The actions door](help:actions-door).
 
 ## What is on offer
-\`GET /v1/actions\` lists each action: its **id**, what it is called, its **kind**, its **cooldown** in milliseconds, and whether it touches your drawing. It lists only what would work right now.
+\`GET /v1/actions\` lists each action: its **id**, what it is called, its **kind**, its **cooldown** in milliseconds, whether it touches your drawing, and whether it is **ready**. A vote or guess is not ready until you start one. It lists only what would work right now.
 
 ## Running one
 \`POST /v1/actions/<id>\`, with the details (if it needs any) as JSON in the body. These come with the door, and none touch your drawing:
@@ -191,19 +192,19 @@ See also [Audience features and the On air pill](help:audience).`,
 - \`door.fit-view\`: fits the drawing in the window. No body.
 - \`quill.cheer\`, \`quill.hop\`, \`quill.snack\`, \`quill.nuzzle\`, \`quill.wave\`: Quill reacts on your screen. No body. See [Quill reacts to your audience](help:quill-reacts).
 - \`quill.sign\`: Quill holds up a sign, once you say yes. Body \`{"text":"hello"}\`, cut to 60 plain characters.
-- \`jar.add\`: drops a prompt in your private prompt jar. Body \`{"text":"a frog in a teacup"}\`, cut to 80 plain characters. It never shows on screen: only you pull one out. See [The prompt jar](help:prompt-jar).
+- \`jar.add\`: drops a prompt in your private prompt jar. Body \`{"text":"a frog in a teacup"}\`, cut to 80 plain characters. It never shows on screen: only you pull one out. Taken at most one every few seconds across the whole channel (you choose how many). See [The prompt jar](help:prompt-jar).
 - \`vote.cast\`: one vote in the vote you started. Body \`{"option":2,"voter":"12345678"}\`. Only counted, never acted on, and not held back by the cooldowns. See [Votes](help:votes).
 - \`guess.send\`: one guess in the guessing game you started. Body \`{"guess":"a cat","player":"12345678"}\`. Frameling never says whether it was right, and not held back by the cooldowns. See [Guess the drawing](help:guess).
 
 ## What comes back
-Frameling always says what happened, as JSON with a **reason** your tool can act on:
+Frameling always says what happened, as JSON with a **reason** your tool can act on. Every refusal also has **say**, one plain sentence a bot can repeat to chat, like "No vote is running right now." Older tools that only read the status or the reason keep working.
 - \`"outcome":"ran"\` (200): it happened.
 - \`"outcome":"queued"\` (202): waiting its turn, with its \`position\`.
 - \`"reason":"cooldown"\` (429): too soon after one of its kind. \`retryInMs\` says how long.
 - \`"reason":"queue-full"\` (429): too many are waiting.
 - \`"reason":"unknown"\` (404): no such action.
 - \`"reason":"unavailable"\` (403): you have that switched off.
-- \`"reason":"invalid"\` (400): the details made no sense.
+- \`"reason":"invalid"\` (400): the details made no sense. \`detail\` says why when Frameling knows: \`closed\`, \`no-option\`, \`no-voter\`, \`no-player\`, \`no-guess\`, \`no-prompt\`, \`again\` or \`full\`.
 - \`"reason":"off"\` (503): audience features are off.
 - \`"reason":"unauthorized"\` (401): the key is missing or wrong.
 - \`"reason":"origin-refused"\` (403): the request came from a web page, which is never allowed.
