@@ -10,6 +10,7 @@ import { setCursor } from '../canvas/controller';
 import { artboardTargets, clearSnap, showSnap } from '../canvas/guides';
 import { nearest, snapBox, snapPoint, type SnapLine, type SnapTargets } from '../canvas/snap';
 import { snapPx } from '../canvas/viewSettings';
+import { cssVar } from '../canvas/theme';
 import type { Anchor } from '../canvas/resize';
 import { activeArtboard, activeId, artboardAt, boxes } from './model';
 import { duplicateArtboardById, goToArtboard, installArtboards, moveArtboardTo, newArtboard, resizeArtboard } from './ops';
@@ -198,7 +199,7 @@ function overlay(g: CanvasRenderingContext2D, zoom: number): void {
   if (doc.editing?.length) return;
   const act = activeArtboard(doc);
   const px = 1 / zoom;
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--chosen-bg').trim() || '#ffc94a';
+  const accent = cssVar('--chosen-bg', '#ffc94a');
   const toLocal = (b: Box): Box => ({ x: b.x - act.x, y: b.y - act.y, w: b.w, h: b.h });
   g.save();
   for (const b of boxes(doc)) {

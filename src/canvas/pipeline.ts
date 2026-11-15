@@ -30,6 +30,7 @@ import { artboardDoc } from '../artboards/model';
 import { blitEntry, blitEntryStretched } from './bitmapBlit';
 import { perf } from './perf';
 import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
+import { cssVar } from './theme';
 
 export interface FrameParams {
   doc: Doc;
@@ -592,7 +593,7 @@ export class FramePainter {
     }
     // Faded towards the canvas colour, so the stage still reads as the stage.
     g.globalAlpha = 0.55;
-    g.fillStyle = getComputedStyleSafe('--canvas-bg', '#121019');
+    g.fillStyle = cssVar('--canvas-bg', '#121019');
     if (frame) {
       // Faded outside the camera's view only.
       g.beginPath();
@@ -757,9 +758,4 @@ export class FramePainter {
     this.scratch = this.scratch2 = null;
     this.lastVector.clear();
   }
-}
-
-function getComputedStyleSafe(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }

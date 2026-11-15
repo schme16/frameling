@@ -10,6 +10,7 @@ import { CURVE_PRESETS, PRESET_ORDER, isPlainCurve, presetOf, type CurvePreset }
 import { penFields } from './input';
 import { PEN_TOOLS, penStore, resetPen, setPenDevice, setToolPen, setTouch, type OneFinger, type PenTool } from './settings';
 import { altitudeOf, azimuthOf } from './tilt';
+import { cssVar } from '../canvas/theme';
 import './tablet.css';
 
 const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither' };
@@ -73,7 +74,7 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
     g.lineCap = 'round';
     g.lineJoin = 'round';
     g.globalCompositeOperation = press.eraser ? 'destination-out' : 'source-over';
-    g.strokeStyle = getComputedStyle(c).getPropertyValue('--accent') || '#9b7bff';
+    g.strokeStyle = cssVar('--accent', '#9b7bff');
     g.lineWidth = (2 + 16 * f.pressure) * k;
     g.beginPath();
     const from = last.current ?? { x, y };

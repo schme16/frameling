@@ -34,14 +34,18 @@ export function subscribeTheme(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-/** The value of a theme token, e.g. `cssVar('--grape')`. Falls back to `fallback` outside a page. */
+/**
+ * The value of a theme token, e.g. `cssVar('--grape')`. Falls back to `fallback` outside a page, or when the token
+ * isn't set. Only a value that was really read is kept, so two callers with different fallbacks never see each
+ * other's, and a token read before the stylesheet arrives is read again rather than stuck on its fallback.
+ */
 export function cssVar(name: string, fallback = '#9b7bff'): string {
   if (typeof document === 'undefined') return fallback;
   watch();
   let v = cache.get(name);
   if (v === undefined) {
-    v = getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-    cache.set(name, v);
+    v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (v) cache.set(name, v);
   }
-  return v;
+  return v || fallback;
 }

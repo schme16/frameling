@@ -45,4 +45,34 @@ describe('canvas theme tokens', () => {
     expect(b).toHaveBeenCalled();
     offB();
   });
+
+  it('reads a token once, then serves it from the cache until the theme changes', async () => {
+    const root = document.documentElement;
+    root.style.setProperty('--once', '#101010');
+    const spy = vi.spyOn(window, 'getComputedStyle');
+    expect(cssVar('--once')).toBe('#101010');
+    expect(cssVar('--once')).toBe('#101010');
+    expect(cssVar('--once')).toBe('#101010');
+    expect(spy).toHaveBeenCalledTimes(1);
+    // A theme pick (data-theme) and a live edit of a token (style) both clear it.
+    root.dataset.theme = 'light';
+    await settle();
+    expect(cssVar('--once')).toBe('#101010');
+    expect(spy).toHaveBeenCalledTimes(2);
+    root.style.setProperty('--once', '#202020');
+    await settle();
+    expect(cssVar('--once')).toBe('#202020');
+    expect(spy).toHaveBeenCalledTimes(3);
+    spy.mockRestore();
+  });
+
+  it('gives each caller its own fallback for a token that is not set, and picks it up once it is', () => {
+    const root = document.documentElement;
+    root.style.removeProperty('--late');
+    expect(cssVar('--late', '#111111')).toBe('#111111');
+    expect(cssVar('--late', '#222222')).toBe('#222222');
+    // The stylesheet arriving after the first read must not leave the fallback stuck.
+    root.style.setProperty('--late', '#333333');
+    expect(cssVar('--late', '#111111')).toBe('#333333');
+  });
 });
