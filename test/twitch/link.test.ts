@@ -22,6 +22,7 @@ const build = (verdict: { ok: boolean; reason?: string } = { ok: true }) => {
     bridge: () => bridge as never,
     gate: { submit, snapshot: () => ({ actions: [{ id: 'quill.hop', label: 'Quill hops' }] }) },
     kinds: () => ['follow'],
+    names: () => false,
     rules: () => [rule],
     setStatus: (s) => statuses.push(s),
     turnedAway: (label, reason) => told.push(`${label}:${reason}`),
@@ -51,7 +52,7 @@ describe('the Twitch link', () => {
     expect(t.submit).toHaveBeenCalledTimes(1);
   });
   it('does nothing without a desktop side', () => {
-    const link = createTwitchLink({ bridge: () => null, gate: { submit: () => ({ ok: true, outcome: 'ran' }), snapshot: () => ({ actions: [] }) }, kinds: () => [], rules: () => [], setStatus: () => undefined, turnedAway: () => undefined });
+    const link = createTwitchLink({ bridge: () => null, gate: { submit: () => ({ ok: true, outcome: 'ran' }), snapshot: () => ({ actions: [] }) }, kinds: () => [], names: () => false, rules: () => [], setStatus: () => undefined, turnedAway: () => undefined });
     link.open();
     link.close();
     expect(link.listen()()).toBeUndefined();

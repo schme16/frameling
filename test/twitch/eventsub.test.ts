@@ -74,6 +74,22 @@ describe('listening', () => {
     const text = JSON.stringify(events);
     for (const leak of ['777', 'viewerlogin', 'ViewerName', 'RaiderName', 'hello there']) expect(text).not.toContain(leak);
   });
+  it('reads display names only when started asking for them, and still never the login, the id or the message', async () => {
+    client.start(['cheer', 'follow', 'raid'], true);
+    sockets[0].welcome();
+    await settle();
+    const who = { user_id: '777', user_login: 'viewerlogin', user_name: 'ViewerName', from_broadcaster_user_name: 'RaiderName' };
+    sockets[0].notify('channel.cheer', { ...who, bits: 300, message: 'hello there', is_anonymous: false });
+    sockets[0].notify('channel.follow', who);
+    sockets[0].notify('channel.raid', { ...who, viewers: 40 });
+    expect(events).toEqual([
+      { kind: 'cheer', bits: 300, name: 'ViewerName' },
+      { kind: 'follow', name: 'ViewerName' },
+      { kind: 'raid', viewers: 40, name: 'RaiderName' },
+    ]);
+    const text = JSON.stringify(events);
+    for (const leak of ['777', 'viewerlogin', 'hello there']) expect(text).not.toContain(leak);
+  });
   it('ignores kinds it was not asked for', async () => {
     client.start(['raid']);
     sockets[0].welcome();

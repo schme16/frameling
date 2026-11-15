@@ -10,7 +10,7 @@ import { _resetFeaturesForTests, isFeatureOn, registerFeatures, setFeatureOn } f
 import { twitchFeature } from '../../src/twitch';
 import { twitchLink } from '../../src/twitch/instance';
 import { _resetTwitchState, setKinds, setRules, twitchSaved, twitchStatus } from '../../src/twitch/state';
-import type { TwitchRule } from '../../src/twitch/rules';
+import { newRule, type TwitchRule } from '../../src/twitch/rules';
 import { signedOutStatus, type TwitchEvent, type TwitchStatus } from '../../src/shared/twitch';
 
 installAudience();
@@ -22,7 +22,7 @@ const calls: string[] = [];
 const signedIn = (): TwitchStatus => ({ ...signedOutStatus(), app: 'built-in', state: 'signed-in', login: 'quilltest', scopes: ['channel:read:redemptions'] });
 const bridge = {
   status: vi.fn(async () => signedIn()),
-  listen: vi.fn(async (kinds: string[]) => (calls.push(`listen ${kinds.join(',')}`), { ...signedIn(), listening: 'listening' as const })),
+  listen: vi.fn(async (kinds: string[], names?: boolean) => (calls.push(`listen ${kinds.join(',')}${names ? ' with names' : ''}`), { ...signedIn(), listening: 'listening' as const })),
   stop: vi.fn(async () => void calls.push('stop')),
   onEvent: vi.fn((h: (e: TwitchEvent) => void) => ((onEvent = h), () => void (onEvent = null))),
   onStatus: vi.fn((h: (s: TwitchStatus) => void) => ((onStatus = h), () => void (onStatus = null))),
@@ -102,6 +102,27 @@ describe('the door', () => {
     twitchLink.refresh();
     await settle();
     expect(calls.slice(-2)).toEqual(['stop', 'listen sub']);
+  });
+  it('asks for names only while a welcome link is on and names are allowed, and listens again when that changes', async () => {
+    setKinds(['follow']);
+    setRules([newRule('follow', 'quill.hop')]);
+    await on();
+    expect(calls).toEqual(['listen follow']);
+    // Pointing a link at a Quill welcome is what asks for names.
+    setRules([newRule('follow', 'quill.welcome.follow')]);
+    await settle();
+    expect(calls.slice(-2)).toEqual(['stop', 'listen follow with names']);
+    // Never use names: not even asked for from Twitch.
+    setChoice('quillreacts.names', 'never');
+    await settle();
+    expect(calls.slice(-2)).toEqual(['stop', 'listen follow']);
+    setChoice('quillreacts.names', undefined);
+    await settle();
+    expect(calls.at(-1)).toBe('listen follow with names');
+    // A welcome link that is switched off asks for nothing.
+    setRules([{ ...newRule('follow', 'quill.welcome.follow'), on: false }]);
+    await settle();
+    expect(calls.at(-1)).toBe('listen follow');
   });
   it('goes with the feature: off, there is no door and no command, and the line is closed', async () => {
     await on();

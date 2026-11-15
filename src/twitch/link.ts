@@ -11,6 +11,8 @@ export interface LinkDeps {
   bridge(): TwitchBridge | null;
   gate: { submit(id: string, raw?: unknown): Verdict; snapshot(): { actions: { id: string; label: string }[] } };
   kinds(): TwitchKind[];
+  /** Whether to ask the desktop side to read viewers' display names: only while a welcome link is on and names are allowed. */
+  names(): boolean;
   rules(): TwitchRule[];
   setStatus(s: TwitchStatus): void;
   /** Something was turned away by the gate: told to the streamer only when they chose to hear it. */
@@ -52,7 +54,7 @@ export function createTwitchLink(d: LinkDeps): TwitchLink {
       enqueue(async () => {
         const b = d.bridge();
         if (!b || !wanted) return;
-        d.setStatus(await b.listen(d.kinds()));
+        d.setStatus(await b.listen(d.kinds(), d.names()));
       });
     },
     close() {
@@ -70,7 +72,7 @@ export function createTwitchLink(d: LinkDeps): TwitchLink {
         const b = d.bridge();
         if (!b || !wanted) return;
         await b.stop();
-        d.setStatus(await b.listen(d.kinds()));
+        d.setStatus(await b.listen(d.kinds(), d.names()));
       });
     },
     listen() {

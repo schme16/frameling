@@ -48,6 +48,7 @@ export const UNREAD_TOAST = {
   words: 'Chat sent some words for your screen. Read them first.',
   sign: 'Chat sent Quill a sign to hold up. Read it first.',
   message: 'A message came in from your stream tool. Read it first.',
+  name: 'Somebody new is here, and Quill would like to say their name. Read it first.',
 } as const;
 
 /** The label on the button that reveals them. */

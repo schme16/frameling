@@ -73,7 +73,7 @@ export function registerTwitchIpc(handle: Handle, win: () => Electron.BrowserWin
   handle('twitch:copyApproval', () => session.copyApproval());
   handle('twitch:cancelSignIn', () => session.cancelSignIn());
   handle('twitch:signOut', () => session.signOut());
-  handle('twitch:listen', (_e, kinds: unknown) => session.listen(cleanKinds(kinds)));
+  handle('twitch:listen', (_e, kinds: unknown, names: unknown) => session.listen(cleanKinds(kinds), names === true));
   handle('twitch:stop', () => session.stopListening());
   handle('twitch:rewards', () => session.rewards());
   handle('twitch:setApp', (_e, id: unknown) => session.setApp(typeof id === 'string' ? id.slice(0, 80) : null));

@@ -195,6 +195,15 @@ describe('listening', () => {
     expect(ev).toEqual([{ type: 'event', event: { kind: 'raid', viewers: 12 } }]);
     expect(JSON.stringify(msgs)).not.toContain('BigRaider');
   });
+  it('passes the display name up only when the page asked for names when it began listening', async () => {
+    await signIn(['raid']);
+    await s.listen(['raid'], true);
+    sockets[0].welcome();
+    await settle();
+    sockets[0].notify('channel.raid', { viewers: 12, from_broadcaster_user_name: 'BigRaider', from_broadcaster_user_id: '55' });
+    expect(msgs.filter((m) => m.type === 'event')).toEqual([{ type: 'event', event: { kind: 'raid', viewers: 12, name: 'BigRaider' } }]);
+    expect(JSON.stringify(msgs)).not.toContain('55');
+  });
   it('does nothing when signed out, or with nothing ticked', async () => {
     await s.listen(['raid']);
     expect(sockets).toHaveLength(0);

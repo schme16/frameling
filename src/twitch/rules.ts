@@ -2,6 +2,7 @@
 // viewer data: only which kind of event, an optional filter (one reward, a number of bits or of raiders), which action
 // and any words to send with it. Nothing here runs an action: the gate does, through the link in ./link.ts.
 import { isKind, type TwitchEvent, type TwitchKind } from '../shared/twitch';
+import { isWelcomeAction, SAMPLE_NAME } from '../quillreacts/welcome';
 
 export interface TwitchRule {
   id: string;
@@ -68,37 +69,62 @@ export function matchRules(rules: TwitchRule[], e: TwitchEvent): TwitchRule[] {
 }
 
 /** What goes to the action as its payload: the viewer's words when the rule says so (and there are some), else the streamer's words, else nothing. */
-export function payloadFor(rule: TwitchRule, e: TwitchEvent): string | undefined {
+export function payloadFor(rule: TwitchRule, e: TwitchEvent): unknown {
+  // A welcome gets the event's size and, when one was asked for, the display name. It is cleaned by the action (never here).
+  if (isWelcomeAction(rule.action)) return welcomePayload(e);
   if (rule.useViewerText && e.kind === 'redemption' && e.text) return e.text;
   return rule.text || undefined;
 }
 
-/** A pretend event of a rule's kind, for the Try it button. Carries no one's words but the rule's own. */
+/** What a Quill welcome is told about an event: how big it is, whether it is a return, and the name if there is one. */
+export function welcomePayload(e: TwitchEvent): { name?: string; amount?: number; resub?: boolean } {
+  switch (e.kind) {
+    case 'cheer':
+      return { amount: e.bits, ...(e.name ? { name: e.name } : {}) };
+    case 'raid':
+      return { amount: e.viewers, ...(e.name ? { name: e.name } : {}) };
+    case 'sub':
+      return { ...(e.resub ? { resub: true } : {}), ...(e.name ? { name: e.name } : {}) };
+    case 'follow':
+      return e.name ? { name: e.name } : {};
+    default:
+      return {};
+  }
+}
+
+/** A pretend event of a rule's kind, for the Try it button. Carries no one's words but the rule's own, and a made-up name. */
 export function sampleEvent(rule: TwitchRule): TwitchEvent {
   switch (rule.event) {
     case 'redemption':
       return { kind: 'redemption', rewardId: rule.rewardId ?? 'sample', rewardTitle: rule.rewardTitle ?? 'A reward', ...(rule.text ? { text: rule.text } : {}) };
     case 'cheer':
-      return { kind: 'cheer', bits: Math.max(1, rule.min ?? 100) };
+      return { kind: 'cheer', bits: Math.max(1, rule.min ?? 100), name: SAMPLE_NAME };
     case 'raid':
-      return { kind: 'raid', viewers: Math.max(1, rule.min ?? 5) };
+      return { kind: 'raid', viewers: Math.max(1, rule.min ?? 5), name: SAMPLE_NAME };
     case 'sub':
-      return { kind: 'sub', resub: false };
+      return { kind: 'sub', resub: false, name: SAMPLE_NAME };
     default:
-      return { kind: 'follow' };
+      return { kind: 'follow', name: SAMPLE_NAME };
   }
 }
 
-/** The links a new connection starts with: small, view-only reactions from Quill, for the actions that exist. */
+/**
+ * The links a new connection starts with: small, view-only reactions from Quill, for the actions that exist. A follow, sub,
+ * cheer or raid is a welcome (he asks you before he says a name); the rest are the plain reactions, which is also what a
+ * build without welcomes falls back to.
+ */
 export function starterRules(have: (id: string) => boolean): TwitchRule[] {
-  const wish: [TwitchKind, string][] = [
-    ['redemption', 'quill.cheer'],
-    ['raid', 'quill.wave'],
-    ['follow', 'quill.hop'],
-    ['sub', 'quill.nuzzle'],
-    ['cheer', 'quill.snack'],
+  const wish: [TwitchKind, string[]][] = [
+    ['redemption', ['quill.cheer']],
+    ['raid', ['quill.welcome.raid', 'quill.wave']],
+    ['follow', ['quill.welcome.follow', 'quill.hop']],
+    ['sub', ['quill.welcome.sub', 'quill.nuzzle']],
+    ['cheer', ['quill.welcome.cheer', 'quill.snack']],
   ];
-  return wish.filter(([, a]) => have(a)).map(([event, action], i) => ({ id: `starter-${i}`, event, action, on: true }));
+  return wish
+    .map(([event, ids]) => [event, ids.find(have)] as const)
+    .filter((w): w is readonly [TwitchKind, string] => !!w[1])
+    .map(([event, action], i) => ({ id: `starter-${i}`, event, action, on: true }));
 }
 
 let counter = 0;

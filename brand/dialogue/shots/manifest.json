@@ -319,5 +319,93 @@
   "lock.teach": {
     "file": "shots/lock.teach.png",
     "note": "Shown the first time the rail, a tool or a panel moves in a quick or short drag, once ever. Here {what} is tools."
+  },
+  "stream.cheer": {
+    "file": "shots/stream.cheer.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.hop": {
+    "file": "shots/stream.hop.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.snack": {
+    "file": "shots/stream.snack.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.nuzzle": {
+    "file": "shots/stream.nuzzle.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.wave": {
+    "file": "shots/stream.wave.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.sign.ask": {
+    "file": "shots/stream.sign.ask.png",
+    "note": "With the words of the sign after it, and nothing shown on stream until you say yes."
+  },
+  "stream.welcome.ask": {
+    "file": "shots/stream.welcome.ask.png",
+    "note": "Covered until you press Read it, so a rude name is never on screen before you have chosen. The name follows in quotes once read."
+  },
+  "stream.welcome.follow.named": {
+    "file": "shots/stream.welcome.follow.named.png",
+    "note": "One of the set, picked at random. Said only after your yes, on the screen and the stream overlay."
+  },
+  "stream.welcome.follow": {
+    "file": "shots/stream.welcome.follow.png",
+    "note": "One of the set, picked at random. What he says when the name is left out."
+  },
+  "stream.welcome.sub.named": {
+    "file": "shots/stream.welcome.sub.named.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.sub": {
+    "file": "shots/stream.welcome.sub.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.resub.named": {
+    "file": "shots/stream.welcome.resub.named.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.cheer.named": {
+    "file": "shots/stream.welcome.cheer.named.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.cheer": {
+    "file": "shots/stream.welcome.cheer.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.raid.named": {
+    "file": "shots/stream.welcome.raid.named.png",
+    "note": "One of the set, picked at random. A wave that turns into a cheer, and he stays longer than for anything else."
+  },
+  "stream.welcome.raid": {
+    "file": "shots/stream.welcome.raid.png",
+    "note": "One of the set, picked at random."
+  },
+  "stream.welcome.ask.more": {
+    "file": "shots/stream.welcome.ask.more.png",
+    "note": "When several people arrive while he is busy: the first name, and the rest as a number. Nobody is dropped. The shot is the nearest moment (the crowd welcomed together); the question reads: Some new people are here. Shall I say \u201cAda\u201d, and 3 more?"
+  },
+  "stream.welcome.follow.crowd.named": {
+    "file": "shots/stream.welcome.follow.crowd.named.png",
+    "note": "One of the set, picked at random. Stood in for by the crowd welcomed together without the name."
+  },
+  "stream.welcome.follow.crowd": {
+    "file": "shots/stream.welcome.follow.crowd.png",
+    "note": "One of the set, picked at random. The same crowd with the name left out."
+  },
+  "stream.welcome.sub.crowd": {
+    "file": "shots/stream.welcome.sub.crowd.png",
+    "note": "Stood in for by the nearest list: its crowd wording reads the same way."
+  },
+  "stream.welcome.sub.crowd.named": {
+    "file": "shots/stream.welcome.sub.crowd.named.png",
+    "note": "Stood in for by the nearest list: its crowd wording reads the same way."
+  },
+  "stream.welcome.cheer.many": {
+    "file": "shots/stream.welcome.cheer.many.png",
+    "note": "Stood in for by the nearest list: its crowd wording reads the same way."
   }
 }

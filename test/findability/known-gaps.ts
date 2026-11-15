@@ -88,18 +88,21 @@ export const STREAM_LOAD = {
   /** 75: How to get your viewers taking part (audience.start), the one page that walks from a Twitch channel to viewers voting. Somebody asking "how do I get my viewers to vote" finds it by that, in the palette, the Streaming menu and the top of the Streaming tab. */
   /** 76: What can your viewers see? (audience.view), the one answer that decides whether secret words, pulled prompts and unread chat words are covered. It has to be findable by a streamer who wants to change it, in the palette and in the Audience features menu, and it goes with the gate commands so it leaves when the streaming tools are tucked away. */
   /** 77: Stream control (streamboard.toggle), the window of buttons for a second screen. It is the one way to open the board, so it has to be in the palette and the Streaming menu, found by "stream control", "second screen" and "buttons". There is no second command: moving the buttons and putting them back are buttons inside the window. */
-  palette: 77,
+  /** 78: Try: Quill welcomes somebody new (quillreacts.welcome), the one way to see a welcome without waiting for somebody to follow. One command, not four: each press shows the next kind (a follower, a subscriber, a cheer, a raid), and Try it on a Twitch link shows any one. Searching "welcome", "greet" or "new follower" has to find it. */
+  palette: 78,
   /** Commands in the menus (View holds all of them). 75, the same three commands as the palette: the two in the Actions door submenu and the first entry of the Streaming menu. */
   /** 76: the same command, in the Audience features menu next to the switch it belongs with. */
-  /** 77: the same command, in the Streaming menu with the audience switch and the card it sits beside. */
-  menu: 77,
+  /** 77: Stream control, in the Streaming menu with the audience switch and the card it sits beside. */
+  /** 78: Try: Quill welcomes somebody new, in Try Quill reacting to chat beside the other Try commands. */
+  menu: 78,
   /** Switches in Preferences > Features. */
   switches: 9,
   /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */
   /** 19: Getting your viewers taking part (viewers-take-part), the one page that walks the whole route, from a Twitch channel to a first vote. It goes with the gate commands, so it leaves when the streaming tools are tucked away. */
   /** 20: Covering secrets and unread words (cover-spoilers), the page that says what is covered, why, and how to tell Frameling what your viewers can see. It is the help of the new command and of the question. */
   /** 21: Stream control (stream-control), the page that says what the buttons are, how to move them, what stays covered and why. It is the help of the new command and goes with it when the streaming tools are tucked away. */
-  help: 21,
+  /** 22: Quill welcomes new followers, subscribers, cheers and raids (quill-welcomes): what he does for each, why he asks before saying a name, what a crowd does, and that nothing is kept. It is the help of the command and of the "Names in welcomes" question, and it is where the privacy line about names lives. */
+  help: 22,
 };
 
 /**

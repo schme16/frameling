@@ -1770,6 +1770,23 @@
     "where": "Preferences: the small line under the \"off\" answer in \"Signs from chat\"."
   },
   "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." },
+  "choice.quillreacts.names.title": { "text": "Names in welcomes", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
+  "choice.quillreacts.names.question": {
+    "text": "When somebody follows, subscribes, cheers or raids, Quill can welcome them by name. Ask you before he says a name, or never use names?",
+    "where": "The question the \"Names in welcomes\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.quillreacts.names.ask.label": { "text": "Ask me first", "where": "Preferences: the answer \"ask\" in \"Names in welcomes\"." },
+  "choice.quillreacts.names.ask.detail": {
+    "text": "A name waits for your yes, covered until you press Read it. Say nothing and Quill welcomes them without it.",
+    "where": "Preferences: the small line under the \"ask\" answer in \"Names in welcomes\"."
+  },
+  "choice.quillreacts.names.ask.did": { "text": "Quill asks before he says a name.", "where": "Toast when \"ask\" is used without asking (\"Names in welcomes\"), in the past tense." },
+  "choice.quillreacts.names.never.label": { "text": "Never use names", "where": "Preferences: the answer \"never\" in \"Names in welcomes\"." },
+  "choice.quillreacts.names.never.detail": {
+    "text": "Quill welcomes everybody without a name, and Frameling does not even read the name from Twitch.",
+    "where": "Preferences: the small line under the \"never\" answer in \"Names in welcomes\"."
+  },
+  "choice.quillreacts.names.never.did": { "text": "Quill welcomes without names.", "where": "Toast when \"never\" is used without asking (\"Names in welcomes\"), in the past tense." },
   "choice.dares.length.title": { "text": "How long a dare lasts", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.dares.length.question": {
     "text": "When a dare lasts for a while (a flipped view, a countdown), how long should it last?",
@@ -1964,7 +1981,7 @@
   "choice.guess.peek.allow.did": { "text": "You can peek at the word for a moment.", "where": "Toast when \"allow\" is used without asking (\"Peeking at the word\"), in the past tense." },
   "choice.twitch.starter.title": { "text": "Links to start a new Twitch connection with", "where": "Name of this choice in Preferences > Streaming (group: Streaming)." },
   "choice.twitch.starter.question": {
-    "text": "Start with a few small Quill reactions linked to Twitch events (a raid makes Quill wave, a follow makes Quill hop), or with an empty list?",
+    "text": "Start with a few small Quill reactions linked to Twitch events (a raid is a wave and a cheer, a follow is a wave and a hello), or with an empty list?",
     "where": "The question the \"Links to start a new Twitch connection with\" dialog asks, the first time you connect Twitch."
   },
   "choice.twitch.starter.suggest.label": {

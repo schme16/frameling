@@ -101,6 +101,49 @@ describe('the report', () => {
     expect(text).toContain('exit code 139');
   });
 
+  it('goes the whole way: a window crash on disk, a quit, a start, the report carries the event (and the old three-line version is gone)', async () => {
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const marker = await import('../../src/main/crashMarker');
+    const { crashReport } = await load(true);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-whole-'));
+    try {
+      const start = (pid: number, now: number) => marker.startRun({ dir, pid, version: '0.0.1', platform: 'linux x64', now, alive: () => false, bootedAt: 0 });
+      start(100, 0);
+      marker.beat(dir, 100, { now: 50 * 60_000, appMB: 2400, freeMB: 300 });
+      marker.noteEvent(dir, 100, marker.windowStopLine({ reason: 'killed', exitCode: 61696 }, 50, 300));
+      // Then the app is stopped with no warning: no endRun.
+      expect(start(101, 60 * 60_000).kind).toBe('crash');
+      const last = JSON.parse(JSON.stringify(marker.readLast(dir)));
+      const r = crashReport(last.notes, { appVersion: '0.0.1', platform: 'linux', settings: { pen: { curve: 1 } }, userAgent: 'x', hid: { devices: [] }, support: {}, screen: { width: 3840, height: 2160 } });
+      const data = r.data as { problems?: string[]; crash: { how: string; facts: Record<string, unknown> }; env: Record<string, unknown> };
+      expect(data.crash.how).toBe('both');
+      expect(data.problems).toHaveLength(1);
+      expect(data.problems![0]).toContain('killed, exit code 61696');
+      expect(data.crash.facts).toMatchObject({ ranMinutes: 50, peakMB: 2400, lowestFreeMB: 300 });
+      // The report is the headline and what it doesn't say, not the same sentence three times.
+      expect(r.text).not.toBe(r.summary);
+      expect(r.text).toContain('50 minutes');
+      // Nothing about how the pen or the tools were set up: that is for a pen report, not a crash.
+      expect(Object.keys(data.env).sort()).toEqual(['appVersion', 'platform', 'screen']);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('the headline says the truer thing when the facts allow it, and stays as it was when they do not', async () => {
+    const { sayHow, sayFacts, LOW_FREE_MB } = await load(true);
+    expect(sayHow('killed')).toBe('Frameling stopped without closing properly last time.');
+    expect(sayHow('killed', { restarted: true })).toMatch(/restarted or lost power/);
+    expect(sayHow('killed', { lowestFreeMB: LOW_FREE_MB - 50 })).toMatch(/nearly out of memory/);
+    expect(sayHow('killed', { lowestFreeMB: 4000, ranMinutes: 3 })).toBe(sayHow('killed'));
+    expect(sayHow('both', { restarted: true })).toMatch(/window crashed.*restarted/);
+    expect(sayHow('window', { restarted: true })).toBe(sayHow('window'));
+    expect(sayFacts(undefined)).toBe('');
+    expect(sayFacts({ ranMinutes: 1 })).toBe('It had been open about 1 minute.');
+  });
+
   it('says in plain words how it stopped', async () => {
     const { sayHow } = await load(true);
     expect(sayHow('killed')).toMatch(/without closing properly/);

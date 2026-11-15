@@ -4,13 +4,13 @@ export const bodies: Record<string, string> = {
 
 **He asks, you decide.** Nothing is sent unless you press **Send the notes**. **Read what would go** shows the whole report, word for word, before you decide.
 
-**What the notes are:** how Frameling stopped (it was shut down without closing properly, or the drawing window crashed), what Frameling and this computer are (version, platform, screen, what your pen can do) and, unless you turned it off in Preferences > Diagnostics, the processor, memory and graphics card, shown in plain rows inside **Read what would go**. Never your drawing, what you called it, where it lives or anything you typed.
+**What the notes are:** how Frameling stopped (it was shut down without closing properly, or the drawing window crashed), a few numbers about that run (about how long it was open, the most memory Frameling used, the least the computer had free, and whether the computer restarted afterwards, which is how a power cut is told from Frameling running out of room), what Frameling and this computer are (version, platform, screen) and, unless you turned it off in Preferences > Diagnostics, the processor, memory and graphics card, shown in plain rows inside **Read what would go**. Never your drawing, what you called it, where it lives or anything you typed.
 
 **No thanks:** the box under the buttons remembers it, and then Quill stays away after a crash. Change your mind any time in **Preferences > Behaviour > Quill after a crash**.
 
 **Later:** the command **Send the notes from the last crash** brings him back with the same notes, whatever you said before.
 
-**How Frameling knows:** when it starts it leaves a small file in its own folder, and when it quits properly it takes the file away. If the file is still there next time, it didn't quit properly. Nothing leaves your computer for this.
+**How Frameling knows:** when it starts it leaves a small file in its own folder, and when it quits properly it takes the file away. If the file is still there next time, it didn't quit properly. Every half minute Frameling also writes the time and those two memory numbers into that same file, and only ever the latest and the biggest or smallest, so it never grows. It stays on your computer, and it is only looked at after a crash.
 
 **Good to know:**
 - He turns up once per crash, and never after you closed Frameling the usual way.

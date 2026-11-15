@@ -13,6 +13,7 @@ import { toast } from '../ui/toast';
 import { KIND_INFO, KINDS, scopesFor, type TwitchKind, type TwitchReward, type TwitchStatus } from '../shared/twitch';
 import { cancelConnect, connect, disconnect, hasTwitch } from './actions';
 import { twitchLink } from './instance';
+import { isWelcomeAction } from '../quillreacts/welcome';
 import { MAX_RULES, newRule, type TwitchRule } from './rules';
 import { currentRules, patchRule, removeRule, setKinds, setRules, twitchSaved, twitchStatus } from './state';
 import './twitch.css';
@@ -84,7 +85,8 @@ export function TwitchPrefsRow() {
   };
   const missing = signedIn ? saved.kinds.filter((k) => KIND_INFO[k].scope && !status.scopes.includes(KIND_INFO[k].scope)) : [];
 
-  const actions = snap.actions.filter((a) => !a.bulk);
+  // Votes are counted, not linked. A welcome is also bulk (a crowd must not be turned away), but it is exactly what a link is for.
+  const actions = snap.actions.filter((a) => !a.bulk || isWelcomeAction(a.id));
   const viewOnly = actions.filter((a) => !a.touchesDrawing);
   const drawing = actions.filter((a) => a.touchesDrawing);
   const firstAction = viewOnly[0]?.id ?? actions[0]?.id;
@@ -381,7 +383,7 @@ function RuleRow({ r, actions, rewards }: { r: TwitchRule; actions: { viewOnly: 
           </optgroup>
         )}
       </select>
-      {picked?.takesDetails && (
+      {picked?.takesDetails && !isWelcomeAction(picked.id) && (
         <>
           <input
             className="ui-input"

@@ -14,6 +14,7 @@ import { streamDoorFeature } from '../../src/streamdoor';
 import { quillReactsFeature } from '../../src/quillreacts';
 import { REACTION_ACTIONS, SIGN_ACTION, SIGN_COOLDOWN } from '../../src/quillreacts/actions';
 import { SAMPLE_SIGN } from '../../src/quillreacts/commands';
+import { WELCOME_ACTIONS } from '../../src/quillreacts/welcome';
 import { pickOf, react, REACTIONS, SIGN_ASK_MS, SIGN_UP_MS } from '../../src/quillreacts/react';
 import { petStore } from '../../src/quillpet/store';
 import { clearToasts, toasts } from '../../src/ui/toast';
@@ -22,7 +23,7 @@ import { resolveMenus, type MenuItem } from '../../src/ui/menus';
 
 installAudience();
 
-const ALL = [...REACTION_ACTIONS.map((a) => a.id), SIGN_ACTION];
+const ALL = [...REACTION_ACTIONS.map((a) => a.id), SIGN_ACTION, ...WELCOME_ACTIONS.map((a) => a.id)];
 const mine = () => audience.snapshot().actions.filter((a) => a.id.startsWith('quill.'));
 const on = () => toasts.get();
 const press = (id: string) => {
@@ -59,7 +60,7 @@ describe('registered', () => {
   it('is a switchable feature that needs the door, with commands, help and a menu home', () => {
     expect(isFeatureOn('quill-reacts')).toBe(true);
     expect(quillReactsFeature.requires).toEqual(['stream-door']);
-    for (const id of ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign']) {
+    for (const id of ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign', 'quillreacts.welcome']) {
       const c = getCommand(id)!;
       expect(c, id).toBeTruthy();
       expect(c.category).toBe('Audience');
@@ -83,7 +84,7 @@ describe('registered', () => {
     };
     const all = () => resolveMenus().flatMap((m) => m.items);
     const sub = find(all());
-    expect(sub && sub.kind === 'submenu' && sub.items.map((i) => (i.kind === 'command' ? i.command.id : '-'))).toEqual(['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign']);
+    expect(sub && sub.kind === 'submenu' && sub.items.map((i) => (i.kind === 'command' ? i.command.id : '-'))).toEqual(['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign', 'quillreacts.welcome']);
     setFeatureOn('quill-reacts', false);
     expect(find(all())).toBeUndefined();
     setFeatureOn('quill-reacts', true);
@@ -97,6 +98,8 @@ describe('registered', () => {
       expect(a.cooldown, a.id).toBeGreaterThanOrEqual(5000);
     }
     expect(mine().find((a) => a.id === SIGN_ACTION)!.cooldown).toBe(SIGN_COOLDOWN);
+    // A welcome is bulk, so a crowd is never refused by the cooldown (welcomeFlow paces it), and it is offered on the links screen.
+    for (const w of WELCOME_ACTIONS) expect(mine().find((a) => a.id === w.id)!.bulk, w.id).toBe(true);
   });
 
   it('is still listed with drawing interruptions off, and goes with the feature', () => {

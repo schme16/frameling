@@ -41,3 +41,32 @@ export function cleanChatText(raw: unknown, max: number): { text: string } | nul
   // Needs a real letter or digit: words that are all punctuation say nothing.
   return /[\p{L}\p{N}]/u.test(text) ? { text } : null;
 }
+
+// A display name is the one thing here that is a person's own. Letters of every language, digits, marks that belong to
+// letters (accents, Thai, Hindi), and the few joiners a name really has stay as they are. Emoji, symbols, markup,
+// control and zero-width marks, text-direction marks and look-alike tricks that need them go.
+const NAME_NOT_PLAIN = /[^\p{L}\p{M}\p{N}_ .'\-]/gu;
+// More than two marks in a row on one letter is stacked noise ("zalgo"), not a name.
+const MARK_STACK = /(\p{M}{2})\p{M}+/gu;
+
+/**
+ * One viewer's display name made safe to show, or null when nothing worth saying is left (the caller then welcomes
+ * without a name). Unlike `cleanChatText` it keeps `_`, `-`, `.` and every language, because showing somebody's name
+ * wrong is its own kind of rude; it does not try to judge words (nothing can), which is why a name is also covered until
+ * the streamer has read it. Cut to `max` characters by whole code points. Pure.
+ */
+export function cleanDisplayName(raw: unknown, max = 25): string | null {
+  if (typeof raw !== 'string') return null;
+  const text = Array.from(
+    withoutLinksAndMentions(raw.slice(0, LOOKED_AT).normalize('NFC'))
+      .replace(NAME_NOT_PLAIN, '')
+      .replace(MARK_STACK, '$1')
+      .replace(RUNS, '$1$1$1')
+      .replace(/ {2,}/g, ' ')
+      .replace(/^[ ._'\-]+|[ ._'\-]+$/g, ''),
+  )
+    .slice(0, max)
+    .join('')
+    .trim();
+  return /[\p{L}\p{N}]/u.test(text) ? text : null;
+}

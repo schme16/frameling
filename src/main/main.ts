@@ -1,6 +1,7 @@
 import './profile';
 import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from 'electron';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { closeActionsDoor, grantFile, registerIpc } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
@@ -9,7 +10,7 @@ import { watchDisplay } from './display';
 import { clearAutosave, keepAutosave, pruneKept, writeFileAtomic } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
-import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
+import { beat, BEAT_MS, endRun, markOffered, noteEvent, readLast, startRun, windowStopLine } from './crashMarker';
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
@@ -41,6 +42,9 @@ if (!gotLock) app.quit();
 // the installed app does (a dev run killed with Ctrl+C is not a crash worth Quill's time).
 const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_MARKER === '1');
 let quitting = false;
+let runStartedAt = Date.now();
+/** Everything Frameling is using across its processes, in MB. */
+const appMemoryMB = () => Math.round(app.getAppMetrics().reduce((n, p) => n + (p.memory?.workingSetSize ?? 0), 0) / 1024);
 // Anything that says "restart" (an update, hardware drawing, plugin memory, the command) comes through here: close the
 // way closing always does, then open again with the drawing and the window as they were (see restart.ts).
 const restartFile = () => path.join(app.getPath('userData'), 'restart.json');
@@ -191,7 +195,7 @@ function createWindow() {
   });
   // The drawing window dying is a crash even if the app is then closed properly, so it goes in the marker.
   win.webContents.on('render-process-gone', (_e, d) => {
-    if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, `The drawing window stopped (${d.reason}, exit code ${d.exitCode}).`);
+    if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, windowStopLine(d, Math.round((Date.now() - runStartedAt) / 60_000), Math.round(os.freemem() / 1048576)));
   });
   // Dragged onto another screen: tell the page, which may offer a better interface size for it.
   const stopWatching = watchDisplay(win, (d) => win?.webContents.send('app:displayChanged', d));
@@ -336,7 +340,14 @@ app.on('open-url', (e, url) => {
 });
 
 app.whenReady().then(() => {
-  if (watchCrashes) startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}` });
+  if (watchCrashes) {
+    runStartedAt = Date.now();
+    startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}`, bootedAt: Date.now() - os.uptime() * 1000 });
+    // A small note in the run's own file, now and every half minute, so a stop with no warning can still be told apart (see beat).
+    const sign = () => beat(dataDir(), process.pid, { now: Date.now(), appMB: appMemoryMB(), freeMB: Math.round(os.freemem() / 1048576) });
+    sign();
+    setInterval(sign, BEAT_MS).unref();
+  }
   setupMenu();
   // A restart left word of what to come back to: the drawing it had open wins over a file on the command line.
   restoring = takeRestartState();

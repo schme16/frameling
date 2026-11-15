@@ -99,6 +99,20 @@ export interface CrashNotes {
   platform: string;
   /** Plain lines about what went wrong, such as how the window crashed. */
   events: string[];
+  /** What was cheap to note about how that run ended. Absent in notes from older versions. */
+  facts?: RunFacts;
+}
+
+/** Whole numbers and one yes or no about a run that ended badly, enough to tell a power cut from the system running out of memory. */
+export interface RunFacts {
+  /** About how many minutes the run lasted, up to the last sign of life. */
+  ranMinutes?: number;
+  /** The computer itself started again after the last sign of life (a restart or a power cut). */
+  restarted?: boolean;
+  /** The most Frameling used in that run, in MB, to the nearest 50. */
+  peakMB?: number;
+  /** The least memory the computer had free in that run, in MB, to the nearest 50. */
+  lowestFreeMB?: number;
 }
 
 /** A screen as the computer reports it: sizes in its own units (before any interface size), and its scale factor. */
@@ -144,7 +158,7 @@ export interface ShareBridge {
   onEvent(handler: (e: import('../share/types').ShareEvent) => void): () => void;
 }
 
-/** Connecting to Twitch (src/twitch, src/main/twitch*.ts). The sign-in and the connection live on the desktop side; no token and no viewer's name ever comes up to the page. Missing in the web build. */
+/** Connecting to Twitch (src/twitch, src/main/twitch*.ts). The sign-in and the connection live on the desktop side; no token ever comes up to the page, and no viewer's name unless `listen` is asked for names (a Quill welcome link is on). Missing in the web build. */
 export interface TwitchBridge {
   status(): Promise<import('../shared/twitch').TwitchStatus>;
   /** Starts signing in for these kinds of event. Resolves once there is a code to approve; the approval finishes by itself and arrives as a status. */
@@ -159,7 +173,8 @@ export interface TwitchBridge {
   /** Tells Twitch to cancel the sign-in and forgets it here. `revoked` is false when Twitch could not be reached. */
   signOut(): Promise<{ revoked: boolean }>;
   /** Starts listening (the audience switch does this through the door). */
-  listen(kinds: import('../shared/twitch').TwitchKind[]): Promise<import('../shared/twitch').TwitchStatus>;
+  /** `names`: also read each viewer's display name (only when a Quill welcome link is on and names are allowed). */
+  listen(kinds: import('../shared/twitch').TwitchKind[], names?: boolean): Promise<import('../shared/twitch').TwitchStatus>;
   stop(): Promise<void>;
   rewards(): Promise<import('../shared/twitch').TwitchRewardsAnswer>;
   /** Signs in with the streamer's own Twitch app instead (a client id), or null for this build's own. */
