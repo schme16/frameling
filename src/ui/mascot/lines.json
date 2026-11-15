@@ -972,11 +972,11 @@
       "It's yours now. Draw all over it if you like.",
       "Not as neat as yours. That's rather the point."
     ],
-    "where": "The Quill tab, his shelves: you opened one of his presents (the app picks one)."
+    "where": "The Presents tab of his house: you opened one of his presents (the app picks one)."
   },
   "pet.present.none": {
     "text": "Give me one of your drawings and I'll see what I can do with it.",
-    "where": "The Quill tab, his shelves: the shelf where his presents go, while he has not made one yet."
+    "where": "The Presents tab of his house: the shelf where his presents go, while he has not made one yet."
   },
   "pet.given": {
     "text": [

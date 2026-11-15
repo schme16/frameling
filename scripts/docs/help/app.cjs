@@ -680,7 +680,7 @@ const entries = [
       { rec: 'stop' },
     ],
   },
-  // Quill's shelves in the Quill tab: the drawings he has been given.
+  // The His things tab of Quill's house: the drawings he has been given.
   {
     name: 'quill-things',
     prefs: CALM,
@@ -689,15 +689,17 @@ const entries = [
       wait(800),
       panel('quill-pet'),
       wait(900),
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
       js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
-      js(`document.querySelector('.qt-panel').scrollIntoView({ block: 'start' })`),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
-      tag('.qt-panel'),
+      tag('.qp-panel'),
       shotEl(2),
     ],
   },
-  // The presents Quill makes: his shelf with one on it, above the things you gave him, in the Quill tab.
+  // The Presents tab of Quill's house: a present he has made, with the tab bar above it.
   {
     name: 'quill-presents',
     prefs: CALM,
@@ -706,14 +708,18 @@ const entries = [
       wait(800),
       panel('quill-pet'),
       wait(900),
-      // Give him a couple of frames, then have him make one out of the newest.
+      // Give him a couple of frames on His things, then have him make one out of the newest and show the Presents tab.
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
       js(`(() => { const s = ${F}.store(); for (const f of [0, 8]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
       js(`window.__framelingQuillPet.present()`),
       wait(1800),
-      js(`document.querySelector('.qt-panel').scrollIntoView({ block: 'start' })`),
+      clickText('.qp-tabs .ui-seg', 'Presents'),
+      wait(600),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
-      tag('.qt-panel'),
+      tag('.qp-panel'),
       shotEl(2),
     ],
   },
@@ -729,8 +735,8 @@ const entries = [
       js(`${F}.store().setUi({ color: '#ff6f91' })`),
       wait(1200),
       ...settle,
-      tag('.qp-him'),
-      { rec: '@', el: '[data-shot]', pad: 10, every: 70 },
+      tag('.qp-panel'),
+      { rec: '@', el: '[data-shot]', pad: 0, every: 70 },
       wait(1600),
       clickText('.qp-pat', ''),
       wait(2000),

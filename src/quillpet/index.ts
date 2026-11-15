@@ -15,12 +15,12 @@ let stopGifts: (() => void) | null = null;
 export const quillPetFeature = defineFeature({
   id: 'quill-pet',
   name: 'Quill',
-  about: 'A home for Quill in the right rail: how he is, the things you and he have given each other, and how well you know each other. Off, he is still your guide.',
+  about: 'A house for Quill in the right rail, with three tabs: his room (how he is, and how well you know each other), his things (the drawings you have given him) and the presents he makes you. Off, he is still your guide.',
   optional: true,
   commands: quillPetCommands,
   panels: [quillPetPanel],
   help: quillPetHelp,
-  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.give'] }],
+  menus: [{ menu: 'View', items: ['quillPet.open'] }],
   sections: {
     'quill-pet': {
       blurb: 'Quill, how he is, how well the two of you know each other, and the things you have given each other.',

@@ -120,12 +120,11 @@ describe('getting closer is announced once', () => {
 });
 
 describe('one home for Quill, called Quill everywhere', () => {
-  it('is a single panel and a single View command, with the things and presents inside it', () => {
+  it('is a single panel, with the things and presents as tabs inside it, and a command for each tab', () => {
     const on = ids();
     expect(on.panels).toContain('quill-pet');
     expect(on.panels).not.toContain('quill-things');
-    expect(on.commands).toEqual(expect.arrayContaining(['quillPet.open', 'quillPet.give']));
-    expect(on.commands).not.toContain('quillPet.things');
+    expect(on.commands).toEqual(expect.arrayContaining(['quillPet.open', 'quillPet.things', 'quillPet.presents', 'quillPet.give']));
     expect(on.help).toEqual(expect.arrayContaining(['quill-pet', 'quill-things', 'quill-presents']));
   });
 
@@ -134,9 +133,9 @@ describe('one home for Quill, called Quill everywhere', () => {
     expect(getCommand('quillPet.open')?.label).toBe('Quill');
     expect(quillPetFeature.name).toBe('Quill');
     expect(quillPetHelp.find((t) => t.id === 'quill-pet')?.title).toBe('Quill');
-    // Nothing still calls him by the old names.
+    // Nothing still calls him by the old names. ("His things" is a tab of the house now, not a name for the panel.)
     const everyWord = JSON.stringify([quillPetPanel, getCommand('quillPet.open'), quillPetFeature.name, quillPetFeature.about, quillPetHelp]);
-    expect(everyWord).not.toMatch(/His things|Quill's things|Quill's corner/);
+    expect(everyWord).not.toMatch(/Quill's things|Quill's corner/);
   });
 
   it('takes the whole home away when the pet is off', () => {
