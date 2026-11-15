@@ -23,7 +23,7 @@ import {
   toggleFit,
 } from '../../src/ui/screenFit';
 import { screenKey, type DisplayInfo } from '../../src/ui/screenSize';
-import { acrossFor, railSizes } from '../../src/ui/toolRailWidth';
+import { acrossFor, railSizes, switchRoom } from '../../src/ui/toolRailWidth';
 
 const screen = (w: number, h: number, o: Partial<DisplayInfo> = {}): DisplayInfo => ({ id: 1, width: w, height: h, scaleFactor: 1, workWidth: w, workHeight: h - 40, windowWidth: w, windowHeight: h, ...o });
 
@@ -75,6 +75,15 @@ describe('what tightens', () => {
       expect(fitRailSaved(undefined, sizes, true)).toBe(compactRailWidth(sizes));
       expect(fitRailSaved(undefined, sizes, false)).toBeUndefined();
       expect(fitRailSaved(222, sizes, true)).toBe(222);
+    }
+  });
+  it('the small-screen rail is never narrower than the Pixels | Vectors switch needs, and still four across', () => {
+    for (const look of ['cosy', 'crisp'] as const) {
+      for (const size of ['small', 'medium', 'large'] as const) {
+        const sizes = railSizes(look, size);
+        expect(compactRailWidth(sizes), `${look} ${size}`).toBeGreaterThanOrEqual(switchRoom(look));
+        expect(acrossFor(compactRailWidth(sizes), sizes, 'two'), `${look} ${size}`).toBe(COMPACT_ACROSS);
+      }
     }
   });
   it('panels that start at a workspace size shrink, and a size you dragged to is kept', () => {

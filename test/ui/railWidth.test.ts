@@ -65,7 +65,7 @@ describe('a save from before the rail had a width', () => {
 // ---------------------------------------------------------------- the width itself
 
 import { readFileSync } from 'node:fs';
-import { acrossFor, buttonsAcross, chosenRailWidth, cleanRailWidth, clampRailWidth, columnStep, fitRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_MAX, type RailSizes } from '../../src/ui/toolRailWidth';
+import { acrossFor, buttonsAcross, buttonsRailWidth, switchRoom, chosenRailWidth, cleanRailWidth, clampRailWidth, columnStep, fitRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_MAX, type RailSizes } from '../../src/ui/toolRailWidth';
 import { sanitizeWorkspace } from '../../src/ui/dockModel';
 
 const cosy = railSizes('cosy', 'medium');
@@ -94,9 +94,14 @@ describe('the limits', () => {
   });
 });
 
-describe('the natural width is what the rail already was', () => {
-  it('two across is 94px and one per group is 50px in the cosy look at the middle size', () => {
-    expect(naturalRailWidth(cosy, 'two')).toBe(94);
+// The natural width with the names off: the buttons (94px), widened to the Pixels | Vectors switch above them.
+const NAT = naturalRailWidth(cosy, 'two');
+
+describe('the natural width is the buttons, widened to the switch above them', () => {
+  it('two across is the switch\'s room (wider than its 94px of buttons) and one per group is 50px in the cosy look at the middle size', () => {
+    expect(buttonsRailWidth(cosy, 'two')).toBe(94);
+    expect(NAT).toBe(Math.max(94, switchRoom('cosy')));
+    expect(NAT).toBeGreaterThan(94);
     expect(naturalRailWidth(cosy, 'stacked')).toBe(50);
   });
   it('the sizes agree with the rail\'s CSS', () => {
@@ -165,23 +170,23 @@ describe('fitting the group names', () => {
     expect(fitRailWidth(190.2, cosy, 'two')).toBe(191);
   });
   it('is never narrower than the natural width, and never past the widest', () => {
-    expect(fitRailWidth(40, cosy, 'two')).toBe(94);
+    expect(fitRailWidth(40, cosy, 'two')).toBe(NAT);
     expect(fitRailWidth(40, cosy, 'stacked')).toBe(50);
     expect(fitRailWidth(900, cosy, 'two')).toBe(280);
-    expect(fitRailWidth(NaN, cosy, 'two')).toBe(94);
+    expect(fitRailWidth(NaN, cosy, 'two')).toBe(NAT);
   });
 });
 
 describe('what is kept as a width', () => {
   it('the natural width is kept as no width, so the rail goes on following its style and size', () => {
-    expect(chosenRailWidth(94, cosy, 'two')).toBeUndefined();
+    expect(chosenRailWidth(NAT, cosy, 'two')).toBeUndefined();
     expect(chosenRailWidth(50, cosy, 'stacked')).toBeUndefined();
     expect(chosenRailWidth(94, cosy, 'stacked')).toBe(94);
     expect(chosenRailWidth(200, cosy, 'two')).toBe(200);
     expect(chosenRailWidth(5000, cosy, 'two')).toBe(280);
   });
   it('a width of nothing is the natural one', () => {
-    expect(railWidthNow(undefined, cosy, 'two')).toBe(94);
+    expect(railWidthNow(undefined, cosy, 'two')).toBe(NAT);
     expect(railWidthNow(undefined, cosy, 'stacked')).toBe(50);
     expect(railWidthNow(200, cosy, 'two')).toBe(200);
     expect(railWidthNow(9, cosy, 'two')).toBe(50);

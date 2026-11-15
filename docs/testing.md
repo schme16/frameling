@@ -1180,7 +1180,7 @@ saves a picture of each open menu.
 
 ## The tool rail's width and names: scripts/e2e/rail-width.cjs
 
-Checks the rail the way a new person meets it, in the real app. For both looks, the three tool sizes, the draw, animate and
+Checks the rail the way a new person meets it, in the real app. It also reads the Pixels | Vectors switch at the top of the rail (each word's room against how wide it is drawn) and counts a word cut short as a failure. For both looks, the three tool sizes, the draw, animate and
 pixel workspaces and the interface sizes 100, 125, 150 and 200 per cent, in a 1280 x 720 window, it reads the rail's width,
 how many group names sit on two lines, which are cut short, and the room the canvas keeps (at least 280 x 190). Then it gives
 three groups names of your own and checks they drop to two lines before anything is cut, and that only a third line or one
@@ -1191,10 +1191,13 @@ canvas is too small.
 npm run build && SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/rail-width.cjs
 ```
 
-`RAILW_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `RAILW_SIZE=<w>x<h>`
+`RAILW_MODE=names|slim|stacked` picks the rail style (group names showing, the names off, or one button per group; run all three), `RAILW_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `RAILW_SIZE=<w>x<h>`
 sets the window, `RAILW_QUICK=1` runs one look and one workspace, `RAILW_JSON=<file>` saves every row. The starting width
 itself is worked out in `src/ui/toolRailWidth.ts` from the built-in group names (`test/ui/railStart.test.ts` holds it to the
-widths the real rail measured), so add a longer built-in group name and the rail starts wider by itself.
+widths the real rail measured), so add a longer built-in group name and the rail starts wider by itself. The switch is worked
+out the same way (`switchRoom`, per look, since the crisp look's font is wider), and the natural width is the largest of the buttons,
+the switch and, with names showing, the longest name. The one-per-group rail is one button wide and shows the switch as two icons;
+so does a rail pulled too narrow for the words (class `is-switch-short`), instead of a word cut to "Vect...".
 
 ## Quill's hello, page by page: scripts/e2e/hello-fit.cjs
 
