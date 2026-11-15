@@ -61,7 +61,7 @@ export function StreamOverlayPrefsRow() {
           <strong>Address</strong>
           <span>{safe ? 'Stream-safe mode is on, so the address stays hidden. You can still copy it.' : 'Hidden until you press Show. It has a secret in it, so keep it off stream.'}</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <code className="sd-code sd-key" data-testid="streamoverlay.address" aria-label={shown === null ? 'The overlay address, hidden' : 'The overlay address, shown'}>
             {shown === null ? maskedAddress(door.running ? door.address : '', door.port) : displaySecret(shown)}
           </code>
@@ -90,7 +90,7 @@ export function StreamOverlayPrefsRow() {
           <strong>Check it works</strong>
           <span>Shows a made-up Quill, banner and prompt for a few seconds.</span>
         </div>
-        <div className="ui-pref-control sd-control">
+        <div className="ui-pref-control">
           <button type="button" className="ui-btn ui-btn-quiet" data-testid="streamoverlay.test" onClick={() => startOverlayTest()} disabled={!door.running}>
             Show a test
           </button>

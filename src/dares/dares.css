@@ -150,10 +150,3 @@
   font-weight: 700;
   opacity: 0.75;
 }
-.dr-prefs .ui-pref-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
