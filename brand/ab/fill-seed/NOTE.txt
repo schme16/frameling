@@ -1,0 +1,4 @@
+A = before (development as of 8e561142), B = after (this branch). Same pan, same Medium gap setting, same click in the narrow handle.
+handle-fits: a 14px break in the rim. A refuses with "isn't closed in"; B fills.
+handle-cramped: a 24px break the handle has no room to close. A gives the "bigger gap setting" advice; B says there isn't room and to click somewhere roomier.
+Made by scripts/docs/ab-fill-seed/fill-seed.cjs.
