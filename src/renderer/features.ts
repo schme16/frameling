@@ -19,6 +19,7 @@ import '../io';
 import '../aseprite';
 import '../import';
 import '../export';
+import '../timelapse';
 import '../effects';
 import '../quests';
 import '../popout';

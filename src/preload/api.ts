@@ -68,8 +68,8 @@ export interface KeptAutosave {
 
 export type { SaveChoice };
 
-/** What the app keeps in its own folder: installed plugins, your templates, and version history. */
-export type LibraryKind = 'plugins' | 'templates' | 'versions' | 'versions-index';
+/** What the app keeps in its own folder: installed plugins, your templates, version history and the pictures of a timelapse. */
+export type LibraryKind = 'plugins' | 'templates' | 'versions' | 'versions-index' | 'timelapse';
 
 export interface LibraryEntry {
   id: string;

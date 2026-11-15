@@ -22,6 +22,12 @@ export interface RunContext {
   videoCodec?: VideoCodec | null;
   /** Whether the chosen video codec can keep a see-through background. */
   videoAlpha?: boolean;
+  /**
+   * Pictures that are already made (a timelapse's), instead of frames drawn from `doc`. `doc` then only says how many
+   * there are (its length), how fast they play (its fps) and what the file is called; the formats that wait for
+   * pictures (MP4, WebM, GIF) read these, so the result is a normal export with the usual settings.
+   */
+  frames?: { width: number; height: number; load: (i: number) => Promise<{ width: number; height: number; pixels: Uint8ClampedArray }> };
   appVersion?: string;
   /** Turns an MP4's Opus sound into AAC (ffmpeg on the desktop), or gives null. */
   toAac?: (bytes: Uint8Array) => Promise<Uint8Array | null>;

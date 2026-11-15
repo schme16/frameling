@@ -1394,5 +1394,64 @@
   "choice.workspace.follow.never.detail": {
     "text": "Keep my layout as it is. The workspace lines in the View menu switch any time.",
     "where": "Dialog and Preferences: the small line under the \"never\" answer in \"Workspace follows the drawing\"."
-  }
+  },
+  "choice.timelapse.startAgain.title": { "text": "Timelapse with old pictures waiting", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.timelapse.startAgain.question": {
+    "text": "You still have pictures from an earlier timelapse. Carry on with them, or start a new one?",
+    "where": "The question the \"Timelapse with old pictures waiting\" dialog asks."
+  },
+  "choice.timelapse.startAgain.continue.label": { "text": "Carry on", "where": "Dialog and Preferences: the button for the answer \"continue\" in \"Timelapse with old pictures waiting\"." },
+  "choice.timelapse.startAgain.continue.detail": {
+    "text": "New pictures are added to the end of the last timelapse.",
+    "where": "Dialog and Preferences: the small line under the \"continue\" answer in \"Timelapse with old pictures waiting\"."
+  },
+  "choice.timelapse.startAgain.continue.did": {
+    "text": "Carried on with the last timelapse.",
+    "where": "Toast when \"continue\" is used without asking (\"Timelapse with old pictures waiting\"), in the past tense."
+  },
+  "choice.timelapse.startAgain.fresh.label": { "text": "Start a new one", "where": "Dialog and Preferences: the button for the answer \"fresh\" in \"Timelapse with old pictures waiting\"." },
+  "choice.timelapse.startAgain.fresh.detail": {
+    "text": "The old pictures are thrown away.",
+    "where": "Dialog and Preferences: the small line under the \"fresh\" answer in \"Timelapse with old pictures waiting\"."
+  },
+  "choice.timelapse.startAgain.fresh.did": {
+    "text": "Started a new timelapse and threw the old pictures away.",
+    "where": "Toast when \"fresh\" is used without asking (\"Timelapse with old pictures waiting\"), in the past tense."
+  },
+  "choice.timelapse.afterExport.title": { "text": "Timelapse pictures after the video is made", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.timelapse.afterExport.question": {
+    "text": "Your timelapse video is saved. Keep the pictures, in case you want another length or kind of file, or clear them to free the space?",
+    "where": "The question the \"Timelapse pictures after the video is made\" dialog asks."
+  },
+  "choice.timelapse.afterExport.keep.label": { "text": "Keep them", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Timelapse pictures after the video is made\"." },
+  "choice.timelapse.afterExport.keep.detail": {
+    "text": "You can make another video from them any time, until the next timelapse starts.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Timelapse pictures after the video is made\"."
+  },
+  "choice.timelapse.afterExport.keep.did": {
+    "text": "Kept the timelapse pictures.",
+    "where": "Toast when \"keep\" is used without asking (\"Timelapse pictures after the video is made\"), in the past tense."
+  },
+  "choice.timelapse.afterExport.clear.label": { "text": "Clear them", "where": "Dialog and Preferences: the button for the answer \"clear\" in \"Timelapse pictures after the video is made\"." },
+  "choice.timelapse.afterExport.clear.detail": {
+    "text": "The pictures are thrown away as soon as the video is saved.",
+    "where": "Dialog and Preferences: the small line under the \"clear\" answer in \"Timelapse pictures after the video is made\"."
+  },
+  "choice.timelapse.afterExport.clear.did": {
+    "text": "Cleared the timelapse pictures.",
+    "where": "Toast when \"clear\" is used without asking (\"Timelapse pictures after the video is made\"), in the past tense."
+  },
+  "choice.timelapse.autoStart.title": { "text": "Timelapse when a drawing opens", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.timelapse.autoStart.question": { "text": "Start a timelapse every time a drawing is opened?", "where": "The question the \"Timelapse when a drawing opens\" dialog asks." },
+  "choice.timelapse.autoStart.off.label": { "text": "No, I will press Record", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Timelapse when a drawing opens\"." },
+  "choice.timelapse.autoStart.off.detail": {
+    "text": "Nothing is recorded until you start it.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Timelapse when a drawing opens\"."
+  },
+  "choice.timelapse.autoStart.on.label": { "text": "Yes, start recording", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Timelapse when a drawing opens\"." },
+  "choice.timelapse.autoStart.on.detail": {
+    "text": "A badge shows while it records, and you can stop it any time.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Timelapse when a drawing opens\"."
+  },
+  "choice.timelapse.autoStart.on.did": { "text": "Started recording a timelapse.", "where": "Toast when \"on\" is used without asking (\"Timelapse when a drawing opens\"), in the past tense." }
 }

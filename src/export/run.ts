@@ -28,6 +28,16 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
   const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), target);
   const rgbaAt = (i: number) => readPixels(frameAt(i));
   const step = (done: number, label: string) => onProgress({ done, total: plan.count, label });
-  const env: RunEnv = { plan, bg, crisp, canvas, frameAt, rgbaAt, step };
+  const src = ctx.frames;
+  // Made pictures are put on the shared canvas, so formats that read the canvas see them as they would a drawn frame.
+  const frameAtAsync = src
+    ? async (i: number) => {
+        const img = await src.load(i);
+        canvas.getContext('2d')!.putImageData(new ImageData(img.pixels as Uint8ClampedArray<ArrayBuffer>, img.width, img.height), 0, 0);
+        return canvas;
+      }
+    : async (i: number) => frameAt(i);
+  const rgbaAtAsync = src ? (i: number) => src.load(i) : async (i: number) => rgbaAt(i);
+  const env: RunEnv = { plan, bg, crisp, canvas, frameAt, rgbaAt, frameAtAsync, rgbaAtAsync, step };
   return (await def.load()).run(ctx, env);
 }

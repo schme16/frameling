@@ -1,0 +1,1 @@
+timelapse.mp4: a scripted drawing session (29 pictures over 20 s of real mouse drawing) made into a 12 second H.264 yuv420p 1280x720 video through the app's own MP4 export; timelapse-last-frame.png is its final frame. Made by scripts/e2e/timelapse.cjs under xvfb.
