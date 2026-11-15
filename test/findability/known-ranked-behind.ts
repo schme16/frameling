@@ -23,5 +23,4 @@ export const STREAM_WORDS: string[] = ['stream', 'obs', 'audience', 'twitch', 'v
 /** Plain words where more than one of the top five is a stream command, with how many. */
 export const CROWDED_WORDS: Record<string, { count: number; why: string }> = {
   address: { count: 3, why: 'Three stream commands: the two Copy the address and a Roll. Nobody else has an address, so this is the palette being right.' },
-  connect: { count: 2, why: 'Connect Twitch is right, but an OBS command comes along with it.' },
 };
