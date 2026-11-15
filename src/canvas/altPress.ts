@@ -40,7 +40,7 @@ export function altPressReleased(state: AltPress): 'pick' | 'nothing' {
  * transform scales from the pivot, boards duplicate, the camera tool turns the camera, the pen pulls a handle out, weights swap more and less, the
  * eyedropper reads one layer, zoom zooms out). The hand tool pans.
  */
-export const ALT_TURN_TOOLS: ReadonlySet<string> = new Set(['pencil', 'brush', 'eraser', 'fill', 'shade', 'dither', 'spray', 'gradient', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge']);
+export const ALT_TURN_TOOLS: ReadonlySet<string> = new Set(['pencil', 'brush', 'eraser', 'fill', 'shade', 'dither', 'spray', 'gradient', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal']);
 
 /** Does this press start the pick-or-turn wait? Alt on its own (no Shift, Ctrl or Cmd), the main button, a free tool. */
 export function altTurnPress(o: { alt: boolean; shift: boolean; mod: boolean; button: number; tool: string; pointerType: string }): boolean {

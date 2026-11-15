@@ -29,6 +29,8 @@ import.meta.glob(['./fill*.ts', '!./**/*.bodies.ts'], { eager: true });
 import '../pixel';
 // Soft paint (airbrush, soft brush, soft eraser, highlighter, smudge) on pixel layers. After the pixel tools it builds on.
 import '../soft';
+// Chalk and charcoal on pixel layers, drawing onto paper. After soft paint, whose edge choice it shares.
+import '../dry';
 import '../select';
 import '../clipboard';
 import '../transform';

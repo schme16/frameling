@@ -2254,9 +2254,9 @@
     "text": "Copied a message with the link and the four words.",
     "where": "Toast when \"message\" is used without asking (\"What Copy the link copies\"), in the past tense."
   },
-  "choice.soft.edge.title": { "text": "Soft paint with Pixel perfect on", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.soft.edge.title": { "text": "Soft paint and charcoal with Pixel perfect on", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
   "choice.soft.edge.question": {
-    "text": "Pixel perfect is on, which keeps every pixel all or nothing. How should the soft brushes make a soft edge?",
+    "text": "Pixel perfect is on, which keeps every pixel all or nothing. How should the soft brushes, charcoal and chalk make a soft edge or a grain?",
     "where": "The question the \"Soft paint with Pixel perfect on\" dialog asks."
   },
   "choice.soft.edge.crisp.label": { "text": "Dither it, keep pixels crisp", "where": "Dialog and Preferences: the button for the answer \"crisp\" in \"Soft paint with Pixel perfect on\"." },

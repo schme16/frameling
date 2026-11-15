@@ -18,13 +18,13 @@ export interface SoftParams {
   edge: EdgeMode;
 }
 
-interface Pt {
+export interface Pt {
   x: number;
   y: number;
 }
 
 /** Walks a pointer's path in even steps, so the dabs are the same distance apart however fast the hand moves. */
-class Walker {
+export class Walker {
   private last: Pt | null = null;
   private owed = 0;
 
@@ -52,7 +52,7 @@ class Walker {
   }
 }
 
-function palettePicker(doc: Doc, layer: PixelLayer): ((c: number[] | Uint8Array | Uint8ClampedArray) => void) | null {
+export function palettePicker(doc: Doc, layer: PixelLayer): ((c: number[] | Uint8Array | Uint8ClampedArray) => void) | null {
   if (!layer.paletteLock) return null;
   const rgb = paletteRgb(docPalette(doc).colors);
   if (!rgb.length) return null;

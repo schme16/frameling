@@ -1,0 +1,44 @@
+Chalk and charcoal on pixel layers (board card: chalk-charcoal-look). Branch wip/charcoal.
+
+What this is: a new pixel-layer tool, Chalk and charcoal (Alt+Shift+T), on the soft paint engine's pixel session. Pigment catches on the
+high points of a paper texture and skips the low ones. Light pressure reaches only the peaks (specks); hard pressure fills the pits;
+a second pass takes hold where the first only touched the peaks. The paper is a tile held still against the page (five papers:
+smooth, fine, medium, laid, rough), so strokes over each other meet the same bumps. Nine media: vine charcoal, compressed charcoal,
+chalk, soft pastel, oil pastel, crayon, sketch pencil, soft pencil (6B), colour pencil.
+
+Every medium, two themes:
+  <medium>-medium-{dark,light}.png         four marks: firm stroke, light stroke, pen pressure ramp, three passes over each other
+  ball-<medium>-medium-{dark,light}.png    the same medium shading a ball with hatching, so it is judged as a drawing and not test marks
+  compressed-charcoal-{smooth,fine,laid,rough}-{dark,light}.png   the four marks on each other paper (medium is above)
+  compare-<medium>-{dark,light}.png        Frameling's marks, the ball, and a scan of the real medium at about the same size
+  overview-{dark,light}.png                all nine media's marks on one sheet
+  ref/<medium>.jpg                         the reference crops used in the compare sheets
+
+Dark theme is chalk-coloured ink on dark paper, light theme is dark ink on cream paper; the colour media keep their colour.
+Strokes are real pointer events with a pretend pen (pressure), on a 400 x 400 pixel sprite, at 100% zoom.
+
+What it was judged against, plainly: real scans, not Krita or Clip Studio. Neither is installed here and I could not get a screenshot of their
+brushes, so the "same brush in Krita or Clip Studio" comparison was NOT done. The references:
+  vine charcoal        Edgar Degas, jockey, charcoal on paper (public domain)
+  compressed charcoal  Georges Seurat, L'Echo, conte crayon on paper (public domain)
+  chalk                no reference kept: the only free scan was CC BY 2.0, and this repo is MIT (see below)
+  soft pastel          Edgar Degas, Ballet Rehearsal, pastel, Pushkin Museum (public domain)
+  oil pastel, crayon   no reference kept: the only free wax crayon scan was CC BY-SA 4.0, and this repo is MIT (see below)
+  sketch pencil        Edvard Munch, pencil sketch of Anna Dahl, 1882 (public domain)
+  soft pencil          the same sketch, the hatched jacket
+  colour pencil        Gabriel de Saint-Aubin, putti, graphite and red pencil (public domain)
+Every reference crop in ref/ is PUBLIC DOMAIN. The two Creative Commons ones the first pass used (a CC BY 2.0
+blackboard photo and a CC BY-SA 4.0 crayon scan) were taken out along with their compare sheets, because Frameling
+is MIT and a share-alike image in an MIT repository puts its own terms on anything built from it. So chalk, oil
+pastel and crayon have no compare sheet; their own strips and ball shots are still here.
+
+Reading the sheets: compressed charcoal against Seurat is the closest match (the same grain over paper tooth, tone built from pressure and
+passes). Vine charcoal against Degas has the right dusty, light stroke but is speckled where the real stroke is smoky, because the grain
+here is whole pixels where a scan has sub-pixel grain. Chalk reads as chalk on a board but is thinner and less streaky than the thick
+real stick. Oil pastel and crayon are the weakest references (one wax crayon photo). Pencils read as pencil lines with a broken, toothy edge.
+
+Made with: npm run build; then
+  PAPER=medium SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-charcoal --out <dir>
+  (PAPER=smooth|fine|laid|rough ONLY=compressed-charcoal for the paper sheets; ONLY=<media> SIZE=<px> narrow it)
+  python3 scripts/ab/charcoal-compare.py <dir> <folder of the reference originals> brand/ab/charcoal
+The first chalk and charcoal pass (brand/ab/chalk, the vector grain trials) was a dead end and its code is gone: tip.trial, its tests and its harness are removed.

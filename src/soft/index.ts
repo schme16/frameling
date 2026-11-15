@@ -10,13 +10,13 @@ import { SOFT_EDGE_CHOICE } from './choices';
 import { edgeAnswered, SOFT_SPECS } from './tools';
 
 // The first time a soft tool is picked with Pixel perfect on (and the layer has no locked palette to decide for it),
-// ask how the soft edge should be made. Never in the screenshot harness, and never mid-stroke.
+// ask how the soft edge (or charcoal's grain) should be made. Never in the screenshot harness, and never mid-stroke.
 let lastTool = '';
 store().subscribe(() => {
   const { ui, doc } = store().get();
   if (ui.tool === lastTool) return;
   lastTool = ui.tool;
-  if (!SOFT_SPECS.some((s) => s.kind === ui.tool)) return;
+  if (!SOFT_SPECS.some((s) => s.kind === ui.tool) && ui.tool !== 'charcoal') return;
   if (edgeAnswered() || inHarness() || !getToolSettings().pixelPerfect) return;
   const layer = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   if (!layer || layer.kind !== 'pixel' || layer.paletteLock) return;

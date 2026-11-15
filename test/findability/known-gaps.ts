@@ -25,8 +25,9 @@ export const CEILINGS = {
    * by default), counted per state. Slot twins (Select and Pixel select) are not counted, they stand in for each other.
    * The palette still lists them greyed with a reason, but the rail itself says nothing.
    */
+  // One more since chalk and charcoal, which like the soft paint tools works on pixel layers only (paper tooth is pixels, not a vector shape).
   // Five more since soft paint: the Soft brush, Airbrush, Highlighter, Soft eraser and Smudge work on pixel layers only (a vector shape cannot fade at its edge). The mode line over the rail names them, and picking one flips to a pixel layer.
-  railToolsVanish: { blank: 15, vector: 15, 'vector-selected': 15, pixel: 8, tilemap: 37, 'symbol-open': 15, playing: 15, 'has-clips': 15 } as Record<string, number>,
+  railToolsVanish: { blank: 16, vector: 16, 'vector-selected': 16, pixel: 8, tilemap: 38, 'symbol-open': 16, playing: 16, 'has-clips': 16 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   menuCommandsVanish: { blank: 7, vector: 7, 'vector-selected': 7, pixel: 6, tilemap: 23, 'symbol-open': 7, playing: 7, 'has-clips': 7 } as Record<string, number>,
 };

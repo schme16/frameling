@@ -57,7 +57,7 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pack keep their group when you add them.
 
 help:brush-presets help:tool-options`,
-  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line.
+  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. The chalk and charcoal tips are shapes with holes cut in them. For grain that catches on paper like the real thing, draw on a pixel layer with [Chalk and charcoal](help:chalk-charcoal).
 
 **Pick one:** choose the **Brush** tool (**B**). Under the preview, the **Tip** row has Plain, Chalk, Charcoal, Watercolour and Stamp, then four you build yourself: [Pen nib, Along the line, Edged and Bristles](help:brush-own). Click one and draw. The preview shows what you'll get. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 

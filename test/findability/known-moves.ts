@@ -28,5 +28,5 @@ export interface Move {
 }
 
 export const MOVES: Move[] = [
-  { id: 'tools.spray', what: 'place', from: 'Draw > Tools | Pixel', to: 'Draw > Tools | Pixel > Spray and soft paint', why: 'The Pixel menu was at its 30 entry limit, and the five soft paint tools needed a place. The Spray is the nearest kin, so it sits with them in one submenu, Spray and soft paint. It is still on the tool rail and in the palette as before.' },
+  { id: 'tools.spray', what: 'place', from: 'Draw > Tools | Pixel', to: 'Draw > Tools | Pixel > Spray, soft paint and charcoal', why: 'The Pixel menu was at its 30 entry limit, and the five soft paint tools needed a place. The Spray is the nearest kin, so it sits with them in one submenu, now called Spray, soft paint and charcoal because chalk and charcoal joined it. It is still on the tool rail and in the palette as before.' },
 ];
