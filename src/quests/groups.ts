@@ -7,6 +7,7 @@ export const QUEST_GROUPS = [
   { id: 'motion', title: 'Motion' },
   { id: 'rigging', title: 'Rigging and effects' },
   { id: 'sharing', title: 'Sharing' },
+  { id: 'streaming', title: 'Streaming' },
   { id: 'more', title: 'More quests' },
 ] as const;
 
@@ -26,6 +27,7 @@ const BY_QUEST: Record<string, QuestGroupId> = {
   'make-it-glow': 'rigging',
   'particle-party': 'rigging',
   'share-it': 'sharing',
+  'go-live': 'streaming',
 };
 
 export function questGroupOf(q: QuestInfo): QuestGroupId {

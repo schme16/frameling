@@ -32,8 +32,12 @@ export const engine = new QuestEngine({
   storage: localStorageOrNull(),
 });
 
-// A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play").
-setChoiceDeferral(() => questProgress.get().active !== null);
+// A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play"), unless the
+// lesson is about that question (Go live is the first time audience features ask how careful to be).
+setChoiceDeferral((id) => {
+  const active = questProgress.get().active;
+  return active !== null && !(getFullQuest(active)?.asks ?? []).includes(id);
+});
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let watch: CommandWatch | null = null;

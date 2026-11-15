@@ -47,11 +47,14 @@ export function StreamingPage({ sharing }: { sharing: ReactNode }) {
         <div className="ui-pref-row streaming-start" data-testid="streaming-start">
           <div className="ui-pref-text">
             <strong>Getting your viewers taking part</strong>
-            <span>Twitch events need only a connection. Votes, guesses and typed prompts need a chat bot as well. The whole route, in order, is one page.</span>
+            <span>Twitch events need only a connection. Votes, guesses and typed prompts need a chat bot as well. Read the whole route on one page, or have Quill walk you through setting it up.</span>
           </div>
           <div className="ui-pref-control">
             <button type="button" className="ui-btn" data-testid="streaming-start-help" onClick={() => openHelp('viewers-take-part')}>
               <Icon name="help" size={14} /> Show me how
+            </button>
+            <button type="button" className="ui-btn ui-btn-primary" data-testid="streaming-start-quest" onClick={() => void getCommand('audience.walk')?.run()}>
+              <Icon name="quest" size={14} /> Walk me through it
             </button>
           </div>
         </div>

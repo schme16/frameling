@@ -144,6 +144,9 @@ export function pickedButOff(interests: readonly Interest[], isOn: (feature: str
 /** Everyone starts with this one: the others open up after it. */
 export const FIRST_QUEST = 'first-animation';
 
+/** A streamer's own quest: it is offered once the first one is done, ahead of the quests in their kind of art. */
+export const STREAM_QUEST = 'go-live';
+
 /**
  * What to suggest for the picks: the first pick (in card order) picks the workspace and the template, help topics
  * come from every pick, and the quest is the 60-second one until that's done (sprite and tile people get their own first).
@@ -161,7 +164,11 @@ export function planFor(interests: readonly Interest[], completedQuests: readonl
   // Sprite and tile people start with a quest in their own kind of art.
   const leadId = picks[0];
   if (leadId && OWN_FIRST.includes(leadId) && !completedQuests.includes(lead.quest)) quest = lead.quest;
-  else if (completedQuests.includes(FIRST_QUEST)) quest = picks.map((id) => PLANS[id].quest).find((q) => !completedQuests.includes(q)) ?? lead.quest;
+  else if (completedQuests.includes(FIRST_QUEST)) {
+    const next = picks.map((id) => PLANS[id].quest);
+    if (all.includes('stream')) next.unshift(STREAM_QUEST);
+    quest = next.find((q) => !completedQuests.includes(q)) ?? lead.quest;
+  }
   return { workspace: lead.workspace, template: lead.template, quest, help: help.slice(0, 4), ...(lead.blank ? { blank: lead.blank } : {}), ...(lead.panel ? { panel: lead.panel } : {}) };
 }
 

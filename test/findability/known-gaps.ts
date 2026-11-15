@@ -89,12 +89,14 @@ export const STREAM_LOAD = {
   /** 76: What can your viewers see? (audience.view), the one answer that decides whether secret words, pulled prompts and unread chat words are covered. It has to be findable by a streamer who wants to change it, in the palette and in the Audience features menu, and it goes with the gate commands so it leaves when the streaming tools are tucked away. */
   /** 77: Stream control (streamboard.toggle), the window of buttons for a second screen. It is the one way to open the board, so it has to be in the palette and the Streaming menu, found by "stream control", "second screen" and "buttons". There is no second command: moving the buttons and putting them back are buttons inside the window. */
   /** 78: Try: Quill welcomes somebody new (quillreacts.welcome), the one way to see a welcome without waiting for somebody to follow. One command, not four: each press shows the next kind (a follower, a subscriber, a cheer, a raid), and Try it on a Twitch link shows any one. Searching "welcome", "greet" or "new follower" has to find it. */
-  palette: 78,
+  /** 79: Walk me through going live (audience.walk), the Go live quest. The route page is for reading and the quest is for doing it with the buttons rung and each part checked, and somebody who asks "how do I set up my stream" or "go live" has to find it in the palette, in the Streaming menu beside the route page, and on the Streaming tab. It goes with the gate commands so it leaves when the streaming tools are tucked away. */
+  palette: 79,
   /** Commands in the menus (View holds all of them). 75, the same three commands as the palette: the two in the Actions door submenu and the first entry of the Streaming menu. */
   /** 76: the same command, in the Audience features menu next to the switch it belongs with. */
   /** 77: Stream control, in the Streaming menu with the audience switch and the card it sits beside. */
   /** 78: Try: Quill welcomes somebody new, in Try Quill reacting to chat beside the other Try commands. */
-  menu: 78,
+  /** 79: Walk me through going live, in the Streaming menu under How to get your viewers taking part. */
+  menu: 79,
   /** Switches in Preferences > Features. */
   switches: 9,
   /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */

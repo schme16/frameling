@@ -61,6 +61,7 @@ What's in `test/`, by folder:
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
 | `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
+| `golive/` | The Go live quest: the checks as pure functions (`logic.test.ts`), and the quest in the real app (`quest.test.tsx`): offered only while the streaming tools are on, asks audience features' two questions itself instead of deferring them, waits for a copy or a save to really happen, and agrees with the palette command, the Streaming menu, the Streaming tab button and the help route. |
 | `rig/` | Bone maths, posing, caches, stretch, weights. |
 | `select/` | Pixel selection, masks, vector lasso. |
 | `clipboard/` | Copy and paste with other apps: which paste it is, where a picture lands and how big, shrinking, hard edges, the words said, the picture symbol (`plan.test.ts`, `picture-symbol.test.ts`), and pixels pasted on a vector layer through the real commands (`paste-across.test.ts`). Anything that needs a canvas or the real clipboard is in `scripts/e2e/clipboard.cjs`. |
@@ -891,6 +892,10 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   per theme. The help runner skips the `stream-control` entry (`scripts/docs/help/stream-control.cjs`). The pure rules (the
   buttons, the layout, what the board is told, what a press does) are in `test/streamboard/`. Not testable on the virtual screen:
   there is no window manager, so "a press lands while another window has the focus" (`acceptFirstMouse`) and "stays on top" are not seen.
+- `scripts/docs/ab-golive-quest/run.sh` walks the Go live quest as a person would, in both themes, in the harness (a pretend OBS and
+  Twitch from the `?debug` hooks, the door and overlay from `scripts/ipc-stubs.cjs`, with `SHOT_STREAM_OK=1` so a copy and the Save
+  dialog work). It writes `brand/ab/golive-quest/golive-quest-<theme>.mp4` (H.264) and a picture per step, the two questions and
+  the badge. `npm run build` first. It cannot show a real OBS taking the overlay, or Twitch's approval page.
 - `scripts/perf/capture-live.cjs` is what the capture view costs the drawing window while you draw, and how live it is, per tool
   (brush, pencil, eraser, rectangle, line, ellipse, star, transform move) on a vector and a pixel document: real mouse events,
   the window closed and open alternately, the drawing window's main-thread time over the stroke (DevTools `TaskDuration`) and

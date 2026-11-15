@@ -168,6 +168,16 @@ export const QUEST_CATALOG: QuestInfo[] = [
     badge: { id: 'page-turner', name: questWord('quest.turn-the-page.badge'), icon: 'rotate', color: '--sky' },
     requires: [],
   },
+  {
+    id: 'go-live',
+    title: questWord('quest.go-live.title'),
+    summary: questWord('quest.go-live.summary'),
+    minutes: 6,
+    icon: 'live',
+    badge: { id: 'showrunner', name: questWord('quest.go-live.badge'), icon: 'live', color: '--rose' },
+    features: ['stream-door', 'stream-overlay', 'stream-twitch'],
+    asks: ['audience.strictness', 'audience.view'],
+  },
 ];
 
 for (const q of QUEST_CATALOG) registerQuest(q);

@@ -3,6 +3,7 @@ import { desktop } from '../io/desktop';
 import { toast } from '../ui/toast';
 import { doorStatus } from './state';
 import { testCommand } from './testCommand';
+import { noteStreamMark } from '../features/streamMarks';
 
 async function toClipboard(text: string): Promise<boolean> {
   try {
@@ -40,6 +41,7 @@ export async function copyAddress(): Promise<boolean> {
     toast('The actions door is not open, so there is no address yet.', { kind: 'warn' });
     return false;
   }
+  noteStreamMark('doorAddress');
   toast(`Copied ${a}. Paste it into your stream tool.`, { kind: 'success' });
   return true;
 }

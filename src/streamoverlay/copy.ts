@@ -1,6 +1,7 @@
 // Getting the overlay's address to the clipboard, or to the screen for a moment, at the moment it is needed.
 import { desktop } from '../io/desktop';
 import { toast } from '../ui/toast';
+import { noteStreamMark } from '../features/streamMarks';
 
 async function toClipboard(text: string): Promise<boolean> {
   try {
@@ -32,6 +33,7 @@ export async function copyOverlayUrl(): Promise<boolean> {
     toast('Could not copy the overlay address.', { kind: 'warn' });
     return false;
   }
+  noteStreamMark('overlayAddress');
   toast('Copied the overlay address. It stays hidden on screen. In OBS: Sources, plus, Browser, paste it in the URL box.', { kind: 'success' });
   return true;
 }
