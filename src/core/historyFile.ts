@@ -11,9 +11,9 @@
  * typed array they refer to. A cap in bytes keeps the newest steps and drops the oldest, so history can never make a
  * file enormous. Plain data and immer only: no DOM.
  */
-import { applyPatches, type Patch } from 'immer';
+import { applyPatches, produceWithPatches, type Patch } from 'immer';
 import type { Doc, DocHistory, PixelDrawing } from './format';
-import { HISTORY_BYTES, historyStepsNow, weighPatches, type HistoryEntry, type RestoredHistory, type RestoredStep } from './store';
+import { HISTORY_BYTES, historyStepsNow, runStep, weighPatches, type HistoryEntry, type RestoredHistory, type RestoredStep } from './store';
 
 /**
  * The most a file's history may hold, measured as the steps' text plus their pixel bytes before the file is zipped.
@@ -293,7 +293,7 @@ interface Encoded {
 
 /** A step's encoding, kept so saving again does not look at every pixel again. Checked against what the step holds now. */
 const encoded = new WeakMap<HistoryEntry, { sig: string; enc: Encoded }>();
-const sigOf = (e: HistoryEntry) => `${e.patches.length}:${e.inverse.length}:${e.at}:${e.label}:${e.view ? 1 : 0}`;
+const sigOf = (e: HistoryEntry) => `${e.patches.length}:${e.inverse.length}:${e.at}:${e.label}:${e.view ? 1 : 0}:${e.rerun ? 1 : 0}`;
 
 /** The pixel drawings a step only changed by replacing their block (and nothing else about them), where both sides have them. */
 function diffable(e: HistoryEntry, before: Doc, after: Doc): Set<string> {
@@ -312,10 +312,21 @@ function diffable(e: HistoryEntry, before: Doc, after: Doc): Set<string> {
   return ids;
 }
 
-function encodeStep(e: HistoryEntry, before: Doc, after: Doc): Encoded {
-  const hit = encoded.get(e);
-  const sig = sigOf(e);
+/**
+ * A step that memory holds as a recipe (a look at another artboard) goes in the file as the patches it makes on the
+ * document it was made on, so the file's format stays what it always was and older versions can read it.
+ */
+function withPatches(e: HistoryEntry, before: Doc): HistoryEntry {
+  if (!e.rerun) return e;
+  const [, patches, inverse] = produceWithPatches(before, e.rerun.redo);
+  return { ...e, patches, inverse, rerun: undefined };
+}
+
+function encodeStep(source: HistoryEntry, before: Doc, after: Doc): Encoded {
+  const hit = encoded.get(source);
+  const sig = sigOf(source);
   if (hit && hit.sig === sig) return hit.enc;
+  const e = withPatches(source, before);
   const bytes = new Bytes();
   const ids = diffable(e, before, after);
   const px: PixelChange[] = [];
@@ -327,7 +338,7 @@ function encodeStep(e: HistoryEntry, before: Doc, after: Doc): Encoded {
   const rec = { l: e.label, at: e.at, ...(e.view ? { view: true as const } : {}), p: pack(e.patches.filter(keep), bytes) as unknown[], i: pack(e.inverse.filter(keep), bytes) as unknown[], ...(px.length ? { px } : {}) };
   const joined = bytes.join();
   const enc = { rec, bytes: joined, size: JSON.stringify(rec).length + joined.length };
-  encoded.set(e, { sig, enc });
+  encoded.set(source, { sig, enc });
   return enc;
 }
 
@@ -371,7 +382,7 @@ export function encodeHistory(src: HistorySource, cap = FILE_HISTORY_BYTES): His
     let s = src.doc;
     for (let k = src.redo.length - 1; k >= 0; k--) {
       const e = src.redo[k];
-      const next = applyPatches(s, e.patches);
+      const next = runStep(s, e, 'redo').doc;
       const enc = encodeStep(e, s, next);
       if (used + enc.size > cap * REDO_SHARE) break;
       redo.push(enc);
@@ -385,7 +396,7 @@ export function encodeHistory(src: HistorySource, cap = FILE_HISTORY_BYTES): His
     let a = src.doc;
     for (let k = src.undo.length - 1; k >= 0; k--) {
       const e = src.undo[k];
-      const before = applyPatches(a, e.inverse);
+      const before = runStep(a, e, 'undo').doc;
       const enc = encodeStep(e, before, a);
       if (used + enc.size > cap) break;
       undo.push(enc);

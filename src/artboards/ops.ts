@@ -2,6 +2,7 @@
  * Artboard actions on the app's store: each is one undo step. Also keeps the view steady when the open artboard
  * changes (by a click, the panel, undo or redo), and remembers the frame, layer and selection each artboard was left on.
  */
+import type { Draft } from 'immer';
 import type { Doc, Id } from '../core/format';
 import { store, type Store } from '../core/store';
 import { findLayer } from '../core/doc';
@@ -118,8 +119,14 @@ export function goToArtboard(id: Id, reveal = false): void {
   const doc = store().get().doc;
   if (activeId(doc) === id || !findArtboard(doc, id)) return;
   const name = findArtboard(doc, id)!.name;
-  // A look, not an edit: it stays out of Undo and the file isn't marked as changed.
-  store().update(`Go to "${name}"`, (d) => void switchArtboard(d as Doc, id), { view: true });
+  // A look, not an edit: it stays out of Undo and the file isn't marked as changed. History keeps just the two ids and
+  // runs the switch again for Undo and Redo, not a copy of the artboard's content (that copy, four times over, was the
+  // whole cost of a look). Undo goes back to the artboard it came from, with whatever that holds by then.
+  const from = activeId(doc);
+  const go = (to: Id) => (d: Draft<Doc>) => void switchArtboard(d as Doc, to);
+  // Without the artboard list in place the first switch would also make it, which two ids can't take back.
+  const plain = !!doc.artboards?.length && !!doc.activeArtboard;
+  store().update(`Go to "${name}"`, go(id), { view: true, ...(plain ? { rerun: { undo: go(from), redo: go(id) } } : {}) });
   if (reveal) revealActive();
 }
 

@@ -126,6 +126,11 @@ export interface DocChange {
   patches: Patch[];
 }
 
+type Recipe = (doc: Draft<Doc>) => void;
+
+/** What a step that is rerun weighs: two small functions and their ids, whatever the drawing holds. */
+export const RERUN_WEIGHT = 96;
+
 export interface HistoryEntry {
   /** Stays the same through undo and redo, so other parts can remember things about a step. */
   id: number;
@@ -139,6 +144,12 @@ export interface HistoryEntry {
    * shown, never dirtying the file, and never the thing Undo stops on. Undo takes it along with the step before it.
    */
   view?: boolean;
+  /**
+   * A look that is taken back and done again by running a recipe, not by patches (`patches` and `inverse` are empty).
+   * For a step whose patches would only be a copy of a whole artboard's content, going back and forth. The recipe runs on
+   * the document as it is when Undo or Redo reaches the step, so it never writes old content over newer.
+   */
+  rerun?: { undo: Recipe; redo: Recipe };
   /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
   weight: number;
   /** What the view goes back to when this step is undone (the layer you were on before a stroke made a layer to draw on). */
@@ -225,6 +236,19 @@ export function weighValue(v: unknown, depth = 0): number {
   return n;
 }
 
+/**
+ * The document after taking a step back (`dir` 'undo') or doing it again ('redo'), with the patches that made the change.
+ * A step that is rerun runs its recipe on `doc` as it is now; any other applies its patches.
+ */
+export function runStep(doc: Doc, e: HistoryEntry, dir: 'undo' | 'redo'): { doc: Doc; patches: Patch[] } {
+  if (e.rerun) {
+    const [next, patches] = produceWithPatches(doc, dir === 'undo' ? e.rerun.undo : e.rerun.redo);
+    return { doc: next, patches };
+  }
+  const patches = dir === 'undo' ? e.inverse : e.patches;
+  return { doc: applyPatches(doc, patches), patches };
+}
+
 export const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
@@ -299,7 +323,7 @@ export class Store {
    * Changes the document. `label` names the step in Undo/Redo ("Undo Draw stroke"). Changes with the same `coalesce`
    * key within a moment of each other merge into one undo step.
    */
-  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string; view?: boolean } = {}): void {
+  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string; view?: boolean; rerun?: { undo: Recipe; redo: Recipe } } = {}): void {
     let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
     const before = this.state.doc;
@@ -308,12 +332,14 @@ export class Store {
       if (why) return blockedHandler(why);
     }
     const own = patches;
+    let settled = false;
     for (const settle of settlers) {
       const fix = settle(next, { patches: own, before });
       if (!fix) continue;
       const [n2, p2, i2] = produceWithPatches(next, fix);
       if (!p2.length) continue;
       next = n2;
+      settled = true;
       patches = [...patches, ...p2];
       inverse = [...i2, ...inverse];
     }
@@ -334,6 +360,9 @@ export class Store {
       last.inverse.unshift(...inverse);
       last.at = now;
       last.weight += weighPatches(patches) + weighPatches(inverse);
+    } else if (opts.rerun && opts.view && !settled) {
+      // Only the recipes are kept, so a look at another artboard weighs next to nothing instead of a copy of its content.
+      this.undoStack.push({ id: nextEntryId++, patches: [], inverse: [], rerun: opts.rerun, label, at: now, weight: RERUN_WEIGHT, view: true });
     } else {
       this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse), ...(opts.view ? { view: true } : {}) });
     }
@@ -454,14 +483,14 @@ export class Store {
       while (this.undoStack.length - 1 > doneAt) {
         const e = this.undoStack.pop()!;
         this.redoStack.push(e);
-        doc = applyPatches(doc, e.inverse);
+        doc = runStep(doc, e, 'undo').doc;
       }
     } else {
       if (!this.redoStack.some((e) => e.id === id)) return false;
       for (;;) {
         const e = this.redoStack.pop()!;
         this.undoStack.push({ ...e, coalesce: undefined });
-        doc = applyPatches(doc, e.patches);
+        doc = runStep(doc, e, 'redo').doc;
         if (e.id === id) break;
       }
     }
@@ -474,12 +503,12 @@ export class Store {
     let doc = this.state.doc;
     const doneAt = id === null ? -1 : this.undoStack.findIndex((e) => e.id === id);
     if (doneAt >= 0 || id === null) {
-      for (let i = this.undoStack.length - 1; i > doneAt; i--) doc = applyPatches(doc, this.undoStack[i].inverse);
+      for (let i = this.undoStack.length - 1; i > doneAt; i--) doc = runStep(doc, this.undoStack[i], 'undo').doc;
       return doc;
     }
     const at = this.redoStack.findIndex((e) => e.id === id);
     if (at < 0) return null;
-    for (let i = this.redoStack.length - 1; i >= at; i--) doc = applyPatches(doc, this.redoStack[i].patches);
+    for (let i = this.redoStack.length - 1; i >= at; i--) doc = runStep(doc, this.redoStack[i], 'redo').doc;
     return doc;
   }
 
@@ -493,8 +522,9 @@ export class Store {
     for (;;) {
       const e = this.undoStack.pop()!;
       this.redoStack.push(e);
-      doc = applyPatches(doc, e.inverse);
-      patches.push(...e.inverse);
+      const r = runStep(doc, e, 'undo');
+      doc = r.doc;
+      patches.push(...r.patches);
       if (e.undoUi) undoUi = e.undoUi;
       if (!e.view) break;
     }
@@ -511,8 +541,9 @@ export class Store {
     for (;;) {
       const e = this.redoStack.pop()!;
       this.undoStack.push({ ...e, coalesce: undefined });
-      doc = applyPatches(doc, e.patches);
-      patches.push(...e.patches);
+      const r = runStep(doc, e, 'redo');
+      doc = r.doc;
+      patches.push(...r.patches);
       if (e.redoUi) redoUi = e.redoUi;
       if (!e.view) break;
     }
