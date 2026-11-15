@@ -8,6 +8,8 @@ import { currentChoice } from '../core/choices';
 import { registerAudienceAction } from '../audience';
 import { react, signFlow, type Reaction } from './react';
 import { cleanSign } from './sign';
+import { arrive, namesAllowed } from './welcomeFlow';
+import { parseArrival, WELCOME_ACTIONS, type Arrival } from './welcome';
 
 /** The action ids, so the door, the tests and the help all spell them the same way. */
 export const REACTION_ACTIONS: { id: string; label: string; which: Reaction; cooldown: number }[] = [
@@ -31,6 +33,11 @@ export function parseSign(raw: unknown): { text: string } | null {
 export function registerReactionActions(): void {
   for (const a of REACTION_ACTIONS) {
     registerAudienceAction({ id: a.id, label: a.label, kind: 'quill', cooldown: a.cooldown, run: () => void react(a.which) });
+  }
+  // Welcomes are bulk on purpose: a crowd of followers must not be refused by the cooldown, because a welcome dropped
+  // silently is worse than none. They are paced by Quill's own turns instead (see welcomeFlow.ts), and Stop ends them.
+  for (const w of WELCOME_ACTIONS) {
+    registerAudienceAction<Arrival>({ id: w.id, label: w.label, kind: 'quill-welcome', bulk: true, parse: (raw) => parseArrival(w.kind, raw, namesAllowed()), run: (a, ctx) => arrive(a, ctx.signal) });
   }
   registerAudienceAction<{ text: string }>({
     id: SIGN_ACTION,

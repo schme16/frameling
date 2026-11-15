@@ -2,7 +2,7 @@
 // and there is no server to keep running. This file is only the connection: welcome, keep-alives, notices, Twitch asking
 // us to move to another address, the line dropping, and trying again. Making the subscriptions (an HTTPS call with the
 // token) is handed in, and so are the socket and the clock, so a pretend Twitch tests all of it.
-// Privacy: a notice is read through normaliseNotice, which keeps no name. Only the ids of the last notices are held
+// Privacy: a notice is read through normaliseNotice, which keeps no name unless the page asked for names (see `start`). Only the ids of the last notices are held
 // (to throw away repeats), for as long as Frameling is listening.
 import { normaliseNotice, type TwitchEvent, type TwitchKind } from '../shared/twitch';
 
@@ -53,6 +53,8 @@ const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object'
 
 export class EventSubClient {
   private kinds: TwitchKind[] = [];
+  /** Whether display names are read from notices. Off unless the page asked. */
+  private names = false;
   private running = false;
   private attempt = 0;
   private refused: TwitchKind[] = [];
@@ -72,8 +74,9 @@ export class EventSubClient {
   }
 
   /** Starts listening for these kinds. Does nothing for an empty list. Safe to call twice. */
-  start(kinds: TwitchKind[]): void {
+  start(kinds: TwitchKind[], names = false): void {
     this.kinds = [...kinds];
+    this.names = names === true;
     if (this.running || !kinds.length) return;
     this.running = true;
     this.attempt = 0;
@@ -231,7 +234,7 @@ export class EventSubClient {
     }
     const stamp = typeof meta.message_timestamp === 'string' ? Date.parse(meta.message_timestamp) : NaN;
     if (Number.isFinite(stamp) && this.d.now() - stamp > STALE_MS) return;
-    const e = normaliseNotice(typeof meta.subscription_type === 'string' ? meta.subscription_type : '', payload.event);
+    const e = normaliseNotice(typeof meta.subscription_type === 'string' ? meta.subscription_type : '', payload.event, { names: this.names });
     if (e && this.kinds.includes(e.kind)) this.d.onEvent(e);
   }
 

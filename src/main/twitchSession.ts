@@ -1,6 +1,6 @@
 // The Twitch link as a whole, on the desktop side: signing in with a device code, keeping the sign-in fresh, listening
 // over EventSub, reading the streamer's own reward names, and signing out for real. The page only ever hears a TwitchStatus
-// and the small events from shared/twitch.ts. A token, a device code and a viewer's name never go up to the page.
+// and the small events from shared/twitch.ts. A token and a device code never go up to the page, and neither does a viewer's name unless the page asked for names (a Quill welcome link is on).
 // Everything outside (network, sockets, clock, the key store, the browser, the clipboard) is handed in, so a pretend
 // Twitch tests it, and nothing here imports Electron.
 import { cleanKinds, coveredKinds, isTwitchApprovalAddress, KIND_INFO, scopesFor, type TwitchEvent, type TwitchKind, type TwitchProblem, type TwitchRewardsAnswer, type TwitchStatus } from '../shared/twitch';
@@ -241,7 +241,7 @@ export class TwitchSession {
   // ---------------------------------------------------------------- listening
 
   /** Starts listening for these kinds (only those the granted permissions cover; the rest are reported as refused). */
-  async listen(kinds: TwitchKind[]): Promise<TwitchStatus> {
+  async listen(kinds: TwitchKind[], names = false): Promise<TwitchStatus> {
     const wanted = cleanKinds(kinds);
     const mine = ++this.begun;
     this.wanted = wanted;
@@ -266,7 +266,7 @@ export class TwitchSession {
       this.push();
       return this.status();
     }
-    this.client.start(covered);
+    this.client.start(covered, names);
     this.cancelValidate?.();
     const again = () => {
       this.cancelValidate = this.d.clock.later(async () => {

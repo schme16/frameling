@@ -10,4 +10,13 @@ export const quillReactHelp: HelpTopic[] = [
     keywords: ['quill', 'chat', 'cheer', 'hop', 'snack', 'cuddle', 'wave', 'sign', 'viewers', 'audience', 'stream', 'streamer', 'twitch', 'channel points', 'redeem', 'react', 'reactions', 'streamer.bot', 'firebot', 'stream deck', 'quill.cheer', 'quill.sign'],
     order: 22,
   },
+  {
+    id: 'quill-welcomes',
+    title: 'Quill welcomes new followers, subscribers, cheers and raids',
+    section: 'Streaming',
+    media: 'quill-welcomes.mp4',
+    summary: 'Quill says hello when somebody follows, subscribes, cheers or raids, on your screen and the stream overlay. He asks you before he says a name, and he never writes in chat.',
+    keywords: ['quill', 'welcome', 'welcomes', 'greet', 'new follower', 'follow', 'follower', 'subscriber', 'subscribe', 'sub', 'cheer', 'bits', 'raid', 'raiders', 'name', 'names', 'twitch', 'stream', 'streamer', 'viewers', 'overlay', 'hello', 'thank', 'quill.welcome.follow', 'quill.welcome.raid'],
+    order: 23,
+  },
 ];

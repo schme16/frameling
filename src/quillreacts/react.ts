@@ -96,45 +96,83 @@ export function showSign(text: string): void {
   setMoment({ anim: 'holding', words: text, sign: true }, SIGN_UP_MS);
 }
 
-let pendingAsk: ((yes: boolean) => void) | null = null;
+let pendingAsk: ((r: Answer) => void) | null = null;
+
+/** `none` is no answer: the time ran out, a newer question took its place, or it was stopped. */
+export type Answer = 'yes' | 'no' | 'none';
+
+interface Question {
+  /** The question and the words it is about, as one line. Covered until read while unread words are being covered. */
+  text: string;
+  covered: string;
+  quill: Script;
+  yes: { label: string; id: string };
+  no: { label: string; id: string };
+}
 
 /**
- * Asks the streamer whether to hold up this sign, on screen, with the words in the question. Resolves true on yes. No
- * answer in time, "Not that one", the toast being closed and kill all mean no. A new question drops the old one. The
- * words live in this closure until the question is over, and nowhere else.
+ * One covered yes/no question on screen, with somebody else's words in it. Resolves `yes` or `no` when pressed, `none`
+ * when nobody answers in time, a newer question takes its place, the toast is closed or Stop is pressed. The words live
+ * in this closure until the question is over, and nowhere else.
  */
-export function askToShowSign(text: string, signal: AbortSignal, waitMs = SIGN_ASK_MS): Promise<boolean> {
-  pendingAsk?.(false);
-  return new Promise<boolean>((resolve) => {
+function askQuestion(q: Question, signal: AbortSignal, waitMs: number): Promise<Answer> {
+  pendingAsk?.('none');
+  return new Promise<Answer>((resolve) => {
     let id = -1;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const finish = (yes: boolean): void => {
+    const finish = (r: Answer): void => {
       if (pendingAsk === finish) pendingAsk = null;
       clearTimeout(timer);
       signal.removeEventListener('abort', onAbort);
       dismissToast(id);
       if (current === id) current = null;
-      resolve(yes);
+      resolve(r);
     };
-    const onAbort = (): void => finish(false);
+    const onAbort = (): void => finish('none');
     pendingAsk = finish;
-    if (signal.aborted) return finish(false);
+    if (signal.aborted) return finish('none');
     if (current !== null) dismissToast(current);
     // The question takes his place on screen, so what he was doing for the audience is over.
     clearMoment();
-    id = toast(`${lines('stream.sign.ask')[0]} “${text}”`, {
-      // Covered until you press Read it: the question is on screen before you have decided, and a rude sign must not be.
-      covered: UNREAD_TOAST.sign,
-      quill: 'think',
+    id = toast(q.text, {
+      // Covered until you press Read it: the question is on screen before you have decided, and a rude one must not be.
+      covered: q.covered,
+      quill: q.quill,
       duration: 0,
       sound: null,
-      action: { label: 'Hold it up', id: 'sign-yes', run: () => finish(true) },
-      decline: { label: 'Not that one', id: 'sign-no', run: () => finish(false) },
+      action: { label: q.yes.label, id: q.yes.id, run: () => finish('yes') },
+      decline: { label: q.no.label, id: q.no.id, run: () => finish('no') },
     });
     current = id;
-    timer = setTimeout(() => finish(false), waitMs);
+    timer = setTimeout(() => finish('none'), waitMs);
     signal.addEventListener('abort', onAbort, { once: true });
   });
+}
+
+/**
+ * Asks the streamer whether to hold up this sign, on screen, with the words in the question. Resolves true on yes. No
+ * answer in time, "Not that one", the toast being closed and kill all mean no. A new question drops the old one.
+ */
+export async function askToShowSign(text: string, signal: AbortSignal, waitMs = SIGN_ASK_MS): Promise<boolean> {
+  const a = await askQuestion(
+    { text: `${lines('stream.sign.ask')[0]} \u201c${text}\u201d`, covered: UNREAD_TOAST.sign, quill: 'think', yes: { label: 'Hold it up', id: 'sign-yes' }, no: { label: 'Not that one', id: 'sign-no' } },
+    signal,
+    waitMs,
+  );
+  return a === 'yes';
+}
+
+/**
+ * Asks whether Quill may say this name out loud. `text` is the whole question, already built from his lines. Only a yes
+ * puts the name anywhere a viewer can see it (the screen toast, then the stream overlay).
+ */
+export const askToSayName = (text: string, signal: AbortSignal, waitMs = SIGN_ASK_MS): Promise<Answer> =>
+  askQuestion({ text, covered: UNREAD_TOAST.name, quill: 'think', yes: { label: 'Say it', id: 'welcome-yes' }, no: { label: 'Leave the name out', id: 'welcome-no' } }, signal, waitMs);
+
+/** Quill welcomes somebody: the words (his own, or a name you said yes to), what he does, and how long he stays. */
+export function showWelcome(words: string, anim: Script, moment: QuillMoment['anim'], ms: number): void {
+  replaceCurrent(toast(words, { quill: anim, duration: ms, sound: null }));
+  setMoment({ anim: moment, words, sign: false }, ms);
 }
 
 /** Asks, then shows it on a yes. The streamer's own preview and a real sign from chat both go through here. */

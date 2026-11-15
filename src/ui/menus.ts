@@ -155,7 +155,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   quillreacts: {
     label: 'Try Quill reacting to chat',
-    items: ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign'],
+    items: ['quillreacts.cheer', 'quillreacts.hop', 'quillreacts.snack', 'quillreacts.nuzzle', 'quillreacts.wave', 'quillreacts.sign', 'quillreacts.welcome'],
   },
   quill: {
     label: "Quill's house",

@@ -4,7 +4,11 @@ import { currentChoice } from '../core/choices';
 import { desktop } from '../io/desktop';
 import { toast } from '../ui/toast';
 import { createTwitchLink } from './link';
-import { currentRules, twitchStatus, wantedKinds } from './state';
+import { NAMES_CHOICE } from '../quillreacts/choices';
+import { currentRules, twitchStatus, wantedKinds, wantsWelcomes } from './state';
+
+/** Names are read from Twitch only while a welcome link is on and the streamer has not said never to use names. */
+export const wantsNames = (): boolean => wantsWelcomes() && currentChoice(NAMES_CHOICE) !== 'never';
 
 const REASONS: Record<string, string> = {
   cooldown: 'it was too soon after the last one',
@@ -19,6 +23,7 @@ export const twitchLink = createTwitchLink({
   bridge: () => desktop()?.twitch ?? null,
   gate: { submit: (id, raw) => audience.submit(id, raw), snapshot: () => audience.snapshot() },
   kinds: wantedKinds,
+  names: wantsNames,
   rules: currentRules,
   setStatus: (s) => twitchStatus.set(s),
   turnedAway: (label, reason) => {

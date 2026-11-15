@@ -2,6 +2,7 @@
 // not secrets, and hold nothing about any viewer. The sign-in itself is never here: it stays on the desktop side.
 import { cleanKinds, DEFAULT_KINDS, signedOutStatus, type TwitchKind, type TwitchStatus } from '../shared/twitch';
 import { createStore, readJson, writeJson } from '../ui/mini';
+import { isWelcomeAction } from '../quillreacts/welcome';
 import { cleanRules, type TwitchRule } from './rules';
 
 const KEY = 'frameling.twitch.v1';
@@ -25,6 +26,9 @@ twitchSaved.subscribe(() => writeJson(KEY, twitchSaved.get()));
 
 export const wantedKinds = (): TwitchKind[] => twitchSaved.get().kinds;
 export const currentRules = (): TwitchRule[] => twitchSaved.get().rules;
+
+/** Whether any link that is on points at a Quill welcome (the only thing that reads a viewer's name). */
+export const wantsWelcomes = (): boolean => currentRules().some((r) => r.on && isWelcomeAction(r.action));
 
 export const setKinds = (kinds: TwitchKind[]): void => twitchSaved.set((s) => ({ ...s, kinds: cleanKinds(kinds) }));
 export const setRules = (rules: TwitchRule[]): void => twitchSaved.set((s) => ({ ...s, rules: cleanRules(rules) }));

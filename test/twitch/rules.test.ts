@@ -68,7 +68,7 @@ describe('links', () => {
   });
   it('makes a pretend event with only the link\'s own words', () => {
     expect(sampleEvent(rule({ text: 'hello' }))).toEqual({ kind: 'redemption', rewardId: 'sample', rewardTitle: 'A reward', text: 'hello' });
-    expect(sampleEvent(rule({ event: 'cheer', min: 300 }))).toEqual({ kind: 'cheer', bits: 300 });
+    expect(sampleEvent(rule({ event: 'cheer', min: 300 }))).toEqual({ kind: 'cheer', bits: 300, name: 'Sam' });
   });
   it('reads rules from storage, dropping what is broken and keeping the rest', () => {
     const out = cleanRules([

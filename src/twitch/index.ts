@@ -9,7 +9,10 @@ import { watchTwitch } from './actions';
 import { twitchChoices } from './choices';
 import { twitchCommands } from './commands';
 import { twitchHelp } from './help';
-import { twitchLink } from './instance';
+import { NAMES_CHOICE } from '../quillreacts/choices';
+import { onChoiceChange } from '../core/choices';
+import { twitchLink, wantsNames } from './instance';
+import { twitchSaved } from './state';
 
 let stops: (() => void)[] = [];
 
@@ -24,7 +27,14 @@ export const twitchFeature = defineFeature({
   menus: [{ menu: 'sub:twitch', items: ['twitch.connect', 'twitch.cancel', 'twitch.disconnect', 'twitch.links'] }],
   activate: () => {
     registerAudienceDoor({ id: 'door.twitch', label: 'Twitch', open: () => twitchLink.open(), close: () => twitchLink.close() });
-    stops = [twitchLink.listen(), watchTwitch()];
+    // Names are only read from Twitch while they are wanted, so turning a welcome link on (or names off) listens again.
+    let named = wantsNames();
+    const recheck = () => {
+      if (wantsNames() === named) return;
+      named = wantsNames();
+      twitchLink.refresh();
+    };
+    stops = [twitchLink.listen(), watchTwitch(), twitchSaved.subscribe(recheck), onChoiceChange((id) => id === NAMES_CHOICE && recheck())];
   },
   deactivate: () => {
     for (const s of stops) s();

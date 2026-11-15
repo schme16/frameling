@@ -77,15 +77,23 @@ export function scopesFor(kinds: TwitchKind[]): string[] {
 export const coveredKinds = (kinds: TwitchKind[], granted: string[]): TwitchKind[] => kinds.filter((k) => !KIND_INFO[k].scope || granted.includes(KIND_INFO[k].scope));
 
 /**
- * What the page hears. Never a name, never an id of a person, never a message: only what a rule can match on. `text` is
- * what a viewer typed when they redeemed a reward that asks for words; it is passed on in memory and nothing keeps it.
+ * What the page hears. Never an id of a person and never a message: only what a rule can match on. `text` is what a
+ * viewer typed when they redeemed a reward that asks for words; it is passed on in memory and nothing keeps it.
+ *
+ * `name` is the one exception, and it is there only when the page asked for names (a link to a Quill welcome is on and
+ * the streamer has not said never to use names): the display name Twitch shows, cut to a sensible length and nothing
+ * more. It is other people's words, so the page treats it like a typed sign: cleaned, covered until read, never kept.
+ * Without the ask, no name is ever read from a notice.
  */
 export type TwitchEvent =
   | { kind: 'redemption'; rewardId: string; rewardTitle: string; text?: string }
-  | { kind: 'cheer'; bits: number }
-  | { kind: 'follow' }
-  | { kind: 'sub'; resub: boolean }
-  | { kind: 'raid'; viewers: number };
+  | { kind: 'cheer'; bits: number; name?: string }
+  | { kind: 'follow'; name?: string }
+  | { kind: 'sub'; resub: boolean; name?: string }
+  | { kind: 'raid'; viewers: number; name?: string };
+
+/** The longest display name Twitch allows. Anything longer is cut, so rubbish costs nothing. */
+export const NAME_MAX = 25;
 
 const str = (v: unknown, max = 200): string => (typeof v === 'string' ? v.slice(0, max) : '');
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -95,8 +103,13 @@ const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object'
  * Turns one Twitch notice into an event, reading only the few fields a rule needs. Everything else in the notice (who
  * did it, their id, their message) is never read, so it cannot leak by accident. Null for a type we do not use.
  */
-export function normaliseNotice(type: string, event: unknown): TwitchEvent | null {
+export function normaliseNotice(type: string, event: unknown, opts: { names?: boolean } = {}): TwitchEvent | null {
   const e = obj(event);
+  // The display name, and only when asked for. An anonymous cheer has none.
+  const named = (v: unknown): { name?: string } => {
+    const n = opts.names ? str(v, NAME_MAX * 2).trim() : '';
+    return n ? { name: n } : {};
+  };
   switch (type) {
     case 'channel.channel_points_custom_reward_redemption.add': {
       const r = obj(e.reward);
@@ -106,15 +119,15 @@ export function normaliseNotice(type: string, event: unknown): TwitchEvent | nul
       return { kind: 'redemption', rewardId: id, rewardTitle: str(r.title, 100), ...(text ? { text } : {}) };
     }
     case 'channel.cheer':
-      return { kind: 'cheer', bits: num(e.bits) };
+      return { kind: 'cheer', bits: num(e.bits), ...(e.is_anonymous === true ? {} : named(e.user_name)) };
     case 'channel.follow':
-      return { kind: 'follow' };
+      return { kind: 'follow', ...named(e.user_name) };
     case 'channel.subscribe':
-      return { kind: 'sub', resub: false };
+      return { kind: 'sub', resub: false, ...named(e.user_name) };
     case 'channel.subscription.message':
-      return { kind: 'sub', resub: true };
+      return { kind: 'sub', resub: true, ...named(e.user_name) };
     case 'channel.raid':
-      return { kind: 'raid', viewers: num(e.viewers) };
+      return { kind: 'raid', viewers: num(e.viewers), ...named(e.from_broadcaster_user_name) };
     default:
       return null;
   }

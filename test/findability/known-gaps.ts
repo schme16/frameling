@@ -102,16 +102,19 @@ export const STREAM_LOAD = {
   /** 74: Copy a test command for the actions door (streamdoor.copyTest), the one line that proves the address and key before anything is set up, so step 2 of the chat commands guide is one click instead of a hand-built curl. Searching "test", "curl" or "does it work" has to find it, and it sits beside Copy the address and Copy the key in the Actions door menu. */
   /** 75: How to get your viewers taking part (audience.start), the one page that walks from a Twitch channel to viewers voting. Somebody asking "how do I get my viewers to vote" finds it by that, in the palette, the Streaming menu and the top of the Streaming tab. */
   /** 76: What can your viewers see? (audience.view), the one answer that decides whether secret words, pulled prompts and unread chat words are covered. It has to be findable by a streamer who wants to change it, in the palette and in the Audience features menu, and it goes with the gate commands so it leaves when the streaming tools are tucked away. */
-  palette: 76,
+  /** 77: Try: Quill welcomes somebody new (quillreacts.welcome), the one way to see a welcome without waiting for somebody to follow. One command, not four: each press shows the next kind (a follower, a subscriber, a cheer, a raid), and Try it on a Twitch link shows any one. Searching "welcome", "greet" or "new follower" has to find it. */
+  palette: 77,
   /** Commands in the menus (View holds all of them). 75, the same three commands as the palette: the two in the Actions door submenu and the first entry of the Streaming menu. */
   /** 76: the same command, in the Audience features menu next to the switch it belongs with. */
-  menu: 76,
+  /** 77: the same command, in Try Quill reacting to chat beside the other Try commands. */
+  menu: 77,
   /** Switches in Preferences > Features. */
   switches: 9,
   /** Help topics. 18 now: the chat commands guide is three topics (the route, Firebot, Streamer.bot), because the Streamer.bot one carries a whole C# script and a single topic would pass the 500 word limit. They are what lets viewers vote and guess at all (see the board doc bot-setup), so they are the one reason this went up. */
   /** 19: Getting your viewers taking part (viewers-take-part), the one page that walks the whole route, from a Twitch channel to a first vote. It goes with the gate commands, so it leaves when the streaming tools are tucked away. */
   /** 20: Covering secrets and unread words (cover-spoilers), the page that says what is covered, why, and how to tell Frameling what your viewers can see. It is the help of the new command and of the question. */
-  help: 20,
+  /** 21: Quill welcomes new followers, subscribers, cheers and raids (quill-welcomes): what he does for each, why he asks before saying a name, what a crowd does, and that nothing is kept. It is the help of the command and of the "Names in welcomes" question, and it is where the privacy line about names lives. */
+  help: 21,
 };
 
 /**

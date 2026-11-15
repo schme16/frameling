@@ -1128,6 +1128,131 @@
     "text": "Chat would like me to hold up a sign:",
     "where": "A toast while you are on air, with two buttons (Hold it up, Not that one): someone in chat sent words for a sign. The words follow in quotes. Nothing shows on stream unless you say yes."
   },
+  "stream.welcome.follow": {
+    "text": [
+      "A new friend just followed. Hello, hello!",
+      "Somebody new followed. Come in, pull up a chair.",
+      "Ooh, a new follower. I'm so glad you're here."
+    ],
+    "where": "A toast (and the stream overlay) while you are on air: somebody followed and no name is being said (you have names off, or they were not asked for, or the name came to nothing, or you said to leave it out). Quill waves. The app picks one."
+  },
+  "stream.welcome.follow.named": {
+    "text": [
+      "Hello, {name}. Thank you for following!",
+      "{name} followed. Welcome, make yourself at home.",
+      "Welcome, {name}. I saved you a good seat."
+    ],
+    "vars": ["name"],
+    "where": "A toast (and the stream overlay) while you are on air: somebody followed and you said yes to their name. Quill waves. The app picks one."
+  },
+  "stream.welcome.follow.crowd": {
+    "text": [
+      "{count} new followers all at once. Hello, everybody!",
+      "Look at that, {count} new followers. Welcome in, all of you."
+    ],
+    "vars": ["count"],
+    "where": "A toast (and the stream overlay) while you are on air: several people followed while he was busy, and no name is being said. They are welcomed together, so nobody is skipped."
+  },
+  "stream.welcome.follow.crowd.named": {
+    "text": [
+      "Welcome, {name}, and {others} more who followed. Hello, all of you!",
+      "{name} and {others} more just followed. Come in, come in."
+    ],
+    "vars": ["name", "others"],
+    "where": "A toast (and the stream overlay) while you are on air: several people followed while he was busy, and you said yes to the first name. The rest are a number."
+  },
+  "stream.welcome.sub": {
+    "text": [
+      "Somebody just subscribed. That's so kind of you!",
+      "A new subscriber. I am doing a little dance.",
+      "Someone subscribed. Thank you, truly."
+    ],
+    "where": "A toast (and the stream overlay) while you are on air: somebody subscribed and no name is being said. Quill nuzzles. The app picks one."
+  },
+  "stream.welcome.sub.named": {
+    "text": [
+      "{name} subscribed. Thank you, thank you!",
+      "Welcome to the club, {name}. Thank you.",
+      "{name}, you subscribed! That means so much."
+    ],
+    "vars": ["name"],
+    "where": "A toast (and the stream overlay) while you are on air: somebody subscribed and you said yes to their name. Quill nuzzles. The app picks one."
+  },
+  "stream.welcome.resub.named": {
+    "text": [
+      "{name} is back for more. Thank you for staying!",
+      "Welcome back, {name}. Thank you for subscribing again.",
+      "{name} again! Thank you for sticking around."
+    ],
+    "vars": ["name"],
+    "where": "A toast (and the stream overlay) while you are on air: somebody subscribed again and you said yes to their name. Quill nuzzles. The app picks one."
+  },
+  "stream.welcome.sub.crowd": {
+    "text": [
+      "{count} new subscribers. I might cry. Thank you!",
+      "Look at all of you, {count} subscribers. Thank you."
+    ],
+    "vars": ["count"],
+    "where": "A toast (and the stream overlay) while you are on air: several people subscribed while he was busy, and no name is being said."
+  },
+  "stream.welcome.sub.crowd.named": {
+    "text": [
+      "{name} and {others} more subscribed. I might cry. Thank you!",
+      "Thank you, {name}, and {others} more who subscribed."
+    ],
+    "vars": ["name", "others"],
+    "where": "A toast (and the stream overlay) while you are on air: several people subscribed while he was busy, and you said yes to the first name."
+  },
+  "stream.welcome.cheer": {
+    "text": [
+      "{bits} bits! Thank you, that's lovely.",
+      "Somebody cheered {bits} bits. Thank you, whoever you are!"
+    ],
+    "vars": ["bits"],
+    "where": "A toast (and the stream overlay) while you are on air: somebody cheered with bits and no name is being said (or the cheer was anonymous). Quill cheers."
+  },
+  "stream.welcome.cheer.named": {
+    "text": [
+      "{name} cheered {bits} bits. Thank you!",
+      "{bits} bits from {name}. That's so generous."
+    ],
+    "vars": ["bits", "name"],
+    "where": "A toast (and the stream overlay) while you are on air: somebody cheered with bits and you said yes to their name. Quill cheers."
+  },
+  "stream.welcome.cheer.many": {
+    "text": [
+      "The cheers keep coming, {bits} bits all together. Thank you!",
+      "{bits} bits between you all. Thank you, everybody."
+    ],
+    "vars": ["bits"],
+    "where": "A toast (and the stream overlay) while you are on air: several cheers came in while he was busy. They are said as one total, with no names."
+  },
+  "stream.welcome.raid": {
+    "text": [
+      "A raid! All {raiders} of you, welcome in!",
+      "Here come {raiders} new friends. Welcome, everybody!"
+    ],
+    "vars": ["raiders"],
+    "where": "A toast (and the stream overlay) while you are on air: a raid arrived and the name is not being said. Quill waves and then cheers, and stays a little longer than for anything else."
+  },
+  "stream.welcome.raid.named": {
+    "text": [
+      "{name} is raiding with {raiders}! Welcome in, everybody.",
+      "{name}'s raid is here, all {raiders} of you. Hello, hello!"
+    ],
+    "vars": ["name", "raiders"],
+    "where": "A toast (and the stream overlay) while you are on air: a raid arrived and you said yes to the raiding channel’s name. Quill waves and then cheers."
+  },
+  "stream.welcome.ask": {
+    "text": "Somebody new is here. Shall I say “{name}”?",
+    "vars": ["name"],
+    "where": "A toast while you are on air, with two buttons (Say it, Leave the name out): a new follower, subscriber, cheer or raid has a name. It stays covered until you press Read it, and nothing shows on stream unless you say yes. No answer in 15 seconds means he welcomes without the name."
+  },
+  "stream.welcome.ask.more": {
+    "text": "Some new people are here. Shall I say “{name}”, and {others} more?",
+    "vars": ["name", "others"],
+    "where": "The same question when several people arrived while he was busy: the first name, and the rest as a number."
+  },
   "stream.guess.close": {
     "text": [
       "Ooh, somebody's close!",
