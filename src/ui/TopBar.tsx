@@ -8,6 +8,7 @@ import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
 import { OnAir } from '../audience/OnAir';
+import { JarChip } from '../promptjar/JarCard';
 import { ObsBadge } from '../streamsafe/ObsBadge';
 
 function DocName() {
@@ -91,6 +92,7 @@ export function TopBar() {
       </div>
       <div className="ui-topbar-end">
         <OnAir />
+        <JarChip />
         <ObsBadge />
         <StreamSafeBadge />
         <WorkspaceSwitcher />

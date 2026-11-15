@@ -27,6 +27,7 @@ const Q: [string, string][] = [
   ['pixels on a vector layer', 'draw-anywhere'], ['a layer appeared', 'draw-anywhere'], ['two layers one row', 'draw-anywhere'], ['other half', 'draw-anywhere'],
   ['turn off', 'features'], ['lock', 'lock-layout'], ['unlock', 'lock-layout'], ['stop moving', 'lock-layout'], ['hide a panel i never use', 'features'],
   ['chat makes quill cheer', 'quill-reacts'], ['sign from chat', 'quill-reacts'], ['quill hop for viewers', 'quill-reacts'],
+  ['ideas from chat', 'prompt-jar'], ['what to draw suggestions', 'prompt-jar'], ['prompt jar', 'prompt-jar'], ['pull a random prompt', 'prompt-jar'],
 ];
 
 

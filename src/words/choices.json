@@ -1697,5 +1697,25 @@
     "text": "Chat can still make Quill cheer, hop and eat, but no words from chat ever reach the screen.",
     "where": "Preferences: the small line under the \"off\" answer in \"Signs from chat\"."
   },
-  "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." }
+  "choice.quillreacts.signs.off.did": { "text": "Signs from chat are turned away.", "where": "Toast when \"off\" is used without asking (\"Signs from chat\"), in the past tense." },
+  "choice.promptjar.keep.title": { "text": "Keep the prompt jar", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.promptjar.keep.question": {
+    "text": "Prompts from your audience wait in the jar. Forget them when you close Frameling, or keep them on this computer for next time?",
+    "where": "The question the \"Keep the prompt jar\" choice asks. It is only ever shown in Preferences, never in the middle of a stream."
+  },
+  "choice.promptjar.keep.forget.label": { "text": "Forget them when I close Frameling", "where": "Preferences: the answer \"forget\" in \"Keep the prompt jar\"." },
+  "choice.promptjar.keep.forget.detail": {
+    "text": "The jar lives in memory only. Closing Frameling empties it, and nothing is written to your computer.",
+    "where": "Preferences: the small line under the \"forget\" answer in \"Keep the prompt jar\"."
+  },
+  "choice.promptjar.keep.forget.did": {
+    "text": "The prompt jar is forgotten when you close Frameling.",
+    "where": "Toast when \"forget\" is used without asking (\"Keep the prompt jar\"), in the past tense."
+  },
+  "choice.promptjar.keep.keep.label": { "text": "Keep them for next time", "where": "Preferences: the answer \"keep\" in \"Keep the prompt jar\"." },
+  "choice.promptjar.keep.keep.detail": {
+    "text": "The words are saved on this computer, with no names and no times, so a good prompt is still here next stream. Empty the jar wipes them.",
+    "where": "Preferences: the small line under the \"keep\" answer in \"Keep the prompt jar\"."
+  },
+  "choice.promptjar.keep.keep.did": { "text": "The prompt jar is kept for next time.", "where": "Toast when \"keep\" is used without asking (\"Keep the prompt jar\"), in the past tense." }
 }
