@@ -1,6 +1,6 @@
 // The words of the topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  twitch: `**Connect Twitch** lets your channel make things happen in Frameling: a channel point reward makes Quill cheer, a raid makes him wave, a cheer sets off a dare. It talks to Twitch directly, so you don't need Streamer.bot or Firebot, and nothing runs on anyone's server. (If you already use one of those, [the actions door](help:actions-door) still works beside this.)
+  twitch: `**Connect Twitch** lets your channel make things happen in Frameling: a channel point reward makes Quill cheer, a raid makes him wave, a cheer sets off a dare. It talks to Twitch directly, so for these you don't need Streamer.bot or Firebot, and nothing runs on anyone's server. **It hears events, not chat.** Votes, guesses and prompts typed in chat still need a bot: [Getting your viewers taking part](help:viewers-take-part) shows the whole route. (If you already use one, [the actions door](help:actions-door) works beside this.)
 
 **Connect:** open Preferences > Streaming > **Twitch**, tick what you want to hear about, and press **Connect Twitch**. Frameling shows a short code. Press **Open Twitch**, sign in there if you need to, and approve it. Frameling picks the sign-in up by itself. If you'd rather use your own phone, **Copy the link** and paste it anywhere.
 
@@ -25,12 +25,14 @@ Frameling never reads a viewer's name, id or chat. Each event is cut down to wha
 ## Disconnect
 **Disconnect from Twitch** stops listening, tells Twitch to cancel the sign-in, and forgets it here. You can double check at twitch.tv/settings/connections.
 
-Next: [Twitch links](help:twitch-links). See also [Audience features and the On air pill](help:audience).`,
+Next: [Twitch links](help:twitch-links). See also [Getting your viewers taking part](help:viewers-take-part) and [Audience features and the On air pill](help:audience).`,
   'twitch-links': `A **link** says "when this happens on Twitch, do that in Frameling". Make them in Preferences > Streaming > **Twitch**. The list starts with a few small Quill reactions if you said yes when asked, and you can change or delete any of them.
 
 **Add a link:** press **Add a link**, then pick the event, a filter if it has one, and the action. The actions are the ones Frameling can do for your audience right now: Quill reactions, dares, a message, a prompt in the jar and so on. Ones that reach your drawing are marked, and only run while **Let the audience interrupt your drawing** is on.
 
 **Filters:** a reward link can be for one reward you made, or any. A cheer or a raid link can need a minimum, so only 500 bits or more makes the big dare happen.
+
+**Where are votes and guesses?** Not in the list, and that's on purpose. They come from people typing in chat, and Frameling never reads chat, so a Twitch event can't carry them. The links screen says so, and a chat bot (Firebot or Streamer.bot) passes them on instead: see [Getting your viewers taking part](help:viewers-take-part).
 
 **Words:** an action that takes words (a message, a sign, a prompt) gets a box. Type fixed words, or for a reward that asks the viewer to type something, tick **Use what the viewer typed**. The action cleans them first, and Frameling doesn't keep them.
 
@@ -41,5 +43,5 @@ Next: [Twitch links](help:twitch-links). See also [Audience features and the On 
 - Channel points need an Affiliate or Partner channel. Cheers, follows, subs and raids don't.
 - Twitch ends a sign-in that is not used for about a month. Then you connect again.
 
-Back to [Connect Twitch](help:twitch).`,
+Back to [Connect Twitch](help:twitch), or on to [Getting your viewers taking part](help:viewers-take-part).`,
 };

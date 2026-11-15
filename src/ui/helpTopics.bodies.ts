@@ -342,6 +342,8 @@ The first question you meet has a button, **Answer all 25 questions the usual wa
 The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer. Change your mind in **Preferences > Behaviour**. A press that only just misses a dialog's edge never counts either way: every dialog has 24 pixels of dead space all round it, so a near miss does nothing at all. The save question ignores the dim area completely. **Esc** and the close button always work.`,
   streaming: `The **Streaming** tab in Preferences has everything about streaming and sharing your screen, in one place. Open **Preferences** and pick **Streaming**, or press **Ctrl+K** and type "streaming".
 
+**New to streaming with Frameling?** Press **Show me how** at the top of the tab for the whole route, from a Twitch channel to a first vote.
+
 **Streaming tools.** The switch at the top is for people who stream. Switch it off if you never do, and dares, votes, the prompt jar, Twitch, the stream overlay and the rest go out of sight, and the **Streaming** menu leaves the menu bar. Nothing is lost. **Choose one by one** opens each tool with its own settings, and your usual answers to the questions they ask.
 
 **Sharing your screen.** These stay on the tab even when the streaming tools are tucked away, because they are for anybody who shares a screen: **Stream-safe mode**, **Going live with OBS**, and the capture view (its background, mouse pointer and size). Their commands are in **View > Sharing your screen**.

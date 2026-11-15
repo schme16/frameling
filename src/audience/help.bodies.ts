@@ -1,5 +1,27 @@
 // The words of the topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'viewers-take-part': `Viewers can take part in two ways, and they need different things. **Twitch events** (channel point rewards, cheers, follows, subs, raids) reach Frameling straight from Twitch, with nothing else installed. **Chat** (votes, guesses, a prompt typed in the box) never does: Frameling doesn't read your chat, on purpose, so a **bot** (a small program that reads chat for you) has to pass it on. This page is the route, in order.
+
+**1. Switch audience features on.** **Preferences > Streaming > Audience features**. A red **On air** pill shows, and **Stop** (**Ctrl+Alt+K**) drops everything. Leave **Let the audience interrupt your drawing** off until you want dares and pen tricks to touch your art. See [Audience features](help:audience).
+
+**2. Connect Twitch, for events.** In **Preferences > Streaming**, find **Twitch**: tick what you want to hear, press **Connect Twitch**, and approve the short code. Frameling has its own Twitch app, so that's all. If your copy says it has none, paste your own Client ID where it asks. See [Connect Twitch](help:twitch).
+
+**3. Link events to actions.** On the same screen press **Add a link**: a reward makes Quill cheer, a cheer sets off a dare. A reward that asks viewers to type something can feed the [prompt jar](help:prompt-jar). See [Twitch links](help:twitch-links).
+
+**4. Add a bot, for chat.** Without one, nobody can vote or guess. **Firebot** is the easy one, and runs on Linux:
+- In Frameling, open **Preferences > Streaming**, find **Actions door**, and press **Save setup file**.
+- In Firebot, open its **File** menu, then **Firebot Setups**, then **Import Firebot Setup**. Pick the file and paste your key when it asks.
+
+That gives you **!vote**, **!guess** and **!prompt**. Or use Streamer.bot. See [Firebot](help:chat-commands-firebot), [Streamer.bot](help:chat-commands-streamerbot) and [Chat commands](help:chat-commands).
+
+**5. Show your viewers.** Add the overlay to OBS as a **Browser** source, or they can't see the votes or Quill. See [Stream overlay](help:stream-overlay).
+
+**6. Run your first vote.** **Streaming > Votes > Start a vote** (**Ctrl+Alt+Y**), then type **!vote 1** in your own chat and watch the bars grow. See [Votes](help:votes).
+
+## Good to know
+- **Votes and guesses aren't on the Twitch links list**, because they come from chat, not from an event.
+- Bot and Frameling must run on the same computer.
+- Only want rewards and cheers? Do steps 1 to 3.`,
   audience: `Some people draw live. Audience features are the small, safe ways viewers or stream tools can join in, like cheering Quill on. This page is the switch, and the safety every one of them shares.
 
 **It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Streaming > Audience features**, **Streaming > Audience features**, or **Audience features** in the command palette.
