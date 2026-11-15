@@ -32,6 +32,13 @@ export interface Command {
   keywords?: string[];
   /** Grey out when false. */
   enabled?: (s: State) => boolean;
+  /**
+   * What would turn it on, in a sentence that says what to do ("Select some shapes first"). Asked only while `enabled`
+   * says no, so it can look at the state to say which of several things is missing. Menus, tooltips, buttons and the
+   * palette show it, where they said nothing at all before. Shared sentences live in `reasons.ts`; `reasonFor` there
+   * also finds the ones kept by command id in `commandReasons.ts`.
+   */
+  reason?: (s: State) => string | undefined;
   /** Shows a tick in menus when true. */
   checked?: (s: State) => boolean;
   run: () => void | Promise<void>;

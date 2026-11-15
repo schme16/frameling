@@ -5,6 +5,7 @@ import { allPanels, allTools, getCommand, getHelp, registerCommand, unregisterCo
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
+import { pickKindReason } from '../core/reasons';
 import { pickTool } from '../tools/pick';
 import { WORKSPACE_KEYS } from './switcherModel';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
@@ -46,6 +47,7 @@ export function syncDynamicCommands(): void {
       keywords: ['tool', ...(t.help ? getHelp(t.help)?.keywords ?? [] : [])],
       layers: t.layers,
       enabled: () => toolEnabled(t.layers),
+      reason: pickKindReason(t.layers, `The ${t.label.toLowerCase()} tool`),
       checked: (s) => s.ui.tool === t.id,
       run: () => pickTool(t.id),
     });

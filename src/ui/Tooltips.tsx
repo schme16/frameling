@@ -7,6 +7,7 @@
 // `title` is moved to `data-tip` the first time it's pointed at, so the browser's own grey tooltip never shows.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCommand, getHelp } from '../core/registry';
+import { commandEnabled, commandReason } from './palette';
 import { effectiveKeys, platformKeysText } from './keys';
 import { openHelp } from './overlays';
 import { Keys } from './ShortcutChip';
@@ -14,6 +15,8 @@ import { Keys } from './ShortcutChip';
 export interface TipContent {
   title: string;
   desc?: string;
+  /** What would turn a greyed command on, shown above the description. */
+  why?: string;
   /** Raw shortcut strings (`Mod+Z`). */
   keys: string[];
   help?: string;
@@ -57,7 +60,9 @@ export function tipFor(el: Element): TipContent | null {
   const keys = keysAttr ? keysAttr.split(',').map((s) => s.trim()).filter(Boolean) : cmd ? effectiveKeys(cmd) : [];
   const help = el.getAttribute('data-help') || cmd?.help || undefined;
   const desc = el.getAttribute('data-tip-desc') || cmd?.description || undefined;
-  return { title: platformKeysText(title), desc: desc && platformKeysText(desc), keys, help: help && getHelp(help) ? help : undefined };
+  // A greyed command says what would turn it on, so the tip is the answer to "why is this grey?".
+  const why = cmd && !el.getAttribute('data-tip-desc') && !commandEnabled(cmd) ? commandReason(cmd) : undefined;
+  return { title: platformKeysText(title), desc: desc && platformKeysText(desc), why, keys, help: help && getHelp(help) ? help : undefined };
 }
 
 interface Shown {
@@ -268,6 +273,7 @@ export function TooltipLayer() {
         <strong>{tip.title}</strong>
         {tip.keys[0] && <Keys shortcut={tip.keys[0]} />}
       </div>
+      {tip.why && <div className="ui-tip-why">{tip.why}</div>}
       {tip.desc && <div className="ui-tip-desc">{tip.desc}</div>}
       {tip.help && !shown.aside && (
         <button

@@ -109,6 +109,15 @@ describe('tooltips and context help', () => {
     expect(tip.desc).toBe('Does a thing.');
     expect(tip.keys).toEqual(['Mod+t']);
   });
+  it('a greyed command says what would turn it on, and an enabled one says nothing of the kind', () => {
+    let ready = false;
+    registerCommand({ id: 'tip.grey', label: 'Greyable', category: 'Test', enabled: () => ready, reason: () => 'Select some shapes first.', run: () => {} });
+    const el = document.createElement('button');
+    el.setAttribute('data-command', 'tip.grey');
+    expect(tipFor(el)!.why).toBe('Select some shapes first.');
+    ready = true;
+    expect(tipFor(el)!.why).toBeUndefined();
+  });
   it('reads plain data-tip and title, title winning nothing over data-tip', () => {
     const el = document.createElement('div');
     el.setAttribute('title', 'Hello');

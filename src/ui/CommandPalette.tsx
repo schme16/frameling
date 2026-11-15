@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { syncDynamicCommands, isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
 import { openHelp, openPrefs, overlays, closePalette } from './overlays';
-import { commandEnabled, loadSettingRows, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, settingRowsReady, withSettings, type ShownHit } from './palette';
-import { toast } from './toast';
+import { commandEnabled, commandReason, explainNotNow, loadSettingRows, noteRecentCommand, paletteItems, rankPalette, runCommand, settingRowsReady, withSettings, type ShownHit } from './palette';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
 import { Modal } from './Modal';
@@ -54,8 +53,7 @@ function PaletteDialog() {
     const c = hit.item.command;
     if (!commandEnabled(c)) {
       // Say why nothing happened, with a way to find out more.
-      const help = c.help;
-      toast(notNowMessage(c), { kind: 'info', action: help ? { label: 'Read about it', run: () => openHelp(help) } : undefined });
+      explainNotNow(c, openHelp);
       return;
     }
     closePalette();
@@ -105,6 +103,8 @@ function PaletteDialog() {
           const showHead = !query.trim() && head !== lastCategory;
           lastCategory = head;
           const key = it.kind === 'command' ? effectiveKeys(it.command)[0] : '';
+          // A greyed row says what would turn it on, where its description would be.
+          const why = it.kind === 'command' && !enabled ? commandReason(it.command) : undefined;
           return (
             <div key={`${it.kind}:${it.id}`}>
               {showHead && <div className="ui-palette-head">{head}</div>}
@@ -121,7 +121,7 @@ function PaletteDialog() {
                   {it.kind === 'help' && <Icon name="help" size={15} />}
                   {it.kind === 'setting' && <Icon name="sliders" size={15} />}
                   <span className="ui-palette-label">{it.label}</span>
-                  {it.description && <span className="ui-palette-desc">{it.description}</span>}
+                  {why ? <span className="ui-palette-desc ui-palette-why">{why}</span> : it.description && <span className="ui-palette-desc">{it.description}</span>}
                 </span>
                 {query.trim() && <span className="ui-palette-cat">{it.kind === 'help' ? 'Help' : it.category}</span>}
                 {key && <Keys shortcut={key} />}

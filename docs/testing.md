@@ -137,10 +137,12 @@ audit passed the whole time a panel could not be found.
 - **State coverage** (`state-coverage.test.ts`): for a new drawing, a vector drawing with and without a selection, pixel
   art, a tilemap, a symbol open, playing, a drawing with clips, and every optional feature switched off, what is
   present, greyed or absent. It fails on absent and unexplained, and counts what still goes quiet (`known-gaps.ts`).
+  A greyed command must also say what would turn it on (`reason` on the command, or `src/core/commandReasons.ts`),
+  checked in every state it greys in; the ones that don't yet are on `known-no-reason.ts`, which can only shrink.
   The small-screen layout and a panel that is on screen but empty need the running app, so they are not in here.
 
 `FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
-rail and every command greyed with only the shared sentence.
+rail and how many greyed commands say why.
 
 ### Case-sensitive imports
 

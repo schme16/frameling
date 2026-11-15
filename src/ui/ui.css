@@ -1705,6 +1705,12 @@ body.ui-resizing * {
 .ui-tip-head strong {
   font-size: var(--fs);
 }
+.ui-tip-why {
+  margin-top: 3px;
+  color: var(--text);
+  line-height: 1.4;
+  font-weight: 700;
+}
 .ui-tip-desc {
   margin-top: 3px;
   color: var(--muted);
@@ -1981,6 +1987,10 @@ body.ui-resizing * {
   white-space: nowrap;
   font-size: var(--fs-small);
   opacity: 0.7;
+}
+.ui-palette-why {
+  opacity: 1;
+  font-style: italic;
 }
 .ui-palette-cat {
   font-size: 11px;

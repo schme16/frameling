@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { menuTitle, resolveMenus, type MenuItem } from './menus';
 import { useMenuEdits } from './menuState';
-import { commandEnabled, runCommand } from './palette';
+import { commandEnabled, explainNotNow, runCommand } from './palette';
+import { openHelp } from './overlays';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
 import { effectiveKeys } from './keys';
@@ -261,7 +262,8 @@ export function MenuBar() {
         onMouseEnter={inSub ? undefined : () => askSub(null)}
         onKeyDown={(e) => (inSub ? onSubKey(e, menu) : onItemKey(e, menu))}
         onClick={() => {
-          if (!enabled) return;
+          // A greyed item stays put and says what would turn it on; the menu stays open to pick something else.
+          if (!enabled) return explainNotNow(c, openHelp);
           setOpen(null);
           setMoreOpen(false);
           runCommand(c);

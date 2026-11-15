@@ -1,6 +1,7 @@
 // What the command palette searches and how it ranks. The component (CommandPalette.tsx) is only the looks.
 import { allCommands, allHelp, type Command, type HelpTopic } from '../core/registry';
 import { store } from '../core/store';
+import { reasonFor } from '../core/commandReasons';
 import { scoreWord, wordsOf } from './match';
 import { readRaw, writeJson } from './mini';
 import { toast } from './toast';
@@ -193,11 +194,25 @@ export function noteRecentCommand(id: string): void {
   writeJson(RECENT_KEY, [id, ...recentCommands().filter((x) => x !== id)].slice(0, 8));
 }
 
-/** Runs a command the way a click would: skips disabled ones, and says so (gently) if it fails. */
+/** What would turn a greyed command on, in the state the app is in now. Undefined when nobody has written it down. */
+export function commandReason(c: Partial<Pick<Command, 'id' | 'reason'>>): string | undefined {
+  return reasonFor(c, store().get());
+}
+
 /** What to say when someone picks a command that can't run right now, instead of nothing happening. */
-export function notNowMessage(c: Pick<Command, 'label' | 'help'>): string {
+export function notNowMessage(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason'>>): string {
+  const why = commandReason(c);
+  if (why) return `"${c.label}" is greyed out. ${why}`;
   return `"${c.label}" can't be used right now.${c.help ? ' Its help page says what it needs.' : ' Try selecting something or moving to a frame with a drawing first.'}`;
 }
+
+/** Pressing a greyed command (menu, button or palette row) says why, with a way to read more. Menus and buttons stayed silent before. */
+export function explainNotNow(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason'>>, openHelp: (id: string) => void): void {
+  const help = c.help;
+  toast(notNowMessage(c), { kind: 'info', action: help ? { label: 'Read about it', run: () => openHelp(help) } : undefined });
+}
+
+/** Runs a command the way a click would: skips disabled ones, and says so (gently) if it fails. */
 
 export function runCommand(c: Command): boolean {
   if (!commandEnabled(c)) return false;

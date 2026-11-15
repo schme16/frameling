@@ -29,6 +29,8 @@ import { getPrefs } from '../../src/ui/prefs';
 import { railFor, type RailTool } from '../../src/ui/toolArrange';
 import { loadApp, reachability, SITUATIONS, type Reach, type Situation } from './app';
 import { ABSENT_UNEXPLAINED, CEILINGS, PANELS_TUCKED_AWAY_SILENTLY } from './known-gaps';
+import { NO_REASON_YET } from './known-no-reason';
+import { hasReason, reasonFor } from '../../src/core/commandReasons';
 
 type Cell = 'present' | 'greyed' | 'absent';
 
@@ -37,6 +39,8 @@ interface Snapshot {
   kind: LayerKind | null;
   palette: Map<string, Cell>;
   menu: Map<string, Cell>;
+  /** What each command greyed in this state says would turn it on (undefined: it says nothing). */
+  reasons: Map<string, string | undefined>;
   /** Tools on the rail, and whether the rail greys the ones that do not work here (otherwise it leaves them out). */
   rail: { shown: Set<string>; off: Set<string> };
 }
@@ -48,18 +52,26 @@ function snapshot(situation: Situation): Snapshot {
   syncDynamicCommands();
   const { doc, ui } = store().get();
   const kind = findLayer(doc, ui.activeLayerId)?.kind ?? null;
+  const reasons = new Map<string, string | undefined>();
   const palette = new Map<string, Cell>();
-  for (const it of paletteItems()) if (it.kind === 'command' && !isStaleCommand(it.id)) palette.set(it.id, cellOf(it.command));
+  for (const it of paletteItems()) {
+    if (it.kind !== 'command' || isStaleCommand(it.id)) continue;
+    palette.set(it.id, cellOf(it.command));
+    if (!commandEnabled(it.command)) reasons.set(it.id, reasonFor(it.command, store().get()));
+  }
   const menu = new Map<string, Cell>();
   const walk = (list: MenuItem[]) => {
     for (const i of list) {
-      if (i.kind === 'command') menu.set(i.command.id, cellOf(i.command));
+      if (i.kind === 'command') {
+        menu.set(i.command.id, cellOf(i.command));
+        if (!commandEnabled(i.command)) reasons.set(i.command.id, reasonFor(i.command, store().get()));
+      }
       else if (i.kind === 'submenu') walk(i.items);
     }
   };
   for (const m of resolveMenus()) walk(m.items);
   const r = railFor(allTools() as RailTool[], kind, undefined, getPrefs().toolsOffLayer === 'grey');
-  return { situation, kind, palette, menu, rail: { shown: new Set(r.shown.map((id) => `tools.${id}`)), off: new Set(r.off.map((id) => `tools.${id}`)) } };
+  return { situation, kind, palette, menu, reasons, rail: { shown: new Set(r.shown.map((id) => `tools.${id}`)), off: new Set(r.off.map((id) => `tools.${id}`)) } };
 }
 
 let shots: Snapshot[] = [];
@@ -121,14 +133,33 @@ describe('state coverage audit', () => {
     expect(Object.keys(ABSENT_UNEXPLAINED).filter((id) => !unexplained.includes(id)), 'now explained or gone: delete the line').toEqual([]);
   });
 
-  it('a greyed command is greyed with a reason: its help page, which the palette links to', () => {
-    // The palette says "can't be used right now" and offers "Read about it" (help id). A greyed command with no help
-    // id gets a vaguer sentence. The help audit already fails a command with no help id; this is the same fact from
-    // the point of view of the person who just pressed a greyed row.
+  it('a greyed command has a help page to link to, for the "Read about it" that comes with its reason', () => {
+    // A greyed command says what would turn it on, and offers "Read about it" (help id). The help audit already fails a
+    // command with no help id; this is the same fact from the point of view of the person who just pressed a greyed row.
     const everGreyed = new Set(shots.flatMap((s) => [...s.palette].filter(([, c]) => c === 'greyed').map(([id]) => id)));
     const vague = commands.filter((c) => everGreyed.has(c.id) && !c.help).map((c) => c.id);
-    say(`Commands greyed in at least one state, each with only the shared sentence plus a link to its help page, no reason written for it: ${everGreyed.size}`);
+    say(`Commands greyed in at least one state: ${everGreyed.size}`);
     expect(vague).toEqual([]);
+  });
+
+  it('a greyed command says what would turn it on, or is on the known list that only shrinks', () => {
+    // A command counts as having a reason when it gives one in every state it is grey in, not just somewhere.
+    const greyIn = new Map<string, Snapshot[]>();
+    for (const s of shots) for (const id of s.reasons.keys()) greyIn.set(id, [...(greyIn.get(id) ?? []), s]);
+    const silentHere = [...greyIn].filter(([id, list]) => list.some((s) => !s.reasons.get(id))).map(([id]) => id);
+    // The states above are eight of many. Any command that can grey at all (it has an `enabled`) needs a reason too, so a
+    // new one is caught even when none of the eight states happens to grey it.
+    const canGrey = commands.filter((c) => c.enabled && !hasReason(c)).map((c) => c.id);
+    const silent = [...new Set([...silentHere, ...canGrey])];
+    const given = [...greyIn.keys()].filter((id) => !silent.includes(id));
+    say(`Commands greyed in at least one state: ${greyIn.size}. Saying what would turn them on: ${given.length}. Still silent: ${silent.length}${silent.length ? ` (${silent.join(', ')})` : ''}`);
+    // Pay one off by writing its reason (in the command, or in src/core/commandReasons.ts) and deleting its line.
+    // Do not add a line to get a new command past this: write the sentence, it is one line.
+    expect(silent.filter((id) => !(id in NO_REASON_YET)), 'greyed with no reason: write one').toEqual([]);
+    expect(Object.keys(NO_REASON_YET).filter((id) => !silent.includes(id)), 'has a reason now, or is gone: delete the line').toEqual([]);
+    // A reason written for a command that never greys is a sentence nobody sees: it has gone stale.
+    const never = allCommands().filter((c) => hasReason(c) && !c.hidden && !isStaleCommand(c.id) && !greyIn.has(c.id) && !shots.some((s) => s.palette.has(c.id) || s.menu.has(c.id)));
+    expect(never.map((c) => c.id)).toEqual([]);
   });
 
   it('tools that leave the rail on another kind of layer are counted, and the number only goes down', () => {
@@ -153,11 +184,12 @@ describe('state coverage audit', () => {
     expect(now).toEqual(CEILINGS.menuCommandsVanish);
   });
 
-  it('greyed menu items are counted (they say nothing when pressed)', () => {
-    // Pressing a greyed palette row explains itself; pressing a greyed menu item does nothing and says nothing.
+  it('a greyed menu item can say why: every one has a reason to show in its tip and when pressed', () => {
+    const silent = (s: Snapshot) => [...s.menu].filter(([id, c]) => c === 'greyed' && !s.reasons.get(id));
     const greyed = (s: Snapshot) => [...s.menu].filter(([, c]) => c === 'greyed').length;
-    for (const s of shots) say(`Greyed menu items with no reason, ${s.situation.id}: ${greyed(s)}`);
+    for (const s of shots) say(`Greyed menu items, ${s.situation.id}: ${greyed(s)}, with no reason: ${silent(s).length}`);
     expect(shots.some((s) => greyed(s) > 0)).toBe(true);
+    expect(shots.flatMap((s) => silent(s).map(([id]) => `${id} in ${s.situation.id}`)).filter((x) => !(x.split(' ')[0] in NO_REASON_YET))).toEqual([]);
   });
 
   it('a workspace that tucks panels away names them, or is on the known list', () => {
