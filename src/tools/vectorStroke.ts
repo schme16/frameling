@@ -6,7 +6,7 @@ import type { BrushSettings, StrokePoint, StrokeShape } from '../core/format';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
 import { getPredicted } from '../canvas/controller';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import type { VectorDynamics } from '../tablet/dynamics';
@@ -118,9 +118,15 @@ export class VectorStroke {
     this.points.push(this.point(e));
     const op = this.dyn?.opacity?.(e);
     if (op !== undefined) this.strengths.push(op);
-    // A second window, if one is open, follows the line as it grows.
-    if (inkWanted()) noteInk(this.shape());
+    // A second window, if one is open, follows the line as it grows. The shape is made when the link is ready for it (once a
+    // screen frame at most), not on every point.
+    if (inkWanted()) noteInk(this.inkOf);
   }
+
+  private inkOf = () => {
+    const s = this.shape();
+    return s && withMirror(s);
+  };
 
   /** The stroke as it would be committed right now. */
   shape(withPredicted = false): StrokeShape | null {

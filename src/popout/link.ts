@@ -3,14 +3,14 @@
 // no picture window is open: the store has no extra listener and the tools' taps are empty.
 import { store, type State } from '../core/store';
 import { currentChoice, onChoiceChange } from '../core/choices';
-import type { StrokeShape } from '../core/format';
 import { subscribeViewSettings } from '../canvas/viewSettings';
 import { cssVar, subscribeTheme } from '../canvas/theme';
 import { lookingThrough } from '../camera/ops';
 import { documentTitle } from '../io/document';
 import { getMarksState, subscribeMarksState } from '../notes/marksState';
 import { backgroundColour, type BackgroundChoice } from './capture';
-import { setInkTap, setLiveTap } from './ink';
+import { setInkTap, setLiveTap, setPixelTap, type InkMaker, type InkShapes, type PixelFeed } from './ink';
+import { waitAfter } from './pace';
 import { Mirror } from './mirror';
 import type { FromPopout, Look, LiveDrawing, PopoutTheme, ToPopout } from './protocol';
 import { marksVisible, throughCamera, type CameraChoice, type MarksChoice } from './show';
@@ -59,7 +59,12 @@ function start(port: MessagePort): void {
   session?.stop();
   let theme = readTheme();
   let raf = 0;
-  let ink: StrokeShape | null = null;
+  let ink: InkShapes | InkMaker = null;
+  // The pixels being painted on: what to ask for, whether something is waiting, and when the port may be used again.
+  let feed: PixelFeed | null = null;
+  let pixelsDirty = false;
+  let pixelsRestart = false;
+  let pixelsAt = 0;
   let live: LiveDrawing | null = null;
   let inkDirty = false;
   let liveDirty = false;
@@ -87,9 +92,21 @@ function start(port: MessagePort): void {
   // Strokes and half-done changes go once per screen frame at most: the picture window cannot show more anyway.
   const flush = () => {
     raf = 0;
-    if (inkDirty) mirror?.setInk(ink);
+    if (inkDirty) mirror?.setInk(typeof ink === 'function' ? ink() : ink);
     if (liveDirty) mirror?.setLive(live);
     inkDirty = liveDirty = false;
+    if (feed && pixelsDirty) {
+      if (performance.now() < pixelsAt) later();
+      else {
+        pixelsDirty = false;
+        const p = feed.take(pixelsRestart);
+        pixelsRestart = false;
+        if (p) {
+          mirror?.setPixels(p);
+          pixelsAt = performance.now() + waitAfter(p.data.byteLength);
+        }
+      }
+    }
   };
   const later = () => {
     if (!raf) raf = requestAnimationFrame(flush);
@@ -128,6 +145,19 @@ function start(port: MessagePort): void {
         if (s === null) flush();
         else later();
       });
+      setPixelTap((f) => {
+        if (f === null) {
+          feed = null;
+          pixelsDirty = false;
+          pixelsRestart = false;
+          pixelsAt = 0;
+          mirror?.setPixels(null);
+          return;
+        }
+        feed = f;
+        pixelsDirty = true;
+        later();
+      });
       setLiveTap((l) => {
         live = l;
         liveDirty = true;
@@ -136,6 +166,12 @@ function start(port: MessagePort): void {
       });
     }
     mirror.hello();
+    // The second window starts again, so the pixels in progress go again from the start.
+    if (feed) {
+      pixelsRestart = true;
+      pixelsDirty = true;
+      later();
+    }
   };
 
   port.onmessage = (e) => {
@@ -150,6 +186,7 @@ function start(port: MessagePort): void {
     for (const u of unsubs.splice(0)) u();
     setInkTap(null);
     setLiveTap(null);
+    setPixelTap(null);
     if (raf) cancelAnimationFrame(raf);
     try {
       port.close();

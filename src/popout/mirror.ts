@@ -2,10 +2,11 @@
 // only patches (a stroke is a few hundred bytes), and the look (playhead, playing, camera) as a tiny message of its own.
 // If anything about the change is not a clean step from what was last sent, the whole drawing is sent again, so the second
 // window can never drift. Nothing here touches the DOM or Electron, so it is tested on its own.
-import type { Doc, StrokeShape } from '../core/format';
+import type { Doc } from '../core/format';
+import type { InkShapes } from './ink';
 import type { DocChange, State } from '../core/store';
 import { sameCapture } from './capture';
-import type { Look, LiveDrawing, ToPopout } from './protocol';
+import type { Look, LiveDrawing, PixelPatch, ToPopout } from './protocol';
 
 export interface MirrorSource {
   get(): State;
@@ -19,7 +20,7 @@ export class Mirror {
   private sent: Doc | null = null;
   private seq = 0;
   private look: Look | null = null;
-  private ink: StrokeShape | null = null;
+  private ink: InkShapes = null;
   private live: LiveDrawing | null = null;
   /** How many whole drawings and how many patch messages went out (for tests and the perf numbers). */
   sentDocs = 0;
@@ -62,10 +63,15 @@ export class Mirror {
   }
 
   /** The stroke in progress (or null). */
-  setInk(ink: StrokeShape | null): void {
+  setInk(ink: InkShapes): void {
     if (ink === this.ink) return;
     this.ink = ink;
     this.out({ t: 'ink', ink });
+  }
+
+  /** A piece of the pixels being painted (or null when that ends). A patch is new every time, so it always goes. */
+  setPixels(patch: PixelPatch | null): void {
+    this.out({ t: 'pixels', patch });
   }
 
   /** A layer's half-done change (or null). */

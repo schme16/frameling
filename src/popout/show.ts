@@ -1,5 +1,5 @@
 // What the picture window shows, worked out from what it was told. Pure functions, so every decision is testable.
-import type { CameraView, Doc, Layer, StrokeShape } from '../core/format';
+import type { CameraView, Doc, Layer, Shape } from '../core/format';
 import { rootDoc } from '../core/symbols';
 import { cameraLayerOf, cameraViewOn, layerCameraMatrix } from '../core/camera';
 import { overlayMatrix } from '../rig/pose';
@@ -78,7 +78,8 @@ export function withoutPictures(doc: Doc): Doc {
 /** A layer's half-done change, in the shape the painter takes. */
 export function liveOf(l: LiveDrawing | null, doc: Doc): Live | null {
   if (!l || doc.editing?.length) return null;
-  return { layerId: l.layerId, kind: 'vector', drawing: l.drawing };
+  // Vector drawings and tile maps both come through here (pixel layers come as pixels, see painter.ts).
+  return l.drawing.kind === 'tilemap' ? { layerId: l.layerId, kind: 'tilemap', drawing: l.drawing } : { layerId: l.layerId, kind: 'vector', drawing: l.drawing };
 }
 
 /** The matrix a stroke in progress is drawn through (the layer's camera speed, then any bone it is attached to). */
@@ -94,4 +95,4 @@ export function inkMatrix(doc: Doc, layerId: string | null, frame: number, camer
   return out;
 }
 
-export type { StrokeShape, FrameParams };
+export type { Shape, FrameParams };

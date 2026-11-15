@@ -107,7 +107,7 @@ describe('the taps the tools call', () => {
     expect(() => noteInk(null)).not.toThrow();
     expect(() => noteLive(null)).not.toThrow();
   });
-  it('pass a stroke on, and only vector drawings for a half-done change', () => {
+  it('pass a stroke on, and vector drawings for a half-done change (pixels go through their own tap)', () => {
     const seen: unknown[] = [];
     const lives: unknown[] = [];
     setInkTap((s) => void seen.push(s));
@@ -119,7 +119,7 @@ describe('the taps the tools call', () => {
     noteLive({ layerId: 'L', kind: 'pixel' });
     noteLive(null);
     expect(seen).toEqual([null]);
-    expect(lives).toEqual([{ layerId: 'L', drawing }, null, null]);
+    expect(lives).toEqual([{ layerId: 'L', drawing }, null]);
     setInkTap(null);
     setLiveTap(null);
   });

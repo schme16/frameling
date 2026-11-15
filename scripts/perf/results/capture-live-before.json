@@ -1,0 +1,300 @@
+{
+  "env": {
+    "reps": 7,
+    "moves": 150,
+    "gapMs": 8,
+    "root": "/mnt/109313D2109313D2/projects/frameling-wt/capture-live-base",
+    "electron": "45.3.0",
+    "when": "2026-11-15T05:26:10.224Z"
+  },
+  "cases": [
+    {
+      "doc": "vector",
+      "tool": "brush",
+      "closed": {
+        "taskMs": 35.4,
+        "scriptMs": 15.6,
+        "gapP95": 16.7,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 33.3,
+        "scriptMs": 17.1,
+        "gapP95": 16.8,
+        "gapMax": 16.8,
+        "popPaints": 41
+      },
+      "liveShare": [
+        20,
+        49.3,
+        73.2
+      ],
+      "liveFinal": 5097,
+      "costMs": -2.1
+    },
+    {
+      "doc": "vector",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 63.1,
+        "scriptMs": 37.7,
+        "gapP95": 16.8,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 59.8,
+        "scriptMs": 38.3,
+        "gapP95": 33.3,
+        "gapMax": 33.4,
+        "popPaints": 18
+      },
+      "liveShare": [
+        36.7,
+        74.3,
+        100
+      ],
+      "liveFinal": 1120,
+      "costMs": -3.3
+    },
+    {
+      "doc": "vector",
+      "tool": "rect",
+      "closed": {
+        "taskMs": 150.6,
+        "scriptMs": 53.1,
+        "gapP95": 33.4,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 155.4,
+        "scriptMs": 49.7,
+        "gapP95": 33.4,
+        "gapMax": 33.5,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 13915,
+      "costMs": 4.8
+    },
+    {
+      "doc": "vector",
+      "tool": "ellipse",
+      "closed": {
+        "taskMs": 78.8,
+        "scriptMs": 29.5,
+        "gapP95": 16.8,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 78.4,
+        "scriptMs": 29,
+        "gapP95": 16.8,
+        "gapMax": 33.3,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 11227,
+      "costMs": -0.4
+    },
+    {
+      "doc": "vector",
+      "tool": "star",
+      "closed": {
+        "taskMs": 63,
+        "scriptMs": 26,
+        "gapP95": 16.8,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 57.1,
+        "scriptMs": 21.7,
+        "gapP95": 16.7,
+        "gapMax": 16.8,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 6303,
+      "costMs": -5.9
+    },
+    {
+      "doc": "vector",
+      "tool": "move",
+      "closed": {
+        "taskMs": 87.8,
+        "scriptMs": 47.6,
+        "gapP95": 33.4,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 68.4,
+        "scriptMs": 41.2,
+        "gapP95": 50,
+        "gapMax": 50.1,
+        "popPaints": 35
+      },
+      "liveShare": [
+        99.3,
+        95.5,
+        93.5
+      ],
+      "liveFinal": 13230,
+      "costMs": -19.4
+    },
+    {
+      "doc": "pixel",
+      "tool": "brush",
+      "closed": {
+        "taskMs": 39.6,
+        "scriptMs": 17.4,
+        "gapP95": 33.3,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 43.8,
+        "scriptMs": 19.9,
+        "gapP95": 33.3,
+        "gapMax": 33.4,
+        "popPaints": 0
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 4509,
+      "costMs": 4.2
+    },
+    {
+      "doc": "pixel",
+      "tool": "pencil",
+      "closed": {
+        "taskMs": 98.7,
+        "scriptMs": 29.4,
+        "gapP95": 50,
+        "gapMax": 66.6
+      },
+      "open": {
+        "taskMs": 92.5,
+        "scriptMs": 29.9,
+        "gapP95": 49.9,
+        "gapMax": 50,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 4509,
+      "costMs": -6.2
+    },
+    {
+      "doc": "pixel",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 38.6,
+        "scriptMs": 17.4,
+        "gapP95": 16.7,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 38.2,
+        "scriptMs": 16.7,
+        "gapP95": 16.8,
+        "gapMax": 16.8,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 709,
+      "costMs": -0.4
+    },
+    {
+      "doc": "pixel",
+      "tool": "rect",
+      "closed": {
+        "taskMs": 428.8,
+        "scriptMs": 403,
+        "gapP95": 33.4,
+        "gapMax": 49.9
+      },
+      "open": {
+        "taskMs": 441.2,
+        "scriptMs": 414.6,
+        "gapP95": 33.4,
+        "gapMax": 50,
+        "popPaints": 1
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 13846,
+      "costMs": 12.4
+    },
+    {
+      "doc": "pixel",
+      "tool": "line",
+      "closed": {
+        "taskMs": 127.9,
+        "scriptMs": 56.2,
+        "gapP95": 33.4,
+        "gapMax": 50.1
+      },
+      "open": {
+        "taskMs": 115.1,
+        "scriptMs": 51.8,
+        "gapP95": 50.1,
+        "gapMax": 50.1,
+        "popPaints": 0
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 909,
+      "costMs": -12.8
+    },
+    {
+      "doc": "pixel",
+      "tool": "move",
+      "closed": {
+        "taskMs": 1198.1,
+        "scriptMs": 1179.6,
+        "gapP95": 550,
+        "gapMax": 550
+      },
+      "open": {
+        "taskMs": 1207.1,
+        "scriptMs": 1187.6,
+        "gapP95": 550,
+        "gapMax": 550,
+        "popPaints": 0
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 0,
+      "costMs": 9
+    }
+  ]
+}

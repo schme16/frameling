@@ -848,6 +848,13 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--
   cropped and captioned); `--help` writes `public/help/stream-capture-<theme>.png`. Run it once per theme. The help runner skips the
   `stream-capture` entry (`scripts/docs/help/capture-view.cjs`). There is no window manager on the virtual screen, so no title bar is
   drawn in either picture. The pure rules are in `test/main/capture.test.ts`.
+- `scripts/perf/capture-live.cjs` is what the capture view costs the drawing window while you draw, and how live it is, per tool
+  (brush, pencil, eraser, rectangle, line, ellipse, star, transform move) on a vector and a pixel document: real mouse events,
+  the window closed and open alternately, the drawing window's main-thread time over the stroke (DevTools `TaskDuration`) and
+  frame gaps, plus a separate pass that screenshots the capture view a quarter, half and three quarters of the way through the
+  stroke and says how much of the finished picture it already shows. `POPOUT_ROOT=<other checkout>` measures that checkout's `dist/`
+  (the before). `--reps`, `--only brush,pixel:move`, `--out`. Results in `scripts/perf/results/capture-live-*.json`.
+- `scripts/e2e/capture-live-media.cjs` records both windows side by side while a tool draws (the clips for the capture-live look).
 - `scripts/perf/popout.cjs` is the frame rate with and without the window, in one run: playback of a heavy drawing (240 frames,
   5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, alternating closed, an animated control window, the
   real window not painting (messages only) and the real window, and printing the median of each. See `scripts/perf/README.md`.

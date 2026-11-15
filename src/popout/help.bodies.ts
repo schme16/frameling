@@ -21,7 +21,8 @@ export const bodies: Record<string, string> = {
 - Working inside a symbol, it keeps showing the whole page.
 
 **Good to know:**
-- Pixel strokes appear when you lift the pen; freehand lines on vector layers show as you draw them.
+- Everything you draw shows as you draw it, a moment behind: pixel and vector brush strokes, erasing, shapes dragged out, the pen, and moving or turning things. If your drawing is slow to follow, the second window drops frames rather than slow you down.
+- Picking things stays in your drawing window. The selection box, the lasso line and the little handles are the interface, not the drawing, so nobody watching sees you pick.
 - If you close the drawing window, the second window closes with it.
 - If the second window gets lost behind others, choose **View > Second window and capture view > Bring the second window forward**.
 - It needs the Frameling desktop app.
@@ -46,7 +47,7 @@ To see what a camera shows, see [Camera](help:camera). To check the picture as i
 
 **Your file stays private.** The window is always called "Frameling capture". It is never told your drawing's name or where the file lives.
 
-**It only watches.** Like the [second window](help:canvas-popout), it follows your strokes and plays along, and nothing in it can change your drawing. It shows the picture as an export would: no grid, guides, handles or notes.
+**It only watches.** Like the [second window](help:canvas-popout), it follows your drawing as you draw it, a moment behind (so your audience sees a line grow rather than appear when you lift the pen), it plays along, and nothing in it can change your drawing. It shows the picture as an export would: no grid, guides, handles or notes.
 
 **On Linux with Wayland**, OBS can only see windows through **PipeWire**. If Window Capture is empty or black, make sure PipeWire and your desktop's xdg-desktop-portal are installed, then add a **Screen Capture (PipeWire)** source and pick the capture view when asked what to share. Windows, macOS and X11 work as they are.
 
