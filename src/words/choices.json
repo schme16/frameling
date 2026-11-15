@@ -1607,5 +1607,30 @@
     "text": "A badge shows while it records, and you can stop it any time.",
     "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Timelapse when a drawing opens\"."
   },
-  "choice.timelapse.autoStart.on.did": { "text": "Started recording a timelapse.", "where": "Toast when \"on\" is used without asking (\"Timelapse when a drawing opens\"), in the past tense." }
+  "choice.timelapse.autoStart.on.did": { "text": "Started recording a timelapse.", "where": "Toast when \"on\" is used without asking (\"Timelapse when a drawing opens\"), in the past tense." },
+  "choice.stream.golive.stop.title": { "text": "When OBS stops streaming", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
+  "choice.stream.golive.stop.question": {
+    "text": "OBS has stopped, and Frameling had turned Stream-safe on for you. Turn it off again? You may still be sharing your screen.",
+    "where": "The question the \"When OBS stops streaming\" dialog asks."
+  },
+  "choice.stream.golive.stop.off.label": { "text": "Turn it off", "where": "Dialog and Preferences: the button for the answer \"off\" in \"When OBS stops streaming\"." },
+  "choice.stream.golive.stop.off.detail": {
+    "text": "File paths, names and keys show as they really are again.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"When OBS stops streaming\"."
+  },
+  "choice.stream.golive.stop.off.did": {
+    "text": "Turned Stream-safe off because OBS stopped.",
+    "where": "Toast when \"off\" is used without asking (\"When OBS stops streaming\"), in the past tense."
+  },
+  "choice.stream.golive.stop.keep.label": { "text": "Leave it on", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"When OBS stops streaming\"." },
+  "choice.stream.golive.stop.keep.detail": {
+    "text": "Stream-safe stays on until you turn it off yourself. The safe choice if you are still sharing.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"When OBS stops streaming\"."
+  },
+  "choice.stream.golive.stop.keep.did": { "text": "Left Stream-safe on after OBS stopped.", "where": "Toast when \"keep\" is used without asking (\"When OBS stops streaming\"), in the past tense." },
+  "choice.stream.golive.stop.wait.label": { "text": "Not now", "where": "Dialog and Preferences: the button for the answer \"wait\" in \"When OBS stops streaming\"." },
+  "choice.stream.golive.stop.wait.detail": {
+    "text": "Leave it on this time and ask again next time.",
+    "where": "Dialog and Preferences: the small line under the \"wait\" answer in \"When OBS stops streaming\"."
+  }
 }

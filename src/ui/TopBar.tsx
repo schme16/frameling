@@ -8,6 +8,7 @@ import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
 import { OnAir } from '../audience/OnAir';
+import { ObsBadge } from '../streamsafe/ObsBadge';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -90,6 +91,7 @@ export function TopBar() {
       </div>
       <div className="ui-topbar-end">
         <OnAir />
+        <ObsBadge />
         <StreamSafeBadge />
         <WorkspaceSwitcher />
         <CmdButton id="edit.undo" icon="undo" label="Undo" />

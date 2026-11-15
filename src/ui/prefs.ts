@@ -108,6 +108,10 @@ export interface Prefs {
   pluginDiagnostics: boolean;
   /** Stream-safe mode: show friendly stand-ins for file paths, your name and keys, so a shared screen gives nothing away. Display only; off by default. See src/core/streamSafe.ts. */
   streamSafe: boolean;
+  /** Going live with OBS: Frameling watches OBS (on this computer or your own network) and turns Stream-safe on by itself when you start streaming or recording. Off by default. The password is not here: it lives on the desktop side. See src/streamsafe/obsLink.ts. */
+  obsLink: boolean;
+  /** Where OBS's WebSocket server listens, as OBS shows it (OBS > Tools > WebSocket Server Settings). */
+  obsAddress: string;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -156,6 +160,8 @@ export const DEFAULT_PREFS: Prefs = {
   newPixelSize: 8,
   pluginDiagnostics: false,
   streamSafe: false,
+  obsLink: false,
+  obsAddress: 'localhost:4455',
 };
 
 /**
@@ -212,6 +218,8 @@ export function migratePrefs(raw: unknown): Prefs {
     pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
     pluginDiagnostics: bool(r.pluginDiagnostics, DEFAULT_PREFS.pluginDiagnostics),
     streamSafe: bool(r.streamSafe, DEFAULT_PREFS.streamSafe),
+    obsLink: bool(r.obsLink, DEFAULT_PREFS.obsLink),
+    obsAddress: typeof r.obsAddress === 'string' && r.obsAddress.trim() ? r.obsAddress.slice(0, 200) : DEFAULT_PREFS.obsAddress,
     pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
     newPixelSize: typeof r.newPixelSize === 'number' && Number.isFinite(r.newPixelSize) ? Math.min(64, Math.max(1, Math.round(r.newPixelSize))) : DEFAULT_PREFS.newPixelSize,
   };

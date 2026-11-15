@@ -85,6 +85,17 @@ const api: FramelingApi = {
     cancel: (id) => call('video:cancel', id),
   },
   beta: { request: (req) => call('beta:request', req) },
+  obs: {
+    status: () => call('obs:status'),
+    setPassword: (password, remember) => call('obs:setPassword', password, remember),
+    connect: (address) => call('obs:connect', address),
+    disconnect: () => call('obs:disconnect'),
+    onEvent: (handler) => {
+      const fn = (_: unknown, m: Parameters<typeof handler>[0]) => handler(m);
+      ipcRenderer.on('obs:event', fn);
+      return () => void ipcRenderer.removeListener('obs:event', fn);
+    },
+  },
   clipboard: { readPicture: () => call('clipboard:readPicture'), writePicture: (png) => call('clipboard:writePicture', png), writeText: (text) => call('clipboard:writeText', text) },
   update: {
     facts: () => call('update:facts'),

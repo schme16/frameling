@@ -119,6 +119,19 @@ export interface BetaBridge {
   request(req: { url: string; method?: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }): Promise<{ status: number; type: string; text: string } | { code: string; message?: string }>;
 }
 
+/** Going live with OBS (src/streamsafe/obsLink.ts, src/main/obs.ts): the connection lives on the desktop side, and so does the password, which never comes up to the page. */
+export interface ObsBridge {
+  /** Whether a password can be kept safely on this computer, and whether there is one (saved or for this session). */
+  status(): Promise<{ canSave: boolean; hasPassword: boolean }>;
+  /** Hands over the password, or null to forget it. `remember` keeps it across restarts where the computer has a real key store. */
+  setPassword(password: string | null, remember: boolean): Promise<{ hasPassword: boolean; saved: boolean }>;
+  /** Tries to reach OBS. Never throws: a missing OBS is an answer, not an error. */
+  connect(address: string): Promise<{ ok: true; streaming: boolean; recording: boolean } | { ok: false; why: 'unreachable' | 'password' | 'refused' | 'address' }>;
+  disconnect(): Promise<void>;
+  /** Streaming or recording started or stopped, or OBS went away. Returns the way to stop listening. */
+  onEvent(handler: (e: { type: 'output'; kind: 'stream' | 'record'; active: boolean } | { type: 'closed' }) => void): () => void;
+}
+
 /** Looking for a newer release and putting it in (src/main/update.ts, src/update). Missing in the web build. */
 export interface UpdateBridge {
   /** What this copy is and how an update would be put in. */
@@ -300,6 +313,8 @@ export interface FramelingApi {
   };
   /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
   beta?: BetaBridge;
+  /** Watching OBS for going live (desktop only). */
+  obs?: ObsBridge;
   /** Looking for a newer Frameling on GitHub, and putting it in when you say so (desktop only). */
   update?: UpdateBridge;
   /** Pictures and text to and from the system clipboard (desktop only). */

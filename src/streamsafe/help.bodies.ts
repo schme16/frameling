@@ -25,4 +25,43 @@ It only changes what's drawn on the screen. Your drawing, your saved files and y
 
 help:saving-and-opening, help:recent-drawings, help:beta-reports
 `,
+  'obs-golive': `**Going live with OBS** means you can forget to hide things, and it still gets done. Frameling watches OBS, and the moment you start streaming or recording it turns [Stream-safe mode](help:stream-safe) on for you. It starts off, and nothing happens until you switch it on.
+
+## What it does
+
+- **You start streaming or recording in OBS.** Stream-safe goes on and Frameling says so, before the first picture goes out.
+- **You stop.** Frameling asks whether to turn Stream-safe off again, because you might still be sharing your screen. Tick **Remember my choice** and it won't ask again. Change it any time in **Preferences > Behaviour**.
+- **Stream-safe was already on?** Frameling leaves it alone. It only offers to undo what it did itself.
+
+It works for any stream OBS sends (Twitch, YouTube, Kick and the rest), because it watches OBS, not the website. It never touches your drawing and never looks at your stream, chat or viewers.
+
+## Step 1: turn on OBS's WebSocket server
+
+This is the step people get stuck on. It is OBS's own door for other programs, built in since OBS 28.
+
+1. In OBS, open the **Tools** menu and choose **WebSocket Server Settings**.
+2. Tick **Enable WebSocket server**.
+3. Leave the **Server Port** as **4455**, unless you changed it.
+4. If **Enable Authentication** is ticked, press **Show Connect Info** to see the password. Then press **OK**.
+
+## Step 2: tell Frameling
+
+1. Choose **View > Look and sound > Going live with OBS on or off**, press **Ctrl+Alt+Shift+O** (**Cmd+Alt+Shift+O** on a Mac), or use the switch in **Preferences > General**.
+2. Leave the address as **localhost:4455**, or type the one OBS shows. OBS on another computer in your home? Type that computer's address.
+3. Type the password, if there is one, and press **Use this password**.
+
+A small pill at the top right shows where things are: **OBS: connected**, **OBS: live** or **OBS: recording**, and a quiet **OBS: not found** when OBS isn't running. Press it to look again.
+
+## OBS isn't running? That's fine
+
+Frameling keeps looking in the background and nothing pops up. Start OBS whenever you like and it finds it within seconds. Closing OBS while live counts as the stream ending. Still not found? Check **Enable WebSocket server** is ticked, and that the address and password match.
+
+## Your password
+
+It stays on your computer, locked with its own key store, and never shows on screen. After you press **Use this password** Frameling doesn't show it again, even to you, and it never goes in your settings file. If your computer has no safe place for it (some Linux desktops with no keyring), Frameling keeps it only until you close it. **Forget password** removes it.
+
+Frameling only talks to OBS on your own computer or network, never the internet, and reads only whether you are streaming or recording.
+
+help:stream-safe, help:stream-capture, help:behaviour
+`,
 };

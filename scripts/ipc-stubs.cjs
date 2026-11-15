@@ -81,6 +81,11 @@ function invokeStubs(library) {
     'gpu:setHardware': () => ({ ok: true, path: '/home/you/.config/Frameling/gpu-off' }),
     'app:restart': () => ({ ok: true }),
     'app:restore': () => null,
+    // No OBS in a harness: it is simply not running.
+    'obs:status': () => ({ canSave: false, hasPassword: false }),
+    'obs:setPassword': () => ({ hasPassword: false, saved: false }),
+    'obs:connect': () => ({ ok: false, why: 'unreachable' }),
+    'obs:disconnect': () => undefined,
     'update:facts': () => ({ how: 'page', beta: false, why: '', version: '0.0.1', platform: 'linux', arch: 'x64', canCheck: false }),
     'update:releases': () => ({ ok: true, releases: [] }),
     'update:install': () => ({ ok: false, message: 'Not in a harness.' }),
