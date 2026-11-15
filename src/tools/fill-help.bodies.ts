@@ -36,7 +36,8 @@ On a pixel layer the paint bucket fills the joined-up pixels of the colour you c
 
 - Zoom in if you are not sure a line really meets. A gap you cannot see still lets colour out.
 - Fill the big areas first, then the small ones. Small shapes next to each other are easier to click that way.
-- Fills on vector layers are real shapes, so they stay sharp at any size.`,
+- Fills on vector layers are real shapes, so they stay sharp at any size.
+- An outline made of filled shapes (traced art, say) stops the colour just like a brush line.`,
   'fill-pixel': `The paint bucket works on pixel art the way it does on vectors: keep your lines on one layer, your flat colour on the one below, and fill inside the lines. Without help a pixel layer only sees itself, so a colour layer under your line art would flood the whole page.
 
 **Fill under your lines:**

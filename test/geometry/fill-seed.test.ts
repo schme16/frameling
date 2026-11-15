@@ -105,12 +105,35 @@ describe("the tester's pan (fixture)", () => {
   const bounds = { x: 0, y: 0, width: doc.width, height: doc.height };
   const inside: [number, number][] = [[560, 420], [520, 400], [620, 380], [600, 440], [660, 350]];
 
-  it('its outline is made of fills, which are paint and not lines: nothing inside it is closed, at any gap setting', () => {
+  it('its outline is made of fills, and a fill counts as a wall: every spot inside fills just the inside, at any gap setting', () => {
     expect(shapes.filter((s) => s.type === 'fill').length).toBeGreaterThan(10);
-    for (const gap of [0, 10, 24, 48]) for (const [x, y] of inside) expect(at(shapes, x, y, gap, bounds).kind).toBe('leak');
+    for (const gap of [0, 10, 24, 48]) {
+      for (const [x, y] of inside) {
+        const r = at(shapes, x, y, gap, bounds);
+        expect(r.kind).toBe('ok');
+        if (r.kind !== 'ok') continue;
+        expect(pointInPaths(r.paths, x, y)).toBe(true);
+        // The inside of the pan, not the canvas: a small part of a 1280x720 stage, and not the rest of it.
+        expect(r.area).toBeGreaterThan(3000);
+        expect(r.area).toBeLessThan(doc.width * doc.height * 0.2);
+        expect(r.box.x).toBeGreaterThan(400);
+        expect(r.box.x + r.box.width).toBeLessThan(800);
+        expect(pointInPaths(r.paths, 100, 100)).toBe(false);
+        expect(pointInPaths(r.paths, 1000, 600)).toBe(false);
+      }
+    }
   });
 
-  it('the same drawing would fill if fills counted as walls, so the gap setting is not what is stopping it', () => {
-    for (const [x, y] of inside) expect(fillRegion(shapes, { x, y }, { gap: 0, bounds, includeFills: true }).kind).toBe('ok');
+  it('every spot inside gives the same area, so the click does not decide it', () => {
+    const areas = inside.map(([x, y]) => {
+      const r = at(shapes, x, y, 0, bounds);
+      return r.kind === 'ok' ? r.area : 0;
+    });
+    for (const a of areas) expect(Math.abs(a - areas[0])).toBeLessThan(areas[0] * 0.02);
+  });
+
+  it('a click outside the pan still fills the outside, not the inside', () => {
+    const r = at(shapes, 100, 100, 0, bounds);
+    expect(r.kind).toBe('leak');
   });
 });

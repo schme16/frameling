@@ -1,7 +1,7 @@
 /**
  * The paint bucket's core: pure, DOM-free, runs in Node.
  *
- * 1. Rasterise every wall (stroke outlines, path edges) into a binary mask, at a scale that keeps it to about 4
+ * 1. Rasterise every wall (stroke outlines, path edges, the edges of fills not under the click) into a binary mask, at a scale that keeps it to about 4
  *    million pixels.
  * 2. Close gaps: dilate the walls by half the gap, flood fill from the click on that fatter mask, grow the filled
  *    area back by the same amount (plus a hair), and let it tuck a pixel under the lines so there are no slivers.
@@ -34,7 +34,7 @@ export interface FillRegionOptions {
   bounds: Rect;
   /** Mask size budget (default 4 million pixels). */
   maxPixels?: number;
-  /** Treat existing fills' edges as walls. */
+  /** Treat every existing fill's edge as a wall. Without it, fills still wall the click in, except the ones under the click. */
   includeFills?: boolean;
   /** Outline fitting settings, in mask pixels. */
   fit?: Partial<LoopOptions>;
@@ -72,12 +72,13 @@ export function maskScale(width: number, height: number, maxPixels = 4_000_000):
 }
 
 /** Rasterises walls into a fresh mask. */
-export function rasteriseBarrier(shapes: readonly Shape[], bounds: Rect, scale: number, includeFills = false): { mask: Uint8Array; w: number; h: number } {
+export function rasteriseBarrier(shapes: readonly Shape[], bounds: Rect, scale: number, includeFills = false, click?: { x: number; y: number }): { mask: Uint8Array; w: number; h: number } {
   const w = Math.max(1, Math.ceil(bounds.width * scale));
   const h = Math.max(1, Math.ceil(bounds.height * scale));
   const mask = new Uint8Array(w * h);
   // A wall under a pixel and a half wide can drop out of a mask, so thin edges are given that much.
-  const parts = shapesToBarrier(shapes, { thinWidth: 1.5 / scale, includeFills });
+  // Below full size, brush lines too thin for the mask are given that much as well (see `floorStrokes`).
+  const parts = shapesToBarrier(shapes, { thinWidth: 1.5 / scale, includeFills, fillsAround: click, floorStrokes: scale < 1 });
   for (const part of parts) {
     const rings = part.rings.map((ring) => {
       const out = new Float64Array(ring.length);
@@ -144,7 +145,7 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   const cy = Math.floor((click.y - bounds.y) * scale);
   if (!(cx >= 0 && cy >= 0 && cx < w && cy < h)) return done({ kind: 'outside', stats });
 
-  const { mask: walls } = rasteriseBarrier(shapes, bounds, scale, opts.includeFills);
+  const { mask: walls } = rasteriseBarrier(shapes, bounds, scale, opts.includeFills, click);
   if (walls[cy * w + cx]) return done({ kind: 'on-line', stats });
 
   // Gap closing. The walls are fattened by the gap radius and flooded from the click. If the click is inside the
