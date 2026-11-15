@@ -33,7 +33,7 @@ help:saving-and-opening, help:recent-drawings, help:beta-reports
 - **You stop.** Frameling asks whether to turn Stream-safe off again, because you might still be sharing your screen. Tick **Remember my choice** and it won't ask again. Change it any time in **Preferences > Streaming**.
 - **Stream-safe was already on?** Frameling leaves it alone. It only offers to undo what it did itself.
 
-It works for any stream OBS sends (Twitch, YouTube, Kick and the rest), because it watches OBS, not the website. It never touches your drawing and never looks at your stream, chat or viewers.
+It works for any stream OBS sends, because it watches OBS and not the website. It never touches your drawing and never looks at your stream, chat or viewers.
 
 ## Step 1: turn on OBS's WebSocket server
 
@@ -50,11 +50,11 @@ This is the step people get stuck on. It is OBS's own door for other programs, b
 2. Leave the address as **localhost:4455**, or type the one OBS shows. OBS on another computer in your home? Type that computer's address.
 3. Type the password, if there is one, and press **Use this password**.
 
-A small pill at the top right shows where things are: **OBS: connected**, **OBS: live** or **OBS: recording**, and a quiet **OBS: not found** when OBS isn't running. Press it to look again.
+A small pill at the top right says where things are: **OBS: connected**, **Live**, **Recording**, or a quiet **OBS: not found**. With audience features on it is the same pill as the red **On air**, with OBS beside it. Press it for a card with the OBS settings and **Look for OBS now**.
 
 ## OBS isn't running? That's fine
 
-Frameling keeps looking in the background and nothing pops up. Start OBS whenever you like and it finds it within seconds. Closing OBS while live counts as the stream ending. Still not found? Check **Enable WebSocket server** is ticked, and that the address and password match.
+Frameling keeps looking quietly. Start OBS whenever you like and it finds it within seconds. Closing OBS while live counts as the stream ending. Still not found? Check **Enable WebSocket server** is ticked, and that the address and password match.
 
 ## Your password
 

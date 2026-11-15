@@ -4,11 +4,13 @@ export const bodies: Record<string, string> = {
 
 **It starts off.** Nothing from outside can reach Frameling until you switch it on: **Preferences > Streaming > Audience features**, **Streaming > Audience features**, or **Audience features** in the command palette.
 
-**Not for you?** Everything for streaming lives in two places: the **Streaming** menu in the menu bar, and the **Streaming** tab in Preferences. **Tuck away the streaming tools** (the palette, **View > Change the menus and features**, or the switch on the Streaming tab) takes the whole family out of your menus in one go, and the **Streaming** menu goes from the bar with it. **Bring back the streaming tools** puts it all back.
+**Not for you?** It all lives in the **Streaming** menu and the **Streaming** tab in Preferences. **Tuck away the streaming tools**, from the palette or that tab's switch, takes the whole family out of your menus at once and the **Streaming** menu leaves the bar with it. **Bring back the streaming tools** puts it all back.
 
 **The On air pill.** While it is on, a red **On air** pill sits in the title bar and nothing can hide it. Press it to see what is waiting and what has happened. A little number says how many are waiting.
 
-**Stop.** The **Stop** button beside the pill, or **Ctrl+Alt+K**, drops everything at once: the queue is emptied, every effect stops, every way in is closed and the switch goes off. The key works from any window if your desktop allows it, and otherwise only while Frameling is the window you are in, so remember the button.
+**OBS shares the pill.** With [Going live with OBS](help:obs-golive) on, what OBS is doing (**Live**, **Rec**, **OBS ready**, **No OBS**) sits beside **Stop**. Press it for the same card, with the OBS settings.
+
+**Stop.** The **Stop** button beside **On air**, or **Ctrl+Alt+K**, drops everything at once: the queue is emptied, every effect stops, every way in is closed and the switch goes off. The key works from any window if your desktop allows it, and otherwise only while Frameling is the window you are in, so remember the button. Stop never touches OBS.
 
 **Kept in check.** Every audience action is on a short list, and anything not on it is turned away. Then:
 - **A cooldown for each kind.** After a Quill cheer, the next Quill action waits a little.

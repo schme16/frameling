@@ -7,9 +7,8 @@ import { commandEnabled, explainNotNow, runCommand } from './palette';
 import { openHelp, openPalette } from './overlays';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
-import { OnAir } from '../audience/OnAir';
+import { LivePill } from './LivePill';
 import { JarChip } from '../promptjar/JarCard';
-import { ObsBadge } from '../streamsafe/ObsBadge';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -91,9 +90,8 @@ export function TopBar() {
         <DocName />
       </div>
       <div className="ui-topbar-end">
-        <OnAir />
+        <LivePill />
         <JarChip />
-        <ObsBadge />
         <StreamSafeBadge />
         <WorkspaceSwitcher />
         <CmdButton id="edit.undo" icon="undo" label="Undo" />
