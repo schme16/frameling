@@ -26,8 +26,8 @@ const api: FramelingApi = {
         },
       }
     : {}),
-  // FRAMELING_EXPORT_READBACK=0 makes export canvases without willReadFrequently, to measure that trade (scripts/perf, test `export`).
-  tuning: { exportReadback: process.env.FRAMELING_EXPORT_READBACK !== '0' },
+  // FRAMELING_EXPORT_READBACK=1 puts willReadFrequently back on export canvases; measured, it costs more than it saves (src/export/readback.ts).
+  tuning: { exportReadback: process.env.FRAMELING_EXPORT_READBACK === '1' },
   files: {
     open: () => call('files:open'),
     read: (path) => call('files:read', path),

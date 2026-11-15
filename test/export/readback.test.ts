@@ -1,30 +1,31 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-// The export canvases' willReadFrequently flag: on unless the desktop side was started with FRAMELING_EXPORT_READBACK=0.
+// The export canvases' willReadFrequently flag: off, because measured it costs more in card-to-processor copies than
+// it saves on reading back (see src/export/readback.ts). FRAMELING_EXPORT_READBACK=1 on the desktop side puts it back.
 describe('export read-back flag', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.resetModules();
   });
 
-  it('is on when nothing says otherwise', async () => {
-    vi.resetModules();
-    const m = await import('../../src/export/readback');
-    expect(m.READBACK_FLAG).toBe(true);
-    expect(m.exportContextOptions).toEqual({ willReadFrequently: true });
-  });
-
-  it('is off when the desktop side says so', async () => {
-    vi.stubGlobal('window', { frameling: { tuning: { exportReadback: false } } });
+  it('is off when nothing says otherwise', async () => {
     vi.resetModules();
     const m = await import('../../src/export/readback');
     expect(m.READBACK_FLAG).toBe(false);
     expect(m.exportContextOptions).toEqual({ willReadFrequently: false });
   });
 
-  it('stays on when the setting is true or missing', async () => {
+  it('is on when the desktop side asks for it', async () => {
+    vi.stubGlobal('window', { frameling: { tuning: { exportReadback: true } } });
+    vi.resetModules();
+    const m = await import('../../src/export/readback');
+    expect(m.READBACK_FLAG).toBe(true);
+    expect(m.exportContextOptions).toEqual({ willReadFrequently: true });
+  });
+
+  it('stays off when the setting is missing, so a stale preload cannot turn it back on', async () => {
     vi.stubGlobal('window', { frameling: { tuning: {} } });
     vi.resetModules();
-    expect((await import('../../src/export/readback')).READBACK_FLAG).toBe(true);
+    expect((await import('../../src/export/readback')).READBACK_FLAG).toBe(false);
   });
 });
