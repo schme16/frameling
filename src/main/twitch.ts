@@ -11,9 +11,13 @@ import { TwitchTokens } from './twitchTokens';
 
 type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => void;
 
-// The Twitch app (public client, no secret) this build signs in with. From the build environment, never the repository.
+// The Twitch app this build signs in with. It is a public client with no secret: the id travels in every sign-in
+// request anyway, so it is not something that can be kept. FRAMELING_TWITCH_CLIENT_ID at build time wins, for anybody
+// who builds their own; otherwise Frameling's own app is used, so an ordinary download can just press Connect Twitch.
+// Somebody who would rather use their own app pastes its id in Preferences > Streaming, which beats both.
 declare const __FRAMELING_TWITCH_CLIENT__: string | undefined;
-const BUILT_IN = typeof __FRAMELING_TWITCH_CLIENT__ === 'undefined' ? '' : __FRAMELING_TWITCH_CLIENT__;
+const FRAMELINGS_OWN = 'wvn3dtyucsey0bcorph85kbiqapjnq';
+const BUILT_IN = (typeof __FRAMELING_TWITCH_CLIENT__ === 'undefined' ? '' : __FRAMELING_TWITCH_CLIENT__) || FRAMELINGS_OWN;
 
 export function registerTwitchIpc(handle: Handle, win: () => Electron.BrowserWindow | null): void {
   const dir = () => app.getPath('userData');
