@@ -194,7 +194,7 @@ export function QuestBar() {
       </header>
       {card ? (
         <div className="qb-card" key={card.key}>
-          <QuillSays anim={script} size={96} className="qb-quill">
+          <QuillSays surface="quest" surfaceId="bar" anim={script} size={96} className="qb-quill">
             <p className="qb-say" aria-live="polite">
               <b className="qb-great">{quillOn ? card.text : 'Great work!'}</b> {didWords}
             </p>
@@ -213,7 +213,7 @@ export function QuestBar() {
         </div>
       ) : (
       <>
-      <QuillSays anim={script} size={96} className="qb-quill">
+      <QuillSays surface="quest" surfaceId="bar" anim={script} size={96} className="qb-quill">
         <p className="qb-say" aria-live="polite">
           {step.say}
         </p>

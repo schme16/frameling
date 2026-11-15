@@ -194,7 +194,7 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
     return (
       <Modal title={label ? `Exporting ${label} (${info.title})` : `Exporting ${info.title}`} onClose={() => abort.current?.abort()} canClose={false} className="ex-running">
         <div className="ex-body ex-progress">
-          <Quill anim="think" size={96} className="ex-quill" />
+          <Quill surface="dialog" surfaceId="progress" anim="think" size={96} className="ex-quill" />
           <div className="ex-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Export progress">
             <div style={{ width: `${pct}%` }} />
           </div>
@@ -332,7 +332,7 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
       </ExportExplainScope>
 
       {error && (
-        <QuillSays anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">
+        <QuillSays surface="dialog" surfaceId="error" anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">
           <span role="alert">
             <Icon name="warning" size={16} /> {error}
           </span>

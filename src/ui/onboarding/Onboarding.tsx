@@ -86,7 +86,7 @@ function Flow() {
   // Show Quill switched on the settings step: a sad goodbye (he stays on screen until it's done), or a cheer.
   const [mood, setMood] = useState<{ kind: 'bye' | 'back'; n: number; playing: boolean } | null>(null);
   const byePlaying = mood?.kind === 'bye' && mood.playing;
-  const quill = useQuillShown(byePlaying);
+  const quill = useQuillShown('onboarding', { force: byePlaying });
   const [dozing, setDozing] = useState<'awake' | 'asleep' | 'woke'>('awake');
   const [beat, setBeat] = useState(0);
   const p = usePrefs((x) => x);
@@ -218,6 +218,7 @@ function Flow() {
           {quill && fit.q > 0 && (
             <div className="ob-quill-stand" style={{ minHeight: fit.q }}>
               <Quill
+                surface="onboarding"
                 anim={anim}
                 size={fit.q}
                 force={byePlaying}

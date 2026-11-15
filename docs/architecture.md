@@ -511,6 +511,17 @@ can change the drawing.
 - `src/ui/mascot/timing.ts` (pure sheet maths), `runtime.ts` (loads `mascot/mascot.json` and `.png`, one shared timer
   moves every Quill on screen by setting `background-position`, an idle clock sends him to sleep), `Quill.tsx`
   (`Quill`, `QuillSays`, `QuillEmpty`), `scripts.ts` (little performances), `goodbye.ts` (turning him off and on).
+- There is one of him, so only one place draws him at a time. `claims.ts` is the authority: every `<Quill>`,
+  `<QuillSays>` and `useQuillShown` names its `surface` (house, ambient, empty, panel, dialog, quest, toast, check,
+  onboarding, hello, lowest claim first), and the highest claim gets him. His house (the Quill panel) is the lowest, so
+  it gives him up to anything else and takes him back when that lets go. A place that doesn't name a surface doesn't
+  compile, and `test/ui/quill-one-of-him.test.tsx` fails if two hold at once or a new place draws him unasked. A place
+  that loses him keeps its words and stands without him, as it does with Show Quill off.
+- In his room (`src/quillpet/QuillPetPanel.tsx`) he potters when nothing louder is going on: `potter.ts` is the pure
+  picking (no repeats, recent things less likely, varied places, lengths and ways), `usePotter.ts` is the one
+  once-a-second clock, which only runs while he's drawn there, the panel is on screen, the window has focus, and
+  nothing is playing. `test/quillpet/potter.test.ts` checks it never reads as a loop; `potter-cost.test.tsx` checks the
+  cost budget. Nothing about pottering is saved, counted or sent anywhere, so nothing can decay.
 - `lines.json` holds everything he says; `lines.ts` reads it (`line`, `lines`, `lineParts`) with typed ids.
 - The rest of the app's words follow the same pattern in `src/words/` (see "The app's words").
 - `mascots.json` and `mascots.ts` are the registry: which mascots there are and which is current (the `mascot`

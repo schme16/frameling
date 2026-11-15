@@ -237,3 +237,87 @@
 .qp-lessons {
   align-items: flex-start;
 }
+
+/* His room: a window, a cushion, a desk and a bowl along one wall, and he potters between them. Pure decoration, so
+   none of it is read out. Positions come from --x (0 to 1 along the room), kept clear of the walls by half his width. */
+.qp-room {
+  --qp-half: 52px;
+  position: relative;
+  width: 100%;
+  height: 148px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  overflow: hidden;
+}
+.qp-room::after {
+  /* the floor */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  background: var(--raised);
+  border-top: 1px solid var(--line);
+}
+.qp-window,
+.qp-bed,
+.qp-desk,
+.qp-bowl,
+.qp-him-at {
+  position: absolute;
+  left: calc(var(--qp-half) + (100% - 2 * var(--qp-half)) * var(--x));
+  transform: translateX(-50%);
+}
+.qp-window {
+  top: 12px;
+  width: 40px;
+  height: 34px;
+  border: 3px solid var(--line);
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(var(--line-soft) 0 0) center / 3px 100% no-repeat, linear-gradient(var(--line-soft) 0 0) center / 100% 3px no-repeat, var(--panel);
+}
+.qp-bed {
+  bottom: 4px;
+  width: 64px;
+  height: 12px;
+  border-radius: 8px 8px 4px 4px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+.qp-desk {
+  bottom: 16px;
+  width: 54px;
+  height: 22px;
+  border-top: 3px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-right: 3px solid var(--line);
+  border-radius: 3px 3px 0 0;
+}
+.qp-bowl {
+  bottom: 14px;
+  width: 26px;
+  height: 11px;
+  border-radius: 0 0 13px 13px;
+  background: var(--line);
+}
+.qp-him-at {
+  bottom: 12px;
+  line-height: 0;
+  /* the hop that gets him there is the sprite's; this carries him along it */
+  transition: left 780ms ease-in-out;
+}
+.qp-out {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qp-him-at {
+    transition: none;
+  }
+}

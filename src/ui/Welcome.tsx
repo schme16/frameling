@@ -41,7 +41,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const pics = useRecentPictures(recent);
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
-  const quill = useQuillShown();
+  const quill = useQuillShown('hello');
   const quillOn = useShowQuill();
   const found = recovery.use((r) => r);
   const firstDrawn = usePrefs((p) => p.firstDrawn);
@@ -66,7 +66,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   return (
     <Modal title={mode === 'welcome' ? 'Welcome to Frameling' : 'New drawing'} size="lg" hideHeader className="ui-welcome" onClose={closeSheet} initialFocus=".ui-preset">
       <div className="ui-welcome-head">
-        {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
+        {quill ? <Quill surface="hello" anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
         <div>
           <h2>{quillOn ? line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new') : mode === 'welcome' ? 'What would you like to make?' : 'Start something new'}</h2>
           <p>{line('welcome.lead')}</p>
