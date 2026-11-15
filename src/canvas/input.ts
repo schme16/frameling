@@ -2,7 +2,7 @@
  * The decisions behind wheel and Space input, kept apart from the DOM so they can be tested: what a wheel event
  * means under the person's wheel preference, and whether a Space press counts as a tap.
  */
-import type { WheelMode } from './choices';
+import type { WheelCtrl, WheelMode } from './choices';
 
 /** How big a bite one wheel notch takes out of the zoom. */
 export type ZoomStep = 'fine' | 'normal' | 'coarse';
@@ -23,11 +23,13 @@ export interface WheelLike {
  * Three sizes of zoom step. **Alt** always takes small careful steps. A **Ctrl** that isn't needed to zoom in the
  * first place takes big ones: with the wheel set to zoom that is plain Ctrl, and with it set to scroll (where Ctrl is
  * what starts the zoom) it is Ctrl and Shift. A trackpad pinch is left alone, since its own steps are already small.
+ * With the wheel already on zoom, `ctrlBig` 'same' turns the plain-Ctrl big steps off (a Ctrl pressed out of habit
+ * then zooms like the wheel alone); Ctrl and Shift still takes big steps either way.
  */
-export function zoomStep(e: WheelLike, mode: WheelMode): ZoomStep {
+export function zoomStep(e: WheelLike, mode: WheelMode, ctrlBig: WheelCtrl = 'bigger'): ZoomStep {
   if (e.altKey) return 'fine';
   const ctrl = e.ctrlKey || e.metaKey;
-  if (ctrl && (mode === 'zoom' || e.shiftKey)) return 'coarse';
+  if (ctrl && ((mode === 'zoom' && (ctrlBig === 'bigger' || e.shiftKey)) || (mode === 'scroll' && e.shiftKey))) return 'coarse';
   return 'normal';
 }
 
@@ -36,14 +38,14 @@ export function zoomStep(e: WheelLike, mode: WheelMode): ZoomStep {
  * the wheel and sends Shift+wheel sideways; 'scroll' mode pans. Two-finger trackpad scrolling carries sideways
  * movement, so it pans in either mode instead of zooming under the person's fingers.
  */
-export function wheelIntent(e: WheelLike, mode: WheelMode): WheelIntent {
+export function wheelIntent(e: WheelLike, mode: WheelMode, ctrlBig: WheelCtrl = 'bigger'): WheelIntent {
   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   let dx = e.deltaX * scale;
   let dy = e.deltaY * scale;
-  if (e.ctrlKey || e.metaKey) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode) };
+  if (e.ctrlKey || e.metaKey) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode, ctrlBig) };
   if (e.shiftKey && dx === 0) [dx, dy] = [dy, 0];
   const sideways = e.shiftKey || dx !== 0;
-  if (mode === 'zoom' && !sideways) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode) };
+  if (mode === 'zoom' && !sideways) return { kind: 'zoom', factorDelta: e.deltaY, step: zoomStep(e, mode, ctrlBig) };
   return { kind: 'pan', dx, dy };
 }
 

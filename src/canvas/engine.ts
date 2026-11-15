@@ -12,7 +12,7 @@ import { altPicks, eyedropperTool, tempEyedropperTool } from '../tools/eyedroppe
 import { paintWellsOn, rightPaints } from '../tools/pixelWells';
 import { swapPaintBack } from '../tools/wells';
 import './choices';
-import type { SpaceTapMode, WheelMode } from './choices';
+import type { SpaceTapMode, WheelCtrl, WheelMode } from './choices';
 import * as ctl from './controller';
 import { subscribePictures } from '../reference/paint';
 import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
@@ -34,7 +34,8 @@ import { drawDecorations } from './decorations';
 import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
-import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
+import { screenToDoc, stageDeviceRect, zoomAbout, type Pt } from './view';
+import { WheelStream, ZOOM_SPEED_SCALE, type ZoomSpeed } from './wheelStream';
 import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
 import { meaningOfPress } from '../tablet/buttons';
 import { penFields } from '../tablet/input';
@@ -1052,14 +1053,20 @@ export class CanvasEngine {
 
   // ---------------------------------------------------------------- wheel and keys
 
+  /** Watches the run of wheel events, to tell a mouse wheel from a pinch. */
+  private wheelStream = new WheelStream();
+
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     this.refreshBounds();
     const { x: sx, y: sy } = this.rel(e.clientX, e.clientY);
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
-    const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
-    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode, intent.step), sx, sy));
-    else {
+    const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'), currentChoice<WheelCtrl>('canvas.wheelCtrl'));
+    if (intent.kind === 'zoom') {
+      const speed = ZOOM_SPEED_SCALE[currentChoice<ZoomSpeed>('canvas.zoomSpeed')];
+      const read = this.wheelStream.read(e, e.timeStamp, { step: intent.step, dpr: window.devicePixelRatio, speed });
+      ctl.setView(zoomAbout(v, v.zoom * read.factor, sx, sy));
+    } else {
       const d = unturnVector(getTurn(), intent.dx, intent.dy);
       ctl.setView({ zoom: v.zoom, panX: v.panX - d.x, panY: v.panY - d.y });
     }

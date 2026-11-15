@@ -154,6 +154,8 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'draw.sharedDrawing': ['shared drawing', 'linked drawing', 'used in several places', 'unlink', 'make unique', 'own copy', 'change everywhere', 'artboards share', 'one drawing many places'],
   'draw.tweenFrame': ['inbetween', 'in-between', 'tween', 'auto key', 'autokey', 'auto keyframe', 'keyframe on edit', 'set key', 'create key'],
   'canvas.wheel': ['scroll', 'scroll wheel', 'zoom', 'pan', 'mousewheel', 'mouse scroll', 'zoom direction', 'scroll zoom', 'scrolling', 'trackpad'],
+  'canvas.wheelCtrl': ['ctrl', 'control', 'ctrl zoom', 'ctrl scroll', 'big steps', 'zoom step', 'wheel modifier'],
+  'canvas.zoomSpeed': ['zoom speed', 'scroll speed', 'zoom too fast', 'zoom too slow', 'wheel speed', 'sensitivity', 'mouse wheel', 'scroll zoom'],
   'canvas.spaceTap': ['spacebar', 'space bar', 'play', 'pause', 'playback', 'hand tool', 'space to play', 'play pause key'],
   'timeline.newKey': ['new frame', 'blank keyframe', 'duplicate frame', 'copy frame', 'new drawing', 'insert blank keyframe', 'keyframe', 'clone'],
   'timeline.holdLonger': ['extend exposure', 'hold', 'ripple', 'insert frames', 'push frames', 'shift frames', 'frame hold', 'exposure', 'ripple edit'],

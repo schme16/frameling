@@ -2,8 +2,10 @@
 export const bodies: Record<string, string> = {
   'canvas-navigation': `**Zoom**
 - Scroll the mouse wheel. It zooms towards your pointer, so what you're looking at stays put. (If you'd rather the wheel slid the page up and down, change **Mouse wheel** in Preferences > Behaviour. Then **Ctrl** (**Cmd** on a Mac) plus the wheel zooms.)
-- Hold **Alt** while you scroll for careful little steps, and **Ctrl** for big sweeping ones. (With the wheel set to slide the page, where Ctrl is already doing the zooming, big steps are **Ctrl and Shift**.)
+- One notch of the wheel zooms about a quarter, however sharp your screen is. Too quick or too slow for your mouse? Change **Wheel zoom speed** in Preferences > Behaviour.
+- Hold **Alt** while you scroll for careful little steps, and **Ctrl** and **Shift** together for big sweeping ones. (If you'd like plain **Ctrl** to take big steps too, switch **Ctrl with the wheel** to Bigger steps in Preferences > Behaviour. Out of the box Ctrl zooms just like the wheel, so pressing it out of habit does no harm.)
 - Pinch on a trackpad. This always zooms.
+- Something feels off? The **Mouse wheel** check in Preferences > Diagnostics shows what your mouse sends and what Frameling does with it.
 - **Ctrl+=** zooms in and **Ctrl+-** zooms out.
 - **Ctrl+0** fits the whole page in the window. **Ctrl+1** shows it at actual size (100%).
 

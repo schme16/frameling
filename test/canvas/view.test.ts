@@ -45,7 +45,7 @@ describe('zooming', () => {
     expect(wheelZoomFactor(-100, 0)).toBeGreaterThan(1);
     expect(wheelZoomFactor(100, 0)).toBeLessThan(1);
     // A trackpad pinch sends small numbers and reacts more strongly per unit than a mouse wheel.
-    expect(Math.log(wheelZoomFactor(-5, 0)) / 5).toBeGreaterThan(Math.log(wheelZoomFactor(-100, 0)) / 100);
+    expect(Math.log(wheelZoomFactor(-5, 0, 'normal', 'pinch')) / 5).toBeGreaterThan(Math.log(wheelZoomFactor(-100, 0)) / 100);
   });
 });
 
