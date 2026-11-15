@@ -40,6 +40,7 @@ See also [Audience features and the On air pill](help:audience).`,
 - \`quill.sign\`: Quill holds up a sign, once you say yes. Body \`{"text":"hello"}\`, cut to 60 plain characters.
 - \`jar.add\`: drops a prompt in your private prompt jar. Body \`{"text":"a frog in a teacup"}\`, cut to 80 plain characters. It never shows on screen: only you pull one out. See [The prompt jar](help:prompt-jar).
 - \`vote.cast\`: one vote in the vote you started. Body \`{"option":2,"voter":"12345678"}\`. Only counted, never acted on, and not held back by the cooldowns. See [Votes](help:votes).
+- \`guess.send\`: one guess in the guessing game you started. Body \`{"guess":"a cat","player":"12345678"}\`. Frameling never says whether it was right, and not held back by the cooldowns. See [Guess the drawing](help:guess).
 
 ## What comes back
 Frameling always says what happened, as JSON with a **reason** your tool can act on:

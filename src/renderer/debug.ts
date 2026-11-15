@@ -18,6 +18,7 @@ import '../quillreacts/debug';
 import '../promptjar/debug';
 import '../votes/debug';
 import '../streamoverlay/debug';
+import '../guess/debug';
 import { uid } from '../core/doc';
 import { activeDrawing } from '../tools/edit';
 import { store } from '../core/store';
