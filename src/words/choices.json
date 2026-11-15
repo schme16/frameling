@@ -2184,24 +2184,24 @@
   },
   "choice.review.keep.title": { "text": "Comments left in a live review", "where": "Name of this choice in Preferences > Behaviour (group: Streaming)." },
   "choice.review.keep.question": {
-    "text": "The review is over and some comments have not been kept. What should happen to them?",
+    "text": "The review is over and some comments are not in your drawing yet. What should happen to them?",
     "where": "The question the \"Comments left in a live review\" dialog asks when you stop a live review."
   },
-  "choice.review.keep.all.label": { "text": "Keep them all", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Comments left in a live review\"." },
+  "choice.review.keep.all.label": { "text": "Add them as they come", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Comments left in a live review\"." },
   "choice.review.keep.all.detail": {
-    "text": "They go into your drawing as notes and marks with the reviewer's name on, in one step that Undo takes back.",
+    "text": "A reviewer's comment goes straight into your drawing as a note or mark with their name on, with no button to press. Your Undo and Redo are not touched. While you stream they wait covered in the card, and go in when it is safe.",
     "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Comments left in a live review\"."
   },
-  "choice.review.keep.all.did": { "text": "Kept every comment in your drawing.", "where": "Toast when \"all\" is used without asking (\"Comments left in a live review\"), in the past tense." },
+  "choice.review.keep.all.did": { "text": "Added every comment to your drawing.", "where": "Toast when \"all\" is used without asking (\"Comments left in a live review\"), in the past tense." },
   "choice.review.keep.none.label": { "text": "Leave them behind", "where": "Dialog and Preferences: the button for the answer \"none\" in \"Comments left in a live review\"." },
   "choice.review.keep.none.detail": {
-    "text": "Nothing is written to your drawing and the comments are forgotten when the card closes.",
+    "text": "Comments wait in the card and nothing is written to your drawing. They are forgotten when the card closes.",
     "where": "Dialog and Preferences: the small line under the \"none\" answer in \"Comments left in a live review\"."
   },
   "choice.review.keep.none.did": { "text": "Left the comments behind.", "where": "Toast when \"none\" is used without asking (\"Comments left in a live review\"), in the past tense." },
   "choice.review.keep.look.label": { "text": "Show me first", "where": "Dialog and Preferences: the button for the answer \"look\" in \"Comments left in a live review\"." },
   "choice.review.keep.look.detail": {
-    "text": "The card stays open with every comment, and you keep the ones you want. Pick this if you are not sure.",
+    "text": "Comments wait in the card and you keep the ones you want. Keeping is one step that Undo takes back. Pick this if you want to read before anything lands.",
     "where": "Dialog and Preferences: the small line under the \"look\" answer in \"Comments left in a live review\"."
   },
   "choice.review.keep.look.did": {

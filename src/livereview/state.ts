@@ -1,11 +1,12 @@
 // The sharer's side of a live review in the drawing window: what is going on (the code, who is in, who is knocking), the inbox
 // of what reviewers said, and their pointers. The link itself is in the main process (src/main/review*.ts); this listens to
-// it and tells it what the sharer decided. Nothing here writes to the drawing except Keep, one undo step.
+// it and tells it what the sharer decided. A reviewer's comments go into the drawing by `landWaiting` (no step in Undo, see
+// src/core/quiet.ts) unless the sharer chose to see them first, and then only Keep writes them, as one undo step.
 import { useSyncExternalStore } from 'react';
 import { audience } from '../audience/index';
-import { currentChoice, useChoice, withChoice } from '../core/choices';
+import { currentChoice, onChoiceChange, useChoice, withChoice } from '../core/choices';
 import { store } from '../core/store';
-import { streamSafe, useStreamSafe } from '../core/streamSafe';
+import { streamSafe, subscribeStreamSafe, useStreamSafe } from '../core/streamSafe';
 import { documentTitle } from '../io/document';
 import { stopReviewFollowing } from '../popout/link';
 import { obs, useObsState } from '../streamsafe/obs';
@@ -15,8 +16,8 @@ import { REVEAL_MS, VIEW_CHOICE } from '../audience/spoilers';
 import { Inbox, driftOf, keepInto, type InboxEntry } from '../review/inbox';
 import { Pointers } from '../review/pointer';
 import { readComments } from '../review/commentsFile';
-import { coverReviewers } from './cover';
-import { keepSummary } from './words';
+import { coverReviewers, landsAtOnce } from './cover';
+import { addedSummary, keepSummary } from './words';
 
 export type Phase = 'off' | 'starting' | 'live' | 'offline' | 'burned';
 
@@ -74,6 +75,59 @@ export function reveal(key: string): void {
   bump();
 }
 
+// ------------------------------------------------------------------ comments going into the drawing
+
+/** Comments are waiting only because a tile or symbol was open: they go in as soon as it is closed. */
+let deferred = false;
+let addedNow = 0;
+let addedTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** The usual answer ("add them as they come") and nothing covered. */
+export const addsAtOnce = (): boolean => landsAtOnce(currentChoice('review.keep'), covered());
+
+/**
+ * Puts every waiting comment into the drawing, when the sharer chose to have them as they come and nothing is covered. They
+ * go in without a step in Undo, so the sharer's Redo and their next Undo are untouched. Returns how many went in.
+ */
+export function landWaiting(): number {
+  if (!addsAtOnce() || inbox.waiting === 0) return 0;
+  const entries = inbox.entries.filter((e) => !e.kept);
+  let wrote = 0;
+  const went = store().updateQuiet((d) => void (wrote = keepInto(d, entries, true)));
+  // Nothing changed because a tile or symbol is open: try again when the store next moves.
+  if (!went && store().nestedTag()) {
+    deferred = true;
+    return 0;
+  }
+  deferred = false;
+  // Whatever was already there (or too many) is done with too, so it is not tried again every time.
+  inbox.markKept(entries.map((e) => e.key));
+  addedNow += wrote;
+  if (wrote && !addedTimer) {
+    addedTimer = setTimeout(() => {
+      addedTimer = null;
+      const n = addedNow;
+      addedNow = 0;
+      if (n) toast(addedSummary(n), { kind: 'info' });
+    }, 900);
+  }
+  bump();
+  return wrote;
+}
+
+let watching = false;
+/** Lands what is waiting whenever the cover lifts, the answer changes, or a tile that was open is closed. */
+function watchForLanding(): void {
+  if (watching) return;
+  watching = true;
+  const again = () => void (inbox.waiting > 0 && landWaiting());
+  subscribeStreamSafe(again);
+  audience.subscribe(again);
+  obs.subscribe(again);
+  onChoiceChange(again);
+  store().subscribe(() => void (deferred && landWaiting()));
+}
+
 // ------------------------------------------------------------------ the events from the desktop side
 
 let off: (() => void) | null = null;
@@ -119,6 +173,7 @@ function onEvent(e: import('../main/reviewHost').HostUiEvent): void {
       const id = inbox.add(e.seat, e.name, e.item, Date.now(), driftOf((e.item as { sig?: string }).sig, store().get().doc));
       // The inbox has it: tell the reviewer, so their outbox can let go. Refused (a full inbox) is not acknowledged.
       if (id) void api()?.ack(e.seat, [id]);
+      landWaiting();
       bump();
       return;
     }
@@ -145,6 +200,7 @@ export function startReview(): void {
   }
   const go = () => {
     off ??= bridge.onEvent(onEvent);
+    watchForLanding();
     review.set({ ...OFF, phase: 'starting', card: true });
     void bridge.start(documentTitle());
   };
@@ -161,9 +217,10 @@ export function stopReview(): void {
   review.set((s) => ({ ...s, phase: 'off', code: '', knocks: [], seats: s.seats.map((x) => ({ ...x, linked: false })) }));
   if (inbox.waiting > 0) {
     withChoice<'all' | 'none' | 'look'>('review.keep', (v) => {
-      if (v === 'all') keepNow();
+      // Anything still waiting is waiting for a reason (covered while you stream, or a tile open): it goes in when that lifts.
+      if (v === 'all') landWaiting();
       else if (v === 'none') inbox.clear();
-      else review.set((s) => ({ ...s, card: true }));
+      review.set((s) => ({ ...s, card: v === 'none' ? false : inbox.waiting > 0 || s.card }));
       bump();
     });
   } else review.set((s) => ({ ...s, card: false, seats: [] }));
@@ -214,7 +271,10 @@ export function bringInComments(text: string): number | null {
   const seat = 10 + files++;
   let n = 0;
   for (const item of f.items) if (inbox.add(seat, f.from, item, Date.now(), driftOf((item as { sig?: string }).sig, store().get().doc))) n++;
-  review.set((s) => ({ ...s, card: n > 0 ? true : s.card }));
+  watchForLanding();
+  landWaiting();
+  // They went straight in, or they wait in the card (to keep, or because something is covered).
+  review.set((s) => ({ ...s, card: n > 0 && inbox.waiting > 0 ? true : s.card }));
   bump();
   return n;
 }

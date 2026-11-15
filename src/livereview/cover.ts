@@ -28,3 +28,10 @@ export const COVERED_POINTER = 'A reviewer\'s pointer';
 export const coveredCount = (n: number): string => (n === 1 ? '1 new comment' : `${n} new comments`);
 /** The small print under a covered comment. */
 export const COVER_NOTE = 'Covered in case your viewers can see this window. Reading it puts it on screen.';
+
+/**
+ * Whether a reviewer's comments go straight into the drawing (no press, and no step in your Undo). It is what you chose
+ * ("add them as they come" is the usual answer) and nothing is being covered: while you stream they wait in the card, out of
+ * sight, and go in by themselves when the cover lifts.
+ */
+export const landsAtOnce = (answer: string | undefined, coveredNow: boolean): boolean => (answer === undefined || answer === 'all') && !coveredNow;

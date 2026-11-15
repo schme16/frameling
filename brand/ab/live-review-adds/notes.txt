@@ -1,0 +1,2 @@
+before-dark.mp4 / before-light.mp4: today. The reviewer circles something and leaves a note; it waits in the sharer's card until they press Keep all.
+after-dark.mp4 / after-light.mp4: the circle and the note are in the sharer's drawing (pin and ring, with the reviewer's name) with no press, and the Undo button is untouched.

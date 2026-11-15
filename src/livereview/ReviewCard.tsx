@@ -7,6 +7,7 @@ import { toast } from '../ui/toast';
 import { DRIFT_NOTE, type InboxEntry } from '../review/inbox';
 import { colourOfSeat } from '../review/pointer';
 import { COVERED_NAME, COVER_NOTE, coveredCount } from './cover';
+import { setChoice, useChoice } from '../core/choices';
 import { admit, goToFrame, inbox, isRevealed, keepNow, refuse, removeSeat, review, reveal, setCard, stopReview, useCovered } from './state';
 import { copyReviewLink } from './link';
 import './review.css';
@@ -40,7 +41,7 @@ function Entry({ e, hide }: { e: InboxEntry; hide: boolean }) {
       <span className="rv-dot" style={{ background: colourOfSeat(e.seat) }} aria-hidden="true" />
       <div className="rv-entry-body">
         <div className="rv-entry-head">
-          <b>{hide ? COVERED_NAME : e.by}</b> <span className="rv-muted">{KIND_WORDS[it.t]}{frame !== undefined ? `, frame ${frame + 1}` : ''}{e.kept ? ', kept' : ''}</span>
+          <b>{hide ? COVERED_NAME : e.by}</b> <span className="rv-muted">{KIND_WORDS[it.t]}{frame !== undefined ? `, frame ${frame + 1}` : ''}{e.kept ? ', in your drawing' : ''}</span>
         </div>
         {open ? (
           <p className="rv-words" data-testid="review.words">{words(e)}</p>
@@ -70,6 +71,7 @@ function Entry({ e, hide }: { e: InboxEntry; hide: boolean }) {
 export function ReviewCard() {
   const s = review.use((v) => v);
   const hide = useCovered();
+  const answer = useChoice('review.keep');
   useSyncExternalStore(
     (fn) => {
       const t = setInterval(fn, 1000);
@@ -150,11 +152,16 @@ export function ReviewCard() {
         </ul>
       )}
       {s.phase === 'live' && here.length === 0 && s.knocks.length === 0 && <p className="rv-muted" role="status">Waiting for somebody to use the code.</p>}
+      <label className="rv-auto" data-testid="review.auto">
+        <input type="checkbox" checked={answer === 'all'} onChange={(e) => setChoice('review.keep', e.target.checked ? 'all' : 'look')} />
+        <span>Add comments to my drawing as they come</span>
+      </label>
+      {answer === 'all' && hide && waiting > 0 && <p className="rv-muted">They are covered while you stream, and go in when it is safe.</p>}
       {entries.length > 0 && (
         <section aria-label="What reviewers said">
           <h3 className="rv-sec">
             Comments{' '}
-            {hide && unread > 0 ? <span className="rv-n" data-testid="review.count">{coveredCount(unread)}</span> : <span className="rv-n" data-testid="review.count">{waiting} waiting</span>}
+            {hide && unread > 0 ? <span className="rv-n" data-testid="review.count">{coveredCount(unread)}</span> : <span className="rv-n" data-testid="review.count">{waiting > 0 ? `${waiting} waiting` : 'all in your drawing'}</span>}
           </h3>
           {hide && <p className="rv-muted">{COVER_NOTE}</p>}
           <ul className="rv-list">

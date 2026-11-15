@@ -121,6 +121,7 @@ const api: FramelingApi = {
       ipcRenderer.on('review:link', fn);
       return () => void ipcRenderer.removeListener('review:link', fn);
     },
+    savePicture: () => call('review:savePicture'),
     onEvent: (handler) => {
       const fn = (_: unknown, e: Parameters<typeof handler>[0]) => handler(e);
       ipcRenderer.on('review:event', fn);

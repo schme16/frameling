@@ -58,3 +58,16 @@ body { background: #121019; font-family: 'Nunito Variable', 'Nunito', system-ui,
 .rv-pointer i { display: block; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 45%), 0 2px 6px rgb(0 0 0 / 35%); }
 .rv-pointer span { margin-top: 8px; padding: 1px 6px; border-radius: 999px; background: rgb(0 0 0 / 72%); color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .rv-pointer { transition: none; } }
+
+/* A review that is over: the picture goes grey and still, a clear strip says so, and the tools that would send something are off. */
+.rv-veil { position: absolute; inset: 0; pointer-events: none; backdrop-filter: grayscale(0.9) brightness(0.88); box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--po-muted) 70%, transparent); }
+.rv-over { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 12px 16px 10px; pointer-events: auto; color: var(--po-text); background: var(--po-raised); border-bottom: 3px solid #e0a020; box-shadow: 0 6px 22px rgb(0 0 0 / 30%); }
+.rv-over-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; min-width: 0; }
+.rv-over-title { font-size: 17px; font-weight: 800; }
+.rv-over-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rv-btn-main { background: var(--po-accent); border-color: var(--po-accent); color: #fff; }
+.rv-btn-main:hover { background: color-mix(in srgb, var(--po-accent) 85%, #000); }
+.rv-over-note { flex: 1 1 100%; color: var(--po-muted); font-size: 12px; }
+.rv-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rv-win[data-over] .rv-surface { cursor: grab; }
+.rv-swatch:disabled { opacity: 0.35; cursor: not-allowed; }

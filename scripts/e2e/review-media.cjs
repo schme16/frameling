@@ -1,5 +1,5 @@
 // The clip for live review: the real app, two windows on screen at once. The sharer draws while a reviewer's window follows,
-// the reviewer points (their dot shows on the sharer's drawing), circles something and leaves a note, and the sharer keeps it.
+// the reviewer points (their dot shows on the sharer's drawing), circles something and leaves a note, and it is in the sharer's drawing with no press.
 // Records the whole virtual screen with ffmpeg, then encodes the board clip and the help clip (always H.264).
 //
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-media.cjs --theme dark [--help] [--ab]
@@ -112,9 +112,8 @@ const run = (cmd, args, opts) => execFileSync(cmd, args, { stdio: ['ignore', 'ig
     await sleep(40);
   }
   await sleep(900);
-  // The sharer reads the note and keeps it.
-  await js(`document.querySelector('[data-testid="review.keepAll"]')?.click()`);
-  await sleep(2200);
+  // Nothing to press: the circle and the note are already in the sharer's drawing, with the reviewer's name on.
+  await sleep(2600);
 
   const finalPng = path.join(tmp, 'last.png');
   fs.writeFileSync(finalPng, (await main.webContents.capturePage()).toPNG());

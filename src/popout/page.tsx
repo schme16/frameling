@@ -10,7 +10,7 @@ import { safeBackground, windowTitle, type CaptureLook } from './capture';
 import { PicturePainter, type Painted } from './painter';
 import type { FromPopout, PopoutTheme, ToPopout } from './protocol';
 import { Replica } from './replica';
-import { ReviewBus } from './reviewBus';
+import { ReviewBus, reviewTitle } from './reviewBus';
 import { ReviewLayer } from './ReviewLayer';
 import { pageOf, shownFrame } from './show';
 import './popout.css';
@@ -93,7 +93,7 @@ export function PopoutPage({ review = false }: { review?: boolean }) {
         themeKey = key;
         setTheme(look.theme);
       }
-      const t = review ? `Live review: ${look.name || 'a drawing'}` : windowTitle(!!look.capture, look.name);
+      const t = review ? reviewTitle(bus.current.snapshot().link, look.name) : windowTitle(!!look.capture, look.name);
       if (t !== title) document.title = title = t;
       const lc = look.capture ? { bg: safeBackground(look.capture.bg), hideCursor: look.capture.hideCursor === true } : null;
       setCap((p) => (p === lc || (p && lc && p.bg === lc.bg && p.hideCursor === lc.hideCursor) ? p : lc));
@@ -106,6 +106,13 @@ export function PopoutPage({ review = false }: { review?: boolean }) {
       if (!raf) raf = requestAnimationFrame(frame);
     };
 
+    // The title bar says so the moment a review is over, even though no picture message comes to say it.
+    const stopTitle = review
+      ? bus.current.subscribe(() => {
+          const t = reviewTitle(bus.current.snapshot().link, replica.look?.name || bus.current.snapshot().name);
+          if (t !== title) document.title = title = t;
+        })
+      : () => {};
     const say = (m: FromPopout | { t: string }) => port?.postMessage(m);
     bus.current.say = (m) => port?.postMessage(m);
     bus.current.repaint = schedule;
@@ -156,6 +163,7 @@ export function PopoutPage({ review = false }: { review?: boolean }) {
     const hide = window.setTimeout(() => setHint(false), 6000);
 
     return () => {
+      stopTitle();
       window.removeEventListener('message', onMessage);
       window.removeEventListener('keydown', key);
       window.clearTimeout(hide);

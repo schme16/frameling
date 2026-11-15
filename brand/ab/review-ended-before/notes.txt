@@ -1,0 +1,1 @@
+live-<theme>.png: a reviewer's window while the review runs (today). ended-<theme>.png: the same window after the sharer stops (today), a thin bar over a picture that still looks live.

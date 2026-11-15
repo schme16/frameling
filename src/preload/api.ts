@@ -178,6 +178,8 @@ export interface ReviewBridge {
   takeLink(): Promise<string | null>;
   /** Called when a review link has come in (then call `takeLink`). Returns an unsubscribe function. */
   onLink(handler: () => void): () => void;
+  /** Asks the review window you used last to save the picture it holds as a PNG. `ok` is false when no review window is open. */
+  savePicture(): Promise<{ ok: boolean }>;
   onEvent(handler: (e: import('../main/reviewHost').HostUiEvent) => void): () => void;
 }
 

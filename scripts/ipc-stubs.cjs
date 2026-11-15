@@ -135,6 +135,7 @@ function invokeStubs(library) {
     'review:ack': () => undefined,
     'review:join': () => ({ ok: true }),
     'review:takeLink': () => null,
+    'review:savePicture': () => ({ ok: false }),
     // No Twitch in a harness: nothing is signed in and no app is set up.
     'twitch:status': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
     'twitch:signIn': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),

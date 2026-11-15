@@ -11,6 +11,7 @@ import { makeLoopback } from '../share/loopback';
 import type { MakeSwarm } from '../share/swarm';
 import { MAX_MESSAGE_BYTES } from '../review/codec';
 import { writeComments } from '../review/commentsFile';
+import { readPictureAsk } from './reviewPicture';
 import type { Squeeze } from '../review/pack';
 import { ReviewGuestBridge } from './reviewGuest';
 import { ReviewHostBridge, type PortLike } from './reviewHost';
@@ -68,7 +69,7 @@ export interface ReviewControl {
 export function registerReviewIpc(handle: Handle, win: () => BrowserWindow | null, o: Opts): ReviewControl {
   const swarm: MakeSwarm = process.env.FRAMELING_REVIEW_LOOPBACK ? makeLoopback : o.makeSwarm;
   let host: ReviewHostBridge | null = null;
-  const guests = new Set<{ leave(): void; win: BrowserWindow }>();
+  const guests = new Set<{ leave(): void; win: BrowserWindow; askSave(): void }>();
   const tell = (channel: string, payload: unknown) => {
     const w = win();
     if (w && !w.isDestroyed()) w.webContents.send(channel, payload);
@@ -100,6 +101,15 @@ export function registerReviewIpc(handle: Handle, win: () => BrowserWindow | nul
   });
   handle('review:ack', (_e, seat: unknown, ids: unknown) => {
     if (typeof seat === 'number' && Array.isArray(ids)) host?.ack(seat, ids.filter((i): i is string => typeof i === 'string').slice(0, 500));
+  });
+
+  // The palette command in the drawing window: the review window you looked at last saves its picture.
+  handle('review:savePicture', () => {
+    const open = [...guests].filter((g) => !g.win.isDestroyed());
+    const g = open.find((x) => x.win.isFocused()) ?? open[open.length - 1];
+    if (!g) return { ok: false };
+    g.askSave();
+    return { ok: true };
   });
 
   handle('review:join', (_e, codeText: unknown, nameText: unknown) => {
@@ -148,7 +158,9 @@ export function registerReviewIpc(handle: Handle, win: () => BrowserWindow | nul
       close: page.close,
       onMessage: (fn) =>
         page.onMessage((m) => {
-          if ((m as { t?: unknown })?.t === 'save') void saveComments();
+          const t = (m as { t?: unknown })?.t;
+          if (t === 'save') void saveComments();
+          else if (t === 'savePicture') void savePicture(m);
           else fn(m);
         }),
     };
@@ -178,7 +190,21 @@ export function registerReviewIpc(handle: Handle, win: () => BrowserWindow | nul
         page.postMessage({ t: 'saved', ok: false });
       }
     }
-    const entry = { leave: () => bridge.leave(), win: rw };
+    // The window sends the picture it holds as a PNG: checked here, then the person says where it goes.
+    async function savePicture(m: unknown): Promise<void> {
+      const ask = readPictureAsk(m);
+      if (!ask) return page.postMessage({ t: 'pictureSaved', ok: false });
+      const r = await dialog.showSaveDialog(rw, { title: 'Save this picture', defaultPath: ask.fileName, filters: [{ name: 'PNG picture', extensions: ['png'] }] });
+      // Closing the dialog is not a failure: nothing is said.
+      if (r.canceled || !r.filePath) return page.postMessage({ t: 'pictureSaved', ok: null });
+      try {
+        fs.writeFileSync(r.filePath, ask.png);
+        page.postMessage({ t: 'pictureSaved', ok: true });
+      } catch {
+        page.postMessage({ t: 'pictureSaved', ok: false });
+      }
+    }
+    const entry = { leave: () => bridge.leave(), win: rw, askSave: () => page.postMessage({ t: 'savePictureNow' }) };
     guests.add(entry);
     wc.once('did-finish-load', () => {
       wc.postMessage('popout:port', null, [port1]);
