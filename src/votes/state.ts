@@ -11,6 +11,7 @@ import { audience, setAudienceOn } from '../audience';
 import { currentChoice } from '../core/choices';
 import { createStore } from '../ui/mini';
 import { cleanSetup, createVote, type Vote, type VoteView, type Ways } from './tally';
+import { fromVoteView, overlayVote } from '../streamoverlay';
 
 export type VoteScreen = { phase: 'none' } | { phase: 'open' | 'result'; view: VoteView };
 
@@ -35,8 +36,14 @@ export const voteIsShowing = (): boolean => vote !== null;
 function publish(): void {
   if (publishTimer) clearTimeout(publishTimer);
   publishTimer = null;
-  if (!vote) return voteScreen.set({ phase: 'none' });
-  voteScreen.set({ phase: vote.isOpen() ? 'open' : 'result', view: vote.view() });
+  if (!vote) {
+    overlayVote.set(null);
+    return voteScreen.set({ phase: 'none' });
+  }
+  const view = vote.view();
+  voteScreen.set({ phase: vote.isOpen() ? 'open' : 'result', view });
+  // The OBS overlay shows the same counts and words. It takes nothing else, and ignores this when it is off.
+  overlayVote.set(fromVoteView(view));
 }
 
 /** Votes can arrive many a second; the screen is told at most every 100 ms, so it stays smooth. */

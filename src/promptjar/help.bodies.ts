@@ -4,13 +4,13 @@ export const bodies: Record<string, string> = {
 
 **Nothing shows until you say.** A prompt that arrives never appears on screen, not in a toast, not in a list. The **Jar** button in the title bar only shows a number. The words stay hidden until you open the jar yourself, so a rude one never gets in front of your viewers.
 
-**Pull one out.** Open the jar and press **Pull one out** (or **Ctrl+Alt+Shift+J** from anywhere). The jar gives a little shake and a slip slides up with the prompt on it. Not feeling it? **Pass on it** throws it away, **Put it back** returns it to the jar for another time, and **Pull another** tries again.
+**Pull one out.** Open the jar and press **Pull one out** (or **Ctrl+Alt+Shift+J** from anywhere). The jar gives a little shake and a slip slides up with the prompt on it. Not feeling it? **Pass on it** throws it away, **Put it back** returns it, and **Pull another** tries again.
 
 **Add your own.** Type a prompt in the box at the bottom, or paste a list with one on each line. Yours go through the same cleaning as everyone else's.
 
 **What gets in.** Chat's words are cut to 80 plain characters first: no links, no @names, no emoji or odd symbols. A prompt with no real words is turned away, and so is one that is already in the jar. The jar holds 50. When it is full, new ones are turned away until you make room, and the **On air** card counts them as "did not work".
 
-**Stream-safe.** With [Stream-safe mode](help:stream-safe) on, a prompt you pull out stays hidden until you press **Show it**, so you choose the moment it shows.
+**You choose when it shows.** With [Stream-safe mode](help:stream-safe) on, a pulled prompt stays hidden until you press **Show it**. With the [stream overlay](help:stream-overlay) on, it waits for **Show on stream**.
 
 **Who sent it?** Frameling never knows. Prompts are kept as words only: no name, no time, nothing about who sent them.
 

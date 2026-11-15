@@ -163,6 +163,18 @@ export interface DoorBridge {
   answer(id: number, answer: unknown): Promise<void>;
 }
 
+/** The stream overlay: a page on the actions door's server that OBS loads as a browser source (src/main/overlayHandler.ts, src/streamoverlay). Missing in the web build. */
+export interface OverlayBridge {
+  /** Says whether the overlay is wanted. Off, every overlay address answers as if it were not there. */
+  setOn(on: boolean): Promise<void>;
+  /** What is going on, for the overlay to show. Cleaned again on the desktop side before it is ever served. */
+  push(state: unknown): Promise<void>;
+  /** The full address (with its token), or '' while the actions door is closed. */
+  url(): Promise<string>;
+  /** Makes a new token. The old address stops working at once. */
+  roll(): Promise<void>;
+}
+
 /** One graphics card the computer has, as Electron reports it. */
 export interface GpuDevice {
   vendorId: number;
@@ -334,6 +346,8 @@ export interface FramelingApi {
   update?: UpdateBridge;
   /** The local actions door for stream tools (desktop only). */
   door?: DoorBridge;
+  /** The stream overlay page for OBS, on the door's server (desktop only). */
+  overlay?: OverlayBridge;
   /** Pictures and text to and from the system clipboard (desktop only). */
   clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */

@@ -122,6 +122,12 @@ const api: FramelingApi = {
     },
     answer: (id, answer) => call('door:answer', id, answer),
   },
+  overlay: {
+    setOn: (on) => call('overlay:on', on === true),
+    push: (state) => call('overlay:push', state),
+    url: () => call('overlay:url'),
+    roll: () => call('overlay:roll'),
+  },
   popout: {
     open: (o) => call('popout:open', o),
     onMode: (handler) => {

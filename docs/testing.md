@@ -883,6 +883,25 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/stream-door.cjs
 ```
 
+## The stream overlay, end to end: scripts/e2e/overlay-clip.cjs
+
+The overlay is a page on the actions door's server, with its own path, token and rules (`src/main/overlayHandler.ts`, the
+reasons are at the top of that file). `test/streamoverlay/` covers it without a window: `shared.test.ts` (what may be on
+it, and that nothing private can be), `handler.test.ts` (the token, who may ask, the headers, and that the door's own
+rules still refuse an Origin), `server.test.ts` (a real local port, the overlay and the door side by side), `page.test.ts`
+(the real page in jsdom: each piece appears and goes, an idle page is empty, words go in as text), `app.test.ts`, `link.test.ts`,
+`prefs.test.tsx` and `jar.test.tsx` (the app's side).
+
+`overlay-clip.cjs` is the real thing: the real app and door, with the overlay page loaded the way OBS loads a browser
+source (a transparent offscreen window, so a request with no Origin and no cross-site mark), its see-through frames laid
+over a still of a drawing by ffmpeg. The audience does things through the real gate. It writes a captioned H.264 clip and a
+still, once per drawing (`--drawing light` or `dark`). It stops only the Electron it started.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/overlay-clip.cjs --drawing light --out brand/ab/stream-overlay
+```
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in

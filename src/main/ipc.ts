@@ -331,7 +331,7 @@ export function registerIpc(hooks: IpcHooks): void {
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
-  doorIpc = registerDoorIpc(handle, hooks.window, () => app.getPath('userData'));
+  doorIpc = registerDoorIpc(handle, hooks.window, () => app.getPath('userData'), () => path.join(__dirname, process.env.FRAMELING_DEV_URL ? '../../public/mascot' : '../renderer/mascot'));
   registerGpuIpc(handle);
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);

@@ -3,6 +3,7 @@
 // only. There is deliberately no way in this folder to say anything into a chat.
 import { lines } from '../ui/mascot/lines';
 import type { Script } from '../ui/mascot/timing';
+import { createStore } from '../ui/mini';
 import { dismissToast, toast } from '../ui/toast';
 
 export const REACTIONS = ['cheer', 'hop', 'snack', 'nuzzle', 'wave'] as const;
@@ -28,6 +29,39 @@ const LOOKS: Record<Reaction, Look> = {
 /** Which one of a set, from a number between 0 and 1. Pure, so a test can pick. */
 export const pickOf = <T>(xs: readonly T[], rand: number): T => xs[Math.min(xs.length - 1, Math.max(0, Math.floor(rand * xs.length)))];
 
+/**
+ * What Quill is doing for the audience right now, for the stream overlay (src/streamoverlay) to follow. Only a reaction
+ * or a sign the streamer said yes to ever lands here: the question "hold up this sign?" holds words nobody has agreed
+ * to show yet, so it never does. It clears itself when his time is up.
+ */
+export interface QuillMoment {
+  id: number;
+  /** The overlay's name for what he is doing (a snack is `eat`, a sign is `holding`). */
+  anim: 'cheer' | 'hop' | 'eat' | 'nuzzle' | 'wave' | 'holding';
+  words: string;
+  sign: boolean;
+  /** When he goes (epoch ms). */
+  until: number;
+}
+export const quillMoment = createStore<QuillMoment | null>(null);
+let momentId = 0;
+let momentTimer: ReturnType<typeof setTimeout> | undefined;
+
+function setMoment(m: Omit<QuillMoment, 'id' | 'until'>, ms: number): void {
+  clearTimeout(momentTimer);
+  const mine: QuillMoment = { ...m, id: ++momentId, until: Date.now() + ms };
+  quillMoment.set(mine);
+  momentTimer = setTimeout(() => {
+    if (quillMoment.get() === mine) quillMoment.set(null);
+  }, ms + 50);
+}
+function clearMoment(): void {
+  clearTimeout(momentTimer);
+  quillMoment.set(null);
+}
+
+const MOMENT_ANIM: Record<Reaction, QuillMoment['anim']> = { cheer: 'cheer', hop: 'hop', snack: 'eat', nuzzle: 'nuzzle', wave: 'wave' };
+
 /** The toast on screen now. There is one of him, so a new reaction takes the place of the last one instead of piling up. */
 let current: number | null = null;
 
@@ -41,6 +75,7 @@ export function react(which: Reaction, rand: () => number = Math.random): string
   const look = LOOKS[which];
   const words = pickOf(look.words(), rand());
   replaceCurrent(toast(words, { quill: look.anim, duration: look.ms, sound: null }));
+  setMoment({ anim: MOMENT_ANIM[which], words, sign: false }, look.ms);
   return words;
 }
 
@@ -52,6 +87,7 @@ export const SIGN_ASK_MS = 15_000;
 /** Quill holds up a sign with these words, which have already been through `cleanSign` and said yes. */
 export function showSign(text: string): void {
   replaceCurrent(toast(`“${text}”`, { quill: [{ anim: 'holding', hold: SIGN_UP_MS - 800 }], duration: SIGN_UP_MS, sound: null, sign: true }));
+  setMoment({ anim: 'holding', words: text, sign: true }, SIGN_UP_MS);
 }
 
 let pendingAsk: ((yes: boolean) => void) | null = null;
@@ -78,6 +114,8 @@ export function askToShowSign(text: string, signal: AbortSignal, waitMs = SIGN_A
     pendingAsk = finish;
     if (signal.aborted) return finish(false);
     if (current !== null) dismissToast(current);
+    // The question takes his place on screen, so what he was doing for the audience is over.
+    clearMoment();
     id = toast(`${lines('stream.sign.ask')[0]} “${text}”`, {
       quill: 'think',
       duration: 0,
