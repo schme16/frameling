@@ -1,0 +1,124 @@
+/* The timelapse dialog and the badge that shows while it records. Theme tokens only. */
+.tl-body {
+  display: grid;
+  gap: 12px;
+}
+.tl-body p {
+  margin: 0;
+}
+.tl-group {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.tl-group legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+.tl-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.tl-opt small {
+  display: block;
+}
+.tl-note {
+  margin: 2px 0 0 24px;
+}
+.tl-spacer {
+  flex: 1;
+}
+.tl-clear {
+  color: var(--muted);
+}
+.tl-problem {
+  color: var(--danger, var(--text));
+  font-weight: 700;
+}
+.tl-progress {
+  display: grid;
+  gap: 4px;
+}
+.tl-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.tl-bar i {
+  display: block;
+  height: 100%;
+  background: var(--chosen-bg);
+}
+
+/* The badge: always on screen while recording, in the corner above the status bar. Pressing it stops the timelapse. */
+.tl-badge {
+  position: fixed;
+  left: 14px;
+  bottom: 42px;
+  z-index: 850;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid var(--danger);
+  box-shadow: var(--shadow);
+  font-family: var(--font-ui);
+  font-size: var(--fs);
+  font-weight: 700;
+}
+.tl-badge.is-paused {
+  border-color: var(--line);
+}
+.tl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: tl-pulse 1.6s ease-in-out infinite;
+}
+.is-paused .tl-dot {
+  background: var(--muted);
+  animation: none;
+}
+@keyframes tl-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-dot {
+    animation: none;
+  }
+}
+.tl-badge small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.tl-badge button {
+  font: inherit;
+  font-weight: 700;
+  padding: 3px 10px;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.tl-badge button:hover {
+  background: var(--hover-bg);
+}
+.tl-badge button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

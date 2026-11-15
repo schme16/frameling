@@ -2,6 +2,7 @@
 // read and drive state. Never on in normal use. main.tsx only loads this (and the areas' own debug hooks below) when
 // ?debug is there, so none of it is in the normal start-up download.
 import '../export/debug';
+import '../timelapse/debug';
 import '../io/debug';
 import '../effects/debug';
 import '../templates/debug';

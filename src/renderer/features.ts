@@ -20,6 +20,7 @@ import '../aseprite';
 import '../streamsafe';
 import '../import';
 import '../export';
+import '../timelapse';
 import '../effects';
 import '../quests';
 import '../popout';

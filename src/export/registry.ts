@@ -79,6 +79,12 @@ export interface RunEnv {
   frameAt: (i: number) => OffscreenCanvas;
   /** The pixels of picture `i`. They are overwritten by the next call, so copy what you keep. */
   rgbaAt: (i: number) => { width: number; height: number; pixels: Uint8ClampedArray };
+  /**
+   * Like `frameAt` and `rgbaAt`, for formats that can wait for a picture. Pictures that come from somewhere else (a
+   * timelapse's saved pictures, see RunContext.frames) can only be had by waiting; drawn ones come back at once.
+   */
+  frameAtAsync: (i: number) => Promise<OffscreenCanvas>;
+  rgbaAtAsync: (i: number) => Promise<{ width: number; height: number; pixels: Uint8ClampedArray }>;
   step: (done: number, label: string) => void;
 }
 

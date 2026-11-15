@@ -8,7 +8,7 @@ import { breathe } from '../runtime';
 import { BT709_LIMITED, rgbaToI420 } from '../yuv';
 import type { ExporterRun } from '../registry';
 
-export const run: ExporterRun['run'] = async (ctx, { plan, bg, canvas, step, rgbaAt, frameAt }) => {
+export const run: ExporterRun['run'] = async (ctx, { plan, bg, canvas, step, rgbaAtAsync, frameAtAsync }) => {
   const { doc, settings, signal } = ctx;
   const codec = ctx.videoCodec;
   if (!codec) throw new Error("This computer can't make that kind of video.");
@@ -43,7 +43,7 @@ export const run: ExporterRun['run'] = async (ctx, { plan, bg, canvas, step, rgb
       step(i, `Drawing frame ${i + 1} of ${plan.count}`);
       // The time of each frame is its number divided by the frame rate, however long drawing it took.
       if (source instanceof VideoSampleSource) {
-        const img = rgbaAt(i);
+        const img = await rgbaAtAsync(i);
         yuv = rgbaToI420(img.pixels, img.width, img.height, yuv);
         const sample = new VideoSample(yuv, { format: 'I420', codedWidth: img.width, codedHeight: img.height, timestamp: i * dt, duration: dt, colorSpace: BT709_LIMITED });
         try {
@@ -52,7 +52,7 @@ export const run: ExporterRun['run'] = async (ctx, { plan, bg, canvas, step, rgb
           sample.close();
         }
       } else {
-        frameAt(i);
+        await frameAtAsync(i);
         await source.add(i * dt, dt);
       }
       await sound.track?.feed(i);
