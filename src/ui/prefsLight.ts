@@ -45,7 +45,9 @@ export function lightRow(root: ParentNode | null, text: string, hold = 2400): ()
       return;
     }
     el.classList.add('is-lit');
-    el.scrollIntoView({ block: 'center' });
+    // Not every place this runs can scroll (a test page has no layout), and lighting the row still works without it.
+    // This sits inside an animation frame, so letting it throw would take down whatever else that frame was doing.
+    el.scrollIntoView?.({ block: 'center' });
     lit = el;
     timer = window.setTimeout(() => el.classList.remove('is-lit'), hold);
   };
