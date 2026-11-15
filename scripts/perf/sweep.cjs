@@ -615,6 +615,8 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
   if (profDir) fs.mkdirSync(profDir, { recursive: true });
   await ev(HELPERS);
   const results = [];
+  // How big a page each document makes, beside the timings (see the probe below).
+  const pages = {};
   for (const dn of docNames) {
     const doc = DOCS[dn];
     if (!doc) { console.error('unknown doc', dn); continue; }
@@ -625,7 +627,14 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
     await escape();
     // What can be done on it: vector drawing needs a plain vector layer (no bones), pixel drawing a pixel layer.
     doc.kinds = await ev(`(() => { const L = window.__frameling.store().get().doc.layers; const k = []; if (L.some((l) => l.kind === 'vector' && !l.rig)) k.push('vector'); if (L.some((l) => l.kind === 'pixel')) k.push('pixel'); return k; })()`);
-    console.error(`doc ${dn} ready (${Date.now() - t0} ms)`);
+    // How big a page this document makes. Browser style, layout and paint is most of what a click costs on a big
+    // document, and that is decided by how many elements are on screen, so the number belongs beside the timings.
+    doc.page = await ev(`(() => {
+      const n = (q) => document.querySelectorAll(q).length;
+      return { nodes: n('*'), timelineNodes: n('.tl-body *'), keys: n('[data-key], .tl-key'), rows: n('[data-row]'), layers: window.__frameling.store().get().doc.layers.length };
+    })()`);
+    pages[dn] = doc.page;
+    console.error(`doc ${dn} ready (${Date.now() - t0} ms), ${doc.page.nodes} elements, ${doc.page.timelineNodes} of them in the timeline`);
     for (const an of actionNames) {
       const a = ACTIONS[an];
       if (!a) { console.error('unknown action', an); continue; }
@@ -661,6 +670,6 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
     if (r.error) { console.log(pad(r.doc, 16) + pad(r.action, 17) + 'FAILED ' + r.error); continue; }
     console.log(pad(r.doc, 16) + pad(r.action, 17) + pad(r.busyMs.toFixed(0), 9) + pad(r.perUnitMs.toFixed(2), 10) + r.unit + (r.note ? '  ' + r.note : ''));
   }
-  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), gpu: gpuRun, reps, results }, null, 1));
+  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), gpu: gpuRun, reps, pages, results }, null, 1));
   app.exit(0);
 })().catch((e) => { console.error(e); app.exit(1); });

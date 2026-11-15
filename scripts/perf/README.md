@@ -202,6 +202,11 @@ document with 600 steps behind it). The last two are the deep-history corners: `
 steps by adding a line to the drawing on the active layer n times, the shape of edit a person actually makes, and
 reports the steps and the memory the history holds.
 
+Each result file also carries `pages`: how many elements each document puts on screen, and how many of those are the
+timeline's. Browser style, layout and paint is most of what a click costs on a big document, and that is decided by how
+many elements are on screen, so the number belongs beside the timings. For scale, the built-in templates make a page of
+about 1050 to 2200 elements; the 40 layers by 240 keys document makes 8155, and 7281 of those are the timeline's.
+
 **How much a difference has to be before it means anything.** The busy-ms figures drift between whole runs, not just
 between reps inside one: two full sweeps of the same build, 122 rows, came out a mean 3.4% apart with single rows as far
 as 53% down and 50% up. `--reps` repeats the action inside one page session, which does not catch that. So a single

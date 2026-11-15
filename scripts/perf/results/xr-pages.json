@@ -1,0 +1,815 @@
+{
+ "label": "sweep",
+ "when": "2026-11-15T00:20:29.448Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 1,
+ "pages": {
+  "bouncing-ball": {
+   "nodes": 1196,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "puppet": {
+   "nodes": 2189,
+   "timelineNodes": 844,
+   "keys": 20,
+   "rows": 16,
+   "layers": 16
+  },
+  "walk-cycle": {
+   "nodes": 1051,
+   "timelineNodes": 208,
+   "keys": 9,
+   "rows": 2,
+   "layers": 2
+  },
+  "hero-sprites": {
+   "nodes": 1321,
+   "timelineNodes": 379,
+   "keys": 41,
+   "rows": 3,
+   "layers": 3
+  },
+  "stress-vector": {
+   "nodes": 8155,
+   "timelineNodes": 7281,
+   "keys": 1400,
+   "rows": 48,
+   "layers": 40
+  },
+  "stress-pixel": {
+   "nodes": 1213,
+   "timelineNodes": 247,
+   "keys": 36,
+   "rows": 1,
+   "layers": 1
+  },
+  "history-deep": {
+   "nodes": 1207,
+   "timelineNodes": 323,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "stress-vector-history": {
+   "nodes": 8167,
+   "timelineNodes": 7281,
+   "keys": 1400,
+   "rows": 48,
+   "layers": 40
+  },
+  "variations": {
+   "nodes": 1052,
+   "timelineNodes": 208,
+   "keys": 9,
+   "rows": 2,
+   "layers": 2
+  },
+  "stress-symbols": {
+   "nodes": 1074,
+   "timelineNodes": 200,
+   "keys": 24,
+   "rows": 1,
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 50.1,
+   "runs": [
+    50.1
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 12.54,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.4
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "(garbage collector) :0",
+     5.9
+    ],
+    [
+     "appendChild :0",
+     1.3
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     17.4
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     16.6
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     16.6
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     16.6
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     16.6
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     10.8
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     10.8
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     10.8
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "Eu index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "tf index-BO6-2Du6.js:9",
+     8.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "select-click",
+   "busyMs": 5.2,
+   "runs": [
+    5.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 1.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     2.4
+    ],
+    [
+     "vM index-BO6-2Du6.js:148",
+     0.5
+    ],
+    [
+     "restore :0",
+     0.3
+    ],
+    [
+     "UFe index-BO6-2Du6.js:163",
+     0.3
+    ],
+    [
+     "mj index-BO6-2Du6.js:148",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     2.4
+    ],
+    [
+     "fje index-BO6-2Du6.js:156",
+     1
+    ],
+    [
+     "e index-BO6-2Du6.js:156",
+     1
+    ],
+    [
+     "yM index-BO6-2Du6.js:148",
+     0.8
+    ],
+    [
+     "rje index-BO6-2Du6.js:156",
+     0.8
+    ],
+    [
+     "onPointerDown index-BO6-2Du6.js:156",
+     0.8
+    ],
+    [
+     "drawOverlay index-BO6-2Du6.js:156",
+     0.5
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     0.5
+    ],
+    [
+     "vM index-BO6-2Du6.js:148",
+     0.5
+    ],
+    [
+     "restore :0",
+     0.3
+    ],
+    [
+     "UFe index-BO6-2Du6.js:163",
+     0.3
+    ],
+    [
+     "mj index-BO6-2Du6.js:148",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-click",
+   "busyMs": 42.2,
+   "runs": [
+    42.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.55,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.8
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     1
+    ],
+    [
+     "yM index-BO6-2Du6.js:148",
+     0.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:146",
+     0.5
+    ],
+    [
+     "createElementNS :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     18.3
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     16.8
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     16.8
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     16.8
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     16.8
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     10.6
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     10.6
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     10.6
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     7.9
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "n index-BO6-2Du6.js:155",
+     7.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 107,
+   "runs": [
+    107
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 26.76,
+   "topSelf": [
+    [
+     "(program) :0",
+     78.6
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     8.6
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "removeChild :0",
+     1.2
+    ],
+    [
+     "Yf index-BO6-2Du6.js:10",
+     0.8
+    ],
+    [
+     "createElementNS :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     78.6
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     19.4
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     18.4
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     18.4
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     18.4
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     18.4
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     12.1
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     12.1
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     12.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     9.4
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     9.1
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     8.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "select-click",
+   "busyMs": 45.7,
+   "runs": [
+    45.7
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.42,
+   "topSelf": [
+    [
+     "(program) :0",
+     22.1
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:146",
+     1
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "cfe index-BO6-2Du6.js:148",
+     0.8
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     22.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     17.5
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     17.5
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     17.5
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     17.5
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.3
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.3
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     8
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     7.8
+    ],
+    [
+     "tf index-BO6-2Du6.js:9",
+     7.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "select-click",
+   "busyMs": 103.4,
+   "runs": [
+    103.4
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 25.86,
+   "topSelf": [
+    [
+     "(program) :0",
+     79.4
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     1.2
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:10",
+     0.8
+    ],
+    [
+     "insertBefore :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     79.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     17
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     17
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     17
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     17
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.2
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.2
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.2
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     9.2
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     8.2
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-click",
+   "busyMs": 42.8,
+   "runs": [
+    42.8
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     8.3
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     18.4
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     17.1
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     17.1
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     17.1
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     17.1
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     8.6
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     8.6
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     8.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-click",
+   "busyMs": 44,
+   "runs": [
+    44
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.9
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     8.3
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "appendChild :0",
+     0.8
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ],
+    [
+     "setUi index-BO6-2Du6.js:10",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     18.3
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     17.8
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.5
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     8.8
+    ],
+    [
+     "Eu index-BO6-2Du6.js:9",
+     8.8
+    ],
+    [
+     "tf index-BO6-2Du6.js:9",
+     8.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
