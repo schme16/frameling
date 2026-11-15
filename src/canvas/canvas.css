@@ -634,6 +634,7 @@
   --snap-guides: #d757c2;
   --snap-grid: #798aa5;
   --snap-cells: #798aa5;
+  --snap-points: #7d9420;
   --snap-shapes: #e45b72;
   --snap-perspective: #9873ef;
   --snap-plugins: #1a9cc8;
@@ -648,6 +649,7 @@
     --snap-guides: #9c1488;
     --snap-grid: #4a5870;
     --snap-cells: #4a5870;
+    --snap-points: #4f6200;
     --snap-shapes: #b01f3e;
     --snap-perspective: #5a30b8;
   --snap-plugins: #0b6a8c;
@@ -662,6 +664,7 @@
   --snap-guides: #9c1488;
   --snap-grid: #4a5870;
   --snap-cells: #4a5870;
+  --snap-points: #4f6200;
   --snap-shapes: #b01f3e;
   --snap-perspective: #5a30b8;
   --snap-plugins: #0b6a8c;
@@ -1087,6 +1090,9 @@
 .sn-distance .cv-slider {
   flex: 1;
   min-width: 0;
+}
+.sn-distance.is-off {
+  opacity: 0.5;
 }
 .sn-distance-value {
   min-width: 3.2em;

@@ -10,6 +10,7 @@ import { addDrawn, drawWithMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import { withWellGradients } from './gradient-wells';
+import { EndSnap } from './endSnap';
 
 /** A turn sharper than this (degrees) between simplified pieces is kept as a corner. */
 const CORNER_DEG = 65;
@@ -72,15 +73,36 @@ export function cleanLineShape(input: V[], color: string, width: number): PathSh
 /** A clean line in progress, previewed as the straight polyline the hand made (cheap), fitted once on release. */
 export class CleanLine {
   private points: V[] = [];
+  /** The start and end pulled onto line ends, guides, the grid and the page (see endSnap.ts). */
+  private snap = new EndSnap();
   constructor(
     private color: string,
     private width: number,
   ) {}
 
   add(e: ToolPointer, zoom: number): void {
+    // The first point may be pulled onto something; after it only the tip is aimed, the middle stays where the hand put it.
+    if (!this.points.length) {
+      const q = this.snap.start(e, zoom);
+      this.points.push({ x: q.x, y: q.y });
+      return;
+    }
+    this.snap.aim(e, zoom);
     const last = this.points[this.points.length - 1];
     if (last && Math.hypot(e.x - last.x, e.y - last.y) * zoom < 0.5) return;
     this.points.push({ x: e.x, y: e.y });
+  }
+
+  /** Lets go of the marks on the canvas (the stroke ended or was dropped). */
+  stop(): void {
+    this.snap.stop();
+  }
+
+  /** The hand's points, and the pulled tip as the line's last point while it shows. */
+  private shown(): V[] {
+    const tip = this.snap.tip;
+    const last = this.points[this.points.length - 1];
+    return tip && last && Math.hypot(tip.x - last.x, tip.y - last.y) > 1e-6 ? [...this.points, { x: tip.x, y: tip.y }] : this.points;
   }
 
   overlay(g: CanvasRenderingContext2D): void {
@@ -92,7 +114,7 @@ export class CleanLine {
     g.strokeStyle = this.color;
     g.beginPath();
     g.moveTo(this.points[0].x, this.points[0].y);
-    for (const p of this.points) g.lineTo(p.x, p.y);
+    for (const p of this.shown()) g.lineTo(p.x, p.y);
     if (this.points.length === 1) g.lineTo(this.points[0].x + 0.01, this.points[0].y);
     g.stroke();
     g.restore();
@@ -100,7 +122,11 @@ export class CleanLine {
 
   commit(e: ToolPointer, zoom: number, ctx: ToolContext): void {
     this.add(e, zoom);
-    const shape = cleanLineShape(this.points, this.color, this.width);
+    // Where the line is to end (the end of another line, a guide, the grid or the page) becomes its last point.
+    const end = this.snap.landing;
+    this.snap.tip = end;
+    const shape = cleanLineShape(this.shown(), this.color, this.width);
+    this.stop();
     if (!shape) return;
     const s = withWellGradients(shape);
     const r = addDrawn('Draw clean line', [s]).result;
@@ -110,7 +136,7 @@ export class CleanLine {
 
   /** The finished shape, for drawing it exactly once it's fitted. */
   shape(): PathShape | null {
-    return cleanLineShape(this.points, this.color, this.width);
+    return cleanLineShape(this.shown(), this.color, this.width);
   }
 
   draw(g: CanvasRenderingContext2D): void {

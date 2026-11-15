@@ -13,6 +13,7 @@ import type { VectorDynamics } from '../tablet/dynamics';
 import { store } from '../core/store';
 import { afterStroke, drawQuickPreview, holdModeNow, QuickHold } from './quickshape';
 import { inkWanted, noteInk } from '../popout/ink';
+import { EndSnap } from './endSnap';
 
 /** The document and layer a stroke belongs to, for remembering where it ended. */
 function lastStore(): { doc: string; ui: string } {
@@ -67,6 +68,8 @@ export class VectorStroke {
   private fromPen = false;
   /** Hold to tidy: watching for the pen to stop (see quickshape.ts). Null when it is off or not allowed here. */
   private hold: QuickHold | null = null;
+  /** The start and end pulled onto line ends, guides, the grid and the page (see endSnap.ts). */
+  private snap = new EndSnap();
 
   constructor(
     private brush: BrushSettings,
@@ -99,6 +102,7 @@ export class VectorStroke {
   /** Stops the watching (the stroke ended or was dropped). */
   stop(): void {
     this.hold?.stop();
+    this.snap.stop();
     noteInk(null);
   }
 
@@ -113,6 +117,11 @@ export class VectorStroke {
       this.hold.moved({ x: e.x, y: e.y, shift: e.shift });
       if (this.hold.snapped) return;
     }
+    // The first point may be pulled onto something; after it only the tip is aimed, the middle stays where the hand put it.
+    if (!this.points.length) {
+      const q = this.snap.start(e, zoom);
+      if (q !== e) e = { ...e, x: q.x, y: q.y };
+    } else this.snap.aim(e, zoom);
     const last = this.points[this.points.length - 1];
     if (last && Math.hypot(e.x - last.x, e.y - last.y) * zoom < MIN_STEP_SCREEN) return;
     this.points.push(this.point(e));
@@ -132,7 +141,11 @@ export class VectorStroke {
   shape(withPredicted = false): StrokeShape | null {
     if (!this.points.length) return null;
     let pts = this.points;
-    if (withPredicted) {
+    const tip = this.snap.tip;
+    if (tip) {
+      // Pulled onto something: the line shows ending there (no look-ahead past it).
+      pts = [...pts, { x: tip.x, y: tip.y, p: this.points[this.points.length - 1].p }];
+    } else if (withPredicted) {
       const pred = getPredicted();
       if (pred.length) {
         const p = this.points[this.points.length - 1].p;
@@ -158,10 +171,13 @@ export class VectorStroke {
       this.add(e, zoom);
       // The very last point always counts, so the stroke ends where the pen lifted.
       const last = this.points[this.points.length - 1];
-      if (last && (last.x !== e.x || last.y !== e.y)) this.points.push(this.point(e));
+      const end = this.snap.landing;
+      if (end && last && this.points.length > 1) this.points[this.points.length - 1] = { ...last, x: end.x, y: end.y };
+      else if (last && (last.x !== e.x || last.y !== e.y)) this.points.push(this.point(end ? { ...e, x: end.x, y: end.y } : e));
+      this.snap.tip = null;
     }
     const shape = this.shape();
-    if (!shape) return;
+    if (!shape) return this.stop();
     // On a merge layer the stroke joins or cuts what it lands on.
     const r = addDrawn('Draw stroke', [shape]).result;
     if (r === 'ok') {

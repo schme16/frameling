@@ -73,7 +73,8 @@ export const BIG_MENUS: Record<string, number> = {
   // 169 before the Streaming menu was taken off the bar for somebody who does not stream. Stream-safe, going live with
   // OBS and the capture view help anybody who shares a screen, so they came back to View > Sharing your screen rather
   // than leaving with the rest. That is 16 more commands under View, and it is the price of that choice, not drift.
-  View: 185,
+  // Two more for the pen, pencil and brush snapping: Snap to line ends and points, and Snap the pen, pencil and brush.
+  View: 187,
   // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
 };
 

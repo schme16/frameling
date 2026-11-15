@@ -3,6 +3,7 @@
  * be restyled later. On a pixel layer it's a pixel pencil: hard pixels, a size in art pixels, "pixel perfect" corners,
  * and Shift+click for a straight line from the last pixel.
  */
+import { forgetHover, hoverSpot, hoverStart } from './endSnap';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
@@ -27,6 +28,7 @@ let pix: PixelStroke | null = null;
 let pixColor = '';
 
 function down(e: ToolPointer, ctx: ToolContext): void {
+  forgetHover();
   const { layer, problem } = activeLayer();
   if (problem) return ctx.hint(EDIT_HINTS[problem]);
   if (!layer) return;
@@ -54,6 +56,16 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const from = e.shift ? lastPixelEnd(doc, layer) : null;
   if (from) pix.beginLine(from, here);
   else pix.begin(here);
+}
+
+/** Hovering: on a vector layer the ring shows where a stroke would start if it is going to be pulled onto something. */
+function hover(e: ToolPointer, ctx: ToolContext): void {
+  if (activeLayer().layer?.kind === 'vector') hoverStart(e, ctx.zoom);
+  else forgetHover();
+}
+
+function leave(): void {
+  forgetHover();
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -101,7 +113,8 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
     drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, stamp?.keep ? null : ui.color, stamp ? stampCells(stamp) : undefined);
   } else {
     const m = activeVectorMirror();
-    for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
+    const at = hoverSpot() ?? h;
+    for (const p of m ? mirrorSpots(m, at.x, at.y) : [at]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
   }
 }
 
@@ -118,6 +131,8 @@ export const brushTool: Tool = {
   cursor: 'crosshair',
   options: BrushOptions,
   down,
+  hover,
+  leave,
   move,
   up,
   cancel,
