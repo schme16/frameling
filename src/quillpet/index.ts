@@ -7,7 +7,7 @@ import { quillPetCommands, quillPetPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
 import { watchForPresents } from './gifts';
-import { registerPresentChoice, registerYoursChoice } from './choices';
+import { registerLatelyChoice, registerPresentChoice, registerYoursChoice } from './choices';
 import { registerSaveHook } from '../io/document';
 import { noteMade } from './madeNow';
 
@@ -35,6 +35,7 @@ export const quillPetFeature = defineFeature({
     registerYoursChoice();
     // Whatever you make and save goes in his room, with no question asked.
     registerSaveHook({ after: async (doc) => void (await noteMade(doc)) });
+    registerLatelyChoice();
     stop = startWatching();
     stopGifts = watchForPresents();
   },

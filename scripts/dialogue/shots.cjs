@@ -318,9 +318,12 @@ const GROUPS = {
     { js: `for (let i = 0; i < 4; i++) __framelingQuillPet.tell({ kind: 'quest' })` },
     { wait: 1200 },
     { shot: ['pet.closer'], crop: TOAST, pad: 8, note: 'The toast when you reach a new step with him.' },
-    { js: `__framelingQuillPet.set({ ...__framelingQuillPet.get(), lastDay: '2026-01-01' }); __frameling.showPanel('quill-pet')` },
+    // Come back the way start-up does (the debug hook stages the return), then open his room: the hello, and what he got up to.
+    { js: `__framelingQuillPet.comeBack(400, 11); __frameling.showPanel('quill-pet')` },
     { wait: 1400 },
-    { shot: ['pet.hello.again'], crop: '.qp-says', pad: 16, note: 'Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you.' },
+    { shot: ['pet.hello.again'], crop: '.qp-says', pad: 16, note: 'Said the first time you open his room after coming back to Frameling. It never says how long it has been.' },
+    { shot: ['pet.lately.found', 'pet.lately.drew', 'pet.lately.slept', 'pet.lately.remembered'], crop: '.qp-lately', pad: 12, note: 'The Room tab after a long break: what he got up to. Each kind is one of a set, picked when he does it. The others (moved a toy, watched the window, sorted his pencils) read the same way.' },
+    { shot: ['pet.lately.moved', 'pet.lately.watched', 'pet.lately.sorted'], crop: '.qp-lately', pad: 12, note: 'Stood in for by the nearest list: these three come up on other returns.' },
   ],
   // Quill reacting to chat: each toast, and the question before a sign. Pretend audience calls from the debug hook.
   stream: [

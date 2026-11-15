@@ -145,15 +145,16 @@ describe('one home for Quill, called Quill everywhere', () => {
     expect(ids().help).not.toContain('quill-things');
   });
 
-  it('says when he was given a thing in plain words', async () => {
+  it('says when he was given a thing as a date', async () => {
     const { sayWhen } = await import('../../src/quillpet/QuillShelves');
     const now = new Date(2026, 10, 13, 12).getTime();
     const day = 86400000;
     expect(sayWhen(now, now)).toBe('today');
     expect(sayWhen(now - day, now)).toBe('yesterday');
-    expect(sayWhen(now - 3 * day, now)).toBe('3 days ago');
-    expect(sayWhen(now - 21 * day, now)).toBe('about 3 weeks ago');
-    expect(sayWhen(now - 90 * day, now)).toBe('about 3 months ago');
+    // A date, never "3 days ago": a gift's date is the only thing he keeps (see while-away.test.ts).
+    expect(sayWhen(now - 3 * day, now)).toBe('on 10 November');
+    expect(sayWhen(now - 21 * day, now)).toBe('on 23 October');
+    expect(sayWhen(now - 400 * day, now)).toMatch(/^on \d{1,2} [A-Z][a-z]+ 2025$/);
     // A thing from the future (a clock that moved) still reads sensibly.
     expect(sayWhen(now + day, now)).toBe('today');
   });

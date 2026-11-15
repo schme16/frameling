@@ -1,6 +1,6 @@
 // The words of the topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'quill-pet': `**Quill** is the little hedgehog with coloured pencils for quills. He has one house in the right rail, and it's called **Quill** wherever you meet it: the tab, the **View** menu and the command palette. The house has three tabs along the top: **Room**, **His things** and **Presents**.
+  'quill-pet': `**Quill** is the little hedgehog with coloured pencils for quills. His house is in the right rail, called **Quill** wherever you meet it, with three tabs along the top: **Room**, **His things** and **Presents**.
 
 **Open it:** **View > Quill**, or press the **Quill** button on the panel rail. It opens on the **Room**, and after that it stays on whichever tab you last chose. **View > Quill's house > Quill: his things** and **View > Quill's house > Quill: his presents** open it on those tabs.
 
@@ -16,13 +16,13 @@ export const bodies: Record<string, string> = {
 **Presents** holds [the presents he makes you](help:quill-presents). When he has left one you haven't opened, a small dot shows on the **Presents** tab, so it's easy to spot from the **Room**.
 
 **Good to know:**
-- He never minds being left alone. Come back after a week, a month or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross.
+- He never minds being left alone. Come back after a week or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross. [What he got up to](help:quill-lately).
+- Drawing is what he likes best, so you feed him by getting on with your work. There's nothing to remember to do.
 - There's only one of him. If a message, a lesson or the welcome wants him, he steps out of his room for a moment and comes back when it's done.
 - Nothing you make depends on him, and giving something back never touches your file.
-- Had enough of the panel? Turn **Quill** off in **Preferences > Features** and he goes back to being just the mascot.
-- Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included.
+- Had enough? Turn **Quill** off in **Preferences > Features** for just the mascot, or **Show Quill** in **Preferences** to hide him everywhere.
 
-help:quill-things help:quill-presents help:quill-yours help:quill-naps help:quests help:preferences`,
+help:quill-things help:quill-presents help:quill-yours help:quill-lately help:quill-naps help:quests help:preferences`,
   'quill-yours': `**Quill's room is yours as much as his.** The more you make, the more it shows: your newest drawings hang on his wall, and your newest sprite lies on his floor as a toy he plays with.
 
 **What goes in:** only work you really made. When you **save** a drawing you have drawn in, a small picture of it goes up. A template, an example, or a file you opened and left alone never does. A sprite is pixel art up to 256 pixels across, and a bigger picture goes on the wall. If you have made nothing yet, the room is simply emptier, and that is fine.
@@ -42,6 +42,19 @@ help:quill-things help:quill-presents help:quill-yours help:quill-naps help:ques
 - Nothing you make depends on him, and your files are never touched.
 
 help:quill-pet help:quill-things help:stream-safe`,
+  'quill-lately': `Open Frameling and **Quill** may have been busy. His **Room** shows a short list called **What he got up to**: a drawing of his own, a toy of yours he moved somewhere new, a good look out of the window, his pencils put in a better order. Sometimes he is found fast asleep somewhere that isn't his bed, and a scratch wakes him.
+
+**The longer you were out, the more there is.** A day or two gives you one thing, a week gives you a few, and a long time gives you the most, plus a rare find in his pocket. It never goes the other way: he is never worse off for being left, and he is never sad about it. He was fine. He was busy.
+
+**What he remembers** is what you gave him and the date you gave it: press one of his things and he says it, like "on 3 March". He never counts how long you were out, and nothing in Frameling does either.
+
+**Good to know:**
+- It's only news. There is nothing to press, nothing to keep up and nothing you owe him.
+- It shows the first time you open Frameling on a new day. If you open it again the same day, you get the same news.
+- Turn it off in **Preferences > Behaviour** under **Quill gets up to things**. He still says hello.
+- The **Show Quill** switch in **Preferences** hides him, and this, everywhere.
+
+help:quill-pet help:quill-things help:preferences`,
   'quill-naps': `Leave Frameling alone for about a minute and **Quill** nods off, curled up with a little **Z** over his head. He's not bored, just resting.
 
 **Waking him:** move the mouse or press any key. He doesn't jump up. He stirs, peeks out, sits up, gives a big yawning stretch, blinks, and settles back to his usual self. It takes a second or so and happens once.
