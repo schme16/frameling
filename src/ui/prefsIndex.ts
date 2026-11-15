@@ -122,6 +122,8 @@ export const SETTING_ROWS: PrefRow[] = [
 
   row('features', 'Audience features', 'Let viewers and stream tools join in, in small safe ways. Off until you switch it on, with a red On air pill and a Stop button.', ['stream', 'streamer', 'streaming', 'twitch', 'youtube', 'chat', 'viewers', 'on air', 'live', 'obs', 'kill switch', 'panic', 'queue', 'cooldown', 'interactive', 'audience participation'], { find: 'Audience features' }),
 
+  row('features', 'Actions door', 'The address and key Streamer.bot, Firebot or a Stream Deck use to ask Frameling for a few safe things. Only on this computer, and only while audience features are on.', ['streamer.bot', 'streamerbot', 'firebot', 'stream deck', 'touch portal', 'http', 'api', 'endpoint', 'token', 'key', 'port', 'channel points', 'redeem', 'obs', 'local', 'address', 'copy key', 'new key'], { find: 'Actions door' }),
+
   row('features', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
 
   // Diagnostics

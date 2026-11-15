@@ -53,6 +53,13 @@ function invokeStubs(library) {
     'app:lastCrash': () => null,
     'app:askSaveChanges': () => 'discard',
     'app:panicKey': () => false,
+    // The actions door: no real server in a harness. It says it is open, with a made-up key that opens nothing.
+    'door:open': (_e, port) => ({ running: true, port: port || 47213, address: `http://127.0.0.1:${port || 47213}`, moved: false, problem: '' }),
+    'door:close': () => undefined,
+    'door:status': () => ({ running: false, port: 47213, address: '', moved: false, problem: '' }),
+    'door:key': () => 'fld_PretendKeyForPicturesOnlyNotReal0123',
+    'door:roll': () => 'fld_AnotherPretendKeyForPicturesOnly4567',
+    'door:answer': () => undefined,
     'library:list': (_e, kind) => own(kind).map((k) => ({ id: k.slice(kind.length + 1), size: library.get(k).length, modified: 0 })),
     'library:read': (_e, kind, id) => library.get(`${kind}/${id}`) ?? null,
     'library:write': (_e, kind, id, bytes) => void library.set(`${kind}/${id}`, bytes),

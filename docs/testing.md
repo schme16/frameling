@@ -869,6 +869,18 @@ REMEMBER_PHASE=check REMEMBER_DIR=/tmp/profile xvfb-run -a -s "-screen 0 1600x10
 `REMEMBER_ROOT=<another checkout>` runs the same check against that checkout's `dist/` (for a before and after).
 `scripts/shoot.cjs` now starts from a throwaway profile, so what one run set does not show up in the next.
 
+## The actions door, end to end: scripts/e2e/stream-door.cjs
+
+Starts the real built app on a throwaway data folder, switches audience features on, and calls the door over HTTP with
+its real key: the list, a run, a cooldown, an unknown action, a bad body, no key, a wrong key and a request with an
+Origin header. Then switches off and checks the door is closed and its address file is gone. It stops only the Electron
+it started. The request handling itself is tested without a window in `test/streamdoor/`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/stream-door.cjs
+```
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in

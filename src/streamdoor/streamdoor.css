@@ -1,0 +1,30 @@
+/* The actions door's block in Preferences > Features. */
+.sd-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sd-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.sd-code {
+  padding: 4px 8px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-small);
+  word-break: break-all;
+  border: 1px solid var(--line-soft);
+}
+.sd-key {
+  letter-spacing: 0.04em;
+  min-width: 9ch;
+}
+.sd-port {
+  width: 6.5rem;
+}

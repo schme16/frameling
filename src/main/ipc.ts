@@ -8,6 +8,7 @@ import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { registerBetaIpc } from './beta';
+import { registerDoorIpc } from './actionsDoor';
 import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
@@ -99,6 +100,10 @@ function automationTarget(suggestedName: string, forceExt?: string): string | nu
   if (forceExt && !name.toLowerCase().endsWith(forceExt)) name += forceExt;
   return path.join(path.resolve(dir), name);
 }
+
+let doorIpc: { close(): Promise<void> } | null = null;
+/** Closes the actions door if it is open (the page reloaded or the app is quitting: it must not outlive what answers it). */
+export const closeActionsDoor = (): Promise<void> => doorIpc?.close() ?? Promise.resolve();
 
 export function registerIpc(hooks: IpcHooks): void {
   // Only our own window may ask.
@@ -321,6 +326,7 @@ export function registerIpc(hooks: IpcHooks): void {
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
+  doorIpc = registerDoorIpc(handle, hooks.window, () => app.getPath('userData'));
   registerGpuIpc(handle);
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);

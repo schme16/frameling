@@ -81,7 +81,7 @@ describe('the index keeps up with the pages', () => {
     workspaces: ['src/ui/WorkspacesPage.tsx'],
     menus: ['src/ui/MenusPage.tsx'],
     plugins: ['src/plugins/PluginsPage.tsx'],
-    features: ['src/features/FeaturesPage.tsx', 'src/audience/PrefsRow.tsx'],
+    features: ['src/features/FeaturesPage.tsx', 'src/audience/PrefsRow.tsx', 'src/streamdoor/PrefsRow.tsx'],
     diagnostics: ['src/tablet/check/DiagnosticsPage.tsx', 'src/beta/BetaPanel.tsx', 'src/update/UpdatePanel.tsx', 'src/plugins/DiagnosticsSwitch.tsx'],
     behaviour: ['src/ui/ChoiceDialog.tsx'],
   };
