@@ -1,0 +1,5 @@
+before-menu-dark.png / before-menu-light.png: Layers and artboards as it was. Layer commands flat down the top, Masks and folders, Artboards and Tiles scattered lower down.
+after-menu-dark.png / after-menu-light.png: Layers and artboards now. Layer, Artboards and Tiles first, a divider, the sprite rows, a Pixels and vectors group, then the Layers panel.
+before-after-dark.png / before-after-light.png: the two side by side, before on the left.
+after-layer-submenu-open-dark.png / after-layer-submenu-open-light.png: the Layer submenu open. Ten layer commands, then Masks and folders as a headed group (a menu has one level of submenu).
+The cost: every layer command is one click deeper. New vector layer, Delete layer, Move up and the rest were two clicks from the bar (Layers and artboards, then the command) and are three now. Masks and folders stays at three. Pixels and vectors is one click shallower (two).
