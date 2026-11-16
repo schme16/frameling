@@ -19,6 +19,7 @@ import { dragging, PanelBoundary } from './dockShared';
 import { Icon } from './icons';
 import { openHelp } from './overlays';
 import { PanelHelp, PanelScope, useShowExplanations } from './explain/ExplainIcon';
+import { usePixelSelectionVersion } from '../select/pixel-state';
 import { groupWord, infoFor, planRight, sectionsNow, shortName, PANEL_INFO, type RightGroupPlan } from './panelInfo';
 import { PanelPicker } from './PanelPicker';
 import { ZoneStack } from './DockGroup';
@@ -283,6 +284,8 @@ function Inspector({ sections, active }: { sections: string[]; active: string | 
   // is in the document store).
   useTl((t) => t.clipId);
   useTl((t) => t.clipLead);
+  // Selected pixels are not in the store, but Position and size and Align turn up when there are some.
+  usePixelSelectionVersion();
   // Joined so the selector hands back something stable between renders.
   const key = useStore((s) => sectionsNow(sections, s, active).shown.join(','));
   const shown = key ? key.split(',') : [];

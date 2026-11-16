@@ -63,6 +63,10 @@ export const DEEP_IN_MENUS: Record<string, string> = {
 export const LONG_LISTS: Record<string, number> = {
   // Empty: Draw is 24, Animate 23 and Draw > Tools 27 at their longest. The rare things went into submenus, and Skeleton,
   // Artboards, Effects and Tiles went to a menu of their own (Extras).
+  // View > Panels is 32: it was at the cap of 30, and Position and size and Align and space out came out of Symbol and motion
+  // to be Properties sections of their own, each with its own show-and-hide here like every other panel. The way down is for
+  // the Panels list to fold the Properties sections into a submenu; that is a change to the menu layout, not to these two.
+  'View > Panels': 32,
 };
 
 /** Lists that are as long as the person's own things, which is content and not design. */
@@ -80,7 +84,8 @@ export const BIG_MENUS: Record<string, number> = {
   // One more for Put the panels back, which sits beside Dock every window back under View > Panel windows and tools.
   // It is the panels' half of a pair the tool strip already had, so it is the price of matching them, not drift.
   // One more for the Scripts panel's show-and-hide, which sits in View > Panels with every other panel's. The scripts themselves are in Edit > Scripts, not here.
-  View: 189,
+  // Two more for the show-and-hide of Position and size and of Align and space out, now sections of Properties of their own (see LONG_LISTS).
+  View: 191,
   // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
 };
 

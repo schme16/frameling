@@ -202,7 +202,7 @@ const commands: Command[] = [
     keywords: ['position', 'coordinates', 'x y', 'size', 'width', 'height', 'resize exactly', 'numbers', 'transform', 'rotate', 'turn', 'skew', 'slant', 'move exactly', 'precise', 'properties'],
     enabled: (s) => s.ui.selection.length > 0 || hasSel(),
     run: () => {
-      showPanel('symbol-props');
+      showPanel('selection-numbers');
       // The panel may have just opened: give it a moment to draw before taking the focus.
       setTimeout(() => document.querySelector<HTMLInputElement>('.sy-props input[aria-label="X"]')?.focus(), 120);
     },

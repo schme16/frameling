@@ -17,7 +17,7 @@ import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 // A feature adds its own entry when it is on.
 for (const f of [lipsyncFeature, flowFeature, cameraFeature, particlesFeature, rigFeature, textFeature, tilesFeature]) for (const [id, info] of Object.entries(f.sections ?? {})) registerPanelInfo(id, info);
 
-const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig'];
+const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'selection-numbers', 'align', 'effects', 'text', 'particles', 'camera', 'rig'];
 
 /** A fresh vector document, with the UI bits a test wants. */
 function state(ui: Partial<State['ui']> = {}, pixel = false): State {
@@ -85,7 +85,7 @@ describe('Properties: what shows now', () => {
   it('shows the tool and colours while drawing, the rest are left out of Properties', () => {
     const r = sectionsNow(SECTIONS, state({ tool: 'brush' }), 'tool-options');
     expect(r.shown).toEqual(['colors', 'tool-options']);
-    expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig']);
+    expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'selection-numbers', 'align', 'effects', 'text', 'particles', 'camera', 'rig']);
   });
 
   it('shows the section asked for even when it does not apply', () => {
@@ -116,16 +116,43 @@ describe('Properties: what shows now', () => {
 
   it('puts Colours first, then the sections about a selection, then the rest', () => {
     const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
-    expect(r.shown.slice(0, 4)).toEqual(['colors', 'symbol-props', 'effects', 'text']);
+    expect(r.shown.slice(0, 5)).toEqual(['colors', 'selection-numbers', 'align', 'effects', 'text']);
     expect(r.shown).toContain('tool-options');
+    // A plain shape is not a symbol: Symbol and motion is still there (for the in-betweens) but does not lead.
+    expect(r.shown.indexOf('symbol-props')).toBeGreaterThan(r.shown.indexOf('text'));
+  });
+
+  it('puts Position and size, then Align, first among the sections about a selection, wherever the layout holds them', () => {
+    const r = sectionsNow(['align', 'effects', 'selection-numbers', 'colors', 'text'], picked().get(), null);
+    expect(r.shown).toEqual(['colors', 'selection-numbers', 'align', 'effects', 'text']);
+  });
+
+  it('has no Position and size or Align with nothing selected', () => {
+    const r = sectionsNow(SECTIONS, state({ tool: 'select' }), null);
+    expect(r.shown).not.toContain('selection-numbers');
+    expect(r.shown).not.toContain('align');
+    expect(r.idle).toEqual(expect.arrayContaining(['selection-numbers', 'align']));
+  });
+
+  it('leads Symbol and motion with the selection only when a symbol is picked', () => {
+    const s = new Store(newDoc());
+    const doc = s.get().doc;
+    const layer = doc.layers[doc.layers.length - 1];
+    s.update('add', (d) => {
+      const l = d.layers.find((x) => x.id === layer.id)!;
+      d.drawings.dr1 = { id: 'dr1', kind: 'vector', shapes: [{ id: 'inst1', type: 'instance', symbolId: 'sym1', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 } as never] };
+      l.cels = [{ id: 'cel1', start: 0, length: 4, drawingId: 'dr1' }];
+    });
+    s.setUi({ activeLayerId: layer.id, selection: ['inst1'], tool: 'select' });
+    expect(sectionsNow(SECTIONS, s.get(), null).shown.slice(0, 4)).toEqual(['colors', 'selection-numbers', 'align', 'symbol-props']);
   });
 
   it('puts the sections about a selection first when that is the answer in Preferences', () => {
     setChoice(PROPS_ORDER_CHOICE, 'selection');
     try {
       const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
-      expect(r.shown.slice(0, 3)).toEqual(['symbol-props', 'effects', 'text']);
-      expect(r.shown.indexOf('colors')).toBeGreaterThan(2);
+      expect(r.shown.slice(0, 4)).toEqual(['selection-numbers', 'align', 'effects', 'text']);
+      expect(r.shown.indexOf('colors')).toBeGreaterThan(3);
       // With nothing picked the answer makes no difference: Colours still lead.
       expect(sectionsNow(SECTIONS, state(), null).shown[0]).toBe('colors');
     } finally {

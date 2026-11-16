@@ -1,11 +1,10 @@
-// The Align and Space out buttons in the Properties panel, under Position and size. They run the same code as the
+// The Align and space out section of Properties: its buttons, for any selection. They run the same code as the
 // commands in the palette and the Edit menu (align-ops.ts).
 import { useState, type ReactNode } from 'react';
 import { useStore } from '../core/store';
 import { docDpi, toPx, unitInfo } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 import { Tip } from '../canvas/controls';
-import { Section } from '../symbols/Num';
 import type { AlignKind, Axis } from './align';
 import { alignSelection, alignTargetNow, pickedCount, spreadSelection } from './align-ops';
 import { setAlignTo, useAlignTo } from './align-settings';
@@ -85,7 +84,7 @@ const ALIGN_BUTTONS: { kind: AlignKind; label: string; tip: string }[] = [
   { kind: 'bottom', label: 'Align bottom', tip: 'Line up on the bottom edges' },
 ];
 
-export function AlignSection() {
+export function AlignPanel() {
   // Re-read when the selection or the drawing changes.
   useStore((s) => s.doc);
   useStore((s) => s.ui.selection);
@@ -98,7 +97,7 @@ export function AlignSection() {
   const where = to === 'page' ? 'the page' : 'the box round them';
   const gapPx = gap.trim() === '' || !Number.isFinite(Number(gap)) ? null : toPx(Number(gap), unit, dpi);
   return (
-    <Section title="Align and space out">
+    <div className="cv-options sy-props sy-section" data-help="align-space-out">
       <div className="al-row" role="group" aria-label="Align">
         {ALIGN_BUTTONS.map((b) => (
           <button key={b.kind} type="button" className="al-btn" aria-label={b.label} data-tip={b.label} data-tip-desc={`${b.tip}, to ${where}.`} onClick={() => void alignSelection(b.kind)}>
@@ -133,6 +132,6 @@ export function AlignSection() {
         </label>
       </div>
       <Tip>{n === 1 ? 'One shape lines up to the page.' : n > 1 ? `Pick three or more shapes to space them out. Lining up goes to ${where}.` : 'Lines up to the page. Spacing out needs three or more shapes.'}</Tip>
-    </Section>
+    </div>
   );
 }
