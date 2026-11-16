@@ -88,9 +88,11 @@ describe('reading a code somebody typed', () => {
     // word showed in the meeting half, which is exactly what must never happen.
     for (let i = 0; i < 500; i++) {
       const c = makeCode();
-      const shown = maskedCode(c);
-      for (const w of c.secret) expect(shown).not.toContain(w);
-      for (const w of c.meet) expect(shown).toContain(w);
+      // Compare whole words, not letters: one word can sit inside another (a "contains" check called "ash" hidden
+      // and then failed on "ashes" showing), and what matters is that no secret word is one of the parts.
+      const parts = maskedCode(c).split('-');
+      for (const w of c.secret) expect(parts).not.toContain(w);
+      for (const w of c.meet) expect(parts).toContain(w);
     }
   });
 
