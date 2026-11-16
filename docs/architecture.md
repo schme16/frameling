@@ -589,9 +589,11 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
   (`match.ts`); `runCommand` is the one runner menus and keys use too.
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
-  aren't listed are added at the bottom. Nine menus on the bar, by id and by the title on screen (File, Edit, View,
-  Draw shown as Tools, Layers shown as Layers and artboards, Animate shown as Animation, Extras shown as Rigging,
-  Effects, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu
+  aren't listed are added at the bottom, except the ones in `src/ui/paletteFirst.ts`: commands a control on screen
+  already does (a tick, a button, a right-click row, each carrying `data-command`) stay in the palette and leave the
+  menus. Ten menus on the bar, by id and by the title on screen (File, Edit, View,
+  Draw shown as Tools, Soft shown as Soft paint, Layers shown as Layers and artboards, Animate shown as Animation,
+  Extras shown as Rigging, Effects, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu
   (`SUBMENUS`, `sub:<key>`). Ids stay put when the words change, because saved menu changes and plugins name them. A
   menu or submenu that moved keeps its old name for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to
   `Extras`, `'Pixel'` to `Draw` and `'Artboards'` to `sub:artboards`, and

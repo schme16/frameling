@@ -538,7 +538,7 @@ A shared workspace moves panels around (including any [stacked groups](help:pane
 
 ## Reset
 
-**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. **Put the panels back** does the same for the panels alone, with **Undo** (see [Put the panels back](help:panels-back)). Your tool arrangement is separate: **Put the tools back** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
+**View > Panel windows and tools > Put the panels back** puts the panels back where the current workspace began, with **Undo** (see [Put the panels back](help:panels-back)). Typing "reset layout" in the command palette finds it too. Your tool arrangement is separate: **Put the tools back** (see [Arrange your tools](help:tool-arrange)).
 
 See also [Panels](help:panels).`,
   properties: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
@@ -668,7 +668,7 @@ The first time there is one, Frameling asks whether to dock it too, then remembe
 
 - One of your own workspaces goes back to how you saved it. One that comes with the app goes back to how it comes.
 - With nothing to put back, it says so instead of doing nothing quietly.
-- **Reset layout** (in **Your workspaces**) is the older way to start over, and it also asks about the tools.
+- The **Reset layout** button on the Workspaces page also asks about the tools.
 
 See also [Panels](help:panels), [Floating windows](help:floating-windows) and [Workspaces](help:workspaces).`,
   'floating-windows': `Any panel can float over the canvas in a window of its own. Handy for keeping the **Preview** next to your drawing, or a panel out of the way.
@@ -809,7 +809,7 @@ Things that invite a move, like the strip's grip and the edges of windows, go wh
 
 - The first time something moves by accident, Quill offers a **Lock it** button on the spot. He only says it once.
 - Each [workspace](help:workspaces) has its own lock. It goes with the workspace when you save or share it.
-- **Reset layout** leaves a locked strip alone, and won't run at all while the panels are locked.
+- **Put the panels back** and **Reset layout** leave a locked strip alone, and won't run at all while the panels are locked.
 
 See also [Change the tools](help:tool-builder), [Panels](help:panels) and [Floating windows](help:floating-windows).`,
   'tool-builder': `**Change the tools** lets you set the strip up the way you work: name your groups, make your own, put away the tools you never touch and fold a whole group into one button. Nothing is lost: every tool still has its key and its place in the command search.

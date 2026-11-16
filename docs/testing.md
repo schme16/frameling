@@ -174,6 +174,15 @@ audit passed the whole time a panel could not be found.
   how much of the palette, menus, feature switches and help belongs to the stream family (`STREAM_LOAD`, exact).
   Lists made of the person's own things (saved brushes) are named exceptions; everything else over a cap is on a list
   in `known-gaps.ts` that can only shrink.
+- **The ledger ratchet** (`ledger.test.ts`, `ledger-logic.ts`, `ledger-history.ts`): every exact number in `known-gaps.ts`
+  (menu sizes, list lengths, the still and stream loads, the tools that leave the rail) has a history in
+  `ledger-history.ts`, one dated row each time it changed, with the reason in words. The last row has to equal the number,
+  so a number cannot rise, fall or appear without a row, and a row needs a sentence (at least eight words; "needed" and
+  "todo" do not count). When it fails it prints the row to add. The easy half is changing the number; the half that
+  matters is the reason, and the better fix for a rise is usually to take something out of a menu instead.
+  Taking something out of a menu is only allowed when a control on screen already does the job: list it in
+  `src/ui/paletteFirst.ts` and give that control a `data-command`. `test/ui/leftOutOfMenus.test.ts` checks the command is
+  real, named by a component, and in no menu; the reachability audit still counts the palette alone as no way in.
 
 - **Moved commands** (`places.test.ts`, `places-logic.test.ts`): every audit above asks "can it be reached?", which a
   command passes before and after being moved. This asks "is it where it was?". `places.json` records, for every

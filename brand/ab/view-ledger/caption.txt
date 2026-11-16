@@ -1,0 +1,1 @@
+A (view-before-*) is the View menu with every submenu open, 201 commands; B (view-after-*) is the same menu with the entries a control on screen already does left out, 157 commands, and Tools going from 175 to 146 by moving soft paint to its own menu; the left-out ones are still in the command palette.

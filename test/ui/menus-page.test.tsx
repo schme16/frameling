@@ -52,7 +52,7 @@ const type = (input: HTMLInputElement, value: string) => {
 
 describe('the Menus page', () => {
   it('lists the menu bar in order, the way it is', () => {
-    expect(rows()).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(rows()).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
     expect(button('Put all the menus back')?.disabled).toBe(true);
   });
   it('moves an entry up with the arrow, shows it in the real menu, and puts the menu back', () => {
@@ -82,7 +82,7 @@ describe('the Menus page', () => {
     click(host.querySelector('[data-entry="Layers"] button[aria-label^="Hide"]'));
     expect(bar()).not.toContain('Layers');
     click(host.querySelector('[data-testid="menus.show.Layers"]'));
-    expect(bar()).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(bar()).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
   });
   it('makes a menu of your own, adds a command to it and a divider, and deletes it with an Undo', () => {
     const name = host.querySelector<HTMLInputElement>('input[placeholder="My favourites"]')!;
@@ -110,7 +110,7 @@ describe('the Menus page', () => {
     expect(button('Put all the menus back')?.disabled).toBe(false);
     click(button('Put all the menus back'));
     expect(getMenuEdits()).toEqual({ v: 1 });
-    expect(rows()).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(rows()).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
   });
   it('says so when a command in a menu is not here right now, and keeps it', () => {
     setMenuEdits(setList(NO_EDITS, 'Help', [...MENUS.find((m) => m.label === 'Help')!.items, 'gone.forever'], MENUS.find((m) => m.label === 'Help')!.items));

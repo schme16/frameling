@@ -88,7 +88,15 @@ export const PHRASES: Phrase[] = [
   P('fit to screen', 'view.fit'),
   P('show the grid', 'view.pixelGrid', 'view.gridSquare'),
   P('turn on dark mode', 'view.toggleTheme', 'view.themes', 'help:themes'),
-  P('reset the layout', 'view.resetLayout'),
+  P('reset the layout', 'view.panelsReset'),
+  // Things that left a menu for the palette (src/ui/paletteFirst.ts) have to be found by the words people use for them.
+  P('snap to the grid', 'view.snap.grid'),
+  P('isometric grid', 'view.gridIso'),
+  P('one point perspective', 'view.perspective1'),
+  P('next note', 'notes.next'),
+  P('draw an arrow', 'marks.arrow'),
+  P('rename this panel', 'view.renamePanel'),
+  P('make the tool buttons bigger', 'view.toolSize.large', 'view.toolbarBuilder'),
   P('lost my panel', 'view.allPanels', 'help:panels'),
   P('change the keyboard shortcuts', 'help.shortcuts', 'help:keyboard-shortcuts'),
   // Second batch
