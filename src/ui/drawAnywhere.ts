@@ -15,7 +15,7 @@ import { openHelp } from './overlays';
 import { toast } from './toast';
 
 /** The tools that put new marks down. The selection, eraser, eyedropper and gradient tools work on what is there and never make a layer. */
-export const STROKE_TOOLS: ReadonlySet<string> = new Set(['brush', 'pencil', 'pen', 'line', 'rect', 'ellipse', 'polygon', 'star', 'shade', 'dither', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'charcoal']);
+export const STROKE_TOOLS: ReadonlySet<string> = new Set(['brush', 'pencil', 'pen', 'line', 'rect', 'ellipse', 'polygon', 'star', 'shade', 'dither', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush']);
 
 /** The kind of layer a stroke wants, or null when it is happy on the layer you are on. */
 export function wantedKind(toolId: string, toolLayers: readonly LayerKind[], active: Pick<Layer, 'kind'> | undefined, side: Side | null): Side | null {

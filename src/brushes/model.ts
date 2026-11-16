@@ -5,17 +5,22 @@ import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { brushFrom } from '../core/uiMemory';
 import { defaultTip, sameTip } from '../geometry/tip';
+import { cleanSpec, sameSpec, specTool, type PixelSpec } from '../dab/spec';
 import { cleanGroup } from './library';
+import { PIXEL_STARTERS } from './pixelStarters';
 import { STARTERS } from './starters';
 
-/** Which tool a brush came from. Only the brush for now; the field is there so more can follow without a new format. */
-export type PresetTool = 'brush';
+/** Which tool a brush came from: the vector Brush, or one of the pixel brush tools (the Pixel brush, soft paint, Chalk and charcoal). */
+export type PresetTool = 'brush' | 'pixel';
 
 export interface BrushPreset {
   id: string;
   name: string;
   tool: PresetTool;
+  /** The vector brush. A pixel brush keeps the standard one here, which nothing reads, so the vector side needs no branches. */
   brush: BrushSettings;
+  /** What a pixel brush (tool 'pixel') holds: the tool and its settings. Left out on a vector brush. */
+  pixel?: PixelSpec;
   /** One of the starters that come with Frameling: it can be picked and copied, never changed or deleted. */
   builtin?: boolean;
   /** The group it sits in in the picker (see library.ts). Left out means "My brushes". */
@@ -32,6 +37,7 @@ export const BRUSHES_EXT = '.frameling-brushes.json';
 export const MAX_BRUSHES_BYTES = 1024 * 1024;
 
 export { STARTERS } from './starters';
+export { PIXEL_STARTERS } from './pixelStarters';
 
 /** A name as it is kept: spaces tidied, cut to length. Empty when there is nothing in it. */
 export function cleanName(raw: unknown): string {
@@ -59,7 +65,10 @@ export function sameBrush(a: BrushSettings, b: BrushSettings): boolean {
 }
 
 /** Every brush to show: the starters, then yours. */
-export const allPresets = (mine: readonly BrushPreset[]): BrushPreset[] => [...STARTERS, ...mine];
+export const allPresets = (mine: readonly BrushPreset[]): BrushPreset[] => [...STARTERS, ...PIXEL_STARTERS, ...mine];
+
+/** The brushes on one side of the library: the vector Brush's, or the pixel brushes'. */
+export const onSide = (all: readonly BrushPreset[], side: 'vector' | 'pixel'): BrushPreset[] => all.filter((p) => (p.tool === 'pixel') === (side === 'pixel'));
 
 /** Reads one preset out of saved or shared data. Anything off about a field falls back to the standard brush for it. */
 export function sanitizePreset(raw: unknown, id: string): BrushPreset | null {
@@ -67,10 +76,15 @@ export function sanitizePreset(raw: unknown, id: string): BrushPreset | null {
   const r = raw as Record<string, unknown>;
   const name = cleanName(r.name);
   if (!name) return null;
-  if (r.tool !== undefined && r.tool !== 'brush') return null;
+  if (r.tool !== undefined && r.tool !== 'brush' && r.tool !== 'pixel') return null;
+  const group = cleanGroup(r.group);
+  if (r.tool === 'pixel') {
+    const pixel = cleanSpec(r.pixel);
+    if (!pixel) return null;
+    return group ? { id, name, tool: 'pixel', brush: DEFAULT_BRUSH, pixel, group } : { id, name, tool: 'pixel', brush: DEFAULT_BRUSH, pixel };
+  }
   const brush = brushFrom(r.brush, DEFAULT_BRUSH);
   if (!brush) return null;
-  const group = cleanGroup(r.group);
   return group ? { id, name, tool: 'brush', brush, group } : { id, name, tool: 'brush', brush };
 }
 
@@ -99,16 +113,26 @@ export type SaveResult = { list: BrushPreset[]; preset: BrushPreset; replaced: b
  * a name a starter has gets a number after it. Returns null when the name is empty or the list is full.
  */
 export function savePreset(list: readonly BrushPreset[], name: string, brush: BrushSettings, newId: string, group?: string): SaveResult | null {
+  return saveAny(list, name, newId, group, 'brush', (p) => ({ ...p, brush: { ...brush } }), { brush: { ...brush } });
+}
+
+/** Saves a pixel brush under a name, with the same rules as savePreset. A vector brush with that name is left alone (the new one gets a number). */
+export function savePixelPreset(list: readonly BrushPreset[], name: string, pixel: PixelSpec, newId: string, group?: string): SaveResult | null {
+  return saveAny(list, name, newId, group, 'pixel', (p) => ({ ...p, pixel }), { brush: DEFAULT_BRUSH, pixel });
+}
+
+function saveAny(list: readonly BrushPreset[], name: string, newId: string, group: string | undefined, tool: PresetTool, change: (p: BrushPreset) => BrushPreset, fields: Pick<BrushPreset, 'brush' | 'pixel'>): SaveResult | null {
   const clean = cleanName(name);
   if (!clean) return null;
-  const mineSame = list.find((p) => same(p.name, clean));
+  const mineSame = list.find((p) => same(p.name, clean) && p.tool === tool);
   if (mineSame) {
-    const preset = { ...mineSame, brush: { ...brush } };
+    const preset = change(mineSame);
     if (group !== undefined) setGroup(preset, group);
     return { list: list.map((p) => (p === mineSame ? preset : p)), preset, replaced: true };
   }
   if (list.length >= MAX_PRESETS) return null;
-  const preset: BrushPreset = { id: newId, name: uniqueName(clean, STARTERS.map((s) => s.name)), tool: 'brush', brush: { ...brush } };
+  const taken = [...STARTERS, ...PIXEL_STARTERS, ...list.filter((p) => p.tool !== tool)].map((s) => s.name);
+  const preset: BrushPreset = { id: newId, name: uniqueName(clean, taken), tool, ...fields };
   setGroup(preset, group);
   return { list: [...list, preset], preset, replaced: false };
 }
@@ -132,7 +156,12 @@ export function movePreset(list: readonly BrushPreset[], id: string, group: stri
 
 /** Puts a brush into a saved one, keeping its name. Starters are left alone. */
 export function updatePreset(list: readonly BrushPreset[], id: string, brush: BrushSettings): BrushPreset[] {
-  return list.map((p) => (p.id === id ? { ...p, brush: { ...brush } } : p));
+  return list.map((p) => (p.id === id && p.tool === 'brush' ? { ...p, brush: { ...brush } } : p));
+}
+
+/** Puts a pixel brush into a saved one, keeping its name. */
+export function updatePixelPreset(list: readonly BrushPreset[], id: string, pixel: PixelSpec): BrushPreset[] {
+  return list.map((p) => (p.id === id && p.tool === 'pixel' ? { ...p, pixel } : p));
 }
 
 /** Gives a saved brush a new name (a number after it if another has it). Unchanged when the name is empty. */
@@ -150,7 +179,13 @@ export function deletePreset(list: readonly BrushPreset[], id: string): BrushPre
 
 /** The brush the one in use matches, if any (yours first, so a copy of a starter reads as yours). */
 export function matchPreset(brush: BrushSettings, mine: readonly BrushPreset[]): BrushPreset | undefined {
-  return mine.find((p) => sameBrush(p.brush, brush)) ?? STARTERS.find((p) => sameBrush(p.brush, brush));
+  return mine.find((p) => p.tool === 'brush' && sameBrush(p.brush, brush)) ?? STARTERS.find((p) => sameBrush(p.brush, brush));
+}
+
+/** The pixel brush the one in use matches, if any (yours first). */
+export function matchPixelPreset(spec: PixelSpec, mine: readonly BrushPreset[]): BrushPreset | undefined {
+  const is = (p: BrushPreset) => p.tool === 'pixel' && !!p.pixel && sameSpec(p.pixel, spec);
+  return mine.find(is) ?? PIXEL_STARTERS.find(is);
 }
 
 export interface PresetState {
@@ -162,9 +197,19 @@ export interface PresetState {
 
 /** Which brush is lit, and whether you have changed it since picking it. `pickedId` is the last one picked this session. */
 export function presetState(brush: BrushSettings, mine: readonly BrushPreset[], pickedId: string | null): PresetState {
-  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId) : undefined;
+  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId && p.tool === 'brush') : undefined;
   if (picked) return { activeId: picked.id, changed: !sameBrush(picked.brush, brush) };
   const m = matchPreset(brush, mine);
+  return { activeId: m ? m.id : null, changed: false };
+}
+
+/** Which pixel brush is lit, and whether you have changed it since picking it. `spec` is the pixel brush in use (null when none is). */
+export function pixelPresetState(spec: PixelSpec | null, mine: readonly BrushPreset[], pickedId: string | null): PresetState {
+  if (!spec) return { activeId: null, changed: false };
+  // The one you picked only stays lit while you are still on its tool (a charcoal brush is not lit on the airbrush).
+  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId && p.tool === 'pixel' && !!p.pixel && specTool(p.pixel) === specTool(spec)) : undefined;
+  if (picked?.pixel) return { activeId: picked.id, changed: !sameSpec(picked.pixel, spec) };
+  const m = matchPixelPreset(spec, mine);
   return { activeId: m ? m.id : null, changed: false };
 }
 
@@ -180,14 +225,27 @@ export function stepPreset(all: readonly BrushPreset[], activeId: string | null,
 
 /** The text to save or copy for these brushes (the starters are never in it: everyone has them). */
 export function brushesToText(list: readonly BrushPreset[]): string {
-  const presets = list.filter((p) => !p.builtin).map((p) => (p.group ? { name: p.name, tool: p.tool, brush: p.brush, group: p.group } : { name: p.name, tool: p.tool, brush: p.brush }));
+  const presets = list
+    .filter((p) => !p.builtin)
+    .map((p) => {
+      const body = p.tool === 'pixel' ? { name: p.name, tool: p.tool, pixel: p.pixel } : { name: p.name, tool: p.tool, brush: p.brush };
+      return p.group ? { ...body, group: p.group } : body;
+    });
   return JSON.stringify({ format: BRUSHES_FORMAT, version: BRUSHES_VERSION, presets }, null, 2);
 }
 
 /** A file name for a shared set: "my-brushes.frameling-brushes.json". */
 export const brushesFileName = (): string => `my-brushes${BRUSHES_EXT}`;
 
-export type ParseResult = { ok: true; presets: { name: string; brush: BrushSettings; group?: string }[]; skipped: number } | { ok: false; error: string };
+/** A brush as it arrives in a shared file: a vector one has `brush`, a pixel one has `pixel`. */
+export interface SharedBrush {
+  name: string;
+  brush: BrushSettings;
+  group?: string;
+  pixel?: PixelSpec;
+}
+
+export type ParseResult = { ok: true; presets: SharedBrush[]; skipped: number } | { ok: false; error: string };
 
 /** Reads brushes out of text (a file's or what was pasted). Nothing in it is trusted. */
 export function parseBrushesText(text: unknown): ParseResult {
@@ -203,24 +261,29 @@ export function parseBrushesText(text: unknown): ParseResult {
   if (!f || typeof f !== 'object' || f.format !== BRUSHES_FORMAT) return { ok: false, error: 'That is not a set of Frameling brushes.' };
   if (typeof f.version === 'number' && f.version > BRUSHES_VERSION) return { ok: false, error: 'Those brushes are from a newer Frameling. Update Frameling to use them.' };
   if (!Array.isArray(f.presets)) return { ok: false, error: 'There are no brushes in that.' };
-  const presets: { name: string; brush: BrushSettings; group?: string }[] = [];
+  const presets: SharedBrush[] = [];
   let skipped = 0;
   for (const item of f.presets) {
     const p = presets.length < MAX_PRESETS ? sanitizePreset(item, 'in') : null;
-    if (p) presets.push(p.group ? { name: p.name, brush: p.brush, group: p.group } : { name: p.name, brush: p.brush });
-    else skipped++;
+    if (p) {
+      const one: SharedBrush = { name: p.name, brush: p.brush };
+      if (p.pixel) one.pixel = p.pixel;
+      if (p.group) one.group = p.group;
+      presets.push(one);
+    } else skipped++;
   }
   if (!presets.length) return { ok: false, error: 'There are no brushes in that.' };
   return { ok: true, presets, skipped };
 }
 
 /** Adds shared brushes to your list under fresh ids, with names that don't clash. Stops at the limit. */
-export function addShared(list: readonly BrushPreset[], incoming: readonly { name: string; brush: BrushSettings; group?: string }[], newId: () => string): { list: BrushPreset[]; added: number } {
+export function addShared(list: readonly BrushPreset[], incoming: readonly SharedBrush[], newId: () => string): { list: BrushPreset[]; added: number } {
   const out = [...list];
   let added = 0;
   for (const it of incoming) {
     if (out.length >= MAX_PRESETS) break;
-    const p: BrushPreset = { id: newId(), name: uniqueName(it.name, allPresets(out).map((p) => p.name)), tool: 'brush', brush: { ...it.brush } };
+    const p: BrushPreset = { id: newId(), name: uniqueName(it.name, allPresets(out).map((p) => p.name)), tool: it.pixel ? 'pixel' : 'brush', brush: { ...it.brush } };
+    if (it.pixel) p.pixel = it.pixel;
     setGroup(p, it.group);
     out.push(p);
     added++;

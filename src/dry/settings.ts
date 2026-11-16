@@ -45,6 +45,7 @@ export function cleanDry(raw: unknown): DrySettings {
 const store = createStore<DrySettings>(cleanDry(readRaw<unknown>(KEY, null)));
 
 export const getDry = (): DrySettings => store.get();
+export const subscribeDry = (fn: () => void): (() => void) => store.subscribe(fn);
 export const useDry = <S,>(selector: (s: DrySettings) => S): S => store.use(selector);
 
 function save(next: DrySettings): DrySettings {

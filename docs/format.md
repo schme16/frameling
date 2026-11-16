@@ -360,6 +360,12 @@ when comparing two drawings for "same look" (as `id` is ignored).
   fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them
   in, see `src/core/tips.ts`), never stored. A saved brush (`src/brushes`) and a shared brush file hold the same `tip`.
   A pixel brush made from a selection is not in the document: it is the `pixelStamp` tool setting (`src/brushes/stamps.ts`).
+  Saved and shared brushes (`src/brushes/model.ts`, file `*.frameling-brushes.json`, still version 1) have a `tool`: `'brush'` (the
+  default, so every old file reads as before) or `'pixel'`, which holds `pixel` instead of `brush`: a `PixelSpec` (`src/dab/spec.ts`) that is
+  one of `{ kind: 'dab', dab }` (the Pixel brush: `tip`, `picture`, `size`, `hardness`, `angle`, `roundness`, `follow`, `spacing`,
+  `scatter`, `sizeJitter`, `angleJitter`, `flow`, `opacity`, `aliased`; every field optional on read, with a default and a range),
+  `{ kind: 'soft', tool, size, hardness, flow }` or `{ kind: 'dry', medium, paper, size, hardness, press }`. An older Frameling
+  skips a `'pixel'` brush as unreadable and keeps the rest. The brush in use is the `frameling.pixelBrush.v1` setting.
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`
   stays as its first stop).
 - `PathShape` (`type: 'path'`): `paths`, `fill: Color | null`, `stroke: {color, width, join, cap} | null`, `opacity`,

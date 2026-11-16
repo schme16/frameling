@@ -126,8 +126,8 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
   'tools.notes', 'tools.marks',
-  // The pixel tools that fade at the edge, and chalk and charcoal, sit in Pixel > Spray, soft paint and charcoal.
-  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal',
+  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in Pixel > Spray, soft paint and charcoal.
+  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
 ];
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
@@ -308,7 +308,8 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
       'tools.charcoal',
       'charcoal.medium.vine-charcoal', 'charcoal.medium.compressed-charcoal', 'charcoal.medium.chalk', 'charcoal.medium.soft-pastel', 'charcoal.medium.oil-pastel', 'charcoal.medium.crayon',
       'charcoal.medium.sketch-pencil', 'charcoal.medium.soft-pencil', 'charcoal.medium.colour-pencil', '-',
-      'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough',
+      'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough', '-',
+      'tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider',
     ],
   },
   pixgrad: {

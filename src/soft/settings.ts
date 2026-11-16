@@ -49,6 +49,7 @@ export function cleanSoft(raw: unknown): SoftSettings {
 const store = createStore<SoftSettings>(cleanSoft(readRaw<unknown>(KEY, null)));
 
 export const getSoft = (): SoftSettings => store.get();
+export const subscribeSoft = (fn: () => void): (() => void) => store.subscribe(fn);
 export const useSoft = <S,>(selector: (s: SoftSettings) => S): S => store.use(selector);
 
 export function setSoftTool(kind: SoftKind, patch: Partial<SoftOptions>): void {

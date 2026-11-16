@@ -36,7 +36,7 @@ describe('the three defaults', () => {
     const g = currentGroups();
     expect(ids(g).slice(0, 4)).toEqual(['select', 'draw', 'pixel', 'shapes']);
     expect(g[1].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
-    expect(g[2].tools).toEqual(['shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal']);
+    expect(g[2].tools).toEqual(['shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush']);
     // Every way of picking is its own tool, and they sit together in the Select group.
     expect(groupOf(g, 'pixel-select-lasso')).toBe('select');
     expect(groupOf(g, 'pixel-select-wand')).toBe('select');

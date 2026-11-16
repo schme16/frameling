@@ -708,6 +708,16 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="10" cy="22" r="0.6" fill="currentColor" fillOpacity="0.4" stroke="none" />
     </>
   ),
+  'pixel-brush': (
+    <>
+      <rect x="3.5" y="16.5" width="4" height="4" rx="0.6" />
+      <rect x="9.5" y="11.5" width="4" height="4" rx="0.6" />
+      <rect x="15.5" y="6.5" width="4" height="4" rx="0.6" />
+      <circle cx="21" cy="3.6" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="3.2" cy="12.5" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="12" cy="20.8" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+    </>
+  ),
   highlighter: (
     <>
       <path d="M14.5 3.5l6 6-8 8-6-6z" />
