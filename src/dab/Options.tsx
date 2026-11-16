@@ -14,7 +14,7 @@ import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
 import { FLOW_RANGE, ROUND_RANGE, SCATTER_RANGE, SIZE_RANGE, SPACING_RANGE, type TipShape } from './maths';
 import { drivesFrom } from './dynamics';
-import { ColourSection, DynamicsSection, TextureSection } from './DynamicsOptions';
+import { ColourSection, DynamicsSection, PaperSection, TextureSection } from './DynamicsOptions';
 import { setDab, useDab } from './settings';
 
 /** The tip made from the selection, kept in the brush (so a saved brush carries its picture). */
@@ -121,6 +121,7 @@ export function DabOptionsPanel() {
         <Slider label="Opacity" value={Math.round(b.opacity * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ opacity: v / 100 })} hint="The most paint any pixel can get in one stroke, however many dabs cross it. Flow is how fast it builds, opacity is where it stops." />
       </MoreOptions>
       <DynamicsSection />
+      <PaperSection />
       <TextureSection />
       <ColourSection />
       <MirrorOptions />

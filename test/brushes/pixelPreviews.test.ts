@@ -48,7 +48,7 @@ function ready(spec: PixelSpec, kind: 'stroke' | 'dab'): string {
   if (base.some((v) => v)) expect(setActivePixels('under', base)).toBe('ok');
   if (spec.kind === 'dry') {
     setMedium(spec.medium);
-    setPaper(spec.paper);
+    setPaper(spec.paper ?? 'medium');
     setDryTool(spec.medium, { size, hardness: spec.hardness, press: spec.press });
     return 'charcoal';
   }

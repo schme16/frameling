@@ -16,7 +16,7 @@ import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
 import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
 import { dualAt, dualTile, grainCut } from './texture';
-import { paperTile, TILE } from '../dry/paper';
+import { paperTile, TILE, type PaperKind } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
 export interface Surface {
@@ -92,6 +92,8 @@ export interface DabParams {
   back?: RGBA | null;
   /** Crisp: a pixel is all or nothing. Smooth: see-through edges. */
   edge: EdgeMode;
+  /** The sheet's paper, for a grain that does not keep one of its own. Medium when left out. */
+  sheet?: PaperKind;
   mirror?: { mode: 'off' | 'h' | 'v' | 'both'; ax2: number; ay2: number };
   /** Turns a pixel into one from the layer's palette, when the palette is locked. */
   snap?: ReturnType<typeof palettePicker>;
@@ -161,7 +163,7 @@ export class DabStroke {
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
     const g = p.brush.grain;
-    this.grainTile = g && g.depth > 0 ? paperTile(g.paper) : null;
+    this.grainTile = g && g.depth > 0 ? paperTile(g.paper ?? p.sheet ?? 'medium') : null;
     this.grainDepth = g?.depth ?? 0;
     this.grainScale = g?.scale ?? 1;
     this.grainMoving = !!g?.moving;

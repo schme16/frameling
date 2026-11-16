@@ -62,7 +62,7 @@ describe('grain', () => {
   it('is read back with anything odd put right, and absent stays absent', () => {
     expect(cleanGrain(undefined)).toBeNull();
     expect(cleanGrain('x')).toBeNull();
-    expect(cleanGrain({ paper: 'nope', depth: 9, scale: 99 })).toEqual({ paper: 'medium', depth: 1, scale: 8, moving: false });
+    expect(cleanGrain({ paper: 'nope', depth: 9, scale: 99 })).toEqual({ depth: 1, scale: 8, moving: false });
     expect(cleanGrain({ paper: 'laid', depth: 0.3, scale: 2, moving: true })).toEqual({ paper: 'laid', depth: 0.3, scale: 2, moving: true });
     expect(sameGrain(DEFAULT_GRAIN, { ...DEFAULT_GRAIN })).toBe(true);
     expect(sameGrain(DEFAULT_GRAIN, null)).toBe(false);
@@ -121,5 +121,17 @@ describe('dual brush', () => {
     expect(b.grain?.paper).toBe('laid');
     expect(b.dual?.size).toBe(4);
     expect(cleanDab({ ...b, grain: null }, b).grain).toBeNull();
+  });
+});
+
+describe('a grain with no paper of its own follows the sheet', () => {
+  it('the default grain names no paper, and a saved one keeps the paper it was given', () => {
+    expect(DEFAULT_GRAIN.paper).toBeUndefined();
+    expect(cleanGrain({ depth: 0.5, scale: 2, moving: false })).not.toHaveProperty('paper');
+    expect(cleanGrain({ paper: 'rough', depth: 0.5 })?.paper).toBe('rough');
+    expect(cleanGrain({ paper: 'nonsense', depth: 0.5 })).not.toHaveProperty('paper');
+  });
+  it('two grains that differ only in keeping a paper are not the same', () => {
+    expect(sameGrain({ depth: 0.8, scale: 1, moving: false }, { paper: 'medium', depth: 0.8, scale: 1, moving: false })).toBe(false);
   });
 });

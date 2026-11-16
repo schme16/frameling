@@ -13,7 +13,7 @@ export const bodies: Record<string, string> = {
 
 **Under Shape, scatter and flow:** **Angle** and **Roundness** turn and flatten the tip (a flat square at an angle is a chisel), **Turn with the line** points it the way you draw, **Scatter**, **Size jitter** and **Angle jitter** vary each dab. **Flow** is how much paint one dab lays down, so it builds up as dabs overlap. **Opacity** is the most any pixel can get in one stroke. Flow is how fast it builds, opacity is where it stops.
 
-**Further folds, each with its own help:** [Pen, speed and fade](help:pixel-brush-dynamics) lets the pen, your speed or a fade-out change each dab, and **Colour changes** lets the colour wander or smear. [Grain and dual tip](help:pixel-brush-texture) gives the brush a paper to catch on, or a second tip of dots.
+**Further folds, each with its own help:** [Pen, speed and fade](help:pixel-brush-dynamics) lets the pen, your speed or a fade-out change each dab, and **Colour changes** lets the colour wander or smear. The **Paper** box ([paper and dual tip](help:pixel-brush-texture)) gives the brush a paper to catch on, and **Dual tip** adds a second tip of dots.
 
 **Keep your brushes:** press **Save as...** in the picker. The same picker holds pixel brushes for the soft paint tools and chalk and charcoal. See [saved brushes](help:brush-presets).
 
@@ -86,15 +86,15 @@ The rest (colour dodge and burn, hard and soft light, difference, exclusion, hue
 - The picture shows five strokes of the same pink across the same four blocks. From the top: paint over it, multiply, screen, overlay, colour only.
 
 See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-presets).`,
-  'pixel-brush-texture': `**Grain** and a **dual tip** are the two ways to make a brush speckled, rough or bristly instead of smooth. Open **Grain and dual tip** in the [Pixel brush](help:pixel-brush) options.
+  'pixel-brush-texture': `**Grain** and a **dual tip** are the two ways to make a brush speckled, rough or bristly instead of smooth. Grain is the **Paper** box in the [Pixel brush](help:pixel-brush) options, and the dual tip is under it.
 
-**Paper grain:** the paint catches on the high points of a paper, so light strokes break into specks and pressing harder fills the dips in. It uses the same five papers as [chalk and charcoal](help:chalk-charcoal), so a stroke here and a stroke there meet the same bumps.
-- **Paper:** smooth, fine, medium, laid or rough.
+**Catch on paper:** switch it on in the **Paper** box and the paint catches on the high points of the sheet's paper, so light strokes break into specks and pressing harder fills the dips in. It is the same paper as [chalk and charcoal](help:paper), so a stroke here and a stroke there meet the same bumps.
+- **Paper:** smooth, fine, medium, laid or rough. This is the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper if you want this brush to stay put when the sheet changes.
 - **How much it catches:** at the top the paint only lands on the high points. Lower the **Flow** to see it best.
 - **Grain size:** makes each bump a block of pixels, for a chunkier paper.
 - **A new patch of paper for every dab:** off, the paper is fixed to the page and two strokes over each other catch on the same bumps. On, every dab finds new paper, so overlapping dabs fill each other in, like a sponge.
 
-**Dual tip:** a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
+**Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
 - **Dot shape, Dot size** and **How many dots** set the dots. Every stroke gets its own scatter of them.
 - **Cut holes instead:** the dots become holes in the brush, so it paints everywhere except them.
 

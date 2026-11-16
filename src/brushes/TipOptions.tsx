@@ -4,6 +4,7 @@ import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { useStore } from '../core/store';
 import type { BrushTip, StampAngle } from '../core/format';
 import { resolveTip } from '../geometry/tip';
+import { PaperGroup } from '../dry/PaperGroup';
 import { clearEdgedPiece, EDGED_SLOTS, edgedHas, makeAlongBrush, setEdgedPiece } from './own';
 import { BrushPicker } from './BrushPicker';
 import { makeBrushFromSelection, patchTip } from './tips';
@@ -57,14 +58,23 @@ function EdgedParts({ has }: { has: Record<(typeof EDGED_SLOTS)[number]['id'], b
   );
 }
 
-/** The paper side of a chalk or charcoal tip: the switch and how coarse the paper is. Its own block, so it can move into a Paper group. */
+/** The paper side of a chalk or charcoal tip: the shared Paper group, with the switch in it and how coarse the paper is. */
 function PaperControls({ tip }: { tip: BrushTip }) {
   const t = resolveTip(tip);
+  const grainSize = <Slider label="Grain size" value={Math.round(t.grain * 10)} min={tip.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />;
   return (
     <div className="tp-row" data-testid="brush-paper">
-      <Toggle label="Catch on paper" checked={!!tip.dry} onChange={(v) => patchTip({ dry: v ? (tip.kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined })} hint="The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead." />
-      {!tip.dry && <Slider label="Grain" value={Math.round(t.amount * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How much of the line is dusty grain, with the paper showing through." />}
-      <Slider label="Grain size" value={Math.round(t.grain * 10)} min={tip.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />
+      <PaperGroup
+        toggle={{ checked: !!tip.dry, onChange: (v) => patchTip({ dry: v ? (tip.kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined }), hint: 'The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead.' }}
+        off={
+          <>
+            <Slider label="Grain" value={Math.round(t.amount * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How much of the line is dusty grain, with the paper showing through." />
+            {grainSize}
+          </>
+        }
+      >
+        {grainSize}
+      </PaperGroup>
     </div>
   );
 }

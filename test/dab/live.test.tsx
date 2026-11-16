@@ -3,13 +3,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
-import { getDry, resetDry } from '../../src/dry/settings';
+import { getDry, resetDry, setPaper } from '../../src/dry/settings';
 import { getSoft, resetSoft } from '../../src/soft/settings';
 import { applySpec, currentSpec, isApplying, isPixelBrushTool, putSpec, subscribeSpecs } from '../../src/dab/live';
 import { DEFAULT_DAB } from '../../src/dab/maths';
 import { cleanSpec } from '../../src/dab/spec';
 import { getDab, resetDab, setDab } from '../../src/dab/settings';
 import { DEFAULT_TOOL_SETTINGS } from '../../src/tools/settings';
+import { PAPER_SAVED_CHOICE } from '../../src/dry/choices';
+import { _resetChoicesForTests, setChoice } from '../../src/core/choices';
 import '../../src/dab';
 
 beforeEach(() => {
@@ -57,6 +59,21 @@ describe('putting a saved brush back', () => {
     expect(getDry().tools.crayon).toEqual({ size: 40, hardness: 0.1, press: 0.4 });
     expect(getDry().tools.chalk).toEqual(before);
     expect(store().get().ui.tool).toBe('charcoal');
+  });
+
+  it('a brush saved on another paper moves the sheet to it by default, and leaves the sheet when the answer is to keep it', () => {
+    applySpec({ kind: 'dry', medium: 'chalk', paper: 'rough', size: 10, hardness: 0.3, press: 0.5 });
+    expect(getDry().paper).toBe('rough');
+    setChoice(PAPER_SAVED_CHOICE, 'keep');
+    applySpec({ kind: 'dry', medium: 'chalk', paper: 'fine', size: 10, hardness: 0.3, press: 0.5 });
+    expect(getDry().paper).toBe('rough');
+    _resetChoicesForTests();
+  });
+
+  it('a dry brush saved with no paper never moves the sheet', () => {
+    setPaper('laid');
+    applySpec({ kind: 'dry', medium: 'chalk', size: 10, hardness: 0.3, press: 0.5 });
+    expect(getDry().paper).toBe('laid');
   });
 
   it('says it is putting one back while it does, so a half-written brush is not mistaken for a change', () => {

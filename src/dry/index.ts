@@ -4,3 +4,4 @@ import '../soft';
 import './help';
 import './tools';
 import './commands';
+import './choices';

@@ -5,7 +5,7 @@ import { Field, Choice, Slider, Toggle, MoreOptions } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
 import { BRUSH_BLENDS } from './blend';
 import { blendInfo } from '../effects/model';
-import { PAPERS, type PaperKind } from '../dry/paper';
+import { PaperGroup } from '../dry/PaperGroup';
 import { DYN_SOURCES, FADE_RANGE, routeFor, withRoute, type DynSource, type DynTarget } from './dynamics';
 import type { DabBrush } from './maths';
 import { setDab, useDab } from './settings';
@@ -137,22 +137,32 @@ export function ColourSection() {
   );
 }
 
-/** Paper grain and the second tip. */
-export function TextureSection() {
-  const b = useDab((x) => x);
-  const g = b.grain;
-  const d = b.dual;
+/** The paper the brush catches on: the shared Paper group, with how much it catches and how big the grain is. */
+export function PaperSection() {
+  const g = useDab((x) => x.grain);
   return (
-    <MoreOptions name="pixel-brush-texture" label="Grain and dual tip" hint="A paper the paint catches on, and a second tip that speckles the first.">
-      <Toggle label="Paper grain" checked={!!g} onChange={(on) => setDab({ grain: on ? DEFAULT_GRAIN : null })} hint="Paint catches on the high points of paper, so light strokes break into specks and pressing harder fills them in. The same papers as chalk and charcoal." />
+    <PaperGroup
+      own={g?.paper}
+      onOwn={(paper) => g && setDab({ grain: { ...g, paper } })}
+      toggle={{ checked: !!g, onChange: (on) => setDab({ grain: on ? DEFAULT_GRAIN : null }), hint: 'Paint catches on the high points of paper, so light strokes break into specks and pressing harder fills them in. The paper is the sheet\u2019s, the same one chalk and charcoal use.' }}
+    >
       {g && (
-        <div className="dab-sub">
-          <Choice<PaperKind> label="Paper" value={g.paper} options={PAPERS.map((p) => ({ value: p.id, label: p.label, title: p.hint }))} onChange={(paper) => setDab({ grain: { ...g, paper } })} />
+        <>
           <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
           <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
           <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
-        </div>
+        </>
       )}
+    </PaperGroup>
+  );
+}
+
+/** The second tip. */
+export function TextureSection() {
+  const b = useDab((x) => x);
+  const d = b.dual;
+  return (
+    <MoreOptions name="pixel-brush-texture" label="Dual tip" hint="A second tip that speckles the first.">
       <Toggle label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
       {d && (
         <div className="dab-sub">

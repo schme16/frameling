@@ -458,9 +458,9 @@ export function brushFromPreset(xml: string, tips: TipLookup | null, fallbackNam
   if (s.bool('Texture/Pattern/Enabled')) {
     const strength = s.num('Texture/Pattern/Strength', s.num('Texture/Strength/Value', 1));
     const scale = Math.min(8, Math.max(1, Math.round(s.num('Texture/Pattern/Scale', 1))));
-    raw.grain = { paper: 'medium', depth: Math.min(1, Math.max(0, strength)), scale, moving: s.bool('Texture/Pattern/isRandomOffsetX') === true };
+    raw.grain = { depth: Math.min(1, Math.max(0, strength)), scale, moving: s.bool('Texture/Pattern/isRandomOffsetX') === true };
     const tn = (s.str('Texture/Pattern/Name') || '').replace(/^.*[/\\]/, '').slice(0, 40);
-    changed.push(`Its texture${tn ? ` "${tn}"` : ''} came as Frameling's medium paper at the same strength. Texture pictures are not kept.`);
+    changed.push(`Its texture${tn ? ` "${tn}"` : ''} came as your sheet's paper at the same strength. Texture pictures are not kept.`);
   }
   if (s.bool('MaskingBrush/Enabled')) dropped.push('Its masking brush (a second tip the first is painted through).');
   if (s.bool('EraserMode')) dropped.push("It is an eraser in Krita. Frameling's brushes paint; the Eraser tool does the erasing.");

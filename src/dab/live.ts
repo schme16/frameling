@@ -1,7 +1,11 @@
 // The pixel brush in use, as one thing the library can keep: whichever of the Pixel brush, the soft paint tools or Chalk
 // and charcoal you are on, with its settings. Reading it gives a PixelSpec; using a saved one puts the settings back and
 // picks the tool.
+import { withChoice } from '../core/choices';
 import { store } from '../core/store';
+import { PAPER_SAVED_CHOICE } from '../dry/choices';
+import type { PaperKind } from '../dry/paper';
+import { savedPaperDiffers, sheetAfterUsing } from '../dry/sheet';
 import { setDryTool, setMedium, setPaper, getDry, subscribeDry } from '../dry/settings';
 import { getSoft, setSoftTool, subscribeSoft } from '../soft/settings';
 import { pickTool } from '../tools/pick';
@@ -37,18 +41,29 @@ export function subscribeSpecs(fn: () => void): () => void {
 }
 
 let applying = false;
+const whileApplying = (fn: () => void): void => {
+  applying = true;
+  try {
+    fn();
+  } finally {
+    applying = false;
+  }
+};
 /** True while a saved brush is being put back (its settings go in one at a time, so the middle of it matches nothing). */
 export const isApplying = (): boolean => applying;
 
 /** Uses a saved pixel brush: its settings go back where they live, and its tool is picked. */
 export function applySpec(spec: PixelSpec, pick = true): void {
-  applying = true;
-  try {
-    putSpec(spec);
-  } finally {
-    applying = false;
-  }
+  whileApplying(() => putSpec(spec));
   if (pick) pickTool(specTool(spec));
+  if (spec.kind === 'dry') usePaperOf(spec.paper);
+}
+
+/** A brush saved on another paper: the sheet moves to it or stays, as the person has said (asked once, then remembered). */
+function usePaperOf(saved: PaperKind | undefined): void {
+  const sheet = getDry().paper;
+  if (!savedPaperDiffers(sheet, saved)) return;
+  withChoice<'sheet' | 'keep'>(PAPER_SAVED_CHOICE, (answer) => whileApplying(() => setPaper(sheetAfterUsing(getDry().paper, saved, answer))), { gently: { undo: () => whileApplying(() => setPaper(sheet)) } });
 }
 
 /** Puts a spec's settings back where they live, without picking its tool (the picker's size slider uses this). */
@@ -57,7 +72,6 @@ export function putSpec(spec: PixelSpec): void {
   else if (spec.kind === 'soft') setSoftTool(spec.tool, { size: spec.size, hardness: spec.hardness, flow: spec.flow });
   else {
     setMedium(spec.medium);
-    setPaper(spec.paper);
     setDryTool(spec.medium, { size: spec.size, hardness: spec.hardness, press: spec.press });
   }
 }

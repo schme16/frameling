@@ -1,0 +1,29 @@
+/* The Paper group: a quiet box that reads as one setting wherever it turns up. */
+.pg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+}
+.pg-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pg-title {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--text);
+}
+.pg-now {
+  font-size: var(--fs-small);
+  color: var(--faint);
+}
+.pg-now[data-source='brush'] {
+  color: var(--text);
+  font-weight: 600;
+}

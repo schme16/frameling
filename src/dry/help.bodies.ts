@@ -26,4 +26,18 @@ Each medium remembers its own **Size**, **Pressure** and **Edge**.
 - On a layer with a [locked palette](help:palette-lock), or with **Pixel perfect** on if you chose to keep pixels crisp, the grain is made of whole pixels in your own colours, so nothing see-through or new is made. The options say so when it happens.
 - It follows [mirror drawing](help:pixel-mirror).
 - On a drawing layer, the Brush's **Chalk** and **Charcoal** tips catch on the same paper, and stay lines you can reshape. See [Brush tips](help:brush-tips).`,
+  paper: `**Paper** is what chalk, charcoal and grainy brushes catch on. Your sheet has one paper, so a charcoal sketch and a speckled pixel brush meet the same bumps, the way they would on a real page.
+
+**Where the Paper box is:** the options of [Chalk and charcoal](help:chalk-charcoal), the [Pixel brush](help:pixel-brush-texture) once **Catch on paper** is on, and the Brush when its Tip is **Chalk** or **Charcoal**, under the **Stick** picker (see [Brush tips](help:brush-tips)). In the pixel brush and the Brush the box carries the **Catch on paper** switch, so you can turn paper on from it. It is the same box every time, and the top right of it says which paper you are on, like **Rough, the sheet's**. Tools that never touch paper don't have it.
+
+**Change the paper:** pick **Smooth**, **Fine**, **Medium**, **Laid** or **Rough**. It changes for every tool that uses it. The new paper is for strokes you draw from now on; what is already drawn stays as it is.
+
+**Give one brush its own paper:** in the Pixel brush, press **Keep this brush on Rough**. The box now says **This brush keeps its own paper**, and changing the sheet leaves the brush alone. **Use the sheet's paper** hands it back.
+
+**Two papers, one question:** if you pick a paper while a brush keeps its own, Frameling asks once whether you mean just that brush or the whole sheet, then remembers. Using a brush you saved on another paper asks the same way: change the sheet to match, or keep yours. Both answers are in **Preferences > Behaviour**, and the message that says what happened has a **Change** button.
+
+**Good to know:**
+- Photoshop and Krita textures come in with no paper of their own, so they follow the sheet.
+- A **Paper tooth** effect on a layer has its own paper in the [Effects](help:effects) panel, since an effect belongs to the layer.
+- The commands **Chalk and charcoal paper: rough** and the others in the palette change the sheet too.`,
 };
