@@ -55,14 +55,17 @@ describe('the right side (Properties and the rail)', () => {
     expect(host.textContent).toContain('Library');
   });
 
-  it('shows the sections that apply, and the rest under Also here', () => {
+  it('shows the sections that apply, and lists nothing that is not there', () => {
     expect(host.textContent).toContain('tool body');
     expect(host.textContent).toContain('colour body');
     expect(host.textContent).not.toContain('particle body');
-    const also = host.querySelector('.rd-idle')!;
-    expect(also.textContent).toContain('Particles');
-    expect(also.textContent).toContain('Select particles on the canvas');
-    act(() => also.querySelector<HTMLElement>('button')!.click());
+    expect(host.querySelector('.rd-idle')).toBeNull();
+    expect(host.textContent).not.toContain('Also here');
+    expect(host.textContent).not.toContain('Select particles on the canvas');
+  });
+
+  it('brings a left-out section up when it is asked for, as the Panels list does', () => {
+    act(() => setActive('right', 'particles'));
     expect(host.textContent).toContain('particle body');
   });
 

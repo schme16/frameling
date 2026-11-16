@@ -9,7 +9,7 @@ import { particlesFeature } from '../../src/particles';
 import { rigFeature } from '../../src/rig';
 import { textFeature } from '../../src/text';
 import { tilesFeature } from '../../src/tiles';
-import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
+import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone, whenShown } from '../../src/ui/panelInfo';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
 // A feature adds its own entry when it is on.
@@ -80,7 +80,7 @@ describe('right side: which panel goes where', () => {
 });
 
 describe('Properties: what shows now', () => {
-  it('shows the tool and colours while drawing, the rest wait under Also here', () => {
+  it('shows the tool and colours while drawing, the rest are left out of Properties', () => {
     const r = sectionsNow(SECTIONS, state({ tool: 'brush' }), 'tool-options');
     expect(r.shown).toEqual(['tool-options', 'colors']);
     expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig']);
@@ -150,5 +150,30 @@ describe('folded sections', () => {
     foldAll(['a', 'b'], true);
     expect(folded.get()).toEqual(['a', 'b']);
     folded.set([]);
+  });
+});
+
+describe('Panels list: when a section turns up', () => {
+  const p = (id: string) => ({ id, title: id });
+  it('says it in the words of the old idle line', () => {
+    expect(whenShown(p('palette'))).toBe('Shows up when you pick a pixel layer');
+    expect(whenShown(p('clip-play'))).toBe('Shows up when you click a clip on the timeline');
+    expect(whenShown(p('particles'))).toBe('Shows up when you select particles on the canvas');
+  });
+  it('has no line for sections that are always there, or for rail places', () => {
+    expect(whenShown(p('tool-options'))).toBeUndefined();
+    expect(whenShown(p('library'))).toBeUndefined();
+  });
+  it('every section that can be idle has one, and none has an em dash', () => {
+    for (const [id, info] of Object.entries(PANEL_INFO)) {
+      if (!info.section) continue;
+      const line = whenShown(p(id));
+      if (info.relevant) expect(line, id).toBeTruthy();
+      expect(line ?? '').not.toContain('\u2014');
+    }
+  });
+  it('finds a section by when it shows up', () => {
+    expect(matchPanel(p('palette'), 'pixel layer')).toBe(true);
+    expect(matchPanel(p('clip-play'), 'timeline')).toBe(true);
   });
 });

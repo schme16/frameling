@@ -279,16 +279,13 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
 // ---------------------------------------------------------------- Properties
 
 function Inspector({ sections, active }: { sections: string[]; active: string | null }) {
-  // The Clip section shows while a clip is picked on the timeline (that is not in the document store).
+  // The Clip section shows while a clip is picked on the timeline, and leads until you pick something else (neither
+  // is in the document store).
   useTl((t) => t.clipId);
+  useTl((t) => t.clipLead);
   // Joined so the selector hands back something stable between renders.
-  const key = useStore((s) => {
-    const r = sectionsNow(sections, s, active);
-    return `${r.shown.join(',')}|${r.idle.join(',')}`;
-  });
-  const [shownKey, idleKey] = key.split('|');
-  const shown = shownKey ? shownKey.split(',') : [];
-  const idle = idleKey ? idleKey.split(',') : [];
+  const key = useStore((s) => sectionsNow(sections, s, active).shown.join(','));
+  const shown = key ? key.split(',') : [];
   const fold = folded.use((f) => f);
   const [flash, setFlash] = useState<string | null>(null);
   // Null at first, so coming back to Properties from another place also lands on the section asked for.
@@ -324,24 +321,6 @@ function Inspector({ sections, active }: { sections: string[]; active: string | 
       {shown.map((id) => (
         <Section key={id} id={id} open={!fold.includes(id)} flash={flash === id} all={shown} />
       ))}
-      {idle.length > 0 && (
-        <div className="rd-idle" role="group" aria-labelledby="rd-idle-title">
-          <h3 className="rd-idle-title" id="rd-idle-title">
-            Also here
-          </h3>
-          {idle.map((id) => {
-            const p = getPanel(id);
-            if (!p) return null;
-            return (
-              <button key={id} type="button" data-wraps className="rd-idle-item" data-tip={p.title} data-tip-desc={infoFor(p).blurb} data-help={p.help ?? 'properties'} onClick={() => setActive('right', id)}>
-                <Icon name={p.icon} size={15} />
-                <span className="rd-idle-name">{p.title}</span>
-                <span className="rd-idle-why">{PANEL_INFO[id]?.idle}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

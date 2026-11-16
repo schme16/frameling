@@ -7,7 +7,7 @@ import { getTool, type PanelDef } from '../core/registry';
 import type { State } from '../core/store';
 import { ownedUndo } from '../core/owners';
 import { allSliceCount } from '../pixel/slices/model';
-import { tl } from '../timeline/state';
+import { leadKeyOf, tl } from '../timeline/state';
 import { RAIL_GROUPS, type RailGroup } from './dockModel';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
@@ -24,7 +24,7 @@ export interface PanelInfo {
   section?: boolean;
   /** For sections: does it apply right now? Missing means always. */
   relevant?: (s: State) => boolean;
-  /** For sections: what makes it apply, when it doesn't ("Select some text"). */
+  /** For sections: what makes it apply, when it doesn't ("Select some text"). The Panels list shows it as "Shows up when you ...". */
   idle?: string;
   /** For sections: about the selected things, so it moves to the top while something is selected. */
   selection?: boolean;
@@ -230,7 +230,7 @@ export function planRight(groups: { tabs: string[]; active: string | null }[], m
 }
 
 /**
- * Which sections Properties shows now, and which wait below as "also here". A section shows when it applies, or when
+ * Which sections Properties shows now, and which are left out (the Panels list says when each turns up). A section shows when it applies, or when
  * it's the one asked for (`active`), so asking for Effects with nothing selected still brings it up. With something
  * selected, the sections about it lead.
  */
@@ -248,8 +248,9 @@ export function sectionsNow(sections: string[], s: State, active: string | null)
     (on || id === active ? shown : idle).push(id);
   }
   // Like Illustrator's Properties: with something selected, what's about it comes first, the tool and colours after.
-  // A clip you just clicked leads: its settings are what you came for.
-  if (shown.includes('clip-play')) shown.splice(0, 0, ...shown.splice(shown.indexOf('clip-play'), 1));
+  // A clip you just clicked leads: its settings are what you came for. Once you press on the canvas, or pick another
+  // layer or tool, what you picked last leads instead, and the clip's settings stay below (it is still picked).
+  if (shown.includes('clip-play') && tl().clipLead === leadKeyOf(s)) shown.splice(0, 0, ...shown.splice(shown.indexOf('clip-play'), 1));
   if (s.ui.selection.length) {
     const first = shown.filter((id) => PANEL_INFO[id]?.selection);
     return { shown: [...first, ...shown.filter((id) => !first.includes(id))], idle };
@@ -257,12 +258,22 @@ export function sectionsNow(sections: string[], s: State, active: string | null)
   return { shown, idle };
 }
 
+/**
+ * The line the Panels list gives a Properties section that only turns up sometimes: "Shows up when you pick a pixel
+ * layer". Made from the section's `idle` words, so there is one wording. Sections that are always there have none.
+ */
+export function whenShown(p: Pick<PanelDef, 'id' | 'title'>): string | undefined {
+  const idle = PANEL_INFO[p.id]?.idle?.trim();
+  if (!idle) return undefined;
+  return `Shows up when you ${idle[0].toLowerCase()}${idle.slice(1)}`;
+}
+
 /** Search for the panel list: every word must start a word of the title, short name, blurb or keywords. */
 export function matchPanel(p: Pick<PanelDef, 'id' | 'title'>, query: string): boolean {
   const q = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
   if (!q.length) return true;
   const info = infoFor(p);
-  const hay = [p.title, info.short ?? '', info.blurb, ...(info.keywords ?? []), GROUP_NAMES[info.group]].join(' ').toLowerCase();
+  const hay = [p.title, info.short ?? '', info.blurb, whenShown(p) ?? '', ...(info.keywords ?? []), GROUP_NAMES[info.group]].join(' ').toLowerCase();
   const words = hay.split(/[^a-z0-9]+/).filter(Boolean);
   return q.every((w) => words.some((x) => x.startsWith(w)) || hay.includes(w));
 }

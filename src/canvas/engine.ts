@@ -20,6 +20,7 @@ import { heldByOverlay, pressesControl, SpaceTap, wheelIntent } from './input';
 import { attachPinch } from './pinch';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
+import { setTl, tl } from '../timeline/state';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
@@ -709,6 +710,8 @@ export class CanvasEngine {
     if (pressesControl(e.target) || heldByOverlay(e)) return;
     if (e.pointerType === 'touch' && this.touchDown(e)) return;
     if (this.gesture) return;
+    // Pressing on the canvas is the latest thing you picked, so Properties stops leading with the Clip settings.
+    if (tl().clipLead !== null) setTl({ clipLead: null });
     this.penPressed = e.pointerType === 'pen' && e.pressure > 0;
     this.spaceTap.spoil();
     this.refreshBounds();

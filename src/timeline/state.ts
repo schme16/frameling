@@ -5,12 +5,19 @@
 import { useSyncExternalStore } from 'react';
 import type { Id } from '../core/format';
 import { onFreshDrawing } from '../core/fresh';
+import { store } from '../core/store';
 
 export interface TlState {
   /** Width of one frame cell in screen pixels. */
   cw: number;
   /** The clip chosen as the play range. */
   clipId: Id | null;
+  /**
+   * Where you were when you picked it: the layer and tool, or null once you have moved on (a press on the canvas, a
+   * different layer or tool). The Clip settings lead Properties only while this still matches, so Properties follows
+   * what you picked last. The clip itself stays picked, so it keeps playing on its own.
+   */
+  clipLead: string | null;
   /** A name box that is open right now (a new clip or marker, a layer or a drawing being renamed). */
   editing: { kind: 'clip' | 'marker' | 'layer' | 'cel'; id: Id } | null;
   /** Layers opened up to show their property rows (detailed timeline). */
@@ -34,7 +41,7 @@ export const DEFAULT_CW = 22;
 export const cwToSlider = (cw: number): number => Math.log(Math.max(MIN_CW, Math.min(MAX_CW, cw)) / MIN_CW) / Math.log(MAX_CW / MIN_CW);
 export const sliderToCw = (v: number): number => MIN_CW * Math.pow(MAX_CW / MIN_CW, Math.max(0, Math.min(1, v)));
 
-const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0, moveFolder: false });
+const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, clipLead: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0, moveFolder: false });
 let state: TlState = freshTl();
 const listeners = new Set<() => void>();
 
@@ -42,8 +49,13 @@ export function tl(): TlState {
   return state;
 }
 
+/** The place you are working in, for telling whether you have moved on from a clip you picked. */
+export const leadKeyOf = (s: { ui: { activeLayerId: string | null; tool: string } }): string => `${s.ui.activeLayerId ?? ''}|${s.ui.tool}`;
+
 export function setTl(patch: Partial<TlState>): void {
   const next = { ...state, ...patch };
+  // Picking a clip makes it the latest thing you picked; letting go of it takes that away.
+  if ('clipId' in patch && !('clipLead' in patch)) next.clipLead = patch.clipId ? leadKeyOf(store().get()) : null;
   next.cw = Math.max(MIN_CW, Math.min(MAX_CW, Math.round(next.cw * 1000) / 1000));
   state = next;
   for (const fn of listeners) fn();

@@ -8,7 +8,7 @@ import '../../src/timeline';
 import { CLIP_DIRECTIONS, DIRECTION_WORDS } from '../../src/core/clipPlay';
 import { ClipPanel } from '../../src/timeline/ClipPanel';
 import { DIRECTION_HELP } from '../../src/timeline/ClipPlay';
-import { setTl } from '../../src/timeline/state';
+import { setTl, tl } from '../../src/timeline/state';
 import { sectionsNow } from '../../src/ui/panelInfo';
 import { registerPanel, unregisterPanel } from '../../src/core/registry';
 import { dock, isVisible, resetDock } from '../../src/ui/dock';
@@ -36,12 +36,34 @@ const withClip = () => {
 };
 
 describe('the Clip section of Properties', () => {
-  it('shows while a clip is picked, first in the list, and waits under Also here otherwise', () => {
+  it('shows while a clip is picked, first in the list, and is left out otherwise', () => {
     const s = withClip();
     const all = ['tool-options', 'clip-play', 'colors'];
     expect(sectionsNow(all, s.get(), null)).toEqual({ shown: ['tool-options', 'colors'], idle: ['clip-play'] });
     act(() => setTl({ clipId: 'k1' }));
     expect(sectionsNow(all, s.get(), null).shown).toEqual(['clip-play', 'tool-options', 'colors']);
+  });
+
+  it('leads only until you pick something after it: a canvas press, another layer or another tool', () => {
+    const s = withClip();
+    const all = ['tool-options', 'clip-play', 'colors'];
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    // A press on the canvas gives the lead back, and the clip stays picked.
+    act(() => setTl({ clipLead: null }));
+    expect(sectionsNow(all, s.get(), null).shown).toEqual(['tool-options', 'clip-play', 'colors']);
+    expect(tl().clipId).toBe('k1');
+    // Picking the clip again takes the lead back.
+    act(() => setTl({ clipId: null }));
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    // Another tool, or another layer, does the same.
+    act(() => s.setUi({ tool: 'text' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('tool-options');
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    act(() => s.setUi({ activeLayerId: 'other' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('tool-options');
   });
 
   it('says how to pick a clip when none is picked', () => {

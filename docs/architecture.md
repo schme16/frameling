@@ -304,7 +304,9 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
 - **Right side** (`src/ui/RightDock.tsx`), chosen by preference (`src/ui/rightStyle.ts`): `inspector` (default),
   `rail` or `tabs`. The rail is a vertical labelled strip. In inspector mode, panels marked as sections (tool options,
   colours, palette, tileset, motion, effects, text, particles, camera, bones) show as one stack of foldable sections
-  called Properties, with sections that don't apply yet listed under "Also here" and selection-related ones moved up.
+  called Properties. Only the sections that apply now show, selection-related ones first, and the Clip section leads only
+  until you press on the canvas or pick another layer or tool. The rest are not listed in Properties; the Panels list
+  gives each a "Shows up when you ..." line made from its `idle` words (`whenShown`).
   Other panels (library, artboards, timeline, preview, clip flow, lip sync, quests, help, plugin panels) are rail
   entries.
 - **`src/ui/panelInfo.ts`** is the data behind that: per panel a short name, blurb, rail group, whether it is a
