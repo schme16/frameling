@@ -25,5 +25,5 @@ Each medium remembers its own **Size**, **Pressure** and **Edge**.
 - It only works on pixel layers. Picking it on a vector layer takes you to a pixel one.
 - On a layer with a [locked palette](help:palette-lock), or with **Pixel perfect** on if you chose to keep pixels crisp, the grain is made of whole pixels in your own colours, so nothing see-through or new is made. The options say so when it happens.
 - It follows [mirror drawing](help:pixel-mirror).
-- The Brush's **Chalk** and **Charcoal** tips on a vector layer are shapes with holes cut in them. They can't catch on paper like this can. See [Brush tips](help:brush-tips).`,
+- On a drawing layer, the Brush's **Chalk** and **Charcoal** tips catch on the same paper, and stay lines you can reshape. See [Brush tips](help:brush-tips).`,
 };

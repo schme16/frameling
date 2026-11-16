@@ -57,15 +57,15 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pack keep their group when you add them.
 
 help:brush-presets help:brush-tips help:tool-options`,
-  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. The chalk and charcoal tips are shapes with holes cut in them. For grain that catches on paper like the real thing, draw on a pixel layer with [Chalk and charcoal](help:chalk-charcoal).
+  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. The chalk and charcoal tips catch on paper like the real thing, and stay lines you can reshape.
 
 **Pick one:** choose the **Brush** tool (**B**). The **Tip** button under the preview shows the tip you use. Click it to see every tip as a real stroke: Plain, Chalk, Charcoal, Watercolour, each stamp shape, and four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 
-**Chalk and Charcoal:** a line with the paper showing through. **Grain** is how much; **Grain size** is how coarse. Charcoal has a rougher edge. The grain sits on the page, not on the line, so two lines drawn over each other show the same paper.
+**Chalk and Charcoal:** a line that catches on paper. **Catch on paper** picks the stick (vine or compressed charcoal, chalk, pastel, crayon, pencil) and **Grain size** how coarse the paper is. Press lightly for specks, firmly to fill in. The paper sits on the page, so two lines over each other meet the same bumps. Each line carries a **Paper tooth** [effect](help:effects) you can change afterwards. Off gives the older grain of tiny shapes.
 
 **Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
 
-**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond, heart or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Spin**, **Gap variety** and a same-size switch give it more say. **Pointy start** and **Pointy end** shrink the stamps at the ends.
+**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond, heart or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** shrink the stamps at the ends.
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.
@@ -74,9 +74,9 @@ help:brush-presets help:brush-tips help:tool-options`,
 
 A pixel brush with more than one colour asks once whether to keep its own colours or paint in yours (change it in **Preferences, Behaviour**). **Back to the usual brush** puts the square or round one back.
 
-**Saved brushes remember the tip.** Chalk, Charcoal, Watercolour and Leaves are in the [saved brushes](help:brush-presets) row, and a brush you save keeps its tip, shape of your own included.
+**Saved brushes remember the tip,** shape of your own included. See [saved brushes](help:brush-presets).
 
-**When you export:** tips stay vector. Chalk and charcoal are thousands of tiny shapes, so in SVG, Lottie, PDF and Illustrator the file comes out bigger; the Export window says so.
+**When you export:** PNG, GIF, video, sprite sheets and Photoshop show the paper as drawn. PDF, Illustrator and Lottie make a picture of the layer. SVG writes tiny shapes instead, which look a little different and make the file bigger.
 
 **Good to know:**
 - Tips are for drawing layers. On a pixel layer the brush paints pixels.

@@ -89,6 +89,7 @@ A shape's effects run first to last on that shape alone. Then the layer's own ef
 | **Colour fringe** | Chromatic aberration | Splits the red and blue apart, like a glitch. |
 | **Dark corners** | Vignette | Darkens the edges so the eye settles in the middle. |
 | **Motion blur** | Directional blur | Smears the layer in one direction, so a fast move looks fast. |
+| **Paper tooth** | Dry brush texture | Catches on paper, like chalk. See [brush tips](help:brush-tips). |
 
 The last five have their own page: [finishing touches](help:effects-finishing).
 

@@ -297,3 +297,14 @@ real second window painting every frame. So the messages cost about 4%, and the 
 on the same software engine. Halving the picture's resolution while it played did not help (33 against 32), and neither did
 painting every other frame, so neither was kept. Not measured: a real graphics card (none comes up under xvfb), where the second
 window's drawing is on the card and should cost the drawing window much less.
+
+## tooth.cjs: paper tooth on chalk and charcoal lines
+
+Draws the same busy page (50, 150 and 400 charcoal lines, each about 280 px long and 22 px wide) three ways: plain lines, the older grain
+made of tiny shapes, and paper tooth, at 1x and 2x, **cold** (every line worked out from scratch) and **warm** (a held drawing, the finished
+pictures reused). Compare the three columns of one run with each other; the machine is shared, so never one run with another.
+
+```bash
+npm run build
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/tooth.cjs --out scripts/perf/results/tooth.json
+```

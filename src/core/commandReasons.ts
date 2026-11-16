@@ -328,7 +328,7 @@ export const COMMAND_REASONS: Record<string, Reason> = {
   'quillPet.give': say('Turn on Show Quill in Preferences first.'),
 
   // ----- layer effects, masks and folders
-  ...Object.fromEntries(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate', 'grain', 'wave', 'fringe', 'vignette', 'motionblur'].map((e) => [`effects.add.${e}`, needLayer])),
+  ...Object.fromEntries(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate', 'grain', 'wave', 'fringe', 'vignette', 'motionblur', 'tooth'].map((e) => [`effects.add.${e}`, needLayer])),
   'colors.recolourLayer': say('Add a layer first.'),
   'colors.recolourFrame': say('Add a layer first.'),
   'layers.newFolder': needLayer,

@@ -15,6 +15,7 @@ import { drawingKindOf } from './layerKinds';
 import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache, paintThroughEffects } from '../effects/composite';
 import { drawableShapeFx, shapeEffects, shapeFxReach } from '../effects/shapeFx';
+import { drawToothStroke } from '../effects/toothShape';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
@@ -265,6 +266,8 @@ export function drawShapeFx(g: Ctx2D, s: Shape, at?: DrawContext): void {
   const fx = drawableShapeFx(s, at?.frame ?? 0);
   if (!fx.length) return drawShape(g, s, at);
   const sig = fx.some((e) => e.kind === 'grain') ? `${at?.frame ?? 0}|${JSON.stringify(shapeEffects(s))}` : JSON.stringify(shapeEffects(s));
+  // A brush line with paper tooth first lays its own dabs on the paper (it knows how hard each bit was pressed); the rest run on that.
+  if (s.type === 'stroke' && fx[0].kind === 'tooth') return drawToothStroke(g, s, fx[0].v, fx.slice(1), at?.doc ? { w: at.doc.width, h: at.doc.height } : undefined, sig);
   paintThroughEffects(g, fx, at?.doc ? { w: at.doc.width, h: at.doc.height } : undefined, s, sig, (lg) => drawShape(lg, s, at));
 }
 

@@ -2,7 +2,8 @@
  * A freehand vector stroke in progress: collects the points, previews them on the overlay with exactly the outline the
  * finished stroke will have, and commits one StrokeShape as a single undo step. Brush and pencil both use it.
  */
-import type { BrushSettings, StrokePoint, StrokeShape } from '../core/format';
+import type { BrushSettings, LayerEffect, StrokePoint, StrokeShape } from '../core/format';
+import { toothValues } from '../dry/tooth';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
 import { getPredicted } from '../canvas/controller';
@@ -54,10 +55,18 @@ export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void 
   stroke.add(e, zoom);
 }
 
-export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false): StrokeShape {
+/** A chalk or charcoal brush on a dry medium draws on paper: its line carries a Paper tooth effect, which the Effects panel can change. */
+export function toothEffects(brush: BrushSettings, seed = Math.floor(Math.random() * 1000)): LayerEffect[] | undefined {
+  const t = brush.tip;
+  if (!t?.dry || (t.kind !== 'chalk' && t.kind !== 'charcoal')) return undefined;
+  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed) }];
+}
+
+export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false, seed?: number): StrokeShape {
   // A lone click becomes a dot: two identical points make perfect-freehand draw a round dab.
   const pts = points.length === 1 ? [points[0], { ...points[0] }] : points;
-  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), color, opacity };
+  const effects = toothEffects(brush, seed);
+  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), ...(effects ? { effects } : {}), color, opacity };
 }
 
 export class VectorStroke {
@@ -66,6 +75,8 @@ export class VectorStroke {
   private strengths: number[] = [];
   /** A pen drew this, so its widths are the pen's own and never worked out from the speed. */
   private fromPen = false;
+  /** Which stick the paper tooth streaks come from, the same through the whole line so the preview does not flicker. */
+  private readonly seed = Math.floor(Math.random() * 1000);
   /** Hold to tidy: watching for the pen to stop (see quickshape.ts). Null when it is off or not allowed here. */
   private hold: QuickHold | null = null;
   /** The start and end pulled onto line ends, guides, the grid and the page (see endSnap.ts). */
@@ -152,7 +163,7 @@ export class VectorStroke {
         pts = [...pts, ...pred.map((q) => ({ x: q.x, y: q.y, p }))];
       }
     }
-    return buildStroke(pts, this.brush, this.color, this.opacity(), this.fromPen);
+    return buildStroke(pts, this.brush, this.color, this.opacity(), this.fromPen, this.seed);
   }
 
   overlay(g: CanvasRenderingContext2D, zoom = 1): void {

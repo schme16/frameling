@@ -25,6 +25,7 @@ import { trimOf } from '../core/trimTween';
 import { trimActive } from '../geometry/trim';
 import { shapeFxKinds } from '../effects/shapeFx';
 import { isGrainy } from '../geometry/tip';
+import { onPaper } from '../core/tips';
 import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
 import './builtin';
 
@@ -59,12 +60,15 @@ export interface DocFeatures {
   effectKinds: Set<EffectKind>;
   /** Effects on single shapes (they are said separately, since a format that has layer effects can still lack these). */
   shapeEffectKinds: Set<EffectKind>;
+  /** Chalk or charcoal lines drawn on paper (Paper tooth), which only the formats that draw pictures can show as they are. */
+  tooth: boolean;
 }
 
 export function docFeatures(doc: Doc): DocFeatures {
   const features = new Set<Feature>();
   const effectKinds = new Set<EffectKind>();
   const shapeEffectKinds = new Set<EffectKind>();
+  let tooth = false;
   const layers = [...doc.layers, ...Object.values(doc.symbols ?? {}).flatMap((s) => s.layers)];
   for (const l of layers) {
     if (l.blend && l.blend !== 'normal') features.add('blend');
@@ -81,7 +85,10 @@ export function docFeatures(doc: Doc): DocFeatures {
     shapeFxKinds(d, shapeEffectKinds);
     for (const s of d.shapes) {
       if (trimActive(trimOf(s))) features.add('trim');
-      if (s.type === 'stroke' && isGrainy(s.brush)) features.add('grain');
+      if (s.type === 'stroke' && isGrainy(s.brush)) {
+        if (onPaper(s)) tooth = true;
+        else features.add('grain');
+      }
       const kind = s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path' && s.type !== 'instance' ? shapeFeatureOf(s.type) : undefined;
       if (kind) features.add(kind);
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');
@@ -92,7 +99,7 @@ export function docFeatures(doc: Doc): DocFeatures {
     }
   }
   if (effectKinds.size || shapeEffectKinds.size) features.add('effects');
-  return { features, effectKinds, shapeEffectKinds };
+  return { features, effectKinds, shapeEffectKinds, tooth };
 }
 
 /** Does this document have effects a format has no version of, so they'd become pictures there? */
@@ -110,6 +117,9 @@ export function hasSoftOrShadow(found: DocFeatures): boolean {
 
 /** What the Export window says about chalk and charcoal in a vector format. */
 export const GRAIN_NOTE = 'Chalk and charcoal grain stays vector, made of thousands of tiny shapes. It looks the same, and the file comes out bigger.';
+
+/** What the Export window says about chalk and charcoal drawn on paper in a vector format that has no paper tooth. */
+export const TOOTH_NOTE = 'Chalk and charcoal that catch on paper come out as tiny shapes here. They stay sharp at any size, but the texture is not the same as on the canvas, and the file comes out bigger.';
 
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }): string[] {
@@ -139,12 +149,15 @@ export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = d
     const native = new Set(c.nativeEffects ?? []);
     const how = c.rows.effects ?? 'kept';
     const all = [...found.shapeEffectKinds].map((k) => effectInfo(k).label.toLowerCase());
-    const other = [...found.shapeEffectKinds].filter((k) => !native.has(k)).map((k) => effectInfo(k).label.toLowerCase());
+    // Paper tooth on chalk and charcoal lines has its own line below, so a format that draws their tiny shapes does not also say "left out".
+    const other = [...found.shapeEffectKinds].filter((k) => !native.has(k) && !(k === 'tooth' && found.tooth && c.rows!.grain === 'shapes')).map((k) => effectInfo(k).label.toLowerCase());
     if (how === 'picture') pictures.push(`layers with a shape that has ${list(all)}`);
     else if (other.length) left.push(`${list(other)} on single shapes`);
   }
   // Grain stays vector in the formats that carry shapes, but it is a lot of shapes.
   if (found.features.has('grain') && c.rows.grain === 'shapes') out.push(GRAIN_NOTE);
+  // Where effects are left out and grain is shapes (SVG), paper tooth comes out as those shapes. Where layers become pictures it is kept as drawn.
+  if (found.tooth && c.rows.grain === 'shapes' && c.rows.effects !== 'picture') out.push(TOOTH_NOTE);
   if (pictures.length) out.push(`Turned into pictures here: ${list(pictures)}.`);
   if (left.length) out.push(`Left out here: ${list(left)}.`);
   return out;

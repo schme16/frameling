@@ -1,6 +1,7 @@
 // Brush tips: what they are, their defaults, and how a saved or shared one is read back. Pure, no DOM. The shapes a tip
 // draws are worked out in tipShapes.ts; the picker is in src/brushes.
 import type { BrushSettings, BrushTip, StampAngle, StampShape, TipKind, TipPieces } from '../core/format';
+import { isMedium } from '../dry/maths';
 
 export interface TipInfo {
   id: TipKind;
@@ -160,9 +161,11 @@ const DEFAULTS: Record<TipKind, Plain> = {
   bristle: { ...BASE, amount: 0.25 },
 };
 
-/** A new tip of a kind, with the usual settings for it. */
+/** A new tip of a kind, with the usual settings for it. Chalk and charcoal start on paper tooth. */
 export function defaultTip(kind: TipKind): BrushTip {
   const d = DEFAULTS[kind];
+  if (kind === 'chalk') return { kind, amount: d.amount, grain: 1, dry: 'chalk' };
+  if (kind === 'charcoal') return { kind, amount: d.amount, grain: 1, dry: 'compressed-charcoal' };
   if (kind === 'stamp') return { kind, shape: d.shape, spacing: d.spacing, jitter: d.jitter, angle: d.angle, scatter: d.scatter };
   if (kind === 'watercolour') return { kind, amount: d.amount };
   if (kind === 'nib') return { kind, roundness: d.roundness, nibAngle: d.nibAngle, angle: d.angle };
@@ -238,6 +241,7 @@ export function readTip(raw: unknown): BrushTip | undefined {
   if (amount !== undefined) tip.amount = amount;
   const grain = num(r.grain, 0.5, 3);
   if (grain !== undefined) tip.grain = grain;
+  if ((tip.kind === 'chalk' || tip.kind === 'charcoal') && isMedium(r.dry)) tip.dry = r.dry;
   if (tip.kind === 'stamp') {
     if (typeof r.shape === 'string' && SHAPES.has(r.shape)) tip.shape = r.shape as StampShape;
     const spacing = num(r.spacing, 0.2, 4);
@@ -300,7 +304,7 @@ export function sameTip(a: BrushTip | undefined, b: BrushTip | undefined): boole
   if (a.kind !== b.kind) return false;
   const x = resolveTip(a);
   const y = resolveTip(b);
-  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1)) return false;
+  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry) return false;
   if (a.kind === 'nib') return x.angle === y.angle && close(x.roundness, y.roundness, 0.3) && close(x.nibAngle, y.nibAngle, 40);
   if (a.kind === 'bristle') return x.count === y.count && close(x.stiffness, y.stiffness, 0.6);
   if (a.kind === 'along' || a.kind === 'edged') return x.fit === y.fit && JSON.stringify(x.custom) === JSON.stringify(y.custom) && JSON.stringify(x.pieces) === JSON.stringify(y.pieces);
@@ -315,6 +319,9 @@ export const withSeed = (tip: BrushTip, seed: number): BrushTip => (usesSeed(tip
 export function brushForLine(b: BrushSettings, seed: number): BrushSettings {
   return b.tip && usesSeed(b.tip.kind) && b.tip.seed === undefined ? { ...b, tip: withSeed(b.tip, seed) } : b;
 }
+
+/** True when the line is drawn as pigment on paper (paper tooth), not as tiny shapes. */
+export const isDry = (b: BrushSettings): boolean => isGrainy(b) && !!b.tip?.dry;
 
 /** The brush without its tip: a plain line. */
 export function plainBrush(b: BrushSettings): BrushSettings {

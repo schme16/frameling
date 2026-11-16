@@ -854,6 +854,15 @@ const ICONS: Record<string, ReactNode> = {
       <ellipse cx="12" cy="12" rx="5" ry="3.4" fill="currentColor" opacity="0.4" stroke="none" />
     </>
   ),
+  'fx-tooth': (
+    <>
+      <path d="M3 17.5c2-3 3.4-3 5-.2 1.6 2.8 2.8 2.8 4.5-.3 1.5-2.7 3-2.7 4.6.1 1.2 2 2.6 2 4.4-.6" />
+      <path d="M4 12.5c2.4-3.4 4.2-3.2 6.2-.2 2 3 3.8 2.8 6-.4 1.4-2 2.8-2 4.2-.6" />
+      <circle cx="7" cy="7" r="1" fill="currentColor" />
+      <circle cx="13" cy="6" r="0.9" fill="currentColor" />
+      <circle cx="18" cy="8" r="1.1" fill="currentColor" />
+    </>
+  ),
   'fx-motion': (
     <>
       <circle cx="16" cy="12" r="3.6" fill="currentColor" />
