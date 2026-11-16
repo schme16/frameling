@@ -1,0 +1,20 @@
+Chalk and charcoal that catch on paper, written into an SVG. The same drawing (480 x 300, 8 charcoal lines) both ways.
+
+A  Scale forever (tiny shapes, the older grain):  charcoal-scale-forever.svg   67.7 KB
+B  Look right (a baked picture per line):         charcoal-look-right.svg       257.1 KB   (3.8x)
+Moving SVG, A:                                    charcoal-moving-scale-forever.svg   67.7 KB
+Moving SVG, B:                                    charcoal-moving-look-right.svg      257.1 KB
+B at scale 2 (a 960 x 600 file):                  742.9 KB   (2.9x the scale 1 file)
+The canvas, as a PNG of the same drawing:         charcoal-canvas.png   68.7 KB
+
+Baked at 2 pixels per SVG pixel, so a 480 x 300 file holds pictures that are up to 960 x 600 pixels, crisp on a screen with twice the density.
+The pictures are PNG inside the file (base64), one per line, only the box round the line, so empty paper costs nothing.
+
+side-by-side.png: A, B and the canvas at the same size. side-by-side-zoom-4x.png: the same three, zoomed 4x into one corner.
+question-dark.png / question-light.png: the question at export time (first time, three answers).
+question-every-time-dark.png / question-every-time-light.png: the question once "Ask me every time" is picked (two answers, nothing remembered).
+
+A busier page, measured the same way (100 charcoal lines on a 1920 x 1080 page):
+  Scale forever  0.9 MB,  0.13 s to write
+  Look right     2.5 MB (2.7x),  0.8 s to write
+  Look right at scale 2 (a 3840 x 2160 file)  7.3 MB,  2.7 s to write

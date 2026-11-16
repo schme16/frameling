@@ -49,3 +49,21 @@ registerChoice<IconFitPref>({
     { value: 'fill', label: choiceWord('choice.export.iconFit.fill.label'), detail: choiceWord('choice.export.iconFit.fill.detail') },
   ],
 });
+
+/** Chalk and charcoal that catch on paper, in an SVG: tiny shapes that scale forever, a baked picture that looks right, or ask on every export. */
+export const SVG_TOOTH_CHOICE = 'export.svgTooth';
+export type SvgToothPref = 'shapes' | 'picture' | 'ask';
+
+registerChoice<SvgToothPref>({
+  id: SVG_TOOTH_CHOICE,
+  title: choiceWord('choice.export.svgTooth.title'),
+  question: choiceWord('choice.export.svgTooth.question'),
+  category: 'Export',
+  help: 'export-svg',
+  default: 'shapes',
+  options: [
+    { value: 'shapes', label: choiceWord('choice.export.svgTooth.shapes.label'), detail: choiceWord('choice.export.svgTooth.shapes.detail'), did: choiceWord('choice.export.svgTooth.shapes.did') },
+    { value: 'picture', label: choiceWord('choice.export.svgTooth.picture.label'), detail: choiceWord('choice.export.svgTooth.picture.detail'), did: choiceWord('choice.export.svgTooth.picture.did') },
+    { value: 'ask', label: choiceWord('choice.export.svgTooth.ask.label'), detail: choiceWord('choice.export.svgTooth.ask.detail') },
+  ],
+});

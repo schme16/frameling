@@ -165,10 +165,10 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       return btoa(bin);
     },
     /** One frame through the real exporter in any single-file format (svg, pdf, lottie, png...), as base64, for stills of an export beside the screen. */
-    fileBase64: async (format: string, frame = 0, range: 'frame' | 'all' = 'frame') => {
+    fileBase64: async (format: string, frame = 0, range: 'frame' | 'all' = 'frame', extra: Partial<ExportSettings> = {}) => {
       const st = store().get();
       const doc = rootDoc(st.doc);
-      const settings = { ...defaultSettings(doc), format, range, clipId: null, scale: 1 } as unknown as ExportSettings;
+      const settings = { ...defaultSettings(doc), format, range, clipId: null, scale: 1, ...extra } as unknown as ExportSettings;
       const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'ab' });
       if (r.kind !== 'file') return null;
       let bin = '';

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import '../../src/renderer/features';
+// Registered when the export area loads (at start in the app), so the test loads it.
+import '../../src/export/choices';
 import { allChoices } from '../../src/core/choices';
 import { loadHelpBodies } from '../../src/core/registry';
 import { switchableFeatures } from '../../src/features/host';

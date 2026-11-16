@@ -121,8 +121,17 @@ export const GRAIN_NOTE = 'Chalk and charcoal grain stays vector, made of thousa
 /** What the Export window says about chalk and charcoal drawn on paper in a vector format that has no paper tooth. */
 export const TOOTH_NOTE = 'Chalk and charcoal that catch on paper come out as tiny shapes here. They stay sharp at any size, but the texture is not the same as on the canvas, and the file comes out bigger.';
 
+/** The same, when the SVG bakes them as pictures (the answer "Look right"). */
+export const TOOTH_PICTURE_NOTE = 'Chalk and charcoal that catch on paper are baked as pictures here, so they look as they do on the canvas. Those lines stop being sharp at any size (they are made at twice the size of the file), and the file comes out much bigger.';
+
+/** The same, when it is asked on every export. */
+export const TOOTH_ASK_NOTE = 'Chalk and charcoal that catch on paper: you choose when you export. Tiny shapes stay sharp at any size but look less like charcoal; pictures look right but stop being sharp at any size, and the file comes out much bigger.';
+
+/** Which of the three lines about paper tooth goes with the answer in force (shapes, picture, or ask; no answer yet means it will ask). */
+export const toothNote = (how: 'shapes' | 'picture' | 'ask' | undefined): string => (how === 'picture' ? TOOTH_PICTURE_NOTE : how === 'shapes' ? TOOTH_NOTE : TOOTH_ASK_NOTE);
+
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
-export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }): string[] {
+export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }, tooth: 'shapes' | 'picture' | 'ask' | undefined = 'shapes'): string[] {
   const c = carryOf(format);
   const clipNote = exporterOf(format)?.clipPlayNote;
   // The clip flow's inputs, checks, Any clip arrows and fades go to a Godot sheet and an Interactives package (both say so themselves); anywhere else they are left out, and that is said.
@@ -157,7 +166,7 @@ export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = d
   // Grain stays vector in the formats that carry shapes, but it is a lot of shapes.
   if (found.features.has('grain') && c.rows.grain === 'shapes') out.push(GRAIN_NOTE);
   // Where effects are left out and grain is shapes (SVG), paper tooth comes out as those shapes. Where layers become pictures it is kept as drawn.
-  if (found.tooth && c.rows.grain === 'shapes' && c.rows.effects !== 'picture') out.push(TOOTH_NOTE);
+  if (found.tooth && c.rows.grain === 'shapes' && c.rows.effects !== 'picture') out.push(toothNote(tooth));
   if (pictures.length) out.push(`Turned into pictures here: ${list(pictures)}.`);
   if (left.length) out.push(`Left out here: ${list(left)}.`);
   return out;

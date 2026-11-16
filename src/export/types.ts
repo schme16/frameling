@@ -140,6 +140,8 @@ export interface ExportSettings extends ContactOpts {
   dotLottieVersion?: 1 | 2;
   /** Lottie only: Soften and Shadow as Lottie's own effects (missing) or as pictures every player shows. */
   lottieSoft?: 'effects' | 'pictures';
+  /** SVG and Moving SVG only: chalk and charcoal on paper as tiny shapes (missing) or as a baked picture. Set for one export from the question, never remembered with the settings. */
+  svgTooth?: 'shapes' | 'picture';
   /** Illustrator only: what to do with several frames (missing = 'one'). */
   aiFrames?: AiFrames;
   /** JPEG only: 1 to 100 (missing = 90). */

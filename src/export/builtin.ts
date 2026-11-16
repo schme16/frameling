@@ -97,6 +97,7 @@ const defs: ExporterDef[] = [
       rows: { effects: 'kept', bones: 'picture', grain: 'shapes' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
+    settle: (doc, s, frame) => import('./formats/svg-prep').then((m) => m.settleSvgTooth(doc, s, frame)),
     load: () => import('./formats/svg'),
   },
   {
@@ -138,6 +139,7 @@ const defs: ExporterDef[] = [
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
     ui: () => import('./options/playback').then((m) => ({ After: m.SvgAnimOptions })),
+    settle: (doc, s, frame) => import('./formats/svg-prep').then((m) => m.settleSvgTooth(doc, s, frame)),
     load: () => import('./formats/svganim'),
   },
   {

@@ -109,7 +109,9 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
   if (!only && exportsSeveral(store().rootDoc(), settings)) {
     try {
-      const outcome = await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+      // An SVG with chalk or charcoal on paper asks how to write it once, for all the artboards, and the answer is not remembered with the settings.
+      const several = settings.format === 'svg' || settings.format === 'svganim' ? await exporterOf(settings.format)?.settle?.(store().rootDoc(), settings, st.ui.frame) : undefined;
+      const outcome = await exportArtboards(several ?? settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
       if (outcome === 'done') rememberExport(settings);
       return outcome;
     } catch (e) {
@@ -124,7 +126,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   const def = exporterOf(settings.format);
   if (!def) throw new ExportProblem('That kind of export is turned off. Turn it on in Preferences > Features.');
   // A format may need to settle something first (an MP4 whose sound would not play everywhere: ask what to do).
-  if (def.settle) settings = await def.settle(doc, settings);
+  if (def.settle) settings = await def.settle(doc, settings, frame);
   const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);

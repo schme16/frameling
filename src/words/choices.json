@@ -2396,5 +2396,33 @@
   "choice.newDrawing.customStart.fresh.detail": {
     "text": "Custom always opens with the first-time settings. Your favourites are still there.",
     "where": "Preferences: the small line under the \"fresh\" answer in \"Where Custom starts from\"."
+  },
+  "choice.export.svgTooth.title": { "text": "Chalk and charcoal on paper in an SVG", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.export.svgTooth.question": {
+    "text": "This drawing has chalk or charcoal that catches on paper. An SVG can hold it two ways, and each gives something up. How should it go into the file?",
+    "where": "The question the \"Chalk and charcoal on paper in an SVG\" dialog asks, at export, only when the SVG really has such a line."
+  },
+  "choice.export.svgTooth.shapes.label": { "text": "Scale forever", "where": "Dialog and Preferences: the button for the answer \"shapes\" in \"Chalk and charcoal on paper in an SVG\"." },
+  "choice.export.svgTooth.shapes.detail": {
+    "text": "Tiny shapes, so the file stays sharp at any size. The grain is the older, simpler kind, so it looks less like charcoal.",
+    "where": "Dialog and Preferences: the small line under the \"shapes\" answer in \"Chalk and charcoal on paper in an SVG\"."
+  },
+  "choice.export.svgTooth.shapes.did": {
+    "text": "Wrote the chalk and charcoal as tiny shapes.",
+    "where": "Toast when \"shapes\" is used without asking (\"Chalk and charcoal on paper in an SVG\"), in the past tense."
+  },
+  "choice.export.svgTooth.picture.label": { "text": "Look right", "where": "Dialog and Preferences: the button for the answer \"picture\" in \"Chalk and charcoal on paper in an SVG\"." },
+  "choice.export.svgTooth.picture.detail": {
+    "text": "A picture of each line, so it looks as it does on the canvas. That part stops being sharp at any size, and the file comes out much bigger.",
+    "where": "Dialog and Preferences: the small line under the \"picture\" answer in \"Chalk and charcoal on paper in an SVG\"."
+  },
+  "choice.export.svgTooth.picture.did": {
+    "text": "Baked the chalk and charcoal as pictures.",
+    "where": "Toast when \"picture\" is used without asking (\"Chalk and charcoal on paper in an SVG\"), in the past tense."
+  },
+  "choice.export.svgTooth.ask.label": { "text": "Ask me every time", "where": "Dialog and Preferences: the button for the answer \"ask\" in \"Chalk and charcoal on paper in an SVG\"." },
+  "choice.export.svgTooth.ask.detail": {
+    "text": "Never remembered. You pick again on every SVG export that has chalk or charcoal on paper.",
+    "where": "Dialog and Preferences: the small line under the \"ask\" answer in \"Chalk and charcoal on paper in an SVG\"."
   }
 }

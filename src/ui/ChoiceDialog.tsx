@@ -179,10 +179,12 @@ function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
           </button>
         ))}
       </div>
-      <label className="ui-choice-remember">
-        <input type="checkbox" data-testid={`choice.${def.id}.remember`} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-        Remember my choice. You can change it any time in Preferences, Behaviour.
-      </label>
+      {!def.options.every((o) => o.once) && (
+        <label className="ui-choice-remember">
+          <input type="checkbox" data-testid={`choice.${def.id}.remember`} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Remember my choice. You can change it any time in Preferences, Behaviour.
+        </label>
+      )}
       {first && howMany > 1 && (
         <div className="ui-choice-usual">
           <button

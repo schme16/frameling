@@ -63,7 +63,7 @@ async function main() {
   }
   await ev(DOC);
   await sleep(500);
-  const get = (fmt, range = 'frame') => ev(`__framelingExport.fileBase64(${JSON.stringify(fmt)}, 0, ${JSON.stringify(range)})`);
+  const get = (fmt, range = 'frame', extra = {}) => ev(`__framelingExport.fileBase64(${JSON.stringify(fmt)}, 0, ${JSON.stringify(range)}, ${JSON.stringify(extra)})`);
 
   // Pictures of frames: the line has real paper tooth, many levels of see-through, and the pigment catches on the paper.
   for (const fmt of ['png', 'gif']) {
@@ -85,6 +85,31 @@ async function main() {
   const subpaths = (svg.match(/M/g) || []).length;
   check(!svg.includes('<image'), 'svg: no embedded picture');
   check(subpaths > 20, `svg: written as tiny shapes (${subpaths} pieces in the path)`);
+
+  // SVG, the answer "Look right": the line is baked as a picture (at twice the file's size), the file is bigger, the rest is as before.
+  const svgPic = Buffer.from(await get('svg', 'frame', { svgTooth: 'picture' }), 'base64').toString('utf8');
+  write('tooth-picture.svg', Buffer.from(svgPic).toString('base64'));
+  const img = /<image [^>]*width="([\d.]+)" height="([\d.]+)" href="data:image\/png;base64,([A-Za-z0-9+/=]+)"/.exec(svgPic);
+  check(!!img, 'svg (look right): the line is an embedded picture');
+  check(!!img && !svgPic.includes('<path'), 'svg (look right): no tiny shapes left');
+  if (img) {
+    const png = Buffer.from(img[3], 'base64');
+    const f = path.join(outDir, 'tooth-baked.png');
+    fs.writeFileSync(f, png);
+    const dims = sh('identify', ['-format', '%w %h', f]).stdout.trim().split(' ').map(Number);
+    check(Math.abs(dims[0] / Number(img[1]) - 2) < 0.02, `svg (look right): baked at 2 pixels per svg pixel (${dims[0]}x${dims[1]} picture shown at ${img[1]}x${img[2]})`);
+    const colours = Number(sh('convert', [f, '-alpha', 'extract', '-format', '%k', 'info:']).stdout);
+    check(colours > 30, `svg (look right): the picture has real grain (${colours} distinct see-through levels)`);
+  }
+  console.log(`size: svg shapes ${svg.length} bytes, svg picture ${svgPic.length} bytes (${(svgPic.length / svg.length).toFixed(1)}x)`);
+  // Moving SVG the same two ways.
+  const anim = Buffer.from(await get('svganim', 'all'), 'base64').toString('utf8');
+  const animPic = Buffer.from(await get('svganim', 'all', { svgTooth: 'picture' }), 'base64').toString('utf8');
+  write('tooth-anim.svg', Buffer.from(anim).toString('base64'));
+  write('tooth-anim-picture.svg', Buffer.from(animPic).toString('base64'));
+  check(!anim.includes('<image'), 'moving svg: tiny shapes by default');
+  check(animPic.includes('<image') && animPic.includes('data:image/png'), 'moving svg (look right): the line is an embedded picture');
+  console.log(`size: moving svg shapes ${anim.length} bytes, picture ${animPic.length} bytes (${(animPic.length / anim.length).toFixed(1)}x)`);
 
   // PDF and Illustrator: the layer is a picture.
   for (const fmt of ['pdf', 'ai']) {

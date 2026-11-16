@@ -187,6 +187,7 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'audio.scrub': ['scrubbing', 'audio scrub', 'hear sound', 'play sound while dragging', 'sound preview', 'scrub audio', 'timeline scrub'],
   'audio.longSound': ['extend animation', 'sound length', 'trim timeline', 'audio longer', 'match audio', 'timeline length', 'duration', 'fit to sound'],
   'export.mp4Sound': ['aac', 'opus', 'codec', 'mp4', 'video sound', 'audio codec', 'encoding', 'h264', 'video export', 'quicktime', 'safari', 'mov'],
+  'export.svgTooth': ['svg', 'charcoal', 'chalk', 'paper tooth', 'paper grain', 'vector', 'picture', 'bake', 'baked', 'scale forever', 'look right', 'sharp at any size', 'svg export', 'moving svg', 'animated svg'],
   'particles.where': ['emitter', 'spawn', 'new particles', 'particle layer', 'particle placement', 'emission'],
   'quill.presents': ['gift', 'present', 'mascot', 'surprise', 'gifts', 'quill gifts', 'drawing gift'],
   'rig.newPose': ['inbetween', 'pose', 'ik', 'pose interpolation', 'new pose', 'auto key', 'bones', 'keyframe pose', 'pose to pose'],
