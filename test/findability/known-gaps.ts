@@ -33,10 +33,12 @@ export const CEILINGS = {
   // One more since the pixel brush (Alt+Shift+N), which like soft paint and charcoal works on pixel layers only: its dabs are pixels, and a vector shape cannot hold sharp pixels or a pixel picture tip. It could not share a slot with the Brush tool, which stays on the rail on a pixel layer too. The mode line over the rail names it, and picking it flips to a pixel layer.
   // One more since chalk and charcoal, which like the soft paint tools works on pixel layers only (paper tooth is pixels, not a vector shape).
   // Five more since soft paint: the Soft brush, Airbrush, Highlighter, Soft eraser and Smudge work on pixel layers only (a vector shape cannot fade at its edge). The mode line over the rail names them, and picking one flips to a pixel layer.
-  railToolsVanish: { blank: 17, vector: 17, 'vector-selected': 17, pixel: 8, tilemap: 39, 'symbol-open': 17, playing: 17, 'has-clips': 17 } as Record<string, number>,
+  // One more on the pixel and tilemap layers since the Shape builder (Shift+N): it cuts overlapping vector shapes into bits, and a pixel or tile layer has no shapes to cut. It is on the rail on every vector layer, and the mode line over the rail names it on the others.
+  railToolsVanish: { blank: 17, vector: 17, 'vector-selected': 17, pixel: 9, tilemap: 40, 'symbol-open': 17, playing: 17, 'has-clips': 17 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   // Two more in every state but the pixel one since the Pixel menu went: it listed Shade and Dither all the time, and now they are only in the Tools menu's tool list, which shows the tools that work on the layer you are on, the same as the Wand and Slice. They are still on the pixel rail, and in the palette greyed with a reason on a vector layer. Tilemap goes 23 to 27 because on a tilemap layer the Pencil, Shade, Dither and Gradient all leave, where the Pixel menu showed them.
-  menuCommandsVanish: { blank: 9, vector: 9, 'vector-selected': 9, pixel: 6, tilemap: 27, 'symbol-open': 9, playing: 9, 'has-clips': 9 } as Record<string, number>,
+  // One more on the pixel and tilemap layers since the Shape builder: its entry in Tools lists only on a vector layer, like the Pen and Edit points beside it, and it is in the palette greyed with a reason on the others.
+  menuCommandsVanish: { blank: 9, vector: 9, 'vector-selected': 9, pixel: 7, tilemap: 28, 'symbol-open': 9, playing: 9, 'has-clips': 9 } as Record<string, number>,
 };
 
 /**
@@ -99,7 +101,8 @@ export const BIG_MENUS: Record<string, number> = {
   // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   // 175 down to 146 when the soft paint family (30) got a Soft paint menu of its own. Draw is under its cap again.
-  Draw: 146,
+  // Then one back for the Shape builder, which is a tool, so it comes in under Tools with the others.
+  Draw: 147,
 };
 
 /**
@@ -150,12 +153,13 @@ export const STILL_LOAD = {
   // with animation: the Offset card and the Width tool (palette only, no menu home, because Draw is over its cap), and
   // the two craft importers in File > Import. The gap is what this ledger is for and the gap did not move: 44 palette
   // commands and 118 menu commands are still out of the way on a still.
-  // Later the same day, four changes that do not touch each other. +1 palette and +1 menu on both sides, the Scripts in
+  // Later the same day, five changes that do not touch each other. +1 palette and +1 menu on both sides, the Scripts in
   // their own window command. -5 palette and -6 menu on a still only, from the clean timeline, ghost on empty frames,
   // light table, look through the camera while playing, import sound and make a symbol from the whole animation now
   // needing animation first. -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
-  // View entries that moved to the palette because a control on screen already does their job. And +2 palette and +7
-  // menu on both sides for Repeat. The gap is unchanged by all of it.
-  still: { palette: 555, menu: 740, animateMenu: 8 },
-  animated: { palette: 604, menu: 864, animateMenu: 123 },
+  // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
+  // on both sides for Repeat. And +1 palette and +1 menu on both sides for the Shape builder, which works on shapes
+  // whether a drawing is animated or not. The gap is unchanged by all of it.
+  still: { palette: 556, menu: 741, animateMenu: 8 },
+  animated: { palette: 605, menu: 865, animateMenu: 123 },
 };

@@ -9,7 +9,7 @@ import { DEFAULT_GROUPS, groupName, moveTool, placeWords, resolveGroups, sanitiz
 const PLACES: Record<string, string[]> = {
   draw: ['pencil', 'brush', 'eraser', 'fill', 'tile-brush', 'tile-eraser', 'tile-fill'],
   extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush'],
-  shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
+  shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'shape-builder', 'text'],
   // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
   select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'slice'],
   pen: ['transform', 'points', 'pen'],

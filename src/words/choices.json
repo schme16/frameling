@@ -597,6 +597,26 @@
     "where": "Dialog and Preferences: the small line under the \"top\" answer in \"Colours when shapes are combined\"."
   },
   "choice.shapes.combineLook.top.did": { "text": "Kept the top shape’s colours.", "where": "Toast when \"top\" is used without asking (\"Colours when shapes are combined\"), in the past tense." },
+  "choice.shapes.buildLook.title": { "text": "Colours in Shape builder", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.shapes.buildLook.question": {
+    "text": "You dragged across bits with different colours. Whose colours should the one new shape keep?",
+    "where": "The question the \"Colours in Shape builder\" dialog asks."
+  },
+  "choice.shapes.buildLook.dragged.label": { "text": "The bit you started on", "where": "Dialog and Preferences: the button for the answer \"dragged\" in \"Colours in Shape builder\"." },
+  "choice.shapes.buildLook.dragged.detail": {
+    "text": "Where your drag began is what you pulled from, so its fill and outline carry over to the rest.",
+    "where": "Dialog and Preferences: the small line under the \"dragged\" answer in \"Colours in Shape builder\"."
+  },
+  "choice.shapes.buildLook.dragged.did": {
+    "text": "Kept the colours of the bit you started on.",
+    "where": "Toast when \"dragged\" is used without asking (\"Colours in Shape builder\"), in the past tense."
+  },
+  "choice.shapes.buildLook.bottom.label": { "text": "The bottom shape", "where": "Dialog and Preferences: the button for the answer \"bottom\" in \"Colours in Shape builder\"." },
+  "choice.shapes.buildLook.bottom.detail": {
+    "text": "The lowest shape in the pile, whichever bit you started on. It matches Join.",
+    "where": "Dialog and Preferences: the small line under the \"bottom\" answer in \"Colours in Shape builder\"."
+  },
+  "choice.shapes.buildLook.bottom.did": { "text": "Kept the bottom shape’s colours.", "where": "Toast when \"bottom\" is used without asking (\"Colours in Shape builder\"), in the past tense." },
   "choice.shapes.offsetKeep.title": { "text": "Offset path: the original", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
   "choice.shapes.offsetKeep.question": { "text": "When you copy a shape a bit bigger or smaller, should the original stay?", "where": "The question the \"Offset path: the original\" dialog asks." },
   "choice.shapes.offsetKeep.copy.label": { "text": "Keep it, and add the copy", "where": "Dialog and Preferences: the button for the answer \"copy\" in \"Offset path: the original\"." },

@@ -1,0 +1,1 @@
+Shape builder: drag across the bits you want as one shape (they light up as you reach them), Alt-drag across the bits you want gone, and nothing changes until you let go.
