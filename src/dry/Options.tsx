@@ -4,6 +4,7 @@ import { findLayer } from '../core/doc';
 import { setChoice, useChoice } from '../core/choices';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip } from '../canvas/controls';
+import { BrushPresetRow } from '../brushes/BrushPresetRow';
 import { MirrorOptions } from '../tools/options/MirrorOptions';
 import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
@@ -41,6 +42,7 @@ export function DryOptionsPanel() {
   const info = mediumInfo(medium);
   return (
     <div className="cv-options">
+      <BrushPresetRow side="pixel" />
       <Choice<DryId> label="Medium" value={medium} options={MEDIA.map((m) => ({ value: m.id, label: m.label, title: m.hint }))} onChange={setMedium} />
       <Tip>{info.hint}</Tip>
       <Choice<PaperKind> label="Paper" value={paper} options={PAPERS.map((p) => ({ value: p.id, label: p.label, title: p.hint }))} onChange={setPaper} />

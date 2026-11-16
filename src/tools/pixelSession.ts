@@ -182,6 +182,16 @@ export class PixelSession {
     return [t[i], t[i + 1], t[i + 2], t[i + 3]];
   }
 
+  /** The pixel as it was when the session began, written into `out` (r, g, b, a) without making a new array. */
+  baseInto(x: number, y: number, out: Uint8ClampedArray | number[]): void {
+    this.readBase(x, y, this.basePx, 0);
+    const o = this.basePx;
+    out[0] = o[0];
+    out[1] = o[1];
+    out[2] = o[2];
+    out[3] = o[3];
+  }
+
   getBase(x: number, y: number): RGBA {
     const o = this.basePx;
     this.readBase(x, y, o, 0);

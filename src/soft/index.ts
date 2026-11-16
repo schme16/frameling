@@ -4,6 +4,7 @@ import { withChoice } from '../core/choices';
 import { store } from '../core/store';
 import { getToolSettings } from '../tools/settings';
 import { inHarness } from '../pixel/harness';
+import { getDab } from '../dab/settings';
 import './help';
 import './tools';
 import { SOFT_EDGE_CHOICE } from './choices';
@@ -16,7 +17,7 @@ store().subscribe(() => {
   const { ui, doc } = store().get();
   if (ui.tool === lastTool) return;
   lastTool = ui.tool;
-  if (!SOFT_SPECS.some((s) => s.kind === ui.tool) && ui.tool !== 'charcoal') return;
+  if (!SOFT_SPECS.some((s) => s.kind === ui.tool) && ui.tool !== 'charcoal' && !(ui.tool === 'pixel-brush' && !getDab().aliased)) return;
   if (edgeAnswered() || inHarness() || !getToolSettings().pixelPerfect) return;
   const layer = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   if (!layer || layer.kind !== 'pixel' || layer.paletteLock) return;

@@ -10,7 +10,6 @@ import {
   applyPreset,
   brushesVersion,
   copyBrushesText,
-  currentBrushState,
   deleteActive,
   everyBrush,
   myBrushes,
@@ -20,8 +19,10 @@ import {
   saveBrushesFile,
   saveCurrentAs,
   startNaming,
+  stateFor,
   updateActive,
   useBrushPresets,
+  type Side,
 } from './presets';
 import { BrushPicker } from './BrushPicker';
 import { groupNames, MAX_GROUP } from './library';
@@ -106,17 +107,18 @@ const suggestName = (): string => {
 };
 
 /** The saved brushes: the picker, then what you can do to the one you are using. */
-export function BrushPresetRow() {
+export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
   // Redraw when the brush in use or the list changes.
   useStore((s) => s.ui.brush);
+  useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
   const mode = useBrushPresets(namingMode);
-  const { changed } = currentBrushState();
-  const own = activeOwn();
+  const { changed } = stateFor(side);
+  const own = activeOwn(side);
   const full = myBrushes().length >= MAX_PRESETS;
   return (
     <div className="bp-row" data-testid="brush-presets">
-      <BrushPicker />
+      <BrushPicker side={side} />
       {mode ? (
         <NameField key={mode} mode={mode} />
       ) : (

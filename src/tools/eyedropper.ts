@@ -83,7 +83,7 @@ export const eyedropperTool: Tool = {
  * Hold Alt with a painting tool on a pixel layer and the press picks a colour instead of painting, as in Aseprite. The
  * shape and select tools keep Alt for their own use (draw from the middle, take away from a selection).
  */
-const ALT_PICK_TOOLS = new Set(['pencil', 'brush', 'eraser', 'fill', 'shade', 'dither', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal']);
+const ALT_PICK_TOOLS = new Set(['pencil', 'brush', 'eraser', 'fill', 'shade', 'dither', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush']);
 export const altPicks = (tool: string, layerKind: string | undefined, alt: boolean): boolean => alt && layerKind === 'pixel' && ALT_PICK_TOOLS.has(tool);
 
 /** The pointer as the temporary eyedropper sees it: Alt is what asked for it, so it doesn't also mean "this layer only". */

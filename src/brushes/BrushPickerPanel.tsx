@@ -41,7 +41,13 @@ import {
   pickerVersion,
   useRowStyle,
 } from './picker';
-import { applyPreset, brushesVersion, currentBrushState, everyBrush, startNaming, useBrushPresets } from './presets';
+import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets, type Side } from './presets';
+import { currentSpec, putSpec } from '../dab/live';
+import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
+import { specSize, withSize, type PixelSpec } from '../dab/spec';
+import { SIZE_RANGE as SOFT_SIZE } from '../soft/settings';
+import { SIZE_RANGE as DRY_SIZE } from '../dry/settings';
+import { PixelStroke, PixelTip } from './PixelSample';
 import { Stroke, TipThumb } from './Stroke';
 import './picker.css';
 
@@ -78,10 +84,10 @@ const sectionIcon = (s: Section): ReactNode => (s.kind === 'favourites' ? <Star 
 /** The picture of the brush's real tip (chalk grain, a wash, its stamps) and its size under it. */
 export const TIP_W = 44;
 export const tipHeight = (scale: number): number => Math.max(20, Math.round(30 * scale));
-const Tip = ({ brush, scale, on }: { brush: BrushSettings; scale: number; on: boolean }) => (
+const Tip = ({ brush, spec, scale, on }: { brush: BrushSettings; spec?: PixelSpec; scale: number; on: boolean }) => (
   <span className="pk-tip" aria-hidden="true">
-    <TipThumb brush={brush} w={TIP_W} h={tipHeight(scale)} on={on} />
-    <b>{brush.size}</b>
+    {spec ? <PixelTip spec={spec} w={TIP_W} h={tipHeight(scale)} on={on} /> : <TipThumb brush={brush} w={TIP_W} h={tipHeight(scale)} on={on} />}
+    <b>{spec ? specSize(spec) : brush.size}</b>
   </span>
 );
 
@@ -97,13 +103,16 @@ interface RowProps {
   scale: number;
   /** The brush as it is now, for the row of the brush in use only, so its sample follows the sliders. */
   live?: BrushSettings;
+  /** The same for a pixel brush. */
+  liveSpec?: PixelSpec | null;
   showGroup: boolean;
   onPick: (id: string) => void;
   onStar: (id: string) => void;
 }
 
-const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, showGroup, onPick, onStar }: RowProps) {
+const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpec, showGroup, onPick, onStar }: RowProps) {
   const brush = live ?? b.brush;
+  const spec = b.tool === 'pixel' ? (liveSpec ?? b.pixel) : undefined;
   const tip = rows === 'tip';
   return (
     <div
@@ -116,13 +125,13 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, showGro
       title={`${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >
-      {tip && <Tip brush={brush} scale={scale} on={on} />}
+      {tip && <Tip brush={brush} spec={spec} scale={scale} on={on} />}
       <span className="pk-main">
-        <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />
+        {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
         <span className="pk-name">
           <span className="pk-name-text">{b.name}</span>
           {showGroup && <em>{groupOf(b)}</em>}
-          {!tip && <b className="pk-size">{brush.size}</b>}
+          {!tip && <b className="pk-size">{spec ? specSize(spec) : brush.size}</b>}
         </span>
       </span>
       <button
@@ -146,18 +155,22 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, showGro
 
 // ---------------------------------------------------------------- the panel
 
+/** How wide each kind of pixel brush can be. */
+const sizeRange = (s: PixelSpec): { min: number; max: number } => (s.kind === 'dab' ? DAB_SIZE : s.kind === 'soft' ? SOFT_SIZE : DRY_SIZE);
 const LIVE_SIZE = (size: number): number => Math.min(54, Math.max(3, Math.round(size * 1.35)));
 const setBrush = (patch: Partial<BrushSettings>): void => store().setUi((u) => ({ brush: { ...u.brush, ...patch } }));
 
-export function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onClose: (refocus: boolean) => void; onPicked: () => void }) {
+export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: HTMLElement; side?: Side; onClose: (refocus: boolean) => void; onPicked: () => void }) {
   useBrushPresets(brushesVersion);
   usePicker(pickerVersion);
   const live = useStore((st) => st.ui.brush);
+  useStore((st) => st.ui.tool);
   const range = useBrushRange(false);
   const rows = useRowStyle();
   const scale = rowScale();
-  const all = everyBrush();
-  const { activeId } = currentBrushState();
+  const all = brushesOnSide(side);
+  const { activeId } = stateFor(side);
+  const liveSpec = side === 'pixel' ? currentSpec() : null;
   const big = all.length > SMALL_LIBRARY;
   const favs = favouriteIds();
   const favSet = useMemo(() => new Set(favs), [favs]);
@@ -265,7 +278,7 @@ export function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onCl
   const rowFor = (s: Section, b: import('./model').BrushPreset) => {
     const key = rowKey(s.key, b.id);
     const on = b.id === activeId;
-    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} showGroup={s.kind === 'found'} onPick={pick} onStar={star} />;
+    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={s.kind === 'found'} onPick={pick} onStar={star} />;
   };
 
   let body: ReactNode;
@@ -275,7 +288,7 @@ export function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onCl
         {all.map((b) => {
           const key = rowKey('flat', b.id);
           const on = b.id === activeId;
-          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} showGroup={false} onPick={pick} onStar={star} />;
+          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={false} onPick={pick} onStar={star} />;
         })}
       </div>
     );
@@ -325,14 +338,20 @@ export function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onCl
   const height = big ? Math.min(box.h ?? 580, maxH) : undefined;
   const activeRow = hotIdx !== undefined ? `pk-i${hotIdx}` : undefined;
   return createPortal(
-    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label="Pick a brush" style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH }} onKeyDown={onKeyDown}>
+    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH }} onKeyDown={onKeyDown}>
       <div className="pk-live">
         <div className="pk-dial" aria-hidden="true">
-          <i style={{ width: LIVE_SIZE(live.size), height: LIVE_SIZE(live.size) }} />
+          <i style={{ width: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size), height: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size) }} />
         </div>
         <div className="pk-sliders">
-          <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-          <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
+          {liveSpec ? (
+            <Slider label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
+          ) : (
+            <>
+              <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+              <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
+            </>
+          )}
         </div>
       </div>
       {big && (

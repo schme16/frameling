@@ -31,6 +31,8 @@ import '../pixel';
 import '../soft';
 // Chalk and charcoal on pixel layers, drawing onto paper. After soft paint, whose edge choice it shares.
 import '../dry';
+// The pixel brush (dabs, spacing, tips) and the pixel side of the brush library. After soft paint and charcoal, which it shares an edge answer and a library with.
+import '../dab';
 import '../select';
 import '../clipboard';
 import '../transform';

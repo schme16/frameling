@@ -114,7 +114,11 @@ function makeVectorBrush(): boolean {
   return true;
 }
 
-function makePixelBrush(): boolean {
+/**
+ * Makes a picture from the selected pixels. By default it becomes the picture of the Brush tool's pixel brush; with `into`
+ * it goes to whoever asked instead (the Pixel brush's picture tip), and the Brush tool is left alone.
+ */
+export function makePixelBrush(into?: (stamp: PixelStamp) => void): boolean {
   const a = activePixelGrid();
   const m = pixelSelection();
   if (!a || !m) return warn('Select some pixels first (the Select tool), then make the brush.');
@@ -126,6 +130,11 @@ function makePixelBrush(): boolean {
   const finish = (keep: boolean) => {
     const r = pixelStampFrom(pixels, a.width, m, keep);
     if (!r.ok) return;
+    if (into) {
+      into(r.stamp);
+      toast(r.stamp.keep ? 'Made a picture tip from your selection, in its own colours.' : 'Made a picture tip from your selection, painting in your colour.', { kind: 'success' });
+      return;
+    }
     setToolSettings({ pixelStamp: r.stamp });
     showOptions();
     toast(r.stamp.keep ? 'Made a brush from your selection. Click to stamp it; drag to lay copies side by side.' : 'Made a brush from your selection, painting in your colour.', {

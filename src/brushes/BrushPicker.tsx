@@ -7,17 +7,21 @@ import { useStore } from '../core/store';
 import { lazyComponent, lazyModule } from '../core/lazy';
 import { groupOf, SMALL_LIBRARY } from './library';
 import { pickerRequests, takePickerRequest, usePicker } from './picker';
-import { brushesVersion, currentBrushState, everyBrush, useBrushPresets } from './presets';
+import { brushesOnSide, brushesVersion, stateFor, useBrushPresets, type Side } from './presets';
+import { currentSpec } from '../dab/live';
+import { PixelStroke } from './PixelSample';
 import { Stroke } from './Stroke';
 import './picker.css';
 
 const Panel = lazyComponent(lazyModule(() => import('./BrushPickerPanel').then((m) => m.Panel), { warm: true }));
 
-export function BrushPicker() {
+export function BrushPicker({ side = 'vector' }: { side?: Side }) {
   const live = useStore((st) => st.ui.brush);
+  useStore((st) => st.ui.tool);
   useBrushPresets(brushesVersion);
-  const all = everyBrush();
-  const { activeId, changed } = currentBrushState();
+  const all = brushesOnSide(side);
+  const { activeId, changed } = stateFor(side);
+  const spec = side === 'pixel' ? (currentSpec() ?? all.find((p) => p.id === activeId)?.pixel ?? null) : null;
   const active = all.find((p) => p.id === activeId);
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
@@ -47,15 +51,15 @@ export function BrushPicker() {
         className="pk-btn"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Pick a brush by what it draws"
+        title={side === 'pixel' ? 'Pick a pixel brush by what it draws' : 'Pick a brush by what it draws'}
         onClick={() => (open ? close(true) : setOpen(true))}
       >
         <span className="pk-btn-sample">
-          <Stroke brush={live} h={30} />
+          {spec ? <PixelStroke spec={spec} h={30} /> : <Stroke brush={live} h={30} />}
         </span>
         <span className="pk-btn-text">
           <span className="pk-btn-name">
-            {active ? active.name : 'Custom brush'}
+            {active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}
             {active && changed && <i className="bp-changed" aria-label="changed" />}
           </span>
           <span className="pk-btn-sub">{active && big ? `${groupOf(active)} · ${all.length} brushes` : `${all.length} brushes`}</span>
@@ -66,7 +70,7 @@ export function BrushPicker() {
           </svg>
         </span>
       </button>
-      {open && btn.current && <Panel anchor={btn.current} onClose={close} onPicked={() => close(true)} />}
+      {open && btn.current && <Panel anchor={btn.current} side={side} onClose={close} onPicked={() => close(true)} />}
     </>
   );
 }

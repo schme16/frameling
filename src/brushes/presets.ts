@@ -8,7 +8,9 @@ import { registerCommand, unregisterCommand } from '../core/registry';
 import { store } from '../core/store';
 import { download, pickUpload } from '../platform';
 import { pickTool } from '../tools/pick';
+import { applySpec, currentSpec, isApplying, isPixelBrushTool, subscribeSpecs } from '../dab/live';
 import { toast } from '../ui/toast';
+import { sameSpec as sameSpecFor, specTool } from '../dab/spec';
 import {
   addShared,
   allPresets,
@@ -19,13 +21,17 @@ import {
   MAX_BRUSHES_BYTES,
   movePreset,
   MAX_PRESETS,
+  onSide,
   parseBrushesText,
+  pixelPresetState,
   presetState,
   renamePreset,
   sameBrush,
   sanitizeList,
+  savePixelPreset,
   savePreset,
   stepPreset,
+  updatePixelPreset,
   updatePreset,
   type BrushPreset,
   type PresetState,
@@ -83,7 +89,13 @@ function emit(): void {
 function setMine(list: BrushPreset[]): void {
   mine = list;
   try {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify({ version: 1, presets: mine.map((p) => (p.group ? { id: p.id, name: p.name, tool: p.tool, brush: p.brush, group: p.group } : { id: p.id, name: p.name, tool: p.tool, brush: p.brush })) }));
+    if (typeof localStorage !== 'undefined') {
+      const kept = mine.map((p) => {
+        const body = p.tool === 'pixel' ? { id: p.id, name: p.name, tool: p.tool, pixel: p.pixel } : { id: p.id, name: p.name, tool: p.tool, brush: p.brush };
+        return p.group ? { ...body, group: p.group } : body;
+      });
+      localStorage.setItem(KEY, JSON.stringify({ version: 1, presets: kept }));
+    }
   } catch {
     // not saved this time
   }
@@ -103,6 +115,16 @@ export const namingMode = (): 'save' | 'rename' | null => naming;
 export const pickedBrushId = (): string | null => pickedId;
 export const currentBrushState = (): PresetState => presetState(store().get().ui.brush, mine, pickedId);
 
+/** The two sides of the library: the vector Brush's brushes, and the pixel brush tools'. The tool you are on says which one the row, the picker and the commands mean. */
+export type Side = 'vector' | 'pixel';
+export const sideOfTool = (tool: string): Side => (isPixelBrushTool(tool) ? 'pixel' : 'vector');
+export const currentSide = (): Side => sideOfTool(store().get().ui.tool);
+export const currentPixelState = (): PresetState => pixelPresetState(currentSpec(), mine, pickedId);
+/** Which brush is lit on a side, and whether it has been changed. */
+export const stateFor = (side: Side): PresetState => (side === 'pixel' ? currentPixelState() : currentBrushState());
+/** The brushes on one side: the starters and yours. */
+export const brushesOnSide = (side: Side): BrushPreset[] => onSide(everyBrush(), side);
+
 export function subscribeBrushes(fn: () => void): () => void {
   listeners.add(fn);
   return () => void listeners.delete(fn);
@@ -118,8 +140,8 @@ export function startNaming(mode: 'save' | 'rename' | null): void {
 }
 
 /** The saved brush now lit that you can change (not a starter). */
-export function activeOwn(): BrushPreset | undefined {
-  const { activeId } = currentBrushState();
+export function activeOwn(side: Side = currentSide()): BrushPreset | undefined {
+  const { activeId } = stateFor(side);
   return mine.find((p) => p.id === activeId);
 }
 
@@ -128,7 +150,8 @@ export function applyPreset(id: string): boolean {
   const p = everyBrush().find((x) => x.id === id);
   if (!p) return false;
   pickedId = p.id;
-  store().setUi({ brush: { ...p.brush } });
+  if (p.tool === 'pixel' && p.pixel) applySpec(p.pixel);
+  else store().setUi({ brush: { ...p.brush } });
   noteRecent(p.id);
   emit();
   return true;
@@ -136,7 +159,8 @@ export function applyPreset(id: string): boolean {
 
 /** Saves the brush in use under a name. Returns the brush saved, or null if the name was empty or the list was full. */
 export function saveCurrentAs(name: string, group?: string): BrushPreset | null {
-  const r = savePreset(mine, name, store().get().ui.brush, uid('b'), group);
+  const spec = currentSide() === 'pixel' ? currentSpec() : null;
+  const r = spec ? savePixelPreset(mine, name, spec, uid('b'), group) : savePreset(mine, name, store().get().ui.brush, uid('b'), group);
   if (!r) {
     toast(name.trim() ? `You have ${MAX_PRESETS} saved brushes already. Delete one to make room.` : 'Give the brush a name first.', { kind: 'warn' });
     return null;
@@ -154,14 +178,15 @@ export function saveCurrentAs(name: string, group?: string): BrushPreset | null 
 export function updateActive(): boolean {
   const own = activeOwn();
   if (!own) return false;
-  setMine(updatePreset(mine, own.id, store().get().ui.brush));
+  const spec = own.tool === 'pixel' ? currentSpec() : null;
+  setMine(spec ? updatePixelPreset(mine, own.id, spec) : updatePreset(mine, own.id, store().get().ui.brush));
   toast(`Updated "${own.name}".`, { kind: 'success' });
   return true;
 }
 
 /** Back to how the lit brush was saved, undoing the changes since. */
 export function revertActive(): boolean {
-  const p = everyBrush().find((x) => x.id === currentBrushState().activeId);
+  const p = everyBrush().find((x) => x.id === stateFor(currentSide()).activeId);
   if (!p) return false;
   return applyPreset(p.id);
 }
@@ -205,7 +230,7 @@ export function deleteActive(): boolean {
 
 /** Stars the lit brush, or takes the star off. Says what happened. */
 export function toggleActiveFavourite(): boolean {
-  const p = everyBrush().find((x) => x.id === currentBrushState().activeId);
+  const p = everyBrush().find((x) => x.id === stateFor(currentSide()).activeId);
   if (!p) return warn('Pick or save a brush first, then star it.');
   const on = toggleFavourite(p.id);
   toast(on ? `"${p.name}" is in your Favourites.` : `"${p.name}" is out of your Favourites.`, { duration: 1600 });
@@ -214,7 +239,8 @@ export function toggleActiveFavourite(): boolean {
 
 /** Moves to the next (or previous) brush in the row. */
 export function stepBrush(by: 1 | -1): void {
-  const p = stepPreset(everyBrush(), currentBrushState().activeId, by);
+  const side = currentSide();
+  const p = stepPreset(brushesOnSide(side), stateFor(side).activeId, by);
   if (p && applyPreset(p.id)) toast(p.name, { duration: 1400 });
 }
 
@@ -229,7 +255,7 @@ export function startBrushPresets(): () => void {
   syncPickCommands();
   const s = store();
   let last = s.get().ui.brush;
-  return s.subscribe(() => {
+  const offVector = s.subscribe(() => {
     const now = s.get().ui.brush;
     if (now === last) return;
     last = now;
@@ -238,6 +264,34 @@ export function startBrushPresets(): () => void {
     if (own && to) setMine(updatePreset(mine, own.id, to));
     else emit();
   });
+  // The pixel brush tools: the same, when any of their settings change or you move between them.
+  let lastTool = s.get().ui.tool;
+  const onPixel = () => {
+    if (isApplying()) return;
+    const own = mine.find((p) => p.id === pickedId && p.tool === 'pixel');
+    const spec = currentSpec();
+    const to = own && spec ? followPixelTarget(currentChoice<BrushEdits>('brushes.edits'), own, spec) : null;
+    if (own && to) setMine(updatePixelPreset(mine, own.id, to));
+    else emit();
+  };
+  const offSpecs = subscribeSpecs(onPixel);
+  const offTool = s.subscribe(() => {
+    const t = s.get().ui.tool;
+    if (t === lastTool) return;
+    lastTool = t;
+    if (isPixelBrushTool(t)) emit();
+  });
+  return () => {
+    offVector();
+    offSpecs();
+    offTool();
+  };
+}
+
+/** The pixel version of followTarget: the pixel brush a saved one should become, or null to leave it. */
+export function followPixelTarget(edits: BrushEdits, own: BrushPreset | undefined, spec: NonNullable<ReturnType<typeof currentSpec>>): NonNullable<ReturnType<typeof currentSpec>> | null {
+  if (edits !== 'follow' || !own?.pixel || specTool(own.pixel) !== specTool(spec)) return null;
+  return sameSpecFor(own.pixel, spec) ? null : spec;
 }
 
 // ---------------------------------------------------------------- sharing
@@ -304,6 +358,7 @@ let syncedFor = '';
 /** Picking a brush from the palette: use it, and move to the brush tool when the layer can take it. */
 export function pickBrushCommand(id: string): void {
   if (!applyPreset(id)) return;
+  if (everyBrush().find((p) => p.id === id)?.tool === 'pixel') return;
   const { doc, ui } = store().get();
   const layer = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   if (ui.tool !== 'brush' && (!layer || layer.kind === 'vector')) pickTool('brush');

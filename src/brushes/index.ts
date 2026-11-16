@@ -13,11 +13,12 @@ import {
   addBrushesFromClipboard,
   addBrushesFromFile,
   copyBrushesText,
-  currentBrushState,
+  currentSide,
   deleteActive,
   myBrushes,
   saveBrushesFile,
   startNaming,
+  stateFor,
   stepBrush,
   toggleActiveFavourite,
   updateActive,
@@ -26,8 +27,12 @@ import { flipRowStyle, requestPicker } from './picker';
 
 export { startBrushPresets } from './presets';
 
-/** Brings the brush options up, with the brush tool, so a name box has somewhere to show. */
+/** Brings the brush options up, with the brush tool, so a name box has somewhere to show. On a pixel brush tool the options are already its own. */
 function showBrushOptions(): void {
+  if (currentSide() === 'pixel') {
+    showPanel('tool-options');
+    return;
+  }
   pickTool('brush');
   showPanel('tool-options');
 }
@@ -94,7 +99,7 @@ registerCommands([
     description: 'Put your changes to the size, smoothing and the rest into the saved brush you picked.',
     help: 'brush-presets',
     keywords: ['brush', 'preset', 'update', 'overwrite', 'keep changes'],
-    enabled: () => !!activeOwn() && currentBrushState().changed,
+    enabled: () => !!activeOwn() && stateFor(currentSide()).changed,
     run: () => void updateActive(),
   },
   {
@@ -125,12 +130,13 @@ registerCommands([
     label: 'Next saved brush',
     category: 'Draw',
     keys: ['Alt+ArrowDown'],
-    description: 'Move to the next brush in the row at the top of the brush options.',
+    description: 'Move to the next brush in the row at the top of the brush options. On a pixel brush tool, the next pixel brush.',
     help: 'brush-presets',
     keywords: ['brush', 'preset', 'next', 'switch brush', 'cycle'],
     run: () => {
+      const side = currentSide();
       stepBrush(1);
-      if (store().get().ui.tool !== 'brush') pickTool('brush');
+      if (side === 'vector' && store().get().ui.tool !== 'brush') pickTool('brush');
     },
   },
   {
@@ -142,8 +148,9 @@ registerCommands([
     help: 'brush-presets',
     keywords: ['brush', 'preset', 'previous', 'switch brush', 'cycle'],
     run: () => {
+      const side = currentSide();
       stepBrush(-1);
-      if (store().get().ui.tool !== 'brush') pickTool('brush');
+      if (side === 'vector' && store().get().ui.tool !== 'brush') pickTool('brush');
     },
   },
   {

@@ -5,6 +5,7 @@ import { findLayer } from '../core/doc';
 import { setChoice, useChoice } from '../core/choices';
 import { useStore } from '../core/store';
 import { ActionButton, Slider, Tip, Toggle } from '../canvas/controls';
+import { BrushPresetRow } from '../brushes/BrushPresetRow';
 import { MirrorOptions } from '../tools/options/MirrorOptions';
 import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
@@ -70,6 +71,7 @@ function Options({ kind }: { kind: SoftKind }) {
   const words = FLOW_WORDS[kind];
   return (
     <div className="cv-options">
+      <BrushPresetRow side="pixel" />
       <Slider label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setSoftTool(kind, { size: v })} />
       {kind !== 'smudge' && <Slider label="Hardness" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setSoftTool(kind, { hardness: v / 100 })} hint="How much of the brush is solid before it starts to fade. Low is soft and airy, high is firm with a thin fade." />}
       <Slider label={words.label} value={Math.round(o.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={(v) => `${v}%`} onChange={(v) => setSoftTool(kind, { flow: v / 100 })} hint={words.hint} />

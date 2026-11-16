@@ -1,6 +1,7 @@
 // The brush library as the picker shows it: groups, favourites, recent, search and the keyboard order. Pure functions,
 // no DOM, so the rules can be tested without drawing anything.
 import type { BrushPreset } from './model';
+import { PIXEL_GROUPS } from './pixelStarters';
 import { STARTER_GROUPS } from './starters';
 
 export const MY_GROUP = 'My brushes';
@@ -125,8 +126,9 @@ export interface PickerFacts {
 function groupOrder(name: string): number {
   if (name === MY_GROUP) return 0;
   if (name === STARTERS_GROUP) return 1;
-  const own = STARTER_GROUPS.findIndex((g) => g.toLowerCase() === name.toLowerCase());
-  return own >= 0 ? 2 + own : 2 + STARTER_GROUPS.length;
+  const groups: readonly string[] = [...STARTER_GROUPS, ...PIXEL_GROUPS];
+  const own = groups.findIndex((g) => g.toLowerCase() === name.toLowerCase());
+  return own >= 0 ? 2 + own : 2 + groups.length;
 }
 
 /** A group's section key. Capitals don't make another group: "Inking" and "inking" are one. */

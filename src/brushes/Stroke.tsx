@@ -9,7 +9,7 @@ import { thumbFor, type ThumbKind } from './thumbs';
 export { dabPoints, dabSize, sampleSize, samplePoints } from './thumbs';
 
 /** True once the element has come near the screen (always true where the browser cannot tell). */
-function useSeen(ref: RefObject<HTMLElement | null>): boolean {
+export function useSeen(ref: RefObject<HTMLElement | null>): boolean {
   const [seen, setSeen] = useState(typeof IntersectionObserver === 'undefined');
   useLayoutEffect(() => {
     const c = ref.current;

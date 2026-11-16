@@ -8,7 +8,7 @@ import { clearPixelStamp, makeBrushFromSelection, setPixelStampKeep } from './ti
 import './brushes.css';
 
 /** The brush drawn big enough to see, in its own colours (or in the colour picked when it paints in that). */
-function StampPicture({ stamp, color }: { stamp: PixelStamp; color: string }) {
+export function StampPicture({ stamp, color }: { stamp: PixelStamp; color: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;

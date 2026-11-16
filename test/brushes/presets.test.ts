@@ -7,7 +7,7 @@ import { DEFAULT_BRUSH, newDoc } from '../../src/core/doc';
 import { _resetChoicesForTests, setChoice } from '../../src/core/choices';
 import { allCommands, getCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
-import { STARTERS, sameBrush } from '../../src/brushes/model';
+import { PIXEL_STARTERS, STARTERS, sameBrush } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
 import { toasts } from '../../src/ui/toast';
 
@@ -121,13 +121,13 @@ describe('steps and commands', () => {
     expect(P.currentBrushState().activeId).toBe(STARTERS[1].id);
     P.stepBrush(-1);
     P.stepBrush(-1);
-    expect(P.currentBrushState().activeId).toBe(P.everyBrush().at(-1)!.id);
+    expect(P.currentBrushState().activeId).toBe(P.brushesOnSide('vector').at(-1)!.id);
   });
   it('registers the commands with help, and their keys do not need the mouse', () => {
     for (const id of ['brush.saveAs', 'brush.update', 'brush.rename', 'brush.delete', 'brush.next', 'brush.previous', 'brush.saveFile', 'brush.copyText', 'brush.addFile', 'brush.pasteText']) {
       expect(getCommand(id)?.help).toBe('brush-presets');
     }
-    expect(allCommands().filter((c) => c.id.startsWith('brush.pick.'))).toHaveLength(STARTERS.length);
+    expect(allCommands().filter((c) => c.id.startsWith('brush.pick.'))).toHaveLength(STARTERS.length + PIXEL_STARTERS.length);
   });
   it('Update and Delete are greyed out until a saved brush of yours is lit', () => {
     P.applyPreset(S('ink').id);

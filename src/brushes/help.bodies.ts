@@ -27,7 +27,7 @@ export const bodies: Record<string, string> = {
 - A saved brush holds the size, smoothing, pressure, pointy ends, end caps and the [tip](help:brush-tips) (chalk, stamps, a shape you made and so on). The colour, the mirror and your pen curves stay as they are.
 - Saving under a name you already used replaces that brush.
 - You can keep up to 1000 of your own, in groups if you like (type a group name when you save).
-- Pixel layers use the pixel brush, which has its own size and shape.
+- Pixel brushes live in this picker too: see the [Pixel brush](help:pixel-brush).
 
 help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet`,
   'brush-picker': `The **brush picker** is the button at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
