@@ -3,6 +3,10 @@
 // ImageMagick from these and the e2e outputs (see brand/ab/canvas-view/note.md).
 // Run: SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab --out brand/ab/canvas-view --only turned-pixel,turned-vector,...
 const L = require('../help/_lib.cjs');
+const { view, at, fromOld, STAGE, PANEL } = require('../help/_shapes.cjs');
+// Where things land is measured from the running app when each step runs; no window numbers for the stage are kept here.
+// A drag written in old window numbers on the pixel stage, as a spot that follows its middle ((666, 303) when the numbers were taken).
+const fromOldPixel = (x, y) => ({ stagePoint: { x, y, z: 1, cx: 666, cy: 303.5 } });
 const INK = '#1d1b26';
 const KAPPA = 0.5522847498307936;
 let nid = 0;
@@ -32,10 +36,10 @@ const pixelClip = {
     { key: 'p' }, L.cmd('view.zoom100'), L.cmd('view.zoomIn'), L.cmd('view.zoomIn'), L.cmd('view.center'), L.wait(300),
     L.js(`__frameling.store().setUi({ color: '#ff6f91' })`), { move: [640, 762] }, L.wait(400),
     { shot: 'warm', crop: [0, 0, 32, 32] },
-    { rec: '@', crop: [403, 47, 526, 418], every: 70 }, L.wait(800),
+    { rec: '@', crop: { stageCrop: { of: '.ui-canvas' } }, every: 70 }, L.wait(800),
     ...turnRight(3), L.wait(600),
-    { drag: [[600, 200], [640, 230], [680, 250], [720, 245]], steps: 6, delay: 30 }, L.wait(500),
-    { drag: [[620, 320], [660, 300], [700, 310]], steps: 5, delay: 30 }, L.wait(900),
+    { drag: [fromOldPixel(600, 200), fromOldPixel(640, 230), fromOldPixel(680, 250), fromOldPixel(720, 245)], steps: 6, delay: 30 }, L.wait(500),
+    { drag: [fromOldPixel(620, 320), fromOldPixel(660, 300), fromOldPixel(700, 310)], steps: 5, delay: 30 }, L.wait(900),
     L.cmd('view.flip'), L.wait(1400), L.cmd('view.resetTurn'), L.wait(1500),
     { rec: 'stop' },
   ],
@@ -48,15 +52,15 @@ const vectorClip = {
   steps: [
     L.template('blank-vector'),
     putOn([ell(460, 200, 360, 320, '#ffd9a8', 8), ell(540, 300, 60, 60, '#ffffff', 5), ell(680, 300, 60, 60, '#ffffff', 5)]),
-    L.js(`__frameling.store().update('guide', (d) => { d.guides = [{ id: 'g1', axis: 'y', at: 560 }]; }); __frameling.store().setUi({ zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5 })`),
+    L.js(`__frameling.store().update('guide', (d) => { d.guides = [{ id: 'g1', axis: 'y', at: 560 }]; })`),
     L.cmd('tools.brush'), L.js(`__frameling.store().setUi({ color: '#5b4bd6', brush: { size: 10, thinning: 0.1, smoothing: 0.5, streamline: 0.5, taperStart: 0, taperEnd: 0, capStart: true, capEnd: true } })`),
-    L.wait(500), away, L.wait(300),
+    L.wait(500), view(0.5), away, L.wait(300),
     { shot: 'warm', crop: [0, 0, 32, 32] },
-    { rec: '@', crop: [113, 47, 764, 444], every: 70 }, L.wait(800),
+    { rec: '@', crop: STAGE, every: 70 }, L.wait(800),
     ...turnRight(2), L.wait(500),
-    { drag: [[330, 330], [400, 300], [490, 283], [580, 296], [650, 340]], steps: 8, delay: 25 }, L.wait(900),
+    { drag: [[330, 330], [400, 300], [490, 283], [580, 296], [650, 340]].map(([x, y]) => fromOld(x, y)), steps: 8, delay: 25 }, L.wait(900),
     ...turnRight(2), L.wait(400),
-    { drag: [[360, 360], [430, 330], [520, 320], [600, 335]], steps: 8, delay: 25 }, L.wait(1100),
+    { drag: [[360, 360], [430, 330], [520, 320], [600, 335]].map(([x, y]) => fromOld(x, y)), steps: 8, delay: 25 }, L.wait(1100),
     L.cmd('view.resetTurn'), L.wait(1500),
     { rec: 'stop' },
   ],
@@ -66,10 +70,10 @@ const vectorClip = {
 const SHAPES = [rect(150, 120, 170, 120, '#ff8fb1'), rect(400, 330, 90, 90, '#8fd0ff'), rect(560, 90, 130, 70, '#ffd36b'), rect(760, 260, 60, 150, '#9be0b4'), rect(960, 140, 110, 110, '#b79cff')];
 const alignStart = [
   L.template('blank-vector'), putOn(SHAPES),
-  L.js(`__frameling.store().setUi({ tool: 'select', selection: ${JSON.stringify(SHAPES.map((s) => s.id))}, zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5 })`),
-  L.panel('align'), L.wait(900), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
+  L.js(`__frameling.store().setUi({ tool: 'select', selection: ${JSON.stringify(SHAPES.map((s) => s.id))} })`),
+  L.panel('align'), L.wait(900), view(0.5), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
 ];
-const ALIGN_CROP = [112, 44, 1084, 448];
+const ALIGN_CROP = PANEL;
 const alignStill = (name, ...after) => ({ name, prefs: { showTips: false }, steps: [...alignStart, ...after, L.wait(900), { shot: '@', crop: ALIGN_CROP }] });
 
 // A see-through artboard: three boards, the open one with no colour (a checkerboard), the Artboards panel beside it.
@@ -95,7 +99,7 @@ const BOARDS = `(async () => {
 const seeThroughStill = {
   name: 'see-through-screen',
   prefs: { showTips: false },
-  steps: [L.js(BOARDS), L.wait(1200), L.panel('artboards'), L.wait(800), L.cmd('artboards.fitAll'), L.wait(900), away, L.wait(400), { shot: '@', crop: [112, 44, 1084, 450] }],
+  steps: [L.js(BOARDS), L.wait(1200), L.panel('artboards'), L.wait(800), L.cmd('artboards.fitAll'), L.wait(900), away, L.wait(400), { shot: '@', crop: PANEL }],
 };
 
 module.exports = [

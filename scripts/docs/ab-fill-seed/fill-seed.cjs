@@ -4,6 +4,7 @@
 // as much of the setting as the handle has room for (or says plainly that there is not enough room).
 //   SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-fill-seed --renderer <dir> --out <dir>
 const L = require('../help/_lib.cjs');
+const { view: stageView, at, STAGE } = require('../help/_shapes.cjs');
 const away = { move: [720, 28] };
 const INK = '#25233a';
 let n = 0;
@@ -15,16 +16,14 @@ const pan = (g) => [
   stroke(arc(640, 360, 100, 1.5 * Math.PI + g, 2 * Math.PI - 0.18)),
   stroke([[735, 342], [820, 342]]), stroke([[735, 378], [820, 378]]), stroke([[820, 342], [820, 378]]),
 ];
-// View: zoom 1 with stage point (700, 360) at the viewport middle (495, 269).
-const view = L.js('__frameling.store().setUi({ zoom: 1, panX: 382 - 700, panY: 222 - 360 })');
-// The page sits 31px right of where the pan/zoom maths puts it (measured from a shot), so the click is nudged to match.
-const at = (x, y) => [Math.round(526 + (x - 700)), Math.round(269 + (y - 360))];
+// View: zoom 1 with stage point (700, 360) at the middle of the stage; where that is on screen is measured from the running app.
+const view = stageView(1, 700, 360);
 const put = (shapes) => L.js(`(() => { const S = __frameling.store(); const shapes = ${JSON.stringify(shapes)}; S.update('setup', (d) => { const l = d.layers[0]; d.drawings[l.cels[0].drawingId].shapes.push(...shapes); }); S.setUi({ activeLayerId: S.get().doc.layers[0].id, fillColor: '#e0788f' }); })()`);
 const medium = L.js("[...document.querySelectorAll('.fl-fill-seg button')].find((b) => b.textContent.trim() === 'Medium').click()");
 const entry = (name, g) => ({
   name,
   prefs: { firstDrawn: true, showTips: false, showWelcome: false, reduceMotion: true },
   steps: [L.template('blank-vector'), view, put(pan(g)), L.cmd('tools.fill'), L.wait(700), medium, L.wait(500), away, L.wait(400),
-    { click: at(790, 360) }, L.wait(1400), { shot: '@', crop: [113, 47, 764, 444] }],
+    { click: at(790, 360) }, L.wait(1400), { shot: '@', crop: STAGE }],
 });
 module.exports = [entry('handle-fits', 0.15), entry('handle-cramped', 0.2)];

@@ -1,5 +1,5 @@
 // Shared by the diamond gradient entries: the same square with each kind of gradient side by side, and a flat panel given a sheen.
-// Window coordinates as in help/_shapes.cjs: the canvas is 764 x 444 at (113, 47).
+// Where things land is measured from the running app (view() in help/_shapes.cjs), so no window numbers are kept here.
 const { T, view, put, away, rect, label, stroke, INK, WARM, dom } = require('../help/_shapes.cjs');
 
 const STOPS = [{ at: 0, color: '#fff7c2' }, { at: 0.5, color: '#ff7a90' }, { at: 1, color: '#4b4fd0' }];

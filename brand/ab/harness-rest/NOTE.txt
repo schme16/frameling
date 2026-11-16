@@ -1,0 +1,2 @@
+Pictures that were wrong before the harness measured the stage, each in both themes: Before on the left, After on the right.
+The caption on each says what was wrong. Pictures that only moved by a few pixels have no media here (see the commit message).
