@@ -21,5 +21,7 @@ Select shapes with the Select tool (**V**), then pick a colour. The box in front
 
 Picking a shape shows its own colour in the panel and in the two boxes, so what you see is what the shape has. Picking only looks: the boxes (and so the next shape you draw) change when you change a colour, not when you pick.
 
+A shape with nothing on a side, a line with no fill for example, shows the red slash (**none**) in that box, so you can see at a glance it has nothing there. Click a colour and it gets one. Pick some shapes that have a fill and some that do not, and the box shows the same hatching as different colours, with a note saying how many have nothing. They stay as they are when you change the colour.
+
 Pick shapes with different colours and the panel says so, with **Make them all match the first**. Click a swatch instead and they all take that colour.`,
 };
