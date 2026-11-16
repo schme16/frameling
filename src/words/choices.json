@@ -2366,5 +2366,20 @@
   "choice.effects.addTarget.layer.did": {
     "text": "Put the effect on the whole layer.",
     "where": "Toast when \"layer\" is used without asking (\"Effects on picked shapes or the whole layer\"), in the past tense."
+  },
+  "choice.newDrawing.customStart.title": { "text": "Where Custom starts from", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.newDrawing.customStart.question": {
+    "text": "When you open Custom on the New drawing sheet, where should its settings start from?",
+    "where": "The question for \"Where Custom starts from\" in Preferences > Behaviour. It is never asked in a dialog."
+  },
+  "choice.newDrawing.customStart.last.label": { "text": "The settings I used last time", "where": "Preferences: the button for the answer \"last\" in \"Where Custom starts from\"." },
+  "choice.newDrawing.customStart.last.detail": {
+    "text": "Your size, frame rate and ticks come back, so making the same thing again is one press. The name always starts as Untitled.",
+    "where": "Preferences: the small line under the \"last\" answer in \"Where Custom starts from\"."
+  },
+  "choice.newDrawing.customStart.fresh.label": { "text": "Fresh each time", "where": "Preferences: the button for the answer \"fresh\" in \"Where Custom starts from\"." },
+  "choice.newDrawing.customStart.fresh.detail": {
+    "text": "Custom always opens with the first-time settings. Your favourites are still there.",
+    "where": "Preferences: the small line under the \"fresh\" answer in \"Where Custom starts from\"."
   }
 }
