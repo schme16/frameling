@@ -13,7 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
-import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, matchSelectedGradients, paintView, swapGradientWells, writeColour } from './gradient-wells';
+import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, giveBare, matchSelectedGradients, paintView, swapGradientWells, writeColour } from './gradient-wells';
 import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
@@ -115,6 +115,11 @@ export function setActiveColor(c: Color): void {
   const v = paintView(ui.activeWell);
   if (v.from === 'colour' || v.from === 'colours') {
     writeColour(ui.activeWell, c);
+    return;
+  }
+  // Picked shapes with nothing on this side: the colour gives them something there, even when it is the box's own.
+  if (v.from === 'none') {
+    giveBare(ui.activeWell, c);
     return;
   }
   if (ui.activeWell === 'fill') {

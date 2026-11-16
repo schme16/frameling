@@ -55,12 +55,12 @@ describe('picking a plain colour shape', () => {
     expect(store().get().ui.color).toBe('#000000');
   });
 
-  it('shows the box again when nothing is picked, or the shape has nothing on that side', () => {
+  it('shows the box again when nothing is picked, and says "none" when the shape has nothing on that side', () => {
     addShapes({ ...red('a'), stroke: null });
     pick([]);
     expect(paintView('fill').from).toBe('box');
     pick(['a']);
-    expect(paintView('stroke').from).toBe('box');
+    expect(paintView('stroke')).toEqual({ from: 'none', count: 1 });
   });
 
   it('brings forward the side the shape actually has', () => {
@@ -210,7 +210,7 @@ describe('the box still works when nothing picked has that side', () => {
   it('sets the box colour and pushes it onto the picked shapes, as before', () => {
     addShapes({ ...red('a'), fill: null });
     pick(['a'], 'fill');
-    expect(paintView('fill').from).toBe('box');
+    expect(paintView('fill').from).toBe('none');
     store().setUi({ activeWell: 'fill' });
     setActiveColor('#123456');
     expect(store().get().ui.fillColor).toBe('#123456');

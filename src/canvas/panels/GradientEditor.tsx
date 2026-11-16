@@ -8,7 +8,7 @@ import { hasAlpha } from '../colors';
 import { Choice, Slider, Tip } from '../controls';
 import { getCommand } from '../../core/registry';
 import { useStore } from '../../core/store';
-import { addStop, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
+import { addStop, bareWords, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
 
 /** How far below the bar (in screen pixels) a dragged marker has to go to be taken away. */
 const DRAG_OFF = 36;
@@ -73,6 +73,11 @@ export function GradientEditor() {
           endGradientGesture();
         }}
       />
+      {bareWords(view, well) && (
+        <p className="cv-tip" data-testid="paint-bare">
+          {bareWords(view, well)}
+        </p>
+      )}
       {view.from === 'colours' && (
         <div className="cv-gradient-differ" role="group" aria-label="The picked shapes have different colours">
           <p className="cv-tip" data-testid="colour-differ">

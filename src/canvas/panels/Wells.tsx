@@ -4,7 +4,7 @@
 import { useStore } from '../../core/store';
 import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../tools/wells';
 import { Icon } from '../../ui/icons';
-import { useGradientWells, usePaintView } from '../../tools/gradient-wells';
+import { isMixed, useGradientWells, usePaintView } from '../../tools/gradient-wells';
 import { firstColor, gradientCss } from '../../core/gradient';
 import { usePaintWells } from '../../tools/pixelWells';
 import { PaintWells } from '../../pixel/PaintWells';
@@ -12,10 +12,12 @@ import { PaintWells } from '../../pixel/PaintWells';
 function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string | null; front: boolean }) {
   const label = which === 'fill' ? 'Fill colour' : 'Stroke colour';
   const boxGradient = useGradientWells((s) => (color ? s[which] : null));
-  // What the box shows follows the picked shapes: their gradient or colour, or "mixed" when they differ.
+  // What the box shows follows the picked shapes: their gradient or colour, "mixed" when they differ (or some have
+  // nothing there), and the red slash for "none" when the picked shapes have nothing on this side.
   const view = usePaintView(which);
-  const mixed = view.from === 'differ' || view.from === 'colours';
-  const shown = view.from === 'colour' ? view.color : view.from === 'selection' ? firstColor(view.style) : color;
+  const mixed = isMixed(view);
+  const bare = view.from === 'none';
+  const shown = bare ? null : view.from === 'colour' ? view.color : view.from === 'selection' ? firstColor(view.style) : color;
   const g = view.from === 'selection' ? view.style : view.from === 'box' ? boxGradient : null;
   const style = mixed ? ({ '--well': 'var(--panel-2)' } as React.CSSProperties) : shown ? ({ '--well': shown, ...(g ? { '--wellg': gradientCss(g, g.angle) } : {}) } as React.CSSProperties) : undefined;
   color = mixed ? 'mixed' : shown;

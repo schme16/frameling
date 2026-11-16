@@ -131,13 +131,31 @@ function colourTargets(w: Well): Coloured[] {
   return d.shapes.filter((s): s is Coloured => ids.has(s.id) && colourOf(s, w) !== null);
 }
 
-/** Which paint the panel is showing for a box: the selection's gradient or colour, a mix, or the box's own. */
+/**
+ * Picked paths that hold nothing on this side (a line with no fill, a shape with no outline). A shape that cannot hold
+ * the side at all (text has no outline) is not counted: it has no gap there, it just is not that kind of thing.
+ */
+function bareTargets(w: Well): PathShape[] {
+  const { ui } = store().get();
+  if (!ui.selection.length || paintWellsOn()) return [];
+  const d = activeDrawing();
+  if (!d || d.kind !== 'vector') return [];
+  const ids = new Set(ui.selection);
+  return d.shapes.filter((s): s is PathShape => s.type === 'path' && ids.has(s.id) && (w === 'fill' ? !s.fill : !s.stroke));
+}
+
+/**
+ * Which paint the panel is showing for a box: the selection's gradient or colour, a mix, nothing at all, or the box's
+ * own. `bare` is how many picked shapes have nothing on this side while others do: that is a mix too, the same as
+ * different colours, so the box reads as mixed (the painted ones can still be edited, the bare ones stay as they are).
+ */
 export type PaintView =
   | { from: 'box'; style: GradientStyle | null }
-  | { from: 'selection'; style: GradientStyle }
-  | { from: 'colour'; color: Color }
-  | { from: 'differ'; count: number }
-  | { from: 'colours'; count: number };
+  | { from: 'selection'; style: GradientStyle; bare?: number }
+  | { from: 'colour'; color: Color; bare?: number }
+  | { from: 'differ'; count: number; bare?: number }
+  | { from: 'colours'; count: number; bare?: number }
+  | { from: 'none'; count: number };
 
 const views = new Map<Well, { key: string; view: PaintView }>();
 
@@ -146,21 +164,38 @@ export function paintView(w: Well): PaintView {
   const box = wellGradient(w);
   // A plain colour only matters when no picked shape holds a gradient on this side.
   const col = shared.state === 'same' || shared.state === 'differ' ? null : sharedColour(colourTargets(w).map((s) => colourOf(s, w)!));
-  const key = JSON.stringify([shared, box, col]);
+  const bare = bareTargets(w).length;
+  const key = JSON.stringify([shared, box, col, bare]);
   const had = views.get(w);
   if (had && had.key === key) return had.view;
+  const b = bare ? { bare } : {};
   const view: PaintView =
     shared.state === 'same'
-      ? { from: 'selection', style: shared.style }
+      ? { from: 'selection', style: shared.style, ...b }
       : shared.state === 'differ'
-        ? { from: 'differ', count: shared.count }
+        ? { from: 'differ', count: shared.count, ...b }
         : col?.state === 'same'
-          ? { from: 'colour', color: col.color }
+          ? { from: 'colour', color: col.color, ...b }
           : col?.state === 'differ'
-            ? { from: 'colours', count: col.count }
-            : { from: 'box', style: box };
+            ? { from: 'colours', count: col.count, ...b }
+            : bare
+              ? { from: 'none', count: bare }
+              : { from: 'box', style: box };
   views.set(w, { key, view });
   return view;
+}
+
+/** True when the box should read as a mix: different paints, or some shapes with paint and some with none. */
+export function isMixed(v: PaintView): boolean {
+  return v.from === 'differ' || v.from === 'colours' || (v.from !== 'none' && v.from !== 'box' && !!v.bare);
+}
+
+/** Plain words about shapes with nothing on a side, for the panel. Null when there is nothing to say. */
+export function bareWords(v: PaintView, w: Well): string | null {
+  const noun = w === 'fill' ? 'fill' : 'outline';
+  if (v.from === 'none') return v.count === 1 ? `The picked shape has no ${noun}. Click a colour to give it one.` : `None of the ${v.count} picked shapes have a ${noun}. Click a colour to give them one.`;
+  if (v.from === 'box' || !v.bare) return null;
+  return v.bare === 1 ? `1 of the picked shapes has no ${noun}, so it stays as it is.` : `${v.bare} of the picked shapes have no ${noun}, so they stay as they are.`;
 }
 
 /** The gradient being edited for a box, or null for a plain colour (or a mix, which has no one gradient). */
@@ -204,6 +239,31 @@ export function writeColour(w: Well, c: Color): void {
   );
 }
 
+/**
+ * Picked shapes with nothing on this side take this colour there (a stroke-only line gets a fill), and the box follows
+ * the edit. `bareTargets` is only the shapes that lack the side, so a shape that has it is never touched here.
+ */
+export function giveBare(w: Well, c: Color, coalesce = `recolour-${w}-${gesture}`): void {
+  const targets = bareTargets(w);
+  if (state[w]) set({ ...state, [w]: null });
+  if (w === 'fill') store().setUi({ fillColor: c });
+  else store().setUi({ color: c, strokeOn: true });
+  if (!targets.length) return;
+  const ids = new Set(targets.map((s) => s.id));
+  editActiveDrawing(
+    w === 'fill' ? 'Change fill colour' : 'Change stroke colour',
+    'vector',
+    (dr) => {
+      for (const s of dr.shapes) {
+        if (!ids.has(s.id) || s.type !== 'path') continue;
+        if (w === 'fill') s.fill = c;
+        else s.stroke = { color: c, width: 2, join: 'round', cap: 'round' };
+      }
+    },
+    { coalesce },
+  );
+}
+
 /** Picked shapes with different plain colours: give every one of them the first one's colour. */
 export function matchSelectedColours(w: Well): void {
   const first = colourTargets(w)[0];
@@ -242,7 +302,14 @@ function newStyle(kind: 'linear' | 'radial', plain: Color): GradientStyle {
 
 /** Switches a box between a plain colour and a linear or radial gradient. */
 export function setPaintKind(w: Well, kind: PaintKind): void {
-  const v = paintView(w);
+  let v = paintView(w);
+  if (v.from === 'none') {
+    // Nothing there to blend: Solid is what it is, and a gradient starts by giving the shapes the box's colour.
+    if (kind === 'solid') return;
+    const ui = store().get().ui;
+    giveBare(w, (w === 'fill' ? ui.fillColor : ui.strokeOn ? ui.color : null) ?? ui.color, `gradient-${w}-${gesture}`);
+    v = paintView(w);
+  }
   if (v.from === 'colour' || v.from === 'colours') {
     // Plain colours on the picked shapes: Solid is what they already are, a gradient starts from the first colour.
     if (kind === 'solid') return;
