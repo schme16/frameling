@@ -3631,8 +3631,8 @@ body.ui-resizing * {
   border-color: var(--line);
 }
 .th-card.is-chosen {
-  border-color: var(--chosen-bg);
-  box-shadow: 0 0 0 1px var(--chosen-bg);
+  border-color: var(--chosen-mark, var(--chosen-bg));
+  box-shadow: 0 0 0 1px var(--chosen-mark, var(--chosen-bg));
 }
 .th-card-pick {
   display: flex;
@@ -3653,66 +3653,24 @@ body.ui-resizing * {
   gap: 6px;
   padding: 0 2px;
 }
-.th-card-badges {
-  /* A folded corner on the card, turned over with a wiggle in it, the sun or the moon sitting in the middle of it.
-     The fold's size is one number, shared with the ink line drawn along its edge, and it counts the padding in
-     (border-box) so the clip's percentages and the line's box are the same square. */
-  --fold: 54px;
-  box-sizing: border-box;
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
+.th-card-name strong {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The marks at the end of the name: which of your two themes the card is, and the chosen tick. Never over the picture.
+   Colours come from --chosen-mark, the chosen colour moved only as far as it needs to stand out from the card (a pale
+   theme cannot lose a pale tick), and --on-chosen-mark for what is drawn on it. */
+.th-card-marks {
+  display: inline-flex;
+  flex: none;
   align-items: center;
-  justify-content: center;
-  gap: 0;
-  width: var(--fold);
-  height: var(--fold);
-  /* The fold's weight is up in its corner, so the icon is nudged there to sit in the middle of the yellow. */
-  padding: 0 14px 14px 0;
-  border-top-left-radius: var(--radius-small);
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-  clip-path: polygon(100% 0%, 99.8% 5.2%, 99.9% 10.6%, 99.2% 16%, 96.7% 21%, 92.3% 25.4%, 87.3% 29.3%, 83.4% 33.3%, 81.7% 38.2%, 82.2% 44.4%, 83.4% 51.5%, 83.3% 58.3%, 80.3% 63.5%, 74.3% 66.1%, 66.6% 66.6%, 59.1% 66.4%, 53.4% 67.7%, 50% 71.5%, 47.9% 77.8%, 45.9% 85%, 42.7% 91%, 37.9% 94.5%, 32.1% 95.1%, 26% 94.3%, 20.3% 93.6%, 15.1% 94.2%, 10.2% 96.2%, 5.2% 98.6%, 0% 100%, 0% 0%);
+  gap: 3px;
 }
-.th-card-badges.is-both {
-  --fold: 67px;
-  padding: 0 17px 17px 0;
-}
-/* The ink line along the fold's edge. Same box and same points as the clip, so it lies right on the yellow's edge. */
-.th-card-fold-edge {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 54px;
-  height: 54px;
-  pointer-events: none;
-}
-.th-card-fold-edge.is-both {
-  width: 67px;
-  height: 67px;
-}
-
-.th-card-fold-edge polyline {
-  fill: none;
-  stroke: #0d0b12;
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.th-card-badge {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-}
-.th-card-badge svg {
-  width: 15px;
-  height: 15px;
-}
-.th-card-pick {
-  position: relative;
+.th-card-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 .th-card-tick {
   display: grid;
@@ -3720,8 +3678,51 @@ body.ui-resizing * {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
+  background: var(--chosen-mark, var(--chosen-bg));
+  color: var(--on-chosen-mark, var(--chosen-fg));
+}
+/* "label": one small capsule, the sun and/or the moon and then the tick, in the place the tick always was. */
+.th-card[data-use-style='label'] .th-card-marks {
+  height: 18px;
+  padding: 0 2px 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--chosen-mark, var(--chosen-bg));
+  color: var(--on-chosen-mark, var(--chosen-fg));
+  gap: 1px;
+}
+.th-card[data-use-style='label'] .th-card-marks:not(:has(.th-card-use)) {
+  padding: 0;
+}
+.th-card[data-use-style='label'] .th-card-tick {
+  width: 16px;
+  background: transparent;
+  color: inherit;
+}
+/* "words": a quiet line under the name. */
+.th-card-words {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px 2px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.th-card-words svg {
+  color: var(--chosen-mark, var(--chosen-bg));
+}
+/* "preview": the sun and moon sit in the picture's own title bar, in that theme's colours. */
+.th-prev-top.has-marks {
+  height: 16px;
+}
+.th-prev-marks {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  color: var(--on-panel, var(--text));
+}
+.th-card-pick {
+  position: relative;
 }
 
 /* The two themes you are using, in one card split corner to corner by a squiggle. */

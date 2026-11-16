@@ -1,0 +1,14 @@
+Theme cards used for day, night or both: a grid of twelve cards (day: Paper & Honey, Ice Camo; night: Midnight Sketchbook,
+Strawberry Night; both: Strawberry Milk, Glacier Grid; the rest not in use), in three app themes. -dark is Midnight Sketchbook,
+-light is Paper & Honey, -pink is Strawberry Milk (the pale pink where the chosen tick nearly vanished).
+
+0-before-{dark,light,pink}.png   The current look: a yellow folded corner over the picture carrying the sun and/or moon, tick bottom right.
+A-words-{dark,light,pink}.png    DEFAULT. A quiet line under the name ("By day", "At night", "Day and night") with the sun and/or moon in front. Nothing over the picture.
+B-label-{dark,light,pink}.png    One small capsule in the tick's place: the sun and/or moon, then the tick, so the two sit together. Names wrap more.
+C-preview-{dark,light,pink}.png  The sun and/or moon drawn in the preview's own title bar, in that theme's colours. Nothing over the picture, but small to read at a glance.
+
+In A, B and C the tick and the card edge use --chosen-mark: the chosen gold moved only as far as it needs to stand out from the card
+(3 to 1), with --on-chosen-mark for what is drawn on it (4.5 to 1). On the pink picture the tick is a deeper gold; on the dark and Paper & Honey
+cards it is unchanged where it already stood out.
+
+Made with: xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/theme-both-badge.cjs <outDir> <label> <abs dist> [label|words|preview]

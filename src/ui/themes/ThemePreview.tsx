@@ -2,17 +2,27 @@
 // drawing, and a timeline with a gold chosen chip. The theme's tokens are set on the element itself, so the preview
 // never touches the real app.
 import { themeStyle } from './model';
+import { Icon } from '../icons';
 import type { Theme } from './builtIn';
 
-export function ThemePreview({ theme, className = '' }: { theme: Pick<Theme, 'tokens' | 'mode'>; className?: string }) {
+/** `marks` puts the sun and/or moon in the picture's own title bar (a card saying which of your two themes it is). */
+export function ThemePreview({ theme, className = '', marks }: { theme: Pick<Theme, 'tokens' | 'mode'>; className?: string; marks?: Array<'sun' | 'moon'> }) {
   return (
     <div className={`th-prev ${className}`} style={themeStyle(theme) as React.CSSProperties} aria-hidden="true">
-      <div className="th-prev-top">
+      <div className={`th-prev-top${marks?.length ? ' has-marks' : ''}`}>
         <i className="th-prev-dot" />
         <i className="th-prev-dot" />
         <i className="th-prev-dot" />
         <b className="th-prev-title" />
-        <b className="th-prev-pill" />
+        {marks?.length ? (
+          <span className="th-prev-marks">
+            {marks.map((n) => (
+              <Icon key={n} name={n} size={12} />
+            ))}
+          </span>
+        ) : (
+          <b className="th-prev-pill" />
+        )}
       </div>
       <div className="th-prev-mid">
         <div className="th-prev-tools">
