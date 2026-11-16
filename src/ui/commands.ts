@@ -35,6 +35,15 @@ registerCommands([
     run: () => openSheet('new'),
   },
   {
+    id: 'file.newCustom',
+    label: 'New drawing, your own size...',
+    category: 'File',
+    description: 'Start something new with a size, pixel art and animation you choose. Your last settings are there waiting.',
+    help: 'new-document',
+    keywords: ['custom', 'size', 'width', 'height', 'favourite', 'starter', 'animation', 'frames a second', 'fps', 'pixel art'],
+    run: () => openSheet('new', { custom: true }),
+  },
+  {
     id: 'file.openExample',
     label: 'Examples...',
     category: 'Help',

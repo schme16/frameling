@@ -92,7 +92,29 @@ const entries = [
   {
     name: 'new-document-cards',
     prefs: CALM,
-    steps: [template('bouncing-ball'), cmd('file.new'), wait(1300), ...shotOf('.ui-presets', null, 12)],
+    // Custom open, a favourite saved from an animation setup so it sits beside the cards, and the message about it gone.
+    steps: [
+      template('bouncing-ball'),
+      cmd('file.newCustom'),
+      wait(1300),
+      js(`(() => { const f = (t) => [...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith(t)).querySelector('input'); f('Width').focus(); })()`),
+      { type: '1920' },
+      js(`(() => { const f = (t) => [...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith(t)).querySelector('input'); f('Height').focus(); })()`),
+      { type: '1080' },
+      js(`[...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith('Add animation')).querySelector('input').click()`),
+      wait(300),
+      js(`[...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith('Frames')).querySelector('input').focus()`),
+      { type: '24' },
+      js(`document.querySelector('[data-testid="welcome.custom.favourite"]').click()`),
+      wait(300),
+      js(`document.querySelector('[data-testid="welcome.favourite.name"]').focus()`),
+      { type: 'Film 1080' },
+      js(`document.querySelector('[data-testid="welcome.favourite.keep"]').click()`),
+      wait(5500),
+      { move: [1100, 40] },
+      wait(600),
+      ...shotOf('.ui-welcome', null, 0),
+    ],
   },
   // The welcome sheet: cards and the start of the examples.
   {

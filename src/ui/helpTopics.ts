@@ -39,7 +39,7 @@ registerHelpTopics([
     section: 'Getting started',
     media: 'new-document-cards.png',
     summary: 'Pick a size and start. You can change your mind later.',
-    keywords: ['new', 'create', 'size', 'canvas', 'blank', 'preset', 'pixel size', 'fps'],
+    keywords: ['new', 'create', 'size', 'canvas', 'blank', 'preset', 'pixel size', 'fps', 'custom', 'favourite', 'favorite', 'save as favourite', 'add animation', 'frames a second', 'remember'],
   },
   {
     id: 'using-help',

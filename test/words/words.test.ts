@@ -12,6 +12,7 @@ import '../../src/renderer/features';
 // Registered when their part loads, so the test loads them.
 import '../../src/artboards/export';
 import '../../src/export/choices';
+import '../../src/ui/favourites';
 import { allChoices, getChoiceDef, registerChoice } from '../../src/core/choices';
 import { interactivesChoices } from '../../src/interactives/roundtrip';
 import { QUEST_CATALOG } from '../../src/quests/catalog';

@@ -2199,6 +2199,57 @@ body.ui-resizing * {
   border-radius: var(--radius);
   animation: ui-rise 0.25s var(--ui-pop);
 }
+.ui-custom-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+.ui-fav-wrap {
+  position: relative;
+  display: flex;
+}
+.ui-fav-wrap > .ui-fav {
+  flex: 1;
+}
+.ui-fav-tools {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  box-shadow: var(--shadow-small);
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.ui-fav-wrap:hover .ui-fav-tools,
+.ui-fav-tools:focus-within {
+  opacity: 1;
+}
+.ui-fav-rename {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 52px;
+  height: var(--ui-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--sunny);
+  border-radius: var(--ui-btn-radius);
+  background: var(--bg);
+  color: var(--text);
+  user-select: text;
+  min-width: 0;
+}
+.ui-fav-save {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.ui-fav-save .ui-field {
+  flex: 1;
+}
 .ui-custom-end {
   grid-column: 1 / -1;
   display: flex;
