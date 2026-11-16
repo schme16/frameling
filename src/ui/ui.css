@@ -3690,22 +3690,11 @@ body.ui-resizing * {
   white-space: normal;
   overflow-wrap: anywhere;
 }
-/* The marks at the end of the name: which of your two themes the card is, and the chosen tick. Never over the picture.
-   Colours come from --chosen-mark, the chosen colour moved only as far as it needs to stand out from the card (a pale
-   theme cannot lose a pale tick), and --on-chosen-mark for what is drawn on it. */
-.th-card-marks {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 3px;
-}
-.th-card-use {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
+/* The chosen tick at the end of the name. Colours come from --chosen-mark, the chosen colour moved only as far as it
+   needs to stand out from the card (a pale theme cannot lose a pale tick), and --on-chosen-mark for what is drawn on it. */
 .th-card-tick {
   display: grid;
+  flex: none;
   place-items: center;
   width: 18px;
   height: 18px;
@@ -3713,45 +3702,53 @@ body.ui-resizing * {
   background: var(--chosen-mark, var(--chosen-bg));
   color: var(--on-chosen-mark, var(--chosen-fg));
 }
-/* "label": one small capsule, the sun and/or the moon and then the tick, in the place the tick always was. */
-.th-card[data-use-style='label'] .th-card-marks {
-  height: 18px;
-  padding: 0 2px 0 6px;
-  border-radius: var(--radius-pill);
-  background: var(--chosen-mark, var(--chosen-bg));
-  color: var(--on-chosen-mark, var(--chosen-fg));
-  gap: 1px;
+/* The splotches: a wobbly yellow corner for each of your two themes this card is. Day is top left, night top right, and
+   they are one shape mirrored, so the same size, the same wobble and the same offset from their corner. The icon sits in
+   the heavy part of the yellow, nudged away from the card's corner by the same amount on both sides. */
+.th-card-splotch {
+  --splotch: 48px;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  display: grid;
+  width: var(--splotch);
+  height: var(--splotch);
+  pointer-events: none;
+  overflow: hidden;
 }
-.th-card[data-use-style='label'] .th-card-marks:not(:has(.th-card-use)) {
-  padding: 0;
+.th-card-splotch.is-day {
+  left: 0;
+  border-top-left-radius: var(--radius-small);
+  place-items: center;
+  padding: 0 12px 12px 0;
 }
-.th-card[data-use-style='label'] .th-card-tick {
-  width: 16px;
-  background: transparent;
-  color: inherit;
+.th-card-splotch.is-night {
+  right: 0;
+  border-top-right-radius: var(--radius-small);
+  place-items: center;
+  padding: 0 0 12px 12px;
 }
-/* "words": a quiet line under the name. */
-.th-card-words {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 2px 2px;
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 700;
+.th-card-splotch svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
-.th-card-words svg {
-  color: var(--chosen-mark, var(--chosen-bg));
+.th-card-splotch polygon {
+  fill: var(--chosen-bg);
 }
-/* "preview": the sun and moon sit in the picture's own title bar, in that theme's colours. */
-.th-prev-top.has-marks {
-  height: 16px;
+.th-card-splotch polyline {
+  fill: none;
+  stroke: #0d0b12;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
-.th-prev-marks {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: auto;
-  color: var(--on-panel, var(--text));
+.th-card-splotch > svg:last-child {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  color: var(--chosen-fg);
 }
 .th-card-pick {
   position: relative;

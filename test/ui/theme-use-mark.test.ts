@@ -1,6 +1,6 @@
 // How a theme card says which of your two themes it is: day, night, both or neither, and the same in words.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_USE_STYLE, USE_SAYS, USE_WORDS, useIcons, useKind } from '../../src/ui/themes/useMark';
+import { USE_SAYS, splotchEdge, splotchEdgePoints, splotchFillPoints, useIcons, useKind, useSplotches } from '../../src/ui/themes/useMark';
 
 describe('which of your two themes a card is', () => {
   it('tells all four apart', () => {
@@ -17,15 +17,47 @@ describe('which of your two themes a card is', () => {
     expect(useIcons({ day: true, night: true })).toEqual(['sun', 'moon']);
   });
 
-  it('has a different line for each kind, and none for a card that is not in use', () => {
-    expect(USE_WORDS.none).toBe('');
-    const lines = [USE_WORDS.day, USE_WORDS.night, USE_WORDS.both];
-    expect(new Set(lines).size).toBe(3);
-    for (const l of lines) expect(l).not.toMatch(/—/);
+  it('has a different screen reader name for each kind', () => {
     expect(new Set(Object.values(USE_SAYS)).size).toBe(4);
+    for (const l of Object.values(USE_SAYS)) expect(l).not.toMatch(/\u2014/);
   });
 
-  it('ships the line under the name, which covers none of the picture', () => {
-    expect(DEFAULT_USE_STYLE).toBe('words');
+  it('gives a card a splotch for each of its themes: day on the left, night on the right', () => {
+    expect(useSplotches({ day: false, night: false })).toEqual([]);
+    expect(useSplotches({ day: true, night: false })).toEqual(['day']);
+    expect(useSplotches({ day: false, night: true })).toEqual(['night']);
+    expect(useSplotches({ day: true, night: true })).toEqual(['day', 'night']);
+  });
+});
+
+describe('the two splotches are uniform', () => {
+  const day = splotchEdge('day');
+  const night = splotchEdge('night');
+  const box = (pts: Array<[number, number]>) => {
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  };
+
+  it("are the same shape, one the other's mirror, so same size and same wobble", () => {
+    expect(night).toHaveLength(day.length);
+    expect(box(night)).toEqual(box(day));
+    day.forEach(([x, y], i) => {
+      expect(night[i][0]).toBeCloseTo(100 - x, 1);
+      expect(night[i][1]).toBe(y);
+    });
+  });
+
+  it('each start in their own top corner and end on the card side below it', () => {
+    expect(day[0]).toEqual([100, 0]);
+    expect(day[day.length - 1]).toEqual([0, 100]);
+    expect(night[0]).toEqual([0, 0]);
+    expect(night[night.length - 1]).toEqual([100, 100]);
+  });
+
+  it('close the yellow through their own corner', () => {
+    expect(splotchFillPoints('day').endsWith(' 0,0')).toBe(true);
+    expect(splotchFillPoints('night').endsWith(' 100,0')).toBe(true);
+    expect(splotchFillPoints('day').startsWith(splotchEdgePoints('day'))).toBe(true);
   });
 });
