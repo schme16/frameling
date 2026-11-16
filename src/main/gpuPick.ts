@@ -84,36 +84,55 @@ export function steering(cards: readonly Card[], env: Record<string, string | un
   return { card, env: { DRI_PRIME: 'pci-' + card.pci.replace(/[:.]/g, '_') }, line: '[gpu] asked for the discrete card (Mesa, ' + card.driver + ').' };
 }
 
-const read = (p: string): string | null => {
-  try {
-    return fs.readFileSync(p, 'utf8').trim();
-  } catch {
-    return null;
-  }
+/** What readCards needs from the disk, so a test can hand it a made-up /sys on any machine (Windows cannot even name a folder 0000:01:00.0). */
+export interface SysfsIO {
+  readdir(dir: string): string[];
+  /** The text of a file, or null when it cannot be read. */
+  read(file: string): string | null;
+  /** Where a symbolic link points, or null when it is not one. */
+  readlink(file: string): string | null;
+}
+
+export const realSysfs: SysfsIO = {
+  readdir: (d) => fs.readdirSync(d),
+  read: (p) => {
+    try {
+      return fs.readFileSync(p, 'utf8').trim();
+    } catch {
+      return null;
+    }
+  },
+  readlink: (p) => {
+    try {
+      return fs.readlinkSync(p);
+    } catch {
+      return null;
+    }
+  },
 };
 
+const read = (p: string): string | null => realSysfs.read(p);
+
 /** Every display card the system lists on the PCI bus (class 03xx), with its driver. Empty when it cannot read them. */
-export function readCards(root = '/sys/bus/pci/devices'): Card[] {
+export function readCards(root = '/sys/bus/pci/devices', io: SysfsIO = realSysfs): Card[] {
+  // sysfs is a Linux place: its paths use slashes whatever machine this runs on.
+  const join = path.posix.join;
   const out: Card[] = [];
   let names: string[] = [];
   try {
-    names = fs.readdirSync(root);
+    names = io.readdir(root);
   } catch {
     return out;
   }
   for (const n of names) {
-    const dir = path.join(root, n);
-    if (!(read(path.join(dir, 'class')) ?? '').startsWith('0x03')) continue;
-    const vendorId = parseInt(read(path.join(dir, 'vendor')) ?? '', 16);
-    const deviceId = parseInt(read(path.join(dir, 'device')) ?? '', 16);
+    const dir = join(root, n);
+    if (!(io.read(join(dir, 'class')) ?? '').startsWith('0x03')) continue;
+    const vendorId = parseInt(io.read(join(dir, 'vendor')) ?? '', 16);
+    const deviceId = parseInt(io.read(join(dir, 'device')) ?? '', 16);
     if (!Number.isFinite(vendorId) || !Number.isFinite(deviceId)) continue;
-    let driver: string | undefined;
-    try {
-      driver = path.basename(fs.readlinkSync(path.join(dir, 'driver')));
-    } catch {
-      driver = undefined;
-    }
-    const v = Number(read(path.join(dir, 'mem_info_vram_total')));
+    const link = io.readlink(join(dir, 'driver'));
+    const driver = link === null ? undefined : path.posix.basename(link);
+    const v = Number(io.read(join(dir, 'mem_info_vram_total')));
     out.push({ pci: n, vendorId, deviceId, driver, vramBytes: Number.isFinite(v) && v > 0 ? v : undefined });
   }
   return out;

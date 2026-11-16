@@ -9,6 +9,7 @@ import { newDoc } from '../../src/core/doc';
 import { loadFileAsync, saveFile } from '../../src/io/file';
 import { isBlankPicture, previewDimensions, previewFrameOrder, PREVIEW_MAX_BYTES } from '../../src/io/preview';
 import { cacheName, embeddedPreview, forgetSeen, keepPreview, MAX_PREVIEW_BYTES, previewOf, pruneCopies, staleCopies } from '../../src/main/preview';
+import { pathKey } from '../../src/main/paths';
 import { isPng, peekZipEntry } from '../../src/shared/zipTail';
 
 // A real (tiny) PNG: one red pixel.
@@ -126,11 +127,27 @@ describe('what the list shows', () => {
     expect(fs.readdirSync(kept).length).toBe(1);
     keepPreview(kept, f, strToU8('not a picture'));
     expect(fs.readdirSync(kept).length).toBe(1);
-    pruneCopies(kept, [path.resolve(f)]);
+    // The list hands over pathKey()s (lower-case on Windows and the Mac, where C:\\Art and c:\\art are one file), as store.ts does.
+    pruneCopies(kept, [pathKey(f)]);
     expect(fs.readdirSync(kept).length).toBe(1);
     pruneCopies(kept, []);
     expect(fs.readdirSync(kept).length).toBe(0);
     expect(staleCopies([cacheName('/a', 1, 2), cacheName('/b', 1, 2)], ['/a'])).toEqual([cacheName('/b', 1, 2)]);
     expect(cacheName('/a', 1, 2)).not.toBe(cacheName('/a', 1, 3));
+  });
+
+  // Windows and the Mac keep a file's copy under its lower-case path (pathKey), so the list must hand that same key back
+  // when it asks what to keep. A key spelled any other way would match nothing and sweep the picture away. This is the
+  // case that failed on those two systems, run here for both, whatever machine it is on.
+  it('keeps the picture of a file whose path has capital letters, on every system', () => {
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      const spelled = platform === 'win32' ? 'C:\\Art\\Walk.frameling' : '/Users/Me/Art/Walk.frameling';
+      const key = pathKey(spelled, platform);
+      const name = cacheName(key, 10, 20);
+      expect(staleCopies([name], [key]), platform).toEqual([]);
+      // Spelled with its capitals the key matches only where the disk cares about case.
+      const raw = platform === 'win32' ? path.win32.resolve(spelled) : path.posix.resolve(spelled);
+      expect(staleCopies([name], [raw]).length, platform).toBe(platform === 'linux' ? 0 : 1);
+    }
   });
 });

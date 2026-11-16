@@ -3,8 +3,9 @@
 // shells (src/ui/Modal.tsx and src/io/mount.tsx) and both hand a press on the dim area to `pressedBackdrop`, which owns the
 // ring. These tests hold that: a press inside the ring does nothing, one outside does what the setting says, in both shells,
 // and no other file builds a dim area of its own that would skip the ring. scripts/e2e/dialog-ring.cjs walks the real app.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { relative, sourceFiles } from '../helpers/files';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -92,12 +93,9 @@ describe('the ring is 24 pixels', () => {
 });
 
 describe('no modal skips the ring', () => {
-  const files = (dir: string): string[] =>
-    readdirSync(dir).flatMap((f) => {
-      const p = join(dir, f);
-      return statSync(p).isDirectory() ? files(p) : /\.tsx?$/.test(f) ? [p] : [];
-    });
-  const src = files(join(__dirname, '../../src')).map((p) => [p.split('/src/')[1], readFileSync(p, 'utf8')] as const);
+  const srcDir = join(__dirname, '../../src');
+  const src = sourceFiles(srcDir).map((p) => [relative(srcDir, p), readFileSync(p, 'utf8')] as const);
+  it('looks at the source at all', () => expect(src.length).toBeGreaterThan(300));
 
   it('builds a dim area only inside the two shells', () => {
     const own = src.filter(([f, text]) => !['ui/Modal.tsx', 'io/mount.tsx'].includes(f) && /className=["'`{][^>]*\b(ui|io)-backdrop\b/.test(text)).map(([f]) => f);

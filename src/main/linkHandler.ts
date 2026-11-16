@@ -10,6 +10,9 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
+// The Linux planning below builds Linux paths whatever machine it runs on, so a test of it on Windows still sees slashes.
+const linuxPath = path.posix;
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
@@ -107,8 +110,8 @@ const realIO = (home: string): LinuxIO => ({
 
 /** Where launchers live: the person's own folder first, then the system's. */
 export function applicationDirs(env: NodeJS.ProcessEnv, home: string): string[] {
-  const dataHome = env.XDG_DATA_HOME || path.join(home, '.local/share');
-  return [dataHome, ...(env.XDG_DATA_DIRS || '/usr/local/share:/usr/share').split(':').filter(Boolean)].map((d) => path.join(d, 'applications'));
+  const dataHome = env.XDG_DATA_HOME || linuxPath.join(home, '.local/share');
+  return [dataHome, ...(env.XDG_DATA_DIRS || '/usr/local/share:/usr/share').split(':').filter(Boolean)].map((d) => linuxPath.join(d, 'applications'));
 }
 
 /**
@@ -118,11 +121,11 @@ export function applicationDirs(env: NodeJS.ProcessEnv, home: string): string[] 
 export async function ensureLinuxHandler(io: LinuxIO): Promise<string[]> {
   const did: string[] = [];
   const appImage = io.env.APPIMAGE;
-  if (!appImage || !path.isAbsolute(appImage)) return ['not an AppImage'];
+  if (!appImage || !linuxPath.isAbsolute(appImage)) return ['not an AppImage'];
   try {
     const dirs = applicationDirs(io.env, io.home);
-    const file = path.join(dirs[0], LAUNCHER);
-    const iconFile = path.join(path.dirname(dirs[0]), 'icons/hicolor/512x512/apps/frameling.png');
+    const file = linuxPath.join(dirs[0], LAUNCHER);
+    const iconFile = linuxPath.join(linuxPath.dirname(dirs[0]), 'icons/hicolor/512x512/apps/frameling.png');
     const existing = io.read(file);
     const plan = planLauncher({ appImage, iconName: 'frameling', existing, targetExists: io.exists });
     if (plan.do === 'leave') return [`left the launcher: ${plan.why}`];
@@ -134,7 +137,7 @@ export async function ensureLinuxHandler(io: LinuxIO): Promise<string[]> {
       await io.exec('update-desktop-database', [dirs[0]]);
     }
     const current = (await io.exec('xdg-mime', ['query', 'default', SCHEME_MIME])) ?? '';
-    const currentExists = current === '' || dirs.some((d) => io.exists(path.join(d, current)));
+    const currentExists = current === '' || dirs.some((d) => io.exists(linuxPath.join(d, current)));
     if (current !== LAUNCHER && shouldClaim(current, currentExists)) {
       await io.exec('xdg-mime', ['default', LAUNCHER, SCHEME_MIME]);
       did.push('made Frameling the opener for links');
