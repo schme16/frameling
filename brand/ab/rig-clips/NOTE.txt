@@ -1,0 +1,11 @@
+Top row is what the help scripts recorded before (four frames of the clip), bottom row is the same clip now. All of them aimed at panel buttons and the stage with window numbers from an older layout.
+rig-stretch: ended on the "Recolour the whole animation" dialog, because its slider drags landed on that button; now it stretches and squashes the bone and shows the Squash and stretch slider moving.
+rig-posing: the drags missed the puppet, so no bone ever moved; now the head, arm and feet are posed.
+rig-bones: the chain of bones was drawn below the puppet, off its feet; now it runs up the middle of the body.
+rig-bone-tools: same, bones drawn off the puppet, and the Add, Edit and Remove steps never showed the character; now the bones are on the body and the options panel is in the picture.
+rig-weights: More stayed lit all the way through, because the Less and Smooth clicks missed; now each button lights as it is clicked.
+rig: Play was never pressed (it sat at frame 1), so the walk never ran; now it plays, then switches to the Pose tool.
+shape-tweens: Play was never pressed, so the square never turned into a circle and a star; now it plays.
+camera: Play was never pressed, so the camera never moved; now it pans and zooms to the house.
+lip-sync: Auto lip sync and Play were missed, so the mouth never moved; now it fills the mouths in and says hello.
+rig-pose-library: the picture was of the Attach list, not the Pose library; now it shows the saved poses and their buttons.

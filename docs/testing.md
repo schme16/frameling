@@ -1568,7 +1568,11 @@ script already does. `--renderer <dir>` uses a private `vite build --outDir`; `-
 Every entry starts with the first-time question "Workspace follows the drawing" answered Never (so it never covers pixel art);
 an entry can give other answers, or change that one, with `choices: { 'workspace.follow': 'always' }`. Steps can click by selector
 instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Animation", "after": 900}` (`"hover": true` only moves
-there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. Each capture looks for a question
+there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. The same goes for a panel's
+own buttons: play is `[data-testid="timeline.play"]`, a Choice button is `button.cv-choice-btn` with its text, and a slider is
+`{"dragOn": "input.cv-slider", "text": "<its label>", "at": 0.4, "to": "input.cv-slider", "toText": "<its label>", "toAt": 0.1}`
+(`at` and `toAt`, 0 to 1, are how far along the slider the drag starts and ends). Points on the stage are `at(x, y)` after a `view(zoom, cx, cy)`
+(help/_shapes.cjs), never window numbers; `view()` keeps the page on that point for a few seconds while the timeline grows into place. Each capture looks for a question
 left open or a loading state in the frame and prints `[LOOK: ...]` after the entry's `ok` line: look at those files.
 
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no

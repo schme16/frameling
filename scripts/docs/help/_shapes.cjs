@@ -10,10 +10,20 @@ let view_ = { z: 0.6, cx: 640, cy: 360 };
 const view = (z = 0.6, cx = 640, cy = 360) => {
   view_ = { z, cx, cy };
   // Waits for the canvas to stop changing size first: loading a template settles the panels and refits the page a moment
-  // after, which undoes a zoom set too early.
-  return dom(`(async () => { const el = () => document.querySelector('.cv-layer'); let last = '', since = Date.now(); const end = since + 6000;
-    for (;;) { const r = el().getBoundingClientRect(); const k = [r.x, r.y, r.width, r.height].join(); if (k !== last) { last = k; since = Date.now(); } if (Date.now() - since >= 400 || Date.now() > end) break; await new Promise((f) => setTimeout(f, 50)); }
-    const b = el().getBoundingClientRect(); __frameling.store().setUi({ zoom: ${z}, panX: b.width / 2 - ${cx} * ${z}, panY: b.height / 2 - ${cy} * ${z} }); })()`);
+  // after, which undoes a zoom set too early. View > Center makes the view the person's own, so the app stops refitting it
+  // when a panel opens or the timeline settles a moment later (a late refit was turning an 80% zoom back into the fit).
+  return dom(`(async () => { const el = () => document.querySelector('.cv-layer'); const rect = () => { const r = el().getBoundingClientRect(); return [r.x, r.y, r.width, r.height].join(); }; const sleep = (ms) => new Promise((f) => setTimeout(f, ms));
+    for (let tries = 0; tries < 6; tries++) {
+      let last = '', since = Date.now(); const end = since + 6000;
+      for (;;) { const k = rect(); if (k !== last) { last = k; since = Date.now(); } if (Date.now() - since >= 400 || Date.now() > end) break; await sleep(50); }
+      const b = el().getBoundingClientRect(); __frameling.run('view.center'); __frameling.store().setUi({ zoom: ${z}, panX: b.width / 2 - ${cx} * ${z}, panY: b.height / 2 - ${cy} * ${z} });
+      // A panel can still be opening: if the stage changed size after the view was set, set it again from the new size.
+      await sleep(500); if (rect() === last) break;
+    }
+    // The timeline grows into its place in steps over the next couple of seconds, and each step moves the stage's middle:
+    // keep the view on the point for a few seconds, so it is still right when the picture is taken.
+    const keep = () => { const b = el().getBoundingClientRect(); __frameling.store().setUi({ zoom: ${z}, panX: b.width / 2 - ${cx} * ${z}, panY: b.height / 2 - ${cy} * ${z} }); };
+    const ro = new ResizeObserver(keep); ro.observe(el()); setTimeout(() => ro.disconnect(), 5000); keep(); })()`);
 };
 const at = (x, y) => ({ stagePoint: { x, y, z: view_.z, cx: view_.cx, cy: view_.cy } });
 /** A spot in screen pixels from the stage's top left corner (the rulers sit on its edge); the runner turns it into a window position. */
