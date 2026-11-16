@@ -178,6 +178,6 @@ export const STILL_LOAD = {
   // for the clone stamp and its commands in their own submenu under Soft paint, +3 for Levels, Curves and the one
   // step auto levels in Effects beside Colour adjust, and +2 for the blur and sharpen brushes in Soft paint, 12 in
   // all on both sides. None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 579, menu: 734, animateMenu: 8 },
-  animated: { palette: 628, menu: 858, animateMenu: 123 },
+  still: { palette: 579, menu: 736, animateMenu: 8 },
+  animated: { palette: 628, menu: 860, animateMenu: 123 },
 };

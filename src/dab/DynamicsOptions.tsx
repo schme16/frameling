@@ -2,6 +2,9 @@
 // (paper grain and a dual tip). Each is a fold under the main options so the first look stays small. Words are plain,
 // with the paint program's term second.
 import { Field, Choice, Slider, Toggle, MoreOptions } from '../canvas/controls';
+import { CurveEditor } from './CurveEditor';
+import { BRUSH_BLENDS } from './blend';
+import { blendInfo } from '../effects/model';
 import { PAPERS, type PaperKind } from '../dry/paper';
 import { DYN_SOURCES, FADE_RANGE, routeFor, withRoute, type DynSource, type DynTarget } from './dynamics';
 import type { DabBrush } from './maths';
@@ -65,6 +68,11 @@ function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 
         <div className="dab-sub">
           <Slider label="Amount" value={Math.round(r.amount * 100)} min={5} max={100} format={(v) => words.amount(v, r.invert)} onChange={(v) => set({ dynamics: withRoute(b.dynamics, to, { amount: v / 100 }) })} />
           <Toggle label="The other way round" checked={r.invert} onChange={(invert) => set({ dynamics: withRoute(b.dynamics, to, { invert }) })} hint="Flips it: a pen that makes the mark bigger when pressed harder makes it smaller instead." />
+          {r.from !== 'random' && (
+            <MoreOptions name={`pixel-brush-curve-${to}`} label={r.curve ? 'Shape of the response (bent)' : 'Shape of the response'} hint="Bend the line so a light press does more, or less, than a hard one.">
+              <CurveEditor curve={r.curve} inLabel={SOURCE_WORDS[r.from].label.toLowerCase()} outLabel={words.label.replace(/ follows$/, '').toLowerCase()} onChange={(curve) => set({ dynamics: withRoute(b.dynamics, to, { curve: curve ?? undefined }) })} />
+            </MoreOptions>
+          )}
         </div>
       )}
       {extra > 0 && <div className="cv-field-hint">{`And ${extra} more from the brush file, kept as they came.`}</div>}
@@ -109,12 +117,21 @@ export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle 
 export function ColourSection() {
   const b = useDab((x) => x);
   return (
-    <MoreOptions name="pixel-brush-colour" label="Colour changes" hint="Wobble the hue or lightness, mix toward the Fill colour, or paint wet so colour smears along.">
+    <MoreOptions name="pixel-brush-colour" label="Colour changes" hint="Wobble the hue or lightness, mix toward the Fill colour, paint wet so colour smears along, or blend like a layer does (Multiply, Screen...).">
       <Wobble b={b} to="hue" label="Hue wobble" format={(v) => `${Math.round(v * 1.8)}° either way`} hint="Each dab turns a little round the colour wheel, so red wanders through orange and pink." />
       <Wobble b={b} to="lightness" label="Lightness wobble" format={(v) => `${Math.round(v / 2)}% either way`} hint="Each dab is a little lighter or darker." />
       <Wobble b={b} to="saturation" label="Colourfulness wobble" format={(v) => `${v}% either way`} hint="Each dab is a little more or less colourful (saturation)." />
       <RouteRow b={b} to="mix" />
-      <Slider label="Wet paint" value={Math.round(b.wet * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Dry: paints its own colour' : `${v}%`)} onChange={(v) => setDab({ wet: v / 100 })} hint="The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other, like a mixing brush." />
+      <Slider label="Wet paint" value={Math.round(b.wet * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Dry: paints its own colour' : `${v}%`)} onChange={(v) => setDab({ wet: v / 100 })} hint="The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other, like a mixing brush. It mixes with its own paint too, so a loop that crosses its own line smears it." />
+      <Field label="How the paint joins what is there" hint={blendInfo(b.blend).description}>
+        <select className="dab-select" aria-label="How the paint joins what is there" value={b.blend} onChange={(e) => setDab({ blend: e.target.value as DabBrush['blend'] })}>
+          {BRUSH_BLENDS.map((m) => (
+            <option key={m} value={m}>
+              {m === 'normal' ? 'Paint over it' : `${blendInfo(m).label} (${blendInfo(m).term})`}
+            </option>
+          ))}
+        </select>
+      </Field>
       <p className="cv-tip">A locked palette is still kept: every colour here lands on the nearest palette colour.</p>
     </MoreOptions>
   );

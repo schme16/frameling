@@ -37,13 +37,55 @@ For soft fades try [soft paint](help:soft-paint); for paper grain, [chalk and ch
 **Colour changes** has its own fold:
 - **Hue**, **lightness** and **colourfulness wobble:** every dab shifts a little, so one red wanders through orange, pink and brick.
 - **Colour mixes toward the fill colour:** the paint starts as your colour and moves toward the **Fill** colour as the source rises. Fading out toward the fill colour is a quick way to a gradient stroke.
-- **Wet paint:** the brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other like a mixing brush.
+- **Wet paint:** the brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other like a mixing brush. It mixes with its own paint too: dabs that overlap blend in proportion, and a loop that crosses its own earlier line picks that colour up and smears it.
 
 **Pixel art stays pixel art.** A [locked palette](help:palette-lock) is always kept: every colour here lands on the nearest palette colour, so no wobble or smear invents one. With sharp pixels nothing is see-through either.
 
-**Brushes from other programs:** Photoshop's Control menus, Krita's sensors and Procreate's pressure curves are all this same idea, one source moving one setting, so they map straight onto these rows.
+**Brushes from other programs:** Photoshop's Control menus and Krita's sensors are this same idea, one source moving one setting, so they map straight onto these rows. Procreate's pressure curves are [how the pen feels](help:pixel-brush-curves).
 
 Try the ready-made ones in the picker under **Pen and speed** and **Colour**. See also [saved brushes](help:brush-presets).`,
+  'pixel-brush-curves': `A **response curve** says how a pen input turns into what the brush does. Straight, twice the press is twice the effect. Bent, a light press can already do most of the work, or a firm press can be needed to do anything. It is the difference between a pen that merely responds and one that feels right under your hand.
+
+**Shape it:** open **Pen, speed and fade** in the [Pixel brush](help:pixel-brush) options, pick a source for a setting (say **Pen pressure** for **Size follows**), and open **Shape of the response** under it. The graph runs left to right from the lightest press to the hardest, and up from the least effect to the most.
+
+**Start from a feel:**
+- **Even:** the straight line, and how every brush starts.
+- **Light touch:** a gentle press already does most of the work, so a light hand still gets a full mark.
+- **Firm hand:** needs a proper press to get going, so a light hand stays small and faint.
+- **Soft ends:** slow to start and slow to finish, quick through the middle.
+- **Ignore the lightest:** nothing happens until the press passes a fifth, which stops tiny accidental marks.
+
+**Or draw your own:** drag a dot, click the line to add one (up to eight), double-click a dot to remove it. With the keyboard, Tab to a dot and use the arrow keys (hold **Shift** for bigger steps) or Delete. The line always passes smoothly through your dots and never wiggles past them.
+
+**Any source can be bent**, not only pressure: speed, tilt and fading out too. **The other way round** flips the result after the curve, so the graph always reads the way you drew it.
+
+**Good to know:**
+- A mouse counts as full pressure, so a curve on pressure changes nothing for a mouse, and the brush never goes missing.
+- Step through the feels from the palette with **Pixel brush: change how the pen feels**. It bends every pressure row at once.
+- Curves from other programs (Photoshop's Control curves, Krita's sensor curves and Procreate's pressure curve) are this same idea.
+- A locked palette is still kept: a curve changes how much, never which colours.
+
+See also [pen, speed and fade](help:pixel-brush-dynamics) and [saved brushes](help:brush-presets).`,
+  'pixel-brush-blend': `A **paint mode** (a **blend mode**) decides how the brush's paint joins what is already on the layer. **Paint over it** is the usual: the paint covers what is there. The others mix with it, so one stroke can shade, glow or recolour, and you don't need a layer for each.
+
+**Pick one:** open **Colour changes** in the [Pixel brush](help:pixel-brush) options and choose from **How the paint joins what is there**. Or step through them from the palette with **Pixel brush: next paint mode**.
+
+**The ones you'll use most:**
+- **Darken, multiply (Multiply):** shades. Blue over yellow makes a deep green, and white changes nothing. Good for shadows.
+- **Lighten, screen (Screen):** lights. Black changes nothing. Good for glows and highlights.
+- **Overlay:** adds contrast: it darkens the dark parts and lightens the light ones, so the picture keeps its shape.
+- **Colour only (Colour):** puts your colour on the shading that is already there. Good for tinting a grey drawing.
+- **Lightness only (Luminosity)** is the other way round: your light and dark on the colours that are there.
+
+The rest (colour dodge and burn, hard and soft light, difference, exclusion, hue, saturation, take away, divide) are the same list a layer has, and work the same way.
+
+**Good to know:**
+- It blends with the pixels on the layer you are painting on, not with the layers under it. Where the layer is empty there is nothing to blend with, so the paint lands as it is.
+- Painting over the same spot twice in one stroke doesn't darken it twice. **Flow** and **Opacity** still decide how much goes on.
+- With sharp pixels the paint goes on whole or not at all, and a [locked palette](help:palette-lock) still keeps its colours: a blend lands on the nearest one.
+- The picture shows five strokes of the same pink across the same four blocks. From the top: paint over it, multiply, screen, overlay, colour only.
+
+See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-presets).`,
   'pixel-brush-texture': `**Grain** and a **dual tip** are the two ways to make a brush speckled, rough or bristly instead of smooth. Open **Grain and dual tip** in the [Pixel brush](help:pixel-brush) options.
 
 **Paper grain:** the paint catches on the high points of a paper, so light strokes break into specks and pressing harder fills the dips in. It uses the same five papers as [chalk and charcoal](help:chalk-charcoal), so a stroke here and a stroke there meet the same bumps.

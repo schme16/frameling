@@ -1,0 +1,4 @@
+curves: The same press, light to hard, on every row. A light touch reaches a full mark sooner, a firm hand holds back, and the last row is a curve dragged by hand.
+blend: The same pink across the same four blocks. Multiply shades, screen lights, overlay adds contrast and colour only tints, where before every stroke just covered what was there.
+wet: A stroke that starts blue and runs out into red, then loops back across its own early line. Before, the wet brush only felt the page, so it stayed red. Now it feels its own paint too.
+curves-clip: four strokes with the same press from light to hard: the pen straight, then a light touch, a firm hand, and a shape dragged by hand on the graph.

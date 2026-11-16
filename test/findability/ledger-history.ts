@@ -83,6 +83,8 @@ export const HISTORY: History = {
     { on: D, n: 781, why: 'clone-curves: the clone stamp is a tool and six commands (where to copy from, carry on or start again, choose a new source) in a Clone stamp submenu under Soft paint, so Draw is untouched. The same seven on both sides, because retouching has nothing to do with animation, so the gap does not move.' },
     { on: D, n: 784, why: 'clone-curves: Levels, Curves and Stretch the tones to fit sit in the Effects menu beside Colour adjust, three more entries. The same three on both sides, because fixing the light of a picture has nothing to do with animation, so the gap does not move.' },
     { on: D, n: 734, why: 'clone-curves: the blur and sharpen brushes are two more tools in Soft paint, the same two on both sides, because softening and crisping an edge has nothing to do with animation, so the gap does not move.' },
+    { on: D, n: 735, why: 'brush-engine2: Change how the pen feels is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
+    { on: D, n: 736, why: 'brush-engine2: Next paint mode is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -110,6 +112,8 @@ export const HISTORY: History = {
     { on: D, n: 905, why: 'clone-curves: the same seven as a still gains, so the gap between the two sides does not move.' },
     { on: D, n: 908, why: 'clone-curves: the same three as a still gains, so the gap between the two sides does not move.' },
     { on: D, n: 858, why: 'clone-curves: the same two as a still gains, so the gap between the two sides does not move.' },
+    { on: D, n: 859, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 860, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };
