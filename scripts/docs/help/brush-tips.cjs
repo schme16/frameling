@@ -1,7 +1,7 @@
 // Help clip for Brush tips: the Tip row, with a wave drawn in chalk, charcoal, watercolour and then a leaf stamp.
-// Window as in drawing.cjs (canvas 764 x 444 at 113, 47; options panel at 879).
+// Where things land comes from the running app (view() and at() in _shapes.cjs), so no window numbers are kept here.
 const L = require('./_lib.cjs');
-const at = (x, y) => [Math.round(495 + (x - 640) * 0.5), Math.round(269 + (y - 360) * 0.5)];
+const { view, at, UI } = require('./_shapes.cjs');
 const wave = (y, amp = 40) => ({ drag: Array.from({ length: 33 }, (_, i) => at(260 + i * 24, y + amp * Math.sin((i / 32) * Math.PI * 2))), steps: 3, delay: 12 });
 // Opens the Tip picker and clicks the row with this name (a stamp is its shape: Leaf, Heart...). Spread it into the steps.
 const tip = (name) => [
@@ -10,7 +10,7 @@ const tip = (name) => [
   L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
 ];
 const set = (patch) => L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ...${JSON.stringify(patch)} } }))`);
-const fit = L.js('__frameling.store().setUi({ zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5, color: "#2d3f6e" })');
+const fit = view(0.5);
 const away = { move: [720, 28] };
 
 module.exports = [
@@ -19,9 +19,9 @@ module.exports = [
     prefs: { firstDrawn: true, showTips: false },
     width: 1000,
     steps: [
-      L.template('blank-vector'), fit, L.cmd('tools.brush'), set({ size: 22, thinning: 0.3 }), L.wait(900), away, L.wait(300),
+      L.template('blank-vector'), UI({ color: '#2d3f6e' }), L.cmd('tools.brush'), set({ size: 22, thinning: 0.3 }), L.wait(900), fit, away, L.wait(300),
       { shot: 'warm', crop: [0, 0, 32, 32] },
-      { rec: '@', crop: [113, 40, 1087, 560], every: 80 },
+      { rec: '@', crop: { stageCrop: { rightGap: 80, down: 109 } }, every: 80 },
       L.wait(700),
       ...tip('Chalk'), L.wait(900), wave(170), L.wait(500),
       ...tip('Charcoal'), L.wait(900), wave(300), L.wait(500),

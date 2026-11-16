@@ -1,18 +1,19 @@
 // Help pictures for reference pictures and for opening a video to trace over. See help-media.cjs for the entry format.
 // The "photo" is drawn in the page (a person against a sky) and handed over as JPEG bytes; the video is
-// assets/reference-walk.mp4 (a ball bouncing along, made with ffmpeg). Window coordinates are those of drawing.cjs: the canvas
-// viewport is 764 x 444 at (113, 47), and view(z, cx, cy) puts stage point (cx, cy) in its middle.
+// assets/reference-walk.mp4 (a ball bouncing along, made with ffmpeg). The stage is measured from the running app, so no
+// window numbers are kept here: view(z, cx, cy) puts stage point (cx, cy) in its middle and at(x, y) says where a point lands.
 const fs = require('node:fs');
 const path = require('node:path');
 const { js, wait } = require('./_lib.cjs');
+const S = require('./_shapes.cjs');
 
 const T = (id) => ({ eval: `__frameling.template(${JSON.stringify(id)})` });
 const UI = (o) => ({ eval: `__frameling.store().setUi(${JSON.stringify(o)})` });
 const away = { move: [720, 28] };
-const CV = [113, 47, 764, 444];
+const CV = S.STAGE;
 const Z = 0.42;
-const view = (z = Z, cx = 640, cy = 360) => UI({ zoom: z, panX: 382 - cx * z, panY: 222 - cy * z });
-const at = (x, y, z = Z, cx = 640, cy = 360) => [Math.round(495 + (x - cx) * z), Math.round(269 + (y - cy) * z)];
+const view = (z = Z, cx = 640, cy = 360) => S.view(z, cx, cy);
+const at = (x, y) => S.at(x, y);
 const INK = '#1d1b26';
 const video = JSON.stringify(Array.from(fs.readFileSync(path.join(__dirname, 'assets', 'reference-walk.mp4'))));
 
@@ -61,6 +62,7 @@ const OPEN_VIDEO = js(`void __framelingImport.video(${video}, 'walk-cycle.mp4');
 const CLICK = (testid) => js(`document.querySelector('[data-testid="${testid}"]')?.click(); 0`);
 
 // Where the photo's box sits on screen once placed (fitted, in the page's middle) at the zoom above: its corners and the knob.
+view();
 const BOX = { tl: at(64, 0), tr: at(1216, 0), br: at(1216, 720), bl: at(64, 720), mid: at(640, 360) };
 
 module.exports = [
@@ -68,7 +70,7 @@ module.exports = [
     // A photo behind the drawing, the ink traced over it, and the bar for placing it open.
     name: 'reference-picture',
     ...NO_QUESTIONS,
-    steps: [T('blank-vector'), view(), ADD_PHOTO, wait(1200), INK_ON, away, wait(700), { shot: '@', crop: CV }],
+    steps: [T('blank-vector'), view(), ADD_PHOTO, wait(1200), INK_ON, away, wait(700), { shot: 'warm', crop: [0, 0, 32, 32] }, { shot: '@', crop: CV }],
   },
   {
     // The window for a video: the picture at a moment, the stretch, how many pictures, what it says it left out.
