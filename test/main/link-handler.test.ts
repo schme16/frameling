@@ -185,3 +185,60 @@ describe('the installer and app settings that register frameling:// links', () =
     expect(cfg.linux.mimeTypes).toContain(SCHEME_MIME);
   });
 });
+
+// What the real packages from CI declared (run 43961976649, "Build desktop apps", 0.0.1): the macOS Info.plist and the
+// registry keys inside the Windows installer. These pin that what we configure is what comes out, so a later change to
+// electron-builder.cjs or installer.nsh cannot drop the scheme or the Aseprite types without a test saying so.
+describe('what the built packages declared, against what we configure', () => {
+  const root = path.resolve(__dirname, '../..');
+  const nsh = fs.readFileSync(path.join(root, 'build/installer.nsh'), 'utf8');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const cfg = require(path.join(root, 'electron-builder.cjs'));
+
+  // electron-builder builds the app's document types from these: the shared list plus the Mac's own.
+  const macDocs = () => [...cfg.fileAssociations, ...cfg.mac.fileAssociations];
+
+  it('the macOS app declares the frameling scheme, and the .frameling, .aseprite and .ase types', () => {
+    // Observed in Info.plist: CFBundleURLSchemes ["frameling"]; CFBundleDocumentTypes for "frameling" (Editor, Default)
+    // and for "aseprite" and "ase" (Viewer, Alternate). The Mac list does not replace the shared one: both came through.
+    const exts = macDocs().flatMap((a: { ext: string | string[] }) => (Array.isArray(a.ext) ? a.ext : [a.ext]));
+    expect(exts).toEqual(expect.arrayContaining(['frameling', 'aseprite', 'ase']));
+    expect(cfg.protocols.flatMap((p: { schemes: string[] }) => p.schemes)).toEqual(['frameling']);
+    const ase = cfg.mac.fileAssociations.find((a: { ext: string[] }) => a.ext.includes('ase'));
+    expect([ase.role, ase.rank]).toEqual(['Viewer', 'Alternate']);
+    const own = cfg.fileAssociations.find((a: { ext: string }) => a.ext === 'frameling');
+    expect(own.role).toBe('Editor');
+  });
+
+  it('the Windows installer writes exactly the keys the built one was seen to hold', () => {
+    // Observed in the compiled installer: these install keys, and the uninstaller removes the same ones (less the
+    // two Aseprite extension keys, where only our own Open with entry goes).
+    const keys = (re: RegExp, text: string) => [...text.matchAll(re)].map((m) => m[1]);
+    const install = nsh.slice(nsh.indexOf('customInstall'), nsh.indexOf('customUnInstall'));
+    const written = [...new Set(keys(/WriteRegStr SHCTX "([^"]+)"/g, install))].sort();
+    expect(written).toEqual(
+      [
+        'Software\\Classes\\.ase\\OpenWithProgids',
+        'Software\\Classes\\.aseprite\\OpenWithProgids',
+        'Software\\Classes\\Frameling.Aseprite',
+        'Software\\Classes\\Frameling.Aseprite\\DefaultIcon',
+        'Software\\Classes\\Frameling.Aseprite\\shell\\open\\command',
+        'Software\\Classes\\frameling',
+        'Software\\Classes\\frameling\\DefaultIcon',
+        'Software\\Classes\\frameling\\shell\\open\\command',
+      ].sort(),
+    );
+    const un = nsh.slice(nsh.indexOf('customUnInstall'));
+    expect(keys(/DeleteRegKey SHCTX "([^"]+)"/g, un).sort()).toEqual(['Software\\Classes\\Frameling.Aseprite', 'Software\\Classes\\frameling']);
+    expect(keys(/DeleteRegValue SHCTX "([^"]+)"/g, un).sort()).toEqual(['Software\\Classes\\.ase\\OpenWithProgids', 'Software\\Classes\\.aseprite\\OpenWithProgids']);
+  });
+
+  it('Windows keeps the .frameling type from the shared list, and both build targets use the installer script', () => {
+    // The installer also holds Software\Classes\.frameling and "Frameling drawing" keys: electron-builder wrote those from
+    // the shared fileAssociations, which Windows has no list of its own to replace.
+    expect(cfg.win.fileAssociations).toBeUndefined();
+    expect(cfg.fileAssociations.some((a: { ext: string }) => a.ext === 'frameling')).toBe(true);
+    expect(cfg.nsis.include).toBe('build/installer.nsh');
+    expect(cfg.win.target).toEqual(['nsis', 'portable']);
+  });
+});
