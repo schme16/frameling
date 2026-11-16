@@ -79,6 +79,23 @@ export function paintOver(base: ArrayLike<number>, bi: number, color: RGBA, cov:
   out[3] = byte(ra * 255);
 }
 
+/**
+ * `base` moved `cov` of the way to `target`, both as they are (colour and see-through together), so a pixel that becomes
+ * see-through fades out rather than going dark. Used by the retouch brushes, where the target is a copy or a blur of the picture.
+ */
+export function mixTowards(base: ArrayLike<number>, target: ArrayLike<number>, cov: number, out: Out): void {
+  const k = clamp01(cov);
+  const ba = (base[3] / 255) * (1 - k);
+  const ta = (target[3] / 255) * k;
+  const ra = ba + ta;
+  if (ra <= 0.002) {
+    out[0] = out[1] = out[2] = out[3] = 0;
+    return;
+  }
+  for (let i = 0; i < 3; i++) out[i] = byte((base[i] * ba + target[i] * ta) / ra);
+  out[3] = byte(ra * 255);
+}
+
 /** The pixel with `cov` of its see-through taken away (the soft eraser). A pixel nearly gone is gone. */
 export function eraseOut(base: ArrayLike<number>, bi: number, cov: number, out: Out): void {
   const a = base[bi + 3] * (1 - clamp01(cov));

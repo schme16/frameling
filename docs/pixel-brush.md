@@ -2,8 +2,8 @@
 
 One engine draws every pixel brush that is not soft paint or a dry medium: `src/dab/`. The brush library, the picker and the
 palette commands sit on it (`src/brushes/`), and the saved brush is a `PixelSpec` (`src/dab/spec.ts`). Brush files from other
-programs (card `brush-import`) and the clone stamp and blur/sharpen brushes (card `pixel-clone-curves`) are meant to land on
-this and not grow a second system. This page is what they land on.
+programs (card `brush-import`) are meant to land on this and not grow a second system. The clone stamp and the blur and sharpen
+brushes did (`src/retouch/`, see the end of this page). This page is what they land on.
 
 ## The shape of a brush
 
@@ -73,3 +73,17 @@ pen), `cursor.ts` (the tip as the cursor), `tools.ts`, `Options.tsx` and `Dynami
 
 Hard rules: a locked palette is applied last (`snap` after every colour step), so no hue swing, mix, wet colour or grain can make a
 colour it did not have. A brush read from any file goes through `cleanDab`: ranges held, unknown things dropped, nothing trusted.
+
+## Retouch brushes: the one hook they use
+
+The clone stamp, the Blur brush and the Sharpen brush (`src/retouch/`) are dab brushes that paint a colour worked out from the picture
+instead of a flat one. The engine has one extra input for this, `DabParams.pick(x, y, was, out)`: given the pixel as it was before the
+stroke, write the colour this pixel should become. The paint share the dab put there then moves the pixel that far toward it
+(`mixTowards` in `src/soft/maths.ts`, colour and see-through together), so size, hardness, spacing, flow, opacity, the pen routes,
+the selection and the palette lock all work as on any brush. A pixel is never painted over itself, so a clone of its own layer never smears.
+
+Each tool keeps its own `DabBrush` (`src/retouch/settings.ts`, so a wide soft blur does not move the pencil's one pixel) and shows the same
+Pen, speed and fade options (`DynamicsSection` takes a `DabHandle`). They hold the brush to their kind: no picture tip, no colour, no
+texture. The clone stamp's source and offset live in `src/retouch/aim.ts` with the rules in `maths.ts` (`strokeOffset`: aligned keeps the
+offset between strokes, otherwise every stroke restarts from the source). Which of the two is the ask-once choice `clone.align`, asked after
+the first stroke.

@@ -766,6 +766,29 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M10 9.5c3.5-1 6.5 0 10-1M10 12h10M10 14.5c3.5 1 6.5 0 10 1" />
     </>
   ),
+  // clone stamp: a rubber stamp, with the copy it leaves underneath
+  'clone-stamp': (
+    <>
+      <path d="M9 3.5h6v5l2.5 3.5h-11L9 8.5z" />
+      <path d="M5.5 15.5h13v2h-13z" />
+      <path d="M7 20.5h10" strokeDasharray="1.6 2" />
+    </>
+  ),
+  // blur brush: a drop with its edge going soft
+  'blur-brush': (
+    <>
+      <path d="M12 3.5c3.2 4 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.3-5.6 5.5-9.6z" />
+      <path d="M9.6 13.4c0 1.6 1 2.6 2.4 2.8" strokeOpacity="0.5" />
+      <path d="M3 21h3.5M8 21h2.5M12.5 21h1.5" strokeOpacity="0.5" />
+    </>
+  ),
+  // sharpen brush: a crisp point with rays
+  'sharpen-brush': (
+    <>
+      <path d="M12 3.5l6 9-6 9-6-9z" />
+      <path d="M12 3.5v18M6 12.5h12" strokeOpacity="0.55" />
+    </>
+  ),
   mirror: (
     <>
       <path d="M12 3v18" strokeDasharray="2 2.6" />

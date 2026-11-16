@@ -36,6 +36,10 @@ import '../soft';
 import '../dry';
 // The pixel brush (dabs, spacing, tips) and the pixel side of the brush library. After soft paint and charcoal, which it shares an edge answer and a library with.
 import '../dab';
+// The clone stamp and the blur and sharpen brushes: dab brushes that move each pixel toward a copy or a blur of the picture. After the pixel brush, whose engine they use.
+import '../retouch';
+// Curves and Levels: change the pixels of a layer by what each brightness becomes. Beside Colour adjust in the Effects menu.
+import '../tone';
 import '../select';
 import '../clipboard';
 import '../transform';

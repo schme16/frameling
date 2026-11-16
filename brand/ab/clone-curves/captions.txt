@@ -1,0 +1,6 @@
+clone: The clone stamp copies clean sky over the dust and the hair, and the sky and its gradient carry on unbroken.
+curves: Four points on the curve bring the colour and depth back to a washed out picture, in one undo step.
+blur: The blur brush went down the bars and round the left half of the ring. The first bar's left edge and the ring's right half were left alone, so a soft edge and a hard one sit side by side.
+clone-clip: the clone stamp at work: Alt-click chooses the spot (the cross), then the dashed ring shows where the copy is coming from as the brush moves.
+curves-clip: the Curves dialog: four points go on the curve, the live copy comes back to life, Apply puts it on the layer.
+blur-clip: the blur brush softens the bars and the ring, then the sharpen brush brings the snap back to some of the edges.

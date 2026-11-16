@@ -11,14 +11,14 @@ const D = '2026-11-16';
 const BASE = 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.';
 
 export const HISTORY: History = {
-  'CEILINGS.railToolsVanish.blank': [{ on: D, n: 17, why: BASE }],
-  'CEILINGS.railToolsVanish.vector': [{ on: D, n: 17, why: BASE }],
-  'CEILINGS.railToolsVanish.vector-selected': [{ on: D, n: 17, why: BASE }],
+  'CEILINGS.railToolsVanish.blank': [{ on: D, n: 17, why: BASE }, { on: D, n: 18, why: 'clone stamp: a pixel layer tool like the soft paint ones, so it is one more thing that is not on the rail for a vector or tile layer. It is on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }, { on: D, n: 20, why: 'blur and sharpen brushes: two more pixel layer tools like the soft paint ones, so two more things that are not on the rail for a vector or tile layer. They are on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }],
+  'CEILINGS.railToolsVanish.vector': [{ on: D, n: 17, why: BASE }, { on: D, n: 18, why: 'clone stamp: a pixel layer tool like the soft paint ones, so it is one more thing that is not on the rail for a vector or tile layer. It is on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }, { on: D, n: 20, why: 'blur and sharpen brushes: two more pixel layer tools like the soft paint ones, so two more things that are not on the rail for a vector or tile layer. They are on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }],
+  'CEILINGS.railToolsVanish.vector-selected': [{ on: D, n: 17, why: BASE }, { on: D, n: 18, why: 'clone stamp: a pixel layer tool like the soft paint ones, so it is one more thing that is not on the rail for a vector or tile layer. It is on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }, { on: D, n: 20, why: 'blur and sharpen brushes: two more pixel layer tools like the soft paint ones, so two more things that are not on the rail for a vector or tile layer. They are on the rail and in Soft paint on a pixel layer, and in the palette greyed with a reason elsewhere.' }],
   'CEILINGS.railToolsVanish.pixel': [{ on: D, n: 8, why: BASE }, { on: D, n: 9, why: 'Shape builder: a vector-only tool, so it is one more thing that is not on a pixel or tile layer. It is on the rail and in Tools for a vector layer.' }],
-  'CEILINGS.railToolsVanish.tilemap': [{ on: D, n: 39, why: BASE }, { on: D, n: 40, why: 'Shape builder: a vector-only tool, so it is one more thing that is not on a pixel or tile layer. It is on the rail and in Tools for a vector layer.' }],
-  'CEILINGS.railToolsVanish.symbol-open': [{ on: D, n: 17, why: BASE }],
-  'CEILINGS.railToolsVanish.playing': [{ on: D, n: 17, why: BASE }],
-  'CEILINGS.railToolsVanish.has-clips': [{ on: D, n: 17, why: BASE }],
+  'CEILINGS.railToolsVanish.tilemap': [{ on: D, n: 39, why: BASE }, { on: D, n: 40, why: 'Shape builder: a vector-only tool, so it is one more thing that is not on a pixel or tile layer. It is on the rail and in Tools for a vector layer.' }, { on: D, n: 43, why: 'Clone stamp, blur and sharpen: three pixel-only tools, so three more things that are not on a vector or tile rail. They live in Soft paint, and the Draw menu does not move.' }],
+  'CEILINGS.railToolsVanish.symbol-open': [{ on: D, n: 17, why: BASE }, { on: D, n: 20, why: 'Clone stamp, blur and sharpen: three pixel-only tools, so three more things that are not on a vector or tile rail. They live in Soft paint, and the Draw menu does not move.' }],
+  'CEILINGS.railToolsVanish.playing': [{ on: D, n: 17, why: BASE }, { on: D, n: 20, why: 'Clone stamp, blur and sharpen: three pixel-only tools, so three more things that are not on a vector or tile rail. They live in Soft paint, and the Draw menu does not move.' }],
+  'CEILINGS.railToolsVanish.has-clips': [{ on: D, n: 17, why: BASE }, { on: D, n: 20, why: 'Clone stamp, blur and sharpen: three pixel-only tools, so three more things that are not on a vector or tile rail. They live in Soft paint, and the Draw menu does not move.' }],
   'CEILINGS.menuCommandsVanish.blank': [{ on: D, n: 9, why: BASE }, { on: D, n: 0, why: 'tools-room: the Tools menu stopped listing every tool (the rail has them all) and the commands whose rows live in the options of a tool, so the five tools it still names are listed on every layer and grey out with a reason instead of vanishing.' }],
   'CEILINGS.menuCommandsVanish.vector': [{ on: D, n: 9, why: BASE }, { on: D, n: 0, why: 'tools-room: the Tools menu stopped listing every tool (the rail has them all) and the commands whose rows live in the options of a tool, so the five tools it still names are listed on every layer and grey out with a reason instead of vanishing.' }],
   'CEILINGS.menuCommandsVanish.vector-selected': [{ on: D, n: 9, why: BASE }, { on: D, n: 0, why: 'tools-room: the Tools menu stopped listing every tool (the rail has them all) and the commands whose rows live in the options of a tool, so the five tools it still names are listed on every layer and grey out with a reason instead of vanishing.' }],
@@ -80,6 +80,9 @@ export const HISTORY: History = {
     { on: D, n: 752, why: 'selection-gradients: one Edit submenu holding the selection edge card, grow, shrink, feather, save and the saved list. The angular commands are not in it, because they went the palette-first route.' },
     { on: D, n: 774, why: 'pixel-brush-engine: the same sixteen ready-made brushes each have a menu entry under the brush lists, plus the six new switches (pen pressure, taper, grain, dual tip, colour wobble, wet paint) in the Pixel brush submenu, which is not in the Draw menu, so Draw stays under its cap.' },
     { on: D, n: 722, why: 'tools-room: 52 entries left the menus for the palette, on both sides (the tool list, Line style and tool option rows), because a control on screen does each one\'s job, so the gap to a drawing with animation is unchanged.' },
+    { on: D, n: 781, why: 'clone-curves: the clone stamp is a tool and six commands (where to copy from, carry on or start again, choose a new source) in a Clone stamp submenu under Soft paint, so Draw is untouched. The same seven on both sides, because retouching has nothing to do with animation, so the gap does not move.' },
+    { on: D, n: 784, why: 'clone-curves: Levels, Curves and Stretch the tones to fit sit in the Effects menu beside Colour adjust, three more entries. The same three on both sides, because fixing the light of a picture has nothing to do with animation, so the gap does not move.' },
+    { on: D, n: 734, why: 'clone-curves: the blur and sharpen brushes are two more tools in Soft paint, the same two on both sides, because softening and crisping an edge has nothing to do with animation, so the gap does not move.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -104,6 +107,9 @@ export const HISTORY: History = {
     { on: D, n: 876, why: 'selection-gradients: the same six as a still gains, for the same reason, so the gap between the two sides does not move.' },
     { on: D, n: 898, why: 'pixel-brush-engine: the same twenty-two as a still gains (sixteen brushes and six switches in the Pixel brush submenu), so the gap between the two sides does not move.' },
     { on: D, n: 846, why: 'tools-room: 52 entries left the menus for the palette, on both sides (the tool list, Line style and tool option rows), because a control on screen does each one\'s job, so the gap to a still is unchanged.' },
+    { on: D, n: 905, why: 'clone-curves: the same seven as a still gains, so the gap between the two sides does not move.' },
+    { on: D, n: 908, why: 'clone-curves: the same three as a still gains, so the gap between the two sides does not move.' },
+    { on: D, n: 858, why: 'clone-curves: the same two as a still gains, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

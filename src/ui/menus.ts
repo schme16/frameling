@@ -51,6 +51,8 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.notes', 'tools.marks',
   // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in the Soft paint menu.
   'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
+  // The retouch brushes sit there too: clone, blur and sharpen paint with a brush, on pixel layers.
+  'tools.clone-stamp', 'tools.blur-brush', 'tools.sharpen-brush',
 ];
 
 const RIG_ITEMS: MenuEntry[] = [
@@ -58,7 +60,7 @@ const RIG_ITEMS: MenuEntry[] = [
 ];
 
 const EFFECT_ITEMS: MenuEntry[] = [
-  'view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', 'effects.add.tooth', '-', 'effects.reset', 'effects.shapesReset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'
+  'view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'tone.levels', 'tone.curves', 'tone.auto', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', 'effects.add.tooth', '-', 'effects.reset', 'effects.shapesReset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'
 ];
 
 /** `-` is a separator. `group:tools`, `group:panels` and `group:workspaces` expand to every one registered. */
@@ -95,7 +97,7 @@ export const MENUS: MenuDef[] = [
     label: 'Soft',
     title: 'Soft paint',
     categories: [],
-    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-', 'sub:charcoal', 'sub:pixelbrush'],
+    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-', 'tools.blur-brush', 'tools.sharpen-brush', 'sub:clonestamp', '-', 'sub:charcoal', 'sub:pixelbrush'],
   },
   {
     // The three things this menu is about come first, each a submenu: Layer, Artboards, Tiles. A tile layer is a layer,
@@ -375,6 +377,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
       'charcoal.medium.sketch-pencil', 'charcoal.medium.soft-pencil', 'charcoal.medium.colour-pencil', '-',
       'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough',
     ],
+  },
+  clonestamp: {
+    label: 'Clone stamp',
+    items: ['tools.clone-stamp', 'clone.source.here', 'clone.forget', 'clone.sample.layer', 'clone.sample.visible', 'clone.align.aligned', 'clone.align.restart'],
   },
   pixelbrush: {
     label: 'Pixel brush',

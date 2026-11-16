@@ -30,11 +30,13 @@ export const CEILINGS = {
    * by default), counted per state. Slot twins (Select and Pixel select) are not counted, they stand in for each other.
    * The palette still lists them greyed with a reason, but the rail itself says nothing.
    */
+  // Two more since the blur and sharpen brushes (Alt+Shift+U and Alt+Shift+Y), pixel layer tools in Soft paint beside the clone stamp.
+  // One more since the clone stamp (Alt+Shift+S), a pixel layer tool in Soft paint like the soft brushes: it paints pixels copied from the picture.
   // One more since the pixel brush (Alt+Shift+N), which like soft paint and charcoal works on pixel layers only: its dabs are pixels, and a vector shape cannot hold sharp pixels or a pixel picture tip. It could not share a slot with the Brush tool, which stays on the rail on a pixel layer too. The mode line over the rail names it, and picking it flips to a pixel layer.
   // One more since chalk and charcoal, which like the soft paint tools works on pixel layers only (paper tooth is pixels, not a vector shape).
   // Five more since soft paint: the Soft brush, Airbrush, Highlighter, Soft eraser and Smudge work on pixel layers only (a vector shape cannot fade at its edge). The mode line over the rail names them, and picking one flips to a pixel layer.
   // One more on the pixel and tilemap layers since the Shape builder (Shift+N): it cuts overlapping vector shapes into bits, and a pixel or tile layer has no shapes to cut. It is on the rail on every vector layer, and the mode line over the rail names it on the others.
-  railToolsVanish: { blank: 17, vector: 17, 'vector-selected': 17, pixel: 9, tilemap: 40, 'symbol-open': 17, playing: 17, 'has-clips': 17 } as Record<string, number>,
+  railToolsVanish: { blank: 20, vector: 20, 'vector-selected': 20, pixel: 9, tilemap: 43, 'symbol-open': 20, playing: 20, 'has-clips': 20 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   // Two more in every state but the pixel one since the Pixel menu went: it listed Shade and Dither all the time, and now they are only in the Tools menu's tool list, which shows the tools that work on the layer you are on, the same as the Wand and Slice. They are still on the pixel rail, and in the palette greyed with a reason on a vector layer. Tilemap goes 23 to 27 because on a tilemap layer the Pencil, Shade, Dither and Gradient all leave, where the Pixel menu showed them.
   // One more on the pixel and tilemap layers since the Shape builder: its entry in Tools lists only on a vector layer, like the Pen and Edit points beside it, and it is in the palette greyed with a reason on the others.
@@ -170,10 +172,12 @@ export const STILL_LOAD = {
   // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
   // text on a curve. The remote door: +2 palette and +3 menu in Edit > Scripts. selection-gradients: +3 palette and
   // +6 menu. The pixel brush: +16 palette and +22 menu, the 16 ready made brushes and the 6 switches, under Soft
-  // paint, so Draw is untouched. diamond gradients: +2 palette and no menu at all, palette first like angular. And
+  // paint, so Draw is untouched. diamond gradients: +2 palette and no menu at all, palette first like angular.
   // tools-room: -52 menu on both sides, the tool list, Line style and the tool option rows that left the menu for
-  // the palette because a control on screen does their job, with no palette change. None of it has anything to do
-  // with animation, so the gap is unchanged.
-  still: { palette: 579, menu: 722, animateMenu: 8 },
-  animated: { palette: 628, menu: 846, animateMenu: 123 },
+  // the palette because a control on screen does their job, with no palette change. And the retouch work: +7 menu
+  // for the clone stamp and its commands in their own submenu under Soft paint, +3 for Levels, Curves and the one
+  // step auto levels in Effects beside Colour adjust, and +2 for the blur and sharpen brushes in Soft paint, 12 in
+  // all on both sides. None of it has anything to do with animation, so the gap is unchanged.
+  still: { palette: 579, menu: 734, animateMenu: 8 },
+  animated: { palette: 628, menu: 858, animateMenu: 123 },
 };

@@ -8,7 +8,7 @@ import type { Doc, PixelLayer } from '../core/format';
 import type { RGBA } from '../canvas/pixels';
 import { tileModeOn, wrap } from '../tiles/state';
 import { PixelSession } from '../tools/pixelSession';
-import { threshold, paintOver, type EdgeMode } from '../soft/maths';
+import { threshold, paintOver, mixTowards, type EdgeMode } from '../soft/maths';
 import { palettePicker, type Pt } from '../soft/stroke';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
@@ -79,6 +79,12 @@ export interface DabParams {
   snap?: ReturnType<typeof palettePicker>;
   /** Seeds the scatter and jitter, so a test can repeat a stroke. */
   seed?: number;
+  /**
+   * Retouch brushes (clone, blur, sharpen): instead of one flat colour, each pixel is mixed toward a colour worked out
+   * from the picture. Given the pixel as it was before the stroke, it writes the colour this pixel should become into `out`.
+   * The paint share the dab put there decides how far it goes, so flow, opacity, hardness and dynamics all work as usual.
+   */
+  pick?: (x: number, y: number, was: Uint8ClampedArray, out: Uint8ClampedArray | number[]) => void;
 }
 
 /** A brush's paint per pixel is kept in square blocks, made on first touch. */
@@ -187,7 +193,10 @@ export class DabStroke {
       c[3] = pc[3];
     }
     const o = this.out;
-    paintOver(b, 0, c, s, o);
+    if (this.p.pick) {
+      this.p.pick(x, y, b, c);
+      mixTowards(b, c, s, o);
+    } else paintOver(b, 0, c, s, o);
     this.p.snap?.(o);
     this.surface.write(x, y, o[0], o[1], o[2], o[3]);
   }
