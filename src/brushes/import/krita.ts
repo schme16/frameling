@@ -4,6 +4,7 @@
 // document is read with the careful reader in xml.ts, every unpacking has a ceiling, and a preset that cannot be read well
 // is left out with its reason, never guessed at. Pure, no DOM.
 import { cleanDab } from '../../dab/maths';
+import { cleanCurve, MAX_CURVE_POINTS as ROUTE_CURVE_POINTS } from '../../dab/curve';
 import { type DynRoute, type DynSource, type DynTarget, MAX_ROUTES } from '../../dab/dynamics';
 import { decodePng, readChunks } from '../../io/png';
 import { Reader } from './bytes';
@@ -228,6 +229,30 @@ const at = (pts: [number, number][], x: number): number => {
   return pts[pts.length - 1][1];
 };
 
+/**
+ * A Krita sensor curve (what the pen does to the setting: input on x, the setting's share on y) as a Frameling route. The
+ * ends and the lowest and highest the line reaches give `amount` (`1 - low / high`) and `invert` (when it ends lower than
+ * it starts); the bend between is the route's `curve`, held to 0 to 1 across that range, so a jump early in Krita jumps
+ * early here. `amount` is 0 when the curve does not move the setting at all. Out of range or odd points are held to 0 to 1.
+ */
+export function routeOf(raw: readonly (readonly [number, number])[]): { amount: number; invert: boolean; curve: [number, number][] | null; points: number } {
+  const clamp = (v: number): number => Math.min(1, Math.max(0, v));
+  const pts = raw.map(([x, y]) => [clamp(x), clamp(y)] as [number, number]).sort((a, b) => a[0] - b[0]);
+  // Krita's line may start after 0 or stop before 1: the first and last heights hold out to the ends.
+  if (pts[0][0] > 0) pts.unshift([0, pts[0][1]]);
+  if (pts[pts.length - 1][0] < 1) pts.push([1, pts[pts.length - 1][1]]);
+  const y0 = pts[0][1];
+  const y1 = pts[pts.length - 1][1];
+  const lo = Math.min(...pts.map((q) => q[1]));
+  const hi = Math.max(...pts.map((q) => q[1]));
+  if (hi < 0.001 || hi - lo < 0.01) return { amount: 0, invert: false, curve: null, points: 0 };
+  const invert = y1 < y0;
+  const flat = pts.map(([x, y]) => [x, invert ? (hi - y) / (hi - lo) : (y - lo) / (hi - lo)] as [number, number]);
+  // Points that all sit on the diagonal are a straight line however many there are.
+  const curve = flat.every(([x, y]) => Math.abs(y - x) < 0.002) ? null : cleanCurve(flat);
+  return { amount: Math.min(1, Math.max(0, 1 - lo / hi)), invert, curve: curve ? curve.map((q) => [q[0], q[1]] as [number, number]) : null, points: raw.length };
+}
+
 /** What each Krita sensor is called in words, and which Frameling input it is nearest. */
 const SENSORS: Record<string, { from: DynSource | null; what: string; note?: string }> = {
   pressure: { from: 'pressure', what: 'pen pressure' },
@@ -411,19 +436,12 @@ export function brushFromPreset(xml: string, tips: TipLookup | null, fallbackNam
         dropped.push(`Its ${o.label.toLowerCase()} control by ${info.what}: Frameling has no such input.`);
         continue;
       }
-      let y0 = 0;
-      let y1 = 1;
-      if (useCurve && sn.curve) {
-        y0 = at(sn.curve, 0);
-        y1 = at(sn.curve, 1);
-        const worst = Math.max(...sn.curve.map(([x, y]) => Math.abs(y - (y0 + (y1 - y0) * x))));
-        if (worst > 0.1) changed.push(`Its ${o.label.toLowerCase()} curve for ${info.what} is not a straight line; it came as the straight line from ${Math.round(y0 * 100)}% to ${Math.round(y1 * 100)}%.`);
-      }
+      const shaped = useCurve && sn.curve ? routeOf(sn.curve) : { amount: 1, invert: false, curve: null, points: 0 };
+      if (shaped.points > ROUTE_CURVE_POINTS) changed.push(`Its ${o.label.toLowerCase()} curve for ${info.what} had ${shaped.points} points; it came as the nearest ${ROUTE_CURVE_POINTS}.`);
       if (info.note) changed.push(`Its ${o.label.toLowerCase()} control by ${info.note}.`);
-      const lo = Math.min(y0, y1);
-      const hi = Math.max(y0, y1);
-      if (hi < 0.001 || hi - lo < 0.01) continue;
-      const route: DynRoute = { from: info.from, to: o.to, amount: Math.min(1, Math.max(0, 1 - lo / hi)), invert: y1 < y0 };
+      if (shaped.amount === 0) continue;
+      const route: DynRoute = { from: info.from, to: o.to, amount: shaped.amount, invert: shaped.invert };
+      if (shaped.curve) route.curve = shaped.curve;
       if (routes.some((r) => r.from === route.from && r.to === route.to)) continue;
       routes.push(route);
       if (o.key === 'Opacity') changed.push('Its opacity dynamics came as flow dynamics (the paint thins per dab instead of per stroke).');

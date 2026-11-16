@@ -122,7 +122,7 @@ They land in your [brush picker](help:brush-picker) beside the ones that come re
 **What comes across:**
 - The tip: a round or square shape, or a picture. A picture tip is shrunk to fit 32 by 32 pixels, with its soft shading kept (so a charcoal or sponge tip still has its texture).
 - Size, hardness, angle, roundness and spacing.
-- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, as straight lines.
+- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, with the bend of each curve (a long curve is thinned to its nearest 8 points, and says so).
 - A texture becomes one of the [papers](help:pixel-brush-texture), and a dual brush with a textured tip becomes a field of dots, both with a note saying so.
 
 **What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP and Krita pick between them as you paint; Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes, and every brush engine that isn't the pixel brush. Each one is named in the window when a brush had it.
