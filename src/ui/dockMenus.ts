@@ -13,7 +13,7 @@ import { getPrefs, setPrefs } from './prefs';
 import { lockedWhy, type LockKind } from './dockLock';
 import { isLocked, refuseIfLocked } from './lockState';
 import { toast } from './toast';
-import { putToolsBack, setRailLock, setToolbarEditing, toolbarIsChanged } from './toolRail';
+import { setToolRailStyle, putToolsBack, setRailLock, setToolbarEditing, toolbarIsChanged } from './toolRail';
 
 /** `why` is a line under a greyed entry that says why it is greyed. */
 export type DockMenuItem = { label: string; onClick: () => void; disabled?: boolean; why?: string; stays?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
@@ -171,7 +171,7 @@ export function toolsMenu(): DockMenuItem[] {
     lockItem('tools'),
     { separator: true },
     ...(locked ? whenLocked('tools', rest) : rest),
-    { label: getPrefs().toolRail === 'two' ? 'Show one button per group' : 'Show every tool, two wide', onClick: () => setPrefs({ toolRail: getPrefs().toolRail === 'two' ? 'stacked' : 'two' }) },
+    { label: getPrefs().toolRail === 'two' ? 'Show one button per group' : 'Show every tool, two wide', onClick: () => setToolRailStyle(getPrefs().toolRail === 'two' ? 'stacked' : 'two') },
     { separator: true },
     { label: 'What is the tool strip?', onClick: () => openHelp('tool-strip') },
   ];

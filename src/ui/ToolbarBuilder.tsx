@@ -9,7 +9,7 @@ import { Icon } from './icons';
 import type { DockZone } from './dockModel';
 import { dock } from './dock';
 import { setPrefs, usePrefs, TOOL_SIZES, type ToolSizePref } from './prefs';
-import { bringToolBack, currentGroups, putToolsBack, setToolbarEditing, startToolDrag, toolbarIsChanged, toolDrag } from './toolRail';
+import { setToolRailStyle, bringToolBack, currentGroups, putToolsBack, setToolbarEditing, startToolDrag, toolbarIsChanged, toolDrag } from './toolRail';
 import { visibleGroups } from './toolArrange';
 
 const SIZE_WORDS: Record<ToolSizePref, string> = { small: 'Small', medium: 'Medium', large: 'Large' };
@@ -107,7 +107,7 @@ export function ToolbarBuilder({ anchor, place, away, visible }: { anchor: DOMRe
       <Segments label="Tools that do not work on this layer" value={offLayer} options={[['hide', 'Hide them'], ['grey', 'Grey them out']]} onChange={(toolsOffLayer) => setPrefs({ toolsOffLayer })} />
 
       <h3 className="ui-tb-head">Rail style</h3>
-      <Segments label="Rail style" value={style} options={[['two', 'Every tool'], ['stacked', 'One per group']]} onChange={(toolRail) => setPrefs({ toolRail })} />
+      <Segments label="Rail style" value={style} options={[['two', 'Every tool'], ['stacked', 'One per group']]} onChange={setToolRailStyle} />
       {style === 'stacked' && <Explainer className="ui-tb-note">Every group is one button. Choose Every tool to fold only some.</Explainer>}
 
       <div className="ui-tb-foot">

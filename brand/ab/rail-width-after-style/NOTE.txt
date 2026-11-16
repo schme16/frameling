@@ -1,0 +1,8 @@
+rail-width-after-style: the tool rail with a long group name ("Colour and pixel extras") after a round trip through the stacked style.
+
+The rail here was pulled to a width of its own (90px) first. A rail nobody pulled never shows the problem (it is 126px before and after).
+
+A (a-before-*.png, ab-*.png left): before the fix. The width is kept, so the name is cut: "COLOUR AND PIXE...".
+B (b-after-*.png, ab-*.png right): after the fix, with the choice answered "Use the style's usual width". The rail is back at 126px and the name is whole.
+b-toast-*.png: what the default answer ("Keep my width") says the first time, with a Change button that asks the question.
+Shot with the harness-style script in xvfb, cosy look, medium buttons, 2x upscale of the rail.

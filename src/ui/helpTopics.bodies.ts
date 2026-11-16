@@ -749,17 +749,17 @@ For a slimmer strip, turn off **Tool group names** in **Preferences, General**. 
 
 ## Choose a tool
 
-Press its button, or press its key. Rest on a button to see the key.
+Press its button or its key. Rest on a button to see the key.
 
 ## The strip stays put
 
 Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
-While they're out of sight, the switch at the top of the strip shows which kind of layer you're on. Press the other side to jump to a layer they work on, or right-click it to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
+While they're out of sight, the switch at the top shows which kind of layer you're on. Press the other side to jump to a layer they work on, or right-click it to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
 
-A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
+A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button that picks the one for the layer you're on, so changing layer never loses your lasso.
 
-Tilemap and camera layers are different jobs, so on those the strip shows only the tools that work there.
+Tilemap and camera layers show only the tools that work there.
 
 ## Your way
 
@@ -767,7 +767,7 @@ Drag tools into the order you like, or into other groups. See [Arrange your tool
 
 ## One button per group
 
-If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider.
+For a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider. A width you pulled it to is asked about once, when you change style: keep it, or start at the style's usual width.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
   'tool-move': `Pick the tool strip up by the little grip at its top and carry it. Where it would land lights up as you go, and letting go puts it there. There's no menu to hunt through.

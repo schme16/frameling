@@ -16,7 +16,7 @@ import { pairOf } from '../core/pairs';
 import * as layerOps from '../timeline/ops';
 import { findLayer } from '../core/doc';
 import { store } from '../core/store';
-import { setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
+import { setToolRailStyle, setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -464,7 +464,7 @@ for (const [style, label, about] of [
     help: 'tool-strip',
     keywords: ['tools', 'toolbar', 'rail', 'style', 'stacked', 'two wide', 'flyout'],
     checked: () => getPrefs().toolRail === style,
-    run: () => setPrefs({ toolRail: style }),
+    run: () => setToolRailStyle(style),
   });
 }
 

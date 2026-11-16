@@ -125,14 +125,6 @@ app.whenReady().then(async () => {
     }
   }
   // A name of your own that does not fit: two lines before it is cut, dots only after that (one long word is cut on its line).
-  // Only in the default style: after the stacked or slim passes the workspace keeps the narrow width those left it at, so the names
-  // would be measured on a rail that was never meant to show them (the same on the build before this check was kept honest).
-  if (process.env.RAILW_MODE && process.env.RAILW_MODE !== 'names') {
-    if (process.env.RAILW_JSON) fs.writeFileSync(process.env.RAILW_JSON, JSON.stringify(rows, null, 1));
-    console.log(bad ? `${bad} pass(es) with a cut name or too little room` : 'every name fits and the canvas keeps its room');
-    app.exit(bad ? 1 : 0);
-    return;
-  }
   await js(`__frameling.prefs.set({ look: 'cosy', toolSize: 'medium', uiScale: 1, toolNames: true, toolRail: 'two' }); __frameling.dock.applyWorkspace('draw'); __frameling.template('bouncing-ball'); return true`);
   await sleep(300);
   const names = [

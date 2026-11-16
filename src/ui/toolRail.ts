@@ -5,7 +5,9 @@ import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
 import { pickTool } from '../tools/pick';
 import { defaultRailWidthOf, dock, flushDock, setLock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
-import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
+import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, widthDiffersFromStyle, type RailSizes, type RailStyle } from './toolRailWidth';
+import { registerChoice, withChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
 import { fitRailSaved, fitToolSize, isCompact } from './screenFit';
 import { toast } from './toast';
@@ -204,6 +206,45 @@ export function setToolRailWidth(px: number, persist = true): void {
   const names = getPrefs().toolNames;
   const chosen = chosenRailWidth(px, s, style, names);
   setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style, names) : undefined), persist);
+}
+
+// ---------------------------------------------------------------- changing the rail's style
+
+/** A rail you pulled to a width of your own, then changed to a style that would start at another width: keep yours, or take the style's? */
+export const STYLE_WIDTH_CHOICE = 'toolRail.widthOnStyle';
+
+registerChoice<'keep' | 'natural'>({
+  id: STYLE_WIDTH_CHOICE,
+  title: choiceWord('choice.toolRail.widthOnStyle.title'),
+  question: choiceWord('choice.toolRail.widthOnStyle.question'),
+  category: 'Tools',
+  help: 'tool-strip',
+  default: 'keep',
+  options: [
+    { value: 'keep', label: choiceWord('choice.toolRail.widthOnStyle.keep.label'), detail: choiceWord('choice.toolRail.widthOnStyle.keep.detail'), did: choiceWord('choice.toolRail.widthOnStyle.keep.did') },
+    { value: 'natural', label: choiceWord('choice.toolRail.widthOnStyle.natural.label'), detail: choiceWord('choice.toolRail.widthOnStyle.natural.detail'), did: choiceWord('choice.toolRail.widthOnStyle.natural.did') },
+  ],
+});
+
+/**
+ * Changes the rail's style (two wide, or one button per group). A rail that has never been pulled follows the style on
+ * its own. One that has a width of its own is asked about, once: keep that width, or start at the style's own.
+ */
+export function setToolRailStyle(style: RailStyle): void {
+  if (getPrefs().toolRail === style) return;
+  const id = dock.get().workspaceId;
+  const mine = dock.get().railWidths?.[id];
+  setPrefs({ toolRail: style });
+  const s = railSizesNow();
+  const names = getPrefs().toolNames;
+  if (railLocked() || !widthDiffersFromStyle(railWidthOf(dock.get()), s, style, names)) return;
+  withChoice<'keep' | 'natural'>(
+    STYLE_WIDTH_CHOICE,
+    (v) => {
+      if (v === 'natural') setToolRailWidth(naturalRailWidth(s, style, names));
+    },
+    { gently: { undo: () => setRailWidth(mine) } },
+  );
 }
 
 /** The width back to this workspace's own default (what it was saved with, or the natural width). */
