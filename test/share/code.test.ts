@@ -84,10 +84,22 @@ describe('reading a code somebody typed', () => {
   });
 
   it('can be shown with the secret part hidden', () => {
-    const c = makeCode();
-    const shown = maskedCode(c);
-    for (const w of c.secret) expect(shown).not.toContain(w);
-    for (const w of c.meet) expect(shown).toContain(w);
+    // Run it a good many times: a repeated word used to slip through about one code in a hundred, and then a secret
+    // word showed in the meeting half, which is exactly what must never happen.
+    for (let i = 0; i < 500; i++) {
+      const c = makeCode();
+      const shown = maskedCode(c);
+      for (const w of c.secret) expect(shown).not.toContain(w);
+      for (const w of c.meet) expect(shown).toContain(w);
+    }
+  });
+
+  it('never says the same word twice, so a code is as strong as it looks', () => {
+    for (let i = 0; i < 500; i++) {
+      const c = makeCode();
+      const all = [...c.meet, ...c.secret];
+      expect(new Set(all).size).toBe(all.length);
+    }
   });
 });
 
