@@ -9,7 +9,7 @@ The very first time, [Quill says hello](help:first-run) and helps you set things
 - **Doodle** is a wide, roomy page for sketching and cartoons.
 - **Square** is good for icons and posts.
 - **Game sprite** and **Tiny sprite** are pixel art, with big square pixels.
-- **Custom** lets you choose the size yourself.
+- **Custom** lets you choose the size yourself, and whether it moves. Settings you use again can be saved as your own **favourite** cards.
 
 Press **Open** if you already have a drawing to carry on with.
 
@@ -81,9 +81,21 @@ Add [speech, music and effects](help:sound), and let [lip sync](help:lip-sync) p
 
 ## Custom
 
-Choose a name, a width and a height, and how many frames a second it plays. Tick **Pixel art** to draw with big square pixels, then say how big each one is.
+Pick **Custom** (or run **New drawing, your own size** from the command palette) to choose everything yourself: a name, a width and a height, and whether it is **pixel art**.
+
+Tick **Add animation** if you want something that moves. **Frames a second** appears, and the drawing starts with some frames to play with. Leave it off for a single picture; you can add animation later.
 
 > Frames a second (fps) is how fast the drawing plays. 12 feels hand-drawn, 24 feels like film.
+
+**Your sizes stay put.** Tick **Pixel art** to have a look, untick it, and the width and height you typed are still there. Each mode keeps its own.
+
+**Custom remembers.** Next time you open it, it starts from the size and ticks you used last. The name always starts as **Untitled**, so two drawings never end up called the same by accident. If you would rather start fresh each time, change **Where Custom starts from** in **Preferences > Behaviour**.
+
+## Favourites
+
+Always make 1920 x 1080 at 24 frames a second? Set it up in Custom and press **Save as favourite**. Give it a name and it sits as a card beside Doodle and Square, so next time it is one press. A favourite made from an animation setup stays an animation.
+
+Point at a favourite to **rename** it, move it **earlier** or **later**, or **remove** it. Removing it can be undone from the message that appears. You can keep 12, and they follow you from drawing to drawing (and into a settings backup).
 
 ## Unsaved work
 
