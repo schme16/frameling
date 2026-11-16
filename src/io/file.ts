@@ -35,6 +35,8 @@ import type { RestoredHistory } from '../core/store';
 import { readClip } from '../core/clipPlay';
 import { cleanStrokeStyle } from '../geometry/lineStyle';
 import { cleanTrim } from '../geometry/trim';
+import { cleanRepeat } from '../geometry/repeat';
+import { canRepeat } from '../core/repeats';
 import { readDataLayers, readTerrainMode, readTerrains, readTileExtras } from '../core/tileFormat';
 import { readTip } from '../geometry/tip';
 
@@ -554,7 +556,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
           const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
-          if (read) shapes.push(withShapeEffects(withExt(read, s, warnings), s));
+          if (read) shapes.push(withRepeat(withShapeEffects(withExt(read, s, warnings), s), s));
           else lost = true;
         } else {
           // A kind of shape this version does not know: kept as it is, so saving never drops it.
@@ -936,6 +938,15 @@ export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | unde
     ...(inputs.length ? { inputs } : {}),
     ...(raw.anyFirst === false ? { anyFirst: false } : {}),
   };
+}
+
+/** The shape with the repeat it was saved with, when it is one that can repeat and the repeat reads as one. */
+function withRepeat<T extends Shape>(shape: T, raw: Record<string, unknown>): T {
+  if (!('repeat' in raw) && !('repeat' in shape)) return shape;
+  // Whatever the shape carried over from the file is replaced by the cleaned repeat, or taken out.
+  const { repeat: _raw, ...rest } = shape as T & { repeat?: unknown };
+  const repeat = canRepeat(shape) ? cleanRepeat(raw.repeat) : undefined;
+  return (repeat ? { ...rest, repeat } : rest) as T;
 }
 
 /** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */

@@ -24,6 +24,8 @@ import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/li
 import { trimActive, trimStrokePoints } from '../geometry/trim';
 import { tipReach } from '../geometry/tip';
 import { setTipOutliner, strokeParts } from './tips';
+import { setRepeatHelpers } from './repeats';
+import { moveForRepeat, shapeCentre } from '../canvas/repeatMove';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -98,6 +100,7 @@ export function strokeOutlineWhole(s: StrokeShape): number[][] {
 }
 
 // Tipped lines ask for the outline of the line itself, whatever tip it has (the cache above keeps it).
+setRepeatHelpers({ move: (s, m) => moveForRepeat(s, m), centre: (s) => shapeCentre(s) });
 setTipOutliner((s, b) => (b === s.brush ? strokeOutline(s) : computeOutline({ ...s, brush: b })));
 
 /** Smooth closed Path2D through outline points (quadratic midpoints, as perfect-freehand recommends). */

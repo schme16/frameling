@@ -15,7 +15,7 @@
  *   `morphNotes` so the panel can say so.
  */
 import { blendGradient } from './gradient';
-import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
+import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Repeat, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
 import { strokeOutline } from './render';
 import { lerpTrim } from '../geometry/trim';
 
@@ -43,6 +43,7 @@ interface Style {
   /** Which kind of shape it came from, so a pair of fills stays a fill. */
   type: 'fill' | 'path';
   group?: string;
+  repeat?: Repeat;
   fillGradient?: Gradient;
   strokeGradient?: Gradient;
 }
@@ -475,8 +476,8 @@ function strokeAsFill(s: StrokeShape): FillShape {
 }
 
 function styleOf(s: FillShape | PathShape): Style {
-  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group, fillGradient: s.gradient };
-  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group, fillGradient: s.fillGradient, strokeGradient: s.strokeGradient };
+  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group, repeat: s.repeat, fillGradient: s.gradient };
+  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group, repeat: s.repeat, fillGradient: s.fillGradient, strokeGradient: s.strokeGradient };
 }
 
 // ---------------------------------------------------------------- plans
@@ -701,6 +702,8 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
         ...(a.group ? { group: a.group } : {}),
         // Paper tooth and other effects on the line stay on it through the in-betweens.
         ...(a.effects ? { effects: a.effects } : {}),
+        // A repeat carries on from the first key through the in-betweens.
+        ...(a.repeat ? { repeat: a.repeat } : {}),
         points: p.pa.map((q, i) => ({ x: lerp(q.x, p.pb[i].x, t), y: lerp(q.y, p.pb[i].y, t), p: Math.max(0, Math.min(1, lerp(q.p, p.pb[i].p, t))) })),
         brush: br,
         color: mixColors(a.color, b.color, t) ?? a.color,
@@ -711,7 +714,7 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
     }
     const paths = p.rings.map((r) => blendRing(r, t));
     const opacity = Math.max(0, Math.min(1, lerp(p.a.opacity, p.b.opacity, t)));
-    const group = p.a.group ? { group: p.a.group } : {};
+    const group = { ...(p.a.group ? { group: p.a.group } : {}), ...(p.a.repeat ? { repeat: p.a.repeat } : {}) };
     if (p.a.type === 'fill' && p.b.type === 'fill') {
       const gradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
       out.push({ id: p.id, type: 'fill', ...group, paths, color: mixColors(p.a.fill, p.b.fill, t) ?? p.a.fill ?? '#000000', opacity, ...(gradient ? { gradient } : {}) });

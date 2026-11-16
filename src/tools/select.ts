@@ -47,6 +47,7 @@ import { outlinePath, strokeOutlineWhole, subPathsToPath2D } from '../core/rende
 import { trimOf } from '../core/trimTween';
 import { trimActive } from '../geometry/trim';
 import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
+import { drawRepeatExtent } from '../repeat/extent';
 import { lockedLayerAt } from '../canvas/lost';
 import { landMatrix } from './select-land';
 import { withChoice } from '../core/choices';
@@ -579,6 +580,8 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
     }
   }
   gx.globalAlpha = 1;
+  // A picked repeat shows how far all its copies reach.
+  drawRepeatExtent(gx, sel, ctx.zoom);
   // The points picked on their own, as little squares, so you can see which corners you have.
   if (parts.size) {
     const dot = 7 * px;

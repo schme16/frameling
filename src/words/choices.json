@@ -611,6 +611,26 @@
     "where": "Dialog and Preferences: the small line under the \"replace\" answer in \"Offset path: the original\"."
   },
   "choice.shapes.offsetKeep.replace.did": { "text": "Swapped the original for the copy.", "where": "Toast when \"replace\" is used without asking (\"Offset path: the original\"), in the past tense." },
+  "choice.repeat.ringTurn.title": { "text": "Copies round a ring", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.repeat.ringTurn.question": {
+    "text": "When you repeat a shape round a ring, should each copy turn to follow the ring, or stay the way up it is?",
+    "where": "The question the \"Copies round a ring\" dialog asks."
+  },
+  "choice.repeat.ringTurn.follow.label": { "text": "Turn to follow the ring", "where": "Dialog and Preferences: the button for the answer \"follow\" in \"Copies round a ring\"." },
+  "choice.repeat.ringTurn.follow.detail": {
+    "text": "Petals, spokes and clock hands: each copy points outwards, like the spokes of a wheel.",
+    "where": "Dialog and Preferences: the small line under the \"follow\" answer in \"Copies round a ring\"."
+  },
+  "choice.repeat.ringTurn.follow.did": { "text": "Each copy turns to follow the ring.", "where": "Toast when \"follow\" is used without asking (\"Copies round a ring\"), in the past tense." },
+  "choice.repeat.ringTurn.upright.label": { "text": "Stay upright", "where": "Dialog and Preferences: the button for the answer \"upright\" in \"Copies round a ring\"." },
+  "choice.repeat.ringTurn.upright.detail": {
+    "text": "Beads on a necklace, or people round a table: each copy keeps the way up the original has.",
+    "where": "Dialog and Preferences: the small line under the \"upright\" answer in \"Copies round a ring\"."
+  },
+  "choice.repeat.ringTurn.upright.did": {
+    "text": "Each copy stays the way up the original is.",
+    "where": "Toast when \"upright\" is used without asking (\"Copies round a ring\"), in the past tense."
+  },
   "choice.draw.heldFrame.title": { "text": "Drawing on a held frame", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
   "choice.draw.heldFrame.question": {
     "text": "This frame is still showing a drawing from an earlier frame (it's being held). When you draw here, what should happen?",

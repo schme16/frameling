@@ -21,6 +21,7 @@ import { bindLayer, type PosedMesh } from './layerKinds';
 import { canOffset, mixOffsets, offsetDrawing, offsetOf } from './offset';
 import { withoutNotes } from '../notes/model';
 import { withTips } from './tips';
+import { withRepeats } from './repeats';
 import { hasTrim, trimmedBetween } from './trimTween';
 
 // ---------------------------------------------------------------- matrices
@@ -695,7 +696,7 @@ export const poseStats = { built: 0 };
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseAtPlain(doc, layer, frame, depth);
-  return d ? moved(layer, frame, withTips(d)) : d;
+  return d ? moved(layer, frame, withTips(withRepeats(d))) : d;
 }
 
 /** `poseAt` with brush tips left as the lines they were drawn as, for code that looks lines up by their id. */
@@ -910,7 +911,7 @@ export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
 
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
-  const d = poseLiveCel(doc, layer, frame, live);
+  const d = withRepeats(poseLiveCel(doc, layer, frame, live));
   return moved(layer, frame, layer.bind ? bindLayer(doc, layer, frame, d) : d);
 }
 

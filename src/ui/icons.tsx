@@ -221,6 +221,15 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="12" cy="17.5" r="1.3" fill="currentColor" />
     </>
   ),
+  // Repeat: a shape and its copies in a grid, the last one still to come.
+  repeat: (
+    <>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8" strokeDasharray="2 2" />
+    </>
+  ),
   polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
   pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
   gradient: (

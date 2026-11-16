@@ -3,6 +3,7 @@
 // it can be tested. Panels not listed here (plugins) get a place on the rail.
 import { celAt, findLayer } from '../core/doc';
 import { isInstance } from '../core/symbols';
+import { canRepeat } from '../core/repeats';
 import { hasPixelSelection } from '../select/pixel-state';
 import type { Layer, Shape } from '../core/format';
 import { getTool, type PanelDef } from '../core/registry';
@@ -124,6 +125,20 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     relevant: (s) => hasSelected(s),
     idle: 'Select something on the canvas',
     keywords: ['align', 'line up', 'distribute', 'space out', 'spread', 'centre', 'center', 'left', 'right', 'top', 'bottom', 'middle', 'gap', 'even'],
+  },
+  repeat: {
+    blurb: 'Make rows and columns of the picked shape, a ring of it round a centre you can snap, or a mirror image across a line. Change the original and every copy follows.',
+    group: 'properties',
+    section: true,
+    selection: true,
+    relevant: (s) => layerOf(s)?.kind === 'vector' && picked(s).some(canRepeat),
+    idle: 'Select a shape on a vector layer',
+    detail: (s) => {
+      const r = picked(s).find((x) => canRepeat(x) && 'repeat' in x && x.repeat);
+      const k = r && 'repeat' in r ? r.repeat?.kind : undefined;
+      return k === 'grid' ? 'rows and columns' : k === 'ring' ? 'ring' : k === 'mirror' ? 'mirror' : undefined;
+    },
+    keywords: ['repeat', 'pattern', 'array', 'grid', 'ring', 'circle', 'mirror', 'symmetry', 'copies', 'rows', 'columns', 'petals', 'fan'],
   },
   'symbol-props': {
     short: 'Motion',
@@ -271,7 +286,7 @@ export function planRight(groups: { tabs: string[]; active: string | null }[], m
 }
 
 /** The sections about a selection that come first among them, in this order. */
-const ABOUT_FIRST = ['selection-numbers', 'align'];
+const ABOUT_FIRST = ['selection-numbers', 'align', 'repeat'];
 
 /**
  * Which sections Properties shows now, and which are left out (the Panels list says when each turns up). A section shows when it applies, or when

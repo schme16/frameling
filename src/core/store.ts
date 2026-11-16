@@ -6,6 +6,7 @@
  *
  * React components read with `useStore(selector)`.
  */
+import { registerDocSource } from './docSource';
 import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Draft, type Patch } from 'immer';
 import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
@@ -746,6 +747,7 @@ export class Store {
 }
 
 let current = new Store();
+registerDocSource(() => current.get().doc);
 
 /** The app's store. */
 export function store(): Store {

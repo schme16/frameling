@@ -4,7 +4,7 @@
  */
 import type { Id, Shape } from '../core/format';
 import { uid } from '../core/doc';
-import { cloneShape, transformShape, translate } from '../canvas/geometry';
+import { carryRepeat, cloneShape, transformShape, translate } from '../canvas/geometry';
 
 interface Clip {
   shapes: Shape[];
@@ -44,7 +44,7 @@ export function pasteFromClipboard(target: Id | null): Shape[] {
   // there, so it steps aside.
   const n = (target ? (clip.pastes.get(target) ?? 0) : 0) + (clip.from !== null && clip.from === target ? 1 : 0);
   const move = translate(n * PASTE_STEP, n * PASTE_STEP);
-  return regroup(clip.shapes.map((s) => transformShape(cloneShape(s, uid('sh')), move)));
+  return regroup(clip.shapes.map((s) => carryRepeat(transformShape(cloneShape(s, uid('sh')), move), move)));
 }
 
 /** Tells the clipboard a paste landed in this drawing, so the next one steps along. */
@@ -55,7 +55,7 @@ export function notePasted(target: Id | null | undefined): void {
 /** Copies of shapes with new ids, nudged aside (Duplicate). */
 export function duplicateShapes(shapes: Shape[]): Shape[] {
   const move = translate(PASTE_STEP, PASTE_STEP);
-  return regroup(shapes.map((s) => transformShape(cloneShape(s, uid('sh')), move)));
+  return regroup(shapes.map((s) => carryRepeat(transformShape(cloneShape(s, uid('sh')), move), move)));
 }
 
 export function clearClipboard(): void {

@@ -30,6 +30,7 @@ export const HISTORY: History = {
   'LONG_LISTS.View > Panels': [
     { on: D, n: 30, why: 'View > Panels was at the cap of 30 before Position and size and Align and space out became Properties sections of their own.' },
     { on: D, n: 32, why: 'Position and size and Align and space out each need a show-and-hide like every other panel, and the way down is a Properties submenu, which is a menu layout change for another day.' },
+    { on: D, n: 33, why: 'Repeat: the Repeat section of Properties gets a show-and-hide like every other panel, so the list of panels is one longer.' },
   ],
   'BIG_MENUS.View': [
     { on: D, n: 185, why: 'Start of 16 November: the count before that day\'s changes (see the view-menu-ledger card for each step).' },
@@ -39,6 +40,7 @@ export const HISTORY: History = {
     { on: D, n: 191, why: 'Position and size and Align and space out became Properties sections of their own, each with a show-and-hide in View > Panels.' },
     { on: D, n: 201, why: 'The Pixel menu went, so its ten view things (zoom to a pixel size 6, slices 2, the Preview\'s play and size 2) came to View, where looking at the canvas belongs.' },
     { on: D, n: 157, why: 'view-ledger: entries a control on screen already does left the menu and stayed in the palette (snapping ticks, tool builder rows, grid and perspective settings, Notes and Marks buttons, a panel\'s right-click menu), and Reset layout joined Put the panels back.' },
+    { on: D, n: 158, why: 'Repeat: the show-and-hide for the Repeat section of Properties. Repeat own commands went to the Edit menu, which had room, rather than here.' },
   ],
   'BIG_MENUS.Draw': [
     { on: D, n: 146, why: 'Start of 16 November: Tools (the Draw menu) before it took in the Pixel menu\'s drawing things.' },
@@ -57,22 +59,26 @@ export const HISTORY: History = {
     { on: D, n: 558, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 557, why: 'view-ledger: Reset layout joined Put the panels back, one command fewer in the palette on both sides, so the gap to a drawing with animation is unchanged.' },
     { on: D, n: 553, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window, and five fewer because the clean timeline, ghost on empty frames, the light table, looking through the camera while playing, importing sound and making a symbol from the whole animation now ask for animation first.' },
+    { on: D, n: 555, why: 'Repeat: the Repeat tool and the panel show-and-hide work with nothing picked, so both count here. The rest of Repeat needs a shape first.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 738, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a drawing with animation is unchanged.' },
     { on: D, n: 733, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window in Edit > Scripts, and six fewer menu entries from the animation commands that now wait until a drawing has animation.' },
+    { on: D, n: 740, why: 'Repeat: seven menu entries, the submenu under Edit for rows and columns, a ring, a mirror, the tool, turn into shapes and take the repeat off, plus the panel show-and-hide in View.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
     { on: D, n: 602, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 601, why: 'view-ledger: Reset layout joined Put the panels back, one command fewer in the palette on both sides, so the gap to a still is unchanged.' },
     { on: D, n: 602, why: 'Merging scripts-bottom: Scripts in their own window is a new command, and a drawing with animation loses none of the ones a still just lost, so this side goes up by the one.' },
+    { on: D, n: 604, why: 'Repeat: the same two as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 856, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a still is unchanged.' },
     { on: D, n: 857, why: 'Merging scripts-bottom: Scripts in their own window sits in Edit > Scripts, and nothing left the menus on this side, so it goes up by the one.' },
+    { on: D, n: 864, why: 'Repeat: the same seven as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };
