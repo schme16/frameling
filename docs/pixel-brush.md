@@ -91,3 +91,5 @@ Pen, speed and fade options (`DynamicsSection` takes a `DabHandle`). They hold t
 texture. The clone stamp's source and offset live in `src/retouch/aim.ts` with the rules in `maths.ts` (`strokeOffset`: aligned keeps the
 offset between strokes, otherwise every stroke restarts from the source). Which of the two is the ask-once choice `clone.align`, asked after
 the first stroke.
+
+- **Thin lines.** A smooth dab under two pixels wide is drawn as a two pixel one with its paint scaled by `size / 2` (`samplerFor`), so a hairline shows wherever it falls and gets fainter as it thins, instead of vanishing when it sits between two pixel rows. Crisp (aliased) dabs snap to whole pixels and are left alone.
