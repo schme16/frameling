@@ -15,8 +15,8 @@ import { blendPaint } from './blend';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
 import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
-import { dualAt, dualTile, grainCut } from './texture';
-import { paperTile, TILE, type PaperKind } from '../dry/paper';
+import { dualAt, dualTile, grainCut, grainTile } from './texture';
+import { TILE, type PaperKind } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
 export interface Surface {
@@ -163,7 +163,7 @@ export class DabStroke {
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
     const g = p.brush.grain;
-    this.grainTile = g && g.depth > 0 ? paperTile(g.paper ?? p.sheet ?? 'medium') : null;
+    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet) : null;
     this.grainDepth = g?.depth ?? 0;
     this.grainScale = g?.scale ?? 1;
     this.grainMoving = !!g?.moving;

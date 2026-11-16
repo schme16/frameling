@@ -57,11 +57,32 @@ paper's height: light paint only lands on the peaks, full paint always fills. Wi
 dither as the threshold, so grain makes whole pixels. Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own
 dots and one stroke is stable).
 
+### Pictures: a tip you draw, grain and dots from an image
+
+All three take a picture the person supplies, so all three go through `src/brushes/imageIn.ts` first: the file is capped at 12 MB, its
+size is read from the header (PNG, GIF, JPEG, WebP, BMP) and the picture is refused above 8192 a side or 16 million pixels
+*before* anything is unpacked, and an animation gives its first still through the page's decoder instead of the frame reader. The
+same file goes on to be boiled down at once, so no big buffer outlives the call.
+
+- **Picture tip editor** (`src/brushes/TipEditor.tsx`, grid maths in `tipGrid.ts`, file route in `tipEdit.ts`): a grid up to 32 by 32
+  to paint, rub out, fill, flip, turn and shift, undo, with the real brush shown beside it (`PixelTip`/`PixelStroke`). It starts blank,
+  from the brush's own picture, from the pixel selection (`makePixelBrush`) or from a picture file (`gridFromPicture`: shrunk to fit,
+  box averaged). It hands back a plain `PixelStamp`, so a saved brush, the brush file importers and the engine are unchanged:
+  `stampFromGrid` keeps a full cell exactly full (plain tip), writes shades as a soft tip, and keeps colours as the picture's own
+  (reduced to 256 by `tipFrom` when there are more). A picture with see-through parts is taken as its own shape; a solid one asks
+  once (`brush.imageTipReading`: dark parts, light parts or the whole picture), and several colours ask `brush.pixelStampColours`.
+- **Grain and dual from a picture** (`src/dab/texturePicture.ts`): `Grain.picture` and `Dual.picture` are a `TexturePicture`, a square of
+  lightness 8, 16, 32 or 64 across (see-through counts as white paper), saved as base 64 (at most 5.5 KB). `grainTileFromPicture`
+  evens the greys out (histogram equalising, like the papers) and repeats them into the 256 tile; the paint catches on the dark
+  parts, as it does on a paper's low values. `dualTileFromPicture` lets paint through the darkest `density` of the picture, scaled 1,
+  2, 4 or 8 times as far as it fits the tile. `invert` swaps light and dark. Both end as the same `Uint8Array(256*256)` the dab loop
+  already reads, so nothing in the loop changed and there is no per-dab cost; tiles are made once and kept (at most 24).
+- Not stored: the picture file itself. Only the boiled down greys, or the up to 32 by 32 tip, go in a brush.
+
 ## Not built, with the reason
 
-- **Texture from a picture, and a second brush with its own spacing and scatter** (PS dual with scatter and count, PS texture from a
-  pattern): grain is the five papers and dual is dots of one size. A `Grain`/`Dual` tile from an image is the extension point
-  (`paperTile`, `dualTile` return `Uint8Array(256*256)`).
+- **A second brush with its own spacing and scatter** (PS dual with scatter and count): the dual tip is one tile of dots or a picture,
+  not a second dab brush. Texture from a picture is built (see below).
 - **Blend modes inside the dual tip** (PS dual's multiply/subtract/overlay): the dual tip is only keep and cut. The brush's own `blend` is built.
 - **Smoothing, stabiliser per brush**: the Pen page's stabiliser stays per tool.
 - **Brush tip editor** (drawing a tip in a window): the tip is made from a selection.

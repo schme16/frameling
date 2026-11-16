@@ -1,0 +1,73 @@
+.te-body {
+  display: grid;
+  gap: 12px;
+}
+.te-stage {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.te-canvas {
+  flex: 0 0 auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--text);
+}
+.te-grid {
+  display: block;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+  max-width: 100%;
+}
+.te-side {
+  flex: 1 1 260px;
+  min-width: 240px;
+  display: grid;
+  gap: 8px;
+}
+.te-preview {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--text);
+}
+.te-tip,
+.te-stroke {
+  display: inline-flex;
+  border-radius: 8px;
+  background: var(--raised);
+  overflow: hidden;
+}
+.te-tip canvas {
+  /* One dab at 32 by 32 art pixels, shown twice as big so a small tip can be seen. */
+  width: 64px !important;
+  height: 64px !important;
+  image-rendering: pixelated;
+}
+.te-stroke {
+  flex: 1;
+  min-width: 0;
+}
+.te-stroke canvas {
+  width: 100%;
+}
+.te-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.te-colour {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.te-note {
+  margin: 0;
+}
+.te-size {
+  margin-right: auto;
+}

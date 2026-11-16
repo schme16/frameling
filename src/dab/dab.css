@@ -81,3 +81,13 @@
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
+
+/* A picture used as grain or as dual dots, drawn at its own size, blown up without blurring. */
+.dab-texpic {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  align-self: flex-start;
+}
