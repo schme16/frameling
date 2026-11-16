@@ -1,0 +1,23 @@
+Tip picker: the two rows of tip chips are one picker button.
+
+BEFORE: a row of nine chips (Plain, Chalk, Charcoal, Watercolour, Stamp, Pen nib, Along the line, Edged, Bristles),
+and on a stamp a second row of seven shape chips. Words only, so nothing shows what a line will look like.
+AFTER: one button, the same shape as the brush picker above it, showing a stroke drawn in the tip in use. It opens a
+list with a real stroke across every tip (drawn by the same renderer as a line on the page, with your size and
+pressure), in four groups, with search. A stamp is its shape (Leaf, Dash, Dot, Star, Diamond, Heart, Paw print, and
+Yours when you made one), so the shape row is gone. The sliders and the explaining line under them are as before.
+
+Space, the whole Tip block (label, picker or chips, sliders, explaining line), same window, same width, in px:
+  stamp tip:            794 -> 698  (96 back)
+  chalk or any other:   359 -> 323  (36 back)
+  plain:                142 -> 106  (36 back)
+Measured by a log step in scripts/docs/ab-tip-picker/shots.cjs (the Tip block's height).
+
+Cost: choosing a tip is two clicks (open the picker, click a row) where a chip was one. Ctrl+K "Brush tip: Chalk", and
+Next and Previous brush tip (Alt+Shift+Down and Up) are still one step. In the picker you can also type and press Enter.
+
+Files (each in dark and light):
+  options-before-after-stamp-*.png / -chalk-* / -plain-*   options panel, before left, after right, same crop
+  picker-open-*.png        picker open: one column (default row style) and two columns (the existing row style choice)
+  stamp-chosen-*.png       chalk in use, then Heart picked from the picker
+Made with: scripts/docs/ab-tip-picker/shots.cjs (see docs/testing.md).

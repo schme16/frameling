@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **On a vector layer** the brush makes smooth lines that follow your hand. If you have a drawing pen, pressing harder makes the line thicker. With a mouse, drawing faster makes it a little thinner. Every line stays editable, so you can select it later and move or resize it.
 
-In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped. The **Tip** row gives lines a different feel: [chalk, charcoal, watercolour or stamps](help:brush-tips).
+In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped. The **Tip** picker gives lines a different feel: [chalk, charcoal, watercolour or stamps](help:brush-tips).
 
 **How big can it go?** The **Size** slider runs from 1 pixel to a little wider than your canvas, so a big canvas gets a big brush and a small one is not left with a slider that is all too wide. The first part of the slider is for small, careful sizes and the last part is for the huge ones. Want it bigger still? Click the number beside the slider and type any size you like. The pencil's **Thickness** and the pen's **Line thickness** work the same way.
 
