@@ -45,7 +45,7 @@ import {
   useRowStyle,
 } from './picker';
 import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
-import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, type PickerSide } from './tipList';
+import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, parseTipId, type PickerSide } from './tipList';
 import { pickStick, pickTip } from './tips';
 import { currentSpec, putSpec } from '../dab/live';
 import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
@@ -123,6 +123,9 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
   const brush = live ?? b.brush;
   const spec = b.tool === 'pixel' ? (liveSpec ?? b.pixel) : undefined;
   const tip = rows === 'tip';
+  // A pen tip row does what the Brush tip command of the same name does (every stamp shape is the Stamp tip).
+  const tipKind = tips ? parseTipId(b.id) : null;
+  const command = tipKind ? `brush.tip.${tipKind.kind ?? 'plain'}` : undefined;
   return (
     <div
       id={`pk-i${idx}`}
@@ -131,6 +134,7 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
       className={`pk-row pk-row-${rows}`}
       data-on={on}
       data-hot={hot}
+      data-command={command}
       title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >

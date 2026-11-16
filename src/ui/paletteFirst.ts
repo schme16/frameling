@@ -89,6 +89,14 @@ export const LEFT_OUT_OF_MENUS: Record<string, string> = {
   'colors.recolourLayer': 'This layer, in the Where row of the Recolour dialog',
   'colors.recolourFrame': 'This frame, in the Where row of the Recolour dialog',
   'colors.recolourSelection': 'The selection, in the Where row of the Recolour dialog',
+  // The brush tips: each tip is a row in the Tip picker in the Brush options (every stamp shape is the Stamp row), and the
+  // buttons that take a drawing from the selection are in the options of the tip that uses it. Next and previous tip (keys
+  // only) and Turn brush lines into plain shapes have no control on screen, so they stay in the Brush tips menu.
+  ...Object.fromEntries(['plain', 'chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle'].map((k) => [`brush.tip.${k}`, 'The Tip picker, in the Brush options'])),
+  'brush.fromSelection': 'Brush from selection, in the Brush options and the pixel brush options',
+  'brush.makeAlong': 'Use the selection as the drawing, in the Along the line tip options',
+  ...Object.fromEntries(['sides', 'start', 'end', 'inner', 'outer'].map((k) => [`brush.edged.${k}`, 'Use selection, in the parts of the Edged tip options'])),
+  'brush.pixelReset': 'Back to the usual brush, in the pixel brush options',
   // The right-click menu on a panel tab or a window.
   'view.floatPanel': 'Move to its own window, in the right-click menu of a panel',
   'view.renamePanel': 'Rename, in the right-click menu of a panel',

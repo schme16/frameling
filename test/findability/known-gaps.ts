@@ -109,7 +109,8 @@ export const BIG_MENUS: Record<string, number> = {
   // next and would have made it 151, so their two commands took the palette-first route instead: the Angular buttons
   // in the Colours panel and the Gradient tool options are the way in (src/ui/paletteFirst.ts).
   // 16 November 2026, tools-room: 149 down to 82. The tool list (every tool is a button on the rail), the Line style submenu and the rows that are in a tool's own options left the menu and stayed in the palette (src/ui/paletteFirst.ts); five tools the Pixel rail leaves off stay, in Tools off the Pixel rail. See ledger-history.ts for the step.
-  Draw: 82,
+  // 16 November 2026, tips-palette: 82 down to 65. Seventeen of the twenty Brush tips entries left the menu and stayed in the palette (src/ui/paletteFirst.ts): the nine tips are rows in the Tip picker, and the selection, Along the line, Edged parts and pixel reset entries are buttons in the brush options. Next tip, Previous tip and Turn brush lines into plain shapes have no control on screen, so they stay.
+  Draw: 65,
 };
 
 /**
@@ -178,6 +179,8 @@ export const STILL_LOAD = {
   // for the clone stamp and its commands in their own submenu under Soft paint, +3 for Levels, Curves and the one
   // step auto levels in Effects beside Colour adjust, and +2 for the blur and sharpen brushes in Soft paint, 12 in
   // all on both sides. None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 579, menu: 736, animateMenu: 8 },
-  animated: { palette: 628, menu: 860, animateMenu: 123 },
+  // tips-palette: -17 menu on both sides, the Brush tips entries that left the menu for the palette because a control
+  // on screen does their job, with no palette change and no change for animation.
+  still: { palette: 579, menu: 719, animateMenu: 8 },
+  animated: { palette: 628, menu: 843, animateMenu: 123 },
 };

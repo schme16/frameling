@@ -272,7 +272,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   brushtips: {
     label: 'Brush tips',
-    items: ['brush.tip.plain', 'brush.tip.chalk', 'brush.tip.charcoal', 'brush.tip.watercolour', 'brush.tip.stamp', 'brush.tip.nib', 'brush.tip.along', 'brush.tip.edged', 'brush.tip.bristle', '-', 'brush.tipNext', 'brush.tipPrevious', '-', 'brush.fromSelection', 'brush.makeAlong', 'brush.edged.sides', 'brush.edged.start', 'brush.edged.end', 'brush.edged.inner', 'brush.edged.outer', '-', 'brush.flatten', 'brush.pixelReset'],
+    items: ['brush.tipNext', 'brush.tipPrevious', '-', 'brush.flatten'],
     prefixes: ['brush.tip.'],
   },
   toolopts: {
