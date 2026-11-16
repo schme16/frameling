@@ -15,12 +15,13 @@ import { usePaintRules } from '../../pixel/colourRules';
 
 // Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes. When the picked
 // shapes share a gradient, or the box holds one, it changes the gradient colour being edited instead (the picked
-// shapes' own gradient is theirs to change: the box is left as it was).
+// shapes' own gradient is theirs to change: the box is left as it was). A picked shape's plain colour is shown the same
+// way, and a change to it goes to the shape and then the box.
 function setColor(c: string): void {
   const w = store().get().ui.activeWell;
   const v = paintView(w);
   if (v.from === 'differ') return;
-  if (v.style) setStopColor(w, c);
+  if ('style' in v && v.style) setStopColor(w, c);
   else setActiveColor(c);
 }
 
@@ -94,7 +95,7 @@ export function ColorsPanel() {
   // Re-read when the gradient changes, so the picker follows the marker being edited.
   const view = usePaintView(well);
   useGradientWells((s) => s.stop[well]);
-  const color = stopColor(well) ?? plain;
+  const color = stopColor(well) ?? (view.from === 'colour' ? view.color : plain);
   const swatches = useStore((s) => s.doc.swatches);
   const recent = useRecentColors();
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -103,7 +104,7 @@ export function ColorsPanel() {
   return (
     <div className="cv-panel cv-colors">
       <Wells />
-      {view.from !== 'differ' && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
+      {view.from !== 'differ' && view.from !== 'colours' && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
       <GradientEditor />
 
       <div className="cv-field-head">

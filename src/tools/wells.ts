@@ -13,7 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
-import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedGradients, paintView, swapGradientWells } from './gradient-wells';
+import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, matchSelectedGradients, paintView, swapGradientWells, writeColour } from './gradient-wells';
 import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
@@ -111,6 +111,12 @@ export function setActiveColor(c: Color): void {
     if (ui.color !== c || !ui.strokeOn) store().setUi({ color: c, strokeOn: true });
     return;
   }
+  // Picked shapes that hold a plain colour on this side come first: they change, and the box follows the edit.
+  const v = paintView(ui.activeWell);
+  if (v.from === 'colour' || v.from === 'colours') {
+    writeColour(ui.activeWell, c);
+    return;
+  }
   if (ui.activeWell === 'fill') {
     if (ui.fillColor === c) return;
     store().setUi({ fillColor: c });
@@ -190,6 +196,20 @@ registerCommands([
     reason: () => 'Pick shapes with different gradients first.',
     run: () => {
       matchSelectedGradients(store().get().ui.activeWell);
+      endGradientGesture();
+    },
+  },
+  {
+    id: 'colors.matchColours',
+    label: 'Make picked colours match the first',
+    category: 'Colours',
+    description: 'Give every picked shape the fill or outline colour of the first picked shape, for the box in front.',
+    help: 'fill-and-stroke',
+    keywords: ['colour', 'color', 'match', 'same', 'different', 'differ', 'copy', 'fill', 'stroke'],
+    enabled: (s) => s.ui.selection.length > 1 && paintView(s.ui.activeWell).from === 'colours',
+    reason: () => 'Pick shapes with different colours first.',
+    run: () => {
+      matchSelectedColours(store().get().ui.activeWell);
       endGradientGesture();
     },
   },

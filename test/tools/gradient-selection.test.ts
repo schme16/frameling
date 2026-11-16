@@ -58,7 +58,8 @@ describe('picking a gradient shape', () => {
     addShapes(sky('a', null));
     pick(['a'], 'stroke');
     expect(store().get().ui.activeWell).toBe('stroke');
-    expect(paintView('stroke').from).toBe('box');
+    // A plain colour is shown as the shape's own (see colour-selection.test.ts), not the box.
+    expect(paintView('stroke').from).toBe('colour');
   });
 
   it('starts again at the first colour', () => {
@@ -177,12 +178,19 @@ describe('several shapes picked', () => {
 });
 
 describe('the box still works when nothing picked has a gradient', () => {
-  it('makes a gradient in the box and puts it on the picked shapes, as before', () => {
+  it('starts a gradient from the picked shape\'s own colour, and the box follows the edit', () => {
     addShapes(sky('a', null));
     pick(['a'], 'fill');
     setPaintKind('fill', 'linear');
     expect(shape('a').fillGradient?.kind).toBe('linear');
-    expect(shape('a').fillGradient?.stops[0].color).toBe('#ff0000');
-    expect(store().get().ui.fillColor).toBe('#ff0000');
+    expect(shape('a').fillGradient?.stops[0].color).toBe('#112233');
+    expect(store().get().ui.fillColor).toBe('#112233');
+  });
+
+  it('with nothing picked, makes a gradient from the box', () => {
+    addShapes(sky('a', null));
+    pick([], 'fill');
+    setPaintKind('fill', 'linear');
+    expect(getGradientWells().fill?.stops[0].color).toBe('#ff0000');
   });
 });

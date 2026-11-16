@@ -203,3 +203,14 @@ export function sharedPaint(list: readonly (Gradient | undefined)[]): SharedPain
   if (list.every((g) => g && stopsKey(g) === key)) return { state: 'same', style: styleOf(first) };
   return { state: 'differ', count: list.length };
 }
+
+/** What a set of shapes holds for one side when it is a plain colour: nothing, one shared colour, or a mix. */
+export type SharedColour = { state: 'none' } | { state: 'same'; color: Color } | { state: 'differ'; count: number };
+
+/** The plain colour a set of shapes share (the same colour in any letter case counts as the same). One entry per shape. */
+export function sharedColour(list: readonly Color[]): SharedColour {
+  if (!list.length) return { state: 'none' };
+  const key = list[0].toLowerCase();
+  if (list.every((c) => c.toLowerCase() === key)) return { state: 'same', color: list[0] };
+  return { state: 'differ', count: list.length };
+}

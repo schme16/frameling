@@ -855,6 +855,9 @@
 .cv-well-fill.has-grad {
   background: var(--wellg);
 }
+.cv-well.is-mixed {
+  --wellg: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text) 45%, var(--panel)) 0 5px, var(--panel-2) 5px 10px);
+}
 .cv-recolour-open {
   margin-top: 10px;
   align-self: flex-start;

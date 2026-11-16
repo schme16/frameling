@@ -4,19 +4,25 @@
 import { useStore } from '../../core/store';
 import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../tools/wells';
 import { Icon } from '../../ui/icons';
-import { useGradientWells } from '../../tools/gradient-wells';
-import { gradientCss } from '../../core/gradient';
+import { useGradientWells, usePaintView } from '../../tools/gradient-wells';
+import { firstColor, gradientCss } from '../../core/gradient';
 import { usePaintWells } from '../../tools/pixelWells';
 import { PaintWells } from '../../pixel/PaintWells';
 
 function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string | null; front: boolean }) {
   const label = which === 'fill' ? 'Fill colour' : 'Stroke colour';
-  const g = useGradientWells((s) => (color ? s[which] : null));
-  const style = color ? ({ '--well': color, ...(g ? { '--wellg': gradientCss(g, g.angle) } : {}) } as React.CSSProperties) : undefined;
+  const boxGradient = useGradientWells((s) => (color ? s[which] : null));
+  // What the box shows follows the picked shapes: their gradient or colour, or "mixed" when they differ.
+  const view = usePaintView(which);
+  const mixed = view.from === 'differ' || view.from === 'colours';
+  const shown = view.from === 'colour' ? view.color : view.from === 'selection' ? firstColor(view.style) : color;
+  const g = view.from === 'selection' ? view.style : view.from === 'box' ? boxGradient : null;
+  const style = mixed ? ({ '--well': 'var(--panel-2)' } as React.CSSProperties) : shown ? ({ '--well': shown, ...(g ? { '--wellg': gradientCss(g, g.angle) } : {}) } as React.CSSProperties) : undefined;
+  color = mixed ? 'mixed' : shown;
   return (
     <button
       type="button"
-      className={`cv-well cv-well-${which}${front ? ' is-front' : ''}${color ? '' : ' is-none'}${g ? ' has-grad' : ''}`}
+      className={`cv-well cv-well-${which}${front ? ' is-front' : ''}${color ? '' : ' is-none'}${g || mixed ? ' has-grad' : ''}${mixed ? ' is-mixed' : ''}`}
       style={style}
       aria-pressed={front}
       aria-label={`${label}: ${color ?? 'none'}${front ? ' (in front)' : ''}`}

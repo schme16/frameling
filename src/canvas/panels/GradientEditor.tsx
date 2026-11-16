@@ -23,10 +23,11 @@ if (typeof window !== 'undefined' && typeof location !== 'undefined' && new URLS
 export function GradientEditor() {
   const well = useStore((s) => s.ui.activeWell);
   const view = usePaintView(well);
-  const g = view.from === 'differ' ? null : view.style;
+  const g = 'style' in view ? view.style : null;
   const sel = useGradientWells((s) => s.stop[well]);
   const bar = useRef<HTMLDivElement>(null);
   const drag = useRef<{ i: number; moved: boolean; off: boolean } | null>(null);
+  const mixed = view.from === 'differ' || view.from === 'colours';
   const kind: PaintKind = g?.kind ?? 'solid';
 
   const atOf = (clientX: number) => {
@@ -61,7 +62,7 @@ export function GradientEditor() {
     <div className="cv-gradient" data-quest="gradient-editor">
       <Choice<PaintKind>
         label={well === 'fill' ? 'Fill' : 'Stroke'}
-        value={view.from === 'differ' ? ('' as PaintKind) : kind}
+        value={mixed ? ('' as PaintKind) : kind}
         options={[
           { value: 'solid', label: 'Solid', title: 'One colour' },
           { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
@@ -72,6 +73,16 @@ export function GradientEditor() {
           endGradientGesture();
         }}
       />
+      {view.from === 'colours' && (
+        <div className="cv-gradient-differ" role="group" aria-label="The picked shapes have different colours">
+          <p className="cv-tip" data-testid="colour-differ">
+            These {view.count} shapes have different colours. Click a swatch to give them all one.
+          </p>
+          <button type="button" className="cv-action" title="Give every picked shape the colour of the first one" onClick={() => getCommand('colors.matchColours')?.run()}>
+            Make them all match the first
+          </button>
+        </div>
+      )}
       {view.from === 'differ' && (
         <div className="cv-gradient-differ" role="group" aria-label="The picked shapes have different gradients">
           <p className="cv-tip" data-testid="gradient-differ">
