@@ -18,6 +18,28 @@ const extOf = (name: string): string => {
 
 const stripExt = (name: string): string => name.replace(/\.[A-Za-z0-9]+$/, '').replace(/[_]+/g, ' ').trim();
 
+/**
+ * Brush files we can tell apart but cannot read yet, and the app each belongs to. A Procreate brush is a zip like a
+ * Krita bundle, so without this it was called a damaged Krita bundle, which sends a person looking in the wrong place.
+ */
+export const NOT_READ_YET: Record<string, string> = {
+  '.brush': 'Procreate',
+  '.brushset': 'Procreate',
+  '.sut': 'Clip Studio Paint',
+  '.afbrushes': 'Affinity',
+};
+
+/** The app a file belongs to when it is one we know of but cannot read, else null. */
+export function knownButUnread(bytes: Uint8Array, fileName: string): string | null {
+  const byExt = NOT_READ_YET[extOf(fileName)];
+  if (byExt) return byExt;
+  // A Clip Studio file carries a SQLite database; a Procreate zip holds a Brush.archive.
+  const text = String.fromCharCode(...bytes.subarray(0, 4096));
+  if (text.includes('SQLite format 3')) return 'Clip Studio Paint';
+  if (String.fromCharCode(...bytes.subarray(0, 2)) === 'PK' && text.includes('Brush.archive')) return 'Procreate';
+  return null;
+}
+
 /** Which brush format this looks like, from its ending and then its first bytes. Null when it is none we know. */
 export function sniff(bytes: Uint8Array, fileName: string): BrushFormat | null {
   const ext = extOf(fileName);
@@ -34,7 +56,7 @@ export function sniff(bytes: Uint8Array, fileName: string): BrushFormat | null {
   if (ext === '.gbr' || gbr) return 'gbr';
   // A Krita preset is a PNG; a Krita bundle is a zip whose first entry is its mimetype file.
   if (head(8) === '\x89PNG\r\n\x1a\n' && ext !== '.png') return 'kpp';
-  if (head(2) === 'PK' && ext !== '.zip') return 'bundle';
+  if (head(2) === 'PK' && ext !== '.zip' && !knownButUnread(bytes, fileName)) return 'bundle';
   // A modern Photoshop set has its version, then 8BIM sections.
   if ([6, 7, 9, 10].includes((bytes[0] << 8) | bytes[1]) && head(8).slice(4) === '8BIM') return 'abr';
   return null;
@@ -44,6 +66,8 @@ export function sniff(bytes: Uint8Array, fileName: string): BrushFormat | null {
 export function readBrushFile(bytes: Uint8Array, fileName: string): ImportResult {
   if (bytes.length > MAX_FILE_BYTES) return { ok: false, error: 'That file is too big to be a brush file.' };
   if (bytes.length < 8) return { ok: false, error: 'That file is too small to be a brush file.' };
+  const notYet = knownButUnread(bytes, fileName);
+  if (notYet) return { ok: false, error: `That is a ${notYet} brush file, and Frameling cannot read those yet. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr) and Krita (.kpp, .bundle) brushes.` };
   const format = sniff(bytes, fileName);
   if (!format) return { ok: false, error: `Frameling could not tell what kind of brush file "${fileName.slice(0, 60)}" is. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr) and Krita (.kpp, .bundle) brushes.` };
   const base = stripExt(fileName) || FORMAT_NAMES[format].what;
