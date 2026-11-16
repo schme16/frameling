@@ -42,7 +42,7 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
   lot. A folder with normal blend, full opacity, no effects and no masks inside is "pass
   through" (its layers draw straight onto the stage); otherwise it's drawn as one picture first.
 
-Making a mask from Layers and artboards > Masks and folders or the Effects panel puts the mask and the layer under it (or every layer under it, asked the
+Making a mask from Layers and artboards > Layer > Masks and folders or the Effects panel puts the mask and the layer under it (or every layer under it, asked the
 first time and remembered: choice `effects.maskScope`) into a folder, so a new mask never reaches further than meant.
 
 **Masks you paint** (`src/effects/masks.ts`, no format change). **Add a mask to this layer** (`layers.addMask`, Ctrl+Alt+Shift+M,

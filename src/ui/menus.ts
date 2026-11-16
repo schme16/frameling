@@ -80,17 +80,16 @@ export const MENUS: MenuDef[] = [
     ],
   },
   {
-    // Everything about the layers a drawing is made of, and the artboards (boards) it is made on. A sprite's boards and
-    // frames and its shared layers live here too, since they are layers and boards, and so do tilemaps: a tile layer
-    // is a layer.
+    // The three things this menu is about come first, each a submenu: Layer, Artboards, Tiles. A tile layer is a layer,
+    // so tilemaps live here, and a sprite's boards and frames and its shared layers are the general rows below them.
     label: 'Layers',
     title: 'Layers and artboards',
     categories: ['Layers'],
     items: [
-      'layers.addVector', 'layers.addPixel', 'sub:pairs', 'layers.duplicate', 'layers.delete', '-',
-      'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-',
-      'sub:masks', 'pixel.shareLayers', 'pixel.unshareLayers', '-',
-      'sub:artboards', 'sub:tiles', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'view.panel.layers',
+      'sub:layer', 'sub:artboards', 'sub:tiles', '-',
+      'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-',
+      'heading:Pixels and vectors', 'layers.draw.pixel', 'layers.draw.vector', 'layers.draw.swap', '-', 'layers.addHalf', 'layers.unpair', 'layers.deletePair', '-', 'layers.go.pixel', 'layers.go.vector', '-',
+      'view.panel.layers',
     ],
   },
   {
@@ -141,6 +140,9 @@ export const MENU_HOMES: Record<string, string> = {
   'sub:rig': 'Extras',
   'sub:effects': 'Effects',
   Artboards: 'sub:artboards',
+  // Masks and folders is a group inside the Layer submenu now, and Pixels and vectors a group in the Layers menu.
+  'sub:masks': 'sub:layer',
+  'sub:pairs': 'Layers',
   Plugins: 'sub:plugins',
   // The Pixel menu is gone: what a feature adds to it goes to Tools, where the pixel tools now are.
   Pixel: 'Draw',
@@ -255,15 +257,17 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
       'heading:Pixel text', 'text.pixelType', 'text.pixelFont.classic', 'text.pixelFont.tiny', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller',
     ],
   },
-  pairs: {
-    label: 'Pixels and vectors',
-    items: ['layers.draw.pixel', 'layers.draw.vector', 'layers.draw.swap', '-', 'layers.addHalf', 'layers.unpair', 'layers.deletePair', '-', 'layers.go.pixel', 'layers.go.vector'],
-    prefixes: ['layers.go.', 'layers.draw.'],
-  },
-  masks: {
-    label: 'Masks and folders',
-    items: ['layers.clipToBelow', 'layers.addMask', 'layers.useAsMask', 'layers.maskSwitch', 'layers.maskOnOff', 'layers.flipMask', 'layers.removeMask', '-', 'layers.newFolder', 'layers.ungroupFolder', 'layers.intoFolder', 'layers.outOfFolder', 'layers.folderIntoFolder', 'layers.folderOutOfFolder'],
+  // Masks and folders is a headed group in here: a menu has one level of submenu, no more. Pixels and vectors is a headed
+  // group in the Layers menu itself, since it is about how two layers pair up, the way the sprite rows are about boards and frames.
+  layer: {
+    label: 'Layer',
+    items: [
+      'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-',
+      'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference',
+      'heading:Masks and folders', 'layers.clipToBelow', 'layers.addMask', 'layers.useAsMask', 'layers.maskSwitch', 'layers.maskOnOff', 'layers.flipMask', 'layers.removeMask', '-', 'layers.newFolder', 'layers.ungroupFolder', 'layers.intoFolder', 'layers.outOfFolder', 'layers.folderIntoFolder', 'layers.folderOutOfFolder',
+    ],
     prefixes: ['layers.mask'],
+    categories: ['Layers'],
   },
   align: {
     label: 'Align and space out',

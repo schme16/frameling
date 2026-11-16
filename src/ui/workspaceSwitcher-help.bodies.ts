@@ -25,9 +25,9 @@ The command search has them too: type "workspace switcher".
 The menus are not the workspaces, so they are named for what is in them:
 
 - **Tools** has the drawing tools, flips, arranging, the palette, brushes and the settings for each tool, pixel art ones included.
-- **Layers and artboards** has the layers, masks and folders, and the artboards (boards) a drawing is made on.
+- **Layers and artboards** has three submenus at the top: **Layer** (new, delete, order, masks and folders), **Artboards** (the boards a drawing is made on) and **Tiles**. The rows below are for how a sprite's boards, frames and layers fit together.
 - **Animation** has playing, stepping between frames, onion skin, keys, the camera, lip sync and one-click motions.
-- **Rigging** has the skeleton (rig) and Tiles, and **Effects** has the effects and particles.
+- **Rigging** has the skeleton (rig), and **Effects** has the effects and particles.
 
 Good to know: switching workspace only moves your panels around. Your drawing, your selection and your undo steps stay exactly as they were.
 
