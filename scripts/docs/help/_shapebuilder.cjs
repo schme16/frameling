@@ -2,14 +2,11 @@
 const S = require('./_shapes.cjs');
 const { shapeOf, ellPath, stroke, INK, put, UI } = S;
 
-// The stage's own middle on screen and a zoom that shows all of a 1280 x 720 page, worked out here rather than taken
-// from view() in _shapes.cjs, which assumes a rail 30 px narrower than the app has now.
+// A zoom that shows all of a 1280 x 720 page. Where the stage sits is read from the running app by view() and at() in
+// _shapes.cjs, so there is no rail width in here to go stale.
 const Z = 0.85;
-const STAGE = { left: 143, top: 47, w: 734, h: 444 };
-const view = () => UI({ zoom: Z, panX: STAGE.w / 2 - 640 * Z, panY: STAGE.h / 2 - 360 * Z });
-const at = (x, y) => [Math.round(STAGE.left + STAGE.w / 2 + (x - 640) * Z), Math.round(STAGE.top + STAGE.h / 2 + (y - 360) * Z)];
-/** A drag through document points, like draw() in _shapes.cjs but on this mapping. */
-const draw = (pts, o = {}) => ({ drag: pts.map(([x, y]) => at(x, y)), steps: o.steps ?? 12, delay: o.delay ?? 12, ...(o.mods ? { mods: o.mods } : {}), ...(o.hold ? { hold: o.hold } : {}), ...(o.after ? { after: o.after } : {}) });
+const view = () => S.view(Z);
+const { at, draw } = S;
 
 const CORAL = '#ff8a7a';
 const MINT = '#6ed3b5';
@@ -33,4 +30,4 @@ const joinPath = [BITS.coral, [535, 265], BITS.lens, [705, 265], BITS.mint];
 /** A drag down the middle: the sunny bit at the bottom and the bit in the centre. */
 const awayPath = [BITS.sunny, [620, 450], BITS.centre];
 
-module.exports = { circles, scene, BITS, joinPath, awayPath, at, draw, STAGE };
+module.exports = { circles, scene, BITS, joinPath, awayPath, at, draw };
