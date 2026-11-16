@@ -96,8 +96,13 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   Flow also when their `<Name>UseCurve` is true (the flags real presets use for those two). The sensor is the `<Name>Sensor`
   text: `pressure`, `xtilt`/`ytilt`/`declination` (tilt), `speed`, `drawingangle` (direction; for Rotation it is `follow`),
   `rotation` (twist), `fuzzy`/`fuzzystroke` (random), `fade` (its `length` in dabs, as `fadeLength` pixels); a list of sensors is
-  one route each. A curve is the straight line from its value at 0 to its value at 1 (`amount = 1 - low / high`, `invert` when it
-  falls), and a curve that bends away from that by more than 10% says so. Opacity dynamics come as flow dynamics, with a note.
+  one route each. A sensor's curve is kept as the route's `curve` (`routeOf` in `krita.ts`): the lowest and highest the line
+  reaches give `amount = 1 - low / high`, `invert` is on when it ends lower than it starts, and the bend between is the points
+  held to 0 to 1 across that range, so a jump early in Krita jumps early here. Points out of range or out of order are mended,
+  a curve that starts after 0 or stops before 1 holds its end heights out to the edges, and a straight curve leaves the route
+  without one. More than 8 points are thinned to the nearest 8, with a note. Only Krita's curve is read: its overall height
+  (a curve that tops out at half) is not, as the route is scaled to its own high point. Opacity dynamics come as flow
+  dynamics, with a note.
 - Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (medium paper,
   `Strength`, `Scale`, random offset as `moving`), with a note that the pattern picture is not kept.
 - Dropped with a note when on: Softness, Sharpness, Roundness, Spacing, Flip, Darken, Colour mixing, Airbrush rate, Hue,
@@ -114,8 +119,14 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   `hfade` 1; the "Opacity" and "Flow" brushes switch those on with `UseCurve`), not from Krita's documentation of the file, and
   not checked by painting the same stroke in Krita. The direction of a turned tip is taken as clockwise, unchecked. `ScatterValue`
   is taken as a share of the brush size. A fade's `length` is taken as dabs.
-- **Krita curves are straight lines here.** A pressure curve that jumps early (Krita's `Basic-5 Size` flow) comes as a slow ramp,
-  which the note names.
+- **Krita curves are kept, but not checked against Krita.** `Basic-5 Size`'s flow curve (it jumps to nearly full by a 7%
+  press) comes with that jump, and its size curve with its late rise, as the route curves the engine draws. Frameling joins the
+  points with its own smooth line, which may differ a little from Krita's between two points. A curve that tops out below 1 is
+  scaled up to 1, so such a brush paints a little heavier than in Krita.
+
+- **Photoshop and GIMP files carry no curves.** A real Photoshop 2026 `.abr` keeps, for each control, only the control menu, the
+  jitter, the minimum and the step count (see `photoshop_dynamics.abr`), and GIMP's `.vbr` has no pen controls at all, so there is
+  nothing for those readers to keep or flatten. If a Photoshop file with a curve turns up, its key is not read yet.
 
 - **The direction of an angle.** GIMP's `.vbr` angle is taken as counter-clockwise (turned the other way for Frameling);
   Photoshop's `Angl` is taken as clockwise (AbrKit's note). Neither was checked against the program, which is not on this

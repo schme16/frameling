@@ -3,6 +3,7 @@ import { zipSync, zlibSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { readBrushFile, sniff } from '../../src/brushes/import';
 import { inflateCapped, unzlibCapped } from '../../src/brushes/import/inflate';
+import { routeOf } from '../../src/brushes/import/krita';
 import { parseXml } from '../../src/brushes/import/xml';
 import { cleanDab } from '../../src/dab/maths';
 import { encodePng, makeChunk, PNG_SIGNATURE } from '../../src/io/png';
@@ -45,10 +46,13 @@ describe('Krita .kpp', () => {
     const b = r.brushes[0];
     expect(b.name).toBe('Basic-5 Size');
     expect(b.dab).toMatchObject({ tip: 'round', size: 40, hardness: 1, roundness: 1, spacing: 0.1, angle: 0 });
-    expect(b.dab.dynamics).toContainEqual({ from: 'pressure', to: 'size', amount: 1, invert: false });
-    // Krita's automatic spacing and its curved flow are the nearest thing here, and the notes say so.
+    // Both curves come with their bends: size holds back until a firm press, flow jumps almost at once.
+    expect(b.dab.dynamics).toContainEqual({ from: 'pressure', to: 'size', amount: 1, invert: false, curve: [[0, 0], [0.35, 0.1], [1, 1]] });
+    expect(b.dab.dynamics).toContainEqual({ from: 'pressure', to: 'flow', amount: 1, invert: false, curve: [[0, 0], [0.036, 0.266], [0.068, 0.995], [1, 1]] });
+    // Krita's automatic spacing is the nearest thing here, and the note says so. Nothing is said about the curves: they came whole.
     expect(b.changed.join(' ')).toMatch(/spacing is automatic/);
-    expect(b.changed.join(' ')).toMatch(/flow curve .* not a straight line/);
+    expect(b.changed.join(' ')).not.toMatch(/curve/);
+    expect(b.dropped.join(' ')).not.toMatch(/curve/);
     expect(cleanDab(b.dab)).toEqual(b.dab);
   });
 
@@ -143,9 +147,71 @@ describe('Krita .kpp', () => {
       expect(b.dab.fadeLength).toBe(150);
     });
 
-    it('a curve that is not a straight line comes as one and says so', () => {
-      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0;0.3,0.9;1,1;'))] }));
-      expect(b.changed.join(' ')).toMatch(/size curve for pen pressure is not a straight line/);
+    it('a bent curve is kept as the route curve, held to 0 to 1 across its range', () => {
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0.2;0.3,0.9;1,1;'))] }));
+      // Low 0.2, high 1: amount 0.8; the curve is the same line with 0.2 taken off the bottom and stretched.
+      const r = b.dab.dynamics.find((x) => x.to === 'size');
+      expect(r).toMatchObject({ from: 'pressure', amount: 0.8, invert: false });
+      expect(r?.curve).toEqual([[0, 0], [0.3, 0.875], [1, 1]]);
+      expect(b.changed.join(' ')).not.toMatch(/curve/);
+    });
+
+    it('a falling curve is an inverted route with its bend flipped to match', () => {
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,1;0.2,0.4;1,0;'))] }));
+      const r = b.dab.dynamics.find((x) => x.to === 'size');
+      expect(r).toMatchObject({ amount: 1, invert: true });
+      expect(r?.curve).toEqual([[0, 0], [0.2, 0.6], [1, 1]]);
+    });
+
+    it('a curve that starts late or stops early holds its end heights out to 0 and 1', () => {
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0.2,0;0.6,1;'))] }));
+      const r = b.dab.dynamics.find((x) => x.to === 'size');
+      expect(r?.curve?.[0]).toEqual([0, 0]);
+      expect(r?.curve?.[r.curve.length - 1]).toEqual([1, 1]);
+      expect(r?.curve).toContainEqual([0.2, 0]);
+      expect(r?.curve).toContainEqual([0.6, 1]);
+    });
+
+    it('a straight curve leaves the route without one', () => {
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0;0.5,0.5;1,1;'))] }));
+      expect(b.dab.dynamics.find((x) => x.to === 'size')?.curve).toBeUndefined();
+    });
+
+    it('a long curve comes as its nearest 8 points and says so', () => {
+      const pts = Array.from({ length: 12 }, (_, i) => `${i / 11},${Math.sqrt(i / 11)}`).join(';') + ';';
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', pts))] }));
+      expect(b.dab.dynamics.find((x) => x.to === 'size')?.curve).toHaveLength(8);
+      expect(b.changed.join(' ')).toMatch(/size curve for pen pressure had 12 points; it came as the nearest 8/);
+    });
+
+    it('nonsense and out-of-range curve points are mended or ignored, never trusted', () => {
+      const wild = sensor('pressure', '0,-5;0.5,9;NaN,1;0.7,;abc;2,3;1,0.5;-1,2;');
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', wild)] }));
+      expect(cleanDab(b.dab)).toEqual(b.dab);
+      for (const r of b.dab.dynamics) {
+        expect(r.amount).toBeGreaterThanOrEqual(0);
+        expect(r.amount).toBeLessThanOrEqual(1);
+        for (const [x, y] of r.curve ?? []) {
+          expect(x).toBeGreaterThanOrEqual(0);
+          expect(x).toBeLessThanOrEqual(1);
+          expect(y).toBeGreaterThanOrEqual(0);
+          expect(y).toBeLessThanOrEqual(1);
+        }
+      }
+      // Garbage that leaves fewer than two points is a plain straight route, as a missing curve is.
+      const none = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', 'x,y;1;'))] }));
+      expect(none.dab.dynamics).toContainEqual({ from: 'pressure', to: 'size', amount: 1, invert: false });
+    });
+
+    it('a curve that never moves the setting adds no route', () => {
+      const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0.5;1,0.5;'))] }));
+      expect(b.dab.dynamics).toEqual([]);
+    });
+
+    it('routeOf gives the same answer however the points come in', () => {
+      const a = routeOf([[0, 0], [0.3, 0.9], [1, 1]]);
+      const b = routeOf([[1, 1], [0.3, 0.9], [0, 0]]);
+      expect(b).toEqual(a);
     });
 
     it('inputs and settings Frameling has no place for are dropped by name', () => {

@@ -24,7 +24,7 @@ export interface ImportedBrush {
   dab: DabBrush;
   /** Settings the file had that Frameling has no place for, in plain words. Empty means nothing was lost. */
   dropped: string[];
-  /** Settings that came across but as the nearest thing Frameling has (a curve as a straight line, a picture shrunk). */
+  /** Settings that came across but as the nearest thing Frameling has (a long curve thinned to 8 points, a picture shrunk). */
   changed: string[];
 }
 

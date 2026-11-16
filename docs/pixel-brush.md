@@ -39,10 +39,9 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 - A route can carry a `curve` (`src/dab/curve.ts`): a list of 2 to 8 `[x, y]` points, x from 0 (first point) to 1 (last), y 0 to 1,
   joined by a monotone smooth line. It bends the source before the flip (`invert`), so the graph always reads as drawn. A straight
   curve is left out. Read with `cleanCurve`, which mends what is off (order, range, ends, crowded points) and thins a long list with
-  `thin` (so a Photoshop or Krita curve of any length comes in as its nearest 8 points). Photoshop's control curves and Krita's sensor
-  curves land here; Procreate's pressure curve too. Pass the points as 0 to 1, with the input on x.
-- Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve is kept now:
-  put its points in `curve` instead of flattening to a straight line. Opacity and flow are both `flow` here, so
+  `thin` (so a curve of any length comes in as its nearest 8 points). Krita's sensor curves land here (Photoshop's and GIMP's files carry none); Procreate's pressure curve would too. Pass the points as 0 to 1, with the input on x.
+- Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve goes in `curve` as its points, never flattened
+  to a straight line (Krita's reader does this, see `routeOf`). Opacity and flow are both `flow` here, so
   a file that puts pressure on both gets one route, not two. The full mapping is in [brush-import.md](brush-import.md).
 - `angle` is clockwise on screen. Photoshop's control numbers and GIMP's counter-clockwise angle are in brush-import.md.
 - The Pen page's pressure for size and flow is skipped when the brush has its own pressure or tilt route to that target, so it
