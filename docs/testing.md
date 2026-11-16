@@ -2008,3 +2008,5 @@ is drawn through the same tip and effects as the real line. `scripts/docs/ab-bru
 `scripts/ab/brush-looks-compose.py <before> <after> brand/ab/brush-looks` and `ab-brush-looks/caption.sh` for the clips).
 `ab-brush-survey/` draws every vector starter as a real stroke, eight to a page, and `scripts/ab/brush-survey-compose.py` names them on
 one contact sheet: use it to ask of any new brush whether its picture reads as its name.
+
+**Gouache A/B (`scripts/docs/ab-gouache`).** Real canvas strokes of Marker, Block marker and Gouache, and a cover shot (Marker, then Gouache, over fine lines). Run it on the old build and the new one, then `python3 scripts/ab/gouache-compose.py <before> <after> brand/ab/gouache`. Same harness line as the other `ab-*` folders: `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-gouache --out <dir>`.

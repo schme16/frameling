@@ -357,6 +357,7 @@ when comparing two drawings for "same look" (as `id` is ignored).
   (`custom` is the drawing, up to 240 points, 4 digits, and `fit` `stretch | repeat`) and `'edged'` (`custom` is the sides,
   `pieces: { start?, end?, inner?, outer? }` the other drawings). A stamp also takes `turn` (0 to 1, random spin), `fixedSize`
   (true ignores pen pressure) and `gapVary` (0 to 1). `along` and `edged` with no usable drawing read back as a plain line.
+  Any tip can also carry `matte` (0 to 1, missing or 0 = none): the line is stored with a Colour adjust (paler, chalkier) and a faint Film grain in its `effects`, both editable in the Effects panel, and its colour stays solid so it covers what is underneath. Gouache is a solid bristle tip with `matte: 1`. A tipped line that carries any effect is kept whole by `withTips` (src/core/tips.ts) so the effect runs on all of it.
   A tip is read by `readTip` (`src/geometry/tip.ts`), on open and when a saved brush is
   read: anything that is not a tip makes the line plain, numbers are held to their range. The line keeps its points; the
   fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them

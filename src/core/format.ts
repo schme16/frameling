@@ -859,6 +859,8 @@ export interface BrushTip {
   body?: number;
   /** Bristle: how much lighter and darker the bristles run from the colour, 0 (all one colour) to 1, in broad streaks along the line. Missing = 0. */
   tone?: number;
+  /** Any tip: how matte the paint is, 0 to 1. The line is drawn through a Colour adjust (a little paler and chalkier, as gouache dries) and a faint Film grain (velvety, not glossy), both in the Effects panel, and its colour still covers what is underneath completely. Missing = 0 (no finish). */
+  matte?: number;
 }
 
 /** The extra drawings of an edged brush (see `BrushTip.pieces`). Any can be missing: the sides are used instead. */

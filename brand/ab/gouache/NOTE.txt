@@ -1,0 +1,8 @@
+Gouache used to draw the same flat stroke as Marker and Block marker, so it read as paint in general and not as gouache.
+It now has a character of its own: a solid body with only a trace of brush marks, finished matte (a little paler and
+chalkier than it went on, with a faint velvety grain). The colour is still fully solid, so it covers what is underneath.
+
+strokes-<theme>.png   Marker, Block marker and Gouache drawing the same wave in the same colour, before beside after
+cover-<theme>.png     Marker, then Gouache, painted over the same fine lines: both hide them, Gouache does it flat and matte
+
+Made with scripts/docs/ab-gouache (real strokes on the canvas) and scripts/ab/gouache-compose.py.
