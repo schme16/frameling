@@ -28,8 +28,8 @@ async function probe(wc, where) {
 }
 
 /** The stage as it is on screen now, [x, y, width, height] in window pixels, for a script that takes its own pictures. */
-async function stageBox(wc) {
-  const r = await wc.executeJavaScript(`(() => { const b = document.querySelector('.cv-layer')?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
+async function stageBox(wc, sel = '.cv-layer') {
+  const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(sel)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
   if (!r) throw new Error('the stage is not on screen');
   return r;
 }
@@ -46,16 +46,43 @@ async function capture(wc, crop) {
 }
 
 /**
- * A crop that follows the stage as it is now: `{ stageCrop: {} }` is the stage's own box, and `rightGap` stretches it to
- * that far from the window's right edge, so a crop of the stage and the panels beside it needs no number copied from the
- * app. help/_shapes.cjs exports these as STAGE and PANEL. Even sizes, as for `el`.
+ * A crop that follows the stage as it is now: `{ stageCrop: {} }` is the stage's own box. Options, all measured from the stage
+ * when the shot is taken, so a crop of the stage and what is round it needs no number copied from the app:
+ *   rightGap  stretch to that far from the window's right edge (the stage and the panels beside it)
+ *   top       move the top edge down from the stage's top (a strip of timeline starts well below it)
+ *   down      add that many pixels under the stage
+ *   height    use this height instead of the stage's own
+ *   around    [w, h]: a window of that size round the stage's middle
+ *   of        a selector to measure instead of the stage (`.ui-canvas` is the stage with its tool bar above it)
+ * help/_shapes.cjs exports STAGE, PANEL and FROM_STAGE. Even sizes, as for `el`.
  */
-async function stageCrop(wc, o, width, height) {
-  const r = await stageBox(wc);
+function cropFromBox(r, o, width, height) {
   const even = (n) => Math.max(2, n - (n % 2));
-  const x = Math.max(0, Math.round(r[0])), y = Math.max(0, Math.round(r[1]));
-  const w = o.rightGap != null ? width - o.rightGap - x : Math.round(r[2]);
-  return [x, y, even(Math.min(width - x, w)), even(Math.min(height - y, Math.round(r[3])))];
+  let x, y, w, h;
+  if (o.around) {
+    // A window of this size round the stage's middle (the page at 100% is bigger than the stage, so a small clip shows its middle).
+    [w, h] = o.around;
+    x = Math.round(r[0] + r[2] / 2 - w / 2);
+    y = Math.round(r[1] + r[3] / 2 - h / 2);
+  } else {
+    x = Math.round(r[0]);
+    y = Math.round(r[1]) + (o.top ?? 0);
+    w = o.rightGap != null ? width - o.rightGap - x : Math.round(r[2]);
+    h = (o.height ?? Math.round(r[3])) + (o.down ?? 0);
+  }
+  x = Math.max(0, x);
+  y = Math.max(0, y);
+  return [x, y, even(Math.min(width - x, w)), even(Math.min(height - y, h))];
+}
+async function stageCrop(wc, o, width, height) {
+  return cropFromBox(await stageBox(wc, o.of), o, width, height);
+}
+
+/** What `stagePoint` and `stageEdge` mean for a stage box [x, y, width, height]: a window position. */
+function resolvePoint(b, v) {
+  if (v.stageEdge) return [Math.round(b[0] + v.stageEdge.x), Math.round(b[1] + v.stageEdge.y)];
+  const p = v.stagePoint;
+  return [Math.round(b[0] + b[2] / 2 + (p.x - p.cx) * p.z), Math.round(b[1] + b[3] / 2 + (p.y - p.cy) * p.z)];
 }
 
 /** Where a step wants the picture cropped: its own `crop`, or the box of the element its `el` selector finds, with
@@ -109,17 +136,18 @@ async function stopRec(r) {
 
 /**
  * Swaps any `{ stagePoint: { x, y, z, cx, cy } }` in a step for a window position, measured from the stage as it is now:
- * the point (x, y) on a stage shown at zoom z with (cx, cy) in the middle. The helpers in help/_shapes.cjs write these, so a
+ * the point (x, y) on a stage shown at zoom z with (cx, cy) in the middle. `{ stageEdge: { x, y } }` is a spot measured in
+ * screen pixels from the stage's top left corner (for the rulers, which sit on the stage's edge). The helpers in help/_shapes.cjs write these, so a
  * drag lands right whatever width the side rail has, without a number copied from the app that goes stale.
  */
 async function resolveStage(wc, step) {
   const text = JSON.stringify(step);
-  if (!text || !text.includes('"stagePoint"')) return step;
+  if (!text || !(text.includes('"stagePoint"') || text.includes('"stageEdge"'))) return step;
   const b = await wc.executeJavaScript(`(() => { const r = document.querySelector('.cv-layer')?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height]; })()`);
   if (!b) throw new Error('stagePoint: the stage is not on screen');
   return JSON.parse(text, (_k, v) => {
-    const p = v && typeof v === 'object' && !Array.isArray(v) ? v.stagePoint : null;
-    return p ? [Math.round(b[0] + b[2] / 2 + (p.x - p.cx) * p.z), Math.round(b[1] + b[3] / 2 + (p.y - p.cy) * p.z)] : v;
+    const o = v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+    return o && (o.stagePoint || o.stageEdge) ? resolvePoint(b, o) : v;
   });
 }
 
@@ -335,4 +363,4 @@ function makeWindow(BrowserWindow, width, height) {
   });
 }
 
-module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stageBox, capture, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
+module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stageBox, capture, cropFromBox, resolvePoint, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
