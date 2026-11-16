@@ -1,0 +1,13 @@
+Toning the tooltip down, after "Too loud, tone the tip down" on look-tips-above-arrow.
+
+<case>-<theme>-loud-vs-toned.png   left: the inverted cream/ink tip that shipped in 06ff4432. right: the toned one.
+<case>-<theme>-toned.png           the toned tip on its own.
+slide-<theme>-toned.mp4            the arrow still sliding along the tip's edge, in the toned colours.
+
+Cases: toolbar (a button), panel (the Timeline lock), menu (beside the Edit menu, which is the case the colour was
+for in the first place), edge-right (pushed sideways to stay on screen).
+
+What changed: four CSS variables on .ui-tip and nothing else, so the arrow, the key caps and the Learn more link all
+followed. The tip was the theme's text colour as its fill; it is now a step PAST the menu surface (--raised mixed
+86/14 with the text colour), with the accent carried in the border instead. It still reads as a different material
+from a menu or a panel, which was the point, without being the brightest thing on screen.

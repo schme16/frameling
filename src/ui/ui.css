@@ -1692,10 +1692,12 @@ body.ui-resizing * {
    as the background and its page colour as the text. Dark theme gives a cream label, light theme an ink one, and a
    custom theme follows its own colours. Menus and panels are all --raised or --panel, so a tip never reads as one. */
 .ui-tip {
-  --tip-bg: color-mix(in srgb, var(--text) 94%, var(--accent));
-  --tip-fg: var(--bg);
-  --tip-soft: color-mix(in srgb, var(--tip-fg) 72%, var(--tip-bg));
-  --tip-line: color-mix(in srgb, var(--tip-fg) 28%, var(--tip-bg));
+  /* A step past the menu surface rather than the other way up: a tip has to read as a label about something and not
+     as another menu, without being the brightest thing on screen. The accent in the border does the telling apart. */
+  --tip-bg: color-mix(in srgb, var(--raised) 86%, var(--text));
+  --tip-fg: var(--text);
+  --tip-soft: var(--muted);
+  --tip-line: color-mix(in srgb, var(--accent) 45%, var(--line));
   position: fixed;
   z-index: 200;
   max-width: 280px;
