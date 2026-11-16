@@ -730,6 +730,43 @@ export interface TileFrame {
   duration: number;
 }
 
+/**
+ * More of a shape, made when it is drawn and never stored as shapes of their own (see src/core/repeats.ts). The shape
+ * itself stays the first one; change it and every copy follows. A copy can't be clicked and isn't a snap target. At
+ * most 400 shapes in all, so a big count is held down rather than slowing the page.
+ */
+export type Repeat = GridRepeat | RingRepeat | MirrorRepeat;
+
+/** Rows and columns: `cols` across and `rows` down, `dx` between columns and `dy` between rows (document pixels, either sign). */
+export interface GridRepeat {
+  kind: 'grid';
+  cols: number;
+  rows: number;
+  dx: number;
+  dy: number;
+}
+
+/** A ring, or a fan: `count` in all round (`cx`, `cy`), spread through `sweep` degrees (missing = 360, a full ring). */
+export interface RingRepeat {
+  kind: 'ring';
+  count: number;
+  cx: number;
+  cy: number;
+  sweep?: number;
+  /** Each copy turns to follow the ring (missing = yes). False keeps every copy the way up the original is. */
+  turn?: boolean;
+}
+
+/** A mirror image across the line through (`x`, `y`) at `angle` degrees (missing = 90, an up-and-down line), or through the point alone. */
+export interface MirrorRepeat {
+  kind: 'mirror';
+  x: number;
+  y: number;
+  angle?: number;
+  /** Reflect through the point itself, not a line (a half turn). */
+  point?: boolean;
+}
+
 export type Shape = StrokeShape | FillShape | PathShape | InstanceShape | TextShape | ParticlesShape;
 
 /** A point of a hand-drawn stroke: position, pen pressure (0 to 1, 0.5 when the device has none). */
@@ -840,6 +877,8 @@ export interface StrokeShape {
   type: 'stroke';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
   /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
   effects?: LayerEffect[];
   points: StrokePoint[];
@@ -878,6 +917,8 @@ export interface FillShape {
   type: 'fill';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
   /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
   effects?: LayerEffect[];
   paths: SubPath[];
@@ -944,6 +985,8 @@ export interface PathShape {
   type: 'path';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
   /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
   effects?: LayerEffect[];
   paths: SubPath[];
@@ -1109,6 +1152,8 @@ export interface InstanceShape {
   type: 'instance';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
   /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
   effects?: LayerEffect[];
   symbolId: Id;
@@ -1226,6 +1271,8 @@ export interface TextShape {
   type: 'text';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
   /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
   effects?: LayerEffect[];
   text: string;

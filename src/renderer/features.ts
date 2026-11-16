@@ -14,6 +14,7 @@ import '../gpu';
 import '../geometry';
 import '../timeline';
 import '../animation';
+import '../repeat';
 import '../symbols';
 import '../artboards';
 import '../io';

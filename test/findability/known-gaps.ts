@@ -67,7 +67,8 @@ export const LONG_LISTS: Record<string, number> = {
   // View > Panels is 32: it was at the cap of 30, and Position and size and Align and space out came out of Symbol and motion
   // to be Properties sections of their own, each with its own show-and-hide here like every other panel. The way down is for
   // the Panels list to fold the Properties sections into a submenu; that is a change to the menu layout, not to these two.
-  'View > Panels': 32,
+  // 33 on 16 November 2026: the Repeat panel's show-and-hide, one more Properties section like the two above. Its commands themselves are in Edit > Repeat a shape.
+  'View > Panels': 33,
 };
 
 /** Lists that are as long as the person's own things, which is content and not design. */
@@ -87,7 +88,8 @@ export const BIG_MENUS: Record<string, number> = {
   // One more for the Scripts panel's show-and-hide, which sits in View > Panels with every other panel's. The scripts themselves are in Edit > Scripts, not here.
   // Two more for the show-and-hide of Position and size and of Align and space out, now sections of Properties of their own (see LONG_LISTS).
   // Ten more for the pixel view things that were in the Pixel menu, which is gone: the Zoom to a pixel size submenu (6), the Slices submenu (2, its panel is already in View > Panels) and the Preview's play and size controls (2, in More view tools). They are about looking at the canvas, so View is where they belong, and it is the price of removing a whole menu.
-  View: 201,
+  // One more for the show-and-hide of the Repeat section of Properties (see LONG_LISTS); Repeat's own commands are in the Edit menu, which has room.
+  View: 202,
   // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   Draw: 175,
@@ -141,6 +143,8 @@ export const STILL_LOAD = {
   // with animation: the Offset card and the Width tool (palette only, no menu home, because Draw is over its cap), and
   // the two craft importers in File > Import. The gap is what this ledger is for and the gap did not move: 44 palette
   // commands and 118 menu commands are still out of the way on a still.
-  still: { palette: 558, menu: 782, animateMenu: 8 },
-  animated: { palette: 602, menu: 900, animateMenu: 123 },
+  // Later the same day: +2 palette and +7 menu on both sides for Repeat (the Repeat tool and its panel's show-and-hide
+  // work with nothing picked; the other commands need a shape). Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 560, menu: 789, animateMenu: 8 },
+  animated: { palette: 604, menu: 907, animateMenu: 123 },
 };

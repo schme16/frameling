@@ -6,7 +6,8 @@
  */
 import { findLayer, uid } from '../core/doc';
 import type { Shape } from '../core/format';
-import { scaleAbout, transformShape, type Matrix } from '../canvas/geometry';
+import { transformShape, type Matrix } from '../canvas/geometry';
+import { axisReflections, copyAs } from '../geometry/repeat';
 import { drawShapeFx } from '../core/render';
 import { getPixelSettings, type SymmetryMode } from '../pixel/settings';
 import { store } from '../core/store';
@@ -24,18 +25,9 @@ export function vectorMirror(mode: SymmetryMode, width: number, height: number, 
   return { mode, ax: axisX ?? width / 2, ay: axisY ?? height / 2 };
 }
 
-const reflectX = (ax: number): Matrix => scaleAbout(-1, 1, ax, 0);
-const reflectY = (ay: number): Matrix => scaleAbout(1, -1, 0, ay);
-
-/** How each copy is made from the original: none when off, one for either direction, three for both. */
+/** How each copy is made from the original: none when off, one for either direction, three for both. The maths is shared with Repeat's mirror (src/geometry/repeat.ts). */
 export function mirrorMatrices(m: VectorMirror): Matrix[] {
-  const h = m.mode === 'h' || m.mode === 'both';
-  const v = m.mode === 'v' || m.mode === 'both';
-  const out: Matrix[] = [];
-  if (h) out.push(reflectX(m.ax));
-  if (v) out.push(reflectY(m.ay));
-  if (h && v) out.push(scaleAbout(-1, -1, m.ax, m.ay));
-  return out;
+  return axisReflections(m.mode === 'h' || m.mode === 'both', m.mode === 'v' || m.mode === 'both', m.ax, m.ay);
 }
 
 /** The point and where it lands across the mirror, the point itself first. */
@@ -53,12 +45,7 @@ export function mirrorSpots(m: VectorMirror, x: number, y: number): { x: number;
 export function mirrorShapes(shapes: readonly Shape[], m: VectorMirror, newId: () => string = () => uid('sh')): Shape[] {
   const out: Shape[] = [];
   for (const mat of mirrorMatrices(m)) {
-    for (const s of shapes) {
-      const copy: Shape = { ...transformShape(s, mat), id: newId() };
-      delete copy.origin;
-      delete copy.group;
-      out.push(copy);
-    }
+    for (const s of shapes) out.push(copyAs(transformShape(s, mat), newId()));
   }
   return out;
 }

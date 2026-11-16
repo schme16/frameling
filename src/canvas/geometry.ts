@@ -5,55 +5,19 @@
 import type { Doc, FillShape, Gradient, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath, Transform2D } from '../core/format';
 import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { mapGradient } from '../core/gradient';
-import { store } from '../core/store';
+import { currentDoc } from '../core/docSource';
 import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';
 import type { Pt, Rect } from './view';
+import { apply, IDENTITY, matrixScale, multiply, rotateAbout, scaleAbout, type Matrix } from '../geometry/matrix';
 import { kindOf } from '../core/shapeKinds';
+import { repeatCopies } from '../core/repeats';
 
 export type { Pt, Rect } from './view';
 
 // ---------------------------------------------------------------- matrices
 
-/** [a, b, c, d, e, f]: x' = a*x + c*y + e, y' = b*x + d*y + f (the same layout as canvas setTransform). */
-export type Matrix = readonly [number, number, number, number, number, number];
-
-export const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
-
-/** Applies `b` first, then `a`. */
-export function multiply(a: Matrix, b: Matrix): Matrix {
-  return [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    a[0] * b[4] + a[2] * b[5] + a[4],
-    a[1] * b[4] + a[3] * b[5] + a[5],
-  ];
-}
-
-export const translate = (tx: number, ty: number): Matrix => [1, 0, 0, 1, tx, ty];
-export const scaleBy = (sx: number, sy: number): Matrix => [sx, 0, 0, sy, 0, 0];
-export const rotateBy = (rad: number): Matrix => {
-  const c = Math.cos(rad);
-  const s = Math.sin(rad);
-  return [c, s, -s, c, 0, 0];
-};
-
-/** Runs a matrix around a fixed point instead of the origin. */
-export function about(m: Matrix, cx: number, cy: number): Matrix {
-  return multiply(translate(cx, cy), multiply(m, translate(-cx, -cy)));
-}
-export const scaleAbout = (sx: number, sy: number, cx: number, cy: number): Matrix => about(scaleBy(sx, sy), cx, cy);
-export const rotateAbout = (rad: number, cx: number, cy: number): Matrix => about(rotateBy(rad), cx, cy);
-
-export function apply(m: Matrix, x: number, y: number): Pt {
-  return { x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] };
-}
-
-/** How much a matrix scales lengths on average (the square root of its area change). Used for line widths. */
-export function matrixScale(m: Matrix): number {
-  return Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
-}
+export type { Matrix } from '../geometry/matrix';
+export { IDENTITY, multiply, translate, scaleBy, rotateBy, about, scaleAbout, rotateAbout, apply, matrixScale } from '../geometry/matrix';
 
 // ---------------------------------------------------------------- rectangles
 
@@ -153,9 +117,9 @@ const ringsCache = new WeakMap<FillShape | PathShape, { pts: Pt[]; closed: boole
 
 // Instances measure against the symbol they show, which lives in the document. Tools always work on the store's
 // document, so that's where they're looked up (tests can point it elsewhere).
-let docSource: () => Doc = () => store().get().doc;
+let docSource: () => Doc = currentDoc;
 export function setGeometryDoc(fn: (() => Doc) | null): void {
-  docSource = fn ?? (() => store().get().doc);
+  docSource = fn ?? currentDoc;
 }
 
 /** A box moved by a key's offset (see core/offset.ts). */
@@ -287,6 +251,17 @@ export function shapeBounds(s: Shape): Rect {
 
 export function shapesBounds(shapes: Shape[]): Rect | null {
   return unionRects(shapes.map(shapeBounds));
+}
+
+/** The box a shape covers with every copy its repeat makes (just its own box when it doesn't repeat). */
+export function shapeExtent(s: Shape, all: readonly Shape[] = [s]): Rect {
+  const own = shapeBounds(s);
+  const copies = repeatCopies(s, all);
+  return copies.length ? unionRects([own, ...copies.map(shapeBounds)])! : own;
+}
+
+export function shapesExtent(shapes: Shape[]): Rect | null {
+  return unionRects(shapes.map((s) => shapeExtent(s, shapes)));
 }
 
 // ---------------------------------------------------------------- hit testing
