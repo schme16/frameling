@@ -13,7 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
-import { applyGradientToSelection, getGradientWells, swapGradientWells } from './gradient-wells';
+import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedGradients, paintView, swapGradientWells } from './gradient-wells';
 import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
@@ -179,6 +179,20 @@ export function setActiveNone(): void {
 }
 
 registerCommands([
+  {
+    id: 'colors.matchGradients',
+    label: 'Make picked gradients match the first',
+    category: 'Colours',
+    description: 'Give every picked shape the colours and direction of the first picked shape that has a gradient.',
+    help: 'tool-gradient',
+    keywords: ['gradient', 'match', 'same', 'different', 'differ', 'copy', 'colours'],
+    enabled: (s) => s.ui.selection.length > 1 && paintView(s.ui.activeWell).from === 'differ',
+    reason: () => 'Pick shapes with different gradients first.',
+    run: () => {
+      matchSelectedGradients(store().get().ui.activeWell);
+      endGradientGesture();
+    },
+  },
   {
     id: 'colors.toggleWell',
     label: 'Switch between fill and stroke colour',

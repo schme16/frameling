@@ -5,11 +5,17 @@
  *
  * The box's plain colour (ui.fillColor / ui.color) always follows the gradient's first colour, so anything that only
  * understands one colour (the paint bucket on pixel layers, the eyedropper, old exports) still gets a sensible one.
+ *
+ * Selected shapes come first: when the shapes you have picked all hold the same gradient for the box in front, the
+ * panel shows that gradient and editing it changes the shapes. Picking a shape never touches the box; an edit does,
+ * the box following the gradient you last worked on (the same as a plain colour: recolour a picked shape and the box
+ * takes that colour too). Picked shapes with different gradients show "these differ", with a way to make them match.
+ * With no gradient on the selection the panel edits the box and pushes it onto the selection, as it always did.
  */
 import { useSyncExternalStore } from 'react';
 import type { Color, FillShape, Gradient, GradientStop, PathShape, Shape } from '../core/format';
-import { colorAt, firstColor, placeGradient, sortedStops, type GradientStyle } from '../core/gradient';
-import { store } from '../core/store';
+import { colorAt, firstColor, placeGradient, sharedPaint, sortedStops, styleOf, type GradientStyle, type SharedPaint } from '../core/gradient';
+import { store, useStore } from '../core/store';
 import { pathsBounds } from '../geometry/hit';
 import { activeDrawing, editActiveDrawing } from './edit';
 
@@ -79,6 +85,63 @@ export function paintKind(w: Well): PaintKind {
   return wellGradient(w)?.kind ?? 'solid';
 }
 
+type Painted = FillShape | PathShape;
+
+/** The selected shapes that can hold a paint on this side (a plain fill or outline counts: it just has no gradient). */
+function paintTargets(w: Well): Painted[] {
+  const { ui } = store().get();
+  if (!ui.selection.length) return [];
+  const d = activeDrawing();
+  if (!d || d.kind !== 'vector') return [];
+  const ids = new Set(ui.selection);
+  return d.shapes.filter((s): s is Painted => {
+    if (!ids.has(s.id)) return false;
+    if (s.type === 'fill') return w === 'fill';
+    return s.type === 'path' && (w === 'fill' ? !!s.fill : !!s.stroke);
+  });
+}
+
+const gradientOn = (s: Painted, w: Well): Gradient | undefined => (s.type === 'fill' ? s.gradient : w === 'fill' ? s.fillGradient : s.strokeGradient);
+
+/** What the selection holds on one side. */
+export function selectionPaint(w: Well): SharedPaint {
+  return sharedPaint(paintTargets(w).map((s) => gradientOn(s, w)));
+}
+
+/** Which gradient the panel is showing for a box: the selection's (when its shapes share one), a mix, or the box's own. */
+export type PaintView = { from: 'box'; style: GradientStyle | null } | { from: 'selection'; style: GradientStyle } | { from: 'differ'; count: number };
+
+const views = new Map<Well, { key: string; view: PaintView }>();
+
+export function paintView(w: Well): PaintView {
+  const shared = selectionPaint(w);
+  const box = wellGradient(w);
+  const key = JSON.stringify([shared, box]);
+  const had = views.get(w);
+  if (had && had.key === key) return had.view;
+  const view: PaintView = shared.state === 'same' ? { from: 'selection', style: shared.style } : shared.state === 'differ' ? { from: 'differ', count: shared.count } : { from: 'box', style: box };
+  views.set(w, { key, view });
+  return view;
+}
+
+/** The gradient being edited for a box, or null for a plain colour (or a mix, which has no one gradient). */
+function shownStyle(w: Well): GradientStyle | null {
+  const v = paintView(w);
+  return v.from === 'differ' ? null : v.style;
+}
+
+/** Re-reads when the shapes, the selection or the boxes change. */
+export function usePaintView(w: Well): PaintView {
+  useGradientWells((s) => s[w]);
+  return useStore(() => paintView(w));
+}
+
+// One undo step per gesture: a drag, a run of picker moves, a key press. Each ends with endGradientGesture().
+let gesture = 0;
+export function endGradientGesture(): void {
+  gesture++;
+}
+
 /** Keeps the box's plain colour on the gradient's first colour. */
 function syncPlain(w: Well, g: GradientStyle | null): void {
   if (!g) return;
@@ -100,6 +163,16 @@ function lighter(c: Color): Color {
 
 /** Switches a box between a plain colour and a linear or radial gradient. */
 export function setPaintKind(w: Well, kind: PaintKind): void {
+  const v = paintView(w);
+  if (v.from !== 'box') {
+    // The picked shapes' own gradient changes, and the box takes it up too.
+    const base = v.from === 'selection' ? v.style : firstSelectedStyle(w);
+    if (kind === 'solid') {
+      set({ ...state, [w]: null });
+      writeSelection(w, () => null, false);
+    } else if (base) adopt(w, { ...base, kind }, state.stop[w], v.from === 'differ');
+    return;
+  }
   const ui = store().get().ui;
   const plain = (w === 'fill' ? ui.fillColor : ui.strokeOn ? ui.color : null) ?? ui.color;
   if (kind === 'solid') {
@@ -120,6 +193,12 @@ export function setPaintKind(w: Well, kind: PaintKind): void {
 }
 
 function edit(w: Well, fn: (g: GradientStyle) => GradientStyle, stop?: number, place = false): void {
+  const v = paintView(w);
+  if (v.from === 'differ') return;
+  if (v.from === 'selection') {
+    adopt(w, fn(v.style), stop, place);
+    return;
+  }
   const g = state[w];
   if (!g) return;
   const next = fn(g);
@@ -128,23 +207,45 @@ function edit(w: Well, fn: (g: GradientStyle) => GradientStyle, stop?: number, p
   applyGradientToSelection(w, place);
 }
 
+/** Gives the picked shapes this gradient and makes it the box's too, so the next shape drawn gets what you are looking at. */
+function adopt(w: Well, next: GradientStyle, stop: number | undefined, place: boolean): void {
+  set({ ...state, [w]: next, stop: { ...state.stop, [w]: Math.max(0, Math.min(stop ?? state.stop[w], next.stops.length - 1)) } });
+  syncPlain(w, next);
+  writeSelection(w, () => next, place);
+}
+
+/** The first selected shape's gradient on this side, as a style. */
+function firstSelectedStyle(w: Well): GradientStyle | null {
+  for (const s of paintTargets(w)) {
+    const g = gradientOn(s, w);
+    if (g) return styleOf(g);
+  }
+  return null;
+}
+
+/** Selected shapes with different gradients: give every one of them the first one's colours and direction. */
+export function matchSelectedGradients(w: Well): void {
+  const base = firstSelectedStyle(w);
+  if (base) adopt(w, base, 0, true);
+}
+
 export function selectStop(w: Well, i: number): void {
   set({ ...state, stop: { ...state.stop, [w]: i } });
 }
 
 /** The colour of the stop being edited. */
 export function stopColor(w: Well): Color | null {
-  const g = wellGradient(w);
+  const g = shownStyle(w);
   return g ? g.stops[Math.min(state.stop[w], g.stops.length - 1)].color : null;
 }
 
 export function setStopColor(w: Well, c: Color): void {
-  edit(w, (g) => ({ ...g, stops: g.stops.map((s, i) => (i === state.stop[w] ? { ...s, color: c } : s)) }));
+  edit(w, (g) => ({ ...g, stops: g.stops.map((s, i) => (i === Math.min(state.stop[w], g.stops.length - 1) ? { ...s, color: c } : s)) }));
 }
 
 /** Adds a stop at `at` (0 to 1) in the colour the gradient already has there, and picks it. */
 export function addStop(w: Well, at: number): void {
-  const g = state[w];
+  const g = shownStyle(w);
   if (!g) return;
   const t = Math.max(0, Math.min(1, at));
   const stops = sortedStops([...g.stops, { at: t, color: colorAt(g.stops, t) }]);
@@ -153,7 +254,7 @@ export function addStop(w: Well, at: number): void {
 
 /** Moves a stop along the bar. Returns its new index (stops stay in order). */
 export function moveStop(w: Well, i: number, at: number): number {
-  const g = state[w];
+  const g = shownStyle(w);
   if (!g || !g.stops[i]) return i;
   const moved: GradientStop = { ...g.stops[i], at: Math.max(0, Math.min(1, at)) };
   const stops = g.stops.map((s, j) => (j === i ? moved : s));
@@ -165,7 +266,7 @@ export function moveStop(w: Well, i: number, at: number): number {
 
 /** Takes a stop away. A gradient keeps at least two. */
 export function removeStop(w: Well, i: number): void {
-  const g = state[w];
+  const g = shownStyle(w);
   if (!g || g.stops.length <= 2) return;
   edit(w, (x) => ({ ...x, stops: x.stops.filter((_, j) => j !== i) }), Math.max(0, i - 1));
 }
@@ -214,6 +315,51 @@ export function withWellGradients<S extends Shape>(s: S): S {
   return s;
 }
 
+/** A gradient style laid on a shape: it keeps where its ends are when only the colours changed, unless `place` is set. */
+function lay(paths: FillShape['paths'], had: Gradient | undefined, style: GradientStyle, place: boolean): Gradient | undefined {
+  if (had && had.kind === style.kind && !place) return { ...had, stops: sortedStops(style.stops) };
+  const b = pathsBounds(paths);
+  return b ? placeGradient(style, b) : had;
+}
+
+/**
+ * Changes the selected shapes' own gradient on one side: `next` says what each should hold (a style, or null for a
+ * plain colour). The box is left alone. The plain colour on the shape follows the gradient's first colour, so
+ * anything that only understands one colour still gets a sensible one.
+ */
+function writeSelection(w: Well, next: (had: Gradient | undefined) => GradientStyle | null, place: boolean): void {
+  const keep = new Set(paintTargets(w).map((s) => s.id));
+  if (!keep.size) return;
+  const label = next(undefined) ? 'Change gradient' : w === 'fill' ? 'Change fill colour' : 'Change stroke colour';
+  editActiveDrawing(
+    label,
+    'vector',
+    (dr) => {
+      for (const s of dr.shapes) {
+        if (!keep.has(s.id) || (s.type !== 'fill' && s.type !== 'path')) continue;
+        const had = gradientOn(s as Painted, w);
+        const style = next(had);
+        const g = style ? lay(s.paths, had, style, place) : undefined;
+        const plain = g ? firstColor(g) : had ? firstColor(had) : null;
+        if (s.type === 'fill') {
+          if (g) s.gradient = g;
+          else delete s.gradient;
+          if (plain) s.color = plain;
+        } else if (w === 'fill') {
+          if (g) s.fillGradient = g;
+          else delete s.fillGradient;
+          if (plain && s.fill) s.fill = plain;
+        } else {
+          if (g) s.strokeGradient = g;
+          else delete s.strokeGradient;
+          if (plain && s.stroke) s.stroke.color = plain;
+        }
+      }
+    },
+    { coalesce: `gradient-${w}-${gesture}` },
+  );
+}
+
 /**
  * The selected shapes take the box's gradient (or lose theirs, for a plain colour). A shape that already has a
  * gradient keeps where its ends are, so recolouring doesn't undo a direction set on the canvas.
@@ -258,13 +404,34 @@ export function applyGradientToSelection(w: Well, place = false): void {
         }
       }
     },
-    { coalesce: `gradient-${w}` },
+    { coalesce: `gradient-${w}-${gesture}` },
   );
 }
 
 // A box set to none drops its gradient, so turning it back on starts from a plain colour.
+// Picking shapes also brings forward the side that has the gradient (a sky with a gradient fill and a plain outline
+// shows its fill, not the outline), and starts the marker choice again at the first colour.
+let lastPick = '';
+
+/** Called whenever the selection may have changed (the store tells it; tests call it by hand, as their store is a fresh one). */
+export function followPick(): void {
+  const ui = store().get().ui;
+  const pick = ui.selection.join(',');
+  if (pick === lastPick) return;
+  lastPick = pick;
+  if (!pick) return;
+  const holds = (w: Well) => {
+    const p = selectionPaint(w).state;
+    return p === 'same' || p === 'differ';
+  };
+  const other: Well = ui.activeWell === 'fill' ? 'stroke' : 'fill';
+  if (!holds(ui.activeWell) && holds(other)) store().setUi({ activeWell: other });
+  if (state.stop.fill || state.stop.stroke) set({ ...state, stop: { fill: 0, stroke: 0 } });
+}
+
 store().subscribe(() => {
   const ui = store().get().ui;
   if (state.fill && !ui.fillColor) set({ ...state, fill: null });
   if (state.stroke && !ui.strokeOn) set({ ...state, stroke: null });
+  followPick();
 });

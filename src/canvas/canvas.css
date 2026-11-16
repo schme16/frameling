@@ -822,6 +822,15 @@
   outline: 2px solid var(--focus, var(--chosen-bg));
   outline-offset: 2px;
 }
+.cv-gradient-differ {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.cv-gradient-differ > .cv-tip {
+  margin: 0;
+}
 .cv-gradient-row {
   display: flex;
   align-items: end;
