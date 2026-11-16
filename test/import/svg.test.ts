@@ -380,7 +380,9 @@ describe('importing SVG', () => {
     expect(some.left.join(' ')).toMatch(/past the limit of 60,000/);
     // Drawing nothing: it would never end, so it gives up and says why.
     expect(() => importSvg(tower(''))).toThrow(/too complicated to bring in/);
-  });
+    // This one is real work with nothing to poll: 60,000 shapes and then 1,500,000 visits, about 3.5 s alone and well
+    // past the 30 s default when ~25 test workers share the CPU. A long ceiling, because a real hang is what it guards.
+  }, 180_000);
 
   it('survives hostile and odd input without crashing', () => {
     // Deep groups, huge counts, NaN-ish numbers, missing attributes, recursive <use>.

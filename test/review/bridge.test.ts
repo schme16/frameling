@@ -127,7 +127,7 @@ describe('a live review, whole', () => {
     expect(r.replica.doc!.notes).toBeUndefined();
     expect(same(r.replica.doc, store().get().doc)).toBe(true);
     for (let i = 1; i <= 5; i++) paint(i);
-    await until(() => same(r.replica.doc, store().get().doc), 5000);
+    await until(() => same(r.replica.doc, store().get().doc));
     // Pixel strokes went as rectangles, not whole pictures.
     expect(host.stats.patches).toBeGreaterThanOrEqual(5);
     expect(host.stats.bytes).toBeLessThan(40_000);
@@ -187,12 +187,12 @@ describe('a live review, whole', () => {
     }
     paint(2);
     paint(3);
-    await until(() => rs.every((r) => same(r.replica.doc, store().get().doc)), 6000);
+    await until(() => rs.every((r) => same(r.replica.doc, store().get().doc)));
     const fifth = reviewer('Late', 'g5');
     await until(() => fifth.statuses.includes('full'));
     for (const r of rs) r.bridge.leave();
     host.stop();
-  }, 30000);
+  }, 120_000);
 
   it('a reviewer who joins late is caught up from the cache with no new request to the drawing window', async () => {
     await sharer();
@@ -224,10 +224,10 @@ describe('a live review, whole', () => {
     await until(() => r.waiting === 1);
     const sw = net.swarms[net.swarms.length - 1];
     sw.join(Buffer.from(net.servers.keys().next().value!, 'hex'), { client: true, server: false });
-    await until(() => ui.some((e) => e.type === 'item'), 6000);
+    await until(() => ui.some((e) => e.type === 'item'));
     expect((ui.find((e) => e.type === 'item') as { item: { id: string } }).item.id).toBe('while-away');
     expect(ui.filter((e) => e.type === 'knock')).toHaveLength(1);
     r.bridge.leave();
     host.stop();
-  }, 20000);
+  }, 120_000);
 });

@@ -1,5 +1,6 @@
 // Pretend connections and a pretend peer network, so the share can be run end to end with no sockets.
 import { EventEmitter } from 'node:events';
+import { waitUntil, WAIT_CEILING_MS } from '../helpers/waits';
 import type { ShareStream } from '../../src/share/protocol';
 import type { MakeSwarm, SwarmLike } from '../../src/share/swarm';
 
@@ -62,13 +63,12 @@ export function relayed(): { receiver: FakeStream; sender: FakeStream } {
   return { receiver, sender };
 }
 
-/** Waits until a condition holds, polling. */
-export async function until(cond: () => boolean, ms = 4000): Promise<void> {
-  const t = Date.now();
-  while (!cond()) {
-    if (Date.now() - t > ms) throw new Error('timed out waiting');
-    await new Promise((r) => setTimeout(r, 5));
-  }
+/**
+ * Waits until a condition holds, polling. The ceiling is the shared generous one (see test/helpers/waits.ts): a guess
+ * of a few seconds passed alone and could fail when the whole suite shares the CPU.
+ */
+export async function until(cond: () => boolean, ms = WAIT_CEILING_MS): Promise<void> {
+  await waitUntil(cond, 'a condition', { ceilingMs: Math.max(ms, WAIT_CEILING_MS), stepMs: 5 });
 }
 
 export interface NetOptions {

@@ -101,7 +101,9 @@ describe('a wrong code', () => {
   });
 
   it('does not count a wrong try when somebody just connects and says nothing, or sends nonsense', async () => {
-    const t = rig({ handshakeMs: 60 });
+    // The handshake limit has to be short enough that the quiet connection is turned away in a moment, and long enough
+    // that the real person, connecting afterwards on the same sender, still gets through on a busy machine.
+    const t = rig({ handshakeMs: 400 });
     const quiet = pair();
     t.sender.accept(quiet[1]);
     const noise = pair();
@@ -110,7 +112,7 @@ describe('a wrong code', () => {
     const huge = pair();
     t.sender.accept(huge[1]);
     huge[0].write(Buffer.concat([Buffer.from([1, 0, 0, 0x10, 0]), Buffer.alloc(10)]));
-    await until(() => quiet[1].closed && noise[1].closed && huge[1].closed, 3000);
+    await until(() => quiet[1].closed && noise[1].closed && huge[1].closed);
     expect(t.sender.wrongTries).toBe(0);
     // And the real person still gets through afterwards.
     t.connect();
@@ -168,10 +170,19 @@ describe('a wrong code', () => {
 describe('a connection that breaks part-way', () => {
   it('returns the sender to waiting, with the code still good, and the receiver can try again', async () => {
     const t = rig({ bytes: drawing(400_000) });
-    const { s } = t.connect();
+    const { r, s } = t.connect();
     s.pace = 15;
-    await until(() => t.got.some((e) => e.type === 'progress' && e.done > 0 && e.done < 400_000));
-    s.destroy();
+    // Cut the line the moment the first piece lands, from inside the data event. Polling for "some but not all" raced
+    // the paced timers: when the machine stalls they fire in a burst and the whole drawing can arrive between two polls.
+    // Both ends go at once so no piece already queued can still be delivered.
+    let cut = false;
+    r.on('data', () => {
+      if (cut || !t.got.some((e) => e.type === 'progress' && e.done > 0 && e.done < 400_000)) return;
+      cut = true;
+      s.destroy();
+      r.destroy();
+    });
+    await until(() => cut);
     await until(() => t.sent.some((e) => e.type === 'dropped'));
     expect(t.sender.finished).toBe(false);
     expect(t.got.some((e) => e.type === 'dropped')).toBe(true);

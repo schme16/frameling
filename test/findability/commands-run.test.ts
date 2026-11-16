@@ -16,6 +16,7 @@ import { AUTO_EDGES } from '../../src/tiles/choices';
 import { clearToasts, toasts } from '../../src/ui/toast';
 import { commandEnabled } from '../../src/ui/palette';
 import { syncDynamicCommands } from '../../src/ui/dynamic';
+import { settled } from '../helpers/waits';
 import { FEATURE_STATES, loadApp, quietWorld, SITUATIONS, type FeatureState } from './app';
 
 /** Like inFeatureState, but waits for an async body: inFeatureState puts the world back as soon as the body first awaits. */
@@ -53,20 +54,11 @@ const snap = () => {
 /**
  * Waits until the command has done something, instead of sleeping a fixed 80ms. Some commands finish later than run()
  * returns: tiles.export loads its dialog with a dynamic import, which is a fresh module transform the first time and
- * takes far longer than 80ms in a full run where ~25 workers share the CPU. A fixed sleep passed alone and failed
- * under load. Polling returns as soon as it is true, so the quiet case costs nothing, and a command that really does
- * nothing still fails, after the limit.
+ * takes far longer than 80ms in a full run where ~25 workers share the CPU. A command that really does nothing still
+ * fails, after the shared ceiling (test/helpers/waits.ts).
  */
-async function settled(before: Snap, check?: (b: Snap, a: Snap) => boolean): Promise<Snap> {
-  const done = (a: Snap) => (check ? check(before, a) : (Object.keys(before) as (keyof Snap)[]).some((k) => before[k] !== a[k]));
-  const end = Date.now() + 15_000;
-  let a = snap();
-  while (!done(a) && Date.now() < end) {
-    await new Promise((r) => setTimeout(r, 20));
-    a = snap();
-  }
-  return a;
-}
+const settledAfter = (before: Snap, check?: (b: Snap, a: Snap) => boolean): Promise<Snap> =>
+  settled(snap, (a) => (check ? check(before, a) : (Object.keys(before) as (keyof Snap)[]).some((k) => before[k] !== a[k])), { stepMs: 20 });
 
 const tileKeys = (d: Snap['rootDoc']) => (d.tileset?.tiles ?? []).map((t) => t.key);
 const layerOf = (d: Snap['rootDoc'], id: string | null) => d.layers.find((l) => l.id === id);
@@ -154,7 +146,7 @@ describe('commands run in the state that switches them on', () => {
           const before = snap();
           await cmd!.run();
           const check = EFFECT[id];
-          const after = await settled(before, check);
+          const after = await settledAfter(before, check);
           if (check) expect(check(before, after), `${id} did not do what it says`).toBe(true);
           else {
             const changed = (Object.keys(before) as (keyof Snap)[]).some((k) => before[k] !== after[k]);
