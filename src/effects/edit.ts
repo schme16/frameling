@@ -31,6 +31,21 @@ export function addEffect(doc: Doc, t: Target, kind: EffectKind): Id | null {
   return o ? addEffectTo([o], kind) : null;
 }
 
+/** Makes every holder's edge soft by `radius` px: its Soften effect set to that (turned on), or a new one. Returns how many it touched. */
+export function softenHolders(holders: Holder[], radius: number): number {
+  let n = 0;
+  for (const o of holders) {
+    const e = o.effects?.find((x) => x.kind === 'blur');
+    if (e) {
+      e.values = { ...e.values, radius };
+      delete e.keys;
+      e.on = true;
+    } else (o.effects ??= []).push({ id: uid('fx'), kind: 'blur', values: { ...defaultValues('blur'), radius } });
+    n++;
+  }
+  return n;
+}
+
 /** Adds one effect to every holder, with the same id on each, so the Effects panel can edit them together. */
 export function addEffectTo(holders: Holder[], kind: EffectKind): Id | null {
   if (!holders.length) return null;

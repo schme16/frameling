@@ -58,7 +58,7 @@ export function PixelGradientOptions() {
       <Strip />
       <Choice<GradientColours> label="Colours" value={colours} options={GRADIENT_COLOURS.map((c) => ({ value: c.id, label: c.label, title: c.detail }))} onChange={(v) => setPixelSettings({ gradientColours: v })} />
       {colours !== 'blend' && <Choice<GradientDither> label="Dither" value={dither} options={GRADIENT_DITHERS.map((d) => ({ value: d.id, label: d.label, title: d.detail }))} onChange={(v) => setPixelSettings({ gradientDither: v })} />}
-      <Choice<GradientShape> label="Shape" value={shape} options={GRADIENT_SHAPES.map((s) => ({ value: s.id, label: s.label }))} onChange={(v) => setPixelSettings({ gradientShape: v })} />
+      <Choice<GradientShape> label="Shape" value={shape} options={GRADIENT_SHAPES.map((s) => ({ value: s.id, label: s.label, command: s.id === 'angular' ? 'pixel.gradientAngular' : undefined }))} onChange={(v) => setPixelSettings({ gradientShape: v })} />
       <Choice<GradientWhere> label="Covers" value={where} options={[{ value: 'all', label: 'Everywhere', title: 'The whole selection, or the whole canvas when nothing is selected.' }, { value: 'painted', label: 'Painted pixels', title: 'Only pixels that already have paint. Empty ones stay empty.' }]} onChange={(v) => setChoice('pixelGradient.where', v)} />
       <Tip>Drag across the picture. The colours run from Paint to Back, stepping through your palette. Select first to keep it to one spot. Shift keeps 45 degree steps.</Tip>
     </div>

@@ -18,8 +18,9 @@ import type { RawImage } from '../io/png';
 import { shapeExportOf } from './shapeExport';
 import { flatPlan, type FlatUnit } from './layered';
 import { nativeData } from './ai-native';
-import { gradientKey, sortedStops } from '../core/gradient';
-import { flattenRing, lineArea } from '../geometry/merge';
+import { angularWedges, conicStart, gradientKey, sortedStops } from '../core/gradient';
+import { areaOfPaths, flattenRing, intersection, lineArea, union, type Geom } from '../geometry/merge';
+import type { Pair } from 'polygon-clipping';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 const PDF_BLEND: Record<BlendMode, string> = {
@@ -409,7 +410,8 @@ export class Content {
    * stops is painted inside a form that carries the soft mask: Illustrator applies the mask twice when the shading is
    * drawn straight under it, which pulls the colour in much too fast.
    */
-  shade(gr: Gradient, opacity: number, rule: 'W*' | 'W', path: (c: Content) => void): void {
+  shade(gr: Gradient, opacity: number, rule: 'W*' | 'W', path: (c: Content) => void, area?: () => Geom): void {
+    if (gr.kind === 'angular' && area) return this.sweep(gr, opacity, area());
     if (opacity < 0.999) this.push(`/${this.w.state(opacity, 1)} gs`);
     const fade = this.w.gradientAlpha(gr);
     if (!fade) {
@@ -422,6 +424,38 @@ export class Content {
     inner.push(`${rule} n /${this.w.shading(gr)} sh`);
     const form = this.w.group(inner.toString(), [-1e5, -1e5, 1e5, 1e5], true);
     this.push(`q /${fade} gs /${form} Do Q`);
+  }
+
+  /**
+   * An angular gradient. PDF has no conic shading, so the area is cut into 90 thin wedges (4 degrees each, one plain colour
+   * each, a hair of overlap so no seam shows) and each wedge is filled where it meets the area, as plain filled shapes:
+   * no clipping, so Illustrator reads them as they are. A see-through stop fades its wedges one by one.
+   */
+  private sweep(gr: Gradient, opacity: number, area: Geom): void {
+    if (!area.length) return;
+    let reach = 1;
+    for (const poly of area) for (const ring of poly) for (const [x, y] of ring) reach = Math.max(reach, Math.hypot(x - gr.from.x, y - gr.from.y));
+    // The wedge's outer corners sit past every point of the area, so its straight outer edge never shows.
+    const far = (reach * 1.2 + 2) / Math.cos(Math.PI / 90);
+    const start = conicStart(gr);
+    const at = (turn: number): Pair => [gr.from.x + Math.cos(start + turn * Math.PI * 2) * far, gr.from.y + Math.sin(start + turn * Math.PI * 2) * far];
+    for (const w of angularWedges(gr.stops, 90)) {
+      const p = parseColor(w.color);
+      const a = p.a * opacity;
+      if (a <= 0.001) continue;
+      const wedge: Geom = [[[[gr.from.x, gr.from.y], at(w.from), at(Math.min(1, w.to + 0.002)), [gr.from.x, gr.from.y]]]];
+      const pieces = intersection(area, wedge) ?? [];
+      if (!pieces.length) continue;
+      this.push(`q ${num(p.r)} ${num(p.g)} ${num(p.b)} rg`);
+      if (a < 0.999) this.push(`/${this.w.state(a, 1)} gs`);
+      for (const poly of pieces)
+        for (const ring of poly) {
+          this.push(`${num(ring[0][0])} ${num(ring[0][1])} m`);
+          for (let i = 1; i < ring.length - 1; i++) this.push(`${num(ring[i][0])} ${num(ring[i][1])} l`);
+          this.push('h');
+        }
+      this.push('f* Q');
+    }
   }
 
   strokeColor(c: Color, opacity: number): boolean {
@@ -540,7 +574,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
     }
   } else if (s.type === 'fill') {
     if (s.gradient) {
-      cx.shade(s.gradient, s.opacity, 'W*', (c) => c.subPaths(s.paths));
+      cx.shade(s.gradient, s.opacity, 'W*', (c) => c.subPaths(s.paths), () => areaOfPaths(s.paths));
     } else if (cx.fillColor(s.color, s.opacity)) {
       cx.subPaths(s.paths);
       cx.push('f*');
@@ -548,7 +582,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
   } else {
     if (s.fill && s.fillGradient) {
       cx.push('q');
-      cx.shade(s.fillGradient, s.opacity, 'W*', (c) => c.subPaths(s.paths));
+      cx.shade(s.fillGradient, s.opacity, 'W*', (c) => c.subPaths(s.paths), () => areaOfPaths(s.paths));
       cx.push('Q');
     } else if (s.fill && cx.fillColor(s.fill, s.opacity)) {
       cx.subPaths(s.paths);
@@ -568,7 +602,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
               for (let i = 1; i < ring.length; i++) c.push(`${num(ring[i][0])} ${num(ring[i][1])} l`);
               c.push('h');
             }
-      });
+      }, () => union(s.paths.flatMap((sp) => lineArea(flattenRing(sp), sp.closed, st.width, st.join, st.cap))) ?? []);
       cx.push('Q');
       if (ctx.includeHidden) cx.push('EMC');
     } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {

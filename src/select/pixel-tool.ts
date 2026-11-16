@@ -361,12 +361,40 @@ function antsPath(m: Mask, size: number): Path2D {
   return path;
 }
 
+let fringeCache: { m: Mask; size: number; paths: Path2D[] } | null = null;
+
+/** The pixels along a soft edge, grouped into four steps of how much they are in, so they can be tinted a step each. */
+function fringePaths(m: Mask, size: number): Path2D[] {
+  if (fringeCache && fringeCache.m === m && fringeCache.size === size) return fringeCache.paths;
+  const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+  const soft = m.soft;
+  if (soft) {
+    for (let i = 0; i < soft.length; i++) {
+      const k = soft[i];
+      if (k === 0 || k === 255) continue;
+      paths[k >> 6].rect((i % m.width) * size, ((i / m.width) | 0) * size, size, size);
+    }
+  }
+  fringeCache = { m, size, paths };
+  return paths;
+}
+
 addStageOverlay((gx, zoom) => {
   const m = shownSelection();
   const a = activePixelGrid();
   if (!m || !a || typeof Path2D === 'undefined') return;
   const path = antsPath(m, a.layer.pixelSize);
   const px = 1 / zoom;
+  if (m.soft) {
+    // A blue wash on the part-way pixels, stronger the more they are in, so a feather shows how far it fades.
+    gx.save();
+    const paths = fringePaths(m, a.layer.pixelSize);
+    for (let b = 0; b < 4; b++) {
+      gx.fillStyle = `rgba(74, 163, 255, ${0.08 + b * 0.08})`;
+      gx.fill(paths[b]);
+    }
+    gx.restore();
+  }
   // Black and white dashes that crawl along, so the edge shows on any colour.
   // They hold still when motion is turned down.
   const crawl = reducedMotion() ? 0 : (Date.now() / 60) % 8;

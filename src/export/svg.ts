@@ -12,7 +12,7 @@ import { toothImage } from './svgTooth';
 import { hasShapeFx, shapeEffects } from '../effects/shapeFx';
 import { composeSvg, composeSymbol, effectsFilter, SHAPE_OWNER, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { gradientKey, sortedStops } from '../core/gradient';
+import { angularWedges, conicStart, gradientKey, sortedStops } from '../core/gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
@@ -48,9 +48,40 @@ export function splitColor(c: string): { color: string; alpha: number } {
 
 const op = (v: number) => String(Math.round(v * 1000) / 1000);
 
-/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). */
-export function svgGradient(gr: Gradient): { id: string; def: string } {
-  const key = gradientKey(gr);
+/** How far a set of paths reaches from a point, with a margin for a line's width (an angular gradient's pieces have to cover that much). */
+export function reachOf(paths: readonly SubPath[], from: { x: number; y: number }, margin = 0): number {
+  let r = 0;
+  for (const sp of paths)
+    for (const p of sp.points)
+      for (const q of [p, p.c1, p.c2]) if (q) r = Math.max(r, Math.hypot(q.x - from.x, q.y - from.y));
+  return r + margin;
+}
+
+/**
+ * SVG has no angular gradient, so one is a pattern: a square round the centre holding thin wedges, each one plain colour
+ * (90 of them, so the steps are 4 degrees). The shape then fills with `url(#id)` like any other gradient. `reach` is how
+ * far the shape goes from the centre; the square is a little bigger than that so the pattern never repeats on the shape.
+ */
+export function angularPattern(id: string, gr: Gradient, reach: number): string {
+  const R = Math.ceil((Math.max(reach, Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y), 1) * 1.05 + 2) / 10) * 10;
+  const start = conicStart(gr);
+  const steps = 90;
+  // The wedge's outer corners sit past the square, so its straight edge never shows inside it. A hair of overlap hides the seams.
+  const far = (R * 1.5) / Math.cos(Math.PI / steps);
+  const pt = (turn: number) => `${n2(gr.from.x + Math.cos(start + turn * Math.PI * 2) * far)} ${n2(gr.from.y + Math.sin(start + turn * Math.PI * 2) * far)}`;
+  const wedges = angularWedges(gr.stops, steps)
+    .map((w) => {
+      const { color, alpha } = splitColor(w.color);
+      return `<path d="M${n2(gr.from.x)} ${n2(gr.from.y)}L${pt(w.from)}L${pt(w.to + 0.002)}Z" fill="${esc(color)}"${alpha < 1 ? ` fill-opacity="${op(alpha)}"` : ''}/>`;
+    })
+    .join('');
+  const box = `${n2(gr.from.x - R)} ${n2(gr.from.y - R)} ${n2(R * 2)} ${n2(R * 2)}`;
+  return `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(gr.from.x - R)}" y="${n2(gr.from.y - R)}" width="${n2(R * 2)}" height="${n2(R * 2)}" viewBox="${box}">${wedges}</pattern>`;
+}
+
+/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). `reach` is only for an angular one. */
+export function svgGradient(gr: Gradient, reach = 0): { id: string; def: string } {
+  const key = gradientKey(gr) + (gr.kind === 'angular' ? `|${Math.ceil(reach / 50)}` : '');
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (Math.imul(h, 31) + key.charCodeAt(i)) | 0;
   const id = `grad${(h >>> 0).toString(36)}`;
@@ -60,6 +91,7 @@ export function svgGradient(gr: Gradient): { id: string; def: string } {
       return `<stop offset="${op(st.at)}" stop-color="${esc(color)}"${alpha < 1 ? ` stop-opacity="${op(alpha)}"` : ''}/>`;
     })
     .join('');
+  if (gr.kind === 'angular') return { id, def: angularPattern(id, gr, reach) };
   const def =
     gr.kind === 'radial'
       ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(gr.from.x)}" cy="${n2(gr.from.y)}" r="${n2(Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y))}">${stops}</radialGradient>`
@@ -68,8 +100,8 @@ export function svgGradient(gr: Gradient): { id: string; def: string } {
 }
 
 /** A paint attribute for a gradient, with its definition to put alongside (inside a <defs> next to the shape). */
-function gradientPaint(attr: 'fill' | 'stroke', gr: Gradient, opacity: number, defs: string[]): string {
-  const g = svgGradient(gr);
+function gradientPaint(attr: 'fill' | 'stroke', gr: Gradient, opacity: number, defs: string[], reach = 0): string {
+  const g = svgGradient(gr, reach);
   defs.push(g.def);
   return ` ${attr}="url(#${g.id})"` + (opacity < 1 ? ` ${attr}-opacity="${op(opacity)}"` : '');
 }
@@ -155,7 +187,7 @@ function plainShapeToSvg(s: Shape, doc?: Doc): string {
     const d = subPathsToPathData(s.paths);
     if (!d) return '';
     const defs: string[] = [];
-    return withDefs(defs, `<path d="${d}"${s.gradient ? gradientPaint('fill', s.gradient, s.opacity, defs) : paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>`);
+    return withDefs(defs, `<path d="${d}"${s.gradient ? gradientPaint('fill', s.gradient, s.opacity, defs, reachOf(s.paths, s.gradient.from)) : paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>`);
   }
   return pathShapeToSvg(s);
 }
@@ -231,9 +263,9 @@ function plainPathToSvg(s: PathShape): string {
   const d = subPathsToPathData(s.paths);
   if (!d) return '';
   const defs: string[] = [];
-  let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
+  let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs, reachOf(s.paths, s.fillGradient.from)) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
   if (s.stroke) {
-    a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
+    a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs, reachOf(s.paths, s.strokeGradient.from, s.stroke.width)) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
     const dash = dashPx(s.stroke);
     if (dash) {
       a += ` stroke-dasharray="${dash.map((v) => n4(v)).join(' ')}"`;

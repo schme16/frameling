@@ -170,6 +170,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `guides?` | `Guide[]` | Ruler guides, never exported (`b5f0737`). |
 | `notes?` | `CanvasNote[]` | Notes left on the canvas: `{ id, x, y, text, pin?, frame?, layer?, board?, by?, at?, done?, replies? }`. `pin` is `'page'` (the default), `'frame'` (with `frame`) or `'layer'` (with `layer`). Read by `readNotes` (src/notes/model.ts), which drops what is malformed. Never exported: every way out passes the document through `withoutNotes`. An older Frameling ignores the field. |
 | `marks?` | `CanvasMark[]` | Marks drawn over the picture (arrow, circle, sketch, words): `{ id, kind, pts, color?, w?, text?, pin?, frame?, layer?, board? }`. `kind` is `'arrow'`, `'circle'`, `'scribble'` or `'text'`; `pts` is a flat list of stage pixels (an arrow is tail then tip, a circle two opposite corners of its box, a scribble the stroke's points, a text mark its top left). `color` (default red) and `w` (line thickness in screen pixels, default 3) are written only when they differ. `pin` works as it does for notes. Read by `readMarks` (src/notes/marks.ts), which drops what is malformed. Never exported: every way out passes the document through `withoutNotes`, which takes marks out with the notes, and `test/notes/marks-never-exported.test.ts` proves it for every format. An older Frameling ignores the field. |
+| `selections?` | `SavedSelection[]` | Selections saved under a name: `{ id, name, kind: 'pixels', width, height, cover }` or `{ id, name, kind: 'shapes', layerId, ids }`. `cover` is a pixel selection's cover over the art grid (0 to 255 each, so a feathered edge comes back feathered) as runs, base64: for each run one value byte then its length in 7 bit pieces, the top bit of a piece meaning another follows (`encodeCover`, `decodeCover` in src/select/saved.ts). Read by `readSavedSelections`, which drops what is malformed, a repeated id and any pixel one whose runs do not add up to `width` x `height`; at most 60 are kept. Never exported, and a reviewer is not sent them. An older Frameling ignores the field. |
 | `inOut?` | `{start, end}` | Play range, inclusive (`9edd74d`). |
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
 | `exports?` | `{last?: {settings, way?}, ways?: {id, name, settings}[]}` | How the drawing was last exported (what Export again repeats) and up to 12 named ways ("the sprite sheet"). Settings are the Export window's choices as plain data. Missing = never exported; old files have none. |
@@ -393,8 +394,12 @@ when comparing two drawings for "same look" (as `id` is ignored).
   ring's radius or the copy's distance from the line. Cleaned on open by `cleanRepeat` (`src/geometry/repeat.ts`), which
   drops one that makes no sense. An older file has none. See `test/repeat/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
-- `Gradient` is `{kind: 'linear' | 'radial', stops: {at, color}[], from, to}` in document pixels, so it moves with
-  the shape.
+- `Gradient` is `{kind: 'linear' | 'radial' | 'angular', stops: {at, color}[], from, to}` in document pixels, so it moves with
+  the shape. Linear runs `from` to `to`; radial is a circle round `from` out to `to`; angular (conic) sweeps once round `from`,
+  clockwise on screen, starting in the direction of `to` (stops 0 and 1 meet there), so how far `to` is only places the handle.
+  `angular` is new: `readGradient` (src/core/gradient.ts) accepts it, and an older Frameling that meets one drops it and shows
+  the shape's plain colour. Writers with no conic gradient: SVG and PDF (and so Illustrator) cut it into 90 wedges of plain colour;
+  Lottie keeps the shape's plain colour (see `ANGULAR_NOTE` and the `gradientAngular` row in src/export/carries.ts).
 - `InstanceShape` (`type: 'instance'`, `828d4a8`): `symbolId`, `transform: Transform2D`, `opacity`, `tint?: {color,
   amount}`, `play: 'loop' | 'once' | 'single'`, `firstFrame`. `Transform2D` is `{x, y, scaleX, scaleY, rotation,
   skew}`, applied translate, rotate, skew, scale around the symbol's origin.

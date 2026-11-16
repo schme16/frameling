@@ -6,6 +6,7 @@
  */
 import { celNameField } from '../core/celName';
 import { readNotes } from '../notes/model';
+import { readSavedSelections } from '../select/saved';
 import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook, withShapeEffects } from '../effects/io';
@@ -693,6 +694,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (notes) doc.notes = notes;
   const marks = readMarks(raw.marks);
   if (marks) doc.marks = marks;
+  const selections = readSavedSelections(raw.selections);
+  if (selections) doc.selections = selections;
   if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
     const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
     const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));

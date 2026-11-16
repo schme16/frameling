@@ -31,6 +31,16 @@ interface Phrase {
 const P = (say: string, ...wants: string[]): Phrase => ({ say, wants });
 
 export const PHRASES: Phrase[] = [
+  // Selecting
+  P('feather the selection', 'select.feather'),
+  P('make the edge soft', 'select.feather'),
+  P('expand the selection', 'select.grow'),
+  P('make the selection smaller', 'select.shrink'),
+  P('name a selection', 'select.save', 'help:saved-selections'),
+  P('bring back my selection', 'select.saved', 'help:saved-selections'),
+  P('conic gradient', 'colors.angular', 'pixel.gradientAngular', 'tools.gradient', 'help:gradient-angular'),
+  P('colour wheel gradient', 'colors.angular', 'help:gradient-angular'),
+  P('brushed metal', 'colors.angular', 'help:gradient-angular'),
   // Drawing
   P('text on a path', 'text.onPath'),
   P('curved text', 'text.onPath'),

@@ -85,6 +85,8 @@ export interface Doc {
   pictures?: ReferencePicture[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** Selections saved under a name, to bring back later (missing = none). Never exported. See `SavedSelection`. */
+  selections?: SavedSelection[];
   /** Notes left on the canvas, for you or whoever opens the file next (missing = none). Saved in the file, never exported. See `CanvasNote`. */
   notes?: CanvasNote[];
   /** Marks drawn over the picture (arrows, circles, a scribble, a few words) for you or whoever reviews it (missing = none). Saved in the file, never exported. See `CanvasMark`. */
@@ -380,6 +382,14 @@ export interface Guide {
   /** Stage pixels from the left (x) or top (y) edge. */
   at: number;
 }
+
+/**
+ * A selection saved under a name. Pixels: the mask over a pixel layer's art grid, as runs of cover (`cover`, see
+ * src/select/saved.ts), so a feathered edge comes back feathered. Shapes: the ids of the picked shapes on a vector layer.
+ */
+export type SavedSelection =
+  | { id: Id; name: string; kind: 'pixels'; width: number; height: number; cover: string }
+  | { id: Id; name: string; kind: 'shapes'; layerId: Id | null; ids: Id[] };
 
 /** Colour labels a layer can wear on the timeline. */
 export const LAYER_LABELS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
@@ -928,6 +938,9 @@ export interface FillShape {
   gradient?: Gradient;
 }
 
+/** The ways a gradient can run. */
+export type GradientKind = 'linear' | 'radial' | 'angular';
+
 /** One colour along a gradient, `at` from 0 (start) to 1 (end). */
 export interface GradientStop {
   at: number;
@@ -935,11 +948,14 @@ export interface GradientStop {
 }
 
 /**
- * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`. Both
- * are in document pixels, the same space as the shape's points, so moving the shape moves its gradient too.
+ * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`; angular
+ * (conic) sweeps once round `from`, clockwise, starting in the direction of `to` (stop 0 and stop 1 meet there), so
+ * how far `to` is only moves the handle. All are in document pixels, the same space as the shape's points, so moving
+ * the shape moves its gradient too. A file from before angular existed never has that kind, and an older Frameling
+ * that meets one drops it and shows the shape's plain colour.
  */
 export interface Gradient {
-  kind: 'linear' | 'radial';
+  kind: GradientKind;
   stops: GradientStop[];
   from: { x: number; y: number };
   to: { x: number; y: number };

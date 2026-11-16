@@ -102,8 +102,9 @@ export const BIG_MENUS: Record<string, number> = {
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   // 175 down to 146 when the soft paint family (30) got a Soft paint menu of its own. Draw is under its cap again.
   // Then one back for the Shape builder, which is a tool, so it comes in under Tools with the others, and two for text
-  // on a curve: putting words on one and taking them off again. 149 against a cap of 150, so the next thing to arrive
-  // has to pay its way out of somewhere.
+  // on a curve: putting words on one and taking them off again. 149 against a cap of 150. Angular gradients arrived
+  // next and would have made it 151, so their two commands took the palette-first route instead: the Angular buttons
+  // in the Colours panel and the Gradient tool options are the way in (src/ui/paletteFirst.ts).
   Draw: 149,
 };
 
@@ -162,9 +163,10 @@ export const STILL_LOAD = {
   // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
   // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
   // text on a curve, which does not touch the palette numbers because both its commands need words and a line picked
-  // first. And the remote door: +2 palette (what it has done, and its settings; the switch itself waits for the
-  // desktop app) and +3 menu, those two and the switch, in Edit > Scripts. None of it has anything to do with
-  // animation, so the gap is unchanged.
-  still: { palette: 558, menu: 746, animateMenu: 8 },
-  animated: { palette: 607, menu: 870, animateMenu: 123 },
+  // first. The remote door: +2 palette and +3 menu in Edit > Scripts. And selection-gradients: +3 palette and +6 menu
+  // on both sides, the selection edge card with grow, shrink and feather, saving a selection and the saved list, all
+  // in one Edit submenu, plus the two angular gradient commands, which are palette only because Tools is at its cap.
+  // None of it has anything to do with animation, so the gap is unchanged.
+  still: { palette: 561, menu: 752, animateMenu: 8 },
+  animated: { palette: 610, menu: 876, animateMenu: 123 },
 };

@@ -64,7 +64,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Edit',
     categories: ['Edit'],
-    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', 'sub:repeat', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins', 'sub:scripts'],
+    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:selection', 'sub:align', 'sub:nudge', 'sub:repeat', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins', 'sub:scripts'],
   },
   {
     label: 'View',
@@ -289,6 +289,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Nudge and place',
     items: ['select.nudgeLeft', 'select.nudgeRight', 'select.nudgeUp', 'select.nudgeDown', '-', 'select.nudgeLeftMore', 'select.nudgeRightMore', 'select.nudgeUpMore', 'select.nudgeDownMore', '-', 'select.numbers'],
     prefixes: ['select.nudge'],
+  },
+  selection: {
+    label: 'Grow, soften and save selection',
+    items: ['select.edge', '-', 'select.grow', 'select.shrink', 'select.feather', '-', 'select.save', 'select.saved'],
   },
   repeat: {
     label: 'Repeat a shape',

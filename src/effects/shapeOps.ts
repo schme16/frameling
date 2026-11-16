@@ -43,6 +43,8 @@ function run(label: string, fn: (holders: edit.Holder[]) => unknown, coalesce?: 
 
 const ckey = (id: Id, key: string) => `fx:shapes:${id}:${key}`;
 
+/** Makes the edges of the picked shapes soft by `radius` px (feather), as one undo step. */
+export const softenPicked = (radius: number): boolean => run('Feather the shapes', (hs) => edit.softenHolders(hs, radius));
 export const addEffect = (kind: EffectKind): boolean => run(`Add ${effectInfo(kind).label.toLowerCase()} to the shape`, (hs) => edit.addEffectTo(hs, kind));
 export const removeEffect = (id: Id): boolean => run('Remove effect', (hs) => edit.removeEffectFrom(hs, id));
 export const moveEffect = (id: Id, dir: -1 | 1): boolean => run('Reorder effects', (hs) => edit.moveEffectIn(hs, id, dir));

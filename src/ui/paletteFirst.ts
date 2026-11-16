@@ -23,6 +23,10 @@ export const LEFT_OUT_OF_MENUS: Record<string, string> = {
   'view.toolRail.two': 'Rail style, in Change the tools',
   'view.toolRail.stacked': 'Rail style, in Change the tools',
   'view.toolsShowAll': 'Bring them all back, in Change the tools',
+  // The gradient kind buttons (Colours panel, and the Gradient tool's options on a pixel layer) hold Angular already,
+  // and the Tools menu is at its cap, so the buttons are the way in and the palette keeps the words.
+  'colors.angular': 'The Angular button, in the Colours panel',
+  'pixel.gradientAngular': 'Angular, in Shape in the Gradient tool options',
   // Grid and perspective settings has the same choices as buttons and a tick.
   'view.gridIso': 'Grid, in Grid and perspective settings',
   'view.perspective1': 'Perspective, in Grid and perspective settings',

@@ -1,8 +1,8 @@
 /**
  * Gradient [F]: sets where a shape's gradient starts and ends, right on the canvas. Drag across a shape to lay its
  * gradient along the drag; drag the round ends to adjust it. On a radial gradient the start is the middle and the end
- * sets the size. Shift keeps the direction to 45 degree steps. A shape without a gradient takes the one in the colour
- * box in front (pick Linear or Radial in the Colours panel).
+ * sets the size; on an angular one the start is the middle and the end sets where the sweep begins. Shift keeps the direction to 45 degree steps. A shape without a gradient takes the one in the colour
+ * box in front (pick Linear, Radial or Angular in the Colours panel).
  */
 import type { FillShape, Gradient, Id, PathShape, Shape } from '../core/format';
 import { placeGradient } from '../core/gradient';
@@ -137,10 +137,10 @@ export const gradientTool: Tool = {
       next = { ...g, from: { ...drag.start }, to: e.shift && angleSteps() ? constrain45(drag.start, e) : { x: e.x, y: e.y } };
     } else if (drag.mode === 'to') next = { ...g, to: e.shift && angleSteps() ? constrain45(g.from, e) : { x: e.x, y: e.y } };
     else {
-      // Moving the start carries the end along on a radial gradient (it's the middle); on a linear one only the start moves.
+      // Moving the start carries the end along on a radial or angular gradient (it's the middle); on a linear one only the start moves.
       const dx = e.x - g.from.x;
       const dy = e.y - g.from.y;
-      next = g.kind === 'radial' ? { ...g, from: { x: e.x, y: e.y }, to: { x: g.to.x + dx, y: g.to.y + dy } } : { ...g, from: e.shift && angleSteps() ? constrain45(g.to, e) : { x: e.x, y: e.y } };
+      next = g.kind !== 'linear' ? { ...g, from: { x: e.x, y: e.y }, to: { x: g.to.x + dx, y: g.to.y + dy } } : { ...g, from: e.shift && angleSteps() ? constrain45(g.to, e) : { x: e.x, y: e.y } };
     }
     write(t.id, drag.which, next, drag.key);
     ctx.requestOverlay();
@@ -173,7 +173,7 @@ export const gradientTool: Tool = {
     gx.strokeStyle = 'rgb(255 255 255 / 0.8)';
     const line = () => {
       gx.beginPath();
-      if (g.kind === 'radial') gx.arc(g.from.x, g.from.y, Math.hypot(g.to.x - g.from.x, g.to.y - g.from.y), 0, Math.PI * 2);
+      if (g.kind !== 'linear') gx.arc(g.from.x, g.from.y, Math.hypot(g.to.x - g.from.x, g.to.y - g.from.y), 0, Math.PI * 2);
       gx.moveTo(g.from.x, g.from.y);
       gx.lineTo(g.to.x, g.to.y);
     };
@@ -198,6 +198,16 @@ registerHelp({
   section: 'Drawing',
   order: 5,
   media: 'gradients.png',
-  summary: 'Colours that blend into each other, along a line (linear) or out from the middle (radial), for fills and outlines.',
-  keywords: ['gradient', 'blend', 'fade', 'linear', 'radial', 'ramp', 'shading', 'gradient tool'],
+  summary: 'Colours that blend into each other, along a line (linear), out from the middle (radial) or round it like a colour wheel (angular), for fills and outlines.',
+  keywords: ['gradient', 'blend', 'fade', 'linear', 'radial', 'angular', 'conic', 'sweep', 'pie', 'metal', 'shine', 'ramp', 'shading', 'gradient tool'],
+});
+
+registerHelp({
+  id: 'gradient-angular',
+  title: 'Angular gradients',
+  section: 'Drawing',
+  order: 6,
+  media: 'gradient-angular.png',
+  summary: 'Colours that sweep once round the middle like a colour wheel or a pie: brushed metal, pie shapes and a spinning shine (angular, or conic, gradient).',
+  keywords: ['angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'chrome', 'brushed metal', 'shine', 'spinning', 'colour wheel', 'gradient'],
 });

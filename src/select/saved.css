@@ -1,0 +1,57 @@
+/* Saved selections list (SavedDialog.tsx). */
+.sv {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sv-save {
+  display: flex;
+  gap: 8px;
+}
+.sv-input {
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.sv-save .sv-input {
+  flex: 1;
+  min-width: 0;
+}
+.sv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+.sv-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+}
+.sv-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+.sv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sv-actions .io-btn {
+  padding: 4px 10px;
+}
