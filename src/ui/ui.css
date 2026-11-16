@@ -107,7 +107,8 @@
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--raised);
-  color: var(--text);
+  /* The --on-* colours are worked out from the fill (see readableTokens), so a theme can't make a button unreadable. */
+  color: var(--on-raised, var(--text));
   font-weight: 600;
   font-size: var(--fs);
   white-space: nowrap;
@@ -117,6 +118,10 @@
   background: var(--hover-bg);
   border-color: var(--faint);
 }
+/* Plain buttons only: quiet and primary ones keep their own words colour. */
+.ui-btn:where(:not(.ui-btn-quiet, .ui-btn-primary)):hover:not(:disabled) {
+  color: var(--on-hover, var(--text));
+}
 .ui-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
@@ -125,11 +130,12 @@
 }
 .ui-btn-primary {
   background: var(--chosen-bg);
-  color: var(--chosen-fg);
+  color: var(--on-chosen, var(--chosen-fg));
   border-color: transparent;
 }
 .ui-btn-primary:hover:not(:disabled) {
   background: var(--sunny-deep);
+  color: var(--on-chosen-deep, var(--chosen-fg));
   border-color: transparent;
 }
 .ui-btn-quiet {
@@ -2341,9 +2347,30 @@ body.ui-resizing * {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: 8px 18px 24px;
+  --page-pad-top: 8px;
+  padding: var(--page-pad-top) 18px 24px;
   /* Clear of the modal's rounded corners, so the scrollbar is a whole bar and not a cut-off one. */
   margin: 0 5px 5px 0;
+}
+/* Scrolling to a row lands it below a stuck header, not under it. */
+.ui-prefs-page {
+  scroll-padding-top: var(--page-top-h, 0px);
+}
+/* A page header that stays put (StickyPageTop). The negative margins cancel the page's padding so it sits flush with
+   the top and the sides, and its own fill stops anything showing behind the words. */
+.ui-page-top {
+  position: sticky;
+  /* Sticks at the edge of the scroller, not of its padding, so no stripe of page shows above it. */
+  top: calc(var(--page-pad-top) * -1);
+  z-index: 4;
+  margin: calc(var(--page-pad-top) * -1) -18px 8px;
+  padding: calc(var(--page-pad-top) + 10px) 18px 8px;
+  background: var(--panel);
+  color: var(--on-panel, var(--text));
+  transition: box-shadow 0.15s var(--ease);
+}
+.ui-page-top[data-stuck] {
+  box-shadow: 0 1px 0 var(--line), var(--shadow-small);
 }
 .ui-prefs-page h3 {
   margin: 12px 0 10px;
@@ -2466,6 +2493,9 @@ body.ui-resizing * {
   display: flex;
   gap: 10px;
   margin-bottom: 8px;
+}
+.ui-page-top .ui-keyboard-top {
+  margin-bottom: 0;
 }
 .ui-keyboard-top .ui-help-search {
   flex: 1;
@@ -3730,12 +3760,14 @@ body.ui-resizing * {
   border-top: 1px solid var(--line-soft);
 }
 
-/* The editor. */
+/* The editor. It shows the app in the theme being made, so its words use the --on-* colours (see readableTokens). */
+.th-editor {
+  color: var(--on-panel, var(--text));
+}
 .th-editor-top {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 10px 0 8px;
 }
 .th-name {
   flex: 1;
@@ -3745,7 +3777,7 @@ body.ui-resizing * {
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--bg);
-  color: var(--text);
+  color: var(--on-bg, var(--text));
   user-select: text;
   font-size: 16px;
   font-weight: 800;
@@ -3758,7 +3790,7 @@ body.ui-resizing * {
 }
 .th-editor-side {
   position: sticky;
-  top: 0;
+  top: var(--page-top-h, 0px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3774,16 +3806,20 @@ body.ui-resizing * {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
 }
 .th-mode .ui-segmented {
   align-self: flex-start;
 }
-.th-danger {
+.th-danger,
+.th-danger:hover:not(:disabled) {
   background: var(--danger);
   border-color: transparent;
-  color: var(--bg);
+  color: var(--on-danger, var(--bg));
+}
+.th-danger:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--on-danger, var(--bg)) 60%, transparent);
 }
 .th-helper,
 .th-check {
@@ -3798,7 +3834,7 @@ body.ui-resizing * {
 }
 .th-helper p {
   margin: 0 0 10px;
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
   line-height: 1.4;
 }
@@ -3848,7 +3884,7 @@ body.ui-resizing * {
   gap: 2px;
 }
 .th-row-text span {
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
 }
 .th-warn {
@@ -3898,7 +3934,7 @@ body.ui-resizing * {
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--bg);
-  color: var(--text);
+  color: var(--on-bg, var(--text));
   user-select: text;
   font-family: var(--font-mono);
   font-size: var(--fs-small);

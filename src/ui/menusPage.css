@@ -6,6 +6,9 @@
   margin: 0 0 12px;
   color: var(--muted);
 }
+.ui-page-top .ui-me-crumbs {
+  margin: 0;
+}
 .ui-me-crumb-now {
   font-weight: 700;
   padding: 0 8px;

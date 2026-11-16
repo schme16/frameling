@@ -4,6 +4,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { allCommands, getCommand } from '../core/registry';
 import { Icon } from './icons';
+import { StickyPageTop } from './StickyPageTop';
 import { Keys } from './ShortcutChip';
 import { effectiveKeys } from './keys';
 import { currentShape, MENUS, menuTitle, SUBMENUS } from './menus';
@@ -135,7 +136,7 @@ export function MenusPage() {
       <p className="ui-pref-intro">
         <strong data-testid="menus.workspace">These are the menus for {workspaceName}.</strong> Each workspace keeps its own. Move things about, take out what you never use, add any command, and make menus of your own. Everything is still in the command search (Ctrl+K).
       </p>
-      {crumbs}
+      <StickyPageTop>{crumbs}</StickyPageTop>
       {here.menu === null ? (
         <BarList
           items={items}

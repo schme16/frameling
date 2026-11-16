@@ -4,6 +4,7 @@
 import { Explainer } from '../explain/ExplainIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../icons';
+import { StickyPageTop } from '../StickyPageTop';
 import { getPrefs, setThemePreview, usePrefs } from '../prefs';
 import { toast } from '../toast';
 import { getBuiltIn } from './builtIn';
@@ -204,24 +205,26 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
 
   return (
     <div className="th-editor">
-      <div className="th-editor-top">
-        <button type="button" className="ui-btn ui-btn-small" onClick={onDone}>
-          <Icon name="prev" size={14} />
-          All themes
-        </button>
-        <input
-          className="th-name"
-          type="text"
-          maxLength={MAX_NAME}
-          aria-label="Theme name"
-          value={theme.name}
-          placeholder="Name your theme"
-          onChange={(e) => saveCustomTheme({ ...theme, name: e.target.value })}
-          onBlur={(e) => {
-            if (!e.target.value.trim()) saveCustomTheme({ ...theme, name: 'My theme' });
-          }}
-        />
-      </div>
+      <StickyPageTop>
+        <div className="th-editor-top">
+          <button type="button" className="ui-btn ui-btn-small" onClick={onDone}>
+            <Icon name="prev" size={14} />
+            All themes
+          </button>
+          <input
+            className="th-name"
+            type="text"
+            maxLength={MAX_NAME}
+            aria-label="Theme name"
+            value={theme.name}
+            placeholder="Name your theme"
+            onChange={(e) => saveCustomTheme({ ...theme, name: e.target.value })}
+            onBlur={(e) => {
+              if (!e.target.value.trim()) saveCustomTheme({ ...theme, name: 'My theme' });
+            }}
+          />
+        </div>
+      </StickyPageTop>
 
       <div className="th-editor-grid">
         <aside className="th-editor-side">

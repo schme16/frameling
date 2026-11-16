@@ -82,3 +82,32 @@ export function fixPair(tokens: ThemeTokens, check: ContrastCheck): string {
 }
 
 export const describeToken = tokenLabel;
+
+/** The most any readable-on-a-fill token is allowed to fall short: words need this much against their fill. */
+export const READABLE_MIN = 4.5;
+
+/**
+ * Text colours worked out from the fills they sit on, so a button stays readable whatever colours a theme picked.
+ * Each starts from the theme's own word colour (so a good theme is untouched) and is moved lighter or darker only as
+ * far as it needs to reach 4.5:1, with black or white as the last resort (always at least 4.5 against anything).
+ * The editor shows the app in the theme being made, so the chrome around the colours has to be readable in it.
+ */
+export const READABLE_TOKENS = ['on-bg', 'on-panel', 'on-muted', 'on-raised', 'on-hover', 'on-danger', 'on-chosen', 'on-chosen-deep'] as const;
+
+export function readableTokens(tokens: ThemeTokens): ThemeTokens {
+  const text = tokens.text;
+  const on = (fg: string | undefined, bg: string | undefined): string | undefined => (fg && bg ? ensureContrast(fg, bg, READABLE_MIN) : undefined);
+  const out: ThemeTokens = {};
+  const set = (name: string, v: string | undefined) => {
+    if (v) out[name] = v;
+  };
+  set('on-bg', on(text, tokens.bg));
+  set('on-panel', on(text, tokens.panel));
+  set('on-muted', on(tokens.muted, tokens.panel));
+  set('on-raised', on(text, tokens.raised));
+  set('on-hover', on(text, tokens['hover-bg']));
+  set('on-danger', on(tokens.bg, tokens.danger));
+  set('on-chosen', on(tokens['chosen-fg'], tokens['chosen-bg']));
+  set('on-chosen-deep', on(tokens['chosen-fg'], tokens['sunny-deep']));
+  return out;
+}
