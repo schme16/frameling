@@ -17,7 +17,7 @@ registerHelpTopics([
     title: 'Brush tips: chalk, charcoal, watercolour and stamps',
     section: 'Drawing',
     summary: 'Give a line a hand-made feel: chalk, charcoal, a watercolour edge, or a shape repeated along it. Or make a brush from your own drawing.',
-    keywords: ['brush', 'tip', 'tips', 'texture', 'textured', 'chalk', 'charcoal', 'watercolour', 'watercolor', 'grain', 'rough', 'stamp', 'stamps', 'leaf', 'star', 'custom brush', 'pixel brush', 'brush from selection', 'make a brush', 'sketch', 'wash', 'paper'],
+    keywords: ['brush', 'tip', 'tips', 'tip picker', 'pick a tip', 'texture', 'textured', 'chalk', 'charcoal', 'watercolour', 'watercolor', 'grain', 'rough', 'stamp', 'stamps', 'leaf', 'star', 'custom brush', 'pixel brush', 'brush from selection', 'make a brush', 'sketch', 'wash', 'paper'],
   },
   {
     id: 'brush-own',

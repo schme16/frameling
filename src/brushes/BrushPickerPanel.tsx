@@ -12,6 +12,8 @@ import { usePopover } from '../ui/popover';
 import {
   BOX,
   buildSections,
+  groupKey,
+  groupsOf,
   flatten,
   foldableKeys,
   groupOf,
@@ -41,7 +43,9 @@ import {
   pickerVersion,
   useRowStyle,
 } from './picker';
-import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets, type Side } from './presets';
+import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
+import { customOf, tipHint, tipIdOf, tipRows, type PickerSide } from './tipList';
+import { pickTip } from './tips';
 import { currentSpec, putSpec } from '../dab/live';
 import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
 import { specSize, withSize, type PixelSpec } from '../dab/spec';
@@ -84,10 +88,10 @@ const sectionIcon = (s: Section): ReactNode => (s.kind === 'favourites' ? <Star 
 /** The picture of the brush's real tip (chalk grain, a wash, its stamps) and its size under it. */
 export const TIP_W = 44;
 export const tipHeight = (scale: number): number => Math.max(20, Math.round(30 * scale));
-const Tip = ({ brush, spec, scale, on }: { brush: BrushSettings; spec?: PixelSpec; scale: number; on: boolean }) => (
+const Tip = ({ brush, spec, scale, on, size = true }: { brush: BrushSettings; spec?: PixelSpec; scale: number; on: boolean; size?: boolean }) => (
   <span className="pk-tip" aria-hidden="true">
     {spec ? <PixelTip spec={spec} w={TIP_W} h={tipHeight(scale)} on={on} /> : <TipThumb brush={brush} w={TIP_W} h={tipHeight(scale)} on={on} />}
-    <b>{spec ? specSize(spec) : brush.size}</b>
+    {size && <b>{spec ? specSize(spec) : brush.size}</b>}
   </span>
 );
 
@@ -106,11 +110,15 @@ interface RowProps {
   /** The same for a pixel brush. */
   liveSpec?: PixelSpec | null;
   showGroup: boolean;
+  /** A line about the brush, for a tooltip (the pen tips have no size or group worth showing). */
+  hint?: string;
+  /** A pen tip row: no star (a short fixed list needs no favourites) and no size number. */
+  tips?: boolean;
   onPick: (id: string) => void;
   onStar: (id: string) => void;
 }
 
-const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpec, showGroup, onPick, onStar }: RowProps) {
+const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpec, showGroup, hint, tips = false, onPick, onStar }: RowProps) {
   const brush = live ?? b.brush;
   const spec = b.tool === 'pixel' ? (liveSpec ?? b.pixel) : undefined;
   const tip = rows === 'tip';
@@ -122,33 +130,35 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
       className={`pk-row pk-row-${rows}`}
       data-on={on}
       data-hot={hot}
-      title={`${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
+      title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >
-      {tip && <Tip brush={brush} spec={spec} scale={scale} on={on} />}
+      {tip && <Tip brush={brush} spec={spec} scale={scale} on={on} size={!tips} />}
       <span className="pk-main">
         {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
         <span className="pk-name">
           <span className="pk-name-text">{b.name}</span>
           {showGroup && <em>{groupOf(b)}</em>}
-          {!tip && <b className="pk-size">{spec ? specSize(spec) : brush.size}</b>}
+          {!tip && !tips && <b className="pk-size">{spec ? specSize(spec) : brush.size}</b>}
         </span>
       </span>
-      <button
-        type="button"
-        tabIndex={-1}
-        className="pk-star"
-        data-on={fav}
-        aria-label={fav ? `Take ${b.name} out of Favourites` : `Add ${b.name} to Favourites`}
-        aria-pressed={fav}
-        title={fav ? 'Take out of Favourites' : 'Add to Favourites'}
-        onClick={(e) => {
-          e.stopPropagation();
-          onStar(b.id);
-        }}
-      >
-        <Star on={fav} />
-      </button>
+      {!tips && (
+        <button
+          type="button"
+          tabIndex={-1}
+          className="pk-star"
+          data-on={fav}
+          aria-label={fav ? `Take ${b.name} out of Favourites` : `Add ${b.name} to Favourites`}
+          aria-pressed={fav}
+          title={fav ? 'Take out of Favourites' : 'Add to Favourites'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onStar(b.id);
+          }}
+        >
+          <Star on={fav} />
+        </button>
+      )}
     </div>
   );
 });
@@ -160,7 +170,7 @@ const sizeRange = (s: PixelSpec): { min: number; max: number } => (s.kind === 'd
 const LIVE_SIZE = (size: number): number => Math.min(54, Math.max(3, Math.round(size * 1.35)));
 const setBrush = (patch: Partial<BrushSettings>): void => store().setUi((u) => ({ brush: { ...u.brush, ...patch } }));
 
-export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: HTMLElement; side?: Side; onClose: (refocus: boolean) => void; onPicked: () => void }) {
+export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: HTMLElement; side?: PickerSide; onClose: (refocus: boolean) => void; onPicked: () => void }) {
   useBrushPresets(brushesVersion);
   usePicker(pickerVersion);
   const live = useStore((st) => st.ui.brush);
@@ -168,14 +178,19 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const range = useBrushRange(false);
   const rows = useRowStyle();
   const scale = rowScale();
-  const all = brushesOnSide(side);
-  const { activeId } = stateFor(side);
+  const tips = side === 'tip';
+  const custom = customOf(live.tip);
+  const tipList = useMemo(() => (tips ? tipRows(live, custom) : []), [tips, live, custom]);
+  const all = tips ? tipList : brushesOnSide(side);
+  const { activeId } = tips ? { activeId: tipIdOf(live.tip) } : stateFor(side);
   const liveSpec = side === 'pixel' ? currentSpec() : null;
   const big = all.length > SMALL_LIBRARY;
-  const favs = favouriteIds();
+  // The tips have no favourites or recent: it is a short list, shown with every group open at once.
+  const favs = tips ? [] : favouriteIds();
   const favSet = useMemo(() => new Set(favs), [favs]);
-  const opened = openGroups();
-  const recent = recentIds();
+  const opened = tips ? (openGroups() ?? groupsOf(all).map((g) => groupKey(g.name))) : openGroups();
+  const recent = tips ? [] : recentIds();
+  const noun = tips ? 'tip' : 'brush';
   const [query, setQuery] = useState('');
   const [hot, setHot] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -218,7 +233,10 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
     return () => document.removeEventListener('mousedown', away);
   }, [anchor, onClose]);
 
-  const sections = useMemo(() => buildSections({ all, favourites: favs, recent, activeId, opened, query }), [all, favs, recent, activeId, opened, query]);
+  const sections = useMemo(() => {
+    const built = buildSections({ all, favourites: favs, recent, activeId, opened, query });
+    return tips ? built.filter((s) => s.kind === 'group' || s.kind === 'found') : built;
+  }, [all, favs, recent, activeId, opened, query, tips]);
   const items = useMemo<Item[]>(() => (big ? flatten(sections) : all.map((b) => ({ key: rowKey('flat', b.id), kind: 'row' as const, section: 'flat', brush: b }))), [big, sections, all]);
   const index = useMemo(() => new Map(items.map((i, n) => [i.key, n])), [items]);
   const hotKey = hot && index.has(hot) ? hot : startKey(items, searching ? null : activeId);
@@ -231,9 +249,9 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
 
   const pick = useCallback(
     (id: string) => {
-      if (applyPreset(id)) onPicked();
+      if (tips ? pickTip(id) : applyPreset(id)) onPicked();
     },
-    [onPicked],
+    [onPicked, tips],
   );
   const star = useCallback((id: string) => void toggleFavourite(id), []);
   const toggleSection = (key: string, to?: boolean) => {
@@ -270,15 +288,16 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
     if (e.key !== 'Tab' && e.key !== 'Escape') e.stopPropagation();
   };
 
-  const allKeys = foldableKeys({ all });
+  const allKeys = foldableKeys({ all }).filter((k) => !tips || k.startsWith('group:'));
   const allOpen = allKeys.every((k) => sections.find((s) => s.key === k)?.open);
+  const hintFor = (b: import('./model').BrushPreset): string | undefined => (tips ? tipHint(b.id) : undefined);
   const hint: Record<string, string> = { favourites: 'Star a brush and it shows up here.', recent: 'The brushes you use show up here.' };
   const firstGroup = sections.findIndex((s) => s.kind === 'group');
 
   const rowFor = (s: Section, b: import('./model').BrushPreset) => {
     const key = rowKey(s.key, b.id);
     const on = b.id === activeId;
-    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={s.kind === 'found'} onPick={pick} onStar={star} />;
+    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={s.kind === 'found'} hint={hintFor(b)} tips={tips} onPick={pick} onStar={star} />;
   };
 
   let body: ReactNode;
@@ -288,7 +307,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
         {all.map((b) => {
           const key = rowKey('flat', b.id);
           const on = b.id === activeId;
-          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={false} onPick={pick} onStar={star} />;
+          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={false} hint={hintFor(b)} tips={tips} onPick={pick} onStar={star} />;
         })}
       </div>
     );
@@ -297,7 +316,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
       <section key={s.key} role="presentation">
         {n === firstGroup && (
           <p className="pk-label">
-            All brushes <span>{all.length}</span>
+            All {noun}s <span>{all.length}</span>
           </p>
         )}
         {s.kind === 'found' ? (
@@ -322,7 +341,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
             <span className="pk-count">{s.count}</span>
           </button>
         )}
-        {s.kind === 'found' && !s.count && <p className="pk-empty">No brush called that. Try a shorter word, like &quot;pen&quot;.</p>}
+        {s.kind === 'found' && !s.count && <p className="pk-empty">{tips ? 'No tip called that. Try a shorter word, like "stamp".' : 'No brush called that. Try a shorter word, like "pen".'}</p>}
         {s.open && s.count === 0 && s.kind !== 'found' && <p className="pk-empty pk-empty-in">{hint[s.kind]}</p>}
         {s.open && s.count > 0 && (
           <div className={`pk-rows pk-rows-${rows}`} role="group" aria-label={s.name}>
@@ -338,22 +357,24 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const height = big ? Math.min(box.h ?? 580, maxH) : undefined;
   const activeRow = hotIdx !== undefined ? `pk-i${hotIdx}` : undefined;
   return createPortal(
-    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH }} onKeyDown={onKeyDown}>
-      <div className="pk-live">
-        <div className="pk-dial" aria-hidden="true">
-          <i style={{ width: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size), height: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size) }} />
+    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? 'Pick a pen tip' : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH }} onKeyDown={onKeyDown}>
+      {!tips && (
+        <div className="pk-live">
+          <div className="pk-dial" aria-hidden="true">
+            <i style={{ width: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size), height: LIVE_SIZE(liveSpec ? specSize(liveSpec) : live.size) }} />
+          </div>
+          <div className="pk-sliders">
+            {liveSpec ? (
+              <Slider label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
+            ) : (
+              <>
+                <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+                <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
+              </>
+            )}
+          </div>
         </div>
-        <div className="pk-sliders">
-          {liveSpec ? (
-            <Slider label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
-          ) : (
-            <>
-              <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-              <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
-            </>
-          )}
-        </div>
-      </div>
+      )}
       {big && (
         <div className="pk-tools">
           <label className="pk-search">
@@ -368,11 +389,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
               aria-expanded="true"
               aria-controls="pk-list"
               aria-activedescendant={activeRow}
-              aria-label="Search brushes"
+              aria-label={`Search ${noun}s`}
               autoComplete="off"
               spellCheck={false}
               value={query}
-              placeholder="Search brushes"
+              placeholder={`Search ${noun}s`}
               onChange={(e) => {
                 setQuery(e.target.value);
                 setHot(null);
@@ -385,20 +406,22 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
           <button type="button" className="pk-icon" title={rows === 'tip' ? 'Two columns, denser' : 'One column'} aria-label={rows === 'tip' ? 'Show two columns' : 'Show one column'} onClick={() => void flipRowStyle()}>
             <Svg>{rows === 'two' ? <path d="M2.5 4h11M2.5 8h11M2.5 12h11" /> : <path d="M2.5 3.5h4.5v4.5H2.5zM9 3.5h4.5v4.5H9zM2.5 10h4.5M9 10h4.5" />}</Svg>
           </button>
-          <button
-            type="button"
-            className="pk-icon"
-            title="Save the brush you are using"
-            aria-label="Save the brush you are using"
-            onClick={() => {
-              onClose(false);
-              startNaming('save');
-            }}
-          >
-            <Svg>
-              <path d="M8 3v10M3 8h10" />
-            </Svg>
-          </button>
+          {!tips && (
+            <button
+              type="button"
+              className="pk-icon"
+              title="Save the brush you are using"
+              aria-label="Save the brush you are using"
+              onClick={() => {
+                onClose(false);
+                startNaming('save');
+              }}
+            >
+              <Svg>
+                <path d="M8 3v10M3 8h10" />
+              </Svg>
+            </button>
+          )}
         </div>
       )}
       <div
@@ -406,7 +429,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
         ref={listRef}
         className="pk-list"
         role={big ? 'tree' : 'listbox'}
-        aria-label="Brushes"
+        aria-label={tips ? 'Tips' : 'Brushes'}
         tabIndex={big ? -1 : 0}
         aria-activedescendant={big ? undefined : activeRow}
         onMouseDown={(e) => {

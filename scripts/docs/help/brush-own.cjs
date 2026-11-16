@@ -4,7 +4,12 @@
 const L = require('./_lib.cjs');
 const at = (x, y) => [Math.round(495 + (x - 640) * 0.5), Math.round(269 + (y - 360) * 0.5)];
 const wave = (y, amp = 34) => ({ drag: Array.from({ length: 33 }, (_, i) => at(260 + i * 24, y + amp * Math.sin((i / 32) * Math.PI * 2))), steps: 3, delay: 12 });
-const tip = (name) => L.js(`[...document.querySelectorAll('.tp-chips[aria-label="Brush tip"] .bp-chip')].find((c) => c.textContent === ${JSON.stringify(name)}).click()`);
+// Opens the Tip picker and clicks the row with this name (a stamp is its shape: Leaf, Heart...). Spread it into the steps.
+const tip = (name) => [
+  L.js(`document.querySelector('[data-testid="brush-tips"] .pk-btn').click()`),
+  L.wait(500),
+  L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
+];
 const set = (patch) => L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ...${JSON.stringify(patch)} } }))`);
 const fit = L.js('__frameling.store().setUi({ zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5, color: "#2d3f6e" })');
 const away = { move: [720, 28] };
@@ -37,8 +42,8 @@ module.exports = [
       L.wait(1500), L.cmd('brush.makeAlong'), L.wait(1300),
       L.js("(() => { const S = __frameling.store(); S.update('cleanup', (d) => { const l = d.layers.find((x) => x.kind === 'vector'); const dr = d.drawings[l.cels[0].drawingId]; dr.shapes = dr.shapes.filter((x) => !/^q\\d+$/.test(x.id)); }); S.setUi({ selection: [] }); })()"),
       L.wait(500), L.cmd('tools.brush'), L.wait(300), wave(250), L.wait(700),
-      tip('Pen nib'), L.wait(900), set({ size: 24 }), L.wait(400), wave(420), L.wait(700),
-      tip('Bristles'), L.wait(900), set({ size: 40 }), L.wait(400), wave(580), L.wait(1500),
+      ...tip('Pen nib'), L.wait(900), set({ size: 24 }), L.wait(400), wave(420), L.wait(700),
+      ...tip('Bristles'), L.wait(900), set({ size: 40 }), L.wait(400), wave(580), L.wait(1500),
       { rec: 'stop' },
     ],
   },

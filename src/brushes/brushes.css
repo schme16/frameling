@@ -76,11 +76,6 @@
   font-weight: 600;
   color: var(--muted);
 }
-.tp-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
 .tp-pick {
   display: flex;
   flex-direction: column;

@@ -3,6 +3,7 @@
 import type { BrushPreset } from './model';
 import { PIXEL_GROUPS } from './pixelStarters';
 import { STARTER_GROUPS } from './starters';
+import { TIP_GROUPS } from './tipList';
 
 export const MY_GROUP = 'My brushes';
 export const STARTERS_GROUP = 'Starters';
@@ -126,7 +127,7 @@ export interface PickerFacts {
 function groupOrder(name: string): number {
   if (name === MY_GROUP) return 0;
   if (name === STARTERS_GROUP) return 1;
-  const groups: readonly string[] = [...STARTER_GROUPS, ...PIXEL_GROUPS];
+  const groups: readonly string[] = [...STARTER_GROUPS, ...PIXEL_GROUPS, ...TIP_GROUPS];
   const own = groups.findIndex((g) => g.toLowerCase() === name.toLowerCase());
   return own >= 0 ? 2 + own : 2 + groups.length;
 }

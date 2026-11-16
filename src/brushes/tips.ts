@@ -14,6 +14,7 @@ import { gridPixels } from '../core/pixelBounds';
 import { defaultTip, STAMPS, TIPS } from '../geometry/tip';
 import { MAX_STAMP, hasColours, pixelStampFrom, readPixelStamp, vectorStampFrom, type PixelStamp } from './stamps';
 import { choiceWord } from '../words/choices';
+import { parseTipId } from './tipList';
 
 export type PixelStampColours = 'own' | 'mine';
 
@@ -62,6 +63,15 @@ export function patchTip(patch: Partial<BrushTip>): void {
 export function setStampShape(shape: StampShape): void {
   const usual = STAMPS.find((s) => s.id === shape)?.angle ?? 'upright';
   patchTip(shape === 'custom' ? { shape } : { shape, angle: usual });
+}
+
+/** Picks a tip from the picker by its id (see tipList.ts): a kind, or a stamp with its shape. False for anything else. */
+export function pickTip(id: string): boolean {
+  const p = parseTipId(id);
+  if (!p) return false;
+  setTipKind(p.kind);
+  if (p.shape) setStampShape(p.shape);
+  return true;
 }
 
 /** The next (or previous) tip: Plain, then each kind. */
