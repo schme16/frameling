@@ -106,9 +106,22 @@ const suggestName = (): string => {
   }
 };
 
-/** The saved brushes: the picker, then what you can do to the one you are using. */
-export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
+/** The picker alone, with an optional title above it (the same look as the Tip title). */
+export function BrushPresetPicker({ side = 'vector', title }: { side?: Side; title?: string }) {
   // Redraw when the brush in use or the list changes.
+  useStore((s) => s.ui.brush);
+  useStore((s) => s.ui.tool);
+  useBrushPresets(brushesVersion);
+  return (
+    <div className="bp-row" data-testid="brush-presets">
+      {title && <div className="tp-label">{title}</div>}
+      <BrushPicker side={side} />
+    </div>
+  );
+}
+
+/** What you can do to the brush in use: keep it, update it, put it back, rename it, delete it, and share your brushes. */
+export function BrushPresetActions({ side = 'vector' }: { side?: Side }) {
   useStore((s) => s.ui.brush);
   useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
@@ -117,8 +130,7 @@ export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
   const own = activeOwn(side);
   const full = myBrushes().length >= MAX_PRESETS;
   return (
-    <div className="bp-row" data-testid="brush-presets">
-      <BrushPicker side={side} />
+    <div className="bp-row" data-testid="brush-keep">
       {mode ? (
         <NameField key={mode} mode={mode} />
       ) : (
@@ -158,6 +170,19 @@ export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
           <ActionButton onClick={() => void addBrushesFromClipboard()}>Paste from text</ActionButton>
         </div>
       </details>
+    </div>
+  );
+}
+
+/** The saved brushes in one block: the picker, then what you can do to the one you are using. The other brush panels use this. */
+export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
+  useStore((s) => s.ui.brush);
+  useStore((s) => s.ui.tool);
+  useBrushPresets(brushesVersion);
+  return (
+    <div className="bp-row" data-testid="brush-presets">
+      <BrushPicker side={side} />
+      <BrushPresetActions side={side} />
     </div>
   );
 }
