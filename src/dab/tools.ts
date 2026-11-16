@@ -12,7 +12,8 @@ import { drawMirrorLines } from '../pixel/tools';
 import { SOFT_EDGE_CHOICE } from '../soft/choices';
 import { edgeFor, type EdgeMode } from '../soft/maths';
 import { flowFactor, sizeFactor } from '../tablet/dynamics';
-import { drawRing } from '../tools/cursors';
+import { drivesFrom } from './dynamics';
+import { senseOf, SpeedMeter } from './sense';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { PixelSession } from '../tools/pixelSession';
 import { noteColorUsed } from '../tools/recent';
@@ -23,11 +24,13 @@ import { DabOptionsPanel } from './Options';
 import { getDab } from './settings';
 import { sessionStroke, type DabStroke } from './stroke';
 import { PIXEL_BRUSH_TOOL } from './live';
+import { drawDabCursor } from './cursor';
 
 /** The width to paint with, in art pixels, for the pointer (pen pressure and tilt change it when the pen page says so). */
 const widthFor = (e: ToolPointer): number => Math.max(1, getDab().size * sizeFor(e) * viewSizeFactor());
-const sizeFor = (e: ToolPointer): number => sizeFactor(PIXEL_BRUSH_TOOL, e);
-const flowFor = (e: ToolPointer): number => Math.min(1, getDab().flow * flowFactor(PIXEL_BRUSH_TOOL as never, e));
+// A brush that sends the pen to its size (or flow) itself does not get the Pen page's pressure on top, so it never counts twice.
+const sizeFor = (e: ToolPointer): number => (drivesFrom(getDab().dynamics, 'size', ['pressure', 'tilt']) ? 1 : sizeFactor(PIXEL_BRUSH_TOOL, e));
+const flowFor = (e: ToolPointer): number => Math.min(1, getDab().flow * (drivesFrom(getDab().dynamics, 'flow', ['pressure', 'tilt']) ? 1 : flowFactor(PIXEL_BRUSH_TOOL as never, e)));
 
 /**
  * How the edge is made on a layer right now. An aliased brush is always crisp. An anti-aliased one is smooth, unless the
@@ -42,6 +45,7 @@ function dabTool(): Tool {
   let stroke: DabStroke | null = null;
   let session: PixelSession | null = null;
   let colour = '';
+  let meter = new SpeedMeter();
   const finish = () => {
     const s = session;
     session = null;
@@ -50,7 +54,7 @@ function dabTool(): Tool {
   };
   const go = (e: ToolPointer, ps: number) => {
     if (!session || !stroke) return;
-    stroke.moveTo({ x: e.x / ps, y: e.y / ps }, widthFor(e), flowFor(e));
+    stroke.moveTo({ x: e.x / ps, y: e.y / ps }, widthFor(e), flowFor(e), senseOf(e, meter.push(e.x / ps, e.y / ps, e.time)));
     session.flush();
   };
 
@@ -77,7 +81,10 @@ function dabTool(): Tool {
       colour = ui.color;
       const brush = getDab();
       session = new PixelSession(doc, layer, ui.frame, { adds: true });
-      stroke = sessionStroke(session, doc, layer, { brush, color: rgba, edge: dabEdge(brush.aliased, layer).mode });
+      meter = new SpeedMeter();
+      // The back colour is the Fill colour (Photoshop's background): brushes that mix colour go toward it.
+      const back = (ui.fillColor && parseHex(ui.fillColor)) || null;
+      stroke = sessionStroke(session, doc, layer, { brush, color: rgba, back, edge: dabEdge(brush.aliased, layer).mode });
       go(e, layer.pixelSize);
     },
     move(e) {
@@ -110,7 +117,7 @@ function dabTool(): Tool {
       const h = getHover();
       const { layer } = activeLayer();
       if (!h || !layer || layer.kind !== 'pixel') return;
-      drawRing(g, ctx, h.x, h.y, (getDab().size * viewSizeFactor() * layer.pixelSize) / 2, PIXEL_BRUSH_TOOL);
+      drawDabCursor(g, ctx, h.x, h.y, layer.pixelSize, getDab(), Math.max(1, getDab().size * viewSizeFactor()));
     },
   };
 }

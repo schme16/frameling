@@ -10,7 +10,11 @@ import { tileModeOn, wrap } from '../tiles/state';
 import { PixelSession } from '../tools/pixelSession';
 import { threshold, paintOver, type EdgeMode } from '../soft/maths';
 import { palettePicker, type Pt } from '../soft/stroke';
-import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler } from './maths';
+import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
+import { touchesColour } from './dynamics';
+import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
+import { dualAt, dualTile, grainCut } from './texture';
+import { paperTile, TILE } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
 export interface Surface {
@@ -66,6 +70,8 @@ export function bufferSurface(pixels: Uint8ClampedArray, width: number, height: 
 export interface DabParams {
   brush: DabBrush;
   color: RGBA;
+  /** The back colour: where a brush whose colour mixes (a "mix" route in its dynamics) goes toward. The paint colour when left out. */
+  back?: RGBA | null;
   /** Crisp: a pixel is all or nothing. Smooth: see-through edges. */
   edge: EdgeMode;
   mirror?: { mode: 'off' | 'h' | 'v' | 'both'; ax2: number; ay2: number };
@@ -92,6 +98,22 @@ export class DabStroke {
   private readonly crisp: boolean;
   private readonly keep: boolean;
   private readonly wrapEdges: boolean;
+  // Texture: the paper and the dual dots, looked up per pixel, and where this stroke's own scatter of dots starts.
+  private readonly grainTile: Uint8Array | null;
+  private readonly grainDepth: number;
+  private readonly grainScale: number;
+  private readonly grainMoving: boolean;
+  private readonly dual: Uint8Array | null;
+  private readonly dualOx: number;
+  private readonly dualOy: number;
+  private gOx = 0;
+  private gOy = 0;
+  private readonly look: () => number;
+  // Colour: the one a dab paints with, which dynamics and wet mode can move away from the colour picked.
+  private readonly colourFx: boolean;
+  private readonly cur: Rgb;
+  private readonly load: Rgb;
+  private readonly under = new Uint8ClampedArray(4);
 
   constructor(
     private readonly surface: Surface,
@@ -105,6 +127,20 @@ export class DabStroke {
     this.crisp = p.edge === 'crisp';
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
+    const g = p.brush.grain;
+    this.grainTile = g && g.depth > 0 ? paperTile(g.paper) : null;
+    this.grainDepth = g?.depth ?? 0;
+    this.grainScale = g?.scale ?? 1;
+    this.grainMoving = !!g?.moving;
+    const d = p.brush.dual;
+    this.dual = d ? dualTile(d) : null;
+    const start = makeRng((p.seed ?? 1) + 77);
+    this.dualOx = (start() * TILE) | 0;
+    this.dualOy = (start() * TILE) | 0;
+    this.look = makeRng((p.seed ?? 1) + 991);
+    this.colourFx = touchesColour(p.brush.dynamics) || p.brush.wet > 0;
+    this.cur = [p.color[0], p.color[1], p.color[2]];
+    this.load = [p.color[0], p.color[1], p.color[2]];
   }
 
   /** Adds this much paint to a pixel (up to the opacity) and repaints it when its look changed. */
@@ -129,7 +165,8 @@ export class DabStroke {
     if (!this.crisp && !this.keep && ((next * 255 + 0.5) | 0) === ((have * 255 + 0.5) | 0)) return;
     if (this.crisp) {
       // All or nothing: the pixel goes on once the paint passes its dither threshold, and stays on.
-      const th = threshold(x, y);
+      // With a grain the paper decides which pixels go on, so the page's dither only counts for what the grain leaves.
+      const th = this.grainDepth > 0 ? threshold(x, y) * (1 - this.grainDepth) : threshold(x, y);
       if (next <= th) return;
       if (have > th && !this.keep) return;
       s = 1;
@@ -144,9 +181,9 @@ export class DabStroke {
       c[2] = cell[2];
       c[3] = Math.round((cell[3] * pc[3]) / 255);
     } else {
-      c[0] = pc[0];
-      c[1] = pc[1];
-      c[2] = pc[2];
+      c[0] = this.cur[0];
+      c[1] = this.cur[1];
+      c[2] = this.cur[2];
       c[3] = pc[3];
     }
     const o = this.out;
@@ -170,6 +207,14 @@ export class DabStroke {
     // A round tip that is not squashed is a circle, so each row only needs the pixels inside the circle's chord.
     const circle = this.p.brush.tip === 'round' && this.p.brush.roundness === 1;
     const r2 = reach * reach;
+    const dual = this.dual;
+    const grain = this.grainTile;
+    const gs = this.grainScale;
+    const depth = this.grainDepth;
+    const gox = this.gOx;
+    const goy = this.gOy;
+    const dox = this.dualOx;
+    const doy = this.dualOy;
     for (let y = y0; y <= y1; y++) {
       const dy = y + 0.5 - d.y;
       let x0 = Math.floor(d.x - reach);
@@ -188,15 +233,51 @@ export class DabStroke {
           const t = tiles[row + (x >> SHIFT)];
           if (t !== undefined && t[ty + (x & MASK)] >= cap) continue;
         }
+        if (dual !== null && dual[(((y + doy) & (TILE - 1)) * TILE) + ((x + dox) & (TILE - 1))] === 0) continue;
         const c = sm.cov(x + 0.5 - d.x, dy);
-        if (c > 0) this.touch(x, y, c * d.flow, cell);
+        if (c <= 0) continue;
+        let add = c * d.flow;
+        if (grain !== null) {
+          const sx = gs > 1 ? Math.floor(x / gs) : x;
+          const sy = gs > 1 ? Math.floor(y / gs) : y;
+          add = grainCut(add, grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255, depth);
+          if (add <= 0) continue;
+        }
+        this.touch(x, y, add, cell);
       }
     }
+  }
+
+  /** The colour this dab paints with: the one picked, mixed toward the back colour, shifted in hue, saturation and lightness, and carrying what it picked up when wet. */
+  private colourFor(d: Dab): void {
+    const pc = this.p.color;
+    const cur = this.cur;
+    cur[0] = pc[0];
+    cur[1] = pc[1];
+    cur[2] = pc[2];
+    const wet = this.p.brush.wet;
+    if (wet > 0) {
+      // Colour from under the middle of the dab joins the load, and the dab paints with a share of the load.
+      const x = Math.floor(d.x);
+      const y = Math.floor(d.y);
+      if (x >= 0 && y >= 0 && x < this.w && y < this.h) {
+        this.surface.read(x, y, this.under);
+        pickUp(this.load, this.under);
+      }
+      mixRgb(pc, this.load, wet, cur);
+    }
+    if (d.mix) mixRgb(cur, this.p.back ?? pc, d.mix, cur);
+    if (d.hue || d.sat || d.light) shiftColour(cur[0], cur[1], cur[2], d.hue ?? 0, d.sat ?? 0, d.light ?? 0, cur);
   }
 
   private lay(dabs: Dab[]): void {
     const { brush, mirror: m } = this.p;
     for (const d of dabs) {
+      if (this.colourFx) this.colourFor(d);
+      if (this.grainMoving) {
+        this.gOx = (this.look() * TILE) | 0;
+        this.gOy = (this.look() * TILE) | 0;
+      }
       const sm = samplerFor(brush, d.size, d.angle, this.crisp);
       // An aliased brush puts its middle on the pixel grid, so its shape is the same wherever it lands. Snap first and
       // mirror after, so the images are snapped too (the mirror lines sit on whole or half pixels).
@@ -206,9 +287,9 @@ export class DabStroke {
     }
   }
 
-  /** Moves the brush to `to` (art pixels, fractions allowed), laying dabs on the way. `size` is how wide it is now; `flow` is the paint per dab, 0 to 1. */
-  moveTo(to: Pt, size: number, flow: number): void {
-    this.lay(this.path.to(to, size, flow));
+  /** Moves the brush to `to` (art pixels, fractions allowed), laying dabs on the way. `size` is how wide it is now; `flow` is the paint per dab, 0 to 1; `sense` is what the pen and hand are doing, for the brush's dynamics. */
+  moveTo(to: Pt, size: number, flow: number, sense?: Sense): void {
+    this.lay(this.path.to(to, size, flow, sense));
   }
 
   /** The stroke is over. A click with no movement still lays its dab. */

@@ -27,7 +27,7 @@ function session() {
 
 const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
 
-function time(run: () => void, reps = 5): number {
+function time(run: () => void, reps = Number(process.env.DAB_BENCH_REPS ?? 5)): number {
   run();
   const t: number[] = [];
   for (let i = 0; i < reps; i++) {
@@ -35,7 +35,8 @@ function time(run: () => void, reps = 5): number {
     run();
     t.push(performance.now() - t0);
   }
-  return Math.round(median(t) * 10) / 10;
+  // DAB_BENCH_STAT=min takes the fastest run, which is steadier than the median on a busy machine.
+  return Math.round((process.env.DAB_BENCH_STAT === 'min' ? Math.min(...t) : median(t)) * 10) / 10;
 }
 
 describe.skipIf(!process.env.DAB_BENCH)('dab engine speed', () => {
@@ -59,6 +60,26 @@ describe.skipIf(!process.env.DAB_BENCH)('dab engine speed', () => {
           const { doc, layer, s } = session();
           const st = sessionStroke(s, doc, layer, { brush: { ...DEFAULT_DAB, size, hardness, aliased: true, spacing: 0.25 }, color: [220, 40, 40, 255], edge: 'crisp' });
           for (const p of PTS) st.moveTo(p, size, 1);
+          st.finish();
+        });
+      }
+    }
+    // The second slice: what each new piece costs on top of the plain sharp brush at the same size (pixel brush engine).
+    const sharp = { ...DEFAULT_DAB, aliased: true, spacing: 0.25, hardness: 1 };
+    const extras: Record<string, Partial<typeof DEFAULT_DAB>> = {
+      'dyn-pressure': { dynamics: [{ from: 'pressure', to: 'size', amount: 0.8, invert: false }, { from: 'pressure', to: 'flow', amount: 0.5, invert: false }] },
+      'dyn-colour': { dynamics: [{ from: 'random', to: 'hue', amount: 0.3, invert: false }, { from: 'random', to: 'lightness', amount: 0.3, invert: false }] },
+      grain: { flow: 0.6, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } },
+      'grain-moving': { flow: 0.6, grain: { paper: 'medium', depth: 1, scale: 2, moving: true } },
+      dual: { dual: { tip: 'round', size: 2, density: 0.3, cut: false } },
+      wet: { wet: 0.8 },
+    };
+    for (const size of [8, 40, 120]) {
+      for (const [name, patch] of Object.entries(extras)) {
+        out[`${name}:${size}px`] = time(() => {
+          const { doc, layer, s } = session();
+          const st = sessionStroke(s, doc, layer, { brush: { ...sharp, size, ...patch }, color: [220, 40, 40, 255], back: [40, 40, 220, 255], edge: 'crisp' });
+          PTS.forEach((p, i) => st.moveTo(p, size, patch.flow ?? 1, { pressure: 0.3 + 0.7 * Math.sin((i / PTS.length) * Math.PI), speed: 0.5 }));
           st.finish();
         });
       }
