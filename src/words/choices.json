@@ -597,6 +597,20 @@
     "where": "Dialog and Preferences: the small line under the \"top\" answer in \"Colours when shapes are combined\"."
   },
   "choice.shapes.combineLook.top.did": { "text": "Kept the top shape’s colours.", "where": "Toast when \"top\" is used without asking (\"Colours when shapes are combined\"), in the past tense." },
+  "choice.shapes.offsetKeep.title": { "text": "Offset path: the original", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.shapes.offsetKeep.question": { "text": "When you copy a shape a bit bigger or smaller, should the original stay?", "where": "The question the \"Offset path: the original\" dialog asks." },
+  "choice.shapes.offsetKeep.copy.label": { "text": "Keep it, and add the copy", "where": "Dialog and Preferences: the button for the answer \"copy\" in \"Offset path: the original\"." },
+  "choice.shapes.offsetKeep.copy.detail": {
+    "text": "You get both. A bigger copy goes behind the original, a smaller one in front.",
+    "where": "Dialog and Preferences: the small line under the \"copy\" answer in \"Offset path: the original\"."
+  },
+  "choice.shapes.offsetKeep.copy.did": { "text": "Kept the original and added the copy.", "where": "Toast when \"copy\" is used without asking (\"Offset path: the original\"), in the past tense." },
+  "choice.shapes.offsetKeep.replace.label": { "text": "Swap it for the copy", "where": "Dialog and Preferences: the button for the answer \"replace\" in \"Offset path: the original\"." },
+  "choice.shapes.offsetKeep.replace.detail": {
+    "text": "The shape itself gets bigger or smaller. Nothing is left behind.",
+    "where": "Dialog and Preferences: the small line under the \"replace\" answer in \"Offset path: the original\"."
+  },
+  "choice.shapes.offsetKeep.replace.did": { "text": "Swapped the original for the copy.", "where": "Toast when \"replace\" is used without asking (\"Offset path: the original\"), in the past tense." },
   "choice.draw.heldFrame.title": { "text": "Drawing on a held frame", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
   "choice.draw.heldFrame.question": {
     "text": "This frame is still showing a drawing from an earlier frame (it's being held). When you draw here, what should happen?",

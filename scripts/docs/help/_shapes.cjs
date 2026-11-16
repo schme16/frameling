@@ -47,4 +47,4 @@ const WARM = { shot: 'warm', crop: [0, 0, 32, 32] };
 /** A tiny seeded wobble, so a hand-drawn shape is the same every time it is shot. */
 const wobbler = (seed) => { let s = seed; return (a) => { s = (s * 1664525 + 1013904223) % 4294967296; return (s / 4294967296 - 0.5) * 2 * a; }; };
 
-module.exports = { dom, UI, T, away, view, at, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, PANEL, REC, STOP, WARM, wobbler, ellPath, rectPath };
+module.exports = { shapeOf, dom, UI, T, away, view, at, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, PANEL, REC, STOP, WARM, wobbler, ellPath, rectPath };
