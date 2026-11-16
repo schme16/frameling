@@ -24,6 +24,7 @@ import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
 import { wordsOf } from './match';
 import { Modal } from './Modal';
+import { StickyPageTop } from './StickyPageTop';
 import { PrefsSearch } from './PrefsSearchBox';
 import { lightRow } from './prefsLight';
 import type { PrefRow } from './prefsSearch';
@@ -542,15 +543,17 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
           ))}
         </select>
       </Row>
-      <div className="ui-keyboard-top">
-        <div className="ui-help-search">
-          <Icon name="search" size={15} />
-          <input type="search" aria-label="Search shortcuts" placeholder="Search commands or keys" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+      <StickyPageTop>
+        <div className="ui-keyboard-top">
+          <div className="ui-help-search">
+            <Icon name="search" size={15} />
+            <input type="search" aria-label="Search shortcuts" placeholder="Search commands or keys" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+          </div>
+          <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast(setId === 'frameling' ? 'All shortcuts are back to how they came.' : `All shortcuts are back to the ${keymapSet(setId).label} set.`, { kind: 'success' }))}>
+            Reset all
+          </button>
         </div>
-        <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast(setId === 'frameling' ? 'All shortcuts are back to how they came.' : `All shortcuts are back to the ${keymapSet(setId).label} set.`, { kind: 'success' }))}>
-          Reset all
-        </button>
-      </div>
+      </StickyPageTop>
       {conflicts.size > 0 && (
         <p className="ui-warn-line">
           <Icon name="warning" size={15} />

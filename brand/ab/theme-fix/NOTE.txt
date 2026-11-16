@@ -1,0 +1,16 @@
+Theme editor: readable buttons, and a header that stays put (cards theme-delete-invisible, theme-header-sticky)
+
+Made with scripts/ab/theme-chrome.cjs (the editor) and scripts/ab/page-top.cjs (other Preferences pages), 1200 x 640 window, in xvfb.
+"before" is the build of development at 97eca18f, "after" is this branch. Each pair is also laid side by side: ab-*.png.
+
+The editor paints the app in the theme being made. Two themes are copied and edited: Ice Camo (pale) and Midnight Sketchbook (dark).
+  <before|after>-<theme>-row.png                 the Undo / Redo / Reset / Duplicate / Export / Delete row at rest
+  <before|after>-<theme>-row-hover-delete.png    Delete hovered (also -duplicate, -undo)
+  <before|after>-<theme>-top.png, -scrolled.png  the editor at the top, and scrolled down in a short window
+  <before|after>-hostile-ice-camo-*.png          Ice Camo with its Main text colour changed to #9fb4ba, which is the screenshot
+                                                 from the card: pale words on a pale button. The stock themes read fine at rest;
+                                                 this is the theme that broke. After: the buttons read, and the editor's
+                                                 own warnings still say the rest of the text is hard to read.
+Other pages that now use the same header (page-before-* / page-after-*, top and scrolled, dark and light):
+  Keyboard: the search box and Reset all stay put over a list of hundreds of commands.
+  Menus: the "Menu bar > File > ..." crumbs stay put, so there is always a way back up.

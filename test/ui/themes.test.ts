@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BUILT_IN_THEMES, CHOSEN_FROM_PALETTE, DEFAULT_DARK, DEFAULT_LIGHT, getBuiltIn, surroundFor } from '../../src/ui/themes/builtIn';
 import { contrast, ensureContrast, hexToHsl, hslToHex, isHex, mix, parseHex } from '../../src/ui/themes/color';
-import { checkContrast, fixPair, problems, problemsFor } from '../../src/ui/themes/contrast';
+import { checkContrast, fixPair, problems, problemsFor, READABLE_TOKENS } from '../../src/ui/themes/contrast';
 import { addCustomTheme, deleteCustomTheme, saveCustomTheme, selectTheme } from '../../src/ui/themes/library';
 import { clearTheme, completeTokens, copyTheme, importThemeText, MAX_FILE_BYTES, sanitizeCustomThemes, themeFileName, themeToFile, themeStyle, uniqueName, writeTheme } from '../../src/ui/themes/model';
 import { paletteFromColour } from '../../src/ui/themes/palette';
@@ -348,7 +348,8 @@ describe('applying a theme', () => {
   it('themeStyle gives CSS variables for a preview', () => {
     const s = themeStyle(getBuiltIn('sunbeam')!);
     expect(s['--bg']).toBe(getBuiltIn('sunbeam')!.tokens.bg);
-    expect(Object.keys(s)).toHaveLength(ALL_TOKENS.length);
+    expect(Object.keys(s)).toHaveLength(ALL_TOKENS.length + READABLE_TOKENS.length);
+    expect(s['--on-raised']).toMatch(/^#[0-9a-f]{6}$/);
   });
 });
 

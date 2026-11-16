@@ -2,6 +2,7 @@
 // what's missing, making copies, the little .json file format, and writing a theme onto the page as CSS variables.
 import { BUILT_IN_THEMES, defaultThemeFor, getBuiltIn, type Theme } from './builtIn';
 import { isHex, normHex } from './color';
+import { readableTokens } from './contrast';
 import { ALL_TOKENS, COLOUR_TOKENS, CORE_TOKENS, DERIVED_TOKENS, deriveTokens, isShadowToken, type ThemeMode, type ThemeTokens } from './tokens';
 import { flushTheme } from '../../canvas/theme';
 
@@ -187,6 +188,11 @@ export function writeTheme(el: HTMLElement, theme: Pick<Theme, 'mode' | 'tokens'
     el.style.setProperty(`--${name}`, v);
     next.add(name);
   }
+  // Text colours worked out from the fills they sit on, so buttons stay readable in any theme.
+  for (const [name, v] of Object.entries(readableTokens(theme.tokens))) {
+    el.style.setProperty(`--${name}`, v);
+    next.add(name);
+  }
   if (prev) for (const name of prev) if (!next.has(name)) el.style.removeProperty(`--${name}`);
   applied.set(el, next);
   el.style.setProperty('color-scheme', theme.mode);
@@ -205,6 +211,7 @@ export function clearTheme(el: HTMLElement): void {
 export function themeStyle(theme: Pick<Theme, 'tokens'>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const name of ALL_TOKENS) if (theme.tokens[name] !== undefined) out[`--${name}`] = theme.tokens[name];
+  for (const [name, v] of Object.entries(readableTokens(theme.tokens))) out[`--${name}`] = v;
   return out;
 }
 
