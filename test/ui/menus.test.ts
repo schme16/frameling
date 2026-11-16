@@ -233,17 +233,19 @@ describe('the real menus', async () => {
   });
   it('the skeleton is in Rigging, Effects has a menu of its own, and each is a plain list (a click, a submenu, a command)', () => {
     const subs = (label: string) => menu(label).filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
-    // Rigging lists the skeleton directly, with Tiles as its one submenu until somebody decides where tilemaps belong.
-    expect(subs('Extras')).toEqual(['Tiles']);
+    // Rigging lists the skeleton directly, with no submenus at all. Tiles are in Layers and artboards: a tile layer is a layer.
+    expect(subs('Extras')).toEqual([]);
+    expect(subs('Layers')).toContain('Tiles');
     expect(subs('Effects')).toEqual([]);
     for (const gone of ['Skeleton (rig)', 'Artboards', 'Effects', 'Tiles']) {
       expect(subs('Draw'), gone).not.toContain(gone);
       expect(subs('Animate'), gone).not.toContain(gone);
     }
     for (const label of ['Extras', 'Effects', 'Layers']) for (const g of menu(label)) if (g.kind === 'submenu') expect(g.items.filter((i) => i.kind === 'submenu'), g.label).toEqual([]);
-    expect(flat(menu('Extras'))).toEqual(expect.arrayContaining(['tiles.addLayer', 'rig.addBones', 'tools.bone']));
+    expect(flat(menu('Extras'))).toEqual(expect.arrayContaining(['rig.addBones', 'tools.bone']));
+    expect(flat(menu('Extras'))).not.toContain('tiles.addLayer');
     expect(flat(menu('Effects'))).toEqual(expect.arrayContaining(['effects.add.blur', 'particles.add.snow', 'view.panel.effects']));
-    expect(flat(menu('Layers'))).toEqual(expect.arrayContaining(['layers.addVector', 'layers.addMask', 'artboards.new', 'pixel.shareLayers', 'pixel.changeWay']));
+    expect(flat(menu('Layers'))).toEqual(expect.arrayContaining(['layers.addVector', 'layers.addMask', 'artboards.new', 'pixel.shareLayers', 'pixel.changeWay', 'tiles.addLayer']));
   });
   it('the layer commands are in Layers and artboards, not in Tools, and Tools has no Pixel menu behind it', () => {
     const tools = flat(menu('Draw'));

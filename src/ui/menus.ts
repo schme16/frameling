@@ -81,7 +81,8 @@ export const MENUS: MenuDef[] = [
   },
   {
     // Everything about the layers a drawing is made of, and the artboards (boards) it is made on. A sprite's boards and
-    // frames and its shared layers live here too, since they are layers and boards.
+    // frames and its shared layers live here too, since they are layers and boards, and so do tilemaps: a tile layer
+    // is a layer.
     label: 'Layers',
     title: 'Layers and artboards',
     categories: ['Layers'],
@@ -89,7 +90,7 @@ export const MENUS: MenuDef[] = [
       'layers.addVector', 'layers.addPixel', 'sub:pairs', 'layers.duplicate', 'layers.delete', '-',
       'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-',
       'sub:masks', 'pixel.shareLayers', 'pixel.unshareLayers', '-',
-      'sub:artboards', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'view.panel.layers',
+      'sub:artboards', 'sub:tiles', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'view.panel.layers',
     ],
   },
   {
@@ -99,12 +100,12 @@ export const MENUS: MenuDef[] = [
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'sub:onion', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'sub:moreframes', '-', 'sub:tween', 'sub:readymotion', 'sub:camera', 'sub:clips', '-', 'sub:sound', 'sub:reference'],
   },
   {
-    // The skeleton kit, flat in its own menu. The id stays Extras (saved menu changes name it). Tiles sit here only until
-    // somebody decides where tilemaps belong.
+    // The skeleton kit, flat in its own menu. The id stays Extras (saved menu changes name it). Tiles are not here:
+    // a tile layer is a layer, so tilemaps live in Layers and artboards.
     label: 'Extras',
     title: 'Rigging',
     categories: ['Rig'],
-    items: [...RIG_ITEMS, '-', 'sub:tiles'],
+    items: [...RIG_ITEMS],
   },
   {
     label: 'Effects',
