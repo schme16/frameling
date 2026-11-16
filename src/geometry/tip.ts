@@ -301,6 +301,8 @@ export function readTip(raw: unknown): BrushTip | undefined {
     const tone = num(r.tone, 0, 1);
     if (tone !== undefined) tip.tone = tone;
   }
+  const matte = num(r.matte, 0, 1);
+  if (matte) tip.matte = matte;
   if (usesSeed(tip.kind)) {
     const seed = num(r.seed, 1, 2 ** 31 - 1);
     if (seed !== undefined) tip.seed = Math.round(seed);
@@ -316,7 +318,7 @@ export function sameTip(a: BrushTip | undefined, b: BrushTip | undefined): boole
   if (a.kind !== b.kind) return false;
   const x = resolveTip(a);
   const y = resolveTip(b);
-  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry || a.streak !== b.streak) return false;
+  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry || a.streak !== b.streak || !close(a.matte, b.matte, 0)) return false;
   if (a.kind === 'nib') return x.angle === y.angle && close(x.roundness, y.roundness, 0.3) && close(x.nibAngle, y.nibAngle, 40);
   if (a.kind === 'bristle') return x.count === y.count && close(x.stiffness, y.stiffness, 0.6) && close(x.body, y.body, 0) && close(x.tone, y.tone, 0);
   if (a.kind === 'along' || a.kind === 'edged') return x.fit === y.fit && JSON.stringify(x.custom) === JSON.stringify(y.custom) && JSON.stringify(x.pieces) === JSON.stringify(y.pieces);
