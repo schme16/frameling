@@ -93,7 +93,7 @@ By default vector layers snap to the page, guides, the grid, line ends and point
 - **The middle of a line is never touched.** Your hand drew it, so it stays yours. A brush that jumped onto the grid while you drew would be no fun.
 
 **Choose how it works**
-- **View > Snapping > Snap the pen, pencil and brush** turns it on or off for those three. The **Snap** button at the bottom has the same tick and a **Pull for drawing tools** slider: how close, in screen pixels, the start or end has to be. Drag it up if lines stop short, down if it grabs too eagerly.
+- The **Snap** button at the bottom has a tick, **Pen, pencil and brush snap their start and end**, that turns it on or off for those three, and a **Pull for drawing tools** slider: how close, in screen pixels, the start or end has to be. Drag it up if lines stop short, down if it grabs too eagerly.
 - **Line ends and points** is in the same list as the guides and the grid. Untick it and lines still settle on guides, the grid and the page.
 - Hold **Ctrl** while you draw to skip it for one line.
 
@@ -145,13 +145,13 @@ The brush shows **Size** and the colour first, so you can start drawing. Press *
 Your settings are remembered, so the brush is just as you left it next time.`,
   'grids-perspective': `**Grids**
 - **View > Guides, grids and perspective > Square grid** (**Ctrl+'**) puts graph paper over the page.
-- **View > Guides, grids and perspective > Isometric grid** shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
+- **Isometric**, under **Grid** in **View > Guides, grids and perspective > Grid and perspective settings...**, shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
 - **View > Guides, grids and perspective > Grid and perspective settings...** sets the size, in your units (**Preferences > General > Units**). For isometric it's the width of one diamond.
 
 While snapping is on (**View > Snapping**, with Grid ticked in [Snapping](help:snapping)), shapes and corners jump onto the square grid's lines, and onto the isometric grid's corners. Hold **Ctrl** while dragging to stop it for a moment. When you zoom far out, the grid thins itself out so it never turns into a grey smudge.
 
 **Perspective guides**
-- **View > Guides, grids and perspective > Perspective guides: one point** shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
+- **One point**, under **Perspective** in the same settings, shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
 - **Two point** has two vanishing points, for boxes and buildings seen from a corner.
 
 The horizon is the yellow line. Drag a round handle to move its vanishing point (it works with any tool). With two, the horizon stays level, so moving one up moves the other with it. Hold **Shift** to tilt it. Points can go off the page: zoom out to reach them. **Lock guides** stops them moving by accident.
@@ -160,7 +160,7 @@ The horizon is the yellow line. Drag a round handle to move its vanishing point 
 
 **Drawing along them.** While the guides show and Perspective lines is ticked in [Snapping](help:snapping), the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
 
-The perspective guides are saved with your drawing. Hide them with **View > Guides, grids and perspective > Show perspective guides**, or take them away with **Remove perspective guides**.
+The perspective guides are saved with your drawing. Hide them with the **Show the perspective guides** tick in **View > Guides, grids and perspective > Grid and perspective settings...**, or take them away with **None** under **Perspective**.
 
 > Grids and guides are only for you. They never show when you play or export.`,
   'light-table': `Animators trace on a light table: a glowing desk that shows the drawing underneath through the paper. Frameling's light table shows a frame you choose, faintly, on every frame you go to.

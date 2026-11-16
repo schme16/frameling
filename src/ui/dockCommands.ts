@@ -270,7 +270,7 @@ registerCommand({
   category: 'View',
   description: 'Put this workspace\'s panels back the way it comes: which are open, which group each is in, the order of the tabs, the size of each side and group, and any names you gave. Panels in a window of their own are docked too, or left, as you choose the first time. Undo is on the message.',
   help: 'panels-back',
-  keywords: ['panels', 'dock', 'tabs', 'windows', 'arrange', 'rearrange', 'tidy', 'mess', 'order', 'default', 'restore', 'undo changes', 'lost panel', 'panel gone'],
+  keywords: ['panels', 'dock', 'tabs', 'windows', 'arrange', 'rearrange', 'tidy', 'mess', 'order', 'default', 'restore', 'undo changes', 'lost panel', 'panel gone', 'reset', 'reset layout', 'layout', 'start over'],
   enabled: () => panelsAreChanged(),
   run: putPanelsBack,
 });

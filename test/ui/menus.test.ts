@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
 import { listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, TOOLS_WITH_THEIR_FEATURE, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { isLeftOutOfMenus } from '../../src/ui/paletteFirst';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
 // These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
@@ -56,7 +57,7 @@ describe('menu filtering', () => {
     expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
   });
   it('the real menus have the ids File, Edit, View, Draw, Layers, Animate, Extras, Effects, Streaming and Help (Artboards and Plugins live inside others, and Pixel is gone)', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
   });
   it('a menu that moved inside another still takes what a feature adds by its old name', () => {
     expect(MENU_HOMES).toEqual({ Rig: 'Extras', 'sub:rig': 'Extras', 'sub:effects': 'Effects', Artboards: 'sub:artboards', 'sub:masks': 'sub:layer', 'sub:pairs': 'Layers', Plugins: 'sub:plugins', Pixel: 'Draw', 'sub:tools': 'Draw' });
@@ -81,7 +82,7 @@ describe('the Help and Skeleton menus', () => {
   });
   it('the menus say what is in them, plain word first', () => {
     const title = (id: string) => menuTitle(MENUS.find((m) => m.label === id)!);
-    expect([title('Draw'), title('Layers'), title('Animate'), title('Extras'), title('Effects')]).toEqual(['Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects']);
+    expect([title('Draw'), title('Soft'), title('Layers'), title('Animate'), title('Extras'), title('Effects')]).toEqual(['Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects']);
   });
 });
 
@@ -144,7 +145,7 @@ describe('the real menus', async () => {
     expect(ids.indexOf('view.workspace.draw')).toBeLessThan(10);
     // Saving, managing, sharing and resetting sit one step in, under the three workspaces.
     const mine = items.find((i) => i.kind === 'submenu' && i.label === 'Your workspaces');
-    expect(flat(mine && mine.kind === 'submenu' ? mine.items : [])).toEqual(expect.arrayContaining(['view.saveWorkspace', 'view.manageWorkspaces', 'view.resetLayout', 'view.exportWorkspace', 'view.workspaceSwitcher.tabs']));
+    expect(flat(mine && mine.kind === 'submenu' ? mine.items : [])).toEqual(expect.arrayContaining(['view.saveWorkspace', 'view.manageWorkspaces', 'view.exportWorkspace', 'view.workspaceSwitcher.tabs']));
   });
   // A submenu is a menu too, and the cap above only ever counted TOP-LEVEL entries: a submenu counted as one line
   // however much was inside it. So the whole of the audience work could land in View and the check stayed green while
@@ -167,13 +168,13 @@ describe('the real menus', async () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('there are ten menus, and the long ones sort their entries into submenus rather than one long list', () => {
-    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Streaming', 'Help']);
+  it('there are eleven menus, and the long ones sort their entries into submenus rather than one long list', () => {
+    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Streaming', 'Help']);
     for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
     // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
     // same with its categories taken away.
     const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));
-    for (const label of ['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects']) expect(flat(menu(label)), label).toEqual(bare(label));
+    for (const label of ['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects']) expect(flat(menu(label)), label).toEqual(bare(label));
   });
   it('Streaming is a menu of its own: the audience tools, each part a group, every entry three clicks from the bar', () => {
     const inside = menu('Streaming');
@@ -202,7 +203,7 @@ describe('the real menus', async () => {
     try {
       setStreaming(false, { remember: false });
       const bar = resolveMenus().map((m) => menuTitle(m.menu));
-      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Help']);
+      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Help']);
       // Everything of the streaming menu that is not a streaming tool is still in View.
       const inView = flat(menu('View'));
       for (const id of ['view.streamSafe', 'stream.obsLink', 'capture.toggle', 'features.streamingOn']) expect(inView, id).toContain(id);
@@ -227,7 +228,7 @@ describe('the real menus', async () => {
     const subs = menu('View').filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
     expect(subs).toEqual(expect.arrayContaining(['Snapping', 'Panels', 'Panel windows and tools']));
     const snap = menu('View').find((i) => i.kind === 'submenu' && i.label === 'Snapping');
-    expect(flat(snap && snap.kind === 'submenu' ? snap.items : [])).toEqual(expect.arrayContaining(['view.snap', 'view.snapOptions', 'view.snap.guides', 'view.snap.artboards']));
+    expect(flat(snap && snap.kind === 'submenu' ? snap.items : [])).toEqual(['view.snap', 'view.snapOptions']);
     expect(flat(menu('View').filter((i) => i.kind === 'command'))).not.toContain('view.snap.guides');
   });
   it('Artboards is a submenu of Layers and artboards, and View carries no artboard commands', () => {
@@ -276,8 +277,10 @@ describe('the real menus', async () => {
     const tools = flat(menu('Draw'));
     expect(tools.filter((id) => id.startsWith('layers.'))).toEqual([]);
     expect(MENUS.find((m) => m.label === 'Pixel')).toBeUndefined();
-    // What the Pixel menu held is in Tools (the pixel tools, palette, soft paint, text and brush settings) or where it belongs.
-    for (const id of ['tools.pencil', 'tools.spray', 'pixel.mirror', 'pixel.sizeUp', 'text.pixelType', 'pixel.outline', 'pixel.flipH', 'pixel.reduceToPalette']) expect(tools, id).toContain(id);
+    // What the Pixel menu held is in Tools (the pixel tools, palette, text and brush settings), in Soft paint (spray, soft paint, chalk, charcoal and the pixel brush) or where it belongs.
+    expect(flat(menu('Soft')), 'Soft paint').toEqual(expect.arrayContaining(['tools.spray', 'tools.soft-brush', 'tools.charcoal', 'charcoal.paper.rough', 'tools.pixel-brush', 'pixelbrush.spacing.wider']));
+    expect(tools.filter((id) => /^(tools\.(soft-|airbrush|highlighter|smudge|charcoal|spray|pixel-brush)|charcoal\.|pixelbrush\.)/.test(id))).toEqual([]);
+    for (const id of ['tools.pencil', 'pixel.mirror', 'pixel.sizeUp', 'text.pixelType', 'pixel.outline', 'pixel.flipH', 'pixel.reduceToPalette']) expect(tools, id).toContain(id);
     expect(flat(menu('Animate'))).toContain('pixel.makeItMove');
     expect(flat(menu('View').filter((i) => i.kind === 'submenu' && i.label === 'More view tools'))).toEqual(expect.arrayContaining(['pixel.zoom1', 'pixel.previewPlay', 'pixel.showSlices']));
   });
@@ -292,12 +295,12 @@ describe('the real menus', async () => {
     // The tools you draw and select with are still there.
     expect(own).toEqual(expect.arrayContaining(['tools.brush', 'tools.pen', 'tools.eraser', 'tools.fill', 'tools.select', 'tools.text']));
   });
-  it('every View and Artboards command is still in some menu (and in the palette)', () => {
+  it('every View and Artboards command is still in some menu (and in the palette), except the ones left out on purpose', () => {
     const everything = new Set(resolveMenus().flatMap((m) => flat(m.items)));
     return import('../../src/core/registry').then(({ allCommands }) => {
       const missing = allCommands()
         .filter((cmd) => (cmd.category === 'View' || cmd.category === 'Artboards') && !cmd.id.startsWith('view.workspace.'))
-        .filter((cmd) => !everything.has(cmd.id))
+        .filter((cmd) => !everything.has(cmd.id) && !isLeftOutOfMenus(cmd.id))
         .map((cmd) => cmd.id);
       expect(missing).toEqual([]);
     });

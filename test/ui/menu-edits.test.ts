@@ -260,7 +260,7 @@ describe('the real menu bar with changes saved', async () => {
   const edit = (label: string) => MENUS.find((x) => x.label === label)!;
 
   it('starts as the menus came, with nothing saved', () => {
-    expect(resolveMenus().map((x) => x.menu.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(resolveMenus().map((x) => x.menu.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
     expect(savedMenus()).toBeNull();
   });
   it('moves an entry, and putting it back leaves nothing saved', () => {

@@ -247,10 +247,10 @@ const GROUPS = {
     { shot: ['lock.teach'], crop: TOAST, pad: 60, note: 'Shown the first time the rail, a tool or a panel moves in a quick or short drag, once ever. Here {what} is tools.' },
     { js: `document.querySelectorAll('.ui-toast-x').forEach((b) => b.click()); window.__framelingAsk = false` },
     { wait: 400 },
-    // A rearranged tool strip, then Reset layout: Quill asks about the tools.
+    // A rearranged tool strip, then the Reset layout button on the Workspaces page: Quill asks about the tools.
     { js: `__frameling.dock.setToolGroups([{ id: 'mine', tools: __frameling.tools().reverse() }])` },
     { wait: 600 },
-    run('view.resetLayout'),
+    { js: `__frameling.resetLayoutAndAsk()` },
     { wait: 900 },
     { shot: ['workspaces.resetTools'], crop: TOAST, pad: 60 },
     // The note about where the old single tool arrangement went: an older saved layout, then a restart.

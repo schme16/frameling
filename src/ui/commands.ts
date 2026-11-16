@@ -2,7 +2,6 @@
 import { getHelp, registerCommands } from '../core/registry';
 import { offFeatures, setFeatureOn } from '../features/host';
 import { contextualHelpId } from './help/context';
-import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
@@ -183,15 +182,6 @@ registerCommands([
       setPrefs({ showTextures: on });
       toast(on ? 'Textures are on.' : 'Textures are off.', { kind: 'info' });
     },
-  },
-  {
-    id: 'view.resetLayout',
-    label: 'Reset layout',
-    category: 'View',
-    description: 'Put the panels back where this workspace started.',
-    help: 'workspaces',
-    keywords: ['panels', 'restore', 'default'],
-    run: () => resetLayoutAndAsk(),
   },
   {
     id: 'view.saveWorkspace',

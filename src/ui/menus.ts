@@ -12,6 +12,7 @@ import { isAnimated } from '../core/animation';
 import { store } from '../core/store';
 import { getMenuEdits } from './menuState';
 import { shapeMenus, type NewEntries, type Shape } from './menuEdits';
+import { isLeftOutOfMenus } from './paletteFirst';
 
 export type MenuEntry = string;
 
@@ -41,7 +42,7 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
   'tools.notes', 'tools.marks',
-  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in Tools > Spray, soft paint and charcoal.
+  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in the Soft paint menu.
   'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
 ];
 
@@ -79,8 +80,16 @@ export const MENUS: MenuDef[] = [
       'sub:tools', 'pixel.mirror', '-',
       'select.flipH', 'select.flipV', 'sub:arrange', '-',
       'sub:symbols', 'sub:shapes', 'sub:linestyle', 'sub:palette', '-',
-      'sub:soft', 'sub:brushes', 'sub:brushtips', 'sub:toolopts',
+      'sub:brushes', 'sub:brushtips', 'sub:toolopts',
     ],
+  },
+  {
+    // Spray, soft paint, chalk and charcoal, and the pixel brush: thirty commands that took Tools over its cap of 150 when
+    // the Pixel menu went. They are one family and they only work on a pixel layer, so they have a menu of their own.
+    label: 'Soft',
+    title: 'Soft paint',
+    categories: [],
+    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-', 'sub:charcoal', 'sub:pixelbrush'],
   },
   {
     // The three things this menu is about come first, each a submenu: Layer, Artboards, Tiles. A tile layer is a layer,
@@ -173,22 +182,22 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['popout.toggle', 'popout.front', '-', 'view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.panelsReset', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
+    items: ['popout.toggle', 'popout.front', '-', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.panelsReset', 'view.hidePanels', 'view.lockPanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.'],
   },
   toolrail: {
     label: 'Change the tools',
-    items: ['view.toolbarBuilder', 'view.toolsReset', 'view.toolsHome', 'view.lockTools', '-', 'view.toolGroupRename', 'view.toolGroupStart', 'view.toolGroupJoin', 'view.toolGroupFold', 'view.toolHide', 'view.toolsShowAll', '-', 'view.toolSize.small', 'view.toolSize.medium', 'view.toolSize.large', 'view.toolNames', 'view.toolsOffLayer.hide', 'view.toolsOffLayer.grey', '-', 'view.toolRail.two', 'view.toolRail.stacked', '-', 'view.toolRailWider', 'view.toolRailNarrower', 'view.toolRailFit', 'view.toolRailWidthReset'],
+    items: ['view.toolbarBuilder', 'view.toolsReset', 'view.toolsHome', 'view.lockTools', '-', 'view.toolGroupRename', 'view.toolGroupStart', 'view.toolGroupJoin', 'view.toolGroupFold', 'view.toolHide', '-', 'view.toolRailWider', 'view.toolRailNarrower', 'view.toolRailFit', 'view.toolRailWidthReset'],
     prefixes: ['view.toolRail.', 'view.toolSize.', 'view.toolsOffLayer.'],
   },
   workspaces: {
     label: 'Your workspaces',
-    items: ['view.saveWorkspace', 'view.manageWorkspaces', 'view.resetLayout', '-', 'view.exportWorkspace', 'view.importWorkspace', 'view.copyWorkspace', 'view.pasteWorkspace', '-', 'view.previousWorkspace', 'view.nextWorkspace', '-', 'heading:Show the workspace switcher as', 'view.workspaceSwitcher.tabs', 'view.workspaceSwitcher.chip', 'view.workspaceSwitcher.off'],
+    items: ['view.saveWorkspace', 'view.manageWorkspaces', '-', 'view.exportWorkspace', 'view.importWorkspace', 'view.copyWorkspace', 'view.pasteWorkspace', '-', 'view.previousWorkspace', 'view.nextWorkspace', '-', 'heading:Show the workspace switcher as', 'view.workspaceSwitcher.tabs', 'view.workspaceSwitcher.chip', 'view.workspaceSwitcher.off'],
     prefixes: ['view.workspaceSwitcher.'],
   },
   snapping: {
     label: 'Snapping',
-    items: ['view.snap', 'view.snapOptions', '-', 'view.snap.grid', 'view.snap.guides', 'view.snap.page', 'view.snap.centre', 'view.snap.points', 'view.snap.shapes', 'view.snap.draw', 'view.snap.allLayers', 'view.snap.artboards', 'view.snap.spacing', 'view.snap.angles', 'view.snap.perspective', 'view.snap.cells', 'view.snap.plugins'],
+    items: ['view.snap', 'view.snapOptions'],
     prefixes: ['view.snap.'],
   },
   quillreacts: {
@@ -201,15 +210,15 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   notes: {
     label: 'Notes',
-    items: ['tools.notes', 'notes.add', 'notes.toggleShow', 'notes.hideDone', '-', 'notes.previous', 'notes.next', 'notes.toggleDone', 'notes.clearDone'],
+    items: ['tools.notes', 'notes.add', 'notes.toggleShow', 'notes.hideDone', '-', 'notes.toggleDone'],
   },
   marks: {
     label: 'Marks',
-    items: ['tools.marks', 'marks.arrow', 'marks.circle', 'marks.scribble', 'marks.text', 'marks.erase', '-', 'marks.toggleShow', '-', 'marks.clearFrame', 'marks.clearAll'],
+    items: ['tools.marks', '-', 'marks.toggleShow', '-'],
   },
   grids: {
     label: 'Guides, grids and perspective',
-    items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.gridSettings', '-', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective'],
+    items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridSettings', '-'],
   },
   tools: {
     label: 'Pick a tool',
@@ -338,16 +347,18 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['pixel.paletteLock', 'pixel.reduceToPalette', '-', 'pixel.nextColor', 'pixel.previousColor', '-', 'palette.fromDrawing', 'palette.fromSwatches', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', '-', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
     prefixes: ['palette.'],
   },
-  soft: {
-    label: 'Spray, soft paint and charcoal',
+  charcoal: {
+    label: 'Charcoal, chalk and pencil',
     items: [
-      'tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-',
       'tools.charcoal',
       'charcoal.medium.vine-charcoal', 'charcoal.medium.compressed-charcoal', 'charcoal.medium.chalk', 'charcoal.medium.soft-pastel', 'charcoal.medium.oil-pastel', 'charcoal.medium.crayon',
       'charcoal.medium.sketch-pencil', 'charcoal.medium.soft-pencil', 'charcoal.medium.colour-pencil', '-',
-      'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough', '-',
-      'tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider',
+      'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough',
     ],
+  },
+  pixelbrush: {
+    label: 'Pixel brush',
+    items: ['tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider'],
   },
   range: {
     label: 'Play range',
@@ -525,7 +536,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
       if (!sub) continue;
       const inner = resolveMenu({ label: sub.label, categories: [], items: subItems(e.slice(4), subs), fixed: true, leaveOut: sub.leaveOut }, menus, lookup, all, subs, hidden, named);
       const extra = all()
-        .filter((c) => ((sub.prefixes ?? []).some((p) => c.id.startsWith(p)) || (sub.categories ?? []).includes(c.category)) && !c.hidden && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+        .filter((c) => ((sub.prefixes ?? []).some((p) => c.id.startsWith(p)) || (sub.categories ?? []).includes(c.category)) && !c.hidden && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id) && !isLeftOutOfMenus(c.id))
         .sort(byLabel);
       for (const c of extra) inner.push({ kind: 'command', command: c });
       if (inner.length) out.push({ kind: 'submenu', label: sub.label, items: inner });
@@ -539,7 +550,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
     }
   }
   const extra = all()
-    .filter((c) => menu.categories.includes(c.category) && !c.hidden && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !claimedCats.includes(c.category) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+    .filter((c) => menu.categories.includes(c.category) && !c.hidden && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !claimedCats.includes(c.category) && !isDynamicCommand(c.id) && !isStaleCommand(c.id) && !isLeftOutOfMenus(c.id))
     .sort(byLabel);
   if (extra.length) {
     out.push({ kind: 'separator' });

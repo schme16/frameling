@@ -48,6 +48,7 @@ import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/
 import { penTools } from '../tablet/tool';
 import { showPanel } from '../ui/dock';
 import * as dockApi from '../ui/dock';
+import * as workspaceActions from '../ui/workspaceActions';
 import * as dockFloats from '../ui/DockFloats';
 import type { RightStyle } from '../ui/rightStyle';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
@@ -137,6 +138,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),
     // The dock (panels, floating windows, workspaces), for shots and checks.
     dock: { ...dockApi, chrome: dockFloats.setFloatChrome },
+    // The Reset layout button on the Workspaces page, which also asks Quill about the tools.
+    resetLayoutAndAsk: workspaceActions.resetLayoutAndAsk,
     // Quill's lock lesson, for the dialogue shots: pretend a quick slip, then teach it.
     teachLock: (kind: 'tools' | 'panels' = 'tools') => {
       lockState.lastDrag.ms = 120;

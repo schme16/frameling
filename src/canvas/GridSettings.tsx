@@ -11,11 +11,12 @@ import './settings.css';
 
 const nudge = () => store().setUi({});
 
-function Seg<T extends string | number>({ label, value, options, onPick }: { label: string; value: T; options: [T, string][]; onPick: (v: T) => void }) {
+/** `commands` names the command that does the same as each choice, so the row and the commands are known to be one. */
+function Seg<T extends string | number>({ label, value, options, onPick, commands }: { label: string; value: T; options: [T, string][]; onPick: (v: T) => void; commands?: Partial<Record<T, string>> }) {
   return (
     <div className="ui-segmented" role="radiogroup" aria-label={label}>
       {options.map(([v, text]) => (
-        <button key={String(v)} type="button" role="radio" aria-checked={value === v} className={`ui-seg${value === v ? ' is-chosen' : ''}`} onClick={() => onPick(v)}>
+        <button key={String(v)} type="button" role="radio" aria-checked={value === v} className={`ui-seg${value === v ? ' is-chosen' : ''}`} data-command={commands?.[v]} onClick={() => onPick(v)}>
           {text}
         </button>
       ))}
@@ -43,7 +44,7 @@ function GridSettings({ close }: { close: () => void }) {
       <div className="io-body gs-body">
         <div className="gs-row">
           <span className="gs-label">Grid</span>
-          <Seg label="Grid" value={grid} options={[['off', 'None'], ['square', 'Squares'], ['iso', 'Isometric']]} onPick={(v) => set({ grid: v })} />
+          <Seg label="Grid" value={grid} options={[['off', 'None'], ['square', 'Squares'], ['iso', 'Isometric']]} onPick={(v) => set({ grid: v })} commands={{ square: 'view.gridSquare', iso: 'view.gridIso' }} />
         </div>
         <label className="gs-row">
           <span className="gs-label">Size</span>
@@ -79,11 +80,11 @@ function GridSettings({ close }: { close: () => void }) {
         <hr className="gs-rule" />
         <div className="gs-row">
           <span className="gs-label">Perspective</span>
-          <Seg label="Perspective guides" value={points} options={[[0, 'None'], [1, 'One point'], [2, 'Two point']]} onPick={(v) => setPerspective(v as 0 | 1 | 2)} />
+          <Seg label="Perspective guides" value={points} options={[[0, 'None'], [1, 'One point'], [2, 'Two point']]} onPick={(v) => setPerspective(v as 0 | 1 | 2)} commands={{ 0: 'view.removePerspective', 1: 'view.perspective1', 2: 'view.perspective2' }} />
         </div>
         {points > 0 && (
           <label className="ui-check gs-row">
-            <input type="checkbox" checked={showP} onChange={(e) => set({ perspective: e.target.checked })} />
+            <input type="checkbox" checked={showP} data-command="view.showPerspective" onChange={(e) => set({ perspective: e.target.checked })} />
             <span>Show the perspective guides</span>
           </label>
         )}

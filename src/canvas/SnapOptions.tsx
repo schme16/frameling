@@ -11,9 +11,10 @@ import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers,
 import { snappedKinds, snapVersion, subscribeSnap } from './snap';
 import { useViewSettings } from './viewSettings';
 
-function Tick({ label, on, disabled, onChange, tip }: { label: string; on: boolean; disabled?: boolean; onChange: (v: boolean) => void; tip?: string }) {
+/** `command` is the command that does the same as this tick, so the tick and the command are known to be one. */
+function Tick({ label, on, disabled, onChange, tip, command }: { label: string; on: boolean; disabled?: boolean; onChange: (v: boolean) => void; tip?: string; command?: string }) {
   return (
-    <input type="checkbox" className="sn-tick" checked={on} disabled={disabled} aria-label={label} data-tip={disabled ? tip : undefined} onChange={(e) => onChange(e.target.checked)} />
+    <input type="checkbox" className="sn-tick" checked={on} disabled={disabled} aria-label={label} data-command={command} data-tip={disabled ? tip : undefined} onChange={(e) => onChange(e.target.checked)} />
   );
 }
 
@@ -69,7 +70,7 @@ export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /**
               return (
                 <span key={c} className={`sn-cell${col(c)}`}>
                   {applies ? (
-                    <Tick label={`${t.label}, ${c === 'vector' ? 'vector layers' : 'pixel layers'}`} on={!!picks[c][t.id]} disabled={blocked} tip="Untick Pixel cells to snap pixel layers to this" onChange={(v) => setSnapPick(c, t.id, v)} />
+                    <Tick label={`${t.label}, ${c === 'vector' ? 'vector layers' : 'pixel layers'}`} on={!!picks[c][t.id]} disabled={blocked} tip="Untick Pixel cells to snap pixel layers to this" onChange={(v) => setSnapPick(c, t.id, v)} command={`view.snap.${t.id}`} />
                   ) : (
                     <span className="sn-na" aria-hidden="true">
                       -
@@ -82,7 +83,7 @@ export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /**
         ))}
       </div>
       <label className="sn-row sn-all-layers" data-tip="All layers, not just this one" data-tip-desc="Other shapes and equal gaps look at every visible layer. Untick it to look at the open layer only.">
-        <Tick label="All layers, not just this one" on={allLayers} onChange={setSnapAllLayers} />
+        <Tick label="All layers, not just this one" on={allLayers} onChange={setSnapAllLayers} command="view.snap.allLayers" />
         <span className="sn-name">All layers, not just this one</span>
       </label>
       <div className="sn-distance" data-tip="Snap distance" data-tip-desc="How close, in screen pixels, something has to come before it snaps.">
@@ -91,7 +92,7 @@ export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /**
         <span className="sn-distance-value">{distance} px</span>
       </div>
       <label className="sn-row sn-draw" data-tip="Pen, pencil and brush" data-tip-desc="The start and end of a line you draw pull onto line ends, guides, the grid and the page. The middle of the line is never moved. Ctrl skips it.">
-        <Tick label="Pen, pencil and brush snap their start and end" on={draw} onChange={setSnapDraw} />
+        <Tick label="Pen, pencil and brush snap their start and end" on={draw} onChange={setSnapDraw} command="view.snap.draw" />
         <span className="sn-name">
           Pen, pencil and brush snap their start and end
         </span>
@@ -104,7 +105,7 @@ export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /**
       <div className="sn-extra">
         {SNAP_TARGETS.filter((t) => t.contexts.includes('artboard')).map((t) => (
           <label key={t.id} className="sn-row">
-            <Tick label={`${t.label}`} on={!!picks.artboard[t.id]} onChange={(v) => setSnapPick('artboard', t.id, v)} />
+            <Tick label={`${t.label}`} on={!!picks.artboard[t.id]} onChange={(v) => setSnapPick('artboard', t.id, v)} command={`view.snap.${t.id}`} />
             <Name t={t} />
           </label>
         ))}

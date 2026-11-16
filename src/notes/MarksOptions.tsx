@@ -36,11 +36,11 @@ export function MarksOptions() {
         label="Draw"
         value={shape}
         options={[
-          { value: 'arrow', label: 'Arrow', title: 'Drag from the tail to the tip' },
-          { value: 'circle', label: 'Circle', title: 'Drag across the thing you want to ring' },
-          { value: 'scribble', label: 'Sketch', title: 'Draw freehand' },
-          { value: 'text', label: 'Words', title: 'Click, then type a few words' },
-          { value: 'erase', label: 'Rub out', title: 'Click or drag over a mark to remove it' },
+          { value: 'arrow', label: 'Arrow', command: 'marks.arrow', title: 'Drag from the tail to the tip' },
+          { value: 'circle', label: 'Circle', command: 'marks.circle', title: 'Drag across the thing you want to ring' },
+          { value: 'scribble', label: 'Sketch', command: 'marks.scribble', title: 'Draw freehand' },
+          { value: 'text', label: 'Words', command: 'marks.text', title: 'Click, then type a few words' },
+          { value: 'erase', label: 'Rub out', command: 'marks.erase', title: 'Click or drag over a mark to remove it' },
         ]}
         onChange={(v) => setMarksSaved({ shape: v })}
       />
@@ -65,6 +65,7 @@ export function MarksOptions() {
           }}
           disabled={!counts.here}
           title="Remove the marks showing on this frame"
+          command="marks.clearFrame"
         >
           Clear this frame
         </ActionButton>
@@ -75,6 +76,7 @@ export function MarksOptions() {
           }}
           disabled={!counts.all}
           title="Remove every mark on this page"
+          command="marks.clearAll"
         >
           Clear all
         </ActionButton>

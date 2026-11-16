@@ -36,13 +36,13 @@ export function NotesPanel() {
         ))}
       </div>
       <div className="nt-tools">
-        <button type="button" disabled={!counts.all} onClick={() => stepNote(-1)}>
+        <button type="button" data-command="notes.previous" disabled={!counts.all} onClick={() => stepNote(-1)}>
           Previous
         </button>
-        <button type="button" disabled={!counts.all} onClick={() => stepNote(1)}>
+        <button type="button" data-command="notes.next" disabled={!counts.all} onClick={() => stepNote(1)}>
           Next
         </button>
-        <button type="button" disabled={!counts.done} onClick={() => clearDoneNotes()} title="Take the ticked-off notes out of the file. Undo brings them back.">
+        <button type="button" data-command="notes.clearDone" disabled={!counts.done} onClick={() => clearDoneNotes()} title="Take the ticked-off notes out of the file. Undo brings them back.">
           Remove done
         </button>
       </div>

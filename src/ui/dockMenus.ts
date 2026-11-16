@@ -16,7 +16,7 @@ import { toast } from './toast';
 import { setToolRailStyle, putToolsBack, setRailLock, setToolbarEditing, toolbarIsChanged } from './toolRail';
 
 /** `why` is a line under a greyed entry that says why it is greyed. */
-export type DockMenuItem = { label: string; onClick: () => void; disabled?: boolean; why?: string; stays?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
+export type DockMenuItem = { label: string; /** The command that does the same thing, so the row and the command are known to be one. */ command?: string; onClick: () => void; disabled?: boolean; why?: string; stays?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
 
 export const dockMenu = createStore<{ x: number; y: number; items: DockMenuItem[] } | null>(null);
 export const openDockMenu = (x: number, y: number, items: DockMenuItem[]): void => dockMenu.set({ x, y, items });
@@ -105,7 +105,7 @@ export function putPanelsBack(): void {
 /** The menu entry, greyed with its reason when there is nothing to put back. */
 export const putBackItem = (): Extract<DockMenuItem, { label: string }> => {
   const changed = panelsAreChanged();
-  return { label: 'Put the panels back', disabled: !changed, why: changed || isLocked('panels') ? undefined : ALREADY, onClick: putPanelsBack };
+  return { label: 'Put the panels back', command: 'view.panelsReset', disabled: !changed, why: changed || isLocked('panels') ? undefined : ALREADY, onClick: putPanelsBack };
 };
 
 /** What can be done with a panel: where it lives, what it's called, closing it. */
@@ -122,18 +122,18 @@ export function panelMenu(id: string, at: { x: number; y: number }): DockMenuIte
     const words = SPLIT_WORDS[zone];
     const count = groupCount(l.zones[zone]);
     const alone = groupTabs(l, here!).length === 1;
-    for (const edge of ['before', 'after'] as const) items.push({ label: `Move to a new group ${words[edge]}`, disabled: alone || count >= MAX_GROUPS, onClick: () => placePanel(id, { zone, group, split: edge }) });
+    for (const edge of ['before', 'after'] as const) items.push({ label: `Move to a new group ${words[edge]}`, command: 'view.splitPanelGroup', disabled: alone || count >= MAX_GROUPS, onClick: () => placePanel(id, { zone, group, split: edge }) });
     if (group > 0) items.push({ label: `Move into the group ${words.before}`, onClick: () => placePanel(id, { zone, group: group - 1 }) });
     if (group < count - 1) items.push({ label: `Move into the group ${words.after}`, onClick: () => placePanel(id, { zone, group: group + 1 }) });
-    if (count > 1) items.push({ label: 'Join this side into one group', onClick: () => joinGroups(zone) });
+    if (count > 1) items.push({ label: 'Join this side into one group', command: 'view.joinPanelGroups', onClick: () => joinGroups(zone) });
   }
-  items.push({ label: 'Move to its own window', disabled: !!here && 'float' in here && l.floats.find((f) => f.id === here.float)!.tabs.length === 1, onClick: () => floatPanel(id) });
+  items.push({ label: 'Move to its own window', command: 'view.floatPanel', disabled: !!here && 'float' in here && l.floats.find((f) => f.id === here.float)!.tabs.length === 1, onClick: () => floatPanel(id) });
   const others = l.floats.filter((f) => !f.tabs.includes(id));
   if (others.length) {
     items.push({ separator: true }, { heading: 'Group with a window' });
     for (const f of others) items.push({ label: floatTitle(l, f, (x) => panelTitle(x, l)), onClick: () => placePanel(id, { float: f.id }) });
   }
-  items.push({ separator: true }, { label: 'Rename...', onClick: () => askRename('panel', id, at.x, at.y) });
+  items.push({ separator: true }, { label: 'Rename...', command: 'view.renamePanel', onClick: () => askRename('panel', id, at.x, at.y) });
   if (l.names?.[id]) items.push({ label: 'Use its own name again', onClick: () => renamePanel(id, '') });
   items.push({ separator: true }, putBackItem());
   items.push({ separator: true }, { label: `Close ${panelTitle(id, l)}`, onClick: () => hidePanel(id) }, { label: 'What is this panel?', stays: true, onClick: () => openHelp(p?.help ?? 'panels') });
@@ -150,7 +150,7 @@ export function floatMenu(floatId: string, at: { x: number; y: number }): DockMe
   items.push({ separator: true }, { label: 'Make it bigger', onClick: () => resizeFloatBy(floatId, 64, 48) }, { label: 'Make it smaller', onClick: () => resizeFloatBy(floatId, -64, -48) }, { label: 'Back to the usual size', onClick: () => resetFloatSize(floatId) });
   items.push({ separator: true }, { label: 'Dock back where it started', onClick: () => dockFloatBack(floatId) });
   items.push({ separator: true }, putBackItem());
-  items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });
+  items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', command: 'view.dockAllWindows', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });
   items.push({ label: 'What are windows?', stays: true, onClick: () => openHelp('floating-windows') });
   return [items[0], lockItem('panels'), { separator: true }, ...whenLocked('panels', items.slice(1))];
 }

@@ -157,6 +157,7 @@ function DockMenuView() {
             role="menuitem"
             className={`ui-menu-item${it.disabled ? ' is-disabled' : ''}${it.why ? ' has-why' : ''}${it.danger ? ' is-danger' : ''}`}
             disabled={it.disabled}
+            data-command={it.command}
             onClick={() => {
               closeDockMenu();
               it.onClick();

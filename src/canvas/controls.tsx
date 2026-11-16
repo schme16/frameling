@@ -185,7 +185,7 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
   );
 }
 
-export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string }[]; onChange: (v: T) => void }) {
+export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
   // The words stay on one line; when they do not fit side by side the buttons stack one per line instead.
   const row = useRef<HTMLDivElement>(null);
   useStackWhenTight(row, [options.map((o) => o.label).join('|')]);
@@ -193,7 +193,7 @@ export function Choice<T extends string>({ label, value, options, onChange }: { 
     <Field label={label}>
       <div className="cv-choice" role="radiogroup" aria-label={label} ref={row}>
         {options.map((o) => (
-          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} title={o.title} onClick={() => onChange(o.value)}>
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} data-command={o.command} title={o.title} onClick={() => onChange(o.value)}>
             {o.label}
           </button>
         ))}
@@ -213,9 +213,9 @@ export function Tip({ children, stays }: { children: ReactNode; stays?: boolean 
   return stays ? <p className="cv-tip">{words}</p> : <Explainer>{words}</Explainer>;
 }
 
-export function ActionButton({ children, onClick, disabled, title, pressed }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
+export function ActionButton({ children, onClick, disabled, title, pressed, command }: { children: ReactNode; /** The command that does the same thing as this button. */ command?: string; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
   return (
-    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed}>
+    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed} data-command={command}>
       {children}
     </button>
   );
