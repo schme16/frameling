@@ -3,7 +3,7 @@
 // stamp its shapes. A picture is kept once drawn: a list of hundreds is only ever drawn as far as it has been seen, and
 // scrolling back over a brush costs a copy, not a redraw.
 import type { BrushSettings, StrokePoint } from '../core/format';
-import { drawShape } from '../core/render';
+import { drawShapeFx } from '../core/render';
 import { buildStroke } from '../tools/vectorStroke';
 
 /** The points of the long sample: one slow wave with a swell in the middle, as wide as the box. */
@@ -15,6 +15,17 @@ export function samplePoints(w: number, h: number): StrokePoint[] {
     pts.push({ x: pad + t * (w - pad * 2), y: h / 2 + Math.sin(t * Math.PI * 2) * h * 0.2, p: 0.25 + 0.6 * Math.sin(t * Math.PI) });
   }
   return pts;
+}
+
+/** Which stick the paper tooth streaks come from in every picture, so a brush's picture never changes between draws. */
+export const PREVIEW_SEED = 7;
+
+/**
+ * Draws a sample line the way the canvas draws a real one: through the shape's own effects, so a chalk or charcoal line
+ * catches on the paper's tooth here exactly as it does on the page. Every preview of a brush goes through this.
+ */
+export function drawPreviewStroke(g: CanvasRenderingContext2D, points: StrokePoint[], brush: BrushSettings, color: string): void {
+  drawShapeFx(g, buildStroke(points, brush, color, 1, false, PREVIEW_SEED));
 }
 
 /** The size the long sample is drawn at: the brush's own, scaled down to fit the row and capped so a fat brush stays inside. */
@@ -84,7 +95,7 @@ export function thumbFor(brush: BrushSettings, kind: ThumbKind, w: number, h: nu
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   const used = thumbBrush(brush, kind, h);
   const pts = kind === 'dab' ? dabPoints(w, h, used.size) : samplePoints(w, h);
-  drawShape(g, buildStroke(pts, used, color));
+  drawPreviewStroke(g, pts, used, color);
   drawn++;
   cache.set(key, c);
   if (cache.size > THUMB_CACHE_MAX) cache.delete(cache.keys().next().value as string);

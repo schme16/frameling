@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react';
 import { PenOptions } from '../../tablet/PenOptions';
 import { findLayer } from '../../core/doc';
 import type { BrushSettings } from '../../core/format';
-import { drawShape } from '../../core/render';
 import { store, useStore } from '../../core/store';
 import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls';
-import { buildStroke } from '../vectorStroke';
+import { drawPreviewStroke } from '../../brushes/thumbs';
 import { inkFor, useThemeTick } from '../../brushes/ink';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
@@ -47,7 +46,7 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     // Keep the preview inside its box however big the brush gets.
     const size = Math.min(brush.size, h * 0.8);
     // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
-    drawShape(g, buildStroke(pts, { ...brush, size }, inkFor(c, color, 3)));
+    drawPreviewStroke(g, pts, { ...brush, size }, inkFor(c, color, 3));
   }, [brush, color, theme]);
   return <canvas className="cv-preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }

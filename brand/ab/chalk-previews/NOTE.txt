@@ -1,0 +1,19 @@
+Chalk and charcoal previews in the brush Library (board card chalk-previews-stale). Branch wip/chalk-previews.
+
+Cause: not baked pictures. The Library drew its stroke and round thumbnail with drawShape(), which paints the bare line and skips the
+shape's effects. Chalk and charcoal now get their grain from a Paper tooth effect on the line, so the picker showed the older
+tiny-shape grain (the blobby worm with white specks). Fix: every brush picture goes through one helper, drawPreviewStroke() in
+src/brushes/thumbs.ts, which draws through drawShapeFx() like the canvas does, so it can not drift again. The brush options
+preview (Tool options) had the same bug and uses the same helper.
+
+after-{dark,light}.png   FIXED. Left and middle: the Library's "Chalk and charcoal" folder (all 7 brushes, shot twice because the panel
+                         shows about five rows), stroke preview and round thumbnail. Right: the same 7 brushes drawing a real stroke
+                         on the canvas (pretend pen, same swell), top to bottom Chalk, Charcoal, Soft pastel, Oil pastel, Crayon,
+                         Vine charcoal, Compressed charcoal. The preview is the brush scaled to fit its row (about 0.6 of its size),
+                         so its line is thinner than the real one; the grain, edge and tone match.
+before-{dark,light}.png  BEFORE the fix, the same layout: previews are fat blobs with white holes, the canvas strokes are grainy chalk.
+
+Made with: npm run build; then
+  SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-chalk-previews --out <dir>
+  python3 scripts/ab/chalk-previews-compose.py <dir> brand/ab/chalk-previews after
+(before: the same with --renderer <a vite build of the old src>.)
