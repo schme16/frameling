@@ -1,8 +1,8 @@
 // Help picture and clip for Offset path and the Width tool, once per theme: see scripts/docs/help-media.cjs.
-const { T, UI, view, away, put, stroke, INK, label, REC, STOP, WARM, draw, at } = require('./_shapes.cjs');
+const { T, UI, view, away, put, stroke, INK, label, REC, STOP, WARM, draw, at, STAGE } = require('./_shapes.cjs');
 const O = require('./_offsetwidth.cjs');
 
-const CANVAS = [113, 47, 764, 444];
+const CANVAS = STAGE;
 const YELLOW = '#ffd23f';
 const RED = '#e0685e';
 

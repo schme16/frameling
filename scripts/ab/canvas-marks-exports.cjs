@@ -12,7 +12,7 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { mockMain, makeWindow, sleep } = require('../docs/steps.cjs');
+const { mockMain, makeWindow, sleep, stageBox, capture } = require('../docs/steps.cjs');
 const { T, view, INK, ell, line, stroke, put } = require('../docs/help/_shapes.cjs');
 
 const root = path.join(__dirname, '../..');
@@ -53,12 +53,14 @@ app.whenReady().then(async () => {
     await sleep(900);
     const work = path.join(tmp, mode);
     fs.mkdirSync(work, { recursive: true });
-    const crop = { x: 140, y: 62, width: 720, height: 405 };
-    fs.writeFileSync(path.join(work, 'screen.png'), (await win.webContents.capturePage(crop)).toPNG());
+    // The page at half size is 640 x 360: a 720 x 405 box round the middle of the stage as it is now keeps a margin of dark.
+    const box = await stageBox(win.webContents);
+    const crop = { x: Math.round(box[0] + box[2] / 2 - 360), y: Math.round(box[1] + box[3] / 2 - 202), width: 720, height: 404 };
+    fs.writeFileSync(path.join(work, 'screen.png'), (await capture(win.webContents, crop)).toPNG());
     // The same frame, marks hidden by the switch, to show it is the same picture underneath.
     await win.webContents.executeJavaScript(`__frameling.run('marks.toggleShow'); true`);
     await sleep(500);
-    fs.writeFileSync(path.join(work, 'hidden.png'), (await win.webContents.capturePage(crop)).toPNG());
+    fs.writeFileSync(path.join(work, 'hidden.png'), (await capture(win.webContents, crop)).toPNG());
     await win.webContents.executeJavaScript(`__frameling.run('marks.toggleShow'); true`);
     // Each export, through the real exporter, with the marks still in the file.
     const marksInDoc = await win.webContents.executeJavaScript(`(__frameling.store().get().doc.marks ?? []).length`);

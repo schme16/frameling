@@ -1,0 +1,1 @@
+Before is what the harness produced, after is the same shot reading the stage from the running app. Six help pictures lose the 30 px strip of rail down their left edge; the two A/B scripts that took their own pictures were also taking them before the frame had painted, so their on-screen tile was a blank page, and now shows the drawing.

@@ -27,9 +27,41 @@ async function probe(wc, where) {
   }
 }
 
+/** The stage as it is on screen now, [x, y, width, height] in window pixels, for a script that takes its own pictures. */
+async function stageBox(wc) {
+  const r = await wc.executeJavaScript(`(() => { const b = document.querySelector('.cv-layer')?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
+  if (!r) throw new Error('the stage is not on screen');
+  return r;
+}
+
+/**
+ * A picture of the window (or of `crop`, an {x, y, width, height}) for a script that does not run steps. A hidden window
+ * paints lazily, so the first capture can be the frame from before the last change: take a throwaway one first, as `shot`
+ * does, then the real one.
+ */
+async function capture(wc, crop) {
+  await wc.capturePage();
+  await sleep(150);
+  return wc.capturePage(crop);
+}
+
+/**
+ * A crop that follows the stage as it is now: `{ stageCrop: {} }` is the stage's own box, and `rightGap` stretches it to
+ * that far from the window's right edge, so a crop of the stage and the panels beside it needs no number copied from the
+ * app. help/_shapes.cjs exports these as STAGE and PANEL. Even sizes, as for `el`.
+ */
+async function stageCrop(wc, o, width, height) {
+  const r = await stageBox(wc);
+  const even = (n) => Math.max(2, n - (n % 2));
+  const x = Math.max(0, Math.round(r[0])), y = Math.max(0, Math.round(r[1]));
+  const w = o.rightGap != null ? width - o.rightGap - x : Math.round(r[2]);
+  return [x, y, even(Math.min(width - x, w)), even(Math.min(height - y, Math.round(r[3])))];
+}
+
 /** Where a step wants the picture cropped: its own `crop`, or the box of the element its `el` selector finds, with
  *  padding, clamped to the window. Shared by `shot` and `rec` so a clip can follow a panel the same way. */
 async function cropOf(wc, s, width, height) {
+  if (s.crop && s.crop.stageCrop) return stageCrop(wc, s.crop.stageCrop, width, height);
   if (!s.el) return s.crop;
   const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.el)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
   if (!r) throw new Error(`no element ${s.el}`);
@@ -303,4 +335,4 @@ function makeWindow(BrowserWindow, width, height) {
   });
 }
 
-module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
+module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stageBox, capture, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
