@@ -166,7 +166,9 @@ export const STILL_LOAD = {
   // first. The remote door: +2 palette and +3 menu in Edit > Scripts. And selection-gradients: +3 palette and +6 menu
   // on both sides, the selection edge card with grow, shrink and feather, saving a selection and the saved list, all
   // in one Edit submenu, plus the two angular gradient commands, which are palette only because Tools is at its cap.
+  // And the diamond gradient: +2 palette on both sides, its two commands, which are palette only for the same reason as
+  // the angular ones (the menu number does not move).
   // None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 561, menu: 752, animateMenu: 8 },
-  animated: { palette: 610, menu: 876, animateMenu: 123 },
+  still: { palette: 563, menu: 752, animateMenu: 8 },
+  animated: { palette: 612, menu: 876, animateMenu: 123 },
 };

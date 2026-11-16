@@ -1,11 +1,12 @@
 /**
  * Gradient [F]: sets where a shape's gradient starts and ends, right on the canvas. Drag across a shape to lay its
  * gradient along the drag; drag the round ends to adjust it. On a radial gradient the start is the middle and the end
- * sets the size; on an angular one the start is the middle and the end sets where the sweep begins. Shift keeps the direction to 45 degree steps. A shape without a gradient takes the one in the colour
- * box in front (pick Linear, Radial or Angular in the Colours panel).
+ * sets the size; on an angular one the start is the middle and the end sets where the sweep begins; on a diamond one
+ * the start is the middle and the end is the corner it steps out to. Shift keeps the direction to 45 degree steps. A
+ * shape without a gradient takes the one in the colour box in front (pick Linear, Radial, Angular or Diamond in the Colours panel).
  */
 import type { FillShape, Gradient, Id, PathShape, Shape } from '../core/format';
-import { placeGradient } from '../core/gradient';
+import { diamondCorners, placeGradient } from '../core/gradient';
 import { registerHelp, registerTool, type Tool, type ToolContext } from '../core/registry';
 import { store } from '../core/store';
 import { topShapeAt } from '../canvas/geometry';
@@ -115,7 +116,7 @@ export const gradientTool: Tool = {
       const style = wellGradient(which);
       const b = pathsBounds(under.paths);
       if (!style || !b) {
-        ctx.hint(`This shape's ${which} is a plain colour. Pick Linear or Radial in the Colours panel to give it a gradient.`);
+        ctx.hint(`This shape's ${which} is a plain colour. Pick a gradient kind in the Colours panel to give it one.`);
         ctx.requestOverlay();
         return;
       }
@@ -173,7 +174,10 @@ export const gradientTool: Tool = {
     gx.strokeStyle = 'rgb(255 255 255 / 0.8)';
     const line = () => {
       gx.beginPath();
-      if (g.kind !== 'linear') gx.arc(g.from.x, g.from.y, Math.hypot(g.to.x - g.from.x, g.to.y - g.from.y), 0, Math.PI * 2);
+      if (g.kind === 'diamond') {
+        diamondCorners(g).forEach((p, i) => (i ? gx.lineTo(p.x, p.y) : gx.moveTo(p.x, p.y)));
+        gx.closePath();
+      } else if (g.kind !== 'linear') gx.arc(g.from.x, g.from.y, Math.hypot(g.to.x - g.from.x, g.to.y - g.from.y), 0, Math.PI * 2);
       gx.moveTo(g.from.x, g.from.y);
       gx.lineTo(g.to.x, g.to.y);
     };
@@ -198,8 +202,8 @@ registerHelp({
   section: 'Drawing',
   order: 5,
   media: 'gradients.png',
-  summary: 'Colours that blend into each other, along a line (linear), out from the middle (radial) or round it like a colour wheel (angular), for fills and outlines.',
-  keywords: ['gradient', 'blend', 'fade', 'linear', 'radial', 'angular', 'conic', 'sweep', 'pie', 'metal', 'shine', 'ramp', 'shading', 'gradient tool'],
+  summary: 'Colours that blend into each other, along a line (linear), out from the middle (radial), round it like a colour wheel (angular) or out in a square turned on its corner (diamond), for fills and outlines.',
+  keywords: ['gradient', 'blend', 'fade', 'linear', 'radial', 'angular', 'conic', 'sweep', 'pie', 'metal', 'shine', 'diamond', 'sheen', 'ramp', 'shading', 'gradient tool'],
 });
 
 registerHelp({
@@ -210,4 +214,14 @@ registerHelp({
   media: 'gradient-angular.png',
   summary: 'Colours that sweep once round the middle like a colour wheel or a pie: brushed metal, pie shapes and a spinning shine (angular, or conic, gradient).',
   keywords: ['angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'chrome', 'brushed metal', 'shine', 'spinning', 'colour wheel', 'gradient'],
+});
+
+registerHelp({
+  id: 'gradient-diamond',
+  title: 'Diamond gradients',
+  section: 'Drawing',
+  order: 7,
+  media: 'gradient-diamond.png',
+  summary: 'Colours that step out from the middle in a square turned on its corner: a sheen on a flat panel, a soft box of light, a jewel (diamond gradient).',
+  keywords: ['diamond', 'square gradient', 'rhombus', 'sheen', 'glint', 'box of light', 'soft light', 'panel', 'jewel', 'facet', 'gradient'],
 });

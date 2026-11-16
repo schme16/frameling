@@ -939,7 +939,7 @@ export interface FillShape {
 }
 
 /** The ways a gradient can run. */
-export type GradientKind = 'linear' | 'radial' | 'angular';
+export type GradientKind = 'linear' | 'radial' | 'angular' | 'diamond';
 
 /** One colour along a gradient, `at` from 0 (start) to 1 (end). */
 export interface GradientStop {
@@ -950,9 +950,10 @@ export interface GradientStop {
 /**
  * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`; angular
  * (conic) sweeps once round `from`, clockwise, starting in the direction of `to` (stop 0 and stop 1 meet there), so
- * how far `to` is only moves the handle. All are in document pixels, the same space as the shape's points, so moving
- * the shape moves its gradient too. A file from before angular existed never has that kind, and an older Frameling
- * that meets one drops it and shows the shape's plain colour.
+ * how far `to` is only moves the handle; diamond steps out from `from` in a square turned on its corner, with `to` the
+ * corner on the way out (stop 1 sits there, and past it the last colour carries on). All are in document pixels, the
+ * same space as the shape's points, so moving the shape moves its gradient too. A file from before angular or diamond
+ * existed never has those kinds, and an older Frameling that meets one drops it and shows the shape's plain colour.
  */
 export interface Gradient {
   kind: GradientKind;

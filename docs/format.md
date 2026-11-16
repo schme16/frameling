@@ -394,12 +394,18 @@ when comparing two drawings for "same look" (as `id` is ignored).
   ring's radius or the copy's distance from the line. Cleaned on open by `cleanRepeat` (`src/geometry/repeat.ts`), which
   drops one that makes no sense. An older file has none. See `test/repeat/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
-- `Gradient` is `{kind: 'linear' | 'radial' | 'angular', stops: {at, color}[], from, to}` in document pixels, so it moves with
+- `Gradient` is `{kind: 'linear' | 'radial' | 'angular' | 'diamond', stops: {at, color}[], from, to}` in document pixels, so it moves with
   the shape. Linear runs `from` to `to`; radial is a circle round `from` out to `to`; angular (conic) sweeps once round `from`,
   clockwise on screen, starting in the direction of `to` (stops 0 and 1 meet there), so how far `to` is only places the handle.
   `angular` is new: `readGradient` (src/core/gradient.ts) accepts it, and an older Frameling that meets one drops it and shows
   the shape's plain colour. Writers with no conic gradient: SVG and PDF (and so Illustrator) cut it into 90 wedges of plain colour;
   Lottie keeps the shape's plain colour (see `ANGULAR_NOTE` and the `gradientAngular` row in src/export/carries.ts).
+  `diamond` steps out from `from` in a square turned on its corner: `to` is the corner on the way out (stop 1 sits there, and the
+  last colour carries on past it), so turning `to` round `from` turns the diamond. It is a straight gradient in each of four
+  mirrored quarters (`diamondQuarters`), and a point is `(|along| + |across|) / distance` of the way out (`diamondAt`). Also new,
+  and dropped by an older Frameling the same way. Canvas formats draw the four quarters exactly; SVG makes a pattern of four
+  pieces with a straight gradient each; PDF cuts the shape along the two axes and shades each piece (so Illustrator gets four
+  gradient fills); Lottie keeps the shape's plain colour (see `DIAMOND_NOTE` and the `gradientDiamond` row in src/export/carries.ts).
 - `InstanceShape` (`type: 'instance'`, `828d4a8`): `symbolId`, `transform: Transform2D`, `opacity`, `tint?: {color,
   amount}`, `play: 'loop' | 'once' | 'single'`, `firstFrame`. `Transform2D` is `{x, y, scaleX, scaleY, rotation,
   skew}`, applied translate, rotate, skew, scale around the symbol's origin.

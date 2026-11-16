@@ -18,7 +18,7 @@ import type { RawImage } from '../io/png';
 import { shapeExportOf } from './shapeExport';
 import { flatPlan, type FlatUnit } from './layered';
 import { nativeData } from './ai-native';
-import { angularWedges, conicStart, gradientKey, sortedStops } from '../core/gradient';
+import { angularWedges, conicStart, diamondQuarters, gradientKey, sortedStops } from '../core/gradient';
 import { areaOfPaths, flattenRing, intersection, lineArea, union, type Geom } from '../geometry/merge';
 import type { Pair } from 'polygon-clipping';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
@@ -412,6 +412,7 @@ export class Content {
    */
   shade(gr: Gradient, opacity: number, rule: 'W*' | 'W', path: (c: Content) => void, area?: () => Geom): void {
     if (gr.kind === 'angular' && area) return this.sweep(gr, opacity, area());
+    if (gr.kind === 'diamond' && area) return this.diamond(gr, opacity, area());
     if (opacity < 0.999) this.push(`/${this.w.state(opacity, 1)} gs`);
     const fade = this.w.gradientAlpha(gr);
     if (!fade) {
@@ -455,6 +456,36 @@ export class Content {
           this.push('h');
         }
       this.push('f* Q');
+    }
+  }
+
+  /**
+   * A diamond gradient. PDF has none, but a diamond is a straight gradient in each of its four quarters, so the area is cut
+   * along the diamond's two axes (as plain geometry) and each piece is shaded with its quarter's straight gradient, the
+   * same way any linear gradient is: one clip and one shading per piece, which Illustrator reads as four gradient fills.
+   */
+  private diamond(gr: Gradient, opacity: number, area: Geom): void {
+    if (!area.length) return;
+    let reach = 1;
+    for (const poly of area) for (const ring of poly) for (const [x, y] of ring) reach = Math.max(reach, Math.hypot(x - gr.from.x, y - gr.from.y));
+    // Pieces that meet at an axis are laid a hair over it, unless a see-through colour or fade would show the overlap painted twice.
+    const solid = opacity >= 0.999 && sortedStops(gr.stops).every((st) => parseColor(st.color).a >= 0.999);
+    for (const q of diamondQuarters(gr, reach * 1.2 + 2, solid ? 0.6 : 0)) {
+      const piece: Geom = [[[...q.poly, q.poly[0]].map((p): Pair => [p.x, p.y])]];
+      const pieces = intersection(area, piece) ?? [];
+      if (!pieces.length) continue;
+      const straight: Gradient = { kind: 'linear', stops: gr.stops, from: q.from, to: q.to };
+      // Each piece is its own clip, so it sits between q and Q and the next one starts clean.
+      this.push('q');
+      this.shade(straight, opacity, 'W*', (c) => {
+        for (const poly of pieces)
+          for (const ring of poly) {
+            c.push(`${num(ring[0][0])} ${num(ring[0][1])} m`);
+            for (let i = 1; i < ring.length - 1; i++) c.push(`${num(ring[i][0])} ${num(ring[i][1])} l`);
+            c.push('h');
+          }
+      });
+      this.push('Q');
     }
   }
 
@@ -591,7 +622,9 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
     if (s.stroke && s.stroke.width > 0 && s.strokeGradient) {
       // A gradient line: the line's own outline clips the gradient (PDF can only shade areas).
       const st = s.stroke;
-      if (ctx.includeHidden) cx.push(`/FrStroke << /I ${ctx.writer.live({ kind: 'stroke', paths: s.paths, width: st.width, join: st.join, cap: st.cap, gradient: s.strokeGradient, opacity: s.opacity })} >> BDC`);
+      // Illustrator holds a line's gradient as a real gradient stroke only for linear and radial; the others come across as the pieces drawn here.
+      const liveLine = ctx.includeHidden && (s.strokeGradient.kind === 'linear' || s.strokeGradient.kind === 'radial');
+      if (liveLine) cx.push(`/FrStroke << /I ${ctx.writer.live({ kind: 'stroke', paths: s.paths, width: st.width, join: st.join, cap: st.cap, gradient: s.strokeGradient, opacity: s.opacity })} >> BDC`);
       cx.push('q');
       cx.shade(s.strokeGradient, s.opacity, 'W', (c) => {
         for (const sp of s.paths)
@@ -604,7 +637,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape, expanded = false
             }
       }, () => union(s.paths.flatMap((sp) => lineArea(flattenRing(sp), sp.closed, st.width, st.join, st.cap))) ?? []);
       cx.push('Q');
-      if (ctx.includeHidden) cx.push('EMC');
+      if (liveLine) cx.push('EMC');
     } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
       cx.push(`${num(s.stroke.width)} w ${JOIN[s.stroke.join] ?? 1} j ${CAP[s.stroke.cap] ?? 1} J`);
       const dash = dashPx(s.stroke);

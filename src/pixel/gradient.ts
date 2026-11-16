@@ -13,7 +13,7 @@ import type { Ink } from './ink';
 import { paletteRgb } from './palette';
 
 export type GradientColours = 'palette' | 'two' | 'blend';
-export type GradientShape = 'linear' | 'radial' | 'angular';
+export type GradientShape = 'linear' | 'radial' | 'angular' | 'diamond';
 
 export const GRADIENT_COLOURS: { id: GradientColours; label: string; detail: string }[] = [
   { id: 'palette', label: 'Palette steps', detail: 'Steps through the palette colours between your two colours.' },
@@ -25,6 +25,7 @@ export const GRADIENT_SHAPES: { id: GradientShape; label: string }[] = [
   { id: 'linear', label: 'Linear' },
   { id: 'radial', label: 'Radial' },
   { id: 'angular', label: 'Angular' },
+  { id: 'diamond', label: 'Diamond' },
 ];
 
 /** Where the gradient sits, in art pixels (fractions allowed): the start, and the end (or the edge of the circle). */
@@ -48,6 +49,14 @@ export function gradientPosition(shape: GradientShape, g: GradientLine, x: numbe
     if (px === 0 && py === 0) return 0;
     const turn = (Math.atan2(py, px) - Math.atan2(dy, dx)) / (Math.PI * 2);
     return ((turn % 1) + 1) % 1;
+  }
+  // Diamond: a square turned on its corner, with the corner where the drag ends.
+  if (shape === 'diamond') {
+    const len = Math.sqrt(len2);
+    const u = (px * dx + py * dy) / len;
+    const v = (px * -dy + py * dx) / len;
+    const t = (Math.abs(u) + Math.abs(v)) / len;
+    return t > 1 ? 1 : t;
   }
   const t = shape === 'radial' ? Math.sqrt((px * px + py * py) / len2) : (px * dx + py * dy) / len2;
   return t < 0 ? 0 : t > 1 ? 1 : t;
