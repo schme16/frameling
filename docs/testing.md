@@ -315,6 +315,10 @@ Chalk and charcoal brush lines that catch on paper (`src/dry/tooth.ts`, `src/eff
   ```
 - `scripts/e2e/tooth-export.cjs` writes one toothed line through every export format and says what is inside each file (PNG grain, SVG tiny
   shapes, PDF, Illustrator and Lottie a picture, Photoshop pixels). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/tooth-export.cjs [outDir]`
+  It also writes the SVG and the moving SVG both ways (`svgTooth: 'picture'`) and checks the picture is baked at 2 pixels per SVG pixel.
+- `scripts/ab/svg-tooth.cjs` runs the real export flow for chalk and charcoal in an SVG: the question (first time, remembered, "Ask me every
+  time", and not asked when the drawing has no such line), the two files, a side by side with the canvas's own PNG, the question in both
+  themes and a NOTE.txt with the file sizes, into `brand/ab/svg-tooth/`. `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/svg-tooth.cjs [outDir]`
 - `scripts/perf/tooth.cjs` times a busy page of lines drawn plain, with the older grain and with paper tooth, cold (every line worked out) and warm
   (a held drawing). Put the two graphics variables from the perf skill in front of `xvfb-run`; results go in `scripts/perf/results/tooth-*.json`.
 

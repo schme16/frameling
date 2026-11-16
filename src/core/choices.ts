@@ -217,10 +217,17 @@ export function setGentleTeller(fn: GentleTeller | null): void {
   teller = fn;
 }
 
+/** A sheet for this time only: the answers left out (the ones about how to ask next time), and nothing in it is remembered. */
+export interface AskOnly {
+  without: string[];
+}
+
 /** Puts one choice to the person with its sheet, whatever is remembered (the Change button on a toast). */
-export function askAgain(id: string, startOn?: string): Promise<{ value: string; remember: boolean } | null> {
-  const def = defs.get(id);
-  if (!def || !asker) return Promise.resolve(null);
+export function askAgain(id: string, startOn?: string, only?: AskOnly): Promise<{ value: string; remember: boolean } | null> {
+  const found = defs.get(id);
+  if (!found || !asker) return Promise.resolve(null);
+  // `only`: a sheet for this one time, without the answers that are about the next ones, and nothing in it is remembered.
+  const def = only ? { ...found, options: found.options.filter((o) => !only.without.includes(o.value)).map((o) => ({ ...o, once: true })) } : found;
   return asker(startOn ? { ...def, highlight: startOn } : def).then((r) => {
     if (r) closed.delete(id);
     return r;

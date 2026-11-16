@@ -8,6 +8,7 @@ import { encodePng } from '../io/png';
 import { flattenDrawing } from '../core/layerKinds';
 import { shapeExportOf } from './shapeExport';
 import { noteShapeFx, withSprites } from './svg-extra';
+import { toothImage } from './svgTooth';
 import { hasShapeFx, shapeEffects } from '../effects/shapeFx';
 import { composeSvg, composeSymbol, effectsFilter, SHAPE_OWNER, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
@@ -123,9 +124,15 @@ export function subPathsToPathData(paths: SubPath[]): string {
  * svg-look.ts), so the effect works on that shape alone. Effects SVG has nothing like are left out, and said so.
  */
 export function shapeToSvg(s: Shape, doc?: Doc): string {
-  const el = plainShapeToSvg(s, doc);
-  const fx = shapeEffects(s);
-  if (!el || !fx?.length || !hasShapeFx(s)) return el;
+  // A line on paper is a baked picture when the export asks for that (svgTooth.ts); its other effects then run on the picture.
+  const picture = s.type === 'stroke' ? toothImage(s) : null;
+  const el = picture ?? plainShapeToSvg(s, doc);
+  let fx = shapeEffects(s);
+  if (picture !== null && fx) {
+    const t = fx.find((e) => e.kind === 'tooth' && e.on !== false);
+    fx = fx.filter((e) => e !== t);
+  }
+  if (!el || !fx?.length || !hasShapeFx({ ...s, effects: fx } as Shape)) return el;
   const defs: string[] = [];
   const host = { doc: doc ?? ({ width: 4096, height: 4096 } as Doc), frames: [0], duration: 1, loop: false, body: () => '', defs, notes: new Set<string>() };
   const id = effectsFilter(host, fx.map((e) => (e.keys ? { ...e, keys: undefined } : e)), SHAPE_OWNER);

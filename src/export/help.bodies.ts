@@ -256,7 +256,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 ## What you get
 
 - **Vector layers** become real paths: every brush stroke becomes one filled shape, and shapes keep their curves, fills and outlines.
-- **Brush tips** (chalk, charcoal, watercolour, stamps) stay vector, written as plain shapes, so they look the same. Chalk and charcoal that catch on paper are written as tiny shapes here, which stay sharp but don't look quite the same as on the canvas, and the file comes out bigger. See [brush tips](help:brush-tips).
+- **Brush tips** (chalk, charcoal, watercolour, stamps) stay vector, written as plain shapes, so they look the same. Chalk and charcoal that catch on paper ask you how to write them, the first time (see below). See [brush tips](help:brush-tips).
 - **Pixel layers** become small rectangles: one for each run of pixels in the same colour. Nothing is lost, every pixel is still there, but a big pixel drawing makes a big file.
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Folders** are groups too, named after the folder, with the folder's layers inside (and folders inside folders as groups inside groups), even a folder that changes nothing. Other programs read the name from the group's id (spaces and symbols become dashes, and a repeated name gets an underscore). Inkscape shows the folder's own name, spelled the way you wrote it.
@@ -264,6 +264,16 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no SVG version, so they're left out (the Export window says so first).
 - **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
+
+## Chalk and charcoal on paper
+
+If your drawing has chalk or charcoal that catches on paper, the Export window asks how to write it:
+
+- **Scale forever** writes tiny shapes. They stay sharp at any size, but the grain is the older, simpler kind, so it looks less like charcoal.
+- **Look right** bakes a picture of each line, so it looks just as it does on the canvas. Those lines stop being sharp at any size (each picture is made at twice the file's size), and the file comes out much bigger.
+- **Ask me every time** asks again on every SVG export. It's never remembered.
+
+It only asks when such a line is really in the file. Change the answer any time in Preferences, Behaviour.
 
 ## Good to know
 
@@ -323,6 +333,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 
 - **Morphs (shape tweens)** are a drawing per frame, so long morphs make bigger files.
 - **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur are left out.
+- Chalk and charcoal that catch on paper work as in the still [SVG](help:export-svg): tiny shapes that scale forever, or a picture of each line that looks right but makes a much bigger file. A drawing that is held for several frames is baked once.
 - Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
 

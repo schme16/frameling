@@ -126,7 +126,7 @@ export interface ExporterDef {
   /** Checks it can be made here and works out what the run needs (the video codec). Throws a problem in plain words. */
   prepare?(plan: Plan, s: ExportSettings): Promise<Partial<RunContext>>;
   /** Anything to ask or settle before asking where to save (an MP4 that would be silent here). */
-  settle?(doc: Doc, s: ExportSettings): Promise<ExportSettings>;
+  settle?(doc: Doc, s: ExportSettings, frame: number): Promise<ExportSettings>;
   /** What this computer can make, for the card. Asked again when the size changes. */
   support?(size: { width: number; height: number }, fresh: boolean): Promise<FormatSupport>;
   /** Why this cannot be made as set, in plain words (a sheet too big for one picture), or null. Asked with the plan. */
