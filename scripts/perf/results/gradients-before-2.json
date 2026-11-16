@@ -1,0 +1,981 @@
+{
+  "env": {
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "cores": 24,
+    "loadAvgBefore": [
+      17.98,
+      13.74,
+      12.78
+    ],
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "gpuFeatures": {
+      "canvas": "enabled"
+    },
+    "conicGradient": "function",
+    "reps": 7,
+    "quick": false,
+    "when": "2026-11-16T10:45:44.019Z",
+    "loadAvgAfter": [
+      9.26,
+      11.89,
+      12.2
+    ]
+  },
+  "render": [
+    {
+      "canvas": "1280x720",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 0.28,
+        "p50": 0.3,
+        "p95": 12.95,
+        "max": 12.95
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.3,
+        "p50": 0.35,
+        "p95": 0.47,
+        "max": 0.47
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.35,
+        "p50": 0.4,
+        "p95": 7.38,
+        "max": 7.38
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.3,
+        "p50": 0.38,
+        "p95": 0.47,
+        "max": 0.47
+      },
+      "diamond": {
+        "n": 7,
+        "min": 0.38,
+        "p50": 0.42,
+        "p95": 0.45,
+        "max": 0.45
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 0.55,
+        "p95": 0.68,
+        "max": 0.68
+      },
+      "linearVsRadial": 0.86,
+      "angularVsRadial": 0.86,
+      "diamondVsRadial": 1.09,
+      "diamondlineVsRadial": 1.43
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 0.3,
+        "p50": 0.4,
+        "p95": 0.45,
+        "max": 0.45
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.4,
+        "p50": 0.43,
+        "p95": 0.53,
+        "max": 0.53
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.38,
+        "p50": 0.45,
+        "p95": 0.53,
+        "max": 0.53
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.43,
+        "p50": 0.5,
+        "p95": 9.65,
+        "max": 9.65
+      },
+      "diamond": {
+        "n": 7,
+        "min": 1.13,
+        "p50": 1.22,
+        "p95": 1.45,
+        "max": 1.45
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 2.22,
+        "p50": 2.38,
+        "p95": 2.58,
+        "max": 2.58
+      },
+      "linearVsRadial": 1.05,
+      "angularVsRadial": 1.13,
+      "diamondVsRadial": 2.97,
+      "diamondlineVsRadial": 5.84
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 0.4,
+        "p50": 0.45,
+        "p95": 0.65,
+        "max": 0.65
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.6,
+        "p50": 0.67,
+        "p95": 0.8,
+        "max": 0.8
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.55,
+        "p50": 0.68,
+        "p95": 0.9,
+        "max": 0.9
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.6,
+        "p50": 0.63,
+        "p95": 0.97,
+        "max": 0.97
+      },
+      "diamond": {
+        "n": 7,
+        "min": 4.65,
+        "p50": 4.75,
+        "p95": 10.98,
+        "max": 10.98
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 6.75,
+        "p50": 7.03,
+        "p95": 7.3,
+        "max": 7.3
+      },
+      "linearVsRadial": 1.09,
+      "angularVsRadial": 1.09,
+      "diamondVsRadial": 8.45,
+      "diamondlineVsRadial": 12.27
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 0.6,
+        "p50": 0.65,
+        "p95": 0.8,
+        "max": 0.8
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.55,
+        "p50": 1.6,
+        "p95": 14.35,
+        "max": 14.35
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.55,
+        "p50": 1.7,
+        "p95": 1.8,
+        "max": 1.8
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.5,
+        "p50": 1.6,
+        "p95": 1.95,
+        "max": 1.95
+      },
+      "diamond": {
+        "n": 7,
+        "min": 11.5,
+        "p50": 12.45,
+        "p95": 15.25,
+        "max": 15.25
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 20.45,
+        "p50": 21.35,
+        "p95": 21.9,
+        "max": 21.9
+      },
+      "linearVsRadial": 1,
+      "angularVsRadial": 0.97,
+      "diamondVsRadial": 7.42,
+      "diamondlineVsRadial": 13.19
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 0.28,
+        "p50": 0.35,
+        "p95": 0.45,
+        "max": 0.45
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.35,
+        "p50": 0.38,
+        "p95": 0.72,
+        "max": 0.72
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.3,
+        "p50": 0.38,
+        "p95": 0.82,
+        "max": 0.82
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.32,
+        "p50": 0.35,
+        "p95": 0.5,
+        "max": 0.5
+      },
+      "diamond": {
+        "n": 7,
+        "min": 0.35,
+        "p50": 0.45,
+        "p95": 0.78,
+        "max": 0.78
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 0.6,
+        "p95": 0.88,
+        "max": 0.88
+      },
+      "linearVsRadial": 1.17,
+      "angularVsRadial": 1.07,
+      "diamondVsRadial": 1.17,
+      "diamondlineVsRadial": 1.67
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 0.32,
+        "p50": 0.38,
+        "p95": 0.92,
+        "max": 0.92
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.33,
+        "p50": 0.45,
+        "p95": 0.72,
+        "max": 0.72
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.38,
+        "p50": 0.42,
+        "p95": 0.52,
+        "max": 0.52
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.38,
+        "p50": 0.45,
+        "p95": 0.45,
+        "max": 0.45
+      },
+      "diamond": {
+        "n": 7,
+        "min": 1.23,
+        "p50": 1.32,
+        "p95": 1.45,
+        "max": 1.45
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 2.78,
+        "p50": 2.85,
+        "p95": 13.72,
+        "max": 13.72
+      },
+      "linearVsRadial": 0.87,
+      "angularVsRadial": 1,
+      "diamondVsRadial": 3.24,
+      "diamondlineVsRadial": 7.32
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 0.4,
+        "p50": 0.43,
+        "p95": 0.5,
+        "max": 0.5
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.57,
+        "p50": 0.68,
+        "p95": 1,
+        "max": 1
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.6,
+        "p50": 0.63,
+        "p95": 0.68,
+        "max": 0.68
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.57,
+        "p50": 0.7,
+        "p95": 0.72,
+        "max": 0.72
+      },
+      "diamond": {
+        "n": 7,
+        "min": 4.85,
+        "p50": 4.97,
+        "p95": 6.5,
+        "max": 6.5
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 9.15,
+        "p50": 9.4,
+        "p95": 10.35,
+        "max": 10.35
+      },
+      "linearVsRadial": 0.95,
+      "angularVsRadial": 0.95,
+      "diamondVsRadial": 8.08,
+      "diamondlineVsRadial": 15.25
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 0.65,
+        "p95": 0.85,
+        "max": 0.85
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.4,
+        "p50": 1.6,
+        "p95": 1.75,
+        "max": 1.75
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.5,
+        "p50": 1.65,
+        "p95": 1.8,
+        "max": 1.8
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.45,
+        "p50": 1.55,
+        "p95": 2.15,
+        "max": 2.15
+      },
+      "diamond": {
+        "n": 7,
+        "min": 11.5,
+        "p50": 11.9,
+        "p95": 13.65,
+        "max": 13.65
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 28.6,
+        "p50": 29.4,
+        "p95": 30.3,
+        "max": 30.3
+      },
+      "linearVsRadial": 0.93,
+      "angularVsRadial": 0.97,
+      "diamondVsRadial": 7.67,
+      "diamondlineVsRadial": 19.07
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 0.45,
+        "p50": 0.8,
+        "p95": 8.5,
+        "max": 8.5
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 0.55,
+        "p95": 0.95,
+        "max": 0.95
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.45,
+        "p50": 0.78,
+        "p95": 0.88,
+        "max": 0.88
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.47,
+        "p50": 0.55,
+        "p95": 0.83,
+        "max": 0.83
+      },
+      "diamond": {
+        "n": 7,
+        "min": 0.55,
+        "p50": 0.8,
+        "p95": 0.92,
+        "max": 0.92
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 2.05,
+        "p50": 2.4,
+        "p95": 2.63,
+        "max": 2.63
+      },
+      "linearVsRadial": 1.11,
+      "angularVsRadial": 1.04,
+      "diamondVsRadial": 1.22,
+      "diamondlineVsRadial": 4.56
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 0.43,
+        "p50": 0.57,
+        "p95": 0.95,
+        "max": 0.95
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.52,
+        "p50": 0.65,
+        "p95": 0.83,
+        "max": 0.83
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 0.75,
+        "p95": 0.82,
+        "max": 0.82
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.53,
+        "p50": 0.55,
+        "p95": 1.03,
+        "max": 1.03
+      },
+      "diamond": {
+        "n": 7,
+        "min": 1.75,
+        "p50": 1.88,
+        "p95": 2.15,
+        "max": 2.15
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 10.03,
+        "p50": 10.5,
+        "p95": 24.92,
+        "max": 24.92
+      },
+      "linearVsRadial": 1.04,
+      "angularVsRadial": 1.06,
+      "diamondVsRadial": 3.5,
+      "diamondlineVsRadial": 20.06
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 0.53,
+        "p50": 0.75,
+        "p95": 0.92,
+        "max": 0.92
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.72,
+        "p50": 0.8,
+        "p95": 1.05,
+        "max": 1.05
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.73,
+        "p50": 0.9,
+        "p95": 1.13,
+        "max": 1.13
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.77,
+        "p50": 0.78,
+        "p95": 1.1,
+        "max": 1.1
+      },
+      "diamond": {
+        "n": 7,
+        "min": 7.15,
+        "p50": 7.47,
+        "p95": 8.38,
+        "max": 8.38
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 33.38,
+        "p50": 34.05,
+        "p95": 35.08,
+        "max": 35.08
+      },
+      "linearVsRadial": 0.99,
+      "angularVsRadial": 1.05,
+      "diamondVsRadial": 9.79,
+      "diamondlineVsRadial": 45.73
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 0.75,
+        "p50": 0.85,
+        "p95": 1.75,
+        "max": 1.75
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.75,
+        "p50": 1.85,
+        "p95": 2.05,
+        "max": 2.05
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.75,
+        "p50": 1.9,
+        "p95": 1.95,
+        "max": 1.95
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.8,
+        "p50": 1.95,
+        "p95": 2.4,
+        "max": 2.4
+      },
+      "diamond": {
+        "n": 7,
+        "min": 16.2,
+        "p50": 17.45,
+        "p95": 18.15,
+        "max": 18.15
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 104.75,
+        "p50": 105.1,
+        "p95": 108.35,
+        "max": 108.35
+      },
+      "linearVsRadial": 1,
+      "angularVsRadial": 1.03,
+      "diamondVsRadial": 9.26,
+      "diamondlineVsRadial": 59.86
+    }
+  ],
+  "live": [
+    {
+      "canvas": "1920x1080",
+      "shapes": 20,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 0.08,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 158,
+          "min": 16.6,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 33.4
+        },
+        "lateFrames": 0
+      },
+      "angular": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 0.11,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 150,
+          "min": 16.6,
+          "p50": 33.2,
+          "p95": 33.4,
+          "max": 33.4
+        },
+        "lateFrames": 0
+      },
+      "diamond": {
+        "framesPainted": 90,
+        "framesSkipped": 1,
+        "paintMs": {
+          "n": 90,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 0.7,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 138,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50.1
+        },
+        "lateFrames": 4
+      }
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 100,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "buildPaintMsEach": 0.28,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 141,
+          "min": 16.5,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50.1
+        },
+        "lateFrames": 1
+      },
+      "angular": {
+        "framesPainted": 92,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 92,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.3,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 0.26,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 155,
+          "min": 16.6,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 33.4
+        },
+        "lateFrames": 0
+      },
+      "diamond": {
+        "framesPainted": 89,
+        "framesSkipped": 2,
+        "paintMs": {
+          "n": 89,
+          "min": 0,
+          "p50": 0,
+          "p95": 0.2,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 2.48,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 138,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 49.9,
+          "max": 66.8
+        },
+        "lateFrames": 9
+      }
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 250,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0.1,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "buildPaintMsEach": 0.63,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 136,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50
+        },
+        "lateFrames": 3
+      },
+      "angular": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0.1,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "buildPaintMsEach": 0.65,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 136,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 33.5
+        },
+        "lateFrames": 0
+      },
+      "diamond": {
+        "framesPainted": 84,
+        "framesSkipped": 7,
+        "paintMs": {
+          "n": 84,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 6.8
+        },
+        "buildPaintMsEach": 6.61,
+        "builds": 91,
+        "rafDeltaMs": {
+          "n": 88,
+          "min": 16.6,
+          "p50": 50,
+          "p95": 50.1,
+          "max": 66.8
+        },
+        "lateFrames": 55
+      }
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 50,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.3,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 0.24,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 140,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 33.5
+        },
+        "lateFrames": 0
+      },
+      "angular": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.3,
+          "max": 0.9
+        },
+        "buildPaintMsEach": 0.19,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 128,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.5,
+          "max": 50.1
+        },
+        "lateFrames": 6
+      },
+      "diamond": {
+        "framesPainted": 86,
+        "framesSkipped": 5,
+        "paintMs": {
+          "n": 86,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 1.53,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 119,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 50,
+          "max": 116.6
+        },
+        "lateFrames": 16
+      }
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 200,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.8
+        },
+        "buildPaintMsEach": 0.49,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 136,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50
+        },
+        "lateFrames": 2
+      },
+      "angular": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "buildPaintMsEach": 0.47,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 140,
+          "min": 16.5,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50.1
+        },
+        "lateFrames": 1
+      },
+      "diamond": {
+        "framesPainted": 85,
+        "framesSkipped": 6,
+        "paintMs": {
+          "n": 85,
+          "min": 0,
+          "p50": 0,
+          "p95": 0.1,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 5.09,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 130,
+          "min": 0.01,
+          "p50": 33.3,
+          "p95": 50.1,
+          "max": 66.7
+        },
+        "lateFrames": 21
+      }
+    }
+  ],
+  "consoleErrors": []
+}

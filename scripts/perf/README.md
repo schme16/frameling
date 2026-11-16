@@ -196,6 +196,50 @@ graphics variables at the top of `.claude/skills/perf/SKILL.md` bring it up). `B
 by self and inclusive time; point `PERF_RENDERER` at a `--minify false` build to read the names), and `firstLatencyMs` in each result is the
 first three inputs raw, the first being the press itself.
 
+## Gradients on a busy canvas: gradients.cjs
+
+`gradients.cjs` answers one question: what do many angular or diamond shapes cost, next to the same scene in radial gradients,
+which the canvas draws itself? A canvas has no diamond gradient, so `fillDiamond` and `strokeDiamond` in `src/core/gradient.ts`
+paint one from pieces on spare canvases the size of the whole canvas. Angular uses the browser's own `createConicGradient`, so it
+is not painted from pieces at all (the run records `conicGradient: "function"` to show it was there).
+
+`render` draws one frame with the single renderer (what an export uses), `reps` times, and keeps the lowest: 1280x720, 1920x1080
+and 3840x2160 canvases, 1, 10, 50 and 200 shapes each about a tenth of the canvas wide, painted solid, linear, radial, angular,
+diamond, and as a diamond *line* round a plain fill. `live` plays 96 frames in the real app where every frame is a different drawing
+full of such shapes, so no finished picture is reused, and counts late and skipped frames. Judge by the ratio to radial in the same
+run, not the milliseconds: other work on the machine moves them together. Give it several runs and read the lowest of each case.
+
+```bash
+npm run build
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia xvfb-run -a -s "-screen 0 1600x1000x24" \
+  npx electron scripts/perf/gradients.cjs --out scripts/perf/results/gradients-after-1.json   # about 75 seconds; --quick, --only render|live, --reps N
+node scripts/perf/gradients-summary.cjs scripts/perf/results/gradients-before-1.json scripts/perf/results/gradients-before-3.json
+```
+
+The result on 2026-11-16 (RTX 4080 Super, Ryzen 9 7900X, three runs, the lowest of each case; the machine was shared with other
+agents, load average 3 in the cleanest run and 9 to 18 in the others; `gradients-before-busy.json` is a fourth, noisy run kept for
+the record). Nothing was changed, so these are the numbers as the code stands:
+
+| One frame, ms (ratio to radial) | 1280x720, 50 shapes | 1920x1080, 10 | 1920x1080, 50 | 1920x1080, 200 | 3840x2160, 50 |
+|---|---|---|---|---|---|
+| radial | 0.55 | 0.35 | 0.60 | 1.45 | 0.73 |
+| angular | 0.60 (1.1x) | 0.38 (1.1x) | 0.57 (0.9x) | 1.45 (1.0x) | 0.77 (1.1x) |
+| diamond fill | 4.5 (8.2x) | 1.2 (3.5x) | 4.9 (8.1x) | 11.5 (7.9x) | 7.2 (9.8x) |
+| diamond line | 6.7 (12x) | 2.8 (7.9x) | 9.2 (15x) | 28.6 (20x) | 33.4 (46x) |
+
+- **Angular costs the same as radial** (within a tenth, in every case): it is the browser's own gradient.
+- **A diamond fill costs about 0.05 ms a shape at 1080p** (a spare canvas each, whatever the shape's size), so 10 of them are
+  about a millisecond and 200 are about 11 ms. A diamond line costs about 0.14 ms a shape at 1080p and about 0.5 ms at 4K (it
+  needs a second spare canvas and grows with the canvas: four times the pixels, 3.6 times the time).
+- **Playing 96 different drawings at 24 fps** (main thread ms to paint one drawing, radial / angular / diamond): 20 shapes on 1080p
+  0.08 / 0.11 / 0.7, no dropped frames; 100 shapes 0.28 / 0.26 / 2.5, diamond drops 2 of 96 and 9 are late; 250 shapes 0.63 / 0.65 /
+  6.6, diamond drops 7 and 33 are late, the other two hardly any. On 4K, 50 diamonds is 1.3 ms a drawing and fine.
+- **Where it starts to matter:** a sixty-frames-a-second frame is 16.7 ms. Diamond fills at 1080p pass that at about 300 shapes,
+  diamond lines at about 100, and diamond lines at 4K at about 25. A single drawing holding that many diamond-painted shapes,
+  new on every frame, is not something people draw, so nothing was changed. If it ever matters, caching a finished piece per shape
+  would not help the animated case (each frame is a new drawing, and the whole drawing's finished picture is already kept); the
+  win is in confining each piece to the shape's own box instead of the whole canvas.
+
 ## Pen-up cost
 
 `penup.cjs` draws a stroke on a big pixel drawing and times the release (mouse-up to the next task), with `--profile out.cpuprofile` printing the top functions of the release (self and inclusive). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/perf/penup.cjs --size 4096 --laps 6`.
