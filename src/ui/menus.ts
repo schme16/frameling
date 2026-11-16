@@ -38,6 +38,13 @@ export interface MenuDef {
  * feature it belongs to (the skeleton tools in Skeleton, the motion tools in In-betweens, Notes and Marks in View), and
  * on the tool rail and in the palette as ever. A test checks each one is named somewhere else.
  */
+/**
+ * The tools that work on a pixel layer and are not on the Pixel workspace's rail (src/ui/dock.ts, PIXEL_TOOLS), so the
+ * menu is the only control on screen that picks them there. Every other tool is on the rail wherever the menu used to
+ * list it, and is left out of the menus (src/ui/paletteFirst.ts).
+ */
+export const TOOLS_OFF_THE_PIXEL_RAIL: readonly string[] = ['tools.brush', 'tools.pen', 'tools.transform', 'tools.slice', 'tools.artboard'];
+
 export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
@@ -77,9 +84,8 @@ export const MENUS: MenuDef[] = [
     title: 'Tools',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Arrange', 'Pixel'],
     items: [
-      'sub:tools', 'pixel.mirror', '-',
-      'select.flipH', 'select.flipV', 'sub:arrange', '-',
-      'sub:symbols', 'sub:shapes', 'sub:linestyle', 'sub:palette', '-',
+      'sub:offrail', 'sub:arrange', '-',
+      'sub:symbols', 'sub:shapes', 'sub:palette', '-',
       'sub:brushes', 'sub:brushtips', 'sub:toolopts',
     ],
   },
@@ -222,18 +228,24 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tools: {
     label: 'Pick a tool',
-    items: ['group:tools', '-', 'tiles.newAndDraw'],
+    items: ['group:tools'],
     // These are on the rail and in the palette as ever, and each is in the menu of the thing it is for.
     leaveOut: TOOLS_WITH_THEIR_FEATURE,
   },
+  // The rail (Tools) has every other tool, and so does each layer kind's own rail, so they are not listed here. These five
+  // are the ones the Pixel workspace leaves off its rail on a pixel layer; test/ui/leftOutOfMenus.test.ts proves it.
+  offrail: {
+    label: 'Tools off the Pixel rail',
+    items: [...TOOLS_OFF_THE_PIXEL_RAIL],
+  },
   arrange: {
     label: 'Arrange, group and transform',
-    items: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', 'heading:Flip and turn the whole drawing', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],
+    items: ['arrange.front', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'heading:Flip and turn the whole drawing', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],
     prefixes: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'transform.'],
   },
   shapes: {
     label: 'Shapes and colour',
-    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', 'text.onPath', 'text.offPath', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
+    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'arrange.tidyStroke', 'arrange.strokeToLine', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourAll'],
     prefixes: ['shapes.', 'colors.recolour'],
   },
   linestyle: {
@@ -243,7 +255,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   tiles: {
     label: 'Tiles',
-    items: ['tiles.addLayer', '-', 'tiles.new', 'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', '-', 'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.oneWay', 'tiles.clearShapes', '-', 'tiles.addValue', '-', 'tiles.addTerrain', 'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', '-', 'tiles.gridStart', 'tiles.export'],
+    items: ['tiles.addLayer', '-', 'tiles.new', 'tiles.newAndDraw', 'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', '-', 'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.oneWay', 'tiles.clearShapes', '-', 'tiles.addValue', '-', 'tiles.addTerrain', 'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', '-', 'tiles.gridStart', 'tiles.export'],
     prefixes: ['tiles.'],
   },
   symbols: {
@@ -263,9 +275,8 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   toolopts: {
     label: 'Brush and tool options',
-    items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'select.scope', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing',
+    items: ['pen.stabilizer', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing',
       'heading:Pixel brush', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack',
-      'heading:Pixel gradient style', 'pixel.gradientColours', 'pixel.gradientDither', 'pixel.gradientRadial',
       'heading:Pixel text', 'text.pixelType', 'text.pixelFont.classic', 'text.pixelFont.tiny', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller',
     ],
   },

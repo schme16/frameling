@@ -9,7 +9,7 @@ export const bodies: Record<string, string> = {
 - **Alt+click a point**, or press **Delete** on the chosen one: take it away.
 - **Make even** in the tool options: back to the same width all the way.
 
-**Start from a shape.** Under **Dashes, arrows and width** (or **Tools > Line style**) are ready-made ones: **Fat in the middle**, **Thin in the middle**, **Tapers to a point** and more. They're the same points the Width tool moves, so pick one, then fine tune it by hand.
+**Start from a shape.** Under **Dashes, arrows and width** are ready-made ones: **Fat in the middle**, **Thin in the middle**, **Tapers to a point** and more. They're the same points the Width tool moves, so pick one, then fine tune it by hand.
 
 **Good to know:**
 - It works on lines and outlines from the **Pen**, **Line** and shape tools. A brush line takes its width from the pen's pressure, so it has no points to drag. Draw it with the Pen to shape it by hand.

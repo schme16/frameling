@@ -37,6 +37,7 @@ export function MirrorOptions() {
     <div className="px-mirror">
       <Choice<SymmetryMode>
         label="Mirror drawing"
+        command="pixel.mirror"
         value={mode}
         options={[
           { value: 'off', label: 'Off' },

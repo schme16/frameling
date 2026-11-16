@@ -185,6 +185,8 @@ audit passed the whole time a panel could not be found.
   Taking something out of a menu is only allowed when a control on screen already does the job: list it in
   `src/ui/paletteFirst.ts` and give that control a `data-command`. `test/ui/leftOutOfMenus.test.ts` checks the command is
   real, named by a component, and in no menu; the reachability audit still counts the palette alone as no way in.
+  A tool is only left out where the rail shows it on every kind of layer it works on, the Pixel workspace's narrower rail
+  included (that test reads the rail itself); the five that rail leaves off stay in Tools > Tools off the Pixel rail.
 
 - **Moved commands** (`places.test.ts`, `places-logic.test.ts`): every audit above asks "can it be reached?", which a
   command passes before and after being moved. This asks "is it where it was?". `places.json` records, for every
