@@ -1,0 +1,8 @@
+Custom starter (board card custom-starter). Each picture is made in both themes (-dark, -light).
+
+form-before-after-*       A: the Custom form as it was (frame rate always shown). B: now (no frame rate until Add animation is ticked, plus Save as favourite).
+sizes-tick-untick-*       Left column is before: typed 1920 x 1080, ticked Pixel art (64 x 64), unticked (800 x 600, numbers lost). Right column is after: unticked gives 1920 x 1080 back.
+animation-off-on-*        Add animation off (no frame rate) and on (Frames a second appears, here 24).
+favourites-row-*          One favourite saved from an animation setup (Film 1080, 1920 x 1080, 24 frames a second), sitting beside Doodle, Square and Pixel art. The toast says where it went.
+
+Made by scripts/docs/ab-custom-start/custom.cjs and sheets.sh. The "before" shots are from a build of development before this change.
