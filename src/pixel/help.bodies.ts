@@ -105,6 +105,8 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
 
 **Changing a colour.** Double-click it (or right-click > Change colour). The first time, Frameling asks whether the pixels already painted in that colour should change too. Say yes and you can try a whole new colour scheme in seconds (this is called a *palette swap*). You can change your answer in Preferences > Behaviour.
 
+**Opacity.** The picker you change a colour with has an **Opacity** bar, so a palette colour can be see-through (glass, a shadow, a glow). It paints see-through by exactly that much, every time, even on a layer locked to the palette, so the palette is still a fixed set of colours. Pixels you've already painted keep the opacity they had. More in [The colour picker](help:colour-picker).
+
 **Arranging.** Drag a colour onto another to move it there. Right-click > Remove takes it out.
 
 **Starter palettes.** A few to get going: *Cosy Sixteen* (a good all-rounder), *Pocket Moss* (four greens, like an old handheld game screen), *Dusk Ramps*, *Arcade Bright* and *Paper and Ink* (one-bit).
@@ -119,6 +121,8 @@ The palette is saved with your document. Until you change it, a new document use
 From then on, every colour painted on that layer, by any tool, snaps to the **nearest palette colour**. The pencil, brush, shapes, bucket, dither and outline all follow it. Clearing with the eraser still clears.
 
 **Reduce to palette** changes everything already on the frame to its nearest palette colour. Pixels that are more than half see-through become clear; the rest become solid.
+
+**See-through palette colours.** If a palette colour has less than 100% opacity, pixels painted with it come out at exactly that opacity, and so does Reduce to palette. That means the Paint colour's own opacity has no say on a locked layer, so its picker shows no Opacity bar there and points you to the palette colour instead.
 
 **How it works.** Pixels are stored as ordinary colours, not as numbers into the palette. When you change a palette colour, Frameling finds every pixel of the old colour and changes it (if you said yes to that). So if two palette colours are ever set to the same colour, their pixels can't be told apart afterwards. Undo is your friend.`,
 };

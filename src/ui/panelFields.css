@@ -40,15 +40,6 @@
   font-weight: 700;
   color: var(--muted);
 }
-.pt-color input {
-  width: 30px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-small);
-  background: var(--bg);
-  cursor: pointer;
-}
 .pt-row {
   display: flex;
   align-items: center;

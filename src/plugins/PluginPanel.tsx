@@ -3,6 +3,7 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { panelTrees, runtimeOf, setPanelFactory } from './manager';
 import type { UiNode } from './ui-schema';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 function Node({ node, send }: { node: UiNode; send: (id: string, value: unknown) => void }) {
   switch (node.type) {
@@ -47,12 +48,30 @@ function Node({ node, send }: { node: UiNode; send: (id: string, value: unknown)
       );
     case 'color':
       return (
-        <label className="plugin-ui-field">
+        <div className="plugin-ui-field">
           <span>{node.label}</span>
-          <input type="color" defaultValue={node.value} key={node.value} onChange={(e) => send(node.id, e.target.value)} />
-        </label>
+          <PluginColour node={node} send={send} />
+        </div>
       );
   }
+}
+
+/** Keeps what was picked on show until the plugin sends its own value back. */
+function PluginColour({ node, send }: { node: Extract<UiNode, { type: 'color' }>; send: (id: string, v: unknown) => void }) {
+  const [value, setValue] = useState(node.value);
+  useEffect(() => setValue(node.value), [node.value]);
+  return (
+    <ColourField
+      label={node.label}
+      value={value}
+      alpha={false}
+      why="A plugin's colour is always solid, six digits like #ff9e6d."
+      onChange={(c) => {
+        setValue(c);
+        send(node.id, c);
+      }}
+    />
+  );
 }
 
 function Check({ node, send }: { node: Extract<UiNode, { type: 'checkbox' }>; send: (id: string, v: unknown) => void }) {

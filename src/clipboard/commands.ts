@@ -15,7 +15,7 @@ import { clipboardHasShapes, pasteFromClipboard } from '../tools/clipboard';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { selectedShapes } from '../tools/edit-commands';
 import { trimPixels } from '../core/pixelBounds';
-import { reduceToPalette, docPalette, paletteRgb } from '../pixel/palette';
+import { reduceToPalette, docPalette, paletteAlpha, paletteRgb } from '../pixel/palette';
 import { lazyModule } from '../core/lazy';
 import { cancelFloating, activePixelGrid, floatPixels, PIXEL_SELECT_TOOL } from '../select/pixel-state';
 import { isPixelSelectTool } from '../select/ways';
@@ -168,7 +168,8 @@ async function pastePicture(png: Uint8Array): Promise<void> {
     let px = placeOnGrid(frame.pixels, pic.width, pic.height, gw, gh, fit);
     let lock: { changed: number } | null = null;
     if (pixelLayer && (layer as PixelLayer).paletteLock) {
-      const r = reduceToPalette(px, paletteRgb(docPalette(store().get().doc).colors));
+      const colors = docPalette(store().get().doc).colors;
+      const r = reduceToPalette(px, paletteRgb(colors), paletteAlpha(colors));
       px = r.pixels;
       lock = { changed: r.changed };
     }

@@ -537,7 +537,10 @@
 .cv-well-fill {
   left: 0;
   top: 0;
-  background: var(--well, var(--panel-2));
+  /* Over a chequerboard, so a see-through fill reads as see-through. */
+  background:
+    linear-gradient(var(--well, var(--panel-2)), var(--well, var(--panel-2))),
+    var(--cp-checker);
 }
 /* The stroke box is a ring: its colour round the edge, the panel showing through the middle. */
 .cv-well-stroke {
@@ -872,7 +875,7 @@
   align-items: center;
   gap: 10px;
 }
-.cv-recolour-pick input[type='color'] {
+.cv-recolour-pick .cp-chip {
   width: 44px;
   height: 30px;
   padding: 0;

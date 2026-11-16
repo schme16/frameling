@@ -16,6 +16,7 @@ import { docDpi, formatSize } from '../core/units';
 import { LengthNum, Num, Section } from './Num';
 import { SelectionNumbers } from './SelectionNumbers';
 import { instanceBounds } from '../canvas/geometry';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 export { LengthNum, Num, Section };
 
@@ -75,12 +76,13 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
       <Slider label="See-through" value={Math.round((1 - inst.opacity) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => set('See-through', 'op', (s) => void (s.opacity = 1 - v / 100))} hint="Fades the whole symbol (opacity). In-betweens can fade it in or out." />
       <Field label="Colour wash (tint)" value={`${Math.round((inst.tint?.amount ?? 0) * 100)}%`}>
         <div className="cv-row">
-          <input
-            type="color"
-            className="sy-color"
-            aria-label="Tint colour"
+          <ColourField
+            className="sy-color cp-chip"
+            label="Tint colour"
             value={inst.tint?.color ?? '#ff6f91'}
-            onChange={(e) => set('Tint', 'tintc', (s) => void (s.tint = { color: e.target.value, amount: s.tint?.amount || 0.5 }))}
+            alpha={false}
+            why="A colour wash has its own amount slider next to it, so its colour stays solid."
+            onChange={(c) => set('Tint', 'tintc', (s) => void (s.tint = { color: c, amount: s.tint?.amount || 0.5 }))}
           />
           <input
             className="cv-slider"

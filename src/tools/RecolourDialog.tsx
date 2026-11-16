@@ -13,8 +13,12 @@ import { activeColor } from './wells';
 import { noteColorUsed } from './recent';
 import { isEditingVariation } from '../artboards/variations';
 import '../export/export.css';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 const PREVIEW = 220;
+
+/** Why a recolour has no opacity slider. */
+const RECOLOUR_WHY = 'Recolouring swaps the colour only. Anything see-through stays exactly as see-through as it was.';
 
 export function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -133,7 +137,7 @@ function RecolourDialog({ close, start }: { close: () => void; start?: RecolourW
         <div className="cv-recolour-pick">
           <label>
             <span className="cv-field-label">2. Change it to</span>
-            <input type="color" value={to.slice(0, 7)} onChange={(e) => setTo(e.target.value)} aria-label="New colour" data-autofocus />
+            <ColourField label="New colour" value={to.slice(0, 7)} alpha={false} why={RECOLOUR_WHY} onChange={setTo} />
           </label>
           <button type="button" className="io-btn" onClick={() => setTo((activeColor(store().get().ui) ?? to).slice(0, 7))} title="Use the colour in the box in front of the Colours panel">
             Use my current colour

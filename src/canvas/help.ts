@@ -68,6 +68,15 @@ registerHelpTopics([
     keywords: ['color', 'palette', 'swatch', 'hex', 'picker', 'paint'],
   },
   {
+    id: 'colour-picker',
+    order: 5.5,
+    title: 'The colour picker',
+    section: 'Drawing',
+    media: 'colour-picker.png',
+    summary: 'Every colour box opens the same picker, with an Opacity bar where see-through makes sense, and a plain reason where it does not.',
+    keywords: ['color', 'colour', 'picker', 'opacity', 'alpha', 'see-through', 'transparent', 'transparency', 'hex', 'chequerboard', 'fade'],
+  },
+  {
     id: 'tool-options',
     title: 'Tool options',
     section: 'Drawing',

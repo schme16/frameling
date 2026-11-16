@@ -7,6 +7,7 @@ import { artboardDoc, exportNameOf, findArtboard, sizeOf } from './model';
 import { rateOf } from './rates';
 import { renameArtboardById, resizeArtboard, setArtboardBackgroundById, setArtboardRateById, setExportNameById } from './ops';
 import './artboards.css';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 /** Name, export name, size and background of one artboard. Used by the panel and the Artboard tool's options. */
 export function ArtboardFields({ id }: { id: Id }) {
@@ -44,7 +45,7 @@ export function ArtboardFields({ id }: { id: Id }) {
       )}
       <div className="ab-bg">
         <span>Background</span>
-        <input type="color" value={bg ?? '#ffffff'} disabled={bg === null} aria-label="Background colour" onChange={(e) => setArtboardBackgroundById(a.id, e.target.value)} />
+        <ColourField label="Background colour" value={bg ?? '#ffffff'} disabled={bg === null} alpha={false} why="The background is always solid. For none at all, turn on See-through next to it." onChange={(c) => setArtboardBackgroundById(a.id, c)} />
         <label className="ab-check">
           <input
             type="checkbox"

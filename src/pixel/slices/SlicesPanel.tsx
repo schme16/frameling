@@ -10,6 +10,7 @@ import { borders, keyAt, sliceAt, sliceColor, sliceOwners, type SliceOwner } fro
 import { deleteSlice, keySliceHere, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, stopSliceMoving, toggleNine, togglePivot, unkeySliceHere, usePickedSlice, createSlice, setSliceColor } from './state';
 import '../pixel.css';
 import './slices.css';
+import { ColourField } from '../../ui/colour/ColourPicker';
 
 function useLayer() {
   return useStore((s) => {
@@ -124,7 +125,7 @@ function Row({ slice, frame, open, canKey, onOpen }: { slice: Slice; frame: numb
           )}
           <label className="sl-name">
             <span>Colour on the canvas</span>
-            <input type="color" value={color} onChange={(e) => setSliceColor(s.id, e.target.value)} aria-label="Slice colour" />
+            <ColourField label="Slice colour" value={color} alpha={false} why="A slice colour only helps you tell slices apart on the canvas, so it is always solid. It never reaches your export." onChange={(c) => setSliceColor(s.id, c)} />
           </label>
         </div>
       )}

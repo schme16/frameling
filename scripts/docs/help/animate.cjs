@@ -258,7 +258,15 @@ const entries = [
       L.wait(600),
       L.cmd('artboards.recolourVariation'),
       L.wait(900),
-      L.js(`(() => { const set = (label, v) => { const i = document.querySelector('input[aria-label="' + label + '"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; set('New colour for #ff9e1f', '#4f9bd1'); set('New colour for #6abf4b', '#c9a227'); return true; })()`),
+      // Each colour box opens the picker; the hex box in it takes the new colour, then the box is pressed again to close it.
+      ...[['#ff9e1f', '#4f9bd1'], ['#6abf4b', '#c9a227']].flatMap(([from, to]) => [
+        L.js(`document.querySelector('button[aria-label^="New colour for ${from}"]').click()`),
+        L.wait(400),
+        L.js(`(() => { const i = document.querySelector('.cp-pop input.cv-hex-input'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '${to}'); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
+        L.wait(300),
+        L.js(`document.querySelector('button[aria-label^="New colour for ${from}"]').click()`),
+        L.wait(400),
+      ]),
       L.wait(900),
       { shot: '@', el: '.io-modal', pad: 0 },
     ],

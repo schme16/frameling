@@ -547,7 +547,10 @@
   height: 50px;
   border-radius: var(--radius-small);
   border: 2px solid color-mix(in srgb, var(--text) 28%, transparent);
-  background: var(--well, var(--panel-2));
+  /* Over a chequerboard, so a see-through colour reads as see-through. */
+  background:
+    linear-gradient(var(--well, var(--panel-2)), var(--well, var(--panel-2))),
+    var(--cp-checker);
   cursor: pointer;
   transition: transform 140ms var(--ease-bounce);
 }

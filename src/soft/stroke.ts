@@ -8,7 +8,7 @@ import type { Doc, PixelLayer } from '../core/format';
 import type { RGBA } from '../canvas/pixels';
 import { tileModeOn, wrap } from '../tiles/state';
 import { PixelSession } from '../tools/pixelSession';
-import { docPalette, NearestCache, paletteRgb } from '../pixel/palette';
+import { docPalette, NearestCache, paletteAlpha, paletteRgb } from '../pixel/palette';
 import { buildUp, crispen, dabStep, eachDabPixel, falloff, holdAt, mirrorCentres, MIN_SMOOTH_EDGE, mixPixels, pickPixel, softColor, type EdgeMode, type SoftKind } from './maths';
 
 export interface SoftParams {
@@ -54,16 +54,19 @@ export class Walker {
 
 export function palettePicker(doc: Doc, layer: PixelLayer): ((c: number[] | Uint8Array | Uint8ClampedArray) => void) | null {
   if (!layer.paletteLock) return null;
-  const rgb = paletteRgb(docPalette(doc).colors);
+  const colors = docPalette(doc).colors;
+  const rgb = paletteRgb(colors);
   if (!rgb.length) return null;
+  const solid = paletteAlpha(colors);
   const near = new NearestCache(rgb);
   return (c) => {
     if (c[3] === 0) return;
-    const k = near.get(c[0], c[1], c[2]) * 3;
+    const n = near.get(c[0], c[1], c[2]);
+    const k = n * 3;
     c[0] = rgb[k];
     c[1] = rgb[k + 1];
     c[2] = rgb[k + 2];
-    c[3] = 255;
+    c[3] = solid[n];
   };
 }
 

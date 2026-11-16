@@ -14,6 +14,7 @@ import { copyTheme, MAX_NAME, themeFileName, themeToFile } from './model';
 import { paletteFromColour } from './palette';
 import { ThemePreview } from './ThemePreview';
 import { deriveTokens, EDITOR_CONTROLS, EDITOR_GROUPS, SNAP_CONTROLS, switchSnapMode, type ThemeMode, type ThemeTokens } from './tokens';
+import { ColourField } from '../colour/ColourPicker';
 
 interface Snap {
   tokens: ThemeTokens;
@@ -67,15 +68,17 @@ function PeekButton() {
   );
 }
 
+/** Why a theme colour has no opacity slider. */
+const THEME_WHY = 'Theme colours are solid. Frameling mixes its own see-through shades from them where it needs them.';
+
 function ColourRow({ token, label, hint, value, warnings, onChange, onFix }: { token: string; label: string; hint: string; value: string; warnings: string[]; onChange: (v: string) => void; onFix?: () => void }) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
   return (
     <div className="th-row">
-      <label className="th-swatch" title={`Pick a colour for ${label.toLowerCase()}`}>
-        <input type="color" value={normHex(value)} aria-label={label} onChange={(e) => onChange(e.target.value)} />
+      <ColourField className="th-swatch cp-chip" label={label} title={`Pick a colour for ${label.toLowerCase()}`} value={normHex(value)} alpha={false} why={THEME_WHY} onChange={onChange}>
         <span style={{ background: value }} />
-      </label>
+      </ColourField>
       <div className="th-row-text">
         <strong>{label}</strong>
         <span>{hint}</span>
@@ -296,10 +299,9 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
             <h4>Start from a colour</h4>
             <p>Pick one colour you like and Frameling works out a whole set to go with it. You can undo it, and change anything after.</p>
             <div className="th-helper-row">
-              <label className="th-swatch" title="Pick your colour">
-                <input type="color" value={normHex(seed)} aria-label="Colour to start from" onChange={(e) => setSeed(e.target.value)} />
+              <ColourField className="th-swatch cp-chip" label="Colour to start from" title="Pick your colour" value={normHex(seed)} alpha={false} why={THEME_WHY} onChange={setSeed}>
                 <span style={{ background: seed }} />
-              </label>
+              </ColourField>
               <div className="ui-segmented" role="radiogroup" aria-label="Dark or light palette">
                 {(['dark', 'light'] as ThemeMode[]).map((m) => (
                   <button key={m} type="button" role="radio" aria-checked={seedMode === m} className={`ui-seg${seedMode === m ? ' is-chosen' : ''}`} onClick={() => setSeedMode(m)}>

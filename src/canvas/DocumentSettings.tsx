@@ -16,6 +16,7 @@ import { reframeVariations, setVariationSize, untouchedFramings } from '../artbo
 import { currentChoice } from '../core/choices';
 import type { FitMode } from '../artboards/fit';
 import './settings.css';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 type Mode = 'canvas' | 'scale';
 
@@ -77,6 +78,9 @@ function Preview({ doc, w, h, mode, anchor }: { doc: Doc; w: number; h: number; 
 
 /** Which field the dialog should open on, when something sent you here to change that one thing. */
 export type SettingsField = 'size' | 'fps';
+
+/** Why the background has no opacity slider, and where see-through lives instead. */
+const BG_WHY = 'The background is always solid. For none at all, turn on See-through (transparent) next to it.';
 
 function DocumentSettings({ close, field }: { close: () => void; field?: SettingsField }) {
   const doc = store().get().doc;
@@ -265,7 +269,7 @@ function DocumentSettings({ close, field }: { close: () => void; field?: Setting
           <div className="ui-field">
             <span>Background</span>
             <div className="ds-bg">
-              <input type="color" value={bg} disabled={see} onChange={(e) => setBg(e.target.value)} aria-label="Background colour" />
+              <ColourField label="Background colour" value={bg} disabled={see} alpha={false} why={BG_WHY} onChange={setBg} />
               <label className="ui-check">
                 <input type="checkbox" checked={see} onChange={(e) => setSee(e.target.checked)} />
                 <span>See-through (transparent)</span>

@@ -3880,13 +3880,9 @@ body.ui-resizing * {
   position: absolute;
   inset: 0;
 }
-.th-swatch input {
-  position: absolute;
-  inset: -4px;
-  width: calc(100% + 8px);
-  height: calc(100% + 8px);
-  opacity: 0;
-  cursor: pointer;
+.th-swatch.cp-chip {
+  padding: 0;
+  background: var(--panel);
 }
 .th-hex {
   flex: none;

@@ -10,8 +10,12 @@ import { noteColorUsed } from '../tools/recent';
 import { drawingColours, rgbKey } from './paletteOverride';
 import { isEditingVariation, paletteScope, recolourOpenVariation, sourceOf } from './variations';
 import { activeId, findArtboard } from './model';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 /** The colours the open variation shows in its drawings, in the order they are met. */
+/** Why a recolour has no opacity slider. */
+const RECOLOUR_WHY = 'Recolouring swaps the colour only. Anything see-through stays exactly as see-through as it was.';
+
 export function variationColours(doc: Doc, limit = 40): string[] {
   const scope = paletteScope(doc);
   const seen = new Map<number, string>();
@@ -53,7 +57,7 @@ function RecolourVariationDialog({ close }: { close: () => void }) {
                 <span className="ab-recolour-chip" style={{ background: c }} aria-hidden="true" />
                 <span className="ab-recolour-code">{c}</span>
                 <span aria-hidden="true">becomes</span>
-                <input type="color" value={to[c] ?? c} onChange={(e) => setTo({ ...to, [c]: e.target.value })} aria-label={`New colour for ${c}`} />
+                <ColourField label={`New colour for ${c}`} value={to[c] ?? c} alpha={false} why={RECOLOUR_WHY} onChange={(v) => setTo({ ...to, [c]: v })} />
                 <button type="button" className="io-btn" disabled={!on} onClick={() => setTo({ ...to, [c]: c })} aria-label={`Keep ${c} as it is`}>
                   Keep
                 </button>

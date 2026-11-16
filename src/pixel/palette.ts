@@ -66,6 +66,23 @@ export function paletteRgb(colors: readonly string[]): Uint8Array {
   return out;
 }
 
+/**
+ * How solid each palette colour is, one byte per colour (255 for a plain `#rrggbb`). A palette colour can be see-through
+ * (`#rrggbbaa`); the colour matching above only looks at the colour part, so two entries of one colour at different
+ * opacities can't be told apart, the first wins. Cached per colour list.
+ */
+const alphaCache = new WeakMap<readonly string[], Uint8Array>();
+export function paletteAlpha(colors: readonly string[]): Uint8Array {
+  let out = alphaCache.get(colors);
+  if (out) return out;
+  out = new Uint8Array(colors.length);
+  colors.forEach((c, i) => {
+    out![i] = parseHex(c)?.[3] ?? 255;
+  });
+  alphaCache.set(colors, out);
+  return out;
+}
+
 /** A perceptual-ish distance ("redmean"), cheap and much better than plain RGB for picking the nearest colour. */
 export function colorDistance(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number): number {
   const rm = (r1 + r2) >> 1;
@@ -150,7 +167,7 @@ export function shadeStep(p: DocPalette, rgb: Uint8Array, index: number, lighter
  * Every pixel snapped to the nearest palette colour. Pixels less than half see-through become fully opaque; the rest
  * become fully clear, since a palette has no "half" colours. Returns a new array and how many pixels changed.
  */
-export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array): { pixels: Uint8ClampedArray; changed: number } {
+export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array, alpha?: Uint8Array): { pixels: Uint8ClampedArray; changed: number } {
   const out = new Uint8ClampedArray(pixels.length);
   const cache = new NearestCache(rgb);
   let changed = 0;
@@ -160,12 +177,14 @@ export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array): { p
       if (a !== 0) changed++;
       continue;
     }
-    const k = cache.get(pixels[i], pixels[i + 1], pixels[i + 2]) * 3;
+    const n = cache.get(pixels[i], pixels[i + 1], pixels[i + 2]);
+    const k = n * 3;
     out[i] = rgb[k];
     out[i + 1] = rgb[k + 1];
     out[i + 2] = rgb[k + 2];
-    out[i + 3] = 255;
-    if (out[i] !== pixels[i] || out[i + 1] !== pixels[i + 1] || out[i + 2] !== pixels[i + 2] || a !== 255) changed++;
+    // Each pixel comes out as its palette colour at that colour's own opacity: solid unless the palette colour is see-through.
+    out[i + 3] = alpha ? alpha[n] : 255;
+    if (out[i] !== pixels[i] || out[i + 1] !== pixels[i + 1] || out[i + 2] !== pixels[i + 2] || out[i + 3] !== a) changed++;
   }
   return { pixels: out, changed };
 }

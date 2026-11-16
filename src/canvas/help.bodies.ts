@@ -109,11 +109,29 @@ Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never
   colours: `The big square at the top is the colour you're drawing with.
 
 - **Pick a colour** by dragging in the square (left is paler, up is brighter) and sliding the rainbow bar for the hue.
-- **Type a colour** in the Hex box, like \`#ff9e6d\`.
+- **Make it see-through** with the **Opacity** bar under the rainbow: all the way right is solid, all the way left is clear. It is the same picker every colour box opens: see [The colour picker](help:colour-picker).
+- **Type a colour** in the Hex box, like \`#ff9e6d\`, or \`#ff9e6d80\` for half see-through.
 - **Swatches** are this drawing's palette. Click one to use it. Press **+** to add the current colour. **Right-click** a swatch to rename or remove it.
 - **Recently used** shows the last 8 colours you drew with, so it's easy to go back.
 
 Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
+  'colour-picker': `Every colour box in Frameling opens this one picker. Click the little swatch and it opens right beside it; click away or press **Escape** to close it.
+
+**Pick a colour:** drag in the square (left is paler, up is brighter), slide the rainbow bar for the hue, or type it in the **Hex** box.
+
+**Make it see-through:** slide the **Opacity** bar. All the way right is solid, all the way left is clear (this is called *alpha*). A see-through colour shows a chequerboard behind it, so you can tell. The Hex box gains two more digits, like \`#ff9e6d80\` for half. A solid colour stays six digits, so older files read exactly as they were.
+
+**Where you can**, you get the Opacity bar: the fill and stroke in the [Colours panel](help:colours), the Paint and Back colours in the Pixel workspace, text, particles, and the colours in your [palette](help:palette).
+
+**Where you can't**, the picker says why, in place of the bar:
+- **Backgrounds** are always solid. For none at all, tick **See-through (transparent)** beside the colour.
+- **Theme colours** are solid; Frameling mixes its own see-through shades from them.
+- **Effects, tints and onion skin** have their own strength sliders.
+- **Recolour** swaps the colour only; anything see-through stays as it was.
+- **Slice and terrain colours** only mark things for you, and never reach your drawing.
+- **A layer locked to the palette** paints with the palette colour's opacity, so change it there (see [palette lock](help:palette-lock)).
+
+**Good to know:** a palette colour at less than 100% paints see-through by exactly that much, every time, so a palette stays a fixed set of colours. Pixels you've already painted keep the opacity they had.`,
   'tool-options': `This panel changes to match whichever tool you've picked. Brush opens on its size, with the rest under **More brush options**. Shapes have fill and outline. The eraser has its reach.
 
 ## Sliders
