@@ -116,6 +116,8 @@ export const SETTING_ROWS: PrefRow[] = [
   row('plugins', 'Plugins', 'Add commands, exports, panels and tools. Each runs in its own sandbox.', ['add-ons', 'addons', 'extensions', 'scripts', 'mods', 'plug-ins', 'scripting', 'api', 'automation', 'macros'], { find: 'Plugins' }),
   row('plugins', 'Install from file', 'Add a plugin from a .zip file.', ['install plugin', 'add plugin', 'zip', 'install extension', 'add-on', 'download plugin'], { find: 'Install from file' }),
   row('plugins', 'Install from folder', 'For plugin makers: install straight from the folder you are working in.', ['develop plugin', 'plugin maker', 'plugin developer', 'dev', 'build a plugin', 'write a plugin'], { find: 'Install from folder' }),
+  row('plugins', 'Remote door', 'Let another program on this computer drive Frameling, for testing and automation. Off until you switch it on.', ['remote', 'api', 'http', 'automation', 'automate', 'testing', 'drive', 'control', 'another program', 'curl', 'python', 'port', 'key', 'token', 'localhost', 'external'], { find: 'Remote door' }),
+  row('plugins', 'What the remote door has done', 'The list of what other programs drove, and when.', ['remote log', 'api log', 'activity', 'history', 'what happened', 'driven'], { find: 'What it has done' }),
   row('plugins', 'What a plugin may do', 'Each plugin gets only the permissions you allow.', ['permissions', 'network', 'sandbox', 'allow', 'trust', 'privacy', 'internet access', 'security', 'safe'], { find: 'Plugins' }),
 
   // Features (the switches themselves are added from the app's list)

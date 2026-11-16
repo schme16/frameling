@@ -12,6 +12,7 @@ Start with `architecture.md`. Tasks, questions, looks and known gaps are on the 
 | [colour-and-gpu.md](colour-and-gpu.md) | Why the colour profile is pinned to sRGB and what that costs on a wide screen, the harnesses' two engine modes (software, the real card), the silent fall back, and what was and wasn't checked in the framebuffer path. |
 | [plugins.md](plugins.md) | The plugin API, the sandbox and the threat model. |
 | [scripting.md](scripting.md) | Scripts: JavaScript run from a panel, on the plugin engine. One run is one Undo step, what a script can and can't reach, and who may run what. |
+| [remote-door.md](remote-door.md) | The remote door: another program on this computer drives Frameling, off until switched on, behind a key. What it reaches, what it can't, and why. |
 | [effects.md](effects.md) | Blend modes, effects, clipping, masks, folders, particles, text and the layered exports: design and how they're built. |
 | [symbols-tweens.md](symbols-tweens.md) | Symbols, classic and shape tweens, camera and clip flow: design and how they're built. |
 | [artboards.md](artboards.md) | Several named canvases in one document: format, behaviour and export. |

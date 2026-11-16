@@ -40,6 +40,10 @@ export const NOT_FOR_SCRIPTS: readonly string[] = [
   'perf.',
   'keys.',
   'features.',
+  // Turning Stream-safe off would show what it hides, and a script has no business doing that.
+  'view.streamSafe',
+  // The remote door's own switch, key and log: a script that opened the door, or read its key, would be a way round the person's switch.
+  'remote.',
   'quests.',
   'pixel.new',
   'view.preferences',

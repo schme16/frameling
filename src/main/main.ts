@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from 'elect
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { closeActionsDoor, grantFile, registerIpc, stopReviewHost, stopReviews } from './ipc';
+import { closeActionsDoor, closeRemoteDoor, grantFile, registerIpc, stopReviewHost, stopReviews } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { makeReviewLinks } from './reviewLink';
@@ -273,8 +273,14 @@ function createWindow() {
     void closeActionsDoor();
     stopReviewHost();
   });
+  // The remote door goes when the page itself is loaded again. Not on every 'did-start-loading': a script's sandbox is a
+  // frame inside the page, and starting one fires it too, which would shut the door in the face of the script that asked.
+  win.webContents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) void closeRemoteDoor();
+  });
   win.on('closed', () => {
     void closeActionsDoor();
+    void closeRemoteDoor();
     stopReviews();
     win = null;
     popout.mainClosed();
@@ -397,6 +403,7 @@ app.on('will-quit', () => {
   quitting = true;
   panicKey.set(false);
   void closeActionsDoor();
+  void closeRemoteDoor();
   restarter.quitting();
   if (watchCrashes) endRun(dataDir(), process.pid);
 });

@@ -303,7 +303,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   // Every saved script is a command in the 'Scripts' category, so each one lands here by itself.
   scripts: {
     label: 'Scripts',
-    items: ['scripts.open', 'scripts.new', 'scripts.stop', '-'],
+    items: ['scripts.open', 'scripts.new', 'scripts.stop', '-', 'remote.toggle', 'remote.log', 'remote.settings', '-'],
     categories: ['Scripts'],
   },
   turnview: {

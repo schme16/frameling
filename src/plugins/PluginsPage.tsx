@@ -10,6 +10,7 @@ import { PERMISSIONS } from './manifest';
 import { diagnosticsOn, pluginDiag, plugins, refreshDiag, removePlugin, setEnabled, setPower } from './manager';
 import { diagLine } from './diagnostics';
 import { elevatedIn } from './powers';
+import { RemoteDoorPrefsRow } from '../remotedoor';
 import { installFromFile, installFromFolder, canInstallFolder } from './install';
 
 const STATUS: Record<string, string> = { starting: 'Starting', on: 'On', problem: 'Problem', off: 'Off' };
@@ -142,6 +143,7 @@ export function PluginsPage() {
           );
         })}
       </ul>
+      <RemoteDoorPrefsRow />
     </div>
   );
 }

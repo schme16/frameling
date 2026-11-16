@@ -1,0 +1,106 @@
+/* The pill that says the remote door is open, and its log. Teal: not the yellow of audience features, nor OBS's green and
+   red, so no part is taken for another. White on it reads in both themes. */
+.rd-pill {
+  --rd-teal: #0f6f78;
+  --rd-teal-deep: #0b5961;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-right: 6px;
+  padding: 0 11px 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--rd-teal);
+  color: #fff;
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+  transition: box-shadow 0.25s ease;
+}
+.rd-pill:hover {
+  background: var(--rd-teal-deep);
+}
+.rd-pill:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}
+.rd-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.7;
+}
+.rd-pill.is-driven {
+  box-shadow: 0 0 0 3px rgb(15 111 120 / 35%);
+}
+.rd-pill.is-driven .rd-dot {
+  opacity: 1;
+}
+:root[data-motion='reduce'] .rd-pill {
+  transition: none;
+}
+.rd-card {
+  width: 380px;
+}
+.rd-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.rd-log li {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr auto;
+  gap: 8px;
+  padding: 5px 9px;
+  font-size: var(--fs-small);
+}
+.rd-log li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.rd-time,
+.rd-out {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.rd-note {
+  display: block;
+  color: var(--muted);
+}
+.rd-log li[data-outcome='failed'] .rd-out,
+.rd-log li[data-outcome='refused'] .rd-out {
+  color: var(--text);
+  font-weight: 700;
+}
+/* The remote door's block in Preferences. */
+.rd-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 18px;
+}
+.rd-code {
+  padding: 4px 8px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-small);
+  word-break: break-all;
+  border: 1px solid var(--line-soft);
+}
+.rd-port {
+  width: 6.5rem;
+}
+.rd-logrow .ui-pref-text {
+  width: 100%;
+  gap: 6px;
+}

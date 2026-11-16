@@ -100,6 +100,14 @@ function tell(script: Script, o: RunOutcome): void {
   }
 }
 
+/** A run started somewhere other than the panel (the remote door) becomes the one Stop ends, until it finishes. */
+export function adoptRun(r: ScriptRun): void {
+  current = r;
+  void r.done.then(() => {
+    if (current === r) current = null;
+  });
+}
+
 /** Stops the script that is running. Safe to call when none is. */
 export function stopRunning(): boolean {
   if (!current) return false;

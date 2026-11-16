@@ -177,6 +177,19 @@ const api: FramelingApi = {
     },
     answer: (id, answer) => call('door:answer', id, answer),
   },
+  remote: {
+    open: (port, fallback) => call('remote:open', port, fallback === true),
+    close: () => call('remote:close'),
+    status: () => call('remote:status'),
+    key: () => call('remote:key'),
+    roll: () => call('remote:roll'),
+    onAsk: (handler) => {
+      const fn = (_: unknown, id: number, op: Parameters<typeof handler>[1]) => handler(id, op);
+      ipcRenderer.on('remote:ask', fn);
+      return () => void ipcRenderer.removeListener('remote:ask', fn);
+    },
+    answer: (id, answer) => call('remote:answer', id, answer),
+  },
   overlay: {
     setOn: (on) => call('overlay:on', on === true),
     push: (state) => call('overlay:push', state),

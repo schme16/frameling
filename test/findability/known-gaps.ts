@@ -156,6 +156,8 @@ export const STILL_LOAD = {
   // needing animation first. -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
   // View entries that moved to the palette because a control on screen already does their job. And +2 palette and +7
   // menu on both sides for Repeat. The gap is unchanged by all of it.
-  still: { palette: 555, menu: 740, animateMenu: 8 },
-  animated: { palette: 604, menu: 864, animateMenu: 123 },
+  // Then the remote door: +2 palette (what it has done, and its settings; the switch itself waits for the desktop app) and
+  // +3 menu (those two and the switch, in Edit > Scripts) on both sides. Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 557, menu: 743, animateMenu: 8 },
+  animated: { palette: 606, menu: 867, animateMenu: 123 },
 };

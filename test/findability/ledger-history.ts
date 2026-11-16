@@ -60,12 +60,14 @@ export const HISTORY: History = {
     { on: D, n: 557, why: 'view-ledger: Reset layout joined Put the panels back, one command fewer in the palette on both sides, so the gap to a drawing with animation is unchanged.' },
     { on: D, n: 553, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window, and five fewer because the clean timeline, ghost on empty frames, the light table, looking through the camera while playing, importing sound and making a symbol from the whole animation now ask for animation first.' },
     { on: D, n: 555, why: 'Repeat: the Repeat tool and the panel show-and-hide work with nothing picked, so both count here. The rest of Repeat needs a shape first.' },
+    { on: D, n: 557, why: 'Remote door: its settings and what-it-has-done commands work with nothing picked, so both count here. The switch itself is off the count until the desktop app is there to open it.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 738, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a drawing with animation is unchanged.' },
     { on: D, n: 733, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window in Edit > Scripts, and six fewer menu entries from the animation commands that now wait until a drawing has animation.' },
     { on: D, n: 740, why: 'Repeat: seven menu entries, the submenu under Edit for rows and columns, a ring, a mirror, the tool, turn into shapes and take the repeat off, plus the panel show-and-hide in View.' },
+    { on: D, n: 743, why: 'Remote door: the switch, the log and the settings sit in Edit > Scripts, the one place for things that drive Frameling from outside the drawing.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -73,12 +75,14 @@ export const HISTORY: History = {
     { on: D, n: 601, why: 'view-ledger: Reset layout joined Put the panels back, one command fewer in the palette on both sides, so the gap to a still is unchanged.' },
     { on: D, n: 602, why: 'Merging scripts-bottom: Scripts in their own window is a new command, and a drawing with animation loses none of the ones a still just lost, so this side goes up by the one.' },
     { on: D, n: 604, why: 'Repeat: the same two as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 606, why: 'Remote door: the same two as a still gains, because another program driving Frameling has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 856, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a still is unchanged.' },
     { on: D, n: 857, why: 'Merging scripts-bottom: Scripts in their own window sits in Edit > Scripts, and nothing left the menus on this side, so it goes up by the one.' },
     { on: D, n: 864, why: 'Repeat: the same seven as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 867, why: 'Remote door: the same three as a still gains, because another program driving Frameling has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

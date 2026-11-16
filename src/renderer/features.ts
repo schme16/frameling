@@ -29,6 +29,7 @@ import '../popout';
 import '../livereview';
 import '../plugins';
 import '../scripts';
+import '../remotedoor';
 import '../templates/app';
 import { installBeta } from '../beta';
 import { installUpdates } from '../update';
