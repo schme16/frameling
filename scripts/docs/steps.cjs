@@ -179,9 +179,10 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
     } else if (s.dragOn) {
       // Drag from the middle of one element to the middle of another ("dragOn" and "to" are selectors, with optional
       // "text" and "toText"), gliding slowly so a clip shows it. "toDx" and "toDy" shift the end point; "hold" waits before letting go.
-      const where = (sel, text) => wc.executeJavaScript(`(() => { const t = ${JSON.stringify(text ?? null)}; const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => !t || e.getAttribute('aria-label') === t || e.textContent.trim() === t); const b = el?.getBoundingClientRect(); return b && [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]; })()`);
-      const a = await where(s.dragOn, s.text);
-      const b = await where(s.to, s.toText);
+      // "at" and "toAt" (0 to 1) pick where along the element's width the drag starts and ends instead of its middle, for a slider.
+      const where = (sel, text, frac) => wc.executeJavaScript(`(() => { const t = ${JSON.stringify(text ?? null)}; const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => !t || e.getAttribute('aria-label') === t || e.textContent.trim() === t); el?.scrollIntoView({ block: 'nearest' }); const b = el?.getBoundingClientRect(); return b && [Math.round(b.x + b.width * ${frac ?? 0.5}), Math.round(b.y + b.height / 2)]; })()`);
+      const a = await where(s.dragOn, s.text, s.at);
+      const b = await where(s.to, s.toText, s.toAt);
       if (!a || !b) throw new Error(`dragOn: nothing for ${!a ? s.dragOn : s.to}`);
       const bx = b[0] + (s.toDx ?? 0);
       const by = b[1] + (s.toDy ?? 0);

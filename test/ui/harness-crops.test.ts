@@ -48,3 +48,22 @@ describe('stage points', () => {
     expect(steps.resolvePoint(STAGE, { stageEdge: { x: 10, y: 283 } })).toEqual([153, 330]);
   });
 });
+
+describe('the rig and tween clips', () => {
+  const entries = require(path.resolve(__dirname, '../../scripts/docs/help/animate.cjs')) as { name: string; steps: Record<string, unknown>[] }[];
+  const names = ['rig', 'rig-stretch', 'rig-bones', 'rig-bend', 'rig-weights', 'rig-posing', 'rig-bone-tools', 'motion-paths', 'tweens', 'shape-tweens', 'one-click-motions', 'camera', 'lip-sync', 'rig-attach', 'rig-pose-library'];
+  it.each(names)('%s aims at the stage or a button by name, never at a window position', (name) => {
+    const e = entries.find((x) => x.name === name);
+    expect(e).toBeTruthy();
+    const text = JSON.stringify(e!.steps);
+    // a click or drag written as plain window numbers (parking the pointer out of the way is fine)
+    expect(text).not.toMatch(/"click":\[\d/);
+    expect(text).not.toMatch(/"drag":\[\[\d/);
+  });
+  it('finds the squash and stretch slider by its label and a point along it', () => {
+    const e = entries.find((x) => x.name === 'rig-stretch')!;
+    const slider = e.steps.filter((s) => s.dragOn === 'input.cv-slider');
+    expect(slider.length).toBeGreaterThan(1);
+    for (const s of slider) expect(s.text).toBe('Squash and stretch');
+  });
+});
