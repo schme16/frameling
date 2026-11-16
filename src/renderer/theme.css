@@ -43,6 +43,12 @@
   --hover-bg: color-mix(in srgb, var(--raised) 70%, var(--line));
   /* A faint warm tint of the panel behind warnings; it follows --panel in light and dark. */
   --peach-soft: color-mix(in srgb, var(--peach) 14%, var(--panel));
+  /* Tooltips: a step past the menu surface, with the accent in the border. Light themes use the same sums. */
+  --tip-bg: color-mix(in srgb, var(--raised) 86%, var(--text));
+  --tip-fg: var(--text);
+  --tip-soft: var(--muted);
+  --tip-line: color-mix(in srgb, var(--accent) 45%, var(--line));
+  --tip-link: color-mix(in srgb, var(--accent) 55%, var(--tip-fg));
   --accent: var(--grape);
   --focus: var(--sunny);
   --danger: #ff7b7b;

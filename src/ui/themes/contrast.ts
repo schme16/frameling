@@ -29,6 +29,9 @@ export const CHECKS: ContrastCheck[] = [
   { id: 'faint-raised', fg: 'faint', bg: 'raised', min: 4.5, what: 'Hints on buttons and cards', words: true },
   { id: 'faint-panel', fg: 'faint', bg: 'panel', min: 4.5, what: 'Hints on panels', words: true },
   { id: 'faint-panel2', fg: 'faint', bg: 'panel-2', min: 4.5, what: 'Hints on the second panel shade', words: true },
+  { id: 'text-tip', fg: 'tip-fg', bg: 'tip-bg', min: 4.5, what: 'Words in a tooltip', words: true },
+  { id: 'muted-tip', fg: 'tip-soft', bg: 'tip-bg', min: 4.5, what: 'Softer words in a tooltip', words: true },
+  { id: 'link-tip', fg: 'tip-link', bg: 'tip-bg', min: 4.5, what: 'The Learn more link in a tooltip', words: true },
   { id: 'chosen', fg: 'chosen-fg', bg: 'chosen-bg', min: 4.5, what: 'Text on the chosen colour', words: true },
   { id: 'accent-panel', fg: 'accent', bg: 'panel', min: 3, what: 'Links on panels', words: true },
   { id: 'danger-panel', fg: 'danger', bg: 'panel', min: 3, what: 'Warnings on panels', words: true },
@@ -92,7 +95,7 @@ export const READABLE_MIN = 4.5;
  * far as it needs to reach 4.5:1, with black or white as the last resort (always at least 4.5 against anything).
  * The editor shows the app in the theme being made, so the chrome around the colours has to be readable in it.
  */
-export const READABLE_TOKENS = ['on-bg', 'on-panel', 'on-muted', 'on-raised', 'on-hover', 'on-danger', 'on-chosen', 'on-chosen-deep'] as const;
+export const READABLE_TOKENS = ['on-bg', 'on-panel', 'on-muted', 'on-raised', 'on-hover', 'on-danger', 'on-chosen', 'on-chosen-deep', 'on-tip', 'on-tip-soft', 'on-tip-link'] as const;
 
 export function readableTokens(tokens: ThemeTokens): ThemeTokens {
   const text = tokens.text;
@@ -109,5 +112,9 @@ export function readableTokens(tokens: ThemeTokens): ThemeTokens {
   set('on-danger', on(tokens.bg, tokens.danger));
   set('on-chosen', on(tokens['chosen-fg'], tokens['chosen-bg']));
   set('on-chosen-deep', on(tokens['chosen-fg'], tokens['sunny-deep']));
+  // A tooltip's words, whatever tip colours a theme file carried: they cannot end up unreadable on the tip fill.
+  set('on-tip', on(tokens['tip-fg'] ?? text, tokens['tip-bg']));
+  set('on-tip-soft', on(tokens['tip-soft'] ?? tokens.muted, tokens['tip-bg']));
+  set('on-tip-link', on(tokens['tip-link'] ?? tokens.accent, tokens['tip-bg']));
   return out;
 }
