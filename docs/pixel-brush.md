@@ -11,7 +11,7 @@ this and not grow a second system. This page is what they land on.
 
 | Field | Meaning | Maps from |
 |---|---|---|
-| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
+| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
 | `size` 1 to 300 px, `hardness` 0 to 1, `angle`, `roundness` 0.05 to 1, `follow` | Size, edge, rotation, flattening, turning with the line | PS diameter, hardness, angle, roundness; Krita size, fade, rotation, ratio |
 | `spacing` 0.05 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
 | `scatter` 0 to 2 (share of size), `sizeJitter`, `angleJitter` | Random position, size and angle per dab | PS shape dynamics jitter, scattering; Krita scatter |
@@ -36,7 +36,9 @@ this and not grow a second system. This page is what they land on.
 - Several routes to one target multiply (size, flow) or add (the rest). The options show the first route per target and say
   when a brush file brought more.
 - Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve is not
-  kept (no curve yet): take the nearest straight line and say so in the import note.
+  kept (no curve yet): take the nearest straight line and say so in the import note. Opacity and flow are both `flow` here, so
+  a file that puts pressure on both gets one route, not two. The full mapping is in [brush-import.md](brush-import.md).
+- `angle` is clockwise on screen. Photoshop's control numbers and GIMP's counter-clockwise angle are in brush-import.md.
 - The Pen page's pressure for size and flow is skipped when the brush has its own pressure or tilt route to that target, so it
   never counts twice (`drivesFrom`).
 - The back colour is the Fill colour (Photoshop's background).

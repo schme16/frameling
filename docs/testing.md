@@ -1957,3 +1957,21 @@ the page (above, arrow, following its thing, no arrow when it can't be near) in 
 ## Theme editor chrome and sticky page headers: scripts/ab/theme-chrome.cjs, scripts/ab/page-top.cjs
 
 `theme-chrome.cjs <outDir> <label> [distDir]` copies a built-in theme (`THEMES="Ice Camo,Midnight Sketchbook"`), opens the editor on the copy in a 1200 x 640 window and shoots the button row at rest and hovered (Delete, Duplicate, Undo), the editor at the top and scrolled down. `SET="text:#9fb4ba"` types colours into the hex boxes first, to make a theme that fights its own buttons. `page-top.cjs` shoots the Keyboard and Menus pages at the top and scrolled in both themes (`PAGES=` to narrow). Both take a dist folder, so a before is a build of the base commit. `test/ui/theme-readable.test.ts` proves every `--on-*` colour reads (4.5:1) on its fill across the built-ins and thousands of made-up themes; `test/ui/sticky-page-top.test.tsx` covers the header.
+
+## Brush import: test/brushes/importGimp.test.ts, importAbr.test.ts, importLibrary.test.ts, scripts/docs/ab-brush-import/
+
+`importGimp.test.ts` reads the real brushes that ship with GIMP (`test/fixtures/brushes/gimp`, CC0): a grey mask, a bigger one, a
+pipe, generated round, square and star brushes, plus `.gbr` files built to the published layout (version 1, colour, very
+colourful, empty margin) and damaged ones (cut short, a size with no pixels behind it, no marker, a header that runs off the end,
+odd pixel sizes, 16-bit float, random bytes). `importAbr.test.ts` reads real Photoshop files (`fixtures/brushes/abr`, with a
+`NOTICE.txt` for where each came from), and files built by a small descriptor writer in the test: every dynamics mapping, a
+switched-off group, bristle tips, raw and packed sampled tips, a set with one unreadable brush, version 1 and 2 records, and hostile
+ones (nested 200 deep, a list longer than the file, a tip that says it is 60000 pixels across, a packed row that overruns,
+nonsense numbers, every truncation of a real file). `importLibrary.test.ts` checks the brushes land in a group with their names,
+can be picked, and come back whole after a save and a read (a brushes file and the browser's storage).
+
+`sh scripts/docs/ab-brush-import/make.sh` (needs `npm run build` first) draws one stroke for each real file with the real importer,
+on a sprite of its own, and lays them out beside their names and settings in `brand/ab/brush-import/`, both themes (set
+`BRUSH_AB_EXTRA` to a folder holding a `special.abr` to add real Photoshop presets). The help picture is `scripts/docs/help/brush-import.cjs`
+(`npm run help:media -- --only brush-import`), from a made-up set built in `_brushset.cjs`; `?debug` pages expose `__brushImport.show`
+and `__brushImport.read` for them.

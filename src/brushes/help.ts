@@ -11,6 +11,15 @@ registerHelpTopics([
     keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'pencils', 'pens', 'markers', 'paint', 'pastel', 'crayon', 'gouache', 'oil paint', 'dry brush', 'g-pen', 'comic pen', 'brush pen', 'dip pen', 'felt tip', 'stipple', 'spatter', 'sparkles', 'airbrush', 'highlighter', 'calligraphy', 'built-in brushes', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing'],
   },
   {
+    id: 'brush-import',
+    order: 8.25,
+    media: 'brush-import.png',
+    title: 'Brushes from Photoshop and GIMP',
+    section: 'Drawing',
+    summary: 'Bring in a Photoshop brush set (.abr) or GIMP brushes (.gbr, .gih, .vbr), see which ones come in whole, and keep the ones you want.',
+    keywords: ['brush', 'import', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'procreate', 'brush set', 'download brushes', 'add brushes', 'free brushes', 'other programs', 'sampled brush', 'brush pack'],
+  },
+  {
     id: 'brush-tips',
     order: 8.3,
     media: 'brush-tips.mp4',

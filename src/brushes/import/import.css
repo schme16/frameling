@@ -1,0 +1,74 @@
+.bi-body {
+  display: grid;
+  gap: 10px;
+}
+.bi-all {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bi-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: min(50vh, 420px);
+  overflow: auto;
+}
+.bi-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.bi-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.bi-tip {
+  display: inline-flex;
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--text);
+}
+.bi-name {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.bi-stroke {
+  flex: 0 0 150px;
+  border-radius: 6px;
+  background: var(--raised);
+  overflow: hidden;
+}
+.bi-name b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bi-verdict {
+  opacity: 0.8;
+}
+.bi-whole .bi-verdict::before {
+  content: '\2713  ';
+}
+.bi-notes {
+  margin: 6px 0 0 32px;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+  font-size: 0.9em;
+  line-height: 1.35;
+}
+.bi-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bi-group input {
+  flex: 1;
+  min-width: 0;
+}

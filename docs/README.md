@@ -9,6 +9,7 @@ Start with `architecture.md`. Tasks, questions, looks and known gaps are on the 
 | [format.md](format.md) | The `.frameling` document format, every type and field, how files are checked and repaired, compatibility rules, the `.flplay` package and the plugin manifest. |
 | [testing.md](testing.md) | Every test and check harness, with exact commands: vitest, the help audit, the Electron harnesses (run under xvfb), perf, screenshots and help clips, CI. |
 | [pixel-brush.md](pixel-brush.md) | The pixel brush engine: what a brush is made of (tip, spacing, scatter, grain, dual tip, dynamics routes, colour, wet), the maths, the file shape, and where a brush file from Photoshop, Krita, GIMP or Procreate lands. Read before writing an importer. |
+| [brush-import.md](brush-import.md) | Brush files from GIMP and Photoshop: which formats are read and from what, the rules every reader follows (untrusted input, `cleanDab`, say what was lost), the mapping, and what is doubtful. |
 | [mascots.md](mascots.md) | What a mascot is, the clip contract every mascot must keep, how to add one, and how the choice works. |
 | [colour-and-gpu.md](colour-and-gpu.md) | Why the colour profile is pinned to sRGB and what that costs on a wide screen, the harnesses' two engine modes (software, the real card), the silent fall back, and what was and wasn't checked in the framebuffer path. |
 | [plugins.md](plugins.md) | The plugin API, the sandbox and the threat model. |

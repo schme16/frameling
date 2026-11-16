@@ -29,7 +29,7 @@ export const bodies: Record<string, string> = {
 - You can keep up to 1000 of your own, in groups if you like (type a group name when you save).
 - Pixel brushes live in this picker too: see the [Pixel brush](help:pixel-brush).
 
-help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet`,
+help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet help:brush-import`,
   'brush-picker': `The **brush picker** is the button at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
 
 **Open it:** click the button, press **Alt+P**, or press **Ctrl+K** and type "brush picker". Pick a brush and it closes. **Esc** or a click away closes it without picking.
@@ -108,4 +108,30 @@ help:brush-presets help:brush-own help:tool-brush help:exporting`,
 - A line drawn with a brush can't be changed afterwards. Undo, change the brush and draw it again.
 
 help:brush-tips help:brush-presets help:brush-picker help:exporting`,
+  'brush-import': `Brushes made in **Photoshop** (**.abr**) and **GIMP** (**.gbr**, **.gih**, **.vbr**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, brush by brush, and says plainly what did not come across.
+
+**Bring some in:**
+1. **Tools > Saved brushes > Add brushes from a file...** (or search the command palette for **Add brushes**).
+2. Pick the file. A window lists every brush in it with a little picture of its tip.
+3. Untick any you don't want, name the group they go in, and press **Add**.
+
+They land in your [brush picker](help:brush-picker) beside the ones that come ready, under the set's name, and they are kept with your other saved brushes.
+
+**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what was left out or changed underneath. **Only the whole ones** ticks just the brushes that lost nothing, handy for a big set.
+
+**What comes across:**
+- The tip: a round or square shape, or a picture. A picture tip is shrunk to fit 32 by 32 pixels, with its soft shading kept (so a charcoal or sponge tip still has its texture).
+- Size, hardness, angle, roundness and spacing.
+- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity.
+- A texture becomes one of the [papers](help:pixel-brush-texture), and a dual brush with a textured tip becomes a field of dots, both with a note saying so.
+
+**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP picks between them as you paint; Frameling takes the first), and stylus wheel. Each one is named in the window when a brush had it.
+
+**Good to know:**
+- A Photoshop set is one file with many brushes. A GIMP file is one brush.
+- A file that is damaged or isn't a brush file is refused with a reason, and nothing is added.
+- Krita and Procreate brushes can't be read yet.
+- Open the brush in the [Pixel brush](help:pixel-brush) options afterwards to change anything, then **Save as...** to keep your version.
+
+help:brush-presets help:brush-picker help:pixel-brush-dynamics`,
 };
