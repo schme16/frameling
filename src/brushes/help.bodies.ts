@@ -59,13 +59,15 @@ You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pa
 help:brush-presets help:brush-tips help:tool-options`,
   'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. Chalk and charcoal catch on paper like the real thing, and stay lines you can reshape.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, drops every tip as a real stroke: Plain, Chalk, Charcoal, Watercolour, each stamp shape, and four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
+**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, shows every tip as a real stroke, including four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 
-**Chalk and Charcoal:** a line that catches on paper. **Stick** appears under **Tip**, another picker: vine or compressed charcoal, chalk, soft or oil pastel, crayon, or one of three pencils, each as a real stroke. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Each line carries a **Paper tooth** [effect](help:effects) you can change afterwards. Off gives the older grain of tiny shapes.
+**Chalk and Charcoal:** a line that catches on paper. **Stick** is another picker under **Tip**: vine or compressed charcoal, chalk, soft or oil pastel, crayon, or one of three pencils, each as a real stroke. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Each line carries a **Paper tooth** [effect](help:effects). Off gives the older grain of tiny shapes.
 
 **Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
 
-**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond, heart or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** shrink the stamps at the ends.
+**Stamp:** repeats a shape along the line, like a leaf, star or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** taper the ends.
+
+**Matte finish:** any tip. Dries paler and chalkier, with a faint velvety grain, like gouache, and still covers what is under it. Each line carries it as [effects](help:effects).
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.
