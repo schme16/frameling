@@ -1982,3 +1982,16 @@ on a sprite of its own, and lays them out beside their names and settings in `br
 `BRUSH_AB_EXTRA` to a folder holding a `special.abr` to add real Photoshop presets). The help picture is `scripts/docs/help/brush-import.cjs`
 (`npm run help:media -- --only brush-import`), from a made-up set built in `_brushset.cjs`; `?debug` pages expose `__brushImport.show`
 and `__brushImport.read` for them.
+
+## Paint brush looks: test/brushes/paintLooks.test.ts, paintPreviews.test.ts, scripts/docs/ab-brush-looks/, scripts/docs/ab-brush-survey/
+
+Oil paint, Bristle brush and Dry brush once drew as one speckled worm (grain holes cut out of one fill). The Library's pictures were
+honest; the brushes were wrong. `paintLooks.test.ts` holds each to what it is on numbers a person sees (a coverage measure on the
+shapes: oil closes into solid paint in three shades, the bristle brush is many separate hairs with gaps, the dry brush carries a paper
+tooth with big grain and full streak, the rake is six clear tines) and holds the bristle tip's `body`, `tone` and a dry tip's `streak`
+to their ranges and to old brushes drawing as before. `paintPreviews.test.ts` is the chalk lesson again for these three: the picture
+is drawn through the same tip and effects as the real line. `scripts/docs/ab-brush-looks/` is the before and after look (run
+`help-media.cjs --entries scripts/docs/ab-brush-looks --out <dir>` once with `--renderer` on an older build, once on this one, then
+`scripts/ab/brush-looks-compose.py <before> <after> brand/ab/brush-looks` and `ab-brush-looks/caption.sh` for the clips).
+`ab-brush-survey/` draws every vector starter as a real stroke, eight to a page, and `scripts/ab/brush-survey-compose.py` names them on
+one contact sheet: use it to ask of any new brush whether its picture reads as its name.

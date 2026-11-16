@@ -89,16 +89,16 @@ help:brush-presets help:brush-own help:tool-brush help:exporting`,
 
 **Pen nib** (calligraphy): an oval or flat pen point, thick one way and thin the other. **Roundness** makes it a blade or a round pen, **Angle** tilts it, and **Angle stays** says whether it keeps that angle on the page or turns with the line.
 
-**Bristles:** lots of thin lines side by side. **Bristles** is how many, **Stiffness** is whether they stay in line or wander, and **Dry gaps** is how often one runs out of paint.
+**Bristles:** lots of thin lines side by side. **Bristles** is how many, **Stiffness** whether they stay in line or wander, and **Dry gaps** how often one runs out of paint. **Bristle thickness** fattens them into solid paint (or thins them to clear tines, like a rake), and **Light and dark streaks** runs some lighter and some darker than your colour. Together they make **Oil paint**.
 
 **Along the line:** your own drawing, bent down the whole line. **Ribbon**, **Thread** and **Leafy vine** are ready made in the brush picker to try.
 1. Draw it and select it (the **Select** tool, **V**).
 2. Choose **Make a brush that goes along the line, from the selection** in the palette (**Ctrl+Alt+Shift+B**), or **Use the selection as the drawing** in the brush options.
 3. Draw. On a long line it can **Stretch** (a ribbon, a flame) or **Repeat** (beads, a border). Frameling asks once and remembers.
 
-**Edged:** separate drawings for the **Sides**, the **Start**, the **End**, and the **Inside** and **Outside corner**. Make the sides first: select that part and choose **Edged brush: sides from the selection**. Then select each other part and use its button in the brush options. The sides repeat to fit the line exactly. A corner drawing shows up where your line turns about a right angle, and the outside one is used when the line turns away from the top of your drawing. Leave a part out and the sides are used there. Chains and borders are what it's for. **Chain** and **Battlements** are ready made in the brush picker.
+**Edged:** separate drawings for the **Sides**, the **Start**, the **End**, and the **Inside** and **Outside corner**. Make the sides first: select that part and choose **Edged brush: sides from the selection**. Then select each other part and use its button in the brush options. A corner drawing shows up where your line turns about a right angle, and the outside one is used when the line turns away from the top of your drawing. Leave a part out and the sides are used there. **Chain** and **Battlements** are ready made in the brush picker.
 
-**Turn it into plain shapes:** a line keeps its brush, so you can see it change if you undo and redraw. **Turn brush lines into plain shapes** fixes the selected lines as ordinary shapes you can edit point by point.
+**Turn it into plain shapes:** a line keeps its brush. **Turn brush lines into plain shapes** fixes the selected lines as ordinary shapes you can edit point by point.
 
 **Good to know:**
 - Each line keeps its own copy of the brush, so a drawing opens fine on a computer that never had your brush. Save it with **Save as** to keep it in your own list.

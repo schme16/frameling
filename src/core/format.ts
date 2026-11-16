@@ -825,6 +825,8 @@ export interface BrushTip {
   grain?: number;
   /** Chalk and charcoal: the dry medium (see src/dry/maths.ts) whose paper tooth the line catches on. The line then carries a Paper tooth effect, so it is drawn as a picture of pigment on paper, not as tiny shapes. Missing = the grain made of tiny shapes. */
   dry?: 'vine-charcoal' | 'compressed-charcoal' | 'chalk' | 'soft-pastel' | 'oil-pastel' | 'crayon' | 'sketch-pencil' | 'soft-pencil' | 'colour-pencil';
+  /** Chalk and charcoal on a dry medium: how much the stick's own bumps streak the line along the way it is dragged, 0 to 1. Missing = the medium's own (see src/dry/maths.ts). */
+  streak?: number;
   /** Stamp: which shape, and how far apart the stamps are (a share of the brush size, 0.2 to 4). */
   shape?: StampShape;
   spacing?: number;
@@ -853,6 +855,10 @@ export interface BrushTip {
   /** Bristle: how many bristles (3 to 60) and how stiff they are, 0 (floppy, wander) to 1 (stay in line). `amount` is how many gaps (dry brush). */
   count?: number;
   stiffness?: number;
+  /** Bristle: how fat each bristle is next to the gap it sits in. 0 (missing) is a little wider than the gap, 1 is so fat they close into solid paint, and down to -1 is thin lines with clear gaps between (a rake). */
+  body?: number;
+  /** Bristle: how much lighter and darker the bristles run from the colour, 0 (all one colour) to 1, in broad streaks along the line. Missing = 0. */
+  tone?: number;
 }
 
 /** The extra drawings of an edged brush (see `BrushTip.pieces`). Any can be missing: the sides are used instead. */

@@ -4,6 +4,7 @@
 // every other vector format carry them as they are. Pure, no DOM.
 import polygonClipping, { type Pair } from 'polygon-clipping';
 import type { FillShape, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
+import { mix, parseHex } from '../ui/themes/color';
 import { rdp } from './bezier';
 import type { ResolvedTip } from './tip';
 import { hash3, stampSites, vnoise } from './tipShapes';
@@ -402,28 +403,53 @@ export function edgedShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
 
 // ---------------------------------------------------------------- bristles
 
-/** Many thin lines side by side: they thin to the pen's pressure, wander when floppy and drop out where the brush runs dry. Two path shapes (finer and coarser hairs). */
+/** How far a tone-streaked bristle goes lighter and darker than the colour at full `tone` (a share of the way to white and to black). */
+const TONE_LIGHT = 0.34;
+const TONE_DARK = 0.3;
+
+/** The colours a bristle can run in: darker, the colour itself, lighter. One colour when `tone` is 0 or the colour is not a plain hex. */
+export function bristleTones(color: string, tone: number): string[] {
+  if (tone <= 0 || !parseHex(color)) return [color];
+  return [mix(color, '#000000', 1 - TONE_DARK * tone), color, mix(color, '#ffffff', 1 - TONE_LIGHT * tone)];
+}
+
+/**
+ * Many thin lines side by side: they thin to the pen's pressure, wander when floppy and drop out where the brush runs dry. Two
+ * path shapes (finer and coarser hairs). `body` fattens the hairs until they close into solid paint, and `tone` runs them
+ * lighter and darker in broad streaks along the line, which is what makes a loaded brush look like paint and not like wire.
+ */
 export function bristleShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
   const b = s.brush;
   const spine = spineFor(s, (q) => widthFactor(s, q, false));
   if (!spine) return null;
   const n = Math.max(3, Math.min(60, t.count));
-  // Hairs a little wider than their gap, so the row has body but still shows the lines.
-  const lineW = Math.max(0.5, (b.size / n) * 1.2);
+  // Hairs a little wider than their gap, so the row has body but still shows the lines. `body` fattens them past touching.
+  const lineW = Math.max(0.5, (b.size / n) * (1.2 + t.body * (t.body > 0 ? 1.8 : 0.8)));
   const seed = t.seed;
   const floppy = 1 - t.stiffness;
   const step = Math.max(1, Math.min(6, b.size * 0.12));
-  const fine: SubPath[] = [];
-  const coarse: SubPath[] = [];
+  const tones = bristleTones(s.color, t.tone);
+  // One bucket per colour and width (coarse or fine), so each is one shape however many hairs it holds.
+  const fine: SubPath[][] = tones.map(() => []);
+  const coarse: SubPath[][] = tones.map(() => []);
+  // The shade of hair k at distance d along the line: broad ridges (neighbouring hairs alike, slow along the line).
+  const shadeAt = (k: number, d: number): number => {
+    if (tones.length === 1) return 0;
+    // About five ridges across the brush however many bristles it has, so they stay broad enough to see at small sizes.
+    const across = (k / n) * 5;
+    const v = vnoise(d / (b.size * 2.2 + 8) + across * 0.7, across * 0.9, seed + 11);
+    return v < 0.3 ? 0 : v > 0.7 ? 2 : 1;
+  };
   for (let k = 0; k < n; k++) {
     const slot = (k + 0.5) / n - 0.5;
     // Each bristle sits a little off its slot, so the row isn't a comb.
     const home = slot + (hash3(seed, k, 1) - 0.5) * (0.6 / n);
     const into = hash3(seed, k, 2) < 0.45 ? fine : coarse;
     let run: { x: number; y: number }[] = [];
+    let shade = 0;
     const flush = () => {
-      if (run.length >= 2) into.push({ closed: false, points: run });
-      else if (run.length === 1) into.push({ closed: false, points: [run[0], { x: run[0].x + 0.01, y: run[0].y }] });
+      if (run.length >= 2) into[shade].push({ closed: false, points: run });
+      else if (run.length === 1) into[shade].push({ closed: false, points: [run[0], { x: run[0].x + 0.01, y: run[0].y }] });
       run = [];
     };
     for (let d = 0; d <= spine.len + 1e-6; d += step) {
@@ -436,17 +462,31 @@ export function bristleShapes(s: StrokeShape, t: ResolvedTip): Shape[] | null {
       }
       const wander = floppy * b.size * 0.16 * (vnoise(d / (b.size * 1.6 + 6) + k * 5.1, k * 3.7, seed + 3) - 0.5) * 2;
       const v = (home * b.size + wander) * c.k;
-      run.push({ x: r2(c.x - Math.sin(c.ang) * v), y: r2(c.y + Math.cos(c.ang) * v) });
+      const here = { x: r2(c.x - Math.sin(c.ang) * v), y: r2(c.y + Math.cos(c.ang) * v) };
+      const want = shadeAt(k, d);
+      if (want !== shade && run.length) {
+        // A new shade starts where the last one stopped, so the line carries on without a gap.
+        const last = run[run.length - 1];
+        run.push(here);
+        flush();
+        shade = want;
+        run = [last, here];
+        continue;
+      }
+      shade = run.length ? shade : want;
+      run.push(here);
     }
     flush();
   }
   const out: Shape[] = [];
-  const make = (paths: SubPath[], w: number, id: string): void => {
+  const make = (paths: SubPath[], w: number, id: string, color: string): void => {
     if (!paths.length) return;
-    const shape: PathShape = { id: `${s.id}~${id}`, type: 'path', paths, fill: null, stroke: { color: s.color, width: r2(w), join: 'round', cap: 'round' }, opacity: s.opacity };
+    const shape: PathShape = { id: `${s.id}~${id}`, type: 'path', paths, fill: null, stroke: { color, width: r2(w), join: 'round', cap: 'round' }, opacity: s.opacity };
     out.push(shape);
   };
-  make(coarse, lineW * 1.15, 'b0');
-  make(fine, lineW * 0.7, 'b1');
+  tones.forEach((color, i) => {
+    make(coarse[i], lineW * 1.15, `b0${i ? i : ''}`, color);
+    make(fine[i], lineW * 0.7, `b1${i ? i : ''}`, color);
+  });
   return out.length ? out : null;
 }

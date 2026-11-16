@@ -395,9 +395,10 @@ export function toothBytes(bytes: Uint8ClampedArray, w: number, h: number, p: To
 
 /**
  * The settings a new Paper tooth effect starts with for a dry medium (vine charcoal, chalk and so on), in the units the
- * Effects panel shows. `grain` is the paper's grain size, `seed` picks which stick (the streaks).
+ * Effects panel shows. `grain` is the paper's grain size, `seed` picks which stick (the streaks) and `streak` (0 to 1)
+ * overrides how much the stick's own bumps streak the mark (a dry brush drags long streaks, a crayon barely does).
  */
-export function toothValues(id: DryId, grain = 1, seed = 0): Record<string, number> {
+export function toothValues(id: DryId, grain = 1, seed = 0, streak?: number): Record<string, number> {
   const m = mediumInfo(id);
   return {
     press: Math.round(m.press * 100),
@@ -405,7 +406,7 @@ export function toothValues(id: DryId, grain = 1, seed = 0): Record<string, numb
     edge: Math.round(m.hardness * 100),
     soft: Math.round(m.soft * 100),
     cover: Math.round(m.ceiling * 100),
-    streak: Math.round(m.streak * 100),
+    streak: Math.round((streak ?? m.streak) * 100),
     paper: 2,
     grain,
     seed,

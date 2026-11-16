@@ -22,6 +22,8 @@ export function pictureFromRows(rows: readonly string[]): PixelStamp {
   return { w, h: rows.length, colours: ['#000000'], cells, keep: false };
 }
 
+// A comb across the line: with `follow` it turns to the line, so each tooth drags a streak along it.
+const COMB = pictureFromRows(['##', '##', '..', '##', '##', '##', '..', '##', '..', '##', '##', '##']);
 const STAR = pictureFromRows(['..#..', '.###.', '#####', '.###.', '#...#']);
 const HEART = pictureFromRows(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']);
 const SPARKLE = pictureFromRows(['..#..', '..#..', '#####', '..#..', '..#..']);
@@ -82,7 +84,7 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   dab('pencil-paper', 'Pencil on paper', 'Grain and texture', { size: 3, spacing: 0.12, flow: 0.65, grain: { paper: 'fine', depth: 0.9, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
   dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { paper: 'medium', depth: 1, scale: 2, moving: true } }),
   dab('spatter', 'Pixel spatter', 'Grain and texture', { size: 16, spacing: 0.2, dual: { tip: 'round', size: 2, density: 0.25, cut: false } }),
-  dab('bristles', 'Pixel bristles', 'Grain and texture', { size: 14, spacing: 0.08, follow: true, dual: { tip: 'square', size: 1, density: 0.5, cut: false } }),
+  dab('bristles', 'Pixel bristles', 'Grain and texture', { tip: 'picture', picture: COMB, size: 12, spacing: 0.1, follow: true }),
   dab('cracked', 'Cracked paint', 'Grain and texture', { size: 14, spacing: 0.15, dual: { tip: 'round', size: 3, density: 0.2, cut: true } }),
 
   dab('rainbow', 'Rainbow trail', 'Colour', { size: 6, spacing: 0.12, dynamics: [r('fade', 'hue', 1)], fadeLength: 260 }),

@@ -106,6 +106,8 @@ export function TipOptions() {
           <Slider label="Bristles" value={t.count} min={3} max={60} format={(v) => `${v}`} onChange={(v) => patchTip({ count: v })} hint="How many thin lines the brush is made of." />
           <Slider label="Stiffness" value={Math.round(t.stiffness * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ stiffness: v / 100 })} hint="Stiff bristles stay in line. Floppy ones wander." />
           <Slider label="Dry gaps" value={Math.round(t.amount * 100)} min={0} max={100} format={(v) => (v ? `${v}%` : 'Off')} onChange={(v) => patchTip({ amount: v / 100 })} hint="How often a bristle runs out of paint, like a dry brush." />
+          <Slider label="Bristle thickness" value={Math.round(t.body * 100)} min={-100} max={100} step={5} format={(v) => (v === 0 ? 'Normal' : v < 0 ? `${-v}% thinner` : `${v}% fatter`)} onChange={(v) => patchTip({ body: v / 100 })} hint="Fatter bristles close the gaps until the stroke is solid paint, like oil. Thinner ones leave clear gaps, like a rake." />
+          <Slider label="Light and dark streaks" value={Math.round(t.tone * 100)} min={0} max={100} format={(v) => (v ? `${v}%` : 'Off')} onChange={(v) => patchTip({ tone: v / 100 })} hint="Runs some bristles lighter and some darker than the colour, in long streaks." />
         </>
       )}
       {t && kind === 'along' && (

@@ -62,7 +62,7 @@ describe('the brushes that catch on paper', () => {
     expect(defaultTip('watercolour').dry).toBeUndefined();
   });
 
-  it('every chalk, charcoal, pastel, crayon and pencil starter is on its own medium; paint textures keep the tiny shapes', () => {
+  it('every chalk, charcoal, pastel, crayon and pencil starter is on its own medium; oil and bristle are bristles, and the dry brush is crayon paper', () => {
     const med: Record<string, string> = {
       chalk: 'chalk',
       charcoal: 'compressed-charcoal',
@@ -76,10 +76,12 @@ describe('the brushes that catch on paper', () => {
       'sketch-pencil': 'sketch-pencil',
     };
     for (const [id, m] of Object.entries(med)) expect(starter(id).tip?.dry, id).toBe(m);
-    for (const id of ['oil', 'bristle', 'dry-brush']) expect(starter(id).tip?.dry, id).toBeUndefined();
+    for (const id of ['oil', 'bristle']) expect(starter(id).tip?.dry, id).toBeUndefined();
+    expect(starter('dry-brush').tip?.dry).toBe('crayon');
     expect(isDry(starter('vine-charcoal'))).toBe(true);
     expect(isDry(starter('oil'))).toBe(false);
-    expect(isGrainy(starter('oil'))).toBe(true);
+    expect(isGrainy(starter('oil'))).toBe(false);
+    expect(isGrainy({ ...starter('oil'), tip: { kind: 'chalk', amount: 0.18, grain: 0.6 } })).toBe(true);
   });
 
   it('a line drawn with one carries a Paper tooth effect set for its medium, and one seed for the whole line', () => {
@@ -184,7 +186,7 @@ describe('what each export does with one', () => {
     expect([...f.shapeEffectKinds]).toEqual(['tooth']);
     expect([...layerShapeFxKinds(doc, doc.layers[0])]).toEqual(['tooth']);
     // The older grain is still counted as grain.
-    const old = page([buildStroke(pts, starter('oil'), '#111')]);
+    const old = page([buildStroke(pts, { ...starter('oil'), tip: { kind: 'chalk', amount: 0.18, grain: 0.6 } }, '#111')]);
     expect(docFeatures(old).features.has('grain')).toBe(true);
     expect(docFeatures(old).tooth).toBe(false);
   });
