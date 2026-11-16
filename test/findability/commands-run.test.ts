@@ -50,6 +50,24 @@ const snap = () => {
     dialogs: document.querySelectorAll('[role="dialog"], .modal, .dialog').length,
   };
 };
+/**
+ * Waits until the command has done something, instead of sleeping a fixed 80ms. Some commands finish later than run()
+ * returns: tiles.export loads its dialog with a dynamic import, which is a fresh module transform the first time and
+ * takes far longer than 80ms in a full run where ~25 workers share the CPU. A fixed sleep passed alone and failed
+ * under load. Polling returns as soon as it is true, so the quiet case costs nothing, and a command that really does
+ * nothing still fails, after the limit.
+ */
+async function settled(before: Snap, check?: (b: Snap, a: Snap) => boolean): Promise<Snap> {
+  const done = (a: Snap) => (check ? check(before, a) : (Object.keys(before) as (keyof Snap)[]).some((k) => before[k] !== a[k]));
+  const end = Date.now() + 15_000;
+  let a = snap();
+  while (!done(a) && Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 20));
+    a = snap();
+  }
+  return a;
+}
+
 const tileKeys = (d: Snap['rootDoc']) => (d.tileset?.tiles ?? []).map((t) => t.key);
 const layerOf = (d: Snap['rootDoc'], id: string | null) => d.layers.find((l) => l.id === id);
 
@@ -135,9 +153,8 @@ describe('commands run in the state that switches them on', () => {
           clearToasts();
           const before = snap();
           await cmd!.run();
-          await new Promise((r) => setTimeout(r, 80));
-          const after = snap();
           const check = EFFECT[id];
+          const after = await settled(before, check);
           if (check) expect(check(before, after), `${id} did not do what it says`).toBe(true);
           else {
             const changed = (Object.keys(before) as (keyof Snap)[]).some((k) => before[k] !== after[k]);

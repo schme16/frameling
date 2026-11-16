@@ -1059,11 +1059,17 @@ kbd {
   align-items: baseline;
   gap: 1px 6px;
 }
-.ui-tool-head-text {
+/* The name itself. With no chip it is plain inline text, so the head's own two-line rule above does the work. Beside a chip the
+   head is a flex row, which that rule cannot clamp, so the name takes the same rule itself. */
+.ui-tool-head.has-off .ui-tool-head-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: balance;
 }
 .ui-tool-head.is-alert .ui-tool-head-off {
   background: color-mix(in srgb, var(--sunny) 28%, transparent);
