@@ -107,6 +107,9 @@ describe('closing', () => {
     const port = await free();
     await door.open(port, false);
     const held = net.connect(port, '127.0.0.1');
+    // macOS resets a held connection when the door shuts, where Linux just ends it. Either is fine for what this
+    // test is about, but a socket with no error handler turns that reset into an uncaught exception and fails the run.
+    held.on('error', () => {});
     await new Promise((r) => held.once('connect', r));
     await door.close();
     expect(await refused(port)).toBe(true);
