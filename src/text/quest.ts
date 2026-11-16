@@ -4,7 +4,7 @@ import { uid } from '../core/doc';
 import type { Doc, TextShape } from '../core/format';
 import { store } from '../core/store';
 import type { Quest } from '../quests/types';
-import { ensureBlankVectorPage } from '../quests/actions';
+import { ensureAnimatedVectorPage } from '../quests/actions';
 import { hasVectorLayer } from '../quests/predicates';
 import { editActiveDrawing } from '../tools/edit';
 import { setDocLength } from '../timeline/ops';
@@ -87,7 +87,7 @@ export const TEXT_QUEST: Quest = {
   features: ['text'],
   requires: ['first-animation'],
   finish: questWord('quest.say-it-with-text.finish'),
-  prepare: ensureBlankVectorPage,
+  prepare: ensureAnimatedVectorPage,
   ready: hasVectorLayer,
   steps: [
     {

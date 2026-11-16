@@ -13,6 +13,7 @@ import { findLayer } from './doc';
 import type { Command } from './registry';
 import type { State } from './store';
 import { pointsInProgress } from './pointUndo';
+import { animationKind, gateReason } from './animationGate';
 import { needManyShapes, needPixelLayer, needShapes, nothingToRedo, nothingToUndo, pickKindReason, say, type Reason } from './reasons';
 
 const inSymbol = (s: State) => !!s.doc.editing?.length;
@@ -348,15 +349,17 @@ export const COMMAND_REASONS: Record<string, Reason> = {
 };
 
 /** What a greyed command says it needs right now, or undefined if nobody wrote that down for it. */
-export function reasonFor(c: Partial<Pick<Command, 'id' | 'reason'>>, s: State): string | undefined {
+export function reasonFor(c: Partial<Pick<Command, 'id' | 'reason' | 'category'>>, s: State): string | undefined {
   try {
-    return (c.reason ?? COMMAND_REASONS[c.id ?? ''])?.(s) || undefined;
+    // A drawing with no animation greys the animation commands, and the reason is the same for all of them.
+    const still = c.id !== undefined && c.category !== undefined ? gateReason({ id: c.id, category: c.category }, s) : undefined;
+    return still ?? ((c.reason ?? COMMAND_REASONS[c.id ?? ''])?.(s) || undefined);
   } catch {
     return undefined;
   }
 }
 
-/** Does this command have a reason written for it, in itself or in the table? */
-export function hasReason(c: Partial<Pick<Command, 'id' | 'reason'>>): boolean {
-  return !!(c.reason ?? COMMAND_REASONS[c.id ?? '']);
+/** Does this command have a reason written for it, in itself or in the table (or is it one a still picture greys)? */
+export function hasReason(c: Partial<Pick<Command, 'id' | 'reason' | 'category'>>): boolean {
+  return !!(c.reason ?? COMMAND_REASONS[c.id ?? '']) || (c.id !== undefined && c.category !== undefined && animationKind({ id: c.id, category: c.category }) === 'needs');
 }

@@ -22,6 +22,7 @@ export const REVIEWER_FIELDS: Record<keyof Doc, Answer> = {
   fps: 'send',
   dpi: 'send',
   length: 'send',
+  animated: 'send',
   background: 'send',
   layers: 'send',
   drawings: 'send',

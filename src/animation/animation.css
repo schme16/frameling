@@ -1,0 +1,21 @@
+.anim-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: auto;
+  max-width: 640px;
+  padding: 16px 20px;
+  color: var(--text);
+}
+.anim-card-words {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.anim-card-words span {
+  color: var(--muted);
+}
+.anim-card .ui-btn {
+  flex: none;
+}

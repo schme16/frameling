@@ -7,6 +7,9 @@ import { oneOfEach } from './toolTwins';
 import { listWorkspaces } from './dock';
 import { ownedUndo } from '../core/owners';
 import { currentChoice } from '../core/choices';
+import { animationKind } from '../core/animationGate';
+import { isAnimated } from '../core/animation';
+import { store } from '../core/store';
 import { getMenuEdits } from './menuState';
 import { shapeMenus, type NewEntries, type Shape } from './menuEdits';
 
@@ -96,7 +99,7 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Animation',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'sub:onion', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'sub:moreframes', '-', 'sub:tween', 'sub:readymotion', 'sub:camera', 'sub:clips', '-', 'sub:sound', 'sub:reference'],
+    items: ['animation.add', 'animation.remove', '-', 'timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'sub:onion', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'sub:moreframes', '-', 'sub:tween', 'sub:readymotion', 'sub:camera', 'sub:clips', '-', 'sub:sound', 'sub:reference'],
   },
   {
     // The skeleton kit, flat in its own menu. The id stays Extras (saved menu changes name it). Tiles are not here:
@@ -545,6 +548,20 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
   return tidy(out);
 }
 
+/** The entries a drawing with no animation shows: everything that is not about frames, with submenus that would be empty gone. */
+export function withoutAnimation(items: MenuItem[]): MenuItem[] {
+  const kept = items.flatMap((it): MenuItem[] => {
+    // Turn animation off has nothing to do on a still, so only the way in stays.
+    if (it.kind === 'command') return animationKind(it.command) === 'open' && it.command.id !== 'animation.remove' ? [it] : [];
+    if (it.kind === 'submenu') {
+      const inner = withoutAnimation(it.items);
+      return inner.some((i) => i.kind === 'command' || i.kind === 'submenu') ? [{ ...it, items: inner }] : [];
+    }
+    return [it];
+  });
+  return tidy(kept);
+}
+
 const isBreak = (it: MenuItem | undefined): boolean => !!it && (it.kind === 'separator' || it.kind === 'heading');
 
 /** No separator at either end or two in a row, and a heading only when something follows it under it. */
@@ -576,5 +593,12 @@ export function resolveMenus(): { menu: MenuDef; items: MenuItem[] }[] {
   // The same list of commands for every menu, read once.
   let every: Command[] | null = null;
   const all = () => (every ??= allCommands());
-  return shape.menus.map((menu) => ({ menu, items: resolveMenu(menu, shape.menus, getCommand, all, shape.subs, hidden, named) })).filter((m) => m.items.length || m.menu.label.startsWith('my-'));
+  // A drawing with no animation leaves the animation entries out of every menu but Add animation, which is the way in (src/core/animationGate.ts).
+  const still = !isAnimated(store().get().doc);
+  return shape.menus
+    .map((menu) => {
+      const items = resolveMenu(menu, shape.menus, getCommand, all, shape.subs, hidden, named);
+      return { menu, items: still ? withoutAnimation(items) : items };
+    })
+    .filter((m) => m.items.length || m.menu.label.startsWith('my-'));
 }

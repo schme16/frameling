@@ -23,7 +23,7 @@ import '../promptjar/debug';
 import '../votes/debug';
 import '../streamoverlay/debug';
 import '../guess/debug';
-import { uid } from '../core/doc';
+import { newDoc, uid } from '../core/doc';
 import { activeDrawing } from '../tools/edit';
 import { store } from '../core/store';
 import { guard as saveGuard } from '../io/file';
@@ -98,6 +98,8 @@ if (new URLSearchParams(location.search).has('debug')) {
       if (t) store().load(t.make());
       return !!t;
     },
+    // A new empty drawing, with or without animation, for shots of the two (src/core/animation.ts).
+    blank: (animated: boolean) => store().load(newDoc({ animated })),
     tiles,
     // Pretend what the computer reports about its graphics, for the Performance page's shots: pretendReport(report | null).
     gpu: { pretend: pretendReport },

@@ -132,6 +132,12 @@ keeps the person's own changes on top. The clash logic is `allConflicts` and `sa
 The help audit proves a thing exists. These prove somebody can get to it, which is a different question: the help
 audit passed the whole time a panel could not be found.
 
+- **A drawing with no animation** (`still.test.ts`): Frameling opens to a still picture, with no timeline, frame rate or
+  animation tools in the way (`src/core/animation.ts`, `src/core/animationGate.ts`). The audit counts what a still has on
+  offer beside the same drawing with animation on (`STILL_LOAD` in `known-gaps.ts`, exact, only meant to go down), checks that
+  every animation command a still tucks out of the menus is still in the command search and says how to get it, and that
+  "animate", "frames", "timeline" and "animation" put Add animation first. The other audits keep measuring the drawing with
+  animation on (`SITUATIONS`), so their numbers still mean "most on offer"; the still one is `STILL_SITUATION` in `app.ts`.
 - **The phrase table** (`phrases.test.ts`): plain sentences a person would type ("rub out", "turn it upside down",
   "save a gif"), each paired with what they meant. Every one must put the right command or topic in the top three of the
   command palette, as the palette shows them. **Add a row every time anybody can't find something.** When a row misses,

@@ -113,7 +113,8 @@ export function startLength(c: Pick<CustomSpec, 'pixel' | 'animate'>): number | 
 
 /** Builds the document for a preset. */
 export function docFromPreset(p: Preset, name = 'Untitled'): Doc {
-  return newDoc({ name, width: p.width, height: p.height, fps: p.fps, ...(p.length ? { length: p.length } : {}), ...(p.pixelSize ? { pixel: { pixelSize: p.pixelSize } } : {}) });
+  // Every preset is a picture to draw on. Add animation (src/animation) gives it frames when it is wanted.
+  return newDoc({ name, width: p.width, height: p.height, fps: p.fps, animated: false, ...(p.length ? { length: p.length } : {}), ...(p.pixelSize ? { pixel: { pixelSize: p.pixelSize } } : {}) });
 }
 
 /** Builds the document for the Custom card, keeping every number sensible. A picture (no animation) ignores the frame rate. */
@@ -121,13 +122,15 @@ export function docFromCustom(c: CustomSpec): Doc {
   const fps = c.animate === false ? DEFAULT_FPS : clampInt(c.fps, 1, 60, DEFAULT_FPS);
   const name = c.name.trim() || NAME_START;
   const length = startLength(c);
+  // Ticking Animation starts it as one. An old saved spec with no tickbox answer animated vector drawings and not pixel ones.
+  const animated = c.animate ?? !c.pixel;
   if (c.pixel) {
     const pixelSize = clampInt(c.pixelSize, 1, 64, 8);
     const w = clampInt(c.width, 1, 512, 64);
     const h = clampInt(c.height, 1, 512, 64);
-    return newDoc({ name, width: w * pixelSize, height: h * pixelSize, fps, ...(length ? { length } : {}), pixel: { pixelSize } });
+    return newDoc({ name, width: w * pixelSize, height: h * pixelSize, fps, animated, ...(length ? { length } : {}), pixel: { pixelSize } });
   }
-  const doc = newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps, ...(length ? { length } : {}) });
+  const doc = newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps, animated, ...(length ? { length } : {}) });
   const dpi = cleanDpi(c.dpi);
   if (dpi !== DEFAULT_DPI) doc.dpi = dpi;
   return doc;

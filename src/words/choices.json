@@ -2450,5 +2450,28 @@
   "choice.export.svgTooth.ask.detail": {
     "text": "Never remembered. You pick again on every SVG export that has chalk or charcoal on paper.",
     "where": "Dialog and Preferences: the small line under the \"ask\" answer in \"Chalk and charcoal on paper in an SVG\"."
+  },
+  "choice.animation.openAnimate.title": { "text": "The Animate room on a still picture", "where": "Name of this choice in Preferences > Behaviour (group: Animating)." },
+  "choice.animation.openAnimate.question": {
+    "text": "You opened the Animate room on a drawing that has no animation yet. Should Frameling add animation for you?",
+    "where": "The question the \"The Animate room on a still picture\" dialog asks."
+  },
+  "choice.animation.openAnimate.add.label": { "text": "Add animation", "where": "Dialog and Preferences: the button for the answer \"add\" in \"The Animate room on a still picture\"." },
+  "choice.animation.openAnimate.add.detail": {
+    "text": "The timeline and the frames arrive straight away. Anything you have already drawn stays as frame 1.",
+    "where": "Dialog and Preferences: the small line under the \"add\" answer in \"The Animate room on a still picture\"."
+  },
+  "choice.animation.openAnimate.add.did": {
+    "text": "Added animation to this drawing.",
+    "where": "Toast when \"add\" is used without asking (\"The Animate room on a still picture\"), in the past tense."
+  },
+  "choice.animation.openAnimate.offer.label": { "text": "Just show me the button", "where": "Dialog and Preferences: the button for the answer \"offer\" in \"The Animate room on a still picture\"." },
+  "choice.animation.openAnimate.offer.detail": {
+    "text": "The room opens with an Add animation button where the timeline goes. Nothing changes until you press it.",
+    "where": "Dialog and Preferences: the small line under the \"offer\" answer in \"The Animate room on a still picture\"."
+  },
+  "choice.animation.openAnimate.offer.did": {
+    "text": "Left the drawing as a still. The Add animation button is where the timeline goes.",
+    "where": "Toast when \"offer\" is used without asking (\"The Animate room on a still picture\"), in the past tense."
   }
 }

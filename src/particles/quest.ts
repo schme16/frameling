@@ -3,7 +3,7 @@
 import type { Doc, ParticlesShape, VectorDrawing } from '../core/format';
 import { store } from '../core/store';
 import type { Quest } from '../quests/types';
-import { ensureBlankVectorPage } from '../quests/actions';
+import { ensureAnimatedVectorPage } from '../quests/actions';
 import { hasVectorLayer } from '../quests/predicates';
 import { showPanel } from '../ui/dock';
 import { presetById } from './model';
@@ -70,7 +70,7 @@ export const PARTICLES_QUEST: Quest = {
   features: ['particles'],
   requires: ['first-animation'],
   finish: questWord('quest.particle-party.finish'),
-  prepare: ensureBlankVectorPage,
+  prepare: ensureAnimatedVectorPage,
   ready: hasVectorLayer,
   steps: [
     {

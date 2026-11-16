@@ -5,6 +5,10 @@ import { resizeZone } from './lockedDock';
 import { TabGroupView, ZoneStack } from './DockGroup';
 import { useEdgeDrag } from './dockShared';
 import { RightDock } from './RightDock';
+import { isAnimated } from '../core/animation';
+import { useStore } from '../core/store';
+import { zoneTabs } from './dockModel';
+import { leftOutForStill } from './stillZone';
 import { useShownZone } from './roomFolds';
 import { rightStyle } from './rightStyle';
 
@@ -16,10 +20,19 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
   return <TabZoneView zone={zone} panelsButton={zone === 'right'} />;
 }
 
+/** True while a drawing with no animation leaves this zone out because it only holds the timeline (see stillZone.ts). */
+function useLeftOut(zone: DockZone): boolean {
+  const animated = useStore((s) => isAnimated(s.doc));
+  const room = dock.use((d) => d.workspaceId);
+  const tabs = dock.use((d) => zoneTabs(d.layout.zones[zone]).join('\n'));
+  return leftOutForStill(zone, tabs ? tabs.split('\n') : [], animated, room);
+}
+
 function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: boolean }) {
   const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const leftOut = useLeftOut(zone);
   // An empty zone takes no room. While something is dragged, the bands over the canvas edges stand in for it.
-  if (!z.tabs.length) return null;
+  if (!z.tabs.length || leftOut) return null;
   const horizontal = zone === 'bottom' || zone === 'top';
   // The size is what it is asked for; it gives way (down to its least) when the window is short of room (see dockFit.ts).
   const style = z.collapsed ? undefined : horizontal ? { height: z.size, minHeight: MIN_SIZE[zone] } : { width: z.size, minWidth: MIN_SIZE[zone] };
@@ -34,11 +47,12 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
 export function Splitter({ zone }: { zone: DockZone }) {
   const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const away = panelsAway.use((v) => v);
+  const leftOut = useLeftOut(zone);
   const horizontal = zone === 'bottom' || zone === 'top';
   // Dragging right grows the left side, left grows the right side; down grows the top, up grows the bottom.
   const sign = zone === 'left' || zone === 'top' ? 1 : -1;
   const drag = useEdgeDrag({ horizontal, sign, size: () => z.size, set: (n) => resizeZone(zone, clampSize(zone, n)) });
-  if (!z.tabs.length || z.collapsed || away) return null;
+  if (!z.tabs.length || z.collapsed || away || leftOut) return null;
 
   return (
     <div

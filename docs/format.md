@@ -152,6 +152,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `fps` | number | |
 | `dpi?` | number | Missing = 96. For sizes in mm, cm, in, pt. Added with onboarding (`977be97`). |
 | `length` | number | Frames, at least 1. |
+| `animated?` | boolean | Optional. True = an animation (timeline, frame rate and animation tools shown). False = a still picture: those are tucked away, and any frames stay in the file. Missing = what every older file meant: animated when `length` is above 1. Turning it off never deletes frames. See `src/core/animation.ts`. |
 | `background` | Color or null | null = see-through. |
 | `layers` | `Layer[]` | Bottom first. |
 | `drawings` | `Record<Id, Drawing>` | Cels point here; several cels can share one drawing. |

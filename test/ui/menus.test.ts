@@ -118,6 +118,11 @@ describe('headings', () => {
 describe('the real menus', async () => {
   await import('../../src/renderer/features');
   const { resolveMenus } = await import('../../src/ui/menus');
+  // These are the menus of a drawing with animation on, which has every entry. A still drawing leaves the animation ones
+  // out (test/findability/still.test.ts holds that side).
+  const { store } = await import('../../src/core/store');
+  const { newDoc } = await import('../../src/core/doc');
+  store().load(newDoc({ animated: true }));
   type Item = ReturnType<typeof resolveMenu>[number];
   const flat = (items: Item[]): string[] => items.flatMap((i) => (i.kind === 'command' ? [i.command.id] : i.kind === 'submenu' ? flat(i.items) : []));
   const menu = (label: string) => resolveMenus().find((m) => m.menu.label === label)!.items;

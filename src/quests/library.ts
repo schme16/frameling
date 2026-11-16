@@ -9,8 +9,9 @@ import {
   demoFill,
   drawDemoBall,
   drawDemoPixelRing,
+  ensureAnimatedVectorPage,
   ensureBlankVectorPage,
-  ensureTinySpritePage,
+  ensureAnimatedTinySpritePage,
   loadBouncingBall,
   nextGapSetting,
   nudgeDrawing,
@@ -76,7 +77,7 @@ export const FIRST_ANIMATION: Quest = {
   icon: 'quest',
   badge: { id: 'flipbooker', name: questWord('quest.first-animation.badge'), icon: 'film', color: '--grape' },
   finish: questWord('quest.first-animation.finish'),
-  prepare: ensureBlankVectorPage,
+  prepare: ensureAnimatedVectorPage,
   ready: hasVectorLayer,
   steps: [
     {
@@ -268,7 +269,7 @@ export const PIXEL_PAL: Quest = {
   // A first quest in its own right for sprite people, so it needs nothing before it.
   requires: [],
   finish: questWord('quest.pixel-pal.finish'),
-  prepare: ensureTinySpritePage,
+  prepare: ensureAnimatedTinySpritePage,
   ready: hasPixelLayer,
   steps: [
     {

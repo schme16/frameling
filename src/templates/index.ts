@@ -34,6 +34,11 @@ export interface Template {
   thumbnail?: () => number;
   /** Words to find it by (search, tooltips). */
   tags?: string[];
+  /**
+   * Whether the document it makes is an animation (missing = yes). A starter that is an animation opens with its timeline
+   * already there and asks nothing; one that is a still picture says `false`, and Add animation is still one press away.
+   */
+  animated?: boolean;
   /** How the app sets itself up when it opens (onion skin, the export it starts on). See setup.ts. */
   setup?: TemplateSetup;
   make(): Doc;
@@ -214,6 +219,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'blank-level',
+    animated: false,
     name: 'Blank level',
     blurb: 'A 320x192 stage for 20 by 12 tiles of 16x16, with an empty tilemap layer. Try it: make a tile in the Tileset panel, then paint the level with it.',
     kind: 'pixel',
@@ -223,6 +229,16 @@ export const TEMPLATES: Template[] = [
 
 // Templates with a setup remember it for every document they make.
 for (const t of TEMPLATES) if (t.setup) t.make = withSetup(t.make, t.setup);
+
+// The file says whether it is an animation, so the timeline is there when an animated starter opens and not when a still one does.
+for (const t of TEMPLATES) {
+  const make = t.make;
+  t.make = () => {
+    const doc = make();
+    doc.animated = t.animated !== false;
+    return doc;
+  };
+}
 
 export function findTemplate(id: string): Template | undefined {
   return TEMPLATES.find((t) => t.id === id);

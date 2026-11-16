@@ -1,7 +1,9 @@
 // What the command palette searches and how it ranks. The component (CommandPalette.tsx) is only the looks.
-import { allCommands, allHelp, type Command, type HelpTopic } from '../core/registry';
+import { allCommands, allHelp, getCommand, type Command, type HelpTopic } from '../core/registry';
 import { store } from '../core/store';
 import { reasonFor } from '../core/commandReasons';
+import { animationKind, gateEnabled, gateReason } from '../core/animationGate';
+import { isAnimated } from '../core/animation';
 import { scoreWord, wordsOf } from './match';
 import { readRaw, writeJson } from './mini';
 import { toast } from './toast';
@@ -183,7 +185,18 @@ export function scoreItem(query: string, it: PaletteItem): number {
   // The verb says which part of the app: somebody who says "draw" wants a tool, and "import" is in the File menu.
   const home = all.map((w) => VERB_HOMES[w]).find((c) => c && it.kind === 'command' && it.category === c);
   if (home) total += qs.length * HOME_BOOST;
-  return (total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0)) * quietFactor(it, all);
+  return (total / qs.length + (labelLower.length ? Math.min(10, 40 / labelLower.length) : 0)) * quietFactor(it, all) + doorBoost(it, all);
+}
+
+/** Words that ask for frames and motion. On a drawing with no animation they all mean the same thing: Add animation. */
+const ASKS_FOR_ANIMATION: ReadonlySet<string> = new Set(['animate', 'animating', 'animated', 'animation', 'frames', 'timeline', 'flipbook', 'fps']);
+
+/** How far Add animation is lifted when somebody on a still picture types one of those words, so it is the first thing they find. */
+export const DOOR_BOOST = 100;
+
+function doorBoost(it: PaletteItem, words: string[]): number {
+  if (it.kind !== 'command' || it.id !== 'animation.add' || isAnimated(store().get().doc)) return 0;
+  return words.some((w) => ASKS_FOR_ANIMATION.has(w)) ? DOOR_BOOST : 0;
 }
 
 /**
@@ -270,7 +283,8 @@ export function withSettings(hits: PaletteHit[], query: string, rows: PrefRow[] 
 /** Is this command usable right now? */
 export function commandEnabled(c: Command): boolean {
   try {
-    return c.enabled ? c.enabled(store().get()) : true;
+    // A drawing with no animation greys the animation commands (see src/core/animationGate.ts).
+    return gateEnabled(c, store().get());
   } catch {
     return false;
   }
@@ -287,21 +301,30 @@ export function noteRecentCommand(id: string): void {
 }
 
 /** What would turn a greyed command on, in the state the app is in now. Undefined when nobody has written it down. */
-export function commandReason(c: Partial<Pick<Command, 'id' | 'reason'>>): string | undefined {
+export function commandReason(c: Partial<Pick<Command, 'id' | 'reason' | 'category'>>): string | undefined {
   return reasonFor(c, store().get());
 }
 
 /** What to say when someone picks a command that can't run right now, instead of nothing happening. */
-export function notNowMessage(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason'>>): string {
+export function notNowMessage(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason' | 'category'>>): string {
   const why = commandReason(c);
   if (why) return `"${c.label}" is greyed out. ${why}`;
   return `"${c.label}" can't be used right now.${c.help ? ' Its help page says what it needs.' : ' Try selecting something or moving to a frame with a drawing first.'}`;
 }
 
 /** Pressing a greyed command (menu, button or palette row) says why, with a way to read more. Menus and buttons stayed silent before. */
-export function explainNotNow(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason'>>, openHelp: (id: string) => void): void {
+export function explainNotNow(c: Pick<Command, 'label' | 'help'> & Partial<Pick<Command, 'id' | 'reason' | 'category'>>, openHelp: (id: string) => void): void {
   const help = c.help;
-  toast(notNowMessage(c), { kind: 'info', action: help ? { label: 'Read about it', run: () => openHelp(help) } : undefined });
+  // On a still picture the way forward is one press, so the toast carries it instead of a page to read.
+  const still = c.id !== undefined && c.category !== undefined && gateReason({ id: c.id, category: c.category }, store().get()) !== undefined;
+  const action = still ? { label: 'Add animation', run: () => void runById('animation.add'), id: 'add-animation' } : help ? { label: 'Read about it', run: () => openHelp(help) } : undefined;
+  toast(notNowMessage(c), { kind: 'info', action });
+}
+
+/** Runs a registered command by its id, the way a click would. Does nothing for an id nobody registered. */
+function runById(id: string): void {
+  const c = getCommand(id);
+  if (c) runCommand(c);
 }
 
 /** Runs a command the way a click would: skips disabled ones, and says so (gently) if it fails. */
@@ -309,6 +332,8 @@ export function explainNotNow(c: Pick<Command, 'label' | 'help'> & Partial<Pick<
 export function runCommand(c: Command): boolean {
   if (!commandEnabled(c)) return false;
   try {
+    // Asking for a frame on a still picture turns animation on first, and says so (see src/core/animationGate.ts).
+    if (animationKind(c) === 'makes' && !isAnimated(store().get().doc)) runById('animation.add');
     const r = c.run();
     if (r && typeof (r as Promise<void>).catch === 'function') (r as Promise<void>).catch((err) => toast(`That didn't work: ${err instanceof Error ? err.message : String(err)}`, { kind: 'error' }));
   } catch (err) {
