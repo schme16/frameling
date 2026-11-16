@@ -126,11 +126,31 @@ app.whenReady().then(async () => {
       if (e.level === 'error' || e.level === 3) { logs.push(String(m)); if (process.env.SHOT_LOG) console.log('LOG', String(m)); }
     });
     await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'), { query: { debug: '1' } });
-    await win.webContents.executeJavaScript(`
-      ${look ? `document.documentElement.dataset.look = ${JSON.stringify(look)};` : ''}
-      ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)}; window.__shotTheme = ${JSON.stringify(theme)};` : ''}
-      true;
-    `);
+    // Set the preference, not the attribute. The app writes data-theme and data-look itself from prefs as soon as it
+    // mounts, so a harness that only sets the attribute gets it overwritten within a frame and every "light" shot came
+    // out dark. The theme name follows from the preference: light gives Paper & Honey, dark gives Midnight Sketchbook.
+    // The debug hooks arrive a moment after the page loads, so wait for them, and never let this step hang the run.
+    // 'cosy' and 'crisp' are the only looks there are; anything else (an empty field, or the old 'default') is ignored.
+    const realLook = look === 'cosy' || look === 'crisp' ? look : '';
+    if (look && !realLook) logs.push(`unknown look ${JSON.stringify(look)}, ignored (cosy or crisp)`);
+    if (realLook || theme) {
+      try {
+        await win.webContents.executeJavaScript(`
+          new Promise((done) => {
+            const go = (tries) => {
+              const p = window.__frameling && window.__frameling.prefs;
+              if (!p) return tries > 0 ? setTimeout(() => go(tries - 1), 50) : done('no prefs hook');
+              ${realLook ? `p.set({ look: ${JSON.stringify(realLook)} });` : ''}
+              ${theme ? `p.set({ theme: ${JSON.stringify(theme)} }); window.__shotTheme = ${JSON.stringify(theme)};` : ''}
+              done('ok');
+            };
+            go(60);
+          })
+        `);
+      } catch (e) {
+        logs.push(`theme/look failed: ${e && e.message ? e.message : e}`);
+      }
+    }
     await sleep(Number(process.env.SHOT_WAIT || 900));
     if (steps) {
       // A step that throws used to leave the run hanging for ever. Say which one, and carry on to the shot so
