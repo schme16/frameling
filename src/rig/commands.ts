@@ -1,4 +1,4 @@
-// Bone commands: palette, Skeleton, effects and more > Skeleton (rig) and keys.
+// Bone commands: palette, Rigging and keys.
 import { lazyPanel } from '../core/lazy';
 import { getCommand, registerCommand, type Command, type PanelDef } from '../core/registry';
 import { store, type State } from '../core/store';

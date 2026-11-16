@@ -1,4 +1,4 @@
-// Record a move: palette, the Animate menu and keys.
+// Record a move: palette, the Animation menu and keys.
 import { registerCommands } from '../core/registry';
 import { store, type State } from '../core/store';
 import { toast } from '../ui/toast';

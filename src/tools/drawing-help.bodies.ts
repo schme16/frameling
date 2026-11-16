@@ -33,7 +33,7 @@ Each drag is one step to undo.`,
 ## Do it
 
 1. Select the brush line with **Select** (**V**). To tidy several at once, select them all.
-2. Choose **Turn into an editable line...** from the **Tools and layers** menu (or press **Ctrl+K** and search for it). Or press **A**, click the line, and press the button on the message.
+2. Choose **Turn into an editable line...** from the **Tools** menu (or press **Ctrl+K** and search for it). Or press **A**, click the line, and press the button on the message.
 3. Slide **Smoothness** while you watch the line on the canvas. Left keeps it closest to what you drew, with more points. Right is smoother, with the fewest points, and a wobbly hand comes out steady. The card tells you how many points it becomes.
 4. Press **Turn into a line**. You're now in Edit points, ready to drag.
 

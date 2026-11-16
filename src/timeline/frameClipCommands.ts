@@ -203,4 +203,4 @@ registerCommands([
   },
 ]);
 
-// These sit in Frames and motion > Copy, move and stretch keys (named in src/ui/menus.ts).
+// These sit in Animation > Copy, move and stretch keys (named in src/ui/menus.ts).

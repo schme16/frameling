@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 **Record one**
 1. Go to the frame where the move should start.
 2. Select what should move (V). Nothing selected moves the whole drawing on this frame.
-3. Pick **Frames and motion > In-betweens and easing > Record a move**, or press **Alt+R**.
+3. Pick **Animation > In-betweens and easing > Record a move**, or press **Alt+R**.
 4. Press on the canvas and drag. The timeline plays while you hold the button, and the drawing follows your hand.
 5. Let go. Your drag becomes keys, in one step you can undo.
 

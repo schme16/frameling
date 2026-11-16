@@ -1152,7 +1152,7 @@
   },
   "choice.pixel.shareLayers.leave.label": { "text": "Leave my files as they are", "where": "Dialog and Preferences: the button for the answer \"leave\" in \"Frames on boards: one stack of layers\"." },
   "choice.pixel.shareLayers.leave.detail": {
-    "text": "Each board keeps layers of its own. You can put them on one stack later, from the Pixel tools menu.",
+    "text": "Each board keeps layers of its own. You can put them on one stack later, from the Layers and artboards menu.",
     "where": "Dialog and Preferences: the small line under the \"leave\" answer in \"Frames on boards: one stack of layers\"."
   },
   "choice.pixel.shareLayers.later.label": { "text": "Not now", "where": "Dialog and Preferences: the button for the answer \"later\" in \"Frames on boards: one stack of layers\"." },

@@ -875,8 +875,8 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
 - A **tick** means it is switched on.
 - **Greyed** choices can't be used right now (nothing to undo yet, for example). Point at one, or click it, and it says what would turn it on.
 - Shortcuts are shown on the right.
-- Along the top: **File**, **Edit**, **View**, **Tools and layers**, **Pixel tools**, **Frames and motion**, **Skeleton, effects and more** and **Help**. The ones in the middle are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
-- A **small arrow** on the right opens a smaller menu beside it. Related things are grouped that way: Snapping and Panels in View, Masks and folders in Tools and layers, Play range and Hold a drawing in Frames and motion, Skeleton (rig), Artboards, Effects and Tiles in Skeleton, effects and more, Plugins in Edit.
+- Along the top: **File**, **Edit**, **View**, **Tools**, **Layers and artboards**, **Animation**, **Rigging**, **Effects** and **Help**. The ones in the middle are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
+- A **small arrow** on the right opens a smaller menu beside it. Related things are grouped that way: Snapping and Panels in View, Masks and folders and Artboards in Layers and artboards, Play range and Hold a drawing in Animation, Tiles in Rigging, Plugins in Edit.
 - You can **move, rename, hide and add** entries, and make menus of your own: see [Change the menus](help:change-the-menus).
 - A menu that is taller than the window **scrolls**: use the mouse wheel, or the arrow keys.
 

@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'line-style': `Make a path on a map, a dotted outline, an arrow on a diagram, or a line that is fat in the middle and thin at the ends. These are all choices for the **outline** of a shape, so they work on lines, rectangles, ellipses, polygons and pen shapes.
 
-**Pick how it looks:** with the **Line**, **Rectangle**, **Ellipse**, **Polygon** or **Pen** tool, open **Dashes, arrows and width** in the tool options. Or choose **Tools and layers > Line style**, or press **Ctrl+K** and type **dashed**, **dotted**, **arrow** or **taper**. What you choose is used for the next shapes you draw, and it is put on any shapes you have picked, in one step you can undo.
+**Pick how it looks:** with the **Line**, **Rectangle**, **Ellipse**, **Polygon** or **Pen** tool, open **Dashes, arrows and width** in the tool options. Or choose **Tools > Line style**, or press **Ctrl+K** and type **dashed**, **dotted**, **arrow** or **taper**. What you choose is used for the next shapes you draw, and it is put on any shapes you have picked, in one step you can undo.
 
 - **Dashes:** Solid, Dashed, Dotted, or Dash and dot. The dashes are measured in line widths, so a thicker line gets longer dashes and the look stays the same.
 - **Arrow heads:** a **Triangle**, an **Open** arrow, a **Dot** or a **Bar**, on the start, the end, or both, of an open line.

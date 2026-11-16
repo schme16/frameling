@@ -29,6 +29,27 @@ export interface MenuDef {
   leaveOut?: readonly string[];
 }
 
+/**
+ * Tools that the Tools menu leaves out, so that list is the ones you draw and select with. Each is in the menu of the
+ * feature it belongs to (the skeleton tools in Skeleton, the motion tools in In-betweens, Notes and Marks in View), and
+ * on the tool rail and in the palette as ever. A test checks each one is named somewhere else.
+ */
+export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
+  'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
+  'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
+  'tools.notes', 'tools.marks',
+  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in Tools > Spray, soft paint and charcoal.
+  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
+];
+
+const RIG_ITEMS: MenuEntry[] = [
+  'rig.addBones', 'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights', '-', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', 'rig.grab.pin', 'rig.grab.stretch', 'rig.grab.turn', '-', 'rig.deleteBone', 'rig.deleteBranch', 'rig.boneLook', 'view.panel.rig'
+];
+
+const EFFECT_ITEMS: MenuEntry[] = [
+  'view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', 'effects.add.tooth', '-', 'effects.reset', 'effects.shapesReset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'
+];
+
 /** `-` is a separator. `group:tools`, `group:panels` and `group:workspaces` expand to every one registered. */
 export const MENUS: MenuDef[] = [
   {
@@ -47,30 +68,48 @@ export const MENUS: MenuDef[] = [
     items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:moreview', 'sub:notes', 'sub:marks', '-', 'sub:look', 'sub:sharing', 'sub:customise', 'view.searchSettings', 'view.commandPalette', 'sub:quill'],
   },
   {
+    // The menu's id stays Draw (saved menu changes and plugins name it); the bar says Tools.
     label: 'Draw',
-    title: 'Tools and layers',
-    categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange'],
-    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', 'sub:arrange', '-', 'sub:symbols', 'sub:shapes', 'sub:linestyle', '-', 'sub:brushes', 'sub:brushtips', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'sub:pairs', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:masks', '-', 'view.panel.layers'],
+    title: 'Tools',
+    categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Arrange', 'Pixel'],
+    items: [
+      'sub:tools', 'pixel.mirror', '-',
+      'select.flipH', 'select.flipV', 'sub:arrange', '-',
+      'sub:symbols', 'sub:shapes', 'sub:linestyle', 'sub:palette', '-',
+      'sub:soft', 'sub:brushes', 'sub:brushtips', 'sub:toolopts',
+    ],
   },
   {
-    label: 'Pixel',
-    title: 'Pixel tools',
-    categories: ['Pixel'],
-    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'pixel.shareLayers', 'pixel.unshareLayers', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.gradient', 'sub:pixgrad', 'sub:soft', 'text.pixelType', 'sub:pixtext', 'pixel.mirror', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack', '-', 'sub:pixturn', 'pixel.outline', 'pixel.outlineInside', 'convert.toShapes', '-', 'sub:palette', 'sub:slices', 'sub:pixzoom', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel'],
+    // Everything about the layers a drawing is made of, and the artboards (boards) it is made on. A sprite's boards and
+    // frames and its shared layers live here too, since they are layers and boards.
+    label: 'Layers',
+    title: 'Layers and artboards',
+    categories: ['Layers'],
+    items: [
+      'layers.addVector', 'layers.addPixel', 'sub:pairs', 'layers.duplicate', 'layers.delete', '-',
+      'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-',
+      'sub:masks', 'pixel.shareLayers', 'pixel.unshareLayers', '-',
+      'sub:artboards', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards', '-', 'view.panel.layers',
+    ],
   },
   {
     label: 'Animate',
-    title: 'Frames and motion',
+    title: 'Animation',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'sub:onion', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'sub:moreframes', '-', 'sub:tween', 'sub:readymotion', 'sub:camera', 'sub:clips', '-', 'sub:sound', 'sub:reference'],
   },
   {
-    // The specialist kits, each a submenu of its own so Draw and Animate stay the menus you use all day. Every command in
-    // them is still on the palette, and these used to sit inside Draw and Animate (MENU_HOMES keeps the old names working).
+    // The skeleton kit, flat in its own menu. The id stays Extras (saved menu changes name it). Tiles sit here only until
+    // somebody decides where tilemaps belong.
     label: 'Extras',
-    title: 'Skeleton, effects and more',
-    categories: [],
-    items: ['sub:rig', 'sub:artboards', 'sub:effects', 'sub:tiles'],
+    title: 'Rigging',
+    categories: ['Rig'],
+    items: [...RIG_ITEMS, '-', 'sub:tiles'],
+  },
+  {
+    label: 'Effects',
+    categories: ['Effects'],
+    items: [...EFFECT_ITEMS],
   },
   {
     // Everything that is only for people who draw live: the audience tools, each part a submenu of its own so every entry
@@ -93,14 +132,18 @@ export const MENUS: MenuDef[] = [
 ];
 
 /**
- * Menus that used to be on the bar and now live inside another, so a feature or plugin that still names the old menu
- * (`registerMenuItems('Rig', ...)`) lands in the right place. The ids underneath did not change.
+ * Menus that moved, so a feature or plugin that still names the old menu or submenu (`registerMenuItems('Rig', ...)`)
+ * lands in the right place. Rig and Effects are menus of their own now, Artboards is inside Layers, Pixel is gone. The ids underneath did not change.
  */
 export const MENU_HOMES: Record<string, string> = {
-  Rig: 'sub:rig',
-  Effects: 'sub:effects',
+  Rig: 'Extras',
+  'sub:rig': 'Extras',
+  'sub:effects': 'Effects',
   Artboards: 'sub:artboards',
   Plugins: 'sub:plugins',
+  // The Pixel menu is gone: what a feature adds to it goes to Tools, where the pixel tools now are.
+  Pixel: 'Draw',
+  'sub:tools': 'Draw',
 };
 
 /** A submenu, named in a menu as `sub:<key>`. */
@@ -116,19 +159,6 @@ export interface SubmenuDef {
   /** Tool ids a `group:tools` in this list skips, because each one is listed where its own feature is. */
   leaveOut?: readonly string[];
 }
-
-/**
- * Tools that Draw > Tools leaves out, so that list is the ones you draw and select with. Each is in the menu of the
- * feature it belongs to (the skeleton tools in Skeleton, the motion tools in In-betweens, Notes and Marks in View), and
- * on the tool rail and in the palette as ever. A test checks each one is named somewhere else.
- */
-export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
-  'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
-  'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
-  'tools.notes', 'tools.marks',
-  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in Pixel > Spray, soft paint and charcoal.
-  'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
-];
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
   panels: {
@@ -176,19 +206,19 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.gridSettings', '-', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective'],
   },
   tools: {
-    label: 'Tools',
+    label: 'Pick a tool',
     items: ['group:tools', '-', 'tiles.newAndDraw'],
     // These are on the rail and in the palette as ever, and each is in the menu of the thing it is for.
     leaveOut: TOOLS_WITH_THEIR_FEATURE,
   },
   arrange: {
     label: 'Arrange, group and transform',
-    items: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle'],
+    items: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', 'heading:Flip and turn the whole drawing', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],
     prefixes: ['arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'transform.'],
   },
   shapes: {
     label: 'Shapes and colour',
-    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
+    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
     prefixes: ['shapes.', 'colors.recolour'],
   },
   linestyle: {
@@ -218,13 +248,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   toolopts: {
     label: 'Brush and tool options',
-    items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'select.scope', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing'],
-  },
-  effects: {
-    label: 'Effects',
-    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', 'effects.add.tooth', '-', 'effects.reset', 'effects.shapesReset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'],
-    prefixes: ['effects.add.', 'particles.add.'],
-    categories: ['Effects'],
+    items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'select.scope', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing',
+      'heading:Pixel brush', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack',
+      'heading:Pixel gradient style', 'pixel.gradientColours', 'pixel.gradientDither', 'pixel.gradientRadial',
+      'heading:Pixel text', 'text.pixelType', 'text.pixelFont.classic', 'text.pixelFont.tiny', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller',
+    ],
   },
   pairs: {
     label: 'Pixels and vectors',
@@ -277,8 +305,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   guess: { label: 'Guess the drawing', items: [] },
   moreview: {
     label: 'More view tools',
-    items: ['view.emptyGhost', 'view.whereDidItGo', 'camera.lookThrough', 'camera.whilePlaying', 'tiles.tileMode', 'tiles.showShapes', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable'],
-    prefixes: ['view.lightTable'],
+    items: ['view.emptyGhost', 'view.whereDidItGo', 'camera.lookThrough', 'camera.whilePlaying', 'tiles.tileMode', 'tiles.showShapes', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable',
+      'heading:Pixel art', 'pixel.previewPlay', 'pixel.previewSize', 'pixel.showSlices', 'pixel.deleteSlice',
+      'heading:Zoom to a pixel size', 'pixel.zoom1', 'pixel.zoom2', 'pixel.zoom3', 'pixel.zoom4', 'pixel.zoom5', 'pixel.zoom6',
+    ],
+    prefixes: ['view.lightTable', 'pixel.zoom'],
   },
   customise: {
     label: 'Change the menus and features',
@@ -294,18 +325,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['penmods.list', 'penmods.stop', '-'],
     prefixes: ['penmods.try.'],
   },
-  pixturn: {
-    label: 'Flip and turn',
-    items: ['pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate'],
-  },
   palette: {
     label: 'Palette',
     items: ['pixel.paletteLock', 'pixel.reduceToPalette', '-', 'pixel.nextColor', 'pixel.previousColor', '-', 'palette.fromDrawing', 'palette.fromSwatches', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', '-', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
     prefixes: ['palette.'],
-  },
-  slices: {
-    label: 'Slices',
-    items: ['pixel.showSlices', 'pixel.deleteSlice', 'view.panel.slices'],
   },
   soft: {
     label: 'Spray, soft paint and charcoal',
@@ -317,21 +340,6 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
       'charcoal.paper.smooth', 'charcoal.paper.fine', 'charcoal.paper.medium', 'charcoal.paper.laid', 'charcoal.paper.rough', '-',
       'tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider',
     ],
-  },
-  pixgrad: {
-    label: 'Pixel gradient style',
-    items: ['pixel.gradientColours', 'pixel.gradientDither', 'pixel.gradientRadial'],
-    prefixes: ['pixel.gradient'],
-  },
-  pixtext: {
-    label: 'Pixel text style',
-    items: ['text.pixelFont.classic', 'text.pixelFont.tiny', '-', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller'],
-    prefixes: ['text.pixelFont.'],
-  },
-  pixzoom: {
-    label: 'Zoom to a pixel size',
-    items: ['pixel.zoom1', 'pixel.zoom2', 'pixel.zoom3', 'pixel.zoom4', 'pixel.zoom5', 'pixel.zoom6'],
-    prefixes: ['pixel.zoom'],
   },
   range: {
     label: 'Play range',
@@ -347,7 +355,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   moreframes: {
     label: 'More frame tools',
-    items: ['timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd'],
+    items: ['timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', '-', 'pixel.makeItMove'],
   },
   readymotion: {
     label: 'Ready-made motion',
@@ -386,11 +394,6 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Sound and lip sync',
     items: ['audio.startHere', 'audio.mute', 'audio.scrub', 'audio.remove'],
     categories: ['Lip sync'],
-  },
-  rig: {
-    label: 'Skeleton (rig)',
-    items: ['rig.addBones', 'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights', '-', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'rig.deleteBone', 'rig.deleteBranch', 'rig.boneLook', 'view.panel.rig'],
-    categories: ['Rig'],
   },
   reference: {
     label: 'Reference picture',
@@ -451,7 +454,7 @@ export const contributedFor = (key: string): string[] => (contributed.get(key) ?
 export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'heading'; label: string } | { kind: 'submenu'; label: string; items: MenuItem[] };
 
 /**
- * `visible` is for drawing a menu: the Draw menu then lists only the tools that work on the layer you are on, each
+ * `visible` is for drawing a menu: the Tools menu then lists only the tools that work on the layer you are on, each
  * name once. Without it (working out which commands some menu already names) every tool counts.
  */
 export function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS, visible = false): string[] {
