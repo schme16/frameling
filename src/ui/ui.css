@@ -1,4 +1,27 @@
 /*
+ * What sits on top of what. The ladder is named in src/ui/layers.ts, and these are the same numbers for CSS to use.
+ * A new floating thing picks a name from here rather than inventing a number, which is how the brush and tip pickers
+ * once ended up over a dialog's dimmed backdrop.
+ */
+:root {
+  --z-in-panel: 6;
+  --z-panel: 50;
+  --z-panel-float: 60;
+  --z-dock-chip: 90;
+  /* A picker or menu opened from the page: above the panels, under a dialog's backdrop. */
+  --z-flyout: 95;
+  --z-backdrop: 100;
+  --z-modal: 110;
+  --z-menu-over-modal: 150;
+  --z-tip: 200;
+  --z-toast: 300;
+  --z-big-dialog: 900;
+  /* A picker opened from inside a dialog, so it is seen above it. */
+  --z-flyout-over-modal: 990;
+  --z-quest: 1000;
+}
+
+/*
  * Frameling shell styles. Every colour comes from theme.css tokens, so both themes and both looks work.
  *
  * Cosy (default): floating rounded panels with gaps between them, soft shadows, a little bounce.
@@ -1708,7 +1731,7 @@ body.ui-resizing * {
      past the menu surface, with the accent in the border. The words use --on-tip, --on-tip-soft and --on-tip-link, which are those
      colours moved only if a theme's own would not be readable on its tip fill. */
   position: fixed;
-  z-index: 200;
+  z-index: var(--z-tip);
   max-width: 280px;
   padding: 8px 11px;
   border: 1px solid var(--tip-line);
@@ -1793,7 +1816,7 @@ body.ui-resizing * {
 
 .ui-toasts {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-toast);
   left: 50%;
   bottom: 44px;
   transform: translateX(-50%);
@@ -1876,7 +1899,7 @@ body.ui-resizing * {
 .ui-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-backdrop);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -4460,7 +4483,7 @@ body.dock-dragging * {
 }
 .dock-chip {
   position: fixed;
-  z-index: 90;
+  z-index: var(--z-dock-chip);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4486,7 +4509,7 @@ body.dock-dragging * {
 .ui-dock-menu {
   position: fixed;
   /* Above a dialog's backdrop (100), so the menu a card in Preferences opens is seen, and under tooltips (200). */
-  z-index: 150;
+  z-index: var(--z-menu-over-modal);
   min-width: 230px;
 }
 .ui-dock-menu-head {

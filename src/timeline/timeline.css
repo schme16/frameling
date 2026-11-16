@@ -970,7 +970,7 @@
 
 .tl-floating {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-flyout);
   box-sizing: border-box;
   padding: 4px;
   background: var(--raised);

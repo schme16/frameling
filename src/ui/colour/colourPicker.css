@@ -93,7 +93,7 @@
 }
 .cp-pop {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-flyout);
   box-sizing: border-box;
   padding: 10px;
   border-radius: var(--radius);

@@ -9,7 +9,7 @@
 .pk-caret { flex: none; color: var(--muted); display: flex; }
 .pk-stroke { display: block; width: 100%; color: inherit; }
 
-.pk-pop { position: fixed; z-index: 1000; width: 380px; display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--text); box-shadow: var(--shadow); overflow: hidden; }
+.pk-pop { position: fixed; z-index: var(--z-flyout); width: 380px; display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--text); box-shadow: var(--shadow); overflow: hidden; }
 .pk-grip { position: absolute; left: 2px; bottom: 2px; width: 18px; height: 18px; display: flex; align-items: flex-end; justify-content: flex-start; padding: 2px; color: var(--muted); cursor: nesw-resize; touch-action: none; }
 .pk-live { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
 .pk-dial { flex: none; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: var(--raised); display: flex; align-items: center; justify-content: center; }
