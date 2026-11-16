@@ -144,7 +144,9 @@ function invokeStubs(library) {
     'review:takeLink': () => null,
     'review:savePicture': () => ({ ok: false }),
     // No Twitch in a harness: nothing is signed in and no app is set up.
-    'twitch:status': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
+    // No problem on a plain status: the app toasts one the moment it first sees it, which landed a "no Twitch app" notice over any
+    // picture that ran long enough. Signing in still answers no-app, which is what a build with no Twitch app of its own says.
+    'twitch:status': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: '' }),
     'twitch:signIn': () => ({ app: 'none', canSave: false, state: 'signed-out', login: '', scopes: [], listening: 'off', refused: [], problem: 'no-app' }),
     // A made-up code and two made-up rewards, so the pictures have something to show.
     'twitch:code': () => ({ userCode: 'WDJNQXHT', expiresAt: Date.now() + 1_800_000 }),

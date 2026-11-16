@@ -1,9 +1,8 @@
 // Help picture for notes on the canvas: a lopsided face with three notes, one of them open with an answer on it.
-// Window coordinates as in drawing.cjs: the canvas viewport is 764 x 444 at (113, 47).
+// The stage is measured from the running app (view() and STAGE in _shapes.cjs), so no window numbers are kept here.
 const T = (id) => ({ eval: `__frameling.template(${JSON.stringify(id)})` });
-const UI = (o) => ({ eval: `__frameling.store().setUi(${JSON.stringify(o)})` });
+const { view, STAGE } = require('./_shapes.cjs');
 const away = { move: [720, 28] };
-const CV = [113, 47, 764, 444];
 const INK = '#1d1b26';
 const KAPPA = 0.5522847498307936;
 let nid = 0;
@@ -40,9 +39,9 @@ module.exports = [
     name: 'canvas-notes',
     width: 800,
     steps: [
-      T('blank-vector'), put, UI({ zoom: 0.5, panX: 270 - 640 * 0.5, panY: 222 - 360 * 0.5 }), add,
+      T('blank-vector'), put, view(0.5, 864, 360), add,
       { wait: 700 }, away, { wait: 500 },
-      { shot: '@', crop: CV },
+      { shot: '@', crop: STAGE },
     ],
   },
 ];

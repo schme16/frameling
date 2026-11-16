@@ -1,12 +1,11 @@
 // Help clip for marks drawn over the picture: an arrow dragged at one eye, a ring round the mouth, a few words typed,
 // a quick sketch, then the switch that hides them all and brings them back. The face is the one the notes picture uses.
-// Window coordinates as in drawing.cjs: the canvas viewport is 764 x 444 at (113, 47).
+// Where things land comes from the running app (view() and at() in _shapes.cjs), so no window numbers are kept here.
 const T = (id) => ({ eval: `__frameling.template(${JSON.stringify(id)})` });
 const UI = (o) => ({ eval: `__frameling.store().setUi(${JSON.stringify(o)})` });
 const away = { move: [720, 28] };
 const L = require('./_lib.cjs');
-// Window: canvas 764 x 444 at (113, 47) with the tool options on the right; the view is zoom 0.5, panned so a stage point (x, y) lands at (175 + x/2, 89 + y/2).
-const at = (x, y) => [Math.round(175 + x / 2), Math.round(89 + y / 2)];
+const { view, at } = require('./_shapes.cjs');
 const INK = '#1d1b26';
 const KAPPA = 0.5522847498307936;
 let nid = 0;
@@ -31,7 +30,7 @@ const FACE = [
   line(640, 380, 625, 450, INK, 6),
 ];
 const put = { eval: `(() => { const S = __frameling.store(); const shapes = ${JSON.stringify(FACE)}; S.update('setup', (d) => { const l = d.layers.find((x) => x.name === 'Lines') ?? d.layers[0]; d.drawings[l.cels[0].drawingId].shapes.push(...shapes); }); })(); 0` };
-const view = UI({ zoom: 0.5, panX: 62, panY: 42, tool: 'marks' });
+const fit = view(0.5);
 const slow = (pts, delay = 14) => ({ drag: pts.map(([x, y]) => at(x, y)), steps: 4, delay });
 
 module.exports = [
@@ -41,9 +40,9 @@ module.exports = [
     prefs: { firstDrawn: true, showTips: false },
     width: 1000,
     steps: [
-      T('blank-vector'), put, view, L.cmd('marks.arrow'), L.wait(900), away, L.wait(500),
+      T('blank-vector'), put, UI({ tool: 'marks' }), L.cmd('marks.arrow'), L.wait(900), fit, away, L.wait(500),
       { shot: 'warm', crop: [0, 0, 32, 32] },
-      { rec: '@', crop: [113, 40, 1087, 560], every: 80 },
+      { rec: '@', crop: { stageCrop: { rightGap: 80, down: 109 } }, every: 80 },
       L.wait(900),
       slow([[1010, 215], [818, 340]], 30),
       L.wait(700),

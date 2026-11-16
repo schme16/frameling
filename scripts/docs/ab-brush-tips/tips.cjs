@@ -1,10 +1,11 @@
 // The same strokes drawn with each brush tip (brand/ab/brush-tips), shot in the real app, once per theme. Names: <tip>.
 //   SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-brush-tips --out <dir> [--only chalk,...]
 // Three strokes on a white page at 100%: a long wave, a hatching zigzag drawn as one line that crosses itself, and a
-// short fat dab. The canvas is 764 x 444 at (113, 47) in a 1000 wide window, the page centre at its middle.
+// short fat dab. Where the stage is comes from the running app (view() and at() in help/_shapes.cjs), the page centre at its middle.
 const L = require('../help/_lib.cjs');
-const at = (x, y) => [Math.round(x - 145), Math.round(y - 91)];
-const fit = L.js('__frameling.store().setUi({ zoom: 1, panX: 382 - 640, panY: 222 - 360 })');
+const { view, at, FROM_STAGE } = require('../help/_shapes.cjs');
+const fit = view(1);
+const CROP = FROM_STAGE({ around: [720, 434] });
 const away = { move: [720, 28] };
 const wave = { drag: Array.from({ length: 36 }, (_, i) => at(300 + i * 15, 230 + 46 * Math.sin((i / 35) * Math.PI * 2.2))), steps: 3, delay: 10 };
 const zig = { drag: Array.from({ length: 13 }, (_, i) => at(330 + i * 22 + (i % 2 ? 6 : 0), i % 2 ? 330 : 440)), steps: 4, delay: 10 };
@@ -19,11 +20,11 @@ const entry = (name, brush) => ({
   prefs: { firstDrawn: true, showTips: false },
   width: 1000,
   steps: [
-    L.template('blank-vector'), fit, L.cmd('tools.brush'), L.wait(700),
+    L.template('blank-vector'), L.cmd('tools.brush'), L.wait(700), fit,
     PAPER, L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ${brush} } }))`), L.wait(500),
     away, L.wait(300),
     wave, L.wait(250), zig, L.wait(250), loop, L.wait(250), dab, L.wait(500), away, L.wait(500),
-    { shot: '@', crop: [150, 52, 720, 435] },
+    { shot: '@', crop: CROP },
   ],
 });
 
@@ -52,13 +53,13 @@ const yours = {
   prefs: { firstDrawn: true, showTips: false },
   width: 1000,
   steps: [
-    L.template('blank-vector'), fit, L.cmd('tools.brush'), L.wait(700),
+    L.template('blank-vector'), L.cmd('tools.brush'), L.wait(700), fit,
     PAPER,
     ...makePaw,
     L.js("__frameling.store().setUi((u) => ({ brush: { ...u.brush, size: 26, tip: { ...u.brush.tip, spacing: 1.6, jitter: 0.2, scatter: 0.05, angle: 'follow' } } }))"), L.wait(500),
     away, L.wait(300),
     wave, L.wait(250), zig, L.wait(250), loop, L.wait(250), dab, L.wait(500), away, L.wait(500),
-    { shot: '@', crop: [150, 52, 720, 435] },
+    { shot: '@', crop: CROP },
   ],
 };
 

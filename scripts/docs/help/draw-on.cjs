@@ -1,6 +1,7 @@
 // Help clip for Make a line draw itself: a winding route and a ring picked, Draw it on pressed, and the clip plays while
-// they draw themselves in. Window as in brush-presets.cjs (canvas 764 x 444 at 113, 47; the Draw on panel on the right).
+// they draw themselves in. The picture follows the stage in the running app, with the Draw on panel on the right.
 const L = require('./_lib.cjs');
+const { view } = require('./_shapes.cjs');
 const INK = '#1d1b26';
 let nid = 0;
 const hid = () => `d${++nid}`;
@@ -25,7 +26,7 @@ const route = {
 };
 const shape = (paths, color, width) => ({ id: hid(), type: 'path', paths, fill: null, stroke: { color, width, join: 'round', cap: 'round' }, opacity: 1 });
 const SHAPES = [shape([route], '#d3445f', 14), shape([ring(1030, 540, 70)], '#3b82f6', 14)];
-const put = L.js(`(() => { const S = __frameling.store(); const shapes = ${JSON.stringify(SHAPES)}; S.update('setup', (d) => { const l = d.layers.find((x) => x.name === 'Lines') ?? d.layers[0]; d.drawings[l.cels[0].drawingId].shapes.push(...shapes); }); S.load(S.get().doc); const d = S.get().doc; const l = d.layers.find((x) => x.name === 'Lines') ?? d.layers[0]; S.setUi({ tool: 'select', activeLayerId: l.id, frame: 0, selection: d.drawings[l.cels[0].drawingId].shapes.map((s) => s.id), zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5 }); return true; })()`);
+const put = L.js(`(() => { const S = __frameling.store(); const shapes = ${JSON.stringify(SHAPES)}; S.update('setup', (d) => { const l = d.layers.find((x) => x.name === 'Lines') ?? d.layers[0]; d.drawings[l.cels[0].drawingId].shapes.push(...shapes); }); S.load(S.get().doc); const d = S.get().doc; const l = d.layers.find((x) => x.name === 'Lines') ?? d.layers[0]; S.setUi({ tool: 'select', activeLayerId: l.id, frame: 0, selection: d.drawings[l.cels[0].drawingId].shapes.map((s) => s.id)}); return true; })()`);
 /** Types a new number in the panel's Takes box (frames), the way a person would. */
 const takes = (n) => L.js(`(() => { const i = [...document.querySelectorAll('input')].find((x) => x.getAttribute('aria-label') === 'Takes (frames)'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '${n}'); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 const away = { move: [720, 28] };
@@ -36,9 +37,9 @@ module.exports = [
     prefs: { firstDrawn: true, showTips: false },
     width: 1000,
     steps: [
-      L.template('blank-vector'), put, L.panel('draw-on'), L.wait(900), away, L.wait(400),
+      L.template('blank-vector'), put, L.panel('draw-on'), L.wait(900), view(0.5), away, L.wait(400),
       { shot: 'warm', crop: [0, 0, 32, 32] },
-      { rec: '@', crop: [113, 40, 1087, 560], every: 80 },
+      { rec: '@', crop: { stageCrop: { rightGap: 80, down: 109 } }, every: 80 },
       L.wait(900),
       takes(24), L.wait(700),
       L.cmd('trim.drawOn'), L.wait(1400),

@@ -1,8 +1,8 @@
 // Help clip for Brushes you build yourself: a leafy vine is drawn as shapes, selected and made into a brush with the real
 // command, a wave is drawn with it, then the Pen nib and Bristles tips each draw a wave.
-// Window as in drawing.cjs (canvas 764 x 444 at 113, 47; options panel at 879).
+// Where things land comes from the running app (view() and at() in _shapes.cjs), so no window numbers are kept here.
 const L = require('./_lib.cjs');
-const at = (x, y) => [Math.round(495 + (x - 640) * 0.5), Math.round(269 + (y - 360) * 0.5)];
+const { view, at, UI } = require('./_shapes.cjs');
 const wave = (y, amp = 34) => ({ drag: Array.from({ length: 33 }, (_, i) => at(260 + i * 24, y + amp * Math.sin((i / 32) * Math.PI * 2))), steps: 3, delay: 12 });
 // Opens the Tip picker and clicks the row with this name (a stamp is its shape: Leaf, Heart...). Spread it into the steps.
 const tip = (name) => [
@@ -11,7 +11,7 @@ const tip = (name) => [
   L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
 ];
 const set = (patch) => L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ...${JSON.stringify(patch)} } }))`);
-const fit = L.js('__frameling.store().setUi({ zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5, color: "#2d3f6e" })');
+const fit = view(0.5);
 const away = { move: [720, 28] };
 
 const K = 0.5522847498307936;
@@ -34,9 +34,9 @@ module.exports = [
     choices: { 'brush.alongFit': 'repeat' },
     width: 1000,
     steps: [
-      L.template('blank-vector'), fit, L.cmd('tools.brush'), set({ size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6 }), L.wait(900), away, L.wait(300),
+      L.template('blank-vector'), UI({ color: '#2d3f6e' }), L.cmd('tools.brush'), set({ size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6 }), L.wait(900), fit, away, L.wait(300),
       { shot: 'warm', crop: [0, 0, 32, 32] },
-      { rec: '@', crop: [113, 40, 1087, 560], every: 80 },
+      { rec: '@', crop: { stageCrop: { rightGap: 80, down: 109 } }, every: 80 },
       L.wait(600),
       L.js(`(() => { const S = __frameling.store(); const shapes = ${JSON.stringify(vine)}; S.update('setup', (d) => { const l = d.layers.find((x) => x.kind === 'vector'); d.drawings[l.cels[0].drawingId].shapes.push(...shapes); }); const l = S.get().doc.layers.find((x) => x.kind === 'vector'); S.setUi({ activeLayerId: l.id, selection: shapes.map((x) => x.id), tool: 'select' }); })()`),
       L.wait(1500), L.cmd('brush.makeAlong'), L.wait(1300),

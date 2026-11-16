@@ -1,5 +1,5 @@
 // Shared by the angular gradient entries: a metal coin and a pie, first with the gradients that were there (radial for the metal, linear
-// for the pie), then with angular ones. Window coordinates as in help/_shapes.cjs: the canvas is 764 x 444 at (113, 47).
+// for the pie), then with angular ones. Where things land is measured from the running app (view() in help/_shapes.cjs), so no window numbers are kept here.
 const { T, view, put, away, ell, stroke, INK, WARM, dom } = require('../help/_shapes.cjs');
 
 const METAL = [0, 0.12, 0.25, 0.38, 0.5, 0.62, 0.75, 0.88, 1].map((at, i) => ({ at, color: ['#f4f6f8', '#9aa1ab', '#eef0f3', '#6b717b', '#f4f6f8', '#9aa1ab', '#eef0f3', '#6b717b', '#f4f6f8'][i] }));

@@ -16,6 +16,20 @@ const view = (z = 0.6, cx = 640, cy = 360) => {
     const b = el().getBoundingClientRect(); __frameling.store().setUi({ zoom: ${z}, panX: b.width / 2 - ${cx} * ${z}, panY: b.height / 2 - ${cy} * ${z} }); })()`);
 };
 const at = (x, y) => ({ stagePoint: { x, y, z: view_.z, cx: view_.cx, cy: view_.cy } });
+/** A spot in screen pixels from the stage's top left corner (the rulers sit on its edge); the runner turns it into a window position. */
+const edge = (x, y) => ({ stageEdge: { x, y } });
+/**
+ * Positions on a pixel document that has been fitted and centred in the stage (view.center), for a document w by h art pixels
+ * drawn `cell` screen pixels across: `at(x, y)` is the middle of art pixel (x, y). Left as markers for the step runner to turn
+ * into window positions from the stage as it is when the step runs, so nothing here knows where the rail or the tool bar put it.
+ * `w` and `h` are the document's size on screen plus a margin, for a crop round it (`{ stageCrop: { around: [g.w, g.h] } }`).
+ */
+const pixelGrid = (w, h, cell) => {
+  const spot = (x, y) => ({ stagePoint: { x: x * cell, y: y * cell, z: 1, cx: (w * cell) / 2, cy: (h * cell) / 2 } });
+  return { at: (x, y) => spot(x + 0.5, y + 0.5), w: w * cell + 20, h: h * cell + 20 };
+};
+/** An old window position (from before the rail grew, with the page at half size and its middle at (495, 269)) as a stage point, for a drag written in window numbers. */
+const fromOld = (x, y) => at(640 + (x - 495) * 2, 360 + (y - 269) * 2);
 const INK = '#1d1b26';
 const KAPPA = 0.5522847498307936;
 let nid = 0;
@@ -49,6 +63,8 @@ const along = (n, f) => Array.from({ length: n + 1 }, (_, i) => f(i / n));
 // panels to its right.
 const STAGE = { stageCrop: {} };
 const PANEL = { stageCrop: { rightGap: 80 } };
+/** Any other box measured from the stage: `{ rightGap, down, height, around: [w, h] }`, see stageCrop in steps.cjs. */
+const FROM_STAGE = (o) => ({ stageCrop: o });
 const REC = (crop, every = 80) => ({ rec: '@', crop, every });
 const STOP = { rec: 'stop' };
 /** A throwaway capture first: a hidden window can hand back a stale frame for the first one. */
@@ -56,4 +72,4 @@ const WARM = { shot: 'warm', crop: [0, 0, 32, 32] };
 /** A tiny seeded wobble, so a hand-drawn shape is the same every time it is shot. */
 const wobbler = (seed) => { let s = seed; return (a) => { s = (s * 1664525 + 1013904223) % 4294967296; return (s / 4294967296 - 0.5) * 2 * a; }; };
 
-module.exports = { shapeOf, dom, UI, T, away, view, at, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, STAGE, PANEL, REC, STOP, WARM, wobbler, ellPath, rectPath };
+module.exports = { shapeOf, dom, UI, T, away, view, at, edge, pixelGrid, fromOld, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, STAGE, PANEL, FROM_STAGE, REC, STOP, WARM, wobbler, ellPath, rectPath };

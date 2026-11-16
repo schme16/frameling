@@ -12,7 +12,7 @@
 //
 // The capture steps live in scripts/docs/help/*.cjs. Each file exports an array of entries:
 //   { name: 'select',            // the topic's `media` without its extension: select.png or tour.mp4 -> 'select', 'tour'
-//     prefs: {...},              // extra preferences on top of the defaults (showWelcome off, the default theme for the mode)
+//     prefs: {...},              // extra preferences on top of the defaults (showWelcome off, firstDrawn on so no first-edit toast lands in a picture, the default theme for the mode)
 //     choices: {...},            // answers to ask-once questions, on top of workspace.follow: 'never' (so that one never shows)
 //     size: [1280, 800],         // window size, default 1280 x 800
 //     steps: [...],              // the record.cjs steps. {"shot": "@"} saves the picture, {"rec": "@", ...} starts the clip.
@@ -81,6 +81,8 @@ async function capture(win, e, mode, tmp, lib) {
     darkTheme: DEFAULT_THEME.dark,
     lightTheme: DEFAULT_THEME.light,
     showWelcome: false,
+    // The "fold the explanations away" toast comes with the first edit; with it on, any picture that makes an edit gets it over the timeline.
+    firstDrawn: true,
     ...(e.prefs ?? {}),
   };
   // The first-time "Workspace follows the drawing" question would pop up over any pixel art; the pictures keep the
