@@ -13,11 +13,12 @@
  * With no gradient on the selection the panel edits the box and pushes it onto the selection, as it always did.
  */
 import { useSyncExternalStore } from 'react';
-import type { Color, FillShape, Gradient, GradientStop, PathShape, Shape } from '../core/format';
-import { colorAt, firstColor, placeGradient, sharedPaint, sortedStops, styleOf, type GradientStyle, type SharedPaint } from '../core/gradient';
+import type { Color, FillShape, Gradient, GradientStop, PathShape, Shape, StrokeShape, TextShape } from '../core/format';
+import { colorAt, firstColor, placeGradient, sharedColour, sharedPaint, sortedStops, styleOf, type GradientStyle, type SharedPaint } from '../core/gradient';
 import { store, useStore } from '../core/store';
 import { pathsBounds } from '../geometry/hit';
 import { activeDrawing, editActiveDrawing } from './edit';
+import { paintWellsOn } from './pixelWells';
 
 export type Well = 'fill' | 'stroke';
 export type PaintKind = 'solid' | 'linear' | 'radial';
@@ -108,18 +109,56 @@ export function selectionPaint(w: Well): SharedPaint {
   return sharedPaint(paintTargets(w).map((s) => gradientOn(s, w)));
 }
 
-/** Which gradient the panel is showing for a box: the selection's (when its shapes share one), a mix, or the box's own. */
-export type PaintView = { from: 'box'; style: GradientStyle | null } | { from: 'selection'; style: GradientStyle } | { from: 'differ'; count: number };
+type Coloured = Painted | StrokeShape | TextShape;
+
+/** The plain colour a shape holds on one side, or null when it holds none there (or is not that kind of shape). */
+function colourOf(s: Shape, w: Well): Color | null {
+  if (w === 'fill') {
+    if (s.type === 'path') return s.fill;
+    return s.type === 'fill' || s.type === 'text' ? s.color : null;
+  }
+  if (s.type === 'path') return s.stroke ? s.stroke.color : null;
+  return s.type === 'stroke' ? s.color : null;
+}
+
+/** The selected shapes that hold a plain colour on this side (a gradient shape counts by its first colour). */
+function colourTargets(w: Well): Coloured[] {
+  const { ui } = store().get();
+  if (!ui.selection.length || paintWellsOn()) return [];
+  const d = activeDrawing();
+  if (!d || d.kind !== 'vector') return [];
+  const ids = new Set(ui.selection);
+  return d.shapes.filter((s): s is Coloured => ids.has(s.id) && colourOf(s, w) !== null);
+}
+
+/** Which paint the panel is showing for a box: the selection's gradient or colour, a mix, or the box's own. */
+export type PaintView =
+  | { from: 'box'; style: GradientStyle | null }
+  | { from: 'selection'; style: GradientStyle }
+  | { from: 'colour'; color: Color }
+  | { from: 'differ'; count: number }
+  | { from: 'colours'; count: number };
 
 const views = new Map<Well, { key: string; view: PaintView }>();
 
 export function paintView(w: Well): PaintView {
   const shared = selectionPaint(w);
   const box = wellGradient(w);
-  const key = JSON.stringify([shared, box]);
+  // A plain colour only matters when no picked shape holds a gradient on this side.
+  const col = shared.state === 'same' || shared.state === 'differ' ? null : sharedColour(colourTargets(w).map((s) => colourOf(s, w)!));
+  const key = JSON.stringify([shared, box, col]);
   const had = views.get(w);
   if (had && had.key === key) return had.view;
-  const view: PaintView = shared.state === 'same' ? { from: 'selection', style: shared.style } : shared.state === 'differ' ? { from: 'differ', count: shared.count } : { from: 'box', style: box };
+  const view: PaintView =
+    shared.state === 'same'
+      ? { from: 'selection', style: shared.style }
+      : shared.state === 'differ'
+        ? { from: 'differ', count: shared.count }
+        : col?.state === 'same'
+          ? { from: 'colour', color: col.color }
+          : col?.state === 'differ'
+            ? { from: 'colours', count: col.count }
+            : { from: 'box', style: box };
   views.set(w, { key, view });
   return view;
 }
@@ -127,13 +166,48 @@ export function paintView(w: Well): PaintView {
 /** The gradient being edited for a box, or null for a plain colour (or a mix, which has no one gradient). */
 function shownStyle(w: Well): GradientStyle | null {
   const v = paintView(w);
-  return v.from === 'differ' ? null : v.style;
+  return 'style' in v ? v.style : null;
 }
 
 /** Re-reads when the shapes, the selection or the boxes change. */
 export function usePaintView(w: Well): PaintView {
   useGradientWells((s) => s[w]);
   return useStore(() => paintView(w));
+}
+
+/**
+ * Gives the picked shapes this plain colour on one side, and the box too (the box follows an edit, never a pick). Only
+ * the shapes that hold a colour there change. The box stops being a gradient, as the shapes have stopped being one.
+ */
+export function writeColour(w: Well, c: Color): void {
+  const targets = colourTargets(w);
+  if (!targets.length) return;
+  if (state[w]) set({ ...state, [w]: null });
+  if (w === 'fill') store().setUi({ fillColor: c });
+  else store().setUi({ color: c, strokeOn: true });
+  const low = c.toLowerCase();
+  if (targets.every((s) => colourOf(s, w)!.toLowerCase() === low)) return;
+  const ids = new Set(targets.map((s) => s.id));
+  editActiveDrawing(
+    w === 'fill' ? 'Change fill colour' : 'Change stroke colour',
+    'vector',
+    (dr) => {
+      for (const s of dr.shapes) {
+        if (!ids.has(s.id)) continue;
+        if (s.type === 'path') {
+          if (w === 'fill') s.fill = c;
+          else if (s.stroke) s.stroke.color = c;
+        } else if (s.type === 'fill' || s.type === 'text' || s.type === 'stroke') s.color = c;
+      }
+    },
+    { coalesce: `recolour-${w}-${gesture}` },
+  );
+}
+
+/** Picked shapes with different plain colours: give every one of them the first one's colour. */
+export function matchSelectedColours(w: Well): void {
+  const first = colourTargets(w)[0];
+  if (first) writeColour(w, colourOf(first, w)!);
 }
 
 // One undo step per gesture: a drag, a run of picker moves, a key press. Each ends with endGradientGesture().
@@ -161,9 +235,22 @@ function lighter(c: Color): Color {
   );
 }
 
+/** A new two-colour gradient that starts from one plain colour. */
+function newStyle(kind: 'linear' | 'radial', plain: Color): GradientStyle {
+  return { kind, angle: 0, stops: kind === 'radial' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }] };
+}
+
 /** Switches a box between a plain colour and a linear or radial gradient. */
 export function setPaintKind(w: Well, kind: PaintKind): void {
   const v = paintView(w);
+  if (v.from === 'colour' || v.from === 'colours') {
+    // Plain colours on the picked shapes: Solid is what they already are, a gradient starts from the first colour.
+    if (kind === 'solid') return;
+    const first = colourTargets(w)[0];
+    const plain = v.from === 'colour' ? v.color : colourOf(first, w)!;
+    adopt(w, newStyle(kind, plain), 0, true);
+    return;
+  }
   if (v.from !== 'box') {
     // The picked shapes' own gradient changes, and the box takes it up too.
     const base = v.from === 'selection' ? v.style : firstSelectedStyle(w);
@@ -179,13 +266,7 @@ export function setPaintKind(w: Well, kind: PaintKind): void {
     set({ ...state, [w]: null });
   } else {
     const cur = state[w];
-    const g: GradientStyle = cur
-      ? { ...cur, kind }
-      : {
-          kind,
-          angle: 0,
-          stops: kind === 'radial' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }],
-        };
+    const g: GradientStyle = cur ? { ...cur, kind } : newStyle(kind, plain);
     set({ ...state, [w]: g, stop: { ...state.stop, [w]: Math.min(state.stop[w], g.stops.length - 1) } });
     syncPlain(w, g);
   }
@@ -194,7 +275,7 @@ export function setPaintKind(w: Well, kind: PaintKind): void {
 
 function edit(w: Well, fn: (g: GradientStyle) => GradientStyle, stop?: number, place = false): void {
   const v = paintView(w);
-  if (v.from === 'differ') return;
+  if (v.from !== 'selection' && v.from !== 'box') return;
   if (v.from === 'selection') {
     adopt(w, fn(v.style), stop, place);
     return;
@@ -420,12 +501,13 @@ export function followPick(): void {
   if (pick === lastPick) return;
   lastPick = pick;
   if (!pick) return;
+  // A gradient on a side outranks a plain colour there, and a plain colour outranks nothing at all.
   const holds = (w: Well) => {
     const p = selectionPaint(w).state;
-    return p === 'same' || p === 'differ';
+    return p === 'same' || p === 'differ' ? 2 : colourTargets(w).length ? 1 : 0;
   };
   const other: Well = ui.activeWell === 'fill' ? 'stroke' : 'fill';
-  if (!holds(ui.activeWell) && holds(other)) store().setUi({ activeWell: other });
+  if (holds(other) > holds(ui.activeWell)) store().setUi({ activeWell: other });
   if (state.stop.fill || state.stop.stroke) set({ ...state, stop: { fill: 0, stroke: 0 } });
 }
 

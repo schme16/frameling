@@ -17,5 +17,9 @@ Rectangles and ellipses use both: the fill inside and the stroke round the edge.
 
 ## Changing shapes you've already drawn
 
-Select shapes with the Select tool (**V**), then pick a colour. The box in front decides whether you change their fill or their outline.`,
+Select shapes with the Select tool (**V**), then pick a colour. The box in front decides whether you change their fill or their outline.
+
+Picking a shape shows its own colour in the panel and in the two boxes, so what you see is what the shape has. Picking only looks: the boxes (and so the next shape you draw) change when you change a colour, not when you pick.
+
+Pick shapes with different colours and the panel says so, with **Make them all match the first**. Click a swatch instead and they all take that colour.`,
 };
