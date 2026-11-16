@@ -1,7 +1,7 @@
 // Preferences > Diagnostics: the beta report panel. You write what happened, you read exactly what will go, and
 // then, only then, you press Send. Nothing here ever acts on its own.
 import { useEffect, useRef, useState } from 'react';
-import { Toggle } from '../canvas/controls';
+import { PrefTitle } from '../ui/PrefTitle';
 import { setChoice, useChoices } from '../core/choices';
 import { store } from '../core/store';
 import { getPrefs, setPrefs, usePrefs } from '../ui/prefs';
@@ -181,11 +181,20 @@ export function BetaPanel() {
 
   return (
     <div className="bt-beta" data-help="beta-reports">
-      <Toggle
-        label="Let me send reports to the makers"
-        checked={on}
+      <PrefTitle
+        level="group"
+        title="Telling the makers"
+        label="Sending reports to the makers, on or off"
+        on={on}
         onChange={(v) => setPrefs({ betaReports: v })}
-        hint="On in a beta build, off in an ordinary one. With it on, a crash is reported by itself, and anything you write here goes when you press Send."
+        switchTestId="beta.switch"
+        statusTestId="beta.status"
+        about={<p className="ui-pref-intro">Send a bug report or crash notes, and read every word of it first. On in a beta build, off in an ordinary one.</p>}
+        status={
+          on
+            ? 'On. A crash is reported by itself, and anything you write below goes when you press Send.'
+            : 'Off. Nothing is being sent. No crash reports, no counting of what you do, no ping when it starts, and nothing at all leaves this computer.'
+        }
       />
       <p className="tb-note">
         New to this?{' '}
@@ -194,9 +203,7 @@ export function BetaPanel() {
         </a>{' '}
         says what is most useful to send and exactly what we see.
       </p>
-      {!on ? (
-        <p className="tb-note">Nothing is being sent. No crash reports, no counting of what you do, no ping when it starts, and nothing at all leaves this computer.</p>
-      ) : (
+      {on && (
         <>
           <label className="bt-field">
             <span>What happened?</span>
@@ -237,7 +244,7 @@ export function BetaPanel() {
           </div>
           {(() => {
             const failed = said ?? (lastSendFailure() ? { good: false, text: `The last report didn't go. ${sayFailure(lastSendFailure()!)}` } : null);
-            return failed && <p className="tb-note" role="status" data-good={failed.good}>{failed.text}</p>;
+            return failed && <p className="tb-note" role="status" data-testid="beta.said" data-good={failed.good}>{failed.text}</p>;
           })()}
           {!canSend() && <p className="tb-note">This build can't send (it was made without a way to send, so it isn't your internet). The pen check's Save a file still works, and you can send that however you like.</p>}
           {!!note.trim() && !preview && <p className="tb-note">Press <b>Show me what you would send</b> first. Send it opens up once you have read it.</p>}

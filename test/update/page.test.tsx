@@ -249,7 +249,7 @@ describe('the switch in Preferences', () => {
     await act(async () => root.render(<UpdatePanel />));
     expect(host.textContent).toContain('one request');
     expect(host.textContent).toContain('Nothing of yours goes with it');
-    await act(async () => void host.querySelector<HTMLInputElement>('input[type=checkbox]')!.click());
+    await act(async () => void host.querySelector<HTMLButtonElement>('[data-testid="update.switch"]')!.click());
     expect(getPrefs().updateCheck).toBe(false);
     expect(host.textContent).toContain('Nothing is asked of anyone');
     await act(async () => root.unmount());

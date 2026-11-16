@@ -1,5 +1,5 @@
 // Preferences > Diagnostics > Updates: the switch for the quiet check, what it sends, and a button to check right now.
-import { Toggle } from '../canvas/controls';
+import { PrefTitle } from '../ui/PrefTitle';
 import { setPrefs, usePrefs } from '../ui/prefs';
 import { checkForUpdates } from './state';
 import './update.css';
@@ -9,17 +9,21 @@ export function UpdatePanel() {
   const skipped = usePrefs((p) => p.updateSkipped);
   return (
     <div className="up-panel" data-help="updates">
-      <Toggle
-        label="Look for new versions"
-        checked={on}
+      <PrefTitle
+        level="group"
+        title="New versions"
+        label="Looking for new versions, on or off"
+        on={on}
         onChange={(v) => setPrefs({ updateCheck: v })}
-        hint="A little after Frameling starts, and twice a day, it asks GitHub whether a newer version is out. Nothing is downloaded until you press Update now."
+        switchTestId="update.switch"
+        statusTestId="update.status"
+        about={<p className="ui-pref-intro">A little after Frameling starts, and twice a day, it asks GitHub whether a newer version is out. Nothing is downloaded until you press Update now.</p>}
+        status={
+          on
+            ? "On. What goes: one request to this project's releases on GitHub, which sees your internet address like any website does. Nothing of yours goes with it: no drawing, no name, no count of what you do."
+            : 'Off. Nothing is asked of anyone. Frameling never looks by itself, and the button below still works whenever you want to know.'
+        }
       />
-      <p className="tb-note">
-        {on
-          ? "What goes: one request to this project's releases on GitHub, which sees your internet address like any website does. Nothing of yours goes with it: no drawing, no name, no count of what you do."
-          : 'Nothing is asked of anyone. Frameling never looks by itself, and the button below still works whenever you want to know.'}
-      </p>
       {skipped && (
         <p className="tb-note">
           You chose to skip {skipped}.{' '}
