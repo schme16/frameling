@@ -2,15 +2,15 @@
 // The picture cache: a brush seen again is copied, not drawn again, and the cache never grows past its limit.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_BRUSH } from '../../src/core/doc';
-import { drawShape } from '../../src/core/render';
+import { drawShapeFx } from '../../src/core/render';
 import { clearThumbs, THUMB_CACHE_MAX, thumbFor, thumbsDrawn, thumbsKept } from '../../src/brushes/thumbs';
 import { defaultTip } from '../../src/geometry/tip';
 
-vi.mock('../../src/core/render', () => ({ drawShape: vi.fn() }));
+vi.mock('../../src/core/render', () => ({ drawShapeFx: vi.fn() }));
 
 beforeEach(() => {
   clearThumbs();
-  vi.mocked(drawShape).mockClear();
+  vi.mocked(drawShapeFx).mockClear();
   // jsdom has no canvas: a stand-in that accepts the one call the cache makes.
   HTMLCanvasElement.prototype.getContext = (() => ({ setTransform() {} })) as unknown as HTMLCanvasElement['getContext'];
 });
@@ -21,15 +21,15 @@ describe('thumbFor', () => {
     const b = thumbFor({ ...DEFAULT_BRUSH }, 'dab', 44, 30, 1, '#fff');
     expect(a).not.toBeNull();
     expect(b).toBe(a);
-    expect(drawShape).toHaveBeenCalledTimes(1);
+    expect(drawShapeFx).toHaveBeenCalledTimes(1);
   });
   it('draws again for another tip, ink or sharpness, and the real tip reaches the renderer', () => {
     thumbFor(DEFAULT_BRUSH, 'dab', 44, 30, 1, '#fff');
     thumbFor({ ...DEFAULT_BRUSH, tip: defaultTip('chalk') }, 'dab', 44, 30, 1, '#fff');
     thumbFor(DEFAULT_BRUSH, 'dab', 44, 30, 1, '#000');
     thumbFor(DEFAULT_BRUSH, 'dab', 44, 30, 2, '#fff');
-    expect(drawShape).toHaveBeenCalledTimes(4);
-    const shape = vi.mocked(drawShape).mock.calls[1][1] as { brush: { tip?: { kind: string } } };
+    expect(drawShapeFx).toHaveBeenCalledTimes(4);
+    const shape = vi.mocked(drawShapeFx).mock.calls[1][1] as { brush: { tip?: { kind: string } } };
     expect(shape.brush.tip?.kind).toBe('chalk');
   });
   it('keeps the picture it was asked for last, and drops the oldest when it is full', () => {
