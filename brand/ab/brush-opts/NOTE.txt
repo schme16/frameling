@@ -1,0 +1,8 @@
+Brush options order: the preview first, then the Brush and Tip pickers, with Save as and Share your brushes under Size.
+
+BEFORE: the Brush picker, Save as..., Share your brushes, then the preview, then Tip.
+AFTER: the preview at the very top, then Brush and Tip (both with a title), the tip's own controls, Size, then Save as... and Share your brushes.
+
+panel-chalk-*, panel-oil-*   the Tool options panel, before | after, both themes
+narrow-*                     the same panel in a window of its own, 230 px wide, before | after
+first-stroke-*               a first chalk stroke with Catch on paper off | on (off is how the old Oil paint, Bristle brush and Dry brush started)
