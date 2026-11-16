@@ -172,7 +172,7 @@ export function saveCurrentAs(name: string, group?: string): BrushPreset | null 
   pickedId = r.preset.id;
   noteRecent(r.preset.id);
   naming = null;
-  toast(r.replaced ? `Updated "${r.preset.name}" with this brush.` : `Saved "${r.preset.name}". Find it in the brush picker at the top of the brush options.`, { kind: 'success' });
+  toast(r.replaced ? `Updated "${r.preset.name}" with this brush.` : `Saved "${r.preset.name}". Find it in the brush picker, under the preview.`, { kind: 'success' });
   emit();
   return r.preset;
 }
