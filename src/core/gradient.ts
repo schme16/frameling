@@ -79,7 +79,163 @@ export function angularWedges(stops: readonly GradientStop[], steps = 90): { fro
   return Array.from({ length: n }, (_, i) => ({ from: i / n, to: (i + 1) / n, color: colorAt(stops, (i + 0.5) / n) }));
 }
 
-/** A canvas gradient for a shape's gradient. */
+/**
+ * Where a diamond gradient sits: its middle, the unit direction along `to` and across it, and how far out `to` is (never
+ * 0, so a gradient dragged to nothing still has a size). The diamond is the square turned on its corner whose corner
+ * is `to`: a point is at `(|along| + |across|) / reach` of the way out.
+ */
+export function diamondFrame(g: Pick<Gradient, 'from' | 'to'>): { cx: number; cy: number; ux: number; uy: number; vx: number; vy: number; reach: number } {
+  const dx = g.to.x - g.from.x;
+  const dy = g.to.y - g.from.y;
+  const len = Math.hypot(dx, dy);
+  const ux = len > 1e-9 ? dx / len : 1;
+  const uy = len > 1e-9 ? dy / len : 0;
+  return { cx: g.from.x, cy: g.from.y, ux, uy, vx: -uy, vy: ux, reach: Math.max(len, 0.001) };
+}
+
+/**
+ * How far out a diamond gradient a point is: 0 in the middle, 1 on the diamond's outline, more outside it (the last
+ * colour carries on there). The colour is `colorAt(stops, diamondAt(...))`, which clamps.
+ */
+export function diamondAt(g: Pick<Gradient, 'from' | 'to'>, x: number, y: number): number {
+  const f = diamondFrame(g);
+  const px = x - f.cx;
+  const py = y - f.cy;
+  return (Math.abs(px * f.ux + py * f.uy) + Math.abs(px * f.vx + py * f.vy)) / f.reach;
+}
+
+/** The four corners of a diamond gradient's outline (the one at `to` first, then clockwise on screen). */
+export function diamondCorners(g: Pick<Gradient, 'from' | 'to'>): P[] {
+  const f = diamondFrame(g);
+  const at = (a: number, b: number): P => ({ x: f.cx + (f.ux * a + f.vx * b) * f.reach, y: f.cy + (f.uy * a + f.vy * b) * f.reach });
+  return [at(1, 0), at(0, 1), at(-1, 0), at(0, -1)];
+}
+
+/** One quarter of a diamond: the straight gradient that runs across it, and the plain four sided piece it covers. */
+export interface DiamondQuarter {
+  from: P;
+  to: P;
+  poly: P[];
+}
+
+/**
+ * A diamond gradient as four mirrored linear gradients, one in each quarter round the middle (|along| + |across| is a
+ * plain straight gradient inside a quarter). Each quarter's piece reaches `size` out, which should be past everything
+ * the gradient will be painted on, and starts `overlap` back over its neighbours' edges, so a seam never shows where
+ * two pieces meet (leave it 0 when the colours are see-through, as the overlap would then paint twice).
+ */
+export function diamondQuarters(g: Pick<Gradient, 'from' | 'to'>, size: number, overlap = 0): DiamondQuarter[] {
+  const f = diamondFrame(g);
+  const out: DiamondQuarter[] = [];
+  for (const [su, sv] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+    const at = (a: number, b: number): P => ({ x: f.cx + f.ux * a * su + f.vx * b * sv, y: f.cy + f.uy * a * su + f.vy * b * sv });
+    // The stops sit between the middle and half way to the quarter's far corner, so the colour reaches its end on the outline.
+    const half = f.reach / 2;
+    out.push({ from: { x: f.cx, y: f.cy }, to: at(half, half), poly: [at(-overlap, -overlap), at(size, -overlap), at(size, size), at(-overlap, size)] });
+  }
+  return out;
+}
+
+type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+type Surface = OffscreenCanvas | HTMLCanvasElement;
+
+// Two spare canvases, kept between draws: one for the diamond itself, one for a line's shape.
+const spares: (Surface | null)[] = [null, null];
+
+/** Lets go of the spare canvases (they are made again when a diamond is next drawn). */
+export function dropSpareCanvases(): void {
+  spares[0] = spares[1] = null;
+}
+
+/** A cleared spare canvas the size of `g`'s, with its context in the plain starting state. */
+function spare(slot: 0 | 1, g: Ctx): Ctx {
+  const w = g.canvas.width;
+  const h = g.canvas.height;
+  let cv = spares[slot];
+  if (!cv) cv = spares[slot] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
+  if (cv.width !== w) cv.width = w;
+  if (cv.height !== h) cv.height = h;
+  const c = cv.getContext('2d') as Ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = 'source-over';
+  c.clearRect(0, 0, w, h);
+  return c;
+}
+
+/**
+ * Paints a whole diamond gradient on a cleared canvas, as its four quarters seen through `m` (the drawing's transform).
+ * Each quarter after the first replaces what is under it ("copy", inside its own clip) and starts a pixel back over its
+ * neighbour, so where two quarters meet there is one colour and never a seam, even when the colours are see-through.
+ */
+function paintQuarters(c: Ctx, gr: Gradient, m: DOMMatrix): void {
+  const scale = Math.hypot(m.a, m.b) || 1;
+  const stops = sortedStops(gr.stops);
+  c.save();
+  c.setTransform(m);
+  diamondQuarters(gr, 1e5, 1 / scale).forEach((q, i) => {
+    const cg = c.createLinearGradient(q.from.x, q.from.y, q.to.x, q.to.y);
+    for (const s of stops) {
+      try {
+        cg.addColorStop(s.at, s.color);
+      } catch {
+        // a colour the canvas can't read: leave that stop out
+      }
+    }
+    c.fillStyle = cg;
+    c.beginPath();
+    q.poly.forEach((p, k) => (k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
+    c.closePath();
+    if (i === 0) c.fill();
+    else {
+      c.save();
+      c.clip();
+      c.globalCompositeOperation = 'copy';
+      c.fillRect(-1e6, -1e6, 2e6, 2e6);
+      c.restore();
+    }
+  });
+  c.restore();
+}
+
+/**
+ * Fills a shape's path with a diamond gradient. A canvas has no diamond gradient, so the diamond is painted whole on a
+ * spare canvas (four straight gradients, one in each quarter) and laid on through the shape's outline.
+ */
+export function fillDiamond(g: Ctx, gr: Gradient, path: Path2D, rule: CanvasFillRule = 'nonzero'): void {
+  const a = spare(0, g);
+  paintQuarters(a, gr, g.getTransform());
+  g.save();
+  g.clip(path, rule);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(a.canvas as CanvasImageSource, 0, 0);
+  g.restore();
+}
+
+/**
+ * Strokes a line with a diamond gradient. `draw` strokes the line (width, joins, dashes and all) on the context it is
+ * given, in any colour, on a spare canvas; the diamond is painted on another and kept only where the line is, then laid
+ * on. A canvas can only clip to a fill, so this is how a line takes a gradient that is not one piece.
+ */
+export function strokeDiamond(g: Ctx, gr: Gradient, draw: (c: Ctx) => void): void {
+  const m = g.getTransform();
+  const line = spare(1, g);
+  line.save();
+  line.setTransform(m);
+  draw(line);
+  line.restore();
+  const a = spare(0, g);
+  paintQuarters(a, gr, m);
+  line.globalCompositeOperation = 'source-in';
+  line.drawImage(a.canvas as CanvasImageSource, 0, 0);
+  line.globalCompositeOperation = 'source-over';
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(line.canvas as CanvasImageSource, 0, 0);
+  g.restore();
+}
+
+/** A canvas gradient for a shape's gradient. A diamond has no single canvas gradient (see `fillDiamond`), so it comes out as the straight one along its line. */
 export function canvasGradient(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, gr: Gradient): CanvasGradient {
   const conic = gr.kind === 'angular' ? (g as { createConicGradient?: (a: number, x: number, y: number) => CanvasGradient }).createConicGradient : undefined;
   const cg =
@@ -100,7 +256,7 @@ export function canvasGradient(g: CanvasRenderingContext2D | OffscreenCanvasRend
 
 /**
  * Lays a gradient style over a box: linear runs edge to edge through the middle at the style's angle, radial
- * starts in the middle and reaches the furthest corner's side.
+ * starts in the middle and reaches the furthest corner's side, and a diamond does the same with its corner there.
  */
 export function placeGradient(style: GradientStyle, box: { x0: number; y0: number; x1: number; y1: number }): Gradient {
   const cx = (box.x0 + box.x1) / 2;
@@ -111,7 +267,7 @@ export function placeGradient(style: GradientStyle, box: { x0: number; y0: numbe
   const hw = (box.x1 - box.x0) / 2;
   const hh = (box.y1 - box.y0) / 2;
   const stops = sortedStops(style.stops);
-  if (style.kind === 'radial' || style.kind === 'angular') {
+  if (style.kind === 'radial' || style.kind === 'angular' || style.kind === 'diamond') {
     const r = Math.max(hw, hh, 0.5);
     return { kind: style.kind, stops, from: { x: cx, y: cy }, to: { x: cx + dx * r, y: cy + dy * r } };
   }
@@ -144,6 +300,14 @@ export function gradientCss(style: Pick<GradientStyle, 'kind' | 'stops'>, angle 
     .join(', ');
   // CSS starts a conic sweep at the top and the canvas at the right, so the sweep turns a quarter to line up.
   if (style.kind === 'angular') return `conic-gradient(from ${angle + 90}deg, ${stops})`;
+  // CSS has no diamond: four straight gradients, one per quarter of the box, each running from the middle out to its far corner.
+  if (style.kind === 'diamond') {
+    const half = sortedStops(style.stops)
+      .map((s) => `${s.color} ${Math.round(s.at * 500) / 10}%`)
+      .join(', ');
+    const q = (to: string, pos: string) => `linear-gradient(${to}, ${half}) ${pos} / 50% 50% no-repeat`;
+    return [q('to top left', 'left top'), q('to top right', 'right top'), q('to bottom right', 'right bottom'), q('to bottom left', 'left bottom')].join(', ');
+  }
   return style.kind === 'radial' ? `radial-gradient(circle, ${stops})` : `linear-gradient(${angle + 90}deg, ${stops})`;
 }
 
@@ -154,7 +318,7 @@ const isPt = (v: unknown): v is P => !!v && typeof v === 'object' && isNum((v as
 export function readGradient(raw: unknown): Gradient | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const r = raw as Record<string, unknown>;
-  if (r.kind !== 'linear' && r.kind !== 'radial' && r.kind !== 'angular') return undefined;
+  if (r.kind !== 'linear' && r.kind !== 'radial' && r.kind !== 'angular' && r.kind !== 'diamond') return undefined;
   if (!isPt(r.from) || !isPt(r.to) || !Array.isArray(r.stops)) return undefined;
   const stops = r.stops.filter((s): s is GradientStop => !!s && typeof s === 'object' && isNum(s.at) && typeof s.color === 'string').map((s) => ({ at: clamp01(s.at), color: s.color }));
   if (!stops.length) return undefined;

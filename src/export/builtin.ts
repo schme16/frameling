@@ -94,7 +94,7 @@ const defs: ExporterDef[] = [
     carry: {
       help: 'export-svg',
       summary: 'This frame as vector shapes, with text, blend modes, masks, clipping, colour wash and most effects kept, inside symbols too.',
-      rows: { effects: 'kept', bones: 'picture', grain: 'shapes', gradientAngular: 'shapes' },
+      rows: { effects: 'kept', bones: 'picture', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
     settle: (doc, s, frame) => import('./formats/svg-prep').then((m) => m.settleSvgTooth(doc, s, frame)),
@@ -115,7 +115,7 @@ const defs: ExporterDef[] = [
     carry: {
       help: 'export-lottie',
       summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
-      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept', trim: 'kept', grain: 'shapes', gradientAngular: 'out' },
+      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept', trim: 'kept', grain: 'shapes', gradientAngular: 'out', gradientDiamond: 'out' },
       nativeEffects: ['blur', 'shadow'],
     },
     // A clip that plays backward, back and forth or N times is baked in play order with a time remap (nothing is drawn twice).
@@ -135,7 +135,7 @@ const defs: ExporterDef[] = [
     carry: {
       help: 'export-svg-animated',
       summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
-      rows: { effects: 'kept', bones: 'picture', trim: 'kept', grain: 'shapes', gradientAngular: 'shapes' },
+      rows: { effects: 'kept', bones: 'picture', trim: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
     ui: () => import('./options/playback').then((m) => ({ After: m.SvgAnimOptions })),
@@ -171,7 +171,7 @@ const defs: ExporterDef[] = [
     fileKind: () => ({ name: 'PDF document' }),
     carry: {
       summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-      rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes' },
+      rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
     },
     ui: () => import('./options/notes').then((m) => ({ Notes: m.NoteFor('pdf') })),
     load: () => import('./formats/pdf'),
@@ -185,7 +185,7 @@ const defs: ExporterDef[] = [
     fileKind: (s) => ((s.aiFrames ?? 'one') === 'files' ? { name: 'Zip file' } : { name: 'Adobe Illustrator' }),
     carry: {
       summary: 'Opens in Illustrator as its own file: your layers and folders as real layers, shapes, gradients and text editable (Illustrator needs the text\'s font installed, or it shows another one). Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-      rows: { effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes' },
+      rows: { effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
     },
     ui: () => import('./options/notes').then((m) => ({ Before: m.IllustratorFrames, Notes: m.NoteFor('ai') })),
     load: () => import('./formats/pdf'),

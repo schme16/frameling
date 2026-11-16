@@ -19,7 +19,7 @@ import { drawToothStroke } from '../effects/toothShape';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
-import { canvasGradient } from './gradient';
+import { canvasGradient, fillDiamond, strokeDiamond } from './gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 import { trimActive, trimStrokePoints } from '../geometry/trim';
 import { tipReach } from '../geometry/tip';
@@ -189,8 +189,11 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
       g.fill(strokePath(s));
     }
   } else if (s.type === 'fill') {
-    g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
-    g.fill(shapePath(s), 'evenodd');
+    if (s.gradient?.kind === 'diamond') fillDiamond(g, s.gradient, shapePath(s), 'evenodd');
+    else {
+      g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
+      g.fill(shapePath(s), 'evenodd');
+    }
   } else if (hasLineStyle(s.stroke)) {
     // Dashes, arrow heads or a changing width: the outline as the plain shapes that paint it.
     for (const part of expandStroke(s)) drawPlainPath(g, part.shape);
@@ -201,24 +204,33 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
 function drawPlainPath(g: Ctx2D, s: PathShape): void {
   const p = shapePath(s);
   if (s.fill) {
-    g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
-    g.fill(p, 'evenodd');
+    if (s.fillGradient?.kind === 'diamond') fillDiamond(g, s.fillGradient, p, 'evenodd');
+    else {
+      g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
+      g.fill(p, 'evenodd');
+    }
   }
   if (s.stroke) {
-    g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
-    g.lineWidth = s.stroke.width;
-    g.lineJoin = s.stroke.join;
-    g.lineCap = s.stroke.cap;
-    const dash = dashPx(s.stroke);
-    if (dash) {
-      g.setLineDash(dash);
-      g.lineDashOffset = dashOffsetPx(s.stroke);
-    }
-    g.stroke(p);
-    if (dash) {
-      g.setLineDash([]);
-      g.lineDashOffset = 0;
-    }
+    const st = s.stroke;
+    const line = (c: Ctx2D, paint: string | CanvasGradient) => {
+      c.strokeStyle = paint;
+      c.lineWidth = st.width;
+      c.lineJoin = st.join;
+      c.lineCap = st.cap;
+      const dash = dashPx(st);
+      if (dash) {
+        c.setLineDash(dash);
+        c.lineDashOffset = dashOffsetPx(st);
+      }
+      c.stroke(p);
+      if (dash) {
+        c.setLineDash([]);
+        c.lineDashOffset = 0;
+      }
+    };
+    // A diamond is four gradients, so the line is drawn in plain black first and then coloured with it.
+    if (s.strokeGradient?.kind === 'diamond') strokeDiamond(g, s.strokeGradient, (c) => line(c, '#000'));
+    else line(g, s.strokeGradient ? canvasGradient(g, s.strokeGradient) : st.color);
   }
 }
 

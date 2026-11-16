@@ -6,6 +6,7 @@
  * The look is in gradient.ts; the vector side of this tool is src/tools/gradient-tool.ts, which hands pixel layers here.
  */
 import { registerChoice, currentChoice } from '../core/choices';
+import { diamondCorners } from '../core/gradient';
 import { registerCommands, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
@@ -169,7 +170,10 @@ export const pixelGradient = {
     const shape: GradientShape = getPixelSettings().gradientShape;
     const line = () => {
       g.beginPath();
-      if (shape !== 'linear') g.arc(d.start.x, d.start.y, Math.hypot(d.end.x - d.start.x, d.end.y - d.start.y), 0, Math.PI * 2);
+      if (shape === 'diamond') {
+        diamondCorners({ from: d.start, to: d.end }).forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+        g.closePath();
+      } else if (shape !== 'linear') g.arc(d.start.x, d.start.y, Math.hypot(d.end.x - d.start.x, d.end.y - d.start.y), 0, Math.PI * 2);
       g.moveTo(d.start.x, d.start.y);
       g.lineTo(d.end.x, d.end.y);
     };
@@ -240,5 +244,15 @@ registerCommands([
     keywords: ['gradient', 'angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'pixel'],
     checked: () => getPixelSettings().gradientShape === 'angular',
     run: () => setPixelSettings({ gradientShape: getPixelSettings().gradientShape === 'angular' ? 'linear' : 'angular' }),
+  },
+  {
+    id: 'pixel.gradientDiamond',
+    label: 'Gradient: switch diamond on or off',
+    category: 'Draw',
+    description: 'A diamond gradient steps out from the point you press in a square turned on its corner, reaching its last colour at the corner you drag to.',
+    help: 'pixel-gradient',
+    keywords: ['gradient', 'diamond', 'square', 'rhombus', 'sheen', 'glow', 'pixel'],
+    checked: () => getPixelSettings().gradientShape === 'diamond',
+    run: () => setPixelSettings({ gradientShape: getPixelSettings().gradientShape === 'diamond' ? 'linear' : 'diamond' }),
   },
 ]);

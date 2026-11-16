@@ -287,8 +287,8 @@ interface LottieGrad {
   k: number[];
 }
 
-/** Lottie has linear and radial gradients only, so an angular one is left to the shape's own plain colour (the first stop). */
-export const lottieCanDo = (gr: Gradient | undefined): gr is Gradient => !!gr && gr.kind !== 'angular';
+/** Lottie has linear and radial gradients only, so an angular or diamond one is left to the shape's own plain colour (the first stop). */
+export const lottieCanDo = (gr: Gradient | undefined): gr is Gradient => !!gr && gr.kind !== 'angular' && gr.kind !== 'diamond';
 
 export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
   const stops = sortedStops(gr.stops);

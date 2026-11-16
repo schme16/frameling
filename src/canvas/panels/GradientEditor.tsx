@@ -69,6 +69,7 @@ export function GradientEditor() {
             { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
             { value: 'radial', label: 'Radial', title: 'Colours blending out from the middle in a circle (radial gradient)' },
             { value: 'angular', label: 'Angular', title: 'Colours sweeping round the middle like a colour wheel or a pie (angular, or conic, gradient)', command: 'colors.angular' },
+            { value: 'diamond', label: 'Diamond', title: 'Colours stepping out from the middle in a square turned on its corner (diamond gradient)', command: 'colors.diamond' },
           ]}
           onChange={(k) => {
             setPaintKind(well, k);

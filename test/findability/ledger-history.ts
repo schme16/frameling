@@ -66,6 +66,7 @@ export const HISTORY: History = {
     { on: D, n: 558, why: 'Remote door: its settings and what-it-has-done commands work with nothing picked, so both count here. The switch itself is off the count until the desktop app is there to open it.' },
     { on: D, n: 561, why: 'selection-gradients: the selection edge card (Ctrl+Alt+F), saving a selection and the saved list. The two angular gradient commands are palette only, left out of the menus because the Angular buttons do the same job and Tools is at its cap.' },
     { on: D, n: 577, why: 'pixel-brush-engine: sixteen more ready-made pixel brushes in the picker (Pen and speed, Grain and texture, Colour), each one a palette command to use it, in a still and in a drawing with animation alike (a brush has nothing to do with animation), so the gap between the two is unchanged. The six commands that flip a setting need a pixel layer, so they are not counted here.' },
+    { on: D, n: 579, why: 'diamond-gradient: the two diamond gradient commands (the Diamond button in the Colours panel, and the Diamond shape in the pixel Gradient options). Palette only, like the angular ones, because the buttons do the same job and Tools is at its cap.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -88,6 +89,7 @@ export const HISTORY: History = {
     { on: D, n: 607, why: 'Remote door: the same two as a still gains, because another program driving Frameling has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 610, why: 'selection-gradients: the same three as a still gains, because selecting and gradients have nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 626, why: 'pixel-brush-engine: the same sixteen as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 628, why: 'diamond-gradient: the same two as a still gains, because gradients have nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },

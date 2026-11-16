@@ -41,6 +41,9 @@ export const PHRASES: Phrase[] = [
   P('conic gradient', 'colors.angular', 'pixel.gradientAngular', 'tools.gradient', 'help:gradient-angular'),
   P('colour wheel gradient', 'colors.angular', 'help:gradient-angular'),
   P('brushed metal', 'colors.angular', 'help:gradient-angular'),
+  P('diamond gradient', 'colors.diamond', 'pixel.gradientDiamond', 'tools.gradient', 'help:gradient-diamond'),
+  P('sheen on a panel', 'colors.diamond', 'help:gradient-diamond'),
+  P('soft box of light', 'colors.diamond', 'help:gradient-diamond'),
   // Drawing
   P('text on a path', 'text.onPath'),
   P('curved text', 'text.onPath'),

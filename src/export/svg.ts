@@ -12,7 +12,7 @@ import { toothImage } from './svgTooth';
 import { hasShapeFx, shapeEffects } from '../effects/shapeFx';
 import { composeSvg, composeSymbol, effectsFilter, SHAPE_OWNER, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { angularWedges, conicStart, gradientKey, sortedStops } from '../core/gradient';
+import { angularWedges, conicStart, diamondQuarters, gradientKey, sortedStops } from '../core/gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
@@ -79,9 +79,31 @@ export function angularPattern(id: string, gr: Gradient, reach: number): string 
   return `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(gr.from.x - R)}" y="${n2(gr.from.y - R)}" width="${n2(R * 2)}" height="${n2(R * 2)}" viewBox="${box}">${wedges}</pattern>`;
 }
 
-/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). `reach` is only for an angular one. */
+/**
+ * SVG has no diamond gradient either, so one is a pattern too: a square round the middle holding four pieces, one in each
+ * quarter, each filled with a straight gradient (the diamond is a straight gradient in each quarter, mirrored). Plain
+ * shapes with real gradients and no clipping, so it stays smooth at any size. Same size rule as `angularPattern`.
+ */
+export function diamondPattern(id: string, gr: Gradient, reach: number): string {
+  const R = Math.ceil((Math.max(reach, Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y), 1) * 1.05 + 2) / 10) * 10;
+  const stops = sortedStops(gr.stops)
+    .map((st) => {
+      const { color, alpha } = splitColor(st.color);
+      return `<stop offset="${op(st.at)}" stop-color="${esc(color)}"${alpha < 1 ? ` stop-opacity="${op(alpha)}"` : ''}/>`;
+    })
+    .join('');
+  // The pieces meet exactly and are drawn without edge smoothing, so each pixel belongs to one piece: no seam, and no double
+  // painting where the colours are see-through. (The meeting line is the same colour on both sides, so it does not look rough.)
+  const quarters = diamondQuarters(gr, R * 1.5);
+  const defs = quarters.map((q, i) => `<linearGradient id="${id}q${i}" gradientUnits="userSpaceOnUse" x1="${n2(q.from.x)}" y1="${n2(q.from.y)}" x2="${n2(q.to.x)}" y2="${n2(q.to.y)}">${stops}</linearGradient>`).join('');
+  const paths = quarters.map((q, i) => `<path d="M${q.poly.map((p) => `${n2(p.x)} ${n2(p.y)}`).join('L')}Z" fill="url(#${id}q${i})" shape-rendering="crispEdges"/>`).join('');
+  const box = `${n2(gr.from.x - R)} ${n2(gr.from.y - R)} ${n2(R * 2)} ${n2(R * 2)}`;
+  return `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(gr.from.x - R)}" y="${n2(gr.from.y - R)}" width="${n2(R * 2)}" height="${n2(R * 2)}" viewBox="${box}"><defs>${defs}</defs>${paths}</pattern>`;
+}
+
+/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). `reach` is only for an angular or diamond one. */
 export function svgGradient(gr: Gradient, reach = 0): { id: string; def: string } {
-  const key = gradientKey(gr) + (gr.kind === 'angular' ? `|${Math.ceil(reach / 50)}` : '');
+  const key = gradientKey(gr) + (gr.kind === 'angular' || gr.kind === 'diamond' ? `|${Math.ceil(reach / 50)}` : '');
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (Math.imul(h, 31) + key.charCodeAt(i)) | 0;
   const id = `grad${(h >>> 0).toString(36)}`;
@@ -92,6 +114,7 @@ export function svgGradient(gr: Gradient, reach = 0): { id: string; def: string 
     })
     .join('');
   if (gr.kind === 'angular') return { id, def: angularPattern(id, gr, reach) };
+  if (gr.kind === 'diamond') return { id, def: diamondPattern(id, gr, reach) };
   const def =
     gr.kind === 'radial'
       ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(gr.from.x)}" cy="${n2(gr.from.y)}" r="${n2(Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y))}">${stops}</radialGradient>`

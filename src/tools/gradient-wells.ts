@@ -37,7 +37,7 @@ const listeners = new Set<() => void>();
 const validStyle = (v: unknown): GradientStyle | null => {
   if (!v || typeof v !== 'object') return null;
   const g = v as GradientStyle;
-  if ((g.kind !== 'linear' && g.kind !== 'radial' && g.kind !== 'angular') || !Array.isArray(g.stops) || g.stops.length < 2) return null;
+  if ((g.kind !== 'linear' && g.kind !== 'radial' && g.kind !== 'angular' && g.kind !== 'diamond') || !Array.isArray(g.stops) || g.stops.length < 2) return null;
   if (!g.stops.every((s) => s && typeof s.at === 'number' && typeof s.color === 'string')) return null;
   return { kind: g.kind, stops: sortedStops(g.stops), angle: typeof g.angle === 'number' && Number.isFinite(g.angle) ? g.angle : 0 };
 };
@@ -325,7 +325,7 @@ function lighter(c: Color): Color {
 /** A new two-colour gradient that starts from one plain colour. */
 function newStyle(kind: GradientKind, plain: Color): GradientStyle {
   // An angular one comes back to its first colour, so the sweep has no seam where it starts and ends.
-  const stops = kind === 'angular' ? [{ at: 0, color: plain }, { at: 0.5, color: lighter(plain) }, { at: 1, color: plain }] : kind === 'radial' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }];
+  const stops = kind === 'angular' ? [{ at: 0, color: plain }, { at: 0.5, color: lighter(plain) }, { at: 1, color: plain }] : kind === 'radial' || kind === 'diamond' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }];
   return { kind, angle: 0, stops };
 }
 

@@ -167,9 +167,10 @@ export const STILL_LOAD = {
   // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
   // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
   // text on a curve. The remote door: +2 palette and +3 menu in Edit > Scripts. selection-gradients: +3 palette and
-  // +6 menu, the angular commands being palette only because Tools is at its cap. And the pixel brush: +16 palette
-  // and +22 menu on both sides, the 16 ready made brushes and the 6 switches, in the Pixel brush submenu under Soft
-  // paint, so Draw is untouched. None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 577, menu: 774, animateMenu: 8 },
-  animated: { palette: 626, menu: 898, animateMenu: 123 },
+  // +6 menu. The pixel brush: +16 palette and +22 menu, the 16 ready made brushes and the 6 switches, under Soft
+  // paint, so Draw is untouched. And diamond gradients: +2 palette and no menu at all, because like angular they are
+  // palette first with the Diamond buttons carrying the command. None of it has anything to do with animation, so
+  // the gap is unchanged.
+  still: { palette: 579, menu: 774, animateMenu: 8 },
+  animated: { palette: 628, menu: 898, animateMenu: 123 },
 };

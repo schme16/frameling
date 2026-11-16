@@ -205,6 +205,20 @@ registerCommands([
     },
   },
   {
+    id: 'colors.diamond',
+    label: 'Make the box in front a diamond gradient',
+    category: 'Colours',
+    description: 'Colours step out from the middle in a square turned on its corner. Good for a sheen on a flat panel, a soft box of light and a jewel facet. The picked shapes (or the box in front, with nothing picked) change to it.',
+    help: 'gradient-diamond',
+    keywords: ['diamond', 'square', 'rhombus', 'sheen', 'box of light', 'glow', 'glint', 'gradient', 'colours'],
+    enabled: (s) => paintView(s.ui.activeWell).from !== 'none',
+    reason: () => 'Pick a shape that has a fill or an outline first, or click a colour so there is something to blend.',
+    run: () => {
+      setPaintKind(store().get().ui.activeWell, 'diamond');
+      endGradientGesture();
+    },
+  },
+  {
     id: 'colors.matchGradients',
     label: 'Make picked gradients match the first',
     category: 'Colours',

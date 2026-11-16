@@ -56,7 +56,7 @@ A small strip at the top of the options shows what you will get.
 - Hold **Shift** to keep the direction to 45 degree steps.
 - On a layer with the [palette lock](help:palette-lock) on, every colour snaps to the palette.
 - One drag is one undo step. Drag again to try another direction; Undo puts it back.
-- Find the options in the command palette (**Ctrl+K**): *Gradient: next dither style*, *next colour mode*, and *switch between linear and radial*.
+- Find the options in the command palette (**Ctrl+K**): *Gradient: next dither style*, *next colour mode*, and *switch between linear and radial*. Angular and diamond shapes are in the **Shape** choice, or search for them there.
 
 For a hand-painted pattern, use the [Dither](help:tool-dither) brush. On a drawn layer the same tool makes [smooth gradients](help:tool-gradient) in shapes.`,
   'pixel-mirror': `This is [mirror drawing](help:mirror-drawing) on a pixel layer. Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.

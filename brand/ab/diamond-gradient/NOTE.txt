@@ -1,0 +1,1 @@
+kinds: the same square and colours in linear, radial, angular and diamond, so the shapes can be compared; sheen: a flat panel, the same panel with a straight sheen, and with a diamond one (a soft glint up and to the left).
