@@ -1704,12 +1704,9 @@ body.ui-resizing * {
    as the background and its page colour as the text. Dark theme gives a cream label, light theme an ink one, and a
    custom theme follows its own colours. Menus and panels are all --raised or --panel, so a tip never reads as one. */
 .ui-tip {
-  /* A step past the menu surface rather than the other way up: a tip has to read as a label about something and not
-     as another menu, without being the brightest thing on screen. The accent in the border does the telling apart. */
-  --tip-bg: color-mix(in srgb, var(--raised) 86%, var(--text));
-  --tip-fg: var(--text);
-  --tip-soft: var(--muted);
-  --tip-line: color-mix(in srgb, var(--accent) 45%, var(--line));
+  /* The tip colours are theme tokens (--tip-bg, --tip-fg, --tip-soft, --tip-line, --tip-link, from src/ui/themes/tokens.ts): a step
+     past the menu surface, with the accent in the border. The words use --on-tip, --on-tip-soft and --on-tip-link, which are those
+     colours moved only if a theme's own would not be readable on its tip fill. */
   position: fixed;
   z-index: 200;
   max-width: 280px;
@@ -1717,7 +1714,7 @@ body.ui-resizing * {
   border: 1px solid var(--tip-line);
   border-radius: var(--radius-small);
   background: var(--tip-bg);
-  color: var(--tip-fg);
+  color: var(--on-tip, var(--tip-fg));
   box-shadow:
     0 6px 16px rgb(0 0 0 / 28%),
     0 1px 3px rgb(0 0 0 / 25%);
@@ -1735,26 +1732,26 @@ body.ui-resizing * {
 }
 .ui-tip-why {
   margin-top: 3px;
-  color: var(--tip-fg);
+  color: var(--on-tip, var(--tip-fg));
   line-height: 1.4;
   font-weight: 700;
 }
 .ui-tip-desc {
   margin-top: 3px;
-  color: var(--tip-soft);
+  color: var(--on-tip-soft, var(--tip-soft));
   line-height: 1.4;
 }
 .ui-tip kbd {
   border-color: var(--tip-line);
-  background: color-mix(in srgb, var(--tip-fg) 10%, var(--tip-bg));
-  color: var(--tip-fg);
+  background: color-mix(in srgb, var(--on-tip, var(--tip-fg)) 10%, var(--tip-bg));
+  color: var(--on-tip, var(--tip-fg));
 }
 .ui-tip-more {
   margin-top: 6px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--accent) 55%, var(--tip-fg));
+  color: var(--on-tip-link, var(--tip-link));
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;

@@ -1,0 +1,10 @@
+The tooltip colours as theme data, from card tip-colours-theme: same rich tip (name, what it does, shortcut, Learn more) in six themes, before and after.
+
+<theme>-before-vs-after.png   before on the left, after on the right, with a count of pixels that differ
+all-themes-before-vs-after.png   all six stacked
+before-<theme>.png, after-<theme>.png   the raw crops
+
+Dark: Midnight Sketchbook, Batwing, Lantern Night (high contrast). Light: Paper & Honey, Ice Camo (pale), Sunbeam (high contrast).
+Four of six are pixel-identical. Midnight Sketchbook and Batwing differ on purpose: their softer words and Learn more link
+were under 4.5:1 on the tip and are now moved just far enough to read. Nothing else moved.
+Made by scripts/ab/tip-colours.cjs (once on the old build, once on the new) and scripts/ab/tip-colours-sheets.py.

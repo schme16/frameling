@@ -23,6 +23,9 @@ const FILLS: Record<string, [string, string]> = {
   'on-danger': ['danger', 'on-danger'],
   'on-chosen': ['chosen-bg', 'on-chosen'],
   'on-chosen-deep': ['sunny-deep', 'on-chosen-deep'],
+  'on-tip': ['tip-bg', 'on-tip'],
+  'on-tip-soft': ['tip-bg', 'on-tip-soft'],
+  'on-tip-link': ['tip-bg', 'on-tip-link'],
 };
 
 const reads = (tokens: ThemeTokens, on = readableTokens(tokens)): string[] =>
