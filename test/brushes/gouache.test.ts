@@ -133,3 +133,33 @@ describe('a tipped line with an effect', () => {
     expect((withTips(drawing(off)) as Extract<Drawing, { kind: 'vector' }>).shapes.every((x) => x.type !== 'stroke')).toBe(true);
   });
 });
+
+describe('the Matte finish slider', () => {
+  it('sets how matte the tip is, takes the setting out at Off, and does nothing on a plain line', async () => {
+    const { setMatte, setTipKind, currentTip } = await import('../../src/brushes/tips');
+    const { store } = await import('../../src/core/store');
+    setMatte(0.5);
+    expect(currentTip()).toBeUndefined();
+    setTipKind('chalk');
+    setMatte(0.5);
+    expect(currentTip()?.matte).toBe(0.5);
+    setMatte(7);
+    expect(currentTip()?.matte).toBe(1);
+    setMatte(0);
+    expect('matte' in (currentTip() ?? {})).toBe(false);
+    setTipKind(null);
+    expect(store().get().ui.brush.tip).toBeUndefined();
+  });
+  it('a new line is drawn with the chosen amount', async () => {
+    const { setMatte, setTipKind } = await import('../../src/brushes/tips');
+    const { store } = await import('../../src/core/store');
+    setTipKind('bristle');
+    setMatte(0.4);
+    const line = buildStroke(points, store().get().ui.brush, '#336699');
+    expect(line.effects?.map((e) => e.kind)).toEqual(['adjust', 'grain']);
+    expect(line.effects?.[1].values.amount).toBe(Math.round(9 * 0.4));
+    setMatte(0);
+    expect(buildStroke(points, store().get().ui.brush, '#336699').effects).toBeUndefined();
+    setTipKind(null);
+  });
+});

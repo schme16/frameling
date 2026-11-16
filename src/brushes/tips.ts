@@ -61,6 +61,16 @@ export function patchTip(patch: Partial<BrushTip>): void {
   setBrush((b) => (b.tip ? { ...b, tip: { ...b.tip, ...patch } } : b));
 }
 
+/** How matte the tip's paint is, 0 to 1. Off takes the setting out of the tip, so a brush that never had it stays as it was. */
+export function setMatte(amount: number): void {
+  setBrush((b) => {
+    if (!b.tip) return b;
+    const { matte: _m, ...rest } = b.tip;
+    const v = Math.min(1, Math.max(0, amount));
+    return { ...b, tip: v > 0 ? { ...rest, matte: v } : rest };
+  });
+}
+
 /** Picks the stamp shape, and turns the stamps the way that shape usually goes. */
 export function setStampShape(shape: StampShape): void {
   const usual = STAMPS.find((s) => s.id === shape)?.angle ?? 'upright';

@@ -7,7 +7,7 @@ import { resolveTip } from '../geometry/tip';
 import { PaperGroup } from '../dry/PaperGroup';
 import { clearEdgedPiece, EDGED_SLOTS, edgedHas, makeAlongBrush, setEdgedPiece } from './own';
 import { BrushPicker } from './BrushPicker';
-import { makeBrushFromSelection, patchTip } from './tips';
+import { makeBrushFromSelection, patchTip, setMatte } from './tips';
 import './brushes.css';
 
 const OWN_TIPS = {
@@ -137,6 +137,7 @@ export function TipOptions() {
         </>
       )}
       {t && kind === 'edged' && <EdgedParts has={edgedHas(tip)} />}
+      {tip && <Slider label="Matte finish" value={Math.round((tip.matte ?? 0) * 100)} min={0} max={100} format={(v) => (v ? `${v}%` : 'Off')} onChange={(v) => setMatte(v / 100)} hint="Dries the paint paler and chalkier, with a faint velvety grain, like gouache. The colour still covers what is under it." />}
       {kind && <Tip>{kind === 'nib' || kind === 'along' || kind === 'edged' || kind === 'bristle' ? OWN_TIPS[kind] : kind === 'stamp' ? 'Stamps stay shapes you can export anywhere. Pointy start and end shrink the stamps at the ends.' : tip?.dry ? 'On paper, the line stays a line you can reshape. PNG, video, sprite sheets and Photoshop show the paper as drawn; PDF, Illustrator and Lottie turn it into a picture; SVG uses tiny shapes instead.' : `${kind === 'watercolour' ? 'Watercolour' : kind === 'chalk' ? 'Chalk' : 'Charcoal'} is drawn from tiny shapes, so it stays sharp at any size. Saving as SVG, Lottie or PDF makes a bigger file.`}</Tip>}
       <ActionButton onClick={() => void makeBrushFromSelection()} title="Turn what you have selected into a brush. On a drawing layer it becomes a stamp; on a pixel layer, a small picture brush.">
         Brush from selection
