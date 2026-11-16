@@ -165,6 +165,8 @@ export const STILL_LOAD = {
   // first. And the remote door: +2 palette (what it has done, and its settings; the switch itself waits for the
   // desktop app) and +3 menu, those two and the switch, in Edit > Scripts. None of it has anything to do with
   // animation, so the gap is unchanged.
-  still: { palette: 558, menu: 746, animateMenu: 8 },
-  animated: { palette: 607, menu: 870, animateMenu: 123 },
+  // Pixel brush engine (16 November 2026): +16 palette and +22 menu on both sides, sixteen ready-made pixel brushes (a command
+  // and a menu entry each) and six switches in the Pixel brush submenu. Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 574, menu: 768, animateMenu: 8 },
+  animated: { palette: 623, menu: 892, animateMenu: 123 },
 };

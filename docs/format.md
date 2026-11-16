@@ -364,7 +364,7 @@ when comparing two drawings for "same look" (as `id` is ignored).
   Saved and shared brushes (`src/brushes/model.ts`, file `*.frameling-brushes.json`, still version 1) have a `tool`: `'brush'` (the
   default, so every old file reads as before) or `'pixel'`, which holds `pixel` instead of `brush`: a `PixelSpec` (`src/dab/spec.ts`) that is
   one of `{ kind: 'dab', dab }` (the Pixel brush: `tip`, `picture`, `size`, `hardness`, `angle`, `roundness`, `follow`, `spacing`,
-  `scatter`, `sizeJitter`, `angleJitter`, `flow`, `opacity`, `aliased`; every field optional on read, with a default and a range),
+  `scatter`, `sizeJitter`, `angleJitter`, `flow`, `opacity`, `aliased`, and since the second slice `dynamics` (a list of `{ from, to, amount, invert }` routes), `fadeLength`, `grain`, `dual` and `wet`; every field optional on read, with a default and a range, and a file from before the second slice reads as a plain brush; see `docs/pixel-brush.md`),
   `{ kind: 'soft', tool, size, hardness, flow }` or `{ kind: 'dry', medium, paper, size, hardness, press }`. An older Frameling
   skips a `'pixel'` brush as unreadable and keeps the rest. The brush in use is the `frameling.pixelBrush.v1` setting.
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`

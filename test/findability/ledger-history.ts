@@ -64,6 +64,7 @@ export const HISTORY: History = {
     { on: D, n: 555, why: 'Repeat: the Repeat tool and the panel show-and-hide work with nothing picked, so both count here. The rest of Repeat needs a shape first.' },
     { on: D, n: 556, why: 'Shape builder: one command, Shift+N. It works on shapes whether a drawing is animated or not, so the gap between the two sides does not move.' },
     { on: D, n: 558, why: 'Remote door: its settings and what-it-has-done commands work with nothing picked, so both count here. The switch itself is off the count until the desktop app is there to open it.' },
+    { on: D, n: 574, why: 'pixel-brush-engine: sixteen more ready-made pixel brushes in the picker (Pen and speed, Grain and texture, Colour), each one a palette command to use it, in a still and in a drawing with animation alike (a brush has nothing to do with animation), so the gap between the two is unchanged. The six commands that flip a setting need a pixel layer, so they are not counted here.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -73,6 +74,7 @@ export const HISTORY: History = {
     { on: D, n: 741, why: 'Shape builder: one entry under Tools, beside the other tools, for the same reason as the palette command.' },
     { on: D, n: 743, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
     { on: D, n: 746, why: 'Remote door: the switch, the log and the settings sit in Edit > Scripts, the one place for things that drive Frameling from outside the drawing.' },
+    { on: D, n: 768, why: 'pixel-brush-engine: the same sixteen ready-made brushes each have a menu entry under the brush lists, plus the six new switches (pen pressure, taper, grain, dual tip, colour wobble, wet paint) in the Pixel brush submenu, which is not in the Draw menu, so Draw stays under its cap.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -82,6 +84,7 @@ export const HISTORY: History = {
     { on: D, n: 604, why: 'Repeat: the same two as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 605, why: 'Shape builder: the same one as a still gains, because building a shape has nothing to do with animation.' },
     { on: D, n: 607, why: 'Remote door: the same two as a still gains, because another program driving Frameling has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 623, why: 'pixel-brush-engine: the same sixteen as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -91,6 +94,7 @@ export const HISTORY: History = {
     { on: D, n: 865, why: 'Shape builder: the same one as a still gains, because building a shape has nothing to do with animation.' },
     { on: D, n: 867, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
     { on: D, n: 870, why: 'Remote door: the same three as a still gains, because another program driving Frameling has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: D, n: 892, why: 'pixel-brush-engine: the same twenty-two as a still gains (sixteen brushes and six switches in the Pixel brush submenu), so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };
