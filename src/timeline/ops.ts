@@ -18,7 +18,7 @@ import * as offsetCore from './offset-core';
 import { canOffset } from '../core/offset';
 import type { Clash } from './edit-core';
 import { shiftInOut } from './inout';
-import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
+import { endCameIn, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
 import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/choices';
 import type { TidyEndChoice } from './choices';
 import './choices';
@@ -75,7 +75,9 @@ export function keepPlayheadIn(): void {
 /** After an edit that pulled the last thing in (it ended at frame `was`, now earlier) and left empty frames: take them off and say so, until you've chosen otherwise. */
 export function offerTidyEnd(was = 0): void {
   const doc = store().get().doc;
-  if (doc.editing || fitLength(doc) >= was || !emptyTail(doc)) return;
+  if (doc.editing || !endCameIn(doc, was)) return;
+  // The end did come in. Only now is it worth asking how far, to see whether there is a tail to take off.
+  if (fitLength(doc) >= doc.length) return;
   // Only empty frames go, and Undo brings them back, so it just happens and a toast says so (with a Change button).
   withChoice<TidyEndChoice>(
     'timeline.tidyEnd',
@@ -95,7 +97,7 @@ function update(label: string, recipe: (d: Draft<Doc>) => void, opts?: { coalesc
   const was = fitLength(store().get().doc);
   store().update(label, (d) => {
     recipe(d);
-    if (fitLength(d as Doc) < was) foldTail(d);
+    if (endCameIn(d as Doc, was)) foldTail(d);
   }, opts);
   keepPlayheadIn();
   offerTidyEnd(was);

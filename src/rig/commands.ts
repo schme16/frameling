@@ -12,6 +12,7 @@ import { rigUi, setRigUi, type PoseGrab } from './state';
 import { artCoverage } from './coverage';
 import { isRigLayer } from './pose';
 import { normaliseActive, paintTarget, smoothActive } from './weightsTool';
+import { takeFocusWhenReady } from '../ui/takeFocusWhenReady';
 
 export const rigPanel: PanelDef = { id: 'rig', title: 'Rig', commandLabel: 'Skeleton panel (Rig)', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' };
 
@@ -217,8 +218,8 @@ export const rigCommands: Command[] = [
     enabled: (s) => !!selectedBone(s),
     run: () => {
       if (!['bone', 'bone-edit', 'bone-remove'].includes(store().get().ui.tool)) store().setUi({ tool: 'bone-edit' });
-      // The name box shows once the tool's options are out.
-      setTimeout(() => document.querySelector<HTMLInputElement>('[data-bone-name]')?.select(), 60);
+      // The name box shows once the tool's options are out, so watch for it rather than guessing how long that takes.
+      takeFocusWhenReady('[data-bone-name]');
     },
   },
   {

@@ -1,0 +1,533 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:22:10.312Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 408,
+   "worstTaskMs": 49.9,
+   "runs": [
+    418.2,
+    408,
+    407.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 136.01,
+   "topSelf": [
+    [
+     "(program) :0",
+     210.8
+    ],
+    [
+     "$e index-CoPimorO.js:10",
+     22.1
+    ],
+    [
+     "bM index-CoPimorO.js:157",
+     15.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     210.8
+    ],
+    [
+     "(anon) index-CoPimorO.js:9",
+     86.8
+    ],
+    [
+     "(anon) index-CoPimorO.js:178",
+     84.8
+    ],
+    [
+     "(anon) :0",
+     83.5
+    ],
+    [
+     "run index-CoPimorO.js:178",
+     82.1
+    ],
+    [
+     "run debug-rRDlKAdV.js:10",
+     82.1
+    ]
+   ],
+   "rendering": [
+    [
+     "HitTest",
+     78.6
+    ],
+    [
+     "Paint",
+     54.9
+    ],
+    [
+     "Layerize",
+     35
+    ],
+    [
+     "#UpdateLayoutTree",
+     21.7
+    ],
+    [
+     "FireAnimationFrame",
+     17.1
+    ],
+    [
+     "Layout",
+     12.5
+    ],
+    [
+     "PrePaint",
+     9.4
+    ],
+    [
+     "Commit",
+     9.4
+    ],
+    [
+     "#Layout",
+     6.3
+    ],
+    [
+     "UpdateLayoutTree",
+     3.6
+    ],
+    [
+     "MinorGC",
+     2.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     2.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     2.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1
+    ],
+    [
+     "UpdateLayer",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 280.8,
+   "worstTaskMs": 45,
+   "runs": [
+    330.7,
+    275,
+    280.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 93.6,
+   "topSelf": [
+    [
+     "(program) :0",
+     128.2
+    ],
+    [
+     "$e index-CoPimorO.js:10",
+     23.6
+    ],
+    [
+     "Pe index-CoPimorO.js:10",
+     17.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     128.2
+    ],
+    [
+     "(anon) :0",
+     94.3
+    ],
+    [
+     "ADe index-CoPimorO.js:157",
+     94.2
+    ],
+    [
+     "run index-CoPimorO.js:178",
+     94.2
+    ],
+    [
+     "run debug-rRDlKAdV.js:10",
+     94.2
+    ],
+    [
+     "OM index-CoPimorO.js:157",
+     92.7
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     63.9
+    ],
+    [
+     "Layerize",
+     27.5
+    ],
+    [
+     "FireAnimationFrame",
+     24.8
+    ],
+    [
+     "HitTest",
+     24.6
+    ],
+    [
+     "Layout",
+     15.3
+    ],
+    [
+     "#UpdateLayoutTree",
+     11
+    ],
+    [
+     "#Layout",
+     7.3
+    ],
+    [
+     "PrePaint",
+     7.1
+    ],
+    [
+     "Commit",
+     6.8
+    ],
+    [
+     "UpdateLayoutTree",
+     3.6
+    ],
+    [
+     "UpdateLayer",
+     1.1
+    ],
+    [
+     "MinorGC",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     0.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     0.8
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 253.5,
+   "worstTaskMs": 63.8,
+   "runs": [
+    323.5,
+    253.5,
+    249.1
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 84.5,
+   "topSelf": [
+    [
+     "(program) :0",
+     160.5
+    ],
+    [
+     "Pe index-CoPimorO.js:10",
+     13.6
+    ],
+    [
+     "bM index-CoPimorO.js:157",
+     12.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     160.5
+    ],
+    [
+     "(anon) :0",
+     75.2
+    ],
+    [
+     "run debug-rRDlKAdV.js:10",
+     75.1
+    ],
+    [
+     "jM index-CoPimorO.js:157",
+     74.8
+    ],
+    [
+     "run index-CoPimorO.js:178",
+     74.8
+    ],
+    [
+     "TM index-CoPimorO.js:157",
+     72.5
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     127.8
+    ],
+    [
+     "PrePaint",
+     20.6
+    ],
+    [
+     "Layerize",
+     17.3
+    ],
+    [
+     "HitTest",
+     15.1
+    ],
+    [
+     "Layout",
+     9.6
+    ],
+    [
+     "Commit",
+     5.1
+    ],
+    [
+     "FireAnimationFrame",
+     5.1
+    ],
+    [
+     "#UpdateLayoutTree",
+     4.3
+    ],
+    [
+     "#Layout",
+     3.3
+    ],
+    [
+     "UpdateLayoutTree",
+     1.4
+    ],
+    [
+     "MinorGC",
+     1.4
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     1.4
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     1.3
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 474.7,
+   "worstTaskMs": 60.3,
+   "runs": [
+    541.6,
+    468.6,
+    474.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 79.11,
+   "topSelf": [
+    [
+     "(program) :0",
+     210.1
+    ],
+    [
+     "zGe index-CoPimorO.js:163",
+     70.4
+    ],
+    [
+     "removeChild :0",
+     15.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     210.1
+    ],
+    [
+     "(anon) index-CoPimorO.js:9",
+     136.2
+    ],
+    [
+     "Ed index-CoPimorO.js:9",
+     126.5
+    ],
+    [
+     "pf index-CoPimorO.js:9",
+     108.7
+    ],
+    [
+     "gf index-CoPimorO.js:9",
+     107.9
+    ],
+    [
+     "ff index-CoPimorO.js:9",
+     107.9
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     145.4
+    ],
+    [
+     "FireAnimationFrame",
+     99.9
+    ],
+    [
+     "Layout",
+     80.9
+    ],
+    [
+     "Layerize",
+     34.3
+    ],
+    [
+     "PrePaint",
+     23.1
+    ],
+    [
+     "#UpdateLayoutTree",
+     18
+    ],
+    [
+     "HitTest",
+     16.9
+    ],
+    [
+     "#Layout",
+     15
+    ],
+    [
+     "Commit",
+     13.4
+    ],
+    [
+     "MajorGC",
+     3.8
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     3.8
+    ],
+    [
+     "UpdateLayoutTree",
+     3.1
+    ],
+    [
+     "MinorGC",
+     2.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     2.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     2.6
+    ],
+    [
+     "UpdateLayer",
+     2.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     2.3
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.9
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.4
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     1.4
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     1.3
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_SLOTS_MAIN",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

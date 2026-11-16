@@ -1,0 +1,967 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:00:58.045Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  },
+  "bouncing-ball": {
+   "nodes": 1110,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 97.3,
+   "runs": [
+    98.9,
+    95.4,
+    97.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 32.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     46.9
+    ],
+    [
+     "$e index-D3HfqC-K.js:10",
+     5.4
+    ],
+    [
+     "bM index-D3HfqC-K.js:157",
+     3.6
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:178",
+     2.3
+    ],
+    [
+     "_n index-D3HfqC-K.js:10",
+     2.1
+    ],
+    [
+     "get index-D3HfqC-K.js:10",
+     1.8
+    ],
+    [
+     "(garbage collector) :0",
+     1.6
+    ],
+    [
+     "Zze index-D3HfqC-K.js:158",
+     1.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     46.9
+    ],
+    [
+     "(anon) :0",
+     22.3
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:178",
+     21.8
+    ],
+    [
+     "run index-D3HfqC-K.js:178",
+     21.7
+    ],
+    [
+     "run debug-CvSnRX1t.js:10",
+     21.7
+    ],
+    [
+     "a1 index-D3HfqC-K.js:178",
+     21.6
+    ],
+    [
+     "update index-D3HfqC-K.js:10",
+     20.7
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     20.6
+    ],
+    [
+     "Ft.produce index-D3HfqC-K.js:10",
+     19
+    ],
+    [
+     "Ft.produceWithPatches index-D3HfqC-K.js:10",
+     19
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     17.6
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     17.6
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     17.5
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     17.4
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     12.6
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     12.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 55.6,
+   "runs": [
+    57.9,
+    55.6,
+    52.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 18.53,
+   "topSelf": [
+    [
+     "(program) :0",
+     18
+    ],
+    [
+     "$e index-D3HfqC-K.js:10",
+     5.9
+    ],
+    [
+     "Pe index-D3HfqC-K.js:10",
+     4.7
+    ],
+    [
+     "bM index-D3HfqC-K.js:157",
+     3
+    ],
+    [
+     "n index-D3HfqC-K.js:178",
+     1.8
+    ],
+    [
+     "Zze index-D3HfqC-K.js:158",
+     1.5
+    ],
+    [
+     "get index-D3HfqC-K.js:10",
+     1.1
+    ],
+    [
+     "At.<computed> index-D3HfqC-K.js:10",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     23
+    ],
+    [
+     "ADe index-D3HfqC-K.js:157",
+     22.9
+    ],
+    [
+     "run index-D3HfqC-K.js:178",
+     22.9
+    ],
+    [
+     "run debug-CvSnRX1t.js:10",
+     22.9
+    ],
+    [
+     "TM index-D3HfqC-K.js:157",
+     22.6
+    ],
+    [
+     "OM index-D3HfqC-K.js:157",
+     22.6
+    ],
+    [
+     "update index-D3HfqC-K.js:10",
+     21.2
+    ],
+    [
+     "Ft.produce index-D3HfqC-K.js:10",
+     19.8
+    ],
+    [
+     "Ft.produceWithPatches index-D3HfqC-K.js:10",
+     19.8
+    ],
+    [
+     "(program) :0",
+     18
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:157",
+     17.8
+    ],
+    [
+     "get index-D3HfqC-K.js:10",
+     14
+    ],
+    [
+     "bM index-D3HfqC-K.js:157",
+     11.4
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     7.7
+    ],
+    [
+     "Dse index-D3HfqC-K.js:140",
+     7.1
+    ],
+    [
+     "ADe.OM.both index-D3HfqC-K.js:157",
+     7.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 53.4,
+   "runs": [
+    54.1,
+    52.7,
+    53.4
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 17.8,
+   "topSelf": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "Pe index-D3HfqC-K.js:10",
+     4.3
+    ],
+    [
+     "bM index-D3HfqC-K.js:157",
+     3
+    ],
+    [
+     "_n index-D3HfqC-K.js:10",
+     3
+    ],
+    [
+     "At.<computed> index-D3HfqC-K.js:10",
+     0.9
+    ],
+    [
+     "get index-D3HfqC-K.js:10",
+     0.9
+    ],
+    [
+     "It index-D3HfqC-K.js:10",
+     0.7
+    ],
+    [
+     "Be index-D3HfqC-K.js:10",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "jM index-D3HfqC-K.js:157",
+     18.2
+    ],
+    [
+     "run index-D3HfqC-K.js:178",
+     18.2
+    ],
+    [
+     "run debug-CvSnRX1t.js:10",
+     18.2
+    ],
+    [
+     "(anon) :0",
+     18.2
+    ],
+    [
+     "TM index-D3HfqC-K.js:157",
+     17.8
+    ],
+    [
+     "update index-D3HfqC-K.js:10",
+     16.7
+    ],
+    [
+     "Ft.produce index-D3HfqC-K.js:10",
+     15.6
+    ],
+    [
+     "Ft.produceWithPatches index-D3HfqC-K.js:10",
+     15.6
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:157",
+     14.2
+    ],
+    [
+     "bM index-D3HfqC-K.js:157",
+     11.2
+    ],
+    [
+     "get index-D3HfqC-K.js:10",
+     7.5
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     6.9
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     6.1
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     5.9
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     5.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 126.5,
+   "runs": [
+    117.5,
+    126.5,
+    148.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 21.09,
+   "topSelf": [
+    [
+     "(program) :0",
+     51.8
+    ],
+    [
+     "zGe index-D3HfqC-K.js:163",
+     21.5
+    ],
+    [
+     "(garbage collector) :0",
+     7.2
+    ],
+    [
+     "removeChild :0",
+     3.9
+    ],
+    [
+     "setAttribute :0",
+     2.6
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:178",
+     2.5
+    ],
+    [
+     "_oe index-D3HfqC-K.js:138",
+     2.1
+    ],
+    [
+     "i index-D3HfqC-K.js:178",
+     2.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     51.8
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     34.5
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     31.9
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     26.7
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     26.6
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     26.6
+    ],
+    [
+     "zGe index-D3HfqC-K.js:163",
+     24.7
+    ],
+    [
+     "r index-D3HfqC-K.js:163",
+     24.7
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     21.4
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     21.3
+    ],
+    [
+     "Xc index-D3HfqC-K.js:9",
+     12.1
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:178",
+     10.7
+    ],
+    [
+     "Cee index-D3HfqC-K.js:9",
+     10.3
+    ],
+    [
+     "Gd index-D3HfqC-K.js:9",
+     10.3
+    ],
+    [
+     "Dd index-D3HfqC-K.js:9",
+     10.3
+    ],
+    [
+     "ML index-D3HfqC-K.js:157",
+     8.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 29.4,
+   "runs": [
+    54.8,
+    25.2,
+    29.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 9.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     18.5
+    ],
+    [
+     "(garbage collector) :0",
+     7.6
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:150",
+     0.4
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:178",
+     0.4
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     0.4
+    ],
+    [
+     "Wo index-D3HfqC-K.js:9",
+     0.4
+    ],
+    [
+     "Hf index-D3HfqC-K.js:10",
+     0.4
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     18.5
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     8.1
+    ],
+    [
+     "(garbage collector) :0",
+     7.6
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     6.1
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     6.1
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     6.1
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     6.1
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     4
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     3.9
+    ],
+    [
+     "Xc index-D3HfqC-K.js:9",
+     3.4
+    ],
+    [
+     "Ac index-D3HfqC-K.js:9",
+     2.5
+    ],
+    [
+     "Wo index-D3HfqC-K.js:9",
+     2.3
+    ],
+    [
+     "Cee index-D3HfqC-K.js:9",
+     2.1
+    ],
+    [
+     "Gd index-D3HfqC-K.js:9",
+     2.1
+    ],
+    [
+     "Dd index-D3HfqC-K.js:9",
+     2.1
+    ],
+    [
+     "emit index-D3HfqC-K.js:10",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 15.7,
+   "runs": [
+    15.7,
+    14.4,
+    17.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 5.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "drawImage :0",
+     0.5
+    ],
+    [
+     "Hf index-D3HfqC-K.js:10",
+     0.3
+    ],
+    [
+     "_f index-D3HfqC-K.js:9",
+     0.3
+    ],
+    [
+     "Ahe index-D3HfqC-K.js:150",
+     0.3
+    ],
+    [
+     "QA index-D3HfqC-K.js:150",
+     0.3
+    ],
+    [
+     "Pe index-D3HfqC-K.js:10",
+     0.3
+    ],
+    [
+     "M index-D3HfqC-K.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     4.5
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     3.8
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     3.8
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     3.8
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     3.8
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     2.8
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     2.8
+    ],
+    [
+     "Xc index-D3HfqC-K.js:9",
+     2.5
+    ],
+    [
+     "ADe index-D3HfqC-K.js:157",
+     2.2
+    ],
+    [
+     "run index-D3HfqC-K.js:178",
+     2.2
+    ],
+    [
+     "run debug-CvSnRX1t.js:10",
+     2.2
+    ],
+    [
+     "(anon) :0",
+     2.2
+    ],
+    [
+     "Wo index-D3HfqC-K.js:9",
+     1.9
+    ],
+    [
+     "Ac index-D3HfqC-K.js:9",
+     1.9
+    ],
+    [
+     "update index-D3HfqC-K.js:10",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 13.7,
+   "runs": [
+    12.5,
+    14,
+    13.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.5
+    ],
+    [
+     "Hf index-D3HfqC-K.js:10",
+     0.4
+    ],
+    [
+     "Uw index-D3HfqC-K.js:150",
+     0.3
+    ],
+    [
+     "Ahe index-D3HfqC-K.js:150",
+     0.3
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:150",
+     0.3
+    ],
+    [
+     "QA index-D3HfqC-K.js:150",
+     0.2
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:10",
+     0.2
+    ],
+    [
+     "Rf index-D3HfqC-K.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.5
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     4.3
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     3.9
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     3.9
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     3.9
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     3.9
+    ],
+    [
+     "Bd index-D3HfqC-K.js:9",
+     2.7
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     2.7
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     2.7
+    ],
+    [
+     "Xc index-D3HfqC-K.js:9",
+     2.3
+    ],
+    [
+     "Ac index-D3HfqC-K.js:9",
+     1.8
+    ],
+    [
+     "Wo index-D3HfqC-K.js:9",
+     1.7
+    ],
+    [
+     "jM index-D3HfqC-K.js:157",
+     1.4
+    ],
+    [
+     "run index-D3HfqC-K.js:178",
+     1.4
+    ],
+    [
+     "run debug-CvSnRX1t.js:10",
+     1.4
+    ],
+    [
+     "(anon) :0",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 39.9,
+   "runs": [
+    39.4,
+    56.4,
+    39.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.65,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.9
+    ],
+    [
+     "(garbage collector) :0",
+     5.3
+    ],
+    [
+     "zGe index-D3HfqC-K.js:163",
+     3.8
+    ],
+    [
+     "i index-D3HfqC-K.js:178",
+     1.9
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "Uw index-D3HfqC-K.js:150",
+     0.8
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:10",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.9
+    ],
+    [
+     "(anon) index-D3HfqC-K.js:9",
+     13.2
+    ],
+    [
+     "gf index-D3HfqC-K.js:9",
+     12.1
+    ],
+    [
+     "ff index-D3HfqC-K.js:9",
+     12.1
+    ],
+    [
+     "pf index-D3HfqC-K.js:9",
+     12.1
+    ],
+    [
+     "Ed index-D3HfqC-K.js:9",
+     12.1
+    ],
+    [
+     "Rd index-D3HfqC-K.js:9",
+     8.8
+    ],
+    [
+     "Bd index-D3HfqC-K.js:9",
+     8.7
+    ],
+    [
+     "zd index-D3HfqC-K.js:9",
+     8.7
+    ],
+    [
+     "Xc index-D3HfqC-K.js:9",
+     5.9
+    ],
+    [
+     "(garbage collector) :0",
+     5.3
+    ],
+    [
+     "r index-D3HfqC-K.js:163",
+     4.9
+    ],
+    [
+     "Wo index-D3HfqC-K.js:9",
+     4.8
+    ],
+    [
+     "Ac index-D3HfqC-K.js:9",
+     4.8
+    ],
+    [
+     "zGe index-D3HfqC-K.js:163",
+     4.7
+    ],
+    [
+     "Cee index-D3HfqC-K.js:9",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

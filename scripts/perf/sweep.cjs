@@ -12,11 +12,14 @@
 //   --out file.json   write every number (and the top functions) as JSON
 //   --profile-dir d   keep one .cpuprofile per document and action (open in Chrome DevTools > Performance)
 //   --trace           also record a Chromium trace of each action and print where the page's own (non-JavaScript) time went:
-//                     style recalculation, layout, paint and so on (the "(program)" time a CPU profile cannot split)
+//                     style recalculation, layout, paint and so on (the "(program)" time a CPU profile cannot split),
+//                     and the longest single block the main thread spent its time in, which is what says whether an
+//                     action drops a frame rather than landing in pieces nobody notices
 //   --cache-stats     load the page with ?perf and print the layer bitmap cache's builds, hits, evictions and size per action
 //   --label name      stored in the JSON
 //
-// Environment: PERF_RENDERER=dir uses another renderer build (an unminified one gives readable function names:
+// Environment: PERF_CPU_SLOWDOWN=4 emulates a CPU four times slower (stored in the JSON as env.cpuSlowdown);
+//              PERF_RENDERER=dir uses another renderer build (an unminified one gives readable function names:
 // `npx vite build --minify false --outDir /somewhere/renderer`); PERF_SOFTWARE_GL=1 for WebGL under xvfb.
 //
 // "busy" is main-thread time with the page doing anything (JavaScript, layout, paint set-up, GC), idle time left out,
@@ -639,6 +642,8 @@ async function measure(name, a, dbg) {
   const iostat = {};
   const longest = [];
   const blocks = [];
+  // Only a --trace run has this: the longest single block of main-thread work in any rep.
+  let worstTask = 0;
   for (let r = 0; r < reps; r++) {
     if (a.setup) await a.setup();
     await sleep(300);
@@ -646,7 +651,7 @@ async function measure(name, a, dbg) {
     const c0 = cacheStats ? await cacheNow() : null;
     if (a.io) { await ioReset(); await ev('window.__sw.takeLongs(); true'); }
     await dbg.sendCommand('Profiler.start');
-    if (trace) { const k = await traced(dbg, () => a.act()); for (const [n, v] of k) rendering.set(n, (rendering.get(n) || 0) + v / reps); }
+    if (trace) { const t = await traced(dbg, () => a.act()); for (const [n, v] of t.kinds) rendering.set(n, (rendering.get(n) || 0) + v / reps); worstTask = Math.max(worstTask, t.longestTask); }
     else await a.act();
     const { profile } = await dbg.sendCommand('Profiler.stop');
     lastProfile = profile;
@@ -670,7 +675,7 @@ async function measure(name, a, dbg) {
     if (a.cleanup) await a.cleanup();
     await restore(base);
   }
-  return { io: a.io ? iostat : null, longestMs: longest.length ? median(longest) : null, longBlocks: blocks.length ? median(blocks) : null, cache: cacheStats ? cstat : null, busy: median(busys), all: busys, wall: walls.length ? median(walls) : null, wallAll: walls, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
+  return { worstTaskMs: worstTask || null, io: a.io ? iostat : null, longestMs: longest.length ? median(longest) : null, longBlocks: blocks.length ? median(blocks) : null, cache: cacheStats ? cstat : null, busy: median(busys), all: busys, wall: walls.length ? median(walls) : null, wallAll: walls, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
 }
 
 /** The save split (page opened with ?debug): where the time inside a save went, see src/io/ioTime.ts. */
@@ -694,12 +699,18 @@ async function traced(dbg, fn) {
   dbg.removeListener('message', on);
   const main = events.find((e) => e.name === 'thread_name' && e.args && e.args.name === 'CrRendererMain');
   const kinds = new Map();
+  // The longest single block the main thread spent its time in. Total busy time cannot tell a 30 ms freeze from
+  // thirty 1 ms pieces, and only the first of those is something a person feels, so the block is the number that
+  // says whether an action drops a frame. The page's own long-task record only sees blocks over 50 ms, which is
+  // three dropped frames: this sees one.
+  let longestTask = 0;
+  if (main) for (const e of events) if (e.ph === 'X' && e.tid === main.tid && e.pid === main.pid && e.name === 'RunTask') longestTask = Math.max(longestTask, e.dur / 1000);
   if (main) for (const e of events) if (e.ph === 'X' && e.tid === main.tid && e.pid === main.pid && /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|HitTest|UpdateLayer|ParseHTML|Decode Image|ImageDecodeTask|CompositeLayers|FireAnimationFrame|MajorGC|MinorGC|V8\.GC_.*|IntersectionObserverController::computeIntersections)$/.test(e.name)) {
     kinds.set(e.name, (kinds.get(e.name) || 0) + e.dur / 1000);
     // How many times, not just how long: forced layouts show up as a count that is higher than the frames made.
     if (e.name === 'Layout' || e.name === 'UpdateLayoutTree') kinds.set('#' + e.name, (kinds.get('#' + e.name) || 0) + 1);
   }
-  return kinds;
+  return { kinds, longestTask };
 }
 
 /** Thrown by an action that cannot run on this document (nothing to select, no key to click): left out, not a failure. */
@@ -716,6 +727,11 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
   dbg.attach('1.3');
   await dbg.sendCommand('Profiler.enable');
   await dbg.sendCommand('Profiler.setSamplingInterval', { interval: 200 });
+  // Emulate a slower machine (CPU only; the GPU is what it is): PERF_CPU_SLOWDOWN=4 means four times slower JS. A
+  // workstation hides costs that a laptop does not, so this is how to tell a thing that fits in a frame here from a
+  // thing that only fits in a frame here.
+  const slowdown = Number(process.env.PERF_CPU_SLOWDOWN || 1);
+  if (slowdown > 1) await dbg.sendCommand('Emulation.setCPUThrottlingRate', { rate: slowdown });
   if (profDir) fs.mkdirSync(profDir, { recursive: true });
   await ev(HELPERS);
   const results = [];
@@ -748,12 +764,13 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
         const m = await measure(an, ctx, dbg);
         const units = typeof a.units === 'function' ? a.units(ctx) : a.units;
         const st = await state();
-        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, longestMs: m.longestMs === null ? undefined : m.longestMs, longBlocks: m.longBlocks === null ? undefined : m.longBlocks, io: m.io ? Object.fromEntries(Object.entries(m.io).map(([k, v]) => [k, +v.toFixed(1)])) : undefined, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
+        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), worstTaskMs: m.worstTaskMs === null ? undefined : +m.worstTaskMs.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, longestMs: m.longestMs === null ? undefined : m.longestMs, longBlocks: m.longBlocks === null ? undefined : m.longBlocks, io: m.io ? Object.fromEntries(Object.entries(m.io).map(([k, v]) => [k, +v.toFixed(1)])) : undefined, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
         results.push(row);
         console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]${m.wall === null ? '' : `  wall ${num(m.wall)} ms [${m.wallAll.map((x) => x.toFixed(0)).join(' ')}]`}  after: ${st.layers} layers, undo "${st.undo}"`);
         if (row.io) console.error(`  ${pad('', 15)} ${pad('', 16)} save split: held ${num(row.io.held)} ms = trim ${num(row.io.trim)} + history ${num(row.io.history)} + doc.json ${num(row.io.docjson)} + walk ${num(row.io.files)} + png copy ${num(row.io.pngCopy)} + hand over ${num(row.io.post)}; waited on workers ${num(row.io.pngWait)} png + ${num(row.io.zipWait)} zip, ${row.io.pngs} pngs made; longest single block ${num(row.longestMs)} ms of ${row.longBlocks} over 50 ms`);
         if (profDir && m.profile) fs.writeFileSync(path.join(profDir, `${dn}.${an}.cpuprofile`), JSON.stringify(m.profile));
         if (m.cache) console.error(`        bitmaps per run: ${m.cache.builds.toFixed(0)} built, ${m.cache.hits.toFixed(0)} found, ${m.cache.evictions.toFixed(0)} evicted; held ${m.cache.entries} (${m.cache.mpix.toFixed(1)} Mpx)`);
+        if (trace && m.worstTaskMs !== null) console.error(`        worst single block ${m.worstTaskMs.toFixed(1)} ms${m.worstTaskMs > 16.7 ? ' (a dropped frame)' : ' (inside a frame)'}`);
         if (trace && m.rendering.length) console.error('        page   ' + m.rendering.map(([k, v]) => `${k} ${v}`).join(', '));
         if (topN) {
           for (const [k, v] of m.self.slice(0, topN)) console.error(`        self ${num(v)}  ${k}`);
@@ -775,6 +792,6 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
     if (r.error) { console.log(pad(r.doc, 16) + pad(r.action, 17) + 'FAILED ' + r.error); continue; }
     console.log(pad(r.doc, 16) + pad(r.action, 17) + pad(r.busyMs.toFixed(0), 9) + pad(r.perUnitMs.toFixed(2), 10) + r.unit + (r.note ? '  ' + r.note : ''));
   }
-  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), gpu: gpuRun, reps, pages, results }, null, 1));
+  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), gpu: gpuRun, cpuSlowdown: slowdown, reps, pages, results }, null, 1));
   app.exit(0);
 })().catch((e) => { console.error(e); app.exit(1); });

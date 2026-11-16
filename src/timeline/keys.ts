@@ -10,7 +10,7 @@ import { pruneDrawings } from '../core/doc';
 import { store } from '../core/store';
 import { ensureLength, MAX_LENGTH } from './edit-core';
 import { foldTail, keepPlayheadIn, offerTidyEnd } from './ops';
-import { fitLength } from './tidyEnd';
+import { endCameIn, fitLength } from './tidyEnd';
 import { celRef, fxRef, parseRef, type KeyRef } from './tracks';
 import { applyPropEdits, planPropEdits, propWhy, type PropPicks } from './propKeys';
 
@@ -316,7 +316,7 @@ export function deleteKeys(refs: KeyRef[]): KeysOutcome {
   const was = fitLength(store().get().doc);
   store().update(refs.length === 1 ? 'Delete a key' : 'Delete keys', (d) => {
     done = removeKeys(d as Doc, refs);
-    if (done && fitLength(d as Doc) < was) foldTail(d as Doc);
+    if (done && endCameIn(d as Doc, was)) foldTail(d as Doc);
   });
   if (done) {
     keepPlayheadIn();

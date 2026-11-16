@@ -28,6 +28,7 @@ import {
 } from './pixel-state';
 import { cancelOpenPixelLasso, pixelLassoIsOpen } from './pixel-tool';
 import { isPixelSelectTool, toolFor, type SelectMode } from './ways';
+import { takeFocusWhenReady } from '../ui/takeFocusWhenReady';
 
 const onPixel = (): boolean => !!activePixelGrid();
 const hasSel = (): boolean => !!pixelSelection();
@@ -203,8 +204,8 @@ const commands: Command[] = [
     enabled: (s) => s.ui.selection.length > 0 || hasSel(),
     run: () => {
       showPanel('selection-numbers');
-      // The panel may have just opened: give it a moment to draw before taking the focus.
-      setTimeout(() => document.querySelector<HTMLInputElement>('.sy-props input[aria-label="X"]')?.focus(), 120);
+      // The panel may have just opened, so watch for its first box rather than guessing how long it takes to draw.
+      takeFocusWhenReady('.sy-props input[aria-label="X"]', { select: false });
     },
   },
   {
