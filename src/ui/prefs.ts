@@ -281,10 +281,9 @@ export function applyPrefs(): void {
   const root = document.documentElement;
   const theme = activeTheme();
   writeTheme(root, theme);
-  // data-theme only says dark or light, for the few stylesheet rules that care. With System it's left off so the
-  // computer's own setting decides them, which always agrees with the theme chosen above.
-  if (p.theme === 'system' && !preview) delete root.dataset.theme;
-  else root.dataset.theme = theme.mode;
+  // data-theme says whether the theme showing is dark or light, for the few stylesheet rules that care. It comes from
+  // the theme itself, never from the computer, because a light theme can sit in the dark slot.
+  root.dataset.theme = theme.mode;
   // A pattern around the page for the themes that have one (camo, strawberry seeds, sock stripes), unless textures
   // are turned off. Pure CSS, see canvas.css.
   const surround = p.showTextures ? surroundFor(theme) : null;

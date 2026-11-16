@@ -9,7 +9,7 @@
  *
  * Shape and type belong to the look, a separate choice from the theme:
  *   data-look="cosy" | "crisp"    (cosy = soft and rounded, the default; crisp = tighter, like Interactives)
- * data-theme="dark" | "light" is also set (left off for System) for the few stylesheet rules that care about it.
+ * data-theme="dark" | "light" is also set, from the mode of the theme showing, for the few stylesheet rules that care.
  */
 @import '@fontsource-variable/nunito';
 @import '@fontsource-variable/inter';

@@ -27,7 +27,7 @@ describe('preferences', () => {
     expect(r.dataset.look).toBe('crisp');
     expect(r.dataset.motion).toBe('reduce');
     setPrefs({ theme: 'system', look: 'cosy', reduceMotion: false });
-    expect(r.dataset.theme).toBeUndefined();
+    expect(r.dataset.theme).toBe('dark'); // System: the theme showing (no computer here, so the dark pick)
     expect(r.dataset.look).toBe('cosy');
     expect(r.dataset.motion).toBeUndefined();
   });
