@@ -89,6 +89,28 @@ describe('saving the history again', () => {
     expect(bytesOf(warm)).toEqual(bytesOf(fresh));
   });
 
+  it('stops at a step too big for the cap without finishing it, and answers the same way twice', () => {
+    const { s, id } = build(3);
+    // One step that repaints the whole drawing: its pixels alone (both sides) are more than this cap holds.
+    s.update('Fill', (doc) => {
+      const d = doc.drawings[id] as PixelDrawing;
+      const grid = gridPixels(d, W, H).slice();
+      for (let i = 0; i < grid.length; i += 4) grid.set([10, 20, 30, 255], i);
+      setGridPixels(d, grid, W, H);
+    });
+    const src = s.historyForSave()!;
+    const cap = 2000;
+    // Newest first: the big step is hit straight away, so nothing fits and the file gets no history.
+    expect(encodeHistory(src, cap)).toBeNull();
+    // Asked again with the same room, the step is known to be over it and is not looked at again.
+    expect(encodeHistory(src, cap)).toBeNull();
+    expect(encodeHistory(cold(src), cap)).toBeNull();
+    // With room for it, the same step goes in after all: the verdict was about the room, not the step.
+    const all = encodeHistory(src);
+    expect(all!.kept.undo).toBe(4);
+    expect(bytesOf(all)).toEqual(bytesOf(encodeHistory(cold(src))));
+  });
+
   it('keeps the same steps when the cap cuts the history short', () => {
     const { s } = build(30, 3);
     const src = s.historyForSave()!;

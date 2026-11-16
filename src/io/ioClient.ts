@@ -7,6 +7,7 @@ import type { Zippable } from 'fflate';
 import type { RawImage } from './png';
 import type { IoReply } from './ioJobs';
 import { WorkerPool, type WorkerLike } from './workerPool';
+import { ioTime, nowMs } from './ioTime';
 
 let pool: WorkerPool | null | undefined;
 
@@ -85,6 +86,11 @@ export async function decodePngsInWorkers(entries: Record<string, Uint8Array>, p
  * worker could not make is null, and so is every one when they are all small (or there are no workers): the caller
  * encodes those itself with `encodePng`. Each picture's pixels are copied before they go across, so the live drawing
  * is never shared with a worker or emptied by one.
+ *
+ * One picture's copy is made only when a worker is free to take it, not all of them at the start. Copying a hundred
+ * frames of a big pixel document up front held the page for about a hundred milliseconds in one go (and had a hundred
+ * copies in memory at once); one line of work per worker lets the page answer the pen between pictures, and never
+ * holds more than a handful of copies.
  */
 export async function encodePngsInWorkers(images: { width: number; height: number; pixels: Uint8ClampedArray }[]): Promise<(Uint8Array | null)[]> {
   const out: (Uint8Array | null)[] = images.map(() => null);
@@ -92,18 +98,26 @@ export async function encodePngsInWorkers(images: { width: number; height: numbe
   if (!p || images.reduce((s, im) => s + im.width * im.height, 0) < WORKER_MIN_PIXELS) return out;
   // Biggest first, so the last job to start is a small one.
   const order = images.map((_, i) => i).sort((a, b) => images[b].pixels.length - images[a].pixels.length);
-  await Promise.all(
-    order.map(async (i) => {
+  let next = 0;
+  const lane = async (): Promise<void> => {
+    for (;;) {
+      const i = order[next++];
+      if (i === undefined) return;
       const im = images[i];
       try {
+        // A copy, so the live drawing is never shared with a worker or emptied by one. On a big pixel document this is
+        // the page's own share of the encode, so it is timed: see ioTime.
+        const tCopy = nowMs();
         const pixels = im.pixels.slice();
+        ioTime.pngCopy += nowMs() - tCopy;
         const r = await p.run<IoReply>({ kind: 'encodepng', image: { width: im.width, height: im.height, pixels } }, [pixels.buffer as ArrayBuffer]);
         if (r.ok && 'png' in r) out[i] = r.png;
       } catch {
         // Left for the caller to encode itself.
       }
-    }),
-  );
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(order.length, p.lanes)) }, lane));
   return out;
 }
 

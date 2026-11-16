@@ -127,7 +127,12 @@ const HELPERS = `(() => {
     }
     return { steps: S.historyList().done.length, weightMB: Math.round(S.historyWeight() / 1e6), buildMs: Math.round(performance.now() - t0) };
   };
-  window.__sw = { F, last, id, hex, blob, line, vlayer, fresh, finish, pileHistory };
+  // Long tasks: the page's own record of every block of main-thread work over 50 ms. Total busy time says how much
+  // work a save is; this says whether it lands as one freeze or as many pieces nobody notices.
+  let longs = [];
+  try { new PerformanceObserver((l) => { for (const e of l.getEntries()) longs.push(Math.round(e.duration)); }).observe({ entryTypes: ['longtask'] }); } catch {}
+  const takeLongs = () => { const o = longs; longs = []; return o; };
+  window.__sw = { F, last, id, hex, blob, line, vlayer, fresh, finish, pileHistory, takeLongs };
 })()`;
 
 /** A pixel document: `frames` frames, each a `bw` x `bh` painted block (at x0, y0, drifting right a little) of flat 8 x 8 colour cells on a `w` x `h` stage. */
@@ -534,12 +539,14 @@ const ACTIONS = {
   // is NOT the cost of a first save: see save-file-first. `wall` is the page's clock for the whole awaited call, worker
   // time included (the CPU profile only sees the page's own thread, a wait on a worker is idle to it).
   'save-file': {
+    io: true,
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,
     async act() { await timedSave(this); },
   },
   // A first save: every pixel drawing gets a fresh pixel array before each run (a copy, which is what opening a file
   // leaves you with), so the PNG cache is cold and the encoding has to happen.
   'save-file-first': {
+    io: true,
     kinds: ['pixel'], unit: 'saves', units: 1,
     async setup() { await freshPixels(); },
     async act() { await timedSave(this); await sleep(150); },
@@ -547,17 +554,20 @@ const ACTIONS = {
   // The same through autosave, which also hands the bytes to the desktop side to write (so the trip across and the
   // disk are in `wall`).
   'autosave-first': {
+    io: true,
     kinds: ['pixel'], unit: 'saves', units: 1,
     async setup() { await freshPixels(true); },
     async act() { this.wall = await ev(`(async () => { const t = performance.now(); await window.__framelingIo.autosaveNow(); return performance.now() - t; })()`); await sleep(200); },
   },
   'open-file': {
+    io: true,
     kinds: ['vector', 'pixel'], unit: 'opens', units: 1,
     async setup() { await ev(`window.__swBytes = window.__framelingArtboards.saveBytes(); true`); },
     // The app opens files through loadFileAsync (pictures decoded on workers); older builds only had the sync hook.
     async act() { await ev(`(async () => { const A = window.__framelingArtboards; await (A.openBytesAsync || (async (b) => A.openBytes(b)))(window.__swBytes); return true; })()`); await sleep(400); },
   },
   'autosave': {
+    io: true,
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,
     async setup() { await ev(`(() => { const S = window.__frameling.store(); S.update('Rename', (d) => { d.layers[d.layers.length - 1].name = 'Auto ' + Math.random(); }); return true; })()`); },
     async act() { this.wall = await ev(`(async () => { const t = performance.now(); await window.__framelingIo.autosaveNow(); return performance.now() - t; })()`); await sleep(200); },
@@ -626,17 +636,28 @@ async function measure(name, a, dbg) {
   let lastProfile = null;
   const rendering = new Map();
   const cstat = { builds: 0, hits: 0, evictions: 0, entries: 0, mpix: 0 };
+  const iostat = {};
+  const longest = [];
+  const blocks = [];
   for (let r = 0; r < reps; r++) {
     if (a.setup) await a.setup();
     await sleep(300);
     const before = a.edits ? await ev('window.__frameling.store().historyIds().undo') : null;
     const c0 = cacheStats ? await cacheNow() : null;
+    if (a.io) { await ioReset(); await ev('window.__sw.takeLongs(); true'); }
     await dbg.sendCommand('Profiler.start');
     if (trace) { const k = await traced(dbg, () => a.act()); for (const [n, v] of k) rendering.set(n, (rendering.get(n) || 0) + v / reps); }
     else await a.act();
     const { profile } = await dbg.sendCommand('Profiler.stop');
     lastProfile = profile;
     if (a.wall !== undefined) { walls.push(a.wall); a.wall = undefined; }
+    if (a.io) {
+      const t = await ioNow();
+      for (const k of IO_KEYS) iostat[k] = (iostat[k] || 0) + t[k] / reps;
+      const l = await ev('window.__sw.takeLongs()');
+      longest.push(l.length ? Math.max(...l) : 0);
+      blocks.push(l.length);
+    }
     if (c0) { const c1 = await cacheNow(); for (const k of ['builds', 'hits', 'evictions']) cstat[k] += (c1[k] - c0[k]) / reps; cstat.entries = c1.entries; cstat.mpix = c1.mpix; }
     if (a.edits) {
       const h = await ev('window.__frameling.store().historyIds().undo');
@@ -649,8 +670,13 @@ async function measure(name, a, dbg) {
     if (a.cleanup) await a.cleanup();
     await restore(base);
   }
-  return { cache: cacheStats ? cstat : null, busy: median(busys), all: busys, wall: walls.length ? median(walls) : null, wallAll: walls, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
+  return { io: a.io ? iostat : null, longestMs: longest.length ? median(longest) : null, longBlocks: blocks.length ? median(blocks) : null, cache: cacheStats ? cstat : null, busy: median(busys), all: busys, wall: walls.length ? median(walls) : null, wallAll: walls, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
 }
+
+/** The save split (page opened with ?debug): where the time inside a save went, see src/io/ioTime.ts. */
+const IO_KEYS = ['trim', 'history', 'docjson', 'files', 'pngCopy', 'post', 'pngWait', 'zipWait', 'held', 'posts', 'pngs', 'saves'];
+const ioReset = () => ev('window.__framelingIo.ioTime.reset(); true');
+const ioNow = () => ev(`(() => { const t = window.__framelingIo.ioTime; const o = {}; for (const k of ${JSON.stringify(IO_KEYS)}) o[k] = t[k]; return o; })()`);
 
 /** The layer bitmap cache's counters (page opened with ?perf). */
 const cacheNow = () => ev(`(() => { const c = window.__framelingPerf.painter.cache; const z = c.size; return { builds: c.builds, hits: c.hits, evictions: c.evictions, entries: z.entries, mpix: z.pixels / 1e6 }; })()`);
@@ -722,9 +748,10 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
         const m = await measure(an, ctx, dbg);
         const units = typeof a.units === 'function' ? a.units(ctx) : a.units;
         const st = await state();
-        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
+        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, longestMs: m.longestMs === null ? undefined : m.longestMs, longBlocks: m.longBlocks === null ? undefined : m.longBlocks, io: m.io ? Object.fromEntries(Object.entries(m.io).map(([k, v]) => [k, +v.toFixed(1)])) : undefined, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
         results.push(row);
         console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]${m.wall === null ? '' : `  wall ${num(m.wall)} ms [${m.wallAll.map((x) => x.toFixed(0)).join(' ')}]`}  after: ${st.layers} layers, undo "${st.undo}"`);
+        if (row.io) console.error(`  ${pad('', 15)} ${pad('', 16)} save split: held ${num(row.io.held)} ms = trim ${num(row.io.trim)} + history ${num(row.io.history)} + doc.json ${num(row.io.docjson)} + walk ${num(row.io.files)} + png copy ${num(row.io.pngCopy)} + hand over ${num(row.io.post)}; waited on workers ${num(row.io.pngWait)} png + ${num(row.io.zipWait)} zip, ${row.io.pngs} pngs made; longest single block ${num(row.longestMs)} ms of ${row.longBlocks} over 50 ms`);
         if (profDir && m.profile) fs.writeFileSync(path.join(profDir, `${dn}.${an}.cpuprofile`), JSON.stringify(m.profile));
         if (m.cache) console.error(`        bitmaps per run: ${m.cache.builds.toFixed(0)} built, ${m.cache.hits.toFixed(0)} found, ${m.cache.evictions.toFixed(0)} evicted; held ${m.cache.entries} (${m.cache.mpix.toFixed(1)} Mpx)`);
         if (trace && m.rendering.length) console.error('        page   ' + m.rendering.map(([k, v]) => `${k} ${v}`).join(', '));

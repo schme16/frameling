@@ -14,6 +14,7 @@ import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'ffla
 import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, encodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
+import { ioTime, nowMs } from './ioTime';
 import { MAX_UNZIPPED, PNG_SAVE_LEVEL } from './ioJobs';
 import { readExports } from '../export/saved';
 import { trimmedDrawing } from '../core/pixelBounds';
@@ -144,7 +145,10 @@ async function fillPendingPngs(files: Zippable, pending: PendingPng[]): Promise<
     else byPixels.set(p.img.pixels, [p]);
   }
   const groups = [...byPixels.values()];
+  ioTime.pngs += groups.length;
+  const tPng = nowMs();
   const made = await encodePngsInWorkers(groups.map((g) => g[0].img));
+  ioTime.pngWait += nowMs() - tPng;
   const byStand = new Map<Uint8Array, Uint8Array>();
   groups.forEach((g, i) => {
     const img = g[0].img;
@@ -278,7 +282,9 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
       const whole = tileFrames.has(id);
       const memo = whole ? undefined : trimMemo.get(d.pixels);
       const known = memo && memo.width === d.width && memo.height === d.height && memo.x === (d.x ?? 0) && memo.y === (d.y ?? 0) ? memo : undefined;
+      const tTrim = nowMs();
       const t = known ? withRect(d, known.rect) : whole ? d : trimmedDrawing(d);
+      ioTime.trim += nowMs() - tTrim;
       if (t.width < 1 || t.height < 1) {
         // Nothing painted: no picture entry at all.
         if (!known && !whole && t !== d) trimMemo.set(d.pixels, { width: d.width, height: d.height, x: d.x ?? 0, y: d.y ?? 0, rect: { x: 0, y: 0, width: 0, height: 0 }, png: NO_PNG });
@@ -325,10 +331,14 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
   const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
   // The undo steps, when asked for (never for exports or versions, which don't pass them; autosave does, so a recovery keeps them).
+  const tHist = nowMs();
   const history = opts.history ? encodeHistory(opts.history) : null;
+  ioTime.history += nowMs() - tHist;
   opts.onHistory?.(history);
   if (history) Object.assign(files, history.files);
+  const tDoc = nowMs();
   files['doc.json'] = docJsonBytes({ ...doc, version, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}), ...(history ? { history: history.note } : {}) }, entries);
+  ioTime.docjson += nowMs() - tDoc;
   return files;
 }
 
@@ -361,9 +371,14 @@ export interface SaveOptions {
  */
 export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
   // The drawings' PNGs are the slow part of a first save, so they are made on workers too (see fillPendingPngs).
+  ioTime.saves++;
   const make = async (): Promise<Zippable> => {
     const pending: PendingPng[] = [];
+    const was = ioTime.trim + ioTime.history + ioTime.docjson;
+    const tWalk = nowMs();
     const made = filesToSave(open, appVersion, now, opts, collectingSink(pending));
+    // `files` is the walk with the parts timed inside it taken off, so the five held numbers never count time twice.
+    ioTime.files += nowMs() - tWalk - (ioTime.trim + ioTime.history + ioTime.docjson - was);
     if (pending.length) await fillPendingPngs(made, pending);
     return made;
   };
@@ -372,7 +387,9 @@ export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new 
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
   const size = doc instanceof Uint8Array ? doc.length : 0;
+  const tZip = nowMs();
   const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
+  ioTime.zipWait += nowMs() - tZip;
   if (made) return made;
   // No worker (or it failed): the handed over buffer is gone, so make the files again (the PNGs are cached by now).
   if (doc instanceof Uint8Array && doc.length !== size) files = await make();

@@ -237,8 +237,10 @@ function pixelChange(id: string, before: PixelDrawing, after: PixelDrawing, byte
   const ch: PixelChange = { id, b: blockOf(before), a: blockOf(after) };
   const u = union(rb, ra);
   if (u) {
-    const was = over(before, u);
-    const now = over(after, u);
+    // A side whose own block is already the union is read where it lies. Copying it out first cost two copies of every
+    // drawing a step touched (hundreds of megabytes on a whole-document edit) before a single pixel was compared.
+    const was = sameRect(rb, u) ? before.pixels : over(before, u);
+    const now = sameRect(ra, u) ? after.pixels : over(after, u);
     const c = changedRect(was, now, u);
     if (c) {
       ch.c = c;
@@ -293,6 +295,16 @@ interface Encoded {
 
 /** A step's encoding, kept so saving again does not look at every pixel again. Checked against what the step holds now. */
 const encoded = new WeakMap<HistoryEntry, { sig: string; enc: Encoded }>();
+
+/**
+ * A step already known to be bigger than the room it was offered, with how far its pixels had got when that became
+ * plain. Nothing smaller will ever fit, so a later save with the same room or less stops there without looking at a
+ * single pixel again.
+ */
+const tooBig = new WeakMap<HistoryEntry, { sig: string; atLeast: number }>();
+
+/** `encodeStep` says this when the step cannot fit the room left: the walk stops rather than finish work it would throw away. */
+const OVER = Symbol('over');
 const sigOf = (e: HistoryEntry) => `${e.patches.length}:${e.inverse.length}:${e.at}:${e.label}:${e.view ? 1 : 0}:${e.rerun ? 1 : 0}`;
 
 /** The pixel drawings a step only changed by replacing their block (and nothing else about them), where both sides have them. */
@@ -328,10 +340,18 @@ function cachedEncoding(e: HistoryEntry): Encoded | undefined {
   return hit && hit.sig === sigOf(e) ? hit.enc : undefined;
 }
 
-function encodeStep(source: HistoryEntry, before: Doc, after: Doc): Encoded {
+/**
+ * One step as the file holds it, or `OVER` when its pixels alone pass `room` (the bytes the file has left for it).
+ * A step over the cap is dropped by the walk anyway, and a whole-document edit (Recolour every frame, say) is hundreds
+ * of megabytes of pixels, so finishing it is a third of a second of work thrown away. It stops as soon as the answer
+ * is settled instead.
+ */
+function encodeStep(source: HistoryEntry, before: Doc, after: Doc, room = Infinity): Encoded | typeof OVER {
   const cached = cachedEncoding(source);
   if (cached) return cached;
   const sig = sigOf(source);
+  const known = tooBig.get(source);
+  if (known && known.sig === sig && known.atLeast > room) return OVER;
   const e = withPatches(source, before);
   const bytes = new Bytes();
   const ids = diffable(e, before, after);
@@ -339,6 +359,10 @@ function encodeStep(source: HistoryEntry, before: Doc, after: Doc): Encoded {
   for (const id of ids) {
     const ch = pixelChange(id, before.drawings[id] as PixelDrawing, after.drawings[id] as PixelDrawing, bytes);
     if (ch) px.push(ch);
+    if (bytes.size > room) {
+      tooBig.set(source, { sig, atLeast: bytes.size });
+      return OVER;
+    }
   }
   const keep = (p: Patch) => !(p.path[0] === 'drawings' && ids.has(String(p.path[1])));
   const rec = { l: e.label, at: e.at, ...(e.view ? { view: true as const } : {}), p: pack(e.patches.filter(keep), bytes) as unknown[], i: pack(e.inverse.filter(keep), bytes) as unknown[], ...(px.length ? { px } : {}) };
@@ -396,8 +420,11 @@ function walkSteps(list: HistoryEntry[], start: Doc, dir: 'undo' | 'redo', used:
         for (const q of skipped) cur = runStep(cur, q, dir).doc;
         skipped.length = 0;
         const next = runStep(cur, e, dir).doc;
-        enc = dir === 'undo' ? encodeStep(e, next, cur) : encodeStep(e, cur, next);
+        const room = limit - used;
+        const made = dir === 'undo' ? encodeStep(e, next, cur, room) : encodeStep(e, cur, next, room);
         cur = next;
+        if (made === OVER) break;
+        enc = made;
       } else {
         skipped.push(e);
       }

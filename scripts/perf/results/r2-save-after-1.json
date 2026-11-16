@@ -1,0 +1,351 @@
+{
+ "label": "r2-save-after",
+ "when": "2026-11-16T03:48:20.780Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-pixel": {
+   "nodes": 1204,
+   "timelineNodes": 246,
+   "keys": 36,
+   "rows": 1,
+   "layers": 1
+  },
+  "stress-pixel-hd": {
+   "nodes": 1108,
+   "timelineNodes": 150,
+   "keys": 12,
+   "rows": 1,
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-pixel",
+   "action": "autosave-first",
+   "busyMs": 435.2,
+   "runs": [
+    435.2,
+    437.9,
+    425.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 435.2,
+   "wallMs": 1106.2,
+   "runsWall": [
+    1109.4,
+    1106.2,
+    1105.3
+   ],
+   "topSelf": [
+    [
+     "KH index-DXOdG1GB.js:167",
+     208
+    ],
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     109.5
+    ],
+    [
+     "Sqe index-DXOdG1GB.js:167",
+     96.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "iG index-DXOdG1GB.js:167",
+     321
+    ],
+    [
+     "(anon) :0",
+     320.1
+    ],
+    [
+     "HW index-DXOdG1GB.js:167",
+     319.4
+    ],
+    [
+     "i index-DXOdG1GB.js:167",
+     318.8
+    ],
+    [
+     "rG index-DXOdG1GB.js:167",
+     318.8
+    ],
+    [
+     "(anon) :1",
+     318.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 323,
+   "longBlocks": 1,
+   "io": {
+    "trim": 1,
+    "history": 315,
+    "docjson": 0.1,
+    "files": 0.3,
+    "pngCopy": 109,
+    "post": 2.2,
+    "pngWait": 781.7,
+    "zipWait": 5.2,
+    "held": 427.5,
+    "posts": 101,
+    "pngs": 100,
+    "saves": 1
+   },
+   "note": "wall 1106 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file-first",
+   "busyMs": 121.1,
+   "runs": [
+    124.8,
+    112.3,
+    121.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 121.15,
+   "wallMs": 800.7,
+   "runsWall": [
+    795.4,
+    806.2,
+    800.7
+   ],
+   "topSelf": [
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     112.7
+    ],
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "pump index-DXOdG1GB.js:167",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     114.6
+    ],
+    [
+     "HW index-DXOdG1GB.js:167",
+     6.5
+    ],
+    [
+     "i index-DXOdG1GB.js:167",
+     5.5
+    ],
+    [
+     "saveBytesAsync debug-Bg0czMob.js:3",
+     5.5
+    ],
+    [
+     "(anon) :1",
+     5.5
+    ],
+    [
+     "(anon) :0",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 1,
+    "history": 0,
+    "docjson": 0.1,
+    "files": 0.2,
+    "pngCopy": 112.7,
+    "post": 1.6,
+    "pngWait": 794.3,
+    "zipWait": 5.2,
+    "held": 115.5,
+    "posts": 101,
+    "pngs": 100,
+    "saves": 1
+   },
+   "note": "1.0 MB file, wall 801 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "autosave-first",
+   "busyMs": 171.7,
+   "runs": [
+    171.7,
+    169.6,
+    178.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 171.72,
+   "wallMs": 455.9,
+   "runsWall": [
+    445.6,
+    457,
+    455.9
+   ],
+   "topSelf": [
+    [
+     "KH index-DXOdG1GB.js:167",
+     80.6
+    ],
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     41
+    ],
+    [
+     "Sqe index-DXOdG1GB.js:167",
+     38.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "iG index-DXOdG1GB.js:167",
+     140.5
+    ],
+    [
+     "(anon) :0",
+     139.6
+    ],
+    [
+     "HW index-DXOdG1GB.js:167",
+     137.8
+    ],
+    [
+     "(anon) :1",
+     137.8
+    ],
+    [
+     "i index-DXOdG1GB.js:167",
+     137.7
+    ],
+    [
+     "rG index-DXOdG1GB.js:167",
+     137.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 139,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0.1,
+    "history": 125.9,
+    "docjson": 0.1,
+    "files": 0.1,
+    "pngCopy": 41.4,
+    "post": 0.2,
+    "pngWait": 317.8,
+    "zipWait": 4.7,
+    "held": 167.8,
+    "posts": 13,
+    "pngs": 12,
+    "saves": 1
+   },
+   "note": "wall 456 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "save-file-first",
+   "busyMs": 43,
+   "runs": [
+    42.3,
+    44.6,
+    43
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 43,
+   "wallMs": 394.9,
+   "runsWall": [
+    400.8,
+    394.9,
+    310.9
+   ],
+   "topSelf": [
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     40.1
+    ],
+    [
+     "(program) :0",
+     1.3
+    ],
+    [
+     "draw index-DXOdG1GB.js:173",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-DXOdG1GB.js:167",
+     40.3
+    ],
+    [
+     "i index-DXOdG1GB.js:167",
+     14.1
+    ],
+    [
+     "HW index-DXOdG1GB.js:167",
+     14.1
+    ],
+    [
+     "saveBytesAsync debug-Bg0czMob.js:3",
+     14.1
+    ],
+    [
+     "(anon) :1",
+     14.1
+    ],
+    [
+     "(anon) :0",
+     14.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.2,
+    "history": 0,
+    "docjson": 0,
+    "files": 0.1,
+    "pngCopy": 40.2,
+    "post": 0.3,
+    "pngWait": 365.4,
+    "zipWait": 3.1,
+    "held": 40.7,
+    "posts": 13,
+    "pngs": 12,
+    "saves": 1
+   },
+   "note": "0.6 MB file, wall 395 ms"
+  }
+ ]
+}

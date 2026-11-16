@@ -7,6 +7,7 @@ import { rootDoc } from '../core/symbols';
 import { store } from '../core/store';
 import { desktop } from './desktop';
 import { previewBytes } from './preview';
+import { ioTime } from './ioTime';
 
 if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   // For pictures of Open recent: puts these starter drawings on the recent list with their little pictures, as if they had been saved. `none` are left without one (an older file).
@@ -25,5 +26,5 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       }
     }
   };
-  (window as unknown as { __framelingIo: unknown }).__framelingIo = { demoRecent, saveDocument, saveDocumentAs, openPath, autosaveNow, offerRecovery, keepUnsavedWork, takeVersion, versionsDialog: (layout?: 'list' | 'strip') => import('./VersionsDialog').then((m) => m.openVersionsDialog(layout)) };
+  (window as unknown as { __framelingIo: unknown }).__framelingIo = { demoRecent, saveDocument, saveDocumentAs, openPath, autosaveNow, offerRecovery, keepUnsavedWork, takeVersion, ioTime, versionsDialog: (layout?: 'list' | 'strip') => import('./VersionsDialog').then((m) => m.openVersionsDialog(layout)) };
 }
