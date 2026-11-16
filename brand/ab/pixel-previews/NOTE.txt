@@ -1,0 +1,13 @@
+Library pictures against real strokes, before (development) and after (wip/pixel-previews). Both themes.
+
+before-<theme>.png / after-<theme>.png
+  Left: the pixel Library's Soft paint and Dry media folders. Right: the same tools drawing a real stroke on a pixel
+  layer (a mouse, so no pen pressure), top to bottom in the same order.
+  Before: the highlighter and soft brush are solid dark worms, dry media a speckled dab brush.
+  After: each picture is the tool's own stroke. The highlighter is drawn over two lines of words so you can see it is
+  see-through; the airbrush is one light pass; dry media catch on the paper.
+
+bristles-<theme>.png
+  The Bristles folder. Before: the round thumbnail is a small lined square. After: a short wave of bristle lines.
+
+Made by scripts/docs/ab-pixel-previews/previews.cjs (run on each build) and scripts/ab/pixel-previews-compose.py.

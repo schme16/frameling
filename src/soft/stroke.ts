@@ -7,7 +7,7 @@
 import type { Doc, PixelLayer } from '../core/format';
 import type { RGBA } from '../canvas/pixels';
 import { tileModeOn, wrap } from '../tiles/state';
-import { PixelSession } from '../tools/pixelSession';
+import type { PixelSession } from '../tools/pixelSession';
 import { docPalette, NearestCache, paletteAlpha, paletteRgb } from '../pixel/palette';
 import { buildUp, crispen, dabStep, eachDabPixel, falloff, holdAt, mirrorCentres, MIN_SMOOTH_EDGE, mixPixels, pickPixel, softColor, type EdgeMode, type SoftKind } from './maths';
 
@@ -52,8 +52,11 @@ export class Walker {
   }
 }
 
-export function palettePicker(doc: Doc, layer: PixelLayer): ((c: number[] | Uint8Array | Uint8ClampedArray) => void) | null {
-  if (!layer.paletteLock) return null;
+/** What a stroke needs from the picture it paints on. A pixel session is one; a picture of a brush in the Library is another. */
+export type PaintSurface = Pick<PixelSession, 'width' | 'height' | 'mirror' | 'get' | 'getBase' | 'set'>;
+
+export function palettePicker(doc: Doc | null, layer: PixelLayer | null): ((c: number[] | Uint8Array | Uint8ClampedArray) => void) | null {
+  if (!doc || !layer?.paletteLock) return null;
   const colors = docPalette(doc).colors;
   const rgb = paletteRgb(colors);
   if (!rgb.length) return null;
@@ -80,9 +83,9 @@ export class SoftStroke {
   private readonly out = new Uint8ClampedArray(4);
 
   constructor(
-    readonly session: PixelSession,
-    doc: Doc,
-    layer: PixelLayer,
+    readonly session: PaintSurface,
+    doc: Doc | null,
+    layer: PixelLayer | null,
     private readonly p: SoftParams,
   ) {
     this.snap = palettePicker(doc, layer);
@@ -141,7 +144,7 @@ export class SmudgeStroke {
   private readonly mixed = [0, 0, 0, 0];
 
   constructor(
-    readonly session: PixelSession,
+    readonly session: PaintSurface,
     private readonly p: SoftParams,
     maxDiameter: number,
   ) {
