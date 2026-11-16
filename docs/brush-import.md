@@ -100,9 +100,11 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   reaches give `amount = 1 - low / high`, `invert` is on when it ends lower than it starts, and the bend between is the points
   held to 0 to 1 across that range, so a jump early in Krita jumps early here. Points out of range or out of order are mended,
   a curve that starts after 0 or stops before 1 holds its end heights out to the edges, and a straight curve leaves the route
-  without one. More than 8 points are thinned to the nearest 8, with a note. Only Krita's curve is read: its overall height
-  (a curve that tops out at half) is not, as the route is scaled to its own high point. Opacity dynamics come as flow
-  dynamics, with a note.
+  without one. More than 8 points are thinned to the nearest 8, with a note. The route is scaled to the curve's own high point, so a
+  curve that tops out below full (at half, say) scales the brush's own size, flow or opacity by that height instead
+  (`height` from `routeOf`), with a note: a half-height size curve gives half the saved size, which is what multiplying
+  the setting by the curve does. Several sensors on one option each scale it, as Krita multiplies sensors. Opacity dynamics
+  come as flow dynamics, with a note.
 - Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (no paper of its own, so it follows the sheet;
   `Strength`, `Scale`, random offset as `moving`), with a note that the pattern picture is not kept.
 - Dropped with a note when on: Softness, Sharpness, Roundness, Spacing, Flip, Darken, Colour mixing, Airbrush rate, Hue,
@@ -121,8 +123,12 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   is taken as a share of the brush size. A fade's `length` is taken as dabs.
 - **Krita curves are kept, but not checked against Krita.** `Basic-5 Size`'s flow curve (it jumps to nearly full by a 7%
   press) comes with that jump, and its size curve with its late rise, as the route curves the engine draws. Frameling joins the
-  points with its own smooth line, which may differ a little from Krita's between two points. A curve that tops out below 1 is
-  scaled up to 1, so such a brush paints a little heavier than in Krita.
+  points with its own smooth line, which may differ a little from Krita's between two points. A curve that tops out below 1 scales the
+  brush by its height (see above), which matches Krita's flow and opacity multiplying with their curves and the Size option
+  being "the curve for how it is affected"; no preset we hold has such a curve, so this is tested on made-up presets only.
+- **`SizeValue` (the strength beside the size curve) is not applied.** Every real preset we hold has it at 1, so nothing shows
+  how Krita combines it with the curve. A preset that sets it to anything else comes at its saved size, with a note. A real
+  preset with `SizeValue` below 1 and a known stroke in Krita would settle it.
 
 - **Photoshop and GIMP files carry no curves.** A real Photoshop 2026 `.abr` keeps, for each control, only the control menu, the
   jitter, the minimum and the step count (see `photoshop_dynamics.abr`), and GIMP's `.vbr` has no pen controls at all, so there is

@@ -195,6 +195,105 @@ describe('Krita .kpp', () => {
       expect(r?.curve).toContainEqual([0.6, 1]);
     });
 
+    describe('a curve that tops out below full scales the setting, it is not stretched up to full', () => {
+      const inkAtPressure = (dab: import('../../src/dab/maths').DabBrush, pressure: number): number => {
+        const W = 60;
+        const H = 40;
+        const px = new Uint8ClampedArray(W * H * 4);
+        const st = new DabStroke(bufferSurface(px, W, H), { brush: dab, color: [0, 0, 0, 255], edge: 'smooth', seed: 1 });
+        for (let x = 5; x < 55; x++) st.moveTo({ x, y: 20 }, dab.size, 1, { pressure, speed: 0.4 });
+        st.finish();
+        let n = 0;
+        for (let k = 3; k < px.length; k += 4) n += px[k];
+        return n;
+      };
+
+      it('routeOf reports the height the curve reaches', () => {
+        expect(routeOf([[0, 0], [1, 0.5]]).height).toBe(0.5);
+        expect(routeOf([[0, 0], [0.3, 0.9], [1, 1]]).height).toBe(1);
+        expect(routeOf([[0, 0.6], [1, 0.2]]).height).toBe(0.6);
+        // Level at a height still scales; level at nothing is not trusted as "paint nothing".
+        expect(routeOf([[0, 0.4], [1, 0.4]])).toMatchObject({ amount: 0, height: 0.4 });
+        expect(routeOf([[0, 0], [1, 0]]).height).toBe(1);
+      });
+
+      it('a size curve that peaks at half halves the brush size, and the route keeps only its shape', () => {
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0;1,0.5;'))] }));
+        expect(b.dab.size).toBe(15);
+        expect(b.dab.dynamics).toEqual([{ from: 'pressure', to: 'size', amount: 1, invert: false }]);
+        expect(b.changed.join(' ')).toMatch(/size curve for pen pressure tops out at 50%/);
+      });
+
+      it('a full press paints the same as the half-size brush with no curve at all, and a half press the same as a quarter-size one', () => {
+        const curved = one(preset({ brush: auto('diameter="40" ratio="1" hfade="1" vfade="1" id="default" type="circle" spikes="2" antialiasEdges="1"'), params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0;1,0.5;'))] }));
+        const plain = (d: number) => one(preset({ brush: auto(`diameter="${d}" ratio="1" hfade="1" vfade="1" id="default" type="circle" spikes="2" antialiasEdges="1"`) }));
+        expect(curved.dab.size).toBe(20);
+        expect(inkAtPressure(curved.dab, 1)).toBe(inkAtPressure(plain(20).dab, 1));
+        expect(inkAtPressure(curved.dab, 0.5)).toBe(inkAtPressure(plain(10).dab, 1));
+      });
+
+      it('a flow curve that peaks at 0.8 on a flow of 0.5 paints at 0.4, and opacity does the same', () => {
+        const f = one(preset({ params: [param('FlowValue', '0.5'), param('PressureFlow', 'true'), param('FlowSensor', sensor('pressure', '0,0;1,0.8;'))] }));
+        expect(f.dab.flow).toBeCloseTo(0.4, 5);
+        expect(f.dab.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 1, invert: false }]);
+        const o = one(preset({ params: [param('OpacityValue', '0.5'), param('OpacityUseCurve', 'true'), param('OpacitySensor', sensor('pressure', '0,0;1,0.8;'))] }));
+        expect(o.dab.opacity).toBeCloseTo(0.4, 5);
+        expect(o.dab.flow).toBe(1);
+      });
+
+      it('a falling curve that starts at 0.6 scales by 0.6', () => {
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0.6;1,0.2;'))] }));
+        expect(b.dab.size).toBe(18);
+        expect(b.dab.dynamics[0]).toMatchObject({ amount: expect.closeTo(2 / 3, 3), invert: true });
+      });
+
+      it('a curve that sits level below full still scales, with no route', () => {
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0.5;1,0.5;'))] }));
+        expect(b.dab.size).toBe(15);
+        expect(b.dab.dynamics).toEqual([]);
+      });
+
+      it('two sensors on one option multiply their heights, as Krita multiplies sensors', () => {
+        const list = `<!DOCTYPE params> <params id="sensorslist"> <ChildSensor id="pressure"> <curve>0,0;1,0.5;</curve> </ChildSensor> <ChildSensor id="speed"> <curve>0,0;1,0.5;</curve> </ChildSensor> </params>`;
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', list)] }));
+        expect(b.dab.size).toBe(8);
+        expect(b.dab.dynamics).toHaveLength(2);
+      });
+
+      it('a curve that reaches full leaves the size and flow as saved, with no note', () => {
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0.2;0.3,0.9;1,1;')), param('FlowValue', '0.5'), param('PressureFlow', 'true'), param('FlowSensor', sensor('pressure', '0,0;1,0.9995;'))] }));
+        expect(b.dab.size).toBe(30);
+        expect(b.dab.flow).toBe(0.5);
+        expect(b.changed.join(' ')).not.toMatch(/tops out/);
+      });
+
+      it('a size strength other than 1 is not applied and says so, since how Krita combines it is not known', () => {
+        const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeValue', '0.5'), param('SizeSensor', sensor('pressure', '0,0;1,1;'))] }));
+        expect(b.dab.size).toBe(30);
+        expect(b.dropped.join(' ')).toMatch(/size strength \(50%\)/);
+        expect(one(preset({ params: [param('PressureSize', 'true'), param('SizeValue', '1'), param('SizeSensor', sensor('pressure', '0,0;1,1;'))] })).dropped).toEqual([]);
+      });
+
+      it('the real Basic-5 Size, whose curves reach full, comes out exactly as it did before this change', () => {
+        const r = readBrushFile(fx('Basic-5_Size_default.kpp'), 'Basic-5_Size_default.kpp');
+        if (!r.ok) throw new Error(r.error);
+        // Pinned from the importer as it was before curve heights were read.
+        expect(r.brushes[0].dab).toEqual({
+          tip: 'round', picture: null, size: 40, hardness: 1, angle: 0, roundness: 1, follow: false, spacing: 0.1, scatter: 0, sizeJitter: 0, angleJitter: 0,
+          flow: 1, opacity: 1, aliased: false,
+          dynamics: [
+            { from: 'pressure', to: 'size', amount: 1, invert: false, curve: [[0, 0], [0.35, 0.1], [1, 1]] },
+            { from: 'pressure', to: 'flow', amount: 1, invert: false, curve: [[0, 0], [0.036, 0.266], [0.068, 0.995], [1, 1]] },
+          ],
+          fadeLength: 150, grain: null, dual: null, wet: 0, blend: 'normal',
+        });
+        expect(r.brushes[0].changed).toEqual(['Its spacing is automatic in Krita (it follows the size); it came as 10%, the spacing it was saved with.']);
+        expect(r.brushes[0].dropped).toEqual([]);
+        expect(routeOf([[0, 0], [0.35, 0.1], [1, 1]]).height).toBe(1);
+        expect(routeOf([[0, 0], [0.0361991, 0.266332], [0.0678731, 0.994975], [1, 1]]).height).toBe(1);
+      });
+    });
+
     it('a straight curve leaves the route without one', () => {
       const b = one(preset({ params: [param('PressureSize', 'true'), param('SizeSensor', sensor('pressure', '0,0;0.5,0.5;1,1;'))] }));
       expect(b.dab.dynamics.find((x) => x.to === 'size')?.curve).toBeUndefined();
