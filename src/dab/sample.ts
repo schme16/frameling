@@ -29,15 +29,22 @@ function wave(w: number, h: number): { x: number; y: number }[] {
   });
 }
 
-/** An RGBA picture, `w` by `h`, of the brush's stroke or dab in `ink`. Nothing is drawn where the brush leaves the box empty. */
-export function renderSample(spec: PixelSpec, kind: SampleKind, w: number, h: number, ink: [number, number, number]): Uint8ClampedArray {
-  const px = new Uint8ClampedArray(w * h * 4);
+/**
+ * An RGBA picture, `w` by `h`, of the brush's stroke or dab in `ink`. Nothing is drawn where the brush leaves the box empty.
+ * `base` is what the brush is drawn over (a wet brush needs paint under it to pick up); it comes back in the picture.
+ */
+export function renderSample(spec: PixelSpec, kind: SampleKind, w: number, h: number, ink: [number, number, number], base?: Uint8ClampedArray): Uint8ClampedArray {
+  const px = base && base.length === w * h * 4 ? base.slice() : new Uint8ClampedArray(w * h * 4);
   const brush = sampleBrush(spec, h, w);
   // The back colour for a brush that mixes: the ink, a good way toward white.
   const back: [number, number, number, number] = [ink[0] + (255 - ink[0]) * 0.65, ink[1] + (255 - ink[1]) * 0.65, ink[2] + (255 - ink[2]) * 0.65, 255];
   const stroke = new DabStroke(bufferSurface(px, w, h), { brush, color: [ink[0], ink[1], ink[2], 255], back, edge: brush.aliased ? 'crisp' : 'smooth', seed: 7 });
   const flow = spec.kind === 'dab' ? brush.flow : 1;
-  if (kind === 'dab') stroke.moveTo({ x: w / 2, y: h / 2 }, brush.size, flow, { pressure: 1, speed: 0.4 });
+  if (kind === 'dab' && brush.wet > 0) {
+    // A wet brush shows nothing in one dab (it has met no paint yet): its dab is a short pull across the middle.
+    const reach = Math.min(brush.size, w / 3);
+    for (const k of [-1, -0.5, 0, 0.5, 1]) stroke.moveTo({ x: w / 2 + k * reach, y: h / 2 }, brush.size, flow, { pressure: 1, speed: 0.4 });
+  } else if (kind === 'dab') stroke.moveTo({ x: w / 2, y: h / 2 }, brush.size, flow, { pressure: 1, speed: 0.4 });
   else {
     // A pretend pen: pressure swells and eases off over the stroke, and the hand moves at a medium speed.
     const pts = wave(w, h);
