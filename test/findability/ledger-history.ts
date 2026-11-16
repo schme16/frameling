@@ -44,6 +44,7 @@ export const HISTORY: History = {
     { on: D, n: 146, why: 'Start of 16 November: Tools (the Draw menu) before it took in the Pixel menu\'s drawing things.' },
     { on: D, n: 175, why: 'The menu bar reshape: Tools absorbed the old Pixel menu\'s drawing things, the soft paint, chalk and charcoal submenu (30), the palette submenu (12) and the pixel brush and text.' },
     { on: D, n: 146, why: 'view-ledger: the soft paint family (30 commands) got a Soft paint menu of its own, because it is one family that only works on a pixel layer, so Tools is back under its cap of 150.' },
+    { on: D, n: 148, why: 'text-on-path: Put text on a curve and Take text off the curve join Tools > Shapes and colour, beside Convert text to shapes, because words round a circle or along a wave is a way of working on text and a line you already have, and a person looking for it would look there. Still under the cap of 150.' },
   ],
   'STREAM_LOAD.palette': [{ on: D, n: 79, why: BASE }],
   'STREAM_LOAD.menu': [{ on: D, n: 79, why: BASE }],
@@ -62,6 +63,7 @@ export const HISTORY: History = {
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 738, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a drawing with animation is unchanged.' },
     { on: D, n: 733, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window in Edit > Scripts, and six fewer menu entries from the animation commands that now wait until a drawing has animation.' },
+    { on: D, n: 735, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -73,6 +75,7 @@ export const HISTORY: History = {
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
     { on: D, n: 856, why: 'view-ledger: 44 View entries left the menus for the palette (a control on screen does each one\'s job), on both sides, so the gap to a still is unchanged.' },
     { on: D, n: 857, why: 'Merging scripts-bottom: Scripts in their own window sits in Edit > Scripts, and nothing left the menus on this side, so it goes up by the one.' },
+    { on: D, n: 859, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

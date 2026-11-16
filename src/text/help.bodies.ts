@@ -1,5 +1,40 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'text-on-path': `Words can run along a line or round a shape instead of sitting straight: a name round a badge, a title along a wave. The words are still text, so you can retype them any time, and they stay stuck to the curve when you move it.
+
+## Put words on a curve
+
+1. Draw the curve you want: a circle, a wave with the **Pen**, any line or shape.
+2. Make the words with the **Text** tool (**T**) if you haven't yet.
+3. Select the words and the curve together (hold **Shift** to add the second one), then press **Ctrl+Alt+O**. It is also in **Tools > Shapes and colour > Put text on a curve**.
+
+Short cut: select just the curve and press **Ctrl+Alt+O**. Frameling adds some words for you to retype.
+
+The first time you do it on a closed shape like a circle, Frameling asks which side the words should run on (**Round the outside** or **Round the inside**). It remembers your answer, and you can change it any time in **Preferences > Behaviour**.
+
+## Change how they sit
+
+Select the words and open the **On a curve** part of the **Text** panel.
+
+- **Side**: outside runs clockwise with the tops of the letters pointing out, like the name on a badge. Inside runs anticlockwise with the tops pointing in, like words along the bottom of a coin. On a line that isn't closed, outside sits on top of it and inside hangs under it.
+- **Flip**: turns the words the other way round the curve, which puts them on the other side.
+- **Start at**: where along the curve the words begin (or where the middle of them sits, when the text is lined up in the middle).
+- **Off the line**: how far the letters stand from the curve.
+- **Letter spacing** (in **Look**) spreads the letters further apart along the curve.
+
+## Keep editing
+
+**Double-click** the words, or press **Type on the canvas**, and a little box of words appears under them. Type, and the curve updates as you go. Change the font, size or colour in the panel too. If you move or reshape the curve, the words move with it, and Undo takes both back together.
+
+To make the words a straight line again, press **Take off the curve** in the panel.
+
+## Good to know
+
+- The words and the curve are grouped, so clicking one picks both and dragging moves both.
+- Words that are longer than the curve carry on straight past its end. Round a closed shape they wrap round and meet themselves.
+- If you delete the curve, the words keep the shape it had.
+- Exports follow the same letters: a picture, GIF, sprite sheet or Godot sheet shows them as you see them, SVG keeps each letter as text, and Illustrator and PDF files get outlines for them.
+- You can still animate the letters (see [Text animations](help:text-animators)), and [Convert to shapes](help:text) turns them into outlines.`,
   'pixel-text': `Pixel text is writing for pixel art: a real pixel font, every letter lined up on your pixel grid, in your Paint colour, with no smoothing. So it never goes blurry, and on a palette-locked layer it only ever uses your palette.
 
 ## Type something

@@ -10,6 +10,14 @@ export const textHelp: HelpTopic[] = [
     keywords: ['text', 'type', 'font', 'title', 'caption', 'words', 'letters', 'typography', 'outline', 'convert to shapes', 'create outlines'],
   },
   {
+    id: 'text-on-path',
+    title: 'Text on a curve: words round a circle or along a wave',
+    section: 'Drawing',
+    media: 'text-on-path.png',
+    summary: 'Pick some text and a line or shape, then press Ctrl+Alt+O. The words run along it and stay editable.',
+    keywords: ['text on a path', 'text on path', 'curved text', 'circle text', 'round a circle', 'badge', 'arc', 'wave', 'bend text', 'text along a line', 'follow a curve', 'stamp', 'ring', 'logo'],
+  },
+  {
     id: 'text-animators',
     title: 'Text animations: letters that fade, slide, pop and wave',
     section: 'Animating',

@@ -94,6 +94,7 @@ const EFFECT: Record<string, (b: Snap, a: Snap) => boolean> = {
   'rig.pickChild': (b, a) => a.rig !== b.rig,
   'flow.fromAny': (b, a) => a.docJson !== b.docJson,
   'particles.shuffle': (b, a) => a.docJson !== b.docJson,
+  'text.offPath': (b, a) => a.docJson.length < b.docJson.length,
   'text.pixelSmaller': (b, a) => getPixelText().scale < JSON.parse(b.text).scale,
 };
 
@@ -116,6 +117,7 @@ const WHERE: Record<string, string[]> = {
   'rig-bent-layer': ['rig.autoAttach', 'rig.bendLayer', 'rig.paintWeights', 'rig.smoothWeights', 'rig.normaliseWeights', 'rig.detachLayer', 'rig.savePose', 'rig.mirrorPose', 'rig.swapSides', 'rig.resetPose', 'rig.togglePin', 'rig.deleteBone', 'rig.deleteBranch', 'rig.addChildBone', 'rig.renameBone', 'rig.pickParent', 'rig.pickChild'],
   'clip-picked': ['flow.fromAny'],
   'particles-selected': ['particles.shuffle'],
+  'text-on-curve': ['text.offPath'],
   'pixel-text-big': ['text.pixelSmaller'],
 };
 
@@ -162,6 +164,6 @@ describe('commands run in the state that switches them on', () => {
   it('every command that was on the old never-seen list is run here', () => {
     const covered = new Set(Object.values(WHERE).flat());
     for (const id of ['tiles.edit', 'tiles.done', 'rig.autoAttach', 'rig.pickChild', 'flow.fromAny', 'particles.shuffle', 'text.pixelSmaller']) expect(covered.has(id)).toBe(true);
-    expect(covered.size).toBe(41);
+    expect(covered.size).toBe(42);
   });
 });

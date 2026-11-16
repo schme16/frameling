@@ -1215,6 +1215,27 @@ export interface TextAnimator {
 }
 
 /**
+ * Words running along a curve instead of a straight line (text on a path). The curve is kept inside the text, in the
+ * text's own space, so the words draw, hit, export and save without looking anything up. `source` names the line or
+ * shape in the same drawing it follows; a change to that shape updates `curve` in the same undo step (see
+ * src/text/onPathSettle.ts). If the source is gone the words keep the curve they last had.
+ */
+export interface TextOnPath {
+  /** The id of the line, curve or shape in this drawing the words follow (missing = none: the words keep their own curve). */
+  source?: Id;
+  /** The curve, in the text's own space (before its transform). Beziers where a point has `c1` and `c2`. */
+  curve: SubPath;
+  /** Which side the letters stand on: 'outside' (missing) reads clockwise round a closed curve, on top of an open line; 'inside' reads anticlockwise with the letters' tops toward the middle, under an open line. */
+  side?: 'outside' | 'inside';
+  /** Turns the words the other way round the curve, which also puts them on the other side (missing = no). */
+  flip?: boolean;
+  /** Where the line of words begins, as a fraction of the curve's length (missing = 0). With `align` centre it is where the middle of the words sits. */
+  start?: number;
+  /** Distance of the baseline from the curve, document pixels, away from it on the letters' side (missing = 0). */
+  offset?: number;
+}
+
+/**
  * Text as one shape: lines of a font at a size, placed and turned by `transform` (the first line's baseline starts at
  * the origin; the anchor moves with `align`). Kept as text, so it stays editable; "Convert to shapes" makes outlines.
  */
@@ -1244,6 +1265,8 @@ export interface TextShape {
   opacity: number;
   transform: Transform2D;
   animators?: TextAnimator[];
+  /** Runs the words along a curve (missing = a straight line). Lines of the text are joined into one run. See `TextOnPath`. */
+  onPath?: TextOnPath;
 }
 
 /** What each particle looks like. 'symbol' draws `ParticlesShape.symbolId`. */

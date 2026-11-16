@@ -1223,6 +1223,11 @@ async function exportMatrix() {
       if (tpl === 'bouncing-ball' && ['gif', 'apng', 'mp4', 'webm'].includes(fmt)) {
         for (const fps of [12.5, 23.976]) await runCase(tpl, fmt, `fps${fps}`, (s) => s, { prepare: `__frameling.store().update('fps', (d) => { d.fps = ${fps}; })` });
       }
+      // Words running round a ring (text on a path): the picture, the GIF, the sheet and the SVG all have to show the letters where the curve puts them.
+      if (tpl === 'blank-vector' && ['svg', 'png', 'gif', 'sheet'].includes(fmt)) {
+        await runCase(tpl, fmt, 'text-on-path', (s) => s, { prepare: ADD_TEXT_ON_PATH });
+        if (fmt === 'sheet') await runCase(tpl, fmt, 'text-on-path-godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: true, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: ADD_TEXT_ON_PATH });
+      }
       if (fmt === 'sheet') {
         await runCase(tpl, fmt, 'trim-pot-pad', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, pot: true, padding: 2, columns: 3 } }));
         await runCase(tpl, fmt, 'godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: true, json: true, godot: true, godotScene: true, godotPath: '' } }));
@@ -1318,6 +1323,29 @@ const ADD_EXTRAS = `(() => {
     );
   });
   return true;
+})()`;
+
+// A ring with words round it, joined by the real command (select both, Put text on a curve), on a layer of its own.
+const ADD_TEXT_ON_PATH = `(async () => {
+  const st = __frameling.store();
+  const K = 0.5522847498307936;
+  const cx = st.get().doc.width / 2, cy = st.get().doc.height / 2, r = Math.min(cx, cy) * 0.55;
+  const ring = { id: 'e2e-ring', type: 'path', fill: null, stroke: { color: '#3366ff', width: 3, join: 'round', cap: 'round' }, opacity: 1, paths: [{ closed: true, points: [
+    { x: cx + r, y: cy, c1: { x: cx + K * r, y: cy - r }, c2: { x: cx + r, y: cy - K * r } },
+    { x: cx, y: cy + r, c1: { x: cx + r, y: cy + K * r }, c2: { x: cx + K * r, y: cy + r } },
+    { x: cx - r, y: cy, c1: { x: cx - K * r, y: cy + r }, c2: { x: cx - r, y: cy + K * r } },
+    { x: cx, y: cy - r, c1: { x: cx - r, y: cy - K * r }, c2: { x: cx - K * r, y: cy - r } },
+  ] }] };
+  const words = { id: 'e2e-words', type: 'text', text: 'ROUND AND ROUND WE GO', font: 'Nunito', size: Math.round(r * 0.3), weight: 700, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 } };
+  st.update('text on a path', (d) => {
+    d.drawings['e2e-top'] = { id: 'e2e-top', kind: 'vector', shapes: [ring, words] };
+    d.layers.push({ id: 'e2e-lt', name: 'Words round a ring', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: 'cel-e2e-top', start: 0, length: d.length, drawingId: 'e2e-top' }] });
+  });
+  st.setUi({ activeLayerId: 'e2e-lt', frame: 0, selection: ['e2e-words', 'e2e-ring'] });
+  __frameling.run('text.onPath');
+  await new Promise((res) => setTimeout(res, 200));
+  const t = st.get().doc.drawings['e2e-top'].shapes.find((x) => x.id === 'e2e-words');
+  return !!t.onPath;
 })()`;
 
 async function layeredCases(tpl, fmt) {

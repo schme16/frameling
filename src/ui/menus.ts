@@ -233,7 +233,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   shapes: {
     label: 'Shapes and colour',
-    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
+    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', 'text.onPath', 'text.offPath', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
     prefixes: ['shapes.', 'colors.recolour'],
   },
   linestyle: {

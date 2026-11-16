@@ -392,6 +392,17 @@ when comparing two drawings for "same look" (as `id` is ignored).
   `lineHeight?` (missing 1.2), `letterSpacing?`, `opacity`, `transform`, `animators?: TextAnimator[]`. A
   `TextAnimator` is `{id, kind: fade|slide|scale|rotate|typewriter|wave, by: letter|word|line, direction?, start,
   duration, stagger, order?, amount, angle?, ease?, seed?, on?}`.
+  `onPath?: TextOnPath` runs the words along a curve (text on a path): `{curve: SubPath, source?, side?, flip?, start?,
+  offset?}`. `curve` is the line in the text's own space (before its transform), kept inside the text so it draws,
+  hits, exports and saves with no lookup; `source` is the id of the line or shape in the same drawing it follows (a
+  change to that shape works `curve` out again in the same undo step, `src/text/onPathSettle.ts`; with no source, or one
+  that is gone, the words keep the curve they have). `side` is `'outside'` (missing: clockwise round a closed curve, on
+  top of an open line) or `'inside'` (anticlockwise with the tops in, or under an open line); `flip` turns the words
+  the other way round; `start` is where the line of words begins as a fraction of the curve's length (missing 0; with
+  `align: 'center'` it is where the middle sits); `offset` is the baseline's distance from the curve in pixels. Lines
+  of the text join into one run. An older Frameling ignores the field and shows the words on a straight line; a curve
+  with fewer than two points, a non-number, or more than 5000 points is dropped on reading (`readOnPath`) and the words
+  stay as text.
 - `ParticlesShape` (`type: 'particles'`, `46a6fbb`): an emitter worked out from `seed` for every frame on its own (no
   step simulation), so scrubbing, playback and exports agree. Fields: `transform`, `emitter: point|line|area`,
   `width`, `height`, `rate`, `burst`, `emitFor`, `prewarm?`, `life`, `variance`, `speed`, `direction`, `spread`,

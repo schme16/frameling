@@ -2,6 +2,7 @@
 import type { TextShape } from '../core/format';
 import { transformMatrix, type Mat } from '../core/symbols';
 import { cssFont, estimateMeasure, glyphLooks, isAnimatedText, layoutText, type Measure, type TextLayout } from './model';
+import { hitGlyphs, pathSignature } from './onPath';
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -40,7 +41,7 @@ const layoutCache = new Map<string, TextLayout>();
 
 /** The layout of a text shape, cached by what it depends on (not the shape object, since posed copies differ). */
 export function textLayout(s: TextShape): TextLayout {
-  const key = `${s.text}\u0000${s.font}|${s.size}|${s.weight}|${s.italic ? 1 : 0}|${s.align}|${s.lineHeight ?? ''}|${s.letterSpacing ?? 0}`;
+  const key = `${s.text}\u0000${s.font}|${s.size}|${s.weight}|${s.italic ? 1 : 0}|${s.align}|${s.lineHeight ?? ''}|${s.letterSpacing ?? 0}|${pathSignature(s.onPath)}`;
   let l = layoutCache.get(key);
   if (!l) {
     l = layoutText(s, canvasMeasure);
@@ -77,7 +78,17 @@ export function drawText(g: Ctx2D, s: TextShape): void {
   if (!isAnimatedText(s)) {
     g.globalAlpha = s.opacity;
     const spacing = s.letterSpacing ?? 0;
-    if (spacing === 0) {
+    if (s.onPath) {
+      // Each letter is turned to follow the curve.
+      for (const gl of layout.glyphs) {
+        if (gl.letter < 0) continue;
+        g.save();
+        g.translate(gl.x, gl.y);
+        g.rotate(gl.rot ?? 0);
+        g.fillText(gl.ch, 0, 0);
+        g.restore();
+      }
+    } else if (spacing === 0) {
       for (const l of layout.lines) if (l.text) g.fillText(l.text, l.x, l.y);
     } else {
       for (const gl of layout.glyphs) if (gl.letter >= 0) g.fillText(gl.ch, gl.x, gl.y);
@@ -91,15 +102,25 @@ export function drawText(g: Ctx2D, s: TextShape): void {
       const a = s.opacity * look.opacity;
       if (a <= 0.001 || look.scale === 0) return;
       g.globalAlpha = Math.min(1, a);
-      if (look.dx === 0 && look.dy === 0 && look.scale === 1 && look.rotation === 0) {
+      const turned = gl.rot !== undefined;
+      const still = look.dx === 0 && look.dy === 0 && look.scale === 1 && look.rotation === 0;
+      if (still && !turned) {
         g.fillText(gl.ch, gl.x, gl.y);
         return;
       }
       g.save();
-      g.translate(cx + look.dx, cy + look.dy);
-      if (look.rotation) g.rotate((look.rotation * Math.PI) / 180);
-      if (look.scale !== 1) g.scale(look.scale, look.scale);
-      g.fillText(gl.ch, gl.x - cx, gl.y - cy);
+      if (!still) {
+        g.translate(cx + look.dx, cy + look.dy);
+        if (look.rotation) g.rotate((look.rotation * Math.PI) / 180);
+        if (look.scale !== 1) g.scale(look.scale, look.scale);
+        g.translate(-cx, -cy);
+      }
+      if (turned) {
+        // A letter on a path: turn it to the curve, then draw it at its left baseline corner.
+        g.translate(gl.x, gl.y);
+        g.rotate(gl.rot!);
+        g.fillText(gl.ch, 0, 0);
+      } else g.fillText(gl.ch, gl.x, gl.y);
       g.restore();
     });
   }
@@ -133,8 +154,10 @@ export function hitText(s: TextShape, x: number, y: number, tol: number): boolea
   const dy = y - m[5];
   const lx = (m[3] * dx - m[2] * dy) / det;
   const ly = (-m[1] * dx + m[0] * dy) / det;
-  const b = textLayout(s).box;
+  const layout = textLayout(s);
+  const b = layout.box;
   const k = Math.max(1e-6, Math.min(Math.abs(s.transform.scaleX), Math.abs(s.transform.scaleY)));
   const t = tol / k;
+  if (s.onPath) return hitGlyphs(layout, lx, ly, t);
   return lx >= b.x - t && lx <= b.x + b.w + t && ly >= b.y - t && ly <= b.y + b.h + t;
 }

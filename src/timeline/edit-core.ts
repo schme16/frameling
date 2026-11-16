@@ -35,10 +35,15 @@ export function cloneDrawing(d: Drawing): Drawing {
   if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
   // Each copy remembers the shape it came from, so a selection can follow it from key to key.
+  const renamed = new Map<string, string>();
   for (const s of shapes) {
     s.origin = s.origin ?? s.id;
+    const was = s.id;
     s.id = uid('s');
+    renamed.set(was, s.id);
   }
+  // Words on a curve follow the copy of their line, not the line they were copied from.
+  for (const s of shapes) if (s.type === 'text' && s.onPath?.source) s.onPath.source = renamed.get(s.onPath.source) ?? s.onPath.source;
   // A bones layer's key keeps its pose.
   return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }

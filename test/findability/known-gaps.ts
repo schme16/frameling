@@ -97,7 +97,7 @@ export const BIG_MENUS: Record<string, number> = {
   // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   // 175 down to 146 when the soft paint family (30) got a Soft paint menu of its own. Draw is under its cap again.
-  Draw: 146,
+  Draw: 148,
 };
 
 /**
@@ -153,6 +153,6 @@ export const STILL_LOAD = {
   // light table, look through the camera while playing, import sound and make a symbol from the whole animation now
   // needing animation first. And -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
   // View entries that moved to the palette because a control on screen already does their job. The gap is unchanged.
-  still: { palette: 553, menu: 733, animateMenu: 8 },
-  animated: { palette: 602, menu: 857, animateMenu: 123 },
+  still: { palette: 553, menu: 735, animateMenu: 8 },
+  animated: { palette: 602, menu: 859, animateMenu: 123 },
 };

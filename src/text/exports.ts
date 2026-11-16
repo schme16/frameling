@@ -18,7 +18,19 @@ export function textToSvg(s: TextShape): string {
   const fam = esc(fontFamilyCss(s.font).replace(/"/g, "'"));
   const attrs = `font-family="${fam}" font-size="${n2(s.size)}" font-weight="${Math.round(s.weight)}"${s.italic ? ' font-style="italic"' : ''} fill="${c.fill}"`;
   const parts: string[] = [];
-  if (!isAnimatedText(s)) {
+  if (s.onPath) {
+    // Words on a curve: one text element per letter, turned and placed where the curve puts it (still real text, so it can be selected and read).
+    const looks = isAnimatedText(s) ? glyphLooks(s, l, isPosedText(s) ? s.posedFrame : 0) : null;
+    l.glyphs.forEach((gl, i) => {
+      if (gl.letter < 0) return;
+      const place = `translate(${n2(gl.x)} ${n2(gl.y)}) rotate(${n2(((gl.rot ?? 0) * 180) / Math.PI)})`;
+      if (!looks) return void parts.push(`<text transform="${place}">${esc(gl.ch)}</text>`);
+      const { look, cx, cy } = looks[i];
+      if (look.opacity <= 0.001 || look.scale === 0) return;
+      const tf = look.dx || look.dy || look.rotation || look.scale !== 1 ? `translate(${n2(cx + look.dx)} ${n2(cy + look.dy)}) rotate(${n2(look.rotation)}) scale(${n2(look.scale)}) translate(${n2(-cx)} ${n2(-cy)}) ` : '';
+      parts.push(`<text${look.opacity < 1 ? ` opacity="${n2(look.opacity)}"` : ''} transform="${tf}${place}">${esc(gl.ch)}</text>`);
+    });
+  } else if (!isAnimatedText(s)) {
     const ls = s.letterSpacing ? ` letter-spacing="${n2(s.letterSpacing)}"` : '';
     for (const line of l.lines) if (line.text) parts.push(`<text x="${n2(line.x)}" y="${n2(line.y)}"${ls} xml:space="preserve">${esc(line.text)}</text>`);
   } else {
@@ -64,7 +76,7 @@ export const textExport: ShapeExport<TextShape> = {
   // Letters become outlines, filled in the text's colour. The Illustrator data also gets the live text (when the text stays
   // put), marked in the content so the PDF part's readers pass it by.
   pdf(cx, ctx, s) {
-    const live = ctx.includeHidden && !isAnimatedText(s) && s.text.trim() && s.opacity > 0;
+    const live = ctx.includeHidden && !isAnimatedText(s) && !s.onPath && s.text.trim() && s.opacity > 0;
     const paths = textOutlines(s);
     if (!paths.length && !live) return;
     if (live) cx.push(`/FrText << /I ${ctx.writer.live({ kind: 'text', text: s.text, font: s.font, weight: s.weight, italic: !!s.italic, size: s.size, color: s.color, align: s.align, lineHeight: s.lineHeight ?? 1.2, letterSpacing: s.letterSpacing ?? 0, opacity: s.opacity, matrix: [...textMatrix(s)] })} >> BDC`);
