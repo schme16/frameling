@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 **Draw with it:** pick the **Pixel brush** (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) at the top of its options and pick one that comes ready. The cursor is the real shape of the tip, turned and flattened as set.
 
 **The things you reach for:**
-- **Tip:** **Round**, **Square**, or **Picture**. A picture tip is a little drawing of your own: select some pixels (up to 32 by 32) and press **Make from the selection**.
+- **Tip:** **Round**, **Square**, or **Picture**. A picture tip is a little drawing of your own: press **Draw a picture...** to draw it on a grid, or start from a picture file or your selection. See [draw your own picture tip](help:pixel-brush-picture).
 - **Size:** how many pixels across.
 - **Spacing:** how far apart the dabs go, as a share of the size. Low is a smooth solid line, 100% is side by side, more leaves gaps like a dotted line. This one setting does most of what makes a brush feel like a brush.
 - **Edges:** **Sharp pixels** or **Smooth**. Sharp is the pixel art way: every pixel is all or nothing. Smooth fades the edge with see-through pixels, like a painting program.
@@ -20,6 +20,27 @@ export const bodies: Record<string, string> = {
 **Pixel art stays pixel art.** With sharp pixels nothing is see-through. If the layer has its [palette locked](help:palette-lock), a smooth edge is dithered into colours you already have, and the options say so. It follows [mirror drawing](help:pixel-mirror). The Pen page's pressure makes it bigger or denser, unless the brush has its own, which then wins so it never counts twice.
 
 For soft fades try [soft paint](help:soft-paint); for paper grain, [chalk and charcoal](help:chalk-charcoal).`,
+  'pixel-brush-picture': `A **picture tip** is a little drawing of your own that the [Pixel brush](help:pixel-brush) stamps along the line. The editor is where you make one, or change the one you have.
+
+**Open it:** pick the Pixel brush, set **Tip** to **Picture**, and press **Draw a picture...** (or **Edit the picture...** when you have one). Or open the command palette and type **picture tip**.
+
+**Draw on the grid:**
+- **Draw, Rub out, Fill:** click or drag. Right-click rubs a cell out as you go.
+- **In my colour:** only the shape counts, and the brush paints it in the colour you have picked, like any other brush. **Its own colours:** the brush stamps the picture just as drawn, which needs two or more colours.
+- **Paint strength:** below full, a cell is a soft shade, so a tip can have a gentle edge. **Crisp edges** makes every shade full or empty.
+- **Width** and **Height** change the canvas, up to 32 by 32. **Flip across, Flip down, Turn** and the arrows move the whole picture. **Swap paint and gaps** makes the shape the hole. **Undo** and **Redo** are Ctrl+Z and Ctrl+Shift+Z.
+- The two pictures on the right are the real brush: one dab, and a short stroke, with your own spacing and settings.
+
+Nothing changes until you press **Use this tip**. Escape throws the changes away.
+
+**Start from something else:** **Start from the selection** uses the pixels you have selected. **Start from a picture file...** takes a PNG, GIF, JPEG, WebP or BMP, shrinks it to fit and opens it on the grid so you can tidy it.
+- A picture with see-through parts is taken as it is: its shape, and its colours if it has several. Frameling asks once whether it should paint in its own colours or yours, then remembers.
+- A solid picture (a photo, a black drawing on white) has no shape, so Frameling asks once which part is the brush: the dark parts, the light parts, or the whole picture. Change either answer in **Preferences > Behaviour**.
+- Pictures are checked before they are read. A file over 12 MB, with more than 16 million pixels (about 4000 by 4000), or not a picture is turned down with a note saying why. An animation gives its first picture.
+
+**Size:** the first tip you make sets the brush size so the picture goes down pixel for pixel. After that the **Size** slider scales it.
+
+**Keep it:** press **Save as...** in the brush picker and the picture goes with the brush. For a picture as the paper or the dots, see [paper and dual tip](help:pixel-brush-texture).`,
   'pixel-brush-dynamics': `**Dynamics** are what the pen and the hand do to each dab as you draw. Open **Pen, speed and fade** in the [Pixel brush](help:pixel-brush) options. Every row is one setting and one thing that moves it.
 
 **Pick what moves it:**
@@ -92,10 +113,12 @@ See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-pr
 - **Paper:** smooth, fine, medium, laid or rough. This is the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper if you want this brush to stay put when the sheet changes.
 - **How much it catches:** at the top the paint only lands on the high points. Lower the **Flow** to see it best.
 - **Grain size:** makes each bump a block of pixels, for a chunkier paper.
+- **Use a picture as the paper...:** pick a picture file (a canvas weave, a scribble) and the brush catches on its dark parts instead of a paper. **Catch on the light parts instead** swaps them.
 - **A new patch of paper for every dab:** off, the paper is fixed to the page and two strokes over each other catch on the same bumps. On, every dab finds new paper, so overlapping dabs fill each other in, like a sponge.
 
 **Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
 - **Dot shape, Dot size** and **How many dots** set the dots. Every stroke gets its own scatter of them.
+- **Use a picture for the dots...:** pick a picture file and the dots come from it. The darkest parts of the picture count first, as much of it as **How much of the picture** says, and **Use the light parts instead** swaps them, and **Picture size** makes each picture pixel a bigger block. **Back to plain dots** goes back.
 - **Cut holes instead:** the dots become holes in the brush, so it paints everywhere except them.
 
 **Flow and opacity, in plain words:** **Flow** is how much paint one dab lays down, so it builds up as dabs overlap. **Opacity** is the most any pixel can get in one stroke, however many dabs cross it. Grain and dots work on the paint of each dab, so a low flow is where they show.

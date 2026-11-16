@@ -12,7 +12,7 @@ import { FEELS, feelOf } from './curve';
 import { stepBlend } from './blend';
 import { blendInfo } from '../effects/model';
 import { DEFAULT_DUAL, DEFAULT_GRAIN } from './texture';
-import { pictureFromSelection } from './Options';
+import { dualFromPicture, editPictureTip, grainFromPicture, pictureTipFromFile } from './pictureTip';
 import { PIXEL_BRUSH_TOOL } from './live';
 
 const onPixel = () => toolEnabled(['pixel']);
@@ -26,7 +26,7 @@ const open = (): void => {
 const TIP_WORDS: Record<TipShape, { label: string; hint: string; keywords: string[] }> = {
   round: { label: 'round', hint: 'A round dab. Hardness sets how firm the edge is.', keywords: ['circle', 'dot', 'disc'] },
   square: { label: 'square', hint: 'A square dab with corners. Turn it with Angle for a diamond or a chisel.', keywords: ['box', 'block', 'chisel', 'diamond'] },
-  picture: { label: 'picture', hint: 'A little picture of your own, stamped along the line.', keywords: ['stamp', 'custom', 'image', 'sprite'] },
+  picture: { label: 'picture', hint: 'A little picture of your own, stamped along the line. With none yet, the editor opens so you can draw one.', keywords: ['stamp', 'custom', 'image', 'sprite'] },
 };
 
 /** The spacings the closer and wider commands step through, as shares of the size. */
@@ -47,7 +47,7 @@ const tipCommands: Command[] = TIP_SHAPES.map((t) => ({
   checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().tip === t,
   run: () => {
     open();
-    if (t === 'picture' && !getDab().picture) void pictureFromSelection();
+    if (t === 'picture' && !getDab().picture) editPictureTip();
     else setDab({ tip: t });
   },
 }));
@@ -204,6 +204,54 @@ registerCommands([
     run: () => {
       open();
       setDab({ dual: getDab().dual ? null : DEFAULT_DUAL });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.picture.edit',
+    help: 'pixel-brush-picture',
+    label: 'Pixel brush: draw or edit the picture tip',
+    description: 'Opens a little grid to draw the tip on, or to change the one you have: paint, rub out, fill, flip, turn, and see the brush as you go. Up to 32 by 32.',
+    keywords: ['pixel brush', 'picture tip', 'tip editor', 'draw a brush', 'make a brush', 'custom brush', 'stamp', 'sprite', 'edit brush', 'image brush'],
+    run: () => {
+      open();
+      editPictureTip();
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.picture.file',
+    help: 'pixel-brush-picture',
+    label: 'Pixel brush: picture tip from an image file',
+    description: 'Pick a picture file (PNG, GIF, JPEG, WebP or BMP) and make a tip from it. It is shrunk to fit 32 by 32 and opens in the editor so you can tidy it first.',
+    keywords: ['pixel brush', 'picture tip', 'image', 'import', 'png', 'jpeg', 'load a brush', 'brush from image', 'custom brush', 'photoshop', 'stamp'],
+    run: () => {
+      open();
+      void pictureTipFromFile();
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.grain.picture',
+    help: 'pixel-brush-texture',
+    label: 'Pixel brush: grain from a picture',
+    description: 'Pick a picture file and the brush catches on it instead of paper: it catches on the dark parts. Switches grain on if it was off.',
+    keywords: ['pixel brush', 'grain', 'texture', 'picture', 'image', 'pattern', 'canvas', 'weave', 'custom texture', 'photoshop', 'krita'],
+    run: () => {
+      open();
+      void grainFromPicture();
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.dual.picture',
+    help: 'pixel-brush-texture',
+    label: 'Pixel brush: dual tip from a picture',
+    description: 'Pick a picture file and use it for the dual tip: the brush only paints where the darkest parts of the picture are. Switches the dual tip on if it was off.',
+    keywords: ['pixel brush', 'dual', 'dual brush', 'second tip', 'picture', 'image', 'texture', 'bristle', 'pattern', 'photoshop'],
+    run: () => {
+      open();
+      void dualFromPicture();
     },
   },
   {

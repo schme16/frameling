@@ -97,6 +97,12 @@ export const LEFT_OUT_OF_MENUS: Record<string, string> = {
   'brush.makeAlong': 'Use the selection as the drawing, in the Along the line tip options',
   ...Object.fromEntries(['sides', 'start', 'end', 'inner', 'outer'].map((k) => [`brush.edged.${k}`, 'Use selection, in the parts of the Edged tip options'])),
   'brush.pixelReset': 'Back to the usual brush, in the pixel brush options',
+  // The pixel brush's picture tip, grain and dual tip: each is a button in its own part of the pixel brush options, and the
+  // Draw menu is better short.
+  'pixelbrush.picture.edit': 'Draw a picture... or Edit the picture..., in the pixel brush options when Tip is Picture',
+  'pixelbrush.picture.file': 'From a picture file..., in the pixel brush options when Tip is Picture',
+  'pixelbrush.grain.picture': 'Use a picture as the paper..., in the Paper box of the pixel brush options',
+  'pixelbrush.dual.picture': 'Use a picture for the dots..., in the Dual tip fold of the pixel brush options',
   // The right-click menu on a panel tab or a window.
   'view.floatPanel': 'Move to its own window, in the right-click menu of a panel',
   'view.renamePanel': 'Rename, in the right-click menu of a panel',

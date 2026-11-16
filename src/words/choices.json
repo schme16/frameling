@@ -536,6 +536,41 @@
     "text": "Made it paint in your colour.",
     "where": "Toast when \"mine\" is used without asking (\"A brush made from pixels with several colours\"), in the past tense."
   },
+  "choice.brush.imageTipReading.title": { "text": "A solid picture made into a brush tip", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brush.imageTipReading.question": {
+    "text": "That picture has no see-through part. Which part of it should be the brush?",
+    "where": "The question the \"A solid picture made into a brush tip\" dialog asks."
+  },
+  "choice.brush.imageTipReading.dark.label": { "text": "The dark parts", "where": "Dialog and Preferences: the button for the answer \"dark\" in \"A solid picture made into a brush tip\"." },
+  "choice.brush.imageTipReading.dark.detail": {
+    "text": "Good for black drawings on white paper. The darker it is, the more paint it lays down.",
+    "where": "Dialog and Preferences: the small line under the answer \"dark\" in \"A solid picture made into a brush tip\"."
+  },
+  "choice.brush.imageTipReading.dark.did": {
+    "text": "Made the dark parts the brush.",
+    "where": "Toast when \"dark\" is used without asking (\"A solid picture made into a brush tip\"), in the past tense."
+  },
+  "choice.brush.imageTipReading.light.label": { "text": "The light parts", "where": "Dialog and Preferences: the button for the answer \"light\" in \"A solid picture made into a brush tip\"." },
+  "choice.brush.imageTipReading.light.detail": {
+    "text": "Good for a white shape on black. The lighter it is, the more paint it lays down.",
+    "where": "Dialog and Preferences: the small line under the answer \"light\" in \"A solid picture made into a brush tip\"."
+  },
+  "choice.brush.imageTipReading.light.did": {
+    "text": "Made the light parts the brush.",
+    "where": "Toast when \"light\" is used without asking (\"A solid picture made into a brush tip\"), in the past tense."
+  },
+  "choice.brush.imageTipReading.colours.label": {
+    "text": "The whole picture, in its colours",
+    "where": "Dialog and Preferences: the button for the answer \"colours\" in \"A solid picture made into a brush tip\"."
+  },
+  "choice.brush.imageTipReading.colours.detail": {
+    "text": "It stamps the picture as a little block, the way it looks.",
+    "where": "Dialog and Preferences: the small line under the answer \"colours\" in \"A solid picture made into a brush tip\"."
+  },
+  "choice.brush.imageTipReading.colours.did": {
+    "text": "Made the whole picture the brush, in its colours.",
+    "where": "Toast when \"colours\" is used without asking (\"A solid picture made into a brush tip\"), in the past tense."
+  },
   "choice.particles.where.title": { "text": "Where new particles go", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
   "choice.particles.where.question": { "text": "Where should new particles go?", "where": "The question the \"Where new particles go\" dialog asks." },
   "choice.particles.where.new-layer.label": { "text": "On a new layer of their own", "where": "Dialog and Preferences: the button for the answer \"new-layer\" in \"Where new particles go\"." },

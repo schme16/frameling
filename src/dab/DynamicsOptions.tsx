@@ -1,7 +1,7 @@
 // The pixel brush options for what moves a dab (pen, speed, fade), colour that changes along the stroke, and texture
 // (paper grain and a dual tip). Each is a fold under the main options so the first look stays small. Words are plain,
 // with the paint program's term second.
-import { Field, Choice, Slider, Toggle, MoreOptions } from '../canvas/controls';
+import { ActionButton, Field, Choice, Slider, Tip, Toggle, MoreOptions } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
 import { BRUSH_BLENDS } from './blend';
 import { blendInfo } from '../effects/model';
@@ -10,6 +10,9 @@ import { DYN_SOURCES, FADE_RANGE, routeFor, withRoute, type DynSource, type DynT
 import type { DabBrush } from './maths';
 import { setDab, useDab } from './settings';
 import { DEFAULT_DUAL, DEFAULT_GRAIN, DUAL_DENSITY, DUAL_SIZE, GRAIN_SCALE } from './texture';
+import { dualPictureScale } from './texturePicture';
+import { TextureSwatch } from './TextureSwatch';
+import { dualFromPicture, grainFromPicture } from './pictureTip';
 import './dab.css';
 
 export const SOURCE_WORDS: Record<DynSource, { label: string; hint: string }> = {
@@ -148,6 +151,23 @@ export function PaperSection() {
     >
       {g && (
         <>
+          {g.picture ? (
+            <div className="dab-sub">
+              <TextureSwatch picture={g.picture} invert={g.invert} label="The picture this brush catches on" />
+              <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the dark parts of it.</Tip>
+              <Toggle label="Catch on the light parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round." />
+              <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Pick another picture file to catch on">
+                Use another picture...
+              </ActionButton>
+              <ActionButton onClick={() => setDab({ grain: { ...g, picture: undefined, invert: undefined } })} title="Go back to catching on paper">
+                Back to the paper
+              </ActionButton>
+            </div>
+          ) : (
+            <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Catch on a picture of your own instead of a paper: a canvas weave, a leaf, a scribble">
+              Use a picture as the paper...
+            </ActionButton>
+          )}
           <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
           <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
           <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
@@ -166,9 +186,29 @@ export function TextureSection() {
       <Toggle label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
       {d && (
         <div className="dab-sub">
-          <Choice<'round' | 'square'> label="Dot shape" value={d.tip} options={[{ value: 'round', label: 'Round' }, { value: 'square', label: 'Square' }]} onChange={(tip) => setDab({ dual: { ...d, tip } })} />
-          <Slider label="Dot size" value={d.size} min={DUAL_SIZE.min} max={DUAL_SIZE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ dual: { ...d, size: v } })} />
-          <Slider label="How many dots" value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => `covers about ${v}%`} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />
+          {d.picture ? (
+            <>
+              <TextureSwatch picture={d.picture} invert={d.invert} label="The picture the dots come from" />
+              <Tip stays>The dots come from your picture: its dark parts, as much of it as How much of the picture says.</Tip>
+              <Toggle label="Use the light parts instead" checked={!!d.invert} onChange={(invert) => setDab({ dual: { ...d, invert } })} hint="Swap light and dark in the picture, for a white shape on black." />
+              <Slider label="Picture size" value={dualPictureScale(d.picture.side, d.scale)} min={1} max={4} format={(v) => (v === 1 ? 'As it is' : `${v} times bigger`)} onChange={(v) => setDab({ dual: { ...d, scale: v } })} hint="Makes each pixel of the picture a block of pixels. It steps 1, 2 and 4, as far as the picture fits." />
+              <ActionButton command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Pick another picture file for the dots">
+                Use another picture...
+              </ActionButton>
+              <ActionButton onClick={() => setDab({ dual: { ...d, picture: undefined, invert: undefined, scale: undefined } })} title="Go back to round or square dots">
+                Back to plain dots
+              </ActionButton>
+            </>
+          ) : (
+            <>
+              <Choice<'round' | 'square'> label="Dot shape" value={d.tip} options={[{ value: 'round', label: 'Round' }, { value: 'square', label: 'Square' }]} onChange={(tip) => setDab({ dual: { ...d, tip } })} />
+              <Slider label="Dot size" value={d.size} min={DUAL_SIZE.min} max={DUAL_SIZE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ dual: { ...d, size: v } })} />
+              <ActionButton command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Use a picture of your own for the dots: a leaf, a scribble, a bristle pattern">
+                Use a picture for the dots...
+              </ActionButton>
+            </>
+          )}
+          <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />
           <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />
         </div>
       )}

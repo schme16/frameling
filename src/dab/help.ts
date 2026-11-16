@@ -12,6 +12,15 @@ registerHelpTopics([
     keywords: ['pixel brush', 'brush', 'dab', 'tip', 'spacing', 'scatter', 'jitter', 'angle', 'roundness', 'anti-aliasing', 'antialiasing', 'aliased', 'stamp', 'picture brush', 'custom brush', 'flow', 'opacity', 'photoshop', 'krita', 'clip studio', 'procreate', 'affinity', 'library', 'saved brushes'],
   },
   {
+    id: 'pixel-brush-picture',
+    order: 1.55,
+    media: 'pixel-brush-picture.png',
+    title: 'Pixel brush: draw your own picture tip',
+    section: 'Pixel art',
+    summary: 'Draw a brush tip on a little grid, or start from a picture file or your selection, and see the real brush as you go. Up to 32 by 32.',
+    keywords: ['picture tip', 'tip editor', 'draw a brush', 'make a brush', 'custom brush', 'stamp', 'sprite', 'image brush', 'brush from image', 'png', 'jpeg', 'import', 'edit brush', 'photoshop', 'krita', 'procreate'],
+  },
+  {
     id: 'pixel-brush-dynamics',
     order: 1.56,
     media: 'pixel-brush-dynamics.png',
@@ -44,7 +53,7 @@ registerHelpTopics([
     media: 'pixel-brush-texture.png',
     title: 'Pixel brush: paper and dual tip',
     section: 'Pixel art',
-    summary: 'Give a brush a paper to catch on, or a second tip of little dots, for chalk, pencil, sponge, spatter and bristle looks, in sharp pixels.',
-    keywords: ['grain', 'texture', 'paper', 'tooth', 'dual', 'dual brush', 'second tip', 'spatter', 'bristle', 'sponge', 'chalk', 'pencil', 'speckle', 'stipple', 'photoshop', 'krita', 'procreate', 'scatter'],
+    summary: 'Give a brush a paper to catch on, or a second tip of little dots, from the built-in ones or a picture of your own, for chalk, pencil, sponge, spatter and bristle looks, in sharp pixels.',
+    keywords: ['grain', 'texture', 'paper', 'tooth', 'dual', 'dual brush', 'second tip', 'spatter', 'bristle', 'sponge', 'chalk', 'pencil', 'speckle', 'stipple', 'photoshop', 'krita', 'procreate', 'scatter', 'picture', 'image', 'pattern', 'custom texture'],
   },
 ]);
