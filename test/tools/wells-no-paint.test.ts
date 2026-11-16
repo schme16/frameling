@@ -210,12 +210,12 @@ describe('some picked shapes with paint and some without', () => {
   });
 });
 
-describe('a side with nothing on it hides its colour tools', () => {
-  it('drops the picker and the Solid/Linear/Radial choice, leaving the words and the swatches', () => {
+describe('a side with nothing on it keeps its colour tools', () => {
+  it('keeps the picker and the Solid/Linear/Radial choice, because picking there is how you give it paint', () => {
     addShapes(lineOnly('a'));
     pick(['a'], 'fill');
-    expect(showsPicker(paintView('fill'))).toBe(false);
-    expect(showsPaintKind(paintView('fill'))).toBe(false);
+    expect(showsPicker(paintView('fill'))).toBe(true);
+    expect(showsPaintKind(paintView('fill'))).toBe(true);
     expect(bareWords(paintView('fill'), 'fill')).toMatch(/no fill/);
   });
 
@@ -231,13 +231,11 @@ describe('a side with nothing on it hides its colour tools', () => {
     expect(showsPaintKind(paintView('fill'))).toBe(true);
   });
 
-  it('brings them back as soon as a colour is given', () => {
-    addShapes(lineOnly('a'));
-    pick(['a'], 'fill');
+  it('drops the picker only when the picked shapes have colours that differ, where there is nothing to show', () => {
+    addShapes(fillOnly('a'), { ...fillOnly('b'), fill: '#00ff00' });
+    pick(['a', 'b'], 'fill');
     expect(showsPicker(paintView('fill'))).toBe(false);
-    store().setUi({ activeWell: 'fill' });
-    setActiveColor('#123456');
-    expect(showsPicker(paintView('fill'))).toBe(true);
+    expect(showsPaintKind(paintView('fill'))).toBe(true);
   });
 });
 

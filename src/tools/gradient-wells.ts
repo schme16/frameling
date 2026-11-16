@@ -191,16 +191,16 @@ export function isMixed(v: PaintView): boolean {
 }
 
 /**
- * Whether the colour picker is worth showing for this box: not when the picked shapes have nothing on this side (there
- * is no colour to pick from, only swatches to give them one) and not when they differ (nothing to show but a mix).
+ * Whether the colour picker is worth showing for this box: not when the picked shapes differ, where there is nothing to
+ * show but a mix. A side with nothing on it still gets it, because picking a colour there is how you give it one.
  */
 export function showsPicker(v: PaintView): boolean {
-  return v.from !== 'none' && v.from !== 'differ' && v.from !== 'colours';
+  return v.from !== 'differ' && v.from !== 'colours';
 }
 
-/** Whether Solid, Linear and Radial are offered: not for a side with nothing on it, where there is no paint to change the kind of. */
-export function showsPaintKind(v: PaintView): boolean {
-  return v.from !== 'none';
+/** Whether Solid, Linear and Radial are offered. Always: picking one on a bare side is how you give it that kind. */
+export function showsPaintKind(_v: PaintView): boolean {
+  return true;
 }
 
 /** What a well's box shows: a colour, a gradient, "mixed", or nothing at all. Nothing means the see-through box. */
