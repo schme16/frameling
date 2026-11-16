@@ -2,6 +2,8 @@
 // what you're doing now) or as its own place on the rail (Library, Quests, Help...). Plain data plus pure helpers so
 // it can be tested. Panels not listed here (plugins) get a place on the rail.
 import { celAt, findLayer } from '../core/doc';
+import { isInstance } from '../core/symbols';
+import { hasPixelSelection } from '../select/pixel-state';
 import type { Layer, Shape } from '../core/format';
 import { getTool, type PanelDef } from '../core/registry';
 import type { State } from '../core/store';
@@ -28,8 +30,8 @@ export interface PanelInfo {
   relevant?: (s: State) => boolean;
   /** For sections: what makes it apply, when it doesn't ("Select some text"). The Panels list shows it as "Shows up when you ...". */
   idle?: string;
-  /** For sections: about the selected things, so it moves to the top while something is selected. */
-  selection?: boolean;
+  /** For sections: about the selected things, so it moves to the top while something is selected (a function says when). */
+  selection?: boolean | ((s: State) => boolean);
   /** For sections: a word or two after the title saying what it's set to now ("Brush"). */
   detail?: (s: State) => string | undefined;
   /** Extra search words. */
@@ -46,6 +48,14 @@ export function picked(s: State): Shape[] {
   if (d?.kind !== 'vector' || !s.ui.selection.length) return [];
   const sel = new Set(s.ui.selection);
   return d.shapes.filter((x) => sel.has(x.id));
+}
+
+/** Something is selected that Position and size and Align can work on: shapes on a vector layer, or pixels. */
+export function hasSelected(s: State): boolean {
+  const l = layerOf(s);
+  if (!l) return false;
+  if (l.kind === 'pixel') return hasPixelSelection();
+  return l.kind === 'vector' && picked(s).length > 0;
 }
 
 export const toolIs = (...ids: string[]) => (s: State) => ids.includes(s.ui.tool);
@@ -92,19 +102,43 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     idle: 'Click a clip on the timeline',
     keywords: ['clip', 'direction', 'repeat', 'back and forth', 'backward', 'loop', 'once', 'times'],
   },
-  'symbol-props': {
-    short: 'Motion',
-    blurb: 'The selected symbol: size, turn, fade and colour wash, and the in-betweens (tweens) that move it.',
+  // Position and size, and Align and space out, are about whatever is selected (shapes, a symbol or pixels), so they
+  // are sections of their own. They lead the selection group, straight after Colours (see sectionsNow).
+  'selection-numbers': {
+    short: 'Position',
+    blurb: 'Where the selection sits and how big it is: X, Y, Width, Height, Turn by and Slant by, or whole pixels for selected pixels.',
     group: 'properties',
     section: true,
     selection: true,
+    relevant: (s) => hasSelected(s),
+    idle: 'Select something on the canvas',
+    detail: (s) => (layerOf(s)?.kind === 'pixel' ? 'pixels' : undefined),
+    keywords: ['position', 'size', 'x y', 'coordinates', 'width', 'height', 'resize', 'turn', 'rotate', 'slant', 'skew', 'exact', 'numbers', 'transform', 'move'],
+  },
+  align: {
+    short: 'Align',
+    blurb: 'Line up the selection on its edges or middles, or space three or more out evenly.',
+    group: 'properties',
+    section: true,
+    selection: true,
+    relevant: (s) => hasSelected(s),
+    idle: 'Select something on the canvas',
+    keywords: ['align', 'line up', 'distribute', 'space out', 'spread', 'centre', 'center', 'left', 'right', 'top', 'bottom', 'middle', 'gap', 'even'],
+  },
+  'symbol-props': {
+    short: 'Motion',
+    blurb: 'A symbol\'s fade, colour wash and how it plays its own animation, and the in-betweens (tweens) that move what is on the key.',
+    group: 'properties',
+    section: true,
+    // Leads with the selection only when a symbol is in it: for a plain shape this is just the in-betweens.
+    selection: (s) => picked(s).some((x) => isInstance(x)),
     relevant: (s) => {
       const l = layerOf(s);
       if (!l || (l.kind !== 'vector' && l.kind !== 'camera')) return false;
       return l.kind === 'camera' || picked(s).length > 0 || !!celAt(l, s.ui.frame)?.tween;
     },
     idle: 'Select something on the canvas',
-    keywords: ['tween', 'in-between', 'instance', 'symbol', 'motion', 'move'],
+    keywords: ['tween', 'in-between', 'instance', 'symbol', 'motion', 'move', 'fade', 'tint', 'see-through'],
   },
   effects: {
     blurb: 'Glow, shadow, blur, outline and blend modes for the whole layer or folder.',
@@ -236,6 +270,9 @@ export function planRight(groups: { tabs: string[]; active: string | null }[], m
   });
 }
 
+/** The sections about a selection that come first among them, in this order. */
+const ABOUT_FIRST = ['selection-numbers', 'align'];
+
 /**
  * Which sections Properties shows now, and which are left out (the Panels list says when each turns up). A section shows when it applies, or when
  * it's the one asked for (`active`), so asking for Effects with nothing selected still brings it up. With something
@@ -258,14 +295,25 @@ export function sectionsNow(sections: string[], s: State, active: string | null)
   // about the selection first, like Illustrator's Properties) is a choice in Preferences > Behaviour. A clip you just
   // clicked leads either way: its settings are what you came for. Once you press on the canvas, or pick another layer
   // or tool, what you picked last leads instead, and the clip's settings stay below (it is still picked).
-  let out = shown;
-  if (s.ui.selection.length && currentChoice<PropsOrder>(PROPS_ORDER_CHOICE) === 'selection') {
-    const first = shown.filter((id) => PANEL_INFO[id]?.selection);
-    out = [...first, ...shown.filter((id) => !first.includes(id))];
+  // What is about the selection comes right after Colours. Position and size, then Align and space out, always come
+  // first among them (a saved layout may hold them anywhere), then the rest in the layout's order.
+  const aboutIt = (id: string) => {
+    const v = PANEL_INFO[id]?.selection;
+    try {
+      return typeof v === 'function' ? v(s) : !!v;
+    } catch {
+      return false;
+    }
+  };
+  const about = s.ui.selection.length || hasPixelSelection() ? shown.filter((id) => aboutIt(id)) : [];
+  const aboutOrdered = [...ABOUT_FIRST.filter((id) => about.includes(id)), ...about.filter((id) => !ABOUT_FIRST.includes(id))];
+  let out: string[];
+  if (about.length && currentChoice<PropsOrder>(PROPS_ORDER_CHOICE) === 'selection') {
+    out = [...aboutOrdered, ...shown.filter((id) => !about.includes(id))];
   } else {
     const lead = shown.filter((id) => id === COLOURS);
-    const about = s.ui.selection.length ? shown.filter((id) => id !== COLOURS && PANEL_INFO[id]?.selection) : [];
-    out = [...lead, ...about, ...shown.filter((id) => !lead.includes(id) && !about.includes(id))];
+    const after = aboutOrdered.filter((id) => id !== COLOURS);
+    out = [...lead, ...after, ...shown.filter((id) => !lead.includes(id) && !after.includes(id))];
   }
   if (out.includes('clip-play') && tl().clipLead === leadKeyOf(s)) out = ['clip-play', ...out.filter((id) => id !== 'clip-play')];
   return { shown: out, idle };

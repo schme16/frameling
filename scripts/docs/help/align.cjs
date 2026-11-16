@@ -16,7 +16,7 @@ module.exports = [
     name: 'align-space-out',
     width: 900,
     steps: [
-      L.template('blank-vector'), put, fit, L.panel('symbol-props'), L.wait(900), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
+      L.template('blank-vector'), put, fit, L.panel('align'), L.wait(900), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
       { shot: 'warm', crop: [0, 0, 32, 32] },
       { rec: '@', crop: [112, 44, 1084, 448], every: 80 }, L.wait(1100),
       L.cmd('select.alignMiddle'), L.wait(1700),

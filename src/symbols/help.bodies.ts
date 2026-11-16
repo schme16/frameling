@@ -63,11 +63,11 @@ Draw, add layers and add frames just as you would on the main stage. Every copy 
 The bar at the top of the canvas shows where you are, like **Scene › Bird › Wing**. Click any name to go back to it, or press **Done**. You can also double-click an empty spot, or press **Shift+F9**, to go back out one level.
 
 Undo works as usual. Going into and out of a symbol are steps too, so undoing far enough takes you back out.`,
-  'symbol-properties': `Select a symbol on the canvas and open **View > Panels > Symbol and motion**.
+  'symbol-properties': `Select a symbol on the canvas and **Symbol and motion** shows in Properties, just under **Position and size** and **Align and space out**. (Or open it from **View > Panels**.)
 
 **Shows** picks which symbol this copy is. Swapping keeps its place, size and turn, which is handy for mouth shapes or hand poses.
 
-**X, Y, Width, Height, Turn and Slant** place it exactly. (The industry words are position, scale, rotation and skew.) You can also drag it, its corners and its round handle on the canvas. Plain shapes and selected pixels have boxes too: see [Exact position and size](help:selection-numbers).
+**Where it is and how big** isn't here: **Position and size** has the **X, Y, Width, Height, Turn and Slant** boxes for a symbol, a plain shape or selected pixels alike. See [Exact position and size](help:selection-numbers). You can also drag the symbol, its corners and its round handle on the canvas.
 
 **See-through** fades the whole copy, and **Colour wash** tints it any colour (opacity and tint). Both can change smoothly with [in-betweens](help:tweens), so a copy can fade in or flash red.
 
@@ -78,7 +78,7 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
 
 **Starts on** picks which of its frames it begins with, so a crowd of copies don't all blink at once.
 
-Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
+Below that are the [in-betweens](help:tweens) for the key under the playhead. They are there for a plain shape too, since a key can glide or morph without a symbol in it.`,
   'tween-offer': `Click a frame in the timeline that sits between two drawings (held frames, or empty frames with a drawing after them), and a small **In-betweens?** offer appears on that stretch.
 
 - **Move** glides, grows, turns or fades the drawing from one key to the next (a classic tween). A plain drawing becomes a [symbol](help:symbols) first.

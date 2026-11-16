@@ -31,11 +31,11 @@ They all share one selection, so you can start a box, then switch to the lasso a
 **Ctrl+A** selects everything, **Ctrl+Shift+I** inverts (selects everything else), **Escape** lets go. The selection stays put when you change frame, so you can work on the same spot frame after frame.`,
   'selection-numbers': `Dragging is quick, but sometimes you want an icon at exactly 64 by 64, or a button 200 pixels from the left. Select something and type it instead.
 
-Open **View > Panels > Symbol and motion** (or press **Ctrl+K** and search **Type an exact position and size**, which opens it and puts the cursor in **X**).
+Select something and **Position and size** turns up in Properties, straight after **Colours**. Fold it away if you don't use it; it comes back the next time you select. Or press **Ctrl+K** and search **Type an exact position and size**, which opens it and puts the cursor in **X**.
 
 ## Shapes
 
-Select one shape or several and the **Position and size** boxes appear:
+Select one shape or several and the boxes appear:
 
 - **X** and **Y** are where the left and top of the selection's box are.
 - **Width** and **Height** are how big the box is. **Keep proportions** (on to begin with) makes typing one change the other too, so nothing squashes.
@@ -53,7 +53,7 @@ You can move, stretch and turn pixels this way. **Width** and **Height** repeat 
 
 ## Good to know
 
-- A symbol on its own keeps its own boxes, which show its angle and size as numbers.
+- A symbol on its own has its own boxes in the same place, which show its angle and size as numbers (**Width** and **Height** are a percentage of the drawing inside it).
 - Pixels moved off the edge of the picture are dropped.`,
   'select-magnetic': `Press **Shift+E**, or pick **Magnetic lasso** (the horseshoe magnet) in the toolbar. It is a lasso that reaches for the edge your drawing already has, so cutting a character out of its background does not take a steady hand.
 

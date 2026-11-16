@@ -41,7 +41,7 @@ registerHelpTopics([
     title: 'Symbol and motion panel',
     section: 'Symbols and motion',
     media: 'symbol-properties.png',
-    summary: "Change a symbol copy's place, size, turn, fade, colour wash and how it plays its own animation, plus the in-betweens on this key.",
+    summary: "Change a symbol copy's fade, colour wash and how it plays its own animation, plus the in-betweens on this key. Its place and size are in Position and size.",
     keywords: ['properties', 'inspector', 'transform', 'scale', 'rotate', 'skew', 'opacity', 'alpha', 'tint', 'swap symbol', 'loop', 'play once', 'single frame', 'first frame'],
   },
   {

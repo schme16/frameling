@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'align-space-out': `Five icons that should sit on one line, a title that should be in the middle of the page, three buttons that should be the same distance apart: pick the shapes and press a button. It is one undo step.
 
-**Line things up:** pick two or more shapes with the Select tool, then open **Align and space out** in the Properties panel (or **Edit > Align and space out**, or the command palette).
+**Line things up:** pick two or more shapes with the Select tool, then use **Align and space out** in Properties, which turns up under **Position and size** whenever something is selected (or **Edit > Align and space out**, or the command palette).
 - **Align left**, **Align centre** and **Align right** line them up side to side.
 - **Align top**, **Align middle** and **Align bottom** line them up up and down.
 

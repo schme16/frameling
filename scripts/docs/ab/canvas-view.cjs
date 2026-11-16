@@ -67,7 +67,7 @@ const SHAPES = [rect(150, 120, 170, 120, '#ff8fb1'), rect(400, 330, 90, 90, '#8f
 const alignStart = [
   L.template('blank-vector'), putOn(SHAPES),
   L.js(`__frameling.store().setUi({ tool: 'select', selection: ${JSON.stringify(SHAPES.map((s) => s.id))}, zoom: 0.5, panX: 382 - 640 * 0.5, panY: 222 - 360 * 0.5 })`),
-  L.panel('symbol-props'), L.wait(900), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
+  L.panel('align'), L.wait(900), scrollTo('Align and space out', 40), L.wait(400), away, L.wait(300),
 ];
 const ALIGN_CROP = [112, 44, 1084, 448];
 const alignStill = (name, ...after) => ({ name, prefs: { showTips: false }, steps: [...alignStart, ...after, L.wait(900), { shot: '@', crop: ALIGN_CROP }] });

@@ -1,4 +1,5 @@
-// Symbol and motion: the selected symbol's place, look and playback, and the in-betweens on the key at the playhead.
+// Symbol and motion: the selected symbol's fade, colour wash and playback, and the in-betweens on the key at the playhead.
+// Where a selection sits and how big it is lives in Position and size (SelectionNumbers.tsx), not here.
 import { useState, type ReactNode } from 'react';
 import type { Easing, InstanceShape, PlayMode } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
@@ -9,13 +10,9 @@ import { instanceAt, isInstance, nextKey, symbolContent } from '../core/symbols'
 import { morphNotes } from '../core/shape-tween';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
-import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
+import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
 import './symbols.css';
-import { usePrefs } from '../ui/prefs';
-import { docDpi, formatSize } from '../core/units';
 import { LengthNum, Num, Section } from './Num';
-import { SelectionNumbers } from './SelectionNumbers';
-import { instanceBounds } from '../canvas/geometry';
 import { ColourField } from '../ui/colour/ColourPicker';
 
 export { LengthNum, Num, Section };
@@ -26,18 +23,9 @@ const PLAY_OPTIONS: { value: PlayMode; label: string; title: string }[] = [
   { value: 'single', label: 'One frame', title: 'Shows just one frame of it (good for swapping poses)' },
 ];
 
-/** How big the instance is on the page, in the chosen unit. */
-function SizeOnPage({ inst }: { inst: InstanceShape }) {
-  const unit = usePrefs((p) => p.units);
-  const doc = useStore((s) => s.doc);
-  const b = instanceBounds(inst, doc);
-  return <p className="sy-size">Size on the page: {formatSize(b.w, b.h, unit, docDpi(doc))}</p>;
-}
-
 function InstanceSection({ inst, between }: { inst: InstanceShape; between: number | null }) {
   const doc = useStore((s) => s.doc);
   const c = symbolContent(doc, inst.symbolId);
-  const t = inst.transform;
   const set = (label: string, key: string, fn: (s: InstanceShape) => void) => updateInstances(label, fn, { coalesce: `inst-${key}-${inst.id}` });
   const symbols = Object.values(doc.symbols ?? {}).sort((a, b) => a.name.localeCompare(b.name));
   return (
@@ -64,15 +52,6 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
         </ActionButton>
       </div>
       {between !== null && <Tip stays>You're between two keys, looking at an in-between. Changes go to the key on frame {between + 1}.</Tip>}
-      <div className="sy-grid">
-        <LengthNum label="X" px={t.x} onPx={(v) => set('Move', 'x', (s) => void (s.transform.x = v))} />
-        <LengthNum label="Y" px={t.y} onPx={(v) => set('Move', 'y', (s) => void (s.transform.y = v))} />
-        <Num label="Width" suffix="%" value={t.scaleX * 100} onChange={(v) => set('Resize', 'sx', (s) => void (s.transform.scaleX = v / 100))} title="Size across (scale X)" />
-        <Num label="Height" suffix="%" value={t.scaleY * 100} onChange={(v) => set('Resize', 'sy', (s) => void (s.transform.scaleY = v / 100))} title="Size up and down (scale Y)" />
-        <Num label="Turn" suffix="°" value={t.rotation} onChange={(v) => set('Turn', 'rot', (s) => void (s.transform.rotation = v))} title="Rotation, in degrees" />
-        <Num label="Slant" suffix="°" value={t.skew} onChange={(v) => set('Slant', 'skew', (s) => void (s.transform.skew = v))} title="Skew, in degrees" />
-      </div>
-      <SizeOnPage inst={inst} />
       <Slider label="See-through" value={Math.round((1 - inst.opacity) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => set('See-through', 'op', (s) => void (s.opacity = 1 - v / 100))} hint="Fades the whole symbol (opacity). In-betweens can fade it in or out." />
       <Field label="Colour wash (tint)" value={`${Math.round((inst.tint?.amount ?? 0) * 100)}%`}>
         <div className="cv-row">
@@ -112,9 +91,6 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
       ) : (
         <Tip>Its drawing has one frame. Draw inside it and add frames to give it its own animation, like a flapping wing.</Tip>
       )}
-      <div className="cv-row cv-wrap">
-        <ActionButton onClick={() => resetTransform()}>Reset size and turn</ActionButton>
-      </div>
     </Section>
   );
 }
@@ -257,17 +233,18 @@ export function PropertiesPanel() {
       {inst ? (
         <InstanceSection inst={inst} between={between} />
       ) : (
-        <>
-          <SelectionNumbers />
-          <Tip stays>
-            {picked.length > 1 ? `${picked.length} symbols selected. Pick just one to change it here.` : 'Select a symbol on the canvas to change its size, turn, fade, colour wash and how it plays.'}{' '}
-            {!picked.length && sel.length > 0 && (
-              <button type="button" className="sy-link" onClick={() => void getCommand('symbols.make')?.run()}>
-                Make the selection a symbol
-              </button>
-            )}
-          </Tip>
-        </>
+        <Tip stays>
+          {picked.length > 1
+            ? `${picked.length} symbols selected. Pick just one to change it here.`
+            : sel.length > 0
+              ? "What you picked isn't a symbol. Make it one to fade it, wash it in a colour or give it an animation of its own."
+              : 'Select a symbol on the canvas to fade it, wash it in a colour or change how it plays.'}{' '}
+          {!picked.length && sel.length > 0 && (
+            <button type="button" className="sy-link" onClick={() => void getCommand('symbols.make')?.run()}>
+              Make the selection a symbol
+            </button>
+          )}
+        </Tip>
       )}
       <TweenSection />
     </div>
