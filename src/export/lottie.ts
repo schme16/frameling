@@ -287,6 +287,9 @@ interface LottieGrad {
   k: number[];
 }
 
+/** Lottie has linear and radial gradients only, so an angular one is left to the shape's own plain colour (the first stop). */
+export const lottieCanDo = (gr: Gradient | undefined): gr is Gradient => !!gr && gr.kind !== 'angular';
+
 export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
   const stops = sortedStops(gr.stops);
   const k: number[] = [];
@@ -331,7 +334,7 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false):
   if (s.type === 'fill') {
     const c = tinted(s.color, tints);
     // A gradient's own stops carry their see-through, so the fill opacity is just the shape's.
-    if (s.gradient) return { paths, fill: { rgb: c.rgb, o: r3(s.opacity * 100), grad: lottieGradient(s.gradient, tints) }, stroke: null };
+    if (lottieCanDo(s.gradient)) return { paths, fill: { rgb: c.rgb, o: r3(s.opacity * 100), grad: lottieGradient(s.gradient, tints) }, stroke: null };
     return { paths, fill: { rgb: c.rgb, o: r3(c.alpha * s.opacity * 100) }, stroke: null };
   }
   const ps = s as PathShape;
@@ -340,8 +343,8 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false):
   const sc = st ? tinted(st.color, tints) : null;
   return {
     paths,
-    fill: f ? (ps.fillGradient ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
-    stroke: st && sc ? { rgb: sc.rgb, o: r3((ps.strokeGradient ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(ps.strokeGradient ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}), ...(dashPx(st) ? { dash: { d: dashPx(st)!.map(r3), o: r3(dashOffsetPx(st)) } } : {}) } : null,
+    fill: f ? (lottieCanDo(ps.fillGradient) ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
+    stroke: st && sc ? { rgb: sc.rgb, o: r3((lottieCanDo(ps.strokeGradient) ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(lottieCanDo(ps.strokeGradient) ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}), ...(dashPx(st) ? { dash: { d: dashPx(st)!.map(r3), o: r3(dashOffsetPx(st)) } } : {}) } : null,
   };
 }
 

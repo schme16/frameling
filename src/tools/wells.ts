@@ -13,7 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
-import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, giveBare, matchSelectedGradients, paintView, swapGradientWells, writeColour } from './gradient-wells';
+import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, giveBare, matchSelectedGradients, paintView, setPaintKind, swapGradientWells, writeColour } from './gradient-wells';
 import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
@@ -190,6 +190,20 @@ export function setActiveNone(): void {
 }
 
 registerCommands([
+  {
+    id: 'colors.angular',
+    label: 'Make the box in front an angular gradient',
+    category: 'Colours',
+    description: 'Colours sweep once round the middle like a colour wheel or a pie. Good for metal, for a pie chart shape and for a spinning shine. The picked shapes (or the box in front, with nothing picked) change to it.',
+    help: 'gradient-angular',
+    keywords: ['angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'chrome', 'shine', 'spin', 'gradient', 'colours'],
+    enabled: (s) => paintView(s.ui.activeWell).from !== 'none',
+    reason: () => 'Pick a shape that has a fill or an outline first, or click a colour so there is something to blend.',
+    run: () => {
+      setPaintKind(store().get().ui.activeWell, 'angular');
+      endGradientGesture();
+    },
+  },
   {
     id: 'colors.matchGradients',
     label: 'Make picked gradients match the first',

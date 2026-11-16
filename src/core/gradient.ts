@@ -2,15 +2,15 @@
  * Gradients: building them for the canvas, placing a gradient style on a shape, moving them with a shape, and reading
  * them safely out of a file. Pure apart from `canvasGradient`, which only needs a 2D context.
  */
-import type { Color, Gradient, GradientStop } from './format';
+import type { Color, Gradient, GradientKind, GradientStop } from './format';
 
 type P = { x: number; y: number };
 
 /** What the colour boxes hold: the colours and the direction, but no position (that comes from the shape). */
 export interface GradientStyle {
-  kind: 'linear' | 'radial';
+  kind: GradientKind;
   stops: GradientStop[];
-  /** Degrees, 0 = left to right, 90 = top to bottom. */
+  /** Degrees, 0 = left to right, 90 = top to bottom. For angular, the direction the sweep starts in. */
   angle: number;
 }
 
@@ -55,10 +55,37 @@ export function colorAt(stops: readonly GradientStop[], t: number): Color {
 /** The single colour that stands in for a gradient where only one fits (the first stop). */
 export const firstColor = (g: Gradient | GradientStyle): Color => sortedStops(g.stops)[0].color;
 
+/** The direction an angular gradient starts in, in radians (0 = right, turning clockwise on screen). */
+export const conicStart = (g: Pick<Gradient, 'from' | 'to'>): number => Math.atan2(g.to.y - g.from.y, g.to.x - g.from.x);
+
+/**
+ * How far round an angular gradient a point is, from 0 (the start direction) up to 1 (all the way round again),
+ * turning clockwise on screen. The centre itself is 0.
+ */
+export function angularAt(g: Pick<Gradient, 'from' | 'to'>, x: number, y: number): number {
+  const dx = x - g.from.x;
+  const dy = y - g.from.y;
+  if (dx === 0 && dy === 0) return 0;
+  const turn = (Math.atan2(dy, dx) - conicStart(g)) / (Math.PI * 2);
+  return ((turn % 1) + 1) % 1;
+}
+
+/**
+ * An angular gradient cut into `steps` equal wedges, each one plain colour (the colour at its middle), for the formats
+ * that have no conic gradient of their own. Angles are turns from the start direction, 0 to 1, clockwise.
+ */
+export function angularWedges(stops: readonly GradientStop[], steps = 90): { from: number; to: number; color: Color }[] {
+  const n = Math.max(3, Math.round(steps));
+  return Array.from({ length: n }, (_, i) => ({ from: i / n, to: (i + 1) / n, color: colorAt(stops, (i + 0.5) / n) }));
+}
+
 /** A canvas gradient for a shape's gradient. */
 export function canvasGradient(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, gr: Gradient): CanvasGradient {
+  const conic = gr.kind === 'angular' ? (g as { createConicGradient?: (a: number, x: number, y: number) => CanvasGradient }).createConicGradient : undefined;
   const cg =
-    gr.kind === 'radial'
+    gr.kind === 'angular' && conic
+      ? conic.call(g, conicStart(gr), gr.from.x, gr.from.y)
+      : gr.kind === 'radial'
       ? g.createRadialGradient(gr.from.x, gr.from.y, 0, gr.from.x, gr.from.y, Math.max(0.001, Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y)))
       : g.createLinearGradient(gr.from.x, gr.from.y, gr.to.x, gr.to.y);
   for (const s of sortedStops(gr.stops)) {
@@ -84,9 +111,9 @@ export function placeGradient(style: GradientStyle, box: { x0: number; y0: numbe
   const hw = (box.x1 - box.x0) / 2;
   const hh = (box.y1 - box.y0) / 2;
   const stops = sortedStops(style.stops);
-  if (style.kind === 'radial') {
+  if (style.kind === 'radial' || style.kind === 'angular') {
     const r = Math.max(hw, hh, 0.5);
-    return { kind: 'radial', stops, from: { x: cx, y: cy }, to: { x: cx + dx * r, y: cy + dy * r } };
+    return { kind: style.kind, stops, from: { x: cx, y: cy }, to: { x: cx + dx * r, y: cy + dy * r } };
   }
   // Half the box's extent along the direction, so the first and last colours land exactly on the edges.
   const reach = Math.max(0.5, Math.abs(dx) * hw + Math.abs(dy) * hh);
@@ -115,6 +142,8 @@ export function gradientCss(style: Pick<GradientStyle, 'kind' | 'stops'>, angle 
   const stops = sortedStops(style.stops)
     .map((s) => `${s.color} ${Math.round(s.at * 1000) / 10}%`)
     .join(', ');
+  // CSS starts a conic sweep at the top and the canvas at the right, so the sweep turns a quarter to line up.
+  if (style.kind === 'angular') return `conic-gradient(from ${angle + 90}deg, ${stops})`;
   return style.kind === 'radial' ? `radial-gradient(circle, ${stops})` : `linear-gradient(${angle + 90}deg, ${stops})`;
 }
 
@@ -125,7 +154,7 @@ const isPt = (v: unknown): v is P => !!v && typeof v === 'object' && isNum((v as
 export function readGradient(raw: unknown): Gradient | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const r = raw as Record<string, unknown>;
-  if (r.kind !== 'linear' && r.kind !== 'radial') return undefined;
+  if (r.kind !== 'linear' && r.kind !== 'radial' && r.kind !== 'angular') return undefined;
   if (!isPt(r.from) || !isPt(r.to) || !Array.isArray(r.stops)) return undefined;
   const stops = r.stops.filter((s): s is GradientStop => !!s && typeof s === 'object' && isNum(s.at) && typeof s.color === 'string').map((s) => ({ at: clamp01(s.at), color: s.color }));
   if (!stops.length) return undefined;

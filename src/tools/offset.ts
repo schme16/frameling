@@ -80,6 +80,11 @@ export function applyOffset(d: number, corners: OffsetCorners = last.corners): v
   withChoice<OffsetKeep>('shapes.offsetKeep', (keep) => run(d, corners, keep), { gently: true });
 }
 
+/** Resizes the picked shapes themselves by `d` px (above 0 bigger, below 0 smaller), with no question: the selection's Grow and Shrink. */
+export function resizePicked(d: number): void {
+  run(d, last.corners, 'replace');
+}
+
 const canOffset = (s: State) => s.ui.selection.length > 0 && activeLayer().layer?.kind === 'vector';
 const needShapeToOffset = say('Select a shape on a vector layer first.');
 

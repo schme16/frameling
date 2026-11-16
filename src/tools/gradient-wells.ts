@@ -13,7 +13,7 @@
  * With no gradient on the selection the panel edits the box and pushes it onto the selection, as it always did.
  */
 import { useSyncExternalStore } from 'react';
-import type { Color, FillShape, Gradient, GradientStop, PathShape, Shape, StrokeShape, TextShape } from '../core/format';
+import type { Color, FillShape, Gradient, GradientKind, GradientStop, PathShape, Shape, StrokeShape, TextShape } from '../core/format';
 import { colorAt, firstColor, placeGradient, sharedColour, sharedPaint, sortedStops, styleOf, type GradientStyle, type SharedPaint } from '../core/gradient';
 import { store, useStore } from '../core/store';
 import { pathsBounds } from '../geometry/hit';
@@ -21,7 +21,7 @@ import { activeDrawing, editActiveDrawing } from './edit';
 import { paintWellsOn } from './pixelWells';
 
 export type Well = 'fill' | 'stroke';
-export type PaintKind = 'solid' | 'linear' | 'radial';
+export type PaintKind = 'solid' | GradientKind;
 
 interface State {
   fill: GradientStyle | null;
@@ -37,7 +37,7 @@ const listeners = new Set<() => void>();
 const validStyle = (v: unknown): GradientStyle | null => {
   if (!v || typeof v !== 'object') return null;
   const g = v as GradientStyle;
-  if ((g.kind !== 'linear' && g.kind !== 'radial') || !Array.isArray(g.stops) || g.stops.length < 2) return null;
+  if ((g.kind !== 'linear' && g.kind !== 'radial' && g.kind !== 'angular') || !Array.isArray(g.stops) || g.stops.length < 2) return null;
   if (!g.stops.every((s) => s && typeof s.at === 'number' && typeof s.color === 'string')) return null;
   return { kind: g.kind, stops: sortedStops(g.stops), angle: typeof g.angle === 'number' && Number.isFinite(g.angle) ? g.angle : 0 };
 };
@@ -309,8 +309,10 @@ function lighter(c: Color): Color {
 }
 
 /** A new two-colour gradient that starts from one plain colour. */
-function newStyle(kind: 'linear' | 'radial', plain: Color): GradientStyle {
-  return { kind, angle: 0, stops: kind === 'radial' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }] };
+function newStyle(kind: GradientKind, plain: Color): GradientStyle {
+  // An angular one comes back to its first colour, so the sweep has no seam where it starts and ends.
+  const stops = kind === 'angular' ? [{ at: 0, color: plain }, { at: 0.5, color: lighter(plain) }, { at: 1, color: plain }] : kind === 'radial' ? [{ at: 0, color: lighter(plain) }, { at: 1, color: plain }] : [{ at: 0, color: plain }, { at: 1, color: lighter(plain) }];
+  return { kind, angle: 0, stops };
 }
 
 /** Switches a box between a plain colour and a linear or radial gradient. */

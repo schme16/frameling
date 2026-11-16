@@ -1,0 +1,1 @@
+Saved selections. The sun and its ring of sky were saved as "Sun and sky" (feathered by 2 px), then something else was picked (saved-before: the purple field). saved-after is Bring back on "Sun and sky": the same selection, soft edge included. Each in -dark and -light.

@@ -169,7 +169,7 @@ export const pixelGradient = {
     const shape: GradientShape = getPixelSettings().gradientShape;
     const line = () => {
       g.beginPath();
-      if (shape === 'radial') g.arc(d.start.x, d.start.y, Math.hypot(d.end.x - d.start.x, d.end.y - d.start.y), 0, Math.PI * 2);
+      if (shape !== 'linear') g.arc(d.start.x, d.start.y, Math.hypot(d.end.x - d.start.x, d.end.y - d.start.y), 0, Math.PI * 2);
       g.moveTo(d.start.x, d.start.y);
       g.lineTo(d.end.x, d.end.y);
     };
@@ -230,5 +230,15 @@ registerCommands([
     keywords: ['gradient', 'radial', 'linear', 'circle', 'pixel'],
     checked: () => getPixelSettings().gradientShape === 'radial',
     run: () => setPixelSettings({ gradientShape: getPixelSettings().gradientShape === 'radial' ? 'linear' : 'radial' }),
+  },
+  {
+    id: 'pixel.gradientAngular',
+    label: 'Gradient: switch angular on or off',
+    category: 'Draw',
+    description: 'An angular gradient sweeps once round the point you press, like a colour wheel or a pie, starting in the direction you drag.',
+    help: 'pixel-gradient',
+    keywords: ['gradient', 'angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'pixel'],
+    checked: () => getPixelSettings().gradientShape === 'angular',
+    run: () => setPixelSettings({ gradientShape: getPixelSettings().gradientShape === 'angular' ? 'linear' : 'angular' }),
   },
 ]);

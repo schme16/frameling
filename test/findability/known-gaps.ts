@@ -97,7 +97,8 @@ export const BIG_MENUS: Record<string, number> = {
   // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   // 175 down to 146 when the soft paint family (30) got a Soft paint menu of its own. Draw is under its cap again.
-  Draw: 146,
+  // 146 up to 148 for angular gradients: Make the box in front an angular gradient (Shapes and colour, under a Gradient heading) and the pixel gradient's Angular switch (beside Radial). Draw stays under its cap of 150.
+  Draw: 148,
 };
 
 /**
@@ -153,6 +154,9 @@ export const STILL_LOAD = {
   // light table, look through the camera while playing, import sound and make a symbol from the whole animation now
   // needing animation first. And -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
   // View entries that moved to the palette because a control on screen already does their job. The gap is unchanged.
-  still: { palette: 553, menu: 733, animateMenu: 8 },
-  animated: { palette: 602, menu: 857, animateMenu: 123 },
+  // Then +4 menu on both sides from selection-gradients: Grow, Shrink and Feather the selection and the card that does all three, in Edit. They are about selecting, not animation, so the gap is unchanged.
+  // And +2 menu and +1 palette on both sides for saved selections (Save the selection and Saved selections, in the same Edit submenu; the list is always open to you, so it is the one palette entry). Not animation either.
+  // And +2 palette and +2 menu on both sides for angular gradients (the vector command and the pixel gradient's switch). Not animation either.
+  still: { palette: 556, menu: 741, animateMenu: 8 },
+  animated: { palette: 605, menu: 865, animateMenu: 123 },
 };

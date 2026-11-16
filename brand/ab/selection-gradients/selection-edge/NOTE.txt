@@ -1,0 +1,1 @@
+Selection edge. Feather: the same sun and round selection copied on to the dark field, with a hard edge (feather-before) and feathered by 5 px (feather-after): the sky round the sun fades into the purple instead of showing as a cut-out disc. Grow: the selection as it was (grow-before) and grown by 4 px (grow-after). Each in -dark and -light.

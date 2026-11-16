@@ -45,6 +45,7 @@ export const REVIEWER_FIELDS: Record<keyof Doc, Answer> = {
   guides: 'withhold',
   notes: 'withhold',
   marks: 'withhold',
+  selections: 'withhold',
   perspective: 'withhold',
   sprite: 'withhold',
   ext: 'withhold',

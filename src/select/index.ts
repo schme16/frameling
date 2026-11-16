@@ -4,6 +4,8 @@
 import './pixel-tool';
 import './commands';
 import './help';
+import './edge';
+import './saved-commands';
 import './align-commands';
 import './align-help';
 import { lazyPanel } from '../core/lazy';

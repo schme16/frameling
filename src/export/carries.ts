@@ -12,6 +12,8 @@
  * dash offset that moves (anything fancier, like a line that also has arrow heads, is cut frame by frame, still as vector).
  *
  * Gradients (linear and radial, fills and lines) are kept as real gradients by SVG, animated SVG, Lottie and PDF.
+ * Angular (conic) gradients are not: SVG, animated SVG, PDF and Illustrator draw them as 90 thin wedges, and Lottie has no conic
+ * gradient, so a shape with one comes out in its own plain colour there.
  * PDF's gradients are solid colours only, so a see-through stop comes out solid there.
  */
 import type { Doc, EffectKind } from '../core/format';
@@ -42,6 +44,7 @@ export const FEATURE_WORDS: Record<Feature, string> = {
   folders: 'layer folders',
   bones: 'bent (boned) drawings',
   gradientAlpha: 'see-through colours inside gradients',
+  gradientAngular: 'angular gradients (a plain colour instead)',
   trim: 'lines that draw themselves',
   grain: 'chalk and charcoal brush grain',
 };
@@ -95,6 +98,7 @@ export function docFeatures(doc: Doc): DocFeatures {
       else if (s.type === 'fill' || s.type === 'path') {
         const grads = s.type === 'fill' ? [s.gradient] : [s.fillGradient, s.strokeGradient];
         if (grads.some((g) => g?.stops.some((st) => /^#[0-9a-f]{6}(?!ff)[0-9a-f]{2}$/i.test(st.color)))) features.add('gradientAlpha');
+        if (grads.some((g) => g?.kind === 'angular')) features.add('gradientAngular');
       }
     }
   }
@@ -114,6 +118,9 @@ export function bakesEffects(doc: Doc, format: FormatId, found: DocFeatures = do
 export function hasSoftOrShadow(found: DocFeatures): boolean {
   return found.effectKinds.has('blur') || found.effectKinds.has('shadow');
 }
+
+/** What the Export window says about angular gradients in a vector format that has no conic gradient but draws them as thin wedges. */
+export const ANGULAR_NOTE = 'Angular gradients are made of 90 thin wedges here, each one plain colour. They look the same, and the file comes out bigger.';
 
 /** What the Export window says about chalk and charcoal in a vector format. */
 export const GRAIN_NOTE = 'Chalk and charcoal grain stays vector, made of thousands of tiny shapes. It looks the same, and the file comes out bigger.';
@@ -163,6 +170,8 @@ export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = d
     if (how === 'picture') pictures.push(`layers with a shape that has ${list(all)}`);
     else if (other.length) left.push(`${list(other)} on single shapes`);
   }
+  // The same for an angular gradient where there is no conic gradient to write.
+  if (found.features.has('gradientAngular') && c.rows.gradientAngular === 'shapes') out.push(ANGULAR_NOTE);
   // Grain stays vector in the formats that carry shapes, but it is a lot of shapes.
   if (found.features.has('grain') && c.rows.grain === 'shapes') out.push(GRAIN_NOTE);
   // Where effects are left out and grain is shapes (SVG), paper tooth comes out as those shapes. Where layers become pictures it is kept as drawn.

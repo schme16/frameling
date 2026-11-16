@@ -64,7 +64,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Edit',
     categories: ['Edit'],
-    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins', 'sub:scripts'],
+    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:selection', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins', 'sub:scripts'],
   },
   {
     label: 'View',
@@ -233,7 +233,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   shapes: {
     label: 'Shapes and colour',
-    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll'],
+    items: ['heading:Combine shapes', 'shapes.join', 'shapes.cut', 'shapes.overlap', 'shapes.punch', 'heading:Tidy and convert', 'draw.holdToTidy', 'arrange.tidyStroke', 'arrange.strokeToLine', 'draw.toggleMerge', 'text.toShapes', '-', 'convert.toPixels', 'convert.toShapes', 'pixel.outline', 'pixel.outlineInside', 'heading:Recolour', 'colors.recolourSelection', 'colors.recolourFrame', 'colors.recolourLayer', 'colors.recolourAll', 'heading:Gradient', 'colors.angular'],
     prefixes: ['shapes.', 'colors.recolour'],
   },
   linestyle: {
@@ -265,7 +265,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Brush and tool options',
     items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'select.scope', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing',
       'heading:Pixel brush', 'pixel.sizeUp', 'pixel.sizeDown', 'pixel.swapPaintBack',
-      'heading:Pixel gradient style', 'pixel.gradientColours', 'pixel.gradientDither', 'pixel.gradientRadial',
+      'heading:Pixel gradient style', 'pixel.gradientColours', 'pixel.gradientDither', 'pixel.gradientRadial', 'pixel.gradientAngular',
       'heading:Pixel text', 'text.pixelType', 'text.pixelFont.classic', 'text.pixelFont.tiny', 'text.pixelBold', 'text.pixelBigger', 'text.pixelSmaller',
     ],
   },
@@ -280,6 +280,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     ],
     prefixes: ['layers.mask'],
     categories: ['Layers'],
+  },
+  selection: {
+    label: 'Grow, soften and save selection',
+    items: ['select.edge', '-', 'select.grow', 'select.shrink', 'select.feather', '-', 'select.save', 'select.saved'],
   },
   align: {
     label: 'Align and space out',

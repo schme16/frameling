@@ -23,6 +23,7 @@ import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../p
 import { docPalette } from '../pixel/palette';
 import { getPixelSettings } from '../pixel/settings';
 import { pixelSelection } from '../select/pixel-state';
+import { mixPixel } from '../select/mask';
 import { notePixels, pixelsWanted, type PixelFeed } from '../popout/ink';
 import type { PixelPatch } from '../popout/protocol';
 
@@ -104,6 +105,9 @@ export class PixelSession {
   readonly lock: (ink: Ink) => Ink;
   /** The selection: when there is one, painting stays inside it. */
   private clip: Uint8Array | null = null;
+  /** How much of each pixel the selection holds, when its edge is feathered: paint only goes in that far. */
+  private soft: Uint8Array | null = null;
+  private mixed = new Uint8ClampedArray(4);
   private pts = new Int32Array(8);
   private rgba = new Uint8Array(4);
   /** One pixel of the old picture, handed to inks. */
@@ -141,7 +145,10 @@ export class PixelSession {
     const pal = layer.paletteLock ? docPalette(doc) : null;
     this.lock = pal ? (ink) => lockedInk(ink, pal) : (ink) => ink;
     const sel = pixelSelection();
-    if (sel && sel.width === this.width && sel.height === this.height) this.clip = sel.bits;
+    if (sel && sel.width === this.width && sel.height === this.height) {
+      this.clip = sel.bits;
+      this.soft = sel.soft ?? null;
+    }
   }
 
   /** The old picture's pixel (x, y) written into `out` at `o`. */
@@ -205,7 +212,20 @@ export class PixelSession {
       x = wrap(x, this.width);
       y = wrap(y, this.height);
     } else if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
-    if (this.clip && !this.clip[y * this.width + x]) return;
+    if (this.clip) {
+      const at = y * this.width + x;
+      if (this.soft) {
+        const k = this.soft[at];
+        if (!k) return;
+        if (k < 255) {
+          // A feathered edge: the new colour goes in part way, mixed with what was there.
+          const b = this.basePx;
+          this.readBase(x, y, b, 0);
+          mixPixel(b, c, 0, k, this.mixed);
+          c = [this.mixed[0], this.mixed[1], this.mixed[2], this.mixed[3]];
+        }
+      } else if (!this.clip[at]) return;
+    }
     const ti = (y >> SHIFT) * this.tilesAcross + (x >> SHIFT);
     let t = this.tiles[ti];
     if (!t) {
