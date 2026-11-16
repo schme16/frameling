@@ -21,6 +21,7 @@ import { getToolSettings } from '../tools/settings';
 import { reportEdit } from '../tools/util';
 import { viewSizeFactor } from '../tools/view-size';
 import { DabOptionsPanel } from './Options';
+import { getDry } from '../dry/settings';
 import { getDab } from './settings';
 import { sessionStroke, type DabStroke } from './stroke';
 import { PIXEL_BRUSH_TOOL } from './live';
@@ -84,7 +85,7 @@ function dabTool(): Tool {
       meter = new SpeedMeter();
       // The back colour is the Fill colour (Photoshop's background): brushes that mix colour go toward it.
       const back = (ui.fillColor && parseHex(ui.fillColor)) || null;
-      stroke = sessionStroke(session, doc, layer, { brush, color: rgba, back, edge: dabEdge(brush.aliased, layer).mode });
+      stroke = sessionStroke(session, doc, layer, { brush, color: rgba, back, edge: dabEdge(brush.aliased, layer).mode, sheet: getDry().paper });
       go(e, layer.pixelSize);
     },
     move(e) {

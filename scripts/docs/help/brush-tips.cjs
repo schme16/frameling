@@ -1,4 +1,4 @@
-// Help clip for Brush tips: the Tip row, with a wave drawn in chalk, charcoal, charcoal with the Stick picker on soft pastel, watercolour and then a leaf stamp.
+// Help clip for Brush tips: the Tip, Stick and Paper rows, with a wave drawn in chalk, charcoal, charcoal with the Stick picker on soft pastel, watercolour and then a leaf stamp.
 // Where things land comes from the running app (view() and at() in _shapes.cjs), so no window numbers are kept here.
 const L = require('./_lib.cjs');
 const { view, at, UI } = require('./_shapes.cjs');
@@ -15,8 +15,8 @@ const stick = (name) => [
   L.wait(500),
   L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
 ];
-// The options panel scrolled so Brush, Tip and Stick sit together at the top of the picture.
-const toTop = L.js(`document.querySelector('[data-panel-id="tool-options"]')?.scrollIntoView({ block: 'start' })`);
+// The options panel scrolled so Tip, Stick and the Paper box under them sit together at the top of the picture.
+const toTop = L.js(`document.querySelector('[data-testid="brush-tips"]')?.scrollIntoView({ block: 'start' })`);
 const set = (patch) => L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ...${JSON.stringify(patch)} } }))`);
 const fit = view(0.5);
 const away = { move: [720, 28] };

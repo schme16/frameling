@@ -121,7 +121,7 @@ export function renderPixelPreview(spec: PixelSpec, kind: SampleKind, w: number,
   const drag = spec.kind === 'soft' && spec.tool === 'smudge';
   const points = kind === 'stroke' ? wavePoints(w, h) : drag ? [-1, -0.5, 0, 0.5, 1].map((k) => ({ x: w / 2 + k * Math.min(size, w / 3), y: h / 2 })) : [{ x: w / 2, y: h / 2 }];
   if (spec.kind === 'dry') {
-    const stroke = new DryStroke(surface, null, null, { medium: mediumInfo(spec.medium), paper: spec.paper, color, hardness: spec.hardness, edge: EDGE, seed: PIXEL_PREVIEW_SEED });
+    const stroke = new DryStroke(surface, null, null, { medium: mediumInfo(spec.medium), paper: spec.paper ?? 'medium', color, hardness: spec.hardness, edge: EDGE, seed: PIXEL_PREVIEW_SEED });
     for (const p of points) stroke.moveTo(p, size, spec.press);
   } else if (spec.tool === 'smudge') {
     const stroke = new SmudgeStroke(surface, { kind: 'smudge', color, hardness: spec.hardness, edge: EDGE }, size);

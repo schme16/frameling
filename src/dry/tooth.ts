@@ -398,7 +398,7 @@ export function toothBytes(bytes: Uint8ClampedArray, w: number, h: number, p: To
  * Effects panel shows. `grain` is the paper's grain size, `seed` picks which stick (the streaks) and `streak` (0 to 1)
  * overrides how much the stick's own bumps streak the mark (a dry brush drags long streaks, a crayon barely does).
  */
-export function toothValues(id: DryId, grain = 1, seed = 0, streak?: number): Record<string, number> {
+export function toothValues(id: DryId, grain = 1, seed = 0, streak?: number, paper: PaperKind = 'medium'): Record<string, number> {
   const m = mediumInfo(id);
   return {
     press: Math.round(m.press * 100),
@@ -407,7 +407,7 @@ export function toothValues(id: DryId, grain = 1, seed = 0, streak?: number): Re
     soft: Math.round(m.soft * 100),
     cover: Math.round(m.ceiling * 100),
     streak: Math.round((streak ?? m.streak) * 100),
-    paper: 2,
+    paper: Math.max(0, PAPERS.findIndex((p) => p.id === paper)),
     grain,
     seed,
   };

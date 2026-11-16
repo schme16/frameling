@@ -42,7 +42,7 @@ registerHelpTopics([
     id: 'pixel-brush-texture',
     order: 1.57,
     media: 'pixel-brush-texture.png',
-    title: 'Pixel brush: grain and dual tip',
+    title: 'Pixel brush: paper and dual tip',
     section: 'Pixel art',
     summary: 'Give a brush a paper to catch on, or a second tip of little dots, for chalk, pencil, sponge, spatter and bristle looks, in sharp pixels.',
     keywords: ['grain', 'texture', 'paper', 'tooth', 'dual', 'dual brush', 'second tip', 'spatter', 'bristle', 'sponge', 'chalk', 'pencil', 'speckle', 'stipple', 'photoshop', 'krita', 'procreate', 'scatter'],

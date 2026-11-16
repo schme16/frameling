@@ -8,6 +8,7 @@ import '../../src/core/render';
 import { onPaper, withTips } from '../../src/core/tips';
 import { defaultTip, isDry, isGrainy, readTip, sameTip } from '../../src/geometry/tip';
 import { loadFile, saveFile } from '../../src/io/file';
+import { resetDry, setPaper } from '../../src/dry/settings';
 import { toothValues } from '../../src/dry/tooth';
 import { EFFECTS, defaultValues, effectInfo } from '../../src/effects/model';
 import { hasShapeFx, layerShapeFxKinds } from '../../src/effects/shapeFx';
@@ -82,6 +83,14 @@ describe('the brushes that catch on paper', () => {
     expect(isDry(starter('oil'))).toBe(false);
     expect(isGrainy(starter('oil'))).toBe(false);
     expect(isGrainy({ ...starter('oil'), tip: { kind: 'chalk', amount: 0.18, grain: 0.6 } })).toBe(true);
+  });
+
+  it('its effect is on the sheet\'s paper, not always the medium one', () => {
+    expect(toothValues('chalk', 1, 0, undefined, 'rough').paper).toBe(4);
+    expect(toothValues('chalk').paper).toBe(2);
+    setPaper('smooth');
+    expect(buildStroke(pts, starter('vine-charcoal'), '#111111', 1, false, 42).effects![0].values.paper).toBe(0);
+    resetDry();
   });
 
   it('a line drawn with one carries a Paper tooth effect set for its medium, and one seed for the whole line', () => {

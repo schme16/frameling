@@ -2567,5 +2567,48 @@
   "choice.animation.openAnimate.offer.did": {
     "text": "Left the drawing as a still. The Add animation button is where the timeline goes.",
     "where": "Toast when \"offer\" is used without asking (\"The Animate room on a still picture\"), in the past tense."
-  }
+  },
+  "choice.paper.pinned.title": { "text": "Picking a paper on a brush that keeps its own", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.paper.pinned.question": {
+    "text": "This brush keeps its own paper, which is not your sheet’s. Should the paper you just picked change only the brush, or the whole sheet?",
+    "where": "The question the \"Picking a paper on a brush that keeps its own\" dialog asks."
+  },
+  "choice.paper.pinned.brush.label": { "text": "Just this brush", "where": "Dialog and Preferences: the button for the answer \"brush\" in \"Picking a paper on a brush that keeps its own\"." },
+  "choice.paper.pinned.brush.detail": {
+    "text": "Your sheet and the other tools stay as they are. The brush keeps its own paper.",
+    "where": "Dialog and Preferences: the small line under the \"brush\" answer in \"Picking a paper on a brush that keeps its own\"."
+  },
+  "choice.paper.pinned.brush.did": {
+    "text": "Changed the paper for this brush only.",
+    "where": "Toast when \"brush\" is used without asking (\"Picking a paper on a brush that keeps its own\"), in the past tense."
+  },
+  "choice.paper.pinned.sheet.label": { "text": "The whole sheet", "where": "Dialog and Preferences: the button for the answer \"sheet\" in \"Picking a paper on a brush that keeps its own\"." },
+  "choice.paper.pinned.sheet.detail": {
+    "text": "Chalk, charcoal and every grainy brush use it, and this brush goes back to following the sheet.",
+    "where": "Dialog and Preferences: the small line under the \"sheet\" answer in \"Picking a paper on a brush that keeps its own\"."
+  },
+  "choice.paper.pinned.sheet.did": {
+    "text": "Changed the sheet’s paper. This brush follows it now.",
+    "where": "Toast when \"sheet\" is used without asking (\"Picking a paper on a brush that keeps its own\"), in the past tense."
+  },
+  "choice.paper.saved.title": { "text": "Using a brush saved on another paper", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.paper.saved.question": {
+    "text": "This brush was saved on a different paper from your sheet’s. Should using it change the sheet?",
+    "where": "The question the \"Using a brush saved on another paper\" dialog asks."
+  },
+  "choice.paper.saved.sheet.label": { "text": "Change the sheet", "where": "Dialog and Preferences: the button for the answer \"sheet\" in \"Using a brush saved on another paper\"." },
+  "choice.paper.saved.sheet.detail": {
+    "text": "The brush looks the way it did when you saved it. Chalk, charcoal and grainy brushes use that paper too.",
+    "where": "Dialog and Preferences: the small line under the \"sheet\" answer in \"Using a brush saved on another paper\"."
+  },
+  "choice.paper.saved.sheet.did": {
+    "text": "Moved the sheet to the brush’s paper.",
+    "where": "Toast when \"sheet\" is used without asking (\"Using a brush saved on another paper\"), in the past tense."
+  },
+  "choice.paper.saved.keep.label": { "text": "Keep my sheet", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Using a brush saved on another paper\"." },
+  "choice.paper.saved.keep.detail": {
+    "text": "The brush draws on the paper you are on, so it may look a little different from when you saved it.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Using a brush saved on another paper\"."
+  },
+  "choice.paper.saved.keep.did": { "text": "Kept your sheet’s paper.", "where": "Toast when \"keep\" is used without asking (\"Using a brush saved on another paper\"), in the past tense." }
 }

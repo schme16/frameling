@@ -11,8 +11,8 @@ import { PenOptions } from '../tablet/PenOptions';
 import { SOFT_EDGE_CHOICE } from '../soft/choices';
 import { edgeNote } from '../soft/Options';
 import { MEDIA, mediumInfo, type DryId } from './maths';
-import { PAPERS, paperInfo, type PaperKind } from './paper';
-import { PRESS_RANGE, SIZE_RANGE, setDryTool, setMedium, setPaper, useDry } from './settings';
+import { PaperGroup } from './PaperGroup';
+import { PRESS_RANGE, SIZE_RANGE, setDryTool, setMedium, useDry } from './settings';
 
 function Edge() {
   const locked = useStore((s) => {
@@ -37,7 +37,6 @@ function Edge() {
 
 export function DryOptionsPanel() {
   const medium = useDry((s) => s.medium);
-  const paper = useDry((s) => s.paper);
   const o = useDry((s) => s.tools[s.medium]);
   const info = mediumInfo(medium);
   return (
@@ -45,8 +44,7 @@ export function DryOptionsPanel() {
       <BrushPresetRow side="pixel" />
       <Choice<DryId> label="Medium" value={medium} options={MEDIA.map((m) => ({ value: m.id, label: m.label, title: m.hint }))} onChange={setMedium} />
       <Tip>{info.hint}</Tip>
-      <Choice<PaperKind> label="Paper" value={paper} options={PAPERS.map((p) => ({ value: p.id, label: p.label, title: p.hint }))} onChange={setPaper} />
-      <Tip>{paperInfo(paper).hint} The paper stays put on the page, so strokes over each other meet the same bumps.</Tip>
+      <PaperGroup tip="The paper stays put on the page, so strokes over each other meet the same bumps." />
       <Slider label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDryTool(medium, { size: v })} />
       <Slider
         label="Pressure"

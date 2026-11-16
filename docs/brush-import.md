@@ -72,7 +72,7 @@ spacing. A sampled tip's `Dmtr` is across the whole picture, so `size = Dmtr x v
 - Jitters: size `szVr` is `sizeJitter`; angle `angleDynamics` is `angleJitter`; scatter `scatterDynamics` jitter is `scatter`
   (held to 200%); opacity `opVr` and flow `prVr` are both flow (a `random` route for the jitter), with a note for opacity;
   mix `mxVr` is `mix`. Pressure on both opacity and flow is one route, not two.
-- `useTexture` is `grain` (the medium paper, `textureDepth`, scale, and `TxtC` "each tip" as `moving`), with a note that the
+- `useTexture` is `grain` (no paper of its own, so it follows the sheet; `textureDepth`, scale, and `TxtC` "each tip" as `moving`), with a note that the
   pattern picture is not kept. `dualBrush` with a sampled (textured) second tip is `dual`: round dots no bigger than a quarter
   of the brush, density 60% (more with a count), `cut` for subtract; the second tip's own picture, spacing, scatter and blend mode
   are dropped with a note. A plain round second tip is left out altogether (a field of dots would look nothing like it), with a note.
@@ -103,7 +103,7 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   without one. More than 8 points are thinned to the nearest 8, with a note. Only Krita's curve is read: its overall height
   (a curve that tops out at half) is not, as the route is scaled to its own high point. Opacity dynamics come as flow
   dynamics, with a note.
-- Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (medium paper,
+- Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (no paper of its own, so it follows the sheet;
   `Strength`, `Scale`, random offset as `moving`), with a note that the pattern picture is not kept.
 - Dropped with a note when on: Softness, Sharpness, Roundness, Spacing, Flip, Darken, Colour mixing, Airbrush rate, Hue,
   Saturation and Value dynamics, the sensors `ascension`, `distance`, `time`, `perspective` and barrel pressure, a masking brush,

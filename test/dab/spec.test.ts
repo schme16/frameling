@@ -20,7 +20,9 @@ describe('reading a saved pixel brush', () => {
     const s = cleanSpec({ kind: 'soft', tool: 'soft-brush', size: 9999, hardness: 4, flow: 'lots' });
     expect(s).toEqual({ kind: 'soft', tool: 'soft-brush', size: 120, hardness: 1, flow: 1 });
     const d = cleanSpec({ kind: 'dry', medium: 'crayon', paper: 'glossy', size: -2 });
-    expect(d).toMatchObject({ kind: 'dry', medium: 'crayon', paper: 'medium', size: 1 });
+    expect(d).toMatchObject({ kind: 'dry', medium: 'crayon', size: 1 });
+    expect(d).not.toHaveProperty('paper');
+    expect(cleanSpec({ kind: 'dry', medium: 'crayon', paper: 'rough' })).toMatchObject({ paper: 'rough' });
     expect(cleanSpec({ kind: 'dab' })).toEqual({ kind: 'dab', dab: DEFAULT_DAB });
   });
 });
@@ -76,5 +78,13 @@ describe('a saved brush with dynamics, grain, a dual tip and wet paint', () => {
   it('never lets a bad file in: odd routes, grain and dual are dropped or put right', () => {
     const s = cleanSpec({ kind: 'dab', dab: { dynamics: [{ from: 'pressure', to: 'size', amount: 99 }, 'x'], grain: 5, dual: { size: 1e9 }, wet: 7, fadeLength: -4 } });
     expect(s).toMatchObject({ kind: 'dab', dab: { dynamics: [{ from: 'pressure', to: 'size', amount: 1 }], grain: null, dual: { size: 64 }, wet: 1, fadeLength: 10 } });
+  });
+});
+
+describe('a saved dry brush and the paper', () => {
+  const dry = { kind: 'dry' as const, medium: 'chalk' as const, size: 10, hardness: 0.3, press: 0.5 };
+  it('one saved with no paper matches the same brush on any paper', () => {
+    expect(sameSpec(dry, { ...dry, paper: 'rough' })).toBe(true);
+    expect(sameSpec({ ...dry, paper: 'fine' }, { ...dry, paper: 'rough' })).toBe(false);
   });
 });

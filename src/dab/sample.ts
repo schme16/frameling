@@ -49,7 +49,7 @@ export function renderSample(spec: PixelSpec, kind: SampleKind, w: number, h: nu
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         const i = (y * w + x) * 4 + 3;
-        if (px[i] && paperHeight(spec.paper, x, y) > 0.35 + spec.press * 0.65) px[i] = Math.round(px[i] * 0.18);
+        if (px[i] && paperHeight(spec.paper ?? 'medium', x, y) > 0.35 + spec.press * 0.65) px[i] = Math.round(px[i] * 0.18);
       }
   }
   return px;

@@ -281,9 +281,9 @@ function mapPreset(preset: DescObject, tips: Tips, index: number): ImportedBrush
   if (getBool(preset, 'useTexture')) {
     const depth = pct(getNum(preset, 'textureDepth'), 100);
     const scale = Math.min(8, Math.max(1, Math.round(pct(getNum(preset, 'textureScale'), 100) * 2)));
-    b.dab.grain = { paper: 'medium', depth, scale, moving: getBool(preset, 'TxtC') === true };
+    b.dab.grain = { depth, scale, moving: getBool(preset, 'TxtC') === true };
     const n = patternName(preset);
-    b.changed.push(`Its texture${n ? ` "${n}"` : ''} came as Frameling's medium paper at the same depth. Texture pictures are not kept.`);
+    b.changed.push(`Its texture${n ? ` "${n}"` : ''} came as your sheet's paper at the same depth. Texture pictures are not kept.`);
   }
   if (getBool(getObj(preset, 'dualBrush'), 'useDualBrush')) {
     const d = getObj(preset, 'dualBrush');

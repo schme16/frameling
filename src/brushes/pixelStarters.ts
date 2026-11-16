@@ -50,7 +50,7 @@ const soft = (tool: 'soft-brush' | 'airbrush' | 'highlighter', name: string): Br
 
 const dry = (medium: DryId, name: string): BrushPreset => {
   const m = MEDIA.find((x) => x.id === medium)!;
-  return spec(medium, name, 'Dry media', { kind: 'dry', medium, paper: 'medium', size: m.size, hardness: m.hardness, press: m.press });
+  return spec(medium, name, 'Dry media', { kind: 'dry', medium, size: m.size, hardness: m.hardness, press: m.press });
 };
 
 export const PIXEL_STARTERS: readonly BrushPreset[] = [
@@ -82,7 +82,7 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
 
   dab('chalk-grain', 'Chalk grain', 'Grain and texture', { size: 12, spacing: 0.12, flow: 0.5, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } }),
   dab('pencil-paper', 'Pencil on paper', 'Grain and texture', { size: 3, spacing: 0.12, flow: 0.65, grain: { paper: 'fine', depth: 0.9, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
-  dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { paper: 'medium', depth: 1, scale: 2, moving: true } }),
+  dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { depth: 1, scale: 2, moving: true } }),
   dab('spatter', 'Pixel spatter', 'Grain and texture', { size: 16, spacing: 0.2, dual: { tip: 'round', size: 2, density: 0.25, cut: false } }),
   dab('bristles', 'Pixel bristles', 'Grain and texture', { tip: 'picture', picture: COMB, size: 12, spacing: 0.1, follow: true }),
   dab('cracked', 'Cracked paint', 'Grain and texture', { size: 14, spacing: 0.15, dual: { tip: 'round', size: 3, density: 0.2, cut: true } }),

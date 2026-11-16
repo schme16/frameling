@@ -8,7 +8,8 @@ import { isPaper, paperTile, TILE, type PaperKind } from '../dry/paper';
 
 /** A paper the paint catches on. */
 export interface Grain {
-  paper: PaperKind;
+  /** A paper this brush keeps for itself. Left out, the brush catches on the sheet's paper, the same one chalk and charcoal use. */
+  paper?: PaperKind;
   /** 0 (paper makes no difference) to 1 (paint only lands on the high points the dab reaches). */
   depth: number;
   /** Whole pixels of page one pixel of the paper covers: 1 is the finest grain. */
@@ -31,7 +32,7 @@ export interface Dual {
 export const GRAIN_SCALE = { min: 1, max: 8 };
 export const DUAL_SIZE = { min: 1, max: 64 };
 export const DUAL_DENSITY = { min: 0.05, max: 1 };
-export const DEFAULT_GRAIN: Grain = { paper: 'medium', depth: 0.8, scale: 1, moving: false };
+export const DEFAULT_GRAIN: Grain = { depth: 0.8, scale: 1, moving: false };
 export const DEFAULT_DUAL: Dual = { tip: 'round', size: 3, density: 0.4, cut: false };
 
 const num = (v: unknown, lo: number, hi: number, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
@@ -42,7 +43,7 @@ export function cleanGrain(raw: unknown): Grain | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   return {
-    paper: isPaper(r.paper) ? r.paper : DEFAULT_GRAIN.paper,
+    ...(isPaper(r.paper) ? { paper: r.paper } : {}),
     depth: r3(num(r.depth, 0, 1, DEFAULT_GRAIN.depth)),
     scale: Math.round(num(r.scale, GRAIN_SCALE.min, GRAIN_SCALE.max, 1)),
     moving: r.moving === true,
@@ -76,7 +77,7 @@ export function grainCut(add: number, height: number, depth: number): number {
 }
 
 /** The paper height (0 to 1) under page pixel (x, y), with the grain's scale and an offset for a paper that moves. */
-export function grainHeight(g: Pick<Grain, 'paper' | 'scale'>, x: number, y: number, ox = 0, oy = 0): number {
+export function grainHeight(g: { paper: PaperKind; scale: number }, x: number, y: number, ox = 0, oy = 0): number {
   const t = paperTile(g.paper);
   const sx = g.scale > 1 ? Math.floor(x / g.scale) : x;
   const sy = g.scale > 1 ? Math.floor(y / g.scale) : y;

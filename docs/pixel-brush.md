@@ -51,7 +51,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 ### Texture, and why there is one mechanism
 
 Grain and dual are small repeating tiles looked up one pixel at a time (256 by 256; a read and a mask each). Grain reuses the dry
-media's paper tiles (`src/dry/paper.ts`), so chalk and charcoal and the pixel brush share one set of papers. The chalk and
+media's paper tiles (`src/dry/paper.ts`), so chalk and charcoal and the pixel brush share one set of papers, and one paper: the sheet's (`DrySettings.paper`, chosen in the shared Paper group, `src/dry/PaperGroup.tsx`). A grain's `paper` is optional; left out it follows the sheet, set it and the brush keeps its own (`src/dry/sheet.ts` has the rules, `DabParams.sheet` carries the sheet's paper into a stroke). The chalk and
 charcoal look card should build on `grainCut`/`grainHeight` in `src/dab/texture.ts`. Grain cuts the paint of each dab (`add`) by the
 paper's height: light paint only lands on the peaks, full paint always fills. With sharp pixels the paper replaces the page's ordered
 dither as the threshold, so grain makes whole pixels. Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own

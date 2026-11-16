@@ -266,12 +266,12 @@ describe('Krita .kpp', () => {
     });
   });
 
-  it('a texture comes as the medium paper and the name is only the last part of its path', () => {
+  it('a texture comes as the sheet\'s paper and the name is only the last part of its path', () => {
     const b = one(
       preset({ params: [param('Texture/Pattern/Enabled', 'true'), param('Texture/Pattern/Strength', '0.6'), param('Texture/Pattern/Scale', '2'), param('Texture/Pattern/Name', 'bundle:///home/someone/paper-grain.png')] }),
     );
-    expect(b.dab.grain).toMatchObject({ paper: 'medium', depth: 0.6, scale: 2 });
-    expect(b.changed.join(' ')).toMatch(/texture "paper-grain.png" came as Frameling's medium paper/);
+    expect(b.dab.grain).toMatchObject({ depth: 0.6, scale: 2 });
+    expect(b.changed.join(' ')).toMatch(/texture "paper-grain.png" came as your sheet's paper/);
     expect(b.changed.join(' ')).not.toMatch(/someone/);
   });
 

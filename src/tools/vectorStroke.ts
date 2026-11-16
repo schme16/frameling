@@ -3,6 +3,7 @@
  * finished stroke will have, and commits one StrokeShape as a single undo step. Brush and pencil both use it.
  */
 import type { BrushSettings, LayerEffect, StrokePoint, StrokeShape } from '../core/format';
+import { getDry } from '../dry/settings';
 import { toothValues } from '../dry/tooth';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
@@ -59,7 +60,7 @@ export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void 
 export function toothEffects(brush: BrushSettings, seed = Math.floor(Math.random() * 1000)): LayerEffect[] | undefined {
   const t = brush.tip;
   if (!t?.dry || (t.kind !== 'chalk' && t.kind !== 'charcoal')) return undefined;
-  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak) }];
+  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak, getDry().paper) }];
 }
 
 /**
