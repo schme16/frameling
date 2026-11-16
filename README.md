@@ -296,6 +296,12 @@ Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](d
 sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
 user data folder.
 
+## Scripts
+
+A few lines of JavaScript, run from a panel (**View > Panels > Scripts**, or `Ctrl+Shift+J`), on the same sandbox as plugins.
+A saved script is a command: in the palette, in **Edit > Scripts**, and on a key if you like. One run is one step in Undo.
+See [docs/scripting.md](docs/scripting.md).
+
 ## Templates
 
 Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`

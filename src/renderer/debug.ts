@@ -7,6 +7,7 @@ import '../io/debug';
 import '../effects/debug';
 import '../templates/debug';
 import '../plugins/debug';
+import '../scripts/debug';
 import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';

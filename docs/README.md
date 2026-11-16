@@ -11,6 +11,7 @@ Start with `architecture.md`. Tasks, questions, looks and known gaps are on the 
 | [mascots.md](mascots.md) | What a mascot is, the clip contract every mascot must keep, how to add one, and how the choice works. |
 | [colour-and-gpu.md](colour-and-gpu.md) | Why the colour profile is pinned to sRGB and what that costs on a wide screen, the harnesses' two engine modes (software, the real card), the silent fall back, and what was and wasn't checked in the framebuffer path. |
 | [plugins.md](plugins.md) | The plugin API, the sandbox and the threat model. |
+| [scripting.md](scripting.md) | Scripts: JavaScript run from a panel, on the plugin engine. One run is one Undo step, what a script can and can't reach, and who may run what. |
 | [effects.md](effects.md) | Blend modes, effects, clipping, masks, folders, particles, text and the layered exports: design and how they're built. |
 | [symbols-tweens.md](symbols-tweens.md) | Symbols, classic and shape tweens, camera and clip flow: design and how they're built. |
 | [artboards.md](artboards.md) | Several named canvases in one document: format, behaviour and export. |

@@ -133,6 +133,11 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'animate',
     keywords: ['trim', 'trim path', 'draw on', 'write on', 'reveal', 'progress ring', 'signature', 'line draws itself'],
   },
+  scripts: {
+    blurb: 'Write a few lines of JavaScript, run them, and keep them as a command you can put on a key.',
+    group: 'more',
+    keywords: ['script', 'scripts', 'javascript', 'macro', 'automate', 'code', 'repeat', 'batch'],
+  },
   notes: {
     blurb: 'Notes you leave on the canvas, for you or whoever opens the file next. They stay in the file and never come out in an export.',
     group: 'more',

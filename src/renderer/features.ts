@@ -26,6 +26,7 @@ import '../quests';
 import '../popout';
 import '../livereview';
 import '../plugins';
+import '../scripts';
 import '../templates/app';
 import { installBeta } from '../beta';
 import { installUpdates } from '../update';

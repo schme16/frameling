@@ -61,7 +61,8 @@ What's in `test/`, by folder:
 | `soft/` | Soft paint on pixel layers: the falloff, dithering and blend maths, strokes through a real pixel session, the settings and the tools' registration. |
 | `dry/` | Chalk and charcoal on pixel layers: the papers (even spread, seamless tile), how much pigment a pixel takes from pressure and paper height, strokes through a real pixel session (light is a thinning of hard, second pass builds up, crisp grain, locked palette, streaks), the settings and the tool's registration. |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
-| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
+| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). `app-power.test.ts` is the `app` permission (a plugin must ask, and a command that reaches outside the drawing is refused whatever it sends) and `console.log` through the host. |
+| `scripts/` | The Scripts feature: the model (wrapping, pasted-code rules, becoming a plugin), what may be pressed, undo grouping in the store (`group.test.ts`), the runner against the real prelude and runtime (one Undo step, nothing half done, Stop, the watchdog), where scripts are kept and what happens to ones inside a drawing (`state.test.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
 | `golive/` | The Go live quest: the checks as pure functions (`logic.test.ts`), and the quest in the real app (`quest.test.tsx`): offered only while the streaming tools are on, asks audience features' two questions itself instead of deferring them, waits for a copy or a save to really happen, and agrees with the palette command, the Streaming menu, the Streaming tab button and the help route. |
 | `rig/` | Bone maths, posing, caches, stretch, weights. |
@@ -1027,6 +1028,23 @@ still, once per drawing (`--drawing light` or `dark`). It stops only the Electro
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/overlay-clip.cjs --drawing light --out brand/ab/stream-overlay
 ```
+
+## Scripts: scripts/e2e/scripts.cjs
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/scripts.cjs
+```
+
+The real app, the real sandbox: a script runs and its three edits are one Undo step; a mistake reports its line (a syntax error
+too, found with a throwaway worker); a script that fails halfway leaves the drawing as it was; Save, the internet and plugin
+commands are refused; `while (true) {}` is stopped by the watchdog (shortened to 1.5 s here with `__framelingScripts.watchdog`)
+and by Stop, and the app and the next script carry on; a saved script is a command, takes a key from the panel's **Set a key**
+and runs from it; a script pasted in (real clipboard, real paste) is marked, and running it shows the look-first sheet, where
+Cancel runs nothing and trusting it clears the mark. `?debug` exposes `__framelingScripts` (src/scripts/debug.ts) for this.
+
+The help clip for Scripts is `scripts/docs/help/scripts.cjs` (`npm run help:media -- --only scripts`); the look for the board is
+`brand/ab/scripting/`.
 
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 

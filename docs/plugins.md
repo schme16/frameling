@@ -75,6 +75,7 @@ A version 2 manifest adds `events` and `exporters` and may ask for more permissi
 | `canvas` | Version 2. `frameling.canvas.overlay()`: a guide Frameling draws on top of the canvas. |
 | `shapes` | Version 2. `frameling.shapes.*`: its own kinds of shape in the drawing. |
 | `files.read` | Version 2. `frameling.files.pick()`: asks the person to pick a file, then reads that file only. |
+| `app` | Version 2. `frameling.app.commands()`, `.run(id)` and `.set({...})`: presses Frameling's own commands and chooses what they act on. Needs a yes of its own, like `document.edit`. Never reaches files, accounts, other plugins or scripts (see [scripting.md](scripting.md)). |
 | `document.write` | Version 2's spelling of `document.edit` (the same power; either works in a version 2 manifest). |
 
 ### How the person is asked
@@ -128,7 +129,11 @@ shortcut in Preferences > Keyboard.
 const doc = await frameling.document.get();      // the whole document (src/core/format.ts), as saved
 const st = await frameling.document.state();     // { frame, activeLayerId, selection, drawingId }
 await frameling.document.edit('Label', [ops]);   // one undo step called "<plugin name>: Label"
+const p = await frameling.document.selected();   // { frame, layerId, drawingId, shapes: [the shapes picked] } (document.read)
 ```
+
+`console.log`, `info`, `warn` and `error` also go to whoever runs the code (a script's panel shows them; a plugin's are dropped
+at the host, the browser's console still has them). At most a hundred lines a second leave the worker.
 
 `get()` is a copy: changing it changes nothing. Pixel drawings hold `pixels` as a `Uint8ClampedArray` (RGBA) of just the painted part: `width` x `height` art pixels at (`x`, `y`) on the art grid (`x` and `y` are missing when 0).
 Changes go through `edit()`, and only these ops exist (`src/plugins/ops.ts`). A batch is all or nothing: one bad op

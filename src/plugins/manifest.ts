@@ -7,12 +7,12 @@ import { sanitizeOptions, type ExportOption } from './options';
 export const PLUGIN_API_VERSION = 2;
 
 /** What a plugin may ask for. Commands and short messages need nothing. The last four are version 2 only. */
-export type Permission = 'document.read' | 'document.edit' | 'export' | 'panels' | 'network' | 'tools' | 'canvas' | 'shapes' | 'files.read';
+export type Permission = 'document.read' | 'document.edit' | 'export' | 'panels' | 'network' | 'tools' | 'canvas' | 'shapes' | 'files.read' | 'app';
 
 /** Version 2 spells "change the drawing" as `document.write`. It is the same power as `document.edit`. */
 const PERMISSION_ALIASES: Record<string, Permission> = { 'document.write': 'document.edit' };
 /** Only a version 2 manifest may ask for these. */
-export const V2_PERMISSIONS: Permission[] = ['tools', 'canvas', 'shapes', 'files.read'];
+export const V2_PERMISSIONS: Permission[] = ['tools', 'canvas', 'shapes', 'files.read', 'app'];
 
 export const PERMISSIONS: Record<Permission, { label: string; detail: string }> = {
   'document.read': { label: 'See your drawing', detail: 'Read the open drawing: its layers, frames, shapes and pixels.' },
@@ -24,6 +24,7 @@ export const PERMISSIONS: Record<Permission, { label: string; detail: string }> 
   canvas: { label: 'Draw on the canvas', detail: 'Show lines, shapes and text on top of your canvas. They are only a guide on screen and never end up in your files.' },
   shapes: { label: 'Add its own kinds of shape', detail: 'Add new kinds of shape to your drawing. They are saved as ordinary shapes, so the file still opens without the plugin.' },
   'files.read': { label: 'Read a file you pick', detail: 'Ask you to pick a file, then read just that file. It can never look at your other files.' },
+  app: { label: 'Run Frameling commands', detail: 'Press Frameling\'s own commands for you (flip, group, duplicate and so on) and pick layers, frames and shapes. It can never open or save files, or touch your accounts.' },
 };
 
 export interface PluginManifest {

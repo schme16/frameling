@@ -1,0 +1,17 @@
+Scripts: write a few lines of JavaScript, run them, put the script on a key, and use it.
+
+scripts-dark.mp4, scripts-light.mp4 (H.264, yuv420p, 800 x 500, 16 s). The same clip in both themes:
+  1. New, then the script is written in the panel (the lines turn up as they are typed).
+  2. Run: the three picked circles turn red, and the panel says "Done ... It is one step in Undo."
+  3. Use it anywhere > Set a key, then Ctrl+F9 is pressed.
+  4. Two more circles are picked and the key does the same job. (The script is also in the palette and in Edit > Scripts.)
+
+look-first-dark.png, look-first-light.png: what a script from somewhere else (pasted, opened from a file, or found inside a
+drawing) shows before its first run. It names the commands it presses, and the one it may not.
+
+what-you-can-use-dark.png, what-you-can-use-light.png: the panel's "What you can use" list, so the editor is never a blank box:
+the frameling object, line by line (click one to put it in the script), and a search over every command a script can press.
+
+These are the same files as the help topic's media (public/help/scripts*.mp4 and .png), made by
+scripts/docs/help/scripts.cjs (npm run help:media -- --only scripts,scripts-reach,scripts-safety).
+Checked for real in the app by scripts/e2e/scripts.cjs.

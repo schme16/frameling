@@ -39,7 +39,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Edit',
     categories: ['Edit'],
-    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins'],
+    items: ['edit.undo', 'edit.redo', '-', 'view.panel.history', 'history.back', 'history.forward', '-', 'edit.cut', 'edit.copy', 'edit.copySvg', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'select.invert', 'sub:align', 'sub:nudge', '-', 'document.settings', 'document.seeThrough', 'text.swapFonts', '-', 'view.preferences', 'view.penTablet', 'view.performance', 'sub:plugins', 'sub:scripts'],
   },
   {
     label: 'View',
@@ -249,6 +249,12 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Plugins',
     items: ['plugins.manage', 'plugins.install', '-'],
     categories: ['Plugins'],
+  },
+  // Every saved script is a command in the 'Scripts' category, so each one lands here by itself.
+  scripts: {
+    label: 'Scripts',
+    items: ['scripts.open', 'scripts.new', 'scripts.stop', '-'],
+    categories: ['Scripts'],
   },
   turnview: {
     label: 'Centre, turn and flip the view',

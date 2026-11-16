@@ -285,3 +285,41 @@ describe('with the real prelude', () => {
     rt.stop();
   });
 });
+
+describe('a limit of its own (a script is stopped sooner than a plugin command)', () => {
+  it('uses the limit it is given, busy or not', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), busy: () => true, limit: () => 3000 });
+    wd.start();
+    vi.advanceTimersByTime(2500);
+    expect(trips).toEqual([]);
+    vi.advanceTimersByTime(2500);
+    expect(trips).toHaveLength(1);
+    expect(trips[0]).toMatchObject({ kind: 'stuck' });
+  });
+
+  it('still gives a script more time for each honest report of progress', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), limit: () => 3000 });
+    wd.start();
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(2000);
+      wd.progress();
+    }
+    expect(trips).toEqual([]);
+    vi.advanceTimersByTime(4000);
+    expect(trips).toHaveLength(1);
+  });
+
+  it('keeps a plugin command on the long limit when no limit is given', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), busy: () => true });
+    wd.start();
+    vi.advanceTimersByTime(WATCHDOG.busyStuckMs - 2000);
+    expect(trips).toEqual([]);
+  });
+
+  it('is shorter for a script than for anything else a plugin does', () => {
+    expect(WATCHDOG.scriptStuckMs).toBeLessThan(WATCHDOG.stuckMs);
+  });
+});

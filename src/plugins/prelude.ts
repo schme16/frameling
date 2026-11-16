@@ -27,6 +27,36 @@ function send(msg, transfer) {
 function errText(e) {
   return e && e.message ? String(e.message) : String(e);
 }
+// The line in the person's own code where an error happened, read from the error's stack (the code is loaded under the
+// name frameling-plugin:<id>, see load below). 0 when there is none to read.
+function lineOf(e) {
+  var m = e && typeof e.stack === 'string' ? /frameling-plugin:[^:\s)]*:(\d+):(\d+)/.exec(e.stack) : null;
+  return m ? Number(m[1]) : 0;
+}
+function words(v) {
+  if (typeof v === 'string') return v;
+  if (v instanceof Error) return String(v.message || v);
+  try {
+    var t = JSON.stringify(v);
+    return t === undefined ? String(v) : t;
+  } catch (e) {
+    return String(v);
+  }
+}
+var logWindow = 0;
+var logCount = 0;
+function logLine(level, args) {
+  // A loop that prints for ever must not bury the port: only so many lines a second leave the worker.
+  var now = Date.now();
+  if (now - logWindow >= 1000) {
+    logWindow = now;
+    logCount = 0;
+  }
+  if (++logCount > 100) return;
+  var out = [];
+  for (var i = 0; i < args.length; i++) out.push(words(args[i]));
+  send({ t: 'log', level: level, text: out.join(' ').slice(0, 500) });
+}
 function call(method, args, transfer) {
   return new Promise(function (resolve, reject) {
     var id = nextId++;
@@ -116,7 +146,7 @@ async function onMessage(m) {
       var value = await serve(m.method, m.args);
       send({ t: 'reply', id: m.id, ok: true, value: value }, buffersOf(value, []));
     } catch (e) {
-      send({ t: 'reply', id: m.id, ok: false, error: errText(e) });
+      send({ t: 'reply', id: m.id, ok: false, error: errText(e), line: lineOf(e) });
     }
   }
 }
@@ -147,6 +177,25 @@ var api = {
         label = '';
       }
       return call('document.edit', { label: String(label || ''), ops: ops });
+    },
+    // What is picked right now: { frame, layerId, drawingId, shapes: [the shapes picked] }.
+    selected: function () {
+      return call('document.selected');
+    },
+  },
+  // Pressing Frameling's own commands. Needs the 'app' permission.
+  app: {
+    // Every command a script may press: [{ id, label, category, description, keys, enabled }].
+    commands: function () {
+      return call('app.commands');
+    },
+    // Presses one by its id and waits for it to finish.
+    run: function (id) {
+      return call('app.run', { id: String(id) });
+    },
+    // Chooses what commands act on: { frame, layerId, selection: [shape ids], color, fillColor }.
+    set: function (what) {
+      return call('app.set', what && typeof what === 'object' ? what : {});
     },
   },
   exporters: {
@@ -273,6 +322,41 @@ function harden(network) {
   }
 }
 
+// Finds the line of a syntax error by handing the same code to a throwaway worker, which stops at the mistake and says where.
+// Calls done with the line, or 0 when it can't be found (no workers, or nothing said within a moment).
+function syntaxLine(code, done) {
+  var url = null;
+  var w = null;
+  var timer = null;
+  var finished = false;
+  function finish(line) {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    try {
+      if (w) w.terminate();
+    } catch (e) {}
+    try {
+      if (url) URL.revokeObjectURL(url);
+    } catch (e) {}
+    done(line);
+  }
+  try {
+    if (typeof Worker !== 'function') return done(0);
+    url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    w = new Worker(url);
+    w.onerror = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      finish(e && e.lineno > 0 ? e.lineno : 0);
+    };
+    timer = setTimeout(function () {
+      finish(0);
+    }, 1500);
+  } catch (e) {
+    finish(0);
+  }
+}
+
 function load(code, id) {
   if (typeof self.__framelingLoad === 'function') return self.__framelingLoad(code, api);
   var url = URL.createObjectURL(new Blob([code + '\n//# sourceURL=frameling-plugin:' + id], { type: 'text/javascript' }));
@@ -284,11 +368,25 @@ function load(code, id) {
 }
 
 self.addEventListener('error', function (e) {
-  send({ t: 'error', message: errText(e.error || e.message) });
+  send({ t: 'error', message: errText(e.error || e.message), line: lineOf(e.error) || (e.lineno > 0 ? e.lineno : 0) });
 });
 self.addEventListener('unhandledrejection', function (e) {
-  send({ t: 'error', message: errText(e.reason) });
+  send({ t: 'error', message: errText(e.reason), line: lineOf(e.reason) });
 });
+// console.log and friends also go to whoever is running the code (a script's panel); it is the same console as before.
+(function () {
+  var c = self.console;
+  if (!c) return;
+  ['log', 'info', 'warn', 'error'].forEach(function (level) {
+    var was = c[level];
+    c[level] = function () {
+      try {
+        logLine(level, arguments);
+      } catch (e) {}
+      if (typeof was === 'function') return was.apply(c, arguments);
+    };
+  });
+})();
 
 self.onmessage = function (e) {
   var d = e.data;
@@ -310,7 +408,12 @@ self.onmessage = function (e) {
     load(String(d.code), info.id);
     send({ t: 'loaded' });
   } catch (err) {
-    send({ t: 'error', message: errText(err), loading: true });
+    if (err && err.name === 'SyntaxError') {
+      // A mistake in how the code is written. The error carries no line, but a worker given the same code reports one.
+      syntaxLine(String(d.code), function (line) {
+        send({ t: 'error', message: errText(err).replace(/^Failed to execute 'importScripts' on 'WorkerGlobalScope': /, ''), loading: true, line: line });
+      });
+    } else send({ t: 'error', message: errText(err), loading: true, line: lineOf(err) });
   }
 };
 `;

@@ -2273,5 +2273,49 @@
     "text": "A true soft edge, the way a paint program does it. A layer with a locked palette still dithers, since it can only hold its own colours.",
     "where": "Dialog and Preferences: the small line under the \"smooth\" answer in \"Soft paint with Pixel perfect on\"."
   },
-  "choice.soft.edge.smooth.did": { "text": "Made the soft edge smooth.", "where": "Toast when \"smooth\" is used without asking (\"Soft paint with Pixel perfect on\"), in the past tense." }
+  "choice.soft.edge.smooth.did": { "text": "Made the soft edge smooth.", "where": "Toast when \"smooth\" is used without asking (\"Soft paint with Pixel perfect on\"), in the past tense." },
+  "choice.scripts.home.title": { "text": "Where new scripts are kept", "where": "Name of this choice in Preferences > Behaviour (group: Scripts)." },
+  "choice.scripts.home.question": {
+    "text": "Where should this script live? With Frameling, every drawing you open can use it. Inside the drawing, it travels with the file.",
+    "where": "The question in the dialog, in the choice \"home\"."
+  },
+  "choice.scripts.home.app.label": { "text": "With Frameling", "where": "Dialog and Preferences: the button for the answer \"app\" in \"Where new scripts are kept\"." },
+  "choice.scripts.home.app.detail": {
+    "text": "Every drawing can use it. It stays on this computer, and it is yours alone.",
+    "where": "Dialog and Preferences: the small line under the \"app\" answer in \"Where new scripts are kept\"."
+  },
+  "choice.scripts.home.app.did": { "text": "Kept the script with Frameling.", "where": "Toast when \"app\" is used without asking (\"Where new scripts are kept\"), in the past tense." },
+  "choice.scripts.home.doc.label": { "text": "Inside the drawing", "where": "Dialog and Preferences: the button for the answer \"doc\" in \"Where new scripts are kept\"." },
+  "choice.scripts.home.doc.detail": {
+    "text": "It is saved in the file and goes wherever the file goes. Whoever opens it is asked before it can run.",
+    "where": "Dialog and Preferences: the small line under the \"doc\" answer in \"Where new scripts are kept\"."
+  },
+  "choice.scripts.home.doc.did": { "text": "Kept the script inside the drawing.", "where": "Toast when \"doc\" is used without asking (\"Where new scripts are kept\"), in the past tense." },
+  "choice.scripts.inFiles.title": { "text": "Scripts inside a drawing you open", "where": "Name of this choice in Preferences > Behaviour (group: Scripts)." },
+  "choice.scripts.inFiles.question": {
+    "text": "This drawing has scripts inside it. A script can change your drawing and press Frameling's commands, so turn them on only if you trust whoever made the file. They have no internet and can't reach your other files. What now?",
+    "where": "The question in the dialog, in the choice \"inFiles\"."
+  },
+  "choice.scripts.inFiles.off.label": { "text": "Leave them off", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Scripts inside a drawing you open\"." },
+  "choice.scripts.inFiles.off.detail": {
+    "text": "You can still read them in the Scripts panel. Nothing runs.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Scripts inside a drawing you open\"."
+  },
+  "choice.scripts.inFiles.on.label": { "text": "Turn them on for this drawing", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Scripts inside a drawing you open\"." },
+  "choice.scripts.inFiles.on.detail": {
+    "text": "They can run, and they are asked about again if the file changes them.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Scripts inside a drawing you open\"."
+  },
+  "choice.scripts.inFiles.never.label": {
+    "text": "Leave them off, and don't ask again",
+    "where": "Dialog and Preferences: the button for the answer \"never\" in \"Scripts inside a drawing you open\"."
+  },
+  "choice.scripts.inFiles.never.detail": {
+    "text": "Scripts inside drawings stay off until you change this in Preferences, Behaviour.",
+    "where": "Dialog and Preferences: the small line under the \"never\" answer in \"Scripts inside a drawing you open\"."
+  },
+  "choice.scripts.inFiles.never.did": {
+    "text": "Left the scripts in this drawing off.",
+    "where": "Toast when \"never\" is used without asking (\"Scripts inside a drawing you open\"), in the past tense."
+  }
 }
