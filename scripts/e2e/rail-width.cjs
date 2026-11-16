@@ -44,13 +44,17 @@ const MEASURE = `(() => {
   if (!nav) return null;
   const r = nav.getBoundingClientRect();
   const heads = [...nav.querySelectorAll('.ui-tool-head')].map((h) => {
+    // The box that clips the name: the head itself, or, beside an "off" chip, the name's own box (the head is a row then, and
+    // the chip sits under the name, so measuring the head would count the chip and the lines the name's box hides).
+    const name = h.querySelector('.ui-tool-head-text');
+    const clip = name && getComputedStyle(name).display !== 'inline' ? name : h;
     const range = document.createRange();
-    range.selectNodeContents(h);
-    const box = h.getBoundingClientRect();
+    range.selectNodeContents(clip === h ? h : name);
+    const box = clip.getBoundingClientRect();
     // Only the lines that show: a third line the box clips away is not one.
     const lines = new Set([...range.getClientRects()].filter((q) => q.bottom <= box.bottom + 1).map((q) => Math.round(q.top))).size;
-    const cut = h.scrollWidth > h.clientWidth + 1 || h.scrollHeight > h.clientHeight + 1;
-    return { text: h.textContent, lines, cut };
+    const cut = clip.scrollWidth > clip.clientWidth + 1 || clip.scrollHeight > clip.clientHeight + 1;
+    return { text: name ? name.textContent : h.textContent, lines, cut };
   });
   // The Pixels | Vectors switch: each word's room (its button less the button's padding), how wide the word is drawn, and whether it is cut short.
   const sides = [...nav.querySelectorAll('.ui-tool-side')].filter((b) => b.offsetParent && getComputedStyle(b.querySelector('.ui-tool-side-word')).display !== 'none').map((b) => {
@@ -121,6 +125,14 @@ app.whenReady().then(async () => {
     }
   }
   // A name of your own that does not fit: two lines before it is cut, dots only after that (one long word is cut on its line).
+  // Only in the default style: after the stacked or slim passes the workspace keeps the narrow width those left it at, so the names
+  // would be measured on a rail that was never meant to show them (the same on the build before this check was kept honest).
+  if (process.env.RAILW_MODE && process.env.RAILW_MODE !== 'names') {
+    if (process.env.RAILW_JSON) fs.writeFileSync(process.env.RAILW_JSON, JSON.stringify(rows, null, 1));
+    console.log(bad ? `${bad} pass(es) with a cut name or too little room` : 'every name fits and the canvas keeps its room');
+    app.exit(bad ? 1 : 0);
+    return;
+  }
   await js(`__frameling.prefs.set({ look: 'cosy', toolSize: 'medium', uiScale: 1, toolNames: true, toolRail: 'two' }); __frameling.dock.applyWorkspace('draw'); __frameling.template('bouncing-ball'); return true`);
   await sleep(300);
   const names = [

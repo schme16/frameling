@@ -1,0 +1,10 @@
+Tool rail, group names you typed yourself, medium tools at 100 per cent, built-in rail names on, same names in both shots:
+"My drawing tools", "One two three four five six seven eight nine", "Supercalifragilisticexpialidocious".
+
+Before (left): a name cut to one line with dots ("MY DRAWING T..."), because the name span added on 14 Nov for the
+"N off" chip was set to one line. Names were meant to drop to a second line before anything is cut.
+After (right): "My drawing tools" sits whole on two lines; the long one takes two lines and only then ends in dots,
+with its "10 off" chip under it; a single long word is still cut on its line.
+
+rail-names-dark.png, rail-names-light.png. Shot with a temporary copy of scripts/e2e/rail-width.cjs against a dist built
+before and after the change (RAILW_DIST).
