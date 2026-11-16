@@ -28,7 +28,8 @@ class FakeObs implements ObsClientLike {
   }
 }
 
-function session(configure: (c: FakeObs) => void = () => undefined, timeoutMs = 50) {
+// The fake answers at once, so a long default limit costs nothing; only the test of a hanging connection wants a short one.
+function session(configure: (c: FakeObs) => void = () => undefined, timeoutMs = 5000) {
   const sent: ObsMessage[] = [];
   const made: FakeObs[] = [];
   const s = new ObsSession({

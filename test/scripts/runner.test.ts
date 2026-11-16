@@ -10,6 +10,7 @@ import { WATCHDOG } from '../../src/plugins/watchdog';
 import { running, startRun, type RunDeps } from '../../src/scripts/runner';
 import { box, addShapes, shapesNow } from '../tools/helpers';
 import { closeAll, runPlugin, settle, type FakeWorker } from '../plugins/harness';
+import { waitUntil } from '../helpers/waits';
 
 let worker: FakeWorker | null = null;
 const deps: RunDeps = {
@@ -201,7 +202,7 @@ describe('a script that will not finish', () => {
   it('is stopped by Stop, without ending anything else, and the drawing goes back', async () => {
     const before = store().get().doc;
     const run = startRun(script(`${RED_ALL}\nawait new Promise(() => {});`), deps);
-    await new Promise((r) => setTimeout(r, 100));
+    await waitUntil(() => colours().every((c) => c === '#ff0000') && colours().length === 3, 'the script to paint the layers red');
     expect(colours()).toEqual(['#ff0000', '#ff0000', '#ff0000']);
     run.stop();
     const out = await run.done;
@@ -215,10 +216,12 @@ describe('a script that will not finish', () => {
 
   it('is stopped by the watchdog when its worker goes quiet, and the drawing goes back', async () => {
     WATCHDOG.pingEveryMs = 20;
-    WATCHDOG.scriptStuckMs = 250;
+    // Long enough that a busy machine pausing this thread for a moment is not read as a stuck worker; the frozen worker
+    // below is still caught, just after this long.
+    WATCHDOG.scriptStuckMs = 1500;
     const before = store().get().doc;
     const run = startRun(script(`${RED_ALL}\nawait new Promise(() => {});`), deps);
-    await new Promise((r) => setTimeout(r, 100));
+    await waitUntil(() => colours().every((c) => c === '#ff0000') && colours().length === 3, 'the script to paint the layers red');
     // The worker stops answering, as one stuck in a loop would.
     worker!.freeze();
     const out = await run.done;

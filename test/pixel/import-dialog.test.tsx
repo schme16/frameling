@@ -14,6 +14,7 @@ import { importPicture } from '../../src/pixel/import/run';
 import { encodePng } from '../../src/io/png';
 import { artboardsOf } from '../../src/artboards/model';
 import { wayOf } from '../../src/pixel/way';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -104,7 +105,8 @@ describe('the dialog', () => {
 
   /** Waits until the palette dialog has worked out the colours (the Take button comes on). */
   const untilReady = async () => {
-    for (let i = 0; i < 200; i++) {
+    const end = Date.now() + WAIT_CEILING_MS;
+    while (Date.now() < end) {
       await flush();
       const b = document.querySelector<HTMLButtonElement>('[data-testid="import.go"]');
       if (b && !b.disabled) return;
@@ -117,8 +119,8 @@ describe('the dialog', () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(i, v);
       i.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    // The pick waits a moment for typing to settle.
-    await act(async () => void (await new Promise((r) => setTimeout(r, 250))));
+    // The pick waits a moment for typing to settle, and the Take button stays off until it has picked for this number,
+    // so waiting for the button is waiting for the pick (no guessed sleep).
     await untilReady();
   };
 

@@ -92,7 +92,9 @@ async function scrollTo(top: number) {
   const el = host.querySelector('.tl-body')!;
   await act(async () => {
     el.dispatchEvent(new Event('scroll'));
-    await new Promise((r) => setTimeout(r, 60));
+    // The panel notices the scroll in an animation frame it asked for during the event above. A frame asked for now
+    // runs after it, so waiting for one is waiting for the panel, whatever the machine is doing (a fixed 60 ms was a guess).
+    await new Promise((r) => requestAnimationFrame(r));
   });
 }
 

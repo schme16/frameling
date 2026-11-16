@@ -12,6 +12,8 @@ import { encodeHistory, FILE_HISTORY_BYTES, HISTORY_DATA_ENTRY, HISTORY_STEPS_EN
 import { gridPixels, setGridPixels } from '../../src/core/pixelBounds';
 import { resetStore, store, type Store } from '../../src/core/store';
 import { HistoryPanel } from '../../src/history/HistoryPanel';
+import { cpuMs } from '../helpers/clock';
+import { settled } from '../helpers/waits';
 import { autosaveNow } from '../../src/io/document';
 import { offerRecovery } from '../../src/io/autosave';
 import { loadFile } from '../../src/io/file';
@@ -85,7 +87,7 @@ function states(s: Store): Doc[] {
 
 /** Waits for the recovery's async load to land. */
 async function waitFor(ok: () => boolean): Promise<void> {
-  for (let i = 0; i < 300 && !ok(); i++) await new Promise((r) => setTimeout(r, 10));
+  await settled(ok, (v) => v);
   expect(ok()).toBe(true);
 }
 
@@ -175,24 +177,24 @@ describe('recovering keeps the history', () => {
     const s = resetStore(doc);
     for (let k = 0; k < 39; k++) paint(s, id, 5 + k, 5 + k, 200, 200, [k * 6, 80, 160, 255], W, W);
     s.setUi({ dirty: true });
-    const t0 = performance.now();
+    const t0 = cpuMs();
     await autosaveNow();
-    const first = performance.now() - t0;
+    const first = cpuMs() - t0;
     paint(s, id, 100, 100, 200, 200, [255, 255, 0, 255], W, W);
-    const t1 = performance.now();
+    const t1 = cpuMs();
     await autosaveNow();
-    const repeat = performance.now() - t1;
+    const repeat = cpuMs() - t1;
     // The part spent working the steps out when none are new (the remembered encodings are reused).
-    const t3 = performance.now();
+    const t3 = cpuMs();
     encodeHistory(s.historyForSave()!);
-    const encode = performance.now() - t3;
+    const encode = cpuMs() - t3;
     console.log(`autosave, 39 heavy steps: first ${first.toFixed(0)} ms; repeat with one new step ${repeat.toFixed(0)} ms (whole save, zipping included, all on this thread here); steps alone with none new ${encode.toFixed(1)} ms; copy ${(copy!.bytes.length / 1e6).toFixed(2)} MB`);
     // The claim this test exists for: with no new steps, working them out is a fraction of a whole first save.
     expect(encode).toBeLessThan(first / 4);
     expect(writes).toBe(2);
     // The second save does the same zipping and writing as the first, so it only has to not cost MORE. Both numbers
-    // are wall clock on a machine that may have other work on it, so a straight repeat < first was a flake: it failed
-    // on 350 against 337. A quarter of headroom still catches a repeat that really does redo everything.
+    // are measured as CPU time (test/helpers/clock.ts), because wall clock on a machine that may have other work on it made
+    // a straight repeat < first a flake: it failed on 350 against 337 alone, and 2011 against 1598 with six suites at once. A quarter of headroom still catches a repeat that really does redo everything.
     expect(repeat).toBeLessThan(first * 1.25);
     expect(loadFile(copy!.bytes).history!.undo).toHaveLength(40);
   }, 60_000);

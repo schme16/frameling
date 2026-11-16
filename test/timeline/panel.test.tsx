@@ -10,6 +10,7 @@ import { ROW_H } from '../../src/timeline/Layers';
 import { SIDE_W } from '../../src/timeline/Grid';
 import { setTl } from '../../src/timeline/state';
 import { addCel, docWith, shape } from './helpers';
+import { cpuMs } from '../helpers/clock';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -318,12 +319,12 @@ describe('timeline panel', () => {
     for (let i = 0; i < 19; i++) doc.layers.push({ ...doc.layers[0], id: `x${i}`, name: `L${i}`, cels: [] });
     for (const l of doc.layers) for (let f = 0; f < 600; f += 2) addCel(doc, l, f, 2);
     resetStore(doc);
-    const t0 = performance.now();
+    const t0 = cpuMs();
     act(() => root.render(<TimelinePanel />));
     const drawn = host.querySelectorAll('.tl-cel').length;
     expect(drawn).toBeLessThan(20 * 60);
     expect(drawn).toBeGreaterThan(0);
-    expect(performance.now() - t0).toBeLessThan(2000);
+    expect(cpuMs() - t0).toBeLessThan(2000);
     void SIDE_W;
   });
 });

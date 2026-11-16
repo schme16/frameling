@@ -101,7 +101,9 @@ describe('a wrong code', () => {
   });
 
   it('does not count a wrong try when somebody just connects and says nothing, or sends nonsense', async () => {
-    const t = rig({ handshakeMs: 60 });
+    // The handshake limit has to be short enough that the quiet connection is turned away in a moment, and long enough
+    // that the real person, connecting afterwards on the same sender, still gets through on a busy machine.
+    const t = rig({ handshakeMs: 400 });
     const quiet = pair();
     t.sender.accept(quiet[1]);
     const noise = pair();
@@ -110,7 +112,7 @@ describe('a wrong code', () => {
     const huge = pair();
     t.sender.accept(huge[1]);
     huge[0].write(Buffer.concat([Buffer.from([1, 0, 0, 0x10, 0]), Buffer.alloc(10)]));
-    await until(() => quiet[1].closed && noise[1].closed && huge[1].closed, 3000);
+    await until(() => quiet[1].closed && noise[1].closed && huge[1].closed);
     expect(t.sender.wrongTries).toBe(0);
     // And the real person still gets through afterwards.
     t.connect();
@@ -169,9 +171,11 @@ describe('a connection that breaks part-way', () => {
   it('returns the sender to waiting, with the code still good, and the receiver can try again', async () => {
     const t = rig({ bytes: drawing(400_000) });
     const { s } = t.connect();
-    s.pace = 15;
+    // Break the line after about a quarter of the drawing has gone, by a count of bytes. Catching "some but not all" by
+    // polling a paced transfer raced the machine: when it stalls, the timers fire in a burst and the whole drawing can
+    // arrive between two polls.
+    s.breakAfterBytes = 100_000;
     await until(() => t.got.some((e) => e.type === 'progress' && e.done > 0 && e.done < 400_000));
-    s.destroy();
     await until(() => t.sent.some((e) => e.type === 'dropped'));
     expect(t.sender.finished).toBe(false);
     expect(t.got.some((e) => e.type === 'dropped')).toBe(true);

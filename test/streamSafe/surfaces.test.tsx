@@ -17,6 +17,7 @@ import { getPrefs, resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { clearToasts, toast } from '../../src/ui/toast';
 import { ToastView } from '../../src/ui/ToastView';
 import type { RecentFile } from '../../src/preload/api';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -94,7 +95,9 @@ describe('the recent lists', () => {
   it('Open recent shows no real name, folder or picture, even when switched on while open', async () => {
     await act(async () => void openRecentDialog());
     await act(async () => undefined);
-    await act(async () => new Promise((r) => setTimeout(r, 30)));
+    // Each wait step runs inside its own act, because React only flushes what the dialog sets when an act ends.
+    const end = Date.now() + WAIT_CEILING_MS;
+    while (!document.querySelector('.io-recent')?.textContent?.includes('ball-of-doom') && Date.now() < end) await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
     expect(document.querySelector('.io-recent')!.textContent).toContain('ball-of-doom');
     await act(async () => setStreamSafe(true));
     const list = document.querySelector('.io-recent')!;

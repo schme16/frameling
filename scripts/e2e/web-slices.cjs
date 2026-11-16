@@ -82,10 +82,19 @@ app.whenReady().then(async () => {
     result[label] = await win.webContents.executeJavaScript('window.run()', true).catch((e) => ({ error: String(e) }));
   }
   await load(win, 'css/x');
-  await new Promise((r) => setTimeout(r, 400));
-  const img = await win.webContents.capturePage();
-  const { width } = img.getSize();
-  const bmp = img.toBitmap();
+  // The 9-patch picture arrives through the style sheet, with nothing to await, so look at the page until the middle of
+  // the patch is no longer the white page (a fixed 400 ms was a guess that a busy machine could miss). Generous ceiling.
+  let img;
+  let width;
+  let bmp;
+  for (const end = Date.now() + 15000; ; ) {
+    img = await win.webContents.capturePage();
+    ({ width } = img.getSize());
+    bmp = img.toBitmap();
+    const o = (Math.round(30 * (width / 240)) * width + Math.round(40 * (width / 240))) * 4;
+    if (bmp[o] !== 255 || bmp[o + 1] !== 255 || bmp[o + 2] !== 255 || Date.now() > end) break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
   // BGRA. Colours as #rrggbb at a point of the page (device pixels may be scaled, so ask for the factor).
   const scale = width / 240;
   const at = (x, y) => { const o = (Math.round(y * scale) * width + Math.round(x * scale)) * 4; return '#' + [bmp[o + 2], bmp[o + 1], bmp[o]].map((v) => v.toString(16).padStart(2, '0')).join(''); };

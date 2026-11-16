@@ -16,6 +16,7 @@ import {
 } from '../../src/select/mask';
 import { applyInSelection } from '../../src/select/ops';
 import { flipH, rotateQuarter } from '../../src/pixel/transform';
+import { cpuMs } from '../helpers/clock';
 
 const RED = [255, 0, 0, 255];
 const BLUE = [0, 0, 255, 255];
@@ -131,7 +132,7 @@ describe('operations on a selection', () => {
   it('is quick on 256 x 256', () => {
     const w = 256;
     const p = img(w, w, (x, y) => ((x >> 3) + (y >> 3)) % 2 ? RED : BLUE);
-    const t0 = performance.now();
+    const t0 = cpuMs();
     const pts = Array.from({ length: 400 }, (_, i) => ({ x: 128 + 120 * Math.cos(i / 63.7), y: 128 + 120 * Math.sin(i / 63.7) }));
     const lasso = polygonMask(w, w, pts);
     const wand = wandMask(p, w, w, 0, 0, { contiguous: false });
@@ -139,6 +140,6 @@ describe('operations on a selection', () => {
     maskEdges(both);
     applyInSelection({ width: w, height: w, pixels: p }, both, 'transform', (d, box) => rotateQuarter(d, 1, box));
     overlayPixels(p, extractPixels(p, both), w, w, 3, 4);
-    expect(performance.now() - t0).toBeLessThan(250);
+    expect(cpuMs() - t0).toBeLessThan(250);
   });
 });

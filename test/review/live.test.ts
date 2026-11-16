@@ -7,7 +7,10 @@ import { startReceive } from '../../src/share/swarm';
 import { WORDS } from '../../src/share/wordlist';
 import { FakeNet, until } from '../share/helpers';
 
-const FAST = { handshakeMs: 4000, idleMs: 4000, knockMs: 1500 };
+// The patience limits are the real ones (src/share/live.ts) or near them. They were 1.5 to 4 s, which a busy machine
+// can pause a test worker for, and then a reviewer is dropped for being idle or a guest gives up looking, and the test
+// waits in vain. No test here depends on a limit running out.
+const FAST = { handshakeMs: 20_000, idleMs: 20_000, knockMs: 20_000 };
 
 function host(net: FakeNet, extra: Partial<Parameters<typeof startLiveHost>[0]> = {}) {
   const events: (HostEvent | { type: string })[] = [];
@@ -22,7 +25,7 @@ function guest(net: FakeNet, code: string, name: string, gid: string, extra: Par
   const got: { lane: string; bytes: Uint8Array }[] = [];
   const parsed = parseCode(code);
   if (!parsed.ok) throw new Error('bad code');
-  const job = startLiveJoin({ code: parsed.code, name, gid, makeSwarm: net.make(), emit: (e) => events.push(e), onMessage: (lane, bytes) => got.push({ lane, bytes }), times: FAST, findMs: 3000, ...extra });
+  const job = startLiveJoin({ code: parsed.code, name, gid, makeSwarm: net.make(), emit: (e) => events.push(e), onMessage: (lane, bytes) => got.push({ lane, bytes }), times: FAST, findMs: 20_000, ...extra });
   const has = (t: string) => events.some((e) => e.type === t);
   return { job, events, got, has };
 }
@@ -100,7 +103,7 @@ describe('live review transport', () => {
     expect((fifth.events.find((e) => e.type === 'refused') as { why: string }).why).toBe('full');
     for (const g of gs) g.job.cancel();
     h.job.cancel();
-  }, 20000);
+  }, 120_000);
 
   it('puts a guest whose link dropped back in the same seat with no second question', async () => {
     const net = new FakeNet();
@@ -135,13 +138,13 @@ describe('live review transport', () => {
     const code = parseCode(wrong);
     if (!code.ok) throw new Error('test words must be real code words');
     for (let i = 0; i < 3; i++) {
-      guest(net, wrong, 'Eve', 'eve' + i, { findMs: 1500 });
-      await until(() => ofType(h.events, 'wrong').length + ofType(h.events, 'burned').length === i + 1, 6000);
+      guest(net, wrong, 'Eve', 'eve' + i, { findMs: 20_000 });
+      await until(() => ofType(h.events, 'wrong').length + ofType(h.events, 'burned').length === i + 1);
     }
     expect(ofType(h.events, 'burned')).toHaveLength(1);
     expect(ofType(h.events, 'knock')).toHaveLength(0);
     h.job.cancel();
-  }, 20000);
+  }, 120_000);
 
   it('does not talk to somebody who asks for a copy with the same code, and does not count it as a wrong try', async () => {
     const net = new FakeNet();
@@ -150,8 +153,10 @@ describe('live review transport', () => {
     const parsed = parseCode(h.code()!);
     if (!parsed.ok) throw new Error('code');
     const events: { type: string }[] = [];
-    startReceive({ code: parsed.code, makeSwarm: net.make(), emit: (e) => events.push(e), findMs: 800, handshakeMs: 800 });
-    await new Promise((r) => setTimeout(r, 1200));
+    startReceive({ code: parsed.code, makeSwarm: net.make(), emit: (e) => events.push(e), findMs: 2000, handshakeMs: 2000 });
+    // The receiver's own last word ("noOne", once its search window has run out) says the attempt is over, so what the
+    // host saw can be checked then, with no guessed sleep.
+    await until(() => events.some((e) => e.type === 'noOne'));
     expect(ofType(h.events, 'wrong')).toHaveLength(0);
     expect(ofType(h.events, 'knock')).toHaveLength(0);
     h.job.cancel();

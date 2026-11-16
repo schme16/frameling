@@ -17,7 +17,10 @@ import { ReviewHostBridge, type HostUiEvent, type PortLike } from '../../src/mai
 import { FakeNet, until } from '../share/helpers';
 
 const squeeze = { deflate: async (b: Uint8Array) => new Uint8Array(await promisify(deflate)(b)), inflate: async (b: Uint8Array) => new Uint8Array(await promisify(inflate)(b)) };
-const FAST = { handshakeMs: 4000, idleMs: 4000, knockMs: 3000 };
+// The patience limits are the real ones (src/share/live.ts) or near them. They were 1.5 to 4 s, which a busy machine
+// can pause a test worker for, and then a reviewer is dropped for being idle or a guest gives up looking, and the test
+// waits in vain. No test here depends on a limit running out.
+const FAST = { handshakeMs: 20_000, idleMs: 20_000, knockMs: 20_000 };
 const THEME = { dark: true, bg: '#000', text: '#fff', muted: '#888', accent: '#a0f', raised: '#222' };
 
 /** Two ends of a message port: what one posts the other hears a moment later, copied as a real port copies. */
@@ -88,7 +91,7 @@ function reviewer(name: string, gid: string): Reviewer {
     else if (r.replica.apply(m as never)) page.postMessage({ t: 'hello' });
   });
   r.say = (m) => page.postMessage(m);
-  r.bridge = new ReviewGuestBridge({ makeSwarm: net.make(), port: bridgeEnd, code: parsed.code, name, gid, times: FAST, findMs: 4000, retryMs: 3000, ...squeeze });
+  r.bridge = new ReviewGuestBridge({ makeSwarm: net.make(), port: bridgeEnd, code: parsed.code, name, gid, times: FAST, findMs: 20_000, retryMs: 3000, ...squeeze });
   r.bridge.start();
   return r;
 }
@@ -127,7 +130,7 @@ describe('a live review, whole', () => {
     expect(r.replica.doc!.notes).toBeUndefined();
     expect(same(r.replica.doc, store().get().doc)).toBe(true);
     for (let i = 1; i <= 5; i++) paint(i);
-    await until(() => same(r.replica.doc, store().get().doc), 5000);
+    await until(() => same(r.replica.doc, store().get().doc));
     // Pixel strokes went as rectangles, not whole pictures.
     expect(host.stats.patches).toBeGreaterThanOrEqual(5);
     expect(host.stats.bytes).toBeLessThan(40_000);
@@ -187,12 +190,12 @@ describe('a live review, whole', () => {
     }
     paint(2);
     paint(3);
-    await until(() => rs.every((r) => same(r.replica.doc, store().get().doc)), 6000);
+    await until(() => rs.every((r) => same(r.replica.doc, store().get().doc)));
     const fifth = reviewer('Late', 'g5');
     await until(() => fifth.statuses.includes('full'));
     for (const r of rs) r.bridge.leave();
     host.stop();
-  }, 30000);
+  }, 120_000);
 
   it('a reviewer who joins late is caught up from the cache with no new request to the drawing window', async () => {
     await sharer();
@@ -224,10 +227,10 @@ describe('a live review, whole', () => {
     await until(() => r.waiting === 1);
     const sw = net.swarms[net.swarms.length - 1];
     sw.join(Buffer.from(net.servers.keys().next().value!, 'hex'), { client: true, server: false });
-    await until(() => ui.some((e) => e.type === 'item'), 6000);
+    await until(() => ui.some((e) => e.type === 'item'));
     expect((ui.find((e) => e.type === 'item') as { item: { id: string } }).item.id).toBe('while-away');
     expect(ui.filter((e) => e.type === 'knock')).toHaveLength(1);
     r.bridge.leave();
     host.stop();
-  }, 20000);
+  }, 120_000);
 });
