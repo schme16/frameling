@@ -10,6 +10,7 @@ import { dock } from '../ui/dock';
 import { toast } from '../ui/toast';
 import { addAnimationNow, hideAnimationNow, whyNotNow } from './ops';
 import './help';
+import './settle';
 
 export type OpenAnimateChoice = 'add' | 'offer';
 

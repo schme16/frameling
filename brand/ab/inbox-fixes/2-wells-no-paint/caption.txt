@@ -1,0 +1,1 @@
+Before: a picked shape with no fill still shows a colour picker and Solid, Linear, Radial for a colour it doesn't have. After: only the red slash, the words and the swatches, so it reads as nothing there.

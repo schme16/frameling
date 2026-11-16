@@ -23,7 +23,20 @@ export const ANIMATION_CATEGORIES: readonly string[] = ['Timeline', 'Animate', '
 export const ANIMATION_DOORS = ['animation.add', 'animation.remove'] as const;
 
 /** Commands about frames and motion that sit in other categories (the tools that move things over time, the Draw on panel). */
-export const ANIMATION_ONLY: readonly string[] = ['pixel.makeItMove', 'tools.motion-path', 'tools.record-move', 'tools.shape-hints', 'view.panel.draw-on'];
+export const ANIMATION_ONLY: readonly string[] = [
+  'pixel.makeItMove',
+  'tools.motion-path',
+  'tools.record-move',
+  'tools.shape-hints',
+  'view.panel.draw-on',
+  // Views of the timeline and of neighbouring frames, sound, and things that act on every frame or from a frame onward.
+  'view.cleanTimeline',
+  'view.emptyGhost',
+  'view.lightTable',
+  'camera.whilePlaying',
+  'audio.import',
+  'symbols.makeFrames',
+];
 
 /** Asking for a frame or the timeline: these turn animation on and carry on. */
 export const MAKES_FRAMES: readonly string[] = [

@@ -1,0 +1,1 @@
+Before: exporting a picture as a GIF asks whether to export the whole animation, a clip or a play range. After: it says the picture comes out as one frame, with Add animation right there to give it frames.

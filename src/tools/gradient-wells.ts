@@ -190,6 +190,19 @@ export function isMixed(v: PaintView): boolean {
   return v.from === 'differ' || v.from === 'colours' || (v.from !== 'none' && v.from !== 'box' && !!v.bare);
 }
 
+/**
+ * Whether the colour picker is worth showing for this box: not when the picked shapes have nothing on this side (there
+ * is no colour to pick from, only swatches to give them one) and not when they differ (nothing to show but a mix).
+ */
+export function showsPicker(v: PaintView): boolean {
+  return v.from !== 'none' && v.from !== 'differ' && v.from !== 'colours';
+}
+
+/** Whether Solid, Linear and Radial are offered: not for a side with nothing on it, where there is no paint to change the kind of. */
+export function showsPaintKind(v: PaintView): boolean {
+  return v.from !== 'none';
+}
+
 /** Plain words about shapes with nothing on a side, for the panel. Null when there is nothing to say. */
 export function bareWords(v: PaintView, w: Well): string | null {
   const noun = w === 'fill' ? 'fill' : 'outline';

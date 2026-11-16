@@ -141,8 +141,10 @@ export const STILL_LOAD = {
   // with animation: the Offset card and the Width tool (palette only, no menu home, because Draw is over its cap), and
   // the two craft importers in File > Import. The gap is what this ledger is for and the gap did not move: 44 palette
   // commands and 118 menu commands are still out of the way on a still.
-  // Later the same day: +1 palette and +1 menu on both sides, the Scripts in their own window command (Edit > Scripts, beside
-  // the others). It has nothing to do with animation, so the gap is the same 44 palette and 118 menu commands.
-  still: { palette: 559, menu: 783, animateMenu: 8 },
+  // Later the same day, two changes that do not touch each other. +1 palette and +1 menu on both sides, the Scripts in
+  // their own window command (Edit > Scripts, beside the others), which has nothing to do with animation. And -5 palette
+  // and -6 menu on a still only, from the clean timeline, ghost on empty frames, light table, look through the camera
+  // while playing, import sound and make a symbol from the whole animation now needing animation first.
+  still: { palette: 554, menu: 777, animateMenu: 8 },
   animated: { palette: 603, menu: 901, animateMenu: 123 },
 };

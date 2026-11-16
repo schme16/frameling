@@ -428,7 +428,7 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. Every theme sits in one grid
 
 The same menu has **Edit this theme** (your own themes) and **Make a copy to change** (any theme).
 
-The change is instant. Your two get a gold edge, a tick and a line under the name: a sun for by day, a moon for at night, both for day and night. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
+The change is instant. Your two get a gold edge, a tick and a yellow splotch in the top corner: the sun on the left for day, the moon on the right for night. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
 
 ## Dark, light and System
 

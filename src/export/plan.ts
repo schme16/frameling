@@ -2,6 +2,7 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
+import { isAnimated } from '../core/animation';
 import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
 import { exporterOf } from './registry';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, oneFrameOnly, type ExportSettings, type FormatId } from './types';
@@ -231,7 +232,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, op
   else if (width > MAX_SIDE || height > MAX_SIDE) problem = `That is bigger than ${MAX_SIDE} pixels on one side. Choose a smaller size.`;
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
   else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
-  else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
+  else if (video && count < 2) problem = isAnimated(doc) ? 'A video needs at least two frames. Try the whole animation or a clip.' : 'A video needs at least two frames, and this drawing is a picture. Add animation first, then export again.';
   if (!problem) problem = exporterOf(s.format)?.problem?.(doc, s, { range, count }) ?? null;
   const looping = exportLoop(doc, s);
   return { range, count, ...(order ? { order } : {}), loop: looping.loop, loopFromClip: looping.fromClip, width, height, name, problem };
