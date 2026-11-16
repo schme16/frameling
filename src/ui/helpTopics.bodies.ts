@@ -536,12 +536,13 @@ Prefer it another way? **Preferences**, **General**, **Right side** offers **Rai
 ## What shows
 
 - **Tool options** and **Colours** are always there while you draw.
+- Click a clip on the timeline and its **Clip** settings lead, until you press on the canvas or pick another layer or tool. Properties follows what you picked last.
 - Select a **symbol** and its size, turn, fade and in-betweens (**Symbol and motion**) show, with **Effects** for its layer. Selected things come first.
 - Pick the **Text** tool or select text and the text settings show. Select particles, pick the camera layer or the **Bone** tool and theirs do.
 
-## Also here
+## Where's the rest?
 
-Sections that don't apply yet wait at the bottom under **Also here**, each with what brings it up ("Select particles on the canvas"). Press one to open it anyway.
+Properties only lists what's here now, so it stays short. A section that doesn't apply yet (**Palette**, **Clip**, **Particles** and so on) turns up on its own when you do the thing it's for. Not sure what? Open **Panels** on the rail: every section is there with a line saying when it shows up ("Shows up when you pick a pixel layer"). Press one to bring it up straight away.
 
 ## Fold sections
 
@@ -565,9 +566,7 @@ The right side has a **rail** down its edge: an icon with a name for every place
 - **Properties** comes first. It holds the settings for what you're doing now. See [Properties](help:properties).
 - Below it are the panels you open now and then: **Layers**, **Artboards**, **Preview**, **Quests**, **Help** and, last of all, **Library**. Press one to open it, and press it again to fold the side away.
 - **Clip flow** and **Draw on** start put away, to keep the rail short. Find them in **Panels** or the command search.
-- **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Type to find one. Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
-
-A layout you already have keeps its arrangement. **Reset layout** in the command search gives you the newest start.
+- **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Sections of Properties (**Palette**, **Clip**...) say when they show up, so you can find them before you need them. Type a name or what you're doing ("pixel" finds **Palette**). Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
 
 ## Move
 
@@ -583,7 +582,7 @@ On the left and bottom, when a zone gets narrow, the other tabs shrink to just t
 
 ## Resize
 
-Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus: **Shift** makes bigger steps, **Home** and **End** go to the smallest and largest, **Enter** puts it back to the usual size.
+Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus (**Shift** for bigger steps, **Enter** for the usual size).
 
 ## Collapse
 
@@ -595,7 +594,7 @@ Press the **x** on a tab (or by a panel's name on the right) to close it, or pre
 
 ## With the keyboard
 
-**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs (up and down on the rail), **Home** and **End** jump to the first and last.
+**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs, **Home** and **End** jump to the ends.
 
 Your layout is remembered. Save arrangements as [workspaces](help:workspaces), or [put the panels back](help:panels-back).`,
   'panel-groups': `Sometimes you want two panels in view at once, not one behind the other. Give each its own **group**: a side can hold up to four, one over the other (or side by side along the bottom and top), and each group has its own tabs.

@@ -90,7 +90,7 @@ describe('the plugin shape section', () => {
     await installFrom({ 'manifest.json': strToU8(JSON.stringify({ id: 'dots', name: 'Dots', version: '1.0.0', apiVersion: 2, permissions: ['shapes'] })), 'main.js': strToU8(CODE) });
     expect(getPanel('plugin-shape')?.title).toBe('Plugin shape');
     expect(PANEL_INFO['plugin-shape']?.section).toBe(true);
-    // It leads Properties when one is picked, and waits in "Also here" otherwise.
+    // It leads Properties when one is picked, and is left out otherwise.
     expect(sectionsNow(['plugin-shape'], store().get(), null).idle).toEqual(['plugin-shape']);
     resetPluginsForTests();
     syncShapeSection();
