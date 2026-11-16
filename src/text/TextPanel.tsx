@@ -175,7 +175,7 @@ function OnCurve({ s }: { s: TextShape }) {
       <Section title="On a curve" open={false} help="text-on-path">
         <Tip stays>Run the words round a circle or along a wave. Pick the text and the line or shape, then press the button.</Tip>
         <div className="cv-row cv-wrap">
-          <ActionButton onClick={() => void getCommand('text.onPath')?.run()}>Put on a curve</ActionButton>
+          <ActionButton command="text.onPath" onClick={() => void getCommand('text.onPath')?.run()}>Put on a curve</ActionButton>
         </div>
       </Section>
     );
@@ -193,7 +193,7 @@ function OnCurve({ s }: { s: TextShape }) {
       </div>
       <Tip stays>The letter spacing above spreads the words along the curve. Move the curve and the words come with it.</Tip>
       <div className="cv-row cv-wrap">
-        <ActionButton onClick={takeTextOffCurve}>Take off the curve</ActionButton>
+        <ActionButton command="text.offPath" onClick={takeTextOffCurve}>Take off the curve</ActionButton>
       </div>
     </Section>
   );
@@ -248,7 +248,7 @@ function TextEditorPanel({ s }: { s: TextShape }) {
       <Section title="Shapes" open={false}>
         <Tip stays>Turn the text into ordinary filled shapes you can reshape. It can't be typed into afterwards.</Tip>
         <div className="cv-row cv-wrap">
-          <ActionButton onClick={() => void getCommand('text.toShapes')?.run()}>Convert to shapes</ActionButton>
+          <ActionButton command="text.toShapes" onClick={() => void getCommand('text.toShapes')?.run()}>Convert to shapes</ActionButton>
         </div>
       </Section>
     </>

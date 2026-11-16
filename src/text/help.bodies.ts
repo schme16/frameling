@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 1. Draw the curve you want: a circle, a wave with the **Pen**, any line or shape.
 2. Make the words with the **Text** tool (**T**) if you haven't yet.
-3. Select the words and the curve together (hold **Shift** to add the second one), then press **Ctrl+Alt+O**. It is also in **Tools > Shapes and colour > Put text on a curve**.
+3. Select the words and the curve together (hold **Shift** to add the second one), then press **Ctrl+Alt+O**. It is also the **Put on a curve** button in the **On a curve** part of the Text panel.
 
 Short cut: select just the curve and press **Ctrl+Alt+O**. Frameling adds some words for you to retype.
 
@@ -82,7 +82,7 @@ Text is a shape like any other: move it, stretch it, turn it and flip it with th
 
 ## Convert to shapes
 
-**Tools > Shapes and colour > Convert text to shapes** (Ctrl+Shift+O) turns the text into ordinary filled shapes (outlines). Now you can reshape the letters, merge them with drawings, or fill them with the paint bucket. They can't be typed into afterwards, so keep a copy if you might change the words.
+**Convert to shapes** in the Text panel (or Ctrl+Shift+O) turns the text into ordinary filled shapes (outlines). Now you can reshape the letters, merge them with drawings, or fill them with the paint bucket. They can't be typed into afterwards, so keep a copy if you might change the words.
 
 Want the letters to move one by one? See [Text animations](help:text-animators).`,
   'text-animators': `Text animations move the pieces of a text one after another, so a title can type itself on, letters can drop in with a bounce, or a word can wave.

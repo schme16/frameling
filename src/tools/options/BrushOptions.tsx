@@ -71,7 +71,7 @@ function VectorBrushOptions() {
       <BrushPreview brush={brush} color={color} />
       <TipOptions />
       <Slider label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-      <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
+      <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
         <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />

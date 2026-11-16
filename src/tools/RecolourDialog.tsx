@@ -108,6 +108,7 @@ function RecolourDialog({ close, start }: { close: () => void; start?: RecolourW
                 disabled={!available(w.id)}
                 title={w.id === 'selection' && !canSelection ? 'Select something first' : w.tip}
                 data-testid={`recolour.where.${w.id}`}
+                data-command={w.id === 'all' ? 'colors.recolourAll' : `colors.recolour${w.id === 'layer' ? 'Layer' : w.id === 'frame' ? 'Frame' : 'Selection'}`}
                 onClick={() => pick(w.id)}
               >
                 {w.label}

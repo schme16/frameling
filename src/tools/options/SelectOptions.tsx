@@ -32,6 +32,7 @@ export function SelectOptions() {
       {!merge && (
         <Choice
           label="Picks"
+          command="select.scope"
           value={scope}
           options={[
             { value: 'parts', label: 'Just the bit', title: 'Only the points and edges inside your drag are picked, so you can move one corner. Hold Ctrl to pick the whole shape for one drag.' },
@@ -46,7 +47,7 @@ export function SelectOptions() {
       </Tip>
       <div className="cv-row cv-wrap">
         {ACTIONS.map(([id, label]) => (
-          <ActionButton key={id} disabled={!count} onClick={() => void getCommand(id)?.run()}>
+          <ActionButton key={id} command={id} disabled={!count} onClick={() => void getCommand(id)?.run()}>
             {label}
           </ActionButton>
         ))}

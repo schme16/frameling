@@ -4,8 +4,8 @@ import { ARROW_HEADS, DASH_PRESETS, WIDTH_PRESETS, type DashKind, type WidthKind
 import { chooseArrow, chooseDash, chooseWidth } from '../lineStyle';
 import { useToolSettings } from '../settings';
 
-const DASHES = (Object.keys(DASH_PRESETS) as DashKind[]).map((k) => ({ value: k, label: k === 'dashdot' ? 'Dash dot' : DASH_PRESETS[k].label }));
-const WIDTHS = (Object.keys(WIDTH_PRESETS) as WidthKind[]).map((k) => ({ value: k, label: WIDTH_PRESETS[k].label }));
+const DASHES = (Object.keys(DASH_PRESETS) as DashKind[]).map((k) => ({ value: k, label: k === 'dashdot' ? 'Dash dot' : DASH_PRESETS[k].label, command: `stroke.dash.${k}` }));
+const WIDTHS = (Object.keys(WIDTH_PRESETS) as WidthKind[]).map((k) => ({ value: k, label: WIDTH_PRESETS[k].label, command: `stroke.width.${k}` }));
 const HEADS: { value: ArrowHead | 'none'; label: string }[] = [{ value: 'none', label: 'None' }, ...(Object.keys(ARROW_HEADS) as ArrowHead[]).map((k) => ({ value: k, label: ARROW_HEADS[k] }))];
 
 /**
@@ -19,8 +19,8 @@ export function LineStyleOptions({ arrows = true }: { arrows?: boolean }) {
       <Choice<DashKind> label="Line" value={(DASH_PRESETS[t.lineDash as DashKind] ? t.lineDash : 'solid') as DashKind} options={DASHES} onChange={chooseDash} />
       {arrows && (
         <>
-          <Choice<ArrowHead | 'none'> label="Arrow at the end" value={(t.arrowEnd in ARROW_HEADS ? t.arrowEnd : 'none') as ArrowHead | 'none'} options={HEADS} onChange={(v) => chooseArrow('end', v)} />
-          <Choice<ArrowHead | 'none'> label="Arrow at the start" value={(t.arrowStart in ARROW_HEADS ? t.arrowStart : 'none') as ArrowHead | 'none'} options={HEADS} onChange={(v) => chooseArrow('start', v)} />
+          <Choice<ArrowHead | 'none'> label="Arrow at the end" command="stroke.arrow.end" value={(t.arrowEnd in ARROW_HEADS ? t.arrowEnd : 'none') as ArrowHead | 'none'} options={HEADS} onChange={(v) => chooseArrow('end', v)} />
+          <Choice<ArrowHead | 'none'> label="Arrow at the start" command="stroke.arrow.start" value={(t.arrowStart in ARROW_HEADS ? t.arrowStart : 'none') as ArrowHead | 'none'} options={HEADS} onChange={(v) => chooseArrow('start', v)} />
         </>
       )}
       <Choice<WidthKind> label="Width along the line" value={(WIDTH_PRESETS[t.lineWidth as WidthKind] ? t.lineWidth : 'even') as WidthKind} options={WIDTHS} onChange={chooseWidth} />

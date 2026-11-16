@@ -31,6 +31,7 @@ export function EraserOptions() {
       {!merge && (
         <Choice
           label="Rub out"
+          command="eraser.bit"
           value={way}
           options={[
             { value: 'bit', label: 'Just the bit', title: 'Only the part you drag over goes, like a real rubber. A line can be cut in two or nibbled at the end.' },

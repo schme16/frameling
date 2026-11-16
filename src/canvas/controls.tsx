@@ -166,13 +166,13 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
   );
 }
 
-export function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string }) {
+export function Toggle({ label, checked, onChange, hint, command }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string; /** The command that does the same thing as this switch. */ command?: string }) {
   const h = useHint(label, hint);
   return (
     <div className="cv-field">
       <div className="cv-toggle-row" data-wraps>
         <label className="cv-toggle" data-on={checked}>
-          <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+          <input type="checkbox" checked={checked} data-command={command} onChange={(e) => onChange(e.target.checked)} />
           <span className="cv-toggle-track" aria-hidden="true">
             <span className="cv-toggle-knob" />
           </span>
@@ -185,13 +185,13 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
   );
 }
 
-export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
+export function Choice<T extends string>({ label, value, options, onChange, command }: { label: string; value: T; /** The command that does the same job as this whole row (one that steps through the choices, or flips between two), so the row and the command are known to be one. */ command?: string; options: { value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
   // The words stay on one line; when they do not fit side by side the buttons stack one per line instead.
   const row = useRef<HTMLDivElement>(null);
   useStackWhenTight(row, [options.map((o) => o.label).join('|')]);
   return (
     <Field label={label}>
-      <div className="cv-choice" role="radiogroup" aria-label={label} ref={row}>
+      <div className="cv-choice" role="radiogroup" aria-label={label} data-command={command} ref={row}>
         {options.map((o) => (
           <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} data-command={o.command} title={o.title} onClick={() => onChange(o.value)}>
             {o.label}
@@ -225,12 +225,12 @@ export function ActionButton({ children, onClick, disabled, title, pressed, comm
  * A fold for the settings most people leave alone: a button that opens and shuts them, remembered per `name`.
  * `hint` says what's inside while it's shut, so nothing is a mystery.
  */
-export function MoreOptions({ name, label, hint, children }: { name: string; label: string; hint?: string; children: ReactNode }) {
+export function MoreOptions({ name, label, hint, command, children }: { name: string; label: string; hint?: string; /** The command that opens and shuts this fold. */ command?: string; children: ReactNode }) {
   const open = useFold(name);
   const id = `cv-more-${name}`;
   return (
     <div className="cv-more" data-open={open}>
-      <button type="button" className="cv-more-btn" data-fold={name} aria-expanded={open} aria-controls={id} onClick={() => setFold(name, !open)}>
+      <button type="button" className="cv-more-btn" data-fold={name} aria-expanded={open} aria-controls={id} data-command={command} onClick={() => setFold(name, !open)}>
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
         <span>{label}</span>
       </button>

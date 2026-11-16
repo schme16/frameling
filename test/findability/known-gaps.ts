@@ -38,7 +38,8 @@ export const CEILINGS = {
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   // Two more in every state but the pixel one since the Pixel menu went: it listed Shade and Dither all the time, and now they are only in the Tools menu's tool list, which shows the tools that work on the layer you are on, the same as the Wand and Slice. They are still on the pixel rail, and in the palette greyed with a reason on a vector layer. Tilemap goes 23 to 27 because on a tilemap layer the Pencil, Shade, Dither and Gradient all leave, where the Pixel menu showed them.
   // One more on the pixel and tilemap layers since the Shape builder: its entry in Tools lists only on a vector layer, like the Pen and Edit points beside it, and it is in the palette greyed with a reason on the others.
-  menuCommandsVanish: { blank: 9, vector: 9, 'vector-selected': 9, pixel: 7, tilemap: 28, 'symbol-open': 9, playing: 9, 'has-clips': 9 } as Record<string, number>,
+  // Down to none on 16 November 2026 (tools-room): the Tools menu stopped listing every tool, because the rail has them all. The five it still names (Brush, Pen, Transform, Slice, Artboard) are listed on every layer and grey out, with a reason, where they do not work, so none of them vanishes.
+  menuCommandsVanish: { blank: 0, vector: 0, 'vector-selected': 0, pixel: 0, tilemap: 0, 'symbol-open': 0, playing: 0, 'has-clips': 0 } as Record<string, number>,
 };
 
 /**
@@ -105,7 +106,8 @@ export const BIG_MENUS: Record<string, number> = {
   // on a curve: putting words on one and taking them off again. 149 against a cap of 150. Angular gradients arrived
   // next and would have made it 151, so their two commands took the palette-first route instead: the Angular buttons
   // in the Colours panel and the Gradient tool options are the way in (src/ui/paletteFirst.ts).
-  Draw: 149,
+  // 16 November 2026, tools-room: 149 down to 82. The tool list (every tool is a button on the rail), the Line style submenu and the rows that are in a tool's own options left the menu and stayed in the palette (src/ui/paletteFirst.ts); five tools the Pixel rail leaves off stay, in Tools off the Pixel rail. See ledger-history.ts for the step.
+  Draw: 82,
 };
 
 /**
@@ -168,9 +170,10 @@ export const STILL_LOAD = {
   // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
   // text on a curve. The remote door: +2 palette and +3 menu in Edit > Scripts. selection-gradients: +3 palette and
   // +6 menu. The pixel brush: +16 palette and +22 menu, the 16 ready made brushes and the 6 switches, under Soft
-  // paint, so Draw is untouched. And diamond gradients: +2 palette and no menu at all, because like angular they are
-  // palette first with the Diamond buttons carrying the command. None of it has anything to do with animation, so
-  // the gap is unchanged.
-  still: { palette: 579, menu: 774, animateMenu: 8 },
-  animated: { palette: 628, menu: 898, animateMenu: 123 },
+  // paint, so Draw is untouched. diamond gradients: +2 palette and no menu at all, palette first like angular. And
+  // tools-room: -52 menu on both sides, the tool list, Line style and the tool option rows that left the menu for
+  // the palette because a control on screen does their job, with no palette change. None of it has anything to do
+  // with animation, so the gap is unchanged.
+  still: { palette: 579, menu: 722, animateMenu: 8 },
+  animated: { palette: 628, menu: 846, animateMenu: 123 },
 };

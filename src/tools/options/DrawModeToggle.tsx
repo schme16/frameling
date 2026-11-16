@@ -16,7 +16,7 @@ export function DrawModeToggle() {
   const mode = layerDrawMode(layer);
   return (
     <div data-quest="draw-mode">
-      <Toggle label="Merge shapes together" checked={mode === 'merge'} onChange={(on) => setLayerDrawMode(layer.id, on ? 'merge' : 'object')} hint={HINT[mode]} />
+      <Toggle label="Merge shapes together" command="draw.toggleMerge" checked={mode === 'merge'} onChange={(on) => setLayerDrawMode(layer.id, on ? 'merge' : 'object')} hint={HINT[mode]} />
     </div>
   );
 }

@@ -24,13 +24,13 @@ export function TransformOptions() {
         {r ? `Width ${num(r.w)}, height ${num(r.h)}, turned ${num(r.turn)}°, slanted ${num(r.slant)}°.` : kind === null ? 'Nothing selected.' : ''}
       </p>
       <div className="cv-row cv-wrap">
-        <ActionButton disabled={!dirty} onClick={() => run('transform.apply')} title="Apply it (Enter)">
+        <ActionButton command="transform.apply" disabled={!dirty} onClick={() => run('transform.apply')} title="Apply it (Enter)">
           Apply
         </ActionButton>
-        <ActionButton disabled={!dirty} onClick={() => run('transform.putBack')} title="Put it all back (Escape)">
+        <ActionButton command="transform.putBack" disabled={!dirty} onClick={() => run('transform.putBack')} title="Put it all back (Escape)">
           Put back
         </ActionButton>
-        <ActionButton disabled={!f} onClick={() => run('transform.pivotMiddle')} title="Move the pivot back to the middle of the box">
+        <ActionButton command="transform.pivotMiddle" disabled={!f} onClick={() => run('transform.pivotMiddle')} title="Move the pivot back to the middle of the box">
           Pivot to the middle
         </ActionButton>
       </div>

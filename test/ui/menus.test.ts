@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
-import { listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, TOOLS_WITH_THEIR_FEATURE, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { expand, listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, TOOLS_OFF_THE_PIXEL_RAIL, TOOLS_WITH_THEIR_FEATURE, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
 import { isLeftOutOfMenus } from '../../src/ui/paletteFirst';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
@@ -280,7 +280,8 @@ describe('the real menus', async () => {
     // What the Pixel menu held is in Tools (the pixel tools, palette, text and brush settings), in Soft paint (spray, soft paint, chalk, charcoal and the pixel brush) or where it belongs.
     expect(flat(menu('Soft')), 'Soft paint').toEqual(expect.arrayContaining(['tools.spray', 'tools.soft-brush', 'tools.charcoal', 'charcoal.paper.rough', 'tools.pixel-brush', 'pixelbrush.spacing.wider']));
     expect(tools.filter((id) => /^(tools\.(soft-|airbrush|highlighter|smudge|charcoal|spray|pixel-brush)|charcoal\.|pixelbrush\.)/.test(id))).toEqual([]);
-    for (const id of ['tools.pencil', 'pixel.mirror', 'pixel.sizeUp', 'text.pixelType', 'pixel.outline', 'pixel.flipH', 'pixel.reduceToPalette']) expect(tools, id).toContain(id);
+    // The pencil and Mirror drawing are on the rail and in the tool options now (src/ui/paletteFirst.ts).
+    for (const id of ['pixel.sizeUp', 'text.pixelType', 'pixel.outline', 'pixel.flipH', 'pixel.reduceToPalette']) expect(tools, id).toContain(id);
     expect(flat(menu('Animate'))).toContain('pixel.makeItMove');
     expect(flat(menu('View').filter((i) => i.kind === 'submenu' && i.label === 'More view tools'))).toEqual(expect.arrayContaining(['pixel.zoom1', 'pixel.previewPlay', 'pixel.showSlices']));
   });
@@ -289,11 +290,14 @@ describe('the real menus', async () => {
     expect(tools.leaveOut).toBe(TOOLS_WITH_THEIR_FEATURE);
     const elsewhere = new Set([...Object.entries(SUBMENUS).filter(([k]) => k !== 'tools').flatMap(([, s]) => s.items), ...MENUS.flatMap((m) => m.items)]);
     expect(TOOLS_WITH_THEIR_FEATURE.filter((id) => !elsewhere.has(id)), 'each needs a home of its own').toEqual([]);
-    const drawTools = menu('Draw').find((i) => i.kind === 'submenu' && i.label === 'Pick a tool');
-    const own = flat(drawTools && drawTools.kind === 'submenu' ? drawTools.items : []);
-    for (const id of TOOLS_WITH_THEIR_FEATURE) expect(own, id).not.toContain(id);
-    // The tools you draw and select with are still there.
-    expect(own).toEqual(expect.arrayContaining(['tools.brush', 'tools.pen', 'tools.eraser', 'tools.fill', 'tools.select', 'tools.text']));
+    // The list is not in Tools any more (every tool is on the rail), but it is still a submenu to add from Menus.
+    const full = expand('group:tools', SUBMENUS);
+    for (const id of TOOLS_WITH_THEIR_FEATURE) expect(full.filter((x) => !(tools.leaveOut ?? []).includes(x)), id).not.toContain(id);
+    expect(full).toEqual(expect.arrayContaining(['tools.brush', 'tools.pen', 'tools.eraser', 'tools.fill', 'tools.select', 'tools.text']));
+    // Tools names only the five the Pixel workspace's rail leaves off.
+    const drawTools = menu('Draw').find((i) => i.kind === 'submenu' && i.label === 'Tools off the Pixel rail');
+    expect(flat(drawTools && drawTools.kind === 'submenu' ? drawTools.items : [])).toEqual([...TOOLS_OFF_THE_PIXEL_RAIL]);
+    expect(menu('Draw').find((i) => i.kind === 'submenu' && i.label === 'Pick a tool')).toBeUndefined();
   });
   it('every View and Artboards command is still in some menu (and in the palette), except the ones left out on purpose', () => {
     const everything = new Set(resolveMenus().flatMap((m) => flat(m.items)));
