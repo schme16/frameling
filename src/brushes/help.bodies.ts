@@ -57,11 +57,11 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pack keep their group when you add them.
 
 help:brush-presets help:brush-tips help:tool-options`,
-  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. The chalk and charcoal tips catch on paper like the real thing, and stay lines you can reshape.
+  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. Chalk and charcoal catch on paper like the real thing, and stay lines you can reshape.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, right under the Brush picker, shows the tip you use. Click it to see every tip as a real stroke: Plain, Chalk, Charcoal, Watercolour, each stamp shape, and four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
+**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, drops every tip as a real stroke: Plain, Chalk, Charcoal, Watercolour, each stamp shape, and four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 
-**Chalk and Charcoal:** a line that catches on paper. **Catch on paper** picks the stick (vine or compressed charcoal, chalk, pastel, crayon, pencil) and **Grain size** how coarse the paper is. Press lightly for specks, firmly to fill in. The paper sits on the page, so two lines over each other meet the same bumps. Each line carries a **Paper tooth** [effect](help:effects) you can change afterwards. Off gives the older grain of tiny shapes.
+**Chalk and Charcoal:** a line that catches on paper. **Stick** appears under **Tip**, another picker: vine or compressed charcoal, chalk, soft or oil pastel, crayon, or one of three pencils, each as a real stroke. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Each line carries a **Paper tooth** [effect](help:effects) you can change afterwards. Off gives the older grain of tiny shapes.
 
 **Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
 
@@ -82,7 +82,7 @@ A pixel brush with more than one colour asks once whether to keep its own colour
 - Tips are for drawing layers. On a pixel layer the brush paints pixels.
 - On a merge layer a line joins what it touches and comes out as plain shapes.
 - A shape you made into a brush is a silhouette: it takes the colour you have picked.
-- Tips can't be changed on a line once it is drawn. Undo, pick another tip, and draw it again.
+- Tips can't be changed on a line once it is drawn: undo, pick another, draw it again.
 
 help:brush-presets help:brush-own help:tool-brush help:exporting`,
   'brush-own': `**Brushes you build yourself.** Pick a tip, or turn a drawing of your own into a brush, and a line becomes a calligraphy stroke, a ribbon, a chain or a dry paintbrush. Every one comes out as plain shapes, so it stays sharp at any size and exports anywhere.

@@ -2,8 +2,7 @@
 // sliders the tip in use has and a line about it.
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { useStore } from '../core/store';
-import type { StampAngle } from '../core/format';
-import { MEDIA } from '../dry/maths';
+import type { BrushTip, StampAngle } from '../core/format';
 import { resolveTip } from '../geometry/tip';
 import { clearEdgedPiece, EDGED_SLOTS, edgedHas, makeAlongBrush, setEdgedPiece } from './own';
 import { BrushPicker } from './BrushPicker';
@@ -58,30 +57,39 @@ function EdgedParts({ has }: { has: Record<(typeof EDGED_SLOTS)[number]['id'], b
   );
 }
 
+/** The paper side of a chalk or charcoal tip: the switch and how coarse the paper is. Its own block, so it can move into a Paper group. */
+function PaperControls({ tip }: { tip: BrushTip }) {
+  const t = resolveTip(tip);
+  return (
+    <div className="tp-row" data-testid="brush-paper">
+      <Toggle label="Catch on paper" checked={!!tip.dry} onChange={(v) => patchTip({ dry: v ? (tip.kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined })} hint="The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead." />
+      {!tip.dry && <Slider label="Grain" value={Math.round(t.amount * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How much of the line is dusty grain, with the paper showing through." />}
+      <Slider label="Grain size" value={Math.round(t.grain * 10)} min={tip.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />
+    </div>
+  );
+}
+
+/** The tip: its picker, then (for chalk and charcoal) the stick picker with the paper controls under it, then what the tip in use has. */
 export function TipOptions() {
   const tip = useStore((s) => s.ui.brush.tip);
   const t = tip ? resolveTip(tip) : null;
   const kind = tip?.kind ?? null;
   return (
-    <div className="tp-row" data-testid="brush-tips">
-      <div className="tp-label">Tip</div>
-      <BrushPicker side="tip" />
-      {t && (kind === 'chalk' || kind === 'charcoal') && (
+    <>
+      <div className="tp-row" data-testid="brush-tips">
+        <div className="tp-label">Tip</div>
+        <BrushPicker side="tip" />
+      </div>
+      {tip && (kind === 'chalk' || kind === 'charcoal') && (
         <>
-          <Toggle label="Catch on paper" checked={!!tip?.dry} onChange={(v) => patchTip({ dry: v ? (kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined })} hint="The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead." />
-          {tip?.dry && (
-            <div className="tp-chips" role="group" aria-label="Dry medium">
-              {MEDIA.map((m) => (
-                <button key={m.id} type="button" className="bp-chip" data-on={tip.dry === m.id} aria-pressed={tip.dry === m.id} title={m.hint} onClick={() => patchTip({ dry: m.id })}>
-                  <span className="bp-chip-name">{m.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!tip?.dry && <Slider label="Grain" value={Math.round(t.amount * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How much of the line is dusty grain, with the paper showing through." />}
-          <Slider label="Grain size" value={Math.round(t.grain * 10)} min={tip?.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />
+          <div className="tp-row" data-testid="brush-stick">
+            <div className="tp-label">Stick</div>
+            <BrushPicker side="stick" disabled={tip.dry ? undefined : 'Turn on Catch on paper to pick a stick'} />
+          </div>
+          <PaperControls tip={tip} />
         </>
       )}
+      <div className="tp-row" data-testid="brush-tip-more">
       {t && kind === 'watercolour' && <Slider label="Edge" value={Math.round(t.amount * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How dark and bold the edge of the wash is, where the paint gathers." />}
       {t && kind === 'stamp' && (
         <>
@@ -123,6 +131,7 @@ export function TipOptions() {
       <ActionButton onClick={() => void makeBrushFromSelection()} title="Turn what you have selected into a brush. On a drawing layer it becomes a stamp; on a pixel layer, a small picture brush.">
         Brush from selection
       </ActionButton>
-    </div>
+      </div>
+    </>
   );
 }

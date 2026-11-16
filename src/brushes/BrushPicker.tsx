@@ -9,7 +9,7 @@ import { groupOf, SMALL_LIBRARY } from './library';
 import { pickerRequests, takePickerRequest, usePicker } from './picker';
 import { brushesOnSide, brushesVersion, stateFor, useBrushPresets } from './presets';
 import { currentSpec } from '../dab/live';
-import { tipRows, customOf, tipIdOf, type PickerSide } from './tipList';
+import { customOf, fixedActiveId, fixedRows, FIXED_WORDS, isFixedSide, type PickerSide } from './tipList';
 import { tipName } from '../geometry/tip';
 import { PixelStroke } from './PixelSample';
 import { Stroke } from './Stroke';
@@ -17,15 +17,17 @@ import './picker.css';
 
 const Panel = lazyComponent(lazyModule(() => import('./BrushPickerPanel').then((m) => m.Panel), { warm: true }));
 
-export function BrushPicker({ side = 'vector' }: { side?: PickerSide }) {
+/** `disabled` is the reason the picker is greyed out, for a stick while Catch on paper is off. */
+export function BrushPicker({ side = 'vector', disabled }: { side?: PickerSide; disabled?: string }) {
   const live = useStore((st) => st.ui.brush);
   useStore((st) => st.ui.tool);
   useBrushPresets(brushesVersion);
-  const tips = side === 'tip';
+  const tips = isFixedSide(side);
+  const words = side === 'stick' ? FIXED_WORDS.stick : FIXED_WORDS.tip;
   const custom = customOf(live.tip);
-  const tipList = useMemo(() => (tips ? tipRows(live, custom) : []), [tips, live, custom]);
+  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom) : []), [tips, side, live, custom]);
   const all = tips ? tipList : brushesOnSide(side);
-  const { activeId, changed } = tips ? { activeId: tipIdOf(live.tip), changed: false } : stateFor(side);
+  const { activeId, changed } = tips ? { activeId: fixedActiveId(side, live), changed: false } : stateFor(side);
   const spec = side === 'pixel' ? (currentSpec() ?? all.find((p) => p.id === activeId)?.pixel ?? null) : null;
   const active = all.find((p) => p.id === activeId);
   const [open, setOpen] = useState(false);
@@ -56,18 +58,19 @@ export function BrushPicker({ side = 'vector' }: { side?: PickerSide }) {
         className="pk-btn"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={tips ? 'Pick a pen tip by what it draws' : side === 'pixel' ? 'Pick a pixel brush by what it draws' : 'Pick a brush by what it draws'}
+        disabled={!!disabled}
+        title={disabled ?? (tips ? words.button : side === 'pixel' ? 'Pick a pixel brush by what it draws' : 'Pick a brush by what it draws')}
         onClick={() => (open ? close(true) : setOpen(true))}
       >
         <span className="pk-btn-sample">
-          {spec ? <PixelStroke spec={spec} h={30} /> : <Stroke brush={live} h={30} />}
+          {spec ? <PixelStroke spec={spec} h={30} /> : <Stroke brush={side === 'stick' && active ? active.brush : live} h={30} />}
         </span>
         <span className="pk-btn-text">
           <span className="pk-btn-name">
-            {tips ? tipName(live.tip) : active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}
+            <span className="pk-btn-name-text">{side === 'stick' ? active?.name : tips ? tipName(live.tip) : active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}</span>
             {active && changed && <i className="bp-changed" aria-label="changed" />}
           </span>
-          <span className="pk-btn-sub">{`${active && big && !tips ? `${groupOf(active)} · ` : ''}${all.length} ${tips ? 'tips' : 'brushes'}`}</span>
+          <span className="pk-btn-sub">{disabled ? 'Needs Catch on paper' : `${active && big && !tips ? `${groupOf(active)} · ` : ''}${all.length} ${tips ? `${words.noun}s` : 'brushes'}`}</span>
         </span>
         <span className="pk-caret" aria-hidden="true">
           <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -75,7 +78,7 @@ export function BrushPicker({ side = 'vector' }: { side?: PickerSide }) {
           </svg>
         </span>
       </button>
-      {open && btn.current && <Panel anchor={btn.current} side={side} onClose={close} onPicked={() => close(true)} />}
+      {open && !disabled && btn.current && <Panel anchor={btn.current} side={side} onClose={close} onPicked={() => close(true)} />}
     </>
   );
 }

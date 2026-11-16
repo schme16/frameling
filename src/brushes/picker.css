@@ -2,9 +2,12 @@
 .pk-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--raised); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .pk-btn:hover { background: var(--hover-bg); }
 .pk-btn[aria-expanded='true'] { border-color: var(--focus); }
+.pk-btn:disabled { opacity: 0.55; cursor: default; }
+.pk-btn:disabled:hover { background: var(--raised); }
 .pk-btn-sample { flex: none; width: 92px; }
 .pk-btn-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .pk-btn-name { display: flex; align-items: center; gap: 6px; font-size: var(--fs-small); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-btn-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pk-btn-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pk-caret { flex: none; color: var(--muted); display: flex; }
 .pk-stroke { display: block; width: 100%; color: inherit; }
