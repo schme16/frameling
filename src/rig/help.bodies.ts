@@ -5,7 +5,7 @@ export const bodies: Record<string, string> = {
 **The three steps:**
 1. **Draw each part on its own layer**: head, body, upper arm, lower arm and so on. (Or draw it all on one layer and let it [bend](help:rig-bend).)
 2. **Draw bones** over it with the [Bone tool](help:rig-bones) (**K**). Start at the hips, then draw from each bone's tip to make chains for the spine, arms and legs.
-3. **Attach the parts** with **Skeleton, effects and more > Skeleton (rig) > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
+3. **Attach the parts** with **Rigging > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
 
 Now pick the [Pose tool](help:rig-posing) (**Shift+K**), go to another frame and drag the bones. That's animation!
 
@@ -25,7 +25,7 @@ Moving, renaming and removing have tools of their own: see [Add, edit and remove
 
 You can draw bones on any frame, even over a posed character: they're placed where they'd be at rest so everything lines up.
 
-Prefer slimmer bones? **Skeleton, effects and more > Skeleton (rig) > Slim bones** switches the look.`,
+Prefer slimmer bones? **Rigging > Slim bones** switches the look.`,
   'rig-bone-tools': `Bones have three tools of their own, side by side in the toolbox and at the top of their options, so you never have to remember a hidden move.
 
 - **Add bone** (**K**): drag to draw a bone. Start on a tip to make a chain, or on the middle of a bone to branch off. Or pick a bone and press **Add next bone** to grow the next one with no dragging.
@@ -38,10 +38,10 @@ Prefer slimmer bones? **Skeleton, effects and more > Skeleton (rig) > Slim bones
 
 **Good to know:** the old moves all still work. Hold **Alt** with Add bone to edit for a moment, press **Delete** to remove the picked bone, **Shift+drag** to stretch and **Alt+click** to pin.
 
-Every action is also in the command palette and under **Skeleton, effects and more > Skeleton (rig)**.`,
+Every action is also in the command palette and under **Rigging**.`,
   'rig-attach': `A layer **attached** to a bone moves and turns with it, like a paper cut-out pinned to a stick.
 
-- **Skeleton, effects and more > Skeleton (rig) > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
+- **Rigging > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
 - In the **Rig panel**, under **Parts**, every layer has a menu: pick the bone it should follow, **Not attached**, or **Bends with the bones** to [bend it smoothly](help:rig-bend).
 
 You can keep drawing on an attached layer. Draw where you see the part, even when it's turned: Frameling works out where that is on the part itself.
@@ -59,10 +59,10 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
 
 **Squash and stretch:** set **Dragging a bone does** to **Stretch** (or hold **Shift** and drag) to make a bone longer or shorter on this frame. See [squash and stretch](help:rig-stretch).
 
-**Skeleton, effects and more > Skeleton (rig) > Reset pose** puts every bone back where it was drawn, on this frame.`,
+**Rigging > Reset pose** puts every bone back where it was drawn, on this frame.`,
   'rig-bend': `Some things don't come apart into neat pieces: a tail, a noodle arm, a whole character drawn on one layer. Let those **bend**.
 
-Pick the layer and choose **Skeleton, effects and more > Skeleton (rig) > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
+Pick the layer and choose **Rigging > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
 
 Frameling lays a fine mesh of triangles over the drawing and ties each point to the nearest bones, more strongly the closer it is (*automatic weights*). Points near one bone follow it exactly; points near a joint blend between the two, so elbows and knees bend smoothly. It works on vector drawings and pixel art alike.
 
@@ -74,7 +74,7 @@ Frameling lays a fine mesh of triangles over the drawing and ties each point to 
 - SVG exports put bent layers in as pictures, since SVG can't bend shapes. Every other export shows exactly what you see.`,
   'rig-weights': `When a layer [bends with the bones](help:rig-bend), Frameling guesses how strongly each part follows each bone. Most of the time the guess is fine. When a bend looks wrong (a sleeve that tears at the elbow, a tail that bends too early), paint it right.
 
-1. Pick the bending layer, then **Skeleton, effects and more > Skeleton (rig) > Paint how much it bends**.
+1. Pick the bending layer, then **Rigging > Paint how much it bends**.
 2. Pick the **bone** in Tool options, or **Ctrl+click** it on the canvas.
 3. Paint. The colours show that bone's pull: **red** follows it fully, **blue** doesn't follow it at all, green and yellow are in between.
 

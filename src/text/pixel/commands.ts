@@ -1,4 +1,4 @@
-// Pixel text commands for the palette and the Pixel menu. The Text tool itself (T) is the tool's own command.
+// Pixel text commands for the palette and the Tools menu. The Text tool itself (T) is the tool's own command.
 import type { Command } from '../../core/registry';
 import { store } from '../../core/store';
 import { hint } from '../../canvas/controller';

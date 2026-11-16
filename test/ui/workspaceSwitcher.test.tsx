@@ -76,13 +76,13 @@ describe('keys for the built-in workspaces', () => {
 
 describe('menus are not workspaces', () => {
   const names = builtinWorkspaces().map((w) => w.name);
-  it('Draw, Pixel and Animate keep their ids but say what is in them', () => {
-    for (const label of ['Draw', 'Pixel', 'Animate']) {
+  it('Draw, Animate and Extras keep their ids but say what is in them', () => {
+    for (const label of ['Draw', 'Animate', 'Extras']) {
       const m = MENUS.find((x) => x.label === label)!;
       expect(m, label).toBeTruthy();
       expect(menuTitle(m)).not.toBe(label);
     }
-    expect(MENUS.map(menuTitle)).toEqual(['File', 'Edit', 'View', 'Tools and layers', 'Pixel tools', 'Frames and motion', 'Skeleton, effects and more', 'Streaming', 'Help']);
+    expect(MENUS.map(menuTitle)).toEqual(['File', 'Edit', 'View', 'Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Streaming', 'Help']);
   });
   it('no menu on the bar is called the same as a workspace', () => {
     for (const m of MENUS) expect(names).not.toContain(menuTitle(m));

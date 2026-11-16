@@ -281,7 +281,7 @@ registerHelpTopics([
     title: 'The menus',
     section: 'Basics',
     media: 'menus.png',
-    summary: 'File, Edit, View, Tools and layers, Pixel tools, Frames and motion and Help, along the top.',
+    summary: 'File, Edit, View, Tools, Layers and artboards, Animation, Rigging, Effects and Help, along the top.',
     keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate', 'customise', 'rearrange'],
   },
   {

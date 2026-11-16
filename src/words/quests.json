@@ -10,7 +10,7 @@
     "text": "That's a real camera move with parallax. Exports always see what the camera sees.",
     "where": "Quest \"Camera move\": the line on the Great work card once you have finished it."
   },
-  "quest.camera-move.add.say": { "text": "Add a camera: Frames and motion > Camera > Add a camera.", "where": "Quest \"Camera move\", step 1 (add): what the guide says." },
+  "quest.camera-move.add.say": { "text": "Add a camera: Animation > Camera > Add a camera.", "where": "Quest \"Camera move\", step 1 (add): what the guide says." },
   "quest.camera-move.add.why": {
     "text": "The camera is a layer of its own. Its frame shows what an export will show.",
     "where": "Quest \"Camera move\", step 1 (add): the quiet line under it saying why."
@@ -141,7 +141,7 @@
     "where": "Quest \"Particle party\", step 1 (add): the quiet line under it saying why."
   },
   "quest.particle-party.add.hint": {
-    "text": "Skeleton, effects and more > Effects > Add particles: Confetti in the menu does it too.",
+    "text": "Effects > Add particles: Confetti in the menu does it too.",
     "where": "Quest \"Particle party\", step 1 (add): said when nothing has happened for a while."
   },
   "quest.particle-party.motion.say": {
@@ -221,7 +221,7 @@
     "where": "Quest \"Shade and shine\", step 5 (shine): said when nothing has happened for a while."
   },
   "quest.shade-and-shine.edge.say": {
-    "text": "Finish with an outline round the whole thing: Pixel tools menu, then Add outline (outside).",
+    "text": "Finish with an outline round the whole thing: Tools menu, then Shapes and colour, then Add outline (outside).",
     "where": "Quest \"Shade and shine\", step 6 (edge): what the guide says."
   },
   "quest.shade-and-shine.edge.why": {
@@ -549,7 +549,7 @@
     "where": "Quest \"Bones and a pose\", step 1 (add): the quiet line under it saying why."
   },
   "quest.bones-and-pose.add.hint": {
-    "text": "It is in the Rig panel on the right, or Skeleton, effects and more > Skeleton (rig) > Add a skeleton to this drawing in the menu.",
+    "text": "It is in the Rig panel on the right, or Rigging > Add a skeleton to this drawing in the menu.",
     "where": "Quest \"Bones and a pose\", step 1 (add): said when nothing has happened for a while."
   },
   "quest.bones-and-pose.draw.say": { "text": "Drag from the shoulder to the elbow, then from the elbow to the hand.", "where": "Quest \"Bones and a pose\", step 2 (draw): what the guide says." },
@@ -566,10 +566,7 @@
     "text": "Attached parts follow their bone around. You can change which bone each part follows in the Rig panel.",
     "where": "Quest \"Bones and a pose\", step 3 (attach): the quiet line under it saying why."
   },
-  "quest.bones-and-pose.attach.hint": {
-    "text": "Skeleton, effects and more > Skeleton (rig) > Attach parts to bones does the same.",
-    "where": "Quest \"Bones and a pose\", step 3 (attach): said when nothing has happened for a while."
-  },
+  "quest.bones-and-pose.attach.hint": { "text": "Rigging > Attach parts to bones does the same.", "where": "Quest \"Bones and a pose\", step 3 (attach): said when nothing has happened for a while." },
   "quest.bones-and-pose.pose.say": {
     "text": "The Pose tool (Shift+K) is picked. Go to frame 13 and drag the hand up for a wave.",
     "where": "Quest \"Bones and a pose\", step 4 (pose): what the guide says."
@@ -675,7 +672,7 @@
     "where": "Quest \"Tiles\", step 3 (edge): said when nothing has happened for a while."
   },
   "quest.tiles.done.say": { "text": "Press Done above the canvas (or Ctrl+Enter) to put the tile back.", "where": "Quest \"Tiles\", step 4 (done): what the guide says." },
-  "quest.tiles.layer.say": { "text": "Add a tilemap layer: Tools and layers menu, then Add a tilemap layer.", "where": "Quest \"Tiles\", step 5 (layer): what the guide says." },
+  "quest.tiles.layer.say": { "text": "Add a tilemap layer: Rigging menu, then Tiles, then Add a tilemap layer.", "where": "Quest \"Tiles\", step 5 (layer): what the guide says." },
   "quest.tiles.layer.why": {
     "text": "A tilemap layer is a grid you paint with tiles instead of colours. Game levels are made of them.",
     "where": "Quest \"Tiles\", step 5 (layer): the quiet line under it saying why."

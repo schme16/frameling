@@ -30,7 +30,8 @@ export const CEILINGS = {
   // Five more since soft paint: the Soft brush, Airbrush, Highlighter, Soft eraser and Smudge work on pixel layers only (a vector shape cannot fade at its edge). The mode line over the rail names them, and picking one flips to a pixel layer.
   railToolsVanish: { blank: 17, vector: 17, 'vector-selected': 17, pixel: 8, tilemap: 39, 'symbol-open': 17, playing: 17, 'has-clips': 17 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
-  menuCommandsVanish: { blank: 7, vector: 7, 'vector-selected': 7, pixel: 6, tilemap: 23, 'symbol-open': 7, playing: 7, 'has-clips': 7 } as Record<string, number>,
+  // Two more in every state but the pixel one since the Pixel menu went: it listed Shade and Dither all the time, and now they are only in the Tools menu's tool list, which shows the tools that work on the layer you are on, the same as the Wand and Slice. They are still on the pixel rail, and in the palette greyed with a reason on a vector layer. Tilemap goes 23 to 27 because on a tilemap layer the Pencil, Shade, Dither and Gradient all leave, where the Pixel menu showed them.
+  menuCommandsVanish: { blank: 9, vector: 9, 'vector-selected': 9, pixel: 6, tilemap: 27, 'symbol-open': 9, playing: 9, 'has-clips': 9 } as Record<string, number>,
 };
 
 /**
@@ -80,8 +81,11 @@ export const BIG_MENUS: Record<string, number> = {
   // One more for Put the panels back, which sits beside Dock every window back under View > Panel windows and tools.
   // It is the panels' half of a pair the tool strip already had, so it is the price of matching them, not drift.
   // One more for the Scripts panel's show-and-hide, which sits in View > Panels with every other panel's. The scripts themselves are in Edit > Scripts, not here.
-  View: 189,
-  // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
+  // 10 more for the pixel view things that were in the Pixel menu, which is gone: the Zoom to a pixel size submenu (6), the Slices submenu (2, its panel is already in View > Panels) and the Preview's play and size controls (2, in More view tools). They are about looking at the canvas, so View is where they belong; it is the price of removing a menu, and the rest of that menu's commands went to Tools, Layers and Animation (see Draw).
+  View: 199,
+  // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
+  // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
+  Draw: 175,
 };
 
 /**

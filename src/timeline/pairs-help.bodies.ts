@@ -37,7 +37,7 @@ One **Undo** takes back the stroke and the layer it made, together. The document
 
 ## If you would rather not
 
-- **Split the pair into two layers** makes them two ordinary layers again. Their frames and drawings stay, but they stop following each other. Press **Ctrl+K** and type it, or find it under **Pixels and vectors** in the **Tools and layers** menu.
+- **Split the pair into two layers** makes them two ordinary layers again. Their frames and drawings stay, but they stop following each other. Press **Ctrl+K** and type it, or find it under **Pixels and vectors** in the **Layers and artboards** menu.
 - In **Preferences, Behaviour**, answer **Just tell me how** to the question about drawing with no layer of that kind. Frameling then never makes a layer for you, and tells you how to add one.
 
 **Good to know:**

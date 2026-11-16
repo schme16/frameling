@@ -1,4 +1,4 @@
-// Particles as commands: one per preset in the palette and Skeleton, effects and more > Effects, plus shuffle.
+// Particles as commands: one per preset in the palette and Effects, plus shuffle.
 import type { Command } from '../core/registry';
 import { showPanel } from '../ui/dock';
 import { PARTICLE_PRESETS } from './model';

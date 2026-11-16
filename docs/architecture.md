@@ -589,9 +589,12 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
   (`match.ts`); `runCommand` is the one runner menus and keys use too.
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
-  aren't listed are added at the bottom. Eight menus on the bar (File, Edit, View, Tools and layers, Pixel tools,
-  Frames and motion, Skeleton, effects and more, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu (`SUBMENUS`, `sub:<key>`). A menu that moved
-  inside another keeps its old id for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to `sub:rig`, and
+  aren't listed are added at the bottom. Nine menus on the bar, by id and by the title on screen (File, Edit, View,
+  Draw shown as Tools, Layers shown as Layers and artboards, Animate shown as Animation, Extras shown as Rigging,
+  Effects, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu
+  (`SUBMENUS`, `sub:<key>`). Ids stay put when the words change, because saved menu changes and plugins name them. A
+  menu or submenu that moved keeps its old name for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to
+  `Extras`, `'Pixel'` to `Draw` and `'Artboards'` to `sub:artboards`, and
   `registerMenuItems('sub:keys', ...)` adds to a submenu directly. Submenus can also claim stray commands by
   `prefixes` or `categories`.
 - **Changing the menus** (`src/ui/menuEdits.ts` pure, `menuState.ts` the edits in force for the workspace you are in, `MenusPage.tsx`

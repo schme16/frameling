@@ -9,11 +9,11 @@ export const bodies: Record<string, string> = {
 
 **Place it.** Right after it arrives, a small bar opens. Drag the picture to move it, a corner to size it, the round knob above it to turn it (hold **Shift** to snap). The bar has the exact numbers, **Fit** (all of it, in the middle), **Fill** (covers the page) and **Own size**. Press **Done** when it sits right. Open it again any time with **Ctrl+Alt+R**.
 
-**Fade, hide, lock.** It is an ordinary layer, so the eye hides it, the padlock keeps it from being nudged, and the opacity slider fades it. A new one starts at 60%, so your lines stand out against it. **Show or hide the reference pictures** (under **Frames and motion > Reference picture**) switches every one at once.
+**Fade, hide, lock.** It is an ordinary layer, so the eye hides it, the padlock keeps it from being nudged, and the opacity slider fades it. A new one starts at 60%, so your lines stand out against it. **Show or hide the reference pictures** (under **Animation > Reference picture**) switches every one at once.
 
 **It stays sharp.** The picture keeps its own size and is drawn from that every time, so zooming in shows its detail, not a blur.
 
-**A picture for each frame.** One picture shows on every frame to begin with. For a few traced frames, go to a frame, pick the reference layer and choose **Frames and motion > Reference picture > Use another picture from this frame on...**. That picture shows from there until you set the next one. **Take away the picture set on this frame** goes back.
+**A picture for each frame.** One picture shows on every frame to begin with. For a few traced frames, go to a frame, pick the reference layer and choose **Animation > Reference picture > Use another picture from this frame on...**. That picture shows from there until you set the next one. **Take away the picture set on this frame** goes back.
 
 **Good to know:**
 - Only the part over the page shows. Slide it about to get the bit you want in view.

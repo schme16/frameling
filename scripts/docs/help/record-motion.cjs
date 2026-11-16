@@ -20,7 +20,7 @@ module.exports = [
       L.wait(600),
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
       L.wait(700),
-      { clickOn: '.ui-menubar [role=menuitem]', text: 'Frames and motion', after: 900 },
+      { clickOn: '.ui-menubar [role=menuitem]', text: 'Animation', after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'In-betweens and easing', hover: true, after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Record a move', hover: true, after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Record a move', after: 800 },

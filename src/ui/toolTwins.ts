@@ -1,5 +1,5 @@
 // Some tools come in pairs with the same name and key: Select and Lasso are one tool for a vector layer and another
-// for a pixel layer. Lists of tools (the Draw menu, the command palette) show each name once.
+// for a pixel layer. Lists of tools (the Tools menu, the command palette) show each name once.
 
 /**
  * One entry per name. Where a name appears more than once, the one usable right now wins; with none usable (or all

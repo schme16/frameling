@@ -29,7 +29,7 @@ Under the tiles, the picked tile has **Collision** (what it blocks), **Custom va
 Water, torches and conveyor belts can move. Open the tile and use the timeline as usual: add a key (**N**) for each new frame, and stretch a key to hold it longer. The tile plays everywhere it is used, and exports keep the frames and their timing. A number on the tile in the panel says how many frames it has.`,
   tilemaps: `A **tilemap layer** is a grid you paint with tiles from the [Tileset panel](help:tileset). Change a tile and every copy of it in the map changes too.
 
-Add one with **Skeleton, effects and more > Tiles > Add a tilemap layer**, or from a layer's **⋯** menu in the timeline. It sits with your other layers, so you can draw a character on a pixel layer in front of it.
+Add one with **Rigging > Tiles > Add a tilemap layer**, or from a layer's **⋯** menu in the timeline. It sits with your other layers, so you can draw a character on a pixel layer in front of it.
 
 ## The tile tools
 
@@ -127,7 +127,7 @@ Related: [Custom values](help:tile-values), [Terrains](help:tile-terrains).`,
 ## Add one
 
 1. Pick a tile in the [Tileset panel](help:tileset) and open **Custom values**.
-2. Press **Add a value** (or use **Skeleton, effects and more > Tiles > Add a custom value to tiles...**).
+2. Press **Add a value** (or use **Rigging > Tiles > Add a custom value to tiles...**).
 3. Type a name and say what it holds: yes or no, a whole number, a number with decimals, or text. Press **Add**.
 
 Every tile now has that value. Pick a tile and fill it in. A tile you leave alone has the usual empty one: no, 0, or nothing.
