@@ -78,6 +78,31 @@ describe('a pixel step holds only what it changed', () => {
     expect(JSON.stringify(steps.undo[0].p)).not.toContain('bin');
   });
 
+  // changedRect reads four bytes at a time when both blocks sit on a four byte boundary, and byte by byte when one of
+  // them does not. A drawing whose pixels are a view one byte into a buffer takes the second path, which is otherwise
+  // never reached, so it is worth pinning down that both paths find the same rectangle.
+  it('finds the same rectangle when a drawing sits off a four byte boundary', () => {
+    const { doc, id } = pixelDoc(64, 64);
+    const d = doc.drawings[id] as PixelDrawing;
+    const buf = new ArrayBuffer(d.pixels.length + 1);
+    const off = new Uint8ClampedArray(buf, 1, d.pixels.length);
+    off.set(d.pixels);
+    d.pixels = off;
+    expect(d.pixels.byteOffset % 4).toBe(1);
+    const s = resetStore(doc);
+    paint(s, id, 7, 9, 5, 3, [255, 0, 0, 255], undefined, 64, 64);
+    const steps = JSON.parse(strFromU8(withHistory(s)!.files[HISTORY_STEPS_ENTRY]));
+    expect(steps.undo[0].px[0].c).toEqual({ x: 7, y: 9, w: 5, h: 3 });
+    // And it still undoes and redoes to the same pixels.
+    const t = reopen(save(s));
+    const now = (st: Store) => [...(st.get().doc.drawings[id] as PixelDrawing).pixels];
+    const painted = now(s);
+    t.undo();
+    expect(now(t)[(9 * 64 + 7) * 4]).toBe(90);
+    t.redo();
+    expect(now(t)).toEqual(painted);
+  });
+
   it('applying the step gives exactly the pixels it had before, both ways', () => {
     const { doc, id } = pixelDoc();
     const s = resetStore(doc);

@@ -1,0 +1,1663 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:59:19.308Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 1,
+ "reps": 3,
+ "pages": {
+  "stress-pixel": {
+   "nodes": 1204,
+   "timelineNodes": 246,
+   "keys": 36,
+   "rows": 1,
+   "layers": 1
+  },
+  "stress-pixel-hd": {
+   "nodes": 1108,
+   "timelineNodes": 150,
+   "keys": 12,
+   "rows": 1,
+   "layers": 1
+  },
+  "history-pixel": {
+   "nodes": 1063,
+   "timelineNodes": 104,
+   "keys": 1,
+   "rows": 1,
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-pixel",
+   "action": "save-file-first",
+   "busyMs": 112.2,
+   "runs": [
+    119.3,
+    112.2,
+    107.2
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 112.21,
+   "wallMs": 786.5,
+   "runsWall": [
+    795,
+    776.6,
+    786.5
+   ],
+   "topSelf": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     106.6
+    ],
+    [
+     "(program) :0",
+     1.4
+    ],
+    [
+     "postMessage :0",
+     1.3
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     1
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.9
+    ],
+    [
+     "e.onmessage index-CfT5N-4h.js:167",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     109
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     5.8
+    ],
+    [
+     "(anon) :0",
+     5.2
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     5.1
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     5.1
+    ],
+    [
+     "(anon) :1",
+     5.1
+    ],
+    [
+     "JJe index-CfT5N-4h.js:167",
+     3.8
+    ],
+    [
+     "uXe index-CfT5N-4h.js:167",
+     3.8
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     2.6
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     2.2
+    ],
+    [
+     "(program) :0",
+     1.4
+    ],
+    [
+     "postMessage :0",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.9,
+    "history": 0,
+    "docjson": 0.1,
+    "files": 0.3,
+    "pngCopy": 106.7,
+    "post": 1.6,
+    "pngWait": 779.8,
+    "zipWait": 4.9,
+    "held": 109.5,
+    "posts": 101,
+    "pngs": 100,
+    "saves": 1
+   },
+   "note": "1.0 MB file, wall 787 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave-first",
+   "busyMs": 146.9,
+   "runs": [
+    146.5,
+    149.9,
+    146.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 146.89,
+   "wallMs": 833.3,
+   "runsWall": [
+    836.9,
+    817.7,
+    833.3
+   ],
+   "topSelf": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     105.2
+    ],
+    [
+     "wqe index-CfT5N-4h.js:167",
+     32.6
+    ],
+    [
+     "(program) :0",
+     2
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     1.3
+    ],
+    [
+     "call preload.cjs:5",
+     1.2
+    ],
+    [
+     "postMessage :0",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     107.4
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     41.5
+    ],
+    [
+     "(anon) :0",
+     40.5
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     39.7
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     39
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     39
+    ],
+    [
+     "(anon) :1",
+     39
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     34.7
+    ],
+    [
+     "Fqe index-CfT5N-4h.js:167",
+     33.2
+    ],
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     33.2
+    ],
+    [
+     "Pqe index-CfT5N-4h.js:167",
+     33.1
+    ],
+    [
+     "Tqe index-CfT5N-4h.js:167",
+     32.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 1,
+    "history": 33.3,
+    "docjson": 0.1,
+    "files": 0.3,
+    "pngCopy": 104,
+    "post": 1.5,
+    "pngWait": 785.3,
+    "zipWait": 5.1,
+    "held": 140.2,
+    "posts": 101,
+    "pngs": 100,
+    "saves": 1
+   },
+   "note": "wall 833 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 2.1,
+   "runs": [
+    2.1,
+    2.1,
+    2.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.12,
+   "wallMs": 5.6,
+   "runsWall": [
+    5.6,
+    5.6,
+    5.5
+   ],
+   "topSelf": [
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.8
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "eW index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:137",
+     0.1
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "UW index-CfT5N-4h.js:167",
+     1.8
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     1.3
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     1.3
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     1.3
+    ],
+    [
+     "(anon) :1",
+     1.3
+    ],
+    [
+     "(anon) :0",
+     1.3
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.8
+    ],
+    [
+     "W_ index-CfT5N-4h.js:137",
+     0.8
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     0.6
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.5
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     0.5
+    ],
+    [
+     "GJe index-CfT5N-4h.js:167",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 1,
+    "history": 0,
+    "docjson": 0.1,
+    "files": 0.1,
+    "pngCopy": 0,
+    "post": 0.6,
+    "pngWait": 0,
+    "zipWait": 4.4,
+    "held": 1.7,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "1.0 MB file, wall 6 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 5.1,
+   "runs": [
+    5.1,
+    5.6,
+    4.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.14,
+   "wallMs": 9.3,
+   "runsWall": [
+    9.3,
+    10.2,
+    9.3
+   ],
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.4
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     1
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.9
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "aG index-CfT5N-4h.js:167",
+     3.8
+    ],
+    [
+     "(anon) :0",
+     2.9
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     1.9
+    ],
+    [
+     "call preload.cjs:5",
+     1.4
+    ],
+    [
+     "write preload.cjs:68",
+     1.4
+    ],
+    [
+     "(anon) :1",
+     1.3
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     1.2
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     1.2
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     1.2
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.9
+    ],
+    [
+     "W_ index-CfT5N-4h.js:137",
+     0.9
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 1,
+    "history": 0,
+    "docjson": 0.1,
+    "files": 0.3,
+    "pngCopy": 0,
+    "post": 0.6,
+    "pngWait": 0,
+    "zipWait": 4.1,
+    "held": 2,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "wall 9 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "undo-redo",
+   "busyMs": 37.9,
+   "runs": [
+    41.7,
+    37.9,
+    37.8
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.16,
+   "topSelf": [
+    [
+     "(program) :0",
+     18.6
+    ],
+    [
+     "XA index-CfT5N-4h.js:150",
+     1
+    ],
+    [
+     "gu index-CfT5N-4h.js:9",
+     0.9
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     0.8
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:304",
+     0.7
+    ],
+    [
+     "Rf index-CfT5N-4h.js:10",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     18.6
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     15.7
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     14.5
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     14.5
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     14.5
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     14.5
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     10.4
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     10.3
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     10
+    ],
+    [
+     "Ac index-CfT5N-4h.js:9",
+     7.8
+    ],
+    [
+     "Wo index-CfT5N-4h.js:9",
+     7.3
+    ],
+    [
+     "q9 index-CfT5N-4h.js:304",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "save-file-first",
+   "busyMs": 42.6,
+   "runs": [
+    45.2,
+    42.6,
+    39.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 42.6,
+   "wallMs": 314.6,
+   "runsWall": [
+    324.5,
+    314.6,
+    308.3
+   ],
+   "topSelf": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     40.8
+    ],
+    [
+     "(program) :0",
+     0.8
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.2
+    ],
+    [
+     "e.onmessage index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "ha index-CfT5N-4h.js:9",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     40.8
+    ],
+    [
+     "(anon) :0",
+     13.7
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     13.6
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     13.6
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     13.6
+    ],
+    [
+     "(anon) :1",
+     13.6
+    ],
+    [
+     "uXe index-CfT5N-4h.js:167",
+     13.4
+    ],
+    [
+     "JJe index-CfT5N-4h.js:167",
+     13.3
+    ],
+    [
+     "(program) :0",
+     0.8
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     0.3
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     0.3
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.1,
+    "history": 0,
+    "docjson": 0.1,
+    "files": 0.1,
+    "pngCopy": 40.4,
+    "post": 0.4,
+    "pngWait": 312.6,
+    "zipWait": 2.8,
+    "held": 41.2,
+    "posts": 13,
+    "pngs": 12,
+    "saves": 1
+   },
+   "note": "0.6 MB file, wall 315 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "autosave-first",
+   "busyMs": 57.3,
+   "runs": [
+    57.3,
+    56,
+    57.5
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 57.31,
+   "wallMs": 340.3,
+   "runsWall": [
+    344,
+    326.3,
+    340.3
+   ],
+   "topSelf": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     39.8
+    ],
+    [
+     "wqe index-CfT5N-4h.js:167",
+     12.8
+    ],
+    [
+     "call preload.cjs:5",
+     0.9
+    ],
+    [
+     "(program) :0",
+     0.8
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     0.6
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     40.7
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     27.7
+    ],
+    [
+     "(anon) :0",
+     27.1
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     26.5
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     26.2
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     26.2
+    ],
+    [
+     "(anon) :1",
+     26.2
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     13.3
+    ],
+    [
+     "Fqe index-CfT5N-4h.js:167",
+     13
+    ],
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     13
+    ],
+    [
+     "JJe index-CfT5N-4h.js:167",
+     12.9
+    ],
+    [
+     "uXe index-CfT5N-4h.js:167",
+     12.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.1,
+    "history": 13,
+    "docjson": 0,
+    "files": 0.1,
+    "pngCopy": 40.2,
+    "post": 0.2,
+    "pngWait": 318.9,
+    "zipWait": 2.2,
+    "held": 53.6,
+    "posts": 13,
+    "pngs": 12,
+    "saves": 1
+   },
+   "note": "wall 340 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "save-file",
+   "busyMs": 1,
+   "runs": [
+    1.1,
+    0.8,
+    1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.04,
+   "wallMs": 2.8,
+   "runsWall": [
+    2.8,
+    2.8,
+    2.4
+   ],
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.2
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "UW index-CfT5N-4h.js:167",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "GJe index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     0.3
+    ],
+    [
+     "(anon) :1",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "R_ index-CfT5N-4h.js:137",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.2,
+    "history": 0,
+    "docjson": 0,
+    "files": 0.1,
+    "pngCopy": 0,
+    "post": 0.2,
+    "pngWait": 0,
+    "zipWait": 2.4,
+    "held": 0.5,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "0.6 MB file, wall 3 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "autosave",
+   "busyMs": 2.9,
+   "runs": [
+    2.9,
+    2.6,
+    3.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.88,
+   "wallMs": 5.1,
+   "runsWall": [
+    5,
+    5.1,
+    5.3
+   ],
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     0.9
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "aG index-CfT5N-4h.js:167",
+     2
+    ],
+    [
+     "(anon) :0",
+     1.5
+    ],
+    [
+     "call preload.cjs:5",
+     0.9
+    ],
+    [
+     "write preload.cjs:68",
+     0.9
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :1",
+     0.4
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0.2,
+    "history": 0,
+    "docjson": 0,
+    "files": 0.1,
+    "pngCopy": 0,
+    "post": 0.4,
+    "pngWait": 0,
+    "zipWait": 2.3,
+    "held": 0.6,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "wall 5 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "undo-redo",
+   "busyMs": 31.1,
+   "runs": [
+    30.1,
+    33.5,
+    31.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.5
+    ],
+    [
+     "XA index-CfT5N-4h.js:150",
+     1.3
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     1.1
+    ],
+    [
+     "Ahe index-CfT5N-4h.js:150",
+     0.8
+    ],
+    [
+     "QA index-CfT5N-4h.js:150",
+     0.8
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:10",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.5
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     11.9
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     11.1
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     11
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     11
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     11
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     7.9
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     7.4
+    ],
+    [
+     "Wo index-CfT5N-4h.js:9",
+     6
+    ],
+    [
+     "Ac index-CfT5N-4h.js:9",
+     6
+    ],
+    [
+     "q9 index-CfT5N-4h.js:304",
+     4
+    ],
+    [
+     "(anon) :0",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-pixel",
+   "action": "save-file-first",
+   "busyMs": 2.4,
+   "runs": [
+    2.4,
+    2.6,
+    2.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.39,
+   "wallMs": 69.2,
+   "runsWall": [
+    73.5,
+    67.9,
+    69.2
+   ],
+   "topSelf": [
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     1.6
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "Pu index-CfT5N-4h.js:9",
+     0.1
+    ],
+    [
+     "eW index-CfT5N-4h.js:167",
+     0.1
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "UW index-CfT5N-4h.js:167",
+     2
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     1.9
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     1.9
+    ],
+    [
+     "(anon) :1",
+     1.9
+    ],
+    [
+     "(anon) :0",
+     1.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     1.8
+    ],
+    [
+     "JJe index-CfT5N-4h.js:167",
+     1.7
+    ],
+    [
+     "uXe index-CfT5N-4h.js:167",
+     1.7
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "Pu index-CfT5N-4h.js:9",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 1.6,
+    "post": 0.1,
+    "pngWait": 69.3,
+    "zipWait": 0.8,
+    "held": 1.8,
+    "posts": 2,
+    "pngs": 1,
+    "saves": 1
+   },
+   "note": "0.2 MB file, wall 69 ms"
+  },
+  {
+   "doc": "history-pixel",
+   "action": "autosave-first",
+   "busyMs": 20.9,
+   "runs": [
+    20.9,
+    18.7,
+    29.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 20.93,
+   "wallMs": 255.9,
+   "runsWall": [
+    255.9,
+    251.9,
+    256.7
+   ],
+   "topSelf": [
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     6.1
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     5.8
+    ],
+    [
+     "(program) :0",
+     2.3
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     2.2
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     1.7
+    ],
+    [
+     "call preload.cjs:5",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "UW index-CfT5N-4h.js:167",
+     15.6
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     13.4
+    ],
+    [
+     "(anon) :0",
+     11.4
+    ],
+    [
+     "(anon) :1",
+     9.8
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     9.7
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     9.7
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     7.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     7.6
+    ],
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     6.7
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     6
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     5.9
+    ],
+    [
+     "GJe index-CfT5N-4h.js:167",
+     5.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0,
+    "history": 6.7,
+    "docjson": 1.2,
+    "files": 0.1,
+    "pngCopy": 1.8,
+    "post": 5.9,
+    "pngWait": 70.3,
+    "zipWait": 171.1,
+    "held": 15.6,
+    "posts": 2,
+    "pngs": 1,
+    "saves": 1
+   },
+   "note": "wall 256 ms"
+  },
+  {
+   "doc": "history-pixel",
+   "action": "save-file",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.58,
+   "wallMs": 0.8,
+   "runsWall": [
+    0.6,
+    0.8,
+    0.9
+   ],
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "vXe index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "UW index-CfT5N-4h.js:167",
+     0.3
+    ],
+    [
+     "saveBytesAsync debug-55cIoJBr.js:3",
+     0.3
+    ],
+    [
+     "(anon) :1",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "vXe index-CfT5N-4h.js:167",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "zU index-CfT5N-4h.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 0.1,
+    "pngWait": 0,
+    "zipWait": 0.6,
+    "held": 0.2,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "0.2 MB file, wall 1 ms"
+  },
+  {
+   "doc": "history-pixel",
+   "action": "autosave",
+   "busyMs": 18.6,
+   "runs": [
+    26.2,
+    15.6,
+    18.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 18.6,
+   "wallMs": 183.5,
+   "runsWall": [
+    186.9,
+    182.3,
+    183.5
+   ],
+   "topSelf": [
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     5.9
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     5.8
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     2.3
+    ],
+    [
+     "call preload.cjs:5",
+     2.2
+    ],
+    [
+     "(garbage collector) :0",
+     1.3
+    ],
+    [
+     "(program) :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "UW index-CfT5N-4h.js:167",
+     12.2
+    ],
+    [
+     "aG index-CfT5N-4h.js:167",
+     11.1
+    ],
+    [
+     "(anon) :0",
+     8.8
+    ],
+    [
+     "yXe index-CfT5N-4h.js:167",
+     6.3
+    ],
+    [
+     "i index-CfT5N-4h.js:167",
+     6.3
+    ],
+    [
+     "iG index-CfT5N-4h.js:167",
+     6.3
+    ],
+    [
+     "(anon) :1",
+     6.3
+    ],
+    [
+     "Iqe index-CfT5N-4h.js:167",
+     6
+    ],
+    [
+     "pump index-CfT5N-4h.js:167",
+     5.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:167",
+     5.9
+    ],
+    [
+     "run index-CfT5N-4h.js:167",
+     5.9
+    ],
+    [
+     "GJe index-CfT5N-4h.js:167",
+     5.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0,
+    "history": 6.1,
+    "docjson": 0.1,
+    "files": 0.4,
+    "pngCopy": 0,
+    "post": 5.8,
+    "pngWait": 0,
+    "zipWait": 232.2,
+    "held": 12.4,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1
+   },
+   "note": "wall 184 ms"
+  },
+  {
+   "doc": "history-pixel",
+   "action": "undo-redo",
+   "busyMs": 33,
+   "runs": [
+    33.6,
+    32.3,
+    33
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.75,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.8
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     1.2
+    ],
+    [
+     "XA index-CfT5N-4h.js:150",
+     0.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:150",
+     0.9
+    ],
+    [
+     "(garbage collector) :0",
+     0.8
+    ],
+    [
+     "Ahe index-CfT5N-4h.js:150",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.8
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     12.7
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     11.7
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     11.4
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     11.4
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     11.4
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     8.3
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     7.8
+    ],
+    [
+     "Ac index-CfT5N-4h.js:9",
+     6.4
+    ],
+    [
+     "Wo index-CfT5N-4h.js:9",
+     6.2
+    ],
+    [
+     "q9 index-CfT5N-4h.js:304",
+     3.9
+    ],
+    [
+     "(anon) :0",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
