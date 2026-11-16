@@ -108,7 +108,7 @@ help:brush-presets help:brush-own help:tool-brush help:exporting`,
 - A line drawn with a brush can't be changed afterwards. Undo, change the brush and draw it again.
 
 help:brush-tips help:brush-presets help:brush-picker help:exporting`,
-  'brush-import': `Brushes made in **Photoshop** (**.abr**) and **GIMP** (**.gbr**, **.gih**, **.vbr**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, brush by brush, and says plainly what did not come across.
+  'brush-import': `Brushes made in **Photoshop** (**.abr**), **GIMP** (**.gbr**, **.gih**, **.vbr**) and **Krita** (**.kpp**, **.bundle**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, brush by brush, and says plainly what did not come across.
 
 **Bring some in:**
 1. **Tools > Saved brushes > Add brushes from a file...** (or search the command palette for **Add brushes**).
@@ -122,15 +122,16 @@ They land in your [brush picker](help:brush-picker) beside the ones that come re
 **What comes across:**
 - The tip: a round or square shape, or a picture. A picture tip is shrunk to fit 32 by 32 pixels, with its soft shading kept (so a charcoal or sponge tip still has its texture).
 - Size, hardness, angle, roundness and spacing.
-- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity.
+- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, as straight lines.
 - A texture becomes one of the [papers](help:pixel-brush-texture), and a dual brush with a textured tip becomes a field of dots, both with a note saying so.
 
-**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP picks between them as you paint; Frameling takes the first), and stylus wheel. Each one is named in the window when a brush had it.
+**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP and Krita pick between them as you paint; Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes, and every brush engine that isn't the pixel brush. Each one is named in the window when a brush had it.
 
 **Good to know:**
-- A Photoshop set is one file with many brushes. A GIMP file is one brush.
+- A Photoshop set or a Krita **.bundle** is one file with many brushes. A GIMP file or a Krita **.kpp** is one brush.
+- A lone Krita **.kpp** that paints with a picture tip can't come in, because the picture isn't inside it. Make a bundle in Krita's **Manage Resources** window (it carries the pictures) and add that instead.
 - A file that is damaged or isn't a brush file is refused with a reason, and nothing is added.
-- Krita and Procreate brushes can't be read yet.
+- Procreate, Clip Studio Paint and Affinity brushes can't be read yet.
 - Open the brush in the [Pixel brush](help:pixel-brush) options afterwards to change anything, then **Save as...** to keep your version.
 
 help:brush-presets help:brush-picker help:pixel-brush-dynamics`,

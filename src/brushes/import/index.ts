@@ -3,12 +3,13 @@
 // message. See docs/brush-import.md for which formats are read and what does not come across.
 import { readAbrFile } from './abr';
 import { readGbrFile, readGihFile, readVbrFile } from './gimp';
+import { readBundleFile, readKppFile } from './krita';
 import { BrushProblem, FORMAT_NAMES, MAX_BRUSHES_PER_FILE, MAX_FILE_BYTES, type BrushFormat, type ImportResult } from './types';
 
 export * from './types';
 
 /** The file endings the Add brushes picker offers, besides Frameling's own .json. */
-export const IMPORT_EXTS = ['.gbr', '.gih', '.vbr', '.abr'];
+export const IMPORT_EXTS = ['.gbr', '.gih', '.vbr', '.abr', '.kpp', '.bundle'];
 
 const extOf = (name: string): string => {
   const m = /\.[A-Za-z0-9]+$/.exec(name);
@@ -26,9 +27,14 @@ export function sniff(bytes: Uint8Array, fileName: string): BrushFormat | null {
   if (ext === '.vbr') return 'vbr';
   if (ext === '.gih') return 'gih';
   if (ext === '.abr') return 'abr';
+  if (ext === '.kpp') return 'kpp';
+  if (ext === '.bundle') return 'bundle';
   // A .gbr has its version in the second word and (version 2) GIMP at byte 20.
   const gbr = (be32(4) === 1 || be32(4) === 2 || be32(4) === 3) && be32(0) >= 20 && be32(0) < 4096 && (be32(4) === 1 || head(24).endsWith('GIMP'));
   if (ext === '.gbr' || gbr) return 'gbr';
+  // A Krita preset is a PNG; a Krita bundle is a zip whose first entry is its mimetype file.
+  if (head(8) === '\x89PNG\r\n\x1a\n' && ext !== '.png') return 'kpp';
+  if (head(2) === 'PK' && ext !== '.zip') return 'bundle';
   // A modern Photoshop set has its version, then 8BIM sections.
   if ([6, 7, 9, 10].includes((bytes[0] << 8) | bytes[1]) && head(8).slice(4) === '8BIM') return 'abr';
   return null;
@@ -39,10 +45,16 @@ export function readBrushFile(bytes: Uint8Array, fileName: string): ImportResult
   if (bytes.length > MAX_FILE_BYTES) return { ok: false, error: 'That file is too big to be a brush file.' };
   if (bytes.length < 8) return { ok: false, error: 'That file is too small to be a brush file.' };
   const format = sniff(bytes, fileName);
-  if (!format) return { ok: false, error: `Frameling could not tell what kind of brush file "${fileName.slice(0, 60)}" is. It reads GIMP (.gbr, .gih, .vbr) and Photoshop (.abr) brushes.` };
+  if (!format) return { ok: false, error: `Frameling could not tell what kind of brush file "${fileName.slice(0, 60)}" is. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr) and Krita (.kpp, .bundle) brushes.` };
   const base = stripExt(fileName) || FORMAT_NAMES[format].what;
   try {
-    const r = format === 'gbr' ? readGbrFile(bytes, base) : format === 'gih' ? readGihFile(bytes, base) : format === 'abr' ? readAbrFile(bytes, base) : readVbrFile(bytes, base);
+    const r =
+      format === 'gbr' ? readGbrFile(bytes, base)
+      : format === 'gih' ? readGihFile(bytes, base)
+      : format === 'abr' ? readAbrFile(bytes, base)
+      : format === 'kpp' ? readKppFile(bytes, base)
+      : format === 'bundle' ? readBundleFile(bytes, base)
+      : readVbrFile(bytes, base);
     if (r.ok && r.brushes.length > MAX_BRUSHES_PER_FILE) return { ...r, brushes: r.brushes.slice(0, MAX_BRUSHES_PER_FILE), notes: [...r.notes, `Only the first ${MAX_BRUSHES_PER_FILE} brushes were kept.`] };
     return r;
   } catch (e) {

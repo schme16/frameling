@@ -3,7 +3,7 @@
 const { L, start, draw, wave, away, shot } = require('../ab-pixel-brush/_draw.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
-const { GIMP, PHOTOSHOP } = require('./_rows.cjs');
+const { GIMP, PHOTOSHOP, KRITA } = require('./_rows.cjs');
 
 const SIZE = 200;
 /** Import a file in the page and make its brush the pixel brush. */
@@ -20,4 +20,4 @@ const make = (group, r, i) => {
   };
 };
 
-module.exports = [...GIMP.map((r, i) => make('gimp', r, i)), ...PHOTOSHOP.map((r, i) => make('photoshop', r, i))];
+module.exports = [...GIMP.map((r, i) => make('gimp', r, i)), ...PHOTOSHOP.map((r, i) => make('photoshop', r, i)), ...KRITA.map((r, i) => make('krita', r, i))];

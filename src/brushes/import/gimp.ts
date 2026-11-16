@@ -11,7 +11,7 @@ const MAX_SIDE = 16384;
 const MAX_NAME_BYTES = 1024;
 const MAX_HEADER = 4096;
 
-interface Gbr {
+export interface Gbr {
   name: string;
   w: number;
   h: number;
@@ -24,7 +24,7 @@ interface Gbr {
 }
 
 /** One .gbr from `pos`. Returns it and where the next thing starts (a .gih keeps several end to end). `keepData` false skips the pixels. */
-function readGbr(r: Reader, keepData = true): Gbr {
+export function readGbr(r: Reader, keepData = true): Gbr {
   const headerSize = r.u32();
   const version = r.u32();
   if (version === 3) throw new BrushProblem('That is a CinePaint (FilmGimp) brush with 16-bit float pixels. Frameling reads the ordinary GIMP .gbr only.');
@@ -48,7 +48,7 @@ function readGbr(r: Reader, keepData = true): Gbr {
   return { name, w, h, bytes, spacing, version, data };
 }
 
-function readerOf(g: Gbr): PixelReader {
+export function readerOf(g: Gbr): PixelReader {
   const { w, bytes, data } = g;
   return (x, y, out) => {
     const i = (y * w + x) * bytes;
@@ -115,7 +115,8 @@ const SELECTIONS: Record<string, string> = {
   fixed: 'by a fixed pick',
 };
 
-export function readGihFile(bytes: Uint8Array, fileName: string): ImportResult {
+/** A pipe checked end to end: its name, how many pictures it says, its settings and the first picture (the rest are only checked, never kept). */
+export function readGihPipe(bytes: Uint8Array, lenient = false): { name: string; count: number; found: number; params: Map<string, string>; first: Gbr } {
   // Two lines of text, then the pictures end to end.
   const lineEnd = (from: number): number => {
     const stop = Math.min(bytes.length, from + 2048);
@@ -133,10 +134,23 @@ export function readGihFile(bytes: Uint8Array, fileName: string): ImportResult {
   // The first picture is the brush. The rest are read only far enough to check the file is whole and to count them.
   const first = readGbr(r);
   let found = 1;
-  for (; found < count; found++) readGbr(r, false);
+  try {
+    for (; found < count; found++) readGbr(r, false);
+  } catch (e) {
+    // Some pipes (Krita's fairy dust one) say more pictures than they hold. Only a caller that has the first whole may carry on.
+    if (!lenient) throw e;
+  }
+  return { name, count, found, params, first };
+}
+
+/** The words for how a pipe picks its picture, e.g. "one after another". */
+export const pipePicks = (params: Map<string, string>): string | undefined => SELECTIONS[params.get('selection') ?? ''];
+
+export function readGihFile(bytes: Uint8Array, fileName: string): ImportResult {
+  const { name, count, params, first } = readGihPipe(bytes);
   const brush = brushFromGbr(first, name || fileName);
   brush.name = fixName(name, brush.name);
-  const how = SELECTIONS[params.get('selection') ?? ''];
+  const how = pipePicks(params);
   brush.dropped.push(
     `This is a pipe of ${plural(count, 'picture')}, and GIMP ${how ? `picks one ${how}` : 'switches between them'} as you paint. Frameling's brush has one tip, so only the first picture came across.`,
   );

@@ -23,4 +23,19 @@ const PHOTOSHOP = [
   ...(extra && have(path.join(extra, 'special.abr')) ? [3, 5, 4].map((i) => ({ file: path.join(extra, 'special.abr'), index: i, label: `Photoshop preset ${i}` })) : []),
 ];
 
-module.exports = { GIMP, PHOTOSHOP };
+// Krita: one lone preset (a generated tip), and presets from a small bundle copied from Krita's own CC0 default brushes.
+// A lone preset carries no tip pictures, so every picture tip comes from the bundle, as it would for a person.
+const KRITA = [
+  { file: fx('krita/Basic-5_Size_default.kpp'), label: 'Basic-5 Size (.kpp)' },
+  { file: fx('krita/small-set.bundle'), index: 1, label: 'Pencil-1 Hard (.bundle)' },
+  { file: fx('krita/small-set.bundle'), index: 2, label: 'Basic-6 Details (.bundle)' },
+  { file: fx('krita/small-set.bundle'), index: 3, label: 'Pencil-4 Soft (.bundle)' },
+  { file: fx('krita/small-set.bundle'), index: 4, label: 'Stamp Sparkles (.bundle)' },
+  { file: fx('krita/small-set.bundle'), index: 5, label: 'Eraser Circle (.bundle)' },
+];
+
+/** Which sets to make: BRUSH_AB_SETS=krita,gimp (default: all). */
+const want = (process.env.BRUSH_AB_SETS || 'gimp,photoshop,krita').split(',');
+const pick = (name, list) => (want.includes(name) ? list : []);
+
+module.exports = { GIMP: pick('gimp', GIMP), PHOTOSHOP: pick('photoshop', PHOTOSHOP), KRITA: pick('krita', KRITA) };
