@@ -34,8 +34,16 @@ export const sampleSize = (size: number, h: number): number => Math.max(1.2, Mat
 /**
  * The points of the short dab: centred in the box with room round the tip for a rough edge, a wash or a stamp to spread,
  * and a tiny slant so it looks made by a hand. A fat brush leaves little line (a tip), a thin one a short stroke.
+ * A bristle tip has no sensible single dab (see `bristles`), so its dab is a short stroke across the box.
  */
-export function dabPoints(w: number, h: number, size: number): StrokePoint[] {
+export function dabPoints(w: number, h: number, size: number, bristles = false): StrokePoint[] {
+  if (bristles) {
+    // Bristles are hairs that run along the line, so one touch is a handful of dots: a small lined square. They get a
+    // short wave across the box instead, which is what a bristle brush is.
+    const pad = 5;
+    const len = Math.max(4, w - 2 * pad);
+    return Array.from({ length: 21 }, (_, i) => ({ x: pad + (len * i) / 20, y: h / 2 + Math.sin((i / 20) * Math.PI * 2) * h * 0.15, p: 0.7 }));
+  }
   const room = size / 2 + Math.max(4, size * 0.3);
   const len = Math.max(4, w - 2 * room);
   const pts: StrokePoint[] = [];
@@ -94,7 +102,7 @@ export function thumbFor(brush: BrushSettings, kind: ThumbKind, w: number, h: nu
   if (!g) return null;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   const used = thumbBrush(brush, kind, h);
-  const pts = kind === 'dab' ? dabPoints(w, h, used.size) : samplePoints(w, h);
+  const pts = kind === 'dab' ? dabPoints(w, h, used.size, brush.tip?.kind === 'bristle') : samplePoints(w, h);
   drawPreviewStroke(g, pts, used, color);
   drawn++;
   cache.set(key, c);
