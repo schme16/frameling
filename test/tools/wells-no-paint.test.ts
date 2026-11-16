@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Gradient, PathShape, Shape, StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
-import { bareWords, endGradientGesture, followPick, getGradientWells, isMixed, matchSelectedColours, paintView, setPaintKind, showsPaintKind, showsPicker } from '../../src/tools/gradient-wells';
+import { bareWords, endGradientGesture, followPick, getGradientWells, isMixed, matchSelectedColours, paintView, setPaintKind, showsPaintKind, showsPicker, wellIsNone, wellShows } from '../../src/tools/gradient-wells';
 import { setActiveColor } from '../../src/tools/wells';
 import { getCommand } from '../../src/core/registry';
 import '../../src/tools/wells';
@@ -238,5 +238,37 @@ describe('a side with nothing on it hides its colour tools', () => {
     store().setUi({ activeWell: 'fill' });
     setActiveColor('#123456');
     expect(showsPicker(paintView('fill'))).toBe(true);
+  });
+});
+
+describe('the see-through box', () => {
+  it('shows nothing for a side with no paint, whatever the box colour is', () => {
+    addShapes(lineOnly('a'));
+    pick(['a'], 'fill');
+    expect(wellShows(paintView('fill'), '#0000ff')).toBe(null);
+    expect(wellIsNone(paintView('fill'), '#0000ff')).toBe(true);
+  });
+
+  it('shows the picked shape colour, not the box colour, when there is paint', () => {
+    addShapes(lineOnly('a'));
+    pick(['a'], 'stroke');
+    expect(wellShows(paintView('stroke'), '#0000ff')).toBe('#00ff00');
+    expect(wellIsNone(paintView('stroke'), '#0000ff')).toBe(false);
+  });
+
+  it('falls back to the box colour when nothing is picked', () => {
+    expect(wellShows(paintView('fill'), '#0000ff')).toBe('#0000ff');
+    expect(wellIsNone(paintView('fill'), '#0000ff')).toBe(false);
+  });
+
+  it('counts an empty box as nothing, so the box is see-through there too', () => {
+    expect(wellIsNone(paintView('fill'), null)).toBe(true);
+  });
+
+  it('is not see-through when the picked shapes differ, which reads as mixed instead', () => {
+    addShapes(fillOnly('a'), lineOnly('b'));
+    pick(['a', 'b'], 'fill');
+    expect(wellShows(paintView('fill'), '#0000ff')).toBe('mixed');
+    expect(wellIsNone(paintView('fill'), '#0000ff')).toBe(false);
   });
 });

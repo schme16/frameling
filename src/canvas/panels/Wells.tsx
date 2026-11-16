@@ -4,8 +4,8 @@
 import { useStore } from '../../core/store';
 import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../tools/wells';
 import { Icon } from '../../ui/icons';
-import { isMixed, useGradientWells, usePaintView } from '../../tools/gradient-wells';
-import { firstColor, gradientCss } from '../../core/gradient';
+import { isMixed, useGradientWells, usePaintView, wellIsNone, wellShows } from '../../tools/gradient-wells';
+import { gradientCss } from '../../core/gradient';
 import { usePaintWells } from '../../tools/pixelWells';
 import { PaintWells } from '../../pixel/PaintWells';
 
@@ -17,7 +17,7 @@ function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string 
   const view = usePaintView(which);
   const mixed = isMixed(view);
   const bare = view.from === 'none';
-  const shown = bare ? null : view.from === 'colour' ? view.color : view.from === 'selection' ? firstColor(view.style) : color;
+  const shown = mixed ? null : wellShows(view, color);
   const g = view.from === 'selection' ? view.style : view.from === 'box' ? boxGradient : null;
   const style = mixed ? ({ '--well': 'var(--panel-2)' } as React.CSSProperties) : shown ? ({ '--well': shown, ...(g ? { '--wellg': gradientCss(g, g.angle) } : {}) } as React.CSSProperties) : undefined;
   color = mixed ? 'mixed' : shown;
@@ -38,12 +38,17 @@ export function Wells() {
   const fill = useStore((s) => s.ui.fillColor);
   const stroke = useStore((s) => (s.ui.strokeOn ? s.ui.color : null));
   const active = useStore((s) => s.ui.activeWell);
+  // The box in front with nothing on it is see-through, so the box behind is cut away where they overlap: you see the
+  // panel through the hole, not the other colour.
+  const fillView = usePaintView('fill');
+  const strokeView = usePaintView('stroke');
+  const seeThrough = active === 'fill' && wellIsNone(fillView, fill) ? 'fill' : active === 'stroke' && wellIsNone(strokeView, stroke) ? 'stroke' : undefined;
   // The Pixel workspace has Paint and Back instead.
   const paintWells = usePaintWells();
   if (paintWells) return <PaintWells />;
   return (
     <div className="cv-wells" data-quest="color-wells">
-      <div className="cv-wells-stack" data-overlaps>
+      <div className="cv-wells-stack" data-overlaps data-see-through={seeThrough}>
         <Box which="fill" color={fill} front={active === 'fill'} />
         <Box which="stroke" color={stroke} front={active === 'stroke'} />
       </div>

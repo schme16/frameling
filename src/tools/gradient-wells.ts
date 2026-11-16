@@ -203,6 +203,20 @@ export function showsPaintKind(v: PaintView): boolean {
   return v.from !== 'none';
 }
 
+/** What a well's box shows: a colour, a gradient, "mixed", or nothing at all. Nothing means the see-through box. */
+export function wellShows(v: PaintView, boxColor: string | null): 'mixed' | string | null {
+  if (isMixed(v)) return 'mixed';
+  if (v.from === 'none') return null;
+  if (v.from === 'colour') return v.color;
+  if (v.from === 'selection') return firstColor(v.style);
+  return boxColor;
+}
+
+/** Whether a well has nothing on it, so its box is see-through and the box behind is cut away under it. */
+export function wellIsNone(v: PaintView, boxColor: string | null): boolean {
+  return !wellShows(v, boxColor);
+}
+
 /** Plain words about shapes with nothing on a side, for the panel. Null when there is nothing to say. */
 export function bareWords(v: PaintView, w: Well): string | null {
   const noun = w === 'fill' ? 'fill' : 'outline';

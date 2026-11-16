@@ -557,9 +557,18 @@
 .cv-well:hover {
   transform: scale(1.04);
 }
-/* "None" is a red slash, as in Illustrator. */
+/* "None" is a red slash, as in Illustrator, over nothing at all: the box is see-through, with no chequerboard and no
+   panel colour behind the slash. */
 .cv-well.is-none {
-  background-image: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+  background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+}
+/* The boxes overlap by 18px. When the one in front is see-through, the one behind is cut away under it, so the hole
+   shows the panel rather than the other colour. */
+.cv-wells-stack[data-see-through='fill'] .cv-well-stroke {
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 18px, 18px 18px);
+}
+.cv-wells-stack[data-see-through='stroke'] .cv-well-fill {
+  clip-path: polygon(0 0, 100% 0, 100% 20px, 20px 20px, 20px 100%, 0 100%);
 }
 .cv-wells-actions {
   display: flex;
