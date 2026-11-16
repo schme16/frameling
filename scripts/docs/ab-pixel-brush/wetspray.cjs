@@ -18,7 +18,8 @@ module.exports = [
       L.js(`__frameling.dock.applyWorkspace('pixel')`), L.wait(600), ...start(160),
       dab({ size: 6 }), draw(wave(60, 10, 14, 146, 30)),
       L.js("document.querySelector('.pk-btn').click()"), L.wait(1200), header('Pen and speed'), L.wait(900), header('Colour'), L.wait(1500),
-      only, L.wait(500),
+      // Rows scrolled into view draw a moment later (they draw when seen), so give them time or the shot catches empty rows.
+      only, L.wait(2500),
       { shot: '@', el: '.pk-pop', pad: 6 },
     ],
   },
