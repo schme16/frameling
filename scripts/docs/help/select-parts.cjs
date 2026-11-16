@@ -1,8 +1,8 @@
 // Help clip for "Picking part of a shape": a box round one corner picks just that corner and pulling it stretches the
 // shape; Ctrl and the same box picks the whole shape and moving it takes the lot. See scripts/docs/help-media.cjs.
-const { T, UI, away, view, put, tool, draw, rect, ell, stroke, INK, REC, STOP, WARM } = require('./_shapes.cjs');
+const { T, UI, away, view, put, tool, draw, rect, ell, stroke, INK, REC, STOP, WARM, STAGE } = require('./_shapes.cjs');
 
-const CANVAS = [113, 47, 764, 444];
+const CANVAS = STAGE;
 const BLUE = '#4a7cf0';
 const SUN = '#f7c95a';
 const CORNER_BOX = [[780, 150], [680, 250]];

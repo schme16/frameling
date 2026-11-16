@@ -1,10 +1,10 @@
 // The board looks for Offset path and the Width tool: the same ghost as drawn, offset out and offset in; the same line
 // even, then made fat in the middle with the Width tool. Once per theme, in the real app.
 //   SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" node_modules/.bin/electron scripts/docs/help-media.cjs --entries scripts/docs/ab-offset-width --out <dir>
-const { T, UI, view, away, put, stroke, label } = require('../help/_shapes.cjs');
+const { T, UI, view, away, put, stroke, label, STAGE } = require('../help/_shapes.cjs');
 const O = require('../help/_offsetwidth.cjs');
 
-const CANVAS = [113, 47, 764, 444];
+const CANVAS = STAGE;
 const YELLOW = '#ffd23f';
 const RED = '#e0685e';
 const choices = { 'shapes.offsetKeep': 'copy' };

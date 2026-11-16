@@ -1,9 +1,9 @@
 // Before and after looks for combining shapes, and clips for hold to tidy.
 // Run: SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab --only <names> --out brand/ab/shape-tools
 // The line styles beside their exported files are made by scripts/ab/shape-tools-files.cjs (see brand/ab/shape-tools/note.md).
-const { T, UI, dom, away, view, INK, rect, ell, line, label, stroke, put, run, tool, draw, along, REC, STOP, WARM, wobbler } = require('../help/_shapes.cjs');
+const { T, UI, dom, away, view, INK, rect, ell, line, label, stroke, put, run, tool, draw, along, REC, STOP, WARM, wobbler, STAGE } = require('../help/_shapes.cjs');
 
-const CANVAS = [113, 47, 764, 444];
+const CANVAS = STAGE;
 const RED = '#e0685e';
 const BLUE = '#4a7cf0';
 const GREEN = '#3fae7a';

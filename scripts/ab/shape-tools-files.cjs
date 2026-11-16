@@ -12,7 +12,7 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { mockMain, makeWindow, sleep } = require('../docs/steps.cjs');
+const { mockMain, makeWindow, sleep, stageBox, capture } = require('../docs/steps.cjs');
 const { T, view, INK, rect, ell, line, pathOf, label, stroke, put } = require('../docs/help/_shapes.cjs');
 
 const root = path.join(__dirname, '../..');
@@ -74,8 +74,9 @@ app.whenReady().then(async () => {
     const work = path.join(tmp, mode);
     fs.mkdirSync(work, { recursive: true });
     console.log('doc ready');
-    // The screen, cropped to the canvas.
-    fs.writeFileSync(path.join(work, 'screen.png'), (await win.webContents.capturePage({ x: 113, y: 47, width: 764, height: 432 })).toPNG());
+    // The screen, cropped to the canvas as it is now.
+    const sb = (await stageBox(win.webContents)).map(Math.round);
+    fs.writeFileSync(path.join(work, 'screen.png'), (await capture(win.webContents, { x: sb[0], y: sb[1], width: sb[2], height: sb[3] })).toPNG());
     // Each export, through the real exporter.
     const files = { svg: 'drawing.svg', pdf: 'drawing.pdf', lottie: 'drawing.json', png: 'drawing.png' };
     for (const [format, name] of Object.entries(files)) {
@@ -96,7 +97,7 @@ app.whenReady().then(async () => {
     const tiles = [['On screen in Frameling', 'screen'], ['PNG export (also video, GIF, sheets)', 'png'], ['SVG export, drawn by rsvg-convert', 'svg'], ['PDF export, drawn by pdftoppm', 'pdf'], ['Lottie export, played by lottie-web', 'lottie']];
     const labelled = tiles.map(([name, f]) => {
       const out = path.join(work, `${f}-l.png`);
-      sh('convert', [path.join(work, `${f}.png`), '-background', mode === 'dark' ? '#1b1a24' : '#f3efe6', '-fill', mode === 'dark' ? '#ffffff' : '#222222', '-gravity', 'north', '-splice', '0x34', '-pointsize', '20', '-annotate', '+0+6', name, out]);
+      sh('convert', [path.join(work, `${f}.png`), '-resize', '764x', '-background', mode === 'dark' ? '#1b1a24' : '#f3efe6', '-fill', mode === 'dark' ? '#ffffff' : '#222222', '-gravity', 'north', '-splice', '0x34', '-pointsize', '20', '-annotate', '+0+6', name, out]);
       return out;
     });
     sh('montage', [...labelled, '-tile', '2x', '-geometry', '+8+8', '-background', mode === 'dark' ? '#0f0e15' : '#e4ded0', path.join(work, 'grid.png')]);

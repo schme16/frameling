@@ -1,7 +1,7 @@
 // Help pictures and clips for combining shapes, line styles and hold to tidy, once per theme: see scripts/docs/help-media.cjs.
-const { T, UI, dom, away, view, at, INK, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, REC, STOP, WARM, wobbler } = require('./_shapes.cjs');
+const { T, UI, dom, away, view, at, INK, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, REC, STOP, WARM, wobbler, STAGE } = require('./_shapes.cjs');
 
-const CANVAS = [113, 47, 764, 444];
+const CANVAS = STAGE;
 const RED = '#e0685e';
 const BLUE = '#4a7cf0';
 

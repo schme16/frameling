@@ -1471,7 +1471,10 @@ Extra steps: `{"log": "js"}` prints a result; `{"drag": ..., "delay": 8, "mods":
 `{"pinch": [x, y], "dy": -6, "count": 12}` does a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it);
 `{"rdrag": [[x, y], ...]}` and `{"rclick": [x, y]}` are the same with the right mouse button (a right-click paints with Back in the Pixel workspace);
 `{"shot": "name", "crop": [x, y, w, h]}` or `"el": "css selector", "pad": 12`; `{"type": "text"}` sets the focused
-input; `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
+input; `"crop": {"stageCrop": {}}` is the stage's own box measured when the step runs (add `"rightGap": 80` to run it on to 80 px
+short of the window's right edge), so a crop never carries a rail width that has since changed (`STAGE` and `PANEL` in
+`scripts/docs/help/_shapes.cjs`; `stageBox(wc)` and `capture(wc, crop)` in `steps.cjs` do the same for a script that takes its
+own pictures, `capture` taking the throwaway frame first); `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
 someone else's build. Preferences go into `localStorage` (`frameling.prefs.v1`) and the page reloads. `SHOT_W`,
 `SHOT_H` (default 1280 x 800) and `SHOT_WAIT` (ms before the steps, default 3000) apply. Its window is hidden

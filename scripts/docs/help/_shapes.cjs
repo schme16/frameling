@@ -45,7 +45,10 @@ const run = (id) => dom(`__frameling.run(${JSON.stringify(id)})`);
 const tool = (id) => run(`tools.${id}`);
 const draw = (pts, o = {}) => ({ drag: pts.map(([x, y]) => at(x, y)), steps: o.steps ?? 12, delay: o.delay ?? 12, ...(o.mods ? { mods: o.mods } : {}), ...(o.hold ? { hold: o.hold } : {}), ...(o.pause ? { pause: o.pause } : {}), ...(o.pull ? { pull: at(...o.pull) } : {}), ...(o.holdAfterPull ? { holdAfterPull: o.holdAfterPull } : {}), ...(o.after ? { after: o.after } : {}) });
 const along = (n, f) => Array.from({ length: n + 1 }, (_, i) => f(i / n));
-const PANEL = [113, 47, 1087, 444];
+// Crops that follow the live stage (steps.cjs measures it when the shot is taken): the stage alone, and the stage with the
+// panels to its right.
+const STAGE = { stageCrop: {} };
+const PANEL = { stageCrop: { rightGap: 80 } };
 const REC = (crop, every = 80) => ({ rec: '@', crop, every });
 const STOP = { rec: 'stop' };
 /** A throwaway capture first: a hidden window can hand back a stale frame for the first one. */
@@ -53,4 +56,4 @@ const WARM = { shot: 'warm', crop: [0, 0, 32, 32] };
 /** A tiny seeded wobble, so a hand-drawn shape is the same every time it is shot. */
 const wobbler = (seed) => { let s = seed; return (a) => { s = (s * 1664525 + 1013904223) % 4294967296; return (s / 4294967296 - 0.5) * 2 * a; }; };
 
-module.exports = { shapeOf, dom, UI, T, away, view, at, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, PANEL, REC, STOP, WARM, wobbler, ellPath, rectPath };
+module.exports = { shapeOf, dom, UI, T, away, view, at, INK, hid, rect, ell, line, pathOf, label, stroke, put, run, tool, draw, along, STAGE, PANEL, REC, STOP, WARM, wobbler, ellPath, rectPath };
