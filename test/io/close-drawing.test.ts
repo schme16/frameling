@@ -125,7 +125,7 @@ describe('Close drawing', () => {
     await closeDrawing();
 
     const now = store();
-    const fresh = new Store(newDoc());
+    const fresh = new Store(newDoc({ animated: false }));
     // Everything a new window has: the same ui (frame, selection, zoom, file, dirty flag...) and the same drawing,
     // apart from ids. The settings that are deliberately remembered between drawings (the brush, the two colours,
     // looping and the onion skin: see src/core/uiMemory.ts) are kept, exactly as New and Open keep them.

@@ -5,7 +5,7 @@ import { getCommand } from '../core/registry';
 import { store } from '../core/store';
 import { isInstance } from '../core/symbols';
 import type { Quest } from '../quests/types';
-import { drawDemoBall, ensureBlankVectorPage } from '../quests/actions';
+import { drawDemoBall, ensureAnimatedVectorPage } from '../quests/actions';
 import { hasInkAt, hasVectorLayer } from '../quests/predicates';
 import { setDocLength } from '../timeline/ops';
 import { DEFAULT_EASE, updateInstances } from './ops';
@@ -51,7 +51,7 @@ export const FIRST_TWEEN: Quest = {
   badge: { id: 'smooth-mover', name: questWord('quest.first-tween.badge'), icon: 'tween', color: '--sky' },
   requires: ['first-animation'],
   finish: questWord('quest.first-tween.finish'),
-  prepare: ensureBlankVectorPage,
+  prepare: ensureAnimatedVectorPage,
   ready: hasVectorLayer,
   steps: [
     {

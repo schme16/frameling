@@ -13,6 +13,7 @@ import '../tablet';
 import '../gpu';
 import '../geometry';
 import '../timeline';
+import '../animation';
 import '../symbols';
 import '../artboards';
 import '../io';

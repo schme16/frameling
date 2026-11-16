@@ -3,6 +3,7 @@
 // (image size). Whatever changes lands as one undo step.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc } from '../core/format';
+import { isAnimated } from '../core/animation';
 import { store } from '../core/store';
 import { cleanDpi, docDpi, formatSize, pxTo, roundIn, toPx, unitInfo, type Unit } from '../core/units';
 import { mountModal, Modal } from '../io/mount';
@@ -262,10 +263,13 @@ function DocumentSettings({ close, field }: { close: () => void; field?: Setting
         ))}
 
         <div className="ds-row">
-          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc={`How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.${many && !doc.sharedLayers ? ' With several artboards this is the speed of the one you are on.' : ''}`}>
-            <span>Speed (frames per second){many && !doc.sharedLayers ? ', this artboard' : ''}</span>
-            <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
-          </label>
+          {/* A still picture has no frame rate to set: it comes back with Add animation, and the number is kept as it was. */}
+          {isAnimated(doc) && (
+            <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc={`How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.${many && !doc.sharedLayers ? ' With several artboards this is the speed of the one you are on.' : ''}`}>
+              <span>Speed (frames per second){many && !doc.sharedLayers ? ', this artboard' : ''}</span>
+              <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
+            </label>
+          )}
           <div className="ui-field">
             <span>Background</span>
             <div className="ds-bg">

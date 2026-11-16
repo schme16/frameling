@@ -9,6 +9,7 @@ import { askAboutUnsavedChanges } from '../io/document';
 import { editActiveDrawing, paintActiveGrid } from '../tools/edit';
 import { setFillOptions, getFillOptions, type GapPreset } from '../tools/fill-options';
 import { docFromPreset, PRESETS } from '../ui/presets';
+import { addAnimationNow } from '../animation/ops';
 import { closeSheet } from '../ui/overlays';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
@@ -82,6 +83,20 @@ export function ensureBlankVectorPage(): boolean | Promise<boolean> {
   return freshPage(() => docFromPreset(PRESETS.find((p) => p.id === 'doodle') ?? PRESETS[0]));
 }
 
+/** Runs `then` once a page is ready, whether the page came back now or after a question about unsaved work. */
+function afterPage(ready: boolean | Promise<boolean>, then: () => void): boolean | Promise<boolean> {
+  const go = (ok: boolean): boolean => {
+    if (ok) then();
+    return ok;
+  };
+  return ready instanceof Promise ? ready.then(go) : go(ready);
+}
+
+/** The same empty page, with animation on, for the quests that are about frames and playing (a picture has no timeline to show). */
+export function ensureAnimatedVectorPage(): boolean | Promise<boolean> {
+  return afterPage(ensureBlankVectorPage(), () => void addAnimationNow());
+}
+
 /** A Tiny sprite pixel page (the open one if it's an empty pixel page already). */
 export function ensureTinySpritePage(): boolean | Promise<boolean> {
   const s = store().get();
@@ -90,6 +105,11 @@ export function ensureTinySpritePage(): boolean | Promise<boolean> {
   const p = PRESETS.find((x) => x.id === 'tiny-sprite');
   if (!p) return false;
   return freshPage(() => docFromPreset(p));
+}
+
+/** The Tiny sprite page with animation on, for the quests that copy a frame and play. */
+export function ensureAnimatedTinySpritePage(): boolean | Promise<boolean> {
+  return afterPage(ensureTinySpritePage(), () => void addAnimationNow());
 }
 
 /** Loads the Bouncing ball example. */

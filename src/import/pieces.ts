@@ -139,7 +139,7 @@ export function centreOn(p: Pieces, stage: Stage): { pieces: Pieces; cutOff: boo
 
 /** A new drawing made of the pieces. `pixel` makes it a pixel drawing (its first layer is replaced either way). */
 export function docFromPieces(p: Pieces, name: string, opts: { length?: number; fps?: number } = {}): Doc {
-  const doc = newDoc({ name, width: Math.max(1, p.width), height: Math.max(1, p.height), length: opts.length ?? STILL_LENGTH, fps: opts.fps ?? 12, background: null });
+  const doc = newDoc({ name, width: Math.max(1, p.width), height: Math.max(1, p.height), length: opts.length ?? STILL_LENGTH, fps: opts.fps ?? 12, background: null, ...(opts.length === undefined ? { animated: false } : {}) });
   doc.layers = p.layers.length ? p.layers : [newVectorLayer('Layer 1')];
   doc.drawings = { ...p.drawings };
   if (Object.keys(p.folders).length) doc.folders = { ...p.folders };

@@ -74,7 +74,9 @@ const fresh = (doc: Doc) => {
 };
 
 export const SITUATIONS: Situation[] = [
-  { id: 'blank', about: 'A new, empty drawing, which is what Frameling opens to (the welcome sheet sits on top).', set: () => fresh(newDoc()) },
+  // The usual empty drawing, with animation on: how every drawing was before animation became opt in. The still drawing Frameling
+  // opens to now is STILL_SITUATION, measured on its own in still.test.ts, so the numbers here keep meaning "most on offer".
+  { id: 'blank', about: 'A new, empty drawing with animation on (the welcome sheet sits on top).', set: () => fresh(newDoc({ animated: true })) },
   { id: 'vector', about: 'A vector drawing with a shape on it and nothing selected.', set: () => fresh(vectorDoc()) },
   {
     id: 'vector-selected',
@@ -122,6 +124,9 @@ export const SITUATIONS: Situation[] = [
     },
   },
 ];
+
+/** What Frameling opens to: one still picture, with no animation until Add animation. Kept out of SITUATIONS (see above). */
+export const STILL_SITUATION: Situation = { id: 'still', about: 'A new, empty drawing with no animation, which is what Frameling opens to.', set: () => fresh(newDoc({ animated: false })) };
 
 // ---------------------------------------------------------------- feature states
 

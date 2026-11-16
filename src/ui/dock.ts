@@ -123,8 +123,8 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   pixel.zones.bottom.size = 260;
 
   return [
-    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw, rail: BUILTIN_RAILS.draw },
-    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. The Layers panel is a tab away for long lists.', layout: animate, rail: BUILTIN_RAILS.animate },
+    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath once the drawing has animation.', layout: draw, rail: BUILTIN_RAILS.draw },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. On a drawing with no animation, an Add animation button stands where the timeline goes. The Layers panel is a tab away for long lists.', layout: animate, rail: BUILTIN_RAILS.animate },
     { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
   ];
 }

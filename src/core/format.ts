@@ -45,6 +45,13 @@ export interface Doc {
   dpi?: number;
   /** Total length in frames (at least 1). Playback and export run from 0 to length - 1 unless a clip says otherwise. */
   length: number;
+  /**
+   * Whether this drawing is an animation. True shows the timeline, frame rate and the animation tools; false is a still
+   * picture, with them tucked away (nothing is deleted: the frames, if there are any, stay in the file and come back
+   * with Add animation). Missing = what every file before this field meant: an animation when `length` is above 1. See
+   * src/core/animation.ts.
+   */
+  animated?: boolean;
   /** Stage colour, or null for transparent. */
   background: Color | null;
   /** Layers, bottom first: index 0 is drawn first (furthest back). */

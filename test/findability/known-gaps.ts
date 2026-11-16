@@ -129,3 +129,14 @@ export const STREAM_LOAD = {
  * who shares their screen: Stream-safe, the OBS link and the capture view. Exact, and it can only go down.
  */
 export const STREAM_LOAD_TUCKED = { palette: 13, menu: 13, switches: 0, help: 2 };
+
+/**
+ * What a drawing with no animation (which is what Frameling opens to) has on offer, beside the same drawing with
+ * animation on. The tucked-away part is the animation commands: they leave the menus on a still, stay in the command
+ * search, and the one door in is Add animation. Exact, and only meant to go down. Raising a number needs a reason here.
+ */
+export const STILL_LOAD = {
+  /** Palette: commands that work right now. Menu: commands in any menu. animateMenu: commands in the Animate menu. */
+  still: { palette: 555, menu: 780, animateMenu: 8 },
+  animated: { palette: 599, menu: 898, animateMenu: 123 },
+};

@@ -16,7 +16,7 @@ export async function closeDrawing(): Promise<boolean> {
   // The drawing waits in Open recent. A save or an open already put it there; this moves it to the top.
   if (path) void desktop()?.recent.add(path);
   // load() gives a new window's history, selection, playhead, zoom, onion skin and file; the rest lives outside the store.
-  store().load(newDoc());
+  store().load(newDoc({ animated: false }));
   // The drawing-bound state outside the store (timeline, bone, sound...) is reset by the load itself; this is for a store nothing watches.
   resetDrawingState();
   forgetAutosaved();

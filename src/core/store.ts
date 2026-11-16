@@ -302,7 +302,8 @@ export class Store {
   /** How many times a whole document has been put in (new or opened), so the canvas can refit even when it is the same file again. */
   loads = 0;
 
-  constructor(doc: Doc = newDoc()) {
+  // A new window opens on a still picture: no timeline until animation is added (src/core/animation.ts).
+  constructor(doc: Doc = newDoc({ animated: false })) {
     this.state = { doc, ui: initialUi(doc) };
   }
 

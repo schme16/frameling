@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCommand } from '../core/registry';
 import { useStore } from '../core/store';
+import { isAnimated } from '../core/animation';
 import { findLayer } from '../core/doc';
 import { Icon } from './icons';
 import { usePrefs, reducedMotion } from './prefs';
@@ -26,6 +27,7 @@ export function StatusBar() {
   const units = usePrefs((p) => p.units);
   const frame = useStore((s) => s.ui.frame);
   const length = useStore((s) => s.doc.length);
+  const animated = useStore((s) => isAnimated(s.doc));
   const pixel = useStore((s) => {
     const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
     return l?.kind === 'pixel' ? l.pixelSize : 0;
@@ -104,14 +106,23 @@ export function StatusBar() {
           {selSize}
         </span>
       )}
-      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc={ownFps ? "Press to change how many drawings show each second on this artboard. The others keep their own." : 'Press to change how many drawings show each second.'}>
-        <Icon name="film" size={14} />
-        {fps} fps
-      </button>
-      <button type="button" className="ui-status-item ui-status-btn" onClick={() => showPanel('timeline')} data-tip="Current frame" data-tip-desc="Press to bring the Timeline out in front.">
-        <Icon name="timeline" size={14} />
-        Frame {frame + 1} of {length}
-      </button>
+      {animated ? (
+        <>
+          <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc={ownFps ? "Press to change how many drawings show each second on this artboard. The others keep their own." : 'Press to change how many drawings show each second.'}>
+            <Icon name="film" size={14} />
+            {fps} fps
+          </button>
+          <button type="button" className="ui-status-item ui-status-btn" onClick={() => showPanel('timeline')} data-tip="Current frame" data-tip-desc="Press to bring the Timeline out in front.">
+            <Icon name="timeline" size={14} />
+            Frame {frame + 1} of {length}
+          </button>
+        </>
+      ) : (
+        <button type="button" className="ui-status-item ui-status-btn ui-status-add-animation" data-testid="status.addAnimation" onClick={() => { const c = getCommand('animation.add'); if (c) runCommand(c); }} data-tip="Add animation" data-tip-desc="Give this drawing frames, a timeline and playback. What you have drawn stays as frame 1.">
+          <Icon name="film" size={14} />
+          Add animation
+        </button>
+      )}
       <SnapButton />
       <span className="ui-status-spacer" />
       {showTips && (

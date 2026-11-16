@@ -667,6 +667,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     fps,
     ...(num(raw.dpi, 0) >= 1 && num(raw.dpi, 0) <= 10000 ? { dpi: num(raw.dpi, 0) } : {}),
     length,
+    ...(typeof raw.animated === 'boolean' ? { animated: raw.animated } : {}),
     background: typeof raw.background === 'string' ? raw.background : null,
     layers,
     drawings,
