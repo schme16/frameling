@@ -2,7 +2,7 @@
 // kept in the browser's storage under `frameling.brushPresets`, so the settings backup carries them too.
 import { useSyncExternalStore } from 'react';
 import { currentChoice, registerChoice } from '../core/choices';
-import { findLayer, uid } from '../core/doc';
+import { DEFAULT_BRUSH, findLayer, uid } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { registerCommand, unregisterCommand } from '../core/registry';
 import { store } from '../core/store';
@@ -10,6 +10,9 @@ import { download, pickUpload } from '../platform';
 import { pickTool } from '../tools/pick';
 import { applySpec, currentSpec, isApplying, isPixelBrushTool, subscribeSpecs } from '../dab/live';
 import { toast } from '../ui/toast';
+import type { DabBrush } from '../dab/maths';
+import { IMPORT_EXTS } from './import';
+import { cleanGroup } from './library';
 import { sameSpec as sameSpecFor, specTool } from '../dab/spec';
 import {
   addShared,
@@ -327,17 +330,38 @@ export function addBrushesFromText(text: string): boolean {
   return true;
 }
 
-export async function addBrushesFromFile(): Promise<boolean> {
-  const file = await pickUpload('.json,application/json');
-  if (!file) return false;
-  if (file.size > MAX_BRUSHES_BYTES) return warn('That file is too big to be a set of brushes.');
-  let text = '';
-  try {
-    text = await file.text();
-  } catch {
-    return warn('That file could not be opened.');
+/** Adds brushes that were read from another program's file (GIMP, Photoshop, Krita...), in a group of their own. Says how many went in. */
+export function addImportedBrushes(items: readonly { name: string; dab: DabBrush }[], group: string): number {
+  const incoming = items.map((it) => ({ name: it.name, brush: DEFAULT_BRUSH, pixel: { kind: 'dab' as const, dab: it.dab }, group: cleanGroup(group) }));
+  const { list, added } = addShared(mine, incoming, () => uid('b'));
+  if (!added) {
+    warn(`You have ${MAX_PRESETS} saved brushes already. Delete some to make room.`);
+    return 0;
   }
-  return addBrushesFromText(text);
+  setMine(list);
+  if (added < items.length) toast(`Only ${added} of ${items.length} fitted: you can keep ${MAX_PRESETS} brushes.`, { kind: 'warn' });
+  return added;
+}
+
+/** What the picker offers: Frameling's own brush files, and the ones other programs make. */
+export const BRUSH_FILE_ACCEPT = `.json,application/json,${IMPORT_EXTS.join(',')}`;
+
+export async function addBrushesFromFile(): Promise<boolean> {
+  const file = await pickUpload(BRUSH_FILE_ACCEPT);
+  if (!file) return false;
+  // Frameling's own files are JSON. Anything else is a brush file from another program (or something that isn't a brush).
+  if (/\.json$/i.test(file.name) || file.type === 'application/json') {
+    if (file.size > MAX_BRUSHES_BYTES) return warn('That file is too big to be a set of brushes.');
+    let text = '';
+    try {
+      text = await file.text();
+    } catch {
+      return warn('That file could not be opened.');
+    }
+    return addBrushesFromText(text);
+  }
+  const { importBrushFile } = await import('./import/run');
+  return importBrushFile(file, addImportedBrushes);
 }
 
 export async function addBrushesFromClipboard(): Promise<boolean> {

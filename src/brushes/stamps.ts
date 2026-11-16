@@ -84,6 +84,11 @@ export interface PixelStamp {
   cells: number[];
   /** Paint with the picture's own colours (true), or fill its shape with the colour you picked (false). */
   keep: boolean;
+  /**
+   * A soft tip (from a brush file): each cell's see-through says how much paint it lays down, in the colour you picked,
+   * so a tip can have soft shading. Left out means the plain rule, where a cell is paint or it is clear.
+   */
+  soft?: boolean;
 }
 
 export type PixelStampResult = { ok: true; stamp: PixelStamp; colourCount: number } | { ok: false; why: 'empty' | 'big' };
@@ -132,7 +137,10 @@ export function readPixelStamp(raw: unknown): PixelStamp | null {
   const n = r.colours.length;
   if (!r.cells.every((c) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= n)) return null;
   if (!r.cells.some((c) => c > 0)) return null;
-  return { w, h, colours: r.colours as string[], cells: r.cells as number[], keep: r.keep === true };
+  const soft = r.soft === true;
+  const stamp: PixelStamp = { w, h, colours: r.colours as string[], cells: r.cells as number[], keep: !soft && r.keep === true };
+  if (soft) stamp.soft = true;
+  return stamp;
 }
 
 export interface StampCell {
@@ -166,4 +174,4 @@ export function stampCells(st: PixelStamp): StampCell[] {
 export const stampSpacing = (st: PixelStamp): number => Math.max(st.w, st.h);
 
 /** True when the picture has more than one colour, so keeping them means something. */
-export const hasColours = (st: PixelStamp): boolean => st.colours.length > 1;
+export const hasColours = (st: PixelStamp): boolean => !st.soft && st.colours.length > 1;
