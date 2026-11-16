@@ -1,5 +1,6 @@
 // Help pictures and clips for symbols, tweens, camera, artboards, clip flow, rigging, sound and lip sync.
 const L = require('./_lib.cjs');
+const { FROM_STAGE, edge } = require('./_shapes.cjs');
 
 /** Selects the first instance on `layer` at `frame` (0-based) with the Select tool, and goes to that frame. */
 const pick = (layer, frame) => L.js(`(() => { const s = __frameling.store(); const { doc } = s.get(); const l = doc.layers.find((x) => x.name === ${JSON.stringify(layer)}); const cel = l.cels.find((c) => c.start <= ${frame} && ${frame} < c.start + c.length); const d = doc.drawings[cel.drawingId]; s.setUi({ tool: 'select', activeLayerId: l.id, frame: ${frame}, selection: d.shapes.filter((x) => x.type === 'instance').slice(0, 1).map((x) => x.id) }); return true; })()`);
@@ -45,15 +46,16 @@ const bendNoodle = () => L.js(`(() => { const s = __frameling.store(); s.setUi({
 /** Real speech for the lip sync clip ("Hello, I am Bob.", scripts/lipsync/say.py): the voice a synthesiser makes, added as a sound. */
 const speech = () => L.js(`(async () => { const b = atob(${JSON.stringify(require('fs').readFileSync(require('path').join(__dirname, 'assets', 'hello-speech.wav')).toString('base64'))}); const bytes = Array.from(b, (c) => c.charCodeAt(0)); return await __framelingAudio.addSound(bytes, 'hello', 'audio/wav'); })()`);
 
-// Rough layout of the 1280 x 800 window: the canvas is x 113-877, y 47-491; the right side x 886-1196; the timeline y 500-760.
-const CANVAS = [112, 44, 766, 448];
+// The pictures made from the stage are cropped from the stage as the running app has it (FROM_STAGE in _shapes.cjs). The other
+// numbers in this file are for a 1280 x 800 window: the right side x 886-1196, the timeline y 500-760.
+const CANVAS = FROM_STAGE({});
 // The puppet's stage and a little around it (720 x 540 document, fitted).
 const STAGE = [203, 47, 584, 444];
 
 const entries = [
   {
     name: 'symbols',
-    steps: [L.template('bouncing-logo'), L.wait(300), L.panel('library'), pick('Logo', 20), L.wait(1500), { shot: '@', crop: [108, 44, 1164, 450] }],
+    steps: [L.template('bouncing-logo'), L.wait(300), L.panel('library'), pick('Logo', 20), L.wait(1500), { shot: '@', crop: FROM_STAGE({ rightGap: 8 }) }],
   },
   {
     name: 'symbols-editing',
@@ -77,7 +79,7 @@ const entries = [
   },
   {
     name: 'tween-offer',
-    steps: [L.template('morphing-shapes'), noTweens(), fit(), L.wait(500), { click: [361 + 22 * 6, 663] }, { move: [600, 300] }, L.wait(1500), { shot: '@', crop: [112, 505, 766, 235] }],
+    steps: [L.template('morphing-shapes'), noTweens(), fit(), L.wait(500), { click: edge(380, 616) }, { move: [600, 300] }, L.wait(1500), { shot: '@', crop: FROM_STAGE({ top: 458, height: 235, rightGap: 402 }) }],
   },
   {
     name: 'easing',
@@ -233,7 +235,7 @@ const entries = [
       L.panel('artboards'),
       L.cmd('artboards.fitAll'),
       L.wait(1200),
-      { rec: '@', crop: [112, 44, 1168, 690], every: 80 },
+      { rec: '@', crop: FROM_STAGE({ rightGap: 0, down: 246 }), every: 80 },
       L.wait(1200),
       L.js(`${ROW(1)}.click()`),
       L.wait(1500),
@@ -465,7 +467,7 @@ const entries = [
   },
   {
     name: 'sound',
-    steps: [L.template('lip-sync'), L.wait(300), speech(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: [112, 483, 766, 279] }],
+    steps: [L.template('lip-sync'), L.wait(300), speech(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: FROM_STAGE({ top: 436, height: 279, rightGap: 402 }) }],
   },
   {
     name: 'lip-sync',
