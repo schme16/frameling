@@ -84,7 +84,14 @@ export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null
 /**
  * How much of a dab's paint a pixel catches, given the paint on offer (0 to 1) and the paper's height there (0 a pit, 1 a
  * peak). At depth 0 every pixel takes all of it. At depth 1 a pixel takes nothing until the paint reaches its height, so
- * light paint only lands on the peaks and pressing harder (more flow) fills the pits, the way chalk behaves.
+ * light paint lands in the pits first and pressing harder (more flow) reaches the peaks.
+ *
+ * That is the opposite way round from the dry media, where `pitDepth` in src/dry/maths.ts takes pigment on the peaks
+ * first, the way real chalk catches on the tooth of the paper. Nothing else calls this, so the two have never had to
+ * agree: chalk and charcoal are the dry media and never come through here. On the built-in papers the two directions
+ * are impossible to tell apart, because the tiles are evenly spread, so only a picture used as grain shows it. See the
+ * board card grain-peaks-or-pits, and test/dab/grain-direction.test.ts, which pins what it does today rather than
+ * claiming it is right.
  */
 export function grainCut(add: number, height: number, depth: number): number {
   const lift = depth * height;
