@@ -274,12 +274,13 @@ describe('applying a theme', () => {
     expect(root().style.getPropertyValue('color-scheme')).toBe('dark');
     expect(root().dataset.theme).toBe('dark');
   });
-  it('uses the light pick for light and leaves data-theme off for System', () => {
+  it('uses the light pick for light, and sets data-theme from the theme showing under System', () => {
     setPrefs({ theme: 'light', lightTheme: 'strawberry-milk' });
     expect(v('bg')).toBe(getBuiltIn('strawberry-milk')!.tokens.bg);
     expect(root().style.getPropertyValue('color-scheme')).toBe('light');
-    setPrefs({ theme: 'system' });
-    expect(root().dataset.theme).toBeUndefined();
+    expect(root().dataset.theme).toBe('light');
+    setPrefs({ theme: 'system' }); // no computer setting in a test, so System shows the dark pick
+    expect(root().dataset.theme).toBe('dark');
   });
   it('marks <html> for the camo surround only while a camo theme shows', () => {
     setPrefs({ theme: 'dark', darkTheme: 'glacier-grid' });
@@ -370,12 +371,12 @@ describe('preferences migration', () => {
     expect(DEFAULT_PREFS.look).toBe('cosy');
     expect(DEFAULT_PREFS.theme).toBe('system');
   });
-  it('replaces unknown values and picks for the wrong mode', () => {
+  it('replaces unknown values, and keeps a pick even if its theme is for the other mode', () => {
     const p = migratePrefs({ theme: 'sepia', look: 'wobbly', darkTheme: 'nope', lightTheme: 'moonlit-pond', showTips: 'yes' });
     expect(p.theme).toBe('system');
     expect(p.look).toBe('cosy');
     expect(p.darkTheme).toBe(DEFAULT_DARK);
-    expect(p.lightTheme).toBe(DEFAULT_LIGHT); // moonlit-pond is a dark theme
+    expect(p.lightTheme).toBe('moonlit-pond'); // a dark theme in the light slot is allowed
     expect(p.showTips).toBe(true);
   });
   it('keeps good picks, including a custom one, and drops a custom theme that is damaged', () => {
@@ -412,11 +413,11 @@ describe('custom themes', () => {
     expect(getPrefs().darkTheme).toBe(copy.id);
     saveCustomTheme({ ...copy, tokens: deriveTokens({ ...copy.tokens, bg: '#102030' }, 'dark', ['bg']) });
     expect(v('bg')).toBe('#102030');
-    // To the other mode: it follows.
+    // To the other mode: the pick stays where it was put.
     saveCustomTheme({ ...getPrefs().customThemes[0], mode: 'light' });
-    expect(getPrefs().darkTheme).toBe(DEFAULT_DARK);
-    expect(getPrefs().lightTheme).toBe(copy.id);
+    expect(getPrefs().darkTheme).toBe(copy.id);
     selectTheme(getPrefs().customThemes[0]);
+    expect(getPrefs().lightTheme).toBe(copy.id);
     deleteCustomTheme(copy.id);
     expect(getPrefs().customThemes).toEqual([]);
     expect(getPrefs().lightTheme).toBe(DEFAULT_LIGHT);

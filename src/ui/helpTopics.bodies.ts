@@ -501,7 +501,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 - **Duplicate** makes another copy to try something different.
 - **Delete** removes your theme. If it was in use, Frameling goes back to the usual one.
 - Rename it any time by typing in the name box at the top.
-- A theme is **for dark mode** or **for light mode**. Change that with the switch under the picture.
+- A theme is **for dark mode** or **for light mode**: say which with the switch under the picture. It tells Frameling how to draw shadows, hover shades and the system's own bits (scrollbars, form boxes), and which of your two slots a theme goes to when you just press **Use**. It never moves your picks: a light theme you set for night stays your night theme.
 
 ## Share a theme
 

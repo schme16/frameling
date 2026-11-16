@@ -78,10 +78,12 @@ export function findTheme(id: string, custom: Theme[]): Theme | undefined {
   return getBuiltIn(id) ?? custom.find((t) => t.id === id);
 }
 
-/** The theme for a mode: the one picked if it exists and is for that mode, else the default for the mode. */
+/**
+ * The theme for a slot (dark or light): the one picked, whatever mode it says it is for, so a light theme you put in
+ * the dark slot shows. Only a pick that has gone (deleted, or an id nobody knows) falls back to the default for the slot.
+ */
 export function themeForMode(mode: ThemeMode, id: string, custom: Theme[]): Theme {
-  const t = findTheme(id, custom);
-  return t && t.mode === mode ? t : defaultThemeFor(mode);
+  return findTheme(id, custom) ?? defaultThemeFor(mode);
 }
 
 export function uniqueId(custom: Theme[], seed = ''): string {

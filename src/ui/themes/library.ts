@@ -26,29 +26,24 @@ export function addCustomTheme(theme: Theme): boolean {
   return true;
 }
 
-/** Replaces a custom theme with an edited version. If its mode changed, anything that was using it follows it. */
+/** Replaces a custom theme with an edited version. */
 export function saveCustomTheme(theme: Theme): void {
   const p = getPrefs();
   const old = p.customThemes.find((t) => t.id === theme.id);
   if (!old) return;
-  const patch: Partial<typeof p> = { customThemes: p.customThemes.map((t) => (t.id === theme.id ? { ...theme, builtIn: false } : t)) };
-  if (old.mode !== theme.mode) {
-    // It moved to the other mode: stop using it where it was, and use it where it is now.
-    if (p.darkTheme === theme.id) patch.darkTheme = defaultThemeFor('dark').id;
-    if (p.lightTheme === theme.id) patch.lightTheme = defaultThemeFor('light').id;
-    if (old.mode === 'dark' && p.darkTheme === theme.id) patch.lightTheme = theme.id;
-    if (old.mode === 'light' && p.lightTheme === theme.id) patch.darkTheme = theme.id;
-  }
-  setPrefs(patch);
+  // Changing its mode moves nothing: where you put a theme is your choice, and it stays put.
+  setPrefs({ customThemes: p.customThemes.map((t) => (t.id === theme.id ? { ...theme, builtIn: false } : t)) });
 }
 
-/** Deletes a custom theme. Where it was in use, the mode goes back to its default theme. */
+/** Deletes a custom theme. Wherever it was in use, that slot goes to the default theme of the deleted theme's own mode, so it still looks the way it did. */
 export function deleteCustomTheme(id: string): void {
   const p = getPrefs();
+  const gone = p.customThemes.find((t) => t.id === id);
+  const fallback = (slot: ThemeMode) => defaultThemeFor(gone?.mode ?? slot).id;
   setPrefs({
     customThemes: p.customThemes.filter((t) => t.id !== id),
-    darkTheme: p.darkTheme === id ? defaultThemeFor('dark').id : p.darkTheme,
-    lightTheme: p.lightTheme === id ? defaultThemeFor('light').id : p.lightTheme,
+    darkTheme: p.darkTheme === id ? fallback('dark') : p.darkTheme,
+    lightTheme: p.lightTheme === id ? fallback('light') : p.lightTheme,
   });
 }
 
