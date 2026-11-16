@@ -31,6 +31,14 @@ export interface ToastOptions {
   farewell?: boolean;
   /** The sound with it (when Sounds is on). Default: the "can't do that" one for refusals and errors, else none. */
   sound?: SoundCue | null;
+  /** The words are on a little sign Quill holds up (audience signs), so they are set apart from his own. */
+  sign?: boolean;
+  /**
+   * Words from chat that nobody has read yet. This is what the toast says in their place while they are covered (see
+   * src/audience/spoilers.ts), with a **Read it** button; `message` holds the words and is only drawn once they are read.
+   * Any `action` waits behind the reading too, so "Put it up" is never pressed on words you have not seen.
+   */
+  covered?: string;
 }
 
 export interface ToastItem {
@@ -42,6 +50,8 @@ export interface ToastItem {
   duration: number;
   quill: Script | null;
   farewell?: boolean;
+  sign?: boolean;
+  covered?: string;
 }
 
 export const toasts = createStore<ToastItem[]>([]);
@@ -51,7 +61,7 @@ const MAX_VISIBLE = 4;
 
 export function toast(message: string, opts: ToastOptions = {}): number {
   const id = nextId++;
-  const item: ToastItem = { id, message, kind: opts.kind ?? 'info', action: opts.action, decline: opts.decline, duration: opts.duration ?? (opts.action ? 7000 : 4000), quill: opts.quill !== undefined ? opts.quill : quillFor(opts.kind ?? 'info'), farewell: opts.farewell };
+  const item: ToastItem = { id, message, kind: opts.kind ?? 'info', action: opts.action, decline: opts.decline, duration: opts.duration ?? (opts.action ? 7000 : 4000), quill: opts.quill !== undefined ? opts.quill : quillFor(opts.kind ?? 'info'), farewell: opts.farewell, sign: opts.sign, covered: opts.covered };
   toasts.set((list) => [...list, item].slice(-MAX_VISIBLE));
   const sound = opts.sound !== undefined ? opts.sound : opts.farewell ? 'goodbye' : item.kind === 'warn' || item.kind === 'error' ? 'refused' : null;
   if (sound) playCue(sound);

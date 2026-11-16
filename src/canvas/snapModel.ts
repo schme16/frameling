@@ -7,7 +7,7 @@
  * pulling points off them; vector work wants guides and the page).
  */
 
-export type SnapTarget = 'page' | 'centre' | 'guides' | 'grid' | 'shapes' | 'spacing' | 'perspective' | 'plugins' | 'cells' | 'angles' | 'artboards';
+export type SnapTarget = 'page' | 'centre' | 'guides' | 'grid' | 'points' | 'shapes' | 'spacing' | 'perspective' | 'plugins' | 'cells' | 'angles' | 'artboards';
 export type SnapContext = 'vector' | 'pixel' | 'artboard';
 
 export interface SnapTargetInfo {
@@ -30,6 +30,7 @@ export const SNAP_TARGETS: SnapTargetInfo[] = [
   { id: 'centre', label: 'Page middle', term: 'centre', tip: 'The middle of the page, across and down.', contexts: ['vector', 'pixel'], note: 'page middle' },
   { id: 'guides', label: 'Guides', tip: 'The guide lines you dragged out of the rulers.', contexts: ['vector', 'pixel'], note: 'guide' },
   { id: 'grid', label: 'Grid', tip: 'The square or isometric grid, while it shows.', contexts: ['vector', 'pixel'], note: 'grid' },
+  { id: 'points', label: 'Line ends and points', term: 'endpoints, anchors', tip: "The ends of other lines and the points of other paths, so one line can start or stop exactly where another does. Pen, pencil, brush and the shape tools pull onto them.", contexts: ['vector'], note: 'line end' },
   { id: 'shapes', label: 'Other shapes', term: 'edges and points', tip: "The edges, middles and corner points of the other shapes in this drawing.", contexts: ['vector'], note: 'another shape' },
   { id: 'spacing', label: 'Equal gaps', term: 'spacing', tip: 'Shapes settle where the gap to a neighbour matches a gap already there, and the distance shows.', contexts: ['vector'], note: 'equal gap' },
   { id: 'perspective', label: 'Perspective lines', term: 'vanishing points', tip: 'Lines and boxes follow the perspective guides, while they show.', contexts: ['vector', 'pixel'], note: 'perspective line' },
@@ -54,7 +55,7 @@ export type SnapPicks = Record<SnapContext, Partial<Record<SnapTarget, boolean>>
  */
 export function defaultPicks(): SnapPicks {
   return {
-    vector: { page: true, centre: true, guides: true, grid: true, shapes: true, spacing: true, perspective: true, plugins: true, angles: true },
+    vector: { page: true, centre: true, guides: true, grid: true, points: true, shapes: true, spacing: true, perspective: true, plugins: true, angles: true },
     pixel: { page: false, centre: false, guides: false, grid: false, cells: true, perspective: true, plugins: false, angles: true },
     artboard: { artboards: true },
   };
@@ -193,3 +194,25 @@ export function clampDistance(v: unknown): number {
 
 /** The theme variable that colours a target's line and its dot in the "Snapped to" note (see canvas.css). */
 export const snapColourVar = (id: SnapTarget): string => `--snap-${id}`;
+
+// ---------------------------------------------------------------- pen, pencil and brush
+
+/**
+ * What the pen, pencil and brush pull their start and end onto: only lines and points that have a fixed place. Other
+ * shapes' edges and equal gaps are for moving shapes, and a stroke's end settling on an invisible box edge would only
+ * be a surprise, so they are left out here whatever their ticks say.
+ */
+export const DRAW_TARGETS: readonly SnapTarget[] = ['points', 'guides', 'grid', 'page', 'centre', 'plugins'];
+
+/** What the freehand tools take from the targets in force: the ones that suit a stroke's start and end. */
+export const drawTargets = (set: ReadonlySet<SnapTarget>): Set<SnapTarget> => new Set(DRAW_TARGETS.filter((t) => set.has(t)));
+
+/** How close (screen pixels) a stroke's start or end has to be before it is pulled: a little stronger than the usual, since only a tip is pulled. */
+export const DRAW_DISTANCE = { min: 2, max: 24, usual: 8 };
+
+/** A pull distance from saved or typed input, whole and inside the range (junk gives the usual). */
+export function clampDrawDistance(v: unknown): number {
+  const n = typeof v === 'number' ? v : Number(v);
+  if (!Number.isFinite(n)) return DRAW_DISTANCE.usual;
+  return Math.min(DRAW_DISTANCE.max, Math.max(DRAW_DISTANCE.min, Math.round(n)));
+}

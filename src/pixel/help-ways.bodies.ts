@@ -23,7 +23,7 @@ With Quill turned off in Preferences, the New sheet shows the same four as plain
 
 ## Changing it
 
-Click the chip, or run **Change how this sprite is built...** from the Pixel tools menu. Each way says what it would do, and why one is not possible. It is one undo step.
+Click the chip, or run **Layers and artboards > Change how this sprite is built...**. Each way says what it would do, and why one is not possible. It is one undo step.
 
 - **Timeline frames to boards**: every frame becomes its own board, side by side. Clips are not kept on boards.
 - **Boards to timeline frames**: every board becomes frames on one timeline, in order. Layers are matched by name (frames that share one set of layers already match), and the boards must all be the same size. If one is not, you are told which.
@@ -45,7 +45,7 @@ Add a second frame to a one-picture sprite and the timeline comes back. Add a se
 
 ## A file that already has layers per board
 
-Frameling never rewrites a file on its own. When you open frames on boards where each board has its own layers, Frameling asks once whether to put them on one stack, and remembers your answer (change it any time in Preferences > Behaviour). To do it later, run **Put the frames on one stack of layers** from the Pixel tools menu.
+Frameling never rewrites a file on its own. When you open frames on boards where each board has its own layers, Frameling asks once whether to put them on one stack, and remembers your answer (change it any time in Preferences > Behaviour). To do it later, run **Layers and artboards > Put the frames on one stack of layers**.
 
 Layers with the same kind and name join up, so 23 frames that each have Lines end up with one Lines. A layer only some frames have is added to the stack, and the others are empty there. If two boards disagree about a setting, the open board's wins. One undo step puts it back, and **Give each board its own layers** does the same on purpose.
 
@@ -61,7 +61,7 @@ See also [The four ways to build a sprite](help:pixel-ways) and [Artboards](help
 - **Click a swatch** in the [Palette](help:palette) to set Paint. Click a big square to pick any colour for it.
 - **X** swaps Paint and Back. The squares do a little pop.
 - **Right-click** on the canvas paints with Back, for that one stroke.
-- **Hold Alt** and click to pick a colour from the canvas, then let go to carry on drawing (the temporary eyedropper).
+- **Hold Alt** and click to pick a colour from the canvas, then let go to carry on drawing (the temporary eyedropper). Drag instead of clicking and the page turns ([see how](help:turn-flip-view)).
 - The [dither](help:tool-dither) brush uses Paint and Back as its two colours. Shapes are drawn in Paint, and filled in Paint when you turn on **Filled** in their options.
 
 The **Draw** and **Animate** workspaces keep the Fill and Stroke boxes, see [Fill and stroke colours](help:fill-and-stroke). The files are the same either way: Paint is the stroke colour and Back is the fill colour.`,

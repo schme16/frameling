@@ -38,26 +38,99 @@ export interface CustomSpec {
   pixelSize: number;
   /** Dots per inch, for sizes in mm, cm, in or pt (missing = 96). Not used for pixel art. */
   dpi?: number;
+  /**
+   * Whether the drawing starts as an animation. On: the usual frames, played at `fps`. Off: one picture, and `fps` is
+   * ignored (the form hides it). Missing = the way Custom worked before the tickbox: vector drawings animate, pixel ones
+   * are one picture. The form always sets it.
+   */
+  animate?: boolean;
+  /** The size you had in the other mode (vector or pixel art), kept so ticking Pixel art and unticking it puts your numbers back. */
+  away?: { width: number; height: number };
 }
 
 export const clampInt = (n: number, lo: number, hi: number, fallback: number): number => (Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : fallback);
 
-/** Builds the document for a preset. */
-export function docFromPreset(p: Preset, name = 'Untitled'): Doc {
-  return newDoc({ name, width: p.width, height: p.height, fps: p.fps, ...(p.length ? { length: p.length } : {}), ...(p.pixelSize ? { pixel: { pixelSize: p.pixelSize } } : {}) });
+/** What the form shows the first time, before anything has been typed. */
+export const FIRST_SIZE = { vector: { width: 800, height: 600 }, pixel: { width: 64, height: 64 } } as const;
+export const DEFAULT_FPS = 12;
+export const NAME_START = 'Untitled';
+
+export const DEFAULT_CUSTOM: CustomSpec = { name: NAME_START, ...FIRST_SIZE.vector, fps: DEFAULT_FPS, pixel: false, pixelSize: 8, animate: false };
+
+/**
+ * Ticks or unticks Pixel art. Each mode keeps its own size: the one you leave is set aside and the other comes back, so a
+ * tick and an untick leaves you exactly where you started. The first time in a mode it gets that mode's usual size.
+ */
+export function setPixelMode(spec: CustomSpec, pixel: boolean): CustomSpec {
+  if (spec.pixel === pixel) return spec;
+  const back = spec.away ?? (pixel ? FIRST_SIZE.pixel : FIRST_SIZE.vector);
+  return { ...spec, pixel, width: back.width, height: back.height, away: { width: spec.width, height: spec.height } };
 }
 
-/** Builds the document for the Custom card, keeping every number sensible. */
+const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+const sizeLimit = (pixel: boolean) => (pixel ? 512 : 8192);
+
+/** A saved spec read back (from storage or a file): anything odd falls back to the first-time values, sizes are held to their limits. */
+export function cleanSpec(raw: unknown): Omit<CustomSpec, 'name'> {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const pixel = r.pixel === true;
+  const side = (v: unknown, key: 'width' | 'height', isPixel: boolean) => clampInt(num(v) ?? NaN, 1, sizeLimit(isPixel), (isPixel ? FIRST_SIZE.pixel : FIRST_SIZE.vector)[key]);
+  const out: Omit<CustomSpec, 'name'> = {
+    width: side(r.width, 'width', pixel),
+    height: side(r.height, 'height', pixel),
+    fps: clampInt(num(r.fps) ?? NaN, 1, 60, DEFAULT_FPS),
+    pixel,
+    pixelSize: clampInt(num(r.pixelSize) ?? NaN, 1, 64, 8),
+    animate: r.animate === true,
+  };
+  const dpi = num(r.dpi);
+  if (dpi !== undefined && cleanDpi(dpi) !== DEFAULT_DPI) out.dpi = cleanDpi(dpi);
+  const a = r.away && typeof r.away === 'object' ? (r.away as Record<string, unknown>) : null;
+  if (a) out.away = { width: side(a.width, 'width', !pixel), height: side(a.height, 'height', !pixel) };
+  return out;
+}
+
+/**
+ * What the Custom form starts from: your last settings, with the name back at Untitled. The name is the one thing not
+ * kept, because two drawings with the same name is worse than typing it again.
+ */
+export function startingSpec(last: unknown): CustomSpec {
+  return { name: NAME_START, ...cleanSpec(last) };
+}
+
+/** What to keep for next time: everything but the name. */
+export function rememberable(spec: CustomSpec): Omit<CustomSpec, 'name'> {
+  const { name: _name, ...rest } = spec;
+  return cleanSpec(rest);
+}
+
+/** How many frames a Custom drawing starts with. Missing = the usual for vector, which `newDoc` picks. */
+export function startLength(c: Pick<CustomSpec, 'pixel' | 'animate'>): number | undefined {
+  if (c.animate === undefined) return c.pixel ? START_FRAMES.picture : undefined;
+  if (c.pixel) return c.animate ? START_FRAMES.animation : START_FRAMES.picture;
+  return c.animate ? undefined : START_FRAMES.picture;
+}
+
+/** Builds the document for a preset. */
+export function docFromPreset(p: Preset, name = 'Untitled'): Doc {
+  // Every preset is a picture to draw on. Add animation (src/animation) gives it frames when it is wanted.
+  return newDoc({ name, width: p.width, height: p.height, fps: p.fps, animated: false, ...(p.length ? { length: p.length } : {}), ...(p.pixelSize ? { pixel: { pixelSize: p.pixelSize } } : {}) });
+}
+
+/** Builds the document for the Custom card, keeping every number sensible. A picture (no animation) ignores the frame rate. */
 export function docFromCustom(c: CustomSpec): Doc {
-  const fps = clampInt(c.fps, 1, 60, 12);
-  const name = c.name.trim() || 'Untitled';
+  const fps = c.animate === false ? DEFAULT_FPS : clampInt(c.fps, 1, 60, DEFAULT_FPS);
+  const name = c.name.trim() || NAME_START;
+  const length = startLength(c);
+  // Ticking Animation starts it as one. An old saved spec with no tickbox answer animated vector drawings and not pixel ones.
+  const animated = c.animate ?? !c.pixel;
   if (c.pixel) {
     const pixelSize = clampInt(c.pixelSize, 1, 64, 8);
     const w = clampInt(c.width, 1, 512, 64);
     const h = clampInt(c.height, 1, 512, 64);
-    return newDoc({ name, width: w * pixelSize, height: h * pixelSize, fps, length: START_FRAMES.picture, pixel: { pixelSize } });
+    return newDoc({ name, width: w * pixelSize, height: h * pixelSize, fps, animated, ...(length ? { length } : {}), pixel: { pixelSize } });
   }
-  const doc = newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps });
+  const doc = newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps, animated, ...(length ? { length } : {}) });
   const dpi = cleanDpi(c.dpi);
   if (dpi !== DEFAULT_DPI) doc.dpi = dpi;
   return doc;

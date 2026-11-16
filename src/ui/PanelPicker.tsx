@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { allPanels } from '../core/registry';
 import { dock, panelTitle, placeOf, showPanel } from './dock';
 import { Icon } from './icons';
-import { GROUP_NAMES, infoFor, isSection, matchPanel, RAIL_GROUPS } from './panelInfo';
+import { GROUP_NAMES, infoFor, isSection, matchPanel, RAIL_GROUPS, whenShown } from './panelInfo';
 import { rightStyle } from './rightStyle';
 import { usePopover } from './popover';
 
@@ -85,6 +85,7 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
                   id={`${uid}-${p.id}`}
                   role="option"
                   aria-selected={i === cur}
+                  data-wraps
                   className={`rd-picker-item${i === cur ? ' is-current' : ''}`}
                   onPointerEnter={() => setCur(i)}
                   onClick={() => pick(p.id)}
@@ -96,6 +97,7 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
                       <span className={`rd-picker-where${at ? '' : ' is-closed'}`}>{!at ? 'Closed' : !z ? 'Floating' : z === 'right' && merged && isSection(p.id) ? 'In Properties' : ZONE_NAMES[z]}</span>
                     </span>
                     <span className="rd-picker-blurb">{infoFor(p).blurb}</span>
+                    {whenShown(p) && <span className="rd-picker-when">{whenShown(p)}</span>}
                   </span>
                 </div>
               );

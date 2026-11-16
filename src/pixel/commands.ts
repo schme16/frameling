@@ -8,16 +8,17 @@ import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { paletteScope, recolourOpenVariation, setVariationPalette, sharedEditNote } from '../artboards/variations';
-import { parseHex } from '../canvas/colors';
+import { parseHex, solidOf } from '../canvas/colors';
 import { hint } from '../canvas/controller';
 import { activeDrawing, activeGrid, activeLayer, EDIT_HINTS, setActivePixels } from '../tools/edit';
 import { gridPixels } from '../core/pixelBounds';
-import { docPalette, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
+import { docPalette, paletteAlpha, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
 import { getPixelSettings, setPixelSettings, type SymmetryMode } from './settings';
 import { activePixelLayer } from './tools';
 import { flipH, flipV, outline, rotateQuarter, type Img } from './transform';
 import { dropFloating, isFloating, pixelSelection, setPixelSelection } from '../select/pixel-state';
 import { applyInSelection, type PixelOp, type SelectionKind } from '../select/ops';
+import { choiceWord } from '../words/choices';
 
 // ---------------------------------------------------------------- the document palette
 
@@ -37,11 +38,11 @@ export type RecolourChoice = 'recolour' | 'palette-only';
 
 registerChoice<RecolourChoice>({
   id: 'palette.recolour',
-  title: 'Changing a palette colour',
-  question: 'You changed a colour in the palette. Should the pixels already painted in that colour change too?',
+  title: choiceWord('choice.palette.recolour.title'),
+  question: choiceWord('choice.palette.recolour.question'),
   options: [
-    { value: 'recolour', label: 'Change the pixels too', detail: 'Every pixel of the old colour, on every pixel layer and frame, becomes the new colour. Great for trying out colour schemes.' },
-    { value: 'palette-only', label: 'Just the palette', detail: 'Your drawing stays as it is. Only the palette changes.' },
+    { value: 'recolour', label: choiceWord('choice.palette.recolour.recolour.label'), detail: choiceWord('choice.palette.recolour.recolour.detail') },
+    { value: 'palette-only', label: choiceWord('choice.palette.recolour.palette-only.label'), detail: choiceWord('choice.palette.recolour.palette-only.detail') },
   ],
   default: 'recolour',
   category: 'Pixel art',
@@ -72,6 +73,13 @@ export function changePaletteColor(index: number, color: string): void {
   const old = p.colors[index];
   if (!old || old.toLowerCase() === color.toLowerCase()) return;
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
+  // Only the opacity changed: nothing painted needs recolouring, so there is nothing to ask. Painted pixels keep their own opacity.
+  if (solidOf(old).toLowerCase() === solidOf(color).toLowerCase()) {
+    store().update('Change palette colour', (d) => {
+      if (!setVariationPalette(d as Doc, next)) d.palette = next as Draft<DocPalette>;
+    });
+    return;
+  }
   const [r, g, b] = rgb3(old);
   const scope = paletteScope(doc, old);
   const inVariation = !!sharedEditNote(doc, 'palette');
@@ -168,7 +176,7 @@ export function reduceActiveToPalette(): boolean {
     return false;
   }
   return editPixels('Reduce to palette', (d) => {
-    const r = reduceToPalette(d.pixels, paletteRgb(p.colors));
+    const r = reduceToPalette(d.pixels, paletteRgb(p.colors), paletteAlpha(p.colors));
     if (!r.changed) {
       hint('Every pixel already uses a palette colour.');
       return null;

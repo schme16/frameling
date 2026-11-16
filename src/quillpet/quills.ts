@@ -1,17 +1,12 @@
 // His quills are coloured pencils, and they take the colours you've been drawing with. The sheet is recoloured once
 // on a canvas and handed back to the mascot runtime, so every Quill in the app picks it up with no extra work per
 // frame. Switching the pet off puts the original sheet back.
-import { quillSheet, setQuillSheet, SHEET_URL, type LoadedSheet } from '../ui/mascot/runtime';
+import { currentMascot, DEFAULT_MASCOT, getMascot, type Pencil } from '../ui/mascot/mascots';
+import { quillSheet, setQuillSheet, sheetUrl, type LoadedSheet } from '../ui/mascot/runtime';
 
-/** The five pencils in the art, each with its bright part and its shaded part, darkest first in the sheet's palette.
- *  Taken from brand/mascot/mascot.frameling: if the art's pencil colours change, change these with them. */
-export const PENCILS: { bright: string; shade: string }[] = [
-  { bright: '#4fd1a5', shade: '#2fae85' },
-  { bright: '#9b7bff', shade: '#7657e0' },
-  { bright: '#5ab8ff', shade: '#3a8fe0' },
-  { bright: '#ff6f91', shade: '#e04a72' },
-  { bright: '#ffc94a', shade: '#f2a91c' },
-];
+/** The pencils in the standard mascot's art, each with its bright part and its shaded part. They're data, in
+ *  src/ui/mascot/mascots.json: if the art's pencil colours change, change them there. */
+export const PENCILS: { bright: string; shade: string }[] = getMascot(DEFAULT_MASCOT).pencils ?? [];
 
 export function parseHex(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -35,12 +30,12 @@ export function shadeOf(hex: string): string {
  * Which colour each pencil becomes. Your colours are used in order, newest pencil last, and any pencil you haven't
  * given a colour to keeps the one the art drew it with, so he's never half bald.
  */
-export function mapPencils(colours: readonly string[]): Map<string, string> {
+export function mapPencils(colours: readonly string[], pencils: readonly Pencil[] = currentMascot().pencils ?? []): Map<string, string> {
   const out = new Map<string, string>();
-  const mine = colours.filter((c) => parseHex(c)).slice(-PENCILS.length);
-  PENCILS.forEach((p, i) => {
+  const mine = colours.filter((c) => parseHex(c)).slice(-pencils.length);
+  pencils.forEach((p, i) => {
     // The newest colour goes on the last pencil, so a fresh one always lands somewhere you can see.
-    const at = i - (PENCILS.length - mine.length);
+    const at = i - (pencils.length - mine.length);
     const colour = at >= 0 ? mine[at] : null;
     if (!colour) return;
     out.set(p.bright.toLowerCase(), colour.toLowerCase());
@@ -79,6 +74,12 @@ export function swapPixels(data: Uint8ClampedArray, map: Map<string, string>): n
 let original: LoadedSheet | null = null;
 /** The colours the sheet is painted with now, so the same list isn't drawn twice. */
 let painted = '';
+
+/** The mascot changed: what was painted belonged to the old one. Forgets it without touching the (new) sheet. */
+export function forgetPaint(): void {
+  original = null;
+  painted = '';
+}
 
 /** Puts the art's own colours back. Safe to call when nothing was changed. */
 export function plainQuills(): void {
@@ -123,5 +124,5 @@ export function paintQuills(colours: readonly string[]): void {
     }
   };
   // Always from the file on disk, so a repaint starts from the art's own colours rather than the last repaint.
-  img.src = SHEET_URL;
+  img.src = sheetUrl();
 }

@@ -59,7 +59,8 @@ describe('Close drawing', () => {
     expect(getCommand('file.close')).toMatchObject({ label: 'Close drawing', keys: ['Mod+W'], help: 'saving-and-opening' });
     const file = MENUS.find((m) => m.label === 'File')!;
     const i = file.items.indexOf('file.close');
-    expect(file.items.slice(i - 2, i + 3)).toEqual(['audio.import', '-', 'file.close', '-', 'file.quit']);
+    // Restart Frameling comes right after Close drawing once that command is there (it is named in the menu already).
+    expect(file.items.slice(i - 2, i + 4)).toEqual(['audio.import', '-', 'file.close', 'app.restart', '-', 'file.quit']);
   });
 
   it('asks when there is unsaved work, and a cancel keeps everything as it was', async () => {
@@ -124,7 +125,7 @@ describe('Close drawing', () => {
     await closeDrawing();
 
     const now = store();
-    const fresh = new Store(newDoc());
+    const fresh = new Store(newDoc({ animated: false }));
     // Everything a new window has: the same ui (frame, selection, zoom, file, dirty flag...) and the same drawing,
     // apart from ids. The settings that are deliberately remembered between drawings (the brush, the two colours,
     // looping and the onion skin: see src/core/uiMemory.ts) are kept, exactly as New and Open keep them.
@@ -138,7 +139,7 @@ describe('Close drawing', () => {
     expect(now.canRedo()).toBe(false);
     expect(now.nestedTag()).toBeNull();
     // The timeline's own state, and the autosave copy.
-    expect(tl()).toEqual({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() });
+    expect(tl()).toEqual({ cw: DEFAULT_CW, clipId: null, clipLead: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0, moveFolder: false });
     expect(cleared).toBeGreaterThan(0);
   });
 });

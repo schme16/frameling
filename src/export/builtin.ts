@@ -1,12 +1,17 @@
 // The formats that are part of Frameling itself. Only the cards and rules are here: making each file, and the
 // options it shows in the dialog, are loaded when they are used (formats/ and options/). Formats that belong to a
 // feature (Interactives) are registered by that feature.
+import { contactProblem, contactSheetSize } from './contact';
+import { stickerPick } from './icons';
 import { repairLottieSettings } from './lottie-choices';
 import { registerExporter, type ExporterDef } from './registry';
 import type { ExportSettings } from './types';
 
 const PICTURES = 'Everything looks exactly as it does on the canvas: each frame is a finished picture.';
 const VIDEO_HELP = 'export-video-gif-apng';
+const STILLS_HELP = 'export-jpeg-webp-contact';
+const ICONS_HELP = 'export-icons-favicon';
+const STICKERS_HELP = 'export-stickers';
 
 const video = (format: 'mp4' | 'webm') => ({
   prepare: (plan: Parameters<NonNullable<ExporterDef['prepare']>>[0], s: ExportSettings) => import('./formats/video-prep').then((m) => m.prepareVideo(plan, s)),
@@ -27,7 +32,7 @@ const defs: ExporterDef[] = [
     ...video('mp4'),
   },
   {
-    info: { id: 'webm', title: 'WebM video', tag: 'VP9', goodFor: 'The web, and videos with a see-through background.', icon: 'film', ext: 'webm', animated: true, alpha: true },
+    info: { id: 'webm', title: 'WebM video', tag: 'AV1', goodFor: 'The web, and videos with a see-through background.', icon: 'film', ext: 'webm', animated: true, alpha: true },
     video: true,
     baked: true,
     carry: { summary: PICTURES, help: VIDEO_HELP },
@@ -59,6 +64,23 @@ const defs: ExporterDef[] = [
     load: () => import('./formats/png'),
   },
   {
+    info: { id: 'jpeg', title: 'JPEG picture', tag: 'This frame', goodFor: 'Forms and sites that will not take a PNG. Small files, no see-through.', icon: 'image', ext: 'jpg', animated: false, alpha: false },
+    noAlphaWhy: "JPEG pictures can't be see-through, so the background is painted in. Try PNG or WebP for a see-through picture.",
+    fileKind: () => ({ name: 'JPEG picture', extensions: ['jpg', 'jpeg'] }),
+    carry: { summary: PICTURES + ' JPEG has no see-through, and it changes colours very slightly to keep the file small.', help: STILLS_HELP },
+    ui: () => import('./options/stills').then((m) => ({ After: m.JpegOptions })),
+    load: () => import('./formats/jpeg'),
+  },
+  {
+    info: { id: 'webp', title: 'WebP picture', tag: 'Still or moving', goodFor: 'Small pictures for chats and web pages, moving or still, with soft see-through edges.', icon: 'image', ext: 'webp', animated: true, alpha: true },
+    baked: true,
+    loops: true,
+    fileKind: () => ({ name: 'WebP picture' }),
+    carry: { summary: PICTURES + ' Frames that repeat are stored once.', help: STILLS_HELP },
+    ui: () => import('./options/stills').then((m) => ({ After: m.WebpOptions })),
+    load: () => import('./formats/webp'),
+  },
+  {
     info: { id: 'pngseq', title: 'PNG sequence', tag: '.zip', goodFor: 'Video editors and other tools that want one picture per frame.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
     popular: 3,
     baked: true,
@@ -72,9 +94,10 @@ const defs: ExporterDef[] = [
     carry: {
       help: 'export-svg',
       summary: 'This frame as vector shapes, with text, blend modes, masks, clipping, colour wash and most effects kept, inside symbols too.',
-      rows: { effects: 'kept', bones: 'picture' },
+      rows: { effects: 'kept', bones: 'picture', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
+    settle: (doc, s, frame) => import('./formats/svg-prep').then((m) => m.settleSvgTooth(doc, s, frame)),
     load: () => import('./formats/svg'),
   },
   {
@@ -91,8 +114,8 @@ const defs: ExporterDef[] = [
     info: { id: 'lottie', title: 'Lottie animation', tag: 'JSON', goodFor: 'Apps and websites: a small vector animation that plays at any size.', icon: 'play', ext: 'json', animated: true, alpha: true },
     carry: {
       help: 'export-lottie',
-      summary: 'Shapes, symbols, tweens, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
-      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept' },
+      summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
+      rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept', trim: 'kept', grain: 'shapes', gradientAngular: 'out', gradientDiamond: 'out' },
       nativeEffects: ['blur', 'shadow'],
     },
     // A clip that plays backward, back and forth or N times is baked in play order with a time remap (nothing is drawn twice).
@@ -111,11 +134,12 @@ const defs: ExporterDef[] = [
     fileKind: () => ({ name: 'Animated SVG' }),
     carry: {
       help: 'export-svg-animated',
-      summary: 'Shapes, symbols, tweens, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
-      rows: { effects: 'kept', bones: 'picture' },
+      summary: 'Shapes, symbols, tweens, lines that draw themselves, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
+      rows: { effects: 'kept', bones: 'picture', trim: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
       nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
     },
     ui: () => import('./options/playback').then((m) => ({ After: m.SvgAnimOptions })),
+    settle: (doc, s, frame) => import('./formats/svg-prep').then((m) => m.settleSvgTooth(doc, s, frame)),
     load: () => import('./formats/svganim'),
   },
   {
@@ -147,7 +171,7 @@ const defs: ExporterDef[] = [
     fileKind: () => ({ name: 'PDF document' }),
     carry: {
       summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-      rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
+      rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
     },
     ui: () => import('./options/notes').then((m) => ({ Notes: m.NoteFor('pdf') })),
     load: () => import('./formats/pdf'),
@@ -161,10 +185,57 @@ const defs: ExporterDef[] = [
     fileKind: (s) => ((s.aiFrames ?? 'one') === 'files' ? { name: 'Zip file' } : { name: 'Adobe Illustrator' }),
     carry: {
       summary: 'Opens in Illustrator as its own file: your layers and folders as real layers, shapes, gradients and text editable (Illustrator needs the text\'s font installed, or it shows another one). Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-      rows: { effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
+      rows: { effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', grain: 'shapes', gradientAngular: 'shapes', gradientDiamond: 'shapes' },
     },
     ui: () => import('./options/notes').then((m) => ({ Before: m.IllustratorFrames, Notes: m.NoteFor('ai') })),
     load: () => import('./formats/pdf'),
+  },
+  {
+    info: { id: 'icons', title: 'App icon set', tag: '.zip', goodFor: 'An icon at every size: PNGs, a Windows .ico, a Mac .icns and the phone sizes.', icon: 'grid', ext: 'zip', animated: false, alpha: true },
+    nameSuffix: '-icons',
+    fileKind: () => ({ name: 'Zip file' }),
+    carry: { summary: 'The frame you are looking at, drawn fresh at each size so small icons stay sharp.', help: ICONS_HELP },
+    picked: () => ({ scale: 1 }),
+    opened: () => ({ scale: 1 }),
+    ui: () => import('./options/stills').then((m) => ({ Size: m.IconOptions, summary: m.iconSummary })),
+    load: () => import('./formats/icons'),
+  },
+  {
+    info: { id: 'favicon', title: 'Favicon set', tag: '.zip', goodFor: 'The icon files a website needs, with the lines to paste into the page.', icon: 'image', ext: 'zip', animated: false, alpha: true },
+    nameSuffix: '-favicon',
+    fileKind: () => ({ name: 'Zip file' }),
+    carry: { summary: 'The frame you are looking at, drawn fresh at each size so small icons stay sharp.', help: ICONS_HELP },
+    picked: () => ({ scale: 1 }),
+    opened: () => ({ scale: 1 }),
+    ui: () => import('./options/stills').then((m) => ({ Size: m.FaviconOptions, summary: m.faviconSummary })),
+    load: () => import('./formats/favicon'),
+  },
+  {
+    info: { id: 'stickers', title: 'Sticker and emoji pack', tag: '.zip', goodFor: 'Slack, Teams, Discord, Telegram, WhatsApp, Signal, iMessage and LINE sizes, a folder for each.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
+    nameSuffix: '-stickers',
+    baked: true,
+    stills: true,
+    fileKind: () => ({ name: 'Zip file' }),
+    carry: { summary: 'Each frame drawn fresh at the size each app asks for, one picture per frame.', help: STICKERS_HELP },
+    picked: () => ({ scale: 1 }),
+    opened: () => ({ scale: 1 }),
+    problem: (_doc, s) => (stickerPick(s.stickerFor).length ? null : 'Pick at least one app.'),
+    ui: () => import('./options/stills').then((m) => ({ Size: m.StickerOptions, summary: m.stickerSummary })),
+    load: () => import('./formats/stickers'),
+  },
+  {
+    info: { id: 'contact', title: 'Contact sheet', tag: 'All frames', goodFor: 'Every frame on one numbered page, for a review or a quick look.', icon: 'grid', ext: 'png', animated: true, alpha: false },
+    nameSuffix: '-contact-sheet',
+    baked: true,
+    stills: true,
+    noAlphaWhy: 'A contact sheet is a page of pictures, so each picture has a background (the page colour, or white).',
+    fileKind: () => ({ name: 'PNG picture' }),
+    carry: { summary: 'Every frame as a small picture on one page, numbered, with the name of the drawing on top.', help: STILLS_HELP },
+    picked: () => ({ scale: 1 }),
+    opened: () => ({ scale: 1 }),
+    problem: (doc, s, plan) => contactProblem(contactSheetSize(doc, plan.count, s).layout),
+    ui: () => import('./options/stills').then((m) => ({ Size: m.ContactOptions, summary: m.contactSummary })),
+    load: () => import('./formats/contact'),
   },
 ];
 

@@ -6,12 +6,14 @@
  *
  * Frames are 0-based in the data. The panel shows them 1-based.
  */
+import { cleanCelName } from '../core/celName';
 import { current, isDraft } from 'immer';
 import type { Cel, Clip, ClipDirection, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
 import { currentChoice } from '../core/choices';
 import { cleanRepeat, clipDirection } from '../core/clipPlay';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { stepLayerThroughFolders, tidyFolders } from '../effects/edit';
+import { gatherHalf, halfTogether, linkPair, topAndBottom, unlinkPair } from '../core/pairs';
 
 /** What to do when a cel lands on top of others: shove them later (push) or cut them back (trim). */
 export type Clash = 'push' | 'trim';
@@ -33,10 +35,15 @@ export function cloneDrawing(d: Drawing): Drawing {
   if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
   // Each copy remembers the shape it came from, so a selection can follow it from key to key.
+  const renamed = new Map<string, string>();
   for (const s of shapes) {
     s.origin = s.origin ?? s.id;
+    const was = s.id;
     s.id = uid('s');
+    renamed.set(was, s.id);
   }
+  // Words on a curve follow the copy of their line, not the line they were copied from.
+  for (const s of shapes) if (s.type === 'text' && s.onPath?.source) s.onPath.source = renamed.get(s.onPath.source) ?? s.onPath.source;
   // A bones layer's key keeps its pose.
   return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }
@@ -168,12 +175,14 @@ export function newBlankKey(doc: Doc, layerId: Id, frame: number, copy = false):
   } else if (cel.start === frame) {
     const d = make(doc.drawings[cel.drawingId]);
     cel.drawingId = d.id;
+    // A fresh blank drawing starts where it was drawn; a copy stays where it was moved to (see core/offset.ts).
+    if (!copy) delete cel.offset;
     id = cel.id;
   } else {
     const oldEnd = end(cel);
     const d = make(doc.drawings[cel.drawingId]);
     cel.length = frame - cel.start;
-    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id, ...(cel.autoHold ? { autoHold: true } : {}) };
+    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id, ...(cel.autoHold ? { autoHold: true } : {}), ...(copy && cel.offset ? { offset: { ...cel.offset } } : {}) };
     layer.cels.push(c);
     layer.cels.sort((a, b) => a.start - b.start);
     id = c.id;
@@ -198,11 +207,11 @@ export function duplicateKey(doc: Doc, layerId: Id, frame: number): Id | null {
   doc.drawings[copy.id] = copy;
   let c: Cel;
   if (target < end(cel)) {
-    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id, ...(cel.autoHold ? { autoHold: true } : {}) };
+    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id, ...(cel.autoHold ? { autoHold: true } : {}), ...(cel.offset ? { offset: { ...cel.offset } } : {}) };
     cel.length = target - cel.start;
   } else {
     if (celAt(layer, target)) shiftFrom(layer, target, 1);
-    c = { id: uid('c'), start: target, length: 1, drawingId: copy.id };
+    c = { id: uid('c'), start: target, length: 1, drawingId: copy.id, ...(cel.offset ? { offset: { ...cel.offset } } : {}) };
   }
   layer.cels.push(c);
   layer.cels.sort((a, b) => a.start - b.start);
@@ -239,6 +248,21 @@ export function clearKey(doc: Doc, layerId: Id, frame: number): boolean {
   cel.drawingId = d.id;
   pruneDrawings(doc);
   return true;
+}
+
+/**
+ * Gives the drawing at `frame` a copy of its own, so changing it no longer changes the other places that show it. The
+ * copy looks the same; the drawing it came from stays where it was. Returns the copy's id, or null with no drawing there.
+ */
+export function makeOwnDrawing(doc: Doc, layerId: Id, frame: number): Id | null {
+  const layer = findLayer(doc, layerId);
+  const cel = layer && celAt(layer, frame);
+  const src = cel && doc.drawings[cel.drawingId];
+  if (!cel || !src) return null;
+  const copy = cloneDrawing(src);
+  doc.drawings[copy.id] = copy;
+  cel.drawingId = copy.id;
+  return copy.id;
 }
 
 /** Takes the key (and its whole hold) away, leaving empty frames. */
@@ -378,6 +402,9 @@ export function addPixelLayer(doc: Doc, aboveId?: Id | null, name?: string, pixe
 export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0 || doc.layers.length <= 1) return null;
+  const gone = doc.layers[i];
+  // Its other half, if it had one, is a layer on its own again.
+  if (gone.pair) unlinkPair(doc.layers as Layer[], gone.id);
   doc.layers.splice(i, 1);
   // One stack for every board: the layer goes from all of them, with what they drew on it.
   if (sharedBoards(doc)) for (const a of doc.artboards!) if (a.content?.cels) delete a.content.cels[layerId];
@@ -385,14 +412,35 @@ export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   return { next: doc.layers[Math.min(i, doc.layers.length - 1)].id };
 }
 
-/** A full copy of a layer (its drawings are copied too, so editing one never changes the other), placed just above it. */
+/**
+ * A full copy of a layer (its drawings are copied too, so editing one never changes the other), placed just above it. A
+ * layer that is half of a pair is copied with its other half, and the two copies are a pair. Returns the copy of `layerId`.
+ */
 export function duplicateLayer(doc: Doc, layerId: Id): Id | null {
+  const other = halfTogether(doc.layers, findLayer(doc, layerId));
+  if (!other) return copyLayer(doc, layerId);
+  // Copy the lower one first, so each copy lands just above its own original and the two stay side by side.
+  const { top, bottom } = topAndBottom(doc.layers, doc.layers.find((l) => l.id === layerId)!, other);
+  const low = copyLayer(doc, bottom.id);
+  const high = copyLayer(doc, top.id);
+  if (!low || !high) return null;
+  const a = doc.layers.find((l) => l.id === low)!;
+  const b = doc.layers.find((l) => l.id === high)!;
+  linkPair(a, b);
+  // The copy of the lower half sits just above it; the copy of the upper half just above the upper one: gather them.
+  gatherHalf(doc.layers as Layer[], high, low, 'below');
+  return layerId === top.id ? high : low;
+}
+
+function copyLayer(doc: Doc, layerId: Id): Id | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0) return null;
   const src = plain(doc.layers[i]);
   const copy = structuredClone(src) as Layer;
   copy.id = uid('l');
   copy.name = `${src.name} copy`;
+  // A copy is not half of the original's pair.
+  delete copy.pair;
   const made = new Map<Id, Id>();
   for (const c of copy.cels) {
     c.id = uid('c');
@@ -443,8 +491,12 @@ export function reorderLayer(doc: Doc, layerId: Id, to: number): boolean {
   const from = doc.layers.findIndex((l) => l.id === layerId);
   const dest = Math.max(0, Math.min(doc.layers.length - 1, Math.round(to)));
   if (from < 0 || from === dest) return false;
+  const other = halfTogether(doc.layers, doc.layers[from]);
+  const otherBelow = other ? doc.layers.indexOf(other) < from : false;
   const [l] = doc.layers.splice(from, 1);
   doc.layers.splice(dest, 0, l);
+  // A pair moves as one: its other half comes along.
+  if (other) gatherHalf(doc.layers as Layer[], layerId, other.id, otherBelow ? 'below' : 'above');
   // Layer folders stay in one piece (see effects/edit.ts).
   tidyFolders(doc, layerId);
   return true;
@@ -452,7 +504,17 @@ export function reorderLayer(doc: Doc, layerId: Id, to: number): boolean {
 
 /** One step towards the top (`up`) or the bottom of the picture. Steps into and out of layer folders on the way. */
 export function stepLayer(doc: Doc, layerId: Id, dir: 'up' | 'down'): boolean {
-  return stepLayerThroughFolders(doc, layerId, dir);
+  const layer = findLayer(doc, layerId);
+  const other = halfTogether(doc.layers, layer);
+  if (!layer || !other) return stepLayerThroughFolders(doc, layerId, dir);
+  // A pair steps as one: the half at the front edge of the move leads, and the other follows it.
+  const { top, bottom } = topAndBottom(doc.layers, layer, other);
+  const lead = dir === 'up' ? top : bottom;
+  const rest = dir === 'up' ? bottom : top;
+  if (!stepLayerThroughFolders(doc, lead.id, dir)) return false;
+  gatherHalf(doc.layers as Layer[], lead.id, rest.id, dir === 'up' ? 'below' : 'above');
+  tidyFolders(doc, lead.id);
+  return true;
 }
 
 export function setLayerVisible(doc: Doc, layerId: Id, visible: boolean): boolean {
@@ -524,6 +586,64 @@ export function addClip(doc: Doc, a: number, b: number, name?: string, loop = tr
   const clip: Clip = { id: uid('k'), name: name?.trim() || `Clip ${doc.clips.length + 1}`, start, end: last, loop };
   doc.clips.push(clip);
   return clip.id;
+}
+
+/** "Run", then "Run copy", then "Run copy 2": a name no clip has yet. */
+export function copyName(doc: Doc, name: string): string {
+  const taken = new Set(doc.clips.map((c) => c.name.toLowerCase()));
+  const base = name.replace(/ copy( \d+)?$/i, '');
+  let n = `${base} copy`;
+  for (let i = 2; taken.has(n.toLowerCase()); i++) n = `${base} copy ${i}`;
+  return n;
+}
+
+/**
+ * Copies a clip onto the end of the animation: every drawing it shows is cloned (one drawn twice stays one drawing),
+ * so painting on the copy never touches the original. Markers inside the clip come along. The copy keeps how it plays.
+ * Returns the new clip's id, or null when the clip is missing or the animation would pass its longest length.
+ */
+export function duplicateClip(doc: Doc, id: Id): Id | null {
+  const src = doc.clips.find((c) => c.id === id);
+  if (!src) return null;
+  const size = src.end - src.start + 1;
+  if (doc.length + size > MAX_LENGTH) return null;
+  const shift = doc.length - src.start;
+  for (const layer of doc.layers) {
+    const clones = new Map<string, Id>();
+    const made: Cel[] = [];
+    for (const cel of layer.cels) {
+      const a = Math.max(cel.start, src.start);
+      const b = Math.min(cel.start + cel.length - 1, src.end);
+      if (b < a) continue;
+      let did = clones.get(cel.drawingId);
+      if (!did) {
+        const from = doc.drawings[cel.drawingId];
+        if (!from) continue;
+        const d = cloneDrawing(from);
+        doc.drawings[d.id] = d;
+        did = d.id;
+        clones.set(cel.drawingId, did);
+      }
+      made.push({ ...plain(cel), id: uid('c'), start: a + shift, length: b - a + 1, drawingId: did });
+    }
+    layer.cels.push(...made);
+  }
+  for (const m of doc.markers.slice()) if (m.frame >= src.start && m.frame <= src.end) doc.markers.push({ ...plain(m), id: uid('m'), frame: m.frame + shift });
+  doc.length += size;
+  const clip: Clip = { ...plain(src), id: uid('k'), name: copyName(doc, src.name), start: src.start + shift, end: src.end + shift };
+  doc.clips.push(clip);
+  return clip.id;
+}
+
+/** Names a drawing (an empty name takes the name off). False when nothing changed. */
+export function renameCel(doc: Doc, layerId: Id, celId: Id, name: string): boolean {
+  const cel = doc.layers.find((l) => l.id === layerId)?.cels.find((c) => c.id === celId);
+  if (!cel) return false;
+  const n = cleanCelName(name);
+  if (cel.name === n) return false;
+  if (n) cel.name = n;
+  else delete cel.name;
+  return true;
 }
 
 export function renameClip(doc: Doc, id: Id, name: string): boolean {

@@ -8,6 +8,7 @@ import { removeOwned, withOwner } from '../core/owners';
 import { drawingAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { rootDoc } from '../core/symbols';
+import { withoutNotes } from '../notes/model';
 import { announceUiChange } from '../features/host';
 import { baseName, desktop } from '../io/desktop';
 import { notify } from '../io/notify';
@@ -26,6 +27,7 @@ import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } f
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
+import { appCommands, appRun, appSet } from './appBridge';
 import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
 import { codeFingerprint } from './fingerprint';
 import { forgetValues } from './options';
@@ -119,7 +121,7 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
   const pid = m.id;
   const mine = () => added.get(pid) ?? (added.set(pid, { commands: [], panels: [] }), added.get(pid)!);
   return {
-    getDoc: () => rootDoc(store().rootDoc()),
+    getDoc: () => withoutNotes(rootDoc(store().rootDoc())),
     getState: () => {
       const { doc, ui } = store().get();
       const layer = findLayer(doc, ui.activeLayerId);
@@ -223,6 +225,9 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
       return { name: baseName(r.path), bytes: r.bytes };
     },
     subscriptionsChanged: () => syncEventPump(),
+    appCommands,
+    appRun,
+    appSet,
     problem: (message, loading) => {
       if (loading) patch(pid, { status: 'problem', problem: message });
       notify(`The "${m.name}" plugin hit a problem: ${message}`, 'error', { label: 'Turn it off', run: () => void setEnabled(pid, false) }, 9000);
@@ -377,7 +382,6 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
       label: def.label,
       icon: ICON_NAMES.includes(def.icon) ? def.icon : 'plugin',
       layers: def.layers,
-      group: 'extras',
       help: 'plugin-tools',
       cursor: 'crosshair',
       down: (e, ctx) => send('down', e, ctx),
@@ -624,7 +628,7 @@ export async function installPackage(pkg: PluginPackage): Promise<boolean> {
   const entry: InstalledPlugin = { manifest: m, enabled: true, granted: allowed.permissions, network: allowed.network, grantedFor: m.version, status: 'off' };
   plugins.set((list) => [...list.filter((x) => x.manifest.id !== m.id), entry].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name)));
   await start(entry);
-  notify(`"${m.name}" is installed. Find it in the Plugins menu.`, 'success', undefined, 5000, 'cheer');
+  notify(`"${m.name}" is installed. Find it in Edit > Plugins.`, 'success', undefined, 5000, 'cheer');
   return true;
 }
 

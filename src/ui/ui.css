@@ -1,4 +1,27 @@
 /*
+ * What sits on top of what. The ladder is named in src/ui/layers.ts, and these are the same numbers for CSS to use.
+ * A new floating thing picks a name from here rather than inventing a number, which is how the brush and tip pickers
+ * once ended up over a dialog's dimmed backdrop.
+ */
+:root {
+  --z-in-panel: 6;
+  --z-panel: 50;
+  --z-panel-float: 60;
+  --z-dock-chip: 90;
+  /* A picker or menu opened from the page: above the panels, under a dialog's backdrop. */
+  --z-flyout: 95;
+  --z-backdrop: 100;
+  --z-modal: 110;
+  --z-menu-over-modal: 150;
+  --z-tip: 200;
+  --z-toast: 300;
+  --z-big-dialog: 900;
+  /* A picker opened from inside a dialog, so it is seen above it. */
+  --z-flyout-over-modal: 990;
+  --z-quest: 1000;
+}
+
+/*
  * Frameling shell styles. Every colour comes from theme.css tokens, so both themes and both looks work.
  *
  * Cosy (default): floating rounded panels with gaps between them, soft shadows, a little bounce.
@@ -25,6 +48,17 @@
   min-height: 0;
   background: var(--bg);
   color: var(--text);
+}
+
+/* A small screen (screenFit.ts): slimmer bars and gaps so the canvas gets the room. Crisp has none to slim. */
+:root[data-fit='compact']:not([data-look='crisp']) .ui-app {
+  --ui-gap: 6px;
+  --ui-pad: 6px;
+  --ui-bar-h: 40px;
+  --ui-tab-h: 32px;
+}
+:root[data-fit='compact'] .ui-status {
+  height: 26px;
 }
 
 :root[data-look='crisp'] .ui-app {
@@ -96,7 +130,8 @@
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--raised);
-  color: var(--text);
+  /* The --on-* colours are worked out from the fill (see readableTokens), so a theme can't make a button unreadable. */
+  color: var(--on-raised, var(--text));
   font-weight: 600;
   font-size: var(--fs);
   white-space: nowrap;
@@ -106,6 +141,10 @@
   background: var(--hover-bg);
   border-color: var(--faint);
 }
+/* Plain buttons only: quiet and primary ones keep their own words colour. */
+.ui-btn:where(:not(.ui-btn-quiet, .ui-btn-primary)):hover:not(:disabled) {
+  color: var(--on-hover, var(--text));
+}
 .ui-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
@@ -114,11 +153,12 @@
 }
 .ui-btn-primary {
   background: var(--chosen-bg);
-  color: var(--chosen-fg);
+  color: var(--on-chosen, var(--chosen-fg));
   border-color: transparent;
 }
 .ui-btn-primary:hover:not(:disabled) {
   background: var(--sunny-deep);
+  color: var(--on-chosen-deep, var(--chosen-fg));
   border-color: transparent;
 }
 .ui-btn-quiet {
@@ -237,6 +277,24 @@ kbd {
   display: flex;
   gap: 2px;
   margin-left: 6px;
+  position: relative;
+}
+/* A menu that does not fit sits out of sight (still measured) and is reached through More (menuFold.ts). */
+.ui-menu-wrap.is-folded {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ui-menu-more .ui-menu {
+  left: auto;
+  right: 0;
+}
+.ui-menu-more .ui-menu-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .ui-menu-wrap {
   position: relative;
@@ -309,6 +367,18 @@ kbd {
 .ui-menu-label {
   flex: 1;
   white-space: nowrap;
+}
+/* A greyed entry that says why (a locked rail or panel). */
+.ui-menu-item.has-why {
+  height: auto;
+  min-height: 30px;
+  padding-block: 4px;
+}
+.ui-menu-why {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--faint);
 }
 .ui-menu-sep {
   height: 1px;
@@ -455,7 +525,8 @@ kbd {
 }
 .ui-center {
   flex: 1;
-  min-width: 0;
+  /* The canvas keeps a usable size: the zones give way first (down to their own least), then fold (dockFit.ts). */
+  min-width: 280px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -463,7 +534,7 @@ kbd {
 }
 .ui-canvas {
   flex: 1;
-  min-height: 0;
+  min-height: 190px;
   min-width: 0;
   position: relative;
   overflow: hidden;
@@ -764,12 +835,17 @@ kbd {
   padding: 3px 8px 1px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--faint);
   font-size: 10px;
   font-weight: 800;
+  line-height: 1.25;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  /* A name that does not fit on one line drops to a second before anything is cut; only a third line (or one long word) ends in dots. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-wrap: balance;
 }
 .ui-tool-head.is-edit {
   display: flex;
@@ -783,7 +859,10 @@ kbd {
   padding: 1px 4px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-wrap: balance;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -888,6 +967,151 @@ kbd {
 .ui-tools-away:focus-visible {
   background: var(--hover-bg);
   color: var(--text);
+}
+
+/* The Pixels | Vectors switch at the top of the rail: it shows the kind of the layer you are on, and pressing a side goes to a layer of that kind. */
+.ui-tool-switch {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  gap: 2px;
+  width: calc(100% - 8px);
+  margin: 2px 4px 4px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+}
+.ui-tool-side {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.ui-tool-side:hover,
+.ui-tool-side:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.ui-tool-side.is-on,
+.ui-tool-side.is-on:hover,
+.ui-tool-side.is-on:focus-visible {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--sunny-deep) 70%, transparent);
+}
+:root[data-look='crisp'] .ui-tool-side.is-on {
+  box-shadow: none;
+}
+.ui-tool-side svg {
+  flex: none;
+  display: none;
+}
+.ui-tool-side-word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-tool-layer-count {
+  display: none;
+}
+/* Tools are off: a firmer outline. It turns gold only when the layout and the layer disagree (the Pixel workspace on a vector layer), which is when missing tools come as a surprise. */
+.ui-tool-switch.is-off {
+  border-color: var(--muted);
+}
+.ui-tool-switch.is-alert {
+  border-color: var(--sunny-deep, var(--sunny));
+  background: color-mix(in srgb, var(--sunny) 14%, transparent);
+}
+/* One button wide, pulled in too narrow for the words, or lying along the top: icons only, and the count on the side that has the missing tools. */
+.ui-tools.is-stacked:not(.has-names) .ui-tool-switch,
+.ui-tools.is-switch-short .ui-tool-switch,
+.ui-tools.is-sideways .ui-tool-switch {
+  width: auto;
+  flex-direction: column;
+  align-self: center;
+}
+.ui-tools.is-sideways .ui-tool-switch {
+  flex-direction: row;
+  margin: 0 6px 0 2px;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side,
+.ui-tools.is-switch-short .ui-tool-side,
+.ui-tools.is-sideways .ui-tool-side {
+  flex: none;
+  width: calc(var(--tool) - 8px);
+  padding: 6px 0;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side svg,
+.ui-tools.is-switch-short .ui-tool-side svg,
+.ui-tools.is-sideways .ui-tool-side svg {
+  display: block;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side-word,
+.ui-tools.is-switch-short .ui-tool-side-word,
+.ui-tools.is-sideways .ui-tool-side-word {
+  display: none;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-layer-count,
+.ui-tools.is-switch-short .ui-tool-layer-count,
+.ui-tools.is-sideways .ui-tool-layer-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--sunny-deep, var(--sunny));
+  color: #1d1b26;
+  font-size: 10px;
+  font-weight: 800;
+}
+/* A group that lost tools to the layer says how many, beside its name. */
+.ui-tool-head.has-off {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1px 6px;
+}
+/* The name itself. With no chip it is plain inline text, so the head's own two-line rule above does the work. Beside a chip the
+   head is a flex row, which that rule cannot clamp, so the name takes the same rule itself. */
+.ui-tool-head.has-off .ui-tool-head-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-wrap: balance;
+}
+.ui-tool-head.is-alert .ui-tool-head-off {
+  background: color-mix(in srgb, var(--sunny) 28%, transparent);
+}
+.ui-tool-head-off {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--text);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 /* Change the tools: the panel beside the rail. */
@@ -1036,6 +1260,13 @@ kbd {
   border-radius: var(--ui-zone-radius);
   box-shadow: var(--ui-zone-shadow);
   overflow: hidden;
+}
+/* A zone that is open takes the size it is asked for, but gives way when the window is short of room (its inline min size stops it). */
+.ui-zone-left:not(.is-collapsed),
+.ui-zone-right:not(.is-collapsed),
+.ui-zone-top:not(.is-collapsed),
+.ui-zone-bottom:not(.is-collapsed) {
+  flex: 0 1 auto;
 }
 .ui-zone-left.is-collapsed,
 .ui-zone-right.is-collapsed {
@@ -1186,7 +1417,10 @@ body.ui-resizing .ui-group-split:active::after {
   flex: none;
   min-height: var(--ui-tab-h);
   padding: 4px 4px 0;
-  overflow: hidden;
+  /* Too many tabs for the width: the strip scrolls sideways, each tab keeps its name whole. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   border-bottom: 1px solid var(--line-soft);
 }
 /* Tabs that don't fit go behind this "+N" button (see tabFit.ts); the list opens fixed under it. */
@@ -1458,6 +1692,15 @@ body.ui-resizing * {
   background: var(--hover-bg);
   color: var(--text);
 }
+/* The one way into animation, so it is the one thing in the bar that looks like a button. */
+.ui-status-add-animation {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.ui-status-add-animation:hover {
+  background: color-mix(in srgb, var(--accent) 34%, transparent);
+}
 .ui-status-tip {
   display: inline-flex;
   align-items: center;
@@ -1489,16 +1732,24 @@ body.ui-resizing * {
 
 /* ------------------------------------------------------------ tooltips and toasts */
 
+/* A tip is a label about something, not something you can click, so it has its own surface: the theme's text colour
+   as the background and its page colour as the text. Dark theme gives a cream label, light theme an ink one, and a
+   custom theme follows its own colours. Menus and panels are all --raised or --panel, so a tip never reads as one. */
 .ui-tip {
+  /* The tip colours are theme tokens (--tip-bg, --tip-fg, --tip-soft, --tip-line, --tip-link, from src/ui/themes/tokens.ts): a step
+     past the menu surface, with the accent in the border. The words use --on-tip, --on-tip-soft and --on-tip-link, which are those
+     colours moved only if a theme's own would not be readable on its tip fill. */
   position: fixed;
-  z-index: 200;
+  z-index: var(--z-tip);
   max-width: 280px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
+  padding: 8px 11px;
+  border: 1px solid var(--tip-line);
   border-radius: var(--radius-small);
-  background: var(--raised);
-  color: var(--text);
-  box-shadow: var(--shadow);
+  background: var(--tip-bg);
+  color: var(--on-tip, var(--tip-fg));
+  box-shadow:
+    0 6px 16px rgb(0 0 0 / 28%),
+    0 1px 3px rgb(0 0 0 / 25%);
   font-size: var(--fs-small);
   animation: ui-fade 0.12s var(--ease);
 }
@@ -1511,28 +1762,70 @@ body.ui-resizing * {
 .ui-tip-head strong {
   font-size: var(--fs);
 }
+.ui-tip-why {
+  margin-top: 3px;
+  color: var(--on-tip, var(--tip-fg));
+  line-height: 1.4;
+  font-weight: 700;
+}
 .ui-tip-desc {
   margin-top: 3px;
-  color: var(--muted);
+  color: var(--on-tip-soft, var(--tip-soft));
   line-height: 1.4;
+}
+.ui-tip kbd {
+  border-color: var(--tip-line);
+  background: color-mix(in srgb, var(--on-tip, var(--tip-fg)) 10%, var(--tip-bg));
+  color: var(--on-tip, var(--tip-fg));
 }
 .ui-tip-more {
   margin-top: 6px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--accent);
+  color: var(--on-tip-link, var(--tip-link));
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-:root[data-theme='dark'] .ui-tip-more {
-  color: color-mix(in srgb, var(--accent) 70%, white);
+/* The arrow: a small diamond on the tip's edge nearest the thing, same fill and line as the tip so the two read as one
+   shape. Its position along the edge is set from code and eases, so it slides rather than jumps when the tip is nudged. */
+.ui-tip-arrow {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  background: var(--tip-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+  transition:
+    left 0.1s var(--ease),
+    top 0.1s var(--ease);
+}
+.ui-tip[data-side='above'] .ui-tip-arrow {
+  top: 100%;
+  border-right: 1px solid var(--tip-line);
+  border-bottom: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='below'] .ui-tip-arrow {
+  top: 0;
+  border-left: 1px solid var(--tip-line);
+  border-top: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='right'] .ui-tip-arrow {
+  left: 0;
+  border-left: 1px solid var(--tip-line);
+  border-bottom: 1px solid var(--tip-line);
+}
+.ui-tip[data-side='left'] .ui-tip-arrow {
+  left: 100%;
+  border-top: 1px solid var(--tip-line);
+  border-right: 1px solid var(--tip-line);
 }
 
 .ui-toasts {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-toast);
   left: 50%;
   bottom: 44px;
   transform: translateX(-50%);
@@ -1584,6 +1877,17 @@ body.ui-resizing * {
 .ui-toast-text {
   line-height: 1.35;
 }
+/* A sign from the audience: its words sit on a card of their own, isolated so odd scripts cannot push the rest around. */
+.ui-toast-sign .ui-toast-text {
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+  padding: 6px 12px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-weight: 800;
+  text-align: center;
+}
 .ui-toast-action {
   flex: none;
   height: 26px;
@@ -1604,7 +1908,7 @@ body.ui-resizing * {
 .ui-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-backdrop);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1651,6 +1955,21 @@ body.ui-resizing * {
 .ui-modal-head h2 {
   margin: 0;
   font-size: 17px;
+}
+
+/* Help opened from a question sheet: the sheet steps aside, and this line says it is waiting. */
+.ui-help-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px 8px 20px;
+  background: color-mix(in srgb, var(--sunny) 22%, var(--panel));
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-small);
+}
+.ui-help-waiting .ui-btn {
+  flex: none;
 }
 
 /* An ask-the-first-time question comes from whatever is open, so it sits above other dialogs (Export is 900). */
@@ -1772,6 +2091,10 @@ body.ui-resizing * {
   white-space: nowrap;
   font-size: var(--fs-small);
   opacity: 0.7;
+}
+.ui-palette-why {
+  opacity: 1;
+  font-style: italic;
 }
 .ui-palette-cat {
   font-size: 11px;
@@ -1910,6 +2233,57 @@ body.ui-resizing * {
   border: 1px dashed var(--line);
   border-radius: var(--radius);
   animation: ui-rise 0.25s var(--ui-pop);
+}
+.ui-custom-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+.ui-fav-wrap {
+  position: relative;
+  display: flex;
+}
+.ui-fav-wrap > .ui-fav {
+  flex: 1;
+}
+.ui-fav-tools {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  box-shadow: var(--shadow-small);
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.ui-fav-wrap:hover .ui-fav-tools,
+.ui-fav-tools:focus-within {
+  opacity: 1;
+}
+.ui-fav-rename {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 52px;
+  height: var(--ui-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--sunny);
+  border-radius: var(--ui-btn-radius);
+  background: var(--bg);
+  color: var(--text);
+  user-select: text;
+  min-width: 0;
+}
+.ui-fav-save {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.ui-fav-save .ui-field {
+  flex: 1;
 }
 .ui-custom-end {
   grid-column: 1 / -1;
@@ -2053,9 +2427,30 @@ body.ui-resizing * {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: 8px 18px 24px;
+  --page-pad-top: 8px;
+  padding: var(--page-pad-top) 18px 24px;
   /* Clear of the modal's rounded corners, so the scrollbar is a whole bar and not a cut-off one. */
   margin: 0 5px 5px 0;
+}
+/* Scrolling to a row lands it below a stuck header, not under it. */
+.ui-prefs-page {
+  scroll-padding-top: var(--page-top-h, 0px);
+}
+/* A page header that stays put (StickyPageTop). The negative margins cancel the page's padding so it sits flush with
+   the top and the sides, and its own fill stops anything showing behind the words. */
+.ui-page-top {
+  position: sticky;
+  /* Sticks at the edge of the scroller, not of its padding, so no stripe of page shows above it. */
+  top: calc(var(--page-pad-top) * -1);
+  z-index: 4;
+  margin: calc(var(--page-pad-top) * -1) -18px 8px;
+  padding: calc(var(--page-pad-top) + 10px) 18px 8px;
+  background: var(--panel);
+  color: var(--on-panel, var(--text));
+  transition: box-shadow 0.15s var(--ease);
+}
+.ui-page-top[data-stuck] {
+  box-shadow: 0 1px 0 var(--line), var(--shadow-small);
 }
 .ui-prefs-page h3 {
   margin: 12px 0 10px;
@@ -2069,7 +2464,9 @@ body.ui-resizing * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  /* In a narrow window the controls drop under the words, right-aligned, rather than squeezing them to a thin column. */
+  flex-wrap: wrap;
+  gap: 8px 20px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -2078,6 +2475,21 @@ body.ui-resizing * {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+.ui-pref-row > .ui-pref-text {
+  flex: 1 1 150px;
+}
+/* The controls at the right of a row: one switch, or several buttons side by side with a gap. Never squashed by a long
+   description beside it (the words on the buttons stay on one line); wraps only when the row itself has run out of room. */
+.ui-pref-control {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+  margin-left: auto;
 }
 .ui-pref-text span {
   color: var(--muted);
@@ -2162,6 +2574,9 @@ body.ui-resizing * {
   gap: 10px;
   margin-bottom: 8px;
 }
+.ui-page-top .ui-keyboard-top {
+  margin-bottom: 0;
+}
 .ui-keyboard-top .ui-help-search {
   flex: 1;
 }
@@ -2181,10 +2596,12 @@ body.ui-resizing * {
   color: var(--faint);
 }
 .ui-keyrow {
-  display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(120px, 1.4fr) auto;
+  /* Name, keys, buttons. When the keys are too wide for the room (big interface size), the buttons drop under them
+     rather than sitting on top of the key chip. */
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   min-height: 38px;
   padding: 3px 8px;
   border-radius: var(--ui-btn-radius);
@@ -2196,6 +2613,8 @@ body.ui-resizing * {
   background: color-mix(in srgb, var(--sunny) 20%, transparent);
 }
 .ui-keyrow-name {
+  flex: 1.1 1 90px;
+  min-width: 90px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2206,6 +2625,9 @@ body.ui-resizing * {
   display: inline-grid;
 }
 .ui-keyrow-keys {
+  /* The same column in every row; never narrower than its widest chip. */
+  flex: 1.4 1 190px;
+  min-width: min-content;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -2259,6 +2681,8 @@ body.ui-resizing * {
   opacity: 0.7;
 }
 .ui-keyrow-act {
+  flex: none;
+  margin-left: auto;
   display: flex;
   gap: 4px;
 }
@@ -2604,8 +3028,7 @@ body.ui-resizing * {
   color: color-mix(in srgb, var(--accent) 70%, white);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .ui-md-link,
-  :root:not([data-theme='light']) .ui-tip-more {
+  :root:not([data-theme='light']) .ui-md-link {
     color: color-mix(in srgb, var(--accent) 70%, white);
   }
 }
@@ -2733,9 +3156,9 @@ body.ui-resizing * {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 220px;
-  height: 32px;
-  padding: 0 12px;
+  max-width: 240px;
+  height: 48px;
+  padding: 0 14px 0 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--raised);
@@ -2941,6 +3364,8 @@ body.ui-resizing * {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* So a long detail wraps inside the button instead of pushing it wider. */
+  min-width: 0;
 }
 .ui-choice-text span {
   color: var(--muted);
@@ -3147,6 +3572,9 @@ body.ui-resizing * {
   background: var(--panel-2);
   border: 1px solid var(--line-soft);
 }
+.th-prev-chip::before {
+  content: 'Draw';
+}
 .th-prev-chip {
   padding: 1px 4px;
   border-radius: 999px;
@@ -3235,8 +3663,8 @@ body.ui-resizing * {
   border-color: var(--line);
 }
 .th-card.is-chosen {
-  border-color: var(--chosen-bg);
-  box-shadow: 0 0 0 1px var(--chosen-bg);
+  border-color: var(--chosen-mark, var(--chosen-bg));
+  box-shadow: 0 0 0 1px var(--chosen-mark, var(--chosen-bg));
 }
 .th-card-pick {
   display: flex;
@@ -3257,81 +3685,73 @@ body.ui-resizing * {
   gap: 6px;
   padding: 0 2px;
 }
-.th-card-badges {
-  /* A folded corner on the card, curved like a page turned over, with the sun or the moon sitting on it. */
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 1px;
-  width: 54px;
-  height: 54px;
-  /* The icon sits where the fold is widest, not at its point. */
-  padding: 7px 0 0 7px;
-  border-top-left-radius: var(--radius-small);
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-  clip-path: polygon(100% 0%, 98.2% 10.5%, 95.4% 20.8%, 91.5% 30.9%, 86.7% 40.7%, 81% 50.1%, 74.4% 58.8%, 67% 67%, 58.8% 74.4%, 50.1% 81%, 40.7% 86.7%, 30.9% 91.5%, 20.8% 95.4%, 10.5% 98.2%, 0% 100%, 0% 0%);
+.th-card-name strong {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.th-card-badges.is-both {
-  width: 64px;
-  height: 64px;
-}
-.th-card-badge {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-}
-.th-card-badge svg {
-  width: 19px;
-  height: 19px;
-}
-.th-card-pick {
-  position: relative;
-}
+/* The chosen tick at the end of the name. Colours come from --chosen-mark, the chosen colour moved only as far as it
+   needs to stand out from the card (a pale theme cannot lose a pale tick), and --on-chosen-mark for what is drawn on it. */
 .th-card-tick {
   display: grid;
+  flex: none;
   place-items: center;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--chosen-bg);
+  background: var(--chosen-mark, var(--chosen-bg));
+  color: var(--on-chosen-mark, var(--chosen-fg));
+}
+/* The splotches: a wobbly yellow corner for each of your two themes this card is. Day is top left, night top right, and
+   they are one shape mirrored, so the same size, the same wobble and the same offset from their corner. The icon sits in
+   the heavy part of the yellow, nudged away from the card's corner by the same amount on both sides. */
+.th-card-splotch {
+  --splotch: 48px;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  display: grid;
+  width: var(--splotch);
+  height: var(--splotch);
+  pointer-events: none;
+  overflow: hidden;
+}
+.th-card-splotch.is-day {
+  left: 0;
+  border-top-left-radius: var(--radius-small);
+  place-items: center;
+  padding: 0 12px 12px 0;
+}
+.th-card-splotch.is-night {
+  right: 0;
+  border-top-right-radius: var(--radius-small);
+  place-items: center;
+  padding: 0 0 12px 12px;
+}
+.th-card-splotch svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.th-card-splotch polygon {
+  fill: var(--chosen-bg);
+}
+.th-card-splotch polyline {
+  fill: none;
+  stroke: #0d0b12;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.th-card-splotch > svg:last-child {
+  position: relative;
+  width: 15px;
+  height: 15px;
   color: var(--chosen-fg);
 }
-.th-card-actions {
-  /* The buttons lie over the foot of the card and swoop up when you point at it (or tab into it), so the card is
-     the same size whether they are showing or not and the grid never shifts. */
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 4px 4px;
-  border-radius: var(--radius-small);
-  background: linear-gradient(to top, var(--panel-2) 72%, transparent);
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition:
-    opacity 0.18s var(--ease),
-    transform 0.22s var(--ui-pop);
-}
-/* Only while you are pointing at the card or tabbing through it: at rest the name is never covered, and the one in
-   use is told apart by its badge and its gold edge. */
-.th-card:hover .th-card-actions,
-.th-card:focus-within .th-card-actions {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-:root[data-motion='reduce'] .th-card-actions {
-  transition: none;
+.th-card-pick {
+  position: relative;
 }
 
 /* The two themes you are using, in one card split corner to corner by a squiggle. */
@@ -3418,12 +3838,14 @@ body.ui-resizing * {
   border-top: 1px solid var(--line-soft);
 }
 
-/* The editor. */
+/* The editor. It shows the app in the theme being made, so its words use the --on-* colours (see readableTokens). */
+.th-editor {
+  color: var(--on-panel, var(--text));
+}
 .th-editor-top {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 10px 0 8px;
 }
 .th-name {
   flex: 1;
@@ -3433,7 +3855,7 @@ body.ui-resizing * {
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--bg);
-  color: var(--text);
+  color: var(--on-bg, var(--text));
   user-select: text;
   font-size: 16px;
   font-weight: 800;
@@ -3446,7 +3868,7 @@ body.ui-resizing * {
 }
 .th-editor-side {
   position: sticky;
-  top: 0;
+  top: var(--page-top-h, 0px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3462,16 +3884,20 @@ body.ui-resizing * {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
 }
 .th-mode .ui-segmented {
   align-self: flex-start;
 }
-.th-danger {
+.th-danger,
+.th-danger:hover:not(:disabled) {
   background: var(--danger);
   border-color: transparent;
-  color: var(--bg);
+  color: var(--on-danger, var(--bg));
+}
+.th-danger:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--on-danger, var(--bg)) 60%, transparent);
 }
 .th-helper,
 .th-check {
@@ -3486,7 +3912,7 @@ body.ui-resizing * {
 }
 .th-helper p {
   margin: 0 0 10px;
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
   line-height: 1.4;
 }
@@ -3536,7 +3962,7 @@ body.ui-resizing * {
   gap: 2px;
 }
 .th-row-text span {
-  color: var(--muted);
+  color: var(--on-muted, var(--muted));
   font-size: var(--fs-small);
 }
 .th-warn {
@@ -3574,13 +4000,9 @@ body.ui-resizing * {
   position: absolute;
   inset: 0;
 }
-.th-swatch input {
-  position: absolute;
-  inset: -4px;
-  width: calc(100% + 8px);
-  height: calc(100% + 8px);
-  opacity: 0;
-  cursor: pointer;
+.th-swatch.cp-chip {
+  padding: 0;
+  background: var(--panel);
 }
 .th-hex {
   flex: none;
@@ -3590,7 +4012,7 @@ body.ui-resizing * {
   border: 1px solid var(--line);
   border-radius: var(--ui-btn-radius);
   background: var(--bg);
-  color: var(--text);
+  color: var(--on-bg, var(--text));
   user-select: text;
   font-family: var(--font-mono);
   font-size: var(--fs-small);
@@ -3603,14 +4025,6 @@ body.ui-resizing * {
   .th-editor-side {
     position: static;
   }
-}
-.th-card-actions .ui-btn {
-  height: auto;
-  min-height: 24px;
-  padding: 3px 8px;
-  white-space: normal;
-  text-align: left;
-  line-height: 1.25;
 }
 
 /* Blank starters on the welcome sheet: a compact row of sizes under the examples (A), or dashed cards (B). */
@@ -3750,6 +4164,15 @@ body.ui-resizing * {
   background: transparent;
   color: var(--faint);
   cursor: grab;
+}
+/* On a docked side the rail's width edge (the splitter) overlaps its inner few pixels: the grip stops short of it, so a press there is only ever a resize. */
+.ui-tools[data-place='left'] .ui-tools-grip {
+  width: calc(100% - 8px);
+  align-self: flex-start;
+}
+.ui-tools[data-place='right'] .ui-tools-grip {
+  width: calc(100% - 8px);
+  align-self: flex-end;
 }
 .ui-tools-grip:hover,
 .ui-tools-grip:focus-visible {
@@ -4036,6 +4459,23 @@ body.dock-dragging * {
   border-color: var(--sunny);
   background: color-mix(in srgb, var(--sunny) 34%, transparent);
 }
+.dock-edge.is-home {
+  border-style: solid;
+}
+/* Over the canvas while the tool rail is carried: letting go here floats it. */
+.dock-float-zone {
+  position: fixed;
+  z-index: 17;
+  border: 2px dashed color-mix(in srgb, var(--sunny) 45%, transparent);
+  border-radius: var(--radius);
+  pointer-events: none;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.dock-float-zone.is-over {
+  border-style: solid;
+  border-color: var(--sunny);
+  background: color-mix(in srgb, var(--sunny) 10%, transparent);
+}
 .dock-ghost {
   position: fixed;
   z-index: 19;
@@ -4050,7 +4490,7 @@ body.dock-dragging * {
 }
 .dock-chip {
   position: fixed;
-  z-index: 90;
+  z-index: var(--z-dock-chip);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4075,7 +4515,8 @@ body.dock-dragging * {
 /* The dock's right-click menu and the name box. */
 .ui-dock-menu {
   position: fixed;
-  z-index: 60;
+  /* Above a dialog's backdrop (100), so the menu a card in Preferences opens is seen, and under tooltips (200). */
+  z-index: var(--z-menu-over-modal);
   min-width: 230px;
 }
 .ui-dock-menu-head {
@@ -4194,4 +4635,93 @@ body.dock-dragging .ui-tip {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+/* The help icon the explanations hide behind: small, quiet until you point at it, and always a real button you can tab to. */
+.ui-explain {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: var(--radius-pill);
+  color: var(--faint);
+  align-self: center;
+}
+.ui-explain:hover,
+.ui-explain:focus-visible {
+  color: var(--text);
+}
+.ui-explain:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.cv-field-head .cv-explain,
+.ab-heading .cv-explain {
+  margin-right: auto;
+  margin-left: -2px;
+}
+.cv-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cv-toggle-row .cv-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ui-tip.is-pinned {
+  border-color: var(--accent);
+}
+/* A panel with no title bar of its own (a floating window, the bottom dock) keeps its help icon in the corner. */
+.ui-panel-explain {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 2;
+}
+.sy-section-title .ui-explain {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* Locked (see lockState.ts): the handles that invite a move are simply gone, and nothing stands in for them. */
+.ui-float-bar.is-locked {
+  cursor: default;
+}
+/* The edges stay in the layout (their margins count) but can't be grabbed, so there is no resize cursor. */
+:root[data-lock-tools] .ui-rail-splitter {
+  visibility: hidden;
+  pointer-events: none;
+}
+:root[data-lock-panels] .ui-splitter:not(.ui-rail-splitter),
+:root[data-lock-panels] .ui-group-split {
+  pointer-events: none;
+  cursor: default;
+}
+:root[data-lock-panels] .ui-splitter:not(.ui-rail-splitter) {
+  visibility: hidden;
+}
+:root[data-lock-panels] .ui-group-split::before,
+:root[data-lock-panels] .ui-group-split::after {
+  display: none;
+}
+/* Preferences > Features: the streaming tools are one row; the nine behind it are folded until asked for. */
+.features-streaming {
+  margin: 18px 0 8px;
+  padding: 4px 16px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+.features-streaming-more > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  padding: 8px 0;
+}
+.features-streaming-more[open] > summary {
+  border-bottom: 1px solid var(--line-soft);
+}
+/* The parts of the streaming group are headings one step down from its own. */
+.features-streaming-more h4 {
+  margin: 22px 0 8px;
+  font-size: 15px;
 }

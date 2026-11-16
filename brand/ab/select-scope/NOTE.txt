@@ -1,0 +1,5 @@
+Selecting part of a vector shape. The same box is dragged round one corner of the same art, then the picked thing is pulled.
+A = "Just the bit I went round": the box picks the corner, and pulling it stretches the shape.
+B = "The whole shape": the same box picks the whole rectangle, and pulling it moves the lot.
+select-scope-ab-<theme>.png is the four pictures side by side; select-scope-ab-clip-<theme>.mp4 is the two clips side by side (H.264, yuv420p).
+scope-<a|b>-<picked|moved|clip>-<theme>.* are the individual pieces. Made by scripts/docs/ab-select-scope/select-scope.cjs.

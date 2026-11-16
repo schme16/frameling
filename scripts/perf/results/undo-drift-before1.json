@@ -1,0 +1,117 @@
+{
+ "label": "before1",
+ "when": "2026-11-14T22:11:46.975Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 165.1,
+   "runs": [
+    165.1,
+    169.3,
+    157.3,
+    228.1,
+    159.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 13.76,
+   "topSelf": [
+    [
+     "(program) :0",
+     112.7
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     14.9
+    ],
+    [
+     "_le index-Doh7tA4P.js:140",
+     7.8
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     2.7
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     1.7
+    ],
+    [
+     "h index-Doh7tA4P.js:9",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     112.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     36.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     27.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     27.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     27.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     27.2
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     19.9
+    ],
+    [
+     "Hd index-Doh7tA4P.js:9",
+     19
+    ],
+    [
+     "Ud index-Doh7tA4P.js:9",
+     18.8
+    ],
+    [
+     "nl index-Doh7tA4P.js:9",
+     17.4
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     15.6
+    ],
+    [
+     "fEe index-Doh7tA4P.js:150",
+     15.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

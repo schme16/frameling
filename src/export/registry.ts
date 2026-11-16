@@ -11,7 +11,7 @@ import type { ExportSettings, FormatInfo } from './types';
 import type { Progress, RunContext, RunResult } from './runtime';
 
 /** Things a document can have that not every format can carry. */
-export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha';
+export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha' | 'gradientAngular' | 'gradientDiamond' | 'trim' | 'grain';
 
 /** kept: as itself. shapes: kept, but as outlines or shapes rather than editable text. picture: baked into pictures. out: left out. */
 export type Carry = 'kept' | 'shapes' | 'picture' | 'out';
@@ -79,6 +79,12 @@ export interface RunEnv {
   frameAt: (i: number) => OffscreenCanvas;
   /** The pixels of picture `i`. They are overwritten by the next call, so copy what you keep. */
   rgbaAt: (i: number) => { width: number; height: number; pixels: Uint8ClampedArray };
+  /**
+   * Like `frameAt` and `rgbaAt`, for formats that can wait for a picture. Pictures that come from somewhere else (a
+   * timelapse's saved pictures, see RunContext.frames) can only be had by waiting; drawn ones come back at once.
+   */
+  frameAtAsync: (i: number) => Promise<OffscreenCanvas>;
+  rgbaAtAsync: (i: number) => Promise<{ width: number; height: number; pixels: Uint8ClampedArray }>;
   step: (done: number, label: string) => void;
 }
 
@@ -107,6 +113,8 @@ export interface ExporterDef {
   clipPlayNote?: string;
   /** More plain-words notes for this document and the frames being exported, shown with what carries over. */
   docNotes?(doc: Doc, range: { start: number; end: number }): string[];
+  /** Added to the file's name, in place of a frame number ("-icons", "-contact-sheet"): the file is a set, not one frame. */
+  nameSuffix?: string;
   /** The extension when it depends on the settings (a dotLottie, a zip of files). */
   extension?(s: ExportSettings): string;
   /** The name in the save dialog's file type list (and the extension, when it is not the usual one). */
@@ -118,9 +126,11 @@ export interface ExporterDef {
   /** Checks it can be made here and works out what the run needs (the video codec). Throws a problem in plain words. */
   prepare?(plan: Plan, s: ExportSettings): Promise<Partial<RunContext>>;
   /** Anything to ask or settle before asking where to save (an MP4 that would be silent here). */
-  settle?(doc: Doc, s: ExportSettings): Promise<ExportSettings>;
+  settle?(doc: Doc, s: ExportSettings, frame: number): Promise<ExportSettings>;
   /** What this computer can make, for the card. Asked again when the size changes. */
   support?(size: { width: number; height: number }, fresh: boolean): Promise<FormatSupport>;
+  /** Why this cannot be made as set, in plain words (a sheet too big for one picture), or null. Asked with the plan. */
+  problem?(doc: Doc, s: ExportSettings, plan: { range: { start: number; end: number }; count: number }): string | null;
   /** Fixes up settings remembered from last time that no longer make sense. */
   repair?(s: ExportSettings): void;
   /** Why a see-through background is not on offer, in plain words. */

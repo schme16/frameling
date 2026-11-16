@@ -15,12 +15,10 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { composite } = require('./blend-reference.cjs');
 
-// Software WebGL (SwiftShader) when there is no GPU, so the GPU path of Linear dodge, Subtract and Divide is the one measured.
-if (process.env.BLEND_NO_SOFTWARE_GL !== '1') {
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-  app.commandLine.appendSwitch('use-angle', 'swiftshader');
-}
+// Software WebGL (SwiftShader), so the GPU path of Linear dodge, Subtract and Divide is the one measured and the numbers
+// are the same on any machine (GPU_MODE=card runs it on the real card; scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software');
 
 const root = path.resolve(__dirname, '../..');
 const ASE = process.env.ASEPRITE_BIN;
@@ -65,6 +63,7 @@ async function main() {
   require(path.join(root, 'dist/main/main.cjs'));
   app.on('browser-window-created', (_e, win2) => win2.on('show', () => win2.hide()));
   await app.whenReady();
+  await gpu.confirmOrExit();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
   for (let i = 0; i < 200 && !(await ev('!!(window.__framelingEffects && window.__frameling && window.__framelingAseprite)').catch(() => false)); i++) await sleep(100);

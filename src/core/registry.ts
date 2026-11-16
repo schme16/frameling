@@ -32,6 +32,13 @@ export interface Command {
   keywords?: string[];
   /** Grey out when false. */
   enabled?: (s: State) => boolean;
+  /**
+   * What would turn it on, in a sentence that says what to do ("Select some shapes first"). Asked only while `enabled`
+   * says no, so it can look at the state to say which of several things is missing. Menus, tooltips, buttons and the
+   * palette show it, where they said nothing at all before. Shared sentences live in `reasons.ts`; `reasonFor` there
+   * also finds the ones kept by command id in `commandReasons.ts`.
+   */
+  reason?: (s: State) => string | undefined;
   /** Shows a tick in menus when true. */
   checked?: (s: State) => boolean;
   run: () => void | Promise<void>;
@@ -140,6 +147,8 @@ export type DockZone = 'left' | 'right' | 'bottom' | 'top';
 export interface PanelDef {
   id: string;
   title: string;
+  /** What its show-or-hide command says in the menus and the palette, when the panel's own name needs more words. */
+  commandLabel?: string;
   /** Icon name from the shared icon set (src/ui/icons.tsx). */
   icon: string;
   component: ComponentType;
@@ -147,6 +156,11 @@ export interface PanelDef {
   zone: DockZone;
   /** Order within that zone (lower first). */
   order?: number;
+  /**
+   * Starts put away: a new layout leaves it off the rail (it is in the Panels list, the palette and the menus, one press
+   * from open), and a layout that has never met it puts it away rather than on the rail. A layout that has met it is left alone.
+   */
+  startsAway?: boolean;
   help?: string;
 }
 
@@ -207,6 +221,8 @@ export interface ToolContext {
 export interface Tool {
   id: string;
   label: string;
+  /** What its menu and palette command says when the rail's short name needs more words ("Draw bones (Bone tool)"). */
+  commandLabel?: string;
   /** Icon name from src/ui/icons.tsx. */
   icon: string;
   /** Default shortcut (a single key like 'b', or 'Shift+K'); registered as a `tools.<id>` command automatically. */
@@ -216,7 +232,7 @@ export interface Tool {
   /** Toolbar order (lower first). */
   order?: number;
   /**
-   * Which group of the tool rail it starts in: 'draw', 'extras', 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
+   * Which group of the tool rail it starts in: 'draw', 'extras' (Colour), 'shapes', 'select', 'pen', 'rig' or 'view' (src/ui/toolArrange.ts
    * names them). Missing means Other. People can still move it.
    */
   group?: string;
@@ -228,6 +244,8 @@ export interface Tool {
    */
   slot?: string;
   help?: string;
+  /** Left off the tool rail, menus and keyboard list: a tool a feature switches to itself (the Collision tool while a tile is open). */
+  railless?: boolean;
   cursor?: string;
   /** Tool options shown in the Tool options panel. */
   options?: ComponentType;
@@ -264,5 +282,5 @@ export function getTool(id: string): Tool | undefined {
   return tools.get(id);
 }
 export function allTools(): Tool[] {
-  return [...tools.values()].sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
+  return [...tools.values()].filter((t) => !t.railless).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
 }

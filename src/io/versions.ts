@@ -16,6 +16,7 @@ import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 import { createStore } from '../ui/mini';
 import { parseIndex, pruneVersions, safeDocKey, VERSION_EVERY_MS, versionFileId, versionLabel, type VersionMeta } from './version-rules';
+import { choiceWord } from '../words/choices';
 
 export type { VersionMeta } from './version-rules';
 
@@ -75,8 +76,9 @@ export function markVersionBaseline(doc: Doc = store().rootDoc(), at = Date.now(
  * Takes a version of the open drawing. Named ones are kept until deleted; automatic ones are pruned. Resolves with
  * the new version, or null if it couldn't be made.
  */
-export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason']; now?: number } = {}): Promise<VersionMeta | null> {
-  const open = store().rootDoc();
+export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason']; now?: number; doc?: Doc } = {}): Promise<VersionMeta | null> {
+  // `doc` keeps an earlier state of the drawing (a step from the History panel) rather than how it is now.
+  const open = opts.doc ?? store().rootDoc();
   const now = opts.now ?? Date.now();
   return serial(async () => {
     try {
@@ -101,7 +103,7 @@ export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason'
       const { keep, drop } = pruneVersions(list, now);
       for (const d of drop) await library.remove('versions', d.id).catch(() => undefined);
       await writeIndex(doc.id, keep);
-      if (store().rootDoc() === open) markVersionBaseline(open, now);
+      if (!opts.doc && store().rootDoc() === open) markVersionBaseline(open, now);
       versionsChanged.set((n) => n + 1);
       return meta;
     } catch {
@@ -157,11 +159,11 @@ export type RestoreChoice = 'in-place' | 'copy';
 
 registerChoice<RestoreChoice>({
   id: 'versions.restore',
-  title: 'Bringing back a version',
-  question: 'When you bring back an earlier version, should it replace what you have now, or open as a separate copy?',
+  title: choiceWord('choice.versions.restore.title'),
+  question: choiceWord('choice.versions.restore.question'),
   options: [
-    { value: 'in-place', label: 'Replace what I have', detail: 'Your drawing goes back to that version. Changed your mind? Undo (Ctrl+Z) brings it straight back. A version of how it was is kept too.' },
-    { value: 'copy', label: 'Open as a copy', detail: 'The version opens as a new, unsaved drawing, and the one you have now stays as it is.' },
+    { value: 'in-place', label: choiceWord('choice.versions.restore.in-place.label'), detail: choiceWord('choice.versions.restore.in-place.detail') },
+    { value: 'copy', label: choiceWord('choice.versions.restore.copy.label'), detail: choiceWord('choice.versions.restore.copy.detail') },
   ],
   default: 'in-place',
   mustAsk: true,

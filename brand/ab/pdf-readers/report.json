@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "id": "layers-folders",
+      "title": "Layers and folders",
+      "readers": {
+        "poppler": {
+          "rmse": 0.0069,
+          "ok": true
+        },
+        "ghostscript": {
+          "rmse": 0.0166,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "nested-folders",
+      "title": "Folders inside folders",
+      "readers": {
+        "poppler": {
+          "rmse": 0.0034,
+          "ok": true
+        },
+        "ghostscript": {
+          "rmse": 0.0086,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "hidden-layers",
+      "title": "Hidden layers and folders",
+      "readers": {
+        "poppler": {
+          "rmse": 0.0046,
+          "ok": true
+        },
+        "ghostscript": {
+          "rmse": 0.0096,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "hidden-in-effect-folder",
+      "title": "Hidden layers inside folders with effects",
+      "readers": {
+        "poppler": {
+          "rmse": 0.0102,
+          "ok": true
+        },
+        "ghostscript": {
+          "rmse": 0.0115,
+          "ok": true
+        }
+      }
+    }
+  ],
+  "readers": [
+    "poppler",
+    "ghostscript"
+  ],
+  "missing": [
+    "mupdf"
+  ]
+}

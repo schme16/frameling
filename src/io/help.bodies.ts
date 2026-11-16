@@ -10,11 +10,15 @@ Want a second copy, or a new version to try something risky on? Use **Save as...
 
 A dot next to the name at the top of the window means there are changes that aren't saved yet.
 
+## Your undo steps travel with the file
+
+Frameling can save your undo steps inside the file, so **Undo** still works after you reopen it, or when a friend opens it. It asks the first time. Anything you drew and then took out is still in the steps, so choose **Just the drawing** if you'd rather it wasn't. Change it any time in **Preferences > Behaviour**. Only the newest steps are kept, so the file never swells, and exports never include them.
+
 ## Opening
 
 Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frameling file in your file manager, and it opens in Frameling.
 
-**Open recent...** lists the drawings you had open lately, so you can jump straight back in.
+**Open recent...** lists the drawings you had open lately, each with a little picture, so you can jump straight back in. See [Open recent](help:recent-drawings).
 
 ## Putting a drawing away
 
@@ -31,9 +35,90 @@ Frameling tells you why in plain words. If a file looks damaged, check whether y
 ---
 
 Want to share your work as a video, a GIF or pictures? That's **Export**, a different thing from Save. See [Exporting](help:exporting).`,
+  'send-a-copy': `**Send a copy** is the plain way to give somebody a drawing: it saves a copy where you pick, and shows you the file, ready to attach, drop in a chat or put on a memory stick. No account, no link, nothing to keep running, so it works when the other person is asleep.
+
+**Send one**
+1. Pick **File > Send a copy...**, or press **Ctrl+Alt+E** (**Cmd+Alt+E** on a Mac).
+2. Choose where it goes and what to call it.
+3. Frameling shows the file in your file manager. Send it however you like.
+
+It copies what you see right now, saved or not. Your own drawing isn't touched: its file, its **unsaved** dot and **Open recent** all stay as they were, and the copy doesn't turn up in **Open recent** either. If you pick your own file's name, Frameling stops you rather than replace it.
+
+**Your undo history: the first time, it asks**
+If you've been drawing, there's a trail of steps behind you. Should they travel with the copy?
+- **Just the drawing** is the usual pick. The file is as small as it gets, and nobody can step back to something you took out.
+- **Send my undo history too** lets whoever opens it use **Undo** back through your steps. The file is bigger, and anything you drew and then rubbed out can still be found in it.
+
+The question shows the real sizes for your drawing, so you can see what you're choosing. It remembers your answer. Change it any time in **Preferences > Behaviour**.
+
+**Your name comes off.** A note you leave is stamped with your name and the time. A copy you send loses those stamps, so it carries the work and not you. The notes themselves still read exactly the same. If you are working with somebody and it matters who said what, **Your name on a copy you send** in **Preferences > Behaviour** keeps them.
+
+**Good to know**
+- The copy has its own identity, so its [versions](help:version-history) start fresh, separate from your drawing's.
+- Only the newest steps go in with the history, so it never swells without limit.
+- While [Stream-safe](help:stream-safe) is on, Frameling doesn't open your file manager by itself, because it would show your folders. The message has a **Show in folder** button for when you're ready.
+- Want to keep working in a new file instead? That's **Save as...**, see [Saving and opening](help:saving-and-opening).
+`,
+  'share-with-a-code': `**Send with a code** gets a drawing to a friend without a file, a link or an account. You get four words, you tell them, they type them in, and the drawing goes straight from your computer to theirs.
+
+**Send one**
+1. Pick **File > Send with a code...**, or press **Ctrl+Alt+Shift+E** (**Cmd+Alt+Shift+E** on a Mac).
+2. Frameling shows a code like **ocean-tiger-maple-spoon**. Say it, text it, whatever you like.
+3. **Keep the window open** until it says **Sent**.
+
+**Receive one**
+1. Pick **File > Receive with a code...**, or press **Ctrl+Alt+Shift+G**.
+2. Type the four words and press **Connect**. The drawing opens as a new, unsaved drawing, and you decide where to save it.
+
+**Both of you need to be online at the same time.** Nothing is stored anywhere, not even for a minute: the drawing is never parked on a server, so if you close the window before they've typed the code, there is nothing to pick up later. For that, use [Send a copy](help:send-a-copy).
+
+**How long it lasts.** A code stops working after 10 minutes (change that in **Preferences > Behaviour**), once it's been used, or when you close the window. The last two words are a secret and are never sent over the network. If somebody guesses wrong three times, the code stops and nothing is sent, so a stranger can't walk off with your drawing by trying words.
+
+**When it can't connect**
+Some networks, like a lot of offices, schools and mobile connections, don't let two computers connect to each other directly, and Frameling has no go-between to help. That is on purpose: nothing of ours sits in the middle. If you and your friend are both on networks like that, it won't connect, and Frameling says so rather than leaving you waiting. Then use [Send a copy](help:send-a-copy), which works anywhere.
+
+**Good to know**
+- The drawing goes as the same copy **Send a copy** makes: your name comes off the notes, and it asks about your undo history the first time.
+- While you connect, the two of you can see each other's internet address, the same as in any call between two computers. Nobody else is told who you are.
+- While [Stream-safe](help:stream-safe) is on, the code is hidden until you press **Show the code**.
+- Frameling doesn't keep the code, who you sent to, or what you sent.
+`,
+  'recent-drawings': `**Open recent** shows each drawing you had open lately with a little picture of it, so you know your own work at a glance.
+
+**Open it:** **File > Open recent...**, or search the command palette (**Ctrl+K**) for **Open recent**. Pick a row and the drawing opens. The start screen's **Pick up where you left off** shows the same pictures.
+
+**Where the picture comes from:** every time you save, Frameling puts a small picture of the drawing inside the file (the first frame that has something on it, a few KB). It travels with the file, so it is there on any computer. Where the drawing is see-through you see a soft checkerboard behind it.
+
+**Older drawings:** a file saved before this has no picture inside, so its row shows a folder icon. Open it once and Frameling keeps a picture for it in its own folder (your file isn't changed), and from then on it shows. Saving puts one in the file itself.
+
+**Good to know:**
+- The list appears at once and the pictures fill in a moment later, so it is never slow.
+- If a file has gone (a drive unplugged, a folder moved) its row says so. It stays on the list in case it comes back; press the **x** beside it to take it off. The file itself is never touched.
+- **Clear list** forgets them all, and the kept pictures with them.
+
+help:saving-and-opening help:version-history`,
+  restart: `Some things only change when Frameling starts again: the **Hardware drawing** switch, measuring plugins' memory, a new version that has just been put in. Wherever Frameling says that, a **Restart now** button does the whole job.
+
+**What happens:** Frameling closes and opens again by itself, on the same drawing, the same frame and layer, the same zoom, with the window where you left it. If you have unsaved changes, they come across too. It all looks as if nothing happened: the drawing is still marked as unsaved, so closing it later still asks, and **Save** still saves.
+
+**It never asks about saving,** because nothing is at risk. Your unsaved work is set aside first, the same safety copy [Autosave](help:autosave) keeps, and Frameling opens that.
+
+**The one thing that doesn't come across is Undo.** The steps you could undo live in memory, so after a restart Undo starts fresh. The first time you restart with some steps to undo, Frameling tells you and asks once; it remembers your answer (change it in **Preferences > Behaviour**). Afterwards a short message says Undo started fresh.
+
+**Any time:** search the command palette (**Ctrl+K**) for **Restart Frameling**.
+
+**If it can't:**
+- A drawing too big to set aside (hundreds of megabytes), or no room to write the copy: Frameling says so, then asks the usual question first (**Save**, **Don't save** or **Cancel**) and comes back to the saved drawing.
+- A copy that can't find its own file to open again says so and stays open, so your drawing is safe. Close it and start it again yourself; the change is waiting.
+
+**Good to know:**
+- A drawing you have never saved comes back as **Untitled**, with its changes, ready for **Save**.
+- After a Windows installer update, Frameling only closes so the installer can finish, so it asks about unsaved work like any close.
+
+help:updates help:performance help:autosave`,
   autosave: `Every minute, if you have unsaved changes, Frameling tucks a copy of your work away in its own private folder.
 
-It **never touches your own file**. It's only a safety net.
+It **never touches your own file**. It's only a safety net. The copy holds your recent undo steps too (the same amount a saved file can keep), so a restored drawing still has its history.
 
 ## Getting your work back
 
@@ -41,7 +126,7 @@ If Frameling closes unexpectedly (a power cut, a crash), the next time you start
 says **Your unsaved work from today at 22:50** (with your own time). If the welcome sheet is turned off, a message at
 the bottom asks instead.
 
-Press **Restore** and you're back where you were. **Not now** leaves it in Recover unsaved work. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
+Press **Restore** and you're back where you were, **Undo** and the **History** panel included, so you can step back through the work you did before it closed. **Not now** leaves it in Recover unsaved work. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
 
 Frameling only offers this when the safety copy is newer than your saved file.
 

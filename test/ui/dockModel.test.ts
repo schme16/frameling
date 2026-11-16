@@ -227,6 +227,41 @@ describe('windows as groups', () => {
     expect(tabs(n, 'bottom')).toEqual(['timeline']);
     expect(tabs(n, 'left')).toEqual(['layers']);
   });
+  it('a window dropped back goes to the side, group and place its panels came from', () => {
+    let l = sample();
+    // Colours is the front of three tabs on the right: floated, then docked, it returns between its neighbours.
+    l = movePanelTo(l, 'library', { newFloat: { x: 100, y: 100 } });
+    expect(tabs(l, 'right')).toEqual(['colours', 'help']);
+    expect(l.floats[0].back).toEqual({ library: { zone: 'right', index: 1 } });
+    const n = dockFloat(l, l.floats[0].id, () => 'left');
+    expect(tabs(n, 'right')).toEqual(['colours', 'library', 'help']);
+    expect(tabs(n, 'left')).toEqual(['layers']);
+  });
+  it('a window with panels from two places sends each back to its own', () => {
+    let l = movePanelTo(sample(), 'timeline', { newFloat: { x: 100, y: 100 } });
+    l = movePanelTo(l, 'layers', { float: l.floats[0].id });
+    const n = dockFloat(l, l.floats[0].id, () => 'top');
+    expect(tabs(n, 'bottom')).toEqual(['timeline']);
+    expect(tabs(n, 'left')).toEqual(['layers']);
+    expect(tabs(n, 'top')).toEqual([]);
+  });
+  it('a panel that leaves a window forgets where that window would have sent it', () => {
+    let l = movePanelTo(sample(), 'timeline', { newFloat: { x: 100, y: 100 } });
+    l = movePanelTo(l, 'timeline', { zone: 'top' });
+    expect(l.floats).toEqual([]);
+    l = movePanelTo(l, 'help', { newFloat: { x: 1, y: 1 } });
+    l = movePanelTo(l, 'timeline', { float: l.floats[0].id });
+    l = movePanelTo(l, 'help', { zone: 'left' });
+    expect(l.floats[0].back).toEqual({ timeline: { zone: 'top', index: 0 } });
+  });
+  it('what a saved layout says about where windows came from is tidied', () => {
+    const w = (back: unknown) => normaliseLayout({ floats: [{ id: 'a', tabs: ['x'], back }] }).floats[0].back;
+    expect(w({ x: { zone: 'left', group: 1, index: 2 } })).toEqual({ x: { zone: 'left', group: 1, index: 2 } });
+    expect(w({ x: { zone: 'elsewhere' } })).toBeUndefined();
+    expect(w({ gone: { zone: 'left' } })).toBeUndefined();
+    expect(w('left')).toBeUndefined();
+    expect(w({ x: { zone: 'top', group: 99, index: -1 } })).toEqual({ x: { zone: 'top' } });
+  });
   it('docks every window back at once', () => {
     let l = movePanelTo(sample(), 'timeline', { newFloat: { x: 100, y: 100 } });
     l = movePanelTo(l, 'layers', { newFloat: { x: 200, y: 200 } });
@@ -287,8 +322,8 @@ describe('showing, raising, sizing, naming', () => {
   it('moves the tool rail', () => {
     const l = placeToolsIn(emptyLayout(), 'top');
     expect(l.tools.place).toBe('top');
-    expect(placeToolsIn(l, 'float', { x: 200.4, y: 300 }).tools).toEqual({ place: 'float', x: 200, y: 300 });
-    expect(placeToolsIn(placeToolsIn(l, 'float', { x: 5, y: 6 }), 'right').tools).toEqual({ place: 'right', x: 5, y: 6 });
+    expect(placeToolsIn(l, 'float', { x: 200.4, y: 300 }).tools).toEqual({ place: 'float', x: 200, y: 300, home: 'top' });
+    expect(placeToolsIn(placeToolsIn(l, 'float', { x: 5, y: 6 }), 'right').tools).toEqual({ place: 'right', x: 5, y: 6, home: 'right' });
   });
 });
 

@@ -1,0 +1,1 @@
+A (before) is the box with no paint still filled with the panel colour, the other box showing through where they overlap; B (after) is the box see-through, the one behind cut away under it, so the hole shows the panel and no other colour.

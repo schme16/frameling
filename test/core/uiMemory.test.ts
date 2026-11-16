@@ -28,17 +28,22 @@ describe('reading what was saved', () => {
   });
 
   it('drops values of the wrong kind and holds numbers to their range', () => {
-    const got = readRemembered({ color: 'red', fillColor: 12, strokeOn: 'yes', brush: { size: 9999, thinning: -5, streamline: 'a' }, onion: { before: 99, after: -3, opacity: 2, beforeColor: 'nope' } }, base());
+    const got = readRemembered({ color: 'red', fillColor: 12, strokeOn: 'yes', brush: { size: 9999999, thinning: -5, streamline: 'a' }, onion: { before: 99, after: -3, opacity: 2, beforeColor: 'nope' } }, base());
     expect(got.color).toBeUndefined();
     expect(got.fillColor).toBeUndefined();
     expect(got.strokeOn).toBeUndefined();
-    expect(got.brush?.size).toBe(400);
+    expect(got.brush?.size).toBe(100000);
     expect(got.brush?.thinning).toBe(-1);
     expect(got.brush?.streamline).toBe(DEFAULT_BRUSH.streamline);
     expect(got.onion?.before).toBe(MAX_ONION_FRAMES);
     expect(got.onion?.after).toBe(0);
     expect(got.onion?.opacity).toBe(1);
     expect(got.onion?.beforeColor).toBe('#ff6f91');
+  });
+
+  it('keeps a big brush across a restart, as big as the number box takes', () => {
+    expect(readRemembered({ brush: { size: 4400 } }, base()).brush?.size).toBe(4400);
+    expect(readRemembered({ brush: { size: 0.2 } }, base()).brush?.size).toBe(1);
   });
 
   it('copes with nothing, junk and old files', () => {

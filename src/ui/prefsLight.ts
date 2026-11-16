@@ -1,7 +1,7 @@
 // Finding a row on a Preferences page by the words it carries, and lighting it for a moment so you learn where it lives.
 const CANDIDATES = '.ui-pref-text strong, .ui-keyrow-name span, h3, h4, th, strong, legend, button, label, [aria-label]';
 /** What to light: the row round the words, or the heading itself when it is one. */
-const BLOCK = '.ui-pref-row, .ui-keyrow, .ui-ws-list > li, .th-section, .th-current, .sn-master, .sn-distance, .sn-all-layers, .plugin-page-actions';
+const BLOCK = '.ui-pref-row, .ui-pref-title, .ui-keyrow, .ui-ws-list > li, .th-section, .th-current, .sn-master, .sn-distance, .sn-all-layers, .plugin-page-actions';
 
 const tidy = (s: string): string =>
   s
@@ -37,8 +37,17 @@ export function lightRow(root: ParentNode | null, text: string, hold = 2400): ()
       if (++tries < 12) frame = requestAnimationFrame(look);
       return;
     }
+    // The row is inside a folded group (Streaming): open it first, then light the row once it has room.
+    const folded = el.closest('details:not([open])');
+    if (folded) {
+      folded.setAttribute('open', '');
+      if (++tries < 12) frame = requestAnimationFrame(look);
+      return;
+    }
     el.classList.add('is-lit');
-    el.scrollIntoView({ block: 'center' });
+    // Not every place this runs can scroll (a test page has no layout), and lighting the row still works without it.
+    // This sits inside an animation frame, so letting it throw would take down whatever else that frame was doing.
+    el.scrollIntoView?.({ block: 'center' });
     lit = el;
     timer = window.setTimeout(() => el.classList.remove('is-lit'), hold);
   };

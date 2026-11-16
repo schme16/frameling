@@ -1,0 +1,971 @@
+{
+ "label": "png-before",
+ "when": "2026-11-15T02:11:03.126Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-pixel": {
+   "nodes": 1212,
+   "timelineNodes": 246,
+   "keys": 36,
+   "rows": 1,
+   "layers": 1
+  },
+  "stress-pixel-hd": {
+   "nodes": 1116,
+   "timelineNodes": 150,
+   "keys": 12,
+   "rows": 1,
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 2.3,
+   "runs": [
+    2.4,
+    2.1,
+    2.3
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.27,
+   "wallMs": 5.9,
+   "runsWall": [
+    6.1,
+    5.9,
+    5.6
+   ],
+   "topSelf": [
+    [
+     "Ap index-BS106EV9.js:133",
+     0.8
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     0.1
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     0.1
+    ],
+    [
+     "Yp index-BS106EV9.js:133",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "x1 index-BS106EV9.js:167",
+     1.8
+    ],
+    [
+     "saveBytesAsync debug-d7_B5mMB.js:3",
+     1.8
+    ],
+    [
+     "(anon) :1",
+     1.8
+    ],
+    [
+     "(anon) :0",
+     1.8
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     1
+    ],
+    [
+     "Ap index-BS106EV9.js:133",
+     0.8
+    ],
+    [
+     "Rp index-BS106EV9.js:133",
+     0.8
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "(anon) index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "run index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "NVe index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "Yp index-BS106EV9.js:133",
+     0.1
+    ],
+    [
+     "Xp index-BS106EV9.js:133",
+     0.1
+    ],
+    [
+     "Zp index-BS106EV9.js:133",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "1.0 MB file, wall 6 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file-first",
+   "busyMs": 2785,
+   "runs": [
+    2785,
+    2780,
+    2806
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2784.98,
+   "wallMs": 2787.3,
+   "runsWall": [
+    2787.3,
+    2782.5,
+    2808.7
+   ],
+   "topSelf": [
+    [
+     "wVe index-BS106EV9.js:167",
+     1491.5
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     1167.1
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     107.4
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     12.1
+    ],
+    [
+     "i$ index-BS106EV9.js:167",
+     3
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "xVe index-BS106EV9.js:167",
+     1.4
+    ],
+    [
+     "o$ index-BS106EV9.js:167",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "x1 index-BS106EV9.js:167",
+     2787.6
+    ],
+    [
+     "saveBytesAsync debug-d7_B5mMB.js:3",
+     2787.6
+    ],
+    [
+     "(anon) :1",
+     2787.6
+    ],
+    [
+     "(anon) :0",
+     2787.6
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     2786.7
+    ],
+    [
+     "N$ index-BS106EV9.js:167",
+     2784.8
+    ],
+    [
+     "YHe index-BS106EV9.js:167",
+     2784.8
+    ],
+    [
+     "TVe index-BS106EV9.js:167",
+     2783.2
+    ],
+    [
+     "wVe index-BS106EV9.js:167",
+     1491.5
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     1291.5
+    ],
+    [
+     "d$ index-BS106EV9.js:167",
+     1184
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     1183.9
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     107.4
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     16.4
+    ],
+    [
+     "i$ index-BS106EV9.js:167",
+     3
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "1.0 MB file, wall 2787 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 4.4,
+   "runs": [
+    4.4,
+    5.1,
+    4.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 4.4,
+   "wallMs": 9.4,
+   "runsWall": [
+    9.4,
+    10.3,
+    9.4
+   ],
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.3
+    ],
+    [
+     "F1 index-BS106EV9.js:167",
+     0.9
+    ],
+    [
+     "Ap index-BS106EV9.js:133",
+     0.9
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     0.1
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "F1 index-BS106EV9.js:167",
+     4.1
+    ],
+    [
+     "(anon) :0",
+     3.3
+    ],
+    [
+     "(anon) :1",
+     1.9
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     1.7
+    ],
+    [
+     "P1 index-BS106EV9.js:167",
+     1.7
+    ],
+    [
+     "call preload.cjs:5",
+     1.3
+    ],
+    [
+     "write preload.cjs:66",
+     1.3
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     1.1
+    ],
+    [
+     "Ap index-BS106EV9.js:133",
+     0.9
+    ],
+    [
+     "Rp index-BS106EV9.js:133",
+     0.9
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "(anon) index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "run index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "NVe index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 9 ms"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave-first",
+   "busyMs": 3107.4,
+   "runs": [
+    3107.4,
+    3118.6,
+    3075
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3107.41,
+   "wallMs": 3111.6,
+   "runsWall": [
+    3111.6,
+    3122.8,
+    3079.7
+   ],
+   "topSelf": [
+    [
+     "wVe index-BS106EV9.js:167",
+     1485.1
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     1171.6
+    ],
+    [
+     "kQ index-BS106EV9.js:167",
+     206
+    ],
+    [
+     "_Be index-BS106EV9.js:167",
+     98.1
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     72.2
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     35
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     9.5
+    ],
+    [
+     "AQ index-BS106EV9.js:167",
+     6
+    ]
+   ],
+   "topIncl": [
+    [
+     "F1 index-BS106EV9.js:167",
+     3095.6
+    ],
+    [
+     "(anon) :0",
+     3094.4
+    ],
+    [
+     "P1 index-BS106EV9.js:167",
+     3092.6
+    ],
+    [
+     "(anon) :1",
+     3092.6
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     3092.5
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     3091.6
+    ],
+    [
+     "YHe index-BS106EV9.js:167",
+     2779.2
+    ],
+    [
+     "N$ index-BS106EV9.js:167",
+     2779.2
+    ],
+    [
+     "wVe index-BS106EV9.js:167",
+     1485.1
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     1292
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     1184.8
+    ],
+    [
+     "d$ index-BS106EV9.js:167",
+     1184.8
+    ],
+    [
+     "TBe index-BS106EV9.js:167",
+     310.9
+    ],
+    [
+     "wBe index-BS106EV9.js:167",
+     310.7
+    ],
+    [
+     "vBe index-BS106EV9.js:167",
+     310.3
+    ],
+    [
+     "AQ index-BS106EV9.js:167",
+     211.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 3112 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.1,
+    1.1,
+    1.3
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "wallMs": 2.7,
+   "runsWall": [
+    2.4,
+    2.7,
+    3.2
+   ],
+   "topSelf": [
+    [
+     "pump index-BS106EV9.js:167",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "Ap index-BS106EV9.js:133",
+     0.3
+    ],
+    [
+     "e.onmessage index-BS106EV9.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "x1 index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "saveBytesAsync debug-d7_B5mMB.js:3",
+     0.7
+    ],
+    [
+     "(anon) :1",
+     0.7
+    ],
+    [
+     "(anon) :0",
+     0.7
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.4
+    ],
+    [
+     "(anon) index-BS106EV9.js:167",
+     0.4
+    ],
+    [
+     "run index-BS106EV9.js:167",
+     0.4
+    ],
+    [
+     "NVe index-BS106EV9.js:167",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "Ap index-BS106EV9.js:133",
+     0.3
+    ],
+    [
+     "Rp index-BS106EV9.js:133",
+     0.3
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "e.onmessage index-BS106EV9.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.6 MB file, wall 3 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "save-file-first",
+   "busyMs": 1121.3,
+   "runs": [
+    1117.6,
+    1133.2,
+    1121.3
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1121.34,
+   "wallMs": 1121.2,
+   "runsWall": [
+    1117.3,
+    1132.7,
+    1121.2
+   ],
+   "topSelf": [
+    [
+     "wVe index-BS106EV9.js:167",
+     580.4
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     484.7
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     46.5
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     5
+    ],
+    [
+     "(program) :0",
+     1.6
+    ],
+    [
+     "xVe index-BS106EV9.js:167",
+     1.2
+    ],
+    [
+     "(garbage collector) :0",
+     1
+    ],
+    [
+     "i$ index-BS106EV9.js:167",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :1",
+     1120.9
+    ],
+    [
+     "(anon) :0",
+     1120.9
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     1120.8
+    ],
+    [
+     "saveBytesAsync debug-d7_B5mMB.js:3",
+     1120.8
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     1120.4
+    ],
+    [
+     "YHe index-BS106EV9.js:167",
+     1120.2
+    ],
+    [
+     "N$ index-BS106EV9.js:167",
+     1120.1
+    ],
+    [
+     "wVe index-BS106EV9.js:167",
+     580.4
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     537.8
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     491.1
+    ],
+    [
+     "d$ index-BS106EV9.js:167",
+     491.1
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     46.5
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     6.2
+    ],
+    [
+     "j$ index-BS106EV9.js:167",
+     1.8
+    ],
+    [
+     "(program) :0",
+     1.6
+    ],
+    [
+     "xVe index-BS106EV9.js:167",
+     1.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.6 MB file, wall 1121 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "autosave",
+   "busyMs": 2.9,
+   "runs": [
+    3.1,
+    2.9,
+    2.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.86,
+   "wallMs": 5.4,
+   "runsWall": [
+    5.4,
+    5.7,
+    5.2
+   ],
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.1
+    ],
+    [
+     "F1 index-BS106EV9.js:167",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     0.1
+    ],
+    [
+     "Xp index-BS106EV9.js:133",
+     0.1
+    ],
+    [
+     "Yp index-BS106EV9.js:133",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "F1 index-BS106EV9.js:167",
+     2.4
+    ],
+    [
+     "(anon) :0",
+     1.7
+    ],
+    [
+     "call preload.cjs:5",
+     1.1
+    ],
+    [
+     "write preload.cjs:66",
+     1.1
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "P1 index-BS106EV9.js:167",
+     0.6
+    ],
+    [
+     "(anon) :1",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "pump index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "(anon) index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "run index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "NVe index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     0.3
+    ],
+    [
+     "Xp index-BS106EV9.js:133",
+     0.2
+    ],
+    [
+     "Zp index-BS106EV9.js:133",
+     0.2
+    ],
+    [
+     "Yp index-BS106EV9.js:133",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 5 ms"
+  },
+  {
+   "doc": "stress-pixel-hd",
+   "action": "autosave-first",
+   "busyMs": 1241.3,
+   "runs": [
+    128.1,
+    1241.3,
+    1245.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1241.3,
+   "wallMs": 1243.5,
+   "runsWall": [
+    127.9,
+    1243.5,
+    1247.2
+   ],
+   "topSelf": [
+    [
+     "wVe index-BS106EV9.js:167",
+     387.2
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     321
+    ],
+    [
+     "kQ index-BS106EV9.js:167",
+     79.3
+    ],
+    [
+     "_Be index-BS106EV9.js:167",
+     37.9
+    ],
+    [
+     "p index-BS106EV9.js:167",
+     15.4
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     13.8
+    ],
+    [
+     "l$ index-BS106EV9.js:167",
+     5.2
+    ],
+    [
+     "(garbage collector) :0",
+     3.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "F1 index-BS106EV9.js:167",
+     867
+    ],
+    [
+     "(anon) :0",
+     866.3
+    ],
+    [
+     "x1 index-BS106EV9.js:167",
+     864.9
+    ],
+    [
+     "P1 index-BS106EV9.js:167",
+     864.9
+    ],
+    [
+     "(anon) :1",
+     864.9
+    ],
+    [
+     "b1 index-BS106EV9.js:167",
+     864.3
+    ],
+    [
+     "YHe index-BS106EV9.js:167",
+     744.6
+    ],
+    [
+     "N$ index-BS106EV9.js:167",
+     744.5
+    ],
+    [
+     "wVe index-BS106EV9.js:167",
+     387.2
+    ],
+    [
+     "dVe index-BS106EV9.js:167",
+     356.2
+    ],
+    [
+     "JBe index-BS106EV9.js:167",
+     327.1
+    ],
+    [
+     "d$ index-BS106EV9.js:167",
+     327.1
+    ],
+    [
+     "TBe index-BS106EV9.js:167",
+     119.6
+    ],
+    [
+     "wBe index-BS106EV9.js:167",
+     119.3
+    ],
+    [
+     "vBe index-BS106EV9.js:167",
+     119.2
+    ],
+    [
+     "AQ index-BS106EV9.js:167",
+     81.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 1244 ms"
+  }
+ ]
+}

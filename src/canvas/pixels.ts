@@ -82,19 +82,49 @@ export function pixelSizeThroughCamera(size: number, factor: number): number {
 
 export type PixelShape = 'square' | 'round';
 
-/** The pixels a brush covers around its centre pixel, as offsets. Even sizes lean up and left, like most pixel tools. */
-export function brushOffsets(size: number, shape: PixelShape): PxPt[] {
+/** One row of a brush footprint: the pixels from `x0` to `x1` (both included) in the row `y`, as offsets from the centre pixel. */
+export interface BrushSpan {
+  y: number;
+  x0: number;
+  x1: number;
+}
+
+/**
+ * The pixels a brush covers around its centre pixel, a row at a time: a big brush is a few thousand spans where it
+ * would be millions of single pixels. Even sizes lean up and left, like most pixel tools. Rows run top to bottom with
+ * none missing, so the row for offset `y` is `spans[y - spans[0].y]`.
+ */
+export function brushSpans(size: number, shape: PixelShape): BrushSpan[] {
   const n = Math.max(1, Math.round(size));
-  const out: PxPt[] = [];
   const lo = -Math.floor((n - 1) / 2);
   const c = (n - 1) / 2;
   const r2 = (n / 2) * (n / 2) - 0.5;
+  const round = shape === 'round' && n > 2;
+  const out: BrushSpan[] = new Array(n);
   for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      if (shape === 'round' && n > 2 && (i - c) * (i - c) + (j - c) * (j - c) > r2) continue;
-      out.push({ x: lo + i, y: lo + j });
+    let i0 = 0;
+    let i1 = n - 1;
+    if (round) {
+      const dj = (j - c) * (j - c);
+      const inside = (i: number) => (i - c) * (i - c) + dj <= r2;
+      // The edge from the circle's own sum, then nudged until it agrees with the pixel test exactly.
+      const d = Math.sqrt(Math.max(0, r2 - dj));
+      i0 = Math.max(0, Math.ceil(c - d));
+      i1 = Math.min(n - 1, Math.floor(c + d));
+      while (i0 > 0 && inside(i0 - 1)) i0--;
+      while (i0 <= i1 && !inside(i0)) i0++;
+      while (i1 < n - 1 && inside(i1 + 1)) i1++;
+      while (i1 >= i0 && !inside(i1)) i1--;
     }
+    out[j] = { y: lo + j, x0: lo + i0, x1: lo + i1 };
   }
+  return out;
+}
+
+/** The pixels a brush covers around its centre pixel, as offsets. Fine for small brushes; a big one wants `brushSpans`. */
+export function brushOffsets(size: number, shape: PixelShape): PxPt[] {
+  const out: PxPt[] = [];
+  for (const s of brushSpans(size, shape)) for (let x = s.x0; x <= s.x1; x++) out.push({ x, y: s.y });
   return out;
 }
 

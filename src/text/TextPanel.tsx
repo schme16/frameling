@@ -15,6 +15,7 @@ import { animInfo, fontFamilyCss, SHIPPED_FONTS, TEXT_ANIMS, TEXT_UNITS } from '
 import { addAnimator, onTextDefaults, removeAnimator, setTextDefaults, textDefaults, updateAnimator, updateTexts } from './ops';
 import { systemFonts } from './fonts';
 import { editText } from './TextEditor';
+import { setPathFlip, setPathOffset, setPathSide, setPathStart, takeTextOffCurve, type PathSide } from './onPathOps';
 
 const WEIGHTS = [
   { value: 300, label: 'Light' },
@@ -161,6 +162,43 @@ function AnimatorCard({ text, a }: { text: TextShape; a: TextAnimator }) {
   );
 }
 
+const SIDES: { value: PathSide; label: string; title: string }[] = [
+  { value: 'outside', label: 'Outside', title: 'Letters stand on the edge with their tops out, reading clockwise (on top of a line)' },
+  { value: 'inside', label: 'Inside', title: 'Letters stand on the edge with their tops in, reading anticlockwise (under a line)' },
+];
+
+/** Words on a curve: which side, which way round, where they start and how far off the line. Without a curve, how to get one. */
+function OnCurve({ s }: { s: TextShape }) {
+  const p = s.onPath;
+  if (!p) {
+    return (
+      <Section title="On a curve" open={false} help="text-on-path">
+        <Tip stays>Run the words round a circle or along a wave. Pick the text and the line or shape, then press the button.</Tip>
+        <div className="cv-row cv-wrap">
+          <ActionButton command="text.onPath" onClick={() => void getCommand('text.onPath')?.run()}>Put on a curve</ActionButton>
+        </div>
+      </Section>
+    );
+  }
+  return (
+    <Section title="On a curve" help="text-on-path">
+      <Choice label="Side" value={p.side ?? 'outside'} options={SIDES} onChange={(v) => setPathSide(s.id, v)} />
+      <label className="pt-row">
+        <input type="checkbox" checked={!!p.flip} onChange={(e) => setPathFlip(s.id, e.target.checked)} />
+        <span title="Turns the words the other way round the curve">Flip</span>
+      </label>
+      <div className="sy-grid">
+        <Num label="Start at" value={Math.round((p.start ?? 0) * 100)} min={0} max={100} suffix="%" title="Where along the curve the words begin (or the middle of them, when lined up in the middle)" onChange={(v) => setPathStart(s.id, v / 100)} />
+        <Num label="Off the line" value={p.offset ?? 0} step={1} suffix="px" title="How far the letters sit from the curve, on their side of it" onChange={(v) => setPathOffset(s.id, v)} />
+      </div>
+      <Tip stays>The letter spacing above spreads the words along the curve. Move the curve and the words come with it.</Tip>
+      <div className="cv-row cv-wrap">
+        <ActionButton command="text.offPath" onClick={takeTextOffCurve}>Take off the curve</ActionButton>
+      </div>
+    </Section>
+  );
+}
+
 function TextEditorPanel({ s }: { s: TextShape }) {
   const upd = (label: string, key: string, fn: (d: TextShape) => void) => updateTexts(label, fn, { coalesce: `tx-${key}-${s.id}` });
   return (
@@ -191,6 +229,7 @@ function TextEditorPanel({ s }: { s: TextShape }) {
         </div>
         <Choice label="Line up" value={s.align} options={ALIGN} onChange={(v) => upd('Line up text', 'align', (d) => void (d.align = v))} />
       </Section>
+      <OnCurve s={s} />
       <Section title="Animate the letters" help="text-animators">
         {(s.animators ?? []).map((a) => (
           <AnimatorCard key={a.id} text={s} a={a} />
@@ -207,9 +246,9 @@ function TextEditorPanel({ s }: { s: TextShape }) {
         </Field>
       </Section>
       <Section title="Shapes" open={false}>
-        <Tip>Turn the text into ordinary filled shapes you can reshape. It can't be typed into afterwards.</Tip>
+        <Tip stays>Turn the text into ordinary filled shapes you can reshape. It can't be typed into afterwards.</Tip>
         <div className="cv-row cv-wrap">
-          <ActionButton onClick={() => void getCommand('text.toShapes')?.run()}>Convert to shapes</ActionButton>
+          <ActionButton command="text.toShapes" onClick={() => void getCommand('text.toShapes')?.run()}>Convert to shapes</ActionButton>
         </div>
       </Section>
     </>
@@ -231,7 +270,7 @@ export function TextPanel() {
         <TextEditorPanel s={picked[0]} />
       ) : (
         <>
-          <Tip>{picked.length > 1 ? `${picked.length} texts selected. Pick just one to change it here.` : 'Pick the Text tool (T), click on the stage and type. Select text to change its font, size and animations here.'}</Tip>
+          <Tip stays>{picked.length > 1 ? `${picked.length} texts selected. Pick just one to change it here.` : 'Pick the Text tool (T), click on the stage and type. Select text to change its font, size and animations here.'}</Tip>
           <div className="cv-row cv-wrap">
             <ActionButton onClick={() => void getCommand('tools.text')?.run()}>Use the Text tool</ActionButton>
           </div>

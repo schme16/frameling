@@ -1,6 +1,7 @@
 // Properties for a shape a plugin made: who made it, a form for its settings ("Change settings") and, when the plugin is
 // off, a "Turn it on" button. The form is described by the plugin (the same kinds of option as an export) and drawn here.
 // Changing a setting asks the plugin to draw the shape again; what the person did to it with the ordinary tools stays.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../core/store';
 import { getCommand } from '../core/registry';
@@ -58,7 +59,7 @@ export function PluginShapePanel() {
     <div className="plugin-shape" data-help="plugin-shapes">
       {by}
       {def.options.length > 0 ? <Settings key={`${picked.inst}`} picked={picked} options={def.options} /> : <NoSettings pluginId={plugin.manifest.id} />}
-      <p className="plugin-shape-note">Move, scale and turn it with the usual tools. Changing a setting keeps that.</p>
+      <Explainer className="plugin-shape-note">Move, scale and turn it with the usual tools. Changing a setting keeps that.</Explainer>
     </div>
   );
 }

@@ -8,18 +8,31 @@ import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { registerBetaIpc } from './beta';
+import { registerDoorIpc } from './actionsDoor';
+import { registerRemoteIpc } from './remoteDoor';
+import { registerGpuIpc } from './gpu';
+import { registerClipboardIpc } from './clipboard';
+import { registerUpdateIpc } from './update';
+import { registerObsIpc } from './obs';
+import { makeHyperswarm, registerShareIpc } from './share';
+import { registerReviewIpc, type ReviewControl } from './review';
+import { registerTwitchIpc } from './twitch';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
+import { forgetSeen, keepPreview, previewOf } from './preview';
+import { isRecent, previewDir } from './store';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
+import { cleanView, type RestartAnswer, type RestartView } from './restart';
 import type { LastCrash } from './crashMarker';
 import { INTERACTIVES_ENABLED } from '../features/flags';
 import { pathKey, safeFileName } from './paths';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
+import { readOpen, type OpenOpts } from './popout';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
-// File > Open also takes Aseprite files and pictures (PNG, GIF, sprite sheets), which open as a new drawing.
-const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files and pictures', extensions: ['frameling', 'aseprite', 'ase', 'png', 'apng', 'gif'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
+// File > Open also takes Aseprite files, pictures (PNG, GIF, sprite sheets), SVG and layered files (PSD, ORA), which open as a new drawing.
+const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files, pictures, SVG and layered files', extensions: ['frameling', 'aseprite', 'ase', 'png', 'apng', 'gif', 'svg', 'svgz', 'psd', 'ora'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'SVG and layered files (Photoshop, Krita, OpenRaster)', extensions: ['svg', 'svgz', 'psd', 'ora'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
 
 export interface IpcHooks {
@@ -32,8 +45,20 @@ export interface IpcHooks {
   /** The notes of the last crash found, and whether Quill has offered them. */
   lastCrash(): LastCrash | null;
   crashOffered(): void;
+  /** Listens for the audience Stop key from any window (or stops). Returns whether it is listening. */
+  setPanicKey(on: boolean): boolean;
   closeQuestionShown(id: number): void;
   closeQuestionAnswer(id: number, answer: unknown): void;
+  /** Close the way closing does, then open again where the person was (see restart.ts). Says no when this copy can't open itself again. */
+  restart(view: RestartView, carry: boolean): RestartAnswer;
+  /** What a restart left for this start: the drawing to open, where the person was in it, and whether unsaved work waits in the autosave. Once. */
+  takeRestore(): { file: string | null; view: RestartView; carry: boolean } | null;
+  /** An installer is about to run: just close, so it can work. */
+  finishUpdate(): void;
+  /** The picture window (a second window showing the drawing big). */
+  popout: { open(o?: OpenOpts): void; close(): void; isOpen(): boolean };
+  /** The Stream control board: a window of buttons for a second screen. */
+  streamboard: { open(top: boolean): void; close(): void; isOpen(): boolean; raiseMain(): void; apart(): boolean };
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -82,6 +107,17 @@ function automationTarget(suggestedName: string, forceExt?: string): string | nu
   return path.join(path.resolve(dir), name);
 }
 
+let doorIpc: { close(): Promise<void> } | null = null;
+let remoteIpc: { close(): Promise<void> } | null = null;
+let review: ReviewControl | null = null;
+/** The drawing window is going: every live review ends with it. */
+export const stopReviews = (): void => review?.stopAll();
+export const stopReviewHost = (): void => review?.stopHost();
+/** Closes the actions door if it is open (the page reloaded or the app is quitting: it must not outlive what answers it). */
+export const closeActionsDoor = (): Promise<void> => doorIpc?.close() ?? Promise.resolve();
+/** The same for the remote door (src/main/remoteDoor.ts): it is answered by the page too, so it goes when the page goes. */
+export const closeRemoteDoor = (): Promise<void> => remoteIpc?.close() ?? Promise.resolve();
+
 export function registerIpc(hooks: IpcHooks): void {
   // Only our own window may ask.
   const trusted = (e: IpcMainInvokeEvent) => e.sender === hooks.window()?.webContents;
@@ -108,32 +144,37 @@ export function registerIpc(hooks: IpcHooks): void {
     return readFile(p);
   });
 
-  handle('files:save', async (_e, opts: { bytes: Uint8Array; path: string | null; suggestedName: string }) => {
+  handle('files:save', async (_e, opts: { bytes: Uint8Array; path: string | null; suggestedName: string; copy?: { avoid: string | null } }) => {
+    // A copy to send: it never replaces the drawing in use, and is not a file you are working on, so no recent list and no remembered folder.
+    const copy = opts.copy;
     let target = opts.path;
     if (target && !granted.has(key(target))) target = null;
     if (!target) {
       const auto = automationTarget(opts.suggestedName.replace(/\.frameling$/i, '') + '.frameling');
       if (auto) {
         target = auto;
-        grantFile(target);
+        if (!copy) grantFile(target);
       } else {
         const r = await dialog.showSaveDialog(hooks.window()!, {
-          title: 'Save your drawing',
+          title: copy ? 'Send a copy of your drawing' : 'Save your drawing',
           defaultPath: path.join(lastDir(), safeFileName(opts.suggestedName).replace(/\.frameling$/i, '') + '.frameling'),
           filters: FILTERS,
         });
         if (r.canceled || !r.filePath) return null;
         target = /\.frameling$/i.test(r.filePath) ? r.filePath : r.filePath + '.frameling';
-        grantFile(target);
-        rememberDir(target);
+        if (!copy) {
+          grantFile(target);
+          rememberDir(target);
+        }
       }
     }
+    if (copy?.avoid && key(target) === key(copy.avoid)) return { error: "That is the drawing you're working on, and a copy would replace it. Pick a different name or place for the copy." };
     try {
       writeFileAtomic(target, Buffer.from(opts.bytes));
     } catch (e) {
       return { error: friendly(e, 'save') };
     }
-    addRecent(target);
+    if (!copy) addRecent(target);
     return { path: target };
   });
 
@@ -219,12 +260,25 @@ export function registerIpc(hooks: IpcHooks): void {
   });
   handle('recent:remove', (_e, p: string) => removeRecent(p));
   handle('recent:clear', () => clearRecent());
+  // The picture of a drawing on the list: only for files that are on it, and only a few KB leave.
+  handle('recent:preview', (_e, p: unknown) => (typeof p === 'string' && isRecent(p) ? previewOf(p, previewDir()) : { state: 'none' as const }));
+  handle('recent:keepPreview', (_e, p: unknown, png: unknown) => {
+    if (typeof p !== 'string' || !isRecent(p) || !(png instanceof Uint8Array)) return;
+    try {
+      keepPreview(previewDir(), p, png);
+      forgetSeen(p);
+    } catch {
+      // A picture is a bonus.
+    }
+  });
 
   handle('autosave:write', (_e, bytes: Uint8Array, meta: AutosaveMeta) => {
     try {
       writeAutosave(bytes, meta);
+      return true;
     } catch {
-      // A failed autosave is not worth interrupting someone's drawing for.
+      // A failed autosave is not worth interrupting someone's drawing for. (A restart asks, so it can fall back.)
+      return false;
     }
   });
   handle('autosave:read', () => readAutosave());
@@ -242,12 +296,24 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof id === 'string') removeKept(id);
   });
 
+  handle('popout:open', (_e, o: unknown) => hooks.popout.open(readOpen(o)));
+  handle('popout:close', () => hooks.popout.close());
+  handle('popout:isOpen', () => hooks.popout.isOpen());
+  handle('streamboard:open', (_e, top: unknown) => hooks.streamboard.open(top === true));
+  handle('streamboard:close', () => hooks.streamboard.close());
+  handle('streamboard:isOpen', () => hooks.streamboard.isOpen());
+  handle('streamboard:raiseMain', () => hooks.streamboard.raiseMain());
+  handle('streamboard:apart', () => hooks.streamboard.apart());
   handle('app:launchFile', () => hooks.takeLaunchFile());
+  handle('app:restart', (_e, view: unknown, carry: unknown) => hooks.restart(cleanView(view), carry === true));
+  handle('app:restore', () => hooks.takeRestore());
   handle('app:lastCrash', () => hooks.lastCrash());
   handle('app:display', () => {
     const w = hooks.window();
     return w ? describeDisplay(w) : null;
   });
+
+  handle('app:panicKey', (_e, on: boolean) => hooks.setPanicKey(on === true));
 
   handle('app:askSaveChanges', async (_e, name: string, neverSaved?: boolean): Promise<SaveChoice> => {
     const q = saveChangesQuestion(name, neverSaved === true);
@@ -257,7 +323,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
     if (e.sender !== hooks.window()?.webContents) return;
-    hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null });
+    hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null, hidePath: s?.hidePath === true });
   });
   ipcMain.on('app:crashOffered', (e) => {
     if (e.sender !== hooks.window()?.webContents) return;
@@ -283,6 +349,15 @@ export function registerIpc(hooks: IpcHooks): void {
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
+  doorIpc = registerDoorIpc(handle, hooks.window, () => app.getPath('userData'), () => path.join(__dirname, process.env.FRAMELING_DEV_URL ? '../../public/mascot' : '../renderer/mascot'));
+  remoteIpc = registerRemoteIpc(handle, hooks.window, () => app.getPath('userData'));
+  registerGpuIpc(handle);
+  registerClipboardIpc(handle);
+  registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);
+  registerObsIpc(handle, hooks.window);
+  registerShareIpc(handle, hooks.window);
+  review = registerReviewIpc(handle, hooks.window, { dir: __dirname, dataDir: () => app.getPath('userData'), makeSwarm: makeHyperswarm });
+  registerTwitchIpc(handle, hooks.window);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

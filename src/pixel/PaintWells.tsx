@@ -4,24 +4,25 @@ import { useEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { swapPaintBack } from '../tools/wells';
 import { Icon } from '../ui/icons';
+import { ColourField } from '../ui/colour/ColourPicker';
+import { usePaintRules } from './colourRules';
 import './pixel.css';
 
 function Well({ which, color }: { which: 'paint' | 'back'; color: string | null }) {
   const name = which === 'paint' ? 'Paint' : 'Back';
+  const rules = usePaintRules();
   return (
-    <label
+    <ColourField
       className={`px-well px-well-${which}${color ? '' : ' is-none'}`}
-      style={color ? ({ '--well': color } as React.CSSProperties) : undefined}
+      label={`${name} colour`}
       title={`${name} colour: ${color ?? 'none'}. Click to pick another.`}
-    >
-      <input
-        type="color"
-        className="px-well-input"
-        aria-label={`${name} colour: ${color ?? 'none'}`}
-        value={(color ?? '#000000').slice(0, 7)}
-        onChange={(e) => store().setUi(which === 'paint' ? { color: e.target.value, strokeOn: true } : { fillColor: e.target.value })}
-      />
-    </label>
+      value={color ?? '#000000'}
+      empty={!color}
+      alpha={rules.alpha}
+      why={rules.why}
+      note={rules.note}
+      onChange={(c) => store().setUi(which === 'paint' ? { color: c, strokeOn: true } : { fillColor: c })}
+    />
   );
 }
 
@@ -54,7 +55,10 @@ export function PaintWells() {
         </li>
         <li>Click paints Paint, right-click paints Back</li>
         <li>
-          Hold <kbd>Alt</kbd> to pick a colour
+          Hold <kbd>Alt</kbd> and click to pick a colour
+        </li>
+        <li>
+          Hold <kbd>Alt</kbd> and drag to turn the page
         </li>
       </ul>
     </div>

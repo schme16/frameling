@@ -36,6 +36,14 @@ export function systemFonts(): string[] {
   return found;
 }
 
+let probe: OffscreenCanvasRenderingContext2D | null | undefined;
+
+/** Is this one font installed here? Works in a plain browser tab too (the page can only see what the browser can draw). */
+export function fontLooksInstalled(family: string): boolean {
+  if (probe === undefined) probe = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(4, 4).getContext('2d') : null;
+  return probe ? installed(probe, family) : false;
+}
+
 /** Load the shipped fonts before anything draws with them, then redraw text measured with a fallback. */
 export function preloadFonts(onReady: () => void): void {
   if (typeof document === 'undefined' || !document.fonts?.load) return;
@@ -44,4 +52,26 @@ export function preloadFonts(onReady: () => void): void {
     forgetTextMeasures();
     onReady();
   });
+}
+
+const GENERIC = new Set(['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy', 'system-ui']);
+
+/** Is this font here: one Frameling ships, a generic family, or one this computer can draw with? */
+export function fontIsHere(family: string): boolean {
+  const k = family.trim().toLowerCase();
+  if (!k || GENERIC.has(k) || SHIPPED_FONTS.some((f) => f.name.toLowerCase() === k)) return true;
+  return systemFonts().some((f) => f.toLowerCase() === k) || fontLooksInstalled(family);
+}
+
+/** The fonts to offer as a replacement: the shipped ones, then those on this computer (plus any in `extra` that are here). */
+export function replacementFonts(extra: readonly string[] = []): { shipped: string[]; system: string[] } {
+  const shipped = SHIPPED_FONTS.map((f) => f.name);
+  const have = new Set([...shipped, ...systemFonts()].map((f) => f.toLowerCase()));
+  const system = [...systemFonts()];
+  for (const f of extra) {
+    if (have.has(f.toLowerCase()) || !fontIsHere(f)) continue;
+    system.push(f);
+    have.add(f.toLowerCase());
+  }
+  return { shipped, system: system.sort((a, b) => a.localeCompare(b)) };
 }

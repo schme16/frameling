@@ -13,6 +13,7 @@ import { activeGrid, editActiveDrawing } from '../tools/edit';
 import { cellKey, makeCell } from './model';
 import * as ops from './ops';
 import { getTileUi, setTileUi, tileModeOn } from './state';
+import { questWord } from '../words/quests';
 
 const SEL = {
   canvas: '.cv-root',
@@ -111,22 +112,22 @@ function stampDemo(): boolean {
 
 export const TILES_QUEST: Quest = {
   id: 'tiles',
-  title: 'Tiles',
-  summary: 'Draw a tile that repeats without a seam, then paint a little level with it.',
+  title: questWord('quest.tiles.title'),
+  summary: questWord('quest.tiles.summary'),
   minutes: 4,
   icon: 'tiles',
-  badge: { id: 'level-builder', name: 'Level Builder', icon: 'tiles', color: '--mint' },
+  badge: { id: 'level-builder', name: questWord('quest.tiles.badge'), icon: 'tiles', color: '--mint' },
   // A first quest in its own right for tile people, so it needs nothing before it.
   features: ['tiles'],
   requires: [],
-  finish: 'A seamless tile and a level made of it. Add more tiles (grass, walls, water) and export the lot for your game with File, Export tileset.',
+  finish: questWord('quest.tiles.finish'),
   prepare: ensureTilePage,
   ready: hasPixelLayer,
   steps: [
     {
       id: 'make',
-      say: 'Make a tile: in the Tileset panel, press + (New tile).',
-      why: 'A tile is a small square picture, like a patch of grass. You draw it once and use it everywhere.',
+      say: questWord('quest.tiles.make.say'),
+      why: questWord('quest.tiles.make.why'),
       target: SEL.newTile,
       enter: () => showPanel('tileset'),
       done: (c) => c.ran.has('tiles.new') || c.ran.has('tiles.newAndDraw') || tileCount() > (c.entry.state.doc.tileset?.tiles.length ?? 0),
@@ -135,8 +136,8 @@ export const TILES_QUEST: Quest = {
     },
     {
       id: 'open',
-      say: 'Double-click your tile to draw it. Tile mode comes on: the tile repeats all round.',
-      why: 'Tile mode (Shift+T) shows copies on every side, so you can see where the edges meet.',
+      say: questWord('quest.tiles.open.say'),
+      why: questWord('quest.tiles.open.why'),
       target: SEL.tiles,
       done: () => !!ops.editingTileKey() && tileModeOn(),
       show: () => {
@@ -146,13 +147,13 @@ export const TILES_QUEST: Quest = {
         if (!tileModeOn()) setTileUi({ tileMode: true });
         store().setUi({ tool: 'pencil' });
       },
-      hint: 'If it is open but not repeating, press Shift+T to turn tile mode on.',
+      hint: questWord('quest.tiles.open.hint'),
       help: 'tile-mode',
     },
     {
       id: 'edge',
-      say: 'Pick the pencil (P) and draw a line off the right edge. Watch it carry on from the left.',
-      why: 'Drawing wraps round in tile mode, so the edges always match. That is a seamless tile.',
+      say: questWord('quest.tiles.edge.say'),
+      why: questWord('quest.tiles.edge.why'),
       target: SEL.canvas,
       enter: () => {
         if (ops.editingTileKey()) store().setUi({ tool: 'pencil' });
@@ -162,12 +163,12 @@ export const TILES_QUEST: Quest = {
         return !!d && c.edits.length > 0 && paintsAcrossEdge(d);
       },
       show: () => void drawDemoWave(),
-      hint: 'Start near the middle and drag straight past the edge of the tile. Top to bottom works too.',
+      hint: questWord('quest.tiles.edge.hint'),
       help: 'tile-mode',
     },
     {
       id: 'done',
-      say: 'Press Done above the canvas (or Ctrl+Enter) to put the tile back.',
+      say: questWord('quest.tiles.done.say'),
       target: SEL.done,
       done: (c) => c.ran.has('tiles.done') || (!ops.editingTileKey() && tileCount() > 0),
       show: 'tiles.done',
@@ -175,8 +176,8 @@ export const TILES_QUEST: Quest = {
     },
     {
       id: 'layer',
-      say: 'Add a tilemap layer: Tools and layers menu, then Add a tilemap layer.',
-      why: 'A tilemap layer is a grid you paint with tiles instead of colours. Game levels are made of them.',
+      say: questWord('quest.tiles.layer.say'),
+      why: questWord('quest.tiles.layer.why'),
       target: SEL.menu,
       done: (c) => c.state.doc.layers.some((l) => l.kind === 'tilemap'),
       show: 'tiles.addLayer',
@@ -184,8 +185,8 @@ export const TILES_QUEST: Quest = {
     },
     {
       id: 'stamp',
-      say: 'With the tile brush (B), click a few times on the canvas to stamp your tile.',
-      why: 'Drag to paint a row. Change the tile later and every copy changes with it.',
+      say: questWord('quest.tiles.stamp.say'),
+      why: questWord('quest.tiles.stamp.why'),
       target: SEL.canvas,
       enter: () => {
         const key = getTileUi().brush || store().get().doc.tileset?.tiles[0]?.key;
@@ -193,7 +194,7 @@ export const TILES_QUEST: Quest = {
       },
       done: (c) => stampedTiles(c.state) >= 3,
       show: () => void stampDemo(),
-      hint: 'Three tiles is enough. Side by side they join up with no seam.',
+      hint: questWord('quest.tiles.stamp.hint'),
       help: 'tilemaps',
     },
   ],

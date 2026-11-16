@@ -10,6 +10,7 @@ import { buildPlan } from '../effects/plan';
 import { compositePlan } from '../effects/composite';
 import { allScopes, bakeScales, bonesStage, fitScriptName, fitWindowScript, godotBonesScene, needsFitScript, godotBonesShaders, hasBonesToExport, restPicture, type BonesScope, type BonesTexture, type PartLook, type PartMask } from './godot-bones';
 import { SheetProblem } from './engines';
+import { exportContextOptions } from './readback';
 
 export interface BonesRun {
   doc: Doc;
@@ -56,7 +57,7 @@ function drawRest(doc: Doc, layer: Layer, d: Drawing, frame: number, k: number, 
   const w = Math.max(1, Math.ceil((doc.width + m * 2) * k));
   const h = Math.max(1, Math.ceil((doc.height + m * 2) * k));
   const canvas = new OffscreenCanvas(w, h);
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  const g = canvas.getContext('2d', exportContextOptions)!;
   g.setTransform(k, 0, 0, k, m * k, m * k);
   paintLayer(g, doc, layer, d, frame, look?.effects ?? []);
   for (const mk of masks) {
@@ -176,7 +177,7 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
         if (o.signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
         o.onStep?.(done++, total, `Drawing ${p.layer.name}`);
         const r = drawRest(doc, p.layer, p.pictures[i], firstFrame(i), ks, p.look, p.masks);
-        const img = r.canvas.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, r.canvas.width, r.canvas.height);
+        const img = r.canvas.getContext('2d', exportContextOptions)!.getImageData(0, 0, r.canvas.width, r.canvas.height);
         const a = alphaBox(img);
         const box = a ? { x: a.x + r.ox, y: a.y + r.oy, w: a.w, h: a.h } : null;
         if (meshBox) {

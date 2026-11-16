@@ -1,6 +1,27 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 import { ix } from '../features/flags';
 export const bodies: Record<string, string> = {
+  'timeline-move-drawing': `A breathe or a head bob moves a part by a pixel or two. You don't need a new drawing for every position: **move the drawing** instead, and Frameling remembers where it sits. A small corner mark on the block in the timeline shows a drawing that has been moved.
+
+**Move it:** pick the layer, go to the frame, and press **Ctrl+Alt+arrow keys**. Each press moves it one pixel (one art pixel on a pixel layer, so it stays on the grid). Hold the key and it still undoes in one step.
+
+**A bob, frame by frame:** on a later frame of a held drawing, moving it cuts the hold there, so the part sits somewhere else from that frame on. Both blocks share the one drawing, so nothing is copied.
+
+**A whole group together:** put the head's layers in a folder, pick one of them and turn on **Animation > Move a drawing without redrawing it > Move the whole folder together**. Now the same keys move every layer of that folder on this frame, so the head bobs as one.
+
+**Back to where it was drawn:** **Put drawing back where it was drawn**, in the same menu or the command palette. If your computer already uses Ctrl+Alt+arrows (some Linux desktops switch workspace with them), change the keys in **Preferences > Keyboard**.
+
+**Between two drawings:** with in-betweens on, the move glides from this drawing's place to the next one's.
+
+## Good to know
+
+- Everything draws it moved: the canvas, the player, pictures, GIFs, sprite sheets, SVG, PDF and Lottie.
+- Drawing on a moved layer works where you see it. A new drawing made as a copy keeps the move; a blank one starts where it was drawn.
+- Two blocks that share a drawing show a change to it together. Draw on the one you mean, or make a copy first.
+- A file with a moved drawing is saved as a newer file. An older Frameling will say so and not open it, rather than put the parts in the wrong place.
+- Cameras, skeletons (bones) and tiles can't be moved this way.
+
+Learn more: [Frames, keys and holds](help:timeline-frames), [Layer folders](help:layer-folders).`,
   timeline: `The timeline is the strip along the bottom. Time runs left to right, one square for each frame. Your layers are stacked on the left, the top layer in front.
 
 ## Reading it
@@ -70,7 +91,7 @@ Click the frames once so the timeline has the keys, then:
 
 ## Prefer it simpler?
 
-Turn on **Clean timeline** (the sliders button in the timeline, **View > Clean timeline**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
+Turn on **Clean timeline** (the sliders button in the timeline, **View > Look and sound > Clean timeline (simple blocks)**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
   'timeline-property-rows': `Open a layer with the **arrow** beside its name and each thing that changes gets its own row of diamonds.
 
 ## What moves on its own
@@ -133,6 +154,73 @@ In the top bar these buttons show their words while there's room, and shrink to 
 **<** and **>** (Shift+comma and Shift+full stop) jump to the previous and next drawing on the layer you're on.
 
 If a layer is locked its frames can't be changed. Click the padlock to unlock it.`,
+  'timeline-copy-keys': `Repeat a walk cycle three times, put a blink at the start and the end, copy a mouth shape onto another layer, paste a pose at frame 40. Copy the drawings once, paste them where you like.
+
+**Copy:** pick some keys (click one, **Shift**+click more, or **Shift**+drag a box), or click a frame that has a drawing. Then press **Ctrl+C** while the timeline has focus. **Ctrl+X** cuts them instead. Right-click works too.
+
+The copy keeps each drawing, how long it is held, and the gaps between them.
+
+**Paste:** click the frame you want it to start on, pick the layer, and press **Ctrl+V**. The pasted keys are picked, so you can nudge them straight away.
+
+- **Pasted drawings are new drawings.** Change one and the original stays as it was.
+- To add on to the end of a layer, use **Paste keys after the last drawing** (in the command palette): the playhead can't go past the end, and this goes right after it.
+- Keys copied from several layers land on the layer you paste on and the ones below it, in the same order.
+- **Paste keys where they were** (in the command palette) puts them back on the same layers and frames, as new drawings, covering what is there now.
+
+**When it lands on drawings that are already there:** the first time, Frameling makes room: the drawings in the way move later, so nothing is lost. A message says so, with a **Change** button for **Paste over them** instead, which covers them and keeps the animation the same length. Either way, Undo takes it back. You can change your mind any time in Preferences > Behaviour.
+
+**Onto another kind of layer:** a vector drawing pasted on a pixel layer becomes pixels, with hard edges snapped to that layer's grid (and its palette, when that is locked). A pixel drawing pasted on a vector layer becomes a picture you can move, turn and resize. A message says what was converted. Camera keys and tile keys only go on their own kind of layer.
+
+**Good to know:**
+
+- Only drawing keys are copied. Effect keys aren't; a symbol's position, size and turn travel with its drawing.
+- On the canvas, **Ctrl+C** still copies shapes. It is the timeline having focus (click it first) that makes it copy keys.
+- Shapes and pixels: [Copy and paste with other apps](help:clipboard-system).`,
+  'timeline-shared': `Sometimes one drawing is shown in more than one place: on two layers, twice along the timeline, or on a few artboards. It's one drawing, not copies, so changing it in one place changes it in all of them. That's handy when they're meant to match. It's a surprise when they aren't.
+
+## How you can tell
+
+A block whose drawing is shown somewhere else has a **pale edge** along the bottom. When the block is wide enough it also has a small **link with a number** on it: how many places show that drawing. Rest the mouse on the block to hear where, like "Shown in 3 places: here and on the artboards wave and talk".
+
+## Make this one its own
+
+Click the block, then right-click it and pick **Make this drawing its own (stop sharing it)**, or press **Ctrl+K** and run it from the command palette. This place gets a copy that looks the same; from then on changing it changes only this one. The other places keep the drawing as it was. It's one **Undo** step.
+
+## When you draw on one
+
+The first time you change a shared drawing, Frameling asks:
+
+- **Change it everywhere** (what it does to start with): every place that shows the drawing changes with it.
+- **Make this one its own:** this place gets a copy with your change, and the others stay as they were.
+
+Your answer is remembered. Change it any time in **Preferences > Behaviour**, under **Drawing on a shared drawing**. Nothing is asked about a drawing that is only shown once.
+
+## Good to know
+
+- Copying a drawing (**D**, or copy and paste) always makes a real copy, so you only meet shared drawings in files built that way on purpose.
+- Variations follow their original by design, so they don't count as another place.
+- A copy takes up room in the file, so make drawings their own only where you need to.
+
+Next: [Frames, keys and holds](help:timeline-frames), [Artboards](help:artboards).`,
+  'timeline-fit': `Press the **magnifier** at the end of the timeline's top bar (or run **Fit the whole animation in the timeline** from the command palette, **Ctrl+K**) and every frame fits across the timeline, whether you have 24 frames or 400.
+
+## Very long animations
+
+A frame can be very narrow, so a long animation still fits. At that size drawings are too small to draw one by one:
+
+- A run of very short drawings is drawn as **one band**. Rest the mouse on it to see how many it stands for.
+- Longer holds keep their own block, so you can still see where the big moments are.
+- The numbers along the top spread out to match, every 100 or 500 frames instead of every 5.
+
+**To work on it:** zoom back in. **Ctrl and scroll** zooms around the pointer, the slider beside the magnifier zooms evenly from tiny to roomy, and the playhead stays on screen.
+
+## Good to know
+
+- Fit changes only how the timeline looks. Your animation and its length stay as they were.
+- Frames can't go narrower than a fifth of a pixel, so about 5,000 frames fit across a normal window.
+- Not sure where you are in a long one? Fit it, find the part, then **Ctrl and scroll** into it.
+
+Next: [The timeline](help:timeline), [Keys, tweens and property rows](help:timeline-detailed).`,
   'timeline-tidy-end': `Stretch a hold to frame 31, then pull it back to 28, and the timeline still says 31. The three frames on the end are empty. **Tidy the end** is Frameling taking them off, so the animation finishes where your last drawing does.
 
 ## The first time it happens
@@ -146,7 +234,7 @@ Whichever you pick is remembered. Change it any time in **Preferences > Behaviou
 
 ## Do it yourself
 
-Open the command palette and run **Tidy the end**, or use **Timeline > Tidy the end**. It works whatever you chose above, and you can undo it.
+Open the command palette and run **Tidy the end**, or use **Animation > More frame tools > Tidy the end**. It works whatever you chose above, and you can undo it.
 
 ## What it never touches
 
@@ -174,13 +262,19 @@ Click the little arrow beside the onion for:
 - **Strength:** how strong the nearest ghost is. Ones further away fade.
 - **Colours:** frames before are tinted rose and frames after mint, so you can tell them apart. Turn the tint off to see them in their own colours.
 
-- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses before and after this one, not copies of the drawing you're on. Also in **Timeline > Onion skin shows only keys**.
+- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses around this one, not copies of it. Also in **Animation > Onion skin options**.
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
+## Clips
+
+Your file has [clips](help:timeline-clips), like idle, run and jump? The ghosts **stop at the edge of the clip you're in**, so the first frame of a jump is never drawn against the last frame of the run before it, and you never trace a limb that belongs to another animation. The ruler's shading stops there too.
+
+The first time an edge hides a ghost, a note says so, with a **Change** button. Making one long scene out of clips back to back? Choose **Carry on into the next clip**, or switch it any time with **Animation > Onion skin options > Onion skin carries on into the next clip**, or in **Preferences > Behaviour**. A frame that is in no clip has no edge, so nothing is hidden there.
+
 ## Boards either side
 
-Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Timeline > Onion skin shows the boards either side**.
+Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Animation > Onion skin options > Onion skin shows the boards either side**.
 
 Board ghosts sit under this board's own frame ghosts, and a board of another size is fitted into yours and centred. Variations are left out: a variation is another take on a board, not the next one.
 
@@ -205,7 +299,7 @@ Start drawing and the ghost stays behind your new lines until you go to another 
 It's only for you: it never shows when you play or export. It hides while the [onion skin](help:timeline-onion) is on,
 since that already shows the frames around this one. Looking through the [camera](help:camera), it goes through it too.
 
-Turn it off or on in **View > Ghost on empty frames**.
+Turn it off or on in **View > More view tools > Ghost on empty frames**.
 
 Want to trace a particular frame, not just the last one? Put it on the [light table](help:light-table).`,
   'timeline-layers': `Layers are like sheets of tracing paper stacked on top of each other. Put the background on a low layer and your character on a higher one, and you can change one without touching the other.
@@ -213,15 +307,16 @@ Want to trace a particular frame, not just the last one? Put it on the [light ta
 ## Two kinds
 
 - **Vector layer** (the *V* badge): smooth, sharp lines that stay crisp at any size. Best for hand-drawn or cartoon art.
-- **Pixel layer** (the *P* badge): pixel art, one square at a time. You choose how big each pixel is (new pixel layers copy the size of the ones you already have, or start at 8).
+- **Pixel layer** (the *P* badge): pixel art, one square at a time. Each pixel starts 8 wide on the page, so a 1280 x 720 page gives a 160 x 90 pixel layer. The first one you add tells you its size, with a **Change size** button that opens the page size. New pixel layers copy the size of the ones you already have.
 
 You can mix both in one animation.
 
 ## Where the list is
 
-Layers show in two places, and they are the same list: the **Layers** panel in the right rail, and down the left
-side of the timeline, where each row lines up with that layer's keys. Use whichever is closer to what you are
-doing. Anything you change in one shows in the other at once.
+Layers show in two places, and they are the same list: down the left side of the timeline, where each row lines up with that layer's keys, and in the **Layers** panel in the right rail. Use whichever is closer to what you are
+doing. Anything you change in one shows in the other at once. The Animate workspace shows only the timeline's column, so you never see the same list twice; the Layers panel is one press away in the rail, handy for a drawing with a great many layers.
+
+**Lots of layers?** A file opens with the timeline tall enough to show them, as far as the window allows (never more than half of it). If you've made it smaller since, press **Ctrl+K** and run **Fit layers**, or drag the edge above it. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
 
 ## The layer list
 
@@ -273,7 +368,7 @@ Frames outside the range are dimmed on the ruler, and there's a bracket at each 
 
 ## Clear it
 
-Click the **x** beside the range in the top bar, or use **Timeline > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
+Click the **x** beside the range in the top bar, or use **Animation > Play range > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
 
 ## Good to know
 
@@ -293,12 +388,13 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 
 - **Click** a clip to play just that part. Playback and the first and last frame buttons stay inside it. Click it again to go back to the whole animation.
 - A **short clip** shrinks to a small icon, or just a coloured bar when it is only a frame or two, so it never covers its neighbour. Rest the mouse on it for its name, or zoom in the timeline. Tab reaches each clip; **Enter** picks it and **F2** renames it.
-- **Double-click** to rename it. Right-click for more: which way it plays, how often it repeats, delete.
+- **Double-click** to rename it. Right-click for more: **Duplicate clip**, which way it plays, how often it repeats, delete.
+- **Duplicate clip** copies the clip, drawings and all, onto the end of the animation as **Run copy**. Paint on the copy and the first one stays as it was, so it's the quick way to start a new pose or a variation.
 - **Plays** and **Repeat** are saved with the clip: forward, backward or [back and forth](help:timeline-clip-play), and forever (a run cycle), once (a jump) or a number of times. A game engine reads them too.
 
 > Frames in your animation that are not in any clip still play and still export. Clips just give them names.
 
-When you export a sprite sheet or a game animation file, each clip becomes its own animation.`,
+When you export a sprite sheet or a game animation file, each clip becomes its own animation. Clips belong to the main scene, so they are hidden inside an open symbol: see [markers](help:timeline-markers).`,
   'timeline-clip-play': `A [clip](help:timeline-clips) can play three ways, and repeat as often as you like. Say it once on the clip and the timeline, your sprite sheets and your game animations all follow.
 
 ## Setting it
@@ -336,6 +432,36 @@ Pick the clip and press play. It plays the way you set it, so you see what a gam
 - **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own back and forth loop instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
 ${ix('- **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.\n')}
 A clip with nothing set plays forward.`,
+  'timeline-drawings': `A long animation is a lot of drawings, and "frame 1701" tells you nothing. Name the ones you care about, and the **Drawings** panel lays out a clip's drawings side by side, once each, however long you hold them.
+
+## Name a drawing
+
+**Double-click a drawing** on the timeline, or press **F2** on the frame you're on. Type a name like "eyes sad" and press **Enter**. Clear the box to take the name off. Right-click a drawing and choose **Name this drawing** to do the same.
+
+The name sits after the drawing's key on the timeline, and in its tooltip. A name belongs to one drawing on one layer, so the Eyes layer can have "sad" while the Mouth layer has "o".
+
+## See a clip's drawings
+
+Open **Drawings** on the right-hand rail, or choose **Animation > Move around the timeline > See the drawings in this clip**. You get a picture for every moment something new appears, with its name underneath (or its frame number when it has none).
+
+Held frames are skipped, so a clip playing at 100 frames a second is a handful of pictures, not thousands. That's the difference from a [contact sheet](help:export-jpeg-webp-contact), which has a tile for every frame and is made for sharing, not for working.
+
+- **Click a picture** to go to that frame. If its name is on another layer, you land on that layer.
+- **Double-click the words** under a picture to name it.
+- The picture you're on has a gold outline.
+- It shows the clip you're in, or the one you clicked on the timeline. Press **Everything** to see the whole animation.
+
+## Find a drawing by name
+
+Type in the box at the top of the panel, or press **Ctrl+K** and choose **Find a drawing by name and jump to it**. Part of a name is enough ("sad" finds "eyes sad"). Nothing in this clip? Press **Everything**.
+
+**Good to know:**
+
+- A copy or a paste starts without a name; duplicating a whole layer keeps its names.
+- An older Frameling opens the file just the same, and the animation plays the same. It simply doesn't show the names.
+- Each artboard has its own drawings, so the panel shows the one that's open.
+
+See also [clips](help:timeline-clips) and [onion skin](help:timeline-onion).`,
   'timeline-markers': `A **marker** is a little flag on one frame with a name. It doesn't change what you see. It tells a game${ix(' (or Interactives)')} *when* something should happen: play the footstep sound, flash the screen, spawn a puff of dust.
 
 ## Adding one
@@ -351,7 +477,9 @@ Type a name, like *footstep*, and press Enter.
 - **Drag** it to move it to another frame.
 - **Right-click** it to delete it.
 
-Markers come out in exports as events.`,
+Markers come out in exports as events.
+
+Good to know: markers and clips belong to the main scene, so inside an open [symbol](help:symbols) their rows give way to a note and nothing can be added there. A marker made from inside would land on the scene at the symbol's own frame number and fire at the wrong moment. Go back out of the symbol to use them. To name frames inside a symbol (a mouth shape, say), see [lip sync](help:lip-sync).`,
   'reference-layers': `Some layers are only there to help you draw: the ground a character stands on, a rough sketch, a grid of where the feet go. Make it a **reference layer** and you still see it on the canvas, but videos, pictures, SVGs and sprite sheets all leave it out.
 
 ## Make one
@@ -363,5 +491,6 @@ A reference layer's name turns *italic* with a small **ref** tag. Choose **Expor
 ## Good to know
 
 - Hiding a layer (the eye) also keeps it out of exports, but then you can't see it either. A reference layer stays visible.
-- The game hero template's **Ground** is a reference layer, so its sprite sheets come out with just the character and its shadow.`,
+- The game hero template's **Ground** is a reference layer, so its sprite sheets come out with just the character and its shadow.
+- To trace a photo or a model sheet, see [A picture behind your drawing](help:reference-picture). It is a reference layer that holds a picture.`,
 };

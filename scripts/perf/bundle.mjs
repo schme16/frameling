@@ -1,6 +1,6 @@
 // Bundle composition: builds the renderer to a private folder and lists what the initial chunk holds, by source
 // folder and by biggest module, so you can see what is worth making lazy.
-//   node scripts/perf/bundle.mjs [--top 40]
+//   node scripts/perf/bundle.mjs [--top 40] [--folder src/ui/] [--json modules.json] [--why src/ui/palette]
 import { build } from 'vite';
 import { gzipSync } from 'node:zlib';
 import { mkdtempSync } from 'node:fs';
@@ -56,7 +56,10 @@ const analyse = {
     for (const id of [...rpo].reverse()) if (id !== rootId && idom.has(id)) dom.set(idom.get(id), dom.get(idom.get(id)) + dom.get(id));
     const rel = (id) => id.replace(root, '').replace(/^.*node_modules\//, 'node_modules/');
     const dominated = rpo.filter((id) => id !== rootId).map((id) => [rel(id), dom.get(id), size.get(id), rel(idom.get(id))]).sort((a, b) => b[1] - a[1]);
-    report = { dominated, entry: sum(entry), chunks: chunks.length, folders: [...folders].sort((a, b) => b[1] - a[1]), mods: mods.sort((a, b) => b[1] - a[1]), all: chunks.map(sum) };
+    // Every static importer of each module (inside this chunk), for --why.
+    const importers = new Map(ids.map((id) => [id, []]));
+    for (const id of ids) for (const n of edges.get(id)) importers.get(n)?.push(rel(id));
+    report = { importers, dominated, entry: sum(entry), chunks: chunks.length, folders: [...folders].sort((a, b) => b[1] - a[1]), mods: mods.sort((a, b) => b[1] - a[1]), all: chunks.map(sum) };
   },
 };
 process.chdir(root);
@@ -70,3 +73,9 @@ for (const [f, n, own, by] of report.dominated.slice(0, top * 2)) console.log(k(
 console.log('\nbiggest modules');
 if (only) { for (const [f, n] of report.mods.filter(([f]) => f.startsWith(only))) console.log(k(n), f); }
 for (const [f, n] of report.mods.slice(0, top)) console.log(k(n), f);
+if (args.includes('--json')) (await import('node:fs')).writeFileSync(args[args.indexOf('--json') + 1], JSON.stringify({ entry: report.entry, chunks: report.chunks, mods: report.mods, importers: Object.fromEntries([...report.importers].map(([k, v]) => [k.replace(root, ''), v])) }));
+if (args.includes('--why')) {
+  const q = args[args.indexOf('--why') + 1];
+  console.log(`\nstatic importers of modules matching ${q} (inside the first chunk)`);
+  for (const [id, list] of report.importers) if (id.includes(q)) console.log(id.replace(root, ''), '<-', list.join(', ') || '(entry)');
+}

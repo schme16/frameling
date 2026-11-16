@@ -1,6 +1,6 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-art': `Pick **Pixel art** on the New sheet (File > New): Quill asks whether you are making [one picture, an animation, frames on boards or sprites on a sheet](help:pixel-new), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
+  'pixel-art': `Pick **Pixel art** on the New sheet (**File > New drawing...**): Quill asks whether you are making [one picture, an animation, frames on boards or sprites on a sheet](help:pixel-new), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (**View > Pixel workspace**): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
 
 A sprite usually goes like this:
 
@@ -9,7 +9,7 @@ A sprite usually goes like this:
 3. **Fill it in** with the paint bucket (G).
 4. **Shade it** with the [Shade](help:tool-shade) tool (S): each pass moves a pixel one step darker or lighter along its colour ramp.
 5. **Add texture** with the [Dither](help:tool-dither) brush (Shift+B).
-6. **Finish with an outline** round the whole thing: Pixel tools > Add outline. See [Outlines](help:pixel-outline).
+6. **Finish with an outline** round the whole thing: **Tools > Shapes and colour > Add outline (outside)**. See [Outlines](help:pixel-outline).
 
 Need it facing the other way, or tilted? See [Flip and turn](help:pixel-flip-rotate). Want to keep strictly to your palette? Turn on the [palette lock](help:palette-lock).`,
   'tool-shade': `Press **S** on a pixel layer, then brush over your drawing.
@@ -36,7 +36,29 @@ The brush lays down a pattern: the pattern's dark squares take your **stroke** c
 - Set the **fill to none** (press / with the fill box in front) and the light squares are left as they are. Great for scattering texture over a finished area.
 - The pattern is fixed to the page, not to your stroke, so separate strokes always line up.
 
-The usual name for this is *ordered dithering*.`,
+The usual name for this is *ordered dithering*. To dither a whole area from one colour into another, use the [Gradient](help:pixel-gradient) tool (F).`,
+  'pixel-gradient': `Press **F** on a pixel layer, then drag across the picture. The colours run from your **Paint** colour at the start to your **Back** colour where you let go.
+
+On pixel art a gradient is never a smooth blur. It is a few real colours that melt into each other in a pattern of dots, the way pixel artists have always done skies and glows. This is *ordered dithering*.
+
+## The options
+
+- **Colours.** **Palette steps** walks through the palette colours that sit between Paint and Back, so every pixel is a colour you already have. **Two colours** uses only Paint and Back. **Smooth** is a plain blend of the two, for pictures with no palette to keep to.
+- **Dither.** **Classic** is the usual pattern. **Smooth** is finer and softer. **Chunky** is bold and retro. **Grainy** is scattered like film grain. **Bands** has no dots at all: hard steps.
+- **Shape.** **Linear** runs along the line you drag. **Radial** spreads out from where you press, and the end of the drag sets how far it reaches.
+- **Covers.** **Everywhere** paints the whole canvas, empty pixels too (good for a sky). **Painted pixels** colours only what is already drawn and leaves empty pixels empty (good for shading a sprite).
+
+A small strip at the top of the options shows what you will get.
+
+## Good to know
+
+- **Select first** to keep the gradient to one spot. With nothing selected it goes over the whole canvas.
+- Hold **Shift** to keep the direction to 45 degree steps.
+- On a layer with the [palette lock](help:palette-lock) on, every colour snaps to the palette.
+- One drag is one undo step. Drag again to try another direction; Undo puts it back.
+- Find the options in the command palette (**Ctrl+K**): *Gradient: next dither style*, *next colour mode*, and *switch between linear and radial*. Angular and diamond shapes are in the **Shape** choice, or search for them there.
+
+For a hand-painted pattern, use the [Dither](help:tool-dither) brush. On a drawn layer the same tool makes [smooth gradients](help:tool-gradient) in shapes.`,
   'pixel-mirror': `This is [mirror drawing](help:mirror-drawing) on a pixel layer. Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.
 
 A dashed line on the page shows where the mirror is. Everything the pencil, brush, eraser, shade, dither and shape tools paint on a pixel layer is copied across it, and the paint bucket fills the mirrored spot too.
@@ -44,9 +66,9 @@ A dashed line on the page shows where the mirror is. Everything the pencil, brus
 **Moving the mirror line.** In the tool options, drag **Mirror line across** or **Mirror line down**. It moves in half pixel steps: on a whole number the line runs between two pixels (both sides are copied), on a half it runs through the middle of a pixel column (that column is shared, which is how you get an odd-width face with one nose). **Back to the middle** puts it back.
 
 The usual name for this is *symmetry*.`,
-  'pixel-outline': `Pixel tools > **Add outline (outside)** draws a one pixel outline round everything drawn on this frame of the layer you're on. It uses the **stroke** colour and goes round holes too.
+  'pixel-outline': `**Tools > Shapes and colour > Add outline (outside)** draws a one pixel outline round everything drawn on this frame of the layer you're on. It uses the **stroke** colour and goes round holes too.
 
-Pixel tools > **Add outline (inside the edge)** repaints the outer pixels of your drawing instead, so it doesn't get any bigger. Handy when a sprite has to fit a tile exactly.
+**Tools > Shapes and colour > Add outline (inside the edge)** repaints the outer pixels of your drawing instead, so it doesn't get any bigger. Handy when a sprite has to fit a tile exactly.
 
 Each is one undo step. Run it twice for a thicker outline, or with a different stroke colour for a two-colour edge.`,
   'pixel-shapes': `On a pixel layer the shape tools ([Rectangle](help:tool-rect), [Ellipse](help:tool-ellipse), [Line](help:tool-line), [Polygon and Star](help:tool-polygon-star)) and the [Pen](help:tool-pen) paint clean, hard pixels with no soft edges. Out of the box the outline is one pixel thick.
@@ -68,7 +90,7 @@ Each is one undo step. Run it twice for a thicker outline, or with a different s
 Everything is painted as whole pixels, never blended. The shape snaps to the pixel under the pointer, so even with a turned or zoomed [camera](help:camera) it lands where you aim. It keeps to the palette when the layer's [palette lock](help:palette-lock) is on, and a thicker outline works too (see [Pixel shapes](help:pixel-shapes)).
 
 Want a flat box on a perspective picture? Set **On a plane** to **Flat**, or hold **Ctrl** to ignore the guides for one shape.`,
-  'pixel-flip-rotate': `These work on the drawing on this frame of the pixel layer you're on. Find them in the **Pixel tools** menu or the command palette.
+  'pixel-flip-rotate': `These work on the drawing on this frame of the pixel layer you're on. Find them in **Tools > Arrange, group and transform** or the command palette.
 
 - **Flip drawing left to right** and **upside down** mirror it around its own middle, so it stays where it is. Perfect for a character that walks both ways.
 - **Turn right**, **Turn left** and **Turn round** are exact quarter and half turns: every pixel lands on the grid, nothing changes colour.
@@ -83,18 +105,24 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
 
 **Changing a colour.** Double-click it (or right-click > Change colour). The first time, Frameling asks whether the pixels already painted in that colour should change too. Say yes and you can try a whole new colour scheme in seconds (this is called a *palette swap*). You can change your answer in Preferences > Behaviour.
 
+**Opacity.** The picker you change a colour with has an **Opacity** bar, so a palette colour can be see-through (glass, a shadow, a glow). It paints see-through by exactly that much, every time, even on a layer locked to the palette, so the palette is still a fixed set of colours. Pixels you've already painted keep the opacity they had. More in [The colour picker](help:colour-picker).
+
 **Arranging.** Drag a colour onto another to move it there. Right-click > Remove takes it out.
 
 **Starter palettes.** A few to get going: *Cosy Sixteen* (a good all-rounder), *Pocket Moss* (four greens, like an old handheld game screen), *Dusk Ramps*, *Arcade Bright* and *Paper and Ink* (one-bit).
 
-**Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture. You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
+**Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture (see [Taking the colours from a picture](help:palette-picture)). You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
+
+**Your swatches.** A file that has named colours of its own (in the Swatches panel) but no pixel palette still shows the starter palette, so the Palette panel offers **Use my swatches** under the colours. It keeps their order and names, and your pixels don't change. The same thing is in the command palette as **Make a palette from the swatches**. It asks first, instead of doing it when you open the file, because opening a file shouldn't change it.
 
 The palette is saved with your document. Until you change it, a new document uses Cosy Sixteen.`,
-  'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or Pixel tools > Lock this layer to the palette).
+  'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or **Tools > Palette > Lock this layer to the palette**).
 
 From then on, every colour painted on that layer, by any tool, snaps to the **nearest palette colour**. The pencil, brush, shapes, bucket, dither and outline all follow it. Clearing with the eraser still clears.
 
 **Reduce to palette** changes everything already on the frame to its nearest palette colour. Pixels that are more than half see-through become clear; the rest become solid.
+
+**See-through palette colours.** If a palette colour has less than 100% opacity, pixels painted with it come out at exactly that opacity, and so does Reduce to palette. That means the Paint colour's own opacity has no say on a locked layer, so its picker shows no Opacity bar there and points you to the palette colour instead.
 
 **How it works.** Pixels are stored as ordinary colours, not as numbers into the palette. When you change a palette colour, Frameling finds every pixel of the old colour and changes it (if you said yes to that). So if two palette colours are ever set to the same colour, their pixels can't be told apart afterwards. Undo is your friend.`,
 };

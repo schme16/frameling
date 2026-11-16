@@ -1,0 +1,11 @@
+Krita brush files used as test fixtures for the importer (src/brushes/import/krita.ts).
+
+small-set.bundle
+  A small bundle made by copying seven presets (Basic-5 Size default, Pencil-1 Hard, Basic-6 Details, Pencil-4 Soft,
+  Stamp Sparkles, Basic-1, Eraser Circle) and the three brush pictures they use (plain_rake.png, graphite_grain.gih,
+  fairy-dust.gih) out of Krita's "Krita_4_Default_Resources.bundle", unchanged, with that bundle's mimetype and meta.xml.
+  The bundle's meta.xml names its authors ("Deevad with derivations of the brushes of Ramon Miranda, Razvanc, Radian,
+  Wolthera, Storm, Scottyp and other") and its licence as CC-0, the same as the default resources that ship with Krita.
+
+Basic-5_Size_default.kpp
+  One preset copied unchanged from the same bundle, so the same CC-0 licence.

@@ -3,6 +3,7 @@
  * be restyled later. On a pixel layer it's a pixel pencil: hard pixels, a size in art pixels, "pixel perfect" corners,
  * and Shift+click for a straight line from the last pixel.
  */
+import { forgetHover, hoverSpot, hoverStart } from './endSnap';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
@@ -19,12 +20,15 @@ import { docToPixel } from '../canvas/pixels';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
 import { activeVectorMirror, mirrorSpots } from './mirror';
+import { brushForLine } from '../geometry/tip';
+import { readPixelStamp, stampCells } from '../brushes/stamps';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
 let pixColor = '';
 
 function down(e: ToolPointer, ctx: ToolContext): void {
+  forgetHover();
   const { layer, problem } = activeLayer();
   if (problem) return ctx.hint(EDIT_HINTS[problem]);
   if (!layer) return;
@@ -32,22 +36,36 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (layer.kind === 'vector') {
     if (!canEdit(ctx, 'vector', 'The brush')) return;
     const dyn = vectorDynamics('brush', { ...ui.brush, size: ui.brush.size * viewSizeFactor() }, e);
-    vec = new VectorStroke(dyn.brush, ui.color, dyn);
+    // A stamp line gets a seed of its own, so its jitter is the same every time it is drawn.
+    vec = new VectorStroke(brushForLine(dyn.brush, 1 + Math.floor(Math.random() * 2 ** 30)), ui.color, dyn);
     // Shift+click runs a straight line from where the last stroke ended, as it does on a pixel layer.
     startFromLast(vec, e, ctx.zoom);
+    // Hold to tidy, unless this started as a Shift+click straight line.
+    if (!e.shift) vec.watchHold(ctx.zoom, ctx.requestOverlay);
     return;
   }
   if (layer.kind !== 'pixel') return;
   const rgba = parseHex(ui.color);
   if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
   const s = getToolSettings();
-  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect });
+  const stamp = readPixelStamp(s.pixelStamp) ?? undefined;
+  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect, stamp });
   pixColor = ui.color;
   pix.scale(sizeFactor('brush', e));
   const here = pix.cell(e.x, e.y);
   const from = e.shift ? lastPixelEnd(doc, layer) : null;
   if (from) pix.beginLine(from, here);
   else pix.begin(here);
+}
+
+/** Hovering: on a vector layer the ring shows where a stroke would start if it is going to be pulled onto something. */
+function hover(e: ToolPointer, ctx: ToolContext): void {
+  if (activeLayer().layer?.kind === 'vector') hoverStart(e, ctx.zoom);
+  else forgetHover();
+}
+
+function leave(): void {
+  forgetHover();
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -75,6 +93,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
 }
 
 function cancel(ctx: ToolContext): void {
+  vec?.stop();
   vec = null;
   pix?.discard();
   pix = null;
@@ -82,7 +101,7 @@ function cancel(ctx: ToolContext): void {
 }
 
 function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
-  if (vec) return vec.overlay(g);
+  if (vec) return vec.overlay(g, ctx.zoom);
   if (pix) return;
   const h = getHover();
   if (!h) return;
@@ -90,10 +109,12 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   const layer = activeLayer().layer;
   if (layer?.kind === 'pixel') {
     const s = getToolSettings();
-    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, ui.color);
+    const stamp = readPixelStamp(s.pixelStamp);
+    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, stamp?.keep ? null : ui.color, stamp ? stampCells(stamp) : undefined);
   } else {
     const m = activeVectorMirror();
-    for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
+    const at = hoverSpot() ?? h;
+    for (const p of m ? mirrorSpots(m, at.x, at.y) : [at]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
   }
 }
 
@@ -110,6 +131,8 @@ export const brushTool: Tool = {
   cursor: 'crosshair',
   options: BrushOptions,
   down,
+  hover,
+  leave,
   move,
   up,
   cancel,

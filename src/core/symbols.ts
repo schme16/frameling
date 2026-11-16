@@ -8,7 +8,7 @@
  * - Posing: `poseAt` is what a layer shows at a frame once instances know which of their own frames to show and
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
-import type { Artboard, Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import type { Artboard, Cel, CelOffset, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { folderChain } from './folders';
 import { layersWithCels } from './sharedLayers';
 import { tweenEase } from './ease';
@@ -18,6 +18,11 @@ import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
 import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
+import { canOffset, mixOffsets, offsetDrawing, offsetOf } from './offset';
+import { withoutNotes } from '../notes/model';
+import { withTips } from './tips';
+import { withRepeats } from './repeats';
+import { hasTrim, trimmedBetween } from './trimTween';
 
 // ---------------------------------------------------------------- matrices
 
@@ -282,6 +287,144 @@ export function makePixelSymbol(doc: Doc, layerId: Id, frame: number, name?: str
   const { pixelSize: _p, paletteLock: _l, slices: _s, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
   doc.layers[at] = { ...look, kind: 'vector', cels: [heldCel] } as Layer;
   return { symbolId, instanceId: inst.id, layerId };
+}
+
+/** True when a drawing has something in it: pixels painted, or at least one shape. */
+export function drawingHasArt(d: Drawing | undefined): boolean {
+  if (!d) return false;
+  if (d.kind === 'pixel') return d.width > 0 && d.height > 0 && trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0).width > 0;
+  if (d.kind === 'vector') return d.shapes.length > 0 && !d.pose;
+  return false;
+}
+
+/**
+ * The keys a "symbol from the animation" takes. With picked keys it is the stretch from the first one to the end of the
+ * last, with everything the layer has in between (so nothing is left lying under the symbol). With none picked it is
+ * every key on the layer. In time order.
+ */
+export function keysInSpan(layer: Layer, picked?: readonly Id[]): Cel[] {
+  const sorted = [...layer.cels].sort((a, b) => a.start - b.start);
+  const chosen = picked?.length ? sorted.filter((c) => picked.includes(c.id)) : [];
+  if (!chosen.length) return sorted;
+  const lo = chosen[0].start;
+  const hi = Math.max(...chosen.map((c) => c.start + c.length));
+  return sorted.filter((c) => c.start >= lo && c.start < hi);
+}
+
+/** How many of the keys in that span have something drawn (two or more is a real animation). */
+export function framesWithArt(doc: Doc, layer: Layer, picked?: readonly Id[]): number {
+  if (layer.kind !== 'pixel' && layer.kind !== 'vector') return 0;
+  return keysInSpan(layer, picked).filter((c) => drawingHasArt(doc.drawings[c.drawingId])).length;
+}
+
+/**
+ * Turns a pixel or vector layer's whole animation (or the stretch between the picked keys) into one looping symbol, on
+ * a draft. The symbol gets the same drawings with the same timing, so it plays the way the layer did, and one instance
+ * stands in their place on a vector layer, held for the same frames. Nothing moves on screen. Pixel layers work as
+ * `makePixelSymbol` does (trimmed to the painted part, the same pixel size, the instance on the layer or just above
+ * it). Vector layers keep their own layer and the keys outside the stretch. `origin` is the registration point for
+ * vector art (pixel art works it out from every frame, so the symbol turns around the middle of all of them).
+ * Returns undefined when there is nothing to take (or the layer is a bones layer).
+ */
+export function makeFramesSymbol(
+  doc: Doc,
+  layerId: Id,
+  opts: { celIds?: readonly Id[]; name?: string; origin?: { x: number; y: number } } = {},
+): { symbolId: Id; instanceId: Id; layerId: Id; frames: number; length: number } | undefined {
+  const at = doc.layers.findIndex((x) => x.id === layerId);
+  const layer = doc.layers[at];
+  if (!layer || (layer.kind !== 'pixel' && layer.kind !== 'vector') || (layer.kind === 'vector' && layer.rig)) return undefined;
+  const keys = keysInSpan(layer, opts.celIds);
+  if (!keys.length) return undefined;
+  const pixel = layer.kind === 'pixel';
+  const first = keys[0].start;
+  const end = Math.max(...keys.map((c) => c.start + c.length));
+  const inSet = new Set(keys.map((c) => c.id));
+  // A drawing another key (anywhere) shows too is copied rather than moved.
+  const elsewhere = new Set<Id>();
+  for (const list of allLayerLists(doc)) for (const l of list) for (const c of l.cels) if (!inSet.has(c.id)) elsewhere.add(c.drawingId);
+  const inner = new Map<Id, Id | null>();
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  const ps = pixel ? layer.pixelSize : 1;
+  for (const c of keys) {
+    if (inner.has(c.drawingId)) continue;
+    const d = doc.drawings[c.drawingId];
+    if (pixel) {
+      if (d?.kind !== 'pixel' || d.width <= 0 || d.height <= 0) {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      const t = trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0);
+      if (t.width <= 0 || t.height <= 0) {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      x0 = Math.min(x0, t.x);
+      y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x + t.width);
+      y1 = Math.max(y1, t.y + t.height);
+      const id = elsewhere.has(d.id) ? uid('p') : d.id;
+      doc.drawings[id] = { id, kind: 'pixel', ...(t.x ? { x: t.x } : {}), ...(t.y ? { y: t.y } : {}), width: t.width, height: t.height, pixels: new Uint8ClampedArray(t.pixels) };
+      inner.set(d.id, id);
+    } else {
+      if (d?.kind !== 'vector') {
+        inner.set(c.drawingId, null);
+        continue;
+      }
+      if (elsewhere.has(d.id)) {
+        const copy: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: plainShapes(d.shapes) };
+        for (const s of copy.shapes) {
+          s.origin = s.origin ?? s.id;
+          s.id = uid('s');
+        }
+        doc.drawings[copy.id] = copy;
+        inner.set(d.id, copy.id);
+      } else inner.set(d.id, d.id);
+    }
+  }
+  const made = keys.filter((c) => inner.get(c.drawingId));
+  if (!made.length || (pixel && !Number.isFinite(x0))) return undefined;
+  const origin = pixel ? { x: ((x0 + x1) / 2) * ps, y: ((y0 + y1) / 2) * ps } : { ...(opts.origin ?? { x: 0, y: 0 }) };
+  const cels: Cel[] = made.map((c) => {
+    const next = keys.find((k) => k.start === c.start + c.length);
+    return {
+      id: uid('c'),
+      start: c.start - first,
+      length: c.length,
+      drawingId: inner.get(c.drawingId)!,
+      ...(c.tween && next && inner.get(next.drawingId) ? { tween: JSON.parse(JSON.stringify(c.tween)) } : {}),
+      ...(c.autoHold && c.start + c.length < end ? { autoHold: true as const } : {}),
+    };
+  });
+  const symLayer: Layer = pixel
+    ? { id: uid('l'), name: 'Layer 1', kind: 'pixel', visible: true, locked: false, opacity: 1, pixelSize: ps, ...(layer.paletteLock ? { paletteLock: true } : {}), cels }
+    : { id: uid('l'), name: 'Layer 1', kind: 'vector', visible: true, locked: false, opacity: 1, cels };
+  const symbolId = uid('y');
+  const length = Math.max(1, end - first);
+  (doc.symbols ??= {})[symbolId] = { id: symbolId, name: opts.name ?? freeSymbolName(doc), layers: [symLayer], length, origin };
+  const inst = newInstance(symbolId, origin);
+  const held: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [inst] };
+  doc.drawings[held.id] = held;
+  const heldCel: Cel = { id: uid('c'), start: first, length, drawingId: held.id };
+  const rest = layer.cels.filter((c) => !inSet.has(c.id));
+  if (!pixel) {
+    layer.cels = [...rest, heldCel].sort((a, b) => a.start - b.start);
+    return { symbolId, instanceId: inst.id, layerId, frames: made.length, length };
+  }
+  const keepPixels = rest.length > 0 || !!layer.slices?.length;
+  if (keepPixels) {
+    layer.cels = rest;
+    const { id: _id, kind: _k, pixelSize: _p, paletteLock: _l, slices: _s, cels: _c, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+    const above: Layer = { ...look, id: uid('l'), name: `${layer.name} symbol`, kind: 'vector', cels: [heldCel] } as Layer;
+    doc.layers.splice(at + 1, 0, above);
+    return { symbolId, instanceId: inst.id, layerId: above.id, frames: made.length, length };
+  }
+  const { pixelSize: _p, paletteLock: _l, slices: _s, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+  doc.layers[at] = { ...look, kind: 'vector', cels: [heldCel] } as Layer;
+  return { symbolId, instanceId: inst.id, layerId, frames: made.length, length };
 }
 
 function plainShapes(shapes: Shape[]): Shape[] {
@@ -552,8 +695,30 @@ export const poseStats = { built: 0 };
  * Plain drawings come back unchanged.
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
+  const d = poseAtPlain(doc, layer, frame, depth);
+  return d ? moved(layer, frame, withTips(withRepeats(d))) : d;
+}
+
+/** `poseAt` with brush tips left as the lines they were drawn as, for code that looks lines up by their id. */
+export function poseAtPlain(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseCel(doc, layer, frame, depth);
   return d && layer.bind ? bindLayer(doc, layer, frame, d) : d;
+}
+
+/** Where a key's drawing sits at `frame`: its own offset, or part way to the next key's while a tween runs (missing = not moved). */
+export function celOffsetAt(layer: Layer, frame: number): CelOffset | undefined {
+  if (!canOffset(layer)) return undefined;
+  const cel = celAt(layer, frame);
+  if (!cel) return undefined;
+  const tp = cel.tween && frame > cel.start ? tweenProgress(layer, cel, frame) : undefined;
+  if (tp && (cel.offset || tp.next.offset)) return mixOffsets(cel.offset, tp.next.offset, tp.t);
+  return offsetOf(cel);
+}
+
+/** A layer's drawing moved by its key's offset (the drawing itself when there is none). */
+function moved(layer: Layer, frame: number, d: Drawing): Drawing {
+  const off = celOffsetAt(layer, frame);
+  return off ? offsetDrawing(d, off, layer.kind === 'pixel' ? layer.pixelSize : 1) : d;
 }
 
 function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
@@ -565,14 +730,21 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     if (m) return m;
   }
   if (!d || d.kind !== 'vector') return d;
-  if (!hasInstances(d)) return hasMoving(d) ? poseMoving(doc, cel, d, frame - cel.start, depth) : d;
+  // Lines that draw themselves: the trims blend between this key and the next, so the shapes are the in-between's.
+  const blended = cel.tween && cel.tween.kind !== 'shape' ? trimBlend(doc, layer, cel, d, frame) : undefined;
+  const src = blended ?? d;
+  if (!hasInstances(src)) {
+    if (!hasMoving(src)) return src;
+    if (!blended) return poseMoving(doc, cel, d, frame - cel.start, depth);
+    return { ...src, id: `${src.id}@moving${frame - cel.start}`, shapes: src.shapes.map((s) => poseMovingShape(doc, s, frame - cel.start, depth)) };
+  }
   if (depth > MAX_DEPTH) return undefined;
 
   const local = frame - cel.start;
   const tp = tweenProgress(layer, cel, frame);
   const to = tp ? doc.drawings[tp.next.drawingId] : undefined;
   const toInst = to?.kind === 'vector' ? to.shapes.filter(isInstance) : [];
-  const fromInst = d.shapes.filter(isInstance);
+  const fromInst = src.shapes.filter(isInstance);
   const pairs = tp ? pairInstances(fromInst, toInst) : [];
 
   // Each instance's own frame, plus the tween position, names this picture.
@@ -581,7 +753,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     const c = symbolContent(doc, s.symbolId);
     frames.push(c ? symbolFrame(s, local, c.length) : -1);
   }
-  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',') + (hasMoving(d) ? `|@${local}` : '');
+  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',') + (hasMoving(src) ? `|@${local}` : '');
   const world = worldOf(doc);
   let byKey = world.cels.get(cel);
   if (!byKey) world.cels.set(cel, (byKey = new Map()));
@@ -589,7 +761,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
   if (hit) return hit;
 
   let n = 0;
-  const shapes: Shape[] = d.shapes.map((s) => {
+  const shapes: Shape[] = src.shapes.map((s) => {
     if (!isInstance(s)) return poseMovingShape(doc, s, local, depth);
     const i = n++;
     const at = tp ? tweenInstance(s, pairs[i], cel.tween!, tp.t) : s;
@@ -601,6 +773,28 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
   // Keep a scrub through a long tween from growing this without end.
   if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
   return out;
+}
+
+/**
+ * The key's drawing with its lines' trims blended toward the next key's, at this frame; undefined when no line changes
+ * (so a plain drawing comes back as itself). Cached by progress, like the other in-betweens.
+ */
+function trimBlend(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: number): VectorDrawing | undefined {
+  const tp = tweenProgress(layer, cel, frame);
+  if (!tp || tp.t === 0) return undefined;
+  const to = doc.drawings[tp.next.drawingId];
+  if (to?.kind !== 'vector' || (!hasTrim(d) && !hasTrim(to))) return undefined;
+  const key = `trim|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}`;
+  const world = worldOf(doc);
+  let byKey = world.cels.get(cel);
+  if (!byKey) world.cels.set(cel, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit.id === d.id ? undefined : (hit as VectorDrawing);
+  const out = trimmedBetween(d, to, tp.t);
+  // A key that blends to nothing new is remembered too, as itself.
+  byKey.set(key, out ? { ...out, id: `${d.id}@${key}` } : d);
+  if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
+  return out ? (byKey.get(key) as VectorDrawing) : undefined;
 }
 
 /** A shape tween's in-between at `frame`, or undefined on the key's own frame (or with no end key to morph to). */
@@ -717,8 +911,8 @@ export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
 
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
-  const d = poseLiveCel(doc, layer, frame, live);
-  return layer.bind ? bindLayer(doc, layer, frame, d) : d;
+  const d = withRepeats(poseLiveCel(doc, layer, frame, live));
+  return moved(layer, frame, layer.bind ? bindLayer(doc, layer, frame, d) : d);
 }
 
 function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
@@ -746,7 +940,8 @@ function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Draw
 
 /** The document and playhead of the main stage, even while a symbol is open (for exports and thumbnails). */
 export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
-  return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
+  // Notes are left out: nothing made from the scene (an export, a package, a plugin's file) should carry them.
+  return doc.editing?.length ? { doc: withoutNotes(rootDoc(doc)), frame: doc.editing[0].frame } : { doc: withoutNotes(doc), frame };
 }
 
 // ---------------------------------------------------------------- moving shapes (text, particles)

@@ -1,10 +1,13 @@
 import { useStore } from '../../core/store';
+import { typedSize } from '../brushRange';
+import { useBrushRange } from './useBrushRange';
 import { Slider, Tip } from '../../canvas/controls';
 import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
 import { PixelOutlineOptions, useLayerKind } from '../../pixel/ToolOptions';
 import { DrawModeToggle } from './DrawModeToggle';
 import { MirrorOptions } from './MirrorOptions';
+import { LineStyleOptions } from './LineStyleOptions';
 
 export function PolyStarOptions() {
   const tool = useStore((s) => s.ui.tool);
@@ -12,6 +15,7 @@ export function PolyStarOptions() {
   const t = useToolSettings((s) => s);
   const star = tool === 'star';
   const pixel = useLayerKind() === 'pixel';
+  const range = useBrushRange(false);
   return (
     <div className="cv-options">
       <DrawModeToggle />
@@ -24,7 +28,8 @@ export function PolyStarOptions() {
       ) : (
         <Slider label="Sides" value={t.polygonSides} min={3} max={24} onChange={(v) => setToolSettings({ polygonSides: v })} />
       )}
-      {pixel ? <PixelOutlineOptions show={strokeOn} /> : strokeOn && <Slider label="Outline thickness" value={t.shapeStroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
+      {pixel ? <PixelOutlineOptions show={strokeOn} /> : strokeOn && <Slider label="Outline thickness" value={t.shapeStroke} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: typedSize(v) })} />}
+      {!pixel && strokeOn && <LineStyleOptions arrows={false} />}
       {!pixel && <MirrorOptions />}
       <Tip>{`Hold Shift to keep it even${star ? ' (equal arms)' : ' (all sides the same)'}. Hold Alt to draw from the middle.`}</Tip>
     </div>

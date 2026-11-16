@@ -4,7 +4,9 @@ import { QuillSays } from '../../ui/mascot';
 import { line } from '../../ui/mascot/lines';
 import { DiagnosticsSwitch } from '../../plugins/DiagnosticsSwitch';
 import { BetaPanel } from '../../beta/BetaPanel';
+import { UpdatePanel } from '../../update/UpdatePanel';
 import { checkMemory, startPenCheck } from './state';
+import { WheelCheck } from './WheelCheck';
 import '../tablet.css';
 
 export function DiagnosticsPage() {
@@ -13,12 +15,13 @@ export function DiagnosticsPage() {
     <div className="tb-page" data-testid="diagnostics-page">
       <h3>Diagnostics</h3>
       <p className="ui-pref-intro">Checks that find out what is going on when something is not working, and save a small file you can send to whoever is helping.</p>
-      <h4>Telling the makers</h4>
       <BetaPanel />
-      <h4>Plugins</h4>
+      <UpdatePanel />
       <DiagnosticsSwitch />
+      <h4>Mouse wheel</h4>
+      <WheelCheck />
       <h4>Pen and tablet</h4>
-      <QuillSays anim="talk" then="idle" size={80} whenHidden={<p>Pen or tablet acting up? A quick check walks you through it, then saves a small file with what it saw.</p>}>
+      <QuillSays surface="panel" anim="talk" then="idle" size={80} whenHidden={<p>Pen or tablet acting up? A quick check walks you through it, then saves a small file with what it saw.</p>}>
         <p>{line('pen.check.diagnostics')}</p>
       </QuillSays>
       <div className="tb-check-buttons">

@@ -9,7 +9,7 @@ The very first time, [Quill says hello](help:first-run) and helps you set things
 - **Doodle** is a wide, roomy page for sketching and cartoons.
 - **Square** is good for icons and posts.
 - **Game sprite** and **Tiny sprite** are pixel art, with big square pixels.
-- **Custom** lets you choose the size yourself.
+- **Custom** lets you choose the size yourself, and whether it moves. Settings you use again can be saved as your own **favourite** cards.
 
 Press **Open** if you already have a drawing to carry on with.
 
@@ -81,9 +81,21 @@ Add [speech, music and effects](help:sound), and let [lip sync](help:lip-sync) p
 
 ## Custom
 
-Choose a name, a width and a height, and how many frames a second it plays. Tick **Pixel art** to draw with big square pixels, then say how big each one is.
+Pick **Custom** (or run **New drawing, your own size** from the command palette) to choose everything yourself: a name, a width and a height, and whether it is **pixel art**.
+
+Tick **Add animation** if you want something that moves. **Frames a second** appears, and the drawing starts with some frames to play with. Leave it off for a single picture; you can add animation later.
 
 > Frames a second (fps) is how fast the drawing plays. 12 feels hand-drawn, 24 feels like film.
+
+**Your sizes stay put.** Tick **Pixel art** to have a look, untick it, and the width and height you typed are still there. Each mode keeps its own.
+
+**Custom remembers.** Next time you open it, it starts from the size and ticks you used last. The name always starts as **Untitled**, so two drawings never end up called the same by accident. If you would rather start fresh each time, change **Where Custom starts from** in **Preferences > Behaviour**.
+
+## Favourites
+
+Always make 1920 x 1080 at 24 frames a second? Set it up in Custom and press **Save as favourite**. Give it a name and it sits as a card beside Doodle and Square, so next time it is one press. A favourite made from an animation setup stays an animation.
+
+Point at a favourite to **rename** it, move it **earlier** or **later**, or **remove** it. Removing it can be undone from the message that appears. You can keep 12, and they follow you from drawing to drawing (and into a settings backup).
 
 ## Unsaved work
 
@@ -96,6 +108,8 @@ Point at something, or click into it, and press **F1**. Frameling opens the help
 
 Rest your mouse on a button for a moment. A small tip shows its name, what it does and its shortcut. **Learn more** opens its help page.
 
+Panels and settings that need a word of explanation have a small **?** beside them: point at it, or press it, to read the words. See [The ? icons](help:explanations).
+
 ## Help panel and help window
 
 The **Help** panel sits with the other panels, handy while you work. Press the little window button in it for a bigger view, with the contents down the side.
@@ -103,6 +117,24 @@ The **Help** panel sits with the other panels, handy while you work. Press the l
 ## Searching
 
 Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K** to search the commands and the help at the same time.`,
+  explanations: `Panels and settings used to explain themselves all the time. Now the words fold away behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
+
+## Read one
+
+Point at a **?** icon, or Tab to it, and the words appear in a tip. Press it (a click, or **Enter**) and the tip stays open, so you can read at your own pace and press **Learn more** to go to the full help page. **Esc** closes it.
+
+A panel's **?** sits in its title bar. A section inside a panel has its own beside its heading, and a setting that needs a word of explanation has one beside its name.
+
+## Keep them on show
+
+When you are new, the explanations sit on show where they always did, so you meet them once. After your first drawing Frameling offers to tuck them away, and you can say no. Any time you know your way round, tuck them away yourself: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it back on any time.
+
+## Good to know
+
+- A line that is a warning, or says what is going on right now ("The camera layer is hidden"), stays on show. Only the "what is this for" lines move.
+- A screen reader reads the words when you reach the **?**, so they are there for everyone.
+
+See also [Using help](help:using-help), [Panels](help:panels) and [Preferences](help:preferences).`,
   'command-palette': `Can't remember where something lives? Press **Ctrl+K** (**Cmd+K** on a Mac), or **Ctrl+Shift+P**.
 
 ## How
@@ -111,11 +143,11 @@ Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K
 2. Use the **up and down arrows** to move through the results.
 3. Press **Enter** to do it, or **Esc** to close.
 
-Each command shows its shortcut on the right, so you can learn it for next time. Greyed out ones can't be used right now.
+Each command shows its shortcut on the right, so you can learn it for next time. Greyed out ones can't be used right now: point at one, or click it, and it tells you what to do first.
 
 Help pages show up in the list too. Choose one to read it.
 
-> With nothing typed, the list starts with the commands you used last.`,
+> With nothing typed, the list starts with the commands you used last. Until you've used a few, it shows **Try these** instead: new drawing, open, save, export, undo and help, the things most people reach for first.`,
   'keyboard-shortcuts': `Shortcuts are the quick way to do things. **Mod** means **Ctrl** on Windows and Linux, and **Cmd** on a Mac.
 
 ## See them all
@@ -161,10 +193,12 @@ The pages down the left include:
 - **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
-- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read. [Quill can suggest a size](help:interface-size) for each screen.
-- **Your settings** (on the General page): **Back up...** saves everything you have set into one small file, and **Put a backup back...** reads one in and starts Frameling again. Handy for a new computer.
+- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read. [Quill can suggest a size](help:interface-size) for each screen, and a [small screen](help:small-screens) gets a tighter layout by itself.
+- **Your settings** (on the General page): **Backup** saves everything you have set into one small file. **Restore** reads one back in: it tells you which backup it is and what it will replace, and only goes ahead when you say yes. Then it says what changed and starts Frameling again. Handy for a new computer.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
+
+**A switch opposite a title** turns a whole part on or off: **Streaming**, **Snapping**, and **Audience features** inside Streaming. Off, the page says in plain words what that means, and nothing you set is lost.
 
 Changes happen straight away and are remembered for next time.`,
   'preferences-search': `The box at the top of **Preferences** finds a setting when you only half remember it. Open Preferences (**Ctrl+,**), or run **Search settings...** from the command palette, and start typing. The box is ready as soon as the window opens.
@@ -189,6 +223,31 @@ A typo still finds it (**stablizer**), and colour and color, stabiliser and stab
 Then it says so, and offers to search the help for the same words instead. The answer may be a way of drawing and not a setting: **symmetry** is a [drawing tool](help:mirror-drawing), for example, not something in Preferences.
 
 Good to know: the command palette (**Ctrl+K**) finds these settings too, below the commands and help. Press one and Preferences opens right at it. See also [Preferences](help:preferences) and [keyboard shortcuts](help:keyboard-shortcuts).`,
+  'small-screens': `On a laptop screen the usual layout leaves your drawing a small patch of room, and the tool rail can run off the bottom. So when Frameling sees a small screen, it **tightens up** by itself: the drawing gets more of the window, and everything is still there.
+
+## What changes
+
+- The tool buttons are one size smaller, and sit four across, so every group shows without scrolling.
+- The side panels and the timeline start a little smaller, and the top and bottom bars are a bit slimmer.
+- The panels on the right sit closer together on their rail, so all of them show.
+
+Nothing is taken away. A panel you dragged to a size of your own keeps it, and a tool size you picked yourself (Small or Large) stays as it is.
+
+## What counts as small
+
+Under about 1450 across or 990 down, counted the way Frameling draws: a computer that scales a 4k laptop to 250% shows 1536 x 864, which is small. Making the [interface size](help:interface-size) bigger can make a screen count as small too. Full HD at 100% and bigger screens keep the roomy layout.
+
+## Say yes or no
+
+The first time on a small screen, a message says it tightened up, with a **Change** button. Press it to keep the roomy layout for that screen instead. Frameling remembers the answer for each screen, so moving the window to another screen never asks twice, and a bigger screen gets the roomy layout back by itself.
+
+## Change it any time
+
+Search the command palette (**Ctrl+K**) for **Tighten the layout for a small screen**, or find it in the **View** menu. It flips between tight and roomy for the screen you're on. The answers are also listed in **Preferences** under **Behaviour**.
+
+Good to know: a small timeline scrolls sideways when the animation is longer than it shows. That's the timeline, not the page.
+
+See also [workspaces](help:workspaces) and [panels](help:panels).`,
   'interface-size': `On a very sharp screen, like a 4k drawing tablet, everything can look tiny. **Interface size** draws the whole of Frameling bigger (or smaller): menus, panels, the timeline and the canvas, all still crisp.
 
 ## Set it yourself
@@ -209,6 +268,7 @@ Search the command palette (**Ctrl+K**) for **Suggest an interface size for this
 
 - He only offers on screens that hold a lot of pixels *as the computer shows them*. A 4k panel the computer already shows at 200% looks fine, so he stays quiet.
 - He never suggests a size that leaves the window too small for the panels.
+- If you set it high on a small screen, the window is short of room, so Frameling makes room for the drawing first. The panels get narrower, then fold to their slim rails, and menus that don't fit gather under **More** at the end of the menu bar. Your layout isn't changed: a bigger window, or a smaller interface size, brings it all back.
 - Every answer is listed in **Preferences, Behaviour** while Frameling is running, and the slider always has the last word.
 
 See also [Preferences](help:preferences) and [Behaviour choices](help:behaviour).`,
@@ -241,7 +301,7 @@ Make the **AppImage** executable (right-click, **Properties**, **Allow executing
 - A message that says no (or that something failed) has a tiny Quill on it.
 - On a new empty page he leaves a [faint line](help:empty-page) about where to start, and after your first drawing he says what to try next.
 
-If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up.
+If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up with a stretch, then settles. See [Quill dozing off and waking up](help:quill-naps).
 
 ## Hiding Quill
 
@@ -273,25 +333,38 @@ He only says it a few times in all, and never again once you've pressed either b
 - **Help > Gentle nudges on or off** flips both at once.
 
 Good to know: the line shows on plain drawings, not on pixel art or tile maps, which have their own welcome. It says **The brush is ready** with the Brush or Pencil picked, and asks you to pick a tool when something else is.`,
-  behaviour: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling does the usual thing and tells you in a little message at the bottom, with a **Change** button. Press it and you pick the other way (and Frameling redoes it that way for you). Whichever you pick is remembered.
+  behaviour: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling does the usual thing and tells you in a little message at the bottom, with a **Change** button. Press it and you pick the other way, and Frameling redoes it that way for you. Whichever you pick is remembered.
 
-Frameling only says something when the answers would really differ. With one layer, adding a frame on every layer or just this one is the same thing, so nothing is said.
+It only says something when the answers would really differ. With one layer, adding a frame on every layer or just this one is the same thing, so nothing is said.
 
 ## When it stops and asks
 
-A few choices can take something with them, such as taking a frame off every layer, or bringing back an older version. Those still stop and ask, with a short explanation of each option. Tick **Remember my choice** and it won't ask again. Untick it to be asked again next time.
+A few choices can take something with them, such as taking a frame off every layer, or bringing back an older version. Those stop and ask, with a short explanation of each option. Tick **Remember my choice** and it won't ask again. Untick it to be asked next time.
+
+Press **Learn more** on a question and the question steps aside, so you can read the help before you decide. **Esc** brings it back just as you left it.
+
+## Closing a question
+
+Close one with **Esc** and Frameling does what closing always does: the safe answer, never one that could lose something. It asks again next time. Close the same question twice in a session and it stops asking until you restart, says so in a message, and the message has **Ask me again**. Questions that could lose work always ask.
 
 ## Don't want to be asked at all?
 
-The first question you meet has a button, **Use the usual answers for everything**. It sets every choice to what Frameling does to start with, so nothing asks again (the few that could lose something still do). The same button sits at the top of **Preferences > Behaviour**.
-
-## Changing your mind
-
-Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there, even after you've used the usual answers. Pick a different answer, or pick **Ask me** to be asked again next time.
+The first question you meet has a button, **Answer all 25 questions the usual way and stop asking** (the number is however many are left). It sets each one to what Frameling does to start with, except the few that could lose something, and the message after has an **Undo**. The same button sits at the top of **Preferences > Behaviour**, where every answer stays listed. Pick **Ask me** on any of them to be asked again.
 
 ## Dialogs
 
-The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer, so it does the same thing every time after that. Change your mind in **Preferences > Behaviour**. A press that only just misses the dialog's edge never counts either way: there are 24 pixels of dead space all round, so a near miss does nothing at all. **Escape** and the close button always work.`,
+The first time you press the dim area beside a dialog, Frameling asks whether that should close it, and remembers your answer. Change your mind in **Preferences > Behaviour**. A press that only just misses a dialog's edge never counts either way: every dialog has 24 pixels of dead space all round it, so a near miss does nothing at all. The save question ignores the dim area completely. **Esc** and the close button always work.`,
+  streaming: `The **Streaming** tab in Preferences has everything about streaming and sharing your screen, in one place. Open **Preferences** and pick **Streaming**, or press **Ctrl+K** and type "streaming".
+
+**New to streaming with Frameling?** Press **Show me how** at the top of the tab for the whole route, from a Twitch channel to a first vote.
+
+**Streaming tools.** The switch opposite the **Streaming** title, at the top right, is for people who stream. Switch it off if you never do, and dares, votes, the prompt jar, Twitch, the stream overlay and the rest go out of sight, and the **Streaming** menu leaves the menu bar. Nothing is lost. **Choose one by one** opens each tool with its own settings, and your usual answers to the questions they ask.
+
+**Sharing your screen.** These stay on the tab even when the streaming tools are tucked away, because they are for anybody who shares a screen: **Stream-safe mode**, **Going live with OBS**, and the capture view (its background, mouse pointer and size). Their commands are in **View > Sharing your screen**.
+
+**The way back.** The switch on this tab brings the streaming tools back. So does **Bring back the streaming tools** in the palette (Ctrl+K), and in **View > Change the menus and features**.
+
+See also [Turning parts on and off](help:features), [Audience features](help:audience) and [Stream-safe mode](help:stream-safe).`,
   features: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
 
 ## Switching one on or off
@@ -299,6 +372,20 @@ The first time you press the dim area beside a dialog, Frameling asks whether th
 Open **Preferences** (**Ctrl+,**) and choose **Features**, or search the command palette (**Ctrl+K**) for **Features**. Each feature has a switch and a line about what it does. Changes happen at once. You never need to restart.
 
 For example, turning **Particles** off also takes its panel and commands out of the menus and the command palette. Turn it back on and they return.
+
+## Getting them all back
+
+If some are off and you want the lot, press **Turn everything back on** at the bottom of the list, or search the command palette (**Ctrl+K**) for **Turn every feature back on**. Both only work while something is off.
+
+## The streaming tools are one switch
+
+Chat dares, votes, the prompt jar, Twitch, the stream overlay and the rest are for people who stream, so they have a tab of their own, **Preferences > Streaming**, with one switch opposite its title. (**Features** has a button that takes you there.) Switch it off and all of them go out of the menu bar, the palette, Preferences and the help index. The Stream-safe, OBS and capture view settings stay, for anybody who shares a screen. Switch it on and they all come back. See [The Streaming tab](help:streaming).
+
+You can also press **Ctrl+K** and type "stream" for **Tuck away the streaming tools** or **Bring back the streaming tools**. The answer to **Do you stream?** is on the Streaming tab too.
+
+## Quill's hello puts some away
+
+On its last page, Quill's hello can tuck away the parts your picks don't need, the streaming tools included unless you picked **Streaming it live**. It says which, and **Bring them back** on the message that follows undoes it. They show here as switched off like any other, so it's the same way back. See [Quill's hello](help:first-run).
 
 ## Your drawings are safe
 
@@ -339,7 +426,9 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. Every theme sits in one grid
 - **Use it at night**: it becomes your dark theme.
 - **Use it for both**: the same colours whatever the time.
 
-The change is instant. Your two wear a badge in the corner of the card, a sun by day and a moon at night, with a gold edge round them. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
+The same menu has **Edit this theme** (your own themes) and **Make a copy to change** (any theme).
+
+The change is instant. Your two get a gold edge, a tick and a yellow splotch in the top corner: the sun on the left for day, the moon on the right for night. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
 
 ## Dark, light and System
 
@@ -348,8 +437,6 @@ The **Mode** switch decides which group is showing:
 - **Dark** always uses your dark theme.
 - **Light** always uses your light theme.
 - **System** follows your computer. When your computer goes dark in the evening, Frameling switches to your dark theme by itself, and back to your light theme in the morning.
-
-So you can have a pastel theme by day and a cosy dark one at night, without touching anything.
 
 ## The themes
 
@@ -372,7 +459,7 @@ Chosen things (the tool, the tab, a switch that is on) are gold in most themes. 
 
 ## Easier to see
 
-**Lantern Night** (dark) and **Sunbeam** (light) have extra contrast: brighter words and stronger borders. Try them if small text is hard to read.
+**Lantern Night** and **Sunbeam** have brighter words and stronger borders. Try them if small text is hard to read.
 
 ## Textures
 
@@ -384,12 +471,12 @@ Themes are only colours. [Cosy or Crisp](help:look-and-feel) is separate, so you
 
 ## Make it yours
 
-Press **Make a copy to customise** on any card to [make your own theme](help:make-your-own-theme).`,
+Press any card, then **Make a copy to change**, to [make your own theme](help:make-your-own-theme).`,
   'make-your-own-theme': `You can't break anything: you always work on your own copy, and the built-in themes stay as they were.
 
 ## Start
 
-Open **Preferences, Themes**, and press **Make a copy to customise** on a theme you almost like. (Or press **Make my own theme** to copy the one you're using.) The editor opens and your copy is switched on, so the whole app shows it as you work.
+Open **Preferences, Themes**, and press a theme you almost like, then **Make a copy to change**. (Or press **Make my own theme** to copy the one you're using.) The editor opens and your copy is switched on, so the whole app shows it as you work.
 
 ## Change colours
 
@@ -414,7 +501,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 - **Duplicate** makes another copy to try something different.
 - **Delete** removes your theme. If it was in use, Frameling goes back to the usual one.
 - Rename it any time by typing in the name box at the top.
-- A theme is **for dark mode** or **for light mode**. Change that with the switch under the picture.
+- A theme is **for dark mode** or **for light mode**: say which with the switch under the picture. It tells Frameling how to draw shadows, hover shades and the system's own bits (scrollbars, form boxes), and which of your two slots a theme goes to when you just press **Use**. It never moves your picks: a light theme you set for night stays your night theme.
 
 ## Share a theme
 
@@ -451,7 +538,7 @@ A shared workspace moves panels around (including any [stacked groups](help:pane
 
 ## Reset
 
-**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. Your tool arrangement is separate: **Put the tools back** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
+**View > Panel windows and tools > Put the panels back** puts the panels back where the current workspace began, with **Undo** (see [Put the panels back](help:panels-back)). Typing "reset layout" in the command palette finds it too. Your tool arrangement is separate: **Put the tools back** (see [Arrange your tools](help:tool-arrange)).
 
 See also [Panels](help:panels).`,
   properties: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
@@ -460,13 +547,15 @@ Prefer it another way? **Preferences**, **General**, **Right side** offers **Rai
 
 ## What shows
 
-- **Tool options** and **Colours** are always there while you draw.
-- Select a **symbol** and its size, turn, fade and in-betweens (**Symbol and motion**) show, with **Effects** for its layer. Selected things come first.
+- **Colours** are always at the top, so your fill and stroke are in the same place whatever you pick. **Tool options** come just below.
+- Click a clip on the timeline and its **Clip** settings lead, until you press on the canvas or pick another layer or tool. Properties follows what you picked last.
+- Select anything and **Position and size** and **Align and space out** show, with **Effects** for its layer. Select a **symbol** and its fade, colour wash and in-betweens (**Symbol and motion**) join them. What is about your pick comes straight after Colours.
+- Rather have what you picked lead, with Colours below it? Change **What leads the Properties panel** in **Preferences > Behaviour**.
 - Pick the **Text** tool or select text and the text settings show. Select particles, pick the camera layer or the **Bone** tool and theirs do.
 
-## Also here
+## Where's the rest?
 
-Sections that don't apply yet wait at the bottom under **Also here**, each with what brings it up ("Select particles on the canvas"). Press one to open it anyway.
+Properties only lists what's here now, so it stays short. A section that doesn't apply yet (**Palette**, **Clip**, **Particles** and so on) turns up on its own when you do the thing it's for. Not sure what? Open **Panels** on the rail: every section is there with a line saying when it shows up ("Shows up when you pick a pixel layer"). Press one to bring it up straight away.
 
 ## Fold sections
 
@@ -488,8 +577,9 @@ Want a section somewhere else? Drag its name onto the left or bottom zone. See [
 The right side has a **rail** down its edge: an icon with a name for every place there, so you can see everything at a glance.
 
 - **Properties** comes first. It holds the settings for what you're doing now. See [Properties](help:properties).
-- Below it are the panels you open now and then: **Library**, **Clip flow**, **Lip sync**, **Quests** and **Help**. Press one to open it, and press it again to fold the side away.
-- **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Type to find one. Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
+- Below it are the panels you open now and then: **Layers**, **Artboards**, **Preview**, **Quests**, **Help** and, last of all, **Library**. Press one to open it, and press it again to fold the side away.
+- **Clip flow** and **Draw on** start put away, to keep the rail short. Find them in **Panels** or the command search.
+- **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Sections of Properties (**Palette**, **Clip**...) say when they show up, so you can find them before you need them. Type a name or what you're doing ("pixel" finds **Palette**). Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
 
 ## Move
 
@@ -505,7 +595,7 @@ On the left and bottom, when a zone gets narrow, the other tabs shrink to just t
 
 ## Resize
 
-Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus: **Shift** makes bigger steps, **Home** and **End** go to the smallest and largest, **Enter** puts it back to the usual size.
+Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus (**Shift** for bigger steps, **Enter** for the usual size).
 
 ## Collapse
 
@@ -513,13 +603,13 @@ Press the little arrow at the end of a tab bar, or at the bottom of the rail, to
 
 ## Show and hide
 
-Press the **x** on a tab (or by a panel's name on the right) to close it, or press **Delete** while its tab has the keyboard. Bring it back from **Panels** or the **View** menu. Panels with a tick are showing.
+Press the **x** on a tab (or by a panel's name on the right) to close it, or press **Delete** while its tab has the keyboard. Bring it back from **Panels** or the **View** menu.
 
 ## With the keyboard
 
-**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs (up and down on the rail), **Home** and **End** jump to the first and last.
+**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs, **Home** and **End** jump to the ends.
 
-Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
+Your layout is remembered. Save arrangements as [workspaces](help:workspaces), or [put the panels back](help:panels-back).`,
   'panel-groups': `Sometimes you want two panels in view at once, not one behind the other. Give each its own **group**: a side can hold up to four, one over the other (or side by side along the bottom and top), and each group has its own tabs.
 
 ## Make a group
@@ -551,6 +641,36 @@ The right side has one rail for all its groups. Each group gets a heading on the
 Groups are part of the layout, so they are saved in your [workspaces](help:workspaces) and travel in the files you share. A layout from an older Frameling opens as one group per side, just as it was.
 
 See also [Panels](help:panels).`,
+  'panels-back': `Dragged the panels about, closed a few, stacked some and renamed others, and now it's a muddle? **Put the panels back** sets the workspace you're in the way it comes, in one go.
+
+**Do it:** right-click a panel's tab (or a window's title) and choose **Put the panels back**. It's also in **View**, **Panel windows and tools**, and in the command search. A message says it's done, and has **Undo** on it, because it changes more than one thing.
+
+## What it puts back
+
+- Which panels are open and which are closed.
+- Which group each panel sits in, and the order of the tabs in it.
+- How wide or tall each side is, and how a side is shared between its groups.
+- A side you folded away, opened again.
+- Any name you gave a panel or a window.
+
+## What it leaves alone
+
+- The tool strip. **Put the tools back** does that: see [Change the tools](help:tool-builder).
+- Your other workspaces. Only the one you're in changes.
+- Which tab is in front, and your drawing.
+- Anything locked. If the panels are locked, it says so and does nothing until you unlock them: see [Lock the tools and panels](help:lock-layout).
+
+## Panels in a window of their own
+
+The first time there is one, Frameling asks whether to dock it too, then remembers. **Dock them too** sends every panel back where the workspace puts it. **Leave the windows alone** keeps them where they are, and **Dock every window back** does those on their own. Change your answer any time in **Preferences**, **Behaviour**.
+
+## Good to know
+
+- One of your own workspaces goes back to how you saved it. One that comes with the app goes back to how it comes.
+- With nothing to put back, it says so instead of doing nothing quietly.
+- The **Reset layout** button on the Workspaces page also asks about the tools.
+
+See also [Panels](help:panels), [Floating windows](help:floating-windows) and [Workspaces](help:workspaces).`,
   'floating-windows': `Any panel can float over the canvas in a window of its own. Handy for keeping the **Preview** next to your drawing, or a panel out of the way.
 
 ## Pop a panel out
@@ -567,15 +687,19 @@ Drag the title bar to move a window. Pull any edge or corner to resize it, or us
 
 ## Dock it again
 
-Drag a tab, or a whole window by its title bar, towards a side of the canvas. Bands light up to say **Dock left**, **Dock right**, **Dock at the top** and **Dock at the bottom**. Let go on one, or on another zone's tabs, to dock there. **Dock back** on the window's bar sends its panels home.
+Drag a tab, or a whole window by its title bar, towards a side of the canvas. Bands light up to say **Dock left**, **Dock right**, **Dock at the top** and **Dock at the bottom**. Let go on one, on another zone's tabs, or anywhere over a zone's panels, to dock there. **Dock back** on the window's bar sends its panels back to the side, group and place they came from. There is no list of sides in the tab's menu: dragging is the way, and the command search has them for the keyboard.
 
 ## Names
 
 Right-click a tab and choose **Rename** to call a panel what you like. Double-click a window's name to name the window. Both are kept in your workspace.
 
+## Lock them in place
+
+Right-click a tab and choose **Lock the panels**, and no slip of the mouse can move them. See [Lock the tools and panels](help:lock-layout).
+
 ## The tools
 
-The tool strip has a small grip at its top. Drag it to float the tools, or onto a side of the canvas to put them there, even along the top or bottom. Right-click the strip for the same as a list. You can also drag tools into other groups, see [Arrange your tools](help:tool-arrange).
+The tool strip has a small grip at its top. Drag it to move the strip: [Move the tool strip](help:tool-move) says where it can go.
 
 ## Room to draw
 
@@ -586,33 +710,108 @@ The tool strip has a small grip at its top. Drag it to float the tools, or onto 
 Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it, and **Alt** with the arrow keys makes it bigger or smaller (right and down grow it, left and up shrink it). **Shift** makes bigger steps, and **Alt** with **Enter** goes back to the usual size. The new size is read out. The window's menu has **Make it bigger**, **Make it smaller** and **Back to the usual size** too. Every move is also in the command search.
 
 See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
+  'drawing-mode': `At the top of the tool strip is a switch: **Pixels** on the left, **Vectors** on the right. It lights the kind of layer you're drawing on, so you can always see whether your tools paint pixels or make shapes.
+
+## Why it's there
+
+The layer decides what your tools can do, not the workspace. The **Pixel** workspace is only a layout: a big palette and a real-size Preview. Pick a vector layer in it and Shade, Dither and Spray have nothing to work on. The switch shows you that, without opening the Layers panel.
+
+## Change side
+
+Press the other side. Nothing moves: the switch just says what your next stroke is. Draw, and the stroke lands on a layer of that kind right next to the one you are on, made for you if it is not there. That is [Draw pixels or vectors anywhere](help:draw-anywhere). If the layer already has its other half, pressing the side goes to it.
+
+A tile or camera layer has no other half, so pressing a side goes to your top layer of that kind, or offers to make one (asked once, then remembered). A new pixel layer copies the square size of your other pixel or tile layer, else **New pixel layer size** in **Preferences, General**, and it tells you which.
+
+## Pick a tool and it follows
+
+Shade, Dither, Spray, the Magic wand and Slices only work on pixels, so picking one flips the switch to **Pixels** and your next stroke goes on a pixel layer beside the one you are on. Edit points and Shape hints flip it to **Vectors**. The Lasso becomes the Pixel lasso instead. Tools that work on both leave the switch alone.
+
+## When tools are off
+
+The switch has a gold outline in the Pixel workspace on a vector layer, which is when missing tools come as a surprise. A group that lost some says so beside its name (**3 off**). Rest on the lit side to read which tools they are.
+
+**Hide them** leaves the tools off the strip, so it's shorter. **Grey them out** keeps every tool where it is, dimmed. Right-click the switch for that, or use **Preferences, General**.
+
+**From the keyboard:** search for **Draw pixels** or **Draw vectors** in the command palette. **Go to a pixel layer** and **Go to a vector layer** really go there.
+
+**Good to know:** on a strip that is one button wide, or lying along the top, the switch shrinks to two icons, with a gold number on the side that has the missing tools. On a tile or camera layer neither side is lit.
+
+See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-workspace) and [Workspaces](help:workspaces).`,
   'tool-strip': `The strip down the left holds your tools, two across. The one with the gold glow is the one you're using.
 
 ## Groups
 
-Tools that belong together sit together, with a thin gap between groups: drawing tools, colour and pixel extras, shapes, select and pen, rig and motion, and the view tools (hand and zoom). A tool that came from a plugin and has no group yet goes in **Other**.
+Tools that belong together sit together under a small name: **Draw**, **Colour**, **Shapes**, **Select**, **Pen and edit**, **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
+
+The strip starts wide enough to read every name on one line. A longer name of your own drops to a second line before anything is cut short.
+
+For a slimmer strip, turn off **Tool group names** in **Preferences, General**. The groups stay, as thin gaps.
 
 ## Choose a tool
 
-Press its button, or press its key. Rest on a button to see the key.
+Press its button or its key. Rest on a button to see the key.
 
 ## The strip stays put
 
-Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. If you'd rather see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General** (or in [Change the tools](help:tool-builder)). Then they wait where they sit, and resting on one says why.
+Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
-A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
+While they're out of sight, the switch at the top shows which kind of layer you're on. Press the other side to jump to a layer they work on, or right-click it to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
 
-Tilemap and camera layers are different jobs, so on those the strip shows only the tools that work there.
+A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button that picks the one for the layer you're on, so changing layer never loses your lasso.
+
+Tilemap and camera layers show only the tools that work there.
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider, so the group names show whole. Right-click the strip to move it to another side, or to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider or narrower, and double-click the edge to fit your longest name. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
 
 ## One button per group
 
-If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there.
+For a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider. A width you pulled it to is asked about once, when you change style: keep it, or start at the style's usual width.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
+  'tool-move': `Pick the tool strip up by the little grip at its top and carry it. Where it would land lights up as you go, and letting go puts it there. There's no menu to hunt through.
+
+## Where it can go
+
+- **Any side:** a band lights up along the left, the right, the top and the bottom of your work area. Let go on one and the strip docks there.
+- **Over the canvas:** the canvas gets an outline. Let go there and the strip floats where you let go, as a little window you can drag about.
+- **Back where it was:** the band for the side it came from says **Back on the left, as it was** (or whichever side it was). A floating strip you pick up can go back there too, with the same width and the same arrangement of tools.
+
+## Changed your mind?
+
+Let go anywhere that isn't a band or the canvas (over the panels, the top bar, or off the window) and the strip goes back to exactly where you picked it up. So does **Esc**. Nothing is left floating by accident.
+
+## Good to know
+
+- The strip's inner edge, the thin line beside the canvas, is for making it wider. Drag that to change the width, and the grip to move it. They don't get in each other's way.
+- With the keyboard: while it floats, press the arrow keys on the grip to nudge it. **Dock the tools back where they were** is in the command search, and so is every side.
+- Panels move the same way: drag a tab to a side, or out over the canvas for a window. See [Floating windows](help:floating-windows).
+
+See also [The tool strip](help:tool-strip) and [Change the tools](help:tool-builder).`,
+  'lock-layout': `Lock the tool strip, the panels, or both, and nothing about them moves until you unlock them. It is for the day a slip of the mouse drags the strip to the other side, or a panel off into a window.
+
+**Lock the tools:** right-click the tool strip and choose **Lock the tools**, or search for it. The grip and the width edge simply go. The strip can't be moved to another side, made wider, rearranged or changed, and **Change the tools** won't open. **Put the tools back** says so and leaves it alone.
+
+**Lock the panels:** right-click a panel's tab and choose **Lock the panels**. No dragging a tab, moving or resizing a window, pulling a side wider, closing, renaming or regrouping.
+
+**Unlock:** the same menu says **Unlock the tools** or **Unlock the panels**. Pressing **Unlock** on the message that appears does it too.
+
+## What still works
+
+Everything you actually do. Every tool draws, every panel is still there and works, the menus still open and the help still answers. Opening a panel from the **View** menu still works. Only the arranging stops.
+
+## Why something is greyed
+
+Things that invite a move, like the strip's grip and the edges of windows, go while it is locked, and nothing stands in for them. A locked menu entry stays on show but greyed, with a line under it saying it is locked, and a command or key that would move something says what the lock stops and how to undo it.
+
+## Good to know
+
+- The first time something moves by accident, Quill offers a **Lock it** button on the spot. He only says it once.
+- Each [workspace](help:workspaces) has its own lock. It goes with the workspace when you save or share it.
+- **Put the panels back** and **Reset layout** leave a locked strip alone, and won't run at all while the panels are locked.
+
+See also [Change the tools](help:tool-builder), [Panels](help:panels) and [Floating windows](help:floating-windows).`,
   'tool-builder': `**Change the tools** lets you set the strip up the way you work: name your groups, make your own, put away the tools you never touch and fold a whole group into one button. Nothing is lost: every tool still has its key and its place in the command search.
 
 **Open it:** **View > Change the tools > Change the tools**, or right-click the strip, or search for it. A gold edge shows the strip is open for changes, and **Done** (or **Escape**) closes it.
@@ -627,11 +826,13 @@ Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
 
 **Fold a group:** press the little arrow beside its name. The group becomes one button with a corner mark; press and hold it for the rest. **Rail style** in the panel folds every group at once, and your own folds are still there when you go back to **Every tool**.
 
-**Button size** is small, medium or large. **Group names** shows or hides the names above the groups (it is on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
+**Button size** is small, medium or large. **Group names** shows or hides the names above the groups (on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
 
-**Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip shows more of each group's name and fits more buttons across. Double-click the edge to fit the longest name; double-click again for the usual width. A name that still doesn't fit ends in dots and never wraps. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
+**Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip fits more buttons across, and room for longer names of your own. Double-click the edge to fit the longest name; double-click again for the usual width. A name that doesn't fit drops to a second line first. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
 
 **Put the tools back** undoes all of it for this workspace, and width, size, names and style too. The message that follows has **Undo**.
+
+**Lock it:** right-click the strip and choose **Lock the tools** and none of this can change by accident. See [Lock the tools and panels](help:lock-layout).
 
 Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools and strip width, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
   'tool-arrange': `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
@@ -672,10 +873,11 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
   menus: `The menu bar is along the top. Press a name to open it, then press a choice.
 
 - A **tick** means it is switched on.
-- **Greyed** choices can't be used right now (nothing to undo yet, for example).
+- **Greyed** choices can't be used right now (nothing to undo yet, for example). Point at one, or click it, and it says what would turn it on.
 - Shortcuts are shown on the right.
-- **Tools and layers**, **Pixel tools** and **Frames and motion** are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
-- A **small arrow** on the right opens a smaller menu beside it (Snapping and Panels, in View, for example).
+- Along the top: **File**, **Edit**, **View**, **Tools**, **Layers and artboards**, **Animation**, **Rigging**, **Effects** and **Help**. The ones in the middle are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
+- A **small arrow** on the right opens a smaller menu beside it. Related things are grouped that way: Snapping and Panels in View, Layer, Artboards and Tiles in Layers and artboards, Play range and Hold a drawing in Animation, Plugins in Edit.
+- You can **move, rename, hide and add** entries, and make menus of your own: see [Change the menus](help:change-the-menus).
 - A menu that is taller than the window **scrolls**: use the mouse wheel, or the arrow keys.
 
 With a menu open, use the **arrow keys** to move, **Home** and **End** to jump to the first or last choice, **Enter** to choose, and **Esc** to close.`,

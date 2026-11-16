@@ -7,7 +7,9 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
-import { currentWorkspace, dock, railOf, railWidthOf } from './dock';
+import { useLocked } from './lockState';
+import { fitRailSaved, fitToolSize, useCompact } from './screenFit';
+import { currentWorkspace, dock, inPixelWorkspace, railOf, railWidthOf } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { useEdgeDrag } from './dockShared';
 import { menuPoint, openDockMenu, toolsMenu } from './dockMenus';
@@ -15,15 +17,18 @@ import type { DockZone } from './dockModel';
 import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
-import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, whyOff, type RailTool, type ToolGroup } from './toolArrange';
+import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, waitingFor, waitingWords, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
-import { acrossFor, clampRailWidth, minRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
+import { acrossFor, buttonsRailWidth, clampRailWidth, minRailWidth, naturalRailWidth, switchRoom, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
-import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
+import { pairOf } from '../core/pairs';
+import { whyNoHalf } from '../timeline/pairs';
+import { sideDesc, sideTip, useDrawKind, flipSideFor, modeLine, offInGroup, pressSide, SIDES, sideOf, sideWord, tellAboutOffLayer, topLayerOf, type Side } from './drawingMode';
+import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, layerLineMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
-  return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? null);
+  return useDrawKind();
 }
 
 /** The tool rail where it is docked: it renders in the slot of the side it was put on, and nowhere else. */
@@ -40,10 +45,12 @@ export function ToolSlot({ at }: { at: DockZone }) {
 function RailSplitter({ at }: { at: 'left' | 'right' }) {
   const saved = dock.use((d) => railWidthOf(d));
   const style = usePrefs((p) => p.toolRail);
-  const size = usePrefs((p) => p.toolSize);
+  const compact = useCompact();
+  const size = fitToolSize(usePrefs((p) => p.toolSize), compact);
   const look = usePrefs((p) => p.look);
+  const names = usePrefs((p) => p.toolNames);
   const sizes = railSizes(look, size);
-  const width = railWidthNow(saved, sizes, style);
+  const width = railWidthNow(fitRailSaved(saved, sizes, compact), sizes, style, names);
   // A rail on the left grows when pulled right; on the right, when pulled left.
   const drag = useEdgeDrag({ horizontal: false, sign: at === 'left' ? 1 : -1, size: () => width, set: (n) => setToolRailWidth(n, false), end: endToolRailPull });
   const to = (n: number) => setToolRailWidth(clampRailWidth(n, sizes));
@@ -209,18 +216,31 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   useFeaturesVersion();
   syncDynamicCommands();
   const sideways = place === 'top' || place === 'bottom';
+  const locked = useLocked('tools');
   const style = usePrefs((p) => p.toolRail);
   const stacked = style === 'stacked';
-  const size = usePrefs((p) => p.toolSize);
+  const compact = useCompact();
+  const size = fitToolSize(usePrefs((p) => p.toolSize), compact);
   const showNames = usePrefs((p) => p.toolNames);
   const look = usePrefs((p) => p.look);
-  const savedWidth = dock.use((d) => railWidthOf(d));
+  const sizes = railSizes(look, size);
+  const savedWidth = fitRailSaved(dock.use((d) => railWidthOf(d)), sizes, compact);
   const editing = toolbarEditing.use((e) => e);
   const iconPx = iconSizeFor(size);
   // A width the person pulled (docked at a side): the rail takes it, and the buttons across follow it.
-  const sizes = railSizes(look, size);
-  const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style) : undefined;
-  const pulled = pulledWidth === undefined ? undefined : ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties);
+  const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style, showNames) : undefined;
+  // No width of their own: the rail starts as wide as its Pixels | Vectors switch and (with names showing) its longest group name need, still two buttons across.
+  const startWidth = pulledWidth === undefined && !sideways ? naturalRailWidth(sizes, style, showNames) : undefined;
+  const pulled =
+    pulledWidth !== undefined
+      ? ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties)
+      : startWidth !== undefined && startWidth > buttonsRailWidth(sizes, style)
+        ? ({ width: startWidth, '--tool-cols': 2 } as React.CSSProperties)
+        : undefined;
+  // The one-per-group rail is one button wide: a name has no room there until the rail is pulled wider.
+  // The switch shows its words when the rail has the room for them; narrower (one button wide, or pulled in) it shows two icons, never a word cut short.
+  const switchShort = !sideways && (pulledWidth ?? startWidth ?? 0) < switchRoom(sizes.look);
+  const showHeads = showNames && !sideways && (!stacked || pulledWidth !== undefined);
   const kind = useActiveKind();
   const current = useStore((s) => s.ui.tool);
   // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
@@ -235,10 +255,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const offKey = rail.off.join(',');
   const off = useMemo(() => new Set(offKey ? offKey.split(',') : []), [offKey]);
   const why = (id: string): string => whyOff({ label: getTool(id)?.label, layers: getTool(id)?.layers ?? [] }, kind);
-  const choose = (id: string) => {
-    if (off.has(id)) toast(why(id), { quill: null });
-    else pickTool(id);
-  };
+  // A greyed-out tool is not refused: picking it flips the switch to the layer it needs.
+  const choose = (id: string) => pickTool(id);
   const saved = dock.use((d) => railOf(d));
   // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
   const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}|${t.slot ?? ''}`).join(',');
@@ -259,6 +277,36 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   // What the shelf shows: one for each place, and only the ones that exist on the rail for this layer.
   const awayList = useMemo(() => awayPlaces(whole, slotMates(allTools())).filter((id) => getTool(id)), [whole, allKey]);
   const visible = (id: string) => shown.has(id) && !awayIds.has(id);
+  // With the other tools hidden on this layer, say what is missing and why, so a shorter rail isn't a mystery.
+  // Greyed out or hidden, the tools that need another kind of layer are counted: the layer line at the top says how many.
+  const waiting = only ? [] : waitingFor(everything, kind, awayIds);
+  const layerName = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.name ?? '');
+  const line = kind ? modeLine(kind, layerName, waiting, greyOut) : null;
+  // The top layer of each kind, for what each side of the switch says it would go to.
+  const topPixel = useStore((s) => topLayerOf(s.doc.layers, 'pixel')?.name ?? '');
+  const topVector = useStore((s) => topLayerOf(s.doc.layers, 'vector')?.name ?? '');
+  const topOf: Record<Side, string> = { pixel: topPixel, vector: topVector };
+  // The other half of the layer you are on, when it has one, and whether the layer can be given one.
+  const halfName = useStore((s) => {
+    const a = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    return pairOf(s.doc.layers, a)?.name ?? '';
+  });
+  const canMakeHalf = useStore((s) => {
+    const a = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    return !!a && !whyNoHalf(a);
+  });
+  const lit = sideOf(kind);
+  // Gold only when the layout and the layer disagree (the Pixel workspace on a vector layer): that is when missing tools surprise you.
+  const alert = !!wsId && inPixelWorkspace() && kind !== 'pixel' && waiting.length > 0 && !greyOut;
+  const waitingKey = waiting.map((w) => w.id).join(',');
+  const waitingIds = useMemo(() => new Set(waitingKey ? waitingKey.split(',') : []), [waitingKey]);
+  // The first time the layer takes tools off the rail, say so once (and ask which way is kinder), a moment after it happens.
+  const dropped = !greyOut && waiting.length > 0;
+  useEffect(() => {
+    if (!dropped) return;
+    const t = window.setTimeout(tellAboutOffLayer, 700);
+    return () => window.clearTimeout(t);
+  }, [dropped]);
   const groups = useMemo(() => visibleGroups(whole, (id) => shown.has(id) && !awayIds.has(id)), [whole, shown, awayIds]);
   const drag = toolDrag.use((d) => d);
   const note = railNote.use((n) => n);
@@ -278,14 +326,24 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const byId = new Map(tools.map((t) => [t.id, t]));
   const axis = sideways ? 'y' : 'x';
 
-  // The picked tool doesn't work on this kind of layer: move to the same job there (the Lasso becomes the Pixel lasso),
-  // or else the first one that does. A tool the workspace only leaves out of the strip still works (picked by its key,
-  // say), so it's left alone.
+  // The picked tool doesn't work on this kind of layer. Picked on purpose: a one-way tool (Shade, Edit points) flips the
+  // Pixels | Vectors switch to the layer it needs, and the Lasso becomes the Pixel lasso instead. The layer changed under
+  // a tool instead (you pressed the other side): move to the same job there, or else the first tool that does work.
+  // A tool the workspace only leaves out of the strip still works (picked by its key, say), so it's left alone.
+  const lastTool = useRef(current);
   useEffect(() => {
+    const picked = lastTool.current !== current;
+    lastTool.current = current;
     const now = getTool(current);
     if (!tools.length || !now || !kind || now.layers.includes(kind)) return;
-    const next = twinFor(everything, current, kind) ?? tools.find((t) => !off.has(t.id))?.id;
-    if (next) store().setUi({ tool: next });
+    const twin = twinFor(everything, current, kind);
+    const fallback = twin ?? tools.find((t) => !off.has(t.id))?.id;
+    const flip = twin || !picked ? null : flipSideFor(now.layers, kind);
+    if (flip) {
+      pressSide(flip, { because: now.label, declined: () => fallback && store().setUi({ tool: fallback }) });
+      return;
+    }
+    if (fallback) store().setUi({ tool: fallback });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, ids, kind]);
 
@@ -361,13 +419,14 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     choose(frontOf(g));
   };
 
-  const grip = (
+  // Locked: the handle simply goes. Nothing takes its place, so a locked rail is just the tools.
+  const grip = locked ? null : (
     <button
       type="button"
       className="ui-tools-grip"
       aria-label="Move the tools. Arrow keys nudge them while they float."
       data-tip="Move the tools"
-      data-tip-desc="Drag to float them, or onto a side of the canvas to dock them there. Right-click for more."
+      data-tip-desc="Drag to dock them on any side, or onto the canvas to float them. Let go anywhere else and they go back. Right-click for more."
       data-help="tool-strip"
       onPointerDown={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
@@ -386,14 +445,17 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     </button>
   );
 
+  // How many of a group's tools (counting the ones the layer took off) are waiting for another kind of layer.
+  const groupOff = (g: ToolGroup): number => greyOut ? 0 : offInGroup(whole.find((w) => w.id === g.id)?.tools ?? g.tools, waitingIds);
   const flyGroup = fly ? groups.find((g) => g.id === fly.group) : undefined;
   const ghost = drag ? getTool(drag.id) : undefined;
 
   return (
     <nav
       ref={navRef}
-      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showNames && !sideways ? ' has-names' : ''} is-size-${size}`}
+      className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showHeads ? ' has-names' : ''}${switchShort ? ' is-switch-short' : ''} is-size-${size}`}
       aria-label="Tools"
+      data-place={place}
       style={pulled}
       aria-describedby="tool-rail-hint"
       data-help="tool-strip"
@@ -412,6 +474,42 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
         {note}
       </span>
       {grip}
+      {line && kind && (
+        <div
+          className={`ui-tool-switch is-${kind}${lit ? ` is-${lit}` : ''}${waiting.length && !greyOut ? ' is-off' : ''}${alert ? ' is-alert' : ''}`}
+          role="group"
+          aria-label={line.label}
+          data-help="drawing-mode"
+          data-layer-kind={kind}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const r = e.currentTarget.getBoundingClientRect();
+            openDockMenu(sideways ? r.left : r.right + 6, sideways ? r.bottom + 6 : r.top, layerLineMenu(kind, layerName, waiting));
+          }}
+        >
+          {SIDES.map((side) => {
+            const on = lit === side;
+            const gone = side === line.needs && waiting.length > 0;
+            return (
+              <button
+                key={side}
+                type="button"
+                className={`ui-tool-side is-${side}${on ? ' is-on' : ''}`}
+                aria-pressed={on}
+                data-side={side}
+                data-tip={on ? line.tip : sideTip(side, { half: halfName, top: topOf[side], canMake: canMakeHalf })}
+                data-tip-desc={on ? line.desc : `${sideDesc(side, { half: halfName, top: topOf[side], canMake: canMakeHalf, name: layerName })}${gone ? ` ${waitingWords(waiting)}` : ''}`}
+                onClick={() => pressSide(side)}
+              >
+                <Icon name={side} size={14} />
+                <span className="ui-tool-side-word">{sideWord(side)}</span>
+                {gone && !greyOut && <span className="ui-tool-layer-count" aria-hidden="true">{waiting.length}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="ui-tool-groups">
         {groups.map((g, gi) => {
           const heading = headingOf(g, groups);
@@ -424,7 +522,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                   data-tool-gap={gi}
                   aria-hidden="true"
                   data-tip={editing ? 'A new group goes here' : heading ?? groupName(g, groups)}
-                  data-tip-desc={editing ? 'Drag a tool onto the +, or click a tool and choose Start a new group here.' : 'Double-click to rename this group. Right-click for more.'}
+                  data-tip-desc={editing ? 'Drag a tool onto the +, or click a tool and choose Start a new group here.' : (locked ? 'Locked in place. Right-click for more.' : 'Double-click to rename this group. Right-click for more.')}
                   data-help={editing ? 'tool-builder' : 'tool-strip'}
                   onDoubleClick={() => askGroupRename(g.id)}
                   onContextMenu={(e) => {
@@ -453,9 +551,10 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                     <Icon name={folded ? 'chevron-right' : 'chevron-down'} size={14} />
                   </button>
                 </div>
-              ) : !sideways && showNames && heading ? (
-                <div className="ui-tool-head" aria-hidden="true" data-tool-head={g.id} onDoubleClick={() => askGroupRename(g.id)}>
-                  {heading}
+              ) : showHeads && heading ? (
+                <div className={`ui-tool-head${groupOff(g) ? ' has-off' : ''}${alert ? ' is-alert' : ''}`} aria-hidden="true" data-tool-head={g.id} onDoubleClick={() => askGroupRename(g.id)}>
+                  <span className="ui-tool-head-text">{heading}</span>
+                  {groupOff(g) > 0 && <span className="ui-tool-head-off" data-tip={`${groupOff(g)} of this group ${groupOff(g) === 1 ? 'is' : 'are'} ${greyOut ? 'greyed out' : 'off'}`} data-tip-desc={waitingWords(waiting)}>{groupOff(g)} {greyOut ? 'grey' : 'off'}</span>}
                 </div>
               ) : null}
               {folded ? (

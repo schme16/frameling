@@ -1,0 +1,25 @@
+Tooltips: another pass. Same tips, old build (before) against the new one (after), dark and light.
+
+What changed
+- Above, not below. The tip sits just above the thing and drops under it only when there is no room up there. A menu row's tip
+  still goes beside the whole menu, and a tool at the left edge still gets its tip on its right.
+- Its own surface. The tip uses the theme's text colour as its background and the page colour as its words: a cream label in
+  the dark theme, an ink one in the light theme, so it never reads as another menu or panel. A custom theme follows its own colours.
+- An arrow. A small diamond on the tip's edge nearest the thing, sliding along it to keep pointing at the middle of the thing even
+  when the tip was pushed sideways to stay on screen, and left off when the tip can't be put near the thing.
+- The tip follows its thing if it moves while the tip is up (the arrow slides with it).
+
+Files (<case>-<theme>-before / -after / -compare)
+  toolbar      the Play button in the timeline (tip over the canvas)
+  panel        a layer's lock icon in the layers list
+  menu         the Undo row of the Edit menu (beside the menu, no arrow, by design)
+  edge-left    the pencil in the tool rail (beside it, arrow on its left)
+  edge-right   the Find a command button, top right corner (tip held on screen, arrow slid to the right)
+  edge-top     the Pixel workspace button at the top (no room above, so below, arrow pointing up)
+  edge-bottom  a button 6 px from the bottom edge (a stand-in added for the shot; the page has nothing there)
+  slide-<theme>-before.mp4 / -after.mp4   a button glides to the right edge and back with its tip up. Before: the tip stays where it
+                                          was. After: the tip is held on screen and the arrow slides along it. H.264, 540x240.
+
+The two judgement calls: the inverted label colours (bold; the dark theme's cream label is the brightest thing on screen while it
+shows), and the 12 px gap with an 11 px arrow. Both are a few lines of CSS (.ui-tip in src/ui/ui.css) and TIP_GAP in src/ui/tipPlace.ts.
+Made with scripts/docs/ab-tooltips/tips.cjs through scripts/docs/help-media.cjs.

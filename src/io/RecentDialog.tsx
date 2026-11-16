@@ -2,10 +2,12 @@ import { line } from '../ui/mascot/lines';
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { QuillEmpty } from '../ui/mascot';
-import { describePlace } from '../platform';
-import { dirName } from './desktop';
+import { useStreamSafe } from '../core/streamSafe';
+import { desktop } from './desktop';
+import { shownRecent } from './recentShown';
 import { clearRecentFiles, listRecentFiles, openPath } from './document';
 import { Modal, mountModal } from './mount';
+import { RecentPicture, useRecentPictures } from './RecentPicture';
 import type { RecentFile } from '../preload/api';
 
 function when(t: number): string {
@@ -20,10 +22,16 @@ function when(t: number): string {
 }
 
 function RecentDialog({ close }: { close: () => void }) {
+  useStreamSafe();
   const [files, setFiles] = useState<RecentFile[] | null>(null);
   useEffect(() => {
     void listRecentFiles().then(setFiles);
   }, []);
+  const pics = useRecentPictures(files);
+  const remove = (f: RecentFile) => {
+    void desktop()?.recent.remove(f.path);
+    setFiles((list) => (list ?? []).filter((x) => x.path !== f.path));
+  };
   return (
     <Modal title="Open recent" onClose={close}>
       <div className="io-body">
@@ -31,21 +39,25 @@ function RecentDialog({ close }: { close: () => void }) {
           <QuillEmpty anim="draw" className="io-empty" whenHidden="Nothing here yet. Drawings you open or save show up here.">{line('empty.recent')}</QuillEmpty>
         ) : (
           <ul className="io-recent">
-            {files.map((f) => (
-              <li key={f.path}>
+            {shownRecent(files).map(({ file: f, name, place }) => (
+              <li key={f.path} className={f.missing ? 'is-missing' : undefined}>
                 <button
                   type="button"
-                  data-autofocus={f === files[0] ? '' : undefined}
+                  data-autofocus={f === files.find((x) => !x.missing) ? '' : undefined}
+                  disabled={f.missing}
                   onClick={() => {
                     close();
                     void openPath(f.path);
                   }}
                 >
-                  <Icon name="open" />
-                  <b>{f.name}</b>
-                  <small title={f.path}>
-                    {when(f.openedAt)} {describePlace(f.path, dirName)}
+                  <RecentPicture preview={pics[f.path]} />
+                  <b>{name}</b>
+                  <small>
+                    {f.missing ? "Can't find this file. It was" : when(f.openedAt)} {place}
                   </small>
+                </button>
+                <button type="button" className="io-recent-remove" aria-label={`Remove ${name} from the list`} title="Remove from the list (the file itself stays where it is)" onClick={() => remove(f)}>
+                  <Icon name="close" size={14} />
                 </button>
               </li>
             ))}

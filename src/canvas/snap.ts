@@ -119,6 +119,7 @@ export function snapBox(box: Rect, dx: number, dy: number, t: SnapTargets, tol: 
 let shown: SnapLine[] = [];
 let notes: SnapTarget[] = [];
 let shownGaps: Gap[] = [];
+let shownMark: Pt | null = null;
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -136,6 +137,14 @@ export function getSnapGaps(): readonly Gap[] {
   return shownGaps;
 }
 
+/** The line end or path point something just snapped onto (a ring is drawn round it), or null. */
+export function setSnapMark(p: Pt | null): void {
+  shownMark = p;
+}
+export function getSnapMark(): Pt | null {
+  return shownMark;
+}
+
 /** What else just snapped without a line to draw (a perspective direction, an angle step). */
 export function setSnapNotes(next: SnapTarget[]): void {
   if (next.length === notes.length && next.every((k, i) => k === notes[i])) return;
@@ -144,7 +153,7 @@ export function setSnapNotes(next: SnapTarget[]): void {
 
 /** What the last snap landed on, in order, without repeats (empty when nothing snapped). */
 export function snappedKinds(): SnapTarget[] {
-  const kinds = [...shown.map((l) => l.kind).filter((k): k is SnapTarget => !!k), ...(shownGaps.length ? (['spacing'] as SnapTarget[]) : []), ...notes];
+  const kinds = [...shown.map((l) => l.kind).filter((k): k is SnapTarget => !!k), ...(shownMark ? (['points'] as SnapTarget[]) : []), ...(shownGaps.length ? (['spacing'] as SnapTarget[]) : []), ...notes];
   return [...new Set(kinds)];
 }
 

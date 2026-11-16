@@ -2,13 +2,16 @@
 // Turning the pet off leaves the mascot alone. The panel, the command and the watching all go, and Quill himself,
 // his lines, his animations and the Show Quill switch carry on exactly as before.
 import { beforeEach, describe, expect, it } from 'vitest';
-import { allCommands, allHelp, allPanels, getPanel } from '../../src/core/registry';
+import { allCommands, allHelp, allPanels, getCommand, getPanel } from '../../src/core/registry';
 import { isFeatureOn, setFeatureOn, switchableFeatures } from '../../src/features/host';
 import { line, lineIds } from '../../src/ui/mascot/lines';
 import { toBeats } from '../../src/ui/mascot/timing';
 import { getPrefs, setPrefs } from '../../src/ui/prefs';
 import { petStore, setPet, tellQuill } from '../../src/quillpet/store';
 import { FRESH_PET } from '../../src/quillpet/model';
+import { quillPetPanel } from '../../src/quillpet/commands';
+import { quillPetFeature } from '../../src/quillpet';
+import { quillPetHelp } from '../../src/quillpet/help';
 import { store } from '../../src/core/store';
 import '../../src/renderer/features';
 
@@ -116,30 +119,42 @@ describe('getting closer is announced once', () => {
   });
 });
 
-describe('his things have a panel of their own', () => {
-  it('brings both panels and both commands', () => {
+describe('one home for Quill, called Quill everywhere', () => {
+  it('is a single panel, with the things and presents as tabs inside it, and a command for each tab', () => {
     const on = ids();
-    expect(on.panels).toEqual(expect.arrayContaining(['quill-pet', 'quill-things']));
-    expect(on.commands).toEqual(expect.arrayContaining(['quillPet.open', 'quillPet.things', 'quillPet.give']));
-    expect(on.help).toEqual(expect.arrayContaining(['quill-pet', 'quill-things']));
+    expect(on.panels).toContain('quill-pet');
+    expect(on.panels).not.toContain('quill-things');
+    expect(on.commands).toEqual(expect.arrayContaining(['quillPet.open', 'quillPet.things', 'quillPet.presents', 'quillPet.give']));
+    expect(on.help).toEqual(expect.arrayContaining(['quill-pet', 'quill-things', 'quill-presents']));
   });
 
-  it('takes the things panel away with the rest when the pet is off', () => {
+  it('uses the same name on the panel, the command, the feature and the help topic', () => {
+    expect(quillPetPanel.title).toBe('Quill');
+    expect(getCommand('quillPet.open')?.label).toBe('Quill');
+    expect(quillPetFeature.name).toBe('Quill');
+    expect(quillPetHelp.find((t) => t.id === 'quill-pet')?.title).toBe('Quill');
+    // Nothing still calls him by the old names. ("His things" is a tab of the house now, not a name for the panel.)
+    const everyWord = JSON.stringify([quillPetPanel, getCommand('quillPet.open'), quillPetFeature.name, quillPetFeature.about, quillPetHelp]);
+    expect(everyWord).not.toMatch(/Quill's things|Quill's corner/);
+  });
+
+  it('takes the whole home away when the pet is off', () => {
     setFeatureOn('quill-pet', false);
-    expect(ids().panels).not.toContain('quill-things');
-    expect(ids().commands).not.toContain('quillPet.things');
+    expect(ids().panels).not.toContain('quill-pet');
+    expect(ids().commands).not.toContain('quillPet.open');
     expect(ids().help).not.toContain('quill-things');
   });
 
-  it('says when he was given a thing in plain words', async () => {
-    const { sayWhen } = await import('../../src/quillpet/QuillThingsPanel');
+  it('says when he was given a thing as a date', async () => {
+    const { sayWhen } = await import('../../src/quillpet/QuillShelves');
     const now = new Date(2026, 10, 13, 12).getTime();
     const day = 86400000;
     expect(sayWhen(now, now)).toBe('today');
     expect(sayWhen(now - day, now)).toBe('yesterday');
-    expect(sayWhen(now - 3 * day, now)).toBe('3 days ago');
-    expect(sayWhen(now - 21 * day, now)).toBe('about 3 weeks ago');
-    expect(sayWhen(now - 90 * day, now)).toBe('about 3 months ago');
+    // A date, never "3 days ago": a gift's date is the only thing he keeps (see while-away.test.ts).
+    expect(sayWhen(now - 3 * day, now)).toBe('on 10 November');
+    expect(sayWhen(now - 21 * day, now)).toBe('on 23 October');
+    expect(sayWhen(now - 400 * day, now)).toMatch(/^on \d{1,2} [A-Z][a-z]+ 2025$/);
     // A thing from the future (a clock that moved) still reads sensibly.
     expect(sayWhen(now + day, now)).toBe('today');
   });

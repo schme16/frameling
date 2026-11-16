@@ -28,20 +28,25 @@
  * multiplies opacity into each shape) fades the group as one too. Effects don't play in that renderer.
  * Pictures made from effects are cropped, shared when they repeat and stored as WebP or PNG (see PICTURE_LOOKS).
  */
-import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
+import type { Cel, Doc, Drawing, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
 import { celAt } from '../core/doc';
+import { celOffsetAt } from '../core/symbols';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
 import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
+import { layerHasShapeFx, layerShapeFxKinds } from '../effects/shapeFx';
 import { shapeExportOf } from './shapeExport';
 import { clampZoom, cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenDrawing } from '../core/layerKinds';
 import { sortedStops } from '../core/gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
+import { nativeTrim, trimSpan } from './trimNative';
 import type { PosedMesh } from '../core/layerKinds';
+import { exportContextOptions } from './readback';
 
 export interface LottieOptions {
   /** Frames to include (inclusive, document frame numbers). Default: the whole animation. */
@@ -282,6 +287,9 @@ interface LottieGrad {
   k: number[];
 }
 
+/** Lottie has linear and radial gradients only, so an angular or diamond one is left to the shape's own plain colour (the first stop). */
+export const lottieCanDo = (gr: Gradient | undefined): gr is Gradient => !!gr && gr.kind !== 'angular' && gr.kind !== 'diamond';
+
 export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
   const stops = sortedStops(gr.stops);
   const k: number[] = [];
@@ -302,7 +310,9 @@ const SOFT_RADIUS = 5;
 export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
-  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
+  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad; dash?: { d: number[]; o: number } } | null;
+  /** Lottie's own trim path on the line: start and end in percent, and the slide in degrees (360 is a whole turn). */
+  trim?: { s: number; e: number; o: number };
   /** A soft round sprite: a radial fade of this colour (SOFT_RADIUS wide, the size particle sprites are drawn at). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
@@ -324,7 +334,7 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false):
   if (s.type === 'fill') {
     const c = tinted(s.color, tints);
     // A gradient's own stops carry their see-through, so the fill opacity is just the shape's.
-    if (s.gradient) return { paths, fill: { rgb: c.rgb, o: r3(s.opacity * 100), grad: lottieGradient(s.gradient, tints) }, stroke: null };
+    if (lottieCanDo(s.gradient)) return { paths, fill: { rgb: c.rgb, o: r3(s.opacity * 100), grad: lottieGradient(s.gradient, tints) }, stroke: null };
     return { paths, fill: { rgb: c.rgb, o: r3(c.alpha * s.opacity * 100) }, stroke: null };
   }
   const ps = s as PathShape;
@@ -333,8 +343,8 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false):
   const sc = st ? tinted(st.color, tints) : null;
   return {
     paths,
-    fill: f ? (ps.fillGradient ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
-    stroke: st && sc ? { rgb: sc.rgb, o: r3((ps.strokeGradient ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(ps.strokeGradient ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}) } : null,
+    fill: f ? (lottieCanDo(ps.fillGradient) ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
+    stroke: st && sc ? { rgb: sc.rgb, o: r3((lottieCanDo(ps.strokeGradient) ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(lottieCanDo(ps.strokeGradient) ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}), ...(dashPx(st) ? { dash: { d: dashPx(st)!.map(r3), o: r3(dashOffsetPx(st)) } } : {}) } : null,
   };
 }
 
@@ -610,6 +620,15 @@ function shapeGroup(raw: ShapeLook[], times: number[], name: string): Json | nul
   return moved && JSON.stringify(moved).length < JSON.stringify(plain).length ? moved : plain;
 }
 
+/** Lottie's dash list: a dash and a gap for each pair in the pattern, then where it starts. */
+function dashItems(dash: { d: number[]; o: number } | undefined): Json {
+  if (!dash) return {};
+  // Every entry needs a name of its own: lottie-web draws nothing at all when two of them share one.
+  const items: Json[] = dash.d.map((v, i) => ({ n: i % 2 === 0 ? 'd' : 'g', nm: `${i % 2 === 0 ? 'Dash' : 'Gap'}${i < 2 ? '' : ` ${Math.floor(i / 2) + 1}`}`, v: stat(Math.max(0.01, v)) }));
+  items.push({ n: 'o', nm: 'Offset', v: stat(dash.o) });
+  return { d: items };
+}
+
 function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json | null {
   const it: Json[] = [];
   const nPaths = Math.max(...looks.map((l) => l.paths.length));
@@ -623,6 +642,11 @@ function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json |
     const most = Math.max(...vals.map((v) => v.v.length));
     if (!blend) for (let j = 0; j < vals.length; j++) vals[j] = padPath(vals[j], most);
     it.push({ ty: 'sh', nm: `Path ${k + 1}`, ks: blend && !vals.every((v) => same(v, vals[0])) ? pathTrack(vals, times, PATH_TOL) : track(vals, times, blend, (v) => v) });
+  }
+  // A line drawing itself: Lottie's trim path, after the paths it trims and before the line.
+  if (looks.some((l) => l.trim)) {
+    const at = (get: (t: NonNullable<ShapeLook['trim']>) => number, whole: number) => smoothTrack(looks.map((l) => (l.trim ? get(l.trim) : whole)), times, OPACITY_TOL);
+    it.push({ ty: 'tm', nm: 'Trim', s: at((t) => t.s, 0), e: at((t) => t.e, 100), o: at((t) => t.o, 0), m: 1 });
   }
   // Fill and line are kept on every frame where any frame has them (see-through where missing), so the structure
   // is the same throughout.
@@ -640,6 +664,8 @@ function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json |
       lc: st.lc,
       lj: st.lj,
       ml: 10,
+      // Dashes, as they are on the first frame that has any (Lottie holds one pattern for the whole line).
+      ...dashItems(looks.find((l) => l.stroke?.dash)?.stroke?.dash),
     });
   }
   if (looks.some((l) => l.fill)) {
@@ -771,6 +797,28 @@ export interface LottieKit {
   hideSym(s: SymbolSprite): SymbolSprite;
 }
 
+const ROLE_ORDER = (r: string) => (r === 'fill' ? 0 : r === 'line' ? 1 : 2);
+
+/**
+ * One path shape across the frames, as the plain shapes its outline turns into (the line, a fill, arrow heads), one slot
+ * per part with the same slots on every frame. A frame without a part shows it faded right out.
+ */
+export function expandLine(ctx: Pick<Ctx, 'tints'>, frames: PathShape[]): Item[][][] {
+  const per = frames.map((s) => expandStroke(s, { split: true }));
+  const roles = [...new Set(per.flatMap((parts) => parts.map((p) => p.role)))].sort((a, b) => ROLE_ORDER(a) - ROLE_ORDER(b));
+  const hide = (l: LookItem): LookItem => ({ type: 'look', look: { ...l.look, fill: l.look.fill && { ...l.look.fill, o: 0 }, stroke: l.look.stroke && { ...l.look.stroke, o: 0 } } });
+  const out: Item[][][] = [];
+  for (const role of roles) {
+    const col = per.map((parts) => {
+      const p = parts.find((x) => x.role === role);
+      return p ? ({ type: 'look', look: lookOf(p.shape, ctx.tints) } as LookItem) : null;
+    });
+    const filled = fillGaps(col, hide);
+    if (filled) out.push(filled.map((x) => [x]));
+  }
+  return out;
+}
+
 /**
  * Text and particles turned into sprites, frame by frame, with the same number of items on every frame: a letter per
  * letter, and a slot per particle that's alive on any of the frames (faded out where it isn't).
@@ -786,6 +834,27 @@ function expandSprites(ctx: Ctx, shapes: Shape[][]): Item[][] {
     const make = s0.type !== 'stroke' && s0.type !== 'fill' && s0.type !== 'path' && s0.type !== 'instance' ? shapeExportOf(s0.type)?.lottie : undefined;
     if (make) {
       cols.push(make(kit, shapes.map((list) => list[k])));
+      continue;
+    }
+    // A line that only draws itself stays one line, with Lottie's own trim path moving along it.
+    const run = nativeTrim(shapes.map((list) => list[k]), { dash: true, noFill: true, noOpenSlide: true });
+    if (run) {
+      const base = lookOf(run.base, ctx.tints);
+      const closed = run.base.paths[0].closed && run.base.paths[0].points.length > 2;
+      cols.push(
+        run.trims.map((t) => {
+          const shows = !!trimSpan(t, closed);
+          const lo = t ? Math.min(t.start, t.end) : 0;
+          const hi = t ? Math.max(t.start, t.end) : 100;
+          const look: ShapeLook = { ...base, trim: { s: r3(lo), e: r3(hi), o: r3((t?.offset ?? 0) * 3.6) }, ...(shows || !base.stroke ? {} : { stroke: { ...base.stroke, o: 0 } }) };
+          return [{ type: 'look', look } as LookItem];
+        }),
+      );
+      continue;
+    }
+    // A line with dashes kept, arrow heads or a changing width is a few plain shapes; every frame gets the same few.
+    if (shapes.some((list) => list[k].type === 'path' && hasLineStyle((list[k] as PathShape).stroke))) {
+      cols.push(...expandLine(ctx, shapes.map((list) => list[k] as PathShape)));
       continue;
     }
     cols.push(shapes.map((list) => [list[k]]));
@@ -1034,7 +1103,9 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
       const moving = d?.kind === 'tilemap' && !!doc.tileset?.tiles.some((t) => t.frames.length > 1);
       const id = imageAsset(ctx, px.id + ':' + layer.pixelSize + (moving ? ':f' + cel.start : ''), px, layer.pixelSize);
       // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.
-      const at = [(px.x ?? 0) * layer.pixelSize, (px.y ?? 0) * layer.pixelSize];
+      // A key's offset (see core/offset.ts) moves it further.
+      const moved = celOffsetAt(layer, cel.start);
+      const at = [(px.x ?? 0) * layer.pixelSize + (moved?.x ?? 0), (px.y ?? 0) * layer.pixelSize + (moved?.y ?? 0)];
       out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat(at), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
@@ -1046,9 +1117,14 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     const frames: number[] = [];
     for (let f = a; f <= b; f++) frames.push(f);
     // A layer on a bone comes back as one posed group: its shapes are moved (or bent) into place per frame.
+    // The same posed drawing flattens to the same object, so a held key stays one still picture.
+    const flat = new Map<Drawing, Drawing>();
     const drawings = frames.map((f) => {
       const d = poseAt(doc, layer, f);
-      return layer.bind && d?.kind === 'vector' ? { ...d, shapes: flattenBound(d.shapes) } : d;
+      if (!((layer.bind || celOffsetAt(layer, f)) && d?.kind === 'vector')) return d;
+      let out = flat.get(d);
+      if (!out) flat.set(d, (out = { ...d, shapes: flattenBound(d.shapes) }));
+      return out;
     });
     const first = drawings[0];
     if (!first || first.kind !== 'vector') continue;
@@ -1435,6 +1511,16 @@ function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: 
   for (let f = r.from; f <= r.to; f++) frames.push(f);
   const times = frames.map((f) => f - r.offset);
   const active = (look.effects ?? []).filter((e) => e.on !== false);
+  // An effect on one shape can't be a Lottie effect (those belong to a whole layer), so a layer holding one is a picture.
+  if (node.type === 'layer' && layerHasShapeFx(ctx.doc, node.layer, frames)) {
+    const kinds = [...layerShapeFxKinds(ctx.doc, node.layer, frames)].map((k) => effectInfo(k).label.toLowerCase());
+    const pic = bakeNode(ctx, node, frames, r);
+    if (pic) {
+      ctx.notes.add(`"${node.layer.name}" became pictures, since a shape on it has ${kinds.join(' or ')} and Lottie only puts effects on a whole layer.`);
+      return { pieces: pic, ef: [] };
+    }
+    ctx.notes.add(`The ${kinds.join(' and ')} on shapes of "${node.layer.name}" ${kinds.length > 1 ? 'were' : 'was'} left out (they need the app to draw them).`);
+  }
   const native = nativeEffects(active, frames, times);
   const chosen = !!native && !!ctx.bakeSoft && active.length > 0;
   if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native, room: shadowRoom(ctx, node, native, frames) };
@@ -1624,7 +1710,7 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   const W = Math.round(area.w * SCALE);
   const H = Math.round(area.h * SCALE);
   const c = new OffscreenCanvas(W, H);
-  const g = c.getContext('2d', { willReadFrequently: true });
+  const g = c.getContext('2d', exportContextOptions);
   if (!g) return null;
   const out: Json[] = [];
   // One bank for the whole file, so a layer baked twice (a clipping base and its copy) stores its pictures once.

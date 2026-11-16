@@ -6,7 +6,7 @@ and `brand/mascot/mascot-icon.frameling`, edited in Frameling and built with `np
 README, "Editing the mascot").
 
 `build.mjs` no longer writes into the app. It writes its sheet to `b/quill.png` + `b/quill.json` and its icon grids
-to `icons/`, which is what `brand/mascot/convert-from-quill.mjs` converted from once. `test/io/mascot-source.test.ts`
+to `icons/`, which is what a one-time converter (since removed) made the first `mascot.frameling` from. `test/io/mascot-source.test.ts`
 checks the `.frameling` files still build to exactly these pictures, but only while they are unedited (the file's
 manifest still says it came from the converter). Once someone saves them from Frameling, that check steps aside and
 the "committed files are up to date" checks are the ones that matter.

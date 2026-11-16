@@ -9,9 +9,9 @@ const electron = require('electron');
 const script = path.join(__dirname, 'a11y.cjs');
 let failed = 0;
 for (const only of ['popup layer options', 'dialog about']) {
-  const r = spawnSync(electron, [script, '--only', only], { encoding: 'utf8', timeout: 120000 });
+  const r = spawnSync(electron, [script, '--only', only], { encoding: 'utf8', timeout: 120000, env: { ...process.env, A11Y_SHOW: '1' } });
   const out = `${r.stdout}${r.stderr}`;
-  const ok = r.status === 0 && /\n1 views checked: 0 axe rules broken/.test(out) && !/not found|opener not found/.test(out);
+  const ok = r.status === 0 && /\n1 views checked: 0 axe rules broken.*, 0 not found\./.test(out) && !/NOT CHECKED|opener not found/.test(out);
   console.log(`${ok ? 'ok' : 'x '} --only "${only}"`);
   if (!ok) {
     failed++;

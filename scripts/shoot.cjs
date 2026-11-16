@@ -12,8 +12,13 @@
 //   {"wait": 300}                       wait in ms
 //   {"shot": "name"}                    save an extra screenshot mid-way
 //   {"down": [x, y]} / {"move": [x, y]} / {"up": [x, y]}   press, move (held if pressed) and release, for shots mid-drag
+// SHOT_DISPLAY='{"width":1536,...}' tells the app which screen it is on (what the desktop side reports; scripts/screen-shoot.cjs sets it).
 // SHOT_SCALE=2 shoots at twice the pixel density. SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('./lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const path = require('node:path');
 const { installIpcStubs } = require('./ipc-stubs.cjs');
@@ -84,10 +89,12 @@ app.on('window-all-closed', () => {});
 app.setPath('userData', fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'frameling-shoot-')));
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   // The real main process answers these; for shots there is no file and no history.
   // The real main process answers these; for shots there is no file and no history (stand-ins in scripts/ipc-stubs.cjs).
   // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"}.
   installIpcStubs(ipcMain, {
+    ...(process.env.SHOT_DISPLAY ? { 'app:display': () => JSON.parse(process.env.SHOT_DISPLAY) } : {}),
     'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && fs.existsSync(p) ? { bytes: new Uint8Array(fs.readFileSync(p)), path: p } : { error: 'No such file.' }),
   });
   fs.mkdirSync(outDir, { recursive: true });
@@ -119,11 +126,31 @@ app.whenReady().then(async () => {
       if (e.level === 'error' || e.level === 3) { logs.push(String(m)); if (process.env.SHOT_LOG) console.log('LOG', String(m)); }
     });
     await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'), { query: { debug: '1' } });
-    await win.webContents.executeJavaScript(`
-      ${look ? `document.documentElement.dataset.look = ${JSON.stringify(look)};` : ''}
-      ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)};` : ''}
-      true;
-    `);
+    // Set the preference, not the attribute. The app writes data-theme and data-look itself from prefs as soon as it
+    // mounts, so a harness that only sets the attribute gets it overwritten within a frame and every "light" shot came
+    // out dark. The theme name follows from the preference: light gives Paper & Honey, dark gives Midnight Sketchbook.
+    // The debug hooks arrive a moment after the page loads, so wait for them, and never let this step hang the run.
+    // 'cosy' and 'crisp' are the only looks there are; anything else (an empty field, or the old 'default') is ignored.
+    const realLook = look === 'cosy' || look === 'crisp' ? look : '';
+    if (look && !realLook) logs.push(`unknown look ${JSON.stringify(look)}, ignored (cosy or crisp)`);
+    if (realLook || theme) {
+      try {
+        await win.webContents.executeJavaScript(`
+          new Promise((done) => {
+            const go = (tries) => {
+              const p = window.__frameling && window.__frameling.prefs;
+              if (!p) return tries > 0 ? setTimeout(() => go(tries - 1), 50) : done('no prefs hook');
+              ${realLook ? `p.set({ look: ${JSON.stringify(realLook)} });` : ''}
+              ${theme ? `p.set({ theme: ${JSON.stringify(theme)} }); window.__shotTheme = ${JSON.stringify(theme)};` : ''}
+              done('ok');
+            };
+            go(60);
+          })
+        `);
+      } catch (e) {
+        logs.push(`theme/look failed: ${e && e.message ? e.message : e}`);
+      }
+    }
     await sleep(Number(process.env.SHOT_WAIT || 900));
     if (steps) {
       // A step that throws used to leave the run hanging for ever. Say which one, and carry on to the shot so

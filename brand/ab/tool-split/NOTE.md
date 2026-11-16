@@ -1,0 +1,1 @@
+A: the tool rail as it is now (Draw workspace), on a vector layer and on a pixel layer. B: the same rail with the three pixel-only colour tools and Slice under a "Pixels only" label, shown only on a pixel layer. Both are the real rail, B made with the rail's own move-and-name feature, not new code. Pictures: tool-split-dark.png, tool-split-light.png.

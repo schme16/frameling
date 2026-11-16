@@ -2,11 +2,14 @@
 // and Quill carries on being the mascot.
 import { lazyPanel } from '../core/lazy';
 import type { Command, PanelDef } from '../core/registry';
-import { showPanel } from '../ui/dock';
+import { currentChoice, setChoice } from '../core/choices';
 import { getPrefs } from '../ui/prefs';
+import { toast } from '../ui/toast';
 import { noteFuss } from './watch';
 import { giveToQuill } from './give';
 import { tellQuill } from './store';
+import { openHouse } from './house';
+import { YOURS_CHOICE } from './made';
 
 export const quillPetPanel: PanelDef = {
   id: 'quill-pet',
@@ -18,48 +21,56 @@ export const quillPetPanel: PanelDef = {
   help: 'quill-pet',
 };
 
-export const quillThingsPanel: PanelDef = {
-  id: 'quill-things',
-  title: "Quill's things",
-  icon: 'image',
-  component: lazyPanel(() => import('./QuillThingsPanel').then((m) => m.QuillThingsPanel)),
-  zone: 'right',
-  order: 86,
-  help: 'quill-things',
-};
-
 export const quillPetCommands: Command[] = [
   {
     id: 'quillPet.open',
-    label: "Quill's corner",
+    label: 'Quill',
     category: 'View',
-    description: 'Opens the panel where Quill lives, so you can see how he is and give him a stroke.',
+    description: "Opens Quill's house on the room: how he is, how well you know each other, and the way to his lessons. His things and his presents are tabs beside it.",
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'corner', 'companion'],
     help: 'quill-pet',
-    run: () => showPanel('quill-pet'),
+    run: () => openHouse('room'),
+  },
+  {
+    id: 'quillPet.things',
+    label: 'Quill: his things',
+    category: 'View',
+    description: 'Opens his house on the things you have given him, with the button to give him another.',
+    keywords: ['quill', 'pet', 'things', 'shelf', 'shelves', 'collection', 'given', 'gifts', 'keep', 'hedgehog'],
+    help: 'quill-things',
+    run: () => openHouse('things'),
+  },
+  {
+    id: 'quillPet.presents',
+    label: 'Quill: his presents',
+    category: 'View',
+    description: 'Opens his house on the presents he has made you. Press one and it opens as a drawing of your own.',
+    keywords: ['quill', 'pet', 'presents', 'gifts', 'crayon', 'surprise', 'made', 'hedgehog'],
+    help: 'quill-presents',
+    run: () => openHouse('presents'),
+  },
+  {
+    id: 'quillPet.lately',
+    label: 'Quill: what he got up to',
+    category: 'View',
+    description: 'Opens his Room, where what he got up to (a drawing, a toy moved, a nap somewhere new) shows when you come back to Frameling.',
+    keywords: ['quill', 'pet', 'lately', 'got up to', 'drew', 'nap', 'toy', 'news', 'hedgehog'],
+    help: 'quill-lately',
+    run: () => openHouse('room'),
   },
   {
     id: 'quillPet.pat',
-    label: 'Give Quill a stroke',
+    label: 'Give Quill a scratch',
     category: 'View',
     description: 'A quick fuss. He likes it, and you two get a little closer.',
-    keywords: ['quill', 'pet', 'stroke', 'pat', 'fuss', 'hedgehog'],
+    keywords: ['quill', 'pet', 'scratch', 'stroke', 'pat', 'fuss', 'hedgehog'],
     help: 'quill-pet',
     enabled: () => getPrefs().showQuill,
     run: () => {
       tellQuill({ kind: 'petted' });
-      noteFuss();
-      showPanel('quill-pet');
+      noteFuss('stroked');
+      openHouse('room');
     },
-  },
-  {
-    id: 'quillPet.things',
-    label: "Quill's things",
-    category: 'View',
-    description: 'Opens the drawings you have given Quill.',
-    keywords: ['quill', 'pet', 'things', 'collection', 'gifts', 'presents', 'drawings', 'kept'],
-    help: 'quill-things',
-    run: () => showPanel('quill-things'),
   },
   {
     id: 'quillPet.give',
@@ -71,7 +82,21 @@ export const quillPetCommands: Command[] = [
     enabled: () => getPrefs().showQuill,
     run: () =>
       void giveToQuill().then((got) => {
-        if (got) showPanel('quill-things');
+        if (got) openHouse('things');
       }),
+  },
+  {
+    id: 'quillPet.yours',
+    label: 'Quill: show or hide my work in his room',
+    category: 'View',
+    description: 'His room shows what you have made: your newest drawings on his wall and your newest sprite as a toy on his floor. This turns that off, or back on. Nothing is lost either way.',
+    keywords: ['quill', 'pet', 'room', 'wall', 'toy', 'sprite', 'drawing', 'yours', 'mine', 'work', 'hedgehog'],
+    help: 'quill-yours',
+    run: () => {
+      const hiding = currentChoice(YOURS_CHOICE) !== 'hide';
+      setChoice(YOURS_CHOICE, hiding ? 'hide' : 'show');
+      toast(hiding ? 'His room is plain for now. Your work is still kept.' : 'Your work is back on his wall and floor.', { duration: 3000 });
+      if (!hiding) openHouse('room');
+    },
   },
 ];

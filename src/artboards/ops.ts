@@ -2,6 +2,7 @@
  * Artboard actions on the app's store: each is one undo step. Also keeps the view steady when the open artboard
  * changes (by a click, the panel, undo or redo), and remembers the frame, layer and selection each artboard was left on.
  */
+import type { Draft } from 'immer';
 import type { Doc, Id } from '../core/format';
 import { store, type Store } from '../core/store';
 import { findLayer } from '../core/doc';
@@ -14,6 +15,7 @@ import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
 import { currentChoice } from '../core/choices';
+import { MAX_FPS } from '../timeline/edit-core';
 import { changeVariation, reframeVariations, setVariationSize, untouchedFramings } from './variations';
 import type { FitMode } from './fit';
 import {
@@ -117,7 +119,14 @@ export function goToArtboard(id: Id, reveal = false): void {
   const doc = store().get().doc;
   if (activeId(doc) === id || !findArtboard(doc, id)) return;
   const name = findArtboard(doc, id)!.name;
-  store().update(`Go to "${name}"`, (d) => void switchArtboard(d as Doc, id));
+  // A look, not an edit: it stays out of Undo and the file isn't marked as changed. History keeps just the two ids and
+  // runs the switch again for Undo and Redo, not a copy of the artboard's content (that copy, four times over, was the
+  // whole cost of a look). Undo goes back to the artboard it came from, with whatever that holds by then.
+  const from = activeId(doc);
+  const go = (to: Id) => (d: Draft<Doc>) => void switchArtboard(d as Doc, to);
+  // Without the artboard list in place the first switch would also make it, which two ids can't take back.
+  const plain = !!doc.artboards?.length && !!doc.activeArtboard;
+  store().update(`Go to "${name}"`, go(id), { view: true, ...(plain ? { rerun: { undo: go(from), redo: go(id) } } : {}) });
   if (reveal) revealActive();
 }
 
@@ -259,6 +268,32 @@ export function moveArtboardTo(id: Id, x: number, y: number, coalesce?: string):
 export function setArtboardBackgroundById(id: Id, color: string | null): void {
   const isVariation = !!findArtboard(store().get().doc, id)?.variationOf;
   store().update('Artboard background', (d) => void (isVariation ? changeVariation(d as Doc, id, (c) => ({ ...c, background: color })) : setArtboardBackground(d as Doc, id, color)), { coalesce: `ab-bg-${id}` });
+}
+
+/** Sets one artboard's speed (frames per second): the open one's is the document's own, the others' sit in their content. */
+export function setArtboardRate(d: Doc, id: Id, fps: number): void {
+  const n = Math.max(1, Math.min(MAX_FPS, Math.round(fps)));
+  if (!Number.isFinite(n) || d.sharedLayers) return;
+  const a = findArtboard(d, id);
+  if (!a) return;
+  if (a.variationOf) changeVariation(d, id, (c) => ({ ...c, fps: n }));
+  else if (a.content) a.content.fps = n;
+  else d.fps = n;
+}
+
+export function setArtboardRateById(id: Id, fps: number): void {
+  store().update('Change artboard speed (frames per second)', (d) => setArtboardRate(d as Doc, id, fps), { coalesce: `ab-fps-${id}` });
+}
+
+/** Gives every artboard the speed of the open one. Originals first, so a variation that follows one follows it. */
+export function sameSpeedForAll(): number {
+  const n = store().get().doc.fps;
+  store().update('Give every artboard the same speed', (d) => {
+    const list = artboardsOf(d as Doc);
+    for (const a of list) if (!a.variationOf) setArtboardRate(d as Doc, a.id, n);
+    for (const a of list) if (a.variationOf) setArtboardRate(d as Doc, a.id, n);
+  });
+  return n;
 }
 
 export function arrangeAll(columns = 0): void {

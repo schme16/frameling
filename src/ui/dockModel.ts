@@ -3,10 +3,25 @@
 // live state and the workspaces; DockView.tsx and friends draw it.
 import type { LayerKind } from '../core/format';
 import type { DockZone } from '../core/registry';
+import { cleanLocks, savedLocks, type Locks } from './dockLock';
 import { sanitizeGroups, type ToolGroup } from './toolArrange';
 import { cleanRailWidth } from './toolRailWidth';
+import type { MenuEdits } from './menuEdits';
+import { cleanBrought } from './workspaceMenus';
 
 export type { DockZone };
+
+/** Where a panel sits on the right rail: Properties first, then these in order with a line between. */
+export const RAIL_GROUPS = ['properties', 'make', 'animate', 'learn', 'more'] as const;
+export type RailGroup = (typeof RAIL_GROUPS)[number];
+const isRailGroup = (v: unknown): v is RailGroup => (RAIL_GROUPS as readonly unknown[]).includes(v);
+
+/**
+ * Panels a NEW layout puts in a different rail group from the usual one (the group in panelInfo.ts). Library starts in the
+ * last group, at the end of the rail. Only new layouts get this (see `Layout.railAt`): one saved earlier keeps the usual
+ * groups, so Library stays where its person left it.
+ */
+export const START_RAIL_AT: Readonly<Record<string, RailGroup>> = { library: 'more' };
 
 /** One group of tabs: a zone holds one, or several stacked. */
 export interface DockGroup {
@@ -27,6 +42,13 @@ export interface ZoneState {
   shares?: number[];
 }
 
+/** A side, and optionally which group of it and where among its tabs, that a floated panel goes back to. */
+export interface BackPlace {
+  zone: DockZone;
+  group?: number;
+  index?: number;
+}
+
 /** A floating window: a group of tabs over the canvas. Later in `Layout.floats` means nearer the front. */
 export interface FloatWin {
   id: string;
@@ -38,6 +60,8 @@ export interface FloatWin {
   y: number;
   w: number;
   h: number;
+  /** Where each panel was docked before it floated, by panel id, so docking the window back puts it there (missing = where the panel was made to go). */
+  back?: Record<string, BackPlace>;
 }
 
 /** Where the tool rail is: one of the zones' edges, or floating. */
@@ -48,15 +72,22 @@ export interface Layout {
   floats: FloatWin[];
   /**
    * The tool rail: where it is. `groups` is only read from older saves and files; the arrangement now belongs to the
-   * workspace (`Workspace.rail`, and `rails` in the dock state for what the person changed).
+   * workspace (`Workspace.rail`, and `rails` in the dock state for what the person changed). `home` is the side it was
+   * last docked on, so a float dropped back goes there (missing = never docked since this was saved: the left).
    */
-  tools: { place: ToolsPlace; x: number; y: number; groups?: ToolGroup[] };
+  tools: { place: ToolsPlace; x: number; y: number; groups?: ToolGroup[]; home?: DockZone };
   /** Panels the person closed. They stay out of the zones until they open them again. */
   hidden: string[];
   /** Every panel this layout has seen, so a panel added by a later version gets placed once. */
   known: string[];
   /** Names the person gave panels, by panel id (missing = the panel's own title). */
   names?: Record<string, string>;
+  /**
+   * Panels this layout puts in another rail group than their usual one, by panel id. Set when a layout is first made
+   * (START_RAIL_AT) and kept with it. Missing = every panel in its usual group, which is how every layout saved before
+   * this reads, so an old layout and an old workspace file keep their rail as it was.
+   */
+  railAt?: Record<string, RailGroup>;
 }
 
 export interface Workspace {
@@ -74,6 +105,10 @@ export interface Workspace {
   rail?: ToolGroup[];
   /** How wide the tool rail is for this workspace, in pixels (missing = its natural width). */
   railWidth?: number;
+  /** What is locked in this workspace (missing = nothing): the tool rail and the panels stay where they are put. */
+  locks?: { tools?: true; panels?: true };
+  /** The menu changes this workspace brings (missing = the menus as they come). The person's own changes in it are in the dock state. */
+  menus?: MenuEdits;
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom', 'top'];
@@ -114,6 +149,21 @@ const isId = (v: unknown): v is string => typeof v === 'string' && ID.test(v) &&
 export function cleanName(v: unknown, max = MAX_NAME): string {
   // eslint-disable-next-line no-control-regex
   return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
+}
+
+/** Where a window's panels came from, from a saved layout: only for panels the window holds, each a zone and optionally a group and a place among its tabs. */
+function cleanBack(v: unknown, tabs: string[]): { back?: Record<string, BackPlace> } {
+  if (!isObj(v)) return {};
+  const back: Record<string, BackPlace> = {};
+  for (const id of tabs) {
+    const b = Object.prototype.hasOwnProperty.call(v, id) ? v[id] : undefined;
+    if (!isObj(b) || !(ZONES as unknown[]).includes(b.zone)) continue;
+    const place: BackPlace = { zone: b.zone as DockZone };
+    if (typeof b.group === 'number' && Number.isInteger(b.group) && b.group > 0 && b.group < MAX_GROUPS) place.group = b.group;
+    if (typeof b.index === 'number' && Number.isInteger(b.index) && b.index >= 0 && b.index < MAX_TABS) place.index = b.index;
+    back[id] = place;
+  }
+  return Object.keys(back).length ? { back } : {};
 }
 
 let floatSeq = 0;
@@ -168,6 +218,7 @@ export function normaliseLayout(raw: unknown): Layout {
       y: Math.round(num(f.y, 120)),
       w: Math.max(FLOAT_MIN.w, Math.round(num(f.w, FLOAT_DEFAULT.w))),
       h: Math.max(FLOAT_MIN.h, Math.round(num(f.h, FLOAT_DEFAULT.h))),
+      ...cleanBack(f.back, tabs),
     });
   }
   l.hidden = ids(r.hidden);
@@ -176,6 +227,12 @@ export function normaliseLayout(raw: unknown): Layout {
   l.tools = { place: (TOOLS_PLACES as unknown[]).includes(t.place) ? (t.place as ToolsPlace) : 'left', x: Math.round(num(t.x, 90)), y: Math.round(num(t.y, 110)) };
   const groups = sanitizeGroups(t.groups);
   if (groups) l.tools.groups = groups;
+  if ((ZONES as unknown[]).includes(t.home)) l.tools.home = t.home as DockZone;
+  if (isObj(r.railAt)) {
+    const railAt: Record<string, RailGroup> = {};
+    for (const [id, g] of Object.entries(r.railAt).slice(0, 200)) if (isId(id) && isRailGroup(g)) railAt[id] = g;
+    if (Object.keys(railAt).length) l.railAt = railAt;
+  }
   if (isObj(r.names)) {
     const names: Record<string, string> = {};
     for (const [id, n] of Object.entries(r.names).slice(0, 200)) {
@@ -200,6 +257,10 @@ export function sanitizeWorkspace(raw: unknown): Workspace | null {
   if (rail) ws.rail = rail;
   const railWidth = cleanRailWidth(raw.railWidth);
   if (railWidth) ws.railWidth = railWidth;
+  const locks = savedLocks(cleanLocks(raw.locks, true));
+  if (locks) ws.locks = locks;
+  const menus = cleanBrought(raw.menus);
+  if (menus) ws.menus = menus;
   const about = cleanName(raw.about, 140);
   if (about) ws.about = about;
   if (raw.pixel === true) ws.pixel = true;
@@ -372,6 +433,10 @@ function take(l: Layout, id: string): { next: Layout; from: Place | null; at: nu
   } else {
     const f = next.floats.find((x) => x.id === from.float)!;
     pull(f);
+    if (f.back) {
+      delete f.back[id];
+      if (!Object.keys(f.back).length) delete f.back;
+    }
     if (!f.tabs.length) next.floats = next.floats.filter((x) => x !== f);
   }
   return { next, from, at };
@@ -442,6 +507,12 @@ function withNewFloat(next: Layout, f: FloatWin): Layout {
   return next;
 }
 
+/** The side, group and place a panel is leaving (or, from one window to another, the one it already remembered). */
+function backOf(l: Layout, id: string, from: Place | null, at: number): BackPlace | undefined {
+  if (from && 'zone' in from) return { zone: from.zone, ...(from.group ? { group: from.group } : {}), index: at };
+  return from && 'float' in from ? l.floats.find((x) => x.id === from.float)?.back?.[id] : undefined;
+}
+
 /** Moves a panel to a target and makes it the front tab there. Windows left empty close; a closed panel opens. */
 export function movePanelTo(l: Layout, id: string, to: DropTarget, win?: { w: number; h: number }): Layout {
   const from = locate(l, id);
@@ -471,14 +542,18 @@ export function movePanelTo(l: Layout, id: string, to: DropTarget, win?: { w: nu
     const f = next.floats.find((x) => x.id === to.float);
     if (f) {
       insert(f, id, index);
+      const back = backOf(l, id, from, at);
+      if (back) f.back = { ...f.back, [id]: back };
       next.floats = [...next.floats.filter((x) => x !== f), f];
       return next;
     }
     // The window is gone (it only had this panel in it): give the panel a window of its own where it was.
     const old = l.floats.find((x) => x.id === to.float);
-    return withNewFloat(next, { id: to.float, tabs: [id], active: id, ...newBox(old ?? { x: 120, y: 120 }, win) });
+    const back = backOf(l, id, from, at);
+    return withNewFloat(next, { id: to.float, tabs: [id], active: id, ...newBox(old ?? { x: 120, y: 120 }, win), ...(back ? { back: { [id]: back } } : {}) });
   }
-  return withNewFloat(next, { id: newFloatId(), tabs: [id], active: id, ...newBox(to.newFloat, win) });
+  const back = backOf(l, id, from, at);
+  return withNewFloat(next, { id: newFloatId(), tabs: [id], active: id, ...newBox(to.newFloat, win), ...(back ? { back: { [id]: back } } : {}) });
 }
 
 /** Puts a whole window's panels into a zone or another window (the window closes). */
@@ -494,6 +569,7 @@ export function moveGroupTo(l: Layout, floatId: string, to: DropTarget): Layout 
   const dest = next.floats.find((x) => x.id === to.float);
   if (!dest) return l;
   dest.tabs.splice(to.index === undefined ? dest.tabs.length : Math.max(0, Math.min(to.index, dest.tabs.length)), 0, ...f.tabs);
+  if (f.back) dest.back = { ...dest.back, ...f.back };
   dest.active = f.active ?? f.tabs[0];
   next.floats = [...next.floats.filter((x) => x !== dest), dest];
   return next;
@@ -506,6 +582,14 @@ export function dockFloat(l: Layout, floatId: string, home: (id: string) => Dock
   const next = clone(l);
   next.floats = next.floats.filter((x) => x.id !== floatId);
   for (const id of f.tabs) {
+    const b = f.back?.[id];
+    if (b) {
+      // It remembers where this panel came from: back to that side, group and place.
+      const z = next.zones[b.zone];
+      const group = groupsOf(z)[groupIndex(z, b.group)];
+      dropInZone(next, b.zone, anchorOf(next, b.zone, b.group, []), { index: b.index }, [id], id === f.active ? id : (group?.active ?? id));
+      continue;
+    }
     const z = next.zones[home(id)];
     z.tabs.push(id);
     if (id === f.active || !z.active) z.active = id;
@@ -672,8 +756,13 @@ export function renameFloatIn(l: Layout, floatId: string, name: string): Layout 
 
 /** The tool rail moved to a zone's edge or floated (at a position, when given). */
 export function placeToolsIn(l: Layout, place: ToolsPlace, at?: { x: number; y: number }): Layout {
-  return { ...l, tools: { ...l.tools, place, x: at ? Math.round(at.x) : l.tools.x, y: at ? Math.round(at.y) : l.tools.y } };
+  // A side it sits on is the side it comes home to; floating leaves that as it was.
+  const home = place === 'float' ? l.tools.home ?? (l.tools.place === 'float' ? undefined : l.tools.place) : place;
+  return { ...l, tools: { ...l.tools, place, x: at ? Math.round(at.x) : l.tools.x, y: at ? Math.round(at.y) : l.tools.y, ...(home ? { home } : {}) } };
 }
+
+/** The side the tool rail goes back to: where it was last docked (the left when it has never been). */
+export const toolsHome = (l: Layout): DockZone => l.tools.home ?? (l.tools.place === 'float' ? 'left' : l.tools.place);
 
 // ---------------------------------------------------------------- what a drop would do
 

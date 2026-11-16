@@ -1,0 +1,116 @@
+{
+ "gpuRun": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "results": [
+  {
+   "strokes": 50,
+   "scale": 1,
+   "plain": {
+    "coldMs": 4.8,
+    "warmMs": 2.2
+   },
+   "holes": {
+    "coldMs": 84.1,
+    "warmMs": 2.2
+   },
+   "tooth": {
+    "coldMs": 76.5,
+    "warmMs": 3
+   }
+  },
+  {
+   "strokes": 50,
+   "scale": 2,
+   "plain": {
+    "coldMs": 3.1,
+    "warmMs": 4.4
+   },
+   "holes": {
+    "coldMs": 45.3,
+    "warmMs": 1.9
+   },
+   "tooth": {
+    "coldMs": 204.7,
+    "warmMs": 8.1
+   }
+  },
+  {
+   "strokes": 150,
+   "scale": 1,
+   "plain": {
+    "coldMs": 8.8,
+    "warmMs": 3.8
+   },
+   "holes": {
+    "coldMs": 169.9,
+    "warmMs": 9.7
+   },
+   "tooth": {
+    "coldMs": 239.1,
+    "warmMs": 10.1
+   }
+  },
+  {
+   "strokes": 150,
+   "scale": 2,
+   "plain": {
+    "coldMs": 15.3,
+    "warmMs": 8.8
+   },
+   "holes": {
+    "coldMs": 141.7,
+    "warmMs": 14
+   },
+   "tooth": {
+    "coldMs": 690,
+    "warmMs": 15.2
+   }
+  },
+  {
+   "strokes": 400,
+   "scale": 1,
+   "plain": {
+    "coldMs": 28.3,
+    "warmMs": 13.4
+   },
+   "holes": {
+    "coldMs": 451.7,
+    "warmMs": 28.6
+   },
+   "tooth": {
+    "coldMs": 570.5,
+    "warmMs": 19.4
+   }
+  },
+  {
+   "strokes": 400,
+   "scale": 2,
+   "plain": {
+    "coldMs": 33.4,
+    "warmMs": 22
+   },
+   "holes": {
+    "coldMs": 513,
+    "warmMs": 35.5
+   },
+   "tooth": {
+    "coldMs": 1725.8,
+    "warmMs": 34.2
+   }
+  }
+ ]
+}

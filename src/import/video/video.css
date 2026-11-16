@@ -1,0 +1,10 @@
+/* The video window: the two ways it comes in stack, so neither is cut off (sizes follow the sequence window, import.css). */
+.vd-ways {
+  grid-template-columns: 1fr;
+}
+.vd-ways .im-way {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}

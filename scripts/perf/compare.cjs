@@ -49,6 +49,14 @@ const rows = [
   ['pan at 400%, 5 layers: frame delta p95', 'zoompan.layers5x50_pan400.rafDelta.p95'],
   ['  main draw p95', 'zoompan.layers5x50_pan400.mainDrawMs.p95'],
   ['memory: heap growth after 200 strokes, 100 undos (MB)', 'memory.growthMB'],
+  ['export kitchen sink 960x576: draw (ms/frame)', 'export.kitchenSink.drawMsPerFrame'],
+  ['  read back (ms/frame)', 'export.kitchenSink.readMsPerFrame'],
+  ['  draw + read back (ms/frame)', 'export.kitchenSink.drawPlusReadMsPerFrame'],
+  ['  whole GIF export (ms)', 'export.kitchenSink.wallMs'],
+  ['export strokes 1280x720: draw (ms/frame)', 'export.strokes.drawMsPerFrame'],
+  ['  read back (ms/frame)', 'export.strokes.readMsPerFrame'],
+  ['  draw + read back (ms/frame)', 'export.strokes.drawPlusReadMsPerFrame'],
+  ['  whole GIF export (ms)', 'export.strokes.wallMs'],
 ];
 
 const w = Math.max(...rows.map((r) => r[0].length));

@@ -4,9 +4,11 @@ export const bodies: Record<string, string> = {
 
 **On a vector layer** the brush makes smooth lines that follow your hand. If you have a drawing pen, pressing harder makes the line thicker. With a mouse, drawing faster makes it a little thinner. Every line stays editable, so you can select it later and move or resize it.
 
-In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped.
+In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped. The **Tip** picker gives lines a different feel: [chalk, charcoal, watercolour or stamps](help:brush-tips).
 
-**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
+**How big can it go?** The **Size** slider runs from 1 pixel to a little wider than your canvas, so a big canvas gets a big brush and a small one is not left with a slider that is all too wide. The first part of the slider is for small, careful sizes and the last part is for the huge ones. Want it bigger still? Click the number beside the slider and type any size you like. The pencil's **Thickness** and the pen's **Line thickness** work the same way.
+
+**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels (the slider runs up to a little wider than your pixel canvas, and you can click the number and type a bigger one). Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
 
@@ -68,6 +70,7 @@ On a **pixel layer** the line is one pixel wide (or as thick as you set in [Pixe
 
 - **Click** a line or shape to select it. **Shift+click** adds more, or takes one off.
 - **Drag a box** round several to select them all. Or take the **Lasso** tool (**Shift+L**) and draw round them, or the **Polygon** tool (**Shift+G**) and click each corner, or the **Magnetic lasso** (**Shift+E**) and trace roughly round them, and it clings to their edges. See [Lasso](help:lasso) and [Magnetic lasso](help:select-magnetic).
+- **Drag a box over part of a shape** and Frameling asks, the first time, whether you meant just the bit you went round or the whole shape. **Ctrl** swaps it for one drag: see [Picking part of a shape](help:select-parts).
 - **Drag a selection** to move it. Hold **Shift** to keep it in a straight line.
 - **Drag a corner** to resize. Hold **Shift** to keep its proportions, **Alt** to resize from the middle.
 - **Drag the round handle** above to turn it. Hold **Shift** to snap to neat angles.
@@ -106,7 +109,7 @@ On a pixel layer these pick and move pixels, and **Ctrl+Shift+I** inverts the se
 
 Pasting onto a different frame puts them in exactly the same place, which is handy for reusing a pose. Pasting onto the same frame puts the copy a little to the side. The pasted shapes are selected, ready to move.
 
-Copy and paste works between frames and layers of the same kind, inside Frameling. On a pixel layer it copies the selected pixels: see [Selecting pixels](help:pixel-select).`,
+Copy and paste works between frames and layers, and with other apps too: Ctrl+C also puts a picture on the computer's clipboard, and Ctrl+V pastes a picture copied anywhere. See [Copy and paste with other apps](help:clipboard-system). On a pixel layer it copies the selected pixels: see [Selecting pixels](help:pixel-select).`,
   'duplicate-delete': `- **Ctrl+D** duplicates the selection. The copy appears just beside it and is selected.
 - **Delete** (or **Backspace**) removes the selection.
 

@@ -13,13 +13,15 @@ import { can } from '../platform';
 import { notifySaved } from '../io/notify';
 import { encodePng, type RawImage } from '../io/png';
 import { detectCapabilities } from '../export/capabilities';
-import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
+import { backgroundFor, drawFrame, makeCanvas, readPixels, wantsSeeThrough } from '../export/draw';
 import { MAX_SHEET_SIDE, fileSafe, planExport } from '../export/plan';
 import { isCancelled, runExport, type Progress } from '../export/run';
 import { formatInfo, type ExportSettings } from '../export/types';
 import { artboardDoc, artboardsOf, exportNameOf, hasArtboards, joinShots } from './model';
 import { rememberedFrame } from './ops';
 import { packArtboardAtlas } from './pack';
+import { choiceWord } from '../words/choices';
+import { displayFile } from '../core/streamSafe';
 
 export type ArtboardExportMode = 'one' | 'each' | 'joined' | 'atlas';
 
@@ -48,14 +50,14 @@ export type ArtboardFolderChoice = 'folder' | 'zip';
 
 registerChoice<ArtboardFolderChoice>({
   id: 'artboards.exportAs',
-  title: 'Exporting several artboards',
-  question: 'Where should the artboards go, one file each?',
+  title: choiceWord('choice.artboards.exportAs.title'),
+  question: choiceWord('choice.artboards.exportAs.question'),
   category: 'Export',
   default: 'folder',
   help: 'Each artboard is saved as its own file, named after the artboard.',
   options: [
-    { value: 'folder', label: 'Into a folder', detail: 'Pick a folder and every artboard lands in it, ready to use.' },
-    { value: 'zip', label: 'One zip file', detail: 'Everything in one .zip, handy for sending or uploading.' },
+    { value: 'folder', label: choiceWord('choice.artboards.exportAs.folder.label'), detail: choiceWord('choice.artboards.exportAs.folder.detail') },
+    { value: 'zip', label: choiceWord('choice.artboards.exportAs.zip.label'), detail: choiceWord('choice.artboards.exportAs.zip.detail') },
   ],
 });
 
@@ -236,7 +238,7 @@ export async function exportArtboards(
       const caps = await detectCapabilities(plan.width, plan.height);
       const cap = caps[settings.format];
       if (!cap.ok) throw new ArtboardExportProblem(cap.reason ?? "This computer can't make that kind of video.");
-      videoCodec = settings.format === 'webm' && settings.transparent && cap.alphaCodec ? cap.alphaCodec : cap.codec;
+      videoCodec = settings.format === 'webm' && wantsSeeThrough(doc, settings.transparent) && cap.alphaCodec ? cap.alphaCodec : cap.codec;
       videoAlpha = cap.alpha;
     }
     if (settings.format === 'prores') throw new ArtboardExportProblem('ProRes goes one artboard at a time. Pick "This artboard", or another format.');
@@ -266,7 +268,7 @@ export async function exportArtboards(
     shown = w.paths[0];
   }
   const what = `${ids.length} artboard${ids.length === 1 ? '' : 's'} as ${info.title}`;
-  notifySaved(`Exported ${what}${where === 'zip' ? ` in ${baseName(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Exported ${what}${where === 'zip' ? ` in ${displayFile(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }
 
@@ -292,7 +294,7 @@ export async function atlasFiles(root: Doc, ids: Id[], settings: ExportSettings,
       const img = readPixels(drawFrame(canvas, doc, f, { width: w, height: h, scale, background: bg, crisp }));
       frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
     }
-    sets.push({ name, frames, clips: doc.clips });
+    sets.push({ name, frames, clips: doc.clips, fps: doc.fps });
   }
   onProgress({ done: total, total, label: 'Packing the sheet' });
   const base = `${fileSafe(root.name)}-atlas`;

@@ -80,3 +80,27 @@ describe('loading and saving the view settings', () => {
     expect(v.getViewSettings().snapPicks).toEqual(defaultPicks());
   });
 });
+
+describe('the pen, pencil and brush options', () => {
+  it('start on, at the usual pull, for someone who saved nothing or saved before they existed', async () => {
+    for (const saved of [undefined, { snap: false, snapDistance: 10 }]) {
+      const m = await load(saved);
+      expect(m.getViewSettings().snapDraw).toBe(true);
+      expect(m.snapDrawPx()).toBe(8);
+    }
+  });
+  it('are remembered, and a saved distance out of range or junk is made safe', async () => {
+    const m = await load({ snapDraw: false, snapDrawDistance: 12 });
+    expect(m.getViewSettings().snapDraw).toBe(false);
+    expect(m.snapDrawPx()).toBe(12);
+    m.setViewSettings({ snapDrawDistance: 400 });
+    expect(m.snapDrawPx()).toBe(24);
+    expect(m.stored().snapDrawDistance).toBe(24);
+    expect((await load({ snapDrawDistance: 'x' })).snapDrawPx()).toBe(8);
+  });
+  it('line ends and points come on by default for vector layers, and a saved old set does not turn them off', async () => {
+    const m = await load({ snapChosen: { vector: { guides: false } } });
+    expect(m.getViewSettings().snapPicks.vector.points).toBe(true);
+    expect(m.getViewSettings().snapPicks.vector.guides).toBe(false);
+  });
+});

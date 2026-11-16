@@ -36,9 +36,12 @@ export const PAGE_NAMES: Record<PrefsPage, string> = {
   keyboard: 'Keyboard',
   snapping: 'Snapping',
   pen: 'Pen and tablet',
+  performance: 'Performance',
   workspaces: 'Workspaces',
+  menus: 'Menus',
   plugins: 'Plugins',
   features: 'Features',
+  streaming: 'Streaming',
   diagnostics: 'Diagnostics',
 };
 

@@ -17,7 +17,10 @@ import { oneOfEach } from '../../src/ui/toolTwins';
 const labels = (items: MenuItem[]) => items.filter((i): i is Extract<MenuItem, { kind: 'command' }> => i.kind === 'command').map((i) => i.command.label);
 const drawMenu = () => {
   syncDynamicCommands();
-  return labels(resolveMenu(MENUS.find((m) => m.label === 'Draw')!));
+  // The Pick a tool list is not in the Tools menu any more (the rail has every tool), but it is still a submenu that can
+  // be added from Menus, so it is resolved here the way that would put it.
+  const tools = resolveMenu({ label: 'Draw', categories: [], items: ['sub:tools'], fixed: true }, MENUS).find((i) => i.kind === 'submenu' && i.label === 'Pick a tool');
+  return labels(tools && tools.kind === 'submenu' ? tools.items : []);
 };
 const dupes = (xs: string[]) => xs.filter((x, i) => xs.indexOf(x) !== i);
 

@@ -1,0 +1,16 @@
+panels-a: Properties shows only what is here (shape A, "only what is here").
+
+A (before-*): the Properties panel on a vector layer with nothing picked. Under the sections that apply there is an
+   ALSO HERE block of eight panels that are not showing (Palette, Tileset, Symbol and motion, Effects, Clip, Particles,
+   Camera, Text, Rig, Slices), each with what you would have to do.
+B (after-*): the same panel with the block gone. It spends its room on what you can use now.
+
+compare-props-dark.png / compare-props-light.png   A and B side by side, full height.
+before-props-full-*.png / after-props-full-*.png   the panel and the rail, full height, one per theme.
+before-panels-list-*.png / after-panels-list-*.png   the Panels list. After: each Properties section has a bold line
+   "Shows up when you pick a pixel layer" (made from the old Also here words). The rows now wrap, so the sentence is
+   whole; before, the blurbs were cut off at the edge of the list.
+before-panels-find-pixel-*.png / after-panels-find-pixel-*.png   typing "pixel" in the Panels list. After: Palette,
+   Turn into and Slices turn up by when they show up; before, nothing matched them by that.
+
+Made with scripts/docs/ab-panels-a/shots.cjs (help-media.cjs --entries ... --renderer old and new build), in xvfb.

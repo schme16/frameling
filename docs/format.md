@@ -19,6 +19,8 @@ A `.frameling` file is a zip (fflate) with:
 | `doc.json` | The `Doc`, with binary parts swapped for entry names (below). |
 | `pixels/<id>.png` | One PNG per pixel drawing. `doc.json` holds the entry name in `pixels` instead of the bytes. |
 | `audio/<id>.<ext>` | One entry per sound clip (stored, not compressed). `doc.json` holds the entry name in `data`. |
+| `pictures/<id>.<ext>` | One entry per reference picture a layer still shows (`jpg` or `png`, stored as it came). `doc.json` holds the entry name in `data`. Pictures no layer shows are not written. |
+| `preview.png` | A small picture of the first frame (the first that isn't empty), longest side 160 px or less, a few KB, with the drawing's background behind it (see-through where it has none). Stored, not compressed. Written on Save by `src/io/preview.ts` for lists of files (Open recent, the welcome sheet); read without reading the rest of the zip (`src/shared/zipTail.ts`, `src/main/preview.ts`). Optional: a file from an older Frameling has none, a build that doesn't know the entry skips it, and the document never reads it. |
 
 Tilemap drawings store `cells` as a plain number list in `doc.json`. Sounds on artboards that aren't open are packed
 the same way (`src/artboards/io.ts` `packArtboards`). `saveFile(doc, appVersion)` always saves `rootDoc(doc)`
@@ -68,7 +70,7 @@ Refused outright:
 - A pixel drawing whose PNG entry is missing, misnamed, undecodable or the wrong size. A tilemap drawing with a
   bad size (over 4,000,000 cells, or `cells` the wrong length).
 - A layer of an unknown kind, or two layers with the same id.
-- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
+- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/`, `audio/` and `pictures/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
 
 Repaired, with a warning:
 
@@ -80,6 +82,7 @@ Repaired, with a warning:
 - A symbol that can't be read is dropped (its instances then draw nothing).
 - Tiles with a bad or duplicate key, or no frame whose drawing is a pixel drawing of exactly the tile size, are
   dropped. A tileset with a tile size outside 1 to 1024 is dropped. An optional `gridX`/`gridY` (0 to tile size minus 1, where a tile edge sits from the stage corner) outside that range is dropped. `nextKey` is raised past the highest key.
+- Tile extras are all optional and checked on the way in, so an odd or hand-edited file still opens: a tile's `collision` keeps only boxes and polygons with real numbers, clamped to the tile, with at least three corners enclosing some area; a tile's `data` keeps only names the tileset's `dataLayers` lists, fitted to their type; a tile's `terrain` is dropped when its terrain doesn't exist, and edges that touch a terrain that doesn't exist are dropped. An unknown `terrainMode` is dropped (the default is `corners-and-sides`). `nextTerrain` is raised past the highest terrain id.
 - A sound whose bytes are missing, or with a duplicate id, is dropped.
 - A variation whose original is missing (or is itself a variation) is dropped with a warning. Inside its overrides,
   anything malformed is left out: unknown or badly typed properties in a patch, `__proto__` style keys, layers
@@ -103,14 +106,16 @@ Repaired quietly (defaults filled, values clamped):
   keeps its plain bone bind).
 - Tweens: unknown easing becomes `'linear'`, `spin` is rounded, a motion path needs two good points, shape hints
   are kept only on shape tweens, at most 26.
-- Clip flow: transitions between clips that don't exist are dropped; triggers are cut to 60 characters.
+- Clip flow: transitions between clips that don't exist are dropped; triggers are cut to 60 characters; inputs, checks and fades are validated (see Clip flow below).
 - Clips: `direction` is kept only when it is one of the four known words (and not `'forward'`); `repeat` only when it
   rounds to a whole number from 2 to 999 (`readClip` in `src/core/clipPlay.ts`, also used for artboards).
 - Gradients that don't parse are removed from the shape (`cleanGradients` in `src/core/gradient.ts`).
 - Text and particles are read field by field with clamps and defaults (`src/io/shapes-extra.ts`); particle defaults
   come from the shape's `preset`.
-- Palette colours must be hex, at most 256; ramps must point inside the palette. `dpi` outside 1..10000 is dropped.
-  `inOut` is clamped to the length and put in order; `perspective` keeps at most two points.
+- Palette colours must be hex (`#rrggbb`, or `#rrggbbaa` for a see-through one), at most 256; ramps must point inside the palette. A six digit colour is fully solid and is always written back as six digits. On a layer with `paletteLock`, painting and Reduce to palette give each pixel its palette colour's own opacity (solid unless the entry has an `aa`); colour matching looks at the `rrggbb` part only. `dpi` outside 1..10000 is dropped.
+  `inOut` is clamped to the length and put in order; `perspective` keeps at most two points. `exports` keeps only plain
+  settings (no format means the entry is dropped), ways without a name or with a repeated id are dropped, and at most 12
+  ways are kept (`readExports` in `src/export/saved.ts`).
 
 Stroke, fill and path shapes are otherwise passed through as stored.
 
@@ -147,6 +152,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `fps` | number | |
 | `dpi?` | number | Missing = 96. For sizes in mm, cm, in, pt. Added with onboarding (`977be97`). |
 | `length` | number | Frames, at least 1. |
+| `animated?` | boolean | Optional. True = an animation (timeline, frame rate and animation tools shown). False = a still picture: those are tucked away, and any frames stay in the file. Missing = what every older file meant: animated when `length` is above 1. Turning it off never deletes frames. See `src/core/animation.ts`. |
 | `background` | Color or null | null = see-through. |
 | `layers` | `Layer[]` | Bottom first. |
 | `drawings` | `Record<Id, Drawing>` | Cels point here; several cels can share one drawing. |
@@ -160,9 +166,14 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `editing?` | `EditFrame[]` | Symbol edit stack. In memory only, never saved (`828d4a8`). |
 | `flow?` | `ClipFlow` | Clip state graph (`f587827`). |
 | `audio?` | `AudioClip[]` | (`0b554d4`) |
+| `pictures?` | `ReferencePicture[]` | The pictures reference layers show: `{id, name, data, mime, width, height}`. Bytes in `pictures/<id>.<ext>`; `width` and `height` are as the picture shows (a phone photo's turn already applied). Shared by every layer and shot that names the id. |
 | `guides?` | `Guide[]` | Ruler guides, never exported (`b5f0737`). |
+| `notes?` | `CanvasNote[]` | Notes left on the canvas: `{ id, x, y, text, pin?, frame?, layer?, board?, by?, at?, done?, replies? }`. `pin` is `'page'` (the default), `'frame'` (with `frame`) or `'layer'` (with `layer`). Read by `readNotes` (src/notes/model.ts), which drops what is malformed. Never exported: every way out passes the document through `withoutNotes`. An older Frameling ignores the field. |
+| `marks?` | `CanvasMark[]` | Marks drawn over the picture (arrow, circle, sketch, words): `{ id, kind, pts, color?, w?, text?, pin?, frame?, layer?, board? }`. `kind` is `'arrow'`, `'circle'`, `'scribble'` or `'text'`; `pts` is a flat list of stage pixels (an arrow is tail then tip, a circle two opposite corners of its box, a scribble the stroke's points, a text mark its top left). `color` (default red) and `w` (line thickness in screen pixels, default 3) are written only when they differ. `pin` works as it does for notes. Read by `readMarks` (src/notes/marks.ts), which drops what is malformed. Never exported: every way out passes the document through `withoutNotes`, which takes marks out with the notes, and `test/notes/marks-never-exported.test.ts` proves it for every format. An older Frameling ignores the field. |
+| `selections?` | `SavedSelection[]` | Selections saved under a name: `{ id, name, kind: 'pixels', width, height, cover }` or `{ id, name, kind: 'shapes', layerId, ids }`. `cover` is a pixel selection's cover over the art grid (0 to 255 each, so a feathered edge comes back feathered) as runs, base64: for each run one value byte then its length in 7 bit pieces, the top bit of a piece meaning another follows (`encodeCover`, `decodeCover` in src/select/saved.ts). Read by `readSavedSelections`, which drops what is malformed, a repeated id and any pixel one whose runs do not add up to `width` x `height`; at most 60 are kept. Never exported, and a reviewer is not sent them. An older Frameling ignores the field. |
 | `inOut?` | `{start, end}` | Play range, inclusive (`9edd74d`). |
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
+| `exports?` | `{last?: {settings, way?}, ways?: {id, name, settings}[]}` | How the drawing was last exported (what Export again repeats) and up to 12 named ways ("the sprite sheet"). Settings are the Export window's choices as plain data. Missing = never exported; old files have none. |
 | `artboards?` | `Artboard[]` | (`d7cd660`) |
 | `activeArtboard?` | Id | Missing = the first (`d7cd660`). |
 | `sprite?` | `{way}` | How a pixel sprite is built: `picture`, `animation`, `boards` (artboards are the frames) or `sheet` (artboards are separate sprites). Missing = worked out from the document (`inferWay` in `src/pixel/way.ts`), so old files open unchanged. Never added to a file that does not say it. |
@@ -234,6 +245,7 @@ See "Variations" in `docs/artboards.md` for how they are kept in step while edit
 | `cels` | Sorted by `start`, never overlapping. A frame with no cel is empty. |
 | `onion?` | false = left out of onion skin (`b6d4329`). |
 | `reference?` | Shown while drawing, left out of every export (`c4c91b3`). |
+| `picture?` | `LayerPicture`: a reference picture this layer shows, drawn by the editing canvas only (never by `renderFrame`, so never exported). `{x, y, scale, turn?, shots}`: the middle of the picture in stage pixels, stage pixels per picture pixel, degrees clockwise about the middle, and `shots: {picture, start, length?}[]` in order of `start` (a shot holds until the next one, or for `length` frames). One placement per layer. A shot naming a picture that isn't in `Doc.pictures` is dropped on reading. |
 | `bind?` | `LayerBind`, attached to a bone (`0b554d4`). |
 | `blend?` | `BlendMode`, missing = normal (`ebd1163`). |
 | `effects?` | `LayerEffect[]` (`ebd1163`). |
@@ -242,6 +254,7 @@ See "Variations" in `docs/artboards.md` for how they are kept in step while edit
 | `folder?` | Key of `doc.folders` (`ebd1163`). |
 | `depth?` | Parallax distance from the camera, missing = 0, kept above -0.9 (`f587827`). |
 | `label?` | Timeline colour, one of `LAYER_LABELS` (`f2492a4`). |
+| `pair?` | Id of the other half of a pair: a vector layer and a pixel layer made by drawing, shown as one row in the Layers panel, whose cels keep the same starts, lengths and offsets (`core/pairs.ts`, kept by the settler in `timeline/pairs.ts`). Both halves name each other. On reading, a link the other layer does not return, or one that joins two layers of one kind, is dropped, so a file without the field, or with a stale one, opens as plain layers. No format version change. |
 
 Per kind:
 
@@ -268,9 +281,30 @@ pixel layer of the board and write them into the engine data (see the sprite she
 
 ### Cels
 
-`Cel` is `{id, start, length, drawingId, tween?, autoHold?}`. `length` is the exposure (1 = on ones). `tween` makes
+`Cel` is `{id, start, length, drawingId, tween?, autoHold?, name?, offset?}`. `length` is the exposure (1 = on ones). `tween` makes
 in-betweens to the next key on the layer when it starts right where this one ends (`828d4a8`). `autoHold` (`cd5f717`)
-means the hold reaches the next key and gives way when someone draws on a later frame of it.
+means the hold reaches the next key and gives way when someone draws on a later frame of it. `offset` is `{x, y}` in
+document pixels (right and down positive): where the key's drawing sits, so a breathe or a head bob moves a part
+without a new drawing per position. Missing means not moved; a zero move is never written; numbers are rounded to a
+thousandth and held within 16384, and anything that isn't a pair of numbers is dropped on open (`cleanOffset` in
+`core/offset.ts`). On a pixel layer the editor keeps it to whole art pixels. In-betweens run from this key's offset to
+the next key's while the key has a tween (a missing one counts as 0). Only vector layers without bones and pixel
+layers use it (not cameras, bones layers or tilemaps). Every renderer and export shows it through `poseAt`, which wraps
+the drawing in the same posed group a bone-attached layer uses; `celOffsetAt` (`core/symbols.ts`) is the one place that
+works the offset out. A folder has no offset of its own: moving a folder (Frameling's "Move the whole folder together")
+sets the offset of every layer under it on that frame, so the group moves as one.
+
+**Version.** A file that uses an offset anywhere (stage, symbols, artboards, what a variation changes) is saved as
+version 4 (`OFFSET_FORMAT_VERSION`); a file that doesn't stays version 3, so nothing changes for anyone not using it.
+`versionFor` in `core/offset.ts` decides. An older Frameling refuses a version 4 file with the "made with a newer
+Frameling" message. That is on purpose: opening it anyway would drop the offsets without a word, draw every moved part
+in the wrong place, and take the moves out of the file for good on the next save. `NEWEST_FORMAT_VERSION` is the
+newest this build opens. `test/offset/offset.test.ts` covers the round trip, the repair of odd values and the version.
+
+drawing ("eyes sad"): optional, tidied by `cleanCelName` (`src/core/celName.ts`: spaces folded, 60 characters at most)
+and written only when there is one, so a file with no names is the file it always was. The format version stays 3: an
+older Frameling builds each cel from the fields it knows and drops `name` without a warning, so the file opens and plays
+the same there, just without the names. Copying or pasting keys does not carry a name; duplicating a layer does.
 
 ### Drawings
 
@@ -310,15 +344,68 @@ Duplicate make a shape of its own (no `origin`). A non-string or empty `origin` 
 when comparing two drawings for "same look" (as `id` is ignored).
 
 - `StrokeShape` (`type: 'stroke'`): `points: {x, y, p}[]` (p = pressure 0..1, 0.5 without a pen), `brush:
-  BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`), `color`,
-  `opacity`. Kept as input points so it re-renders losslessly.
+  BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`, and `tip?`), `color`,
+  `opacity`. Kept as input points so it re-renders losslessly. **Brush tips** (`brush.tip`, all optional, missing = a plain
+  line, so older files read unchanged): `kind` is `'chalk' | 'charcoal' | 'watercolour' | 'stamp'`, and the rest depend on it:
+  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; on a dry medium `streak` 0 to 1 overrides how much the stick's bumps streak along the line; watercolour: `amount` is the edge
+  strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | paw | custom`), `spacing` (a share of the
+  brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
+  outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is
+  drawn, so the random parts stay put). Four more kinds are the brushes you build yourself (`src/geometry/tipRibbon.ts`), each
+  field optional: `'nib'` (`roundness` 0.05 to 1, `nibAngle` -90 to 90 degrees, `angle` `upright` = fixed on the page or
+  `follow` = measured from the line), `'bristle'` (`count` 3 to 60, `stiffness` 0 to 1, `amount` = dry gaps, `body` -1 to 1 = how fat each bristle is next to its gap (below 0 clear tines, above 0 closing into solid paint), `tone` 0 to 1 = how far bristles run lighter and darker than the colour in broad streaks, `seed`), `'along'`
+  (`custom` is the drawing, up to 240 points, 4 digits, and `fit` `stretch | repeat`) and `'edged'` (`custom` is the sides,
+  `pieces: { start?, end?, inner?, outer? }` the other drawings). A stamp also takes `turn` (0 to 1, random spin), `fixedSize`
+  (true ignores pen pressure) and `gapVary` (0 to 1). `along` and `edged` with no usable drawing read back as a plain line.
+  A tip is read by `readTip` (`src/geometry/tip.ts`), on open and when a saved brush is
+  read: anything that is not a tip makes the line plain, numbers are held to their range. The line keeps its points; the
+  fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them
+  in, see `src/core/tips.ts`), never stored. A saved brush (`src/brushes`) and a shared brush file hold the same `tip`.
+  A pixel brush made from a selection is not in the document: it is the `pixelStamp` tool setting (`src/brushes/stamps.ts`).
+  Saved and shared brushes (`src/brushes/model.ts`, file `*.frameling-brushes.json`, still version 1) have a `tool`: `'brush'` (the
+  default, so every old file reads as before) or `'pixel'`, which holds `pixel` instead of `brush`: a `PixelSpec` (`src/dab/spec.ts`) that is
+  one of `{ kind: 'dab', dab }` (the Pixel brush: `tip`, `picture`, `size`, `hardness`, `angle`, `roundness`, `follow`, `spacing`,
+  `scatter`, `sizeJitter`, `angleJitter`, `flow`, `opacity`, `aliased`, and since the second slice `dynamics` (a list of `{ from, to, amount, invert }` routes), `fadeLength`, `grain`, `dual` and `wet`; a `picture` (`PixelStamp`) has an optional `soft: true` (each cell's see-through is the amount of paint, in the colour picked; an older Frameling reads it as a plain picture), set by brushes brought in from GIMP and Photoshop files, see `docs/brush-import.md`; every field optional on read, with a default and a range, and a file from before the second slice reads as a plain brush; see `docs/pixel-brush.md`),
+  `{ kind: 'soft', tool, size, hardness, flow }` or `{ kind: 'dry', medium, paper, size, hardness, press }`. An older Frameling
+  skips a `'pixel'` brush as unreadable and keeps the rest. The brush in use is the `frameling.pixelBrush.v1` setting.
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`
   stays as its first stop).
 - `PathShape` (`type: 'path'`): `paths`, `fill: Color | null`, `stroke: {color, width, join, cap} | null`, `opacity`,
-  `fillGradient?`, `strokeGradient?` (`e352d32`).
+  `fillGradient?`, `strokeGradient?` (`e352d32`). The stroke can also carry, all optional (a missing one is a plain
+  line, so older files read unchanged, and bad values are dropped on open by `cleanStrokeStyle`):
+  `dash?: number[]` and `dashOffset?` (dashes and gaps, in **line widths**, so they scale with the line; a dash of about
+  0 with round caps is a dot), `arrowStart?` / `arrowEnd?` (`'triangle' | 'open' | 'dot' | 'bar'`, on every open subpath),
+  `arrowSize?` (line widths, default 4) and `widths?: {at, w}[]` (width along the line, `at` 0 to 1, `w` times `width`).
+  `src/geometry/lineStyle.ts` turns these into plain shapes for the writers; see `test/export/line-style.test.ts` for
+  what each format does with them. It can also carry `trim?: {start, end, offset, order?}` (a line that draws itself:
+  percents of the line's length; the part between `start` and `end` shows, `offset` slides it, `order` is `'inOrder'`
+  to treat several outlines as one long line, missing = each the same; whole line = missing). A `StrokeShape` takes the
+  same `trim?` on the shape. Cleaned on open by `cleanTrim`. Between two drawing keys joined by a classic tween the trims
+  of the same shape (found by `origin`) blend at the eased progress (`src/core/trimTween.ts`); the timeline shows it as
+  the "Draw on" row (`trim`). See `test/trim/`.
+- Stroke, fill, path, symbol and text shapes take an optional `repeat?: Repeat`: `{kind: 'grid', cols, rows, dx, dy}`
+  (rows and columns, steps in document pixels, either sign), `{kind: 'ring', count, cx, cy, sweep?, turn?}` (round a
+  centre; `sweep` degrees, missing = 360, a full ring; `turn: false` keeps each copy upright, missing = turned to
+  follow the ring) or `{kind: 'mirror', x, y, angle?, point?}` (across the line through the point at `angle` degrees,
+  missing = 90, up and down; `point: true` reflects through the point). The copies are never stored: `src/core/repeats.ts`
+  makes them when the drawing is posed (like tipped lines, so the canvas and every writer that reads `poseAt` see them),
+  after the shape, with ids `<id>~r<n>`. At most 400 shapes in all. A copy can't be clicked and isn't a snap target.
+  The centre and the line are in document pixels and stay put when the shape moves, so moving the shape changes the
+  ring's radius or the copy's distance from the line. Cleaned on open by `cleanRepeat` (`src/geometry/repeat.ts`), which
+  drops one that makes no sense. An older file has none. See `test/repeat/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
-- `Gradient` is `{kind: 'linear' | 'radial', stops: {at, color}[], from, to}` in document pixels, so it moves with
-  the shape.
+- `Gradient` is `{kind: 'linear' | 'radial' | 'angular' | 'diamond', stops: {at, color}[], from, to}` in document pixels, so it moves with
+  the shape. Linear runs `from` to `to`; radial is a circle round `from` out to `to`; angular (conic) sweeps once round `from`,
+  clockwise on screen, starting in the direction of `to` (stops 0 and 1 meet there), so how far `to` is only places the handle.
+  `angular` is new: `readGradient` (src/core/gradient.ts) accepts it, and an older Frameling that meets one drops it and shows
+  the shape's plain colour. Writers with no conic gradient: SVG and PDF (and so Illustrator) cut it into 90 wedges of plain colour;
+  Lottie keeps the shape's plain colour (see `ANGULAR_NOTE` and the `gradientAngular` row in src/export/carries.ts).
+  `diamond` steps out from `from` in a square turned on its corner: `to` is the corner on the way out (stop 1 sits there, and the
+  last colour carries on past it), so turning `to` round `from` turns the diamond. It is a straight gradient in each of four
+  mirrored quarters (`diamondQuarters`), and a point is `(|along| + |across|) / distance` of the way out (`diamondAt`). Also new,
+  and dropped by an older Frameling the same way. Canvas formats draw the four quarters exactly; SVG makes a pattern of four
+  pieces with a straight gradient each; PDF cuts the shape along the two axes and shades each piece (so Illustrator gets four
+  gradient fills); Lottie keeps the shape's plain colour (see `DIAMOND_NOTE` and the `gradientDiamond` row in src/export/carries.ts).
 - `InstanceShape` (`type: 'instance'`, `828d4a8`): `symbolId`, `transform: Transform2D`, `opacity`, `tint?: {color,
   amount}`, `play: 'loop' | 'once' | 'single'`, `firstFrame`. `Transform2D` is `{x, y, scaleX, scaleY, rotation,
   skew}`, applied translate, rotate, skew, scale around the symbol's origin.
@@ -326,6 +413,17 @@ when comparing two drawings for "same look" (as `id` is ignored).
   `lineHeight?` (missing 1.2), `letterSpacing?`, `opacity`, `transform`, `animators?: TextAnimator[]`. A
   `TextAnimator` is `{id, kind: fade|slide|scale|rotate|typewriter|wave, by: letter|word|line, direction?, start,
   duration, stagger, order?, amount, angle?, ease?, seed?, on?}`.
+  `onPath?: TextOnPath` runs the words along a curve (text on a path): `{curve: SubPath, source?, side?, flip?, start?,
+  offset?}`. `curve` is the line in the text's own space (before its transform), kept inside the text so it draws,
+  hits, exports and saves with no lookup; `source` is the id of the line or shape in the same drawing it follows (a
+  change to that shape works `curve` out again in the same undo step, `src/text/onPathSettle.ts`; with no source, or one
+  that is gone, the words keep the curve they have). `side` is `'outside'` (missing: clockwise round a closed curve, on
+  top of an open line) or `'inside'` (anticlockwise with the tops in, or under an open line); `flip` turns the words
+  the other way round; `start` is where the line of words begins as a fraction of the curve's length (missing 0; with
+  `align: 'center'` it is where the middle sits); `offset` is the baseline's distance from the curve in pixels. Lines
+  of the text join into one run. An older Frameling ignores the field and shows the words on a straight line; a curve
+  with fewer than two points, a non-number, or more than 5000 points is dropped on reading (`readOnPath`) and the words
+  stay as text.
 - `ParticlesShape` (`type: 'particles'`, `46a6fbb`): an emitter worked out from `seed` for every frame on its own (no
   step simulation), so scrubbing, playback and exports agree. Fields: `transform`, `emitter: point|line|area`,
   `width`, `height`, `rate`, `burst`, `emitFor`, `prewarm?`, `life`, `variance`, `speed`, `direction`, `spread`,
@@ -355,12 +453,23 @@ when comparing two drawings for "same look" (as `id` is ignored).
 ### Look: blend, effects, folders (`ebd1163`)
 
 - `BlendMode`: the canvas modes plus `'add'`.
-- `LayerEffect`: `{id, kind: blur|glow|shadow|adjust|outline|pixelate, on?, values, keys?}`. `values` holds numbers
+- `LayerEffect`: `{id, kind: blur|glow|shadow|adjust|outline|pixelate|grain|wave|fringe|vignette|motionblur, on?, values, keys?}`. `values` holds numbers
   and hex colours; `keys: {frame, values}[]` animate the numbers (linear between keys, held outside).
 - `LayerFolder`: `{id, name, visible, opacity, blend?, effects?, parent?}`. `parent` is the id of the folder it sits in
   (missing = on the stage), up to 8 levels deep. A layer's `folder` is the folder it sits in directly; every layer under
   a folder, in folders inside it too, sits next to the others in `layers`, so the flat list reads like the tree walked in
   order. Files from before folders could nest have no `parent` and open unchanged.
+
+  The last five (film grain, wave, colour fringe, dark corners, motion blur) were added later: an older build opens a file
+  that has them without those effects (unknown kinds are dropped on read), and a file from before them has none. Their
+  settings are all optional on read and take their defaults (`src/effects/model.ts`, `EFFECTS`). Grain's moving pattern is
+  worked out from the frame and the `seed` and `change` settings, never stored.
+
+- Shapes can carry `effects?: LayerEffect[]` too (every kind of shape: stroke, fill, path, instance, text, particles). It is
+  the same list a layer has, run on that shape alone before the layer's own effects. Optional: a file from before has none and
+  writes back without the field, and an older build ignores it. `keys` are not kept (a shape's effects are the same on every
+  frame); a bad list or kind is dropped on read (`withShapeEffects`, `src/effects/io.ts`). A shape with effects is left out of
+  merge drawing (`mergeable`, `src/geometry/merge.ts`).
 
 See `docs/effects.md`.
 
@@ -385,13 +494,31 @@ See `docs/effects.md`.
   the same as the baked list (each end once, checked in the real engine).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
-- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys
+- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?, dataLayers?, terrains?, terrainMode?, nextTerrain?}`. `Tile`: `{key, name, frames: {drawingId, duration}[], collision?, data?, terrain?}`. Keys
   are never reused, so maps keep pointing at the right tile.
+  - `collision`: `{shapes, oneWay?}`; a shape is `{kind: 'box', x, y, w, h}` or `{kind: 'polygon', points}` in art pixels from the tile's top-left corner.
+  - `dataLayers`: `{name, type: 'bool' | 'int' | 'float' | 'string'}[]`, the named values every tile can carry; a tile's `data` is `{[name]: value}`.
+  - `terrains`: `{id, name, color}[]` (ids are never reused); `terrainMode`: `'corners-and-sides'` (the default, missing), `'corners'` or `'sides'`. A tile's `terrain` is `{id, bits?}`, where `bits` says which terrain touches each of `right`, `bottom-right`, `bottom`, `bottom-left`, `left`, `top-left`, `top`, `top-right`.
+  - While a tile is open for editing, these three live in the tile document's `ext['tiles.props']` and are written back with Done.
+  - The Godot export writes them as a physics layer, custom data layers and one terrain set (see `src/tiles/export.ts`).
 
 ### Clip flow (`f587827`)
 
-`ClipFlow`: `{start?, transitions, positions?}`. `ClipTransition`: `{id, from, to, when: 'end' | 'trigger',
-trigger?}`. Frameling's own playback ignores it; game engine exports and Interactives read it as a state machine.
+`ClipFlow`: `{start?, transitions, positions?, inputs?, anyFirst?}`. `ClipTransition`: `{id, from, to, when: 'end' | 'trigger' | 'now',
+trigger?, conditions?, blend?}`. Frameling's own playback ignores it (Try it in the Clip flow panel plays it); game engine exports and
+Interactives read it as a state machine.
+
+All of these are optional, so older files read unchanged (an older Frameling reads a `now` arrow as `end`, and ignores the rest):
+- `inputs`: `{name, kind: 'toggle' | 'number', start?}[]`, named values the game sets. Names are unique, 40 characters at most, at most 32 of them.
+  `start` is missing for off or 0.
+- `conditions`: `{input, op: '>' | '>=' | '<' | '<=' | '==' | '!=', value: boolean | number}[]` on an arrow; all must hold. A toggle uses `==`
+  or `!=` with a boolean. A check on an input that no longer exists is kept (it never holds, and the panel and exports say so).
+- `when: 'now'`: the arrow goes the moment its conditions hold (with no conditions it never goes). `'end'` and `'trigger'` also need their conditions.
+- `from: '*'` (`FLOW_ANY`): an "Any clip" arrow, from every clip except its own target. `positions['*']` places its box in the panel.
+- `blend`: seconds of fade into the next clip, 0 to 5 (missing = a straight cut).
+- `anyFirst: false`: a clip's own arrows are tried before the Any clip ones (missing = Any clip first). The first ready arrow wins.
+
+The rules (`pickTransition`, `conditionHolds`) are pure functions in `src/core/flow.ts`; `readFlow` in `src/io/file.ts` validates the fields.
 
 ### Bones (`0b554d4`, stretch `d31ae80`)
 
@@ -440,8 +567,9 @@ Written by `src/export/playable.ts` (`playablePackage`), a zip with media type `
   then the number of frames the document itself has (the rest are baked passes), for a player that wants the whole
   animation without them. The flow's `frames` is the baked length and its `direction`/`repeat` are left out for such
   a clip. The `.frameling` source inside has the settings.
-- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], transitions: {from, to, on:
-  'end' | 'trigger', trigger?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). Older readers ignore it.
+- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], inputs?: {name, kind, start}[], transitions: {from?, any?: true, to, on:
+  'end' | 'trigger' | 'now', trigger?, conditions?, blend?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). `transitions` are in the
+  order they are tried (the first ready one wins); an Any clip arrow has `any: true` and no `from`. Older readers ignore it.
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
 The round trip (opening a `.flplay`'s source and saving back into it) is `src/interactives/`, described in

@@ -16,7 +16,12 @@ import { dock, placeTools, railWidthOf, resetDock, setRailWidth } from '../../sr
 import { resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { ToolSlot, ToolStrip } from '../../src/ui/ToolStrip';
 import { putToolsBack, setToolbarEditing, toolbarIsChanged } from '../../src/ui/toolRail';
-import { RAIL_MAX } from '../../src/ui/toolRailWidth';
+import { naturalRailWidth, railSizes, RAIL_MAX, switchRoom } from '../../src/ui/toolRailWidth';
+
+// What a new person's rail starts at: wide enough for the longest built-in group name, still two buttons across.
+const START = naturalRailWidth(railSizes('cosy', 'medium'), 'two', true);
+// With the names off: the buttons, widened to the Pixels | Vectors switch.
+const NO_NAMES = naturalRailWidth(railSizes('cosy', 'medium'), 'two', false);
 
 vi.mock('../../src/ui/rightDock.css', () => ({}));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -53,11 +58,39 @@ describe('the rail with a width', () => {
     document.body.innerHTML = '';
   });
 
-  it('has no width of its own to begin with, so it is two across as it always was', () => {
+  it('has no width of its own to begin with: it starts wide enough for its group names, two across', () => {
+    mount(<ToolSlot at="left" />);
+    expect(START).toBeGreaterThan(94);
+    expect(nav().style.width).toBe(`${START}px`);
+    expect(nav().style.getPropertyValue('--tool-cols')).toBe('2');
+    expect(edge().getAttribute('aria-valuenow')).toBe(String(START));
+    expect(railWidthOf(dock.get())).toBeUndefined();
+  });
+
+  it('with the group names off it is as wide as the Pixels | Vectors switch needs, still two across', () => {
+    setPrefs({ toolNames: false });
+    mount(<ToolSlot at="left" />);
+    expect(NO_NAMES).toBeGreaterThan(94);
+    expect(nav().style.width).toBe(`${NO_NAMES}px`);
+    expect(nav().style.getPropertyValue('--tool-cols')).toBe('2');
+    expect(edge().getAttribute('aria-valuenow')).toBe(String(NO_NAMES));
+    expect(railWidthOf(dock.get())).toBeUndefined();
+    expect(nav().classList.contains('is-switch-short')).toBe(false);
+  });
+
+  it('the one-per-group rail is one button wide and its switch is two icons, so no word is cut', () => {
+    setPrefs({ toolRail: 'stacked' });
     mount(<ToolSlot at="left" />);
     expect(nav().style.width).toBe('');
-    expect(nav().style.getPropertyValue('--tool-cols')).toBe('');
-    expect(edge().getAttribute('aria-valuenow')).toBe('94');
+    expect(nav().classList.contains('is-switch-short')).toBe(true);
+  });
+
+  it('a rail pulled too narrow for the words shows icons on the switch, and words once it is wide enough', () => {
+    setRailWidth(switchRoom('cosy') - 1);
+    mount(<ToolSlot at="left" />);
+    expect(nav().classList.contains('is-switch-short')).toBe(true);
+    act(() => setRailWidth(switchRoom('cosy')));
+    expect(nav().classList.contains('is-switch-short')).toBe(false);
   });
 
   it('takes the saved width, and the buttons across follow it', () => {
@@ -85,11 +118,11 @@ describe('the rail with a width', () => {
     expect(edge().getAttribute('aria-valuemin')).toBe('50');
     expect(edge().getAttribute('aria-valuemax')).toBe(String(RAIL_MAX));
     key('ArrowRight');
-    expect(railWidthOf(dock.get())).toBe(110);
+    expect(railWidthOf(dock.get())).toBe(START + 16);
     key('ArrowRight', true);
-    expect(railWidthOf(dock.get())).toBe(174);
+    expect(railWidthOf(dock.get())).toBe(START + 80);
     key('ArrowLeft');
-    expect(railWidthOf(dock.get())).toBe(158);
+    expect(railWidthOf(dock.get())).toBe(START + 64);
     key('End');
     expect(railWidthOf(dock.get())).toBe(RAIL_MAX);
     key('Home');
@@ -104,7 +137,7 @@ describe('the rail with a width', () => {
     const kids = [...host.children];
     expect(kids[0]).toBe(edge());
     key('ArrowLeft');
-    expect(railWidthOf(dock.get())).toBe(110);
+    expect(railWidthOf(dock.get())).toBe(START + 16);
   });
 
   it('on the left the edge comes after the rail', () => {
@@ -119,15 +152,17 @@ describe('the rail with a width', () => {
     mount(<ToolSlot at="top" />);
     expect(edge()).toBeNull();
     expect(nav().style.width).toBe('');
+    // A floating rail has the starting width, for its names; it has no edge to pull.
     mount(<ToolStrip place="float" />);
-    expect(nav().style.width).toBe('');
+    expect(nav().style.width).toBe(`${START}px`);
   });
 
-  it('names never wrap: the stylesheet keeps them on one line and ends them in dots', () => {
+  it('a name drops to a second line before it is cut: the stylesheet allows two lines and ends the rest in dots', () => {
     const css = readFileSync('src/ui/ui.css', 'utf8');
     for (const sel of ['.ui-tool-head', '.ui-tool-head-name']) {
       const body = css.match(new RegExp(`\\n${sel.replace('.', '\\.')} \\{([^}]*)\\}`))?.[1] ?? '';
-      expect(body, sel).toMatch(/white-space: nowrap/);
+      expect(body, sel).not.toMatch(/white-space: nowrap/);
+      expect(body, sel).toMatch(/-webkit-line-clamp: 2/);
       expect(body, sel).toMatch(/text-overflow: ellipsis/);
       expect(body, sel).toMatch(/overflow: hidden/);
     }
@@ -139,8 +174,20 @@ describe('the rail with a width', () => {
     expect(toolbarIsChanged()).toBe(true);
     act(() => putToolsBack());
     expect(railWidthOf(dock.get())).toBeUndefined();
-    expect(nav().style.width).toBe('');
+    expect(nav().style.width).toBe(`${START}px`);
     expect(toolbarIsChanged()).toBe(false);
+  });
+
+  it('Put the tools back from a slim, pulled rail goes back to the natural width, which holds the switch', () => {
+    setPrefs({ toolNames: false });
+    setRailWidth(100);
+    mount(<ToolSlot at="left" />);
+    expect(nav().classList.contains('is-switch-short')).toBe(true);
+    act(() => putToolsBack());
+    expect(railWidthOf(dock.get())).toBeUndefined();
+    expect(nav().style.width).toBe(`${START}px`);
+    expect(START).toBeGreaterThanOrEqual(switchRoom('cosy'));
+    expect(nav().classList.contains('is-switch-short')).toBe(false);
   });
 
   it('Undo on its message brings the width back', async () => {
@@ -176,15 +223,15 @@ describe('the commands', () => {
     const wider = getCommand('view.toolRailWider')!;
     const narrower = getCommand('view.toolRailNarrower')!;
     wider.run();
-    expect(railWidthOf(dock.get())).toBe(136);
+    expect(railWidthOf(dock.get())).toBe(START + 42);
     wider.run();
-    expect(railWidthOf(dock.get())).toBe(178);
+    expect(railWidthOf(dock.get())).toBe(START + 84);
     narrower.run();
     narrower.run();
-    // Back at the natural width it is kept as no width.
+    // Back at the starting width it is kept as no width.
     expect(railWidthOf(dock.get())).toBeUndefined();
     narrower.run();
-    expect(railWidthOf(dock.get())).toBe(52);
+    expect(railWidthOf(dock.get())).toBe(START - 42);
     for (let i = 0; i < 10; i++) narrower.run();
     expect(railWidthOf(dock.get())).toBe(50);
     for (let i = 0; i < 12; i++) wider.run();

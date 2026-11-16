@@ -6,7 +6,9 @@
 import { allCommands, type Command } from '../core/registry';
 import { allChoices, type ChoiceDef } from '../core/choices';
 import { switchableFeatures } from '../features/host';
+import { isStreamingChoice, STREAM_FEATURES } from '../features/streamIds';
 import type { FeatureDescriptor } from '../features/feature';
+import { hasChoice } from './mascot/mascots';
 import { isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
 import type { PrefsPage } from './overlays';
@@ -31,17 +33,19 @@ export const SETTING_ROWS: PrefRow[] = [
   row('general', 'Reduce motion', 'Stops the bouncing and fading.', ['animations off', 'accessibility', 'transitions', 'fade', 'calm', 'less animation', 'motion sickness', 'vestibular', 'no animation']),
   row('general', 'Welcome sheet', 'Show the start page when Frameling opens.', ['start page', 'start screen', 'splash', 'home screen', 'startup', 'launch screen', 'welcome screen', 'new document screen', 'open on start']),
   row('general', 'Tips', 'A friendly tip in the status bar.', ['hints', 'status bar tips', 'did you know', 'tip of the day', 'advice']),
+  row('general', 'Explanations', 'The little lines that say what a panel or a setting is for, or tucked behind the ? icons.', ['hints', 'help icons', 'tooltips', 'descriptions', 'explainers', 'instructions', 'notes', 'clutter', 'show help text', 'question mark']),
   row('general', 'Workspace switcher', 'Which workspace you are in, beside the drawing name: tabs, a chip, or hidden.', ['workspace tabs', 'layout tabs', 'workspace bar', 'workspace picker', 'layout switcher']),
   row('general', 'Right side', 'Properties, a rail of panels, or the older tabs.', ['properties panel', 'inspector', 'options panel', 'panel tabs', 'right dock', 'side panels', 'panel layout', 'sidebar']),
   row('general', 'Tool rail style', 'Two wide, or stacked with a button per group.', ['toolbar', 'toolbox', 'tool bar', 'tool palette', 'tools panel', 'flyout', 'grouped tools', 'two columns', 'tool layout']),
   row('general', 'Tool group names', 'A name above each group of tools.', ['toolbar labels', 'tool labels', 'group titles', 'tool headings', 'slimmer toolbar']),
   row('general', 'Tool button size', 'How big the buttons on the tool rail are.', ['toolbar size', 'icon size', 'big buttons', 'tool icons', 'button size', 'toolbar icon size']),
   row('general', 'Tools that do not work here', 'Hide the tools a layer cannot use, or grey them out.', ['hide tools', 'grey out tools', 'disabled tools', 'unavailable tools', 'vector tools on pixel layer', 'greyed out', 'gray out']),
+  row('general', 'New pixel layer size', 'How wide each square is on a pixel layer made from the Pixels and Vectors switch.', ['pixel size', 'grid size', 'square size', 'chunky', 'new layer', 'pixels and vectors', 'toggle']),
   row('general', 'Show Quill', 'Quill the hedgehog shows you round. Off hides him.', ['mascot', 'hedgehog', 'assistant', 'helper', 'character', 'hide mascot', 'clippy', 'guide']),
   row('general', 'Fade tile copies', 'In tile mode, fade the copies round the tile you are drawing.', ['tile preview', 'seamless', 'tiling', 'repeat mode', 'pattern preview', 'offset', 'wrap around', 'tiled mode']),
   row('general', 'Thicker pixel outlines', 'Pixel shapes get an outline thicker than one pixel.', ['stroke width', 'line width', 'outline', 'border thickness', 'line thickness', 'pixel line', 'stroke']),
   row('general', 'Outline thickness', 'How many pixels thick the outline is.', ['stroke width', 'line width', 'border size', 'stroke size', 'outline width', 'pixel stroke']),
-  row('general', 'Your settings', 'Keep a copy of everything you have set, or put one back on another computer.', ['backup', 'back up', 'restore', 'export settings', 'import settings', 'sync', 'settings file', 'transfer', 'new computer', 'reset', 'autosave', 'save settings', 'preferences file']),
+  row('general', 'Your settings', 'Backup keeps a copy of everything you have set; Restore puts one back, on this computer or another.', ['backup', 'back up', 'restore', 'export settings', 'import settings', 'sync', 'settings file', 'transfer', 'new computer', 'reset', 'autosave', 'save settings', 'preferences file']),
 
   // Themes
   row('themes', 'Your two themes', 'The theme you use in dark mode and the one for light mode.', ['dark theme', 'light theme', 'day theme', 'night theme', 'colour scheme', 'skin', 'appearance'], { find: 'Your two themes' }),
@@ -58,13 +62,15 @@ export const SETTING_ROWS: PrefRow[] = [
   row('keyboard', 'Shortcut used twice', 'A warning mark shows where two commands share keys.', ['conflict', 'clash', 'duplicate shortcut', 'used twice', 'overlap', 'same key'], { find: 'Search shortcuts' }),
 
   // Behaviour (the choices themselves are added from the app's list)
-  row('behaviour', 'Use the usual answers for everything', 'Stop the questions and do what most people like.', ['ask me', 'stop asking', 'do not ask again', 'dont show again', 'confirmations', 'prompts', 'warnings', 'defaults', 'questions', 'remember', 'choices', 'reset choices'], { find: 'Use the usual answers for everything' }),
+  row('behaviour', 'Answer all the questions the usual way', 'Stop the questions and do what most people like. Every answer stays listed here, and there is an Undo.', ['ask me', 'stop asking', 'do not ask again', 'dont show again', 'confirmations', 'prompts', 'warnings', 'defaults', 'questions', 'remember', 'choices', 'reset choices'], { find: 'the usual way and stop asking' }),
 
   // Snapping
   row('snapping', 'Snapping', 'Switch snapping on or off. Hold Ctrl to skip it for a moment.', ['snap', 'magnet', 'magnetic', 'sticky', 'smart guides', 'align', 'alignment', 'snap to grid', 'snap to guides', 'snap to pixel', 'grid', 'guides']),
-  row('snapping', 'What to snap to', 'The page, guides, the grid, other shapes, perspective lines, pixels.', ['grid', 'guides', 'smart guides', 'perspective', 'centre', 'center', 'pixel grid', 'cells', 'edges', 'midpoints', 'bounding box', 'snap to grid', 'snap to guides', 'snap to pixel'], { find: 'Vector layers' }),
+  row('snapping', 'What to snap to', 'The page, guides, the grid, line ends and points, other shapes, perspective lines, pixels.', ['grid', 'guides', 'smart guides', 'perspective', 'centre', 'center', 'pixel grid', 'cells', 'edges', 'midpoints', 'bounding box', 'snap to grid', 'snap to guides', 'snap to pixel'], { find: 'Vector layers' }),
   row('snapping', 'All layers, not just this one', 'Look at every visible layer, or the open one only.', ['other layers', 'snap to other layers', 'visible layers', 'every layer', 'smart guides']),
   row('snapping', 'Snap distance', 'How close something has to come before it snaps.', ['snap threshold', 'snap radius', 'tolerance', 'sensitivity', 'magnet strength', 'snap strength', 'how close', 'snap range']),
+  row('snapping', 'Pen, pencil and brush snap their start and end', 'The start and end of a line you draw pull onto the end of another line, guides, the grid and the page. Ctrl skips it.', ['snap while drawing', 'snap drawing', 'snap pen', 'snap pencil', 'snap brush', 'freehand', 'join lines', 'line ends', 'endpoints', 'meet', 'magnetic lines']),
+  row('snapping', 'Pull for drawing tools', 'How close the start or end of a line has to be before it is pulled.', ['drawing snap distance', 'snap strength', 'pen snap', 'brush snap', 'how close', 'sensitivity']),
   row('snapping', 'Back to the usual choices', 'Put the snapping ticks back how they came.', ['reset snapping', 'default snap', 'restore snap']),
 
   // Pen and tablet
@@ -87,36 +93,71 @@ export const SETTING_ROWS: PrefRow[] = [
   row('pen', 'Pressure for each tool', 'Which tools change size, strength or amount with pressure, and which lean.', ['pressure size', 'pressure opacity', 'flow', 'opacity', 'brush dynamics', 'size jitter', 'tilt', 'per tool', 'shape dynamics'], { find: 'What each tool does with the pen' }),
   row('pen', 'Put the pen settings back', 'Back to how the pen came.', ['reset pen', 'default pen', 'restore pen', 'reset pressure', 'reset tablet']),
 
+  // Performance
+  row('performance', 'What Frameling found', 'The graphics card in use, how it is drawing, and whether that is good. Copy it for a bug report.', ['gpu', 'graphics card', 'video card', 'gpu info', 'gpu detected', 'which gpu', 'renderer', 'driver', 'vram', 'video memory', 'graphics memory', 'vulkan', 'opengl', 'directx', 'metal', 'software rendering', 'slow', 'lag', 'laggy', 'performance', 'system info', 'about gpu', 'bug report'], { find: 'What Frameling found' }),
+  row('performance', 'Hardware drawing', 'Let the graphics card do the drawing. Needs a restart.', ['hardware acceleration', 'gpu acceleration', 'use gpu', 'gpu rendering', 'gpu', 'graphics card', 'disable gpu', 'software rendering', 'renderer', 'opengl', 'vulkan', 'angle', 'glitch', 'flicker', 'black screen', 'performance', 'graphics processor', 'cuda', 'turn off gpu', 'window will not open', 'safe mode']),
+  row('performance', 'Drawings kept ready', 'How much memory keeps drawings ready, so stepping and playing do not redraw them.', ['cache', 'cache size', 'layer cache', 'memory', 'ram', 'vram', 'memory limit', 'bitmap cache', 'tile cache', 'cache limit', 'memory usage', 'performance', 'photoshop memory', 'performance memory', 'prefetch', 'pre-render']),
+  row('performance', 'Scrubbing the timeline', 'Full quality, or quick while you drag along the timeline.', ['scrub', 'scrubbing', 'quality while scrubbing', 'draft mode', 'preview quality', 'low quality preview', 'proxy', 'fast preview', 'draft', 'timeline drag', 'realtime preview', 'performance', 'onion skin while scrubbing']),
+  row('performance', 'Playback frame rate limit', 'The most frames a second playback shows, for a computer that cannot keep up.', ['fps limit', 'frame rate cap', 'fps cap', 'max fps', 'frame skipping', 'drop frames', 'frame dropping', 'playback speed', 'playback quality', 'realtime playback', 'slow playback', 'preview fps', 'performance', 'vsync']),
+  row('performance', 'Put these back to how they were', 'Back to how the performance settings came.', ['reset performance', 'default performance', 'restore performance', 'reset cache', 'reset gpu', 'defaults']),
+
   // Workspaces
   row('workspaces', 'Workspaces', 'Ways of arranging your panels, and switching between them.', ['layout', 'panel layout', 'arrangement', 'window layout', 'saved layouts', 'perspectives', 'workspace presets', 'essentials', 'layouts'], { find: 'Workspaces' }),
   row('workspaces', 'Save my layout', 'Save the panels as they are now, under a name.', ['save workspace', 'new workspace', 'save layout', 'custom workspace', 'store layout', 'name layout', 'create workspace'], { find: 'Yours' }),
   row('workspaces', 'Share a workspace', 'Save one to a file, copy it as text, or add one you were sent.', ['export workspace', 'import workspace', 'workspace file', 'send layout', 'share layout', 'copy layout', 'paste workspace'], { find: 'Share' }),
   row('workspaces', 'Window style', 'How floating panels look and behave.', ['floating panels', 'detached panels', 'undock', 'tear off', 'panel windows', 'always on top', 'floating window', 'floating windows'], { find: 'Window style' }),
 
+  // Menus
+  row('menus', 'Menus', 'Move, rename, take out and add menu entries, and make menus of your own.', ['menu bar', 'customise menus', 'customize menus', 'edit menus', 'rearrange menus', 'reorder', 'hide a menu', 'remove from menu', 'submenu'], { find: 'Menus' }),
+  row('menus', 'Make a menu of your own', 'A new name on the menu bar, with the commands you use most.', ['my menu', 'favourites', 'favorites', 'custom menu', 'new menu', 'add menu'], { find: 'Make a menu of your own' }),
+  row('menus', 'Put the menus back', 'Every menu in this workspace back to how it came with Frameling.', ['reset menus', 'default menus', 'restore menus', 'undo menu changes'], { find: 'Put all the menus back' }),
+
   // Plugins
   row('plugins', 'Plugins', 'Add commands, exports, panels and tools. Each runs in its own sandbox.', ['add-ons', 'addons', 'extensions', 'scripts', 'mods', 'plug-ins', 'scripting', 'api', 'automation', 'macros'], { find: 'Plugins' }),
   row('plugins', 'Install from file', 'Add a plugin from a .zip file.', ['install plugin', 'add plugin', 'zip', 'install extension', 'add-on', 'download plugin'], { find: 'Install from file' }),
   row('plugins', 'Install from folder', 'For plugin makers: install straight from the folder you are working in.', ['develop plugin', 'plugin maker', 'plugin developer', 'dev', 'build a plugin', 'write a plugin'], { find: 'Install from folder' }),
+  row('plugins', 'Remote door', 'Let another program on this computer drive Frameling, for testing and automation. Off until you switch it on.', ['remote', 'api', 'http', 'automation', 'automate', 'testing', 'drive', 'control', 'another program', 'curl', 'python', 'port', 'key', 'token', 'localhost', 'external'], { find: 'Remote door' }),
+  row('plugins', 'What the remote door has done', 'The list of what other programs drove, and when.', ['remote log', 'api log', 'activity', 'history', 'what happened', 'driven'], { find: 'What it has done' }),
   row('plugins', 'What a plugin may do', 'Each plugin gets only the permissions you allow.', ['permissions', 'network', 'sandbox', 'allow', 'trust', 'privacy', 'internet access', 'security', 'safe'], { find: 'Plugins' }),
 
   // Features (the switches themselves are added from the app's list)
   row('features', 'Turn parts of Frameling on or off', 'Switch off what you do not use, to keep things simple.', ['turn off', 'modules', 'hide features', 'simple mode', 'simplify', 'disable', 'enable', 'optional', 'extensions', 'minimal', 'beginner mode', 'declutter'], { find: 'Features' }),
 
+  // Streaming: the family (its nine switches come from the app's list, the choices from theirs)
+  row('streaming', 'Streaming tools', 'One switch for everything that is for streaming: audience features, the actions door, the overlay, Twitch, dares, votes and the rest. Off, they leave the menus and the command palette.', ['stream', 'streamer', 'streaming', 'stream stuff', 'twitch', 'obs', 'live', 'audience', 'dares', 'votes', 'hide stream', 'turn off streaming', 'tuck away', 'i do not stream'], { find: 'Streaming tools' }),
+  row('streaming', 'Getting your viewers taking part', 'The whole route in one page: connect Twitch for rewards and cheers, add a chat bot for votes and guesses, run your first vote.', ['how do i', 'get started', 'viewers', 'vote', 'voting', 'guess', 'chat', 'bot', 'firebot', 'streamer.bot', 'twitch', 'interact', 'participate', 'set up', 'first time', 'stream'], { find: 'Getting your viewers taking part' }),
+  row('streaming', 'Audience features', 'Let viewers and stream tools join in, in small safe ways. Off until you switch it on, with a yellow Audience participation: on pill that you press to turn it off.', ['stream', 'streamer', 'streaming', 'twitch', 'youtube', 'chat', 'viewers', 'on air', 'live', 'obs', 'kill switch', 'panic', 'queue', 'cooldown', 'interactive', 'audience participation'], { find: 'Audience features' }),
+
+  row('streaming', 'Actions door', 'The address and key Streamer.bot, Firebot or a Stream Deck use to ask Frameling for a few safe things. Only on this computer, and only while audience features are on.', ['streamer.bot', 'streamerbot', 'firebot', 'stream deck', 'touch portal', 'http', 'api', 'endpoint', 'token', 'key', 'port', 'channel points', 'redeem', 'obs', 'local', 'address', 'copy key', 'new key'], { find: 'Actions door' }),
+
+  row('streaming', 'Let the audience interrupt your drawing', 'Lets dares and pen tricks from your audience change your drawing, each as one step that Undo takes back. Off until you switch it on.', ['dares', 'debuff', 'debuffs', 'troll', 'trolls', 'chaos', 'sabotage', 'stream', 'viewers', 'pen modifier', 'mess up my drawing', 'audience participation'], { find: 'Let the audience interrupt your drawing' }),
+
+  row('streaming', 'Pen modifiers', 'Let your audience make your pen steadier, shakier, thinner or fatter for a while. Off until you allow interruptions, with a switch for each and a Try it button.', ['steady hand', 'shaky hand', 'thin brush', 'fat brush', 'long rope', 'wobble', 'tremor', 'debuff', 'debuffs', 'buff', 'brush size', 'stream', 'viewers', 'channel points', 'audience participation'], { find: 'Pen modifiers' }),
+
+  // Streaming: Stream-safe and OBS, which are for anybody who shares a screen
+  row('streaming', 'Stream-safe mode', 'File paths, your name and keys show as friendly stand-ins while you share your screen.', ['streamer mode', 'streaming', 'twitch', 'obs', 'privacy', 'hide paths', 'hide name', 'share screen', 'screen sharing', 'recording', 'demo mode', 'presentation', 'private']),
+  row('streaming', 'Going live with OBS', 'Frameling watches OBS and turns Stream-safe on by itself when you start streaming or recording.', ['obs', 'obs studio', 'websocket', 'go live', 'streaming', 'twitch', 'youtube', 'recording', 'auto stream safe', 'obs password', 'obs address', 'streamer']),
+
   // Diagnostics
   row('diagnostics', 'Telling the makers', 'Send a bug report or crash notes, only when you press Send.', ['report a bug', 'bug report', 'feedback', 'send report', 'crash report', 'telemetry', 'analytics', 'privacy', 'beta', 'error report', 'logs', 'crash notes', 'contact'], { find: 'Telling the makers' }),
-  row('diagnostics', 'Measure my plugins', 'See how much memory and time your plugins use.', ['plugin performance', 'profiler', 'memory', 'plugin cpu', 'plugin timing', 'slow plugin', 'performance'], { find: 'Plugins' }),
+  row('diagnostics', 'Look for new versions', 'Quietly check for a newer Frameling, and say what is sent. Off means it never looks by itself.', ['update', 'updates', 'auto update', 'automatic update', 'check for updates', 'new version', 'upgrade', 'new release', 'latest version', 'skip version', 'github', 'privacy', 'offline'], { find: 'New versions' }),
+  row('diagnostics', 'Measure my plugins', 'See how much memory and time your plugins use.', ['plugin performance', 'profiler', 'memory', 'plugin cpu', 'plugin timing', 'slow plugin', 'performance'], { find: 'Plugin measuring' }),
   row('diagnostics', 'Check my pen with Quill', 'A short check that saves a report when the pen or tablet is not working.', ['pen check', 'tablet not working', 'pressure not working', 'wacom problem', 'huion problem', 'windows ink', 'driver', 'pen diagnostics', 'test pen', 'tablet problem', 'pen report'], { find: 'Pen and tablet' }),
 ];
 
 /** Other names for the remembered choices in Behaviour, by id. A choice with no entry is still found by its title and its question. */
 export const CHOICE_ALSO: Record<string, string[]> = {
+  'recolour.where': ['palette swap', 'replace colour', 'recolor', 'this layer', 'this frame', 'selection', 'cel', 'scope', 'find and replace', 'limit recolour'],
   'artboards.fit': ['letterbox', 'pillarbox', 'fit to frame', 'scale to fit', 'crop to fill', 'fill', 'aspect ratio', 'shot size', 'artboard size', 'resize to fit', 'mixed sizes'],
   'artboards.barColor': ['letterbox colour', 'bars', 'black bars', 'background colour', 'padding colour', 'border colour', 'matte'],
   'artboards.pictureSize': ['canvas size', 'image size', 'document size', 'resolution', 'export size', 'video size', 'output size', 'dimensions', 'width height'],
   'variations.frame': ['artboard canvas', 'alt size', 'resize canvas', 'different size', 'artboard fit', 'scale', 'crop'],
   'draw.heldFrame': ['hold', 'held frame', 'exposure', 'edit held', 'shared drawing', 'clone frame', 'hold frame', 'extend'],
+  'draw.sharedDrawing': ['shared drawing', 'linked drawing', 'used in several places', 'unlink', 'make unique', 'own copy', 'change everywhere', 'artboards share', 'one drawing many places'],
   'draw.tweenFrame': ['inbetween', 'in-between', 'tween', 'auto key', 'autokey', 'auto keyframe', 'keyframe on edit', 'set key', 'create key'],
   'canvas.wheel': ['scroll', 'scroll wheel', 'zoom', 'pan', 'mousewheel', 'mouse scroll', 'zoom direction', 'scroll zoom', 'scrolling', 'trackpad'],
+  'canvas.wheelCtrl': ['ctrl', 'control', 'ctrl zoom', 'ctrl scroll', 'big steps', 'zoom step', 'wheel modifier'],
+  'canvas.zoomSpeed': ['zoom speed', 'scroll speed', 'zoom too fast', 'zoom too slow', 'wheel speed', 'sensitivity', 'mouse wheel', 'scroll zoom'],
   'canvas.spaceTap': ['spacebar', 'space bar', 'play', 'pause', 'playback', 'hand tool', 'space to play', 'play pause key'],
   'timeline.newKey': ['new frame', 'blank keyframe', 'duplicate frame', 'copy frame', 'new drawing', 'insert blank keyframe', 'keyframe', 'clone'],
   'timeline.holdLonger': ['extend exposure', 'hold', 'ripple', 'insert frames', 'push frames', 'shift frames', 'frame hold', 'exposure', 'ripple edit'],
@@ -127,6 +168,7 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'nudge.drawn': ['tip', 'hint', 'first drawing', 'quill tip', 'tutorial', 'onboarding', 'next step', 'suggestion'],
   'draw.newLayerMode': ['merge shapes', 'merge', 'draw mode', 'object drawing', 'merge drawing', 'stacking', 'separate shapes', 'shape mode', 'overlap', 'object mode', 'behind'],
   'tween.plainDrawing': ['shape tween', 'motion tween', 'classic tween', 'morph', 'inbetween', 'interpolate', 'in-betweens', 'tween type', 'morphing'],
+  'select.vectorScope': ['select', 'selection', 'marquee', 'box select', 'lasso', 'whole shape', 'parts', 'points', 'one corner', 'direct select', 'partial select', 'touches', 'move a corner'],
   'eraser.vectorWay': ['erase', 'rubber', 'erase whole shape', 'partial erase', 'erase strokes', 'object eraser', 'vector eraser', 'stroke eraser'],
   'memory.onion': ['onion skin', 'onionskin', 'ghost', 'ghosting', 'light table', 'lightbox', 'light box', 'remember onion', 'onion on startup', 'tracing', 'previous frame', 'launch'],
   'palette.recolour': ['swatches', 'palette swap', 'replace colour', 'recolor', 'colour ramp', 'indexed colour', 'change colour everywhere', 'global colour', 'palette edit'],
@@ -141,10 +183,13 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'motion.room': ['overlap', 'motion clip', 'trim', 'clip length', 'transition', 'overrun', 'longer than gap'],
   'versions.restore': ['revert', 'history', 'restore', 'previous version', 'file history', 'rollback', 'open copy', 'undo save', 'backup', 'version history', 'snapshots', 'autosave', 'auto save', 'recovery', 'saving'],
   'aseprite.drop': ['import aseprite', 'ase file', 'open aseprite', 'drag and drop', 'drop file', 'import', 'open file'],
+  'import.where': ['import sequence', 'import svg', 'import psd', 'photoshop', 'openraster', 'logo', 'folder of pictures', 'png sequence', 'add or new', 'new drawing', 'import', 'open file'],
   'beta.crashOffer': ['crash', 'bug report', 'crash report', 'error report', 'send report', 'crash notes', 'feedback', 'telemetry', 'privacy', 'diagnostic'],
+  'beta.autoMachine': ['crash report', 'automatic report', 'machine details', 'computer details', 'graphics card', 'processor', 'gpu', 'privacy', 'telemetry', 'diagnostic', 'send report'],
   'audio.scrub': ['scrubbing', 'audio scrub', 'hear sound', 'play sound while dragging', 'sound preview', 'scrub audio', 'timeline scrub'],
   'audio.longSound': ['extend animation', 'sound length', 'trim timeline', 'audio longer', 'match audio', 'timeline length', 'duration', 'fit to sound'],
   'export.mp4Sound': ['aac', 'opus', 'codec', 'mp4', 'video sound', 'audio codec', 'encoding', 'h264', 'video export', 'quicktime', 'safari', 'mov'],
+  'export.svgTooth': ['svg', 'charcoal', 'chalk', 'paper tooth', 'paper grain', 'vector', 'picture', 'bake', 'baked', 'scale forever', 'look right', 'sharp at any size', 'svg export', 'moving svg', 'animated svg'],
   'particles.where': ['emitter', 'spawn', 'new particles', 'particle layer', 'particle placement', 'emission'],
   'quill.presents': ['gift', 'present', 'mascot', 'surprise', 'gifts', 'quill gifts', 'drawing gift'],
   'rig.newPose': ['inbetween', 'pose', 'ik', 'pose interpolation', 'new pose', 'auto key', 'bones', 'keyframe pose', 'pose to pose'],
@@ -167,7 +212,7 @@ export const FEATURE_ALSO: Record<string, string[]> = {
 export function choiceRows(choices: ChoiceDef[] = allChoices()): PrefRow[] {
   return choices.map((c) => ({
     id: `behaviour.${c.id}`,
-    page: 'behaviour',
+    page: isStreamingChoice(c) ? 'streaming' : 'behaviour',
     label: c.title,
     hint: c.question,
     group: c.category,
@@ -177,7 +222,12 @@ export function choiceRows(choices: ChoiceDef[] = allChoices()): PrefRow[] {
 }
 
 export function featureRows(features: FeatureDescriptor[] = switchableFeatures()): PrefRow[] {
-  return features.map((f) => ({ id: `features.${f.id}`, page: 'features', label: f.name, hint: f.about, also: FEATURE_ALSO[f.id] ?? [], kind: 'feature' }));
+  return features.map((f) => ({ id: `features.${f.id}`, page: STREAM_FEATURES.includes(f.id) ? 'streaming' : 'features', label: f.name, hint: f.about, also: FEATURE_ALSO[f.id] ?? [], kind: 'feature' }));
+}
+
+/** The guide picker, which is only on the page once there is more than one mascot to pick from. */
+export function mascotRows(): PrefRow[] {
+  return hasChoice() ? [row('general', 'Your guide', 'Who shows you round and cheers you on.', ['mascot', 'guide', 'character', 'helper', 'hedgehog', 'assistant'])] : [];
 }
 
 /** The commands the Keyboard page lists, so a command can be found by name and the page scrolls to it. */
@@ -190,5 +240,5 @@ export function commandRows(commands: Command[] = allCommands().filter((c) => !c
 
 /** Every row there is right now: the fixed ones, the choices, the features, and the commands. */
 export function allPrefRows(): PrefRow[] {
-  return [...SETTING_ROWS, ...choiceRows(), ...featureRows(), ...commandRows()];
+  return [...SETTING_ROWS, ...mascotRows(), ...choiceRows(), ...featureRows(), ...commandRows()];
 }

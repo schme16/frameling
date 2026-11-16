@@ -95,7 +95,7 @@ describe('railFor', () => {
 describe('why a tool is off', () => {
   it('says what it works on, what you are on, and what to do', () => {
     const w = whyOff({ label: 'Shade', layers: ['pixel'] }, 'vector');
-    expect(w).toBe("Shade works on pixel layers, and you're on a vector layer. Click a pixel layer, or add one with Pixel in the Layers header.");
+    expect(w).toBe("Shade works on pixel layers, and you're on a vector layer. Pick Shade, or press Pixels at the top of the rail, and you switch to a pixel layer.");
     expect(whyOff({ label: 'Text', layers: ['vector'] }, 'pixel')).toContain('Text works on vector layers, and you\'re on a pixel layer.');
   });
   it('has no em dashes', () => {
@@ -225,11 +225,12 @@ describe('the real tools', () => {
     }
   });
 
-  it('shade, dither, spray and the wand are off on a vector layer, and text and the gradient on a pixel layer', () => {
+  it('shade, dither, spray and the wand are off on a vector layer, and edit points on a pixel layer (the Text tool types pixel text there)', () => {
     const v = railFor(everyday(), 'vector').off;
     for (const id of ['shade', 'dither', 'spray', 'pixel-select-wand']) expect(v, id).toContain(id);
     const p = railFor(everyday(), 'pixel').off;
-    for (const id of ['text', 'gradient']) expect(p, id).toContain(id);
+    expect(p).toContain('points');
+    expect(p).not.toContain('text');
     expect(v).not.toContain('brush');
     expect(p).not.toContain('brush');
   });
@@ -348,12 +349,16 @@ describe('the rail on the page', () => {
     expect(shade.classList.contains('is-off')).toBe(true);
     expect(shade.getAttribute('aria-disabled')).toBe('true');
     expect(shade.getAttribute('data-tip-desc')).toContain('Shade works on pixel layers');
+    // Pressing it is not refused: the switch flips to Pixels and Shade is the tool. You stay on the layer: the next stroke
+    // goes on a pixel layer beside it.
     act(() => shade.click());
-    expect(store().get().ui.tool).not.toBe('shade');
-    expect(toasts.get().some((t) => t.message.includes('Shade works on pixel layers'))).toBe(true);
+    expect(store().get().ui.tool).toBe('shade');
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(toasts.get().some((t) => t.message.includes('Shade draws pixels, so your next stroke goes on a pixel layer'))).toBe(true);
     on(k.pixel);
     expect(host.querySelector('[data-tool-id="shade"]')!.classList.contains('is-off')).toBe(false);
-    expect(host.querySelector('[data-tool-id="text"]')!.classList.contains('is-off')).toBe(true);
+    expect(host.querySelector('[data-tool-id="points"]')!.classList.contains('is-off')).toBe(true);
+    expect(host.querySelector('[data-tool-id="text"]')!.classList.contains('is-off')).toBe(false);
   });
 
   it('a shared tool that is not a twin keeps its place and stays picked', () => {

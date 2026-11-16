@@ -3,7 +3,7 @@ import { store } from '../core/store';
 import { createStore } from './mini';
 import { saveAsking } from '../io/saveAsk';
 
-export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins' | 'features' | 'snapping' | 'pen' | 'diagnostics';
+export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'menus' | 'plugins' | 'features' | 'streaming' | 'snapping' | 'pen' | 'performance' | 'diagnostics';
 
 export interface Overlays {
   palette: boolean;
@@ -11,6 +11,8 @@ export interface Overlays {
   help: { topic?: string; anchor?: string; query?: string } | null;
   /** `welcome` is the first-run sheet, `new` is the same chooser opened from File > New, `examples` is the same sheet scrolled to the examples. */
   sheet: 'welcome' | 'new' | 'examples' | null;
+  /** The New drawing sheet opens with the Custom form already showing (File > New drawing, your own size). */
+  customOpen?: boolean;
   /** The About Frameling card. */
   about: boolean;
   /** Quill's first-run hello (Help > Meet Quill again). */
@@ -36,8 +38,8 @@ export const closePrefs = () => patch({ prefs: null });
 export const openHelp = (topic?: string, anchor?: string, query?: string) => patch({ help: { topic, anchor, query }, palette: false });
 export const closeHelp = () => patch({ help: null });
 
-export const openSheet = (sheet: 'welcome' | 'new' | 'examples') => patch({ sheet, palette: false });
-export const closeSheet = () => patch({ sheet: null });
+export const openSheet = (sheet: 'welcome' | 'new' | 'examples', opts: { custom?: boolean } = {}) => patch({ sheet, customOpen: !!opts.custom, palette: false });
+export const closeSheet = () => patch({ sheet: null, customOpen: false });
 
 export const openAbout = () => patch({ about: true, palette: false });
 export const closeAbout = () => patch({ about: false });

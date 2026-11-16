@@ -1,0 +1,7 @@
+[
+  {"eval": "__frameling.dock.applyWorkspace('draw'); __frameling.template('bouncing-ball'); true"},
+  {"wait": 900},
+  {"eval": "if (window.__shotTheme) __frameling.prefs.set({ theme: window.__shotTheme }); true"},
+  {"key": "Escape"},
+  {"wait": 600}
+]

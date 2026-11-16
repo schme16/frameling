@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import * as ops from '../../src/timeline/ops';
 import * as keys from '../../src/timeline/keys';
 import { celRef } from '../../src/timeline/tracks';
-import { emptyTail, fitLength, tidyEnd } from '../../src/timeline/tidyEnd';
+import { emptyTail, endCameIn, fitLength, tidyEnd } from '../../src/timeline/tidyEnd';
 import { setChoice, setChoiceAsker, type ChoiceAsker } from '../../src/core/choices';
 import { getChoiceDef } from '../../src/core/choices';
 import { addCel, docWith, storeWith } from './helpers';
@@ -50,6 +50,35 @@ describe('where the animation really ends', () => {
     expect(fitLength(d)).toBe(34);
     d.audio = [{ id: 'a', name: 'boom', start: 36, data: new Uint8Array(), mime: 'audio/wav' }];
     expect(fitLength(d)).toBe(37);
+  });
+  // The walk stops as soon as something reaches the animation's own length, and reads a layer's keys newest first.
+  // These two pin that the answer does not depend on the order it finds things in.
+  it('finds the furthest key whatever order the keys are in', () => {
+    const d = docWith([], 40);
+    const l = d.layers[0];
+    addCel(d, l, 20, 2);
+    addCel(d, l, 4, 2);
+    addCel(d, l, 12, 2);
+    l.cels.reverse();
+    expect(fitLength(d)).toBe(22);
+  });
+  it('still answers the full length when the first layer already fills it', () => {
+    const d = docWith([[0, 24]], 24);
+    const l = newVectorLayer('Two');
+    d.layers.push(l);
+    addCel(d, l, 2, 2);
+    expect(fitLength(d)).toBe(24);
+    expect(emptyTail(d)).toBe(0);
+  });
+  it('says whether the end came in, the same as asking how far it reaches', () => {
+    const d = docWith([[0, 4], [10, 18]], 31);
+    expect(fitLength(d)).toBe(28);
+    expect(endCameIn(d, 28)).toBe(false);
+    expect(endCameIn(d, 29)).toBe(true);
+    expect(endCameIn(d, 0)).toBe(false);
+    // The animation itself got shorter than the mark, which is the end coming in too.
+    d.length = 20;
+    expect(endCameIn(d, 28)).toBe(true);
   });
   it('tidyEnd takes the empty frames off and leaves everything else alone', () => {
     const d = docWith([[0, 4], [10, 18]], 31);

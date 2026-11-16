@@ -1,0 +1,1 @@
+Angular gradients. The same metal coin and pie: before (angular-before) with the gradients Frameling had, radial for the metal and linear for the pie, which cannot sweep round the middle; after (angular-after) with an angular gradient, where the colours go once round and the pie's hard stops make real wedges. Each in -dark and -light.

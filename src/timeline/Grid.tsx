@@ -6,34 +6,40 @@ import { celAt } from '../core/doc';
 import type { Cel, Clip, Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
-import { say } from './commands';
+import { duplicateClipAndPick, say } from './commands';
 import { keyHint } from './cmd';
 import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
-import { frameAtX, holdWords, labelStep, visibleFrames, zoomScroll } from './geometry';
+import { celGap, frameAtX, holdWords, labelStep, movedWords, thinCels, visibleFrames, zoomScroll } from './geometry';
+import { placesOf, sharedDrawings, type DrawingUse } from '../core/sharedDrawings';
+import { SharedMark, sharedTitle } from './SharedMark';
 import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
 import { goTo, inOutRange } from './playback';
-import { onionFrames } from '../canvas/onion';
+import { onionShading } from '../canvas/onion';
 import { pinLightTable } from '../canvas/lightTable';
 import { acceptTweenOffer, closeTweenOffer, dismissTweenOffer, offerTweenAt, tweenOffer } from './tweenOffer';
 import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
-import { makeTween, removeTween } from '../symbols/ops';
+import { makeSymbolFromFrames, makeTween, removeTween } from '../symbols/ops';
 import { MOTIONS } from '../core/motions';
 import { makeMotion } from '../symbols/motion-ops';
 import '../symbols/symbols.css';
 import { attachPinch } from '../canvas/pinch';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { TimelineSlot } from './slots';
-import { DetailRow, PropRow } from './Detail';
-import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
+import { framesWithNotes } from '../notes/model';
+import '../notes/notes.css';
+import { setScrubbing } from '../gpu/settings';
+import { CelName, DetailRow, PropRow } from './Detail';
+import { rowAtY, rowOfLayerIn, rowWindow, type Layout, type LayoutRow, type RowWindow } from './layout';
 import { currentLayout, useLayout } from './view';
 import { celRef, layerTracks, type KeyRef } from './tracks';
 import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } from './keys';
 import { clearKeys, pickKeys } from './state';
+import { copyKeys, cutKeys, hasFrameClip, pasteKeys } from './frameClipCommands';
 import { toast } from '../ui/toast';
 import { clipPlayItems } from './ClipPlay';
 import { isSection } from '../ui/panelInfo';
@@ -51,6 +57,9 @@ const D_MARKS_H = 18;
 const D_CLIPS_H = 18;
 /** Empty frames shown past the end, so there is room to drag the end further out. */
 const SLACK = 24;
+/** Up and down scrolling is noticed in steps this tall, and rows this far past the edge are drawn in full too. */
+const SCROLL_STEP = 56;
+const ROW_SPARE = 56;
 
 type Drag =
   | { kind: 'scrub'; pause: boolean }
@@ -89,33 +98,58 @@ const Playhead = memo(function Playhead({ part, cw, cursor }: { part: 'ruler' | 
   );
 });
 
-/** One layer's row of drawings. Only draws the cels that are on screen. */
-const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: Layer; cw: number; from: number; to: number; active: boolean }) {
+/** One layer's row of drawings. Only draws the cels that are on screen, and joins runs of tiny ones into one band. */
+const GridRow = memo(function GridRow({ layer, cw, from, to, active, shared }: { layer: Layer; cw: number; from: number; to: number; active: boolean; shared: ReadonlyMap<Id, DrawingUse> }) {
   const shown: Cel[] = [];
   for (const c of layer.cels) {
     if (c.start > to) break;
     if (c.start + c.length >= from) shown.push(c);
   }
+  const gap = celGap(cw);
   return (
     <div className={`tl-row${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: ROW_H }} data-layer={layer.id}>
-      {shown.map((c) => (
-        <div
-          key={c.id}
-          className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}`}
-          data-cel={c.id}
-          style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}
-          title={c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined}
-        >
-          <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
-            <i className="tl-cel-dot" />
-          </span>
-          {c.tween ? <TweenBar layer={layer} cel={c} cw={cw} /> : null}
-          <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
-        </div>
-      ))}
+      {thinCels(shown, cw).map((p) => {
+        const c = p.cel;
+        const width = p.right - p.left - gap;
+        const use = p.dense ? undefined : shared.get(c.drawingId);
+        const auto = c.autoHold && c.length > 1;
+        return (
+          <div
+            key={c.id}
+            className={`tl-cel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${c.offset && !p.dense ? ' is-moved' : ''}${p.dense ? ' is-dense' : ''}${width < 8 ? ' is-thin' : ''}`}
+            data-cel={c.id}
+            style={{ left: p.left + gap / 2, width: Math.max(1, width) }}
+            title={
+              p.dense
+                ? `${p.count} short drawings. Zoom in to see each one.`
+                : [c.offset ? movedWords(c.offset) : '', sharedTitle(use, auto ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined) ?? ''].filter(Boolean).join(' ') || undefined
+            }
+          >
+            {p.dense ? null : (
+              <span className="tl-cel-key" style={{ width: Math.max(1, Math.min(cw, c.length * cw) - gap) }}>
+                <i className="tl-cel-dot" />
+              </span>
+            )}
+            {use ? <SharedMark use={use} width={width} at={Math.max(1, Math.min(cw, c.length * cw) - gap) + 3} /> : null}
+            {c.tween && !p.dense ? <TweenBar layer={layer} cel={c} cw={cw} /> : null}
+            <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
+          </div>
+        );
+      })}
+      {thinCels(shown, cw)
+        .filter((p) => !p.dense)
+        .map((p, i, list) => (
+          <CelName key={`n${p.cel.id}`} layer={layer} cel={p.cel} next={list[i + 1]?.cel} cw={cw} />
+        ))}
     </div>
   );
 });
+
+/** What hovering a drawing on the clean timeline says: its name, and that a held drawing carries on. */
+function cellTitle(c: Cel): string | undefined {
+  const carries = c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : '';
+  return [c.name ? `"${c.name}". Double-click to rename.` : '', carries].filter(Boolean).join(' ') || undefined;
+}
 
 /** In-betweens on a key: a band with an arrow to the next key (dashed when the keys don't touch). */
 function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
@@ -131,6 +165,8 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
   const frame = useStore((s) => (s.ui.onion.enabled ? s.ui.frame : -1));
   // Keys only: the shaded frames move when the drawings do.
   useStore((s) => (s.ui.onion.enabled && s.ui.onion.keysOnly ? s.doc.layers : null));
+  // The shading stops at the edge of the clip, like the ghosts do.
+  useStore((s) => (s.ui.onion.enabled ? s.doc.clips : null));
   const step = labelStep(cw);
   const labels: number[] = [];
   const secs: number[] = [];
@@ -149,13 +185,17 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange, deta
   useStore((s) => s.doc.inOut);
   const saved = inOutRange(store().get().doc);
   const io = ghostRange ?? saved;
+  const noted = useStore((s) => s.doc.notes);
+  const notedFrames = noted?.length ? framesWithNotes(store().get().doc) : null;
   return (
     <div className={`tl-ruler${detailed ? ' is-detailed' : ''}`} data-region="ruler" data-quest="timeline-ruler" style={{ height: h }}>
       {detailed ? <SecondsBand cw={cw} from={from} to={Math.min(total, to)} fps={fps} /> : null}
       {clip ? <i className="tl-range-shade" style={{ left: clip.start * cw, width: (clip.end - clip.start + 1) * cw }} /> : null}
-      {onion.enabled && !onion.keysOnly ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
-      {onion.enabled && onion.keysOnly && frame >= 0
-        ? onionFrames(store().get().doc, frame, onion).map((o) => shade(o.frame, o.frame, o.side === 'before' ? onion.beforeColor : onion.afterColor, `k${o.frame}`))
+      {onion.enabled && frame >= 0 ? onionShading(store().get().doc, frame, onion).map((r) => shade(r.from, r.to, r.side === 'before' ? onion.beforeColor : onion.afterColor, `${r.side}${r.from}`)) : null}
+      {notedFrames
+        ? [...notedFrames].filter(([f]) => f >= from && f <= to && f < total).map(([f, c]) => (
+            <i key={`note${f}`} className={`tl-notedot${c.open ? '' : ' is-done'}`} style={{ left: f * cw + cw / 2 }} title={`${c.total} note${c.total === 1 ? '' : 's'} on frame ${f + 1}${c.open ? '' : ' (done)'}`} />
+          ))
         : null}
       {labels.map((f) => (
         <span key={`n${f}`} className="tl-num" style={{ left: f * cw, width: cw }}>
@@ -228,6 +268,17 @@ function MarkersRow({ cw, from, to, h }: { cw: number; from: number; to: number;
             )}
           </div>
         ))}
+    </div>
+  );
+}
+
+/** Where the Markers and Clips lanes are while a symbol is open: they are the scene's, and a marker made here would land on it. */
+function SceneOnlyNote({ from, cw, h }: { from: number; cw: number; h: number }) {
+  return (
+    <div className="tl-scene-only" data-testid="timeline.sceneOnly" style={{ height: h }}>
+      <span className="tl-lane-empty" style={{ left: from * cw + 8 }}>
+        Markers and clips belong to the main scene. Go back out of the symbol to use them.
+      </span>
     </div>
   );
 }
@@ -341,7 +392,7 @@ function rowKeys(r: LayoutRow): { frame: number; ref: KeyRef }[] {
 }
 
 /** Keys inside a box of rows and frames. */
-function keysIn(layout: Layout, y0: number, y1: number, f0: number, f1: number): KeyRef[] {
+export function keysIn(layout: Layout, y0: number, y1: number, f0: number, f1: number): KeyRef[] {
   const out = new Set<KeyRef>();
   for (const r of layout.rows) {
     if (r.y + r.h <= y0 || r.y >= y1) continue;
@@ -360,6 +411,7 @@ function keySpots(layout: Layout, refs: ReadonlySet<KeyRef>): { ref: KeyRef; fra
 export function TimelineBody() {
   const layers = useStore((s) => s.doc.layers);
   const length = useStore((s) => s.doc.length);
+  const shared = useStore((s) => sharedDrawings(s.doc));
   const fps = useStore((s) => s.doc.fps);
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const cw = useTl((t) => t.cw);
@@ -385,7 +437,9 @@ export function TimelineBody() {
   const [cursorRow, setCursorRow] = useState<string | null>(null);
   const anchor = useRef<{ frame: number; y: number } | null>(null);
   const [ghost, setGhost] = useState<Ghost | null>(null);
-  const [view, setView] = useState({ left: 0, width: 800 });
+  // The scroll position and size. `top` moves in steps of SCROLL_STEP, so scrolling up and down only draws again when a
+  // new row is about to show, not on every pixel. A `height` of 0 is "not measured yet": every row is drawn.
+  const [view, setView] = useState({ left: 0, width: 800, top: 0, height: 600 });
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [panning, setPanning] = useState(false);
   const keepScroll = useRef<number | null>(null);
@@ -394,6 +448,14 @@ export function TimelineBody() {
   const { from, to } = visibleFrames(view.left, view.width - sideW, cw);
   const contentEnd = useMemo(() => layers.reduce((n, l) => Math.max(n, l.cels.length ? l.cels[l.cels.length - 1].start + l.cels[l.cels.length - 1].length : 0), 0), [layers]);
   const total = Math.max(length, contentEnd) + SLACK;
+  // Which rows to draw in full: the ones on screen and a few either side. The rest are empty shells of the same height,
+  // so the rows still add up to the same scroll length and the layer list still has every row for keyboard and screen
+  // readers. The rows start below the ruler, the markers and the clips.
+  const headH = rulerH + marksH + clipsH;
+  const win = useMemo(
+    () => (view.height > 0 ? rowWindow(layout, view.top - headH - ROW_SPARE, view.top + SCROLL_STEP + view.height - headH + ROW_SPARE) : { lo: 0, hi: layout.rows.length - 1 }),
+    [layout, view.top, view.height, headH],
+  );
   const activeRow = (cursorRow ? layout.rows.find((r) => r.key === cursorRow && r.kind === 'prop' && r.layer.id === activeId) : undefined) ?? rowOfLayerIn(layout, activeId);
   const cursor = activeRow ? { y: activeRow.y, h: activeRow.h } : null;
 
@@ -404,7 +466,8 @@ export function TimelineBody() {
     let raf = 0;
     const read = () => {
       raf = 0;
-      setView((v) => (v.left === el.scrollLeft && v.width === el.clientWidth ? v : { left: el.scrollLeft, width: el.clientWidth }));
+      const top = Math.floor(el.scrollTop / SCROLL_STEP) * SCROLL_STEP;
+      setView((v) => (v.left === el.scrollLeft && v.width === el.clientWidth && v.top === top && v.height === el.clientHeight ? v : { left: el.scrollLeft, width: el.clientWidth, top, height: el.clientHeight }));
     };
     const queue = () => {
       if (!raf) raf = requestAnimationFrame(read);
@@ -519,6 +582,7 @@ export function TimelineBody() {
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && dragRef.current) {
         dragRef.current = null;
+        setScrubbing(false);
         setGhost(null);
       }
     };
@@ -556,6 +620,7 @@ export function TimelineBody() {
     if (!region) return;
     const capture = (d: Drag) => {
       dragRef.current = d;
+      if (d.kind === 'scrub') setScrubbing(true);
       main.current?.setPointerCapture(e.pointerId);
     };
     if (region === 'ruler') {
@@ -740,6 +805,7 @@ export function TimelineBody() {
     }
     const g = ghost;
     dragRef.current = null;
+    setScrubbing(false);
     const click = clickRef.current;
     clickRef.current = null;
     if (click && Math.abs(e.clientX - click.x) < 3 && Math.abs(e.clientY - click.y) < 3 && !store().get().ui.playing) {
@@ -820,6 +886,14 @@ export function TimelineBody() {
       e.stopPropagation();
     };
     const picked = [...tl().keys];
+    // Copy, cut and paste work on keys while the frames have focus (on the canvas they work on shapes).
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
+      done();
+      if (e.key === 'v') pasteKeys();
+      else if (e.key === 'c') copyKeys();
+      else cutKeys();
+      return;
+    }
     if ((e.key === 'Delete' || e.key === 'Backspace') && picked.length) {
       done();
       const o = deleteKeys(picked);
@@ -888,6 +962,11 @@ export function TimelineBody() {
     } else if (region === 'clips') {
       const c = t.closest<HTMLElement>('[data-clip]');
       if (c) setTl({ editing: { kind: 'clip', id: c.dataset.clip! } });
+    } else if (region === 'rows' && t.closest('.tl-cel, .tl-cel-name')) {
+      // A drawing: name it ("eyes sad"), so it can be found without counting frames.
+      const row = rowAt(e);
+      const cel = row && row.kind !== 'folder' ? celAt(row.layer, frameAt(e)) : undefined;
+      if (cel) setTl({ editing: { kind: 'cel', id: cel.id } });
     }
   };
 
@@ -960,21 +1039,23 @@ export function TimelineBody() {
   const dragClip = ghost?.kind === 'clip' ? ghost : null;
   const dragKeys = ghost?.kind === 'keys' ? ghost : null;
   const box = ghost?.kind === 'box' ? ghost : null;
-  const markers = useStore((s) => (detailed ? s.doc.markers : null));
+  const markers = useStore((s) => (detailed && !s.doc.editing?.length ? s.doc.markers : null));
+  // Markers and clips are the scene's, so inside a symbol their lanes give way to a note saying so.
+  const inSymbol = useStore((s) => !!s.doc.editing?.length);
 
   return (
-    <div ref={scroller} className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
+    <div ref={scroller} data-scrolls className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
       <div className="tl-inner">
       <div className="tl-side">
         <div className="tl-corner" style={{ height: rulerH + marksH + clipsH }}>
           <LayerTools />
         </div>
-        <LayerList />
+        <LayerList window={win} />
         <TimelineSlot slot="side" />
       </div>
       <div
         ref={main}
-        className="tl-main"
+        className={`tl-main${cw < 4 ? ' is-tiny' : ''}`}
         style={gridStyle}
         tabIndex={0}
         aria-label="Frames. Arrow keys move around, Shift and arrows pick keys, Delete removes picked keys."
@@ -983,6 +1064,7 @@ export function TimelineBody() {
         onPointerUp={onUp}
         onPointerCancel={() => {
           dragRef.current = null;
+          setScrubbing(false);
           setPanning(false);
           setGhost(null);
         }}
@@ -992,30 +1074,39 @@ export function TimelineBody() {
       >
         <div className="tl-top">
           <Ruler cw={cw} from={from} to={to} length={length} fps={fps} total={total} ghostLength={ghost?.kind === 'length' ? ghost.length : null} ghostRange={ghost?.kind === 'inOut' ? ghost : null} detailed={detailed} h={rulerH} />
-          <MarkersRow cw={cw} from={from} to={to} h={marksH} />
-          <ClipsRow cw={cw} from={from} to={to} h={clipsH} />
+          {inSymbol ? (
+            <SceneOnlyNote from={from} cw={cw} h={marksH + clipsH} />
+          ) : (
+            <>
+              <MarkersRow cw={cw} from={from} to={to} h={marksH} />
+              <ClipsRow cw={cw} from={from} to={to} h={clipsH} />
+            </>
+          )}
           <Playhead part="ruler" cw={cw} cursor={cursor} />
           {dragMarker ? <i className="tl-ghost-line" style={{ left: dragMarker.frame * cw, top: 0, height: rulerH + marksH }} /> : null}
           {dragClip ? <i className="tl-ghost-clip" style={{ left: dragClip.start * cw, width: (dragClip.end - dragClip.start + 1) * cw, top: rulerH + marksH, height: clipsH }} /> : null}
         </div>
         <div ref={rows} className="tl-rows" data-region="rows" style={{ height: layout.height }}>
-          {layout.rows.map((r) =>
-            r.kind === 'folder' ? (
+          {layout.rows.map((r, i) =>
+            i < win.lo || i > win.hi ? (
+              // Scrolled out of view: an empty row of the same height, drawn in full when it comes near.
+              <div key={r.key} className={`tl-row${r.kind === 'folder' ? ' is-folder' : ''}`} style={{ height: r.h }} data-layer={r.kind === 'folder' ? undefined : r.layer.id} />
+            ) : r.kind === 'folder' ? (
               <div key={r.key} className={`tl-row is-folder${r.row.folder.visible ? '' : ' is-hidden'}`} style={{ height: r.h }} />
             ) : r.kind === 'prop' ? (
               <PropRow key={r.key} layer={r.layer} track={r.track} cw={cw} from={from} to={to} picked={picked} h={r.h} last={r.last} />
             ) : detailed ? (
-              <DetailRow key={r.key} layer={r.layer} cw={cw} from={from} to={to} active={r.layer.id === activeId} picked={picked} fxKeys={r.open ? null : fxTracks(r.tracks)} h={r.h} />
+              <DetailRow key={r.key} layer={r.layer} shared={shared} cw={cw} from={from} to={to} active={r.layer.id === activeId} picked={picked} fxKeys={r.open ? null : fxTracks(r.tracks)} h={r.h} />
             ) : (
-              <GridRow key={r.key} layer={r.layer} cw={cw} from={from} to={to} active={r.layer.id === activeId} />
+              <GridRow key={r.key} layer={r.layer} shared={shared} cw={cw} from={from} to={to} active={r.layer.id === activeId} />
             ),
           )}
           {markers?.filter((m) => m.frame >= from && m.frame <= to).map((m) => <i key={m.id} className="tl-mline" style={{ left: m.frame * cw }} aria-hidden="true" />)}
           <span className="tl-beyond" style={{ left: (ghost?.kind === 'length' ? ghost.length : length) * cw }} />
           <Playhead part="rows" cw={cw} cursor={cursor} />
           <TweenOfferView cw={cw} layout={layout} />
-          {ghostCel && ghostRow ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + 1, width: ghostCel.length * cw - 2, top: ghostRow.y + 3, height: ghostRow.h - 6 }} /> : null}
-          {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} /> : null}
+          {ghostCel && ghostRow ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + celGap(cw) / 2, width: Math.max(1, ghostCel.length * cw - celGap(cw)), top: ghostRow.y + 3, height: ghostRow.h - 6 }} /> : null}
+          {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} win={win} from={from} to={to} /> : null}
           {box ? <i className="tl-box" style={{ left: Math.min(box.x0, box.x1), top: Math.min(box.y0, box.y1), width: Math.abs(box.x1 - box.x0), height: Math.abs(box.y1 - box.y0) }} /> : null}
         </div>
         <TimelineSlot slot="main" cw={cw} from={from} to={to} />
@@ -1035,14 +1126,19 @@ function fxTracks(tracks: ReturnType<typeof layerTracks>) {
 }
 
 /** Picked keys where they'll land while they're dragged, with how far they've gone. */
-function KeysGhost({ layout, refs, map, text, cw }: { layout: Layout; refs: ReadonlySet<KeyRef>; map: (f: number) => number; text: string; cw: number }) {
+function KeysGhost({ layout, refs, map, text, cw, win, from, to }: { layout: Layout; refs: ReadonlySet<KeyRef>; map: (f: number) => number; text: string; cw: number; win: RowWindow; from: number; to: number }) {
   const spots = keySpots(layout, refs);
   if (!spots.length) return null;
   const top = Math.min(...spots.map((s) => s.y));
   const left = Math.min(...spots.map((s) => map(s.frame)));
+  // The tag goes by every picked key, but only the ones that land in view are drawn (all of them could be thousands).
+  const y0 = layout.rows[win.lo]?.y ?? 0;
+  const last = layout.rows[win.hi];
+  const y1 = last ? last.y + last.h : Infinity;
+  const near = spots.filter((s) => s.y >= y0 && s.y <= y1 && map(s.frame) >= from && map(s.frame) <= to);
   return (
     <>
-      {spots.map((s) => (
+      {near.map((s) => (
         <i key={s.ref + s.y} className={`tl-ghost-key${s.small ? ' is-small' : ''}`} style={{ left: (map(s.frame) + 0.5) * cw, top: s.y }} />
       ))}
       <span className="tl-ghost-tag" style={{ left: left * cw, top: Math.max(0, top - 26) }}>
@@ -1057,6 +1153,9 @@ function keyMenu(refs: KeyRef[], extra: MenuItem[]): MenuItem[] {
   const n = refs.length;
   const items: MenuItem[] = [
     { heading: n === 1 ? 'Key' : `${n} keys` },
+    { label: n === 1 ? 'Copy this key' : `Copy ${n} keys`, hint: keyHint('edit.copy'), onClick: () => void copyKeys({ refs }) },
+    { label: n === 1 ? 'Cut this key' : `Cut ${n} keys`, hint: keyHint('edit.cut'), onClick: () => void cutKeys({ refs }) },
+    { label: 'Paste keys at the playhead', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys() },
     { label: n === 1 ? 'Delete this key' : `Delete ${n} keys`, danger: true, hint: 'Delete', onClick: () => void (deleteKeys(refs).ok && clearKeys()) },
     { label: 'Move one frame later', hint: 'Alt+→', onClick: () => void keysResult(moveKeys(refs, 1)) },
     { label: 'Move one frame earlier', hint: 'Alt+←', onClick: () => void keysResult(moveKeys(refs, -1)) },
@@ -1131,12 +1230,19 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { heading: `${layer.name}, frame ${frame + 1}${cel ? ` (drawing held for ${holdWords(cel.length)})` : ' (empty)'}` },
     { label: 'New blank drawing here', hint: keyHint('timeline.newKey'), onClick: () => void say(ops.newBlankKey(layer.id, frame)) },
     { label: 'Copy this drawing to the next frame', hint: keyHint('timeline.duplicateKey'), disabled: none, onClick: () => void say(ops.duplicateKey(layer.id, frame)) },
+    ...(cel && placesOf(store().get().doc, cel.drawingId) > 1
+      ? [{ label: 'Make this drawing its own (stop sharing it)', hint: keyHint('timeline.makeOwnDrawing'), onClick: () => void say(ops.makeOwnDrawing(layer.id, frame)) } as MenuItem]
+      : []),
+    { label: 'Copy this drawing', hint: keyHint('edit.copy'), disabled: none, onClick: () => void copyKeys({ layerId: layer.id, frame }) },
+    { label: 'Paste keys here', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys({ layerId: layer.id, frame }) },
     { label: 'Clear this drawing', disabled: none, onClick: () => void say(ops.clearKey(layer.id, frame)) },
     { label: 'Make these frames empty', disabled: none, onClick: () => void say(ops.deleteKey(layer.id, frame)) },
+    { label: cel?.name ? 'Rename this drawing' : 'Name this drawing', hint: keyHint('timeline.nameKey'), disabled: none, onClick: () => cel && setTl({ editing: { kind: 'cel', id: cel.id } }) },
     { separator: true },
     cel?.tween
       ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }
       : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel'), onClick: () => void makeTween(layer.id, frame) },
+    { label: 'Make a symbol from the whole animation', hint: keyHint('symbols.makeFrames'), disabled: (layer.kind !== 'vector' && layer.kind !== 'pixel') || layer.cels.length < 1, onClick: () => void makeSymbolFromFrames({ layerId: layer.id }) },
     { heading: 'One-click motions' },
     ...MOTIONS.map((m): MenuItem => ({ label: `Make it ${m.label.toLowerCase()}`, disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel') || !!cel?.tween, onClick: () => makeMotion(m.id, layer.id, frame) })),
     { separator: true },
@@ -1148,7 +1254,7 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { label: 'Add a frame (hold one longer)', hint: keyHint('timeline.insertFrame'), onClick: () => void say(ops.insertFrame(layer.id, frame)) },
     { label: 'Remove a frame', hint: keyHint('timeline.removeFrame'), onClick: () => void say(ops.removeFrame(layer.id, frame)) },
     { separator: true },
-    { label: 'Add a marker here', onClick: () => void ops.addMarker(frame) },
+    { label: 'Add a marker here', onClick: () => void say(ops.addMarker(frame)) },
     {
       label: 'Put this drawing on the light table',
       checked: store().get().ui.lightTable?.frame === frame && store().get().ui.lightTable?.layerId === layer.id,
@@ -1164,6 +1270,7 @@ function clipMenu(c: Clip): MenuItem[] {
     { label: 'Show how it plays in Properties', onClick: () => { setTl({ clipId: c.id }); showPanel('clip-play'); } },
     { label: tl().clipId === c.id ? 'Play everything again' : 'Play just this clip', onClick: () => setTl({ clipId: tl().clipId === c.id ? null : c.id }) },
     { label: 'Rename', onClick: () => setTl({ editing: { kind: 'clip', id: c.id } }) },
+    { label: 'Duplicate clip', onClick: () => void duplicateClipAndPick(c.id) },
     { separator: true },
     ...clipPlayItems(c),
     { separator: true },

@@ -9,12 +9,15 @@ export function visibleFrames(scrollLeft: number, viewWidth: number, cw: number,
   return { from: Math.max(0, Math.floor(scrollLeft / cw) - spare), to: Math.ceil((scrollLeft + viewWidth) / cw) + spare };
 }
 
-/** Frames between ruler numbers, so they never crowd: every 5 when roomy, then 10, 20, 50. */
+/** Frames between ruler numbers, so they never crowd: every 5 when roomy, then 10, 20, 50, and on up for tiny frames. */
 export function labelStep(cw: number): number {
   if (cw >= 18) return 5;
   if (cw >= 10) return 10;
   if (cw >= 7) return 20;
-  return 50;
+  if (cw >= 3) return 50;
+  if (cw >= 1.2) return 100;
+  if (cw >= 0.5) return 250;
+  return 500;
 }
 
 /** The scroll position that keeps the frame under the pointer where it is while zooming. */
@@ -42,4 +45,70 @@ export function celParts(length: number): { key: number; hold: number } {
 export function holdWords(frames: number): string {
   const on = ['', 'ones', 'twos', 'threes', 'fours'][frames];
   return on ? `${frames} frame${frames === 1 ? '' : 's'} (on ${on})` : `${frames} frames`;
+}
+
+/**
+ * Where a drawing's name goes on its row, and how much room it has: it starts just after the key and runs to the next
+ * drawing on the row (or to the end of its own hold when there is none), so a name on a one frame drawing still shows
+ * when the frames after it are empty. `width` is in screen pixels; a name needs about 28 to be worth drawing.
+ */
+export function celLabelBox(cel: { start: number; length: number }, nextStart: number | undefined, cw: number): { left: number; width: number } {
+  const stop = nextStart !== undefined ? Math.max(nextStart, cel.start + cel.length) : cel.start + cel.length;
+  return { left: (cel.start + 1) * cw + 3, width: Math.max(0, (stop - cel.start - 1) * cw - 10) };
+}
+
+/** The least width a name is drawn in: narrower than this it would only be a smudge, and the tooltip still has it. */
+export const MIN_LABEL_W = 28;
+
+/** Under this many pixels wide a drawing is too small to draw by itself, so runs of them are drawn as one band. */
+export const TINY_CEL = 4;
+
+/** One thing to draw on a row: a single drawing, or (dense) a run of tiny ones drawn as one band. */
+export interface CelPiece<C> {
+  cel: C;
+  /** Pixels from the row's start, with no gap taken off. */
+  left: number;
+  right: number;
+  /** How many drawings the band stands for (1 for a single one). */
+  count: number;
+  dense: boolean;
+}
+
+/**
+ * What to draw for a row of cels at this zoom. Wide enough drawings are drawn as they are. Tiny ones that touch are
+ * joined into one band, so a clip of hundreds of one-frame drawings squeezed into a window stays a few shapes.
+ * `cels` is in time order; so is the result.
+ */
+export function thinCels<C extends { start: number; length: number }>(cels: readonly C[], cw: number): CelPiece<C>[] {
+  const out: CelPiece<C>[] = [];
+  let run: CelPiece<C> | null = null;
+  for (const cel of cels) {
+    const left = cel.start * cw;
+    const right = (cel.start + cel.length) * cw;
+    if (right - left >= TINY_CEL) {
+      run = null;
+      out.push({ cel, left, right, count: 1, dense: false });
+    } else if (run && left - run.right <= 1) {
+      run.right = Math.max(run.right, right);
+      run.count++;
+      run.dense = true;
+    } else {
+      run = { cel, left, right, count: 1, dense: false };
+      out.push(run);
+    }
+  }
+  // A band of one is just a thin drawing: keep it at least a pixel wide.
+  for (const p of out) if (p.right - p.left < 1) p.right = p.left + 1;
+  return out;
+}
+
+/** The gap left between neighbouring drawings: 2 px when roomy, none when frames are tiny. */
+export function celGap(cw: number): number {
+  return cw >= 5 ? 2 : cw >= 2 ? 1 : 0;
+}
+
+/** "Moved 3 right and 2 down from where it was drawn", in words. */
+export function movedWords(o: { x: number; y: number }): string {
+  const bits = [o.x ? `${Math.abs(o.x)} ${o.x > 0 ? 'right' : 'left'}` : '', o.y ? `${Math.abs(o.y)} ${o.y > 0 ? 'down' : 'up'}` : ''].filter(Boolean);
+  return `Moved ${bits.join(' and ')} from where it was drawn.`;
 }

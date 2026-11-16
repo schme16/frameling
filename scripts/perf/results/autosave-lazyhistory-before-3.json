@@ -1,0 +1,244 @@
+{
+ "label": "sweep",
+ "when": "2026-11-15T09:35:43.224Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "pages": {
+  "history-deep": {
+   "nodes": 1212,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "stress-vector-history": {
+   "nodes": 3024,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  },
+  "history-pixel": {
+   "nodes": 1075,
+   "timelineNodes": 104,
+   "keys": 1,
+   "rows": 1,
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "history-deep",
+   "action": "autosave",
+   "busyMs": 15.9,
+   "runs": [
+    15.9,
+    15.7,
+    16.7,
+    16.5,
+    14.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 15.85,
+   "wallMs": 64.4,
+   "runsWall": [
+    71.3,
+    64.4,
+    65.1,
+    63.8,
+    60.8
+   ],
+   "topSelf": [
+    [
+     "(anon) index-B9TxVs3Y.js:10",
+     4.2
+    ],
+    [
+     "XGe index-B9TxVs3Y.js:167",
+     3.1
+    ],
+    [
+     "Re index-B9TxVs3Y.js:10",
+     3
+    ]
+   ],
+   "topIncl": [
+    [
+     "YX index-B9TxVs3Y.js:167",
+     14.5
+    ],
+    [
+     "(anon) :0",
+     14.2
+    ],
+    [
+     "FX index-B9TxVs3Y.js:167",
+     13.5
+    ],
+    [
+     "i index-B9TxVs3Y.js:167",
+     13.4
+    ],
+    [
+     "MJe index-B9TxVs3Y.js:167",
+     13.4
+    ],
+    [
+     "JX index-B9TxVs3Y.js:167",
+     13.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 64 ms"
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "autosave",
+   "busyMs": 459.7,
+   "runs": [
+    468.2,
+    456.5,
+    459.7,
+    457.9,
+    461.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 459.72,
+   "wallMs": 1151.9,
+   "runsWall": [
+    1160.3,
+    1137.9,
+    1137.6,
+    1151.9,
+    1157.5
+   ],
+   "topSelf": [
+    [
+     "$e index-B9TxVs3Y.js:10",
+     419.1
+    ],
+    [
+     "MJe index-B9TxVs3Y.js:167",
+     10.3
+    ],
+    [
+     "YX index-B9TxVs3Y.js:167",
+     6.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "YX index-B9TxVs3Y.js:167",
+     457
+    ],
+    [
+     "(anon) :0",
+     450.2
+    ],
+    [
+     "FX index-B9TxVs3Y.js:167",
+     446.5
+    ],
+    [
+     "(anon) :1",
+     446.4
+    ],
+    [
+     "i index-B9TxVs3Y.js:167",
+     446.3
+    ],
+    [
+     "JX index-B9TxVs3Y.js:167",
+     446.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 1152 ms"
+  },
+  {
+   "doc": "history-pixel",
+   "action": "autosave",
+   "busyMs": 15.9,
+   "runs": [
+    14.9,
+    17.8,
+    13.9,
+    39.2,
+    15.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 15.88,
+   "wallMs": 189.9,
+   "runsWall": [
+    189.9,
+    189.1,
+    185.3,
+    196.6,
+    195.3
+   ],
+   "topSelf": [
+    [
+     "XGe index-B9TxVs3Y.js:167",
+     5.6
+    ],
+    [
+     "pump index-B9TxVs3Y.js:167",
+     5.5
+    ],
+    [
+     "(program) :0",
+     3.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "FX index-B9TxVs3Y.js:167",
+     12.1
+    ],
+    [
+     "YX index-B9TxVs3Y.js:167",
+     9.9
+    ],
+    [
+     "(anon) :0",
+     8.3
+    ],
+    [
+     "JX index-B9TxVs3Y.js:167",
+     6.6
+    ],
+    [
+     "(anon) :1",
+     6.6
+    ],
+    [
+     "MJe index-B9TxVs3Y.js:167",
+     6.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "wall 190 ms"
+  }
+ ]
+}

@@ -17,6 +17,7 @@ import {
   type Present,
 } from './model';
 import type { ThingSource } from './crayon';
+import { markLatelySeen, readLately, type Lately } from './whileAway';
 
 export const PET_KEY = 'frameling.quill.v1';
 
@@ -61,6 +62,7 @@ export function readPet(storage: Pick<Storage, 'getItem'> | null | undefined): P
             .filter(Boolean) as Present[])
         : [],
       lastPresentAt: num(v.lastPresentAt),
+      ...(readLately(v.lately) ? { lately: readLately(v.lately) } : {}),
     };
   } catch {
     return FRESH_PET;
@@ -136,6 +138,20 @@ export function notePresentOpened(id: string): void {
 /** Gives one of his presents back, because you asked. */
 export function letGoOfPresentNamed(id: string): void {
   petStore.set(letGoOfPresent(petStore.get(), id));
+  save();
+}
+
+/** Puts what he got up to in the room. */
+export function keepLately(lately: Lately): void {
+  petStore.set({ ...petStore.get(), lately });
+  save();
+}
+
+/** Remembers that the news has been looked at. */
+export function noteLatelySeen(): void {
+  const next = markLatelySeen(petStore.get());
+  if (next === petStore.get()) return;
+  petStore.set(next);
   save();
 }
 

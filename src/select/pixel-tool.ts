@@ -1,7 +1,7 @@
 /**
  * Select [V] on a pixel layer: pick pixels with a box, a lasso or the magic wand, then drag them to move them.
  * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something
- * is selected, painting stays inside it, and the Pixel tools menu's flips, turns and outlines work on just that part.
+ * is selected, painting stays inside it, and the flips, turns and outlines in the Tools menu work on just that part.
  */
 import { gridPixels } from '../core/pixelBounds';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
@@ -22,21 +22,24 @@ import {
   PIXEL_SELECT_TOOL,
   pixelSelection,
   setPixelSelection,
+  shownSelection,
 } from './pixel-state';
 import { clingReach, getSelectSettings } from './settings';
 import { MagneticTrace, PixelEdges, pixelSource } from './magnetic';
 import { modeOfTool, WAYS } from './ways';
+import { registerPointGesture } from '../core/pointUndo';
 import { store } from '../core/store';
-import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
+import { backLassoPoints, drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
 import { reducedMotion } from '../ui/prefs';
+import { choiceWord } from '../words/choices';
 
 /** A drag shorter than this (screen pixels) is a click. */
 const DRAG_PX = 3;
 
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
-  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace }
+  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean; mag?: MagneticTrace; marks?: number[] }
   | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
@@ -45,15 +48,15 @@ export type AltInsideChoice = 'copy' | 'subtract';
 
 registerChoice<AltInsideChoice>({
   id: 'select.altInside',
-  title: 'Alt+drag inside a pixel selection',
-  question: 'What should Alt+drag do when it starts inside the selected pixels?',
+  title: choiceWord('choice.select.altInside.title'),
+  question: choiceWord('choice.select.altInside.question'),
   category: 'Pixel art',
   silent: true,
   default: 'copy',
   help: 'Alt+drag outside the selection always takes away from it.',
   options: [
-    { value: 'copy', label: 'Copy the pixels', detail: 'Drags a copy and leaves the originals where they were.' },
-    { value: 'subtract', label: 'Take away from the selection', detail: 'Draws a box or lasso that is cut out of the selection.' },
+    { value: 'copy', label: choiceWord('choice.select.altInside.copy.label'), detail: choiceWord('choice.select.altInside.copy.detail') },
+    { value: 'subtract', label: choiceWord('choice.select.altInside.subtract.label'), detail: choiceWord('choice.select.altInside.subtract.detail') },
   ],
 });
 
@@ -181,6 +184,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     if (e.alt && s.op !== 'subtract') {
       // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
       s.open = true;
+      (s.marks ??= []).push(s.pts.length);
       ctx.requestOverlay();
       return;
     }
@@ -235,14 +239,13 @@ export function closeOpenPixelLasso(): boolean {
 /** How far (document pixels) the magnetic lasso reaches for an edge, from the cling setting. */
 const reachOf = (ctx: ToolContext): number => clingReach(getSelectSettings().cling) / ctx.zoom;
 
-/** Takes the last corner of an open polygon or magnetic lasso back. At the first one, it lets go of the whole thing. */
+/** Takes the last corner of an open polygon, magnetic or Alt lasso back. At the first one, it lets go of the whole thing. */
 export function backOpenPixelLasso(ctx?: ToolContext): boolean {
-  if (g?.kind !== 'lasso' || !g.open || !g.poly) return false;
+  if (g?.kind !== 'lasso' || !g.open) return false;
   if (g.mag) {
     if (!g.mag.back()) g = null;
     else if (ctx) g.mag.move(g.cur, reachOf(ctx), ctx.zoom);
-  } else if (g.pts.length > 1) g.pts.pop();
-  else g = null;
+  } else if (!backLassoPoints(g.pts, g.marks ?? [], !!g.poly)) g = null;
   return true;
 }
 
@@ -252,6 +255,12 @@ function polygonKey(e: KeyboardEvent, ctx: ToolContext): boolean {
   if (e.key !== 'Enter' || !pixelLassoIsOpen()) return false;
   return closeOpenPixelLasso();
 }
+
+/** Ctrl+Z while a polygon or lasso is open takes a corner back, like Backspace. */
+registerPointGesture({
+  open: () => pixelLassoIsOpen() && pixelSelectTools.some((t) => t.id === store().get().ui.tool),
+  back: () => void backOpenPixelLasso(),
+});
 
 function cancel(ctx: ToolContext): void {
   // A drag that already lifted pixels keeps them lifted where they were before it; anything else is dropped.
@@ -352,12 +361,40 @@ function antsPath(m: Mask, size: number): Path2D {
   return path;
 }
 
+let fringeCache: { m: Mask; size: number; paths: Path2D[] } | null = null;
+
+/** The pixels along a soft edge, grouped into four steps of how much they are in, so they can be tinted a step each. */
+function fringePaths(m: Mask, size: number): Path2D[] {
+  if (fringeCache && fringeCache.m === m && fringeCache.size === size) return fringeCache.paths;
+  const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+  const soft = m.soft;
+  if (soft) {
+    for (let i = 0; i < soft.length; i++) {
+      const k = soft[i];
+      if (k === 0 || k === 255) continue;
+      paths[k >> 6].rect((i % m.width) * size, ((i / m.width) | 0) * size, size, size);
+    }
+  }
+  fringeCache = { m, size, paths };
+  return paths;
+}
+
 addStageOverlay((gx, zoom) => {
-  const m = pixelSelection();
+  const m = shownSelection();
   const a = activePixelGrid();
   if (!m || !a || typeof Path2D === 'undefined') return;
   const path = antsPath(m, a.layer.pixelSize);
   const px = 1 / zoom;
+  if (m.soft) {
+    // A blue wash on the part-way pixels, stronger the more they are in, so a feather shows how far it fades.
+    gx.save();
+    const paths = fringePaths(m, a.layer.pixelSize);
+    for (let b = 0; b < 4; b++) {
+      gx.fillStyle = `rgba(74, 163, 255, ${0.08 + b * 0.08})`;
+      gx.fill(paths[b]);
+    }
+    gx.restore();
+  }
   // Black and white dashes that crawl along, so the edge shows on any colour.
   // They hold still when motion is turned down.
   const crawl = reducedMotion() ? 0 : (Date.now() / 60) % 8;

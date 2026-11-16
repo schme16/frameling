@@ -8,12 +8,13 @@ import { DEFAULT_GROUPS, groupName, moveTool, placeWords, resolveGroups, sanitiz
 // Where the built-in tools start in the rail (each registers its own `group` and `groupAt`; the last test checks they agree).
 const PLACES: Record<string, string[]> = {
   draw: ['pencil', 'brush', 'eraser', 'fill', 'tile-brush', 'tile-eraser', 'tile-fill'],
-  extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray'],
-  shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
+  extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush', 'clone-stamp', 'blur-brush', 'sharpen-brush'],
+  shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'shape-builder', 'text'],
   // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
-  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'points', 'pen', 'slice'],
-  rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
-  view: ['hand', 'zoom', 'camera', 'artboard'],
+  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'slice'],
+  pen: ['transform', 'points', 'pen'],
+  rig: ['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints'],
+  view: ['hand', 'zoom', 'camera', 'notes', 'artboard', 'marks'],
 };
 const refs = (ids: string[]) =>
   ids.map((id) => {
@@ -25,14 +26,35 @@ const resolve = (saved: ToolGroup[] | undefined, ids: string[]) => resolveGroups
 const VECTOR = ['pencil', 'brush', 'eraser', 'fill', 'gradient', 'eyedropper', 'line', 'rect', 'ellipse', 'polygon', 'star', 'text', 'select', 'points', 'pen', 'bone', 'pose', 'hand', 'zoom'];
 const flat = (g: ToolGroup[]) => g.flatMap((x) => x.tools);
 const names = (g: ToolGroup[]) => g.map((x) => x.id);
+const draw = (g: ToolGroup[]) => g.find((x) => x.id === 'draw')!;
 
 describe('the default arrangement', () => {
-  it('groups the real tools: drawing, extras, shapes, select and pen, rig, view', () => {
+  it('groups the real tools: select, drawing, colour, shapes, pen and edit, rig, view', () => {
     const g = resolve(undefined, VECTOR);
-    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
-    expect(g[0].tools).toEqual(['pencil', 'brush', 'eraser', 'fill']);
-    expect(g[2].tools).toEqual(['line', 'rect', 'ellipse', 'polygon', 'star', 'text']);
-    expect(g[5].tools).toEqual(['hand', 'zoom']);
+    expect(names(g)).toEqual(['select', 'draw', 'extras', 'shapes', 'pen', 'rig', 'view']);
+    expect(g[0].tools).toEqual(['select']);
+    expect(g[1].tools).toEqual(['pencil', 'brush', 'eraser', 'fill']);
+    expect(g[2].tools).toEqual(['gradient', 'eyedropper']);
+    expect(g[3].tools).toEqual(['line', 'rect', 'ellipse', 'polygon', 'star', 'text']);
+    expect(g[4].tools).toEqual(['points', 'pen']);
+    expect(g[6].tools).toEqual(['hand', 'zoom']);
+  });
+  it('a rail saved before Select moved to the top keeps its order, and its ids', () => {
+    const old = ['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view'];
+    const defaults = resolve(undefined, VECTOR);
+    const saved: ToolGroup[] = old.map((id) => ({ id, tools: defaults.find((g) => g.id === id)!.tools }));
+    expect(names(resolve(saved, VECTOR))).toEqual(old);
+    // A group the saved rail lacks comes back where it used to sit, not at the top.
+    const noSelect = saved.filter((g) => g.id !== 'select');
+    expect(names(resolve(noSelect, VECTOR))).toEqual(old);
+  });
+  it('every group id is one a saved rail from before can name', () => {
+    expect(DEFAULT_GROUPS.map((g) => g.id).sort()).toEqual(['draw', 'extras', 'pen', 'rig', 'select', 'shapes', 'view']);
+  });
+  it('every built-in workspace starts with Select', async () => {
+    const { BUILTIN_RAILS } = await import('../../src/ui/toolArrange');
+    expect(DEFAULT_GROUPS[0].id).toBe('select');
+    for (const id of ['draw', 'animate', 'pixel']) expect(BUILTIN_RAILS[id][0].id, id).toBe('select');
   });
   it('puts every tool exactly once, wherever it was registered from', () => {
     const g = resolve(undefined, [...VECTOR].reverse());
@@ -48,7 +70,7 @@ describe('the tools the app registers', () => {
     await import('../../src/renderer/features');
     const { allTools } = await import('../../src/core/registry');
     const g = resolveGroups(undefined, allTools());
-    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
+    expect(names(g)).toEqual(['select', 'draw', 'extras', 'shapes', 'pen', 'rig', 'view']);
     for (const group of g) expect(group.tools).toEqual(PLACES[group.id]);
   });
 });
@@ -83,20 +105,20 @@ describe('moving tools', () => {
   const base = () => resolve(undefined, VECTOR);
   it('within a group: before another tool, or to the end', () => {
     const a = moveTool(base(), 'fill', { group: 'draw', before: 'pencil' });
-    expect(a[0].tools).toEqual(['fill', 'pencil', 'brush', 'eraser']);
+    expect(draw(a).tools).toEqual(['fill', 'pencil', 'brush', 'eraser']);
     const b = moveTool(base(), 'pencil', { group: 'draw', before: null });
-    expect(b[0].tools).toEqual(['brush', 'eraser', 'fill', 'pencil']);
+    expect(draw(b).tools).toEqual(['brush', 'eraser', 'fill', 'pencil']);
   });
   it('into another group', () => {
     const a = moveTool(base(), 'pencil', { group: 'shapes', before: 'rect' });
-    expect(a[0].tools).toEqual(['brush', 'eraser', 'fill']);
-    expect(a[2].tools.slice(0, 3)).toEqual(['line', 'pencil', 'rect']);
+    expect(draw(a).tools).toEqual(['brush', 'eraser', 'fill']);
+    expect(a.find((g) => g.id === 'shapes')!.tools.slice(0, 3)).toEqual(['line', 'pencil', 'rect']);
   });
   it('into a group of its own, anywhere among the groups', () => {
     const a = moveTool(base(), 'text', { newGroupAt: 1 });
-    expect(a).toHaveLength(7);
+    expect(a).toHaveLength(8);
     expect(a[1].tools).toEqual(['text']);
-    expect(a[1].id).toBe('g7');
+    expect(a[1].id).toBe('g8');
     expect(a.find((g) => g.id === 'shapes')!.tools).not.toContain('text');
     expect(flat(a).sort()).toEqual([...VECTOR].sort());
   });
@@ -129,25 +151,25 @@ describe('moving tools', () => {
 describe('keyboard steps', () => {
   const base = () => resolve(undefined, VECTOR);
   it('one place later or earlier in the group', () => {
-    expect(shiftTool(base(), 'pencil', 1)[0].tools).toEqual(['brush', 'pencil', 'eraser', 'fill']);
-    expect(shiftTool(base(), 'fill', -2)[0].tools).toEqual(['pencil', 'fill', 'brush', 'eraser']);
+    expect(draw(shiftTool(base(), 'pencil', 1)).tools).toEqual(['brush', 'pencil', 'eraser', 'fill']);
+    expect(draw(shiftTool(base(), 'fill', -2)).tools).toEqual(['pencil', 'fill', 'brush', 'eraser']);
   });
   it('crosses into the next group past the end, and the previous group past the start', () => {
     const a = shiftTool(base(), 'fill', 1);
-    expect(a[0].tools).toEqual(['pencil', 'brush', 'eraser']);
-    expect(a[1].tools[0]).toBe('fill');
+    expect(draw(a).tools).toEqual(['pencil', 'brush', 'eraser']);
+    expect(a[names(a).indexOf('draw') + 1].tools[0]).toBe('fill');
     const b = shiftTool(base(), 'gradient', -1);
-    expect(b[0].tools.at(-1)).toBe('gradient');
+    expect(draw(b).tools.at(-1)).toBe('gradient');
   });
   it('stops at the very start and end', () => {
     const g = base();
-    expect(shiftTool(g, 'pencil', -1)).toBe(g);
+    expect(shiftTool(g, 'select', -1)).toBe(g);
     expect(shiftTool(g, 'zoom', 1)).toBe(g);
   });
   it('steps over tools that are not showing', () => {
     const g = base();
     const shows = (id: string) => id !== 'brush';
-    expect(shiftTool(g, 'pencil', 1, shows)[0].tools).toEqual(['brush', 'eraser', 'pencil', 'fill']);
+    expect(draw(shiftTool(g, 'pencil', 1, shows)).tools).toEqual(['brush', 'eraser', 'pencil', 'fill']);
   });
   it('says where a tool is', () => {
     expect(placeWords(base(), 'brush')).toBe('Draw, place 2 of 4');

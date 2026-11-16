@@ -38,7 +38,7 @@ export interface Tuning {
 /** Below this loudness (dB, mean square; about 0.00016 rms) a step is silence. */
 const SILENT_DB = -76;
 
-export const DEFAULT_TUNING: Tuning = { mbpBoost: 1.5, fvBoost: 1.2, switchCost: 0.8, textWeight: 0.4 };
+export const DEFAULT_TUNING: Tuning = { mbpBoost: 2, fvBoost: 1.2, switchCost: 0.8, textWeight: 0.4 };
 
 /** Turns runs shorter than `min` frames into part of a neighbour, so nothing flickers. */
 export function holdAtLeast(mouths: Mouth[], min: number, exempt: Mouth = 'MBP'): Mouth[] {

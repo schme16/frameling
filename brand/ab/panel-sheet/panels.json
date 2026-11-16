@@ -1,0 +1,402 @@
+[
+  {
+    "id": "tool-options",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 241,
+    "problem": null
+  },
+  {
+    "id": "timeline",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 1120,
+    "h": 218,
+    "problem": null
+  },
+  {
+    "id": "colors",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 497,
+    "problem": null
+  },
+  {
+    "id": "palette",
+    "theme": "dark",
+    "doc": "blank-pixel",
+    "w": 280,
+    "h": 655,
+    "problem": null
+  },
+  {
+    "id": "library",
+    "theme": "dark",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 249,
+    "problem": null
+  },
+  {
+    "id": "tileset",
+    "theme": "dark",
+    "doc": "tileset",
+    "w": 316,
+    "h": 448,
+    "problem": null
+  },
+  {
+    "id": "symbol-props",
+    "theme": "dark",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "effects",
+    "theme": "dark",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 650,
+    "problem": null
+  },
+  {
+    "id": "draw-on",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 428,
+    "problem": null
+  },
+  {
+    "id": "clip-play",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 90,
+    "problem": null
+  },
+  {
+    "id": "particles",
+    "theme": "dark",
+    "doc": "sparkle-fx",
+    "w": 264,
+    "h": 320,
+    "problem": null
+  },
+  {
+    "id": "camera",
+    "theme": "dark",
+    "doc": "camera-parallax",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "text",
+    "theme": "dark",
+    "doc": "title-card",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "clip-flow",
+    "theme": "dark",
+    "doc": "hero-sprites",
+    "w": 264,
+    "h": 471,
+    "problem": null
+  },
+  {
+    "id": "rig",
+    "theme": "dark",
+    "doc": "puppet",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "layers",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 155,
+    "problem": null
+  },
+  {
+    "id": "artboards",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 415,
+    "problem": null
+  },
+  {
+    "id": "notes",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 305,
+    "problem": null
+  },
+  {
+    "id": "lipsync",
+    "theme": "dark",
+    "doc": "lip-sync",
+    "w": 316,
+    "h": 311,
+    "problem": null
+  },
+  {
+    "id": "preview",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "slices",
+    "theme": "dark",
+    "doc": "hero-sprites",
+    "w": 264,
+    "h": 174,
+    "problem": null
+  },
+  {
+    "id": "quests",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "quill-pet",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 565,
+    "problem": null
+  },
+  {
+    "id": "history",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 146,
+    "problem": null
+  },
+  {
+    "id": "help",
+    "theme": "dark",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "tool-options",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 241,
+    "problem": null
+  },
+  {
+    "id": "timeline",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 1120,
+    "h": 218,
+    "problem": null
+  },
+  {
+    "id": "colors",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 497,
+    "problem": null
+  },
+  {
+    "id": "palette",
+    "theme": "light",
+    "doc": "blank-pixel",
+    "w": 280,
+    "h": 655,
+    "problem": null
+  },
+  {
+    "id": "library",
+    "theme": "light",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 249,
+    "problem": null
+  },
+  {
+    "id": "tileset",
+    "theme": "light",
+    "doc": "tileset",
+    "w": 316,
+    "h": 448,
+    "problem": null
+  },
+  {
+    "id": "symbol-props",
+    "theme": "light",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "effects",
+    "theme": "light",
+    "doc": "bouncing-logo",
+    "w": 316,
+    "h": 650,
+    "problem": null
+  },
+  {
+    "id": "draw-on",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 428,
+    "problem": null
+  },
+  {
+    "id": "clip-play",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 90,
+    "problem": null
+  },
+  {
+    "id": "particles",
+    "theme": "light",
+    "doc": "sparkle-fx",
+    "w": 264,
+    "h": 320,
+    "problem": null
+  },
+  {
+    "id": "camera",
+    "theme": "light",
+    "doc": "camera-parallax",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "text",
+    "theme": "light",
+    "doc": "title-card",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "clip-flow",
+    "theme": "light",
+    "doc": "hero-sprites",
+    "w": 264,
+    "h": 471,
+    "problem": null
+  },
+  {
+    "id": "rig",
+    "theme": "light",
+    "doc": "puppet",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "layers",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 155,
+    "problem": null
+  },
+  {
+    "id": "artboards",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 415,
+    "problem": null
+  },
+  {
+    "id": "notes",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 305,
+    "problem": null
+  },
+  {
+    "id": "lipsync",
+    "theme": "light",
+    "doc": "lip-sync",
+    "w": 316,
+    "h": 311,
+    "problem": null
+  },
+  {
+    "id": "preview",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "slices",
+    "theme": "light",
+    "doc": "hero-sprites",
+    "w": 264,
+    "h": 174,
+    "problem": null
+  },
+  {
+    "id": "quests",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  },
+  {
+    "id": "quill-pet",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 565,
+    "problem": null
+  },
+  {
+    "id": "history",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 146,
+    "problem": null
+  },
+  {
+    "id": "help",
+    "theme": "light",
+    "doc": "bouncing-ball",
+    "w": 316,
+    "h": 844,
+    "problem": null
+  }
+]

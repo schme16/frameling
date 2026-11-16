@@ -6,6 +6,9 @@
 // Prints, per lap, how long the page took from the mouse-up event to the next task (a setTimeout(0) probe), and with
 // --profile the top functions by self time and by inclusive time during the release.
 const { app, BrowserWindow } = require('electron');
+// A speed claim: the real card, and a failure if it did not come up (scripts/lib/gpu.cjs).
+const gpuMod = require('../lib/gpu.cjs');
+gpuMod.use('card');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -33,6 +36,7 @@ async function start() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpuMod.confirmOrExit(win);
   win.setSize(1400, 900);
   for (let i = 0; i < 200; i++) {
     try {

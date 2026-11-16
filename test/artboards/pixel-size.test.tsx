@@ -36,7 +36,7 @@ describe('artboard sizes for pixel art', () => {
   it('the panel lists each board in art pixels', () => {
     resetStore(spriteDoc());
     act(() => root.render(<ArtboardsPanel />));
-    const meta = [...host.querySelectorAll('.sy-item-meta')].map((e) => e.textContent);
+    const meta = [...host.querySelectorAll('.ab-size')].map((e) => e.textContent);
     expect(meta.length).toBe(2);
     for (const m of meta) {
       expect(m).toContain('32 x 32');
@@ -49,7 +49,7 @@ describe('artboard sizes for pixel art', () => {
     addArtboard(doc, { name: 'Two', width: 640, height: 360 });
     resetStore(doc);
     act(() => root.render(<ArtboardsPanel />));
-    expect([...host.querySelectorAll('.sy-item-meta')].map((e) => e.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('1280 x 720'), expect.stringContaining('640 x 360')]));
+    expect([...host.querySelectorAll('.ab-size')].map((e) => e.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('1280 x 720'), expect.stringContaining('640 x 360')]));
   });
 
   it('the W and H fields are in art pixels too', () => {

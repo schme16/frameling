@@ -1,8 +1,12 @@
 // Opening, saving and the "unsaved changes?" question, on the page side. The bytes are made and read by file.ts; the
 // desktop side (src/main) does the dialogs and the disk.
+import { choose, registerChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
+import { historyFitsFile, type HistorySaved } from '../core/historyFile';
 import { ownedUndo } from '../core/owners';
 import { rootDoc } from '../core/symbols';
 import { uid } from '../core/doc';
+import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
@@ -10,12 +14,18 @@ import { FileProblem, loadFileAsync, saveFileAsync } from './file';
 import { notify } from './notify';
 import { askSaveInPage, saveAskAvailable } from './saveAsk';
 import { thumbnailOf } from './thumb';
+import { previewBytes } from './preview';
+import { handoverFits } from '../shared/handover';
+import { displayPath, streamSafe } from '../core/streamSafe';
+import { handIsBusy, whenHandIsFree } from '../core/handBusy';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
   const { ui } = store().get();
   const doc = store().rootDoc();
-  return ui.filePath ? stripExt(baseName(ui.filePath)) : doc.name || 'Untitled';
+  // While stream-safe, the file's own name is not shown: it stands in as "My drawing".
+  if (ui.filePath) return streamSafe() ? displayPath(ui.filePath) : stripExt(baseName(ui.filePath));
+  return doc.name || 'Untitled';
 }
 
 export async function clearAutosaveCopy(): Promise<void> {
@@ -26,24 +36,108 @@ export async function clearAutosaveCopy(): Promise<void> {
   }
 }
 
+export type SaveHistoryChoice = 'keep' | 'plain';
+
+// Asked the first time a save has undo steps to put in the file; the answer can be changed in Preferences > Behaviour.
+registerChoice<SaveHistoryChoice>({
+  id: 'save.history',
+  title: choiceWord('choice.save.history.title'),
+  question: choiceWord('choice.save.history.question'),
+  options: [
+    { value: 'keep', label: choiceWord('choice.save.history.keep.label'), detail: choiceWord('choice.save.history.keep.detail') },
+    { value: 'plain', label: choiceWord('choice.save.history.plain.label'), detail: choiceWord('choice.save.history.plain.detail') },
+  ],
+  default: 'keep',
+  dismiss: 'plain',
+  // Never settled by weariness: the answer decides whether what you took out travels with the file.
+  mustAsk: true,
+  category: 'Files',
+  help: 'saving-and-opening',
+});
+
+/** The sentence for a save that left older steps out to keep the file small, or null when all of them went in. */
+export function historyNote(saved: Pick<HistorySaved, 'kept' | 'dropped'> | null): string | null {
+  if (!saved || !saved.dropped) return null;
+  const n = saved.kept.undo;
+  return `Saved. The file keeps your last ${n} ${n === 1 ? 'step' : 'steps'} of history; older ones were left out to keep it small.`;
+}
+
 let lastDoc: unknown = null;
+/** An autosave that is waiting for the hand to come off the canvas. */
+let saveWaiting = false;
+
+/** How long after the pen lifts a waiting autosave runs, so it never lands on the frame that finishes the stroke. */
+const AFTER_STROKE_MS = 300;
 
 /** Lets go of the drawing the autosave last wrote, so a closed drawing isn't held in memory. */
 export function forgetAutosaved(): void {
   lastDoc = null;
 }
 
-export async function autosaveNow(): Promise<void> {
+/**
+ * The bytes of an autosave copy: the drawing and its undo and redo steps, so a recovery after a crash can still step
+ * back through the work. The steps are encoded once each and remembered (see `encodeHistory`), so a minute later only the
+ * new steps cost anything. It is the same byte cap as a saved file, so the copy can't grow without limit. A tile open for
+ * editing, or a variation, has no steps that fit the file's drawing, and then the copy goes without them.
+ */
+export async function autosaveBytes(doc: Doc, appVersion: string, withHistory = true): Promise<Uint8Array> {
+  const steps = withHistory ? store().historyForSave() : null;
+  const history = steps && steps.doc === doc && historyFitsFile(doc) ? steps : null;
+  return saveFileAsync(doc, appVersion, new Date(), { reuse: true, ...(history ? { history } : {}) });
+}
+
+export async function autosaveNow(opts: { now?: boolean } = {}): Promise<void> {
   const api = desktop();
   const { ui } = store().get();
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
+  // The clock does not care that a pen is down. On a big document the copy takes tens of milliseconds on the main
+  // thread, and in the middle of a stroke that is a hitch in the line. Wait for the release: a second later is just
+  // as good a copy. Only one waits at a time, because the next minute's autosave finds this one already pending.
+  if (handIsBusy() && !opts.now) {
+    if (!saveWaiting) {
+      saveWaiting = true;
+      whenHandIsFree(() => {
+        // Not on the release itself: lifting the pen already finishes the stroke and repaints, and a save on that
+        // same frame would only move the hitch to the end of the line. A moment later nobody is waiting on it.
+        setTimeout(() => {
+          saveWaiting = false;
+          void autosaveNow();
+        }, AFTER_STROKE_MS);
+      });
+    }
+    return;
+  }
   try {
-    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
+    const bytes = await autosaveBytes(doc, api.versions.app);
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });
     lastDoc = doc;
   } catch {
     // Try again at the next tick; a failed autosave should never get in the way.
+  }
+}
+
+export type Handover = { ok: true } | { ok: false; why: 'big' | 'failed' };
+
+/**
+ * Writes the unsaved work to the autosave copy right now (whatever the clock says), for a restart to carry across, and
+ * says whether it is really there. `big`: too large to hand over as a copy. `failed`: it could not be written.
+ */
+export async function handOverUnsavedWork(): Promise<Handover> {
+  const api = desktop();
+  if (!api) return { ok: false, why: 'failed' };
+  const { ui } = store().get();
+  const doc = store().rootDoc();
+  try {
+    let bytes = await autosaveBytes(doc, api.versions.app);
+    // Too big to carry with its steps: the drawing goes across on its own rather than not at all.
+    if (!handoverFits(bytes.length)) bytes = await autosaveBytes(doc, api.versions.app, false);
+    if (!handoverFits(bytes.length)) return { ok: false, why: 'big' };
+    if ((await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id })) === false) return { ok: false, why: 'failed' };
+    lastDoc = doc;
+    return { ok: true };
+  } catch {
+    return { ok: false, why: 'failed' };
   }
 }
 
@@ -72,7 +166,7 @@ export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts
     return false;
   }
   if (opts.confirm !== false && !(await askAboutUnsavedChanges())) return false;
-  store().load(loaded.doc, filePath);
+  store().load(loaded.doc, filePath, loaded.history);
   if (opts.dirty) store().setUi({ dirty: true });
   if (loaded.warnings.length) notify(`Opened, with a few small repairs: ${[...new Set(loaded.warnings)].join(' ')}`, 'warn', undefined, 8000);
   // A drawing that uses a feature that is turned off offers to turn it on (it opens and keeps its data either way).
@@ -116,7 +210,10 @@ export async function openDocument(): Promise<void> {
     await other.open(r.bytes, r.path);
     return;
   }
-  if (await loadBytes(r.bytes, r.path)) void api.recent.add(r.path);
+  if (await loadBytes(r.bytes, r.path)) {
+    void api.recent.add(r.path);
+    keepPictureIfMissing(r.path);
+  }
 }
 
 // Other kinds of file that open into a drawing (an Interactives package with its drawing inside), by path.
@@ -168,8 +265,34 @@ export async function openPath(path: string): Promise<boolean> {
   }
   if (other) return other.open(r.bytes, r.path);
   const ok = await loadBytes(r.bytes, r.path);
-  if (ok) void api.recent.add(r.path);
+  if (ok) {
+    void api.recent.add(r.path);
+    keepPictureIfMissing(r.path);
+  }
   return ok;
+}
+
+/**
+ * A file saved by an older Frameling has no little picture inside. Now that it is open there is one to make, kept in
+ * the app's own folder (the file itself is never changed by opening it), so Open recent can show it from now on.
+ */
+export function keepPictureIfMissing(path: string): void {
+  const api = desktop();
+  if (!api?.recent.preview || !api.recent.keepPreview) return;
+  const doc = store().rootDoc();
+  // After a pause, so opening is never slowed by it.
+  window.setTimeout(() => {
+    void (async () => {
+      try {
+        const had = await api.recent.preview!(path);
+        if (had.state !== 'none' || store().get().ui.filePath !== path) return;
+        const png = await previewBytes(rootDoc(doc));
+        if (png) await api.recent.keepPreview!(path, png);
+      } catch {
+        // A picture is a bonus.
+      }
+    })();
+  }, 1500);
 }
 
 /** Saves to the document's file, or asks where when it has none yet. Resolves true when it is saved. */
@@ -199,15 +322,24 @@ async function saveTo(path: string | null): Promise<boolean> {
   if (saving) return false;
   saving = true;
   try {
-    // While a tile is open for editing, the file gets the whole document with the tile as it is now.
+    // Asked here, before the file is made, and only when there are steps to keep.
+    const steps = store().historyForSave();
+    const wantHistory = steps && historyFitsFile(steps.doc) ? (await choose<SaveHistoryChoice>('save.history')) === 'keep' : false;
+    // The little picture that goes inside the file, for Open recent. Never a reason not to save.
+    const preview = await previewBytes(rootDoc(store().rootDoc()), store().get().ui.frame);
+    // While a tile is open for editing, the file gets the whole document with the tile as it is now. The steps are taken
+    // at the same moment, so they still fit this document if you keep drawing while the file is being made.
     const doc = store().rootDoc();
+    const history = wantHistory ? store().historyForSave() : null;
+    let kept: HistorySaved | null = null;
+    const saveOpts = history ? { history, onHistory: (h: HistorySaved | null) => void (kept = h) } : {};
     // Save as on a drawing that already has a file makes a separate copy, so the copy gets its own id (and its own
     // version history). The original keeps its id and history.
     const oldPath = store().get().ui.filePath;
     const copyId = path === null && oldPath ? uid('d') : null;
     let bytes: Uint8Array;
     try {
-      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app);
+      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app, new Date(), { ...saveOpts, preview });
     } catch {
       notify("Something went wrong while packing up your drawing, so it wasn't saved. Please try again.", 'error');
       return false;
@@ -215,7 +347,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     let r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
     if (!r) return false;
     // Saved as over the same file after all: that's a plain save, so it keeps the drawing's own id.
-    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app), path: r.path, suggestedName: doc.name });
+    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app, new Date(), { ...saveOpts, preview }), path: r.path, suggestedName: doc.name });
     if (!r) return false;
     if ('error' in r) {
       notify(r.error, 'error');
@@ -229,7 +361,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     void clearAutosaveCopy();
     // Whatever was set aside for this drawing is in the file now.
     void api.autosave.removeKept(doc.id).catch(() => undefined);
-    notify('Saved.', 'success', undefined, 1600);
+    notify(historyNote(kept) ?? 'Saved.', 'success', undefined, historyNote(kept) ? 5000 : 1600);
     const saved = copyId && r.path !== oldPath ? store().rootDoc() : doc;
     for (const h of saveHooks) void h.after?.(saved, r.path)?.catch(() => undefined);
     return true;

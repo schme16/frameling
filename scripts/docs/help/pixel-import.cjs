@@ -25,6 +25,20 @@ module.exports = [
     ],
   },
   {
+    // The colours of a picture: the limit set, the swatches of what will be taken.
+    name: 'palette-picture',
+    prefs: { showTips: false },
+    steps: [
+      js(`${F}.dock.applyWorkspace('pixel')`),
+      wait(500),
+      js(`localStorage.removeItem('frameling.import.v1'); void __framelingPicture.palette(${bytes('scenery.png')}, 'scenery.png'); 0`),
+      wait(1200),
+      js(`(() => { const i = document.querySelector('.im-modal input[data-testid="palette.max"]'); const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); d.set.call(i, '12'); i.dispatchEvent(new Event('input', { bubbles: true })); })()`),
+      wait(900),
+      { shot: '@', el: '.im-modal', pad: 12 },
+    ],
+  },
+  {
     // A sprite sheet cut by a grid: the cells outlined and numbered, the margin and spacing set.
     name: 'pixel-import-sheet',
     prefs: { showTips: false },

@@ -1,0 +1,191 @@
+// Quill's reactions, shown as a little toast with him in it. Everything here only moves Quill and puts words on the
+// screen: no document, no pet memory (nothing makes him closer, nothing is counted), no network. He talks on screen
+// only. There is deliberately no way in this folder to say anything into a chat.
+import { lines } from '../ui/mascot/lines';
+import type { Script } from '../ui/mascot/timing';
+import { createStore } from '../ui/mini';
+import { dismissToast, toast } from '../ui/toast';
+import { UNREAD_TOAST } from '../audience/spoilers';
+
+export const REACTIONS = ['cheer', 'hop', 'snack', 'nuzzle', 'wave'] as const;
+export type Reaction = (typeof REACTIONS)[number];
+
+interface Look {
+  /** What he does. Loops (eating, nuzzling) get a `hold` so they stop by themselves. */
+  anim: Script;
+  /** How long the toast stays, in ms. */
+  ms: number;
+  /** The set of lines to pick from. */
+  words: () => string[];
+}
+
+const LOOKS: Record<Reaction, Look> = {
+  cheer: { anim: 'cheer', ms: 4200, words: () => lines('stream.cheer') },
+  hop: { anim: 'hop', ms: 3600, words: () => lines('stream.hop') },
+  snack: { anim: [{ anim: 'eat', hold: 2600 }], ms: 3800, words: () => lines('stream.snack') },
+  nuzzle: { anim: [{ anim: 'nuzzle', hold: 2600 }], ms: 3800, words: () => lines('stream.nuzzle') },
+  wave: { anim: 'wave', ms: 3600, words: () => lines('stream.wave') },
+};
+
+/** Which one of a set, from a number between 0 and 1. Pure, so a test can pick. */
+export const pickOf = <T>(xs: readonly T[], rand: number): T => xs[Math.min(xs.length - 1, Math.max(0, Math.floor(rand * xs.length)))];
+
+/**
+ * What Quill is doing for the audience right now, for the stream overlay (src/streamoverlay) to follow. Only a reaction
+ * or a sign the streamer said yes to ever lands here: the question "hold up this sign?" holds words nobody has agreed
+ * to show yet, so it never does. It clears itself when his time is up.
+ */
+export interface QuillMoment {
+  id: number;
+  /** The overlay's name for what he is doing (a snack is `eat`, a sign is `holding`). */
+  anim: 'cheer' | 'hop' | 'eat' | 'nuzzle' | 'wave' | 'holding';
+  words: string;
+  sign: boolean;
+  /** When he goes (epoch ms). */
+  until: number;
+}
+export const quillMoment = createStore<QuillMoment | null>(null);
+let momentId = 0;
+let momentTimer: ReturnType<typeof setTimeout> | undefined;
+
+function setMoment(m: Omit<QuillMoment, 'id' | 'until'>, ms: number): void {
+  clearTimeout(momentTimer);
+  const mine: QuillMoment = { ...m, id: ++momentId, until: Date.now() + ms };
+  quillMoment.set(mine);
+  momentTimer = setTimeout(() => {
+    if (quillMoment.get() === mine) quillMoment.set(null);
+  }, ms + 50);
+}
+function clearMoment(): void {
+  clearTimeout(momentTimer);
+  quillMoment.set(null);
+}
+
+/** Stop: whatever Quill is showing the audience (a welcome with a name in it, say) comes down now, on screen and on the overlay. */
+export function endReaction(): void {
+  if (current !== null) dismissToast(current);
+  current = null;
+  clearMoment();
+}
+
+const MOMENT_ANIM: Record<Reaction, QuillMoment['anim']> = { cheer: 'cheer', hop: 'hop', snack: 'eat', nuzzle: 'nuzzle', wave: 'wave' };
+
+/** The toast on screen now. There is one of him, so a new reaction takes the place of the last one instead of piling up. */
+let current: number | null = null;
+
+function replaceCurrent(id: number): void {
+  if (current !== null && current !== id) dismissToast(current);
+  current = id;
+}
+
+/** Quill reacts. Returns the words he said. */
+export function react(which: Reaction, rand: () => number = Math.random): string {
+  const look = LOOKS[which];
+  const words = pickOf(look.words(), rand());
+  replaceCurrent(toast(words, { quill: look.anim, duration: look.ms, sound: null }));
+  setMoment({ anim: MOMENT_ANIM[which], words, sign: false }, look.ms);
+  return words;
+}
+
+/** Quill says something at a moment of his own (a game round, say), taking the place of the one on screen. The words are his, from lines.json. */
+export function quillSays(words: string, anim: Script, ms = 4200): void {
+  replaceCurrent(toast(words, { quill: anim, duration: ms, sound: null }));
+}
+
+/** How long a sign stays up, in ms. */
+export const SIGN_UP_MS = 9000;
+/** How long the question "hold up this sign?" waits for a yes before it is dropped, in ms. */
+export const SIGN_ASK_MS = 15_000;
+
+/** Quill holds up a sign with these words, which have already been through `cleanSign` and said yes. */
+export function showSign(text: string): void {
+  replaceCurrent(toast(`“${text}”`, { quill: [{ anim: 'holding', hold: SIGN_UP_MS - 800 }], duration: SIGN_UP_MS, sound: null, sign: true }));
+  setMoment({ anim: 'holding', words: text, sign: true }, SIGN_UP_MS);
+}
+
+let pendingAsk: ((r: Answer) => void) | null = null;
+
+/** `none` is no answer: the time ran out, a newer question took its place, or it was stopped. */
+export type Answer = 'yes' | 'no' | 'none';
+
+interface Question {
+  /** The question and the words it is about, as one line. Covered until read while unread words are being covered. */
+  text: string;
+  covered: string;
+  quill: Script;
+  yes: { label: string; id: string };
+  no: { label: string; id: string };
+}
+
+/**
+ * One covered yes/no question on screen, with somebody else's words in it. Resolves `yes` or `no` when pressed, `none`
+ * when nobody answers in time, a newer question takes its place, the toast is closed or Stop is pressed. The words live
+ * in this closure until the question is over, and nowhere else.
+ */
+function askQuestion(q: Question, signal: AbortSignal, waitMs: number): Promise<Answer> {
+  pendingAsk?.('none');
+  return new Promise<Answer>((resolve) => {
+    let id = -1;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (r: Answer): void => {
+      if (pendingAsk === finish) pendingAsk = null;
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      dismissToast(id);
+      if (current === id) current = null;
+      resolve(r);
+    };
+    const onAbort = (): void => finish('none');
+    pendingAsk = finish;
+    if (signal.aborted) return finish('none');
+    if (current !== null) dismissToast(current);
+    // The question takes his place on screen, so what he was doing for the audience is over.
+    clearMoment();
+    id = toast(q.text, {
+      // Covered until you press Read it: the question is on screen before you have decided, and a rude one must not be.
+      covered: q.covered,
+      quill: q.quill,
+      duration: 0,
+      sound: null,
+      action: { label: q.yes.label, id: q.yes.id, run: () => finish('yes') },
+      decline: { label: q.no.label, id: q.no.id, run: () => finish('no') },
+    });
+    current = id;
+    timer = setTimeout(() => finish('none'), waitMs);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * Asks the streamer whether to hold up this sign, on screen, with the words in the question. Resolves true on yes. No
+ * answer in time, "Not that one", the toast being closed and kill all mean no. A new question drops the old one.
+ */
+export async function askToShowSign(text: string, signal: AbortSignal, waitMs = SIGN_ASK_MS): Promise<boolean> {
+  const a = await askQuestion(
+    { text: `${lines('stream.sign.ask')[0]} \u201c${text}\u201d`, covered: UNREAD_TOAST.sign, quill: 'think', yes: { label: 'Hold it up', id: 'sign-yes' }, no: { label: 'Not that one', id: 'sign-no' } },
+    signal,
+    waitMs,
+  );
+  return a === 'yes';
+}
+
+/**
+ * Asks whether Quill may say this name out loud. `text` is the whole question, already built from his lines. Only a yes
+ * puts the name anywhere a viewer can see it (the screen toast, then the stream overlay).
+ */
+export const askToSayName = (text: string, signal: AbortSignal, waitMs = SIGN_ASK_MS): Promise<Answer> =>
+  askQuestion({ text, covered: UNREAD_TOAST.name, quill: 'think', yes: { label: 'Say it', id: 'welcome-yes' }, no: { label: 'Leave the name out', id: 'welcome-no' } }, signal, waitMs);
+
+/** Quill welcomes somebody: the words (his own, or a name you said yes to), what he does, and how long he stays. */
+export function showWelcome(words: string, anim: Script, moment: QuillMoment['anim'], ms: number): void {
+  replaceCurrent(toast(words, { quill: anim, duration: ms, sound: null }));
+  setMoment({ anim: moment, words, sign: false }, ms);
+}
+
+/** Asks, then shows it on a yes. The streamer's own preview and a real sign from chat both go through here. */
+export async function signFlow(text: string, signal: AbortSignal): Promise<boolean> {
+  if (!(await askToShowSign(text, signal))) return false;
+  if (signal.aborted) return false;
+  showSign(text);
+  return true;
+}

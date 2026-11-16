@@ -7,18 +7,29 @@ let spriteIds: Map<string, string> | null = null;
 let softIds: Map<string, string> | null = null;
 
 /** Runs `make` with symbol particle sprites shared through <use>; their definitions come back with the result. */
-export function withSprites<T>(make: () => T): { value: T; defs: string[] } {
+export function withSprites<T>(make: () => T): { value: T; defs: string[]; notes: string[] } {
   const outer = spriteIds;
   const outerSoft = softIds;
+  const outerNotes = fxNotes;
   spriteIds = new Map();
   softIds = new Map();
+  fxNotes = new Set();
   try {
     const value = make();
-    return { value, defs: [...softIds.values(), ...[...spriteIds].map(([body, id]) => `<g id="${id}">${body}</g>`)] };
+    return { value, defs: [...softIds.values(), ...[...spriteIds].map(([body, id]) => `<g id="${id}">${body}</g>`)], notes: [...fxNotes] };
   } finally {
     spriteIds = outer;
     softIds = outerSoft;
+    fxNotes = outerNotes;
   }
+}
+
+// What the effects on single shapes could not do in SVG, said once each, while a writer is collecting (see withSprites).
+let fxNotes: Set<string> | null = null;
+
+/** Notes the file's writer should show (an effect on a shape that SVG has nothing like). */
+export function noteShapeFx(note: string): void {
+  fxNotes?.add(note);
 }
 
 /** Gives a symbol sprite body its shared id while a writer is collecting them (see withSprites), or null when none is. */

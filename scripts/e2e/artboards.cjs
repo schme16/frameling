@@ -20,8 +20,10 @@ const { pathToFileURL } = require('node:url');
 
 const root = path.resolve(__dirname, '../..');
 const WEB = process.env.WEB_ENGINES === '1';
-// Phaser needs a WebGL context, so the web engines run on software GL (as in export.cjs).
-if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['use-gl', 'angle'], ['use-angle', 'swiftshader'], ['enable-unsafe-swiftshader']]) app.commandLine.appendSwitch(...sw);
+// Software drawing, the same everywhere, colour pinned to sRGB (scripts/lib/gpu.cjs). The web engines need WebGL, and
+// PixiJS's WebGPU renderer needs WebGPU too, which is the { webgpu } variant (as in export.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { webgpu: WEB });
 const argv = process.argv.slice(2).filter((a) => !a.endsWith('artboards.cjs'));
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-ab-')));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -65,6 +67,7 @@ async function startApp() {
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
   if (!win) throw new Error('The app never opened a window');
+  await gpu.confirmOrExit(win);
   win.setSize(1400, 900);
   for (let i = 0; i < 200; i++) {
     try {

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import '../../src/renderer/features';
+// Registered when the export area loads (at start in the app), so the test loads it.
+import '../../src/export/choices';
 import { allChoices } from '../../src/core/choices';
 import { loadHelpBodies } from '../../src/core/registry';
 import { switchableFeatures } from '../../src/features/host';
@@ -14,13 +16,14 @@ import { searchHelp } from '../../src/ui/help/search';
 import { sameSpelling, sameWords } from '../../src/ui/match';
 import { allPrefRows, CHOICE_ALSO, choiceRows, commandRows, FEATURE_ALSO, featureRows, SETTING_ROWS } from '../../src/ui/prefsIndex';
 import { foundSaid, groupByPage, searchPrefs, type PrefRow } from '../../src/ui/prefsSearch';
-import { settingRows, withSettings } from '../../src/ui/palette';
+import { loadSettingRows, settingRows, withSettings } from '../../src/ui/palette';
 
 let rows: PrefRow[];
 beforeAll(async () => {
   syncDynamicCommands();
   rows = allPrefRows();
   await loadHelpBodies();
+  await loadSettingRows();
 });
 
 const find = (q: string, list = rows) => searchPrefs(q, list);
@@ -75,15 +78,18 @@ describe('the index keeps up with the pages', () => {
     keyboard: ['src/ui/PrefsModal.tsx'],
     snapping: ['src/ui/PrefsModal.tsx', 'src/canvas/SnapOptions.tsx'],
     pen: ['src/tablet/PenPage.tsx'],
+    performance: ['src/gpu/GpuPage.tsx'],
     themes: ['src/ui/themes/ThemesPage.tsx'],
     workspaces: ['src/ui/WorkspacesPage.tsx'],
-    plugins: ['src/plugins/PluginsPage.tsx'],
+    menus: ['src/ui/MenusPage.tsx'],
+    plugins: ['src/plugins/PluginsPage.tsx', 'src/remotedoor/PrefsRow.tsx'],
     features: ['src/features/FeaturesPage.tsx'],
-    diagnostics: ['src/tablet/check/DiagnosticsPage.tsx', 'src/beta/BetaPanel.tsx', 'src/plugins/DiagnosticsSwitch.tsx'],
+    streaming: ['src/features/StreamingPage.tsx', 'src/ui/PrefsModal.tsx', 'src/audience/PrefsRow.tsx', 'src/streamdoor/PrefsRow.tsx', 'src/penmods/PrefsRow.tsx', 'src/features/streamIds.ts'],
+    diagnostics: ['src/tablet/check/DiagnosticsPage.tsx', 'src/beta/BetaPanel.tsx', 'src/update/UpdatePanel.tsx', 'src/plugins/DiagnosticsSwitch.tsx'],
     behaviour: ['src/ui/ChoiceDialog.tsx'],
   };
   it('has a row for every labelled row on the pages', () => {
-    for (const page of ['general', 'keyboard', 'pen'] as const) {
+    for (const page of ['general', 'keyboard', 'pen', 'performance'] as const) {
       const labels = [...src(...PAGE_FILES[page]).matchAll(/<Row label="([^"]+)"/g)].map((m) => m[1]);
       expect(labels.length).toBeGreaterThan(0);
       // General and Keyboard share a file: a label counts if any page of that file has it.

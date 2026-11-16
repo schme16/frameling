@@ -13,7 +13,7 @@
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
 //                        godot-bones)
-//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
+//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink pixel-symbol-walk)
 //   --cases=phaser,css   only cases with these labels (the word after the format in the report)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot, unity, web
 //   --show               leave the window visible (needs a real display)
@@ -44,10 +44,11 @@ const GODOT = process.env.GODOT_BIN;
 const UNITY = process.env.UNITY_BIN;
 const WEB = process.env.WEB_ENGINES === '1' && !SKIP.includes('web');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// Phaser and PixiJS need WebGL, which Chromium blocklists on a virtual display unless the blocklist is ignored (it then
-// runs on the software renderer). PixiJS's WebGPU renderer needs WebGPU switched on. Do not add the ANGLE or SwiftShader
-// switches here: with them the GPU process drops the WebGPU device, and WebGL works without them.
-if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['enable-unsafe-webgpu']]) app.commandLine.appendSwitch(...sw);
+// Software drawing, the same everywhere, colour pinned to sRGB (scripts/lib/gpu.cjs). Phaser and PixiJS need WebGL, which
+// Chromium blocklists on a virtual display, and PixiJS's WebGPU renderer needs WebGPU: that is the { webgpu } variant,
+// which leaves the ANGLE and SwiftShader switches out (with them the GPU process drops the WebGPU device).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { webgpu: WEB });
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
@@ -126,7 +127,7 @@ const X = (call) => ev(`window.__framelingExport.${call}`);
 const IO = (call) => ev(`window.__framelingIo.${call}`);
 
 // stress and kitchen-sink are fixtures, not templates people see (src/export/debug.ts, src/export/kitchenSink.ts).
-const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
+const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'pixel-symbol-walk' ? 'loadPixelSymbolWalk()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
 
 function setAutomationDir(d) {
   fs.mkdirSync(d, { recursive: true });
@@ -150,6 +151,7 @@ async function startApp() {
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
   if (!win) throw new Error('The app never opened a window');
+  await gpu.confirmOrExit(win);
   await waitForPage();
 }
 
@@ -1172,9 +1174,15 @@ async function exportMatrix() {
   console.log(`video support here: mp4=${caps.mp4.ok ? caps.mp4.codec : 'NO (' + caps.mp4.reason + ')'} webm=${caps.webm.ok ? caps.webm.codec + (caps.webm.alpha ? '+alpha' : '') : 'NO'}`);
   if (!caps.webm.alpha) console.log('WARNING: see-through WebM is unavailable here. If the page logs a Content Security Policy error about a worker, index.html needs worker-src blob: in its policy.');
   const addClip = (tpl) => `__framelingExport.addClip('mid', ${tpl === 'stress' ? '1, 2' : '2, 5'})`;
+  // A format whose feature is switched off in src/features/flags.json is not registered at all, so asking for it
+  // throws. Skip those here and say so once, rather than running cases that can only fail.
+  const registered = new Set(await X('formats()'));
+  const off = ALL_FORMATS.filter((f) => !registered.has(f));
+  if (off.length) console.log(`skipping ${off.join(', ')}: the feature is switched off, so nothing exports as that`);
   for (const tpl of TEMPLATES) {
     for (const fmt of ALL_FORMATS) {
       if (ONLY && !ONLY.includes(fmt)) continue;
+      if (!registered.has(fmt)) continue;
       const video = fmt === 'mp4' || fmt === 'webm' || fmt === 'prores';
       if (LAYERED.has(fmt)) {
         await layeredCases(tpl, fmt);
@@ -1214,6 +1222,11 @@ async function exportMatrix() {
       // A frame rate that is not a whole number: the Settings box only takes whole ones, a file or a plugin can carry any.
       if (tpl === 'bouncing-ball' && ['gif', 'apng', 'mp4', 'webm'].includes(fmt)) {
         for (const fps of [12.5, 23.976]) await runCase(tpl, fmt, `fps${fps}`, (s) => s, { prepare: `__frameling.store().update('fps', (d) => { d.fps = ${fps}; })` });
+      }
+      // Words running round a ring (text on a path): the picture, the GIF, the sheet and the SVG all have to show the letters where the curve puts them.
+      if (tpl === 'blank-vector' && ['svg', 'png', 'gif', 'sheet'].includes(fmt)) {
+        await runCase(tpl, fmt, 'text-on-path', (s) => s, { prepare: ADD_TEXT_ON_PATH });
+        if (fmt === 'sheet') await runCase(tpl, fmt, 'text-on-path-godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: true, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: ADD_TEXT_ON_PATH });
       }
       if (fmt === 'sheet') {
         await runCase(tpl, fmt, 'trim-pot-pad', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, pot: true, padding: 2, columns: 3 } }));
@@ -1310,6 +1323,29 @@ const ADD_EXTRAS = `(() => {
     );
   });
   return true;
+})()`;
+
+// A ring with words round it, joined by the real command (select both, Put text on a curve), on a layer of its own.
+const ADD_TEXT_ON_PATH = `(async () => {
+  const st = __frameling.store();
+  const K = 0.5522847498307936;
+  const cx = st.get().doc.width / 2, cy = st.get().doc.height / 2, r = Math.min(cx, cy) * 0.55;
+  const ring = { id: 'e2e-ring', type: 'path', fill: null, stroke: { color: '#3366ff', width: 3, join: 'round', cap: 'round' }, opacity: 1, paths: [{ closed: true, points: [
+    { x: cx + r, y: cy, c1: { x: cx + K * r, y: cy - r }, c2: { x: cx + r, y: cy - K * r } },
+    { x: cx, y: cy + r, c1: { x: cx + r, y: cy + K * r }, c2: { x: cx + K * r, y: cy + r } },
+    { x: cx - r, y: cy, c1: { x: cx - K * r, y: cy + r }, c2: { x: cx - r, y: cy + K * r } },
+    { x: cx, y: cy - r, c1: { x: cx - r, y: cy - K * r }, c2: { x: cx - K * r, y: cy - r } },
+  ] }] };
+  const words = { id: 'e2e-words', type: 'text', text: 'ROUND AND ROUND WE GO', font: 'Nunito', size: Math.round(r * 0.3), weight: 700, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 } };
+  st.update('text on a path', (d) => {
+    d.drawings['e2e-top'] = { id: 'e2e-top', kind: 'vector', shapes: [ring, words] };
+    d.layers.push({ id: 'e2e-lt', name: 'Words round a ring', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: 'cel-e2e-top', start: 0, length: d.length, drawingId: 'e2e-top' }] });
+  });
+  st.setUi({ activeLayerId: 'e2e-lt', frame: 0, selection: ['e2e-words', 'e2e-ring'] });
+  __frameling.run('text.onPath');
+  await new Promise((res) => setTimeout(res, 200));
+  const t = st.get().doc.drawings['e2e-top'].shapes.find((x) => x.id === 'e2e-words');
+  return !!t.onPath;
 })()`;
 
 async function layeredCases(tpl, fmt) {

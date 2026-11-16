@@ -1,0 +1,9 @@
+theme-mode-ignored: a light theme (Strawberry Milk) set for both dark and light, computer set to dark.
+
+before-*.png  development before the fix
+after-*.png   with the fix
+ab-<mode>-app.png / ab-<mode>-prefs.png  before on the left, after on the right
+Modes shot: System, Dark, Light.
+
+Before: System and Dark showed the default dark theme (bg #17151f), Light showed Strawberry Milk (bg #fbeaee).
+After:  all three show Strawberry Milk (bg #fbeaee), and data-theme says light.

@@ -1,0 +1,21 @@
+/* The stream overlay's block in Preferences > Streaming. Shares the actions door block's look (streamdoor.css). */
+.so-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+.so-steps {
+  margin: 2px 0 4px;
+  padding-left: 1.4em;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+.so-steps li {
+  margin: 2px 0;
+}
+.so-steps strong {
+  color: var(--text);
+  font-weight: 600;
+}

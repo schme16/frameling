@@ -1,0 +1,1 @@
+Same words, two ways, dark and light. A (a-pixel-text) is the Text tool on a pixel layer: a real pixel font on the grid, one colour, no smoothing. B (b-vector-text) is the Text tool on a vector layer over the same pixel scene, which is what you had before: smooth edges that sit between the pixels and blend into colours no palette holds.

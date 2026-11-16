@@ -1,0 +1,2967 @@
+{
+ "label": "sweep",
+ "when": "2026-11-14T23:51:38.883Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "results": [
+  {
+   "doc": "history-deep",
+   "action": "brush-stroke",
+   "busyMs": 11.9,
+   "runs": [
+    16.8,
+    11.9,
+    11.7
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.2,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "vn index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "e index-BO6-2Du6.js:174",
+     0.2
+    ],
+    [
+     "quadraticCurveTo :0",
+     0.2
+    ],
+    [
+     "drawOverlay index-BO6-2Du6.js:156",
+     0.2
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     0.2
+    ],
+    [
+     "P index-BO6-2Du6.js:10",
+     0.2
+    ],
+    [
+     "tT index-BO6-2Du6.js:146",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     2.9
+    ],
+    [
+     "drawOverlay index-BO6-2Du6.js:156",
+     2.1
+    ],
+    [
+     "onPointerMove index-BO6-2Du6.js:156",
+     1.2
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     1.1
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "overlay index-BO6-2Du6.js:163",
+     0.8
+    ],
+    [
+     "aLe index-BO6-2Du6.js:163",
+     0.8
+    ],
+    [
+     "t.overlay index-BO6-2Du6.js:167",
+     0.8
+    ],
+    [
+     "Gd index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "Jd index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     0.7
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     0.7
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     0.7
+    ],
+    [
+     "toPointer index-BO6-2Du6.js:156",
+     0.6
+    ],
+    [
+     "nh index-BO6-2Du6.js:10",
+     0.6
+    ],
+    [
+     "yU index-BO6-2Du6.js:156",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "scrub",
+   "busyMs": 64.4,
+   "runs": [
+    70.1,
+    64.4,
+    62.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.81,
+   "topSelf": [
+    [
+     "(program) :0",
+     38.8
+    ],
+    [
+     "pce index-BO6-2Du6.js:146",
+     2.2
+    ],
+    [
+     "FC index-BO6-2Du6.js:146",
+     1.8
+    ],
+    [
+     "IC index-BO6-2Du6.js:146",
+     1.3
+    ],
+    [
+     "t index-BO6-2Du6.js:9",
+     0.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     0.8
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.6
+    ],
+    [
+     "F index-BO6-2Du6.js:9",
+     0.5
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     38.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     19.6
+    ],
+    [
+     "nh index-BO6-2Du6.js:10",
+     14.9
+    ],
+    [
+     "th index-BO6-2Du6.js:10",
+     14.5
+    ],
+    [
+     "Bf index-BO6-2Du6.js:9",
+     14.4
+    ],
+    [
+     "Cn index-BO6-2Du6.js:9",
+     14.2
+    ],
+    [
+     "Pf index-BO6-2Du6.js:9",
+     12.4
+    ],
+    [
+     "ge index-BO6-2Du6.js:172",
+     12
+    ],
+    [
+     "setUi index-BO6-2Du6.js:10",
+     11.1
+    ],
+    [
+     "yV index-BO6-2Du6.js:155",
+     11.1
+    ],
+    [
+     "emit index-BO6-2Du6.js:10",
+     10.8
+    ],
+    [
+     "jw index-BO6-2Du6.js:146",
+     6
+    ],
+    [
+     "IC index-BO6-2Du6.js:146",
+     5.9
+    ],
+    [
+     "Aw index-BO6-2Du6.js:146",
+     5.9
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     5.5
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     5.3
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     5.3
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     5.3
+    ],
+    [
+     "FC index-BO6-2Du6.js:146",
+     4.5
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     4.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "play",
+   "busyMs": 42.9,
+   "runs": [
+    42.5,
+    47.6,
+    42.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 28.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.1
+    ],
+    [
+     "i index-BO6-2Du6.js:172",
+     0.8
+    ],
+    [
+     "QQe index-BO6-2Du6.js:172",
+     0.8
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     0.7
+    ],
+    [
+     "drawMain index-BO6-2Du6.js:156",
+     0.5
+    ],
+    [
+     "TEe index-BO6-2Du6.js:155",
+     0.4
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     0.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:10",
+     0.4
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.3
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     6
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     4.7
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     4.5
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     4.4
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     4.3
+    ],
+    [
+     "TEe index-BO6-2Du6.js:155",
+     4
+    ],
+    [
+     "setUi index-BO6-2Du6.js:10",
+     3.2
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     3.1
+    ],
+    [
+     "emit index-BO6-2Du6.js:10",
+     2.8
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     2.7
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     2.6
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     1.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     1.9
+    ],
+    [
+     "warmAhead index-BO6-2Du6.js:156",
+     1.8
+    ],
+    [
+     "vh index-BO6-2Du6.js:134",
+     1.7
+    ],
+    [
+     "warm index-BO6-2Du6.js:156",
+     1.7
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     1.6
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     1.6
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     1.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "undo-redo",
+   "busyMs": 33.5,
+   "runs": [
+    35,
+    33.5,
+    30.6
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:174",
+     1.2
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:148",
+     0.9
+    ],
+    [
+     "vM index-BO6-2Du6.js:148",
+     0.8
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.7
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     0.7
+    ],
+    [
+     "yM index-BO6-2Du6.js:148",
+     0.6
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     0.6
+    ],
+    [
+     "pce index-BO6-2Du6.js:146",
+     0.5
+    ],
+    [
+     "$f index-BO6-2Du6.js:10",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     13.5
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     12.7
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     12.7
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     12.6
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     12.6
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     10.1
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     10
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     9.8
+    ],
+    [
+     "Lc index-BO6-2Du6.js:9",
+     8.4
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "J9 index-BO6-2Du6.js:174",
+     3.5
+    ],
+    [
+     "(anon) :0",
+     3
+    ],
+    [
+     "run index-BO6-2Du6.js:10",
+     2.7
+    ],
+    [
+     "run debug-DOGNhe0V.js:10",
+     2.7
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     2.5
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     2.5
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     2.5
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     2.4
+    ],
+    [
+     "afterHistory index-BO6-2Du6.js:10",
+     2.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "add-key",
+   "busyMs": 13.8,
+   "runs": [
+    13.6,
+    13.8,
+    15.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:148",
+     0.3
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "h index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:10",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "vE index-BO6-2Du6.js:148",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:174",
+     0.2
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     3.9
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     2.7
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     2.7
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     2.7
+    ],
+    [
+     "Lc index-BO6-2Du6.js:9",
+     2.3
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     2.2
+    ],
+    [
+     "Yye index-BO6-2Du6.js:155",
+     2
+    ],
+    [
+     "run index-BO6-2Du6.js:172",
+     2
+    ],
+    [
+     "run debug-DOGNhe0V.js:10",
+     2
+    ],
+    [
+     "(anon) :0",
+     2
+    ],
+    [
+     "update index-BO6-2Du6.js:10",
+     1.7
+    ],
+    [
+     "uP index-BO6-2Du6.js:155",
+     1.7
+    ],
+    [
+     "pP index-BO6-2Du6.js:155",
+     1.7
+    ],
+    [
+     "emit index-BO6-2Du6.js:10",
+     1
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "delete-key",
+   "busyMs": 23.2,
+   "runs": [
+    23.5,
+    23.2,
+    23.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.74,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.1
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     0.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     0.4
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "h index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "wn index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:174",
+     0.3
+    ],
+    [
+     "J9 index-BO6-2Du6.js:174",
+     0.3
+    ],
+    [
+     "yu index-BO6-2Du6.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     6.6
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     5.1
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     5
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     5
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     5
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     3.8
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     3.8
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     2.8
+    ],
+    [
+     "Lc index-BO6-2Du6.js:9",
+     2.8
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     1.7
+    ],
+    [
+     "(anon) :0",
+     1.7
+    ],
+    [
+     "run index-BO6-2Du6.js:172",
+     1.5
+    ],
+    [
+     "run debug-DOGNhe0V.js:10",
+     1.5
+    ],
+    [
+     "update index-BO6-2Du6.js:10",
+     1.4
+    ],
+    [
+     "z3 index-BO6-2Du6.js:172",
+     1.4
+    ],
+    [
+     "nh index-BO6-2Du6.js:10",
+     1.3
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     1.2
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     1.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "save-file",
+   "busyMs": 13.6,
+   "runs": [
+    23.7,
+    13.2,
+    13.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 13.59,
+   "topSelf": [
+    [
+     "(anon) index-BO6-2Du6.js:167",
+     5.7
+    ],
+    [
+     "encode :0",
+     5.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.7
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     1.5
+    ],
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "e.onmessage index-BO6-2Du6.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "sHe index-BO6-2Du6.js:167",
+     13
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     13
+    ],
+    [
+     "O1 index-BO6-2Du6.js:167",
+     13
+    ],
+    [
+     "saveBytesAsync debug-DOGNhe0V.js:3",
+     13
+    ],
+    [
+     "(anon) :0",
+     13
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:167",
+     5.7
+    ],
+    [
+     "encode :0",
+     5.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.7
+    ],
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "e.onmessage index-BO6-2Du6.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.4 MB file"
+  },
+  {
+   "doc": "history-deep",
+   "action": "open-file",
+   "busyMs": 33.3,
+   "runs": [
+    52.3,
+    29.9,
+    33.3
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 33.34,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "P1 index-BO6-2Du6.js:167",
+     5.9
+    ],
+    [
+     "quadraticCurveTo :0",
+     3.1
+    ],
+    [
+     "fill :0",
+     2.6
+    ],
+    [
+     "Mi index-BO6-2Du6.js:20",
+     2.1
+    ],
+    [
+     "vi index-BO6-2Du6.js:20",
+     1.9
+    ],
+    [
+     "(program) :0",
+     1.8
+    ],
+    [
+     "Ii index-BO6-2Du6.js:20",
+     1.8
+    ],
+    [
+     "Vd index-BO6-2Du6.js:133",
+     1.3
+    ],
+    [
+     "decode :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-BO6-2Du6.js:156",
+     20.1
+    ],
+    [
+     "paintStage index-BO6-2Du6.js:156",
+     20
+    ],
+    [
+     "paint index-BO6-2Du6.js:156",
+     20
+    ],
+    [
+     "drawMain index-BO6-2Du6.js:156",
+     20
+    ],
+    [
+     "build index-BO6-2Du6.js:156",
+     19.9
+    ],
+    [
+     "$d index-BO6-2Du6.js:133",
+     18
+    ],
+    [
+     "paintInto index-BO6-2Du6.js:156",
+     18
+    ],
+    [
+     "Jd index-BO6-2Du6.js:133",
+     17.8
+    ],
+    [
+     "Gd index-BO6-2Du6.js:133",
+     14.5
+    ],
+    [
+     "Vd index-BO6-2Du6.js:133",
+     9.9
+    ],
+    [
+     "P1 index-BO6-2Du6.js:167",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "Ii index-BO6-2Du6.js:20",
+     5
+    ],
+    [
+     "Wd index-BO6-2Du6.js:133",
+     4.2
+    ],
+    [
+     "quadraticCurveTo :0",
+     3.1
+    ],
+    [
+     "zi index-BO6-2Du6.js:20",
+     3.1
+    ],
+    [
+     "fill :0",
+     2.6
+    ],
+    [
+     "Mi index-BO6-2Du6.js:20",
+     2.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     2.1
+    ],
+    [
+     "vi index-BO6-2Du6.js:20",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "autosave",
+   "busyMs": 2.6,
+   "runs": [
+    2.4,
+    2.9,
+    2.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.58,
+   "topSelf": [
+    [
+     "sHe index-BO6-2Du6.js:167",
+     1
+    ],
+    [
+     "call preload.cjs:5",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "V1 index-BO6-2Du6.js:167",
+     0.3
+    ],
+    [
+     "invoke :0",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "V1 index-BO6-2Du6.js:167",
+     2.1
+    ],
+    [
+     "(anon) :0",
+     1.9
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     1
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     1
+    ],
+    [
+     "O1 index-BO6-2Du6.js:167",
+     1
+    ],
+    [
+     "call preload.cjs:5",
+     0.7
+    ],
+    [
+     "write preload.cjs:66",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "invoke :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "select-click",
+   "busyMs": 48.2,
+   "runs": [
+    71.8,
+    48.2,
+    47.1
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 12.05,
+   "topSelf": [
+    [
+     "(program) :0",
+     25
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "(garbage collector) :0",
+     4.6
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:144",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.9
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     0.7
+    ],
+    [
+     "insertBefore :0",
+     0.7
+    ],
+    [
+     "rD index-BO6-2Du6.js:148",
+     0.6
+    ],
+    [
+     "Yb index-BO6-2Du6.js:144",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     25
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     20.5
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     18.9
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     18.9
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     18.9
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     18.9
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.6
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     8.7
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     7.9
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     7.7
+    ],
+    [
+     "Eu index-BO6-2Du6.js:9",
+     7.7
+    ],
+    [
+     "tf index-BO6-2Du6.js:9",
+     7.7
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "n index-BO6-2Du6.js:155",
+     7.6
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     7.2
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     7.2
+    ],
+    [
+     "(garbage collector) :0",
+     4.6
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     4.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "history-deep",
+   "action": "workspaces",
+   "busyMs": 128.5,
+   "runs": [
+    123.4,
+    128.5,
+    132.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 21.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.3
+    ],
+    [
+     "(garbage collector) :0",
+     27.5
+    ],
+    [
+     "drawImage :0",
+     5.8
+    ],
+    [
+     "fill :0",
+     5.3
+    ],
+    [
+     "pAe index-BO6-2Du6.js:156",
+     5.2
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     4.7
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.3
+    ],
+    [
+     "Jd index-BO6-2Du6.js:133",
+     4
+    ],
+    [
+     "QQe index-BO6-2Du6.js:172",
+     1.7
+    ],
+    [
+     "setAttribute :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.3
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     34.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     33.4
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     32.1
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     32
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     32
+    ],
+    [
+     "(garbage collector) :0",
+     27.5
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     19.7
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     18.7
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     18.7
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     18.7
+    ],
+    [
+     "drawMain index-BO6-2Du6.js:156",
+     18.7
+    ],
+    [
+     "paintStage index-BO6-2Du6.js:156",
+     18.2
+    ],
+    [
+     "paint index-BO6-2Du6.js:156",
+     18.2
+    ],
+    [
+     "build index-BO6-2Du6.js:156",
+     17.8
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     16.2
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     16.2
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     13.6
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     11.8
+    ],
+    [
+     "$d index-BO6-2Du6.js:133",
+     10.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "brush-stroke",
+   "busyMs": 28.4,
+   "runs": [
+    28.6,
+    24.6,
+    28.4
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.6
+    ],
+    [
+     "Xe index-BO6-2Du6.js:10",
+     1.8
+    ],
+    [
+     "WOe index-BO6-2Du6.js:156",
+     0.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:148",
+     0.4
+    ],
+    [
+     "setTimeout :0",
+     0.3
+    ],
+    [
+     "save :0",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     0.3
+    ],
+    [
+     "e index-BO6-2Du6.js:174",
+     0.2
+    ],
+    [
+     "Ci index-BO6-2Du6.js:9",
+     0.2
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.6
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     3
+    ],
+    [
+     "drawOverlay index-BO6-2Du6.js:156",
+     2.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     2.4
+    ],
+    [
+     "update index-BO6-2Du6.js:10",
+     2.1
+    ],
+    [
+     "u index-BO6-2Du6.js:148",
+     2.1
+    ],
+    [
+     "f index-BO6-2Du6.js:148",
+     2.1
+    ],
+    [
+     "FE index-BO6-2Du6.js:148",
+     2.1
+    ],
+    [
+     "MD index-BO6-2Du6.js:148",
+     2.1
+    ],
+    [
+     "vU index-BO6-2Du6.js:156",
+     2.1
+    ],
+    [
+     "commit index-BO6-2Du6.js:163",
+     2.1
+    ],
+    [
+     "rLe index-BO6-2Du6.js:163",
+     2.1
+    ],
+    [
+     "finishGesture index-BO6-2Du6.js:156",
+     2.1
+    ],
+    [
+     "onPointerUp index-BO6-2Du6.js:156",
+     2.1
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     2
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     2
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     2
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     2
+    ],
+    [
+     "get index-BO6-2Du6.js:10",
+     1.9
+    ],
+    [
+     "Nt.produce index-BO6-2Du6.js:10",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "scrub",
+   "busyMs": 528.4,
+   "runs": [
+    528.4,
+    562.3,
+    474.9
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 6.6,
+   "topSelf": [
+    [
+     "(program) :0",
+     330.7
+    ],
+    [
+     "drawImage :0",
+     84.6
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     23.2
+    ],
+    [
+     "(garbage collector) :0",
+     9.4
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     6.3
+    ],
+    [
+     "getContext :0",
+     4.6
+    ],
+    [
+     "as index-BO6-2Du6.js:132",
+     2.6
+    ],
+    [
+     "bh index-BO6-2Du6.js:134",
+     2.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     2.2
+    ],
+    [
+     "save :0",
+     1.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     330.7
+    ],
+    [
+     "t index-BO6-2Du6.js:156",
+     120.1
+    ],
+    [
+     "warm index-BO6-2Du6.js:156",
+     119.7
+    ],
+    [
+     "build index-BO6-2Du6.js:156",
+     100
+    ],
+    [
+     "drawImage :0",
+     84.6
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     32.9
+    ],
+    [
+     "vh index-BO6-2Du6.js:134",
+     32.8
+    ],
+    [
+     "drawMain index-BO6-2Du6.js:156",
+     29.9
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     26
+    ],
+    [
+     "paint index-BO6-2Du6.js:156",
+     25.7
+    ],
+    [
+     "paintStage index-BO6-2Du6.js:156",
+     25.5
+    ],
+    [
+     "Yke index-BO6-2Du6.js:156",
+     25.1
+    ],
+    [
+     "$o index-BO6-2Du6.js:132",
+     24.5
+    ],
+    [
+     "es index-BO6-2Du6.js:132",
+     23.9
+    ],
+    [
+     "as index-BO6-2Du6.js:132",
+     23.8
+    ],
+    [
+     "rs index-BO6-2Du6.js:132",
+     23.8
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     23.2
+    ],
+    [
+     "l index-BO6-2Du6.js:156",
+     19.1
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     18.4
+    ],
+    [
+     "nh index-BO6-2Du6.js:10",
+     16.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "play",
+   "busyMs": 385.9,
+   "runs": [
+    703.6,
+    385.9,
+    350.2
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 257.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     172.3
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     107
+    ],
+    [
+     "warm index-BO6-2Du6.js:156",
+     70.6
+    ],
+    [
+     "drawImage :0",
+     56.3
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     19.9
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     9.5
+    ],
+    [
+     "yh index-BO6-2Du6.js:134",
+     6.2
+    ],
+    [
+     "warmAhead index-BO6-2Du6.js:156",
+     6
+    ],
+    [
+     "vh index-BO6-2Du6.js:134",
+     3
+    ],
+    [
+     "(garbage collector) :0",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-BO6-2Du6.js:156",
+     291.2
+    ],
+    [
+     "warmAhead index-BO6-2Du6.js:156",
+     284.2
+    ],
+    [
+     "warm index-BO6-2Du6.js:156",
+     278
+    ],
+    [
+     "(program) :0",
+     172.3
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     107
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     101.8
+    ],
+    [
+     "vh index-BO6-2Du6.js:134",
+     99.3
+    ],
+    [
+     "build index-BO6-2Du6.js:156",
+     62.1
+    ],
+    [
+     "yh index-BO6-2Du6.js:134",
+     61.4
+    ],
+    [
+     "drawImage :0",
+     56.3
+    ],
+    [
+     "bh index-BO6-2Du6.js:134",
+     34.9
+    ],
+    [
+     "xh index-BO6-2Du6.js:134",
+     34.9
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     9.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     7.8
+    ],
+    [
+     "drawMain index-BO6-2Du6.js:156",
+     6.5
+    ],
+    [
+     "paint index-BO6-2Du6.js:156",
+     5.8
+    ],
+    [
+     "paintStage index-BO6-2Du6.js:156",
+     5.5
+    ],
+    [
+     "Yke index-BO6-2Du6.js:156",
+     5.5
+    ],
+    [
+     "TEe index-BO6-2Du6.js:155",
+     5.4
+    ],
+    [
+     "setUi index-BO6-2Du6.js:10",
+     5.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "undo-redo",
+   "busyMs": 133.2,
+   "runs": [
+    176.4,
+    133.2,
+    126.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 11.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     96.4
+    ],
+    [
+     "(garbage collector) :0",
+     8.3
+    ],
+    [
+     "$f index-BO6-2Du6.js:10",
+     2.4
+    ],
+    [
+     "F index-BO6-2Du6.js:10",
+     2.3
+    ],
+    [
+     "Ci index-BO6-2Du6.js:9",
+     2.1
+    ],
+    [
+     "warm index-BO6-2Du6.js:156",
+     1.9
+    ],
+    [
+     "Yf index-BO6-2Du6.js:10",
+     1.8
+    ],
+    [
+     "p index-BO6-2Du6.js:9",
+     1.7
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     1.2
+    ],
+    [
+     "Mm index-BO6-2Du6.js:134",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     96.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     28.1
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     26.5
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     26.5
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     26.5
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     26.5
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     19.1
+    ],
+    [
+     "qd index-BO6-2Du6.js:9",
+     19
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     19
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     17.3
+    ],
+    [
+     "Lc index-BO6-2Du6.js:9",
+     11.1
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     10.4
+    ],
+    [
+     "(garbage collector) :0",
+     8.3
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     7.4
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     7.4
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     7.4
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     6.5
+    ],
+    [
+     "yu index-BO6-2Du6.js:9",
+     6.5
+    ],
+    [
+     "ef index-BO6-2Du6.js:9",
+     6.5
+    ],
+    [
+     "$f index-BO6-2Du6.js:10",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "add-key",
+   "busyMs": 71.1,
+   "runs": [
+    71.1,
+    69.9,
+    73.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 23.72,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.5
+    ],
+    [
+     "Xe index-BO6-2Du6.js:10",
+     5.7
+    ],
+    [
+     "je index-BO6-2Du6.js:10",
+     4.6
+    ],
+    [
+     "nP index-BO6-2Du6.js:155",
+     3.4
+    ],
+    [
+     "WOe index-BO6-2Du6.js:156",
+     1.5
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:148",
+     1.3
+    ],
+    [
+     "Sh index-BO6-2Du6.js:134",
+     1
+    ],
+    [
+     "Dt.<computed> index-BO6-2Du6.js:10",
+     0.9
+    ],
+    [
+     "Tt index-BO6-2Du6.js:10",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.5
+    ],
+    [
+     "Yye index-BO6-2Du6.js:155",
+     21.1
+    ],
+    [
+     "run index-BO6-2Du6.js:172",
+     21.1
+    ],
+    [
+     "run debug-DOGNhe0V.js:10",
+     21.1
+    ],
+    [
+     "(anon) :0",
+     21.1
+    ],
+    [
+     "uP index-BO6-2Du6.js:155",
+     21
+    ],
+    [
+     "pP index-BO6-2Du6.js:155",
+     21
+    ],
+    [
+     "update index-BO6-2Du6.js:10",
+     20.1
+    ],
+    [
+     "Nt.produce index-BO6-2Du6.js:10",
+     19.1
+    ],
+    [
+     "Nt.produceWithPatches index-BO6-2Du6.js:10",
+     19.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     17.7
+    ],
+    [
+     "get index-BO6-2Du6.js:10",
+     12.9
+    ],
+    [
+     "nP index-BO6-2Du6.js:155",
+     11
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     8.4
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     8.1
+    ],
+    [
+     "ade index-BO6-2Du6.js:148",
+     7
+    ],
+    [
+     "Yye.pP.both index-BO6-2Du6.js:155",
+     7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "delete-key",
+   "busyMs": 196.5,
+   "runs": [
+    198.5,
+    195.8,
+    196.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 65.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     128.3
+    ],
+    [
+     "Xe index-BO6-2Du6.js:10",
+     5.2
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     4.6
+    ],
+    [
+     "nP index-BO6-2Du6.js:155",
+     3.7
+    ],
+    [
+     "$f index-BO6-2Du6.js:10",
+     3.7
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     3.7
+    ],
+    [
+     "Ci index-BO6-2Du6.js:9",
+     3.6
+    ],
+    [
+     "je index-BO6-2Du6.js:10",
+     3
+    ],
+    [
+     "p index-BO6-2Du6.js:9",
+     2.4
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     128.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     37.7
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     35.4
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     35.4
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     35.4
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     35.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     27.1
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     24
+    ],
+    [
+     "qd index-BO6-2Du6.js:9",
+     23.8
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     23.8
+    ],
+    [
+     "(anon) :0",
+     23.3
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     23.2
+    ],
+    [
+     "run index-BO6-2Du6.js:172",
+     22.7
+    ],
+    [
+     "run debug-DOGNhe0V.js:10",
+     22.7
+    ],
+    [
+     "z3 index-BO6-2Du6.js:172",
+     22.4
+    ],
+    [
+     "update index-BO6-2Du6.js:10",
+     21.4
+    ],
+    [
+     "Nt.produce index-BO6-2Du6.js:10",
+     20.3
+    ],
+    [
+     "Nt.produceWithPatches index-BO6-2Du6.js:10",
+     20.3
+    ],
+    [
+     "Lc index-BO6-2Du6.js:9",
+     12
+    ],
+    [
+     "Wo index-BO6-2Du6.js:9",
+     11.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "save-file",
+   "busyMs": 203.9,
+   "runs": [
+    204,
+    203.3,
+    203.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 203.88,
+   "topSelf": [
+    [
+     "encode :0",
+     85.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:167",
+     71.5
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     29.6
+    ],
+    [
+     "(garbage collector) :0",
+     14.1
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     2
+    ],
+    [
+     "Gp index-BO6-2Du6.js:133",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "O1 index-BO6-2Du6.js:167",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "l index-BO6-2Du6.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "O1 index-BO6-2Du6.js:167",
+     189.2
+    ],
+    [
+     "saveBytesAsync debug-DOGNhe0V.js:3",
+     189.2
+    ],
+    [
+     "(anon) :0",
+     189.2
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     186.2
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     126
+    ],
+    [
+     "encode :0",
+     85.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:167",
+     71.6
+    ],
+    [
+     "(garbage collector) :0",
+     14.1
+    ],
+    [
+     "Gp index-BO6-2Du6.js:133",
+     0.6
+    ],
+    [
+     "Kp index-BO6-2Du6.js:133",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "qp index-BO6-2Du6.js:133",
+     0.3
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:133",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "pump index-BO6-2Du6.js:167",
+     0.1
+    ],
+    [
+     "run index-BO6-2Du6.js:167",
+     0.1
+    ],
+    [
+     "HBe index-BO6-2Du6.js:167",
+     0.1
+    ],
+    [
+     "l index-BO6-2Du6.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "7.2 MB file"
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "open-file",
+   "busyMs": 168.1,
+   "runs": [
+    294.1,
+    168.1,
+    160
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 168.08,
+   "topSelf": [
+    [
+     "P1 index-BO6-2Du6.js:167",
+     82.9
+    ],
+    [
+     "(garbage collector) :0",
+     52
+    ],
+    [
+     "decode :0",
+     17.2
+    ],
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "hHe index-BO6-2Du6.js:167",
+     7.9
+    ],
+    [
+     "gHe index-BO6-2Du6.js:167",
+     4.6
+    ],
+    [
+     "WBe index-BO6-2Du6.js:167",
+     2.7
+    ],
+    [
+     "Tl index-BO6-2Du6.js:133",
+     2.3
+    ],
+    [
+     "jHe index-BO6-2Du6.js:167",
+     1.8
+    ],
+    [
+     "drawImage :0",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "P1 index-BO6-2Du6.js:167",
+     122.5
+    ],
+    [
+     "(garbage collector) :0",
+     52
+    ],
+    [
+     "hHe index-BO6-2Du6.js:167",
+     19.8
+    ],
+    [
+     "decode :0",
+     17.2
+    ],
+    [
+     "h$ index-BO6-2Du6.js:167",
+     17.2
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     13.1
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     11.7
+    ],
+    [
+     "gHe index-BO6-2Du6.js:167",
+     10.3
+    ],
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "qd index-BO6-2Du6.js:9",
+     9.1
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     9.1
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     9.1
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     8.8
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     8.5
+    ],
+    [
+     "Yke index-BO6-2Du6.js:156",
+     7.7
+    ],
+    [
+     "paintStage index-BO6-2Du6.js:156",
+     7.7
+    ],
+    [
+     "paint index-BO6-2Du6.js:156",
+     7.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "autosave",
+   "busyMs": 33.1,
+   "runs": [
+    32.4,
+    33.1,
+    107.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 33.05,
+   "topSelf": [
+    [
+     "sHe index-BO6-2Du6.js:167",
+     17.6
+    ],
+    [
+     "(garbage collector) :0",
+     12.5
+    ],
+    [
+     "(program) :0",
+     10.9
+    ],
+    [
+     "V1 index-BO6-2Du6.js:167",
+     7.2
+    ],
+    [
+     "call preload.cjs:5",
+     3.8
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     1.7
+    ],
+    [
+     "encode :0",
+     1.3
+    ],
+    [
+     "O1 index-BO6-2Du6.js:167",
+     1.2
+    ],
+    [
+     "Gp index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "V1 index-BO6-2Du6.js:167",
+     34
+    ],
+    [
+     "(anon) :0",
+     26.9
+    ],
+    [
+     "O1 index-BO6-2Du6.js:167",
+     22.6
+    ],
+    [
+     "D1 index-BO6-2Du6.js:167",
+     21.4
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     19
+    ],
+    [
+     "(garbage collector) :0",
+     12.5
+    ],
+    [
+     "(program) :0",
+     10.9
+    ],
+    [
+     "call preload.cjs:5",
+     3.9
+    ],
+    [
+     "write preload.cjs:66",
+     3.9
+    ],
+    [
+     "encode :0",
+     1.3
+    ],
+    [
+     "Gp index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "Kp index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "qp index-BO6-2Du6.js:133",
+     0.7
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:133",
+     0.5
+    ],
+    [
+     "invoke :0",
+     0.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:167",
+     0.1
+    ],
+    [
+     "e.onmessage index-BO6-2Du6.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "select-click",
+   "busyMs": 111.9,
+   "runs": [
+    111.9,
+    111.5,
+    113.3
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 27.98,
+   "topSelf": [
+    [
+     "(program) :0",
+     87
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.7
+    ],
+    [
+     "insertBefore :0",
+     0.8
+    ],
+    [
+     "setAttribute :0",
+     0.7
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:10",
+     0.7
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     0.4
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     0.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     0.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     87
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     19.2
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     17.9
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     17.9
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     17.9
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     17.9
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     11.6
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     11.6
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     11.6
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:155",
+     8.6
+    ],
+    [
+     "fl index-BO6-2Du6.js:9",
+     8.4
+    ],
+    [
+     "n index-BO6-2Du6.js:155",
+     7.8
+    ],
+    [
+     "ou index-BO6-2Du6.js:9",
+     7.8
+    ],
+    [
+     "Eu index-BO6-2Du6.js:9",
+     7.8
+    ],
+    [
+     "tf index-BO6-2Du6.js:9",
+     7.8
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     7.7
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     6.3
+    ],
+    [
+     "qd index-BO6-2Du6.js:9",
+     6.1
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     6.1
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector-history",
+   "action": "workspaces",
+   "busyMs": 358.6,
+   "runs": [
+    325.6,
+    366.4,
+    358.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 59.77,
+   "topSelf": [
+    [
+     "(program) :0",
+     222.5
+    ],
+    [
+     "(garbage collector) :0",
+     18.1
+    ],
+    [
+     "drawImage :0",
+     7.7
+    ],
+    [
+     "sHe index-BO6-2Du6.js:167",
+     5.6
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.5
+    ],
+    [
+     "hSe index-BO6-2Du6.js:155",
+     4.4
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:172",
+     4.3
+    ],
+    [
+     "removeChild :0",
+     3.9
+    ],
+    [
+     "$f index-BO6-2Du6.js:10",
+     3.7
+    ],
+    [
+     "xu index-BO6-2Du6.js:9",
+     3.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     222.5
+    ],
+    [
+     "jd index-BO6-2Du6.js:9",
+     64.1
+    ],
+    [
+     "(anon) index-BO6-2Du6.js:9",
+     45.4
+    ],
+    [
+     "Sf index-BO6-2Du6.js:9",
+     36.9
+    ],
+    [
+     "Tf index-BO6-2Du6.js:9",
+     36.8
+    ],
+    [
+     "bf index-BO6-2Du6.js:9",
+     36.8
+    ],
+    [
+     "Ud index-BO6-2Du6.js:9",
+     35.7
+    ],
+    [
+     "qd index-BO6-2Du6.js:9",
+     35.2
+    ],
+    [
+     "Wd index-BO6-2Du6.js:9",
+     35.2
+    ],
+    [
+     "D index-BO6-2Du6.js:2",
+     30
+    ],
+    [
+     "gee index-BO6-2Du6.js:9",
+     28.5
+    ],
+    [
+     "Qd index-BO6-2Du6.js:9",
+     28.5
+    ],
+    [
+     "Md index-BO6-2Du6.js:9",
+     28.5
+    ],
+    [
+     "il index-BO6-2Du6.js:9",
+     28.3
+    ],
+    [
+     "wf index-BO6-2Du6.js:9",
+     27.4
+    ],
+    [
+     "as index-BO6-2Du6.js:132",
+     19.6
+    ],
+    [
+     "rs index-BO6-2Du6.js:132",
+     19.6
+    ],
+    [
+     "es index-BO6-2Du6.js:132",
+     19.6
+    ],
+    [
+     "$o index-BO6-2Du6.js:132",
+     19.6
+    ],
+    [
+     "frame index-BO6-2Du6.js:156",
+     18.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

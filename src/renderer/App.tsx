@@ -5,7 +5,7 @@ import { CanvasView } from '../canvas/CanvasView';
 import { PictureStrip, PixelBar } from '../pixel/PixelBar';
 import { CommandPalette } from '../ui/CommandPalette';
 import { DockZoneView, Splitter } from '../ui/DockView';
-import { syncPanels, takeRailMigrationNote } from '../ui/dock';
+import { shareMenusWithAll, syncPanels, takeMenusMigrationNote, takeRailMigrationNote } from '../ui/dock';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
 import { syncDynamicCommands } from '../ui/dynamic';
@@ -14,8 +14,13 @@ import { installKeyboard } from '../ui/keyboard';
 import { installRovingKeys } from '../ui/roving';
 import { watchFirstDrawing } from '../ui/firstDrawing';
 import { startScreenWatch } from '../ui/screenSize';
+import { startStreamOffer } from '../features/streamOffer';
+import { startFitWatch } from '../ui/screenFit';
 import { startCrashWatch } from '../beta/crashAsk';
 import { CrashOffer } from '../beta/CrashOffer';
+import { UpdateOffer } from '../update/UpdateOffer';
+import { startUpdateWatch } from '../update/state';
+import { installDrawingReset } from '../io/fresh';
 import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
@@ -23,6 +28,11 @@ import { AskDialog } from '../platform/AskDialog';
 import { SaveQuestionDialog } from '../io/SaveQuestionDialog';
 import { StatusBar } from '../ui/StatusBar';
 import { ToastView } from '../ui/ToastView';
+import { DareLayer } from '../dares/DareLayer';
+import { VoteLayer } from '../votes';
+import { GuessLayer } from '../guess';
+import { ReviewCard } from '../livereview/ReviewCard';
+import { PenModChip } from '../penmods/PenModChip';
 import { ToolFloat, ToolSlot } from '../ui/ToolStrip';
 import { DockOverlays } from '../ui/DockOverlays';
 import { FloatLayer } from '../ui/DockFloats';
@@ -31,6 +41,7 @@ import { TopBar } from '../ui/TopBar';
 import { maybeOnboard } from '../ui/onboarding';
 import { lazyComponent, lazyModule, warmLazyParts, type Loader } from '../core/lazy';
 import type { ComponentType } from 'react';
+import { DockFitWatch } from '../ui/DockFitWatch';
 
 // The big floating things load the first time they open (and in idle time after start-up), not before the first frame.
 function whenOpen(isOpen: (o: Overlays) => boolean, load: Loader<ComponentType<object>>, warm = true) {
@@ -58,17 +69,26 @@ export function App() {
   });
 
   useEffect(() => {
-    const off = [installKeyboard(), installRovingKeys(), trackHover(), installSheetCloser(), watchFirstDrawing()];
+    const off = [installKeyboard(), installRovingKeys(), trackHover(), installSheetCloser(), installDrawingReset(), watchFirstDrawing()];
     // The first time, Quill's hello comes instead of the welcome sheet.
     if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;
     // Quill offers a better interface size on a very dense screen, and again on a new one the window is dragged to.
     startScreenWatch();
+    // Anybody who finished the hello before it asked about streaming is asked once, a little later, whether they stream.
+    startStreamOffer();
+    // A small screen gets a tighter layout, said once in a toast.
+    startFitWatch();
     // After a crash, a dazed Quill offers to send the crash notes (once, and only if you say so).
     startCrashWatch();
+    // A quiet look for a newer release (when Preferences allows), offered at a calm moment.
+    const stopUpdates = startUpdateWatch();
     // Someone who changed the one tool arrangement before workspaces had their own is told where it went, once.
     const kept = takeRailMigrationNote();
     if (kept) toast(line('workspaces.railKept', { workspace: kept }), { kind: 'info', duration: 9000 });
+    // Someone who changed the menus before workspaces had their own is told where those changes went, once.
+    const menusKept = takeMenusMigrationNote();
+    if (menusKept) toast(line('workspaces.menusKept', { workspace: menusKept }), { kind: 'info', duration: 12000, action: { label: 'Use them everywhere', id: 'menus-everywhere', run: shareMenusWithAll } });
     // The first frame with the canvas drawn and the page free to take input. scripts/perf/startup.cjs reads it.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -76,7 +96,10 @@ export function App() {
         warmLazyParts();
       }),
     );
-    return () => off.forEach((f) => f());
+    return () => {
+      off.forEach((f) => f());
+      stopUpdates();
+    };
   }, []);
 
   return (
@@ -109,10 +132,12 @@ export function App() {
       </FloatLayer>
       <DockOverlays />
       <StatusBar />
+      <DockFitWatch />
       <CommandPalette />
       <PrefsModal />
       <ChoiceDialog />
       <CrashOffer />
+      <UpdateOffer />
       <AskDialog />
       <SaveQuestionDialog />
       <HelpWindow />
@@ -121,6 +146,11 @@ export function App() {
       <PenCheckSheet />
       <AboutDialog />
       <ToastView />
+      <DareLayer />
+      <VoteLayer />
+      <GuessLayer />
+      <ReviewCard />
+      <PenModChip />
       <TooltipLayer />
     </div>
   );

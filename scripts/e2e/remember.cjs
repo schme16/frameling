@@ -12,6 +12,10 @@
 // prints one line per setting, `kept` or `forgotten`, and writes them to REMEMBER_DIR/result.json. The tool options are
 // set through the real option panels (click the value, type a number, Enter) and read back from the panel's own label.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -39,6 +43,7 @@ async function start() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   win.setSize(1600, 1000);
   for (let i = 0; i < 200; i++) {
     try {

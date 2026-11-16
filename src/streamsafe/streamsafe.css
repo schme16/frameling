@@ -1,0 +1,161 @@
+/* The pill that says Stream-safe is on. Warm and clear, never loud. */
+.ss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 8px;
+  padding: 3px 10px 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ss-badge:hover {
+  background: var(--sunny-deep);
+}
+.ss-badge:focus-visible {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: 2px;
+}
+
+/* The OBS part of the Live pill. It always paints its own background, so its colour is its own whatever the audience part
+   beside it is doing. Green is connected and ready, red is recording or streaming, and nothing else is either. Looking and
+   not found are plain and quiet. Needs-you is plain with a heavy ring and a warning mark, a look no other part has, so
+   it is never taken for the yellow audience part. */
+.live-pill[data-tone='ready'] {
+  --live-ring: var(--aud-green);
+}
+.live-pill[data-tone='quiet'],
+.live-pill[data-tone='looking'] {
+  --live-ring: var(--line);
+  opacity: 0.8;
+}
+.live-pill[data-tone='fix'] {
+  --live-ring: var(--text);
+}
+.live-pill[data-tone='rec'],
+.live-pill[data-tone='live'] {
+  --live-ring: var(--aud-red);
+}
+.live-obs {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 11px 0 9px;
+  border: 0;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.live-obs:hover {
+  background: var(--panel-2);
+}
+.live-obs:focus-visible {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: -3px;
+}
+.live-obs-quiet,
+.live-obs-looking {
+  color: var(--muted);
+}
+.live-obs-ready,
+.live-obs-ready:hover {
+  background: var(--aud-green);
+  color: #fff;
+  font-weight: 700;
+}
+.live-obs-ready:hover {
+  filter: brightness(1.12);
+}
+.live-obs-live,
+.live-obs-rec,
+.live-obs-live:hover,
+.live-obs-rec:hover {
+  background: var(--aud-red);
+  color: #fff;
+  font-weight: 800;
+}
+.live-obs-live:hover,
+.live-obs-rec:hover {
+  filter: brightness(1.12);
+}
+.live-obs-fix {
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+.live-obs:focus-visible.live-obs-ready,
+.live-obs:focus-visible.live-obs-live,
+.live-obs:focus-visible.live-obs-rec {
+  outline-color: #fff;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  animation: aud-pulse 1.8s ease-in-out infinite;
+}
+:root[data-motion='reduce'] .live-dot {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
+
+/* Beside the audience part: the same segment, set off by a hairline. It keeps its own colour from the rules above. */
+.live-obs.is-beside {
+  border-left: 1px solid rgb(0 0 0 / 30%);
+}
+.live-obs.is-beside.live-obs-fix {
+  border-left: 0;
+}
+.obs-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+.obs-panel .obs-line {
+  margin: 0;
+  font-size: 12px;
+  text-align: right;
+}
+.obs-panel input {
+  width: 220px;
+}
+.obs-panel .obs-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ui-pref-row.obs-row {
+  justify-content: flex-end;
+  border-top: 0;
+}
+.obs-panel .ui-pref-text {
+  align-items: flex-end;
+  font-size: 12px;
+}
+.obs-panel input[type='text'],
+.obs-panel input[type='password'] {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+}

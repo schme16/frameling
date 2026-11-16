@@ -10,26 +10,27 @@ import { leaveTileEdit } from '../tiles/tileEdit';
 import { artboardDoc, artboardsOf, shotAt } from './model';
 import { barColorFor, currentPictureSize, customPicture, fitPlacement, sameSize, type FitMode } from './fit';
 import { PictureSizeControl } from './PictureSize';
+import { filmSeconds, frameAtSeconds, secondsAt } from './rates';
 
 export interface Reel {
-  shots: { id: Id; name: string; doc: Doc }[];
+  /** Each shot plays at its own speed: `fps` is its own, the same as `doc.fps` (the document's, when the file has the frames on boards). */
+  shots: { id: Id; name: string; doc: Doc; fps: number }[];
   /** First frame of each shot in the whole reel. */
   starts: number[];
   length: number;
-  fps: number;
 }
 
 /** The shots in list order (or just `ids`), with where each starts. */
 export function buildReel(root: Doc, ids?: Id[]): Reel {
   const list = artboardsOf(root).filter((a) => !ids || ids.includes(a.id));
-  const shots = list.map((a) => ({ id: a.id, name: a.name, doc: artboardDoc(root, a.id) }));
+  const shots = list.map((a) => ({ id: a.id, name: a.name, doc: artboardDoc(root, a.id) })).map((s) => ({ ...s, fps: s.doc.fps }));
   const starts: number[] = [];
   let at = 0;
   for (const s of shots) {
     starts.push(at);
     at += s.doc.length;
   }
-  return { shots, starts, length: Math.max(1, at), fps: root.fps };
+  return { shots, starts, length: Math.max(1, at) };
 }
 
 /** The shot and its own frame at a frame of the reel. */
@@ -47,6 +48,8 @@ function ShotsPlayer({ close }: { close: () => void }) {
   const fit = useChoice<FitMode>('artboards.fit');
   useChoice('artboards.pictureSize');
   customPicture.use((c) => c);
+  const timed = useMemo(() => reel.shots.map((s) => ({ length: s.doc.length, fps: s.fps })), [reel]);
+  const total = useMemo(() => filmSeconds(timed), [timed]);
   const sizes = useMemo(() => reel.shots.map((s) => ({ width: s.doc.width, height: s.doc.height })), [reel]);
   const picSize = currentPictureSize(sizes);
   const mixed = sizes.some((s) => !sameSize(s.width, s.height, picSize.width, picSize.height));
@@ -56,13 +59,14 @@ function ShotsPlayer({ close }: { close: () => void }) {
     let raf = 0;
     clock.current = { t0: performance.now(), from: frame >= reel.length - 1 ? 0 : frame };
     const tick = (t: number) => {
-      const i = clock.current.from + Math.floor(((t - clock.current.t0) * reel.fps) / 1000);
-      if (i >= reel.length && !loop) {
+      // The clock runs in seconds, because a shot at 12 fps and one at 24 take different times for the same frames.
+      const secs = secondsAt(timed, clock.current.from) + (t - clock.current.t0) / 1000;
+      if (secs >= total && !loop) {
         setFrame(reel.length - 1);
         setPlaying(false);
         return;
       }
-      setFrame(i % reel.length);
+      setFrame(Math.min(reel.length - 1, frameAtSeconds(timed, secs % total)));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -130,8 +134,8 @@ function ShotsPlayer({ close }: { close: () => void }) {
               key={s.id}
               type="button"
               className={`ab-shot${i === at.shot ? ' ab-shot-on' : ''}`}
-              style={{ flexGrow: s.doc.length }}
-              title={`${s.name}: ${s.doc.length} frame${s.doc.length === 1 ? '' : 's'}`}
+              style={{ flexGrow: Math.max(1, Math.round((1000 * s.doc.length) / s.fps)) }}
+              title={`${s.name}: ${s.doc.length} frame${s.doc.length === 1 ? '' : 's'} at ${s.fps} fps`}
               onClick={() => {
                 setFrame(reel.starts[i]);
                 clock.current = { t0: performance.now(), from: reel.starts[i] };
@@ -162,7 +166,7 @@ function ShotsPlayer({ close }: { close: () => void }) {
         </div>
         <div className="io-foot ab-player-foot">
           <span className="io-muted">
-            {shot.name}, frame {at.frame + 1} of {shot.doc.length}
+            {shot.name}, frame {at.frame + 1} of {shot.doc.length}, {shot.fps} fps
           </span>
           <label className="ex-check">
             <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />

@@ -15,8 +15,9 @@
  *   `morphNotes` so the panel can say so.
  */
 import { blendGradient } from './gradient';
-import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
+import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Repeat, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
 import { strokeOutline } from './render';
+import { lerpTrim } from '../geometry/trim';
 
 type P = { x: number; y: number };
 /** One cubic segment: a to d, with controls b and c. */
@@ -42,6 +43,7 @@ interface Style {
   /** Which kind of shape it came from, so a pair of fills stays a fill. */
   type: 'fill' | 'path';
   group?: string;
+  repeat?: Repeat;
   fillGradient?: Gradient;
   strokeGradient?: Gradient;
 }
@@ -466,14 +468,16 @@ export function resampleStroke(points: StrokePoint[], n: number): StrokePoint[] 
   return out;
 }
 
+const trimField = (trim: ReturnType<typeof lerpTrim>) => (trim ? { trim } : {});
+
 function strokeAsFill(s: StrokeShape): FillShape {
   const o = strokeOutline(s);
   return { id: s.id, type: 'fill', paths: [{ points: o.map(([x, y]) => ({ x, y })), closed: true }], color: s.color, opacity: s.opacity, ...(s.group ? { group: s.group } : {}) };
 }
 
 function styleOf(s: FillShape | PathShape): Style {
-  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group, fillGradient: s.gradient };
-  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group, fillGradient: s.fillGradient, strokeGradient: s.strokeGradient };
+  if (s.type === 'fill') return { fill: s.color, stroke: null, opacity: s.opacity, type: 'fill', group: s.group, repeat: s.repeat, fillGradient: s.gradient };
+  return { fill: s.fill, stroke: s.stroke, opacity: s.opacity, type: 'path', group: s.group, repeat: s.repeat, fillGradient: s.fillGradient, strokeGradient: s.strokeGradient };
 }
 
 // ---------------------------------------------------------------- plans
@@ -696,16 +700,21 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
         id: p.id,
         type: 'stroke',
         ...(a.group ? { group: a.group } : {}),
+        // Paper tooth and other effects on the line stay on it through the in-betweens.
+        ...(a.effects ? { effects: a.effects } : {}),
+        // A repeat carries on from the first key through the in-betweens.
+        ...(a.repeat ? { repeat: a.repeat } : {}),
         points: p.pa.map((q, i) => ({ x: lerp(q.x, p.pb[i].x, t), y: lerp(q.y, p.pb[i].y, t), p: Math.max(0, Math.min(1, lerp(q.p, p.pb[i].p, t))) })),
         brush: br,
         color: mixColors(a.color, b.color, t) ?? a.color,
         opacity: Math.max(0, Math.min(1, lerp(a.opacity, b.opacity, t))),
+        ...trimField(lerpTrim(a.trim, b.trim, t)),
       });
       continue;
     }
     const paths = p.rings.map((r) => blendRing(r, t));
     const opacity = Math.max(0, Math.min(1, lerp(p.a.opacity, p.b.opacity, t)));
-    const group = p.a.group ? { group: p.a.group } : {};
+    const group = { ...(p.a.group ? { group: p.a.group } : {}), ...(p.a.repeat ? { repeat: p.a.repeat } : {}) };
     if (p.a.type === 'fill' && p.b.type === 'fill') {
       const gradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
       out.push({ id: p.id, type: 'fill', ...group, paths, color: mixColors(p.a.fill, p.b.fill, t) ?? p.a.fill ?? '#000000', opacity, ...(gradient ? { gradient } : {}) });
@@ -718,7 +727,10 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
       const base = (t < 0.5 ? (sa ?? sb) : (sb ?? sa))!;
       const color = mixColors(sa?.color ?? null, sb?.color ?? null, t);
       const width = lerp(sa?.width ?? 0, sb?.width ?? 0, t);
-      if (color && width > 0.01) stroke = { ...base, color, width };
+      if (color && width > 0.01) {
+        const { trim: _t, ...plain } = base;
+        stroke = { ...plain, color, width, ...trimField(lerpTrim(sa?.trim, sb?.trim, t)) };
+      }
     }
     const fillGradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
     const strokeGradient = blendGradient(p.a.strokeGradient, p.b.strokeGradient, t);

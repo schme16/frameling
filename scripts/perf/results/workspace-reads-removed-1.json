@@ -1,0 +1,375 @@
+{
+ "label": "stub",
+ "when": "2026-11-15T09:16:06.174Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 8,
+ "pages": {
+  "bouncing-ball": {
+   "nodes": 1200,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "stress-vector": {
+   "nodes": 3023,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 126,
+   "runs": [
+    130.6,
+    125.8,
+    123.9,
+    133.9,
+    119.5,
+    126,
+    125.9,
+    134
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 21.01,
+   "topSelf": [
+    [
+     "(program) :0",
+     53
+    ],
+    [
+     "(garbage collector) :0",
+     21
+    ],
+    [
+     "(anon) index-BbqSLZ-D.js:155",
+     6.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     53
+    ],
+    [
+     "Ad index-BbqSLZ-D.js:9",
+     43.3
+    ],
+    [
+     "(anon) index-BbqSLZ-D.js:9",
+     39.6
+    ],
+    [
+     "wf index-BbqSLZ-D.js:9",
+     38.8
+    ],
+    [
+     "yf index-BbqSLZ-D.js:9",
+     38.8
+    ],
+    [
+     "xf index-BbqSLZ-D.js:9",
+     38.4
+    ]
+   ],
+   "rendering": [
+    [
+     "#UpdateLayoutTree",
+     39.1
+    ],
+    [
+     "#Layout",
+     39.1
+    ],
+    [
+     "Paint",
+     17.4
+    ],
+    [
+     "Layout",
+     12.5
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     9.9
+    ],
+    [
+     "MajorGC",
+     9.9
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     9.7
+    ],
+    [
+     "FireAnimationFrame",
+     8.8
+    ],
+    [
+     "PrePaint",
+     7.2
+    ],
+    [
+     "Layerize",
+     6.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     5.4
+    ],
+    [
+     "UpdateLayoutTree",
+     4.9
+    ],
+    [
+     "Commit",
+     3.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     3.3
+    ],
+    [
+     "HitTest",
+     2.9
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     2.2
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY",
+     2
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     1.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY_PARALLEL",
+     1.5
+    ],
+    [
+     "V8.GC_MC_CLEAR_JOIN_JOB",
+     1.2
+    ],
+    [
+     "V8.GC_MC_MARK",
+     1
+    ],
+    [
+     "UpdateLayer",
+     0.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_SLOTS_MAIN",
+     0.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_POINTER_TABLES",
+     0.7
+    ],
+    [
+     "V8.GC_HEAP_EMBEDDER_TRACING_EPILOGUE",
+     0.7
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.6
+    ],
+    [
+     "V8.GC_MC_MARK_FULL_CLOSURE_PARALLEL",
+     0.6
+    ],
+    [
+     "V8.GC_MC_MARK_WEAK_CLOSURE_EPHEMERON_MARKING",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 205.6,
+   "runs": [
+    217.4,
+    173.9,
+    202,
+    205.9,
+    152.3,
+    205.6,
+    208.2,
+    183.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 34.26,
+   "topSelf": [
+    [
+     "(program) :0",
+     93.8
+    ],
+    [
+     "(garbage collector) :0",
+     24.6
+    ],
+    [
+     "drawImage :0",
+     11.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     93.8
+    ],
+    [
+     "Ad index-BbqSLZ-D.js:9",
+     50.3
+    ],
+    [
+     "(anon) index-BbqSLZ-D.js:9",
+     40
+    ],
+    [
+     "wf index-BbqSLZ-D.js:9",
+     37.9
+    ],
+    [
+     "yf index-BbqSLZ-D.js:9",
+     37.9
+    ],
+    [
+     "xf index-BbqSLZ-D.js:9",
+     37.3
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     42.3
+    ],
+    [
+     "#UpdateLayoutTree",
+     40.3
+    ],
+    [
+     "#Layout",
+     40.3
+    ],
+    [
+     "FireAnimationFrame",
+     21.4
+    ],
+    [
+     "Layout",
+     19.1
+    ],
+    [
+     "Layerize",
+     15
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     14.7
+    ],
+    [
+     "PrePaint",
+     12.3
+    ],
+    [
+     "MajorGC",
+     8.3
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     8.3
+    ],
+    [
+     "HitTest",
+     6.2
+    ],
+    [
+     "Commit",
+     5.6
+    ],
+    [
+     "UpdateLayoutTree",
+     5.5
+    ],
+    [
+     "V8.GC_HEAP_EMBEDDER_TRACING_EPILOGUE",
+     4.2
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     2.3
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.4
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     1.1
+    ],
+    [
+     "UpdateLayer",
+     1
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     1
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY",
+     0.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     0.8
+    ],
+    [
+     "V8.GC_MC_CLEAR_JOIN_JOB",
+     0.7
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY_PARALLEL",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

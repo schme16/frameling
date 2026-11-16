@@ -2,7 +2,9 @@
 // tab bar over its panel, and the splitter you can pull or use from the keyboard. The model is dockModel.ts.
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
-import { dock, evenGroupSplit, flushDock, hidePanel, nudgeGroupSplit, panelTitle, setActive, setGroupSplit, toggleCollapsed } from './dock';
+import { useLocked } from './lockState';
+import { dock, flushDock, panelTitle, setActive, toggleCollapsed } from './dock';
+import { evenGroupSplit, hidePanel, nudgeGroupSplit, setGroupSplit } from './lockedDock';
 import { dragState, dropIndexFor, splitFor, startPanelDrag } from './dockDrag';
 import { groupCount, groupsOf, MIN_SHARE, sharesOf } from './dockModel';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
@@ -11,6 +13,8 @@ import { Icon } from './icons';
 import { PanelPicker } from './PanelPicker';
 import { panelPicker, togglePicker } from './rightStyle';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
+import { PanelScope } from './explain/ExplainIcon';
+import { useShownZone } from './roomFolds';
 
 const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down', top: 'chevron-up' };
 const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up', top: 'chevron-down' };
@@ -127,8 +131,9 @@ function GroupSplitter({ zone, boundary, stack }: { zone: DockZone; boundary: nu
 
 /** One group as a tab bar over its panel. The first group of a zone also holds the fold button (and the Panels button on the right). */
 export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; group: number; panelsButton?: boolean }) {
+  const locked = useLocked('panels');
   const picker = panelPicker.use((v) => (panelsButton ? v : null));
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const g = groupsOf(z)[group] ?? { tabs: [], active: null };
   const drag = dragState.use((d) => (d && d.kind !== 'tools' ? d.panels[0] : null));
   const dropAt = dragState.use((d) => dropIndexFor(d, { zone, group }, g.tabs.length));
@@ -228,7 +233,7 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
           className="ui-tab-main"
           data-help={p.help ?? 'panels'}
           data-tip={title}
-          data-tip-desc={z.collapsed ? 'Press to open. Drag to move it. Right-click for more.' : 'Drag to move it, out to a window, to another side or to the edge of a group to split. Right-click for more.'}
+          data-tip-desc={z.collapsed ? (locked ? 'Press to open. Right-click for more.' : 'Press to open. Drag to move it. Right-click for more.') : locked ? 'Locked in place. Right-click for more.' : 'Drag to move it, out to a window, to another side or to the edge of a group to split. Right-click for more.'}
           onClick={() => setActive(zone, id)}
           onKeyDown={(e) => {
             // Delete closes the panel, like the little x does.
@@ -287,7 +292,7 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
 
   return (
     <>
-      <div className="ui-tabbar" ref={bar} data-dock-strip="" data-dock-zone={zone} data-dock-group={group} data-dock-tabs={g.tabs.join(',')} data-dock-axis={z.collapsed && !horizontal ? 'y' : 'x'}>
+      <div className="ui-tabbar" data-scrolls ref={bar} data-dock-strip="" data-dock-zone={zone} data-dock-group={group} data-dock-tabs={g.tabs.join(',')} data-dock-axis={z.collapsed && !horizontal ? 'y' : 'x'}>
         <div className="ui-tabbar-tabs" role="tablist" aria-label={where} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
           {tabs}
         </div>
@@ -388,9 +393,11 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
       {!z.collapsed && panel && (
         <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`} data-panel-id={active}>
           <h2 className="ui-sr-only">{names?.[active] ?? panel.title}</h2>
-          <PanelBoundary name={panel.title} key={active}>
-            <panel.component />
-          </PanelBoundary>
+          <PanelScope id={active} title={names?.[active] ?? panel.title} help={panel.help}>
+            <PanelBoundary name={panel.title} key={active}>
+              <panel.component />
+            </PanelBoundary>
+          </PanelScope>
         </div>
       )}
     </>

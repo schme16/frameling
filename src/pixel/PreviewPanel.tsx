@@ -49,7 +49,7 @@ export function PreviewPanel() {
   const doc = useStore((s) => s.doc);
   const mainFrame = useStore((s) => s.ui.frame);
   const mainPlaying = useStore((s) => s.ui.playing);
-  const quillOn = useQuillShown();
+  const quillOn = useQuillShown('ambient');
   const [shown, setShown] = useState(0);
   const [boxSize, setBoxSize] = useState({ w: 240, h: 200 });
   const [jump, setJump] = useState(0);
@@ -74,7 +74,8 @@ export function PreviewPanel() {
   const artW = Math.max(1, Math.round(box0.w * base));
   const artH = Math.max(1, Math.round(box0.h * base));
   const source = kind === 'boards' ? root : sdoc;
-  const fps = root.fps;
+  // Frames on boards play at the document's speed; a sprite plays at the speed of its own artboard.
+  const fps = kind === 'boards' ? root.fps : sdoc.fps;
   const scale = previewScale(settings.zoom, artW, artH, boxSize.w - 16, boxSize.h - 16);
   const showQuill = quillOn && settings.quillForScale && quillFits(scale, artW, artH, boxSize.w, boxSize.h);
 
@@ -217,6 +218,7 @@ export function PreviewPanel() {
   };
   const nameNow = kind === 'boards' ? (slots.every((b) => b.length === 1) ? '' : playing?.name) : kind === 'sprites' ? (artboardsList(root).find((b) => b.id === stripOn)?.name ?? '') : '';
   const lengthNow = kind === 'boards' ? total : sdoc.length;
+  const infoText = `${nameNow ? `${nameNow}, ` : ''}${clipNote}frame ${shown + 1} of ${lengthNow}, ${fps} fps, ${artW} x ${artH} ${base !== 1 ? 'art pixels' : 'pixels'}${mainPlaying ? '. Following the timeline.' : ''}`;
 
   return (
     <div className="cv-panel px-preview" data-help="pixel-preview">
@@ -239,7 +241,7 @@ export function PreviewPanel() {
           <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
           {showQuill && (
             <span className="px-preview-quill" title={line('pixel.scale.hover')} style={{ height: QUILL_ART_HEIGHT * scale }}>
-              <Quill anim="idle" size={QUILL_ART_HEIGHT * scale} />
+              <Quill surface="ambient" anim="idle" size={QUILL_ART_HEIGHT * scale} />
             </span>
           )}
         </div>
@@ -289,9 +291,21 @@ export function PreviewPanel() {
         </button>
       </div>
       )}
-      <p className="px-preview-info" aria-live="off">
-        {nameNow ? `${nameNow}, ` : ''}{clipNote}frame {shown + 1} of {lengthNow}, {fps} fps, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}
-        {mainPlaying ? '. Following the timeline.' : ''}
+      {/* One line that never wraps, so the panel keeps its height as the numbers grow. When it is tight, the extras go in
+          this order: "Following the timeline", the name and clip, the size, the speed; the frame number stays. */}
+      <p className="px-preview-info" aria-live="off" data-one-line title={infoText}>
+        {nameNow || clipNote ? (
+          <span className="pi-name">
+            {nameNow ? `${nameNow}, ` : ''}
+            {clipNote}
+          </span>
+        ) : null}
+        <span className="pi-frame">
+          frame <span className="pi-n" style={{ minWidth: `${String(lengthNow).length}ch` }}>{shown + 1}</span> of {lengthNow}
+        </span>
+        <span className="pi-fps">, {fps} fps</span>
+        <span className="pi-size">, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}</span>
+        {mainPlaying ? <span className="pi-follow">. Following the timeline.</span> : null}
       </p>
     </div>
   );

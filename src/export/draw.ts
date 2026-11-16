@@ -3,6 +3,7 @@
 import type { Doc } from '../core/format';
 import { renderFrame } from '../core/render';
 import type { RawImage } from '../io/png';
+import { exportContextOptions } from './readback';
 
 export type BackgroundMode = 'doc' | 'none' | 'white';
 
@@ -15,9 +16,18 @@ export interface DrawTarget {
   crisp?: boolean;
 }
 
-/** How the background should be painted: see-through when asked and allowed, else the document's own, else white. */
+/**
+ * Whether a page comes out see-through where the format can hold it: when "Transparent background" is ticked, and
+ * always when the page has no background colour of its own (a see-through artboard stays see-through, whatever the tick
+ * says about the others). A format that can't hold it (MP4) paints the page's colour, or white where there is none.
+ */
+export function wantsSeeThrough(doc: Doc, wantTransparent: boolean): boolean {
+  return wantTransparent || doc.background === null;
+}
+
+/** How the background should be painted: see-through when wanted and allowed, else the document's own, else white. */
 export function backgroundFor(doc: Doc, wantTransparent: boolean, formatAllowsAlpha: boolean): BackgroundMode {
-  if (wantTransparent && formatAllowsAlpha) return 'none';
+  if (wantsSeeThrough(doc, wantTransparent) && formatAllowsAlpha) return 'none';
   return doc.background ? 'doc' : 'white';
 }
 
@@ -27,7 +37,7 @@ export function makeCanvas(width: number, height: number): OffscreenCanvas {
 
 /** Draws one frame onto `canvas` (cleared first). */
 export function drawFrame(canvas: OffscreenCanvas, doc: Doc, frame: number, t: DrawTarget): OffscreenCanvas {
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  const g = canvas.getContext('2d', exportContextOptions)!;
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, canvas.width, canvas.height);
   // Videos need even sizes, so the canvas can be a pixel bigger than the drawing. That extra edge gets the background too.
@@ -50,7 +60,7 @@ export function drawFrame(canvas: OffscreenCanvas, doc: Doc, frame: number, t: D
 
 /** The canvas as plain RGBA bytes. */
 export function readPixels(canvas: OffscreenCanvas): RawImage {
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  const g = canvas.getContext('2d', exportContextOptions)!;
   const d = g.getImageData(0, 0, canvas.width, canvas.height);
   return { width: d.width, height: d.height, pixels: d.data };
 }

@@ -2,8 +2,10 @@
 export const bodies: Record<string, string> = {
   'canvas-navigation': `**Zoom**
 - Scroll the mouse wheel. It zooms towards your pointer, so what you're looking at stays put. (If you'd rather the wheel slid the page up and down, change **Mouse wheel** in Preferences > Behaviour. Then **Ctrl** (**Cmd** on a Mac) plus the wheel zooms.)
-- Hold **Alt** while you scroll for careful little steps, and **Ctrl** for big sweeping ones. (With the wheel set to slide the page, where Ctrl is already doing the zooming, big steps are **Ctrl and Shift**.)
+- One notch of the wheel zooms about a quarter, however sharp your screen is and whatever your mouse calls a notch: Frameling learns what one notch says on yours within a few turns. Too quick or too slow? Change **Wheel zoom speed** in Preferences > Behaviour.
+- Hold **Alt** while you scroll for careful little steps, and **Ctrl** and **Shift** together for big sweeping ones. (If you'd like plain **Ctrl** to take big steps too, switch **Ctrl with the wheel** to Bigger steps in Preferences > Behaviour. Out of the box Ctrl zooms just like the wheel, so pressing it out of habit does no harm.)
 - Pinch on a trackpad. This always zooms.
+- Something feels off? The **Mouse wheel** check in Preferences > Diagnostics shows what your mouse sends, what Frameling takes a notch to be, and what it does with it. Holding **Ctrl** never changes what the mouse sends, only how big a step Frameling takes.
 - **Ctrl+=** zooms in and **Ctrl+-** zooms out.
 - **Ctrl+0** fits the whole page in the window. **Ctrl+1** shows it at actual size (100%).
 
@@ -20,7 +22,7 @@ When Frameling opens a new drawing, it fits the page for you.`,
 - **Change the page** (canvas size): your drawing stays the size it is, and space is added or removed around it. The little grid of squares (the anchor) says where your drawing stays. Pick the middle to grow evenly on every side, or a corner to add space on the other sides.
 - **Scale everything** (image size): your whole drawing grows or shrinks with the page. Lines get thicker or thinner to match, and so do effects like blur and shadows.
 
-Sizes are shown in your units (Preferences > Units). The chain button between width and height keeps the shape the same (keep proportions). Press it to change them apart.
+Sizes are shown in your units (**Preferences > General > Units**). The chain button between width and height keeps the shape the same (keep proportions). Press it to change them apart.
 
 **Pixel art** stays crisp. Making the page bigger or smaller adds or removes rows and columns of pixels, moving by whole pixels only. Scaling goes in whole steps (2x, 3x...), so every pixel stays a clean square and nothing is blurred.
 
@@ -39,7 +41,7 @@ Sizes are shown in your units (Preferences > Units). The chain button between wi
 
 Each one is a normal step you can undo with **Ctrl+Z**. Frameling only mentions each one once per document, so it never nags. Things that fade or fly in on purpose (keys with in-betweens) are left alone.
 
-**Ask any time:** **View > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
+**Ask any time:** **View > More view tools > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
 
 **Locked layers:** click something on a locked layer with the Select tool and Frameling says it's locked, instead of doing nothing. Unlock it with the padlock in the timeline.
 
@@ -50,7 +52,7 @@ Press **Ctrl+R** (or **View > Rulers**) to show rulers along the top and left of
 **Guides**
 - Drag down from the top ruler for a sideways guide, or across from the left ruler for an up-and-down one. A label shows exactly where it is.
 - To move a guide, drag its little triangle on the ruler. To remove it, drag the triangle back onto the ruler.
-- **View > Guides** (**Ctrl+;**) hides or shows them. **View > Lock guides** stops them moving by accident. **View > Clear all guides** removes them all.
+- **View > Guides** (**Ctrl+;**) hides or shows them. **View > Guides, grids and perspective > Lock guides** stops them moving by accident. **View > Guides, grids and perspective > Clear all guides** removes them all.
 - Guides are saved with your drawing, and never show up in exports.
 
 **Snapping**
@@ -58,39 +60,78 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
   snapping: `Snapping is a little pull: when a shape you draw or move gets close to something, it jumps onto it so things line up. You choose what it can jump onto.
 
 **Change it**
-- Press the **Snap** button at the bottom of the window (**View > Snapping options...**, or **Preferences > Snapping**).
+- Press the **Snap** button at the bottom of the window (**View > Snapping > Snapping options...**, or **Preferences > Snapping**).
 - The big switch turns all snapping on or off (**View > Snapping**, **Ctrl+Shift+;**). Hold **Ctrl** while dragging to skip it for one shape.
-- Tick or untick any row. Each kind of layer has its own ticks, and the column for the layer you are on is shaded. Your choices are remembered.
+- Tick or untick any row. Each kind of layer has its own ticks, and your choices are remembered.
 - **Snap distance** is how close, in screen pixels, something has to come before it jumps. Drag it up if snapping feels shy, down if it grabs too eagerly.
-- Every row is also a command in the command palette (**Ctrl+K**): try "snap to guides".
+- **Pen, pencil and brush** have their own tick and **Pull for drawing tools** slider.
+- Every row is also a command in the palette (**Ctrl+K**): try "snap to guides".
 
 **What you can snap to**
 - **Page edges** and **Page middle**: the border of the page, and its middle across and down.
 - **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
 - **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
+- **Line ends and points**: the end of another line or a point of another path. [Lines that meet](help:snapping-lines) covers the pen, pencil and brush.
 - **Other shapes**: the edges, middles and corner points of the other shapes, so a new shape lines up with what is there. **All layers, not just this one** picks every visible layer (the usual) or only the layer you are on.
-- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, or sits in the middle of one, and little bars show the exact sizes. It works while you drag a shape and while you draw one, on the corner you are dragging and the far end of a line.
+- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, and little bars show the sizes. It works while you drag a shape and while you draw one.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
 - **Plugin guides**: the straight lines and boxes a [plugin](help:plugins) draws on your canvas, while it is on and allowed to draw there.
-- **Pixel cells** (pixel layers): drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it to snap pixel layers to those too.
+- **Pixel cells** (pixel layers): drawing stays on whole pixels. Untick it to snap pixel layers to guides, the grid and the page too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it.
 - **Other artboards**: moving or sizing an [artboard](help:artboards), its edges and middle line up with the other artboards'.
 
 **What snapped**
-A line shows what a shape landed on, and each kind has its own colour, in every theme. A note at the bottom of the canvas says it in words, with a dot in the same colour, like "Snapped to guide and page edge".
+A line shows what a shape landed on, in a colour of its own for each kind. A note at the bottom of the canvas says it in words, like "Snapped to guide and page edge".
 
-By default vector layers snap to the page, guides, the grid, perspective lines, plugin guides, other shapes and equal gaps, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
+By default vector layers snap to the page, guides, the grid, line ends and points, perspective lines, plugin guides, other shapes and equal gaps, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
+  'snapping-lines': `Draw a line, stop a little short of where another one ends, and let go: the line settles exactly on that end. That is what the pen, pencil and brush do when snapping is on, so lines can really meet.
+
+**What pulls, and when**
+- **The start of a line** is pulled onto the end of another line, a point of another path, a guide, the grid or the page's edge when you press close to one. Hover first and a ring shows where it would start.
+- **The end of a line** is pulled when you let go close to one of those. Close to the end of another line, you see your line reach it as you go, with a ring round it. Close to a guide or the grid, the line lights up and the pull happens as you lift.
+- **A long line closing a loop** lands exactly on its own start.
+- **The middle of a line is never touched.** Your hand drew it, so it stays yours. A brush that jumped onto the grid while you drew would be no fun.
+
+**Choose how it works**
+- The **Snap** button at the bottom has a tick, **Pen, pencil and brush snap their start and end**, that turns it on or off for those three, and a **Pull for drawing tools** slider: how close, in screen pixels, the start or end has to be. Drag it up if lines stop short, down if it grabs too eagerly.
+- **Line ends and points** is in the same list as the guides and the grid. Untick it and lines still settle on guides, the grid and the page.
+- Hold **Ctrl** while you draw to skip it for one line.
+
+**Good to know**
+- The pen and the shape tools use the same line ends for their points and corners.
+- Pixel layers are left alone: they already land on whole pixels.
+- Other shapes' edges and equal gaps are for moving shapes, so they don't pull a drawn line.
+
+See [Snapping](help:snapping) for everything else you can snap to.`,
   'pixel-grid': `When you're on a pixel layer and zoomed in close (each pixel at least 6 screen pixels wide, which is 600% for single-pixel art), Frameling draws thin lines between the pixels so you can see exactly where each one is.
 
 Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never shows up in exports.`,
   colours: `The big square at the top is the colour you're drawing with.
 
 - **Pick a colour** by dragging in the square (left is paler, up is brighter) and sliding the rainbow bar for the hue.
-- **Type a colour** in the Hex box, like \`#ff9e6d\`.
+- **Make it see-through** with the **Opacity** bar under the rainbow: all the way right is solid, all the way left is clear. It is the same picker every colour box opens: see [The colour picker](help:colour-picker).
+- **Type a colour** in the Hex box, like \`#ff9e6d\`, or \`#ff9e6d80\` for half see-through.
 - **Swatches** are this drawing's palette. Click one to use it. Press **+** to add the current colour. **Right-click** a swatch to rename or remove it.
 - **Recently used** shows the last 8 colours you drew with, so it's easy to go back.
 
 Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
+  'colour-picker': `Every colour box in Frameling opens this one picker. Click the little swatch and it opens right beside it; click away or press **Escape** to close it.
+
+**Pick a colour:** drag in the square (left is paler, up is brighter), slide the rainbow bar for the hue, or type it in the **Hex** box.
+
+**Make it see-through:** slide the **Opacity** bar. All the way right is solid, all the way left is clear (this is called *alpha*). A see-through colour shows a chequerboard behind it, so you can tell. The Hex box gains two more digits, like \`#ff9e6d80\` for half. A solid colour stays six digits, so older files read exactly as they were.
+
+**Where you can**, you get the Opacity bar: the fill and stroke in the [Colours panel](help:colours), the Paint and Back colours in the Pixel workspace, text, particles, and the colours in your [palette](help:palette).
+
+**Where you can't**, the picker says why, in place of the bar:
+- **Backgrounds** are always solid. For none at all, tick **See-through (transparent)** beside the colour.
+- **Theme colours** are solid; Frameling mixes its own see-through shades from them.
+- **Effects, tints and onion skin** have their own strength sliders.
+- **Recolour** swaps the colour only; anything see-through stays as it was.
+- **Slice and terrain colours** only mark things for you, and never reach your drawing.
+- **A layer locked to the palette** paints with the palette colour's opacity, so change it there (see [palette lock](help:palette-lock)).
+
+**Good to know:** a palette colour at less than 100% paints see-through by exactly that much, every time, so a palette stays a fixed set of colours. Pixels you've already painted keep the opacity they had.`,
   'tool-options': `This panel changes to match whichever tool you've picked. Brush opens on its size, with the rest under **More brush options**. Shapes have fill and outline. The eraser has its reach.
 
 ## Sliders
@@ -103,14 +144,14 @@ The brush shows **Size** and the colour first, so you can start drawing. Press *
 
 Your settings are remembered, so the brush is just as you left it next time.`,
   'grids-perspective': `**Grids**
-- **View > Square grid** (**Ctrl+'**) puts graph paper over the page.
-- **View > Isometric grid** shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
-- **View > Grid and perspective settings...** sets the size, in your units (Preferences > Units). For isometric it's the width of one diamond.
+- **View > Guides, grids and perspective > Square grid** (**Ctrl+'**) puts graph paper over the page.
+- **Isometric**, under **Grid** in **View > Guides, grids and perspective > Grid and perspective settings...**, shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
+- **View > Guides, grids and perspective > Grid and perspective settings...** sets the size, in your units (**Preferences > General > Units**). For isometric it's the width of one diamond.
 
 While snapping is on (**View > Snapping**, with Grid ticked in [Snapping](help:snapping)), shapes and corners jump onto the square grid's lines, and onto the isometric grid's corners. Hold **Ctrl** while dragging to stop it for a moment. When you zoom far out, the grid thins itself out so it never turns into a grey smudge.
 
 **Perspective guides**
-- **View > Perspective guides: one point** shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
+- **One point**, under **Perspective** in the same settings, shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
 - **Two point** has two vanishing points, for boxes and buildings seen from a corner.
 
 The horizon is the yellow line. Drag a round handle to move its vanishing point (it works with any tool). With two, the horizon stays level, so moving one up moves the other with it. Hold **Shift** to tilt it. Points can go off the page: zoom out to reach them. **Lock guides** stops them moving by accident.
@@ -119,14 +160,14 @@ The horizon is the yellow line. Drag a round handle to move its vanishing point 
 
 **Drawing along them.** While the guides show and Perspective lines is ticked in [Snapping](help:snapping), the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
 
-The perspective guides are saved with your drawing. Hide them with **View > Show perspective guides**, or take them away with **Remove perspective guides**.
+The perspective guides are saved with your drawing. Hide them with the **Show the perspective guides** tick in **View > Guides, grids and perspective > Grid and perspective settings...**, or take them away with **None** under **Perspective**.
 
 > Grids and guides are only for you. They never show when you play or export.`,
   'light-table': `Animators trace on a light table: a glowing desk that shows the drawing underneath through the paper. Frameling's light table shows a frame you choose, faintly, on every frame you go to.
 
 **Put something on it**
-- **View > Put this frame on the light table** pins the whole frame you're on.
-- To pin just one drawing, right-click it in the timeline and pick **Put this drawing on the light table**. Or use **View > Put this layer's drawing on the light table**.
+- **View > More view tools > Put this frame on the light table** pins the whole frame you're on.
+- To pin just one drawing, right-click it in the timeline and pick **Put this drawing on the light table**. Or use **View > More view tools > Put this layer's drawing on the light table**.
 
 Now go to any other frame and draw over it. The timeline's top bar shows what's on the light table, with a slider for how strongly it shows, and an **x** to clear it. Click its name to jump back to that frame.
 

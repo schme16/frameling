@@ -5,11 +5,17 @@ import { ToolOptionsPanel } from './panels/ToolOptionsPanel';
 import './canvas.css';
 import './choices';
 import './commands';
+import './turnCommands';
+import './seeThrough';
 import './guides';
 import './snapCommands';
 import './gridView';
 import './lightTable';
+import '../reference';
+import '../notes';
 import './help';
+import './turn-help';
+import './seeThrough-help';
 import { installLostHint } from './lostHint';
 import { installNudges } from '../nudge';
 

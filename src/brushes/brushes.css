@@ -1,0 +1,121 @@
+/* The saved-brush row in the brush options (the picker itself is in picker.css). Theme tokens only. */
+.bp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bp-changed {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--chosen-bg);
+}
+.bp-actions,
+.bp-share,
+.bp-name-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bp-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bp-name-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.bp-name-label small {
+  font-weight: 500;
+}
+.bp-name-label input {
+  font: inherit;
+  font-weight: 500;
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.bp-fold summary {
+  cursor: pointer;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.bp-fold summary:hover {
+  color: var(--text);
+}
+.bp-fold[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bp-fold-hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* The tip picker under the brush preview. */
+.tp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tp-label {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+.tp-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tp-pixel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tp-pixel canvas {
+  flex: none;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+}
+
+/* The parts of an edged brush: a name and the buttons that take it from the selection. */
+.tp-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tp-part {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.tp-part-name {
+  flex: 0 0 96px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.tp-part[data-set='true'] .tp-part-name {
+  color: var(--text);
+}
+.tp-part[data-set='true'] .tp-part-name::after {
+  content: ' \2713';
+  color: var(--accent);
+}

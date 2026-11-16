@@ -5,6 +5,7 @@ import { allCommands } from '../core/registry';
 import { store } from '../core/store';
 import { getPrefs, reducedMotion } from '../ui/prefs';
 import { runCommandById } from './actions';
+import { didWords } from './did';
 import { QuestEngine, type StateSource } from './engine';
 import { celebrate, clearPraise, dismissCelebration, praise } from './feedback';
 import { playCue } from '../ui/sounds';
@@ -19,6 +20,7 @@ const source: StateSource = {
   subscribe: (fn) => store().subscribe(fn),
   undoLabel: () => store().undoLabel(),
   canRedo: () => store().canRedo(),
+  lastChangeWasView: () => store().lastChangeWasView(),
 };
 
 export const engine = new QuestEngine({
@@ -30,8 +32,12 @@ export const engine = new QuestEngine({
   storage: localStorageOrNull(),
 });
 
-// A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play").
-setChoiceDeferral(() => questProgress.get().active !== null);
+// A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play"), unless the
+// lesson is about that question (Go live is the first time audience features ask how careful to be).
+setChoiceDeferral((id) => {
+  const active = questProgress.get().active;
+  return active !== null && !(getFullQuest(active)?.asks ?? []).includes(id);
+});
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let watch: CommandWatch | null = null;
@@ -64,7 +70,7 @@ engine.on((e) => {
     stopWatching();
   }
   else if (e.kind === 'step' && !e.skipped) {
-    praise(PIXEL_QUESTS.has(e.quest.id), e.step.did);
+    praise(PIXEL_QUESTS.has(e.quest.id), e.step.did ?? didWords(e.quest.id, e.step.id));
     playCue('step');
   }
   else if (e.kind === 'finish') {

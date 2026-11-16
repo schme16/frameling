@@ -9,13 +9,15 @@ import { particlesFeature } from '../../src/particles';
 import { rigFeature } from '../../src/rig';
 import { textFeature } from '../../src/text';
 import { tilesFeature } from '../../src/tiles';
-import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
+import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone, whenShown } from '../../src/ui/panelInfo';
+import { setChoice } from '../../src/core/choices';
+import { PROPS_ORDER_CHOICE } from '../../src/ui/propsOrder';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
 // A feature adds its own entry when it is on.
 for (const f of [lipsyncFeature, flowFeature, cameraFeature, particlesFeature, rigFeature, textFeature, tilesFeature]) for (const [id, info] of Object.entries(f.sections ?? {})) registerPanelInfo(id, info);
 
-const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig'];
+const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'selection-numbers', 'align', 'effects', 'text', 'particles', 'camera', 'rig'];
 
 /** A fresh vector document, with the UI bits a test wants. */
 function state(ui: Partial<State['ui']> = {}, pixel = false): State {
@@ -80,10 +82,10 @@ describe('right side: which panel goes where', () => {
 });
 
 describe('Properties: what shows now', () => {
-  it('shows the tool and colours while drawing, the rest wait under Also here', () => {
+  it('shows the tool and colours while drawing, the rest are left out of Properties', () => {
     const r = sectionsNow(SECTIONS, state({ tool: 'brush' }), 'tool-options');
-    expect(r.shown).toEqual(['tool-options', 'colors']);
-    expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig']);
+    expect(r.shown).toEqual(['colors', 'tool-options']);
+    expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'selection-numbers', 'align', 'effects', 'text', 'particles', 'camera', 'rig']);
   });
 
   it('shows the section asked for even when it does not apply', () => {
@@ -97,7 +99,8 @@ describe('Properties: what shows now', () => {
     expect(sectionsNow(SECTIONS, state({}, false), null).shown).not.toContain('palette');
   });
 
-  it('puts the sections about a selection first', () => {
+  /** A text shape picked on the top layer. */
+  const picked = () => {
     const s = new Store(newDoc());
     const doc = s.get().doc;
     const layer = doc.layers[doc.layers.length - 1];
@@ -108,9 +111,53 @@ describe('Properties: what shows now', () => {
       l.cels = [{ id: 'cel1', start: 0, length: 4, drawingId: 'dr1' }];
     });
     s.setUi({ activeLayerId: layer.id, selection: [id], tool: 'select' });
-    const r = sectionsNow(SECTIONS, s.get(), 'tool-options');
-    expect(r.shown.slice(0, 3)).toEqual(['symbol-props', 'effects', 'text']);
+    return s;
+  };
+
+  it('puts Colours first, then the sections about a selection, then the rest', () => {
+    const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
+    expect(r.shown.slice(0, 5)).toEqual(['colors', 'selection-numbers', 'align', 'effects', 'text']);
     expect(r.shown).toContain('tool-options');
+    // A plain shape is not a symbol: Symbol and motion is still there (for the in-betweens) but does not lead.
+    expect(r.shown.indexOf('symbol-props')).toBeGreaterThan(r.shown.indexOf('text'));
+  });
+
+  it('puts Position and size, then Align, first among the sections about a selection, wherever the layout holds them', () => {
+    const r = sectionsNow(['align', 'effects', 'selection-numbers', 'colors', 'text'], picked().get(), null);
+    expect(r.shown).toEqual(['colors', 'selection-numbers', 'align', 'effects', 'text']);
+  });
+
+  it('has no Position and size or Align with nothing selected', () => {
+    const r = sectionsNow(SECTIONS, state({ tool: 'select' }), null);
+    expect(r.shown).not.toContain('selection-numbers');
+    expect(r.shown).not.toContain('align');
+    expect(r.idle).toEqual(expect.arrayContaining(['selection-numbers', 'align']));
+  });
+
+  it('leads Symbol and motion with the selection only when a symbol is picked', () => {
+    const s = new Store(newDoc());
+    const doc = s.get().doc;
+    const layer = doc.layers[doc.layers.length - 1];
+    s.update('add', (d) => {
+      const l = d.layers.find((x) => x.id === layer.id)!;
+      d.drawings.dr1 = { id: 'dr1', kind: 'vector', shapes: [{ id: 'inst1', type: 'instance', symbolId: 'sym1', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 } as never] };
+      l.cels = [{ id: 'cel1', start: 0, length: 4, drawingId: 'dr1' }];
+    });
+    s.setUi({ activeLayerId: layer.id, selection: ['inst1'], tool: 'select' });
+    expect(sectionsNow(SECTIONS, s.get(), null).shown.slice(0, 4)).toEqual(['colors', 'selection-numbers', 'align', 'symbol-props']);
+  });
+
+  it('puts the sections about a selection first when that is the answer in Preferences', () => {
+    setChoice(PROPS_ORDER_CHOICE, 'selection');
+    try {
+      const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
+      expect(r.shown.slice(0, 4)).toEqual(['selection-numbers', 'align', 'effects', 'text']);
+      expect(r.shown.indexOf('colors')).toBeGreaterThan(3);
+      // With nothing picked the answer makes no difference: Colours still lead.
+      expect(sectionsNow(SECTIONS, state(), null).shown[0]).toBe('colors');
+    } finally {
+      setChoice(PROPS_ORDER_CHOICE, undefined);
+    }
   });
 
   it('a broken relevance check shows the section rather than losing it', () => {
@@ -150,5 +197,30 @@ describe('folded sections', () => {
     foldAll(['a', 'b'], true);
     expect(folded.get()).toEqual(['a', 'b']);
     folded.set([]);
+  });
+});
+
+describe('Panels list: when a section turns up', () => {
+  const p = (id: string) => ({ id, title: id });
+  it('says it in the words of the old idle line', () => {
+    expect(whenShown(p('palette'))).toBe('Shows up when you pick a pixel layer');
+    expect(whenShown(p('clip-play'))).toBe('Shows up when you click a clip on the timeline');
+    expect(whenShown(p('particles'))).toBe('Shows up when you select particles on the canvas');
+  });
+  it('has no line for sections that are always there, or for rail places', () => {
+    expect(whenShown(p('tool-options'))).toBeUndefined();
+    expect(whenShown(p('library'))).toBeUndefined();
+  });
+  it('every section that can be idle has one, and none has an em dash', () => {
+    for (const [id, info] of Object.entries(PANEL_INFO)) {
+      if (!info.section) continue;
+      const line = whenShown(p(id));
+      if (info.relevant) expect(line, id).toBeTruthy();
+      expect(line ?? '').not.toContain('\u2014');
+    }
+  });
+  it('finds a section by when it shows up', () => {
+    expect(matchPanel(p('palette'), 'pixel layer')).toBe(true);
+    expect(matchPanel(p('clip-play'), 'timeline')).toBe(true);
   });
 });

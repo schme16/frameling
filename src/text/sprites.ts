@@ -3,6 +3,7 @@
 import { mul, type Mat } from '../core/symbols';
 import type { SubPath, TextShape } from '../core/format';
 import { glyphLooks, isAnimatedText, cssFont } from './model';
+import { glyphMatrix } from './onPath';
 import { isPosedText, textLayout, textMatrix } from './draw';
 import { textOutlines } from './convert';
 
@@ -18,7 +19,7 @@ export function glyphOutline(s: TextShape, ch: string): SubPath[] {
   const key = `${cssFont(s, s.size)}|${ch}`;
   let p = glyphCache.get(key);
   if (!p) {
-    const one: TextShape = { ...s, text: ch, align: 'left', letterSpacing: 0, animators: undefined, opacity: 1, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 } };
+    const one: TextShape = { ...s, text: ch, align: 'left', letterSpacing: 0, animators: undefined, onPath: undefined, opacity: 1, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 } };
     p = textOutlines(one);
     if (glyphCache.size > 2000) glyphCache.clear();
     glyphCache.set(key, p);
@@ -44,14 +45,16 @@ export function glyphSprites(s: TextShape): GlyphSprite[] {
   const out: GlyphSprite[] = [];
   layout.glyphs.forEach((gl, i) => {
     if (gl.letter < 0) return;
-    let m: Mat = mul(tm, [1, 0, 0, 1, gl.x, gl.y]);
+    // A letter on a path is turned about its left baseline corner; a straight one only moves.
+    const place: Mat = gl.rot === undefined ? [1, 0, 0, 1, gl.x, gl.y] : glyphMatrix(gl);
+    let m: Mat = mul(tm, place);
     let alpha = s.opacity;
     if (looks) {
       const { look, cx, cy } = looks[i];
       const r = (look.rotation * Math.PI) / 180;
       const c = Math.cos(r) * look.scale;
       const sn = Math.sin(r) * look.scale;
-      m = mul(tm, mul([c, sn, -sn, c, cx + look.dx, cy + look.dy], [1, 0, 0, 1, gl.x - cx, gl.y - cy]));
+      m = mul(tm, mul([c, sn, -sn, c, cx + look.dx, cy + look.dy], mul([1, 0, 0, 1, -cx, -cy], place)));
       alpha = s.opacity * look.opacity;
       if (alpha <= 0.001 || look.scale === 0) alpha = 0;
     }

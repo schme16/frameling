@@ -9,6 +9,8 @@ export const WATCHDOG = {
   pingEveryMs: 1000,
   /** A ping unanswered for this long means the worker is stuck. Each progress report (frameling.progress) starts the count again. */
   stuckMs: 10_000,
+  /** A script from the Scripts panel is stopped after this long without an answer, running or not. It is written for one person who is waiting. */
+  scriptStuckMs: 5000,
   /** The same, while a command or an export is running (they may legitimately think for a while). */
   busyStuckMs: 60_000,
   /** How often memory is looked at. */
@@ -26,6 +28,8 @@ export interface WatchdogHooks {
   trip(t: Trip): void;
   /** Whether a long, honest job is running (the stuck limit is longer then). */
   busy?(): boolean;
+  /** A limit of its own, in milliseconds, instead of the usual ones (a script's). */
+  limit?(): number | undefined;
   /** The plugin's memory in bytes, or null where it can't be seen (then there is no cap: a limit nobody can measure is not kept). */
   memory?(): Promise<number | null>;
   /** The worker answered a ping after `ms` milliseconds. */
@@ -83,7 +87,7 @@ export class Watchdog {
       this.lastMemory = t;
     }
     if (this.out) {
-      const limit = this.hooks.busy?.() ? WATCHDOG.busyStuckMs : WATCHDOG.stuckMs;
+      const limit = this.hooks.limit?.() ?? (this.hooks.busy?.() ? WATCHDOG.busyStuckMs : WATCHDOG.stuckMs);
       if (t - this.out.at >= limit) return this.finish({ kind: 'stuck', seconds: Math.round((t - this.out.at) / 1000) });
     } else {
       this.out = { n: ++this.n, at: t, sentAt: t };

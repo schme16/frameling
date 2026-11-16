@@ -1,0 +1,11 @@
+Photoshop brush sets used as test fixtures for the importer (src/brushes/import/abr.ts).
+
+photoshop_dynamics.abr, photoshop_dual_brush.abr
+  Self-authored files exported from Adobe Photoshop 2026 (ABR version 6, subversion 2), each holding one small sampled
+  brush with known Shape Dynamics, Scattering and Transfer values; the dual brush one also switches Dual Brush on.
+  From the test fixtures of AbrKit (github.com/focale-editor/abrkit, MIT licence), where the author says they hold no
+  third-party content.
+
+soft-round.abr, tilt-size.abr
+  Tiny version 6 files (a soft round brush, and a round brush whose size follows pen tilt) from the test files of
+  ag-psd (github.com/Agamnentzar/ag-psd, MIT licence).

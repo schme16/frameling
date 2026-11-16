@@ -1,6 +1,6 @@
 // The words of the help topics in workspace-help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-workspace': `Pick **View > Workspaces > Pixel**. The first time pixel art meets the Draw workspace (a new pixel art file, or one you open), or a drawing opens in Pixel, Frameling asks: **Switch workspaces to match the kind of drawing?** Say **Always** and Pixel opens for pixel art and Draw for drawings, by themselves, from then on. **Not now** asks again next time, and **Never** leaves your layout alone. The Animate workspace and ones you made yourself are never switched. Change your answer any time in Preferences, under Behaviour. A new pixel art file starts on the Pencil.
+  'pixel-workspace': `Pick **View > Pixel workspace**. The first time pixel art meets the Draw workspace (a new pixel art file, or one you open), or a drawing opens in Pixel, Frameling asks: **Switch workspaces to match the kind of drawing?** Say **Always** and Pixel opens for pixel art and Draw for drawings, by themselves, from then on. **Not now** asks again next time, and **Never** leaves your layout alone. The Animate workspace and ones you made yourself are never switched. Change your answer any time in Preferences, under Behaviour. A new pixel art file starts on the Pencil.
 
 What changes:
 
@@ -17,7 +17,7 @@ What changes:
 The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off with the grid switch on the pixel bar.`,
   'pixel-aseprite-habits': `If you know Aseprite, your fingers already know most of this.
 
-- **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. The line, rectangle and ellipse keep Alt for drawing from the middle.
+- **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. **Hold Alt and drag** instead and the page turns, to any angle ([more](help:turn-flip-view)). The line, rectangle and ellipse keep Alt for drawing from the middle.
 - **+** makes the pencil, eraser, dither or spray one pixel bigger and **_** (Shift and minus) one pixel smaller. With **Aseprite keys**, **=** and **-** do too. (In Frameling's own keys **=** adds a frame and **-** removes one.)
 - **[ and ]** paint with the colour before or after this one in the [palette](help:palette). After the last it starts again at the first.
 - **1 to 6** zoom to 100%, 200%, 400%, 800%, 1600% and 3200%. Zoom is how many screen pixels each pixel of your sprite takes, so 800% shows every art pixel 8 screen pixels wide. The number is in the status bar.
@@ -56,7 +56,7 @@ The sliders button at the end opens the Tool options panel, with everything else
 - Every change shows straight away, so you can draw a frame and watch it move.
 - While the timeline itself is playing, the Preview follows it.
 
-It's in the Pixel workspace on the right. Anywhere else, open it from View > Panels > Preview. Pixel tools > Play or pause the Preview works from the command palette too.`,
+It's in the Pixel workspace on the right. Anywhere else, open it from View > Panels > Preview. **View > More view tools > Play or pause the Preview** works from the command palette too.`,
   'pixel-preview-boards': `When a sprite has several boards, the [Preview](help:pixel-preview) adds a strip of small buttons under the picture. What the strip does depends on [how the sprite is built](help:pixel-ways).
 
 - **Frames on boards**: the Preview plays every board in order as one animation, each board a frame (or as many frames as its own timeline has). The strip shows which board is playing, with the playing one lit. Click a board to jump there. While paused, clicking a board opens it for drawing instead.

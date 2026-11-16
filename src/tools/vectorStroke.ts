@@ -2,15 +2,19 @@
  * A freehand vector stroke in progress: collects the points, previews them on the overlay with exactly the outline the
  * finished stroke will have, and commits one StrokeShape as a single undo step. Brush and pencil both use it.
  */
-import type { BrushSettings, StrokePoint, StrokeShape } from '../core/format';
+import type { BrushSettings, LayerEffect, StrokePoint, StrokeShape } from '../core/format';
+import { toothValues } from '../dry/tooth';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
 import { getPredicted } from '../canvas/controller';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import type { VectorDynamics } from '../tablet/dynamics';
 import { store } from '../core/store';
+import { afterStroke, drawQuickPreview, holdModeNow, QuickHold } from './quickshape';
+import { inkWanted, noteInk } from '../popout/ink';
+import { EndSnap } from './endSnap';
 
 /** The document and layer a stroke belongs to, for remembering where it ended. */
 function lastStore(): { doc: string; ui: string } {
@@ -51,10 +55,18 @@ export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void 
   stroke.add(e, zoom);
 }
 
-export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false): StrokeShape {
+/** A chalk or charcoal brush on a dry medium draws on paper: its line carries a Paper tooth effect, which the Effects panel can change. */
+export function toothEffects(brush: BrushSettings, seed = Math.floor(Math.random() * 1000)): LayerEffect[] | undefined {
+  const t = brush.tip;
+  if (!t?.dry || (t.kind !== 'chalk' && t.kind !== 'charcoal')) return undefined;
+  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak) }];
+}
+
+export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false, seed?: number): StrokeShape {
   // A lone click becomes a dot: two identical points make perfect-freehand draw a round dab.
   const pts = points.length === 1 ? [points[0], { ...points[0] }] : points;
-  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), color, opacity };
+  const effects = toothEffects(brush, seed);
+  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), ...(effects ? { effects } : {}), color, opacity };
 }
 
 export class VectorStroke {
@@ -63,6 +75,12 @@ export class VectorStroke {
   private strengths: number[] = [];
   /** A pen drew this, so its widths are the pen's own and never worked out from the speed. */
   private fromPen = false;
+  /** Which stick the paper tooth streaks come from, the same through the whole line so the preview does not flicker. */
+  private readonly seed = Math.floor(Math.random() * 1000);
+  /** Hold to tidy: watching for the pen to stop (see quickshape.ts). Null when it is off or not allowed here. */
+  private hold: QuickHold | null = null;
+  /** The start and end pulled onto line ends, guides, the grid and the page (see endSnap.ts). */
+  private snap = new EndSnap();
 
   constructor(
     private brush: BrushSettings,
@@ -82,41 +100,95 @@ export class VectorStroke {
     return this.strengths.reduce((a, b) => a + b, 0) / this.strengths.length;
   }
 
+  /**
+   * Starts watching for the pen to hold still (Hold to tidy). `changed` redraws the preview. Does nothing when the
+   * feature is off, or here it is not allowed (a merge layer, mirror drawing).
+   */
+  watchHold(zoom: number, changed: () => void): void {
+    const mode = holdModeNow();
+    if (!mode) return;
+    this.hold = new QuickHold({ points: () => this.points.map((p) => ({ x: p.x, y: p.y })), changed }, zoom, mode);
+  }
+
+  /** Stops the watching (the stroke ended or was dropped). */
+  stop(): void {
+    this.hold?.stop();
+    this.snap.stop();
+    noteInk(null);
+  }
+
+  /** True while the clean shape is showing. */
+  get tidying(): boolean {
+    return !!this.hold?.snapped;
+  }
+
   add(e: ToolPointer, zoom: number): void {
+    if (this.hold) {
+      // Once the clean shape shows, the pen reshapes it and the line stops growing.
+      this.hold.moved({ x: e.x, y: e.y, shift: e.shift });
+      if (this.hold.snapped) return;
+    }
+    // The first point may be pulled onto something; after it only the tip is aimed, the middle stays where the hand put it.
+    if (!this.points.length) {
+      const q = this.snap.start(e, zoom);
+      if (q !== e) e = { ...e, x: q.x, y: q.y };
+    } else this.snap.aim(e, zoom);
     const last = this.points[this.points.length - 1];
     if (last && Math.hypot(e.x - last.x, e.y - last.y) * zoom < MIN_STEP_SCREEN) return;
     this.points.push(this.point(e));
     const op = this.dyn?.opacity?.(e);
     if (op !== undefined) this.strengths.push(op);
+    // A second window, if one is open, follows the line as it grows. The shape is made when the link is ready for it (once a
+    // screen frame at most), not on every point.
+    if (inkWanted()) noteInk(this.inkOf);
   }
+
+  private inkOf = () => {
+    const s = this.shape();
+    return s && withMirror(s);
+  };
 
   /** The stroke as it would be committed right now. */
   shape(withPredicted = false): StrokeShape | null {
     if (!this.points.length) return null;
     let pts = this.points;
-    if (withPredicted) {
+    const tip = this.snap.tip;
+    if (tip) {
+      // Pulled onto something: the line shows ending there (no look-ahead past it).
+      pts = [...pts, { x: tip.x, y: tip.y, p: this.points[this.points.length - 1].p }];
+    } else if (withPredicted) {
       const pred = getPredicted();
       if (pred.length) {
         const p = this.points[this.points.length - 1].p;
         pts = [...pts, ...pred.map((q) => ({ x: q.x, y: q.y, p }))];
       }
     }
-    return buildStroke(pts, this.brush, this.color, this.opacity(), this.fromPen);
+    return buildStroke(pts, this.brush, this.color, this.opacity(), this.fromPen, this.seed);
   }
 
-  overlay(g: CanvasRenderingContext2D): void {
+  overlay(g: CanvasRenderingContext2D, zoom = 1): void {
+    if (this.hold?.shape) {
+      const plain = this.shape();
+      if (plain) return drawQuickPreview(g, plain, this.hold.shape, zoom);
+    }
     const s = this.shape(true);
     if (s) drawWithMirror(g, s);
   }
 
   /** Finishes the stroke. */
   commit(e: ToolPointer, zoom: number, ctx: ToolContext): void {
-    this.add(e, zoom);
-    // The very last point always counts, so the stroke ends where the pen lifted.
-    const last = this.points[this.points.length - 1];
-    if (last && (last.x !== e.x || last.y !== e.y)) this.points.push(this.point(e));
+    const tidied = this.tidying;
+    if (!tidied) {
+      this.add(e, zoom);
+      // The very last point always counts, so the stroke ends where the pen lifted.
+      const last = this.points[this.points.length - 1];
+      const end = this.snap.landing;
+      if (end && last && this.points.length > 1) this.points[this.points.length - 1] = { ...last, x: end.x, y: end.y };
+      else if (last && (last.x !== e.x || last.y !== e.y)) this.points.push(this.point(end ? { ...e, x: end.x, y: end.y } : e));
+      this.snap.tip = null;
+    }
     const shape = this.shape();
-    if (!shape) return;
+    if (!shape) return this.stop();
     // On a merge layer the stroke joins or cuts what it lands on.
     const r = addDrawn('Draw stroke', [shape]).result;
     if (r === 'ok') {
@@ -124,7 +196,9 @@ export class VectorStroke {
       const { doc, ui } = lastStore();
       const end = this.points[this.points.length - 1];
       if (end) noteVectorEnd(doc, ui, end);
-    }
-    else if (r !== 'nothing') reportEdit(ctx, r);
+      // The stroke is drawn as it was; if the pen held, it is swapped for the clean shape as a step of its own.
+      afterStroke(shape.id, this.hold);
+    } else if (r !== 'nothing') reportEdit(ctx, r);
+    this.stop();
   }
 }

@@ -1,0 +1,1 @@
+Swap fonts window, dark and light: "opened" is how it opens on a drawing with two fonts missing from this computer (red note, counts, layers, nothing picked yet); "picked" has a replacement chosen for each, with the sample, and Now and After pictures of the drawing underneath.

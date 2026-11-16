@@ -13,6 +13,7 @@ import { Modal } from './Modal';
 import { hiddenHelp, setFeatureOn } from '../features/host';
 import { useFeaturesVersion } from '../features/use';
 import { toast } from './toast';
+import { asking } from './ChoiceDialog';
 
 interface Nav {
   topic: string | null;
@@ -100,7 +101,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
           <ul>
             {g.topics.map((t) => (
               <li key={t.id}>
-                <button type="button" className={`ui-help-link${nav.topic === t.id ? ' is-chosen' : ''}`} aria-current={nav.topic === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
+                <button type="button" data-wraps className={`ui-help-link${nav.topic === t.id ? ' is-chosen' : ''}`} aria-current={nav.topic === t.id ? 'page' : undefined} onClick={() => go(t.id)}>
                   {t.title}
                 </button>
               </li>
@@ -201,7 +202,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
               <p>Pick something from the list, or search. Pressing F1 over any button comes straight here.</p>
               <div className="ui-help-quick">
                 {['welcome', 'command-palette', 'keyboard-shortcuts', 'workspaces'].filter((id) => getHelp(id)).map((id) => (
-                  <button key={id} type="button" className="ui-card" onClick={() => go(id)}>
+                  <button key={id} type="button" className="ui-card" data-wraps onClick={() => go(id)}>
                     <strong>{getHelp(id)!.title}</strong>
                     <span>{getHelp(id)!.summary}</span>
                   </button>
@@ -221,9 +222,21 @@ export function HelpPanel() {
 
 export function HelpWindow() {
   const h = overlays.use((o) => o.help);
+  // A question sheet stepped aside to let this be read: say so, and offer the way back.
+  const waitingFor = asking.use((p) => p?.def.title ?? null);
   if (!h) return null;
   return (
     <Modal title="Help" size="lg" className="ui-help-modal" onClose={closeHelp} initialFocus=".ui-help-search input">
+      {waitingFor && (
+        <div className="ui-help-waiting" role="status" data-testid="help.waiting">
+          <span>
+            Your question is waiting: <strong>{waitingFor}</strong>. Esc takes you back to it.
+          </span>
+          <button type="button" className="ui-btn" data-testid="help.back-to-question" onClick={closeHelp}>
+            Back to the question
+          </button>
+        </div>
+      )}
       <HelpBrowser key={`${h.topic ?? ''}#${h.anchor ?? ''}?${h.query ?? ''}`} initial={h} />
     </Modal>
   );

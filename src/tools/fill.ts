@@ -31,6 +31,8 @@ import { paintWellsOn } from './pixelWells';
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
   leak: "That area isn't closed in. Try a bigger gap setting, or close the gap.",
+  // Not "try a bigger gap setting": a bigger setting needs even more room around the click.
+  cramped: "There isn't room to check that area from this spot. Click in a roomier part of the shape, or close the gap with a line.",
   'on-line': 'You clicked right on a line. Click inside the area you want to fill.',
   outside: "That spot is off the canvas. Click inside the area you want to fill.",
   'no-drawing': 'There is nothing to fill on this frame yet. Draw some lines first.',
@@ -114,15 +116,30 @@ function drawPop(g: CanvasRenderingContext2D, ctx: ToolContext) {
 
 // ---------------------------------------------------------------- the tool
 
-/** The lines the bucket sees: the active drawing, plus every visible vector layer's drawing at this frame when asked. */
-export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], allLayers: boolean, activeLayerId: string | undefined): Shape[] {
+/**
+ * The lines the bucket sees: the active drawing, plus every visible vector layer's drawing at this frame when asked.
+ *
+ * Paint counts as a wall too, but only where it can be seen standing on the page: the fills on layers ABOVE the one
+ * being filled (a pan outlined in paint on a line-art layer). The fills on layers below are left out, since the new
+ * paint would cover them and their edges are not a wall to anything. Fills that cover the click are skipped later
+ * (see `fillsAround` in geometry/barrier.ts), so a big tint above never walls off what is under it. `withFills` is off
+ * on a merge layer, where every fill's edge is already a wall.
+ */
+export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], allLayers: boolean, activeLayerId: string | undefined, withFills = true): Shape[] {
   if (!allLayers) return own.slice();
   const out: Shape[] = own.slice();
-  for (const l of doc.layers) {
-    if (l.id === activeLayerId || !l.visible || l.kind !== 'vector') continue;
+  const activeAt = activeLayerId ? doc.layers.findIndex((l) => l.id === activeLayerId) : -1;
+  doc.layers.forEach((l, i) => {
+    if (l.id === activeLayerId || !l.visible || l.kind !== 'vector') return;
     const d = drawingAt(doc, l, frame);
-    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill' && s.type !== 'instance') out.push(s);
-  }
+    if (d?.kind !== 'vector') return;
+    const above = i > activeAt;
+    for (const s of d.shapes) {
+      if (s.type === 'instance') continue;
+      if (s.type === 'fill' && !(withFills && above)) continue;
+      out.push(s);
+    }
+  });
   return out;
 }
 
@@ -145,9 +162,9 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
   }
   const own = drawing?.kind === 'vector' ? drawing.shapes : [];
   const bounds: Rect = { x: 0, y: 0, width: doc.width, height: doc.height };
-  const lines = barrierShapes(doc, ui.frame, own, opts.allLayers, activeLayer().layer?.id);
   // On a merge layer the lines are painted areas themselves, so their edges are the walls.
   const merge = activeIsMerge();
+  const lines = barrierShapes(doc, ui.frame, own, opts.allLayers, activeLayer().layer?.id, !merge);
   const res = fillRegion(lines, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds, includeFills: merge });
   const hit = paintAt(own, e.x, e.y);
 
@@ -156,7 +173,7 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     return;
   }
   // Paint is already here and the lines around it have not changed (or have leaked since): recolour it.
-  if (hit && (res.kind === 'leak' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
+  if (hit && (res.kind === 'leak' || res.kind === 'cramped' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
     const current = hit.type === 'fill' ? hit.color : hit.fill;
     // With a gradient in the fill box, the area takes the gradient laid over its own size.
     const grad = gradientFor('fill', hit.paths);
@@ -196,8 +213,8 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     else startPop(e.x, e.y, color, ctx);
     return;
   }
-  if (res.kind === 'leak') {
-    ctx.hint(FILL_HINTS.leak);
+  if (res.kind === 'leak' || res.kind === 'cramped') {
+    ctx.hint(FILL_HINTS[res.kind]);
     return;
   }
   const shape: FillShape = withWellGradients({ id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 });

@@ -1,0 +1,981 @@
+{
+  "env": {
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "cores": 24,
+    "loadAvgBefore": [
+      18.33,
+      8.19,
+      11.22
+    ],
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "gpuFeatures": {
+      "canvas": "enabled"
+    },
+    "conicGradient": "function",
+    "reps": 7,
+    "quick": false,
+    "when": "2026-11-16T10:39:38.364Z",
+    "loadAvgAfter": [
+      28.39,
+      14.09,
+      13.04
+    ]
+  },
+  "render": [
+    {
+      "canvas": "1280x720",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 0.65,
+        "p50": 1.25,
+        "p95": 14.75,
+        "max": 14.75
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.65,
+        "p50": 0.88,
+        "p95": 1.25,
+        "max": 1.25
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.65,
+        "p50": 1.03,
+        "p95": 1.2,
+        "max": 1.2
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.7,
+        "p50": 1.4,
+        "p95": 12.68,
+        "max": 12.68
+      },
+      "diamond": {
+        "n": 7,
+        "min": 1.03,
+        "p50": 2,
+        "p95": 13.55,
+        "max": 13.55
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 1.2,
+        "p50": 2.05,
+        "p95": 3.2,
+        "max": 3.2
+      },
+      "linearVsRadial": 1,
+      "angularVsRadial": 1.08,
+      "diamondVsRadial": 1.58,
+      "diamondlineVsRadial": 1.85
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 0.9,
+        "p50": 1.47,
+        "p95": 14,
+        "max": 14
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.68,
+        "p50": 1.05,
+        "p95": 12.45,
+        "max": 12.45
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.3,
+        "p50": 2.55,
+        "p95": 4.83,
+        "max": 4.83
+      },
+      "angular": {
+        "n": 7,
+        "min": 1,
+        "p50": 1.78,
+        "p95": 4.63,
+        "max": 4.63
+      },
+      "diamond": {
+        "n": 7,
+        "min": 3.9,
+        "p50": 5.52,
+        "p95": 11.47,
+        "max": 11.47
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 6.65,
+        "p50": 8.93,
+        "p95": 12.85,
+        "max": 12.85
+      },
+      "linearVsRadial": 0.52,
+      "angularVsRadial": 0.77,
+      "diamondVsRadial": 3,
+      "diamondlineVsRadial": 5.12
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 0.8,
+        "p50": 1.2,
+        "p95": 3.35,
+        "max": 3.35
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.45,
+        "p50": 4.15,
+        "p95": 19.22,
+        "max": 19.22
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.83,
+        "p50": 1.98,
+        "p95": 3.1,
+        "max": 3.1
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.78,
+        "p50": 2.53,
+        "p95": 3.78,
+        "max": 3.78
+      },
+      "diamond": {
+        "n": 7,
+        "min": 11.85,
+        "p50": 14.8,
+        "p95": 22.42,
+        "max": 22.42
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 14.88,
+        "p50": 20.57,
+        "p95": 32.03,
+        "max": 32.03
+      },
+      "linearVsRadial": 0.79,
+      "angularVsRadial": 0.97,
+      "diamondVsRadial": 6.48,
+      "diamondlineVsRadial": 8.13
+    },
+    {
+      "canvas": "1280x720",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 1.55,
+        "p50": 2.5,
+        "p95": 5.35,
+        "max": 5.35
+      },
+      "linear": {
+        "n": 7,
+        "min": 4.5,
+        "p50": 5.6,
+        "p95": 11.2,
+        "max": 11.2
+      },
+      "radial": {
+        "n": 7,
+        "min": 3.75,
+        "p50": 6,
+        "p95": 14.3,
+        "max": 14.3
+      },
+      "angular": {
+        "n": 7,
+        "min": 4.65,
+        "p50": 8.2,
+        "p95": 27.35,
+        "max": 27.35
+      },
+      "diamond": {
+        "n": 7,
+        "min": 31.1,
+        "p50": 33.35,
+        "p95": 38.7,
+        "max": 38.7
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 45.8,
+        "p50": 50,
+        "p95": 56.45,
+        "max": 56.45
+      },
+      "linearVsRadial": 1.2,
+      "angularVsRadial": 1.24,
+      "diamondVsRadial": 8.29,
+      "diamondlineVsRadial": 12.21
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 0.75,
+        "p50": 3.75,
+        "p95": 12.8,
+        "max": 12.8
+      },
+      "linear": {
+        "n": 7,
+        "min": 0.95,
+        "p50": 1.78,
+        "p95": 3.4,
+        "max": 3.4
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.5,
+        "p50": 1.03,
+        "p95": 2.07,
+        "max": 2.07
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.57,
+        "p50": 1.75,
+        "p95": 2.95,
+        "max": 2.95
+      },
+      "diamond": {
+        "n": 7,
+        "min": 0.7,
+        "p50": 1.72,
+        "p95": 3.75,
+        "max": 3.75
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 1.18,
+        "p50": 1.68,
+        "p95": 3.85,
+        "max": 3.85
+      },
+      "linearVsRadial": 1.9,
+      "angularVsRadial": 1.14,
+      "diamondVsRadial": 1.4,
+      "diamondlineVsRadial": 2.36
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 0.83,
+        "p50": 1.4,
+        "p95": 3.82,
+        "max": 3.82
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.13,
+        "p50": 2.17,
+        "p95": 16.68,
+        "max": 16.68
+      },
+      "radial": {
+        "n": 7,
+        "min": 0.65,
+        "p50": 0.9,
+        "p95": 3.93,
+        "max": 3.93
+      },
+      "angular": {
+        "n": 7,
+        "min": 0.9,
+        "p50": 1.8,
+        "p95": 3.3,
+        "max": 3.3
+      },
+      "diamond": {
+        "n": 7,
+        "min": 2.75,
+        "p50": 5.42,
+        "p95": 5.9,
+        "max": 5.9
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 5.45,
+        "p50": 7.45,
+        "p95": 19.9,
+        "max": 19.9
+      },
+      "linearVsRadial": 1.74,
+      "angularVsRadial": 1.38,
+      "diamondVsRadial": 4.23,
+      "diamondlineVsRadial": 8.38
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 0.78,
+        "p50": 1.7,
+        "p95": 9.35,
+        "max": 9.35
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.17,
+        "p50": 2.03,
+        "p95": 3.9,
+        "max": 3.9
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.58,
+        "p50": 3.57,
+        "p95": 18.32,
+        "max": 18.32
+      },
+      "angular": {
+        "n": 7,
+        "min": 2.47,
+        "p50": 5.47,
+        "p95": 12.68,
+        "max": 12.68
+      },
+      "diamond": {
+        "n": 7,
+        "min": 14.9,
+        "p50": 18.55,
+        "p95": 22.53,
+        "max": 22.53
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 20.1,
+        "p50": 23.35,
+        "p95": 26.33,
+        "max": 26.33
+      },
+      "linearVsRadial": 0.74,
+      "angularVsRadial": 1.56,
+      "diamondVsRadial": 9.43,
+      "diamondlineVsRadial": 12.72
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 1.1,
+        "p50": 1.35,
+        "p95": 1.75,
+        "max": 1.75
+      },
+      "linear": {
+        "n": 7,
+        "min": 2.65,
+        "p50": 3.1,
+        "p95": 4.85,
+        "max": 4.85
+      },
+      "radial": {
+        "n": 7,
+        "min": 3.55,
+        "p50": 3.8,
+        "p95": 5.15,
+        "max": 5.15
+      },
+      "angular": {
+        "n": 7,
+        "min": 2.95,
+        "p50": 4.15,
+        "p95": 31.75,
+        "max": 31.75
+      },
+      "diamond": {
+        "n": 7,
+        "min": 22.75,
+        "p50": 32,
+        "p95": 43.6,
+        "max": 43.6
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 38.75,
+        "p50": 49.35,
+        "p95": 78.5,
+        "max": 78.5
+      },
+      "linearVsRadial": 0.75,
+      "angularVsRadial": 0.83,
+      "diamondVsRadial": 6.41,
+      "diamondlineVsRadial": 10.92
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 1,
+      "solid": {
+        "n": 7,
+        "min": 2.1,
+        "p50": 13.57,
+        "p95": 44.55,
+        "max": 44.55
+      },
+      "linear": {
+        "n": 7,
+        "min": 4.55,
+        "p50": 6.45,
+        "p95": 9.58,
+        "max": 9.58
+      },
+      "radial": {
+        "n": 7,
+        "min": 2.05,
+        "p50": 5.07,
+        "p95": 17.25,
+        "max": 17.25
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.43,
+        "p50": 4.45,
+        "p95": 9.35,
+        "max": 9.35
+      },
+      "diamond": {
+        "n": 7,
+        "min": 1.6,
+        "p50": 2.88,
+        "p95": 5.67,
+        "max": 5.67
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 5.07,
+        "p50": 8.2,
+        "p95": 10.78,
+        "max": 10.78
+      },
+      "linearVsRadial": 2.22,
+      "angularVsRadial": 0.7,
+      "diamondVsRadial": 0.78,
+      "diamondlineVsRadial": 2.47
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 10,
+      "solid": {
+        "n": 7,
+        "min": 1.28,
+        "p50": 3.68,
+        "p95": 6.78,
+        "max": 6.78
+      },
+      "linear": {
+        "n": 7,
+        "min": 1.35,
+        "p50": 3.3,
+        "p95": 19.68,
+        "max": 19.68
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.03,
+        "p50": 2.6,
+        "p95": 4.4,
+        "max": 4.4
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.02,
+        "p50": 3.02,
+        "p95": 5.72,
+        "max": 5.72
+      },
+      "diamond": {
+        "n": 7,
+        "min": 3.92,
+        "p50": 5.2,
+        "p95": 7.1,
+        "max": 7.1
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 19.43,
+        "p50": 21.63,
+        "p95": 35.1,
+        "max": 35.1
+      },
+      "linearVsRadial": 1.31,
+      "angularVsRadial": 0.99,
+      "diamondVsRadial": 3.81,
+      "diamondlineVsRadial": 18.86
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 50,
+      "solid": {
+        "n": 7,
+        "min": 1.27,
+        "p50": 3.2,
+        "p95": 6,
+        "max": 6
+      },
+      "linear": {
+        "n": 7,
+        "min": 4.8,
+        "p50": 6.13,
+        "p95": 28.75,
+        "max": 28.75
+      },
+      "radial": {
+        "n": 7,
+        "min": 4.65,
+        "p50": 5.97,
+        "p95": 8.38,
+        "max": 8.38
+      },
+      "angular": {
+        "n": 7,
+        "min": 3.85,
+        "p50": 5.77,
+        "p95": 20.22,
+        "max": 20.22
+      },
+      "diamond": {
+        "n": 7,
+        "min": 14.8,
+        "p50": 16.9,
+        "p95": 21.88,
+        "max": 21.88
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 35.25,
+        "p50": 55.42,
+        "p95": 88.8,
+        "max": 88.8
+      },
+      "linearVsRadial": 1.03,
+      "angularVsRadial": 0.83,
+      "diamondVsRadial": 3.18,
+      "diamondlineVsRadial": 7.58
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 200,
+      "solid": {
+        "n": 7,
+        "min": 0.95,
+        "p50": 1.1,
+        "p95": 15.5,
+        "max": 15.5
+      },
+      "linear": {
+        "n": 7,
+        "min": 2,
+        "p50": 2.6,
+        "p95": 3.15,
+        "max": 3.15
+      },
+      "radial": {
+        "n": 7,
+        "min": 1.85,
+        "p50": 2.2,
+        "p95": 2.85,
+        "max": 2.85
+      },
+      "angular": {
+        "n": 7,
+        "min": 1.9,
+        "p50": 2.05,
+        "p95": 2.65,
+        "max": 2.65
+      },
+      "diamond": {
+        "n": 7,
+        "min": 17.05,
+        "p50": 18.05,
+        "p95": 19.45,
+        "max": 19.45
+      },
+      "diamondline": {
+        "n": 7,
+        "min": 100.65,
+        "p50": 105.3,
+        "p95": 108.65,
+        "max": 108.65
+      },
+      "linearVsRadial": 1.08,
+      "angularVsRadial": 1.03,
+      "diamondVsRadial": 9.22,
+      "diamondlineVsRadial": 54.41
+    }
+  ],
+  "live": [
+    {
+      "canvas": "1920x1080",
+      "shapes": 20,
+      "radial": {
+        "framesPainted": 91,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 91,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 0.11,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 148,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 33.4
+        },
+        "lateFrames": 0
+      },
+      "angular": {
+        "framesPainted": 90,
+        "framesSkipped": 0,
+        "paintMs": {
+          "n": 90,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.3
+        },
+        "buildPaintMsEach": 0.1,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 137,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 33.4,
+          "max": 50.1
+        },
+        "lateFrames": 1
+      },
+      "diamond": {
+        "framesPainted": 88,
+        "framesSkipped": 3,
+        "paintMs": {
+          "n": 88,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 0.71,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 110,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 50.1,
+          "max": 66.7
+        },
+        "lateFrames": 25
+      }
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 100,
+      "radial": {
+        "framesPainted": 77,
+        "framesSkipped": 13,
+        "paintMs": {
+          "n": 77,
+          "min": 0.1,
+          "p50": 0.3,
+          "p95": 0.7,
+          "max": 2.1
+        },
+        "buildPaintMsEach": 0.61,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 80,
+          "min": 16.6,
+          "p50": 50,
+          "p95": 66.8,
+          "max": 100
+        },
+        "lateFrames": 56
+      },
+      "angular": {
+        "framesPainted": 65,
+        "framesSkipped": 25,
+        "paintMs": {
+          "n": 65,
+          "min": 0.2,
+          "p50": 0.4,
+          "p95": 0.5,
+          "max": 2.7
+        },
+        "buildPaintMsEach": 0.81,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 65,
+          "min": 33.3,
+          "p50": 50.1,
+          "p95": 83.3,
+          "max": 83.4
+        },
+        "lateFrames": 63
+      },
+      "diamond": {
+        "framesPainted": 58,
+        "framesSkipped": 33,
+        "paintMs": {
+          "n": 58,
+          "min": 0,
+          "p50": 6,
+          "p95": 14.1,
+          "max": 15.3
+        },
+        "buildPaintMsEach": 7.14,
+        "builds": 88,
+        "rafDeltaMs": {
+          "n": 58,
+          "min": 16.7,
+          "p50": 66.7,
+          "p95": 83.5,
+          "max": 100
+        },
+        "lateFrames": 56
+      }
+    },
+    {
+      "canvas": "1920x1080",
+      "shapes": 250,
+      "radial": {
+        "framesPainted": 74,
+        "framesSkipped": 17,
+        "paintMs": {
+          "n": 74,
+          "min": 0.2,
+          "p50": 0.4,
+          "p95": 0.8,
+          "max": 1.7
+        },
+        "buildPaintMsEach": 1.71,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 77,
+          "min": 16.6,
+          "p50": 50,
+          "p95": 66.7,
+          "max": 83.3
+        },
+        "lateFrames": 61
+      },
+      "angular": {
+        "framesPainted": 76,
+        "framesSkipped": 14,
+        "paintMs": {
+          "n": 76,
+          "min": 0.2,
+          "p50": 0.4,
+          "p95": 1.5,
+          "max": 3.1
+        },
+        "buildPaintMsEach": 1.98,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 79,
+          "min": 16.6,
+          "p50": 50,
+          "p95": 66.7,
+          "max": 83.4
+        },
+        "lateFrames": 62
+      },
+      "diamond": {
+        "framesPainted": 50,
+        "framesSkipped": 41,
+        "paintMs": {
+          "n": 50,
+          "min": 0.1,
+          "p50": 20.5,
+          "p95": 36.1,
+          "max": 58
+        },
+        "buildPaintMsEach": 23.38,
+        "builds": 50,
+        "rafDeltaMs": {
+          "n": 49,
+          "min": 16.7,
+          "p50": 66.7,
+          "p95": 100.1,
+          "max": 116.6
+        },
+        "lateFrames": 47
+      }
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 50,
+      "radial": {
+        "framesPainted": 83,
+        "framesSkipped": 7,
+        "paintMs": {
+          "n": 83,
+          "min": 0.1,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.7
+        },
+        "buildPaintMsEach": 0.69,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 85,
+          "min": 16.7,
+          "p50": 50,
+          "p95": 66.7,
+          "max": 66.7
+        },
+        "lateFrames": 53
+      },
+      "angular": {
+        "framesPainted": 80,
+        "framesSkipped": 11,
+        "paintMs": {
+          "n": 80,
+          "min": 0.1,
+          "p50": 0.2,
+          "p95": 0.5,
+          "max": 4.2
+        },
+        "buildPaintMsEach": 0.55,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 87,
+          "min": 16.7,
+          "p50": 49.9,
+          "p95": 66.7,
+          "max": 83.4
+        },
+        "lateFrames": 46
+      },
+      "diamond": {
+        "framesPainted": 61,
+        "framesSkipped": 30,
+        "paintMs": {
+          "n": 61,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 0.2
+        },
+        "buildPaintMsEach": 4.32,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 63,
+          "min": 16.6,
+          "p50": 66.6,
+          "p95": 83.4,
+          "max": 99.9
+        },
+        "lateFrames": 57
+      }
+    },
+    {
+      "canvas": "3840x2160",
+      "shapes": 200,
+      "radial": {
+        "framesPainted": 76,
+        "framesSkipped": 14,
+        "paintMs": {
+          "n": 76,
+          "min": 0.1,
+          "p50": 0.4,
+          "p95": 1.2,
+          "max": 2
+        },
+        "buildPaintMsEach": 1.19,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 77,
+          "min": 16.7,
+          "p50": 50,
+          "p95": 66.7,
+          "max": 83.3
+        },
+        "lateFrames": 59
+      },
+      "angular": {
+        "framesPainted": 89,
+        "framesSkipped": 2,
+        "paintMs": {
+          "n": 89,
+          "min": 0.1,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 1.9
+        },
+        "buildPaintMsEach": 1.09,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 123,
+          "min": 16.6,
+          "p50": 33.3,
+          "p95": 50,
+          "max": 83.3
+        },
+        "lateFrames": 10
+      },
+      "diamond": {
+        "framesPainted": 81,
+        "framesSkipped": 10,
+        "paintMs": {
+          "n": 81,
+          "min": 0,
+          "p50": 0.1,
+          "p95": 0.2,
+          "max": 5.8
+        },
+        "buildPaintMsEach": 6.68,
+        "builds": 95,
+        "rafDeltaMs": {
+          "n": 100,
+          "min": 16.6,
+          "p50": 33.4,
+          "p95": 66.6,
+          "max": 83.3
+        },
+        "lateFrames": 45
+      }
+    }
+  ],
+  "consoleErrors": []
+}

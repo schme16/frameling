@@ -1,7 +1,8 @@
 // Options for the pixel art tools (mirror drawing, shading, dither; mirror drawing is shared with the vector tools), kept in the browser's storage like the other
 // tool options in src/tools/settings.ts.
 import { useSyncExternalStore } from 'react';
-import type { DitherPattern } from './dither';
+import type { DitherPattern, GradientDither } from './dither';
+import type { GradientColours, GradientShape } from './gradient';
 
 export type SymmetryMode = 'off' | 'h' | 'v' | 'both';
 
@@ -19,6 +20,10 @@ export interface PixelSettings {
   ditherPattern: DitherPattern;
   /** Dither brush size in art pixels. */
   ditherSize: number;
+  /** The Gradient tool on a pixel layer: how its steps are dithered, which colours it steps through, and its shape. */
+  gradientDither: GradientDither;
+  gradientColours: GradientColours;
+  gradientShape: GradientShape;
   /** Outline: include diagonal neighbours. */
   outlineCorners: boolean;
   /** Spray brush size in art pixels (the radius of the spray). */
@@ -38,6 +43,9 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   shadeLighter: true,
   ditherPattern: 'checker',
   ditherSize: 4,
+  gradientDither: 'classic',
+  gradientColours: 'palette',
+  gradientShape: 'linear',
   outlineCorners: false,
   spraySize: 8,
   shapeFilled: false,

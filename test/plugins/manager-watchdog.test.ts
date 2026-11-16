@@ -10,6 +10,7 @@ import { memoryLibrary, setLibraryForTests } from '../../src/platform/library';
 import * as desk from '../../src/io/desktop';
 import { DEFAULT_PREFS, setPrefs } from '../../src/ui/prefs';
 import { closeAll, exampleFiles, runPlugin } from './harness';
+import { waitUntil, WAIT_CEILING_MS } from '../helpers/waits';
 
 const toasts: { message: string; kind: string; action?: { label: string; run(): void } }[] = [];
 vi.mock('../../src/io/notify', () => ({ notify: (message: string, kind: string, action?: { label: string; run(): void }) => void toasts.push({ message, kind, action }) }));
@@ -29,7 +30,9 @@ beforeEach(() => {
   });
   resetStore(newDoc({ width: 100, height: 100 }));
   WATCHDOG.pingEveryMs = 20;
-  WATCHDOG.stuckMs = 150;
+  // Long enough that a busy machine pausing this thread for a moment is not read as a stuck plugin. The frozen one is
+  // still caught, just after this long, so tests wait for the plugin to change state rather than for a guessed time.
+  WATCHDOG.stuckMs = 1500;
   WATCHDOG.memoryEveryMs = 40;
 });
 
@@ -48,16 +51,15 @@ const pack = (id = 'slowpoke') => ({
   'manifest.json': strToU8(JSON.stringify({ id, name: 'Slowpoke', version: '1.0.0', apiVersion: 2, permissions: [] })),
   'main.js': strToU8('frameling.commands.register({ id: "x", label: "X" }, () => {});'),
 });
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const savedState = () => JSON.parse(localStorage.getItem('frameling.plugins.v1') ?? '{}');
 
 describe('turning off a plugin that is in trouble', () => {
   it('a stuck one is turned off, stays off after a restart and can be turned on from the toast', async () => {
     await installFrom(pack());
-    await wait(60);
+    await waitUntil(() => plugins.get()[0]?.status === 'on', 'the plugin to start');
     expect(plugins.get()[0].status).toBe('on');
     frozen!();
-    await wait(500);
+    await waitUntil(() => plugins.get()[0].enabled === false, 'the stuck plugin to be turned off');
     const p = plugins.get()[0];
     expect(p).toMatchObject({ enabled: false, status: 'off' });
     expect(p.problem).toBe('"Slowpoke" stopped responding, so Frameling turned it off.');
@@ -70,7 +72,7 @@ describe('turning off a plugin that is in trouble', () => {
     expect(plugins.get()[0].enabled).toBe(false);
     // The toast's button brings it back.
     toasts.at(-1)!.action!.run();
-    await wait(100);
+    await waitUntil(() => plugins.get()[0].enabled === true && plugins.get()[0].status === 'on', 'the plugin to come back');
     expect(plugins.get()[0]).toMatchObject({ enabled: true, status: 'on' });
   });
 
@@ -79,7 +81,9 @@ describe('turning off a plugin that is in trouble', () => {
     const memory = vi.fn(async () => ({ slowpoke: 5000 }));
     vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory } } as never);
     await installFrom(pack());
-    await wait(400);
+    // Nothing should happen, so there is no condition to wait for: this has to be a duration. 400 ms is ten memory
+    // checks (every 40 ms) for a trip to show up in. A slow machine only makes it check fewer times, never fail.
+    await new Promise((r) => setTimeout(r, 400));
     expect(plugins.get()[0]).toMatchObject({ enabled: true, status: 'on' });
     expect(memory).not.toHaveBeenCalled();
   });
@@ -89,7 +93,7 @@ describe('turning off a plugin that is in trouble', () => {
     WATCHDOG.memoryCapBytes = 1000;
     vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory: async () => ({ slowpoke: 5000, other: 1 }) } } as never);
     await installFrom(pack());
-    await wait(500);
+    await waitUntil(() => plugins.get()[0]?.enabled === false, 'the greedy plugin to be turned off');
     const p = plugins.get()[0];
     expect(p).toMatchObject({ enabled: false, status: 'off' });
     expect(p.problem).toMatch(/was using a lot of memory/);
@@ -100,8 +104,13 @@ describe('turning off a plugin that is in trouble', () => {
     setPrefs({ pluginDiagnostics: true });
     vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory: async () => ({ slowpoke: 5 * 2 ** 20 }) } } as never);
     await installFrom(pack());
-    await wait(200);
+    // Each refresh asks for the numbers; the latency is only there once a ping has come back.
+    await waitUntil(() => plugins.get()[0]?.status === 'on', 'the plugin to start');
     await refreshDiag();
+    for (let end = Date.now() + WAIT_CEILING_MS; pluginDiag.get().slowpoke?.latencyMs == null && Date.now() < end; ) {
+      await new Promise((r) => setTimeout(r, 20));
+      await refreshDiag();
+    }
     const d = pluginDiag.get().slowpoke;
     expect(d.memoryBytes).toBe(5 * 2 ** 20);
     expect(d.latencyMs).not.toBeNull();

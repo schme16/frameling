@@ -56,6 +56,29 @@ export function cycleLength(len: number, dir: ClipDirection): number {
 
 /** The positions (0 = the clip's first frame) one pass shows, in order. */
 export function cyclePositions(len: number, dir: ClipDirection): number[] {
+  return buildCycle(len, dir).slice();
+}
+
+/**
+ * The same order, kept and shared. `directedPosition` reads one position out of this on every tick of playback and
+ * once per frame the warm-ahead looks forward, which on a long clip was two 240-number arrays built and thrown away
+ * each time. Never handed out: `cyclePositions` copies it, so nobody can change what the next reader sees.
+ */
+const cycles = new Map<string, number[]>();
+
+function positionsFor(len: number, dir: ClipDirection): number[] {
+  const key = `${Math.max(1, len)}|${dir}`;
+  let hit = cycles.get(key);
+  if (!hit) {
+    hit = buildCycle(len, dir);
+    // A document has a handful of clip lengths, so this stays small; a cap keeps it that way whatever happens.
+    if (cycles.size > 64) cycles.clear();
+    cycles.set(key, hit);
+  }
+  return hit;
+}
+
+function buildCycle(len: number, dir: ClipDirection): number[] {
   const n = Math.max(1, len);
   const up = Array.from({ length: n }, (_, i) => i);
   const down = Array.from({ length: n }, (_, i) => n - 1 - i);
@@ -107,7 +130,7 @@ export function directedPosition(idx: number, len: number, dir: ClipDirection, p
   if (Number.isFinite(total) && idx >= total) return { pos: holdPosition(n, dir, plays), done: true };
   if (n === 1) return { pos: 0, done: false };
   const cycle = cycleLength(n, dir);
-  return { pos: cyclePositions(n, dir)[Math.max(0, idx) % cycle], done: false };
+  return { pos: positionsFor(n, dir)[Math.max(0, idx) % cycle], done: false };
 }
 
 /** The step count that shows `pos` going the way the clip plays (for carrying on from a frame somebody picked). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { frameAt, parseSheet, poseAt, resolveAnim, scaleFor, toBeats, totalMs } from '../../src/ui/mascot/timing';
+import { frameAt, parseSheet, poseAt, resolveAnim, scaleFor, toBeats, totalMs, wakeBeats, withWake } from '../../src/ui/mascot/timing';
 import { stepScript, talkFor } from '../../src/ui/mascot/scripts';
 import { quillFor } from '../../src/ui/toast';
 import { FAKE_SHEET as S } from '../fixtures/quill-sheet';
@@ -134,5 +134,52 @@ describe('toasts', () => {
     expect(quillFor('error')).toBe('oops');
     expect(quillFor('info')).toBeNull();
     expect(quillFor('success')).toBeNull();
+  });
+});
+
+describe('waking up', () => {
+  const noWake = { ...S, anims: { idle: S.anims.idle, sleep: S.anims.sleep } };
+
+  it('wakes through the wake frames once, then settles into idle', () => {
+    const beats = wakeBeats(S)!;
+    expect(beats.map((b) => b.anim)).toEqual(['wake', 'idle']);
+    const wake = totalMs(S.anims.wake);
+    expect(poseAt(S, beats, 10).anim).toBe('wake');
+    expect(poseAt(S, beats, 10).frame).toEqual(S.anims.wake.frames[0]);
+    // Each wake frame shows in turn, in order.
+    expect(poseAt(S, beats, 180 + 10).frame).toEqual(S.anims.wake.frames[1]);
+    expect(poseAt(S, beats, wake - 10).frame).toEqual(S.anims.wake.frames.at(-1));
+    // Then it is idle, from its first frame, and stays there.
+    const after = poseAt(S, beats, wake + 10);
+    expect(after.anim).toBe('idle');
+    expect(after.frame).toEqual(S.anims.idle.frames[0]);
+    expect(after.beat).toBe(1);
+  });
+
+  it('stays brief', () => {
+    expect(totalMs(S.anims.wake)).toBeLessThanOrEqual(1500);
+  });
+
+  it('does nothing without wake art, or with less motion on', () => {
+    expect(wakeBeats(noWake)).toBeNull();
+    expect(wakeBeats(S, true)).toBeNull();
+  });
+
+  it('puts the wake in front of idle only when coming out of a sleep', () => {
+    const idle = toBeats('idle');
+    expect(withWake(S, toBeats('sleep'), idle).map((b) => b.anim)).toEqual(['wake', 'idle']);
+    // Not from anything else, and not into anything livelier.
+    expect(withWake(S, toBeats('wave'), idle)).toEqual(idle);
+    expect(withWake(S, toBeats('sleep'), toBeats('cheer'))).toEqual(toBeats('cheer'));
+    // Still asleep, no wake art, less motion: untouched.
+    expect(withWake(S, toBeats('sleep'), toBeats('sleep'))).toEqual(toBeats('sleep'));
+    expect(withWake(noWake, toBeats('sleep'), idle)).toEqual(idle);
+    expect(withWake(S, toBeats('sleep'), idle, true)).toEqual(idle);
+  });
+
+  it('wake on its own plays once and holds its last frame', () => {
+    const p = poseAt(S, toBeats('wake'), 5000);
+    expect(p).toMatchObject({ anim: 'wake', done: true });
+    expect(p.frame).toEqual(S.anims.wake.frames.at(-1));
   });
 });

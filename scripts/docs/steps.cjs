@@ -27,9 +27,68 @@ async function probe(wc, where) {
   }
 }
 
+/** The stage as it is on screen now, [x, y, width, height] in window pixels, for a script that takes its own pictures. */
+async function stageBox(wc, sel = '.cv-layer') {
+  const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(sel)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
+  if (!r) throw new Error('the stage is not on screen');
+  return r;
+}
+
+/**
+ * A picture of the window (or of `crop`, an {x, y, width, height}) for a script that does not run steps. A hidden window
+ * paints lazily, so the first capture can be the frame from before the last change: take a throwaway one first, as `shot`
+ * does, then the real one.
+ */
+async function capture(wc, crop) {
+  await wc.capturePage();
+  await sleep(150);
+  return wc.capturePage(crop);
+}
+
+/**
+ * A crop that follows the stage as it is now: `{ stageCrop: {} }` is the stage's own box. Options, all measured from the stage
+ * when the shot is taken, so a crop of the stage and what is round it needs no number copied from the app:
+ *   rightGap  stretch to that far from the window's right edge (the stage and the panels beside it)
+ *   top       move the top edge down from the stage's top (a strip of timeline starts well below it)
+ *   down      add that many pixels under the stage
+ *   height    use this height instead of the stage's own
+ *   around    [w, h]: a window of that size round the stage's middle
+ *   of        a selector to measure instead of the stage (`.ui-canvas` is the stage with its tool bar above it)
+ * help/_shapes.cjs exports STAGE, PANEL and FROM_STAGE. Even sizes, as for `el`.
+ */
+function cropFromBox(r, o, width, height) {
+  const even = (n) => Math.max(2, n - (n % 2));
+  let x, y, w, h;
+  if (o.around) {
+    // A window of this size round the stage's middle (the page at 100% is bigger than the stage, so a small clip shows its middle).
+    [w, h] = o.around;
+    x = Math.round(r[0] + r[2] / 2 - w / 2);
+    y = Math.round(r[1] + r[3] / 2 - h / 2);
+  } else {
+    x = Math.round(r[0]);
+    y = Math.round(r[1]) + (o.top ?? 0);
+    w = o.rightGap != null ? width - o.rightGap - x : Math.round(r[2]);
+    h = (o.height ?? Math.round(r[3])) + (o.down ?? 0);
+  }
+  x = Math.max(0, x);
+  y = Math.max(0, y);
+  return [x, y, even(Math.min(width - x, w)), even(Math.min(height - y, h))];
+}
+async function stageCrop(wc, o, width, height) {
+  return cropFromBox(await stageBox(wc, o.of), o, width, height);
+}
+
+/** What `stagePoint` and `stageEdge` mean for a stage box [x, y, width, height]: a window position. */
+function resolvePoint(b, v) {
+  if (v.stageEdge) return [Math.round(b[0] + v.stageEdge.x), Math.round(b[1] + v.stageEdge.y)];
+  const p = v.stagePoint;
+  return [Math.round(b[0] + b[2] / 2 + (p.x - p.cx) * p.z), Math.round(b[1] + b[3] / 2 + (p.y - p.cy) * p.z)];
+}
+
 /** Where a step wants the picture cropped: its own `crop`, or the box of the element its `el` selector finds, with
  *  padding, clamped to the window. Shared by `shot` and `rec` so a clip can follow a panel the same way. */
 async function cropOf(wc, s, width, height) {
+  if (s.crop && s.crop.stageCrop) return stageCrop(wc, s.crop.stageCrop, width, height);
   if (!s.el) return s.crop;
   const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.el)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
   if (!r) throw new Error(`no element ${s.el}`);
@@ -75,12 +134,32 @@ async function stopRec(r) {
   fs.writeFileSync(path.join(r.dir, 'list.txt'), lines.join('\n') + '\n');
 }
 
+/**
+ * Swaps any `{ stagePoint: { x, y, z, cx, cy } }` in a step for a window position, measured from the stage as it is now:
+ * the point (x, y) on a stage shown at zoom z with (cx, cy) in the middle. `{ stageEdge: { x, y } }` is a spot measured in
+ * screen pixels from the stage's top left corner (for the rulers, which sit on the stage's edge). The helpers in help/_shapes.cjs write these, so a
+ * drag lands right whatever width the side rail has, without a number copied from the app that goes stale.
+ */
+async function resolveStage(wc, step) {
+  const text = JSON.stringify(step);
+  if (!text || !(text.includes('"stagePoint"') || text.includes('"stageEdge"'))) return step;
+  const b = await wc.executeJavaScript(`(() => { const r = document.querySelector('.cv-layer')?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height]; })()`);
+  if (!b) throw new Error('stagePoint: the stage is not on screen');
+  return JSON.parse(text, (_k, v) => {
+    const o = v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+    return o && (o.stagePoint || o.stageEdge) ? resolvePoint(b, o) : v;
+  });
+}
+
 async function runSteps(win, steps, { outDir, width, height, name }) {
   const wc = win.webContents;
   const send = (e) => wc.sendInputEvent(e);
-  for (const s of steps) {
+  for (const step of steps) {
+    const s = await resolveStage(wc, step);
     if (s.eval) await wc.executeJavaScript(s.eval);
     else if (s.log) console.log(JSON.stringify(await wc.executeJavaScript(s.log)));
+    // {"write": "js returning base64", "file": "name.png"}: saves what the page hands back (an exported picture) into the output folder.
+    else if (s.write) fs.writeFileSync(path.join(outDir, s.file), Buffer.from(await wc.executeJavaScript(s.write), 'base64'));
     else if (s.wait) await sleep(s.wait);
     else if (s.clickOn) {
       // Click the middle of the first element matching a selector (and containing `text`, when given), so a step
@@ -122,9 +201,11 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       const [x, y] = s.click;
       send({ type: 'mouseMove', x, y });
       await sleep(s.pause ?? 0);
-      send({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+      // `mods` holds keys through the click (a Shift+click that picks one more key).
+      const modifiers = s.mods ?? [];
+      send({ type: 'mouseDown', x, y, button: 'left', clickCount: 1, modifiers });
       await sleep(30);
-      send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+      send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1, modifiers });
       await sleep(s.after ?? 80);
     } else if (s.dblclick) {
       // Two quick presses at one spot, the second counted as a double-click.
@@ -140,8 +221,10 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
     } else if (s.down || s.held || s.up) {
       // Hold the button over several steps, for a shot in the middle of a drag: down, then held moves, then up.
       const [x, y] = s.down || s.held || s.up;
-      if (s.down) send({ type: 'mouseMove', x, y });
-      send({ type: s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove', x, y, button: 'left', clickCount: 1, modifiers: s.held ? ['leftButtonDown'] : [] });
+      // "mods": ["alt"] keeps keys down through the step (an Alt-drag held part way for a shot).
+      const held = s.mods ?? [];
+      if (s.down) send({ type: 'mouseMove', x, y, modifiers: held });
+      send({ type: s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove', x, y, button: 'left', clickCount: 1, modifiers: [...held, ...(s.held ? ['leftButtonDown'] : [])] });
       await sleep(s.after ?? 60);
     } else if (s.move) {
       send({ type: 'mouseMove', x: s.move[0], y: s.move[1] });
@@ -163,8 +246,21 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
           send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: [...mods, 'leftButtonDown'] });
           await sleep(d);
         }
+        // "pause": [[pointIndex, ms], ...] keeps the pen still part way along (a thinking pause that carries on).
+        for (const [at, ms] of s.pause ?? []) if (at === i) await sleep(ms);
       }
-      const [lx, ly] = pts[pts.length - 1];
+      let [lx, ly] = pts[pts.length - 1];
+      // "hold": ms the pen stays still at the end before it lifts (Hold to tidy). "pull": [x, y] then drags there, still pressed.
+      if (s.hold) await sleep(s.hold);
+      if (s.pull) {
+        const [px, py] = s.pull;
+        for (let k = 1; k <= 8; k++) {
+          send({ type: 'mouseMove', x: Math.round(lx + ((px - lx) * k) / 8), y: Math.round(ly + ((py - ly) * k) / 8), modifiers: [...mods, 'leftButtonDown'] });
+          await sleep(d);
+        }
+        [lx, ly] = [px, py];
+        if (s.holdAfterPull) await sleep(s.holdAfterPull);
+      }
       send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1, modifiers: mods });
       await sleep(s.after ?? 80);
     } else if (s.rdrag || s.rclick) {
@@ -217,7 +313,7 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       rec = startRec(outDir, wc, s.rec === '@' ? name : s.rec, await cropOf(wc, s, width, height), s.every ?? 60);
     } else if (s.type) {
       // Types into the focused input in a way React notices.
-      await wc.executeJavaScript(`(() => { const el = document.activeElement; const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(s.type)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+      await wc.executeJavaScript(`(() => { const el = document.activeElement; const set = Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(s.type)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
       await sleep(s.after ?? 200);
     } else if (s.shot) {
       const crop = await cropOf(wc, s, width, height);
@@ -239,6 +335,13 @@ function mockMain(ipcMain) {
   const stubs = installIpcStubs(ipcMain, {
     // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
     'video:probe': () => ({ ok: true }),
+    // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"} (as in shoot.cjs).
+    // Send a copy gets a pretend place to land (nothing is written), so the clip can show what you see afterwards.
+    // SHOT_STREAM_OK=1: the clipboard takes a copy and the Save dialog picks a place, so a clip can show the streaming setup
+    // working (a copy that fails, as in the plain stub, is what the quest would wait on forever).
+    ...(process.env.SHOT_STREAM_OK ? { 'clipboard:writeText': () => true, 'files:pickExportFile': () => '/home/me/Documents/frameling.firebotsetup' } : {}),
+    'files:save': (_e, o) => (o && o.copy ? { path: '/home/me/Pictures/Sunny day.frameling' } : null),
+    'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && require('node:fs').existsSync(p) ? { bytes: new Uint8Array(require('node:fs').readFileSync(p)), path: p } : { error: 'No such file.' }),
   });
   return stubs.clearLibrary;
 }
@@ -260,4 +363,4 @@ function makeWindow(BrowserWindow, width, height) {
   });
 }
 
-module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
+module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stageBox, capture, cropFromBox, resolvePoint, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };

@@ -1,0 +1,82 @@
+/* Send with a code and Receive with a code. Theme tokens only. */
+.share-code {
+  margin: 10px 0 8px;
+  padding: 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.share-row {
+  display: flex;
+  gap: var(--gap);
+  margin-bottom: 6px;
+}
+.share-facts {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.share-note {
+  margin: 8px 0 0;
+}
+.share-warn {
+  margin: 8px 0 0;
+  font-weight: 700;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.share-hint {
+  min-height: 1.4em;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.share-field {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+.share-field input {
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 10px;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.share-field input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.share-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.share-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+.share-link {
+  font: inherit;
+  padding: 0;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}

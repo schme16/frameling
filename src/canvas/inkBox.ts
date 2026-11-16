@@ -5,7 +5,10 @@
  * reach isn't known here (symbol instances, text, particles, plugin shapes) answers "unknown" and keeps a
  * stage-sized bitmap.
  */
+import { tipReach } from '../geometry/tip';
 import type { PathPoint, Shape, StrokeShape, SubPath } from '../core/format';
+import { styleReach } from '../geometry/lineStyle';
+import { shapeEffects } from '../effects/shapeFx';
 
 export interface InkBox {
   x0: number;
@@ -38,7 +41,7 @@ function strokeReach(s: StrokeShape): number {
   for (const p of s.points) dev = Math.max(dev, Math.abs(p.p - 0.5));
   // perfect-freehand's radius is size * (0.5 - thinning * (0.5 - pressure)).
   const radius = Math.abs(b.size) * (0.5 + Math.abs(b.thinning) * (0.5 + dev));
-  return radius * 1.5 + 1;
+  return radius * 1.5 + 1 + tipReach(b);
 }
 
 function addPaths(b: InkBox, paths: readonly SubPath[], r: number): boolean {
@@ -60,6 +63,8 @@ function addPaths(b: InkBox, paths: readonly SubPath[], r: number): boolean {
 export function shapesInk(shapes: readonly Shape[]): InkBox | null {
   const b: InkBox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
   for (const s of shapes) {
+    // An effect can paint well past the outline (and a wave or a smear a long way), so the bitmap keeps the whole stage.
+    if (shapeEffects(s)?.length) return null;
     if (s.type === 'stroke') {
       const r = strokeReach(s);
       for (const p of s.points) if (!grow(b, p.x, p.y, r)) return null;
@@ -72,7 +77,7 @@ export function shapesInk(shapes: readonly Shape[]): InkBox | null {
         // A zero or odd width leaves the canvas's previous line width in force, so the reach can't be told.
         if (!(half > 0) || !Number.isFinite(half)) return null;
         // A miter can reach ten half-widths (the canvas default limit), a square cap a corner's worth.
-        r = half * (s.stroke.join === 'miter' ? 10 : 1.5);
+        r = Math.max(half * (s.stroke.join === 'miter' ? 10 : 1.5), styleReach(s.stroke));
       }
       if (!addPaths(b, s.paths, r)) return null;
     } else return null;

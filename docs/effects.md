@@ -42,8 +42,19 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
   lot. A folder with normal blend, full opacity, no effects and no masks inside is "pass
   through" (its layers draw straight onto the stage); otherwise it's drawn as one picture first.
 
-Making a mask from the Effects menu or panel puts the mask and the layer under it (or every layer under it, asked the
+Making a mask from Layers and artboards > Layer > Masks and folders or the Effects panel puts the mask and the layer under it (or every layer under it, asked the
 first time and remembered: choice `effects.maskScope`) into a folder, so a new mask never reaches further than meant.
+
+**Masks you paint** (`src/effects/masks.ts`, no format change). **Add a mask to this layer** (`layers.addMask`, Ctrl+Alt+Shift+M,
+the Mask button in the Layers panel) adds an empty mask layer above the layer, in a folder with it, and picks it. What it
+starts as is the choice `effects.maskStart` (`show` hides the layer until painted, `hide` shows it until painted). A
+pixel layer gets a pixel mask with the same squares. A mask is **on** while it is visible: switching it off is the eye
+(a `MaskSwitch` in its row, `layers.maskOnOff`), and an off mask is never drawn and cuts nothing, in the renderer and in
+every exporter (and `docFeatures` no longer lists it, so a PDF does not warn about it). While a mask is the layer being
+painted, the canvas shows what it hides at 28% (`ghostPlan`: the layers it cuts, cut the other way round) and what it
+shows with a purple wash. `maskLinks` says which mask cuts which layers; the rows use it to colour the mask purple and
+edge the cut layers, and `layers.maskSwitch` (Ctrl+Alt+J) jumps between the two. A mask dragged out of its folder asks
+what to do once (`effects.maskLeavesFolder`: keep it, or make it a plain layer in a second undo step).
 
 ## How it renders
 
@@ -64,6 +75,25 @@ Effects (`src/effects/apply.ts`), all in canvas pixels with settings scaled from
 - Glow is a blurred copy tinted with `source-in`, drawn under the layer, stacked when strength is over 1.
 - Outline stamps the layer at rings of offsets out to the width, tints the result and puts the layer on top.
 - Pixelate shrinks with smoothing and grows back without, with squares lined up on the stage corner.
+- Film grain, wave, colour fringe, dark corners and motion blur change pixels one by one, so they are not canvas
+  filters. `src/effects/kernels.ts` is the software path (plain maths on premultiplied floats, no DOM, unit tested) and
+  `src/effects/effectsGL.ts` repeats it in a WebGL2 shader (one shared context, nothing read back). `kernelParams` turns
+  an effect's settings into canvas-pixel numbers once and both paths read those, so they agree: within 1 level on
+  nearly every pixel, 2 at worst (`scripts/e2e/effects-gpu.cjs`). No WebGL2 means the JS path; no pixel access at all
+  (a test stand-in canvas) leaves the effect undone.
+  - Grain: one random value per square cell (`size`) lined up on the stage corner, from an integer hash of the cell and
+    the pattern (`grainPattern(seed, change, frame)` in `model.ts`, put in the resolved values as `pattern` by
+    `activeEffects`, so the effect cache sees a new picture on a new frame). Added to the colour, only where there is drawing.
+  - Wave: each pixel looks sideways by `amount x sin(2 pi u / spacing + phase)`, with `u` measured across the push
+    direction from the stage corner; `ripple` adds a second push along `u` a quarter wave behind.
+  - Colour fringe: red from one side, blue from the other, green in place; the result is there where any of the three is.
+  - Dark corners: a colour laid over the picture by `strength x smoothstep` of the distance from the stage's middle
+    (corner = 1). It also fills see-through parts, so an empty top layer with just this effect frames the whole picture.
+    It is measured from the stage (`Run.stage`), so the editor's pan and zoom don't move it, and the effect cache key
+    includes the document size.
+  - Motion blur: the average of up to 64 evenly spaced samples along a line (`trail` slides the line behind the layer).
+    It doesn't read the move; the length and angle animate like any setting. Time-sampling the real move is not done.
+  - Wave, fringe and motion blur read past the picture's edge as its edge pixel, so full-stage drawings stay filled.
 
 Finished effect pictures are cached per layer content (the drawing object), settings and transform
 (`EffectCache`, LRU inside a pixel budget). Holding a drawing with a glow over many frames blurs it once; constant
@@ -77,7 +107,7 @@ modes mix with it the same way exports do.
 - **Effects panel** (dockable, right side by default): opacity, blend picker with plain words and the industry term,
   clip and mask, the stack with on/off, animate, reorder, reset and remove, and Reset all. A/B of how effects are
   added: `brand/ab/effects-panel/`.
-- **Effects menu** and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
+- **Effects** and **Masks and folders**, and the command palette: add each effect, clip (Ctrl+Alt+G), use as mask, put in a folder, take
   out of a folder, reset. Every blend mode is a palette command too (`effects.blend.*`).
 - **Timeline**: folder header rows with fold, eye and menu; layers in a folder indented with a purple rule; one small
   mark per layer (mask, clipped, or blend/effects) with the details in its tooltip. Dragging a layer next to a layer
@@ -91,9 +121,43 @@ modes mix with it the same way exports do.
   in their folder), folder opacity, hidden folders, each effect and an animated blur.
   `npm run build && xvfb-run -a npx electron scripts/e2e/effects.cjs`.
 
+## Effects on one shape
+
+`effects?` on a shape (`StrokeShape`, `FillShape`, `PathShape`, `InstanceShape`, `TextShape`, `ParticlesShape`) is the same list a layer
+has. The pure parts are in `src/effects/shapeFx.ts`, the edits in `shapeOps.ts` (through `editActiveDrawing`, so held frames and
+shared drawings ask what drawing always asks) and `edit.ts` (`addEffectTo` and friends work on any holder of a list).
+
+- **Order.** A shape's effects run first to last on that shape alone, then the layer's, then its folder's. Not a choice: the
+  layer's effects work on the finished layer, so they cannot go under a shape's.
+- **Drawing.** `drawDrawing` goes through `drawShapeFx`: a shape with effects is painted on a scratch canvas the size of the
+  target (the pool in `composite.ts`, one per nesting depth), put through `applyEffect`, and drawn on 1:1
+  (`paintThroughEffects`). The picture is cached per shape object and settings (`shapeFxStats`), so a held drawing is blurred
+  once. Shapes are never animated: the values ignore `keys`, so the editor's cached layer bitmaps stay right. To change one
+  over time, give the shape a new key.
+- **Room.** `drawingBox` grows by the effect's reach (`effectReach`); a layer bitmap with such a shape keeps the whole stage
+  (`shapesInk` answers "unknown").
+- **Merging.** `mergeable` is false for a shape with effects, so merge drawing, its eraser and moving shapes on a merge layer
+  leave it alone, like a grouped shape. The object eraser's pieces and "Turn into an editable line" keep the effects. Join,
+  Keep the overlap and Punch a hole wear the effects of the shape whose look they take (`wearLook`); effects count in
+  `looksDiffer`, so the existing "colours when shapes are combined" question covers them. Break apart on a shape with
+  effects asks `effects.breakApart`: keep the effect on the pieces (they stay separate shapes) or make plain paint.
+- **Commands.** The effect commands go on the picked shapes when there are some, asked once (`effects.addTarget`: just the
+  picked shapes, or the whole layer). The Effects panel has a "Change" switch for the same thing and shows the first picked
+  shape's stack (the same effect goes on every picked shape with the same id, so they edit together).
+- **Exports.** Pictures of frames (PNG, GIF, video, sheets, Godot sheets, Interactives) and PSD draw through the renderer, so
+  they are exact. SVG and moving SVG wrap the shape in `<g filter>` with the same filters a layer's effects use
+  (`shapeToSvg`), and leave out the kinds SVG has nothing like, with a note. Lottie, PDF and Illustrator turn the layer
+  holding the shape into a picture (`layerHasShapeFx` in `lottie.ts` `nodePicture`, `needsPicture` in `layered.ts`), since
+  Lottie's effects belong to a whole layer and the other two have none. Godot bones scenes bake it into the part's picture
+  and say so. `carryWarnings` tells the person in the Export window first (`shapeEffectKinds` in `DocFeatures`).
+- **Known gaps.** The morph (shape tween) between two shapes drops the effects; the onion skin draws a shape's effects but not
+  a layer's.
+- Pixel checks: the last five cases in `scripts/e2e/effects.cjs`. The old way (a shape alone on its own layer) against the
+  new is `scripts/docs/ab-shape-fx`.
+
 ## Known gaps
 
-- SVG has no Pixelate, so the still and moving SVG leave it out (the Export window says so first).
+- SVG has no Pixelate, Film grain, Wave, Colour fringe, Dark corners or Motion blur, so the still and moving SVG leave them out (the Export window says so first).
 - Folders don't nest. Move up / Move down step a layer into a folder at its edge and out of it again; any plain
   reorder keeps folders in one piece (`tidyFolders`), so there are never ghost copies of a folder.
 - The onion skin shows drawings plain, without effects.
@@ -190,7 +254,7 @@ this document will become pictures or be left out. The Export window shows both 
   (export option "Pictures from effects"): balanced (default) WebP q0.9 at 2x, sharp PNG at 2x, small WebP q0.8 at 1x;
   WebP comes from `canvas.toDataURL` and falls back to PNG when the page can't make it or it isn't smaller. lottie-web
   registers only Tint, Fill, Stroke, Tritone, Levels, Drop Shadow, Matte3, Gaussian Blur and Transform effects, so
-  Glow, Adjust, Outline and Pixelate have no native Lottie form and stay pictures. A layer, folder or symbol copy that
+  Glow, Adjust, Outline, Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no native Lottie form and stay pictures. A layer, folder or symbol copy that
   fades and paints two or more things goes in at full opacity under an alpha matte (a see-through stage-sized rectangle
   carrying the fade, `fadeAsWhole`), because lottie-web's canvas player multiplies opacity into every shape it draws but
   draws a matted layer into its own buffer first; the SVG renderer and the native players fade the group either way.

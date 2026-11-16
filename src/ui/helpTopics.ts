@@ -2,8 +2,18 @@
 import { registerHelpTopics } from '../core/registry';
 import './onboarding/help';
 import './workspaceSwitcher-help';
+import './menuEdit-help';
 
 registerHelpTopics([
+  {
+    id: 'explanations',
+    order: 7,
+    media: 'explanations.png',
+    title: 'The ? icons and the explanations',
+    section: 'Getting started',
+    summary: 'The little lines that say what a panel is for fold away behind a ? icon. Point at it to read them.',
+    keywords: ['explanations', 'hints', 'help icon', 'question mark', 'tooltip', 'clutter', 'descriptions', 'notes', 'hide text', 'fewer words', 'explainers'],
+  },
   {
     id: 'welcome',
     order: 1,
@@ -29,7 +39,7 @@ registerHelpTopics([
     section: 'Getting started',
     media: 'new-document-cards.png',
     summary: 'Pick a size and start. You can change your mind later.',
-    keywords: ['new', 'create', 'size', 'canvas', 'blank', 'preset', 'pixel size', 'fps'],
+    keywords: ['new', 'create', 'size', 'canvas', 'blank', 'preset', 'pixel size', 'fps', 'custom', 'favourite', 'favorite', 'save as favourite', 'add animation', 'frames a second', 'remember'],
   },
   {
     id: 'using-help',
@@ -85,6 +95,15 @@ registerHelpTopics([
     keywords: ['bigger', 'smaller', 'tiny', 'small text', '4k', 'tablet', 'dense', 'hidpi', 'dpi', 'display', 'monitor', 'screen', 'second screen', 'slider'],
   },
   {
+    id: 'small-screens',
+    order: 2.5,
+    title: 'Small screens',
+    section: 'Settings',
+    media: 'small-screens.png',
+    summary: 'On a laptop screen Frameling tightens up by itself, so your drawing gets the room.',
+    keywords: ['small screen', 'laptop', '720', '768', '1366', '1280', 'cramped', 'squeezed', 'compact', 'tight', 'roomy', 'tool rail', 'scrolls', 'canvas room', 'netbook', 'high dpi', 'scaling', '125%', '150%', 'display', 'monitor'],
+  },
+  {
     id: 'installing',
     title: 'Installing Frameling',
     section: 'Getting started',
@@ -123,6 +142,14 @@ registerHelpTopics([
     media: 'features.png',
     summary: 'Switch off the parts of Frameling you do not use, to keep it simple. Your drawings keep everything.',
     keywords: ['turn off', 'turn on', 'switch', 'hide', 'optional', 'simple', 'disable', 'enable', 'switch off'],
+  },
+  {
+    id: 'streaming',
+    title: 'The Streaming tab',
+    section: 'Streaming',
+    media: 'streaming.png',
+    summary: 'Everything about streaming and sharing your screen, on one tab of Preferences. The streaming tools can be tucked away, and the sharing settings stay.',
+    keywords: ['stream', 'streaming', 'streamer', 'twitch', 'obs', 'stream-safe', 'capture view', 'tuck away', 'bring back', 'audience', 'dares', 'votes', 'prompt jar', 'overlay', 'live', 'share screen', 'preferences'],
   },
   {
     id: 'look-and-feel',
@@ -193,12 +220,45 @@ registerHelpTopics([
     keywords: ['float', 'window', 'detach', 'undock', 'dock', 'pop out', 'tabs', 'group', 'rename', 'name', 'tools', 'tool strip', 'toolbar', 'move tools', 'top', 'second', 'hide all', 'panels away'],
   },
   {
+    id: 'panels-back',
+    order: 4,
+    media: 'panels-back.mp4',
+    title: 'Put the panels back',
+    section: 'Workspace',
+    summary: 'Panels dragged about, closed or renamed? One press sets this workspace\'s panels the way it comes, with Undo.',
+    keywords: ['reset', 'put back', 'restore', 'default', 'tidy', 'mess', 'undo changes', 'panels', 'dock', 'tabs', 'groups', 'windows', 'lost panel', 'panel gone', 'rearrange', 'order', 'sizes'],
+  },
+  {
     id: 'tool-strip',
     title: 'The tool strip',
     section: 'Basics',
     media: 'tool-strip.png',
     summary: 'Your tools, two across, in groups. Pick one to draw with.',
     keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout', 'greyed out', 'grey', 'disabled', 'pixel layer', 'vector layer', 'moves', 'same place'],
+  },
+  {
+    id: 'drawing-mode',
+    title: "Pixels or Vectors",
+    section: 'Basics',
+    media: 'drawing-mode.png',
+    summary: 'The switch at the top of the tool strip says what your next stroke is, pixels or vectors, and flips when you pick a tool that needs the other kind.',
+    keywords: ['layer kind', 'drawing mode', 'pixel layer', 'vector layer', 'tools missing', 'tools gone', 'tools off', 'pixel tools', 'shade', 'dither', 'greyed out', 'hidden tools', 'workspace', 'which layer', 'go to layer'],
+  },
+  {
+    id: 'tool-move',
+    title: 'Move the tool strip',
+    section: 'Basics',
+    media: 'tool-move.mp4',
+    summary: 'Drag the strip by its grip to any side, or out over the canvas. Let go nowhere and it goes back.',
+    keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'move', 'dock', 'float', 'undock', 'grip', 'drag', 'left', 'right', 'top', 'bottom', 'side', 'put back', 'where it was', 'return', 'unfloat', 'over the canvas'],
+  },
+  {
+    id: 'lock-layout',
+    title: 'Lock the tools and panels',
+    section: 'Basics',
+    media: 'lock-layout.mp4',
+    summary: 'Keep the tool strip or the panels exactly where they are, so a slip of the mouse moves nothing. Everything still works.',
+    keywords: ['lock', 'unlock', 'locked', 'freeze', 'stuck', 'stop moving', 'accident', 'pin', 'keep in place', 'tools', 'panels', 'tool strip', 'tool rail', 'greyed', 'cannot move', 'cant move'],
   },
   {
     id: 'tool-builder',
@@ -221,8 +281,8 @@ registerHelpTopics([
     title: 'The menus',
     section: 'Basics',
     media: 'menus.png',
-    summary: 'File, Edit, View, Artboards, Draw, Animate and Help, along the top.',
-    keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate'],
+    summary: 'File, Edit, View, Tools, Layers and artboards, Animation, Rigging, Effects and Help, along the top.',
+    keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate', 'customise', 'rearrange'],
   },
   {
     id: 'status-bar',

@@ -3,7 +3,8 @@
 //   npx electron scripts/perf/run.cjs --out scripts/perf/results/before.json [--only draw,playback] [--label before]
 //
 // Needs a build first (`npm run build`), or point PERF_RENDERER at another renderer build directory. See README.md.
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app } = require('electron');
+const { startRealApp } = require('./realapp.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -23,12 +24,11 @@ const WIN_H = 900;
 app.commandLine.appendSwitch('enable-precise-memory-info');
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
-// No GPU (xvfb): software WebGL, so the WebGL paths can run at all (the numbers are then software numbers).
-if (process.env.PERF_SOFTWARE_GL === '1') {
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-  app.commandLine.appendSwitch('use-angle', 'swiftshader');
-}
+// Numbers are speed claims, so they are measured on the real card, and the run fails if the card did not come up (it does
+// not quietly measure software). PERF_SOFTWARE_GL=1 asks for software instead, for a machine with no card; the results
+// then say so in env.gpuRun. Details and the colour pin: scripts/lib/gpu.cjs.
+const gpuMod = require('../lib/gpu.cjs');
+gpuMod.use(process.env.PERF_SOFTWARE_GL === '1' ? 'software' : 'card');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -106,33 +106,14 @@ true;
 `;
 
 async function main() {
-  ipcMain.handle('app:launchFile', () => null);
-  ipcMain.handle('recent:list', () => []);
-  ipcMain.handle('library:list', () => []);
-  ipcMain.handle('autosave:read', () => null);
-  await app.whenReady();
-  // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
-  // number meaningless. So the window is mapped but parked off-screen and unfocusable: nothing appears, nothing
-  // takes focus, and frames are produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
+  // The app's own main process runs (see realapp.cjs), so every handler the page asks for is the real one. A window that is
+  // truly hidden gets one rAF a second with this app (nothing is presented), which makes every number meaningless. So the
+  // window is mapped but parked off-screen and unfocusable: nothing appears, nothing takes focus, and frames are
+  // produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
   const hidden = process.env.PERF_HIDDEN === '1';
   const onScreen = process.env.PERF_SHOW === '1';
-  const win = new BrowserWindow({
-    width: WIN_W,
-    height: WIN_H,
-    x: onScreen ? undefined : -4000,
-    y: onScreen ? undefined : 0,
-    show: false,
-    focusable: onScreen,
-    skipTaskbar: !onScreen,
-    paintWhenInitiallyHidden: true,
-    webPreferences: {
-      preload: path.join(__dirname, '../../dist/preload/preload.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      additionalArguments: ['--frameling-version=perf'],
-      backgroundThrottling: false,
-    },
-  });
+  const win = await startRealApp({ rendererDir, onScreen, hidden, width: WIN_W, height: WIN_H });
+  const gpuRun = await gpuMod.confirmOrExit(win);
   const wc = win.webContents;
   const errors = [];
   wc.on('console-message', (e) => {
@@ -144,8 +125,12 @@ async function main() {
   // Emulate a slower machine (CPU only; the GPU is what it is): PERF_CPU_SLOWDOWN=4 means four times slower JS.
   const slowdown = Number(process.env.PERF_CPU_SLOWDOWN || 1);
   const dbg = (m) => process.env.PERF_DEBUG && console.error('[perf] ' + m);
+  const loadMs = [];
   async function load() {
     dbg('load');
+    // Start-up: from asking for the page to its first two frames with the app ready (the page asks main for the last
+    // session and the plugin settings on the way). One entry per load, kept in the results as env.loadMs.
+    const t0 = Date.now();
     await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1', perf: '1' } });
     if (!hidden) (onScreen ? win.show() : win.showInactive());
     if (slowdown > 1) {
@@ -154,6 +139,8 @@ async function main() {
       await wc.debugger.sendCommand('Emulation.setCPUThrottlingRate', { rate: slowdown });
     }
     dbg('loaded');
+    await js(`new Promise((res) => { const t = Date.now(); const w = () => (window.__frameling ? requestAnimationFrame(() => requestAnimationFrame(res)) : Date.now() - t < 10000 ? setTimeout(w, 5) : res()); w(); })`);
+    loadMs.push(Date.now() - t0);
     await sleep(900);
     await js(PRELUDE);
     dbg('prelude');
@@ -208,7 +195,7 @@ async function main() {
   }
 
   const readBag = () =>
-    js(`(() => { const b = window.__framelingPerf; return { latency: b.latency, overlayMs: b.overlayMs, mainMs: b.mainMs, painted: b.painted, builds: b.painter ? b.painter.cache.builds : null }; })()`);
+    js(`(() => { const b = window.__framelingPerf; return { latency: b.latency, overlayMs: b.overlayMs, mainMs: b.mainMs, painted: b.painted, builds: b.painter ? b.painter.cache.builds : null, evictions: b.painter ? b.painter.cache.evictions : null, build: b.build }; })()`);
   const deltas = (ts) => ts.slice(1).map((t, i) => t - ts[i]);
 
   const results = {};
@@ -244,6 +231,8 @@ async function main() {
         longTasks: longs.length,
         longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
         bitmapBuilds: bag.builds,
+        bitmapEvictions: bag.evictions,
+        buildSplit: bag.build,
       };
     }
     // One short stroke at a steady one-event-per-frame pace on the busy document: plain brush latency.
@@ -290,6 +279,8 @@ async function main() {
         longTasks: longs.length,
         longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
         bitmapBuilds: bag.builds,
+        bitmapEvictions: bag.evictions,
+        buildSplit: bag.build,
       };
       await js(`window.__frameling.store().setUi({ playing: false })`);
     }
@@ -317,7 +308,7 @@ async function main() {
     await js('window.__h.stopRaf()');
     {
       const bag = await readBag();
-      out.scrubWithOnion60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+      out.scrubWithOnion60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions, buildSplit: bag.build };
     }
     // Stepping through frames the way a person does (a key press every ~150 ms, onion skin off), so a paused
     // canvas has idle time between steps. What the paint on each step costs.
@@ -331,7 +322,7 @@ async function main() {
     }
     {
       const bag = await readBag();
-      out.stepPaused60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+      out.stepPaused60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions, buildSplit: bag.build };
     }
     // What one playhead move costs everything that listens to the store (React panels, menus), without any drawing.
     out.storeFrameUpdateMs = stats(
@@ -519,6 +510,59 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ combinations
+  // Costs that are fine on their own stack up when they happen together. This is the one a person actually feels:
+  // the autosave clock does not care that your pen is down, so on a big document a minute's autosave can land in the
+  // middle of a stroke. The control draws the same stroke on the same document with no autosave, so the pair says
+  // what autosave costs inside a stroke rather than what a stroke costs.
+  async function combos() {
+    const out = {};
+    const spec = { frames: 120, layers: 10, strokesPer: 40, pts: 20 };
+    for (const withSave of [false, true]) {
+      await setDoc(spec);
+      const box = await canvasBox();
+      const pts = wiggle(box, 1200);
+      // Autosave only runs on a changed document, so make one small change first and let it settle.
+      await strokeThrough(wiggle(box, 60));
+      await sleep(300);
+      await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+      await strokeThroughWithSave(pts, withSave);
+      await sleep(300);
+      const raf = await js('window.__h.stopRaf()');
+      const longs = await js('window.__h.takeLongs()');
+      const bag = await readBag();
+      out[withSave ? 'strokeWithAutosave' : 'strokeControl'] = {
+        rafDelta: stats(deltas(raf)),
+        latencyAll: stats(bag.latency),
+        latencyMax: bag.latency.length ? Math.round(Math.max(...bag.latency) * 10) / 10 : 0,
+        overlayDrawMs: stats(bag.overlayMs),
+        mainDrawMs: stats(bag.mainMs),
+        longTasks: longs.length,
+        longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
+      };
+    }
+    return out;
+  }
+
+  /** The same stroke as strokeThrough, with one autosave fired at the half way point when `withSave`. */
+  async function strokeThroughWithSave(pts, withSave, { perTick = 4, tickMs = 16 } = {}) {
+    const half = Math.floor(pts.length / 2);
+    send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+    send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+    await sleep(tickMs);
+    let fired = false;
+    for (let i = 1; i < pts.length; i += perTick) {
+      for (let k = i; k < Math.min(pts.length, i + perTick); k++) send({ type: 'mouseMove', x: pts[k][0], y: pts[k][1], modifiers: ['leftButtonDown'] });
+      if (withSave && !fired && i >= half) {
+        fired = true;
+        await js('window.__frameling.autosaveNow()');
+      }
+      await sleep(tickMs);
+    }
+    const l = pts[pts.length - 1];
+    send({ type: 'mouseUp', x: l[0], y: l[1], button: 'left', clickCount: 1 });
+  }
+
   // ------------------------------------------------------------------ zoom and pan
   async function zoomPan() {
     const out = {};
@@ -542,7 +586,7 @@ async function main() {
       let raf = await js('window.__h.stopRaf()');
       let bag = await readBag();
       const zoomLongs = await js('window.__h.takeLongs()');
-      out[name + '_zoom'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), overlayDrawMs: stats(bag.overlayMs), longTasks: zoomLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_zoom'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), overlayDrawMs: stats(bag.overlayMs), longTasks: zoomLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions, buildSplit: bag.build };
       // Pan: a middle-button drag in a big circle.
       await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
       send({ type: 'mouseMove', x: cx, y: cy });
@@ -557,7 +601,7 @@ async function main() {
       raf = await js('window.__h.stopRaf()');
       bag = await readBag();
       const panLongs = await js('window.__h.takeLongs()');
-      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: panLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: panLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions, buildSplit: bag.build };
       // Pan again at 400%: the stage is bigger than the screen, so nothing can be cached and every frame is drawn live.
       await js(`window.__frameling.store().setUi({ zoom: 4, panX: -900, panY: -500 })`);
       await js('window.__h.raf2()');
@@ -574,7 +618,7 @@ async function main() {
       raf = await js('window.__h.stopRaf()');
       bag = await readBag();
       const zoomedLongs = await js('window.__h.takeLongs()');
-      out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds };
+      out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds, bitmapEvictions: bag.evictions, buildSplit: bag.build };
     }
     return out;
   }
@@ -775,9 +819,58 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
+  // ------------------------------------------------------------------ export (draw against read-back)
+  // Every export canvas is made with willReadFrequently (src/export/readback.ts), which makes reading cheap and may make
+  // drawing slow. So: the frames an export draws, timed as drawing and as reading back apart, then the whole GIF export
+  // by the clock. Run it twice, with and without FRAMELING_EXPORT_READBACK=0, and compare (README). Only when named.
+  // `drawMs + readMs` is the real cost of a frame: on a canvas the card draws, drawFrame only queues work and the read
+  // is where it is waited for, so a shift of time from one to the other is not a win or a loss by itself.
+  async function exportTest() {
+    const out = { readbackFlag: null };
+    const docs = {
+      // 320 x 192 at 3x: 960 x 576 frames of effects, masks, tiles, a symbol, a bending mesh and a pixel layer.
+      kitchenSink: { open: `window.__framelingExport.loadKitchenSinkPerf(96)`, scale: 3 },
+      // 1280 x 720, 5 layers of 40 strokes, a different drawing every frame.
+      strokes: { open: `window.__frameling.store().load(window.__h.mkDoc({ frames: 48, layers: 5, strokesPer: 40, pts: 10, fps: 24 }))`, scale: 1 },
+    };
+    const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+    const r1 = (v) => Math.round(v * 10) / 10;
+    for (const [name, spec] of Object.entries(docs)) {
+      await js(spec.open);
+      await js(`window.__frameling.store().setUi({ tool: 'brush', playing: false, frame: 0 })`);
+      await js('window.__h.raf2()');
+      await sleep(500);
+      const settings = `{ ...window.__framelingExport.defaults(), format: 'gif', range: 'all', scale: ${spec.scale} }`;
+      const time = () => js(`window.__framelingExport.timeFrames(${settings})`);
+      const wall = () => js(`(async () => { try { return await window.__framelingExport.encode(${settings}); } catch (e) { return { error: String(e) }; } })()`);
+      await time(); // warm-up: shaders, fonts and the first canvas
+      const laps = [];
+      for (let i = 0; i < 3; i++) laps.push(await time());
+      const walls = [];
+      for (let i = 0; i < 3; i++) {
+        const w = await wall(); // the first is a warm-up of the encoder as well, kept in the list
+        walls.push(w.error ? 'error: ' + w.error : w.ms);
+      }
+      out.readbackFlag = laps[0].flag;
+      const per = (k) => r1(median(laps.map((l) => l[k])) / laps[0].frames);
+      const nums = walls.filter((x) => typeof x === 'number');
+      out[name] = {
+        frames: laps[0].frames,
+        size: [laps[0].width, laps[0].height],
+        drawMsPerFrame: per('drawMs'),
+        readMsPerFrame: per('readMs'),
+        drawPlusReadMsPerFrame: r1(median(laps.map((l) => l.drawMs + l.readMs)) / laps[0].frames),
+        loopMs: r1(median(laps.map((l) => l.loopMs))),
+        lapsMs: laps.map((l) => r1(l.loopMs)),
+        wallMs: nums.length > 1 ? median(nums.slice(1)) : nums[0] ?? null, // median of the laps after the warm-up
+        wallLapsMs: walls,
+      };
+    }
+    return out;
+  }
+
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, combos, soak, export: exportTest };
   await load();
-  const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();
   results.env = {
     label,
@@ -785,17 +878,20 @@ async function main() {
     electron: process.versions.electron,
     chrome: process.versions.chrome,
     cpu: os.cpus()[0]?.model,
+    gpuRun,
     window: [WIN_W, WIN_H],
     gpu2dCanvas: feat.canvas_oop_rasterization ?? feat['2d_canvas'],
     gpuFeatures: { canvas: feat['2d_canvas'], oop: feat.canvas_oop_rasterization, gpu_compositing: feat.gpu_compositing },
-    gpuDevice: gpu?.gpuDevice?.[0] ? { vendorId: gpu.gpuDevice[0].vendorId, deviceString: gpu.gpuDevice[0].deviceString } : null,
+    // (No gpuDevice here any more: getGPUInfo lists the first device, not the one drawing, so it named the wrong card. gpuRun.renderer is what WebGL says is drawing.)
     dpr: await js('window.devicePixelRatio'),
     idleRafMs: await js(`new Promise((res) => { const ts = []; const l = (t) => { ts.push(t); if (ts.length < 40) requestAnimationFrame(l); else res((ts[39] - ts[0]) / 39); }; requestAnimationFrame(l); })`),
     renderer: rendererDir,
+    exportReadbackEnv: process.env.FRAMELING_EXPORT_READBACK ?? null,
+    loadMs,
     when: new Date().toISOString(),
   };
   for (const [name, fn] of Object.entries(tests)) {
-    if (only ? !only.includes(name) : name === 'soak') continue; // soak is long, so only when asked for
+    if (only ? !only.includes(name) : name === 'soak' || name === 'export') continue; // soak and export are long and are for A/B pairs, so only when asked for
     process.stdout.write(`${name}... `);
     const t = Date.now();
     try {

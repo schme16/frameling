@@ -2,6 +2,7 @@
 // and in tests), anything else the browser can show (JPEG, BMP, PNG kinds we don't read) through the page's own decoder,
 // and animated WebP frame by frame through the browser's ImageDecoder (or, without one, by taking the file apart and
 // letting the browser decode each frame as a still WebP).
+import { decodePngInWorker } from '../../io/ioClient';
 import { decodePng, PNG_SIGNATURE } from '../../io/png';
 import { ApngProblem, decodeApng, isApng } from './apng';
 import { decodeGif, GIF_MAX_FRAMES, GIF_MAX_PIXELS, GifProblem, isGif } from './gif';
@@ -61,7 +62,8 @@ export async function decodePicture(bytes: Uint8Array): Promise<Picture> {
   }
   if (isPng(bytes)) {
     try {
-      const img = decodePng(bytes);
+      // A big one is decoded on a worker thread, so the page keeps answering meanwhile.
+      const img = (await decodePngInWorker(bytes)) ?? decodePng(bytes);
       return { width: img.width, height: img.height, frames: [{ pixels: img.pixels }], kind: 'png', notes };
     } catch {
       // Interlaced and other rarer PNG kinds: the page can read those.

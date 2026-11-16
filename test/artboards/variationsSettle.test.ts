@@ -4,7 +4,7 @@ import { newDoc, newVectorLayer } from '../../src/core/doc';
 import type { Doc, PathShape, VectorDrawing } from '../../src/core/format';
 import { resetStore, store } from '../../src/core/store';
 import { activeId, artboardsOf, findArtboard, switchArtboard } from '../../src/artboards/model';
-import { aliasId, makeVariation, recolourOpenVariation, settleVariations } from '../../src/artboards/variations';
+import { aliasId, makeVariation, recolourOpenVariation, settleVariations, splitAlias } from '../../src/artboards/variations';
 
 const PINK = '#ff6f91';
 const BLUE = '#4f9bd1';
@@ -64,7 +64,9 @@ describe('a copy a variation no longer needs', () => {
       delete d.drawings['kn'];
     });
     expect(doc().drawings[aliasId('kn', v)]).toBeUndefined();
-    expect(Object.keys(doc().drawings).filter((k) => k.includes('kn'))).toEqual([]);
+    // Match the key exactly or as the original of a copy: a substring would also hit ids that hold "kn" by chance in
+    // their random part (about one run in thirty), which made this test fail now and then.
+    expect(Object.keys(doc().drawings).filter((k) => k === 'kn' || splitAlias(k)?.orig === 'kn')).toEqual([]);
     expect(settleVariations(doc())).toBeNull();
     expect(artboardsOf(doc())).toHaveLength(2);
   });

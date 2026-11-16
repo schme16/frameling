@@ -194,7 +194,7 @@ describe('the tab menu', () => {
     fire(tabEl('layers'), 'contextmenu', 50, 50);
     const items = dockMenu.get()!.items;
     const labels = items.flatMap((i) => ('label' in i ? [i.label] : []));
-    expect(labels).toEqual(expect.arrayContaining(['Move to the left side', 'Move to the top', 'Move to its own window', 'Rename...', 'Close Layers']));
+    expect(labels).toEqual(expect.arrayContaining(['To move it, drag its tab', 'Move to its own window', 'Rename...', 'Close Layers']));
     const own = items.find((i) => 'label' in i && i.label === 'Move to its own window') as { onClick: () => void };
     act(() => own.onClick());
     expect(dock.get().layout.floats[0].tabs).toEqual(['layers']);

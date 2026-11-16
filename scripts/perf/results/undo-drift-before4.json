@@ -1,0 +1,141 @@
+{
+ "label": "before4",
+ "when": "2026-11-14T22:17:43.528Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 162.8,
+   "runs": [
+    172.2,
+    158.5,
+    166.3,
+    162.8,
+    153.5
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 13.57,
+   "topSelf": [
+    [
+     "(program) :0",
+     102.1
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     14.5
+    ],
+    [
+     "RE index-Doh7tA4P.js:140",
+     3
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     2.8
+    ],
+    [
+     "LE index-Doh7tA4P.js:140",
+     2
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     1.5
+    ],
+    [
+     "h index-Doh7tA4P.js:9",
+     1.5
+    ],
+    [
+     "nl index-Doh7tA4P.js:9",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     102.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     34.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     25.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     25.8
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     25.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     25.7
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     19.3
+    ],
+    [
+     "Ud index-Doh7tA4P.js:9",
+     18.1
+    ],
+    [
+     "Hd index-Doh7tA4P.js:9",
+     18.1
+    ],
+    [
+     "nl index-Doh7tA4P.js:9",
+     17.1
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     15.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:150",
+     14.8
+    ],
+    [
+     "fEe index-Doh7tA4P.js:150",
+     14.7
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     14.5
+    ],
+    [
+     "rG index-Doh7tA4P.js:150",
+     14.5
+    ],
+    [
+     "(anon) :0",
+     12
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

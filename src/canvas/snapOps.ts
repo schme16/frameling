@@ -2,7 +2,7 @@
 import { store } from '../core/store';
 import { findLayer } from '../core/doc';
 import { createStore } from '../ui/mini';
-import { SNAP_DISTANCE, targetInfo, withChosen, type SnapContext, type SnapTarget } from './snapModel';
+import { DRAW_DISTANCE, SNAP_DISTANCE, targetInfo, withChosen, type SnapContext, type SnapTarget } from './snapModel';
 import { getViewSettings, setViewSettings } from './viewSettings';
 
 // Menus read their ticks from the store's state, so give them a nudge to look again.
@@ -29,8 +29,20 @@ export function setSnapDistance(px: number): void {
   nudge();
 }
 
+/** The pen, pencil and brush pulling their start and end onto things, on or off. */
+export function setSnapDraw(on: boolean): void {
+  setViewSettings({ snapDraw: on });
+  nudge();
+}
+
+/** How close (screen pixels) a stroke's start or end has to be to be pulled, kept inside the range. */
+export function setSnapDrawDistance(px: number): void {
+  setViewSettings({ snapDrawDistance: px });
+  nudge();
+}
+
 export function resetSnapPicks(): void {
-  setViewSettings({ snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true });
+  setViewSettings({ snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapDraw: true, snapDrawDistance: DRAW_DISTANCE.usual, snapAllLayers: true });
   nudge();
 }
 

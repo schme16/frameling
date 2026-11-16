@@ -1,0 +1,19 @@
+[
+  {"eval": "__frameling.showPanel('quill-pet')"},
+  {"wait": 900},
+  {"shot": "rail-quill"},
+  {"eval": "(() => { const s = __frameling.store(); for (const f of [0, 6]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()"},
+  {"wait": 1800},
+  {"eval": "document.querySelector('.qt-panel').scrollIntoView({ block: 'start' })"},
+  {"wait": 600},
+  {"shot": "rail-shelves"},
+  {"eval": "document.querySelector('.qp-lessons').scrollIntoView({ block: 'end' })"},
+  {"wait": 600},
+  {"shot": "rail-lessons"},
+  {"eval": "__frameling.store().setUi({ frame: 0 })"},
+  {"eval": "__frameling.quests.start('first-animation')"},
+  {"wait": 1500},
+  {"drag": [[560, 280], [620, 250], [690, 270], [700, 330], [640, 360], [580, 340], [560, 285]], "steps": 8, "delay": 20},
+  {"wait": 500},
+  {"shot": "great-work-card"}
+]

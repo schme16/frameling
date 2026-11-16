@@ -11,6 +11,7 @@ import { desktop } from '../../io/desktop';
 import { getPen } from '../settings';
 import { CHECK_STEPS, CheckRecorder, windowSystem, type CheckStepId, type PenSample, type SkipReason } from './recorder';
 import { checkMemory, closePenCheck, gatherEnv, reduceCheck, saveReport, setCheckMemory, startFlow } from './state';
+import { cssVar } from '../../canvas/theme';
 import '../tablet.css';
 
 const STEP_TITLE: Record<CheckStepId, string> = {
@@ -216,7 +217,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     const g = c.getContext('2d');
     if (g && drawing) {
       g.lineCap = 'round';
-      g.strokeStyle = getComputedStyle(c).getPropertyValue('--accent') || '#9b7bff';
+      g.strokeStyle = cssVar('--accent', '#9b7bff');
       g.globalCompositeOperation = rec.current.eraserEnd(sampleOf(e)) ? 'destination-out' : 'source-over';
       g.lineWidth = (2 + 14 * e.pressure) * k;
       g.beginPath();
@@ -291,7 +292,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   return (
     <Modal title="Pen check with Quill" size="lg" className={`tb-check${flow.phase === 'offer' ? ' tb-check-asking' : ''}`} onClose={close} initialFocus="[data-autofocus]">
       <div className="tb-check-body">
-        <QuillSays anim={mood} then="idle" size={96} bubbleClassName="tb-check-bubble">
+        <QuillSays surface="check" anim={mood} then="idle" size={96} bubbleClassName="tb-check-bubble">
           <p aria-live="polite" data-testid="quill-says">
             {says}
           </p>

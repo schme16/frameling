@@ -24,7 +24,7 @@ export function mountModal(render: (close: () => void) => ReactElement): () => v
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** A friendly centred dialog: dim backdrop, Escape closes, Tab stays inside, and the app behind never sees the keys. */
-export function Modal({ title, onClose, children, wide = false, canClose = true, className = '' }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; canClose?: boolean; className?: string }) {
+export function Modal({ title, onClose, children, wide = false, canClose = true, className = '', headExtra }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; canClose?: boolean; className?: string; /** Beside the title: a help icon, the way the panels have one. */ headExtra?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -63,6 +63,7 @@ export function Modal({ title, onClose, children, wide = false, canClose = true,
       >
         <div className="io-head">
           <h2 id={titleId}>{title}</h2>
+          {headExtra}
         </div>
         {children}
       </div>

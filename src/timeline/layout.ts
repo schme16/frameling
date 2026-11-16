@@ -15,7 +15,7 @@ export const PROP_ROW_H = 22;
 
 export type LayoutRow =
   | { kind: 'folder'; key: string; y: number; h: number; row: Extract<TimelineRow, { type: 'folder' }> }
-  | { kind: 'layer'; key: string; y: number; h: number; layer: Layer; inFolder: boolean; depth: number; tracks: Track[]; open: boolean }
+  | { kind: 'layer'; key: string; y: number; h: number; layer: Layer; /** The other half, when a pair is shown as one row. */ half?: Layer; inFolder: boolean; depth: number; tracks: Track[]; open: boolean }
   | { kind: 'prop'; key: string; y: number; h: number; layer: Layer; depth: number; track: Track; last: boolean };
 
 export interface Layout {
@@ -36,7 +36,7 @@ export function buildLayout(rows: TimelineRow[], style: TimelineStyle, open: Rea
     }
     const tracks = style === 'clean' ? [] : tracksOf(r.layer);
     const isOpen = tracks.length > 0 && open.has(r.layer.id);
-    out.push({ kind: 'layer', key: r.layer.id, y, h: rowH, layer: r.layer, inFolder: r.inFolder, depth: r.depth, tracks, open: isOpen });
+    out.push({ kind: 'layer', key: r.layer.id, y, h: rowH, layer: r.layer, ...(r.half ? { half: r.half } : {}), inFolder: r.inFolder, depth: r.depth, tracks, open: isOpen });
     y += rowH;
     if (isOpen)
       tracks.forEach((t, i) => {
@@ -59,6 +59,25 @@ export function rowAtY(layout: Layout, y: number): LayoutRow | undefined {
     else hi = mid - 1;
   }
   return rs[lo];
+}
+
+/** A run of rows, by index into `layout.rows`, both ends included. */
+export interface RowWindow {
+  lo: number;
+  hi: number;
+}
+
+/**
+ * The rows to draw in full for a stretch of the rows' own height (`top` to `bottom`, 0 being the top of the first
+ * row), so a document with 40 layers draws the dozen you can see and not all forty. The rest stay as bare shells of
+ * the same height, which keeps the scroll length, the row order and the accessibility tree whole.
+ */
+export function rowWindow(layout: Layout, top: number, bottom: number): RowWindow {
+  const rs = layout.rows;
+  if (!rs.length) return { lo: 0, hi: -1 };
+  const first = rowAtY(layout, Math.max(0, top));
+  const last = rowAtY(layout, Math.max(0, bottom));
+  return { lo: rs.indexOf(first!), hi: rs.indexOf(last!) };
 }
 
 /** The row a layer shows on: its own, or its folder's header when the folder is shut. */

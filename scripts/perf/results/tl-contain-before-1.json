@@ -1,0 +1,817 @@
+{
+ "label": "tl-before-1",
+ "when": "2026-11-16T05:09:33.995Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 342.1,
+   "worstTaskMs": 34.4,
+   "runs": [
+    342.1,
+    337.8,
+    390.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 114.03,
+   "topSelf": [
+    [
+     "(program) :0",
+     204.1
+    ],
+    [
+     "$e index-CfT5N-4h.js:10",
+     21.1
+    ],
+    [
+     "(garbage collector) :0",
+     11.3
+    ],
+    [
+     "_n index-CfT5N-4h.js:10",
+     11.3
+    ],
+    [
+     "Zze index-CfT5N-4h.js:158",
+     6.6
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:178",
+     5.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:150",
+     5.1
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     4.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     204.1
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     75.8
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     66.8
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     66.2
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     66.2
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     66.2
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:178",
+     52.5
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     49.1
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     48.5
+    ],
+    [
+     "(anon) :0",
+     45.3
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     44.8
+    ],
+    [
+     "run index-CfT5N-4h.js:178",
+     43.7
+    ],
+    [
+     "run debug-55cIoJBr.js:10",
+     43.7
+    ],
+    [
+     "a1 index-CfT5N-4h.js:178",
+     43.4
+    ],
+    [
+     "update index-CfT5N-4h.js:10",
+     43.4
+    ],
+    [
+     "Ft.produce index-CfT5N-4h.js:10",
+     38.6
+    ]
+   ],
+   "rendering": [
+    [
+     "HitTest",
+     76.6
+    ],
+    [
+     "Paint",
+     48
+    ],
+    [
+     "Layerize",
+     30.2
+    ],
+    [
+     "#UpdateLayoutTree",
+     21
+    ],
+    [
+     "FireAnimationFrame",
+     15.5
+    ],
+    [
+     "Commit",
+     9.3
+    ],
+    [
+     "Layout",
+     8.9
+    ],
+    [
+     "PrePaint",
+     8.5
+    ],
+    [
+     "#Layout",
+     6
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     4.2
+    ],
+    [
+     "MajorGC",
+     3.9
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     3.8
+    ],
+    [
+     "UpdateLayoutTree",
+     3.1
+    ],
+    [
+     "MinorGC",
+     1.9
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     1.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     1.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1.1
+    ],
+    [
+     "UpdateLayer",
+     0.9
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     0.9
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     0.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     0.6
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_FINALIZE",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 250.7,
+   "worstTaskMs": 47.6,
+   "runs": [
+    259.6,
+    250.7,
+    247.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 83.57,
+   "topSelf": [
+    [
+     "(program) :0",
+     112
+    ],
+    [
+     "$e index-CfT5N-4h.js:10",
+     23.5
+    ],
+    [
+     "Pe index-CfT5N-4h.js:10",
+     11.2
+    ],
+    [
+     "mDe index-CfT5N-4h.js:157",
+     10.4
+    ],
+    [
+     "getBoundingClientRect :0",
+     10.1
+    ],
+    [
+     "Zze index-CfT5N-4h.js:158",
+     6.8
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:150",
+     4.2
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     112
+    ],
+    [
+     "(anon) :0",
+     76.8
+    ],
+    [
+     "run debug-55cIoJBr.js:10",
+     76.5
+    ],
+    [
+     "kDe index-CfT5N-4h.js:157",
+     76.4
+    ],
+    [
+     "run index-CfT5N-4h.js:178",
+     76.4
+    ],
+    [
+     "AM index-CfT5N-4h.js:157",
+     73.7
+    ],
+    [
+     "DM index-CfT5N-4h.js:157",
+     73.5
+    ],
+    [
+     "update index-CfT5N-4h.js:10",
+     70.6
+    ],
+    [
+     "Ft.produce index-CfT5N-4h.js:10",
+     65
+    ],
+    [
+     "Ft.produceWithPatches index-CfT5N-4h.js:10",
+     65
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:157",
+     59.5
+    ],
+    [
+     "get index-CfT5N-4h.js:10",
+     45.9
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     32
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     31.7
+    ],
+    [
+     "SM index-CfT5N-4h.js:157",
+     31
+    ],
+    [
+     "mDe index-CfT5N-4h.js:157",
+     30.8
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     54.6
+    ],
+    [
+     "Layerize",
+     24.2
+    ],
+    [
+     "FireAnimationFrame",
+     21
+    ],
+    [
+     "HitTest",
+     20.9
+    ],
+    [
+     "Layout",
+     14.6
+    ],
+    [
+     "#UpdateLayoutTree",
+     11.7
+    ],
+    [
+     "#Layout",
+     7.7
+    ],
+    [
+     "PrePaint",
+     6.1
+    ],
+    [
+     "Commit",
+     6
+    ],
+    [
+     "UpdateLayoutTree",
+     3.4
+    ],
+    [
+     "UpdateLayer",
+     0.7
+    ],
+    [
+     "MinorGC",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 196.4,
+   "worstTaskMs": 57.6,
+   "runs": [
+    196.4,
+    207.8,
+    195.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 65.46,
+   "topSelf": [
+    [
+     "(program) :0",
+     145.5
+    ],
+    [
+     "_n index-CfT5N-4h.js:10",
+     10.3
+    ],
+    [
+     "n index-CfT5N-4h.js:10",
+     2
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     1.7
+    ],
+    [
+     "M index-CfT5N-4h.js:10",
+     1.6
+    ],
+    [
+     "setAttribute :0",
+     1.5
+    ],
+    [
+     "qee index-CfT5N-4h.js:136",
+     1.3
+    ],
+    [
+     "XA index-CfT5N-4h.js:150",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     145.5
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     26.8
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     25
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     24.9
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     24.9
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     24.9
+    ],
+    [
+     "(anon) :0",
+     19.8
+    ],
+    [
+     "NM index-CfT5N-4h.js:157",
+     19.7
+    ],
+    [
+     "run index-CfT5N-4h.js:178",
+     19.7
+    ],
+    [
+     "run debug-55cIoJBr.js:10",
+     19.7
+    ],
+    [
+     "DM index-CfT5N-4h.js:157",
+     18.5
+    ],
+    [
+     "update index-CfT5N-4h.js:10",
+     18.4
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     18.2
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     17.9
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:157",
+     15.2
+    ],
+    [
+     "Ft.produceWithPatches index-CfT5N-4h.js:10",
+     15
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     127.4
+    ],
+    [
+     "PrePaint",
+     19.4
+    ],
+    [
+     "Layerize",
+     16.8
+    ],
+    [
+     "HitTest",
+     11.2
+    ],
+    [
+     "Layout",
+     9.1
+    ],
+    [
+     "FireAnimationFrame",
+     5.5
+    ],
+    [
+     "Commit",
+     4.6
+    ],
+    [
+     "#UpdateLayoutTree",
+     4
+    ],
+    [
+     "#Layout",
+     3
+    ],
+    [
+     "UpdateLayoutTree",
+     1.2
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 510.1,
+   "worstTaskMs": 63.7,
+   "runs": [
+    510.1,
+    564,
+    481.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 85.02,
+   "topSelf": [
+    [
+     "(program) :0",
+     213.1
+    ],
+    [
+     "zGe index-CfT5N-4h.js:163",
+     82.9
+    ],
+    [
+     "removeChild :0",
+     16.6
+    ],
+    [
+     "(garbage collector) :0",
+     16.2
+    ],
+    [
+     "setAttribute :0",
+     11.4
+    ],
+    [
+     "_oe index-CfT5N-4h.js:138",
+     9.4
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:178",
+     9.3
+    ],
+    [
+     "i index-CfT5N-4h.js:178",
+     8.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     213.1
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     134.8
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     127.5
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     104.6
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     104
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     104
+    ],
+    [
+     "r index-CfT5N-4h.js:163",
+     97.8
+    ],
+    [
+     "zGe index-CfT5N-4h.js:163",
+     97.8
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     81.8
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     81.5
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     49.2
+    ],
+    [
+     "Dd index-CfT5N-4h.js:9",
+     45.7
+    ],
+    [
+     "Gd index-CfT5N-4h.js:9",
+     45.5
+    ],
+    [
+     "Cee index-CfT5N-4h.js:9",
+     45.4
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:178",
+     44.4
+    ],
+    [
+     "NL index-CfT5N-4h.js:157",
+     37.6
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     142.8
+    ],
+    [
+     "FireAnimationFrame",
+     107.8
+    ],
+    [
+     "Layout",
+     87.9
+    ],
+    [
+     "Layerize",
+     34.9
+    ],
+    [
+     "PrePaint",
+     22
+    ],
+    [
+     "#UpdateLayoutTree",
+     18
+    ],
+    [
+     "#Layout",
+     15
+    ],
+    [
+     "HitTest",
+     14
+    ],
+    [
+     "Commit",
+     13.1
+    ],
+    [
+     "MinorGC",
+     4.9
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     4.9
+    ],
+    [
+     "MajorGC",
+     4.9
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     4.9
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     4.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     4.7
+    ],
+    [
+     "UpdateLayoutTree",
+     2.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     2.5
+    ],
+    [
+     "UpdateLayer",
+     1.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     1.8
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     1.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.6
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_WEAK_GLOBAL_HANDLES_IDENTIFY",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_TRACED_HANDLES_COMPUTE_WEAKNESS_PARALLEL",
+     0.6
+    ],
+    [
+     "V8.GC_MC_MARK",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_FREE_REMEMBERED_SET",
+     0.5
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

@@ -1,0 +1,159 @@
+{
+ "label": "sweep",
+ "when": "2026-11-15T09:48:52.094Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 7,
+ "pages": {
+  "history-deep": {
+   "nodes": 1212,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  },
+  "bouncing-ball": {
+   "nodes": 1200,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "history-deep",
+   "action": "workspaces",
+   "busyMs": 106.7,
+   "runs": [
+    78.1,
+    88,
+    106.9,
+    112.4,
+    111.1,
+    106.1,
+    106.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 17.78,
+   "topSelf": [
+    [
+     "(program) :0",
+     38.1
+    ],
+    [
+     "(garbage collector) :0",
+     13.6
+    ],
+    [
+     "gTe index-DazB1yEq.js:155",
+     5.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "Dd index-DazB1yEq.js:9",
+     38.8
+    ],
+    [
+     "(program) :0",
+     38.1
+    ],
+    [
+     "(anon) index-DazB1yEq.js:9",
+     35.9
+    ],
+    [
+     "xf index-DazB1yEq.js:9",
+     35.2
+    ],
+    [
+     "gf index-DazB1yEq.js:9",
+     35.2
+    ],
+    [
+     "vf index-DazB1yEq.js:9",
+     34.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 104.4,
+   "runs": [
+    103.4,
+    106.9,
+    103.5,
+    99,
+    106.1,
+    104.4,
+    107
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 17.4,
+   "topSelf": [
+    [
+     "(program) :0",
+     37.8
+    ],
+    [
+     "(garbage collector) :0",
+     21.5
+    ],
+    [
+     "gTe index-DazB1yEq.js:155",
+     5.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     37.8
+    ],
+    [
+     "Dd index-DazB1yEq.js:9",
+     34.7
+    ],
+    [
+     "(anon) index-DazB1yEq.js:9",
+     31.9
+    ],
+    [
+     "gf index-DazB1yEq.js:9",
+     31.1
+    ],
+    [
+     "xf index-DazB1yEq.js:9",
+     31.1
+    ],
+    [
+     "vf index-DazB1yEq.js:9",
+     30.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

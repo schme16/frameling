@@ -1,4 +1,4 @@
-// Artboard commands: palette, menus (Artboards, and File > Export) and keys, plus the Artboards panel.
+// Artboard commands: palette, menus (Layers and artboards > Artboards, and File > Export) and keys, plus the Artboards panel.
 import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import type { State } from '../core/store';
@@ -7,7 +7,11 @@ import { setChoice } from '../core/choices';
 import './fit';
 import { activeArtboard, activeId, artboardsOf, hasArtboards } from './model';
 import { familyOf, isVariation, sourceOf } from './variations';
-import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, zoomToArtboard } from './ops';
+import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, sameSpeedForAll, zoomToArtboard } from './ops';
+import { mixedRates } from './rates';
+import { requestFind } from './find';
+import { showPanel } from '../ui/dock';
+import { toast } from '../ui/toast';
 
 registerPanel({ id: 'artboards', title: 'Artboards', icon: 'artboard', component: lazyPanel(() => import('./ArtboardsPanel').then((m) => m.ArtboardsPanel)), zone: 'right', order: 40, help: 'artboards' });
 
@@ -207,6 +211,19 @@ registerCommands([
     run: () => step(-1),
   },
   {
+    id: 'artboards.find',
+    label: 'Find an artboard by name',
+    category: 'Artboards',
+    description: 'Opens the Artboards panel with the cursor in its search box. Type part of a name and press Enter to open the first match.',
+    keywords: ['artboard', 'search', 'jump', 'go to', 'name', 'switch', 'find'],
+    help: 'artboards',
+    enabled: top,
+    run: () => {
+      showPanel('artboards');
+      requestFind();
+    },
+  },
+  {
     id: 'artboards.zoomTo',
     label: 'Zoom to artboard',
     category: 'Artboards',
@@ -246,6 +263,16 @@ registerCommands([
     help: 'artboards-shots',
     enabled: many,
     run: () => void import('./player').then((m) => m.openShotsPlayer()),
+  },
+  {
+    id: 'artboards.sameSpeed',
+    label: 'Give every artboard this speed',
+    category: 'Artboards',
+    description: 'Each artboard keeps its own frames per second. This sets all of them to the speed of the one you are on. Only there when they differ.',
+    keywords: ['frame rate', 'fps', 'same speed', 'match speed', 'all artboards', 'sync fps', 'one frame rate'],
+    help: 'artboards-speed',
+    enabled: (s) => many(s) && !s.doc.sharedLayers && mixedRates(s.doc),
+    run: () => toast(`Every artboard now plays at ${sameSpeedForAll()} fps.`),
   },
   {
     id: 'artboards.export',

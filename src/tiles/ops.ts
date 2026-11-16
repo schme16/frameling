@@ -3,9 +3,13 @@
  * document first puts away a tile that's open for editing, so the change lands in the document and not in the tile.
  */
 import { DEFAULT_TILE_SIZE, findLayer, newTilemapLayer } from '../core/doc';
-import type { Doc, Id } from '../core/format';
+import type { Doc, Id, PeeringBit, TerrainMode, TileDataType, TileShape } from '../core/format';
 import { store } from '../core/store';
 import * as m from './model';
+import * as data from './data';
+import * as terrain from './terrain';
+import { TILE_PROPS_EXT, propsOf, writeProps, type TileProps } from './props';
+import { cleanCollision, wholeTileBox } from './shapes';
 import { setTileUi, getTileUi } from './state';
 import { editTile, editingTileKey, finishTileEdit, leaveTileEdit } from './tileEdit';
 import { hint } from '../canvas/controller';
@@ -126,6 +130,194 @@ export function pickTile(key: number): void {
   const { doc, ui } = store().get();
   const layer = findLayer(doc, ui.activeLayerId);
   if (layer?.kind === 'tilemap' && !ui.tool.startsWith('tile-')) store().setUi({ tool: 'tile-brush' });
+}
+
+// ---------------------------------------------------------------- shapes, values and terrain
+
+/**
+ * Changes what a tile carries (shapes, values, terrain). While the tile is open on the canvas the change goes into the
+ * open tile, so it undoes with the drawing and lands with Done; otherwise it goes straight into the tileset.
+ */
+export function updateTileProps(key: number, label: string, mutate: (p: TileProps) => void): boolean {
+  const { doc } = store().get();
+  if (editingTileKey() === key) {
+    const p = (doc.ext?.[TILE_PROPS_EXT] as TileProps | undefined) ?? {};
+    const next = propsOf(p);
+    mutate(next);
+    store().update(label, (d) => {
+      d.ext = { ...(d.ext ?? {}), [TILE_PROPS_EXT]: next };
+    });
+    return true;
+  }
+  if (!m.findTile(doc.tileset, key)) return false;
+  store().update(label, (d) => {
+    const t = m.findTile(d.tileset, key);
+    if (!t) return;
+    const next = propsOf(t);
+    mutate(next);
+    writeProps(t, next);
+  });
+  return true;
+}
+
+/** Changes the tileset's own lists (values, terrains), putting a tile that is open away first and opening it again after. */
+function changeTileset(label: string, fn: (d: Doc) => void): void {
+  const editing = editingTileKey();
+  leaveTileEdit();
+  store().update(label, (d) => fn(d as Doc));
+  if (editing && m.findTile(store().get().doc.tileset, editing)) editTile(editing);
+}
+
+/** Opens a tile's shape on the canvas with the Collision tool. */
+export function drawShape(key: number, mode: 'box' | 'polygon'): boolean {
+  if (!m.findTile(store().rootDoc().tileset, key)) return false;
+  if (!editTile(key)) return false;
+  setTileUi({ shapeMode: mode });
+  store().setUi({ tool: 'tile-shape' });
+  return true;
+}
+
+export function setShapes(key: number, shapes: TileShape[], label = 'Change collision shape'): boolean {
+  return updateTileProps(key, label, (p) => {
+    const c = cleanCollision({ shapes, oneWay: p.collision?.oneWay });
+    if (c) p.collision = c;
+    else delete p.collision;
+  });
+}
+
+export function addShape(key: number, shape: TileShape): boolean {
+  const shapes = [...(tileProps(key).collision?.shapes ?? []), shape];
+  return setShapes(key, shapes, 'Add collision shape');
+}
+
+/** Makes the whole tile solid: one box covering it. */
+export function solidTile(key: number): boolean {
+  const ts = store().rootDoc().tileset;
+  if (!ts) return false;
+  return setShapes(key, [wholeTileBox(ts.tileWidth, ts.tileHeight)], 'Make the tile solid');
+}
+
+export function clearShapes(key: number): boolean {
+  return updateTileProps(key, 'Clear collision shapes', (p) => void delete p.collision);
+}
+
+export function setOneWay(key: number, on: boolean): boolean {
+  return updateTileProps(key, on ? 'Make the tile a one-way platform' : 'Make the tile solid from every side', (p) => {
+    if (!p.collision) return;
+    if (on) p.collision.oneWay = true;
+    else delete p.collision.oneWay;
+  });
+}
+
+/** What a tile carries right now, including changes made while it's open on the canvas. */
+export function tileProps(key: number): TileProps {
+  const root = store().rootDoc();
+  return propsOf(m.findTile(root.tileset, key));
+}
+
+export function addValue(name: string, type: TileDataType): string {
+  let made = '';
+  changeTileset('Add a custom value', (d) => void (made = data.addDataLayer(m.ensureTileset(d), name, type).name));
+  return made;
+}
+
+export function removeValue(name: string): void {
+  changeTileset(`Remove the value "${name}"`, (d) => void (d.tileset && data.removeDataLayer(d.tileset, name)));
+}
+
+export function renameValue(from: string, to: string): boolean {
+  let ok = false;
+  changeTileset('Rename a custom value', (d) => void (ok = !!d.tileset && data.renameDataLayer(d.tileset, from, to)));
+  return ok;
+}
+
+export function retypeValue(name: string, type: TileDataType): void {
+  changeTileset('Change what a value holds', (d) => void (d.tileset && data.retypeDataLayer(d.tileset, name, type)));
+}
+
+/** Sets a tile's value; an empty text for a number or text clears it. */
+export function setTileValue(key: number, name: string, raw: unknown): boolean {
+  const ts = store().rootDoc().tileset;
+  const layer = ts?.dataLayers?.find((l) => l.name === name);
+  if (!ts || !layer) return false;
+  if (raw === '' && layer.type !== 'string') return updateTileProps(key, `Clear "${name}"`, (p) => void (p.data && (delete p.data[name], !Object.keys(p.data).length && delete p.data)));
+  const v = data.coerceData(layer.type, raw);
+  if (v === undefined) return false;
+  return updateTileProps(key, `Set "${name}"`, (p) => void (p.data = { ...(p.data ?? {}), [name]: v }));
+}
+
+export function addTerrain(name?: string): number {
+  let id = 0;
+  changeTileset('Add a terrain', (d) => void (id = terrain.addTerrain(m.ensureTileset(d), { name }).id));
+  setTileUi({ terrain: id });
+  return id;
+}
+
+export function deleteTerrain(id: number): void {
+  const left = (store().rootDoc().tileset?.terrains ?? []).filter((t) => t.id !== id);
+  changeTileset('Delete a terrain', (d) => void (d.tileset && terrain.deleteTerrain(d.tileset, id)));
+  if (getTileUi().terrain === id) setTileUi({ terrain: left[0]?.id ?? 0 });
+}
+
+export function renameTerrain(id: number, name: string): boolean {
+  let ok = false;
+  changeTileset('Rename a terrain', (d) => void (ok = !!d.tileset && terrain.renameTerrain(d.tileset, id, name)));
+  return ok;
+}
+
+export function recolourTerrain(id: number, color: string): boolean {
+  let ok = false;
+  changeTileset('Change a terrain colour', (d) => void (ok = !!d.tileset && terrain.recolourTerrain(d.tileset, id, color)));
+  return ok;
+}
+
+export function setTerrainMode(mode: TerrainMode): void {
+  changeTileset('Change how terrain edges match', (d) => {
+    const ts = m.ensureTileset(d);
+    if (mode === 'corners-and-sides') delete ts.terrainMode;
+    else ts.terrainMode = mode;
+  });
+}
+
+/** Says which terrain a tile is made of (undefined: none). */
+export function setTerrainOf(key: number, id: number | undefined): boolean {
+  return updateTileProps(key, id === undefined ? 'Take the tile out of its terrain' : 'Put the tile in a terrain', (p) => {
+    if (id === undefined) delete p.terrain;
+    else p.terrain = { id, ...(p.terrain?.bits ? { bits: p.terrain.bits } : {}) };
+  });
+}
+
+/** Sets what touches one side or corner of a tile (undefined: nothing). */
+export function setEdge(key: number, bit: PeeringBit, id: number | undefined): boolean {
+  return updateTileProps(key, 'Change a tile edge', (p) => {
+    if (!p.terrain) return;
+    const bits = { ...(p.terrain.bits ?? {}) };
+    if (id === undefined) delete bits[bit];
+    else bits[bit] = id;
+    p.terrain = { id: p.terrain.id, ...(Object.keys(bits).length ? { bits } : {}) };
+  });
+}
+
+/** Works out a tile's edges from its picture (see terrain.guessBits). The tile's first frame is the one looked at. */
+export function guessEdges(key: number): boolean {
+  const root = store().rootDoc();
+  const ts = root.tileset;
+  const tile = m.findTile(ts, key);
+  const own = tileProps(key).terrain?.id;
+  if (!ts || !tile || own === undefined) return false;
+  const d = m.tileDrawingAt(root, tile, 0);
+  if (!d) return false;
+  const guess = terrain.guessBits(d.pixels, d.width, d.height, own, terrain.modeOf(ts));
+  return updateTileProps(key, 'Guess the tile edges from its picture', (p) => void (p.terrain = guess));
+}
+
+/** Makes a full set of edge tiles for a terrain (47 for corners and sides). Returns how many were made. */
+export function makeEdgeTiles(id: number): number {
+  leaveTileEdit();
+  let made: number[] = [];
+  store().update('Make edge tiles', (d) => void (made = terrain.addEdgeSet(d as Doc, id).map((t) => t.key)));
+  if (made.length) setTileUi({ brush: made[made.length - 1] });
+  return made.length;
 }
 
 export { editTile, finishTileEdit, editingTileKey };

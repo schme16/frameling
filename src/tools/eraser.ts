@@ -23,6 +23,7 @@ import { currentChoice, registerChoice, setChoice } from '../core/choices';
 import { toast } from '../ui/toast';
 import { sizeFactor } from '../tablet/dynamics';
 import { activeVectorMirror, mirrorSpots } from './mirror';
+import { choiceWord } from '../words/choices';
 
 interface VectorGesture {
   layerId: Id;
@@ -38,11 +39,11 @@ export type EraserWay = 'bit' | 'whole';
 
 registerChoice<EraserWay>({
   id: 'eraser.vectorWay',
-  title: 'Eraser on lines and shapes',
-  question: 'When the eraser touches a line or shape, what should it rub out?',
+  title: choiceWord('choice.eraser.vectorWay.title'),
+  question: choiceWord('choice.eraser.vectorWay.question'),
   options: [
-    { value: 'bit', label: 'Just the bit I drag over', detail: 'Like a real rubber: a line is cut or nibbled where the circle passes, and the rest stays.' },
-    { value: 'whole', label: 'The whole line', detail: 'Anything the circle touches disappears, so one swipe removes a stroke or a shape.' },
+    { value: 'bit', label: choiceWord('choice.eraser.vectorWay.bit.label'), detail: choiceWord('choice.eraser.vectorWay.bit.detail') },
+    { value: 'whole', label: choiceWord('choice.eraser.vectorWay.whole.label'), detail: choiceWord('choice.eraser.vectorWay.whole.detail') },
   ],
   default: 'bit',
   category: 'Drawing',

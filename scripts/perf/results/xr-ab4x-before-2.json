@@ -1,0 +1,165 @@
+{
+  "env": {
+    "label": "ab4x-before-2",
+    "cpuSlowdown": 4,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "dpr": 1,
+    "idleRafMs": 16.666666666666668,
+    "renderer": "/tmp/claude-1000/-mnt-109313D2109313D2-projects-frameling/2d620d1c-fc39-4118-b005-0a2392de3d2d/scratchpad/renderer-before",
+    "loadMs": [
+      371,
+      300
+    ],
+    "when": "2026-11-15T00:11:57.921Z"
+  },
+  "playback": {
+    "onionOff": {
+      "secondsPlayed": 8,
+      "framesPainted": 190,
+      "framesSkipped": 2,
+      "paintIntervalMs": {
+        "n": 189,
+        "mean": 42.26,
+        "p50": 42.9,
+        "p95": 59.1,
+        "p99": 96.5,
+        "max": 101
+      },
+      "latePaints": 6,
+      "paintMs": {
+        "n": 190,
+        "mean": 0.73,
+        "p50": 0.7,
+        "p95": 1.6,
+        "p99": 3.9,
+        "max": 4.2
+      },
+      "rafDelta": {
+        "n": 315,
+        "mean": 25.4,
+        "p50": 33.2,
+        "p95": 33.4,
+        "p99": 50,
+        "max": 66.7
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 970,
+      "bitmapEvictions": 829
+    },
+    "onionOn": {
+      "secondsPlayed": 8,
+      "framesPainted": 192,
+      "framesSkipped": 0,
+      "paintIntervalMs": {
+        "n": 191,
+        "mean": 41.85,
+        "p50": 29.1,
+        "p95": 65.9,
+        "p99": 72.3,
+        "max": 74.6
+      },
+      "latePaints": 20,
+      "paintMs": {
+        "n": 192,
+        "mean": 0.57,
+        "p50": 0.6,
+        "p95": 1.1,
+        "p99": 1.8,
+        "max": 2.1
+      },
+      "rafDelta": {
+        "n": 282,
+        "mean": 28.37,
+        "p50": 33.3,
+        "p95": 33.4,
+        "p99": 50,
+        "max": 66.7
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 1987,
+      "bitmapEvictions": 1846
+    },
+    "replayFirstSeconds": {
+      "framesPainted": 96,
+      "paintIntervalMs": {
+        "n": 95,
+        "mean": 42.02,
+        "p50": 38.2,
+        "p95": 66.8,
+        "p99": 73.2,
+        "max": 73.2
+      },
+      "latePaints": 7,
+      "paintMs": {
+        "n": 96,
+        "mean": 0.55,
+        "p50": 0.6,
+        "p95": 1,
+        "p99": 1.5,
+        "max": 1.5
+      }
+    },
+    "scrubWithOnion60": {
+      "paintMs": {
+        "n": 60,
+        "mean": 3.41,
+        "p50": 1.7,
+        "p95": 7.9,
+        "p99": 13.6,
+        "max": 13.6
+      },
+      "bitmapBuilds": 2857,
+      "bitmapEvictions": 2716
+    },
+    "stepPaused60": {
+      "paintMs": {
+        "n": 60,
+        "mean": 0.77,
+        "p50": 0.8,
+        "p95": 1.2,
+        "p99": 1.3,
+        "max": 1.3
+      },
+      "bitmapBuilds": 3182,
+      "bitmapEvictions": 3041
+    },
+    "storeFrameUpdateMs": {
+      "n": 120,
+      "mean": 1.38,
+      "p50": 1.3,
+      "p95": 2.4,
+      "p99": 2.9,
+      "max": 2.9
+    }
+  },
+  "consoleErrors": []
+}

@@ -1,0 +1,293 @@
+// Saved brushes: the row at the top of the brush options, and the commands to save, pick, share and step through them.
+// The rules are in model.ts, where they are kept and changed in presets.ts, and the row itself is BrushPresetRow.tsx.
+import { registerCommands } from '../core/registry';
+import { store } from '../core/store';
+import { showPanel } from '../ui/dock';
+import { pickTool } from '../tools/pick';
+import './help';
+import { TIPS } from '../geometry/tip';
+import { flattenBrushLines, makeAlongBrush, setEdgedPiece, EDGED_SLOTS } from './own';
+import { clearPixelStamp, makeBrushFromSelection, pixelBrushStamp, setTipKind, stepTip } from './tips';
+import {
+  activeOwn,
+  addBrushesFromClipboard,
+  addBrushesFromFile,
+  copyBrushesText,
+  currentSide,
+  deleteActive,
+  myBrushes,
+  saveBrushesFile,
+  startNaming,
+  stateFor,
+  stepBrush,
+  toggleActiveFavourite,
+  updateActive,
+} from './presets';
+import { flipRowStyle, requestPicker } from './picker';
+
+export { startBrushPresets } from './presets';
+
+/** Brings the brush options up, with the brush tool, so a name box has somewhere to show. On a pixel brush tool the options are already its own. */
+function showBrushOptions(): void {
+  if (currentSide() === 'pixel') {
+    showPanel('tool-options');
+    return;
+  }
+  pickTool('brush');
+  showPanel('tool-options');
+}
+
+const KEYWORDS: Record<string, string[]> = {
+  stamp: ['stamp', 'leaf', 'star', 'repeat', 'pattern', 'scatter', 'scattered'],
+  watercolour: ['watercolor', 'wash', 'paint'],
+  chalk: ['grain', 'dusty', 'rough', 'sketch'],
+  charcoal: ['grain', 'dusty', 'rough', 'sketch'],
+  nib: ['calligraphy', 'calligraphic', 'nib', 'flat', 'italic', 'pen', 'shaped', 'illustrator'],
+  along: ['art brush', 'along', 'stretch', 'ribbon', 'rope', 'illustrator', 'own drawing'],
+  edged: ['pattern brush', 'edged', 'border', 'chain', 'corner', 'illustrator', 'own drawing'],
+  bristle: ['bristle', 'dry brush', 'paintbrush', 'hairs', 'illustrator'],
+};
+
+registerCommands([
+  {
+    id: 'brush.picker',
+    label: 'Open the brush picker',
+    category: 'Draw',
+    keys: ['Alt+P'],
+    description: 'Drop down the list of your brushes, each with a stroke across it. Type to search, arrows to move, Enter to pick.',
+    help: 'brush-picker',
+    keywords: ['brush', 'picker', 'pick brush', 'brushes', 'library', 'choose brush', 'search brushes', 'preset', 'saved brush'],
+    run: () => {
+      showBrushOptions();
+      requestPicker();
+    },
+  },
+  {
+    id: 'brush.favourite',
+    label: 'Add the brush to Favourites (or take it out)',
+    category: 'Draw',
+    description: 'Star the brush you are using, so it is at the top of the brush picker. Run it again to take the star off.',
+    help: 'brush-picker',
+    keywords: ['brush', 'favourite', 'favorite', 'star', 'pin', 'bookmark'],
+    run: () => void toggleActiveFavourite(),
+  },
+  {
+    id: 'brush.rows',
+    label: 'Brush picker: one column or two',
+    category: 'Draw',
+    description: 'Switch the brush picker between one wide column and two denser columns. Your choice is remembered.',
+    help: 'brush-picker',
+    keywords: ['brush', 'picker', 'columns', 'rows', 'dense', 'layout', 'two columns'],
+    run: () => void flipRowStyle(),
+  },
+  {
+    id: 'brush.saveAs',
+    label: 'Save this brush as...',
+    category: 'Draw',
+    description: 'Keep the brush you are using under a name, to pick again in one click.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'save brush', 'new brush', 'name', 'favourite'],
+    run: () => {
+      showBrushOptions();
+      startNaming('save');
+    },
+  },
+  {
+    id: 'brush.update',
+    label: 'Update the saved brush',
+    category: 'Draw',
+    description: 'Put your changes to the size, smoothing and the rest into the saved brush you picked.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'update', 'overwrite', 'keep changes'],
+    enabled: () => !!activeOwn() && stateFor(currentSide()).changed,
+    run: () => void updateActive(),
+  },
+  {
+    id: 'brush.rename',
+    label: 'Rename the saved brush...',
+    category: 'Draw',
+    description: 'Give the saved brush you picked another name.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'rename', 'name'],
+    enabled: () => !!activeOwn(),
+    run: () => {
+      showBrushOptions();
+      startNaming('rename');
+    },
+  },
+  {
+    id: 'brush.delete',
+    label: 'Delete the saved brush',
+    category: 'Draw',
+    description: 'Take the saved brush you picked away. The message that appears has Undo.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'delete', 'remove'],
+    enabled: () => !!activeOwn(),
+    run: () => void deleteActive(),
+  },
+  {
+    id: 'brush.next',
+    label: 'Next saved brush',
+    category: 'Draw',
+    keys: ['Alt+ArrowDown'],
+    description: 'Move to the next brush in the row at the top of the brush options. On a pixel brush tool, the next pixel brush.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'next', 'switch brush', 'cycle'],
+    run: () => {
+      const side = currentSide();
+      stepBrush(1);
+      if (side === 'vector' && store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.previous',
+    label: 'Previous saved brush',
+    category: 'Draw',
+    keys: ['Alt+ArrowUp'],
+    description: 'Move to the brush before this one in the row at the top of the brush options.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'previous', 'switch brush', 'cycle'],
+    run: () => {
+      const side = currentSide();
+      stepBrush(-1);
+      if (side === 'vector' && store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.tip.plain',
+    label: 'Brush tip: Plain',
+    category: 'Draw',
+    description: 'A smooth, solid line, as the brush usually draws.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'plain', 'smooth', 'solid'],
+    run: () => {
+      showBrushOptions();
+      setTipKind(null);
+    },
+  },
+  ...TIPS.map((t) => ({
+    id: `brush.tip.${t.id}`,
+    label: `Brush tip: ${t.label}`,
+    category: 'Draw',
+    description: t.hint,
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', t.label.toLowerCase(), ...(KEYWORDS[t.id] ?? [])],
+    run: () => {
+      showBrushOptions();
+      setTipKind(t.id);
+    },
+  })),
+  {
+    id: 'brush.tipNext',
+    label: 'Next brush tip',
+    category: 'Draw',
+    keys: ['Alt+Shift+ArrowDown'],
+    description: 'Switch the brush to the next tip: Plain, Chalk, Charcoal, Watercolour, Stamp, Pen nib, Along the line, Edged, Bristles.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'next', 'cycle'],
+    run: () => {
+      stepTip(1);
+      if (store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.tipPrevious',
+    label: 'Previous brush tip',
+    category: 'Draw',
+    keys: ['Alt+Shift+ArrowUp'],
+    description: 'Switch the brush to the tip before this one.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'previous', 'cycle'],
+    run: () => {
+      stepTip(-1);
+      if (store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.fromSelection',
+    label: 'Make a brush from the selection',
+    category: 'Draw',
+    keys: ['Mod+Alt+B'],
+    description: 'Turn what you have selected into a brush: a stamp on a drawing layer, a small picture brush on a pixel layer.',
+    help: 'brush-tips',
+    keywords: ['brush', 'custom brush', 'stamp', 'selection', 'make brush', 'pixel brush', 'pattern'],
+    run: () => void makeBrushFromSelection(),
+  },
+  {
+    id: 'brush.makeAlong',
+    label: 'Make a brush that goes along the line, from the selection',
+    category: 'Draw',
+    keys: ['Mod+Alt+Shift+B'],
+    description: 'Use the shapes you have selected as one drawing that stretches or repeats down every line you draw.',
+    help: 'brush-own',
+    keywords: ['brush', 'art brush', 'along', 'stretch', 'ribbon', 'rope', 'illustrator', 'make brush', 'custom brush', 'own brush'],
+    run: () => void makeAlongBrush(),
+  },
+  ...EDGED_SLOTS.map((p) => ({
+    id: `brush.edged.${p.id}`,
+    label: `Edged brush: ${p.id === 'sides' ? 'sides' : p.label.toLowerCase()} from the selection`,
+    category: 'Draw',
+    description: `${p.hint} Select a drawing, then run this. ${p.id === 'sides' ? 'It starts a new edged brush.' : 'The sides come first.'}`,
+    help: 'brush-own',
+    keywords: ['brush', 'pattern brush', 'edged', 'border', 'chain', 'corner', p.label.toLowerCase(), 'illustrator', 'make brush', 'own brush'],
+    run: () => void setEdgedPiece(p.id),
+  })),
+  {
+    id: 'brush.flatten',
+    label: 'Turn brush lines into plain shapes',
+    category: 'Draw',
+    description: 'Fix the selected chalk, stamp, nib, bristle and drawing-along-the-line strokes as ordinary shapes, so they no longer follow the brush or its settings.',
+    help: 'brush-own',
+    keywords: ['brush', 'flatten', 'expand', 'outline', 'plain shapes', 'expand appearance', 'illustrator', 'bake'],
+    run: () => void flattenBrushLines(),
+  },
+  {
+    id: 'brush.pixelReset',
+    label: 'Back to the usual pixel brush',
+    category: 'Draw',
+    description: 'Stop painting with the brush made from a selection, and use the square or round pixel brush again.',
+    help: 'brush-tips',
+    keywords: ['brush', 'pixel brush', 'custom brush', 'reset', 'square', 'round'],
+    enabled: () => !!pixelBrushStamp(),
+    run: () => clearPixelStamp(),
+  },
+  {
+    id: 'brush.saveFile',
+    label: 'Save my brushes as a file',
+    category: 'Draw',
+    description: 'Make a small file of the brushes you saved, to send to a friend.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'share', 'export', 'file'],
+    enabled: () => myBrushes().length > 0,
+    run: () => void saveBrushesFile(),
+  },
+  {
+    id: 'brush.copyText',
+    label: 'Copy my brushes as text',
+    category: 'Draw',
+    description: 'Put the brushes you saved on the clipboard as text, to paste into a message.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'share', 'copy', 'text', 'clipboard'],
+    enabled: () => myBrushes().length > 0,
+    run: () => void copyBrushesText(),
+  },
+  {
+    id: 'brush.addFile',
+    label: 'Add brushes from a file...',
+    category: 'Draw',
+    description: 'Add the brushes in a file someone sent you: one made in Frameling, or a GIMP, Photoshop or Krita brush file. You see what is in it first, and what did not come across.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'import', 'open', 'file', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'kpp', 'bundle', 'procreate', 'brush set', 'brushes from other programs', 'download'],
+    run: () => void addBrushesFromFile(),
+  },
+  {
+    id: 'brush.pasteText',
+    label: 'Add brushes from pasted text',
+    category: 'Draw',
+    description: 'Add the brushes in text you copied from a message.',
+    help: 'brush-presets',
+    keywords: ['brush', 'preset', 'import', 'paste', 'text', 'clipboard'],
+    run: () => void addBrushesFromClipboard(),
+  },
+]);
+

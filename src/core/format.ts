@@ -9,6 +9,10 @@
  */
 
 export const FORMAT_VERSION = 3;
+/** What a file that uses a key's `offset` is saved as, so an older Frameling refuses it instead of drawing parts in the wrong place. Files that don't use one stay at `FORMAT_VERSION`. */
+export const OFFSET_FORMAT_VERSION = 4;
+/** The newest version this build can open. */
+export const NEWEST_FORMAT_VERSION = OFFSET_FORMAT_VERSION;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
@@ -41,6 +45,13 @@ export interface Doc {
   dpi?: number;
   /** Total length in frames (at least 1). Playback and export run from 0 to length - 1 unless a clip says otherwise. */
   length: number;
+  /**
+   * Whether this drawing is an animation. True shows the timeline, frame rate and the animation tools; false is a still
+   * picture, with them tucked away (nothing is deleted: the frames, if there are any, stay in the file and come back
+   * with Add animation). Missing = what every file before this field meant: an animation when `length` is above 1. See
+   * src/core/animation.ts.
+   */
+  animated?: boolean;
   /** Stage colour, or null for transparent. */
   background: Color | null;
   /** Layers, bottom first: index 0 is drawn first (furthest back). */
@@ -70,8 +81,16 @@ export interface Doc {
   flow?: ClipFlow;
   /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
   audio?: AudioClip[];
+  /** The pictures that reference layers show behind the drawing, by what they were added as (missing = none). See `ReferencePicture`. */
+  pictures?: ReferencePicture[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** Selections saved under a name, to bring back later (missing = none). Never exported. See `SavedSelection`. */
+  selections?: SavedSelection[];
+  /** Notes left on the canvas, for you or whoever opens the file next (missing = none). Saved in the file, never exported. See `CanvasNote`. */
+  notes?: CanvasNote[];
+  /** Marks drawn over the picture (arrows, circles, a scribble, a few words) for you or whoever reviews it (missing = none). Saved in the file, never exported. See `CanvasMark`. */
+  marks?: CanvasMark[];
   /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
   inOut?: { start: number; end: number };
   /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
@@ -79,7 +98,7 @@ export interface Doc {
   /**
    * Artboards: several named canvases in one document, each with its own size, background, layers and timeline (a
    * sprite, a shot). The open one's content is the document's own fields (`width` to `perspective`); the others keep theirs
-   * in `Artboard.content`. Palette, swatches, symbols, tiles and fps are shared. Missing = the document is one artboard.
+   * in `Artboard.content`. Palette, swatches, symbols and tiles are shared; the frame rate is each artboard's own (`Doc.fps` is the open one's). Missing = the document is one artboard.
    * See src/artboards.
    */
   artboards?: Artboard[];
@@ -95,6 +114,53 @@ export interface Doc {
   sprite?: SpriteInfo;
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** How this drawing was last exported, and the named ways it can leave (missing = none yet). See src/export/saved.ts. */
+  exports?: DocExports;
+  /**
+   * The undo and redo steps saved with the drawing, so whoever opens the file can step back through them (missing = none).
+   * Only ever in a file: the reader takes the steps out and gives them to the store, so a document in memory never has
+   * it and no export writes it. This is just the note in `doc.json`; the steps are in the `history/` entries. See `DocHistory`.
+   */
+  history?: DocHistory;
+}
+
+/**
+ * What `doc.json` says about the history in the file. The steps are in `history/steps.json` (the patches, as JSON) and
+ * `history/data.bin` (the pixels they hold, as bytes), see src/core/historyFile.ts. A pixel step holds only the
+ * rectangle it changed.
+ *
+ * Unlike `offset`, history does NOT raise the file's version (see `OFFSET_FORMAT_VERSION`). A file is raised so an older
+ * build refuses it when reading it wrongly would draw the wrong picture. An older build that skips the history draws the
+ * right picture, and a bump would stop it opening every file that has steps, so the file stays at its normal version:
+ * an older build opens the drawing and leaves the steps out (and drops them if it saves again).
+ */
+export interface DocHistory {
+  /** How the entries are laid out. A reader that doesn't know the number leaves the history out. */
+  v: 1;
+  /** Steps that Undo goes back through, oldest first in the file. */
+  undo: number;
+  /** Steps that Redo goes forward through, the next one first in the file. */
+  redo: number;
+  /** Older steps that were left out to keep the file small (missing = none). */
+  dropped?: number;
+}
+
+/** Export choices as plain data (the Export window's settings, with nothing but strings, numbers and yes/no inside). */
+export interface SavedSettings {
+  [key: string]: string | number | boolean | null | SavedSettings;
+}
+
+/** One named way out ("the sprite sheet", "the web video"): a set of export choices kept with the drawing. */
+export interface SavedExport {
+  id: Id;
+  name: string;
+  settings: SavedSettings;
+}
+
+/** What a drawing remembers about exporting. `last` is what Export again repeats; `way` is the saved way it was, if it was one. */
+export interface DocExports {
+  last?: { settings: SavedSettings; way?: Id };
+  ways?: SavedExport[];
 }
 
 /**
@@ -224,6 +290,8 @@ export interface ArtboardContent {
   height: number;
   background: Color | null;
   length: number;
+  /** Frames per second, this artboard's own (missing = the rate of the artboard open when it was read: files from before each had its own). Not kept with shared layers, where every artboard plays at `Doc.fps`. */
+  fps?: number;
   /** The artboard's own layers. Empty when the document shares one stack (`Doc.sharedLayers`): see `cels`. */
   layers: Layer[];
   /** With shared layers: this artboard's cels on each layer of the document's stack, by layer id (missing = nothing drawn). */
@@ -237,6 +305,76 @@ export interface ArtboardContent {
   perspective?: Doc['perspective'];
 }
 
+/** A note's answer to it. */
+export interface NoteReply {
+  id: Id;
+  text: string;
+  /** Who wrote it, when that is known. */
+  by?: string;
+  /** When, as milliseconds since 1970, when that is known. */
+  at?: number;
+}
+
+/**
+ * A note left on the canvas ("the elbow pops here"). It lives in the file and is never drawn into an export (see
+ * src/notes). `pin` says where it belongs: the page (always there), one frame, or one layer (while that layer has a
+ * drawing on the frame you are on). Missing `pin` = the page.
+ */
+export interface CanvasNote {
+  id: Id;
+  /** Where its marker sits, in stage pixels. */
+  x: number;
+  y: number;
+  text: string;
+  pin?: 'page' | 'frame' | 'layer';
+  /** The frame a frame note belongs to (0 is the first). */
+  frame?: number;
+  /** The layer a layer note belongs to. */
+  layer?: Id;
+  /** The artboard it was left on (missing = shows on every artboard, or the document has none). */
+  board?: Id;
+  /** Who left it, when that is known. */
+  by?: string;
+  /** When, as milliseconds since 1970, when that is known. */
+  at?: number;
+  /** Ticked off as done (missing = still open). */
+  done?: true;
+  /** Answers, oldest first (missing = none). */
+  replies?: NoteReply[];
+}
+
+/**
+ * A mark drawn over the picture: an arrow, a circle, a scribble or a few words (see src/notes/marks.ts). Like a note it
+ * lives in the file and is never drawn into an export. `pin` says where it belongs, the same way a note's does: the
+ * page, one frame, or one layer. Missing `pin` = the page.
+ *
+ * `pts` is a flat list of stage pixels, x then y: an arrow is [tailX, tailY, tipX, tipY]; a circle is two opposite
+ * corners of its box [x1, y1, x2, y2]; a scribble is the points of the stroke; a text mark is [x, y], the top left of
+ * its first line.
+ */
+export interface CanvasMark {
+  id: Id;
+  kind: 'arrow' | 'circle' | 'scribble' | 'text';
+  pts: number[];
+  /** CSS hex colour (missing = the default red). */
+  color?: string;
+  /** Line thickness in screen pixels, whatever the zoom (missing = 3). */
+  w?: number;
+  /** The words of a text mark. */
+  text?: string;
+  pin?: 'page' | 'frame' | 'layer';
+  /** The frame a frame mark belongs to (0 is the first). */
+  frame?: number;
+  /** The layer a layer mark belongs to. */
+  layer?: Id;
+  /** The artboard it was drawn on (missing = shows on every artboard, or the document has none). */
+  board?: Id;
+  /** Who drew it, when that is known (a reviewer in a live review). */
+  by?: string;
+  /** When, as milliseconds since 1970, when that is known. */
+  at?: number;
+}
+
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */
 export interface Guide {
   id: Id;
@@ -244,6 +382,14 @@ export interface Guide {
   /** Stage pixels from the left (x) or top (y) edge. */
   at: number;
 }
+
+/**
+ * A selection saved under a name. Pixels: the mask over a pixel layer's art grid, as runs of cover (`cover`, see
+ * src/select/saved.ts), so a feathered edge comes back feathered. Shapes: the ids of the picked shapes on a vector layer.
+ */
+export type SavedSelection =
+  | { id: Id; name: string; kind: 'pixels'; width: number; height: number; cover: string }
+  | { id: Id; name: string; kind: 'shapes'; layerId: Id | null; ids: Id[] };
 
 /** Colour labels a layer can wear on the timeline. */
 export const LAYER_LABELS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
@@ -264,6 +410,8 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** A picture this reference layer shows, drawn by the canvas only and never exported (missing = none). See `LayerPicture`. */
+  picture?: LayerPicture;
   /** Attached to a bone, so it moves with the skeleton (missing = not attached). See `LayerBind`. */
   bind?: LayerBind;
   /** How the layer mixes with what's under it (missing = 'normal'). */
@@ -283,6 +431,12 @@ export interface BaseLayer {
   depth?: number;
   /** A colour label for the timeline, to tell layers apart at a glance (missing = the kind's own colour). */
   label?: LayerLabel;
+  /**
+   * The other half of a pair: the vector layer and the pixel layer that one drawing is made of (missing = not paired).
+   * Both name each other. A pair is shown as one row, and its cels keep the same starts and lengths. A link the other
+   * layer does not return, or that joins two layers of one kind, counts as no pair at all. See `core/pairs.ts`.
+   */
+  pair?: Id;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -385,6 +539,25 @@ export interface Cel {
    * a later frame of it, as if those frames were empty. Choosing a length (Hold for, dragging the end) clears it.
    */
   autoHold?: boolean;
+  /**
+   * A name for this drawing ("eyes sad", "arm up"), so a pose can be found without counting frames (missing = none).
+   * Shown on the timeline bar, in the Drawings panel and the jump list. Never written when empty; an older Frameling
+   * drops it without a warning and the file plays the same.
+   */
+  name?: string;
+  /**
+   * Where the drawing sits on this key, in document pixels from where it was drawn (missing = not moved). Lets a
+   * breathe or a head bob move a part by a pixel or two without a new drawing for every position. Drawn by every
+   * renderer and export, and in-betweens go from this key's offset to the next key's when the key has a tween. A file
+   * that uses it is written as version 4, so an older Frameling refuses it rather than drawing the part in the wrong place.
+   */
+  offset?: CelOffset;
+}
+
+/** How far a key's drawing is moved, in document pixels. Right and down are positive. */
+export interface CelOffset {
+  x: number;
+  y: number;
 }
 
 export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;
@@ -498,6 +671,53 @@ export interface Tileset {
   tiles: Tile[];
   /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */
   nextKey: number;
+  /** The named values every tile can carry (damage, solid), each with one type. Tiles hold the values in `Tile.data`. Missing = none. */
+  dataLayers?: TileDataLayer[];
+  /** The terrains tiles can belong to (grass, water), for edges that pick themselves as you paint. Missing = none. */
+  terrains?: Terrain[];
+  /** What the terrains' edges are matched on: sides only, corners only, or both (missing = both, which is Godot's "corners and sides"). */
+  terrainMode?: TerrainMode;
+  /** The key the next new terrain gets (missing = one more than the highest). Ids are never reused. */
+  nextTerrain?: number;
+}
+
+/** The type of a custom value on tiles. */
+export type TileDataType = 'bool' | 'int' | 'float' | 'string';
+export type TileDataValue = boolean | number | string;
+
+export interface TileDataLayer {
+  name: string;
+  type: TileDataType;
+}
+
+export type TerrainMode = 'corners-and-sides' | 'corners' | 'sides';
+
+export interface Terrain {
+  /** Stays the same when terrains are deleted, so tiles keep pointing at the right one. */
+  id: number;
+  name: string;
+  /** Hex colour, how the terrain shows in the panel and in Godot's editor. */
+  color: string;
+}
+
+/** The eight neighbours of a square tile, clockwise from the right side. */
+export type PeeringBit = 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left' | 'top' | 'top-right';
+
+/** A shape a tile blocks things with, in art pixels from the tile's top-left corner. */
+export type TileShape = { kind: 'box'; x: number; y: number; w: number; h: number } | { kind: 'polygon'; points: { x: number; y: number }[] };
+
+export interface TileCollision {
+  shapes: TileShape[];
+  /** Solid only from above: things land on it but jump up through it (a platform). */
+  oneWay?: boolean;
+}
+
+/** Which terrain a tile belongs to, and which terrain sits against each of its sides and corners. */
+export interface TileTerrain {
+  /** The terrain the tile is made of. */
+  id: number;
+  /** For each side or corner that touches a terrain, which one (a side missing touches nothing). */
+  bits?: Partial<Record<PeeringBit, number>>;
 }
 
 export interface Tile {
@@ -506,12 +726,55 @@ export interface Tile {
   name: string;
   /** One frame for a still tile, more for an animated one (water, torches). Each is a pixel drawing in `drawings`. */
   frames: TileFrame[];
+  /** What the tile blocks (missing = nothing, the tile is only a picture). */
+  collision?: TileCollision;
+  /** Custom values by the name of a `Tileset.dataLayers` entry (missing = none set). */
+  data?: Record<string, TileDataValue>;
+  /** The terrain it belongs to and what its edges touch (missing = none). */
+  terrain?: TileTerrain;
 }
 
 export interface TileFrame {
   drawingId: Id;
   /** How many document frames it shows for. */
   duration: number;
+}
+
+/**
+ * More of a shape, made when it is drawn and never stored as shapes of their own (see src/core/repeats.ts). The shape
+ * itself stays the first one; change it and every copy follows. A copy can't be clicked and isn't a snap target. At
+ * most 400 shapes in all, so a big count is held down rather than slowing the page.
+ */
+export type Repeat = GridRepeat | RingRepeat | MirrorRepeat;
+
+/** Rows and columns: `cols` across and `rows` down, `dx` between columns and `dy` between rows (document pixels, either sign). */
+export interface GridRepeat {
+  kind: 'grid';
+  cols: number;
+  rows: number;
+  dx: number;
+  dy: number;
+}
+
+/** A ring, or a fan: `count` in all round (`cx`, `cy`), spread through `sweep` degrees (missing = 360, a full ring). */
+export interface RingRepeat {
+  kind: 'ring';
+  count: number;
+  cx: number;
+  cy: number;
+  sweep?: number;
+  /** Each copy turns to follow the ring (missing = yes). False keeps every copy the way up the original is. */
+  turn?: boolean;
+}
+
+/** A mirror image across the line through (`x`, `y`) at `angle` degrees (missing = 90, an up-and-down line), or through the point alone. */
+export interface MirrorRepeat {
+  kind: 'mirror';
+  x: number;
+  y: number;
+  angle?: number;
+  /** Reflect through the point itself, not a line (a half turn). */
+  point?: boolean;
 }
 
 export type Shape = StrokeShape | FillShape | PathShape | InstanceShape | TextShape | ParticlesShape;
@@ -538,6 +801,86 @@ export interface BrushSettings {
   /** Round or flat ends when not tapered. */
   capStart: boolean;
   capEnd: boolean;
+  /** What the line is made of instead of a smooth solid (chalk, charcoal, watercolour edges, a stamp along the line). Missing = a plain line. See `BrushTip`. */
+  tip?: BrushTip;
+}
+
+/** The kinds of tip a brush can have besides plain. */
+export type TipKind = 'chalk' | 'charcoal' | 'watercolour' | 'stamp' | 'nib' | 'along' | 'edged' | 'bristle';
+/** The built-in stamps, and `custom` for one made from a selection. */
+export type StampShape = 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw' | 'custom';
+/** How stamps turn: along the line, always upright, or every which way. */
+export type StampAngle = 'follow' | 'upright' | 'random';
+
+/**
+ * A brush tip. The line is still kept as its points, so it can be restyled; the tip only changes what is drawn from them
+ * (the shapes it is made of are worked out when drawing and exporting, see src/geometry/tip.ts). Every field but `kind`
+ * is optional and has a default there.
+ */
+export interface BrushTip {
+  kind: TipKind;
+  /** Chalk and charcoal: how much of the line is grain, 0 to 1. Watercolour: how strong the darker edge is, 0 to 1. */
+  amount?: number;
+  /** Chalk and charcoal: how coarse the grain is, 0.5 to 3 (1 = usual). */
+  grain?: number;
+  /** Chalk and charcoal: the dry medium (see src/dry/maths.ts) whose paper tooth the line catches on. The line then carries a Paper tooth effect, so it is drawn as a picture of pigment on paper, not as tiny shapes. Missing = the grain made of tiny shapes. */
+  dry?: 'vine-charcoal' | 'compressed-charcoal' | 'chalk' | 'soft-pastel' | 'oil-pastel' | 'crayon' | 'sketch-pencil' | 'soft-pencil' | 'colour-pencil';
+  /** Chalk and charcoal on a dry medium: how much the stick's own bumps streak the line along the way it is dragged, 0 to 1. Missing = the medium's own (see src/dry/maths.ts). */
+  streak?: number;
+  /** Stamp: which shape, and how far apart the stamps are (a share of the brush size, 0.2 to 4). */
+  shape?: StampShape;
+  spacing?: number;
+  /** Stamp: how much the size varies from stamp to stamp, 0 to 1. */
+  jitter?: number;
+  angle?: StampAngle;
+  /** Stamp: how far stamps wander off the line, a share of the brush size, 0 to 2. */
+  scatter?: number;
+  /** A custom stamp: closed outlines as flat lists [x, y, x, y, ...], centred on 0 and 1 unit across. */
+  custom?: number[][];
+  /** Keeps the random parts (stamp jitter and scatter, bristle wobble and gaps) the same every time the line is drawn. Set when the line is drawn. */
+  seed?: number;
+  /** Stamp: how far each stamp may spin on top of `angle`, 0 (none) to 1 (any way). */
+  turn?: number;
+  /** Stamp: true keeps every stamp the same size whatever the pen pressure (missing = pressure sizes them). */
+  fixedSize?: boolean;
+  /** Stamp: how much the gap between stamps varies, 0 to 1. */
+  gapVary?: number;
+  /** Nib (a flat or oval pen point): how thin it is next to its length, 0.05 (a blade) to 1 (round), and its angle in degrees. `angle` 'upright' keeps the angle fixed, 'follow' measures it from the way the line runs. */
+  roundness?: number;
+  nibAngle?: number;
+  /** Along the stroke: 'stretch' (missing) stretches the drawing down the whole line, 'repeat' lays copies end to end. */
+  fit?: 'stretch' | 'repeat';
+  /** Edged: the drawings for the two ends and the inner and outer corners. `custom` is the drawing for the sides. Each is closed outlines like `custom`. */
+  pieces?: TipPieces;
+  /** Bristle: how many bristles (3 to 60) and how stiff they are, 0 (floppy, wander) to 1 (stay in line). `amount` is how many gaps (dry brush). */
+  count?: number;
+  stiffness?: number;
+  /** Bristle: how fat each bristle is next to the gap it sits in. 0 (missing) is a little wider than the gap, 1 is so fat they close into solid paint, and down to -1 is thin lines with clear gaps between (a rake). */
+  body?: number;
+  /** Bristle: how much lighter and darker the bristles run from the colour, 0 (all one colour) to 1, in broad streaks along the line. Missing = 0. */
+  tone?: number;
+}
+
+/** The extra drawings of an edged brush (see `BrushTip.pieces`). Any can be missing: the sides are used instead. */
+export interface TipPieces {
+  start?: number[][];
+  end?: number[][];
+  inner?: number[][];
+  outer?: number[][];
+}
+
+/**
+ * Which part of an outline shows, for a line that draws itself. All three are percents of the line's length. The line
+ * between `start` and `end` shows and the rest doesn't (`start` after `end` counts the same, the smaller first). `offset`
+ * slides that window along the line; on a closed outline it wraps round, on an open line it stops at the ends.
+ * Missing, or 0, 100 and 0, = the whole line. Keyed by drawing key, in-betweens ease between the keys.
+ */
+export interface Trim {
+  start: number;
+  end: number;
+  offset: number;
+  /** An outline made of several lines: 'together' trims each by the same amount (missing), 'inOrder' treats them as one long line. */
+  order?: 'together' | 'inOrder';
 }
 
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
@@ -550,12 +893,18 @@ export interface StrokeShape {
   type: 'stroke';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   points: StrokePoint[];
   brush: BrushSettings;
   /** The widths came from a real pen, so they are never made up from how fast the line was drawn (missing = work it out). */
   realPressure?: boolean;
   color: Color;
   opacity: number;
+  /** Shows only part of the line (missing = all of it). See `Trim`. */
+  trim?: Trim;
 }
 
 /** One closed outline: a list of points, each optionally a cubic bezier from the previous point. */
@@ -584,12 +933,19 @@ export interface FillShape {
   type: 'fill';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   paths: SubPath[];
   color: Color;
   opacity: number;
   /** Paints with this instead of `color` when set (`color` stays as its first stop, for anything that wants one colour). */
   gradient?: Gradient;
 }
+
+/** The ways a gradient can run. */
+export type GradientKind = 'linear' | 'radial' | 'angular' | 'diamond';
 
 /** One colour along a gradient, `at` from 0 (start) to 1 (end). */
 export interface GradientStop {
@@ -598,14 +954,48 @@ export interface GradientStop {
 }
 
 /**
- * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`. Both
- * are in document pixels, the same space as the shape's points, so moving the shape moves its gradient too.
+ * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`; angular
+ * (conic) sweeps once round `from`, clockwise, starting in the direction of `to` (stop 0 and stop 1 meet there), so
+ * how far `to` is only moves the handle; diamond steps out from `from` in a square turned on its corner, with `to` the
+ * corner on the way out (stop 1 sits there, and past it the last colour carries on). All are in document pixels, the
+ * same space as the shape's points, so moving the shape moves its gradient too. A file from before angular or diamond
+ * existed never has those kinds, and an older Frameling that meets one drops it and shows the shape's plain colour.
  */
 export interface Gradient {
-  kind: 'linear' | 'radial';
+  kind: GradientKind;
   stops: GradientStop[];
   from: { x: number; y: number };
   to: { x: number; y: number };
+}
+
+/** The head on the end of an open line. */
+export type ArrowHead = 'triangle' | 'open' | 'dot' | 'bar';
+
+/** How wide a line is at one place along it: `at` from 0 (start) to 1 (end), `w` times the line's width. */
+export interface WidthStop {
+  at: number;
+  w: number;
+}
+
+/** A shape's outline. Everything after `cap` is optional, so older files read unchanged (missing = a plain line). */
+export interface PathStroke {
+  color: Color;
+  width: number;
+  join: 'round' | 'miter' | 'bevel';
+  cap: 'round' | 'butt' | 'square';
+  /** Dashes and gaps, in line widths: [3, 2] is a dash three widths long, then a gap of two (missing or empty = solid). A dash of about 0 with round caps is a dot. */
+  dash?: number[];
+  /** Where in the pattern the line starts, in line widths (missing = 0). */
+  dashOffset?: number;
+  /** A head on the start and the end of every open line (missing = none). */
+  arrowStart?: ArrowHead;
+  arrowEnd?: ArrowHead;
+  /** How long the heads are, in line widths (missing = 4). */
+  arrowSize?: number;
+  /** Width along the line, as stops from the start (0) to the end (1), times `width` (missing = the same all the way). */
+  widths?: WidthStop[];
+  /** Shows only part of the outline, so a line can draw itself (missing = all of it). See `Trim`. */
+  trim?: Trim;
 }
 
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
@@ -618,9 +1008,13 @@ export interface PathShape {
   type: 'path';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   paths: SubPath[];
   fill: Color | null;
-  stroke: { color: Color; width: number; join: 'round' | 'miter' | 'bevel'; cap: 'round' | 'butt' | 'square' } | null;
+  stroke: PathStroke | null;
   opacity: number;
   /** Gradients for the inside and the outline, used instead of the plain colours when set. */
   fillGradient?: Gradient;
@@ -702,7 +1096,7 @@ export type BlendMode =
   /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
   | 'divide';
 
-export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
+export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate' | 'grain' | 'wave' | 'fringe' | 'vignette' | 'motionblur' | 'tooth';
 
 /**
  * One effect in a layer's stack. `values` holds every setting (numbers, and colours as hex). Numbers can be animated
@@ -781,6 +1175,10 @@ export interface InstanceShape {
   type: 'instance';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   symbolId: Id;
   transform: Transform2D;
   opacity: number;
@@ -885,6 +1283,27 @@ export interface TextAnimator {
 }
 
 /**
+ * Words running along a curve instead of a straight line (text on a path). The curve is kept inside the text, in the
+ * text's own space, so the words draw, hit, export and save without looking anything up. `source` names the line or
+ * shape in the same drawing it follows; a change to that shape updates `curve` in the same undo step (see
+ * src/text/onPathSettle.ts). If the source is gone the words keep the curve they last had.
+ */
+export interface TextOnPath {
+  /** The id of the line, curve or shape in this drawing the words follow (missing = none: the words keep their own curve). */
+  source?: Id;
+  /** The curve, in the text's own space (before its transform). Beziers where a point has `c1` and `c2`. */
+  curve: SubPath;
+  /** Which side the letters stand on: 'outside' (missing) reads clockwise round a closed curve, on top of an open line; 'inside' reads anticlockwise with the letters' tops toward the middle, under an open line. */
+  side?: 'outside' | 'inside';
+  /** Turns the words the other way round the curve, which also puts them on the other side (missing = no). */
+  flip?: boolean;
+  /** Where the line of words begins, as a fraction of the curve's length (missing = 0). With `align` centre it is where the middle of the words sits. */
+  start?: number;
+  /** Distance of the baseline from the curve, document pixels, away from it on the letters' side (missing = 0). */
+  offset?: number;
+}
+
+/**
  * Text as one shape: lines of a font at a size, placed and turned by `transform` (the first line's baseline starts at
  * the origin; the anchor moves with `align`). Kept as text, so it stays editable; "Convert to shapes" makes outlines.
  */
@@ -896,6 +1315,10 @@ export interface TextShape {
   type: 'text';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** More of this shape, made as it is drawn (missing = just the one). See `Repeat`. */
+  repeat?: Repeat;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   text: string;
   /** Font family name ('Nunito', 'Inter', or a font on this computer). */
   font: string;
@@ -912,6 +1335,8 @@ export interface TextShape {
   opacity: number;
   transform: Transform2D;
   animators?: TextAnimator[];
+  /** Runs the words along a curve (missing = a straight line). Lines of the text are joined into one run. See `TextOnPath`. */
+  onPath?: TextOnPath;
 }
 
 /** What each particle looks like. 'symbol' draws `ParticlesShape.symbolId`. */
@@ -930,6 +1355,8 @@ export interface ParticlesShape {
   type: 'particles';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   /** Where the emitter sits and how it is turned and stretched (origin = its centre). */
   transform: Transform2D;
   /** Where particles start: one point, along a line (`width` long) or inside a box (`width` x `height`). */
@@ -985,25 +1412,61 @@ export interface ParticlesShape {
 
 /**
  * Which clip plays first and what follows what. States are the document's clips. Game engines and Interactives read
- * this as a state machine; Frameling's own playback ignores it.
+ * this as a state machine; Frameling's own playback ignores it (Try it in the Clip flow panel plays it).
  */
 export interface ClipFlow {
   /** The clip that plays first (missing = the first clip). */
   start?: Id;
   transitions: ClipTransition[];
-  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). */
+  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). The "Any clip" box is under `FLOW_ANY`. */
   positions?: Record<Id, { x: number; y: number }>;
+  /** Named values the game sets while it plays (speed, grounded, health). Arrows can check them. Missing = none. */
+  inputs?: FlowInput[];
+  /**
+   * Which arrow goes first when an "Any clip" arrow and the clip's own arrow are both ready. True (the default, so a
+   * hurt clip cuts in) puts the Any clip arrows first, false the clip's own. Exports write the arrows in this order.
+   */
+  anyFirst?: boolean;
 }
 
-/** Go from one clip to another when it ends, or when something triggers it (a key press, "jump", "hit"). */
+/** The `from` of an arrow that starts from every clip ("Any clip"), so a hurt clip can play from anywhere. */
+export const FLOW_ANY = '*';
+
+/** The longest fade between two clips, in seconds. */
+export const MAX_FLOW_BLEND = 5;
+
+/** A named value the flow can check: on/off ('toggle') or a number. Names are unique and are how arrows refer to it. */
+export interface FlowInput {
+  name: string;
+  kind: 'toggle' | 'number';
+  /** What it starts as (missing = off, or 0). */
+  start?: boolean | number;
+}
+
+/** One check on an arrow: "speed is above 0.5", "grounded is on". An on/off input uses '==' or '!=' with true or false. */
+export interface FlowCondition {
+  input: string;
+  op: '>' | '>=' | '<' | '<=' | '==' | '!=';
+  value: boolean | number;
+}
+
+/** Go from one clip to another when it ends, when something triggers it (a key press, "jump", "hit"), or as soon as its checks hold. */
 export interface ClipTransition {
   id: Id;
+  /** The clip it leaves, or `FLOW_ANY` for every clip. */
   from: Id;
   to: Id;
-  /** 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired. */
-  when: 'end' | 'trigger';
+  /**
+   * 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired.
+   * 'now': as soon as `conditions` hold (an arrow with no checks never fires).
+   */
+  when: 'end' | 'trigger' | 'now';
   /** The trigger's name, for 'trigger' transitions. */
   trigger?: string;
+  /** Checks that must all hold before the arrow is taken (missing = none). */
+  conditions?: FlowCondition[];
+  /** Seconds to fade from one clip into the next (missing or 0 = a straight cut). */
+  blend?: number;
 }
 
 // ---------------------------------------------------------------- bones and rigs
@@ -1077,6 +1540,45 @@ export interface SkinMesh {
 // ---------------------------------------------------------------- sound
 
 /** A sound placed on the timeline. */
+/** One picture a reference layer can show: the file as it came (JPG or PNG). In a saved file it lives beside doc.json as `pictures/<id>.<ext>`. */
+export interface ReferencePicture {
+  id: Id;
+  /** What it was called, for the layer's name and the lists ("model-sheet.png"). */
+  name: string;
+  data: Uint8Array;
+  /** `image/jpeg` or `image/png`. */
+  mime: string;
+  /** Its own size in pixels, as it shows (a phone photo turned by its EXIF note is already the right way up). */
+  width: number;
+  height: number;
+}
+
+/** Which picture shows on which frames of a picture layer. A shot with no `length` holds until the next one starts. */
+export interface PictureShot {
+  /** An id in `Doc.pictures`. */
+  picture: Id;
+  /** The first frame it shows on. */
+  start: number;
+  /** How many frames it shows for (missing = until the next shot, or the end). */
+  length?: number;
+}
+
+/**
+ * What a reference layer shows and where it sits. One placement for the layer (a rotoscoped clip stays put from frame to
+ * frame); `shots` says which picture is on which frame. Drawn in the layer's place in the stack, under its fade.
+ */
+export interface LayerPicture {
+  /** The middle of the picture, in stage pixels. */
+  x: number;
+  y: number;
+  /** Stage pixels per picture pixel: 1 shows it at its own size. */
+  scale: number;
+  /** Turned this many degrees clockwise about its middle (missing = 0). */
+  turn?: number;
+  /** In order of `start`. */
+  shots: PictureShot[];
+}
+
 export interface AudioClip {
   id: Id;
   name: string;

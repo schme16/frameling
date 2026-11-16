@@ -57,6 +57,6 @@ export async function giveToQuill(): Promise<boolean> {
   const thing = await thingFromNow();
   if (!thing) return false;
   tellQuill({ kind: 'gave', thing });
-  noteFuss();
+  noteFuss('given');
   return true;
 }

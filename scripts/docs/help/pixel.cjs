@@ -85,18 +85,7 @@ const pixelDoc = (rows, tool = ['p'], o = {}) => [
 
 const pixelWorkspace = () => js(`${F}.dock.applyWorkspace('pixel')`);
 
-/**
- * Screen positions on the stage once pixelDoc has fitted it (window 1280 x 800, Pixel workspace): `at(x, y)` is the
- * middle of art pixel (x, y). Tools whose bar wraps onto two rows (pencil, brush, shade, eraser, bucket) leave the
- * canvas area 20 px shorter (`tall`). The canvas area is 526 wide and reaches y = 491 in the 1280 x 800 window.
- */
-function grid(w, h, cell, tall) {
-  const top = tall ? 116 : 96;
-  const height = tall ? 375 : 395;
-  const ox = 403 + (526 - w * cell) / 2;
-  const oy = top + (height - h * cell) / 2;
-  return { ox, oy, at: (x, y) => [Math.round(ox + (x + 0.5) * cell), Math.round(oy + (y + 0.5) * cell)] };
-}
+const { pixelGrid: grid } = require('./_shapes.cjs');
 /** A slow drag through art pixels. */
 const stroke = (g, pts, o = {}) => ({ drag: pts.map(([x, y]) => g.at(x, y)), steps: o.steps ?? 3, delay: o.delay ?? 24, ...(o.mods ? { mods: o.mods } : {}), ...(o.after ? { after: o.after } : {}) });
 const setUi = (o) => js(`${F}.store().setUi(${JSON.stringify(o)})`);
@@ -104,7 +93,9 @@ const away = { move: [640, 762] };
 const properties = [{ click: [1232, 76] }, wait(300)];
 const center = js(`${F}.run('view.center')`);
 
-const canvasPane = [403, 47, 526, 418];
+// The canvas panel (the stage and the tool bar above it) with the panel beside it, and the stage alone: both measured when the shot is taken.
+const CANVAS_AND_PANEL = { stageCrop: { of: '.ui-canvas', rightGap: 86 } };
+const STAGE = { stageCrop: {} };
 
 const measure = { log: `(() => { const b = (q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height].map(Math.round); }; const u = ${F}.store().get().ui; return { cv: b('.cv-layer'), tool: u.tool, zoom: u.zoom, pan: [u.panX, u.panY] }; })()` };
 
@@ -115,18 +106,35 @@ module.exports = [
     steps: [...pixelDoc(slimeRows(), ['p']), ...properties, center, wait(300), away, wait(400), { shot: '@' }],
   },
   {
+    // Gradient on a pixel layer: a sunset sky from Paint to Back, stepping through the palette, with its options showing.
+    name: 'pixel-gradient',
+    steps: (() => {
+      const g = grid(32, 16, 16);
+      return [
+        ...pixelDoc(null, ['f'], { w: 32, h: 16, zoomIn: 2 }),
+        ...properties,
+        center,
+        setUi({ color: '#5a1f33', fillColor: '#ffe066' }),
+        stroke(g, [[16, 0], [16, 15]], { steps: 10 }),
+        away,
+        wait(500),
+        { shot: '@', crop: CANVAS_AND_PANEL },
+      ];
+    })(),
+  },
+  {
     name: 'pixel-dither',
     steps: [
       ...pixelDoc(slimeRows(), ['b', ['shift']]),
       ...properties,
       center,
       setUi({ color: '#2b4a9e', fillColor: '#6fb8ff' }),
-      stroke(grid(28, 24, 12, false), [[0, 2], [27, 2]], { steps: 8 }),
+      stroke(grid(28, 24, 12), [[0, 2], [27, 2]], { steps: 8 }),
       setUi({ color: DARK, fillColor: GREEN }),
-      stroke(grid(28, 24, 12, false), [[3, 17], [22, 17]], { steps: 8 }),
+      stroke(grid(28, 24, 12), [[3, 17], [22, 17]], { steps: 8 }),
       away,
       wait(500),
-      { shot: '@', crop: [403, 47, 791, 418] },
+      { shot: '@', crop: CANVAS_AND_PANEL },
     ],
   },
   {
@@ -134,7 +142,7 @@ module.exports = [
     name: 'pixel-shapes',
     prefs: { showTips: false, pixelThickOutlines: true, pixelOutlineWidth: 2 },
     steps: (() => {
-      const g = grid(28, 24, 12, false);
+      const g = grid(28, 24, 12);
       return [
         ...pixelDoc(null, ['r'], { background: '#fdf6e8' }),
         ...properties,
@@ -150,7 +158,7 @@ module.exports = [
         setUi({ tool: 'rect' }),
         away,
         wait(500),
-        { shot: '@', crop: [403, 47, 791, 418] },
+        { shot: '@', crop: CANVAS_AND_PANEL },
       ];
     })(),
   },
@@ -159,7 +167,7 @@ module.exports = [
     name: 'perspective-shapes-pixel',
     prefs: { showTips: false },
     steps: (() => {
-      const g = grid(28, 24, 12, false);
+      const g = grid(28, 24, 12);
       return [
         ...pixelDoc(null, ['r'], { background: '#fdf6e8' }),
         ...properties,
@@ -179,7 +187,7 @@ module.exports = [
         stroke(g, [[19, 9], [24, 15]], { steps: 6 }),
         away,
         wait(5400),
-        { shot: '@', crop: [403, 47, 791, 418] },
+        { shot: '@', crop: CANVAS_AND_PANEL },
       ];
     })(),
   },
@@ -191,7 +199,7 @@ module.exports = [
       js(`${F}.run('pixel.outline')`),
       away,
       wait(500),
-      { shot: '@', crop: [403, 116, 526, 375] },
+      { shot: '@', crop: STAGE },
     ],
   },
   {
@@ -203,6 +211,20 @@ module.exports = [
       { type: '-20' },
       wait(700),
       { shot: '@', el: '[role=dialog]', pad: 0 },
+    ],
+  },
+  {
+    // The colour picker, opened from the Paint colour, with the Opacity bar part way along.
+    name: 'colour-picker',
+    size: [1280, 1000],
+    steps: [
+      ...pixelDoc(slimeRows(), ['p']),
+      setUi({ color: '#4f9bd1' }),
+      js(`document.querySelector('.px-well-paint').click()`),
+      wait(500),
+      ...Array.from({ length: 4 }, () => [js(`document.querySelector('.cp-alpha').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }))`), wait(120)]).flat(),
+      wait(400),
+      { shot: '@', crop: [0, 80, 520, 400] },
     ],
   },
   {
@@ -367,7 +389,7 @@ module.exports = [
     // A heart drawn row by row on a white page, to show the grid between the pixels.
     name: 'pixel-heart',
     steps: (() => {
-      const g = grid(20, 18, 16, true);
+      const g = grid(20, 18, 16);
       const runs = [
         [[3, 3], [5, 3]], [[9, 3], [11, 3]],
         [[2, 4], [6, 4]], [[8, 4], [12, 4]],
@@ -379,7 +401,7 @@ module.exports = [
         setUi({ color: '#ff6f91' }),
         away,
         wait(500),
-        { rec: '@', crop: [g.ox - 10, g.oy - 10, 20 * 16 + 20, 18 * 16 + 20], every: 70 },
+        { rec: '@', crop: { stageCrop: { around: [g.w, g.h] } }, every: 70 },
         wait(700),
         ...runs.map((r) => (r[0][0] === r[1][0] && r[0][1] === r[1][1] ? { click: g.at(...r[0]), after: 250 } : stroke(g, r, { steps: Math.max(2, r[1][0] - r[0][0]), delay: 40, after: 250 }))),
         setUi({ color: '#ffc2cf' }),
@@ -396,7 +418,7 @@ module.exports = [
     // Lighter strokes along the top, then darker ones along the bottom, over a flat green slime.
     name: 'pixel-shade',
     steps: (() => {
-      const g = grid(28, 24, 12, true);
+      const g = grid(28, 24, 12);
       const mirror = (pts) => pts.map(([x, y]) => [27 - x, y]);
       const lightL = [[9, 6], [8, 6], [7, 6], [6, 7], [5, 8], [4, 9], [4, 10]];
       return [
@@ -407,7 +429,7 @@ module.exports = [
         wait(400),
         away,
         wait(500),
-        { rec: '@', crop: [403, 116, 526, 375], every: 70 },
+        { rec: '@', crop: STAGE, every: 70 },
         wait(800),
         stroke(g, lightL, { steps: 3, delay: 40, after: 500 }),
         stroke(g, mirror(lightL), { steps: 3, delay: 40, after: 900 }),
@@ -424,13 +446,13 @@ module.exports = [
     // Mirror drawing on: one half of the outline and the other half follows, then the eyes.
     name: 'pixel-mirror',
     steps: (() => {
-      const g = grid(28, 24, 12, true);
+      const g = grid(28, 24, 12);
       const half = [[13, 5], [8, 5], [6, 6], [5, 7], [4, 8], [3, 9], [3, 10], [2, 11], [2, 12], [1, 13], [1, 19], [2, 20], [3, 21], [13, 21]];
       return [
         ...pixelDoc(null, ['p']),
         away,
         wait(600),
-        { rec: '@', crop: [403, 116, 526, 375], every: 70 },
+        { rec: '@', crop: STAGE, every: 70 },
         wait(900),
         key('m', ['shift']),
         wait(1300),
@@ -446,7 +468,7 @@ module.exports = [
     // A crown goes on Pip while the Preview keeps playing at real size.
     name: 'pixel-preview',
     steps: (() => {
-      const g = grid(32, 32, 8, true);
+      const g = grid(32, 32, 8);
       return [
         js(`${F}.dock.applyWorkspace('pixel')`),
         wait(500),
@@ -460,7 +482,7 @@ module.exports = [
         js(`document.querySelectorAll('.px-preview-zoom [role="radio"]')[1]?.click()`),
         away,
         wait(700),
-        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
+        { rec: '@', crop: CANVAS_AND_PANEL, every: 70 },
         wait(1500),
         { click: [1067, 330], after: 900 },
         away,
@@ -482,7 +504,7 @@ module.exports = [
     // Box select Pip, copy it with Alt+drag, then pick the scarf with the magic wand.
     name: 'pixel-select',
     steps: (() => {
-      const g = grid(32, 32, 8, false);
+      const g = grid(32, 32, 8);
       return [
         js(`${F}.dock.applyWorkspace('pixel')`),
         wait(500),
@@ -495,7 +517,7 @@ module.exports = [
         center,
         wait(500),
         away,
-        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
+        { rec: '@', crop: CANVAS_AND_PANEL, every: 70 },
         wait(1000),
         stroke(g, [[7, 14], [24, 30]], { steps: 10, delay: 40, after: 1000 }),
         stroke(g, [[15, 22], [23, 22]], { steps: 8, delay: 45, after: 1000 }),
@@ -515,7 +537,7 @@ module.exports = [
     // The magnetic lasso: a rough trace round the slime, the outline clinging to its edge, then closing it.
     name: 'select-magnetic',
     steps: (() => {
-      const g = grid(28, 24, 12, false);
+      const g = grid(28, 24, 12);
       // The slime on a sky with a strip of ground, so picking it out means picking it from a background.
       const rows = slimeRows().map((r, y) => [...r].map((c) => (c !== '.' ? c : y >= 22 ? 'e' : 's')).join(''));
       // Where the pointer goes, in art pixels, a little outside the edge all the way round. A click lands at each.
@@ -538,7 +560,7 @@ module.exports = [
         center,
         away,
         wait(500),
-        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
+        { rec: '@', crop: CANVAS_AND_PANEL, every: 70 },
         wait(900),
         ...steps,
         // Back to the start to close it.
@@ -549,7 +571,7 @@ module.exports = [
           const n = 6;
           for (let i = 1; i <= n; i++) out.push({ move: at([last[0] + ((first[0] - last[0]) * i) / n, last[1] + ((first[1] - last[1]) * i) / n]) }, wait(40));
           // The dot where it started is on the corner it clung to, so that is what gets clicked.
-          out.push({ click: [Math.round(g.ox + 8 * 12), Math.round(g.oy + 5 * 12)], after: 400 });
+          out.push({ click: g.at(7.5, 4.5), after: 400 });
           return out;
         })(),
         away,

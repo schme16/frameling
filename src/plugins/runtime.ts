@@ -9,8 +9,9 @@ import { EventGate, MAX_UNANSWERED, type PluginEventName } from './events';
 import type { Permission, PluginManifest } from './manifest';
 import { cleanValues, sanitizeOptions, type ExportOption, type OptionValues } from './options';
 import { sanitizeUi, type UiNode } from './ui-schema';
-import { Watchdog, type Trip } from './watchdog';
+import { Watchdog, WATCHDOG, type Trip } from './watchdog';
 import { Diagnostics, type PluginDiag } from './diagnostics';
+import { cleanAppSet, isRunnable, type AppCommandInfo, type AppSet } from './appRules';
 
 export interface Transport {
   post(msg: unknown, transfer?: Transferable[]): void;
@@ -168,8 +169,8 @@ export interface HostHooks {
   addExporter(def: PluginExporterDef): void;
   addPanel(def: PluginPanelDef, ui: UiNode): void;
   updatePanel(id: string, ui: UiNode): void;
-  /** The plugin hit a problem (an error in its code). */
-  problem(message: string, loading: boolean): void;
+  /** The plugin hit a problem (an error in its code). `line` is the line of its code it happened on, when that is known. */
+  problem(message: string, loading: boolean, line?: number): void;
   loaded?(): void;
   // Version 2. Each is only called when the person allowed that power.
   addTool?(def: PluginToolDef): void;
@@ -188,9 +189,34 @@ export interface HostHooks {
   memory?(): Promise<number | null>;
   /** Whether "Measure plugins' memory and speed" is on. Off (or missing), nothing is counted and no memory is looked at. */
   diagnostics?(): boolean;
+  // Version 2, with the `app` power: Frameling's own commands.
+  /** Every command a plugin may press. */
+  appCommands?(): AppCommandInfo[];
+  /** Presses one and waits for it. Throws, in plain words, when it can't be pressed. */
+  appRun?(id: string): Promise<void>;
+  /** Chooses what commands act on. Already checked for shape; the host checks that the layer and shapes exist. */
+  appSet?(what: AppSet): void;
+  /** The plugin printed a line (console.log and friends). Only a script's panel listens. */
+  printed?(level: 'log' | 'info' | 'warn' | 'error', text: string): void;
 }
 
-const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024, notifiesPerTenSeconds: 10, pickCooldownMs: 10_000, pickCooldownMaxMs: 60_000, messagesPerSecond: 600, messageBytesPerSecond: 24 * 1024 * 1024, progressStep: 0.005 };
+/** Options for how one runtime is held to account. */
+export interface RuntimeOptions {
+  /** A script from the Scripts panel: it is stopped sooner when stuck, and running does not buy the long limit a plugin's command gets. */
+  script?: boolean;
+}
+
+/** An error that came back from the plugin with the line of its code it happened on. */
+export class LineError extends Error {
+  constructor(
+    message: string,
+    readonly line?: number,
+  ) {
+    super(message);
+  }
+}
+
+const LIMITS = { logsPerSecond: 100, logChars: 500, commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024, notifiesPerTenSeconds: 10, pickCooldownMs: 10_000, pickCooldownMaxMs: 60_000, messagesPerSecond: 600, messageBytesPerSecond: 24 * 1024 * 1024, progressStep: 0.005 };
 /** How long the host waits for a plugin to answer, so one that hangs cannot hold things up. */
 export const TIMEOUTS = { toolEvent: 2000, shapeDraw: 5000, tooSlowInARow: 3 };
 const NEEDS: Record<string, Permission | null> = {
@@ -202,6 +228,10 @@ const NEEDS: Record<string, Permission | null> = {
   'shapes.place': 'shapes',
   'shapes.update': 'shapes',
   permissions: null,
+  'document.selected': 'document.read',
+  'app.commands': 'app',
+  'app.run': 'app',
+  'app.set': 'app',
 };
 
 /** What a message from a plugin costs to handle, roughly and cheaply: strings, numbers and binary data, looking at only so many parts. */
@@ -230,7 +260,10 @@ export function approxBytes(v: unknown, budget = { nodes: 2000 }): number {
 }
 
 /** The kinds of message that ask the host to do work. Answers to the host's own requests, heartbeats and error reports are not counted. */
-const COSTLY = new Set(['register', 'panel', 'call', 'subscribe', 'unsubscribe', 'overlay', 'progress']);
+const COSTLY = new Set(['register', 'panel', 'call', 'subscribe', 'unsubscribe', 'overlay', 'progress', 'log']);
+
+/** A line number from the plugin, or undefined when it is not a sensible one. */
+const lineNumber = (v: unknown): number | undefined => (typeof v === 'number' && Number.isInteger(v) && v > 0 && v < 1_000_000 ? v : undefined);
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const cleanId = (v: unknown) => (typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v) ? v : null);
@@ -321,6 +354,7 @@ export class PluginRuntime {
     readonly granted: Permission[],
     private transport: Transport,
     private hooks: HostHooks,
+    private opts: RuntimeOptions = {},
   ) {
     this.gate = new EventGate((name, payload) => this.sendEvent(name, payload));
     transport.onMessage((m) => void this.receive(m));
@@ -328,7 +362,8 @@ export class PluginRuntime {
       this.watch = new Watchdog({
         ping: (n) => this.send({ t: 'ping', n }),
         trip: (t) => hooks.watchdog!(t),
-        busy: () => this.heavy > 0,
+        busy: () => this.heavy > 0 && !this.opts.script,
+        limit: this.opts.script ? () => WATCHDOG.scriptStuckMs : undefined,
         memory: hooks.memory ? () => (hooks.diagnostics?.() ? hooks.memory!() : Promise.resolve(null)) : undefined,
         onPong: (ms) => {
           if (hooks.diagnostics?.()) this.measured.latency(Date.now(), ms);
@@ -361,10 +396,12 @@ export class PluginRuntime {
     if (!this.stopped) this.transport.post(msg, transfer);
   }
 
-  private problem(message: string, loading = false): void {
+  private problem(message: string, loading = false, line?: number): void {
     // A broken plugin could shout in a loop: say it a few times at most.
     if (++this.problems > 3 && !loading) return;
-    this.hooks.problem(cleanText(message, 300) || 'Something went wrong.', loading);
+    const text = cleanText(message, 300) || 'Something went wrong.';
+    if (line) this.hooks.problem(text, loading, line);
+    else this.hooks.problem(text, loading);
   }
 
   private async receive(m: unknown): Promise<void> {
@@ -386,11 +423,13 @@ export class PluginRuntime {
         if (!w) return;
         this.waiting.delete(m.id);
         if (m.ok) w.resolve(m.value);
-        else w.reject(new Error(cleanText(m.error, 300) || 'The plugin hit a problem.'));
+        else w.reject(new LineError(cleanText(m.error, 300) || 'The plugin hit a problem.', lineNumber(m.line)));
         return;
       }
       case 'error':
-        return this.problem(String(m.message ?? ''), !!m.loading);
+        return this.problem(String(m.message ?? ''), !!m.loading, lineNumber(m.line));
+      case 'log':
+        return this.log(m);
       case 'loaded':
         this.hooks.loaded?.();
         return;
@@ -410,6 +449,15 @@ export class PluginRuntime {
       case 'progress':
         return this.reportProgress(m.done, m.total);
     }
+  }
+
+  private logWindow = { start: 0, count: 0 };
+  private log(m: Record<string, any>): void {
+    const now = Date.now();
+    if (now - this.logWindow.start >= 1000) this.logWindow = { start: now, count: 0 };
+    if (++this.logWindow.count > LIMITS.logsPerSecond) return;
+    const level = m.level === 'info' || m.level === 'warn' || m.level === 'error' ? m.level : 'log';
+    this.hooks.printed?.(level, cleanText(m.text, LIMITS.logChars));
   }
 
   /** Keeps what a plugin can ask of the host in one second bounded, in how many messages and how big they are. Over it, the message is dropped (a call is answered with a refusal). */
@@ -527,12 +575,27 @@ export class PluginRuntime {
     }
   }
 
+  /** Calls from the plugin that Frameling is still working on (a script waits for these before it counts as finished). */
+  private inflight = 0;
+  get calling(): number {
+    return this.inflight;
+  }
+
   private async answer(m: Record<string, any>): Promise<void> {
+    this.inflight++;
+    try {
+      await this.answerNow(m);
+    } finally {
+      this.inflight--;
+    }
+  }
+
+  private async answerNow(m: Record<string, any>): Promise<void> {
     const reply = (ok: boolean, value?: unknown, error?: string, transfer?: Transferable[]) => this.send({ t: 'reply', id: m.id, ok, value, error }, transfer);
     const method = typeof m.method === 'string' ? m.method : '';
     if (!Object.hasOwn(NEEDS, method)) return reply(false, undefined, `Frameling has no "${method.slice(0, 40)}".`);
     const need = NEEDS[method];
-    if (need && !this.can(need)) return reply(false, undefined, `This plugin did not ask for permission to ${need === 'document.edit' ? 'change' : 'see'} the drawing.`);
+    if (need && !this.can(need)) return reply(false, undefined, need === 'app' ? "This plugin did not ask for permission to run Frameling's commands." : `This plugin did not ask for permission to ${need === 'document.edit' ? 'change' : 'see'} the drawing.`);
     try {
       const a = isObj(m.args) ? m.args : {};
       switch (method) {
@@ -542,6 +605,25 @@ export class PluginRuntime {
           return reply(true, this.hooks.getState());
         case 'document.edit':
           this.hooks.edit(cleanText(a.label, 60), a.ops);
+          return reply(true, null);
+        case 'document.selected': {
+          const st = this.hooks.getState();
+          const doc = this.hooks.getDoc();
+          const d = st.drawingId ? doc.drawings[st.drawingId] : undefined;
+          const picked = new Set(st.selection);
+          return reply(true, { frame: st.frame, layerId: st.activeLayerId, drawingId: st.drawingId, shapes: d?.kind === 'vector' ? d.shapes.filter((x) => picked.has(x.id)) : [] });
+        }
+        case 'app.commands':
+          return reply(true, this.hooks.appCommands?.() ?? []);
+        case 'app.run': {
+          const id = cleanText(a.id, 80);
+          if (!isRunnable(id)) throw new Error(`A script can't press "${id}". It opens windows or touches files, accounts or other plugins. Run \`frameling.app.commands()\` to see what it can press.`);
+          if (!this.hooks.appRun) throw new Error('Commands are not available here.');
+          await this.hooks.appRun(id);
+          return reply(true, null);
+        }
+        case 'app.set':
+          this.hooks.appSet?.(cleanAppSet(a));
           return reply(true, null);
         case 'permissions':
           return reply(true, { granted: this.manifest.permissions.filter((p) => this.granted.includes(p)) });
@@ -670,6 +752,19 @@ export class PluginRuntime {
       await this.request('command', { id });
     } catch (e) {
       this.problem(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.end();
+    }
+  }
+
+  /** Runs a command and says how it went, instead of reporting a problem: a script's panel shows the answer itself. */
+  async runScriptCommand(id: string): Promise<{ ok: true } | { ok: false; message: string; line?: number }> {
+    this.begin();
+    try {
+      await this.request('command', { id });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: e instanceof Error ? e.message : String(e), ...(e instanceof LineError && e.line ? { line: e.line } : {}) };
     } finally {
       this.end();
     }

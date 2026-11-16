@@ -1,0 +1,583 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:09:36.366Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  },
+  "bouncing-ball": {
+   "nodes": 1110,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 80.4,
+   "runs": [
+    106.9,
+    76.5,
+    80.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 26.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     45.2
+    ],
+    [
+     "(garbage collector) :0",
+     6.3
+    ],
+    [
+     "$e index-CjCOVn8L.js:10",
+     5.1
+    ],
+    [
+     "_n index-CjCOVn8L.js:10",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     45.2
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     18.7
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     15.9
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     15.8
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     15.8
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     15.8
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:178",
+     13.1
+    ],
+    [
+     "(anon) :0",
+     11.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 49.1,
+   "runs": [
+    51.2,
+    44.5,
+    49.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 16.37,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.8
+    ],
+    [
+     "$e index-CjCOVn8L.js:10",
+     5.5
+    ],
+    [
+     "mDe index-CjCOVn8L.js:157",
+     2.8
+    ],
+    [
+     "n index-CjCOVn8L.js:178",
+     1.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "kDe index-CjCOVn8L.js:157",
+     17.6
+    ],
+    [
+     "run index-CjCOVn8L.js:178",
+     17.6
+    ],
+    [
+     "run debug-CZiT0ET0.js:10",
+     17.6
+    ],
+    [
+     "(anon) :0",
+     17.6
+    ],
+    [
+     "DM index-CjCOVn8L.js:157",
+     17.1
+    ],
+    [
+     "AM index-CjCOVn8L.js:157",
+     17.1
+    ],
+    [
+     "(program) :0",
+     16.8
+    ],
+    [
+     "update index-CjCOVn8L.js:10",
+     16.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 41.3,
+   "runs": [
+    36.7,
+    41.3,
+    59.4
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 13.77,
+   "topSelf": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "(garbage collector) :0",
+     5.5
+    ],
+    [
+     "_n index-CjCOVn8L.js:10",
+     1.7
+    ],
+    [
+     "n index-CjCOVn8L.js:10",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     6.6
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     5.9
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     5.9
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     5.9
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     5.9
+    ],
+    [
+     "(garbage collector) :0",
+     5.5
+    ],
+    [
+     "NM index-CjCOVn8L.js:157",
+     5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 108.5,
+   "runs": [
+    108.5,
+    133.5,
+    104.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 18.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     45.6
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     15.2
+    ],
+    [
+     "(garbage collector) :0",
+     5.7
+    ],
+    [
+     "removeChild :0",
+     3.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     45.6
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     31.7
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     30.5
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     25
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     24.9
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     24.9
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     20.2
+    ],
+    [
+     "zd index-CjCOVn8L.js:9",
+     20
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 24.2,
+   "runs": [
+    24.2,
+    24.7,
+    24.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.07,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:150",
+     0.4
+    ],
+    [
+     "vl index-CjCOVn8L.js:9",
+     0.4
+    ],
+    [
+     "Ahe index-CjCOVn8L.js:150",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     7.4
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     5.6
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     5.6
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     5.5
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     5.5
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     4
+    ],
+    [
+     "zd index-CjCOVn8L.js:9",
+     4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 15.4,
+   "runs": [
+    12.7,
+    15.4,
+    17.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 5.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:10",
+     0.5
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:150",
+     0.5
+    ],
+    [
+     "XA index-CjCOVn8L.js:150",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     4.8
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     3.8
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     3.8
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     3.8
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     3.8
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     2.8
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     2.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 14.2,
+   "runs": [
+    14.4,
+    14.2,
+    13
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.74,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.9
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "Ahe index-CjCOVn8L.js:150",
+     0.3
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:304",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.9
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     4.3
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     3.9
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     3.9
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     3.9
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     3.9
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     2.6
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     2.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 37.9,
+   "runs": [
+    37.9,
+    54.2,
+    36.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     15
+    ],
+    [
+     "(garbage collector) :0",
+     5.1
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     3.9
+    ],
+    [
+     "i index-CjCOVn8L.js:178",
+     1.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     13
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     11.7
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     11.7
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     8.1
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     5.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

@@ -1,6 +1,7 @@
 // "Change the tools": the panel that sits beside the tool rail while it is being changed. The rail itself does the
 // moving (drag, click for a menu, names to type, folds to flip); this holds the things that belong to no one tool:
 // the Put away shelf, button size, group names, rail style, and putting it all back.
+import { Explainer } from './explain/ExplainIcon';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getTool } from '../core/registry';
@@ -8,16 +9,17 @@ import { Icon } from './icons';
 import type { DockZone } from './dockModel';
 import { dock } from './dock';
 import { setPrefs, usePrefs, TOOL_SIZES, type ToolSizePref } from './prefs';
-import { bringToolBack, currentGroups, putToolsBack, setToolbarEditing, startToolDrag, toolbarIsChanged, toolDrag } from './toolRail';
+import { setToolRailStyle, bringToolBack, currentGroups, putToolsBack, setToolbarEditing, startToolDrag, toolbarIsChanged, toolDrag } from './toolRail';
 import { visibleGroups } from './toolArrange';
 
 const SIZE_WORDS: Record<ToolSizePref, string> = { small: 'Small', medium: 'Medium', large: 'Large' };
 
-function Segments<V extends string>({ label, value, options, onChange }: { label: string; value: V; options: [V, string][]; onChange: (v: V) => void }) {
+/** `commands` names the command that does the same as each choice (or one for the whole row), so the row and the command are known to be one. */
+function Segments<V extends string>({ label, value, options, onChange, commands, command }: { label: string; value: V; options: [V, string][]; onChange: (v: V) => void; commands?: Record<V, string>; command?: string }) {
   return (
-    <div className="ui-tb-segs" role="radiogroup" aria-label={label}>
+    <div className="ui-tb-segs" role="radiogroup" aria-label={label} data-command={command}>
       {options.map(([v, text]) => (
-        <button key={v} type="button" role="radio" aria-checked={value === v} className={`ui-tb-seg${value === v ? ' is-on' : ''}`} onClick={() => onChange(v)}>
+        <button key={v} type="button" role="radio" aria-checked={value === v} className={`ui-tb-seg${value === v ? ' is-on' : ''}`} data-command={commands?.[v]} onClick={() => onChange(v)}>
           {text}
         </button>
       ))}
@@ -88,26 +90,26 @@ export function ToolbarBuilder({ anchor, place, away, visible }: { anchor: DOMRe
         )}
       </div>
       {away.length > 1 && (
-        <button type="button" className="ui-tb-link" onClick={() => bringToolBack()}>
+        <button type="button" className="ui-tb-link" data-command="view.toolsShowAll" onClick={() => bringToolBack()}>
           Bring them all back
         </button>
       )}
 
       <h3 className="ui-tb-head">New group</h3>
-      <p className="ui-tb-note">Drag a tool to a gold <b>+</b> between two groups, or click a tool and choose <b>Start a new group here</b>. Give it no name and it is just a divider.</p>
+      <Explainer className="ui-tb-note">Drag a tool to a gold <b>+</b> between two groups, or click a tool and choose <b>Start a new group here</b>. Give it no name and it is just a divider.</Explainer>
 
       <h3 className="ui-tb-head">Button size</h3>
-      <Segments label="Button size" value={size} options={TOOL_SIZES.map((s): [ToolSizePref, string] => [s, SIZE_WORDS[s]])} onChange={(toolSize) => setPrefs({ toolSize })} />
+      <Segments label="Button size" value={size} options={TOOL_SIZES.map((s): [ToolSizePref, string] => [s, SIZE_WORDS[s]])} onChange={(toolSize) => setPrefs({ toolSize })} commands={{ small: 'view.toolSize.small', medium: 'view.toolSize.medium', large: 'view.toolSize.large' }} />
 
       <h3 className="ui-tb-head">Group names</h3>
-      <Segments label="Group names" value={names ? 'show' : 'hide'} options={[['show', 'Show'], ['hide', 'Hide']]} onChange={(v) => setPrefs({ toolNames: v === 'show' })} />
+      <Segments label="Group names" value={names ? 'show' : 'hide'} options={[['show', 'Show'], ['hide', 'Hide']]} onChange={(v) => setPrefs({ toolNames: v === 'show' })} command="view.toolNames" />
 
       <h3 className="ui-tb-head">Tools that do not work on this layer</h3>
-      <Segments label="Tools that do not work on this layer" value={offLayer} options={[['hide', 'Hide them'], ['grey', 'Grey them out']]} onChange={(toolsOffLayer) => setPrefs({ toolsOffLayer })} />
+      <Segments label="Tools that do not work on this layer" value={offLayer} options={[['hide', 'Hide them'], ['grey', 'Grey them out']]} onChange={(toolsOffLayer) => setPrefs({ toolsOffLayer })} commands={{ hide: 'view.toolsOffLayer.hide', grey: 'view.toolsOffLayer.grey' }} />
 
       <h3 className="ui-tb-head">Rail style</h3>
-      <Segments label="Rail style" value={style} options={[['two', 'Every tool'], ['stacked', 'One per group']]} onChange={(toolRail) => setPrefs({ toolRail })} />
-      {style === 'stacked' && <p className="ui-tb-note">Every group is one button. Choose Every tool to fold only some.</p>}
+      <Segments label="Rail style" value={style} options={[['two', 'Every tool'], ['stacked', 'One per group']]} onChange={setToolRailStyle} commands={{ two: 'view.toolRail.two', stacked: 'view.toolRail.stacked' }} />
+      {style === 'stacked' && <Explainer className="ui-tb-note">Every group is one button. Choose Every tool to fold only some.</Explainer>}
 
       <div className="ui-tb-foot">
         <button type="button" className="ui-tb-back" disabled={!changed} onClick={putToolsBack} data-tip="Put the tools back" data-tip-desc="Groups, names, hidden and folded tools, size and style all go back to how they come. Undo is on the message.">

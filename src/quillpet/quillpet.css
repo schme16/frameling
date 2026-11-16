@@ -207,3 +207,281 @@
   background: var(--accent);
   box-shadow: 0 0 0 2px var(--panel);
 }
+
+/* One house, three tabs. The room tab has him over the way to his lessons; the other two are a shelf each. */
+.qp-tabs {
+  display: flex;
+  align-self: stretch;
+}
+.qp-tabs .ui-seg {
+  flex: 1;
+  justify-content: center;
+  position: relative;
+}
+.qp-tab-new {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+.qp-tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.qp-him,
+.qt-panel,
+.qp-lessons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qp-him {
+  gap: 12px;
+}
+.qp-lessons {
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.qt-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.qt-count {
+  margin: 0;
+}
+.qp-lessons {
+  align-items: flex-start;
+}
+
+/* His room: a window, a cushion, a desk and a bowl along one wall, and he potters between them. Pure decoration, so
+   none of it is read out. Positions come from --x (0 to 1 along the room), kept clear of the walls by half his width. */
+.qp-room {
+  --qp-half: 52px;
+  position: relative;
+  width: 100%;
+  height: 148px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  overflow: hidden;
+}
+.qp-room::after {
+  /* the floor */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  background: var(--raised);
+  border-top: 1px solid var(--line);
+}
+.qp-window,
+.qp-bed,
+.qp-desk,
+.qp-bowl,
+.qp-frame,
+.qp-toy,
+.qp-him-at {
+  position: absolute;
+  left: calc(var(--qp-half) + (100% - 2 * var(--qp-half)) * var(--x));
+  transform: translateX(-50%);
+}
+.qp-window {
+  top: 12px;
+  width: 40px;
+  height: 34px;
+  border: 3px solid var(--line);
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(var(--line-soft) 0 0) center / 3px 100% no-repeat, linear-gradient(var(--line-soft) 0 0) center / 100% 3px no-repeat, var(--panel);
+}
+.qp-bed {
+  bottom: 4px;
+  width: 64px;
+  height: 12px;
+  border-radius: 8px 8px 4px 4px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+.qp-desk {
+  bottom: 16px;
+  width: 54px;
+  height: 22px;
+  border-top: 3px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-right: 3px solid var(--line);
+  border-radius: 3px 3px 0 0;
+}
+.qp-bowl {
+  bottom: 14px;
+  width: 26px;
+  height: 11px;
+  border-radius: 0 0 13px 13px;
+  background: var(--line);
+}
+.qp-him-at {
+  bottom: 12px;
+  line-height: 0;
+  /* the hop that gets him there is the sprite's; this carries him along it */
+  transition: left 780ms ease-in-out;
+}
+.qp-out {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qp-him-at {
+    transition: none;
+  }
+}
+
+/* What you made. Your drawings hang on his wall and your sprite lies on his floor, in front of him so he can push it about. */
+.qp-frame {
+  top: 10px;
+  width: 38px;
+  height: 32px;
+  padding: 2px;
+  border: 3px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--text) 10%, transparent);
+}
+.qp-frame img,
+.qp-toy img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* pixel art stays blocky when it is shrunk or grown this little */
+  image-rendering: pixelated;
+}
+.qp-frame:hover,
+.qp-toy:hover {
+  border-color: var(--accent);
+}
+.qp-frame:focus-visible,
+.qp-toy:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.qp-toy {
+  bottom: 14px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  transform-origin: 50% 100%;
+}
+.qp-toy.is-playing {
+  animation: qp-toy-play 900ms ease-in-out infinite;
+}
+.qp-toy.is-poked {
+  animation: qp-toy-poke 520ms ease-out 1;
+}
+@keyframes qp-toy-play {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(0);
+  }
+  35% {
+    transform: translateX(-50%) translateY(-9px) rotate(-12deg);
+  }
+  65% {
+    transform: translateX(-50%) translateY(-3px) rotate(8deg);
+  }
+}
+@keyframes qp-toy-poke {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(-12px) rotate(-10deg);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qp-toy.is-playing,
+  .qp-toy.is-poked {
+    animation: none;
+  }
+}
+:root[data-motion='reduce'] .qp-toy.is-playing,
+:root[data-motion='reduce'] .qp-toy.is-poked {
+  animation: none;
+}
+/* Stream-safe: the picture could give the drawing away, so there is a plain stand-in. */
+.qp-blank {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* What he got up to: a short list under him. News, not a to-do, so nothing here is a button. */
+.qp-lately {
+  margin: 0;
+}
+.qp-lately-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qp-lately-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text);
+}
+.qp-lately-item:not(:has(.qp-lately-pic)) {
+  padding-left: 52px;
+  min-height: 33px;
+}
+.qp-lately-pic {
+  flex: none;
+  width: 44px;
+  height: 33px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+/* A toy he moved sits where he left it, on the floor of his room. */
+.qp-toy {
+  position: absolute;
+  left: calc(var(--qp-half) + (100% - 2 * var(--qp-half)) * var(--x));
+  bottom: 17px;
+  width: 22px;
+  height: 22px;
+  /* beside the spot, not on it, so he can stand there without hiding it */
+  transform: translateX(22px);
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}

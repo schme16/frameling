@@ -4,6 +4,7 @@
 //   npm run help:media -- --only select,tour     just those names (base names, as a topic's `media` says, no extension)
 //   npm run help:media -- --theme light          one theme only
 //   npm run help:media -- --list                 print the names and what each makes
+//   [--entries <dir>]                            capture the entries of another folder (a before/after look) instead of scripts/docs/help
 //   [--renderer <dir>]  [--out <dir>]            a private `vite build --outDir`; write somewhere other than public/help
 //
 // Run it inside xvfb, never on the desktop: SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron ...
@@ -11,16 +12,21 @@
 //
 // The capture steps live in scripts/docs/help/*.cjs. Each file exports an array of entries:
 //   { name: 'select',            // the topic's `media` without its extension: select.png or tour.mp4 -> 'select', 'tour'
-//     prefs: {...},              // extra preferences on top of the defaults (showWelcome off, the default theme for the mode)
+//     prefs: {...},              // extra preferences on top of the defaults (showWelcome off, firstDrawn on so no first-edit toast lands in a picture, the default theme for the mode)
 //     choices: {...},            // answers to ask-once questions, on top of workspace.follow: 'never' (so that one never shows)
 //     size: [1280, 800],         // window size, default 1280 x 800
 //     steps: [...],              // the record.cjs steps. {"shot": "@"} saves the picture, {"rec": "@", ...} starts the clip.
+//     external: 'scripts/e2e/popout-media.cjs',  // made by another script (it needs the real main process, e.g. two windows): this run skips it and says which one to use
 //     width: 800,                // widest the output gets (default 800)
 //     poster: 12 }               // clips: the poster frame (default the last one)
 // An entry that records ({"rec": "@"}) makes `<name>-dark.mp4` + `<name>-dark-poster.png` (and -light); one that shoots
 // makes `<name>-dark.png` (and -light). The steps run once per theme, in a fresh page, with the mode's default theme
 // (the dark one and the light one the app starts with), so the two versions match except for the colours.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -44,6 +50,7 @@ const flag = (name) => {
 };
 const rendererDir = opt('renderer', path.join(root, 'dist/renderer'));
 const outDir = opt('out', path.join(root, 'public/help'));
+const entriesDir = opt('entries', path.join(__dirname, 'help'));
 const onlyArg = opt('only', '');
 const only = onlyArg ? onlyArg.split(',') : null;
 const themeArg = opt('theme', 'both');
@@ -54,7 +61,7 @@ const DEFAULT_THEME = { dark: 'midnight-sketchbook', light: 'paper-and-honey' };
 
 /** Every entry from scripts/docs/help/*.cjs, with the file it came from. */
 function loadEntries() {
-  const dir = path.join(__dirname, 'help');
+  const dir = path.resolve(entriesDir);
   const out = [];
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.cjs') && !x.startsWith('_')).sort()) {
     for (const e of require(path.join(dir, f))) out.push({ ...e, file: f });
@@ -74,6 +81,8 @@ async function capture(win, e, mode, tmp, lib) {
     darkTheme: DEFAULT_THEME.dark,
     lightTheme: DEFAULT_THEME.light,
     showWelcome: false,
+    // The "fold the explanations away" toast comes with the first edit; with it on, any picture that makes an edit gets it over the timeline.
+    firstDrawn: true,
     ...(e.prefs ?? {}),
   };
   // The first-time "Workspace follows the drawing" question would pop up over any pixel art; the pictures keep the
@@ -101,6 +110,7 @@ async function capture(win, e, mode, tmp, lib) {
 }
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   const entries = loadEntries();
   const names = new Set();
   for (const e of entries) {
@@ -113,6 +123,7 @@ app.whenReady().then(async () => {
     return;
   }
   const picked = entries.filter((e) => !only || only.includes(e.name));
+  for (const e of picked.filter((x) => x.external)) console.log(`skipped ${e.name}: made by ${e.external}`);
   if (only) for (const n of only) if (!names.has(n)) console.log(`no entry named ${n}`);
   fs.mkdirSync(outDir, { recursive: true });
   const lib = mockMain(ipcMain);
@@ -125,7 +136,7 @@ app.whenReady().then(async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'help-media-'));
   const failed = [];
   let made = 0;
-  for (const e of picked) {
+  for (const e of picked.filter((x) => !x.external)) {
     for (const mode of THEMES) {
       logs.length = 0;
       try {

@@ -1,6 +1,8 @@
 // Small fields the Particles and Text panels share: a number box, a colour well and a titled section.
 import { useState, type ReactNode } from 'react';
 import '../symbols/symbols.css';
+import { SectionScope } from './explain/ExplainIcon';
+import { ColourField } from './colour/ColourPicker';
 import './panelFields.css';
 
 export function Num({ label, value, onChange, step = 1, min, max, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; suffix?: string; title?: string }) {
@@ -40,20 +42,28 @@ export function Num({ label, value, onChange, step = 1, min, max, suffix, title 
   );
 }
 
-export function ColorWell({ label, value, onChange, title }: { label: string; value: string; onChange: (v: string) => void; title?: string }) {
+/** A colour with a label. See-through (opacity) is offered unless `alpha` is false, and then `why` says why not. */
+export function ColorWell({ label, value, onChange, title, alpha = true, why }: { label: string; value: string; onChange: (v: string) => void; title?: string; alpha?: boolean; why?: string }) {
   return (
-    <label className="pt-color" title={title}>
-      <input type="color" aria-label={label} value={value.slice(0, 7)} onChange={(e) => onChange(e.target.value)} />
+    <div className="pt-color" title={title}>
+      <ColourField label={label} value={value} onChange={onChange} alpha={alpha} why={why} />
       <span>{label}</span>
-    </label>
+    </div>
   );
 }
 
 export function Section({ title, children, open = true, help }: { title: string; children: ReactNode; open?: boolean; help?: string }) {
   return (
-    <details className="pt-section" open={open} data-help={help}>
-      <summary className="sy-section-title">{title}</summary>
-      <div className="pt-section-body">{children}</div>
-    </details>
+    <SectionScope title={title}>
+      {(icon) => (
+        <details className="pt-section" open={open} data-help={help}>
+          <summary className="sy-section-title">
+            {title}
+            {icon}
+          </summary>
+          <div className="pt-section-body">{children}</div>
+        </details>
+      )}
+    </SectionScope>
   );
 }

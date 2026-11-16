@@ -1,5 +1,6 @@
 // Preferences, Pen and tablet: try the pen, shape the pressure curve, say what the barrel buttons and the eraser end do,
 // choose what fingers do, and see what each tool does with pressure, tilt and the stabilizer.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { useEffect, useRef, useState } from 'react';
 import { Row, Segmented, Switch } from '../ui/PrefsModal';
 import { BARREL_ACTIONS, barrelBits, firstBarrelBit, penPress, type BarrelAction } from './buttons';
@@ -9,9 +10,10 @@ import { CURVE_PRESETS, PRESET_ORDER, isPlainCurve, presetOf, type CurvePreset }
 import { penFields } from './input';
 import { PEN_TOOLS, penStore, resetPen, setPenDevice, setToolPen, setTouch, type OneFinger, type PenTool } from './settings';
 import { altitudeOf, azimuthOf } from './tilt';
+import { cssVar } from '../canvas/theme';
 import './tablet.css';
 
-const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither' };
+const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither', 'soft-brush': 'Soft brush', airbrush: 'Airbrush', highlighter: 'Highlighter', 'soft-eraser': 'Soft eraser', smudge: 'Smudge', charcoal: 'Chalk and charcoal', 'pixel-brush': 'Pixel brush' };
 /** Which columns make sense for which tool. */
 const HAS: Record<PenTool, { size: boolean; opacity: boolean; flow: boolean }> = {
   brush: { size: true, opacity: false, flow: false },
@@ -20,6 +22,13 @@ const HAS: Record<PenTool, { size: boolean; opacity: boolean; flow: boolean }> =
   spray: { size: true, opacity: false, flow: true },
   shade: { size: true, opacity: false, flow: false },
   dither: { size: true, opacity: false, flow: false },
+  'soft-brush': { size: true, opacity: false, flow: true },
+  airbrush: { size: true, opacity: false, flow: true },
+  highlighter: { size: true, opacity: false, flow: true },
+  'soft-eraser': { size: true, opacity: false, flow: true },
+  smudge: { size: true, opacity: false, flow: true },
+  charcoal: { size: true, opacity: false, flow: true },
+  'pixel-brush': { size: true, opacity: false, flow: true },
 };
 
 interface Reading {
@@ -72,7 +81,7 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
     g.lineCap = 'round';
     g.lineJoin = 'round';
     g.globalCompositeOperation = press.eraser ? 'destination-out' : 'source-over';
-    g.strokeStyle = getComputedStyle(c).getPropertyValue('--accent') || '#9b7bff';
+    g.strokeStyle = cssVar('--accent', '#9b7bff');
     g.lineWidth = (2 + 16 * f.pressure) * k;
     g.beginPath();
     const from = last.current ?? { x, y };
@@ -194,7 +203,7 @@ export function PenPage() {
           >
             Reset
           </button>
-          <p className="tb-note tb-curve-note">Drag the dots to make the feel your own. <b>Reset</b> brings back the straight line.</p>
+          <Explainer className="tb-note tb-curve-note">Drag the dots to make the feel your own. <b>Reset</b> brings back the straight line.</Explainer>
         </div>
         <div className="tb-curve-side">
           <Row label="Feel" hint="Soft counts a light touch for a lot. Firm needs a harder press. Normal is the straight line. Pick one to start from, then drag the dots to make it yours.">
@@ -255,9 +264,9 @@ export function PenPage() {
       </Row>
 
       <h4>What each tool does with the pen</h4>
-      <p className="tb-note">
+      <Explainer className="tb-note">
         The vector Brush has its own thickness switch in its options. Everything else is here, and in each tool's options. The stabilizer smooths a wobbly line by letting the brush trail a little behind your pen or mouse. Every tool starts at a gentle 12%; slide it to 0 to turn it off.
-      </p>
+      </Explainer>
       <table className="tb-tools">
         <thead>
           <tr>

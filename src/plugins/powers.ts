@@ -5,7 +5,7 @@ import { PERMISSIONS, type Decision, type Permission, type PluginManifest } from
  * The powers a version 2 plugin must be allowed one by one. Each one is off until the person turns it on, and a plugin
  * that was refused keeps running with that part switched off. (The internet is the same kind of switch, for any version.)
  */
-export const ELEVATED: Permission[] = ['document.edit', 'tools', 'canvas', 'shapes'];
+export const ELEVATED: Permission[] = ['document.edit', 'tools', 'canvas', 'shapes', 'app'];
 
 /** What each power could do in the wrong hands, in words anyone can follow. */
 export const RISKS: Partial<Record<Permission, string>> = {
@@ -13,6 +13,7 @@ export const RISKS: Partial<Record<Permission, string>> = {
   tools: 'While one of its tools is picked it sees every click and drag on your canvas. It can change your drawing too, if you allowed that.',
   canvas: 'It can put marks on top of your canvas, so a careless or dishonest plugin could cover or mislead what you see. The marks never end up in your files.',
   shapes: 'It can add its own shapes to your drawing, as many as it likes. They are ordinary shapes you can undo or delete.',
+  app: 'It can press almost any of Frameling\'s own commands, as fast as it likes: delete layers, clear frames, change settings. Each run is one step you can undo, but save a copy first. It can never open or save files, or reach your accounts.',
   network: 'It can send what it can see to the sites it listed. Only allow this if you trust where it comes from.',
 };
 

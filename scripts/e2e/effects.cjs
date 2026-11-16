@@ -7,6 +7,10 @@
 //
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const path = require('node:path');
 const { installIpcStubs } = require('../ipc-stubs.cjs');
 
@@ -31,7 +35,7 @@ const px = (data, x, y) => data.slice((y * W + x) * 4, (y * W + x) * 4 + 4);
 const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
 
 const cases = [];
-const add = (name, d, checks, frame = 0, editor = false) => cases.push({ name, d, checks, frame, editor });
+const add = (name, d, checks, frame = 0, editor = false, active, editorOnly = false) => cases.push({ name, d, checks, frame, editor, active, editorOnly });
 
 const full = (c) => [rect('r' + n, 0, 0, W, H, c)];
 
@@ -53,6 +57,35 @@ add('clipped layers hide with their base', doc([layer('base', [rect('b', 0, 0, 8
     [12, 4, [255, 255, 255, 255], 1],
     [12, 14, [0, 0, 255, 255], 1],
   ]);
+}
+{
+  // A mask added to a layer (its own folder), and the same mask switched off: on the render and on the editor canvas.
+  const f = { f: { id: 'f', name: 'Masked', visible: true, opacity: 1 } };
+  const a = () => layer('a', full('#ff0000'), { folder: 'f' });
+  add('a mask added to a layer shows where it is painted', doc([layer('bg', full('#00ff00')), a(), layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show' }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [0, 255, 0, 255], 1],
+  ], 0, true);
+  add('a mask that is switched off cuts nothing', doc([layer('bg', full('#00ff00')), a(), layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show', visible: false }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [255, 0, 0, 255], 1],
+  ], 0, true);
+  add('an empty show mask hides its layer; the layer under the folder stays', doc([layer('bg', full('#00ff00')), a(), layer('m', [], { folder: 'f', mask: 'show' }), layer('top', [])], { folders: f }), [
+    [2, 4, [0, 255, 0, 255], 1],
+    [12, 4, [0, 255, 0, 255], 1],
+  ], 0, true);
+  {
+    // While a mask is the layer being painted, what it hides shows faintly (28%) and what it shows has a purple wash (35%).
+    const m = layer('m', [rect('m', 0, 0, 8, H, '#000000')], { folder: 'f', mask: 'show' });
+    add('painting a mask: the hidden part shows faintly, the painted part washes purple', doc([layer('bg', full('#00ff00')), a(), m], { folders: f }), [
+      [12, 4, [71, 183, 0, 255], 4],
+      [2, 4, [219, 43, 89, 255], 4],
+    ], 0, true, m.layer.id, true);
+  }
+  add('an empty hide mask shows its layer in full', doc([layer('bg', full('#00ff00')), a(), layer('m', [], { folder: 'f', mask: 'hide' }), layer('top', [])], { folders: f }), [
+    [2, 4, [255, 0, 0, 255], 1],
+    [12, 4, [255, 0, 0, 255], 1],
+  ], 0, true);
 }
 {
   const a = layer('a', full('#ff0000'), { folder: 'f' });
@@ -90,6 +123,36 @@ add('glow around the drawing', doc([layer('a', box(), { effects: [{ id: 'g', kin
   [5, 8, [0, 0, 255, 255], 170],
 ]);
 add('colour adjust: no brightness is black', doc([layer('a', full('#ff8800'), { effects: [{ id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 0, contrast: 100 } }] })]), [[4, 4, [0, 0, 0, 255], 1]]);
+// The finishing effects, on the JS path (this harness has no GPU process; scripts/e2e/effects-gpu.cjs compares the two paths).
+add('colour fringe: red one way, blue the other', doc([layer('a', [rect('x', 6, 6, 4, 4, '#ffffff')], { effects: [{ id: 'f', kind: 'fringe', values: { distance: 2, angle: 0 } }] })], { background: '#000000' }), [
+  [5, 8, [0, 0, 255, 255], 2],
+  [6, 8, [0, 255, 255, 255], 2],
+  [7, 8, [0, 255, 255, 255], 2],
+  [8, 8, [255, 255, 0, 255], 2],
+  [10, 8, [255, 0, 0, 255], 2],
+  [1, 8, [0, 0, 0, 255], 1],
+]);
+add('dark corners: clear middle, dark corner', doc([layer('a', full('#ffffff'), { effects: [{ id: 'v', kind: 'vignette', values: { amount: 100, size: 50, softness: 0, color: '#000000' } }] })]), [
+  [8, 8, [255, 255, 255, 255], 1],
+  [0, 0, [0, 0, 0, 255], 1],
+], 0, true);
+add('dark corners on an empty layer still frame everything under it', doc([layer('a', full('#ffffff')), layer('v', [], { effects: [{ id: 'v', kind: 'vignette', values: { amount: 100, size: 50, softness: 0, color: '#ff0000' } }] })]), [
+  [8, 8, [255, 255, 255, 255], 1],
+  [0, 0, [255, 0, 0, 255], 1],
+]);
+add('motion blur smears along the angle', doc([layer('a', box(), { effects: [{ id: 'm', kind: 'motionblur', values: { length: 4, angle: 0, trail: 0 } }] })]), [
+  [5, 8, [153, 153, 153, 255], 4],
+  [8, 8, [51, 51, 51, 255], 4],
+  [8, 3, [255, 255, 255, 255], 1],
+]);
+add('wave bends the layer sideways', doc([layer('a', box(), { effects: [{ id: 'w', kind: 'wave', values: { amount: 4, length: 500, phase: 90, angle: 0, ripple: 0 } }] })]), [
+  [3, 8, [0, 0, 0, 255], 5],
+  [8, 8, [255, 255, 255, 255], 5],
+]);
+add('film grain only touches the drawing', doc([layer('a', box(), { effects: [{ id: 'g', kind: 'grain', values: { amount: 100, size: 1, colour: 0, change: 0, seed: 1 } }] })]), [
+  [1, 1, [255, 255, 255, 255], 1],
+  [7, 7, [64, 64, 64, 255], 64],
+]);
 add('pixelate averages squares', doc([layer('a', [rect('a', 0, 0, 2, 4, '#000000'), rect('b', 2, 0, 2, 4, '#ffffff')], { effects: [{ id: 'p', kind: 'pixelate', values: { size: 4 } }] })]), [[1, 1, [128, 128, 128, 255], 30]]);
 {
   // A symbol instance on a layer with an outline and a blend mode: the instance's posed drawing goes through the
@@ -159,6 +222,36 @@ add('animated blur, frame 1: sharp', doc([layer('a', box(), { effects: anim() })
 add('animated blur, frame 11: soft', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [200, 200, 200, 255], 50]], 10);
 
 // A rejection must end the run with a failure, not leave Electron hanging with the window hidden.
+// Effects on one shape (src/effects/shapeFx.ts): the shape goes through its own effects, the shapes round it do not, and the
+// layer's effects then run on the layer as a whole.
+const withFx = (shape, ...effects) => ({ ...shape, effects });
+const crisp = () => rect('c', 0, 0, 2, 2, '#000000');
+add('an effect on one shape softens that shape and leaves its neighbour crisp', doc([layer('a', [crisp(), withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'b', kind: 'blur', values: { radius: 2 } })])]), [
+  [8, 8, [145, 145, 145, 255], 30],
+  [4, 8, [215, 215, 215, 255], 40],
+  [0, 0, [0, 0, 0, 255], 1],
+  [1, 1, [0, 0, 0, 255], 1],
+  [2, 2, [255, 255, 255, 255], 1],
+]);
+add('a shape\'s soft edge is the one a layer of its own would give', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'b', kind: 'blur', values: { radius: 2 } })])]), [
+  [8, 8, [145, 145, 145, 255], 30],
+  [4, 8, [215, 215, 215, 255], 40],
+]);
+add('a shadow on one shape falls from that shape only', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 's', kind: 'shadow', values: { color: '#ff0000', opacity: 1, x: 4, y: 4, softness: 0 } }), rect('y', 0, 12, 3, 3, '#000000')])]), [
+  [12, 12, [255, 0, 0, 255], 2],
+  [7, 7, [0, 0, 0, 255], 1],
+  [1, 13, [0, 0, 0, 255], 1],
+  [4, 15, [255, 255, 255, 255], 1],
+]);
+add('a shape\'s effects run first, then the layer\'s on the whole layer', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'o', kind: 'outline', values: { color: '#ff0000', width: 2 } })], { effects: [{ id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 200, contrast: 100 } }] })]), [
+  // The red outline the shape made is there for the layer's brighten to work on (red doubled stays red; black stays black).
+  [5, 7, [255, 0, 0, 255], 2],
+  [7, 7, [0, 0, 0, 255], 1],
+]);
+add('colour adjust on one shape recolours that shape only', doc([layer('a', [withFx(rect('x', 0, 0, 8, H, '#ff8800'), { id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 0, contrast: 100 } }), rect('y', 8, 0, 8, H, '#ff8800')])]), [
+  [4, 4, [0, 0, 0, 255], 1],
+  [12, 4, [255, 136, 0, 255], 2],
+]);
 const bail = (e) => {
   console.error('FAIL harness error:', e && e.stack ? e.stack : e);
   app.exit(1);
@@ -168,6 +261,7 @@ process.on('uncaughtException', bail);
 setTimeout(() => bail(new Error('effects harness timed out after 180s')), 180000).unref();
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   await win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'), { query: { debug: '1' } });
@@ -178,17 +272,17 @@ app.whenReady().then(async () => {
   console.log(`canvas filter: ${await win.webContents.executeJavaScript('window.__framelingEffects.nativeFilterWorks() ? "native" : "JS fallback"')}`);
   let failed = 0;
   for (const c of cases) {
-    const data = await win.webContents.executeJavaScript(`window.__framelingEffects.pixels(${JSON.stringify(c.d)}, ${c.frame})`);
+    const data = c.editorOnly ? [] : await win.webContents.executeJavaScript(`window.__framelingEffects.pixels(${JSON.stringify(c.d)}, ${c.frame})`);
     const bad = [];
-    for (const [x, y, want, tol] of c.checks) {
+    for (const [x, y, want, tol] of c.editorOnly ? [] : c.checks) {
       const got = px(data, x, y);
       if (!near(got, want, tol)) bad.push(`(${x},${y}) got ${got.join(',')} want ${want.join(',')} ±${tol}`);
     }
     if (c.editor) {
       // The same pixels on the editor canvas (scaled to fit the window, so only well inside each area is compared).
-      const got = await win.webContents.executeJavaScript(`window.__framelingEffects.editorPixels(${JSON.stringify(c.d)}, ${c.frame}, ${JSON.stringify(c.checks.map(([x, y]) => [x, y]))})`);
+      const got = await win.webContents.executeJavaScript(`window.__framelingEffects.editorPixels(${JSON.stringify(c.d)}, ${c.frame}, ${JSON.stringify(c.checks.map(([x, y]) => [x, y]))}, ${JSON.stringify(c.active || null)})`);
       c.checks.forEach(([x, y, want, tol], i) => {
-        if (!near(got[i], want, tol + 40)) bad.push(`editor (${x},${y}) got ${got[i].join(',')} want ${want.join(',')}`);
+        if (!near(got[i], want, c.editorOnly ? tol : tol + 40)) bad.push(`editor (${x},${y}) got ${got[i].join(',')} want ${want.join(',')}`);
       });
     }
     if (bad.length) failed++;

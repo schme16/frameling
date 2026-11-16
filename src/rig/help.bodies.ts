@@ -1,33 +1,47 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  rig: `**Bones** turn a drawing into a puppet. Instead of redrawing an arm on every frame, you drag it into a new pose and Frameling moves it smoothly from the last pose to this one.
+  rig: `A **skeleton** (animators call it a **rig**) turns a drawing into a puppet: you draw **bones** over it, then pose them. Instead of redrawing an arm on every frame, you drag it into a new pose and Frameling moves it smoothly from the last pose to this one.
 
 **The three steps:**
 1. **Draw each part on its own layer**: head, body, upper arm, lower arm and so on. (Or draw it all on one layer and let it [bend](help:rig-bend).)
 2. **Draw bones** over it with the [Bone tool](help:rig-bones) (**K**). Start at the hips, then draw from each bone's tip to make chains for the spine, arms and legs.
-3. **Attach the parts** with **Rig > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
+3. **Attach the parts** with **Rigging > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
 
 Now pick the [Pose tool](help:rig-posing) (**Shift+K**), go to another frame and drag the bones. That's animation!
 
 The skeleton lives on its own **Bones** layer in the timeline. Each key on it is a pose. Hide it and the bones still move your character; it never shows in exports.
 
-Want to see one working first? **File > New** and pick **Paper doll puppet**: it has a rig and a walk ready to play with.`,
-  'rig-bones': `Pick the **Bone tool** (**K**) and **drag** to draw a bone, from its joint to its tip.
+Want to see one working first? **File > New drawing...** and pick **Paper doll puppet**: it has a rig and a walk ready to play with.`,
+  'rig-bones': `Pick the **Add bone** tool (**K**) and **drag** to draw a bone, from its joint to its tip.
 
 - **Chains:** start a drag on the **tip** of a bone (the small dot) and the new bone hangs from it, like an upper arm, then a lower arm, then a hand.
 - **Branches:** start on the **middle** of a bone to grow a new chain from it (arms and a neck from the chest).
-- **Click** a bone to pick it. **Delete** removes the picked bone; anything hanging from it moves up to its parent.
+- **No dragging:** pick a bone and press **Add next bone**. It grows from the tip, carrying on the same way.
+- **Click** a bone to pick it. **Delete** or **Remove bone** takes the picked bone away.
 
-**Adjusting:** switch the tool to **Adjust bones** in Tool options, or hold **Alt** for a moment, and drag a **joint** (big dot) or **tip** to move it. Moving a tip takes the bones hanging from it along.
+Moving, renaming and removing have tools of their own: see [Add, edit and remove bones](help:rig-bone-tools).
 
-**Naming bones** helps later: double-click a bone in the **Rig panel**. Names with *left* and *right* (or *L* and *R*) let [Mirror pose](help:rig-pose-library) swap sides.
+**Naming bones** helps later: use the name box in the **Edit bone** options, or double-click a bone in the **Rig panel**. Names with *left* and *right* (or *L* and *R*) let [Mirror pose](help:rig-pose-library) swap sides.
 
 You can draw bones on any frame, even over a posed character: they're placed where they'd be at rest so everything lines up.
 
-Prefer slimmer bones? **Rig > Slim bones** switches the look.`,
+Prefer slimmer bones? **Rigging > Slim bones** switches the look.`,
+  'rig-bone-tools': `Bones have three tools of their own, side by side in the toolbox and at the top of their options, so you never have to remember a hidden move.
+
+- **Add bone** (**K**): drag to draw a bone. Start on a tip to make a chain, or on the middle of a bone to branch off. Or pick a bone and press **Add next bone** to grow the next one with no dragging.
+- **Edit bone** (**Alt+K**): drag a **joint** (big dot) or a **tip** (small dot) to move it; bones hanging from a tip come along. Click a bone to pick it, then use the buttons: **Add next bone**, **Pin**, **Remove bone**, **Pick the one above** and **Pick the one below** (handy when joints sit on top of each other). Type in the name box to rename it.
+- **Remove bone** (**Alt+Shift+K**): click a bone and it's gone. It turns pink as you hover, so you see what will go first. **Ctrl+Z** brings it back.
+
+**Bones hanging from a removed bone:** the first time it matters, Frameling takes the bone out, keeps the ones hanging from it (they hang from the bone above instead) and tells you, with a **Change** button to remove the whole branch instead. Your answer is remembered; change it any time in the Remove bone options, or in **Preferences > Behaviour**. **Remove the picked bone and everything hanging from it** (in the palette) does the whole branch whenever you like.
+
+**Posing has buttons too.** In the [Pose tool](help:rig-posing) options, **Dragging a bone does** switches between **Turn and pull**, **Stretch** and **Pin**, so you don't need to hold **Shift** (stretch) or **Alt** (pin).
+
+**Good to know:** the old moves all still work. Hold **Alt** with Add bone to edit for a moment, press **Delete** to remove the picked bone, **Shift+drag** to stretch and **Alt+click** to pin.
+
+Every action is also in the command palette and under **Rigging**.`,
   'rig-attach': `A layer **attached** to a bone moves and turns with it, like a paper cut-out pinned to a stick.
 
-- **Rig > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
+- **Rigging > Attach parts to bones** (**Shift+A**) attaches every layer that isn't attached yet to the bone nearest the middle of its drawing. It's right most of the time.
 - In the **Rig panel**, under **Parts**, every layer has a menu: pick the bone it should follow, **Not attached**, or **Bends with the bones** to [bend it smoothly](help:rig-bend).
 
 You can keep drawing on an attached layer. Draw where you see the part, even when it's turned: Frameling works out where that is on the part itself.
@@ -39,16 +53,16 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
 - **A tip** (the small dot) to pull the limb along, the way you'd move a puppet's hand: the arm bends at the elbow by itself. (This is *IK*, inverse kinematics.)
 - **The first joint** (usually the hips) to move the whole character.
 
-**Pins:** **Alt+click** a bone to pin it (or use the pin in the Rig panel). A pinned bone stays where it is while you move the rest: pin both feet, then drag the hips down, and the knees bend. Great for walks and sits.
+**Pins:** click **Pin** in Tool options with a bone picked, set **Dragging a bone does** to **Pin**, or **Alt+click** a bone (or use the pin in the Rig panel). A pinned bone stays where it is while you move the rest: pin both feet, then drag the hips down, and the knees bend. Great for walks and sits.
 
 **Every drag makes a key.** Posing on a frame with no pose of its own adds a key on the Bones layer. Frameling asks the first time whether the frames in between should **glide** from the last pose (smooth, with easing) or **jump** (stepped). Change it any time in **Preferences > Behaviour**. Glides use the same [easing](help:easing) as other in-betweens, so you can change the feel in the Symbol and motion panel.
 
-**Squash and stretch:** **Shift+drag** a bone to make it longer or shorter on this frame. See [squash and stretch](help:rig-stretch).
+**Squash and stretch:** set **Dragging a bone does** to **Stretch** (or hold **Shift** and drag) to make a bone longer or shorter on this frame. See [squash and stretch](help:rig-stretch).
 
-**Rig > Reset pose** puts every bone back where it was drawn, on this frame.`,
+**Rigging > Reset pose** puts every bone back where it was drawn, on this frame.`,
   'rig-bend': `Some things don't come apart into neat pieces: a tail, a noodle arm, a whole character drawn on one layer. Let those **bend**.
 
-Pick the layer and choose **Rig > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
+Pick the layer and choose **Rigging > Bend this layer with the bones**, or choose **Bends with the bones** for it in the Rig panel.
 
 Frameling lays a fine mesh of triangles over the drawing and ties each point to the nearest bones, more strongly the closer it is (*automatic weights*). Points near one bone follow it exactly; points near a joint blend between the two, so elbows and knees bend smoothly. It works on vector drawings and pixel art alike.
 
@@ -60,7 +74,7 @@ Frameling lays a fine mesh of triangles over the drawing and ties each point to 
 - SVG exports put bent layers in as pictures, since SVG can't bend shapes. Every other export shows exactly what you see.`,
   'rig-weights': `When a layer [bends with the bones](help:rig-bend), Frameling guesses how strongly each part follows each bone. Most of the time the guess is fine. When a bend looks wrong (a sleeve that tears at the elbow, a tail that bends too early), paint it right.
 
-1. Pick the bending layer, then **Rig > Paint how much it bends**.
+1. Pick the bending layer, then **Rigging > Paint how much it bends**.
 2. Pick the **bone** in Tool options, or **Ctrl+click** it on the canvas.
 3. Paint. The colours show that bone's pull: **red** follows it fully, **blue** doesn't follow it at all, green and yellow are in between.
 

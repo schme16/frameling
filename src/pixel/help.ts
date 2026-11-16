@@ -36,6 +36,14 @@ registerHelpTopics([
     keywords: ['dithering', 'pattern', 'checker', 'checkerboard', 'texture', 'blend', 'gradient'],
   },
   {
+    id: 'pixel-gradient',
+    title: 'Gradients on pixel layers',
+    section: 'Pixel art',
+    media: 'pixel-gradient.png',
+    summary: 'Drag across a pixel layer and the colours blend from Paint to Back in dithered steps through your palette.',
+    keywords: ['gradient', 'fade', 'sky', 'dither', 'dithering', 'blend', 'ramp', 'palette steps', 'bayer', 'radial', 'linear', 'backdrop', 'pixel gradient'],
+  },
+  {
     id: 'pixel-mirror',
     title: 'Mirror drawing on pixel layers',
     section: 'Pixel art',

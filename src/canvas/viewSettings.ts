@@ -1,6 +1,6 @@
 // Little bits of view state that aren't part of the document or the shared UI state.
 import { useSyncExternalStore } from 'react';
-import { clampDistance, defaultPicks, SNAP_DISTANCE, migrateSavedPicks, sanitizeChosen, sanitizePicks, type SnapChosen, type SnapPicks } from './snapModel';
+import { clampDistance, clampDrawDistance, DRAW_DISTANCE, defaultPicks, SNAP_DISTANCE, migrateSavedPicks, sanitizeChosen, sanitizePicks, type SnapChosen, type SnapPicks } from './snapModel';
 
 interface ViewSettings {
   /** Show the pixel grid on pixel layers when zoomed in far enough. */
@@ -23,6 +23,10 @@ interface ViewSettings {
   snapChosen: SnapChosen;
   /** How close (screen pixels) something has to come to snap. */
   snapDistance: number;
+  /** The pen, pencil and brush pull their start and end onto line ends, guides, the grid and the page (needs the master switch too). */
+  snapDraw: boolean;
+  /** How close (screen pixels) a stroke's start or end has to be to be pulled. */
+  snapDrawDistance: number;
   /** Other shapes (and equal gaps) look at every visible vector layer, not just the open one. */
   snapAllLayers: boolean;
   /** Guides can't be moved or added (they still show and snap). */
@@ -57,7 +61,7 @@ function keepNewest(by: Record<string, boolean>): Record<string, boolean> {
   if (keys.length <= KEEP_THROUGH) return by;
   return Object.fromEntries(keys.slice(keys.length - KEEP_THROUGH).map((k) => [k, by[k]]));
 }
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, throughBy: {}, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, throughBy: {}, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapDraw: true, snapDrawDistance: DRAW_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -67,13 +71,14 @@ try {
     if (saved && typeof saved.throughCamera === 'boolean') state = { ...state, throughCamera: saved.throughCamera };
     if (saved && saved.throughBy) state = { ...state, throughBy: readThrough(saved.throughBy) };
     if (saved && typeof saved.cameraWhilePlaying === 'boolean') state = { ...state, cameraWhilePlaying: saved.cameraWhilePlaying };
-    for (const k of ['rulers', 'guides', 'snap', 'snapAllLayers', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
+    for (const k of ['rulers', 'guides', 'snap', 'snapDraw', 'snapAllLayers', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
     // Newer saves hold only what was chosen; older ones held every tick, so the ones still at their old default are dropped.
     if (saved && (saved.snapChosen || saved.snapPicks)) {
       const snapChosen = saved.snapChosen ? sanitizeChosen(saved.snapChosen) : migrateSavedPicks(saved.snapPicks);
       state = { ...state, snapChosen, snapPicks: sanitizePicks(snapChosen) };
     }
     if (saved && saved.snapDistance !== undefined) state = { ...state, snapDistance: clampDistance(saved.snapDistance) };
+    if (saved && saved.snapDrawDistance !== undefined) state = { ...state, snapDrawDistance: clampDrawDistance(saved.snapDrawDistance) };
     if (saved && (saved.grid === 'square' || saved.grid === 'iso' || saved.grid === 'off')) state = { ...state, grid: saved.grid };
     if (saved && Number.isFinite(saved.gridSize) && saved.gridSize >= 1 && saved.gridSize <= 4096) state = { ...state, gridSize: saved.gridSize };
     if (saved && (saved.isoStyle === '2:1' || saved.isoStyle === '30')) state = { ...state, isoStyle: saved.isoStyle };
@@ -90,9 +95,13 @@ export function getViewSettings(): ViewSettings {
 /** The snap distance in screen pixels (View > Snapping options). */
 export const snapPx = (): number => state.snapDistance;
 
+/** The pull distance in screen pixels for the start and end of a pen, pencil or brush stroke. */
+export const snapDrawPx = (): number => state.snapDrawDistance;
+
 export function setViewSettings(patch: Partial<ViewSettings>): void {
   state = { ...state, ...patch };
   if (patch.snapDistance !== undefined) state.snapDistance = clampDistance(patch.snapDistance);
+  if (patch.snapDrawDistance !== undefined) state.snapDrawDistance = clampDrawDistance(patch.snapDrawDistance);
   if (patch.snapChosen) state.snapPicks = sanitizePicks(state.snapChosen);
   if (patch.throughBy) state.throughBy = keepNewest(state.throughBy);
   try {

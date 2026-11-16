@@ -5,7 +5,7 @@
  *
  * Effects: Soften is a Gaussian blur, Shadow a blurred, moved and coloured copy underneath, Colour adjust colour
  * matrices, Glow a blurred coloured copy underneath (stacked by strength), Outline the drawing moved round a ring of
- * offsets the same way the canvas does it. Pixelate has no SVG equivalent and is left out (the export says so).
+ * offsets the same way the canvas does it. Pixelate, film grain, wave, colour fringe, dark corners and motion blur have no SVG equivalent and are left out (the export says so).
  * Effect settings that change over time are SMIL <animate>s switching once per frame.
  */
 import type { Doc, Layer, LayerEffect, LayerFolder } from '../core/format';
@@ -58,6 +58,9 @@ function prim(host: SvgLookHost, tag: string, fixed: string, values: Record<stri
   const { attr, anim } = attrs(host, values);
   return anim ? `<${tag}${fixed}${attr}>${anim}</${tag}>` : `<${tag}${fixed}${attr}/>`;
 }
+
+/** Stands for "a shape" as the owner of effects in the notes (an effect on one shape has no name to quote). */
+export const SHAPE_OWNER = '\u0000shape';
 
 /** The effects as one SVG filter (its id), or '' when none of them do anything. */
 export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefined, owner: string): string {
@@ -126,7 +129,7 @@ export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefi
       parts.push(`<feMerge result="${out}"><feMergeNode in="${c}"/><feMergeNode in="${prev}"/></feMerge>`);
       prev = out;
     } else {
-      host.notes.add(`${effectInfo(e.kind).label} on "${owner}" was left out: SVG has nothing like it.`);
+      host.notes.add(`${effectInfo(e.kind).label} on ${owner === SHAPE_OWNER ? 'a shape' : `"${owner}"`} was left out: SVG has nothing like it.`);
     }
   }
   if (!parts.length) return '';

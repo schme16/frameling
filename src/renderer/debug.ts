@@ -2,14 +2,30 @@
 // read and drive state. Never on in normal use. main.tsx only loads this (and the areas' own debug hooks below) when
 // ?debug is there, so none of it is in the normal start-up download.
 import '../export/debug';
+import '../timelapse/debug';
 import '../io/debug';
 import '../effects/debug';
 import '../templates/debug';
 import '../plugins/debug';
+import '../scripts/debug';
 import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
+import '../soft/debug';
+import '../select/debug';
+import '../dry/debug';
+import '../brushes/debug';
 import '../quillpet/debug';
+import '../update/debug';
+import '../audience/debug';
+import '../twitch/debug';
+import '../quillreacts/debug';
+import '../promptjar/debug';
+import '../votes/debug';
+import '../streamoverlay/debug';
+import '../guess/debug';
+import { newDoc, uid } from '../core/doc';
+import { activeDrawing } from '../tools/edit';
 import { store } from '../core/store';
 import { guard as saveGuard } from '../io/file';
 import { findTemplate } from '../templates';
@@ -18,27 +34,38 @@ import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/r
 import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getFullQuest, loadQuests, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
+import { getToolSettings, setToolSettings } from '../tools/settings';
 import { considerScreen } from '../ui/screenSize';
+import * as screenFit from '../ui/screenFit';
 import { crashDialog, crashReport } from '../beta/crashAsk';
 import { askSaveInPage } from '../io/saveAsk';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
 import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
+import { autosaveNow } from '../io/document';
+import { setCheckMemory } from '../tablet/check/state';
 import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/settings';
 import { penTools } from '../tablet/tool';
 import { showPanel } from '../ui/dock';
 import * as dockApi from '../ui/dock';
+import * as workspaceActions from '../ui/workspaceActions';
 import * as dockFloats from '../ui/DockFloats';
 import type { RightStyle } from '../ui/rightStyle';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
 import { recovery } from '../io/recovery';
+import * as lockState from '../ui/lockState';
 import { setViewSettings } from '../canvas/viewSettings';
+import { pretendReport } from '../gpu/report';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
+import { pickKeys, setTl } from '../timeline/state';
+import { celRef } from '../timeline/tracks';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
+import { allChoices, askAgain, forgetAnswers } from '../core/choices';
+import { pretend as pretendReviewLink } from '../livereview/link';
 
 if (new URLSearchParams(location.search).has('debug')) {
   // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
@@ -47,6 +74,10 @@ if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
+    // Turns down Quill's offer of the pen check, so a shot drawn with a pretend pen is not covered by it.
+    declinePenCheck: () => setCheckMemory({ declined: true }),
+    // A review link that arrives from another computer (the harness has one window that is both sharer and friend): { elsewhere: true }.
+    reviewLink: pretendReviewLink,
     // Grids, light table and the tween offer, for their help shots and A/Bs.
     anim: {
       view: setViewSettings,
@@ -61,16 +92,26 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     // The paint bucket's options, for its shots and A/Bs.
     fill: { get: getFillOptions, set: setFillOptions },
+    // The tool options (pixel brush size and shape, pencil thickness), for the big brush check (scripts/perf/brushsize.cjs).
+    toolSettings: { get: getToolSettings, set: setToolSettings },
     // Opens a starter template by id (for shots of a known document).
     template: (id: string) => {
       const t = findTemplate(id);
       if (t) store().load(t.make());
       return !!t;
     },
+    // A new empty drawing, with or without animation, for shots of the two (src/core/animation.ts).
+    blank: (animated: boolean) => store().load(newDoc({ animated })),
     tiles,
+    // Pretend what the computer reports about its graphics, for the Performance page's shots: pretendReport(report | null).
+    gpu: { pretend: pretendReport },
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
+    // Ask-the-first-time questions, for their shots and the no-wrap check: ask one by id, or forget the answers.
+    choices: { ask: askAgain, forget: forgetAnswers, all: () => allChoices().map((c) => c.id) },
     // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.
+    // The small-screen fit: tell it a screen (a harness has no real one), and ask what it decided.
+    fit: { consider: (d: Omit<Parameters<typeof screenFit.considerFit>[0], 'windowWidth' | 'windowHeight'>, quiet = true) => screenFit.considerFit({ windowWidth: 1280, windowHeight: 720, ...d }, { quiet }), toggle: screenFit.toggleFit, isCompact: screenFit.isCompact },
     screenOffer: (d: Omit<Parameters<typeof considerScreen>[0], 'windowWidth' | 'windowHeight'>) => void considerScreen({ windowWidth: 1400, windowHeight: 900, ...d }, { force: true }),
     // Quill's offer after a crash, for a pretend crash (shots, checks): 'ask' offers to send, 'tell' only says what happened.
     crashOffer: (mode: 'ask' | 'tell' = 'ask') => {
@@ -80,11 +121,32 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     // Quill's "Save changes?" question, for shots and checks: a drawing with a file (false) or a never-saved one (true).
     saveQuestion: (neverSaved = false) => void askSaveInPage(neverSaved ? 'Untitled' : 'Ball bounce', neverSaved),
+    // The timeline's frame width (pixels a frame), for shots of a zoom the slider is too coarse to land on.
+    timelineZoom: (cw: number) => setTl({ cw }),
+    // Picks the drawings at these frames on a layer (by name, or the last one), for shots of picked keys: clicking
+    // one and then holding Shift lands differently every run, which is no good for an A/B.
+    pickKeys: (frames: number[], layerName?: string) => {
+      const { doc } = store().get();
+      const layer = layerName ? doc.layers.find((l) => l.name === layerName) : doc.layers[doc.layers.length - 1];
+      if (!layer) return 0;
+      const refs = layer.cels.filter((c) => frames.some((f) => f >= c.start && f < c.start + c.length)).map((c) => celRef(layer.id, c.id));
+      pickKeys(refs);
+      store().setUi({ activeLayerId: layer.id, frame: frames[0] ?? 0 });
+      return refs.length;
+    },
     commands: () => allCommands().map((c) => c.id),
     /** Every help topic with its picture or clip, for the web check that every file is served. */
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),
     // The dock (panels, floating windows, workspaces), for shots and checks.
     dock: { ...dockApi, chrome: dockFloats.setFloatChrome },
+    // The Reset layout button on the Workspaces page, which also asks Quill about the tools.
+    resetLayoutAndAsk: workspaceActions.resetLayoutAndAsk,
+    // Quill's lock lesson, for the dialogue shots: pretend a quick slip, then teach it.
+    teachLock: (kind: 'tools' | 'panels' = 'tools') => {
+      lockState.lastDrag.ms = 120;
+      lockState.lastDrag.px = 30;
+      return lockState.teachLock(kind, () => dockApi.setLock(kind, true));
+    },
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {
       start: startQuest,
@@ -102,11 +164,49 @@ if (new URLSearchParams(location.search).has('debug')) {
     toast,
     // Work found after a crash, for shots of the welcome sheet's recovery card.
     recovery,
+    // Autosave on demand, so the performance harness can land one in the middle of a stroke on purpose
+    // (scripts/perf/run.cjs, the combos test). Nothing in the app calls this: the clock does.
+    autosaveNow: () => void autosaveNow(),
     overlays: { openHelp, openPrefs, closeSheet, state: overlays },
     // Pen and tablet settings, for the pen check (scripts/e2e/pen.cjs).
     pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen, forgetTools: () => penTools.reset() },
     // The accessibility check (scripts/a11y.cjs) opens every panel and picks every tool.
     panels: () => allPanels().map((p) => p.id),
+    // Small states that are hard to reach by hand, so the contact sheet of panels (scripts/panels-sheet.cjs) shows them:
+    // one picked text shape, two notes, three named slices on the first pixel layer (picked), and a few edits in the History list.
+    seed: {
+      notes: () =>
+        store().update('Seed notes', (d) => {
+          (d.notes ??= []).push(
+            { id: uid('n'), x: 120, y: 90, text: 'Make the squash a touch longer.', pin: 'page' },
+            { id: uid('n'), x: 300, y: 200, text: 'Shadow should shrink as the ball rises.', pin: 'page' },
+          );
+        }),
+      slices: () => {
+        const layer = store().get().doc.layers.find((l) => l.kind === 'pixel');
+        if (!layer) return false;
+        store().setUi({ activeLayerId: layer.id });
+        store().update('Seed slices', (d) => {
+          const l = d.layers.find((x) => x.id === layer.id);
+          if (l?.kind === 'pixel') l.slices = [{ id: uid('s'), name: 'idle', x: 0, y: 0, w: 16, h: 16 }, { id: uid('s'), name: 'run', x: 16, y: 0, w: 16, h: 16 }, { id: uid('s'), name: 'jump', x: 32, y: 0, w: 16, h: 16 }];
+        });
+        return true;
+      },
+      // Picks the first text shape on any layer (the Text panel only shows its controls for one). False when there is none.
+      text: () => {
+        for (const l of store().get().doc.layers) {
+          store().setUi({ activeLayerId: l.id, selection: [] });
+          const shape = activeDrawing()?.kind === 'vector' ? (activeDrawing() as { shapes: { id: string; type: string }[] }).shapes.find((x) => x.type === 'text') : undefined;
+          if (shape) return void store().setUi({ selection: [shape.id] });
+        }
+        return false;
+      },
+      history: () => {
+        for (const label of ['Move the ball', 'Squash and stretch', 'Fade the shadow']) store().update(label, (d) => void (d.layers[0].opacity = d.layers[0].opacity === 1 ? 0.9 : 1));
+      },
+    },
+    // Every panel with its name and zone, for the contact sheet of all panels (scripts/panels-sheet.cjs).
+    panelList: () => allPanels().map((p) => ({ id: p.id, title: p.title, zone: p.zone })),
     tools: () => allTools().map((t) => t.id),
     showPanel,
     // The right side's layout, for side by side shots: 'inspector' (the real one), 'rail' or 'tabs'.

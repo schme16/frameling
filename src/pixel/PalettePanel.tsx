@@ -9,12 +9,14 @@ import { activeColor, setActiveColor } from '../tools/wells';
 import { noteColorUsed } from '../tools/recent';
 import { STARTER_PALETTES } from './builtin';
 import { changePaletteColor, reduceActiveToPalette, setDocPalette, togglePaletteLock } from './commands';
-import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
-import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
+import { exportPalette, importPalette, paletteFromDrawing, paletteFromSwatchesNow } from './palette-files';
+import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, offerSwatchPalette, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
 import { usePopover } from '../ui/popover';
+import { ColourPopover } from '../ui/colour/ColourPicker';
+import { chipBackground } from '../ui/colour/chip';
 import { dock, inPixelWorkspace } from '../ui/dock';
 import { paletteIndexOf } from './bar';
 import { sharedEditNote, variationPalette } from '../artboards/variations';
@@ -36,24 +38,10 @@ function useActivePixelLayer() {
   });
 }
 
-/** Opens the system colour picker on a palette colour; the pixels follow when it closes (one undo step). */
-function editColor(index: number, current: string): void {
-  const input = document.createElement('input');
-  input.type = 'color';
-  input.value = current.slice(0, 7);
-  input.style.position = 'fixed';
-  input.style.opacity = '0';
-  input.style.pointerEvents = 'none';
-  input.addEventListener('change', () => {
-    changePaletteColor(index, input.value);
-    input.remove();
-  });
-  input.addEventListener('blur', () => setTimeout(() => input.remove(), 500));
-  document.body.appendChild(input);
-  input.click();
-}
+/** What a palette colour's opacity means, in the picker that changes it. */
+export const PALETTE_ALPHA_NOTE = "A palette colour with less than 100% opacity paints see-through, by exactly that much, even on a layer locked to the palette. Pixels you've already painted keep the opacity they have.";
 
-function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette; onClose: () => void }) {
+function ChipMenu({ menu, palette, onClose, onEdit }: { menu: Menu; palette: DocPalette; onClose: () => void; onEdit: (index: number, at: { left: number; top: number }) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const color = palette.colors[menu.index];
   const front = useStore((s) => activeColor(s.ui) ?? s.ui.color);
@@ -83,7 +71,7 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
   return (
     <div className="cv-menu px-menu" ref={ref} role="menu" style={{ left: Math.min(menu.x, window.innerWidth - 220), top: Math.min(menu.y, window.innerHeight - 280) }}>
       <div className="px-menu-head">
-        <span className="px-menu-chip" style={{ backgroundColor: color }} />
+        <span className="px-menu-chip" style={chipBackground(color)} />
         <span>{color}</span>
       </div>
       {item(wells ? 'Paint with this' : 'Use for lines (stroke)', () => {
@@ -94,7 +82,7 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
         store().setUi({ fillColor: color });
         noteColorUsed(color);
       })}
-      {item('Change colour...', () => editColor(menu.index, color))}
+      {item('Change colour...', () => onEdit(menu.index, { left: menu.x, top: menu.y }))}
       {item(`Set to the current colour (${front})`, () => changePaletteColor(menu.index, front), false, same(front, color))}
       {menu.index > 0 && item(startsRamp ? 'Join the ramp before' : 'Start a new ramp here', () => setDocPalette(toggleRampStart(palette, menu.index), 'Change ramps'))}
       {item('Remove from palette', () => setDocPalette(removeColor(palette, menu.index), 'Remove palette colour'), true, palette.colors.length <= 1)}
@@ -116,6 +104,8 @@ export function PalettePanel() {
   const layer = useActivePixelLayer();
   const frame = useStore((s) => s.ui.frame);
   const [menu, setMenu] = useState<Menu | null>(null);
+  // The colour being changed, with the picker open beside it.
+  const [edit, setEdit] = useState<{ index: number; at: { left: number; top: number; bottom?: number } } | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [name, setName] = useState(palette.name);
@@ -199,7 +189,7 @@ export function PalettePanel() {
                   key={i}
                   type="button"
                   className="px-chip"
-                  style={{ backgroundColor: c }}
+                  style={chipBackground(c)}
                   draggable
                   data-on={same(c, front)}
                   aria-pressed={same(c, front)}
@@ -210,7 +200,10 @@ export function PalettePanel() {
                     setActiveColor(c);
                     noteColorUsed(c);
                   }}
-                  onDoubleClick={() => editColor(i, c)}
+                  onDoubleClick={(ev) => {
+                    const r = ev.currentTarget.getBoundingClientRect();
+                    setEdit({ index: i, at: { left: r.left, top: r.top, bottom: r.bottom } });
+                  }}
                   onContextMenu={(ev) => {
                     ev.preventDefault();
                     setMenu({ index: i, x: ev.clientX, y: ev.clientY });
@@ -243,7 +236,7 @@ export function PalettePanel() {
 
       {at && (
         <div className="px-palette-current" role="status">
-          <span className="px-bar-chip" style={{ backgroundColor: palette.colors[at.index] }} aria-hidden="true" />
+          <span className="px-bar-chip" style={chipBackground(palette.colors[at.index])} aria-hidden="true" />
           {at.exact ? `Painting with colour ${at.index + 1} (index ${at.index})` : `Snaps to colour ${at.index + 1} (index ${at.index})`}
         </div>
       )}
@@ -317,9 +310,21 @@ export function PalettePanel() {
         <p className="cv-tip">The palette lock and shading work on pixel layers. Pick or add a pixel layer to use them.</p>
       )}
       {sharedEditNote(doc, 'palette') && <p className="cv-tip">This is a variation. Change a colour here and only this variation changes; the rest follows the original. The list of colours itself belongs to the original.</p>}
-      {!doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
+      {offerSwatchPalette(doc) ? (
+        <div className="cv-tip px-swatch-offer" data-testid="swatch-offer">
+          <p>This is the starter palette, but your file has colours of its own: its swatches.</p>
+          <ActionButton onClick={paletteFromSwatchesNow} title="Make the pixel palette from the swatches, in the order they are listed. Your pixels don't change.">
+            Use my swatches
+          </ActionButton>
+        </div>
+      ) : (
+        !doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>
+      )}
 
-      {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} />}
+      {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} onEdit={(index, at) => setEdit({ index, at })} />}
+      {edit && palette.colors[edit.index] && (
+        <ColourPopover value={palette.colors[edit.index]} at={edit.at} label={`Palette colour ${edit.index + 1}`} alpha note={PALETTE_ALPHA_NOTE} onCommit={(c) => changePaletteColor(edit.index, c)} onClose={() => setEdit(null)} />
+      )}
     </div>
   );
 }

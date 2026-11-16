@@ -198,6 +198,9 @@ import neither. A kind stays registered for good, also while its feature is off,
   out from the seed for each frame (`src/particles/model.ts`), with no step simulation.
 - A layer bound to a bone is wrapped by `boundDrawing` (`src/rig/pose.ts`): moved by the bone, or bent through a skin
   mesh. Bone maths is `src/rig/math.ts`; weights are `src/rig/weights.ts`.
+  The bone tools are three tools made by one factory in `src/rig/tools.ts` (`bone` Add, `bone-edit` Edit, `bone-remove` Remove), each with a
+  button for what used to be a held key (Alt, Shift) or a hidden key (Delete); the old moves still work. Removing a bone that has bones hanging
+  from it goes through the `rig.removeBone` choice (keep them, or take the branch).
 - `src/core/motions.ts` is data for one-click motions; it makes keys and plays no part in rendering.
 
 **Camera** (`src/core/camera.ts`): `cameraViewAt` finds the first visible camera layer and eases its keys;
@@ -261,6 +264,8 @@ an edit misses the old entry and the old one is garbage collected. The main ones
   passed to `tool.down/move/up`. Tools preview with `setLive` and the overlay, then commit with one `store().update`.
 - Pure helpers: `view.ts` (zoom and pan maths), `input.ts` (wheel intent, Space tap), `onion.ts`, `lightTable.ts`,
   `snap.ts`, `grid.ts`, `guides.ts`. `perf.ts` records timings only with `?perf`.
+- **Lines that draw themselves** (`src/trim`): a `Trim` (Start, End, Offset in percent) on a path's outline or a brush line. `geometry/trim.ts` is the pure geometry (the window, exact curve cutting, brush points); `expandStroke` turns a trimmed outline into plain shapes (so every writer and the canvas get the cut line, with dashes and arrow heads put on after), and `computeOutline` outlines only the shown part of a brush line (`strokeOutlineWhole` is for picking and editing). `core/trimTween.ts` blends trims between two keys of a classic tween (`poseAt`), `timeline/tracks.ts` has the "Draw on" row, and `trim/model.ts` is the editing (cut a key at the playhead, the one-step draw on). Lottie keeps a plain line as one line with a trim path and animated SVG as a dash offset (`export/trimNative.ts` says when); everything else is cut frame by frame, still vector.
+- **Notes on the canvas** (`src/notes`): `Doc.notes` holds them, so they save in the file. `model.ts` is the pure logic (which show on a frame, reading them back, `withoutNotes`), `ops.ts` the store changes (a new note is a draft in `state.ts` until it has words), `NotesLayer.tsx` the markers and the open card, `tool.ts`, `NotesPanel.tsx`. They never reach an export: `sceneOf`, `runExport`, the Interactives package source, plugins and templates all take the document through `withoutNotes`, and `test/notes/never-exported.test.ts` holds that line (a new exporter that reads `doc.notes` fails it).
 - **Snapping choices**: `snapModel.ts` (pure) lists the targets (page, centre, guides, grid, other shapes, perspective,
   cells, angles, artboards) and `activeTargets` says which are in force for one gesture, from the master switch, the
   per-kind ticks (`viewSettings.snapPicks`: vector, pixel, artboard), Ctrl and what is showing. `guides.ts` asks it before
@@ -280,11 +285,12 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
 - **Dock**, in layers:
   - `src/ui/dockModel.ts` is the pure model: `Layout` (zones `left`, `right`, `bottom`, `top` with tabs, active tab,
     size and collapsed state; `floats`, the floating windows, later = nearer the front; `tools`, where the tool rail
-    is; `names`, panels the person renamed; `hidden`; `known`), `normaliseLayout` (tidies anything, so layouts saved
+    is; `names`, panels the person renamed; `hidden`; `known`; optional `railAt`, panels this layout puts in another
+    rail group than their usual one), `normaliseLayout` (tidies anything, so layouts saved
     before the top zone and windows load as they were), and the moves (`movePanelTo`, `moveGroupTo`, `dockFloat`,
     `closePanel`, `frontPanel`, `clampBox`...). No registry, no storage.
   - `src/ui/dock.ts` is the live store (`dock`), saved in `localStorage` `frameling.dock.v1` (`v: 2`), over the model:
-    `syncPanels()` places newly registered panels by their `zone`, `reconcile` fits a layout to what is registered,
+    `syncPanels()` places newly registered panels by their `zone` (a panel with `startsAway` goes to `hidden` instead: Clip flow and Draw on), `reconcile` fits a layout to what is registered,
     `placePanel`, `floatPanel`, `showPanel`, `togglePanel`, workspaces (below). `panelsAway` is "Hide all panels".
   - `DockView.tsx` draws the zones (tabs fit by `tabFit.ts`: full, compact, or overflow behind "+N"); `DockFloats.tsx`
     the floating windows (two looks, `floatChrome`); `ToolStrip.tsx` the tool rail in whichever slot it is placed
@@ -294,10 +300,13 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
     Views mark drop places with `data-dock-strip`, `-tab`, `-tabs`, `-axis`, `-area`, `-zone`, `-float` and `-edge`, and
     `targetAt` reads what is under the pointer. `dockMenus.ts` holds the menus as data; `dockCommands.ts` the
     commands ("this panel" is the last one clicked in, `lastPanel`).
+  - `railDrop.ts` is the tool rail's drop rules as plain functions: a band along each outer edge of the work area docks it, the canvas floats it, anywhere else (or Esc) puts it back where it was picked up. The rail keeps `tools.home` (the side it was last docked on) and a floating window keeps `back` (the side, group and place each panel came from), both optional in saved layouts. `railLocked()` and `panelsLocked()` in `dockDrag.ts` are the seam for the lock card.
 - **Right side** (`src/ui/RightDock.tsx`), chosen by preference (`src/ui/rightStyle.ts`): `inspector` (default),
   `rail` or `tabs`. The rail is a vertical labelled strip. In inspector mode, panels marked as sections (tool options,
   colours, palette, tileset, motion, effects, text, particles, camera, bones) show as one stack of foldable sections
-  called Properties, with sections that don't apply yet listed under "Also here" and selection-related ones moved up.
+  called Properties. Only the sections that apply now show, selection-related ones first, and the Clip section leads only
+  until you press on the canvas or pick another layer or tool. The rest are not listed in Properties; the Panels list
+  gives each a "Shows up when you ..." line made from its `idle` words (`whenShown`).
   Other panels (library, artboards, timeline, preview, clip flow, lip sync, quests, help, plugin panels) are rail
   entries.
 - **`src/ui/panelInfo.ts`** is the data behind that: per panel a short name, blurb, rail group, whether it is a
@@ -368,7 +377,7 @@ Where things live:
 
 - `plan.ts` (pure): range, size and name; limits 8192 px per side, 5000 frames, 16384 px sheets.
 - `run.ts` `runExport`: draws each frame with the shared renderer (`draw.ts`) and hands it to the format's writer.
-- `capabilities.ts`: what this machine can encode (WebCodecs through mediabunny: H.264 for MP4; AV1, VP9 or VP8 for
+- `capabilities.ts`: what this machine can encode (WebCodecs through mediabunny: H.264 for MP4; VP9 (the default), AV1 or VP8 for
   WebM, transparency only with VP9 and VP8).
 - `carries.ts` + `CarryNotes.tsx`: a table of what each format keeps (text, particles, tint, blend, effects, clipping,
   masks, folders, bones, gradient alpha) as kept, shapes, picture or lost; `carryWarnings` tells the person before
@@ -408,13 +417,22 @@ Writers:
   out (all within an hour, hourly for a day, daily for 14 days, at most 60 automatic and 400 MB). Restore or open as a
   copy.
 - `ioClient.ts`, `ioWorker.ts`, `ioJobs.ts`, `workerPool.ts`: worker threads (a bundled module worker, up to 4, let go after 20 s idle)
-  that zip a save (`saveFileAsync`) and decode the pictures of a big pixel document in parallel (`loadFileAsync`, used
+  that encode the pictures of a big pixel document to PNG side by side and then zip a save (`saveFileAsync`), and decode the pictures of a big pixel document in parallel (`loadFileAsync`, used
   by `loadBytes`). Without a worker (Node tests, a page that cannot start one) or when one fails, the same code runs
   on the calling thread, so nothing depends on them. Autosave and versions (`saveFileAsync(..., { reuse: true })`) also keep
   each vector drawing's `doc.json` text, already UTF-8 encoded, in a `WeakMap` by drawing object (`file.ts`), relying on
   a drawing never being changed in place once it is in the document (edits replace it). Save and Save As never reuse.
   Under test and with `?debug` (not `&nofreeze`) immer auto-freezes committed documents and the kept drawings are frozen,
   so a write in place throws where it happens.
+- Taking the colours of a picture (`src/pixel/quantise.ts`, `quantiseRun.ts`, `quantise.worker.ts`): a `Histogram` counts the
+  picture's colours a piece at a time (exactly up to 65,536 distinct, in 5-bit bins with their true average colour past that),
+  and `pickColours` takes at most the limit: variance-driven box cutting, then four rounds of k-means. `startScan` sends the
+  pixels to a worker in 1 MB pieces with at most four unacknowledged (so progress is what the worker has counted), keeps the
+  counting so a new limit only picks again, and can be cancelled (the worker is ended). With no worker, or one that fails,
+  the same code runs on the page in 256 KB steps that give the page back every 8 ms. Big PNGs are decoded on the I/O worker
+  (`decodePngInWorker`). A sprite brought in with "Put its colours in the palette" goes the same way: `apply` (import/run.tsx)
+  calls `pickSpritePalette` (import/spriteColours.ts, up to 256 colours, sampled frames, no copy of the pixels; small sprites
+  skip the worker) and hands the result to `spriteDoc`/`spriteInto` as `BuildOptions.colours`. Without it they pick in one go.
 - `png.ts` (own PNG codec), `thumb.ts`, `RecentDialog.tsx`, `notify.ts` (toasts from io and export).
 
 **The user library** (desktop: `library/<kind>/` in the user data folder, `src/main/library.ts`; web: IndexedDB):
@@ -442,8 +460,56 @@ the plugin's permissions and limits; `ops.ts` applies edits as one undo step; `u
 descriptions; `manager.ts` installs, enables and removes; approvals live in `localStorage` `frameling.plugins.v1`. The
 API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.md`.
 
+## The second window
+
+A window that shows the drawing big (for a second screen) and follows the drawing window. It only watches: nothing in it
+can change the drawing.
+
+- **Desktop side.** `src/main/popout.ts` holds the rules (one window at most, where it was, what to do when it or the drawing
+  window goes), with Electron handed in so `test/main/popout.test.ts` can run them with stand-ins. `popoutWindow.ts` is the
+  Electron half. The window loads `dist/popout/popout.html` (a page of its own, `vite.popout.config.ts`, so it loads none of the
+  app's chunk) with its own preload (`src/preload/popout.ts`), which can pass on a message port and nothing else.
+- **The link.** A `MessageChannelMain` pair: one end to each page, so what crosses never goes through the main process. The
+  drawing window's end is `src/popout/link.ts`, started by a window message; it does nothing until a picture window says hello.
+- **Stream control** (`src/streamboard/`) is a second window of this kind: the same rules in `src/main/popout.ts` (opening, linking, where it
+  was), its own page (`dist/popout/streamboard.html`, built with the picture window) and preload. Every button is a face on a registry
+  command: `tiles.ts` says which command a button runs for the state of the stream, `layout.ts` where the buttons sit (moved by
+  pick up and put down, no dragging), `model.ts` what the board is told and what a press does. All three are pure. `link.ts` is the
+  drawing window's end: it sends the board a view when any streaming store changes and runs the commands it is asked to. The board
+  holds no streaming logic. What is covered in the main window (`src/audience/spoilers.ts`) is covered here at the source: covered
+  words are left out of the message, and the secret word of a guessing game is never sent.
+- **What is sent.** `mirror.ts` watches the store: the whole drawing first, then immer patches (`store.lastChange()` says how the
+  drawing got from the last value to this one; anything that is not a clean step sends the whole drawing again), a small
+  `look` (playhead, playing, camera, marks, theme), and work in progress through the taps in `ink.ts` (below). A message that
+  does not follow on makes the other side ask again (`replica.ts`).
+- **Work in progress.** The shape of it: a tool hands over what it has, the link decides when to send (once per screen frame at
+  most, `link.ts` `flush`), and a tool never waits for the second window. `inkWanted()` and `pixelsWanted()` let a tool skip making
+  the message when nobody listens. Three taps. `noteInk` is a shape or a function that makes one (called by the link, once a frame,
+  not on every pointer move): freehand strokes, the shape tools, the pen, mirrored copies included. `noteLive` is the half-done
+  drawing a tool shows through `setLive`: vector and tile maps go on whole (small), which covers moving, scaling, rotating and the
+  eraser on vector layers. Pixel layers are pictures, so they go through `notePixels`: a `PixelFeed` whose `take()` gives the
+  changed rectangle as RGBA since the last call (`PixelSession.feed`, so every pixel tool that paints through a session is live:
+  brush, pencil, eraser, shapes, lines, gradient) or, for a whole picture the tool already has (a transform or a floating
+  selection), the grid (`pixelFeed.ts`). `pace.ts` spaces big pieces out (64 MB a second at most, never more than 250 ms), so
+  the second window falls behind on a huge move rather than the drawing window paying. The second window keeps a canvas the size
+  of the layer's grid (`painter.ts`), seeded from the saved drawing, and puts each rectangle on it. Left out on purpose:
+  selection and lasso (interface), and layers over 4096 x 4096 art pixels. Playback, scrubbing, tweens and edit-points follow
+  the store, not these taps.
+- **How it paints.** `painter.ts` calls the canvas's own `FramePainter`, so it is the same renderer with its own bitmap cache.
+  `show.ts` has the decisions (camera, marks, which frame, fitting the page), all pure.
+- **The capture view.** The same window dressed for OBS and the like: `frame: false`, a fixed name (`CAPTURE_TITLE`, never the drawing's),
+  a flat background colour, an optional hidden pointer and an optional fixed pixel size. `src/popout/capture.ts` holds the pure parts
+  (sizes, colours, the title, what the desktop side is asked to open) and is shared by the page, the desktop side and the tests
+  (`test/main/capture.test.ts`). The kind of window is `OpenOpts.capture`: asking for the other kind swaps the window, asking for another
+  size resizes it. The desktop side tells the drawing window which kind it is linked to (`popout:mode`, just before the port), and in
+  capture mode `Look.name` is empty and `Look.capture` carries the colour and pointer. Choices `popout.captureBackground` (asked once),
+  `popout.captureCursor` and `popout.captureSize` (silent preferences). It keeps its own saved place (`popout-capture-window.json`).
+- **Choices.** `popout.camera` and `popout.marks` (`src/popout/choices.ts`), asked once and only when the drawing has a camera
+  or marks. Onion skin, light table, ghosts, grid, guides, handles, notes and reference pictures are never shown.
+
 ## Other feature folders
 
+- `src/reference/`: reference pictures (a JPG or PNG on a reference layer, to trace over): which picture shows on which frame and where it sits (`model.ts`, pure), drawing it for the editing canvas only (`paint.ts`, so exports never see it), adding and moving it (`ops.ts`), the handles and the bar (`Placement.tsx`), the drop and the commands. Its file part is `src/io/pictures-file.ts`. `src/import/video/` opens a video as frames to trace over (mediabunny's decoder, a video element as the fallback).
 - `src/audio/`: sound clips on the timeline, decode, waveforms, playback that follows the playhead, offline mix.
 - `src/lipsync/`: guesses mouth shapes from sound (loudness and spectrum, no AI) and keys a mouth symbol.
 - `src/flow/`: the clip flow graph and its panel.
@@ -474,9 +540,28 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
 - `src/ui/mascot/timing.ts` (pure sheet maths), `runtime.ts` (loads `mascot/mascot.json` and `.png`, one shared timer
   moves every Quill on screen by setting `background-position`, an idle clock sends him to sleep), `Quill.tsx`
   (`Quill`, `QuillSays`, `QuillEmpty`), `scripts.ts` (little performances), `goodbye.ts` (turning him off and on).
+- There is one of him, so only one place draws him at a time. `claims.ts` is the authority: every `<Quill>`,
+  `<QuillSays>` and `useQuillShown` names its `surface` (house, ambient, empty, panel, dialog, quest, toast, check,
+  onboarding, hello, lowest claim first), and the highest claim gets him. His house (the Quill panel) is the lowest, so
+  it gives him up to anything else and takes him back when that lets go. A place that doesn't name a surface doesn't
+  compile, and `test/ui/quill-one-of-him.test.tsx` fails if two hold at once or a new place draws him unasked. A place
+  that loses him keeps its words and stands without him, as it does with Show Quill off.
+- In his room (`src/quillpet/QuillPetPanel.tsx`) he potters when nothing louder is going on: `potter.ts` is the pure
+  picking (no repeats, recent things less likely, varied places, lengths and ways), `usePotter.ts` is the one
+  once-a-second clock, which only runs while he's drawn there, the panel is on screen, the window has focus, and
+  nothing is playing. `test/quillpet/potter.test.ts` checks it never reads as a loop; `potter-cost.test.tsx` checks the
+  cost budget. Nothing about pottering is saved, counted or sent anywhere, so nothing can decay.
 - `lines.json` holds everything he says; `lines.ts` reads it (`line`, `lines`, `lineParts`) with typed ids.
-- `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns
-  `brand/mascot/mascot.frameling` into the sheet and `mascot-icon.frameling` into the app icons. See the README.
+- The rest of the app's words follow the same pattern in `src/words/` (see "The app's words").
+- `mascots.json` and `mascots.ts` are the registry: which mascots there are and which is current (the `mascot`
+  preference). The app asks it, not Quill by name; `runtime.ts` loads whichever is current. The clips a mascot must
+  draw, and how to add one, are in `docs/mascots.md`.
+- `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns each mascot's source (Quill's
+  is `brand/mascot/mascot.frameling`) into its sheet and `mascot-icon.frameling` into the app icons, and fails if a
+  mascot is missing a clip. Quill's file has an artboard per animation on one shared stack of layers (`doc.sharedLayers`,
+  see `docs/artboards.md`); `docToSheet` walks the artboards in panel order, so the tile order is the artboard order, and
+  an artboard with one clip across all of it is named after the artboard. `node brand/mascot/mascot.mjs check` compares a
+  file's sheet, frame by frame, with the one that ships. See the README.
 
 ## Help
 
@@ -491,6 +576,11 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
   reduced motion, welcome, tips, Quill, right side style, units, keymap and keymap set, clean timeline, and more.
   `applyPrefs` writes the theme's CSS variables and `data-theme`, `data-look`, `data-motion` on `<html>`.
   `src/ui/PrefsModal.tsx` has the pages (general, themes, behaviour, keyboard, workspaces, plugins).
+  Page rows are `.ui-pref-row` (words in `.ui-pref-text`, controls in `.ui-pref-control`, all based in `ui.css`: a
+  page-scoped copy of a row class is a bug, and `test/ui/pref-title.test.tsx` checks every `ui-pref-*` class has a
+  base rule). A whole feature that is turned on or off (Streaming, Audience features, Snapping) puts its switch
+  opposite its title with `PrefTitle` (`src/ui/PrefTitle.tsx`): heading left, switch right, an explaining line, and a
+  status line that says what off means, never a silent grey page.
 - **Themes** (`src/ui/themes/`): built-in themes (`builtIn.ts`), tokens and derived tokens (`tokens.ts`), custom themes
   and the theme file (`model.ts`, `library.ts`), contrast checks and fixes (`contrast.ts`), the editor.
 - **Keyboard** (`src/ui/keyboard.ts`): one listener; in a field or with an overlay open only `global` commands fire.
@@ -499,7 +589,35 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
   (`match.ts`); `runCommand` is the one runner menus and keys use too.
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
-  aren't listed are added at the bottom.
+  aren't listed are added at the bottom, except the ones in `src/ui/paletteFirst.ts`: commands a control on screen
+  already does (a tick, a button, a right-click row, each carrying `data-command`) stay in the palette and leave the
+  menus. Ten menus on the bar, by id and by the title on screen (File, Edit, View,
+  Draw shown as Tools, Soft shown as Soft paint, Layers shown as Layers and artboards, Animate shown as Animation,
+  Extras shown as Rigging, Effects, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu
+  (`SUBMENUS`, `sub:<key>`). Ids stay put when the words change, because saved menu changes and plugins name them. A
+  menu or submenu that moved keeps its old name for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to
+  `Extras`, `'Pixel'` to `Draw` and `'Artboards'` to `sub:artboards`, and
+  `registerMenuItems('sub:keys', ...)` adds to a submenu directly. Submenus can also claim stray commands by
+  `prefixes` or `categories`.
+- **Changing the menus** (`src/ui/menuEdits.ts` pure, `menuState.ts` the edits in force for the workspace you are in, `MenusPage.tsx`
+  Preferences > Menus). Every menu, submenu and the bar is a list of entries (command id, `-`, `heading:`, `sub:`,
+  `group:`). A changed list is saved whole beside `seen` (what the built-in list held then), so `mergeList` can tell
+  "taken out" from "new in this version" (the `menus.newEntries` choice: `add` puts new entries after the one they
+  follow, `leave` keeps the list as made). A command that is gone is left out when drawing but kept in storage. Entries
+  taken out of every place go in `Shape.hidden`, so category tails don't bring them back. A list set back to the
+  built-in one is dropped, so putting things back leaves nothing saved. The help audit reads `resolveMenus()`, which in
+  tests has no edits, so help paths are always checked against the menus as they come.
+  **Per workspace** (`src/ui/workspaceMenus.ts` pure, state in `dock.ts`): the person's own edits are `DockState.menus`
+  by workspace id, and `Workspace.menus` is what a saved workspace or a workspace file brings (optional, so older
+  files open). In force: the person's own entry, else what the workspace brings, else none. An own entry of `{ v: 1 }`
+  means "put back" over a workspace that brings changes. `saveWorkspace` folds the edits in force into the workspace,
+  `workspaceText` writes them, `deleteWorkspace` drops them. They used to be one global set in `frameling.menus.v1`:
+  `initial()` moves it into the workspace the person was on (only when the dock has no `menus` yet), the old key goes
+  once the dock is saved with them, and `takeMenusMigrationNote` tells the person once. Menus do not follow the
+  workspace's kind (Draw, Animate, Pixel show the same bar until the person changes one): a menu that loses entries
+  under someone who switches about is a surprise, the palette cannot be the only way to find them, and the per-workspace
+  edits let anyone who wants a different bar in a workspace make one. `view.menusEverywhere` copies one workspace's
+  edits to all.
 - **Toasts** (`src/ui/toast.ts`, `ToastView.tsx`) and **tooltips** (`src/ui/Tooltips.tsx`: one layer for the whole
   app, built from `data-command`, `data-tip` or `title`).
 
@@ -516,3 +634,31 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 `src/ui/sounds/`: every cue is synthesised from notes (`synth.ts`, no sample files): step, celebrate, exported,
 refused, goodbye, nothing to undo, tick. `index.ts` `playCue` caches each as an `AudioBuffer`, honours the sounds
 preference and rate-limits.
+
+
+## The app's words (src/words)
+
+Quill's lines were the first words to live in one file. The rest of the app's words are moving the same way, an area at
+a time, into `src/words/<area>.json`. Each entry is `"id": { "text", "where", "vars"? }`, exactly like `lines.json`.
+
+- `choices.json` (the ask-once-then-remember questions: each choice's name, question, answers, the line under each
+  answer, the toast for an unasked answer) and `quests.json` (each quest's name, summary, badge and finishing line, and
+  every step's instruction, reason and hint) are done. Ids are `choice.<choice id>.title`, `.question`,
+  `.<value>.label|detail|did` and `quest.<quest id>.title|summary|badge|finish` and `quest.<quest id>.<step id>.say|why|hint|did`.
+- Code reads a word through its area's small module: `choiceWord(id, vars?)` in `src/words/choices.ts`,
+  `questWord(id, vars?)` in `src/words/quests.ts`. They are made by `readWords` (`src/words/make.ts`), and the ids are
+  typed from the JSON, so a typo fails `npm run typecheck`. `fill` and `placeholders` (`src/words/fill.ts`) are shared
+  with Quill's `lines.ts`.
+- One file per area, not one big one, so an area's words load with the area (the quest words go with the quests) and a
+  file stays readable. Ids are prefixed with the area and never repeat across files, which a test checks.
+- `where` and `vars` are for whoever edits. In a build, `scripts/words/vite-plugin.ts` (wired into `vite.config.ts`)
+  drops them and the `$about` note, and swaps every plain `choiceWord('id')` / `questWord('id')` call for its words, so
+  the bundle holds the same text as before and no table of long ids (the build ends up the same size as with the strings
+  in code). A call that fills placeholders or builds its id stays a lookup. Tests and `npm run dev` read the files as
+  they are, and `test/words/words.test.ts` runs the swap over every call to check it gives the same words.
+- A choice or quest whose words are built from a value in code (`screen.fit`, `screen.size`, the nudge answers) keeps
+  them there for now; the test names them.
+- Help bodies stay in their `*.bodies.ts` files: they are long markdown that loads lazily, and the help audit already
+  reads them. Not moved on purpose.
+- Add a word: put it in the area's file with its `where`, read it with `choiceWord`/`questWord`. Edit words in bulk with
+  `npm run words:list -- --json` and `npm run words:apply` (see docs/testing.md).

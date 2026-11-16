@@ -62,7 +62,7 @@ export function blobWorkersWork(): Promise<boolean> {
 
 /** The order WebM codecs are tried in: the preferred one first, then whatever else this computer has. */
 export function webmOrder(pref: string): VideoCodec[] {
-  return pref === 'vp9' ? ['vp9', 'av1', 'vp8'] : ['av1', 'vp9', 'vp8'];
+  return pref === 'av1' ? ['av1', 'vp9', 'vp8'] : ['vp9', 'av1', 'vp8'];
 }
 
 export function detectCapabilities(width: number, height: number): Promise<Capabilities> {

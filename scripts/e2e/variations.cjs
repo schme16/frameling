@@ -8,6 +8,10 @@
 //
 // Exits non-zero when anything fails. Uses a throwaway profile inside outDir.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const cp = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -57,6 +61,7 @@ async function startApp() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   if (!win) throw new Error('The app never opened a window');
   win.setSize(1400, 900);
   for (let i = 0; i < 200; i++) {
@@ -216,11 +221,16 @@ async function section() {
     out.where = document.querySelector('[data-testid=recolour-where]')?.textContent ?? '';
     sw?.click();
     await wait(100);
-    const input = document.querySelector('input[type=color][aria-label="New colour"]');
+    // The colour box opens the app's own picker; the hex box in it takes the colour.
+    const chip = document.querySelector('button[aria-label^="New colour"]');
+    chip.click();
+    await wait(200);
+    const input = document.querySelector('.cp-pop input.cv-hex-input');
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setter.call(input, '#3366ff');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(200);
+    chip.click();
     await wait(300);
     const btn = document.querySelector('[data-testid="recolour.apply"]');
     out.canApply = !!btn && !btn.disabled;

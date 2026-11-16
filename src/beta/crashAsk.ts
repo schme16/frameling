@@ -14,9 +14,12 @@ import { createStore } from '../ui/mini';
 import { getPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { gatherEnv } from '../tablet/check/state';
-import type { CrashNotes, FramelingApi } from '../preload/api';
+import type { RunFacts, CrashNotes, FramelingApi } from '../preload/api';
+import { refreshReport } from '../gpu/report';
+import { machineFacts, type MachineFacts } from './machine';
 import { buildReport, type IngestReport } from './report';
 import { canSend } from './send';
+import { choiceWord } from '../words/choices';
 
 /** The choice that remembers a No thanks. */
 export const CRASH_CHOICE = 'beta.crashOffer';
@@ -61,25 +64,47 @@ export function crashAction(f: CrashFacts): CrashAction {
 export const FRESH_DAYS = 7;
 export const isFresh = (notes: CrashNotes, now: number = Date.now()): boolean => now - notes.startedAt < FRESH_DAYS * 86_400_000;
 
-/** How the crash is put in the report's first line. */
-export function sayHow(how: CrashNotes['how']): string {
+/** Below this, the computer had little room left, which is what the system's out-of-memory stop looks like from outside. */
+export const LOW_FREE_MB = 400;
+
+/** How the crash is put in the report's first line. With the facts it can be truer: a restart, or no memory left. */
+export function sayHow(how: CrashNotes['how'], facts?: RunFacts): string {
   if (how === 'window') return 'The drawing window crashed during the last run.';
-  if (how === 'both') return 'The drawing window crashed, and Frameling then stopped without closing properly.';
-  return 'Frameling stopped without closing properly last time.';
+  const stopped = how === 'both' ? 'The drawing window crashed, and Frameling then stopped without closing properly.' : 'Frameling stopped without closing properly last time.';
+  if (facts?.restarted) return `${stopped} The computer restarted or lost power after that, so that may be the cause.`;
+  if (facts?.lowestFreeMB !== undefined && facts.lowestFreeMB < LOW_FREE_MB) return `${stopped} The computer was nearly out of memory, so the system may have stopped it.`;
+  return stopped;
 }
+
+/** The facts, as a line or two a person can read. Empty when there are none (an older run, or one that stopped at once). */
+export function sayFacts(f?: RunFacts): string {
+  if (!f) return '';
+  const parts: string[] = [];
+  if (f.ranMinutes !== undefined) parts.push(`It had been open about ${f.ranMinutes} minute${f.ranMinutes === 1 ? '' : 's'}.`);
+  if (f.peakMB !== undefined) parts.push(`At its biggest Frameling used about ${f.peakMB} MB.`);
+  if (f.lowestFreeMB !== undefined) parts.push(`The computer had as little as ${f.lowestFreeMB} MB free.`);
+  return parts.join(' ');
+}
+
+/** What a crash report needs from the computer's details: where and on what, not how the pen or the tools were set up. */
+const CRASH_ENV_KEYS = ['appVersion', 'electron', 'chrome', 'platform', 'session', 'devicePixelRatio', 'screen', 'now'];
+export const crashEnv = (env: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(CRASH_ENV_KEYS.filter((k) => k in env).map((k) => [k, env[k]]));
 
 /**
  * The report for a crash. Built from the notes and what this computer is, and nothing else: no drawing, no file names,
  * no words anyone typed. Pure, so the dialog can show exactly what would go.
  */
-export function crashReport(notes: CrashNotes, env: Record<string, unknown>, contact?: string): IngestReport {
-  const r = buildReport({ note: sayHow(notes.how), contact, where: 'after a crash', env, problems: notes.events });
+export function crashReport(notes: CrashNotes, env: Record<string, unknown>, contact?: string, machine?: MachineFacts | null): IngestReport {
+  const headline = sayHow(notes.how, notes.facts);
+  const r = buildReport({ note: headline, contact, where: 'after a crash', env: crashEnv(env), problems: notes.events, machine });
   return {
     ...r,
     kind: 'crash',
+    // The headline is the title and summary; the text adds only what the headline doesn't say.
+    text: sayFacts(notes.facts),
     version: notes.version || r.version,
     platform: notes.platform || r.platform,
-    data: { ...r.data, crash: { how: notes.how, startedAt: new Date(notes.startedAt).toISOString(), version: notes.version, platform: notes.platform } },
+    data: { ...r.data, crash: { how: notes.how, startedAt: new Date(notes.startedAt).toISOString(), version: notes.version, platform: notes.platform, ...(notes.facts ? { facts: notes.facts } : {}) } },
   };
 }
 
@@ -95,15 +120,15 @@ crashDialog.subscribe(() => overlays.set((o) => (!!o.crashOffer === !!crashDialo
 export function registerCrashChoice(): void {
   registerChoice<'ask' | 'no'>({
     id: CRASH_CHOICE,
-    title: 'Quill after a crash',
-    question: 'When Frameling crashed last time, shall Quill turn up and offer to send the crash notes? Nothing is ever sent without a press.',
+    title: choiceWord('choice.beta.crashOffer.title'),
+    question: choiceWord('choice.beta.crashOffer.question'),
     category: 'Diagnostics',
     default: 'ask',
     silent: true,
     help: 'crash-notes',
     options: [
-      { value: 'ask', label: 'Offer to send the notes', detail: 'Quill asks once per crash. You can read the notes before anything goes.' },
-      { value: 'no', label: 'No thanks', detail: "Quill stays away after a crash. The command Send the notes from the last crash still works." },
+      { value: 'ask', label: choiceWord('choice.beta.crashOffer.ask.label'), detail: choiceWord('choice.beta.crashOffer.ask.detail') },
+      { value: 'no', label: choiceWord('choice.beta.crashOffer.no.label'), detail: choiceWord('choice.beta.crashOffer.no.detail') },
     ],
   });
 }
@@ -143,7 +168,9 @@ export async function considerCrash(o: { force?: boolean } = {}): Promise<void> 
   if (!o.force && (anyOverlayOpen() || crashDialog.get())) return;
   const notes = last!.notes;
   const env = (await gatherEnv()) as unknown as Record<string, unknown>;
-  crashDialog.set({ mode: action.kind, notes, report: crashReport(notes, env, getPrefs().betaContact) });
+  // The processor and graphics go in only when the person left that on, and show in the "Read what would go" box.
+  const machine = getPrefs().betaMachine ? machineFacts(await refreshReport()) : null;
+  crashDialog.set({ mode: action.kind, notes, report: crashReport(notes, env, getPrefs().betaContact, machine) });
   bridge()?.crashOffered?.();
 }
 

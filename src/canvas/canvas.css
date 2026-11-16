@@ -146,6 +146,7 @@
 
 /* ------------------------------------------------------------ tool options and colour panels */
 .cv-panel {
+  container: cv-panel / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
@@ -342,6 +343,10 @@
   cursor: pointer;
   font-weight: 600;
 }
+.cv-action.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
 .cv-action:hover:not(:disabled) {
   background: var(--hover-bg);
 }
@@ -532,7 +537,10 @@
 .cv-well-fill {
   left: 0;
   top: 0;
-  background: var(--well, var(--panel-2));
+  /* Over a chequerboard, so a see-through fill reads as see-through. */
+  background:
+    linear-gradient(var(--well, var(--panel-2)), var(--well, var(--panel-2))),
+    var(--cp-checker);
 }
 /* The stroke box is a ring: its colour round the edge, the panel showing through the middle. */
 .cv-well-stroke {
@@ -549,9 +557,18 @@
 .cv-well:hover {
   transform: scale(1.04);
 }
-/* "None" is a red slash, as in Illustrator. */
+/* "None" is a red slash, as in Illustrator, over nothing at all: the box is see-through, with no chequerboard and no
+   panel colour behind the slash. */
 .cv-well.is-none {
-  background-image: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+  background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+}
+/* The boxes overlap by 18px. When the one in front is see-through, the one behind is cut away under it, so the hole
+   shows the panel rather than the other colour. */
+.cv-wells-stack[data-see-through='fill'] .cv-well-stroke {
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 18px, 18px 18px);
+}
+.cv-wells-stack[data-see-through='stroke'] .cv-well-fill {
+  clip-path: polygon(0 0, 100% 0, 100% 20px, 20px 20px, 20px 100%, 0 100%);
 }
 .cv-wells-actions {
   display: flex;
@@ -629,6 +646,7 @@
   --snap-guides: #d757c2;
   --snap-grid: #798aa5;
   --snap-cells: #798aa5;
+  --snap-points: #7d9420;
   --snap-shapes: #e45b72;
   --snap-perspective: #9873ef;
   --snap-plugins: #1a9cc8;
@@ -643,6 +661,7 @@
     --snap-guides: #9c1488;
     --snap-grid: #4a5870;
     --snap-cells: #4a5870;
+    --snap-points: #4f6200;
     --snap-shapes: #b01f3e;
     --snap-perspective: #5a30b8;
   --snap-plugins: #0b6a8c;
@@ -657,6 +676,7 @@
   --snap-guides: #9c1488;
   --snap-grid: #4a5870;
   --snap-cells: #4a5870;
+  --snap-points: #4f6200;
   --snap-shapes: #b01f3e;
   --snap-perspective: #5a30b8;
   --snap-plugins: #0b6a8c;
@@ -811,6 +831,15 @@
   outline: 2px solid var(--focus, var(--chosen-bg));
   outline-offset: 2px;
 }
+.cv-gradient-differ {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.cv-gradient-differ > .cv-tip {
+  margin: 0;
+}
 .cv-gradient-row {
   display: flex;
   align-items: end;
@@ -835,6 +864,9 @@
 .cv-well-fill.has-grad {
   background: var(--wellg);
 }
+.cv-well.is-mixed {
+  --wellg: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text) 45%, var(--panel)) 0 5px, var(--panel-2) 5px 10px);
+}
 .cv-recolour-open {
   margin-top: 10px;
   align-self: flex-start;
@@ -845,6 +877,12 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.cv-recolour-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .cv-recolour-pick,
 .cv-recolour-field {
@@ -858,7 +896,7 @@
   align-items: center;
   gap: 10px;
 }
-.cv-recolour-pick input[type='color'] {
+.cv-recolour-pick .cp-chip {
   width: 44px;
   height: 30px;
   padding: 0;
@@ -1077,9 +1115,93 @@
   flex: 1;
   min-width: 0;
 }
+.sn-distance.is-off {
+  opacity: 0.5;
+}
 .sn-distance-value {
   min-width: 3.2em;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+}
+
+/* Too narrow for the words side by side: one button per line, on purpose (see src/ui/fitRow.ts). */
+.cv-choice[data-stacked='true'] {
+  flex-direction: column;
+}
+.cv-choice-btn {
+  white-space: nowrap;
+}
+
+/* A name too long for a narrow panel gives way to a shorter one, whole, instead of breaking onto a second line. */
+.cv-words-short {
+  display: none;
+}
+@container cv-panel (max-width: 250px) {
+  .cv-words-long {
+    display: none;
+  }
+  .cv-words-short {
+    display: inline;
+  }
+}
+
+/* Turning and flipping the view: the box the layers sit in, and the note that says it is only the view. */
+.cv-turn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+.tv-chip {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-small);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 3;
+}
+.tv-chip .ui-icon {
+  color: var(--rose, #ff6f91);
+  flex: none;
+}
+.tv-chip span {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.tv-chip small {
+  font-weight: 500;
+  color: var(--muted);
+}
+.tv-chip-reset {
+  font: inherit;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.tv-chip-reset:hover {
+  background: var(--hover-bg);
+}
+.tv-chip-reset:focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
 }

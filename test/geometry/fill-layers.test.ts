@@ -6,7 +6,7 @@ import { barrierShapes } from '../../src/tools/fill';
 const line = (id: string): Shape => ({ id, type: 'path', paths: [{ points: [{ x: 0, y: 0 }, { x: 10, y: 0 }], closed: false }], fill: null, stroke: { color: '#000', width: 2, join: 'round', cap: 'round' }, opacity: 1 });
 
 describe('the bucket sees lines from all layers when asked', () => {
-  it('collects lines from visible vector layers at the frame, but not their fills or hidden layers', () => {
+  it('collects lines, and the paint on layers above, from visible vector layers at the frame, but not hidden layers', () => {
     const doc = newDoc();
     const ink = newVectorLayer('Ink');
     const hidden = newVectorLayer('Hidden');
@@ -22,7 +22,9 @@ describe('the bucket sees lines from all layers when asked', () => {
     hidden.cels.push({ id: 'c2', start: 0, length: 2, drawingId: d2.id });
     const colour = doc.layers[0];
     expect(barrierShapes(doc, 1, [], false, colour.id).map((s) => s.id)).toEqual([]);
-    expect(barrierShapes(doc, 1, [], true, colour.id).map((s) => s.id)).toEqual(['a']);
+    expect(barrierShapes(doc, 1, [], true, colour.id).map((s) => s.id)).toEqual(['a', 'f']);
+    // On a merge layer (no fills asked for) only the lines come.
+    expect(barrierShapes(doc, 1, [], true, colour.id, false).map((s) => s.id)).toEqual(['a']);
     expect(barrierShapes(doc, 5, [], true, colour.id).map((s) => s.id)).toEqual([]);
   });
 });

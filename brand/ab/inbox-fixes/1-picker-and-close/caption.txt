@@ -1,0 +1,1 @@
+Before: with the brush picker open, closing the window puts the picker on top of the Save changes question. After: the question opens and the picker has gone, so nothing is in front of it.

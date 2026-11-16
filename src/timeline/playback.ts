@@ -15,6 +15,7 @@ import { findLayer } from '../core/doc';
 import { store, type Store } from '../core/store';
 import { tl } from './state';
 import { inOutRange } from './inout';
+import { frameDue, getPerf } from '../gpu/settings';
 
 export { inOutRange };
 
@@ -118,6 +119,8 @@ interface Run {
   pass: number;
   /** The frame we last wrote, to spot someone else moving the playhead. */
   shown: number;
+  /** When a new frame last went up, for the frame rate cap in Preferences > Performance. */
+  shownAt: number;
   doc: Doc;
 }
 
@@ -141,7 +144,7 @@ function begin(): void {
   if (f < r.start || f > r.end || (Number.isFinite(plays) && f === hold && r.end > r.start)) f = r.start + entryPosition(len, dir);
   const t = scheduler.now();
   // Set up before moving the playhead: that change comes straight back through the store subscription.
-  const mine: Run = { handle: null, t0: t, from: indexOfPosition(f - r.start, len, dir), lastTick: t, pass: 0, shown: f, doc };
+  const mine: Run = { handle: null, t0: t, from: indexOfPosition(f - r.start, len, dir), lastTick: t, pass: 0, shown: f, shownAt: t, doc };
   run = mine;
   if (f !== ui.frame) s.setUi({ frame: f });
   mine.handle = scheduler.request(tick);
@@ -182,7 +185,15 @@ function tick(): void {
     if (plays === Infinity) for (const fn of [...passListeners]) fn();
   }
   const frame = r.start + st.pos;
-  if (frame !== ui.frame) s.setUi({ frame });
+  // With a cap, a new frame waits until it is due; the clock still decides which one, so nothing slows down.
+  if (frame !== ui.frame && !frameDue(t, cur.shownAt, getPerf().fpsCap)) {
+    cur.handle = scheduler.request(tick);
+    return;
+  }
+  if (frame !== ui.frame) {
+    s.setUi({ frame });
+    cur.shownAt = t;
+  }
   cur.shown = frame;
   cur.handle = scheduler.request(tick);
 }

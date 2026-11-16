@@ -1,19 +1,22 @@
 /**
  * Pen [Shift+P]: exact lines and curves, point by point (bezier paths). Click for a sharp corner, drag for a smooth
  * curve. Click the first point to close the shape; Enter, Escape or a double-click finishes an open line. Backspace
- * takes back the last point. Shift keeps a new point at 45 degree steps, Alt while dragging bends just the next side.
+ * or Ctrl+Z takes back the last point. Shift keeps a new point at 45 degree steps, Alt while dragging bends just the next side.
  *
  * The pure model (`PenPath`) is separate from the canvas tool so it can be tested on its own.
  */
 import type { PathShape } from '../core/format';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import { uid } from '../core/doc';
+import { registerPointGesture } from '../core/pointUndo';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
 import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
 import { activePixelLayer, commitPixelPath, currentOutline } from '../pixel/tools';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
+import { inkWanted, noteInk } from '../popout/ink';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { viewSizeFactor } from './view-size';
@@ -85,10 +88,10 @@ export class PenPath {
 export function penShape(sp: PathShape['paths'][number], colors: { fill: string | null; stroke: string | null; line: string }, width: number): PathShape | null {
   if (sp.closed) {
     if (!colors.fill && !colors.stroke) return null;
-    return { id: uid('sh'), type: 'path', paths: [sp], fill: colors.fill, stroke: colors.stroke ? { color: colors.stroke, width, join: 'round', cap: 'round' } : null, opacity: 1 };
+    return { id: uid('sh'), type: 'path', paths: [sp], fill: colors.fill, stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width, join: 'round', cap: 'round' }, getToolSettings()) : null, opacity: 1 };
   }
   // An open line always shows: with the stroke set to none it still uses the stroke colour, like the Line tool.
-  return { id: uid('sh'), type: 'path', paths: [sp], fill: null, stroke: { color: colors.stroke ?? colors.line, width, join: 'round', cap: 'round' }, opacity: 1 };
+  return { id: uid('sh'), type: 'path', paths: [sp], fill: null, stroke: strokeWithStyle({ color: colors.stroke ?? colors.line, width, join: 'round', cap: 'round' }, getToolSettings()), opacity: 1 };
 }
 
 let path: PenPath | null = null;
@@ -118,8 +121,23 @@ function preview(closed: boolean): PathShape | null {
   return s && withWellGradients(s);
 }
 
-/** Puts the path into the drawing (one undo step) and starts afresh. */
+/** What a second window sees while the path is being made (vector layers only: on a pixel layer the path lands as pixels). Made when the link asks, once a screen frame at most. */
+const penInk = () => {
+  if (activePixelLayer()) return null;
+  const s = preview(false);
+  return s && withMirror(s);
+};
+const showPath = () => {
+  if (inkWanted()) noteInk(penInk);
+};
+
+/** Puts the path into the drawing (one undo step) and starts afresh. The live copy goes after the edit, so the finished shape is already there. */
 function finish(ctx: ToolContext, closed: boolean): void {
+  finishPath(ctx, closed);
+  noteInk(null);
+}
+
+function finishPath(ctx: ToolContext, closed: boolean): void {
   const p = path;
   path = null;
   press = null;
@@ -143,6 +161,17 @@ function finish(ctx: ToolContext, closed: boolean): void {
   } else if (r !== 'nothing') reportEdit(ctx, r);
 }
 
+/** Takes the last point back (Backspace, and Ctrl+Z). The only one left cancels the path. */
+function backPoint(): void {
+  if (!path) return;
+  press = null;
+  path.closing = false;
+  if (!path.back()) path = null;
+  showPath();
+}
+
+registerPointGesture({ open: () => !!path, back: backPoint });
+
 const nearFirst = (p: P, zoom: number) => !!path && path.length >= 3 && Math.hypot(p.x - path.anchors[0].x, p.y - path.anchors[0].y) * zoom <= GRAB_PX;
 const nearLast = (p: P, zoom: number) => !!path && path.length >= 2 && Math.hypot(p.x - path.anchors[path.length - 1].x, p.y - path.anchors[path.length - 1].y) * zoom <= GRAB_PX;
 
@@ -158,7 +187,7 @@ function placed(e: ToolPointer, ctx: ToolContext): P {
 
 export const penTool: Tool = {
   id: 'pen',
-  group: 'select',
+  group: 'pen',
   groupAt: 6,
   label: 'Pen',
   icon: 'pen',
@@ -187,6 +216,7 @@ export const penTool: Tool = {
     path ??= new PenPath();
     path.add(p);
     press = { at: p, dragged: false, time: e.time };
+    showPath();
   },
   move(e, ctx) {
     hover = { x: e.x, y: e.y };
@@ -194,6 +224,7 @@ export const penTool: Tool = {
     if (!press.dragged && Math.hypot(e.x - press.at.x, e.y - press.at.y) * ctx.zoom < DRAG_PX) return;
     press.dragged = true;
     path.pull(e, e.alt);
+    showPath();
   },
   up(e, ctx) {
     lastUp = { time: e.time, x: e.x, y: e.y };
@@ -231,7 +262,7 @@ export const penTool: Tool = {
       return true;
     }
     if (e.key === 'Backspace' || e.key === 'Delete') {
-      if (!path.back()) path = null;
+      backPoint();
       ctx.requestOverlay();
       return true;
     }

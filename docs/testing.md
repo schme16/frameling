@@ -50,7 +50,7 @@ What's in `test/`, by folder:
 | `effects/` | Effect model and how effects look inside symbols. |
 | `clips/` | How a clip plays (`src/core/clipPlay.ts`): the order of one pass, stepping, repeat counts, baking for formats without direction, reading a clip from a file. Exporters are in `export/clip-play.test.ts`. |
 | `export/` | Every writer (APNG, GIF, sheet, SVG and animated SVG, Lottie, PDF, PSD, ProRes, YUV, playable, Godot, Godot add-on, Godot bones), the plan, capabilities, engine presets and fidelity. `*-e2e.test.ts` load the output in a real Godot 4 and are skipped unless `GODOT_BIN` is set. |
-| `geometry/` | Fill, flood, merge, morph, pen, raster, tracing. |
+| `geometry/` | Fill, flood, merge, morph, pen, raster, tracing; combining shapes (`boolean.test.ts`: join, cut out, overlap, punch, colours kept, curves refitted); dashes, arrow heads and width along a line (`line-style.test.ts`); and recognising a rough stroke as a line, circle, box or triangle (`quickshape.test.ts`, with rates over many wobbly strokes). |
 | `integration/` | Whole-feature runs: the kitchen sink document, selecting mid-tween, nested editing, tiles inside symbols. |
 | `interactives/` | The .flplay round trip. |
 | `io/` | The .frameling file, PNG, sound in files, recovery, kept work, versions, save-as history, the user library (main side), cross-platform paths, reference layers, and that `brand/mascot/*.frameling` still load. |
@@ -58,20 +58,37 @@ What's in `test/`, by folder:
 | `particles/` | Emitter maths and determinism. |
 | `perf/` | Work counting against a fake canvas (`fakeCanvas.ts`): cache hits, bitmap builds, look-ahead depth. Never asserts on time. |
 | `pixel/` | Pixel tools, maths, paths, the pixel workspace. Picture import: `import-gif.test.ts` (the GIF reader against real GIFs in `test/fixtures/gif`, made by `scripts/fixtures/make-gif-fixtures.py` with Pillow, ImageMagick and ffmpeg, next to what Pillow says each frame is), `import-apng.test.ts` (the animated PNG reader against real files in `test/fixtures/apng`, made by `scripts/fixtures/make-apng-fixtures.py` with Pillow and ffmpeg, plus a hand-made file for blend-over and dispose-previous; interlaced (Adam7) APNG and still PNG files are in the same folder; animated WebP needs a real Chromium and is checked with and without ImageDecoder: `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/webp-import.cjs`; `import-webp.test.ts` covers the pure-JS WebP demuxer and the frame compositing), `import-trim.test.ts` and `commit-rect.test.ts` (trimmed on build, dirty-rectangle commit; `test/perf/pixel-commit.test.ts` prints the 4000 x 4000 numbers), `session-tiles.test.ts` (the pixel session copies tiles on first touch and matches a whole-grid edit), `slice-keys.test.ts` (slices that change between frames), `slices-boards.test.tsx` (slices on every board and layer), `import-sheet.test.ts` (grid and gap slicing, sheet JSON, the four ways, adding to a drawing), `import-dialog.test.tsx`; slices: `slices.test.ts` (maths, file, Aseprite, the export text), `slices-ui.test.tsx` (tool and panel); `import-aseprite-bin.test.ts` needs `ASEPRITE_BIN`. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
+| `soft/` | Soft paint on pixel layers: the falloff, dithering and blend maths, strokes through a real pixel session, the settings and the tools' registration. |
+| `dry/` | Chalk and charcoal on pixel layers: the papers (even spread, seamless tile), how much pigment a pixel takes from pressure and paper height, strokes through a real pixel session (light is a thinning of hard, second pass builds up, crisp grain, locked palette, streaks), the settings and the tool's registration. |
+| `dab/` | The pixel brush: the dab maths (tip edge matching the soft falloff, spacing, scatter and jitter repeatable from a seed, turning with the line, snapping to the pixel grid), strokes on a plain buffer (sharp pixels only, anti-aliased edges, flow building to opacity, a locked palette, picture tips, mirror), the saved pixel brush (`spec.test.ts`), the brush in use as one thing (`live.test.tsx`), and the tool, its commands and the picker samples. The pixel side of the library is in `brushes/pixelLibrary.test.ts` and `brushes/pickerPixel.test.tsx`. |
+| `retouch/` | The clone stamp, blur and sharpen brushes: the offset rules (aligned or not, where the ring shows), the clone reading the picture as it was before the stroke so it never smears, blur and sharpen on a plain buffer (a hard edge softens only where the brush went and the light overall stays put, a flat colour stays flat, see-through is blurred properly), and the tools on a real pixel layer (Alt-click, Ctrl-click and first-click choose the source, one undo per stroke, the question asked once after the first stroke). |
+| `tone/` | Curves and Levels: the curve evaluation (through every point, never overshoots, only rises where the points rise, ends held, points kept apart), the levels table and the handle maths, the two together per colour (levels first), the histogram and the automatic points, and the dialog and commands on a real layer (one undo with the right name, a selection and a locked palette honoured, keyboard on the points). |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
-| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
+| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). `app-power.test.ts` is the `app` permission (a plugin must ask, and a command that reaches outside the drawing is refused whatever it sends) and `console.log` through the host. |
+| `scripts/` | The Scripts feature: the model (wrapping, pasted-code rules, becoming a plugin), what may be pressed, undo grouping in the store (`group.test.ts`), the runner against the real prelude and runtime (one Undo step, nothing half done, Stop, the watchdog), where scripts are kept and what happens to ones inside a drawing (`state.test.ts`), where the panel lives: the bottom drawer beside the timeline, closed until asked for, a window of its own one press away and back (`place.test.ts`; `test/animation/gate.test.ts` holds the rule that the drawer exists when either the timeline or Scripts wants it). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
+| `golive/` | The Go live quest: the checks as pure functions (`logic.test.ts`), and the quest in the real app (`quest.test.tsx`): offered only while the streaming tools are on, asks audience features' two questions itself instead of deferring them, waits for a copy or a save to really happen, and agrees with the palette command, the Streaming menu, the Streaming tab button and the help route. |
 | `rig/` | Bone maths, posing, caches, stretch, weights. |
 | `select/` | Pixel selection, masks, vector lasso. |
+| `clipboard/` | Copy and paste with other apps: which paste it is, where a picture lands and how big, shrinking, hard edges, the words said, the picture symbol (`plan.test.ts`, `picture-symbol.test.ts`), and pixels pasted on a vector layer through the real commands (`paste-across.test.ts`). Anything that needs a canvas or the real clipboard is in `scripts/e2e/clipboard.cjs`. |
 | `symbols/` | Motions and symbol and shape ops. |
 | `templates/` | Every starter template builds; community templates; setup. |
-| `text/` | Text layout and animators. |
+| `text/` | Text layout and animators. `pixel-text.test.ts`: the pixel font tables (every entry well formed, every ASCII character present), layout (whole cells, whole-number scale, bold, spacing, line up, caret and selection boxes), and typing on a pixel layer through the Text tool (floats until finished, one undo step, palette lock snap, edge cut-off, locked layer). Its help picture and the before/after look come from `scripts/docs/help/pixel-text.cjs` and `scripts/docs/ab-pixel-text/`. |
+| `repeat/` | Repeat (`src/repeat/`, `src/core/repeats.ts`, `src/geometry/repeat.ts`). `maths.test.ts` is the placing maths as pure functions (grid steps and the 400 limit, a ring's spacing and fan, turned or upright copies, mirrors across any line or a point, the handles' drag, reading a repeat) and that the mirror is one mirror: the same matrices as Mirror drawing for an up-and-down or sideways line. `pose.test.ts`: the copies as drawn (order, ids, caching, the live drawing, a brush line, grouped shapes on an upright ring), where a repeat reaches, and the file (kept through save and open, an old file unchanged, a bad repeat dropped or put right). `ops.test.ts`: the commands and their reasons, the ring's ask-once answer, grouping, a typed number as one undo step, Take off and Turn into shapes, and the Repeat tool dragging a centre onto a guide, with Ctrl letting go. |
+| `text/` | Text layout and animators. `pixel-text.test.ts`: the pixel font tables (every entry well formed, every ASCII character present), layout (whole cells, whole-number scale, bold, spacing, line up, caret and selection boxes), and typing on a pixel layer through the Text tool (floats until finished, one undo step, palette lock snap, edge cut-off, locked layer). Its help picture and the before/after look come from `scripts/docs/help/pixel-text.cjs` and `scripts/docs/ab-pixel-text/`. `on-path.test.ts` is text on a path: the letter-placing maths as pure functions (the curve as a polyline, walking a circle clockwise or anticlockwise whichever way it was drawn, outside and inside, open lines read left to right, start, line-up, offset, spacing, going on straight past an open end), the box, hit test, SVG and sprite matrices, reading and saving (old files, damaged curves), and the store: the command in one undo step, the words following their line when it moves, is reshaped or undone, a copied key's words following the copy of the line, and Take off the curve. Its help picture and the look come from `scripts/docs/help/text-on-path.cjs` and `scripts/docs/ab-text-on-path/` (both use `scripts/docs/help/_text-on-path.cjs`), and `scripts/e2e/export.cjs --only=svg,png,gif,sheet --templates=blank-vector --cases=text-on-path,text-on-path-godot` checks the exports of words round a ring, including a real Godot load (`GODOT_BIN`). |
+| `trim/` | Lines that draw themselves (`src/trim`, `src/geometry/trim.ts`). `geometry.test.ts`: the window (start after end, slide and wrap on a loop, stop on an open line), exact curve cutting and lengths, several outlines together or in order, brush points with pressure. `draw-on.test.ts`: draw on and rub out (keys, glide, `origin` pairing, a hold cut at the playhead, a gap closed), setting a trim at a frame (cutting a key, holding a glide's progress, shared drawings), the timeline row and moving its keys, what shows (fill stays whole, arrow head rides the end, no dot at 0%, brush lines pick whole), blending for brush lines and morphs, and the file round trip with damaged values. `export.test.ts`: when a trim can stay native (`nativeTrim`), Lottie's `tm` and the moving SVG dash, the frame by frame fallbacks, and the carry table. `panel.test.tsx` (jsdom): the commands, the ask-once `trim.order` choice, and the Draw on panel. The help clip comes from `scripts/docs/help/draw-on.cjs`. |
+| `import/` | Bringing work in from elsewhere (`src/import/`). `svg.test.ts`: the XML reader (entities, doctype bombs, depth, plain error messages with line numbers), colours, lengths, transforms, path data (every command, arcs, flags that run together, closing curves, errors keep what was read), style sheets, then whole SVGs in `test/fixtures/import/` (an Inkscape-style and an Illustrator-style file), the badge the help pictures use, a round trip through the app's own SVG export, every kind of thing it leaves out and says so, and hostile input. `psd.test.ts` + `psdBuilder.ts` (a small PSD writer that makes what the app's writer can't: raw, RLE, zip and zip-with-prediction channels at 8 and 16 bits, an `Lr16` block, masks in their own box, adjustment, text, smart object and style blocks, odd blend keys, CMYK and 32 bit headers): reading, the app's own PSD export read back, every refusal sentence, a cut-short file at every length and a flipped byte at every third position (must read or throw `LayeredProblem`, never anything else). `ora.test.ts`: OpenRaster zips built in the test. `sequence.test.ts`: natural sort, runs, gaps, junk, the PNG sequence zip round trip (export naming in, exact pixels out), timing, and damaged zips. `pieces.test.ts`: fitting and centring. `flow.test.tsx` (jsdom): each import end to end in the store (new drawing, add to the open one, undo, the toast and the "See what was left out" list, every broken file leaves the drawing as it was). The help pictures' scene is made by `scripts/fixtures/make-import-fixtures.ts` (run from the repo root; the command is at the top of the file) into `scripts/docs/help/assets/` (`import-scene.psd`, `import-scene.ora`; `import-logo.svg` is hand written). |
 | `aseprite/` | The Aseprite reader and importer: `writer.ts` writes .aseprite files chunk by chunk (every colour depth, cel type, palette chunk, tags, slices, user data, tilesets) and `import.test.ts` checks every pixel of the imported frames. `aseprite-bin.test.ts` needs `ASEPRITE_BIN`. |
-| `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
-| `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
+| `tiles/` | Tile model, copy with alpha, export and edit. `collision.test.ts` (shapes, custom values, copying, the file round trip and a hand-edited file), `terrain.test.ts` (edge tiles, wanted edges, picking and healing), `props-export.test.ts` (the Godot, Tiled and JSON text, editing with a tile open, a stroke with edges). `godot-tiles-e2e` needs `GODOT_BIN`: it loads the TileSet with its physics layer, custom data layers and terrain set, fires rays at the collision in a running scene, and checks the edge tiles against what Godot's own terrain brush picks. |
+| `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. Copying keys: `frame-clip.test.ts` (the pure copy and paste: holds, new drawings, making room or covering, several layers, vector and pixel across kinds) and `frame-clip-commands.test.ts` (on the store, as one undo step). |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
+| `offset/` | Moving a key's drawing (`src/core/offset.ts`, `src/timeline/offset-core.ts`): `offset.test.ts` (cleaning, showing, the saved version, repair of odd files), `nudge.test.ts` (moving, cutting a hold, glides, folders, copies, undo), `exports.test.ts` (SVG, animated SVG and Lottie), `sheet.test.ts` (the mascot sheet builder with folders, blends and offsets, and `blendPure.ts`), `variation.test.ts`. |
 | `nudge/` | The empty-page line and Quill's tip after the first drawing: when each shows, when it goes, when it stays quiet (Show Quill off, choice off, harness, playing, mid stroke), the three-times cap, Not now being remembered. Under `?debug` both stay quiet so existing pictures are unchanged; a capture turns them on with `window.__framelingAsk = true`. |
-| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
+| `quillpet/` | Quill as a pet: the model and mood (nothing decays, no unhappy mood), his things, presents and quills, the panel. `potter.test.ts` is his pottering round his room: seeded ten-minute runs that must never repeat, never fall into a pattern of one to four moves three times over, and keep a spread of things, places, lengths and ways, plus a check the loop detector would catch a plain four-move loop. `potter-cost.test.tsx` is the cost budget: one timer ticking once a second while he is on show, and none when he isn't drawn, the panel is off screen, the window is unfocused, the page is hidden, the animation plays, or the panel is closed; reduced motion keeps him still. `made.test.ts`, `madeNow.test.ts` and `yours.test.tsx` are his room filling with what you made: only real work counts (drawn in and saved, not a template or an unedited file, not an empty drawing), an empty room when there is none, new work appearing by itself, nothing removed as time passes, and Stream-safe names and blank pictures. The cost of having the room open is measured by `scripts/perf/quillroom.cjs` (`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/quillroom.cjs`), and the A/B of an empty room against one with your work in it is `scripts/docs/ab-quill-your-work/` (`npm run help:media -- --entries scripts/docs/ab-quill-your-work --out <raw>`, then `sheet.py <raw> brand/ab/quill-house-your-work`). |
+| `quillreacts/` | Quill reacting to the audience. `sign.test.ts` is the cleaning of chat's words for a sign (cut to 60, plain text only, no links, @names, emoji or odd characters, only `text` read). `app.test.ts` is the feature on the real gate: every action listed and view-and-words only, the cooldowns, a sign waiting for a yes (yes, no, no answer, Stop, never take signs), no trace of the words afterwards, nothing touching the document or the pet, and a source guard that the folder has no store, network or desktop import. Its debug hook is `__framelingQuillReacts` (`react`, `submit`). `welcome.test.ts` is Quill welcoming a follower, subscriber, cheer or raid: the display name cleaner (any language kept, tricks and emoji out), a crowd of three hundred held as a count and four names, a name said straight out by default, and under Ask me first covered and asked about before it reaches the screen or the stream overlay (no answer meaning a welcome without the name, the names-left-out list only kept under that answer), Never use names asking Twitch for nothing, and Stop dropping everyone waiting. |
+| `promptjar/` | The prompt jar. `logic.test.ts` is the pure rules: the shared cleaner on prompts (and that signs use the same one), the cap, repeats, picking, pasted lists, and that only words go to storage and are cleaned again on the way back. `app.test.tsx` is the feature on the real gate: one view-only action, nothing arriving on screen unasked (no toast, card shut, the chip a number only, the queue a label only), Stream-safe hiding a pulled prompt until Show it, the cap, pull, pass and put back, emptying in one click (and the saved copy), and nothing that names anybody stored. Its debug hook is `__framelingJar` (`submit`, `add`, `pull`, `state`). |
+| `flow/` | Clip flow inputs (`src/flow`, `src/core/flow.ts`). `inputs.test.ts`: how checks compare, which arrow is picked (Any clip first or last, gated triggers, "as soon as"), editing inputs and checks (renames follow, kind changes reset), the file (old flows unchanged, nonsense dropped, round trip), the manifest and what each export says it carries. `try-it.test.ts` (jsdom): Try it switching clips as an input changes. `godot-inputs.test.ts`: the Godot script in a real Godot 4 (`GODOT_BIN=/mnt/109313D2109313D2/godot-editors/editors/godot.linuxbsd.editor.x86_64`, under xvfb), including the cross fade. The help clip comes from `scripts/docs/help/animate.cjs` (`clip-flow-inputs`). |
+| `ui/` | Quill is one place at a time (`quill-one-of-him.test.tsx`: the claims, the real panel and toasts, and a scan that every `<Quill>` names its surface), dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), Put the panels back (`panelsBack.test.tsx`: what the panels go back to, what counts as a mess, windows docked or left, Undo in its own workspace only, the lock, the menus and the command), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
 | top level | `smoke.test.ts` (package targets), `core.test.ts` (store, undo, registries), `case-sensitive-imports.test.ts`. |
 
 Godot checks inside vitest:
@@ -97,6 +114,11 @@ same in any test or script that reads `helpBody()` or runs `searchHelp`). Fails 
 - a file in `public/help/` isn't used by any topic (a video's poster counts as used);
 - a `help:` link points at a topic or heading that doesn't exist;
 - a topic names a shortcut no command has any more (keys from `KEYMAP_SETS` and a few browser keys are allowed);
+- a **Menu > Item** path in a topic's words isn't in the menus (the bar's own titles, submenus and **Preferences > Page >
+  Row** all count; `Window` and the panel row's `⋯` button are left alone). `test/ui/menu-paths.test.ts` runs the same check over
+  every topic, including hidden Interactives ones, and over every other string in `src/` (tips, quests, hints), with
+  Interactives on. Write a path in bold with ` > ` between the parts, spelled as the menu says it (a trailing `...` and a
+  bracketed aside are optional). The failure says where the thing moved to. Logic: `src/ui/help/menuPaths.ts`;
 - a topic is over 500 words (over 400 is listed in the report).
 
 `help-words.test.ts` checks the plain words people type ("rubber", "lost my work") bring up the right topic in the
@@ -109,6 +131,78 @@ letter when they belong to different layer kinds, like the Brush and the Tile br
 name for the palette, and each shortcut set in `src/ui/keymapSets.ts` is clash-free, names only real commands, and
 keeps the person's own changes on top. The clash logic is `allConflicts` and `sameContext` in `src/ui/keys.ts`.
 
+### Findability audits: test/findability/
+
+The help audit proves a thing exists. These prove somebody can get to it, which is a different question: the help
+audit passed the whole time a panel could not be found.
+
+- **A drawing with no animation** (`still.test.ts`): Frameling opens to a still picture, with no timeline, frame rate or
+  animation tools in the way (`src/core/animation.ts`, `src/core/animationGate.ts`). The audit counts what a still has on
+  offer beside the same drawing with animation on (`STILL_LOAD` in `known-gaps.ts`, exact, only meant to go down), checks that
+  every animation command a still tucks out of the menus is still in the command search and says how to get it, and that
+  "animate", "frames", "timeline" and "animation" put Add animation first. The other audits keep measuring the drawing with
+  animation on (`SITUATIONS`), so their numbers still mean "most on offer"; the still one is `STILL_SITUATION` in `app.ts`.
+- **The phrase table** (`phrases.test.ts`): plain sentences a person would type ("rub out", "turn it upside down",
+  "save a gif"), each paired with what they meant. Every one must put the right command or topic in the top three of the
+  command palette, as the palette shows them. **Add a row every time anybody can't find something.** When a row misses,
+  fix it with a single-word keyword on the command, not a multi-word one. A sentence that misses and can't be fixed yet
+  goes in `KNOWN_MISSES` in the same file, where the test checks it still misses, so a fix is noticed. The right answer
+  must also be FIRST: a row with wrong answers above it goes in `RANKED_BEHIND` (`known-ranked-behind.ts`) with its
+  exact rank, so the palette cannot get worse while the test stays green. A second check asks about thirty plain words
+  ("settings", "test", "address") and fails when more than one of the top five is a stream command
+  (`CROWDED_WORDS` holds today's, exact, and can only shrink).
+- **Reachability** (`reachability.test.ts`): every way into every command (palette, menu, tool rail, key, something on
+  screen). A command that only the palette reaches, or that only a key reaches, fails, unless it is in
+  `known-unreachable.ts`, which can only shrink. "On screen" is read from the source (a component that names the
+  command), so it cannot tell a button behind a closed panel from one in view.
+- **State coverage** (`state-coverage.test.ts`): for a new drawing, a vector drawing with and without a selection, pixel
+  art, a tilemap, a symbol open, playing, a drawing with clips, and every optional feature switched off, what is
+  present, greyed or absent. It fails on absent and unexplained, and counts what still goes quiet (`known-gaps.ts`).
+  A greyed command must also say what would turn it on (`reason` on the command, or `src/core/commandReasons.ts`),
+  checked in every state it greys in; the ones that don't yet are on `known-no-reason.ts`, which can only shrink.
+  The small-screen layout and a panel that is on screen but empty need the running app, so they are not in here.
+- **Feature states** (`feature-states.test.ts`): state coverage only knows document situations. This sets up the states
+  a FEATURE has (`FEATURE_STATES` in `app.ts`: no desktop, just installed, live, a vote going, a round going, a prompt
+  in hand, a dare on, Quill hidden, a sound, a camera, text selected) and looks at every command of every optional
+  feature in each one: each state must turn on and grey what it says it does, a greyed command must say a true,
+  one-line sentence there, and every command must be on in at least one state (`NEVER_SEEN_WORKING`, only shrinks, and
+  empty today). Being on is not the same as working, so `commands-run.test.ts` runs the tiles, rig, flow, particles and
+  pixel text commands in their state and checks each one did what it says. Two traps: `inFeatureState` puts the world
+  back the moment its body first awaits, so an async body must use its own set-up and tidy-up (see `inState` there); and
+  a state that makes a command's job already done (a tile already solid) needs a first step in `FIRST`.
+  Each feature is also switched off on its own: its commands, panels and help must go, no menu list may be left
+  empty, "Turn on" must be offered, and switching it back on must restore the palette and menus exactly. **A new
+  feature adds a state here** for whatever it has (something running, something picked).
+- **Crowding and depth** (`crowding.test.ts`): how deep a menu entry is (cap 3 clicks, `DEEP_IN_MENUS`), how long any
+  menu or submenu is (cap 30 entries, `LONG_LISTS`), how much a whole top-level menu holds (cap 150, `BIG_MENUS`), and
+  how much of the palette, menus, feature switches and help belongs to the stream family (`STREAM_LOAD`, exact).
+  Lists made of the person's own things (saved brushes) are named exceptions; everything else over a cap is on a list
+  in `known-gaps.ts` that can only shrink.
+- **The ledger ratchet** (`ledger.test.ts`, `ledger-logic.ts`, `ledger-history.ts`): every exact number in `known-gaps.ts`
+  (menu sizes, list lengths, the still and stream loads, the tools that leave the rail) has a history in
+  `ledger-history.ts`, one dated row each time it changed, with the reason in words. The last row has to equal the number,
+  so a number cannot rise, fall or appear without a row, and a row needs a sentence (at least eight words; "needed" and
+  "todo" do not count). When it fails it prints the row to add. The easy half is changing the number; the half that
+  matters is the reason, and the better fix for a rise is usually to take something out of a menu instead.
+  Taking something out of a menu is only allowed when a control on screen already does the job: list it in
+  `src/ui/paletteFirst.ts` and give that control a `data-command`. `test/ui/leftOutOfMenus.test.ts` checks the command is
+  real, named by a component, and in no menu; the reachability audit still counts the palette alone as no way in.
+  A tool is only left out where the rail shows it on every kind of layer it works on, the Pixel workspace's narrower rail
+  included (that test reads the rail itself); the five that rail leaves off stay in Tools > Tools off the Pixel rail.
+
+- **Moved commands** (`places.test.ts`, `places-logic.test.ts`): every audit above asks "can it be reached?", which a
+  command passes before and after being moved. This asks "is it where it was?". `places.json` records, for every
+  command, its menu (and so its depth), name, shortcut, feature switch, whether it is in the palette, and the words
+  that found it. Any difference fails in plain words ("Capture view moved. It used to be in X; it is now in Y. That is
+  deeper: 3 clicks, it was 2.") with a paste-ready line, until the move is written in `known-moves.ts` with why. A
+  chain of moves (A to B to C) takes a line per step. Commands the record does not know are not checked, up to 10 percent
+  of them; `PLACES_WRITE=add npx vitest run test/findability/places.test.ts` records them (about a minute), and
+  `PLACES_WRITE=rebase` re-records everything and empties `known-moves.ts` when a release is cut. **The half no test
+  can do:** when a look moves something, say the old place and the new one in a sentence.
+
+`FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
+rail and how many greyed commands say why.
+
 ### Case-sensitive imports
 
 `test/case-sensitive-imports.test.ts` checks every relative import in `src/` and `test/` names the file with exactly
@@ -118,6 +212,14 @@ the letter case on disk. Windows and macOS don't care, Linux does, so this catch
 
 `test/ui/quill-lines.test.ts` checks every line in `src/ui/mascot/lines.json` is used, every id the code uses exists,
 and placeholders match.
+
+### The app's words
+
+`test/words/words.test.ts` is the same check for everything that isn't Quill's (`src/words/*.json`): every word is
+used, every id the code asks for exists, placeholders match, no em dashes, the files are in their tidy shape, and
+`words:apply` merges an edit in and refuses a lost or gained placeholder, an unknown id, or an id in two files. It also
+loads the real choices and quests and checks their name, question, answers and steps are what the file says, so a word
+wired to the wrong place fails here. `STILL_IN_CODE` in that file lists the choices whose words are still built in code.
 
 ### Random operations (fuzz): test/artboards/fuzz.test.ts
 
@@ -168,6 +270,26 @@ espeak-ng was not used for the list: its dictionary data is GPL-3 and whether ge
 reading of the transcript onto it (DTW on mel features; good to a few frames). Keep recordings out of the repository;
 `eval.mjs <out> --text` scores them under "real speech".
 
+### Real voices (the recording script clips)
+
+The 30 clips of `pb doc lipsync-recording-script` are somebody's own voice. They stay out of the repository and are
+never sent anywhere; everything below runs on this computer, with the folder somewhere outside the checkout.
+
+```bash
+python3 scripts/lipsync/real_voice.py <recordings_dir> /tmp/real          # flac/wav named by sentence ("... - whispered", "... - faster")
+node scripts/lipsync/eval_real.mjs /tmp/real [--text] [--shapes] [--closures] [--unseen]   # per mouth shape, per kind, lip closures
+node scripts/lipsync/cv_real.mjs /tmp/refs /tmp/real /tmp/cv --init src/lipsync/model.ts --hidden 128 --epochs 6 --lr 0.001 --real-weight 3 --synth-keep 0.3 --cache /tmp/synth --shapes
+node scripts/lipsync/train.mjs /tmp/refs --init src/lipsync/model.ts --hidden 128 --epochs 6 --lr 0.001 --real /tmp/real --real-weight 3 --synth-keep 0.3
+LIPSYNC_REAL_DIR=/tmp/real npx vitest run test/lipsync/real-voices.test.ts
+```
+
+`real_voice.py` times normal and faster clips by warping an espeak reading of the sentence onto them (the recording's
+own noise floor is allowed for when finding where speech starts and ends), and times a whispered clip by warping the
+same speaker's normal reading of that sentence onto it. The timing is good to a few frames, so `eval_real.mjs` also
+gives the score within one frame. `cv_real.mjs` keeps each sentence's readings together in one fold and scores every
+clip with a model that never heard it: that is the number to quote. A model trained on all the clips scores
+higher on them and says nothing about other voices. `real-voices.test.ts` is skipped without `LIPSYNC_REAL_DIR`.
+
 ## Build first
 
 Every Electron harness except `vector-check.cjs` loads `dist/`, so build first:
@@ -186,6 +308,41 @@ the pasteboard (no stale stage-coloured rectangle). Needs `npm run build` first.
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboard-drag.cjs
 ```
 
+## Copy and paste with other apps: scripts/e2e/clipboard.cjs
+
+Starts the real main process and uses the real system clipboard. A picture is put there the way another app would
+(a screenshot-like PNG), Ctrl+V is pressed in the window and the drawing is read back: onto a vector layer (a picture
+of pixels in the middle, at its own size), onto a pixel layer (lifted pixels), one bigger than the page (shrunk, then
+Change to cut the edges), and onto a locked palette. The other way, Ctrl+C is pressed and the clipboard is read (twice
+the page size, see-through corner, solid middle), then Copy as SVG, Paste after Copy (Frameling's own shapes, not the
+picture), and shapes to pixels and pixels to a picture with the words each says. Needs `npm run build` first.
+`--stills <dir>` also saves a cropped picture of each, in both themes.
+
+```
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/clipboard.cjs [outDir] [--stills <dir>]
+```
+
+## Paper tooth on vector lines: three harnesses
+
+Chalk and charcoal brush lines that catch on paper (`src/dry/tooth.ts`, `src/effects/toothShape.ts`).
+
+- `scripts/docs/ab-vector-charcoal/` shoots every dry brush drawing the firm, light, pressure ramp and three passes marks, and a
+  shaded ball, in both themes, on a 400 x 400 page. `scripts/ab/vector-charcoal-compare.py` lays them beside the pixel version and the
+  public domain scans in `brand/ab/charcoal/ref/`. `ONLY=a,b` limits the brushes, `HOLES=1` draws the older tiny-shape grain, `SIZE=<px>` sets the size.
+
+  ```
+  SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-vector-charcoal --out <dir>
+  python3 scripts/ab/vector-charcoal-compare.py <dir> brand/ab/vector-charcoal
+  ```
+- `scripts/e2e/tooth-export.cjs` writes one toothed line through every export format and says what is inside each file (PNG grain, SVG tiny
+  shapes, PDF, Illustrator and Lottie a picture, Photoshop pixels). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/tooth-export.cjs [outDir]`
+  It also writes the SVG and the moving SVG both ways (`svgTooth: 'picture'`) and checks the picture is baked at 2 pixels per SVG pixel.
+- `scripts/ab/svg-tooth.cjs` runs the real export flow for chalk and charcoal in an SVG: the question (first time, remembered, "Ask me every
+  time", and not asked when the drawing has no such line), the two files, a side by side with the canvas's own PNG, the question in both
+  themes and a NOTE.txt with the file sizes, into `brand/ab/svg-tooth/`. `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/svg-tooth.cjs [outDir]`
+- `scripts/perf/tooth.cjs` times a busy page of lines drawn plain, with the older grain and with paper tooth, cold (every line worked out) and warm
+  (a held drawing). Put the two graphics variables from the perf skill in front of `xvfb-run`; results go in `scripts/perf/results/tooth-*.json`.
+
 ## Export end to end: scripts/e2e/export.cjs
 
 Starts the real main process (`dist/main/main.cjs`) with `FRAMELING_AUTOMATION_DIR` set, so save dialogs answer
@@ -202,7 +359,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 |---|---|
 | `outDir` | Where outputs and `report.json` go (default: a new folder in the system temp dir). |
 | `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones svganim`. |
-| `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink`. |
+| `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink pixel-symbol-walk` (the last is a four-drawing pixel walk made into one looping symbol, with a second turned copy: every format must show each drawing on its own frame). |
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
 | `GODOT_BIN=/path/to/godot-4-editor` | Also load the sprite sheet exports and the Godot bones export in Godot and compare frames. |
@@ -228,9 +385,10 @@ WebGL animation frames). Phaser 3.90.0, Phaser 4.2.1 and PixiJS 8.23.0 are pinne
 downloads each package from the npm registry, checks it against the pinned sha512, and unpacks its browser build into
 `~/.cache/frameling-web-engines` (override with `WEB_ENGINES_DIR`), so nothing goes into `package.json`. The check
 serves the export folder over http on 127.0.0.1 and loads it the way a web page would, with the code from the help topics.
-Chromium needs `ignore-gpu-blocklist` (the harness sets it), or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
-adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Do not add `use-angle swiftshader` or
-`use-gl angle`: with them the GPU process drops the WebGPU device.
+Chromium needs `ignore-gpu-blocklist`, or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
+adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Both come from
+`gpu.use('software', { webgpu: true })` (scripts/lib/gpu.cjs), which leaves out `use-angle swiftshader` and `use-gl angle`:
+with them the GPU process drops the WebGPU device.
 
 Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the plain `phaser` and `pixi` cases) load the sheet in
 every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
@@ -329,6 +487,25 @@ picture again and checks the clips follow and the sprite ids stay the same. Logs
 (`unity-*.log`, `unity-report-*.txt`). Takes several minutes, mostly Unity starting up. The Unity editor must be
 installed and licensed for the user running the check.
 
+## JPEG, WebP, icons, favicon, stickers and contact sheet: scripts/e2e/stills.cjs
+
+The small last-mile exports in the real app. It drives `exportDocument()` for each format and checks the files with Pillow,
+ImageMagick, `icotool` and `unzip`: the JPEG is a real JPEG at the right size and quality 40 is smaller than 90; a still
+WebP is one frame; a moving WebP has the right frames, lasts as long as the animation, loops (or plays once) and its first
+frame matches the PNG; a lossless WebP has exactly the PNG's pixels (and pixel art is lossless by default); the icon zip has
+every PNG square at its size, an `.ico` icotool can read and an `.icns` Pillow reads, plus the iOS and Android folders; the
+favicon zip has all its files and a valid manifest; the sticker zip has a folder per app at each app's size, WhatsApp under
+100 KB, one picture per frame for a whole animation, and refuses a pack with no app ticked. It also leaves
+`contact-sheet.png`, `icon-256.png` and `icon-16-zoom.png` in the output folder to look at.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/stills.cjs [outDir]
+```
+
+The pure parts (the WebP packer checked against the app's own WebP reader, the `.ico` and `.icns` writers, the size tables, the
+fitting maths, the contact sheet layout, saved settings) are in `test/export/stills.test.ts`.
+
 ## Illustrator end to end: scripts/e2e/illustrator.cjs
 
 Opens Frameling's `.ai` exports in a real Adobe Illustrator and compares what Illustrator finds with what Frameling
@@ -374,15 +551,106 @@ streams; the layer, path, gradient and raster operators in `ai-native.ts` were w
 
 Live text (`ai-text.ts`) is in the setup part of the data, as `%AI11_BeginTextDocument` with one `/AI11TextDocument : /ASCII85Decode` block: the text engine's document, nested dictionaries with numbers for keys. Facts found by saving texts from Illustrator and decoding that block: whole numbers and reals are different types (a size written `36` is read as 36/65536, write `36.0`); the fill is a `/SimplePaint` with `[alpha r g b]` (a `/CAITextPaint` without its id string is ignored); each story has a text ending in a return, a character run, an optional paragraph run (`/0` is 0 left, 1 right, 2 centre) and a layout cache that may be an empty list (Illustrator lays the text out itself, but a missing cache key hangs it); each frame has an origin and a matrix `[a b c d tx ty]` in a y down space whose (0, 0) is the file's (0, 0) moved by the ruler origin (8191 less half the artboard, plus a half point). The layer item only says which story it is (`/AI11Text` with `/StoryIndex`). Probe by decoding with a small script: ASCII85 the lines after `/AI11TextDocument`, each with its leading `%` taken off.
 
+## Colour and the engine: scripts/lib/gpu.cjs and scripts/e2e/colour.cjs
+
+Every Electron harness picks its engine through `scripts/lib/gpu.cjs` (`gpu.use('software')` or `gpu.use('card')` before
+ready, `gpu.confirmOrExit()` after), pins the colour profile to sRGB, and prints which engine it really got; a run that
+asked for the card and got software fails. Speed claims (`perf/`) use the card, pixel comparisons use software.
+`GPU_MODE=card|software` overrides. The colour proof is `scripts/e2e/colour.cjs`. Everything, with the numbers, is in
+[colour-and-gpu.md](colour-and-gpu.md).
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/colour.cjs
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/lib/gpu-check.cjs card
+```
+
+## The AppImage uses the card: scripts/e2e/appimage-gpu.cjs
+
+Starts the packaged Linux app (the AppImage, or `release/linux-unpacked/frameling`, which is what the AppImage is made
+from) four times, each with a config folder of its own so it never meets a Frameling you have open, and asks the engine
+what it really did over the debugging port (`SystemInfo.getInfo`, plus a 2D canvas and a WebGL 2 pixel read back in the
+page). Nothing in the app is probed for the test.
+
+| Start | Passes when |
+|---|---|
+| as shipped | the engine's command line has `--ignore-gpu-blocklist`, compositing, 2D canvas, rasterization and WebGL are all `enabled`, both canvases draw, and the app does not say it fell back |
+| `FRAMELING_GPU=off` | the flag is gone and every verdict is software (the control: it shows the check can tell the two apart) |
+| a card that cannot be used (`--use-angle=no-such-driver`) | the app still opens and draws, the engine says software, and the app's log says so: `[gpu] hardware drawing was asked for but the engine is drawing in software` |
+| `FRAMELING_GPU=full` | zero copy and out-of-process canvas are on the command line, no Vulkan, and it still draws |
+
+This one sees the engine's verdicts, not the card: under xvfb OpenGL has no card, so every start here is on llvmpipe whatever it asks. Which card and whether the window shows the drawing are `gpu-canvas.cjs`, next.
+
+```bash
+npm run dist:linux
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/appimage-gpu.cjs                 # the AppImage in release/
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/appimage-gpu.cjs release/linux-unpacked/frameling
+node scripts/e2e/appimage-gpu.cjs --require-card   # on a real display, for the real card (gpu-real-runs)
+```
+
+What it proves under xvfb, and what it cannot. Before the change the same AppImage, started the same way, reported
+`gpu_compositing disabled_software, 2d_canvas disabled_software, rasterization disabled_software, webgl disabled_off`
+and logged `WebGL2 blocklisted`; after it, all four are `enabled`. That is the switch getting to the engine through the
+real launcher and the hardware path coming on. It cannot prove a real card is drawing: xvfb has no card to present on,
+so its OpenGL is Mesa's llvmpipe, and the report names the adapter (`ANGLE (Mesa, llvmpipe ...)`) and says "software"
+beside it. `--require-card` fails on a software adapter, for the run on the real card, which belongs to `gpu-real-runs`.
+The flag is set in the app's main process (`src/main/gpuFlags.ts`), not the launcher; see
+[colour-and-gpu.md](colour-and-gpu.md).
+
+## The real card, and the window: scripts/e2e/gpu-canvas.cjs
+
+Starts the real app (`dist/`) for each way of asking for the card, opens a vector and a pixel starter drawing, takes a
+picture of the composited window through the debugging port, and fails on an empty canvas or one that does not match the
+software drawing. Each run prints the adapter the page really got, and for a card run says which of the app's processes
+was on the NVIDIA card in `nvidia-smi` while it ran. A control hides the canvas and must be caught.
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs            # what ships
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs --explore  # plus the Vulkan and Skia-on-Vulkan combinations (report only)
+node scripts/e2e/gpu-canvas.cjs --shots /tmp/shots   # keeps each window picture
+```
+
+`--allow-software` for a computer with no card (the card runs then only have to draw). A virtual screen cannot show the
+last step on a real one, the card's pixels reaching a real X server, so a pass here is the floor: see
+[colour-and-gpu.md](colour-and-gpu.md). To get the real card for any other Electron harness in xvfb, start it with
+`__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia` in its environment (set later, in the main process, it is
+too late). `scripts/ab/gpu-detect.cjs <appDir> <outPrefix> [KEY=VALUE ...]` shoots Preferences > Performance from the real
+app in both themes.
+
+## Finishing effects, GPU against JS: scripts/e2e/effects-gpu.cjs
+
+Film grain, wave, colour fringe, dark corners and motion blur each run on the GPU (`src/effects/effectsGL.ts`) and in JS
+(`src/effects/kernels.ts`). This renders documents with each effect (two or three settings, solid and see-through
+shapes, at 1x and 2x) once with the GPU path off and once on, fails when any pixel differs by more than 3 levels
+(colour premultiplied) or the GPU path was not used, and times a 1920x1080 frame both ways. Each render gets its own
+copy of the document, because finished effect pictures are cached by drawing.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects-gpu.cjs
+```
+
+Software WebGL (SwiftShader) by default, so the answer is the same on any machine; `GPU_MODE=card` for a real card (under
+xvfb on a machine with no card it falls back and the run says so). Before and after pictures of the five, made through
+the same renderer: `scripts/ab/more-effects.cjs` into `brand/ab/more-effects/`.
+
 ## Effects pixels: scripts/e2e/effects.cjs
 
 Renders tiny documents through the single renderer in a real Chromium canvas and compares pixels with values worked
-out by hand: blend modes, clipping, masks, folders, effects.
+out by hand: blend modes, clipping, masks, folders, effects. Cases flagged for the editor also read the editor canvas
+(masks on, switched off, empty, and the faint ghost and purple wash while a mask is the layer being painted).
 
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects.cjs
 ```
+
+The last five cases are effects on one shape (a soft edge on one shape and not its neighbour, a shadow from one shape, the shape's
+effects running before the layer's, colour adjust on one shape). `FILTER=fallback` runs them on the JS blur too.
+`scripts/docs/ab-shape-fx` is the look for them: a soft shadow under a character and a glow round a title, the old way (the shape
+alone on its own layer) against the new (`--entries scripts/docs/ab-shape-fx --out brand/ab/shape-fx`). `test/effects/shape-fx*.test.ts`
+cover the format, the edits, merging, the exporters and the panel.
+
+`scripts/docs/ab-colour/shots.cjs` is the look for the colour picker and the Properties order (`--entries scripts/docs/ab-colour --renderer <dist dir> --out <dir>`, once against an older build with `--only props-picked,props-drawing`, once against the new one): Properties with Colours on top, the picker with its Opacity bar, a palette colour being given opacity, a place where opacity is left out (the background), and the palette lock case. `test/canvas/colour-alpha.test.ts` is the colour reading and writing (six digit colours stay six digits), `test/pixel/palette-alpha.test.ts` what a see-through palette colour means for the lock, Reduce to palette and changing a colour, and `test/ui/colour-picker.test.tsx` the picker itself (the Opacity bar where it belongs, the reason where it does not).
 
 ## Shadow and glow softness per format: scripts/e2e/shadow-sigma.cjs
 
@@ -440,6 +708,11 @@ difference and the share of pixels off by more than 48, and fails when a frame i
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/vector-check.cjs [outDir]
 ```
 
+`masks-more` is the mask case for the layer-masks work: a mask added to a layer, one switched off, and masks over and
+as pixel layers; it must match in lottie-web and in Chromium's SVG. For masks in the other exporters see
+`test/export/masks-exporters.test.ts` (SVG, Lottie, PSD and PDF layout, what a format warns about) and
+`scripts/ab/layer-masks.cjs` (the clip and the exported PNG beside the screen).
+
 It also prints one summary line per document: RMSE (0 to 255, both over white) against `renderFrame` for lottie-web's canvas
 and SVG players, the Lottie file size and where the bytes go (baked effect pictures, pixel-layer pictures, keyframes,
 shapes, other; see `src/export/lottie-size.ts`). Every built-in template is included as `tpl:<id>` (reported, but a
@@ -488,6 +761,23 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboards.cjs [outDir]
 ```
 
+## See-through artboards end to end: scripts/e2e/see-through.cjs
+
+Three artboards: Wide (no background colour, a blue box), Square (green, a yellow box) and Clear (no colour, a magenta box).
+First the open board, Wide, goes out as PNG, PNG sequence, Animated PNG, GIF, sprite sheet, SVG, Moving SVG, Lottie, Photoshop
+layers, PDF, WebM and MP4, with Transparent background ticked and unticked: every one except MP4 must come out see-through
+(a corner pixel with no alpha, no page-sized rectangle in the vector files, an alpha_mode tag on the WebM), and the MP4 must be
+white. Then each way of exporting several boards (each into a folder, the packed sheet, all in order as one) with Wide open and
+with Square open, ticked and unticked as the window would offer: Square must keep its green, Wide and Clear must stay
+see-through, and ticking the box on purpose must leave the green off. The offered tick must be off when any board has a colour.
+ProRes, Illustrator and Interactives go through the same `backgroundFor` (`src/export/draw.ts`) and are covered by
+`test/export/see-through.test.ts`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/see-through.cjs [outDir]
+```
+
 ## Variations end to end: scripts/e2e/variations.cjs
 
 Loads the variations demo (a ball, a recoloured variation and a square cut framed by a camera) and exports the family
@@ -498,6 +788,21 @@ the variations are still linked and still resolve. It also drives the real "Reco
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/variations.cjs [outDir]
+```
+
+## Turn into pixels and shapes end to end: scripts/e2e/convert.cjs
+
+Opens the real Turn into pixels and Turn into shapes dialogs from their commands and presses their buttons: a vector
+character into pixels beside the original (the original hidden, the new layer at 8x) and in its place, each undone in one
+step; pixel art (a mushroom) into five shapes that end up selected; and a made-up photo, which must get the plain
+warning before any work and a button that says "anyway". The pictures it uses are `scripts/docs/help/_convert-art.cjs`,
+shared with the help pictures (`scripts/docs/help/convert.cjs`) and the A/B entries (`scripts/docs/ab-convert`, built
+into captioned pairs by `scripts/ab/convert-montage.sh`). The pure parts (size maths, colour separation, the trace to shapes,
+what goes where) are `test/convert/`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/convert.cjs [outDir]
 ```
 
 ## Selection end to end: scripts/e2e/selection.cjs
@@ -553,17 +858,164 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cj
 ## Live pixel stroke preview: scripts/e2e/pixel-live.cjs
 
 While a pixel stroke is held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live
-(`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil and eraser) over a drawing that
-fills the grid, at ten zoom levels, takes the canvas while the stroke is held and again after it is let go, and the two
-must be pixel for pixel the same (at 33% and below the odd screen pixel may differ, and is only listed). At pen-up the
+(`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil, eraser and the Gradient tool, which paints through the same preview) over a drawing that
+fills the grid, at fifteen zoom levels (the drawing is put in the middle of the view below 100%, so the stroke lands on it),
+takes the canvas while the stroke is held and again after it is let go, and the two must be pixel for pixel the same, with no
+exceptions: the far-out zooms where art pixel edges land exactly on screen pixel middles (30%, 25%, 15%, 12.5%) are in the list
+too (the preview fills there, see `edgeOnMiddle` in `livePixels.ts`; they used to differ by 1694 and 539 screen pixels at 30% and
+15%). The Gradient tool's guide line and handles are drawn over the picture while it is held, so the screen pixels beside its
+drag line are left out of that one comparison. `PIXEL_LIVE_ZOOMS=0.3,0.15` and `PIXEL_LIVE_TOOLS=pencil` narrow a run. Each stroke must also have changed the screen, or the run fails. The stabilizer is turned off for
+the two tools, since its default (12%) keeps the brush a few screen pixels behind the pointer until pen-up, which the
+held-versus-finished comparison would read as a difference. At pen-up the
 finished drawing's cached picture is the old one with only the touched tiles put on it (`seedPicture` in
 `pixelSession.ts`, so pen-up uploads nothing big); the script also checks it against a picture rebuilt from the pixels,
-and that undo and redo (at 100% and up) give back the same screen.
+and that undo and redo give back the same screen, at every zoom. `scripts/ab/far-zoom-shimmer.sh` records the old shimmer at 30%
+against the fixed build as clips and pixel-difference pictures (`brand/ab/far-zoom-shimmer/`).
 
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
+
+## Snapping the pen, pencil and brush: test/tools/snap-draw.test.ts, scripts/perf/snapdraw.cjs, scripts/docs/ab-snap-draw/
+
+`test/canvas/snap-points.test.ts` is the pure side (what a shape offers, the bucket index checked against a plain search on random points, the lines a start or end can be pulled onto, the options), and `test/tools/snap-draw.test.ts` drives the real brush, pencil, clean line and pen. `SNAPDRAW_PERF=1 npx vitest run test/perf/snap-draw-cost.test.ts` prints what an index build and one question cost on 300, 3,000 and 20,000 strokes (it never asserts on time). `scripts/perf/snapdraw.cjs` draws a long stroke with real mouse events on those drawings with snapping off, the tick off and on (`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/snapdraw.cjs --out file.json`, `PERF_RENDERER`/`PERF_DIST` for another build); event-to-paint latency is frame-quantised, so it shows "no change", and the unit numbers are the cost. `scripts/docs/ab-snap-draw/` is the before and after clip (`caption.sh` burns the captions in): run `help-media.cjs --entries scripts/docs/ab-snap-draw` once with `--renderer` pointing at an older build and once without.
+
+## Big brushes: scripts/perf/brushsize.cjs and scripts/ab/brush-size.cjs
+
+`scripts/perf/brushsize.cjs` times a stroke per tip at the old 120 px cap, the top of the size slider and past it, on a
+vector canvas and on a big pixel layer (see `scripts/perf/README.md`). `scripts/ab/brush-size.cjs` takes the A/B pictures for
+the brush-size card (a stroke at the old cap beside one at the top of the slider, the Size control at the top of its range, and a
+bigger number typed into the box), both themes; `scripts/ab/brush-size-sheets.py` joins and captions them.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/brush-size.cjs /tmp/bs
+```
+
+## Same pixels after a speed-up: scripts/e2e/tip-same.cjs
+
+Draws chalk and charcoal (everyday and huge sizes, short and long strokes), the other tips, and plain fills and outlined paths
+through the single renderer in a real canvas, and compares every byte with what another build drew. Use it whenever a way of
+drawing changes for speed: the drawing has to come out the same. A second page in one run fails to load, so it is two steps:
+
+```bash
+npx vite build --outDir /tmp/dev-renderer        # a build of the code to match, for example development
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/e2e/tip-same.cjs --build /tmp/dev-renderer --save /tmp/tip-pictures
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/e2e/tip-same.cjs --build dist/renderer --against /tmp/tip-pictures
+```
+
+The first dab of a big pixel brush is pinned in vitest by `test/pixel/first-dab.test.ts` (whole rows against every pixel
+through `paint`: the same pixels, changed rectangle and tiles, with a mirror, a selection, tile mode and other inks), and the
+fill-only path by `test/canvas/fill-path.test.ts`.
+
+## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
+
+The second window (the picture window, `src/popout/`, `src/main/popout.ts`) needs the real main process (two windows and the
+message port between them), so these three run `dist/main/main.cjs` inside the harness (`scripts/e2e/popout-lib.cjs`) instead of
+stubbing the desktop side. Always in xvfb, after `npm run build`:
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/popout.cjs [--theme light]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/popout-media.cjs --theme dark [--ab] [--help]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs [--rounds 7] [--seconds 6] [--out file.json]
+```
+
+- `popout.cjs` is the check, exit code 1 on any failure. It opens the window and compares the copy it holds with the drawing
+  (JSON equal) after: a stroke drawn with real pointer events (the stroke shows live while the pen is down, and the live ink is
+  gone once it lands), undo, redo, a new drawing, moving the playhead and playing. Then the awkward cases: moved and resized,
+  closed and reopened (a fresh window, back where it was), the command closing it, asking again never making a second one,
+  the drawing window reloading (the link is made again) and the drawing window closing (the second window goes with it and
+  the app quits). The pure rules behind this are in `test/main/popout.test.ts` and `test/popout/`.
+- `popout-media.cjs` records the whole virtual screen with ffmpeg (both windows at once): drawing three strokes, then playing.
+  `--ab` writes `brand/ab/canvas-popout/canvas-popout-<theme>.mp4` and `rest-<theme>.png` (the window at rest, cropped, captioned);
+  `--help` writes the help topic's `public/help/canvas-popout-<theme>.mp4` and poster. Run it once per theme. The help runner
+  (`help-media.cjs`) skips the `canvas-popout` entry (`external:` in `scripts/docs/help/popout.cjs`) and says to use this script.
+- `scripts/e2e/capture-view.cjs` checks the capture view in the real app (frameless, named `Frameling capture`, flat colour, hidden pointer, fixed sizes exact and locked, swapping with the second window); exit code 1 on any failure.
+- `scripts/e2e/capture-view-media.cjs` is the capture view (the same window, frameless, on a flat colour, named `Frameling capture`) in
+  the real app: it opens the second window, swaps to the capture view, checks the window title shows nothing of the drawing and
+  makes the pictures. `--ab` writes `brand/ab/stream-capture-view/` (`a-second-window`, `b-capture-view` and `a-vs-b`, per theme,
+  cropped and captioned); `--help` writes `public/help/stream-capture-<theme>.png`. Run it once per theme. The help runner skips the
+  `stream-capture` entry (`scripts/docs/help/capture-view.cjs`). There is no window manager on the virtual screen, so no title bar is
+  drawn in either picture. The pure rules are in `test/main/capture.test.ts`.
+- `scripts/e2e/streamboard.cjs` is Stream control (the window of buttons for a second screen) in the real app: both windows and the
+  message port. It checks the default buttons, a greyed button saying why, audience participation from the board, that a covered
+  prompt is nowhere in the board's page until Read it, moving a button by tapping (and putting away, adding back, putting them
+  back), the layout surviving a close and open, the window's size and place being remembered, a vote started from the board (the
+  setup dialog opens in the drawing window), Stop everything, and the board and its command going with the streaming tools.
+  Exit code 1 when a check fails. `--ab` writes `brand/ab/stream-control/` (`board-` and `arranging-<theme>.png`), `--clip` the
+  `stream-control-<theme>.mp4` clip (a button moved, a vote started). Run it once per theme. Its `--help` picture was replaced by the
+  one below. The pure rules (the
+  buttons, the layout, what the board is told, what a press does) are in `test/streamboard/`. Not testable on the virtual screen:
+  there is no window manager, so "a press lands while another window has the focus" (`acceptFirstMouse`) and "stays on top" are not seen.
+- `scripts/e2e/streamboard-private.cjs` is the private side of Stream control in the real app (the vote written and counted on
+  the board, the secret word, the guesses, the whole waiting list of the prompt jar). It checks that an answer of "capture" gives a
+  private board with everything in full, that "screen" leaves no secret word, guess or waiting prompt anywhere in the board's page
+  until Read it, that "one screen" is private only after the board is told it moved to another screen (it sends the `streamboard:apart`
+  message by hand, as the virtual screen has one display), the **This board is on my stream** switch, that the word is never in the
+  drawing window, and that Stop everything still ends the round. Exit code 1 when a check fails. `--ab` writes
+  `brand/ab/stream-private/` (`board-private-` and `board-covered-<theme>.png`, and the `stream-private-<theme>.mp4` clip), `--help`
+  writes `public/help/stream-control-<theme>.png`. Run it once per theme. The help runner skips the `stream-control` entry
+  (`scripts/docs/help/stream-control.cjs`). The pure rules are in `test/streamboard/` (`privacy`, `side`, and `link` with the real stores).
+- `scripts/docs/ab-golive-quest/run.sh` walks the Go live quest as a person would, in both themes, in the harness (a pretend OBS and
+  Twitch from the `?debug` hooks, the door and overlay from `scripts/ipc-stubs.cjs`, with `SHOT_STREAM_OK=1` so a copy and the Save
+  dialog work). It writes `brand/ab/golive-quest/golive-quest-<theme>.mp4` (H.264) and a picture per step, the two questions and
+  the badge. `npm run build` first. It cannot show a real OBS taking the overlay, or Twitch's approval page.
+- `scripts/perf/capture-live.cjs` is what the capture view costs the drawing window while you draw, and how live it is, per tool
+  (brush, pencil, eraser, rectangle, line, ellipse, star, transform move) on a vector and a pixel document: real mouse events,
+  the window closed and open alternately, the drawing window's main-thread time over the stroke (DevTools `TaskDuration`) and
+  frame gaps, plus a separate pass that screenshots the capture view a quarter, half and three quarters of the way through the
+  stroke and says how much of the finished picture it already shows. `POPOUT_ROOT=<other checkout>` measures that checkout's `dist/`
+  (the before). `--reps`, `--only brush,pixel:move`, `--out`. Results in `scripts/perf/results/capture-live-*.json`.
+- `scripts/e2e/capture-live-media.cjs` records both windows side by side while a tool draws (the clips for the capture-live look).
+- `scripts/perf/popout.cjs` is the frame rate with and without the window, in one run: playback of a heavy drawing (240 frames,
+  5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, alternating closed, an animated control window, the
+  real window not painting (messages only) and the real window, and printing the median of each. See `scripts/perf/README.md`.
+
+## Live review: scripts/e2e/review.cjs and review-media.cjs
+
+Live review (`src/review` the rules, `src/livereview` the sharer's side, `src/popout/ReviewLayer.tsx` the reviewer's window,
+`src/main/review*.ts` the link, `src/share/live.ts` the transport) is checked at four levels. The unit tests are in `test/review/`
+(codec, lanes, wire readers, inbox, pointers, the transport over the in-memory network, a whole review through both bridges in
+one process, and an import-graph audit that the reviewer's window cannot reach the store, a file writer or the desktop calls).
+The two harnesses run the real built app with `FRAMELING_REVIEW_LOOPBACK=1`, which swaps Hyperswarm for an in-process peer
+network (`src/share/loopback.ts`), so a sharer's window and a reviewer's window really join, with the real handshake and no sockets:
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review.cjs [--theme light]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-media.cjs --theme dark [--help] [--ab]
+```
+
+- `review.cjs` is the check (exit code 1 on any failure): off by default, the code, a knock and Let in, strokes following, pointers
+  both ways, a note and a mark going straight into the drawing with the sharer's Undo and Redo untouched (`store().updateQuiet`,
+  `src/core/quiet.ts`), names and words covered while Stream-safe is on with the comment waiting and then going in when the cover
+  lifts, Show me first with Keep as one undo step, Stop, the reviewer's window saying the review has ended (strip, title, greyed
+  picture, tools off) and Save this picture writing a real PNG without the layers the sharer hid (the save dialog is stubbed).
+- `review-media.cjs` records both windows with ffmpeg: `--ab` writes `brand/ab/live-review/live-review-<theme>.mp4`, `--help` writes
+  `public/help/live-review-<theme>.mp4` and its poster. Run it once per theme. The help runner skips the `live-review` entry
+  (`scripts/docs/help/live-review.cjs`). Both are always H.264.
+- `review-ended-media.cjs` shoots a reviewer's window live and after Stop: `--help` writes `public/help/review-ended-<theme>.png`,
+  `--ab DIR` writes `live-<theme>.png` and `ended-<theme>.png` there. It reads only what both builds have, so copy it into a worktree
+  of an older commit to shoot a "before".
+
+### Review links: scripts/e2e/review-link-media.cjs
+
+`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/review-link-media.cjs --theme dark [--help] [--ab]` runs the real
+app and records a `frameling://review?code=...` link: Copy the link on the card, the link arriving the way a second launch hands it
+over (`app.emit('second-instance', ...)`, the same path Linux and Windows use, and the one `open-url` ends in on macOS), the question
+"Join a live review?" with nothing connected, Join, the window opening, Let in. After the recording it checks (exit code 1 on a
+failure): a link for something else or a broken one asks nothing; your own link says so; a second link does not swap the code of a
+question already up; Not now connects nothing; and while Stream-safe is on the code in the question is covered until Show.
+It does not start a real second computer: one window is both sharer and friend (`window.__frameling.reviewLink.elsewhere`), and the
+peer network is the in-process loopback. `--ab` writes `brand/ab/review-link/review-link-<theme>.mp4`, `--help` writes
+`public/help/review-link-<theme>.mp4` and its poster (the help runner skips the entry in `scripts/docs/help/review-link.cjs`).
+
+Unit tests: `test/share/link.test.ts` (what a link may carry), `test/livereview/link-logic.test.ts` (what is copied, when Join may be
+pressed, the cover), `test/main/review-link.test.ts` (the main process keeps the code until the window asks, only the window can ask),
+`test/main/link-handler.test.ts` (the Linux launcher plan, and the real `xdg-mime` against a throwaway home where it is installed;
+the installer and app settings that Windows and macOS rely on are checked as files only, never on a real Windows or Mac).
 
 ## What is remembered between launches: scripts/e2e/remember.cjs
 
@@ -582,6 +1034,90 @@ REMEMBER_PHASE=check REMEMBER_DIR=/tmp/profile xvfb-run -a -s "-screen 0 1600x10
 `REMEMBER_ROOT=<another checkout>` runs the same check against that checkout's `dist/` (for a before and after).
 `scripts/shoot.cjs` now starts from a throwaway profile, so what one run set does not show up in the next.
 
+## The actions door, end to end: scripts/e2e/stream-door.cjs
+
+Starts the real built app on a throwaway data folder, switches audience features on, and calls the door over HTTP with
+its real key: the list, a run, a cooldown, an unknown action, a bad body, no key, a wrong key and a request with an
+Origin header. Then switches off and checks the door is closed and its address file is gone. It stops only the Electron
+it started. The request handling itself is tested without a window in `test/streamdoor/`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/stream-door.cjs
+```
+
+
+## The chat commands guide, end to end: scripts/e2e/chat-commands.cjs
+
+The real built app, a started vote and round, and the exact requests the chat commands guide gives for `!vote`,
+`!guess` and `!prompt`, with every answer its failure table promises (400 invalid, 400 bad-request, 401, 403 with an
+Origin, 429 with `retryInMs`, and the door closed with audience features off). `test/streamdoor/chat-commands.test.ts`
+holds the guide's Firebot bodies against the real parsers and checks a viewer's quote mark can't break or add to them.
+It also checks the test command (a GET of the list, with each action's `ready`), the `detail` and `say` on each refusal, and the
+prompt jar's channel pause. It asks for its own port, so it runs while a Frameling you are really using holds the usual one.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/chat-commands.cjs
+```
+
+## The stream overlay, end to end: scripts/e2e/overlay-clip.cjs
+
+The overlay is a page on the actions door's server, with its own path, token and rules (`src/main/overlayHandler.ts`, the
+reasons are at the top of that file). `test/streamoverlay/` covers it without a window: `shared.test.ts` (what may be on
+it, and that nothing private can be), `handler.test.ts` (the token, who may ask, the headers, and that the door's own
+rules still refuse an Origin), `server.test.ts` (a real local port, the overlay and the door side by side), `page.test.ts`
+(the real page in jsdom: each piece appears and goes, an idle page is empty, words go in as text), `app.test.ts`, `link.test.ts`,
+`prefs.test.tsx` and `jar.test.tsx` (the app's side).
+
+`overlay-clip.cjs` is the real thing: the real app and door, with the overlay page loaded the way OBS loads a browser
+source (a transparent offscreen window, so a request with no Origin and no cross-site mark), its see-through frames laid
+over a still of a drawing by ffmpeg. The audience does things through the real gate. It writes a captioned H.264 clip and a
+still, once per drawing (`--drawing light` or `dark`). It stops only the Electron it started.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/overlay-clip.cjs --drawing light --out brand/ab/stream-overlay
+```
+
+## Scripts: scripts/e2e/scripts.cjs
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/scripts.cjs
+```
+
+The real app, the real sandbox: a script runs and its three edits are one Undo step; a mistake reports its line (a syntax error
+too, found with a throwaway worker); a script that fails halfway leaves the drawing as it was; Save, the internet and plugin
+commands are refused; `while (true) {}` is stopped by the watchdog (shortened to 1.5 s here with `__framelingScripts.watchdog`)
+and by Stop, and the app and the next script carry on; a saved script is a command, takes a key from the panel's **Set a key**
+and runs from it; a script pasted in (real clipboard, real paste) is marked, and running it shows the look-first sheet, where
+Cancel runs nothing and trusting it clears the mark. `?debug` exposes `__framelingScripts` (src/scripts/debug.ts) for this.
+
+The help clip for Scripts is `scripts/docs/help/scripts.cjs` (`npm run help:media -- --only scripts`); the look for the board is
+`brand/ab/scripting/`.
+
+## The remote door: scripts/e2e/remote-door.cjs, scripts-door.cjs, remote-door-media.cjs
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/remote-door.cjs
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/scripts-door.cjs
+```
+
+All three run the real built app in-process (`scripts/e2e/popout-lib.cjs`, via `remote-door-lib.cjs`) and talk to the door over real
+HTTP with the real key. `remote-door.cjs`: nothing listening and no files before the switch; the key file private; no key, a wrong
+key, an Origin and a bad body refused; the commands it may not press (Stream-safe, audience, remote, file, Undo) refused and
+absent from the list; a run of three steps is one Undo step and one Undo takes it back; a request with a dialog open or a button
+held down is `409 busy`; **Stop everything** and a page reload close it. `scripts-door.cjs` is the run checks of `scripts.cjs`
+(one Undo step, the line of an error, a failed script leaves nothing, no Save, no internet, an endless loop stopped) driven through
+the door: what it could not convert, and why, is written at the bottom of the file. The page is reached for two things only: the
+person's switch (`remote.toggle`, the command the Preferences switch runs) and opening the document.
+
+`remote-door-media.cjs --theme dark|light` makes the help clip (`public/help/remote-door-*.mp4`, entry `scripts/docs/help/remote-door.cjs`)
+and the board look in `brand/ab/remote-door/`: the app on the left, and on the right a window showing what a real `curl` and the
+real `docs/examples/remote-door.py` printed. See [remote-door.md](remote-door.md).
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in
@@ -599,10 +1135,18 @@ things with a visible focus ring, Escape closes dialogs and focus goes back). Fr
 axe "serious" or "critical" result or a keyboard failure.
 
 ```bash
-xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
+A11Y_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
 npm run build
-xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
+A11Y_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 ```
+
+**It fails when it looked at nothing.** The run sets the right side to tabs, so every panel really is on the page (in the
+default layout most are folded into one Properties pane, and for a while the panel check was passing on two of 25). A
+scenario whose target is missing or not showing is a failure, a panel with almost nothing in it for axe to judge is a
+failure, and a full run must have checked every panel the app lists (`scripts/lib/a11y-coverage.cjs`, tested in
+`test/a11y/coverage.test.ts`). Each line says how many elements axe judged, and the run ends with
+`panels: N of N really checked`. Panels are shown in the same document as the panel contact sheet. Set `A11Y_SHOW=1`
+under xvfb: an off-screen window gets no keyboard focus, which fails every key check (and the Tab walk now says so).
 
 A full run is about 120 views and takes 4 to 6 minutes (more when the machine is busy), and prints nothing new when piped
 into `tail` until it ends, so give it time before calling it stuck. It always exits: 0 clean, 1 problems found, 2 when the
@@ -616,6 +1160,151 @@ focus moving elsewhere. Every scenario sets up its own state, so any `--only` su
 
 `--themes` also runs axe's colour contrast rule in every built-in theme. `A11Y_SHOW=1` puts the window on screen
 (the virtual one, under xvfb). `AXE_CORE=<folder>` points at an axe-core install elsewhere.
+
+## The ring round a dialog: scripts/e2e/dialog-ring.cjs
+
+Presses just outside every modal with a real mouse, with "Pressing beside a dialog" set to Close. A press within 24 pixels of a
+dialog's edge (`NEAR_MISS` in `src/ui/backdropClick.ts`) must do nothing; one well clear must close it. The save question
+ignores the dim area, so a far press must leave it open, and the quest cards are not modals at all. It also reports any part of a
+dialog that sticks out past the box the ring is measured from. Walks Preferences, Help, the palette, the welcome and new
+sheets, New pixel art, About, Quill's hello, Export, the settings dialogs, Versions, Recover, the pen check, a choice question,
+the crash offer and the save question.
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dialog-ring.cjs
+```
+
+`DIALOGRING_ONLY=<text>` runs only dialogs whose name starts with it. Exits 1 on any wrong press. The same rule is held in
+vitest by `test/ui/dialog-ring-everywhere.test.tsx`, which also fails if a file other than the two dialog shells builds a dim
+area of its own (it would skip the ring).
+
+## Hidden layers in a PDF: scripts/e2e/pdf-readers.cjs
+
+Frameling writes layers as optional content (OCG), hidden ones in `/OFF`. A reader that ignores optional content
+would draw art that is meant to be off. This writes the PDFs and Frameling's own picture of the same frame, draws
+each PDF with every reader on this computer, and fails when one of them shows art Frameling's picture does not.
+
+```bash
+npm run build
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pdf-readers.cjs [outDir] [--only=a,b]
+```
+
+Cases come from `illustrator-fixtures.cjs`: `hidden-layers`, `hidden-in-effect-folder`, `layers-folders`,
+`nested-folders`. Readers: poppler (`pdftoppm`), Ghostscript (`gs`) and MuPDF (`mutool`), each used if it is on the
+computer, with the rest named in the report. Outputs: `<case>.pdf`, `<case>-frameling.png`, `<case>-<reader>.png`,
+`report.json`, and `browser/index.html`.
+
+**The browsers have to be opened by hand**, because Chrome uses PDFium and Firefox uses pdf.js and neither can be
+driven from here. Open `browser/index.html`, or the `.pdf` files themselves, in the browser you want to check. The
+results so far are in `brand/ab/pdf-readers/note.md`.
+
+## Words on one line: scripts/e2e/no-wrap.cjs
+
+The rule: a control's words stay on one line. Every `button`, `summary` and `role=tab|radio|switch|checkbox|menuitem|option`
+gets `white-space: nowrap` from `src/renderer/theme.css`. Where there is not room, the row answers in one of these ways, and
+never by breaking a label in two:
+
+- **stack one per line** on purpose: `useStackWhenTight` (`src/ui/fitRow.ts`) sets `data-stacked` on a pick-one row that does
+  not fit side by side (the tool options' `Choice`), measured before paint so nothing flickers; Preferences' pick-one rows keep their size (`flex: none`) and the description beside them wraps instead;
+- **flow onto the next line**: a `flex-wrap` row or grid of whole buttons (effects tiles, tile sizes, layer kind buttons);
+- **shorter words**: a container query swaps a name for a shorter one (`cv-words-long` and `cv-words-short`), the full
+  name stays in the tooltip and the accessible name;
+- **scroll sideways** on purpose: mark the row `data-scrolls` (tab strips, the timeline);
+- **cut with an ellipsis** for a name that comes from the person (the Preview panel's frame line, the pixel bar's chip).
+
+Words that are a sentence (a card's blurb, a row in a list of help topics) say so with `data-wraps`, which turns the rule
+off for that control and what is inside it. A switch or tick box keeps its knob in place and its words may wrap beside it.
+
+The harness opens the built app at the narrow sizes people use, in five passes: a 1280 laptop with the right side at its smallest
+(200 px) and at its usual width, the interface size slider at 150% and at 200% (1280 pixels becomes 640 and 853 of the app's
+own pixels), and a wide 1920 screen. In each it walks the main window (vector and pixel drawing), every panel, every tool's
+options (on a vector and a pixel drawing), every dialog and every Preferences page, and reports any control that:
+
+- has a short piece of text on two or more lines (a wrap), or
+- keeps its words on one line but sticks out of the box that holds it, or makes a panel scroll sideways when it should not, or
+- **sits on top of another control** (an overlap is not a wrap, and it is what a missing `data-wraps` looks like: a card's
+  sentence that will not wrap runs under the column beside it). Every pair of visible controls that do not contain each other is
+  compared, using the box their words fill, cut to any scrolling or clipping box round them (so a control scrolled out of sight
+  is not "under" anything). Mark a stack that is meant (the fill and stroke wells, a badge on a thumbnail) with `data-overlaps`
+  on it or a box round it. A sticky or fixed heading is left to lie over what scrolls under it. The finding reads `[overlaps] a <> b`.
+
+It also drags the right side from 200 to 480 px in steps of 10 on a few busy panels, and fails when a wrap shows up on the way
+or the content grows taller as the panel gets wider (the layout jumping about). On the Preview panel it steps the frame
+through 1, 9, 10, 99, 100 and 150 at every width and fails if the panel's height changes with the digits.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/no-wrap.cjs
+```
+
+The Export window is walked once for each format card (with More formats open), and once with artboards, since each format
+brings its own options and changes the column's height (`NOWRAP_ONLY="dialog export"` runs just those).
+
+`NOWRAP_ROOM_ONLY=1` runs only the **room** check, in about a minute: in each pass and in each of the Draw, Animate and Pixel
+workspaces the canvas must keep at least 280 x 190 of the app's pixels, nothing in the top bar or the status bar may sit past the
+window's edge, and the page must not scroll sideways (the rule is in `src/ui/dockFit.ts`; the menu bar folds into **More**, see
+`src/ui/menuFold.ts`). It prints the smallest canvas each pass saw. Before the layout answered to the room, the 200% pass left the
+canvas 2 x 2 in a 640 x 400 window; now it is 392 x 262.
+
+About 4 minutes a pass, 15 for all five. `NOWRAP_PASSES=a,b` runs only the passes whose name contains a or b (`smallest`,
+`usual`, `150`, `200`, `wide`), `NOWRAP_ONLY="tool select"` only the views whose name starts with that, `NOWRAP_JSON=<file>`
+saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `NOWRAP_DIST=<dir>` checks another copy of `dist/`
+(copy it before a change to get the before numbers). It exits 1 when anything wraps or jumps. The edge of the window itself
+is left to the dock's layout, not judged here: at 200% on a 1280 screen the app has only 640 pixels to share.
+
+## Real presses on menus: scripts/e2e/real-menus.cjs
+
+Every unit test opens a menu with `element.click()` and looks for it in the page. That passed while the menu a Themes card opens
+in Preferences sat **behind the dialog's dimmed backdrop**: it was in the page, so every test was happy, and nobody could reach it.
+This harness presses with a real mouse (`sendInputEvent`) and counts a menu as open only when the element under the middle of
+**every entry** is that entry, so a covered menu fails. It covers the Themes cards (the art and the name, in dark and light, then a
+real press on "Use it at night" and on "Make a copy"), the tool rail's layer line, the rail's right press menu and a tool's menu while
+the tools are being changed. Add a case here for any new button that opens a dock menu, and above all for one that opens from a dialog.
+Exits 1 on any failure. `test/ui/dock-menu-layer.test.ts` holds the stacking order that broke (menu above a dialog backdrop).
+
+```bash
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/real-menus.cjs
+```
+
+`REALMENUS_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `REALMENUS_SHOTS=<dir>`
+saves a picture of each open menu.
+
+## The tool rail's width and names: scripts/e2e/rail-width.cjs
+
+Checks the rail the way a new person meets it, in the real app. It also reads the Pixels | Vectors switch at the top of the rail (each word's room against how wide it is drawn) and counts a word cut short as a failure. For both looks, the three tool sizes, the draw, animate and
+pixel workspaces and the interface sizes 100, 125, 150 and 200 per cent, in a 1280 x 720 window, it reads the rail's width,
+how many group names sit on two lines, which are cut short, and the room the canvas keeps (at least 280 x 190). Then it gives
+three groups names of your own and checks they drop to two lines before anything is cut, and that only a third line or one
+very long word ends in dots. Exits 1 when a built-in name is cut at the starting width, a name of your own is cut too soon, or the
+canvas is too small.
+
+```bash
+npm run build && SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/rail-width.cjs
+```
+
+`RAILW_MODE=names|slim|stacked` picks the rail style (group names showing, the names off, or one button per group; run all three), `RAILW_DIST=<dir>` checks another copy of `dist/` (a copy made before a change, for the before numbers), `RAILW_SIZE=<w>x<h>`
+sets the window, `RAILW_QUICK=1` runs one look and one workspace, `RAILW_JSON=<file>` saves every row. The starting width
+itself is worked out in `src/ui/toolRailWidth.ts` from the built-in group names (`test/ui/railStart.test.ts` holds it to the
+widths the real rail measured), so add a longer built-in group name and the rail starts wider by itself. The switch is worked
+out the same way (`switchRoom`, per look, since the crisp look's font is wider), and the natural width is the largest of the buttons,
+the switch and, with names showing, the longest name. The one-per-group rail is one button wide and shows the switch as two icons;
+so does a rail pulled too narrow for the words (class `is-switch-short`), instead of a word cut to "Vect...".
+
+## Quill's hello, page by page: scripts/e2e/hello-fit.cjs
+
+Walks every page of the first-run hello (hello, what to make with and without picks, colours with Auto, settings, the last page) at
+the sizes and interface scales you give it, in dark and light, and saves a picture of each so every one can be opened and looked at.
+It reports an element that **scrolls** (a welcome sheet with a scrollbar looks broken), is **clipped** by a box that hides overflow
+(a bubble cut off at an edge), **spills** (words crossing the edge of the card, button or bubble they sit in) or sticks **outside**
+the sheet. The checks do not replace looking at the pictures. Exits 1 on any finding.
+
+```bash
+npm run build
+HELLOFIT_OUT=/tmp/hello HELLOFIT_SIZES=1280x720,1600x900 HELLOFIT_SCALES=1,1.5 xvfb-run -a -s "-screen 0 1700x1000x24" npx electron scripts/e2e/hello-fit.cjs
+```
+
+`HELLOFIT_DIST=<dir>` checks another copy of `dist/`, `HELLOFIT_THEMES=dark` one theme. `scripts/e2e/no-wrap.cjs` also has the hello's
+pages as dialogs (`NOWRAP_ONLY="dialog onboarding"`), and `NOWRAP_SIZE=1280x720` runs its passes at that window size.
 
 ## Performance: scripts/perf/
 
@@ -635,6 +1324,12 @@ node scripts/perf/compare.cjs scripts/perf/results/before.json scripts/perf/resu
 
 Environment: `PERF_RENDERER=<dir>` (measure a renderer built elsewhere with `npx vite build --outDir <dir>`),
 `PERF_CPU_SLOWDOWN=4`, `PERF_SHOW=1`, `PERF_HIDDEN=1`.
+
+`gradients.cjs` (with `gradients-summary.cjs`): what many angular or diamond shapes cost on a big canvas, next to the same
+scene in radial gradients, drawn one frame at a time and played with a new drawing on every frame. Angular is the browser's own
+gradient and costs the same as radial; a diamond is painted from pieces and costs about 8 times radial (fine up to a few hundred
+shapes). Method, command and the 2026-11-16 numbers are in `scripts/perf/README.md`; results in
+`scripts/perf/results/gradients-*.json`.
 
 `startup.cjs`: launches the built app as a fresh process again and again and times launch to the
 `frameling:interactive` mark (set in `src/renderer/App.tsx`), plus the JS needed before start. It starts Electron
@@ -679,7 +1374,7 @@ file is a JSON array run in order with real input events:
 | `{"eval": "js"}` | Run JavaScript in the page. |
 | `{"click": [x, y]}` | Left click at window coordinates. |
 | `{"dblclick": [x, y]}` | Double-click at window coordinates (`record.cjs` and the help clips only). |
-| `{"drag": [[x, y], ...], "steps": 6}` | Press, move through the points, release. |
+| `{"drag": [[x, y], ...], "steps": 6}` | Press, move through the points, release. Options: `"hold": ms` keeps the pen still at the end before it lifts (Hold to tidy), `"pull": [x, y]` then drags there still pressed, `"pause": [[pointIndex, ms]]` keeps it still part way along. |
 | `{"down": [x, y]}`, `{"move": [x, y]}`, `{"up": [x, y]}` | For shots mid-drag. |
 | `{"key": "g", "mods": ["control"]}` | A key press (Electron keyCode names). |
 | `{"wait": 300}` | Milliseconds. |
@@ -687,8 +1382,87 @@ file is a JSON array run in order with real input events:
 
 Environment: `SHOT_SHOW=1` puts the window on the screen (use it under xvfb); `SHOT_SCALE=2` shoots at twice the
 pixel density; `SHOT_LOG=1` prints console errors as they happen; `SHOT_W`, `SHOT_H` set the window size (default 1400
-x 900). Console errors are printed after each shot anyway. A step can open a real file with
+x 900), `SHOT_DISPLAY` a JSON screen (what the desktop side reports) so the app knows which screen it is on, as `screen-shoot.cjs` below sets it. Console errors are printed after each shot anyway. A step can open a real file with
 `{"eval": "__framelingIo.openPath('/abs/path.frameling')"}`.
+
+## Every panel on one sheet: scripts/panels-sheet.cjs
+
+A contact sheet of every panel, with its name under it, in dark and in light. It is the browsable gallery a component
+library would give, built on the help-picture harness (`scripts/docs/steps.cjs`), so there is nothing new to install.
+Look at it after a change to a panel, a theme or the dock, to see everything at once.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/panels-sheet.cjs <outDir> [options]
+```
+
+It writes `panels-dark.png`, `panels-light.png`, `panels-both.png` (each panel with its dark and light crops side by
+side) and `panels.json` (one line per panel per theme: size, document, and its problem or null). About 45 seconds.
+
+| Option | |
+|---|---|
+| `--themes dark,light` | Which themes (both by default). |
+| `--doc <template id>` | Show every panel in this template. By default it is Bouncing ball, and the template a panel needs when that would leave it empty (Lip sync for Lip sync, Hero sprites for Slices, a title card for Text; the table is in `scripts/lib/sheet-layout.cjs`). |
+| `--only a,b`, `--skip a,b` | Just these panels, or all but these. A name that is not a panel is reported. |
+| `--no-select` | Nothing selected. By default everything on the layer is, since most panels show their controls only then. |
+| `--right tabs` | The right side's layout (`tabs`, `rail` or `inspector`). Tabs is the default because the usual Properties pane folds many panels into one, leaving no panel of their own to crop. |
+| `--full` | Keep each panel as tall as its dock zone. By default the empty space under a short panel is cut. |
+| `--width 1800` | Sheet width in pixels. |
+| `--renderer <dir>` | A private `vite build --outDir`, as for `record.cjs`. |
+
+The list comes from the app's own registry (`__frameling.panelList()`), so a new panel appears on the sheet without
+anyone adding it, and a panel a plugin or feature registers shows up too. Panels with a state that is hard to reach get
+it from the `?debug` hooks in `__frameling.seed` (`text`, `notes`, `slices`, `history`, in `src/renderer/debug.ts`); give
+a new panel one by adding it there and in `SEEDS` in `scripts/lib/sheet-layout.cjs` (a test checks the two agree).
+
+A panel that cannot be shown is never left out quietly. It gets a red box on the sheet that says why, `panels.json`
+carries the reason, the run lists them at the end and exits 1. The reasons: no panel on screen (the dock did not show
+it), its own "tripped over something" screen, every pixel one colour, a call that threw, or an error the page logged
+while it was up (a missing hook or Electron call). The console errors are the page's own, so a panel that needs a real
+file or the main process will say so here (the harness answers those calls with the stand-ins in `scripts/ipc-stubs.cjs`).
+
+The pure parts (panel list, documents, packing, trimming, blank detection) are tested in `test/ui/panels-sheet.test.ts`.
+Sheets from a run live in `brand/ab/panel-sheet/`.
+
+## A pretend screen of any size: scripts/screen-shoot.cjs
+
+Shoots the interface as it looks on a particular screen, such as a 16 inch 4K laptop, without that screen. It wraps
+`scripts/shoot.cjs` (same variants, same steps files), so it starts its own xvfb at the screen's pixel size, sizes the
+window to fill it like a maximised one, sets the device pixel ratio, and tells the app which screen it is on (so the
+small-screen fit in `src/ui/screenFit.ts` sees what it would on the real thing). No `xvfb-run` needed from you.
+
+```bash
+npm run build
+node scripts/screen-shoot.cjs <outDir> --screen 4k16 name:cosy:dark:scripts/steps/draw-workspace.json
+node scripts/screen-shoot.cjs <outDir> --size 1366x768 --dpr 1 name:cosy:light
+node scripts/screen-shoot.cjs --list          # the presets
+```
+
+`--screen` picks a preset and puts its name in front of each shot's name. `4k16` is 3840 x 2160 at a device pixel ratio of
+2.5 (what Windows recommends for a 16 inch 4K panel, about 275 pixels an inch), so the interface sees 1536 x 864 units and
+the picture is 3840 pixels wide. `4k16-200` and `4k16-300` are the same panel at 200% and 300%. `--size` (real pixels) and
+`--dpr` set any other screen, and `--window WxH` uses a window smaller than the screen (in the screen's own units). Without
+a `--screen` or `--size` it is 1280 x 720 at 1x. `scripts/steps/draw-workspace.json` opens the Bouncing ball in the Draw
+workspace, in whichever theme the variant names (a step can read it from `window.__shotTheme`, which shoot.cjs sets: the page's own theme pref wins over the variant's `data-theme` as soon as the app redraws).
+
+## The Draw workspace on small screens: scripts/e2e/screen-fit.cjs
+
+Opens the app at each screen size from 1024 x 640 to 2560 x 1440 (as if the window were the whole screen), loads the
+Bouncing ball in a workspace, and prints the room the canvas keeps, the panel sizes, whether the left tool rail or the right
+panel rail scrolls, whether anything runs off the window or the page scrolls sideways, and the timeline's own scroll. It
+exits 1 for a screen of 1280 x 720 or more where the canvas gets under 30% of the window, the page scrolls sideways,
+something runs off the window, a rail scrolls or the timeline's three rows are cut off. The thresholds in `src/ui/screenFit.ts` (`SMALL_BELOW`, the tool rail's 902 px
+need) come from its numbers.
+
+```bash
+npm run build && SHOT_SHOW=1 xvfb-run -a -s "-screen 0 2600x1500x24" npx electron scripts/e2e/screen-fit.cjs
+```
+
+`FIT_FIT=off` tells the app the screen is a roomy one, which is the layout from before the fit (the "before" numbers and
+pictures). `FIT_SIZES=1280x720,1366x768` picks the screens, `FIT_WS=animate` another workspace, `FIT_PREFS='{"toolSize":"large"}'`
+sets preferences first, `FIT_EVAL=<js>` runs a line in the page to try a change before building it, `FIT_SHOTS=<dir>` saves each
+size in dark and light, `FIT_DIST=<dir>` checks another copy of `dist/`, `FIT_JSON=<file>` saves every row. The timeline's
+own sideways scroll is not counted: it is there for animations longer than it shows, and it keeps some room after the last frame.
 
 ## Help pictures and clips: scripts/docs/record.cjs and encode.sh
 
@@ -707,7 +1481,14 @@ Extra steps: `{"log": "js"}` prints a result; `{"drag": ..., "delay": 8, "mods":
 `{"pinch": [x, y], "dy": -6, "count": 12}` does a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it);
 `{"rdrag": [[x, y], ...]}` and `{"rclick": [x, y]}` are the same with the right mouse button (a right-click paints with Back in the Pixel workspace);
 `{"shot": "name", "crop": [x, y, w, h]}` or `"el": "css selector", "pad": 12`; `{"type": "text"}` sets the focused
-input; `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
+input; `"crop": {"stageCrop": {}}` is the stage's own box measured when the step runs (add `"rightGap": 80` to run it on to 80 px
+short of the window's right edge), so a crop never carries a rail width that has since changed (`STAGE` and `PANEL` in
+`scripts/docs/help/_shapes.cjs`; `stageBox(wc)` and `capture(wc, crop)` in `steps.cjs` do the same for a script that takes its
+own pictures, `capture` taking the throwaway frame first). `stageCrop` also takes `top`, `down`, `height`, `around: [w, h]` and
+`of: ".ui-canvas"` (the stage with its tool bar, for the Pixel workspace), and `FROM_STAGE({...})` writes one. Aim with `at(x, y)`
+(a stage point), `edge(x, y)` (screen pixels from the stage's top left, for the rulers) or `pixelGrid(w, h, cell).at(x, y)` (the middle of
+an art pixel), never a window number; the sums are tested in `test/ui/harness-crops.test.ts`. The harness turns `firstDrawn` on for every
+entry, so the "fold the explanations away" offer that comes with the first edit never lands over a picture. `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
 someone else's build. Preferences go into `localStorage` (`frameling.prefs.v1`) and the page reloads. `SHOT_W`,
 `SHOT_H` (default 1280 x 800) and `SHOT_WAIT` (ms before the steps, default 3000) apply. Its window is hidden
@@ -735,7 +1516,46 @@ npm run help:media                        # npm run build, then every entry in d
 npm run help:media -- --only select,tour  # just those names (base names, no extension)
 npm run help:media -- --theme light       # one theme only
 npm run help:media -- --list              # every entry and whether it is a picture or a clip
+npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the entries of another folder, for a before/after look (not a help topic)
 ```
+
+`scripts/docs/ab-brush-tips/tips.cjs` draws the same three strokes with each brush tip (plain for reference, chalk, charcoal, watercolour, a leaf stamp, a star stamp and a paw stamp made from a selection with the real command), once per theme, into brand/ab/brush-tips (`--entries scripts/docs/ab-brush-tips --out <dir>`). In the dark theme the page is slate and the lines are cream; in the light theme it is ink on white. Brush texture is judged by eye, so rerun it after changing `src/geometry/tipShapes.ts`.
+
+`scripts/docs/ab-pen-mods/pen-mods.cjs` draws the same wave, line and ring with each pen modifier on (plain for reference, steady hand, shaky hand, thin brush, fat brush, long rope), once per theme, with the chip counting down (`--entries scripts/docs/ab-pen-mods --out <raw dir>`); `scripts/docs/ab-pen-mods/caption.sh <raw dir> brand/ab/stream-pen-mods` burns a caption into each clip and makes one six-up clip per theme. Rerun both after changing a modifier's strength in `src/penmods/catalogue.ts`.
+
+`scripts/docs/ab-selection-edge/edge.cjs` makes the before and after of the selection edge: the same sun and round selection copied on to a dark field with a hard edge and with a feathered one, and the selection as it was and grown (`--entries scripts/docs/ab-selection-edge --out <dir>`, then copy into brand/ab/selection-gradients/selection-edge). It drives the real commands through the `__framelingSelect` hook in `src/select/debug.ts` (`scene`, `disc`, `edge`, `paste`, `move`, `drop`). The maths is `test/select/soften.test.ts` (grow, shrink, feather and what a soft edge does to delete, copy and fill) and `test/select/soft-paint.test.ts` (the brush through a feathered selection).
+
+`scripts/docs/ab-angular-gradient/angular.cjs` makes the before and after of angular gradients: the same metal coin and pie with the radial and linear gradients Frameling had, and with angular ones (`--entries scripts/docs/ab-angular-gradient --out <dir>`, then copy into brand/ab/selection-gradients/angular-gradient). `test/export/angular.test.ts` is the maths (where a point falls round the sweep, the wedges, the pixel gradient) and what every writer does with one: SVG a pattern of 90 wedges, PDF 90 wedges cut to the shape as plain filled shapes (so Illustrator reads them), Lottie the shape's plain colour, and what the Export window says for each.
+
+`scripts/docs/ab-diamond-gradient/diamond.cjs` makes the A/B for diamond gradients: the same square panel with linear, radial, angular and diamond side by side, then a real use (a sheen on a flat panel) with a linear sheen against a diamond one (`--entries scripts/docs/ab-diamond-gradient --out <dir>`, then copy into brand/ab/diamond-gradient). `test/export/diamond.test.ts` is the maths (where a point falls, the four quarters agreeing with it everywhere, the canvas painting four clipped quarters and a line through a spare canvas) and what every writer does with one: SVG a pattern of four gradient pieces, PDF four clipped shadings (so Illustrator reads four gradient fills), Lottie the shape's plain colour, and what the Export window says for each.
+
+`scripts/docs/ab-pixel-gradient/pixel-gradient.cjs` makes the single looks for the pixel gradient (each dither style, two colours against palette steps against a smooth mix, linear against radial); `scripts/ab/pixel-gradient-montage.sh <dir of looks>` puts them side by side with labels in brand/ab/pixel-gradient/.
+
+`scripts/docs/ab-psd-text/psd-text.cjs` is another: the same Photoshop file (`scripts/docs/help/assets/import-text.psd`, made by `scripts/fixtures/make-text-fixture.ts` with ImageMagick) brought in, with the title selected and the left-out list open. Run it once with `--renderer` pointing at a build of the base commit and once without, for the before and after.
+
+`scripts/docs/ab-brush-picker-built/built.cjs` shoots the finished brush picker against a made-up pack of 148 brushes (`scripts/docs/help/_library.cjs`, added through `__brushes.addFromText`, which only exists with `?debug`) in each state: at rest, one group open, Recent, Favourites, every group folded, searching, two columns resized. The brush-picker help clip uses the same pack.
+
+`scripts/ab/canvas-marks-exports.cjs` is the look for marks drawn over a picture: the canvas with the marks showing beside the PNG the real exporter writes and the SVG (drawn by rsvg-convert), in both themes, into brand/ab/canvas-notes (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/canvas-marks-exports.cjs <outDir>`). It fails if the document stops holding the marks or if one reaches the SVG. The code-side proof is `test/notes/marks-never-exported.test.ts`, which runs every registered format's plan and checks the renderer is never handed a mark.
+
+`scripts/docs/ab-paw-brush/paw.cjs` shoots the Paw prints brush: its row in the picker (scrolled into view in the Stamps and texture group) and strokes drawn with it picked from the picker, in both themes (`brand/ab/paw-brush`). `scripts/steps/rail-vector.json`, `rail-pixel.json` and `rail-pixel-workspace.json` open a vector layer, a pixel layer and the Pixel workspace for shooting the tool rail with `screen-shoot.cjs` (`brand/ab/select-first`).
+
+`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (62 brushes in 11 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
+
+`scripts/docs/ab-tip-picker/shots.cjs` shoots the Tip picker in the brush options: the options panel with a stamp, a plain and a chalk tip (`stamp`, `plain`, `chalk`, run on the chips build and the picker build at the same crop, with a `log` step printing the Tip block's height in px), the picker open in both row styles (`open`, `open-dense`) and a stamp chosen from it (`chosen`). Build each side with `npx vite build --outDir <dir>` (the before from a detached worktree of the base commit) and run `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-tip-picker --renderer <dir> --out <raw>`. `test/brushes/tipList.test.ts` and `pickerTips.test.tsx` cover the list and the picker.
+
+`scripts/docs/ab-soft-paint/soft-paint.cjs` shoots the soft paint tools (Soft brush, Airbrush, Highlighter, Soft eraser, Smudge) on a 400 x 400 pixel sprite: a firm stroke, a light stroke, a pen pressure ramp and two crossing strokes, in both themes, with a smooth edge and with the dithered one (`-smooth`, `-crisp`) and a clip of each being drawn (`-clip`). Strokes are real pointer events dispatched on the canvas (`_draw.cjs`; the ramp is a pen with pressure), and the Pixel perfect answer is set through `__framelingSoft.edge`. `--entries scripts/docs/ab-soft-paint --out brand/ab/soft-paint`; the help picture is `scripts/docs/help/soft-paint.cjs`. Unit tests: `test/soft/maths.test.ts` (falloff, dithering, blends, the edge rule), `test/soft/stroke.test.ts` (strokes through a real pixel session: soft, crisp, locked palette, mirror, highlighter, smudge) and `test/soft/settings.test.tsx`.
+
+`scripts/docs/ab-charcoal/` shoots chalk and charcoal on a 400 x 400 pixel sprite on paper: `marks.cjs` draws every medium's firm stroke, light stroke, pen pressure ramp and three passes over each other (`<medium>-<paper>-dark|light`), `ball.cjs` shades a ball with hatching the way you would with a stick of charcoal. Strokes are real pointer events with a pretend pen (`_draw.cjs`, which borrows the helper from the soft paint entry), the ink and the paper colour follow the theme, and the medium and paper are set through `__framelingDry` (`medium`, `paper`, `set`, `reset`). `PAPER=<kind>`, `ONLY=<media>` and `SIZE=<px>` narrow it. `--entries scripts/docs/ab-charcoal --out brand/ab/charcoal`; the help picture is `scripts/docs/help/chalk-charcoal.cjs`. Unit tests are in `test/dry/`. `scripts/ab/charcoal-compare.py` lays the Frameling marks beside scans of real charcoal, chalk, pastel, crayon and pencil.
+
+`scripts/docs/ab-pixel-brush/` shoots the pixel brush on a small pixel sprite on paper (`_draw.cjs` holds the scene): `spacing.cjs` (the same brush at 10, 25, 50, 100 and 200 percent), `scatter.cjs`, `picture.cjs` (stars, hearts and a chain that turns with the line), `antialias.cjs` (sharp pixels above, smooth below, on a 48 pixel sprite) and `library.cjs` (the pixel side of the brush picker open). `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-pixel-brush --out brand/ab/pixel-brush`. The help picture is `scripts/docs/help/pixel-brush.cjs`. Speed: `DAB_BENCH=1 DAB_BENCH_OUT=<file> npx vitest run test/perf/dabBench.test.ts` times one long stroke through a real pixel session with the soft paint engine and the dab engine side by side (it never asserts on time); results are in `scripts/perf/results/dab-*.json`. The second slice adds rows for each new piece (`dyn-pressure`, `dyn-colour`, `grain`, `grain-moving`, `dual`, `wet`, at 8, 40 and 120 px) and two switches for a busy machine: `DAB_BENCH_REPS=9` and `DAB_BENCH_STAT=min` (the fastest run, steadier than the median when other work is running); `pbe-*.json` are that round's numbers. `scripts/docs/ab-pixel-brush/_rows.cjs` holds the second slice's rows (pressure pencil, tapered ink, fast is thin, chalk, pencil on paper, sponge, spatter, bristles, rainbow, wet smear) shared by `kinds.cjs`, `dynamics.cjs`, `texture.cjs`, `colour.cjs`, `feel.cjs` (the clip) and the two help pictures `scripts/docs/help/pixel-brush-dynamics.cjs` and `pixel-brush-texture.cjs`. Unit tests: `test/dab/dynamics.test.ts`, `texture.test.ts`, `colour.test.ts` and `texture-stroke.test.ts` (strokes with the new pieces, including the locked palette with everything on).
+
+`scripts/docs/ab-own-brushes/own.cjs` draws the same four strokes (a wave, a zigzag, a loop and a dab; a box with corners for the edged brushes) with each brush you build yourself, once per theme, into brand/ab/own-brushes (`--entries scripts/docs/ab-own-brushes --out <dir>`). The `-yours` entries draw shapes, select them and make the brush with the real commands (`brush.makeAlong`, `brush.edged.*`), so what is shot is what a person gets. The help clip is `scripts/docs/help/brush-own.cjs`. Rerun both after changing `src/geometry/tipRibbon.ts`. Unit tests: `test/geometry/tipRibbon.test.ts` (nib, along, edged, corners, bristles, reading and comparing), `test/brushes/own.test.ts` (making from a selection, the five edged parts, flatten, plain vector export), and the new kinds in `test/export/brush-tips.test.ts`.
+
+`scripts/docs/ab/shape-tools.cjs` is such a folder for combining shapes (before and after, all four operations) and Hold to
+tidy (snapping, slow drawing that is left alone, undo giving the line back). `scripts/ab/shape-tools-files.cjs` is its
+own Electron script: the dashes, arrow heads and tapered lines on screen beside what the PNG, SVG, PDF and Lottie exports
+make of them, drawn by rsvg-convert, pdftoppm and lottie-web (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx
+electron scripts/ab/shape-tools-files.cjs <outDir>`; the exports come from `__framelingExport.fileBase64`).
 
 It runs the steps in `scripts/docs/help/*.cjs` (one file per area; files starting with `_` aren't entries). Each entry is
 `{ name, steps, prefs?, size?, width?, poster?, wait? }`: `name` is the topic's media base name, `steps` are the
@@ -747,7 +1567,7 @@ clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script u
 script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
 Every entry starts with the first-time question "Workspace follows the drawing" answered Never (so it never covers pixel art);
 an entry can give other answers, or change that one, with `choices: { 'workspace.follow': 'always' }`. Steps can click by selector
-instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Frames and motion", "after": 900}` (`"hover": true` only moves
+instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Animation", "after": 900}` (`"hover": true` only moves
 there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. Each capture looks for a question
 left open or a loading state in the frame and prints `[LOOK: ...]` after the entry's `ok` line: look at those files.
 
@@ -812,6 +1632,19 @@ against Aseprite and against the W3C maths in floats (`blend-reference.cjs`). It
 Result: Frameling matches the W3C maths within rounding in every mode; Aseprite matches it over solid backdrops but mixes
 see-through backdrops its own way (up to 64 of 255 off). `test/aseprite/blend-bin.test.ts` checks the pixel modes against it.
 
+## The app's words
+
+```bash
+npm run words:list                          # every word in src/words, with its id and where it shows
+npm run words:list -- choice.               # only the ids that start with this
+npm run words:list -- --json > words.json   # the { "word id": "words" } file, to edit and send back
+npm run words:apply <changes.json> [--check]   # merge edits into whichever file holds each id, write nothing with --check
+```
+
+`words:apply` takes the same `{ "id": "new words" }` file as Quill's `dialogue:apply` and refuses the whole file, writing
+nothing, if a `{placeholder}` was lost or gained, an id doesn't exist, or a word is empty. It uses Quill's checks
+(`scripts/dialogue/lines-tools.mjs`), because the entries have the same shape.
+
 ## Quill's dialogue
 
 ```bash
@@ -839,10 +1672,45 @@ that doesn't exist. The workflow is in the README.
 npm run build:mascot
 ```
 
-Reads `brand/mascot/mascot.frameling` and `mascot-icon.frameling` with the app's own reader and writes
+Reads each mascot's source (Quill's is `brand/mascot/mascot.frameling`) and `mascot-icon.frameling` with the app's own reader and writes
 `public/mascot/mascot.png` + `mascot.json`, `build/icon.png`, `build/icon.svg`, `build/icons/` and
 `public/mascot/logo.png`, touching only files whose bytes changed. `npm run build` runs it first.
-`test/io/mascot-source.test.ts` checks the source files still load.
+`test/io/mascot-source.test.ts` checks the source files still load (an artboard per animation, one clip each, the committed sheet up to date with them), the split into artboards, `copyAnimation`, `compareSheets` and the build over artboards. `test/ui/mascots.test.ts` checks every mascot in `src/ui/mascot/mascots.json` keeps the clip contract in `docs/mascots.md` (and that the code only asks for clips on the list), and `test/ui/mascots-switch.test.tsx` the picker (hidden while there is one) and switching the sheet while running.
+
+## Quill's file in the real app: scripts/e2e/quill-artboards.cjs
+
+An artist's journey through `brand/mascot/mascot.frameling`, which has an artboard per animation. Works on a scratch copy in the
+output folder, so the repo's file is never touched. It opens the file and checks it opens on 13 artboards with only the first
+animation's timeline, saves through the app and rebuilds the sheet (`node brand/mascot/mascot.mjs check <file>`, which compares frame
+by frame with `public/mascot/`), picks another animation's artboard by clicking its row and checks the timeline is that animation's
+alone, picks the Eyes layer, draws a pixel with the pencil, saves and checks the sheet changed only in the animations that show
+that drawing, undoes and saves and checks the sheet is the one that ships again. It also draws on Body in idle, a part shown by
+several animations, and reports how many animations that changed (a known gap, told and not failed).
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/quill-artboards.cjs <outDir> [--theme dark|light]
+```
+
+`--before --file <old one-timeline file>` and `--after` (with `--clip oops`) shoot the A/B pictures of the timeline instead: the
+Animate workspace, the timeline dragged tall, one animation on a long timeline against its own artboard.
+
+## Shared drawings, artboard names and fitting a long clip on Quill's file: scripts/e2e/shared-drawings.cjs
+
+Three timeline changes on `brand/mascot/mascot.frameling` in the real app, on a scratch copy. Idle is 419 frames: it checks Fit the
+whole animation gives frames narrower than the old 5 px floor and all 419 fit the window; that idle's Body block is marked as shown in
+several places and says where; that Make this drawing its own gives the block a new drawing, the other animations keep the old one, and
+no frame's pixels or hold change (the sheet's tiles can move, because it packs frames that share a drawing onto one tile); that undo
+shares it again; that renaming an artboard renames its whole-board clip, and a duplicate's clip takes the copy's name. It writes the A/B
+pictures (`marker-*`, `names-*`, `fit-*`, `-before` and `-after`) into the output folder. The pictures in `brand/ab/shared-drawings/` are
+these, cropped and captioned with ImageMagick.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shared-drawings.cjs <outDir> [--theme dark|light]
+```
+
+`__frameling.timelineZoom(px)` sets the timeline's frame width, for a zoom the slider is too coarse to land on.
 
 ## The off-screen window and ?debug hooks
 
@@ -860,7 +1728,7 @@ own `debug.ts`, which put test hooks on `window`. None of it is in the normal st
 | `__frameling` | `src/renderer/debug.ts` | `store`, `run(commandId)`, `template(id)`, `prefs`, `commands()`, `panels()`, `tools()`, `showPanel`, `quests`, `quill`, `toast`, `recovery`, `overlays`, `rightStyle`, `themes()`, `anim` (grids, light table, tween offer), `tiles`, and more. |
 | `__framelingExport` | `src/export/debug.ts` | Drives exports for `e2e/export.cjs` and `e2e/artboards.cjs`. |
 | `__framelingIo` | `src/io/debug.ts` | Open a path, file helpers. |
-| `__framelingEffects`, `__framelingTemplates`, `__framelingPlugins`, `__framelingArtboards`, `__framelingAudio` | each area's `debug.ts` or `index.ts` | Area hooks for its harness and help shots. |
+| `__framelingReference`, `__framelingEffects`, `__framelingTemplates`, `__framelingPlugins`, `__framelingArtboards`, `__framelingAudio` | each area's `debug.ts` or `index.ts` | Area hooks for its harness and help shots. |
 | `__framelingCameraLook`, `__framelingRulerLook`, `__framelingGradientLook`, `__framelingHandleLook` | `src/camera/canvas.ts`, `src/canvas/Rulers.tsx`, `src/canvas/panels/GradientEditor.tsx`, `src/tools/point-handles.ts` | Swap a look for A/B shots. |
 | `__framelingPerf` | `src/canvas/perf.ts` | Timings, only with `?perf`. |
 
@@ -972,6 +1840,11 @@ asks the real board's health address when the computer is online (`BETA_NET_OFFL
 and which board it sends to, without printing the key; `--expect-key` makes it exit 1 when there is none, so run it before
 handing a build to a tester. `FRAMELING_BETA=1` on the build itself stops with an error if `FRAMELING_INGEST_KEY` is missing.
 
+`scripts/docs/ab-offset-width/shots.cjs` is the board look for Offset path and the Width tool: a ghost as drawn, offset out and offset in through the real card, and a line even then made fat with three Width tool drags, once per theme (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" node_modules/.bin/electron scripts/docs/help-media.cjs --entries scripts/docs/ab-offset-width --out <dir>`). The builders it shares with the two help entries (`offset-path`, `tool-width`) are in `scripts/docs/help/_offsetwidth.cjs`. `test/geometry/offset.test.ts` and `width-edit.test.ts` are the pure maths, `test/tools/offset-width.test.ts` the commands and the tool.
+
+`scripts/docs/ab-repeat-objects/shots.cjs` is the board look for Repeat: a ring of petals with its centre dragged onto a guide crossing, a grid of tiles, a wing mirrored across a guide, and a clip of changing the ring's count through the real Repeat section and then dragging its centre, once per theme (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" node_modules/.bin/electron scripts/docs/help-media.cjs --entries scripts/docs/ab-repeat-objects --out brand/ab/repeat-objects`). The help picture is `scripts/docs/help/repeat.cjs`; the shapes both use are in `scripts/docs/help/_repeat.cjs`. The window is 1600 x 1000, where the page sits at 0.7484 zoom with its corner at (191, 99.56), which the drags use.
+`test/geometry/regions.test.ts` is the Shape builder's maths as pure functions: the regions a set of shapes makes (two squares give three, three circles seven, a bar across a rectangle splits it), the point test with holes, the shapes to work on round a point, and building from a drag (join, take away, whose colours, stacking, ids, groups). It also times 30 overlapping circles (about 80 ms to work out, well under a millisecond per pointer lookup). `test/tools/shape-builder.test.ts` drives the tool itself: a drag is one undo step, Alt and Shift take away, the options flip the plain drag, Escape builds nothing. `scripts/docs/help/shape-builder.cjs` is the help clip (`npm run help:media -- --only tool-shape-builder`); `scripts/docs/ab-shape-builder/shots.cjs` is the board look (before, part way, after, and the Alt half, plus a clip, once per theme), and both use `scripts/docs/help/_shapebuilder.cjs`, which works out where the stage is itself because `view()` in `_shapes.cjs` assumes a rail 30 px narrower than the app has now.
+
 ### Quill's save question: scripts/ab/quill-save-dialog.cjs
 
 Real built app, real window close and real Quit. `dialog` mode checks the close is held, the dialog's focus, name and role, Escape
@@ -993,3 +1866,145 @@ real built app (`npm run build` first), draws, picks **File > Close drawing**, a
 ```bash
 xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/close-drawing.cjs dark out.mp4
 ```
+
+## Import looks: scripts/docs/ab-import and ab-import-before
+
+Before and after stills for the three importers (brand/ab/import-batch/). `ab-import/after.cjs` runs on this branch; `ab-import-before/before.cjs` runs
+on a build of the commit this branch started from (a throwaway `git worktree add --detach` and `npm run build`), handing each file to the nearest thing the old app
+had, the picture reader. Both go through help-media.cjs, in xvfb:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-import/ --out <dir>
+# in the throwaway worktree of the base commit:
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries <abs path>/scripts/docs/ab-import-before/ --out <dir>
+```
+
+The page hooks they use are `__framelingImport.sequence / zip / svg / layered` (under `?debug`, src/import/index.ts).
+
+
+## Reference and video looks: scripts/docs/ab-reference
+
+A photo placed behind a drawing and traced, a clip of moving, sizing, turning and fading it with real mouse drags (they go through the
+overlay's handles, so the clip also proves a drag on them doesn't draw underneath), the video window, and a clip of a video's frames landing on a
+reference layer and playing (brand/ab/reference/). The photo is drawn in the page and `scripts/docs/help/assets/reference-walk.mp4` (a ball
+bouncing, made with ffmpeg) is the video; it is decoded by WebCodecs inside Electron, so the clip also proves the decoder path. Through help-media.cjs, in xvfb:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-reference --out brand/ab/reference
+```
+
+The page hooks are `__framelingReference.add / place` (under `?debug`, src/reference/index.ts) and `__framelingImport.video` (src/import/index.ts).
+
+## Restart and Open recent pictures: scripts/ab/restart-recent.cjs
+
+Runs the REAL main process with a real profile and real `.frameling` files (not the stand-ins), because both features are
+about what the main process does. `RR_ROOT=<another checkout>` runs the same against that checkout's `dist/`, for the before.
+
+```bash
+npm run build
+RR_MODE=recent RR_OUT=brand/ab/recent-pictures xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/restart-recent.cjs
+THEME=dark xvfb-run -a -s "-screen 0 1600x1000x24" scripts/ab/restart-recent-record.sh /tmp/restart-dark
+python3 scripts/ab/restart-recent-cut.py dark
+```
+
+- `recent` saves six starter drawings (each file gets its `preview.png`), strips the picture from one (an older file) and
+  deletes another (a file that has gone), then shoots Open recent in both themes, and again in a 800 x 560 window at the
+  interface size 200%.
+- `carry` (the default restart): the first half saves a drawing, draws a real unsaved brush stroke with mouse events, runs the
+  Restart command, answers the once-only Undo question, and checks no save question shows. The relaunched copy writes
+  `result.json`: the file, frame and window position as before, `dirty` still true, the same drawing size, and `questionShown`
+  false. `MODE=carry THEME=dark scripts/ab/restart-recent-record.sh /tmp/restart-dark`, then `restart-recent-cut.py dark`.
+- `restart` is two halves of one run: the relaunched copy runs the same script again and tells itself apart by a marker
+  file. The first half saves a drawing, moves the window, goes to frame 6, makes an unsaved change and runs the Restart
+  command; it presses Save on Quill's question. The second half (after the app really came back) writes `result.json`
+  with the file, frame and window position before and after, and `same`. `restart-recent-record.sh` records the virtual
+  screen with ffmpeg around it, and `restart-recent-cut.py` cuts, crops and captions the clip.
+- The unit side: `test/main/restart.test.ts` (the order, Cancel, a failed save, where relaunching is not possible, what to
+  open, the window and view that come back), `test/io/restart-page.test.tsx`, `test/io/preview.test.ts` (the picture in the
+  file, read from the end of the zip, kept for older files) and `test/io/recent-dialog.test.tsx`.
+- `scripts/ipc-stubs.cjs` keeps a pretend recent list and kept pictures, and `__framelingIo.demoRecent([...])` fills it for
+  pictures of Open recent (`scripts/docs/help/restart-recent.cjs`).
+
+## A big picture's palette never freezes the page: scripts/perf/palettepic.cjs
+
+Makes a 4000 x 3000 photo-like picture in the page (JPEG or PNG), opens **Take colours from a picture**, presses the button
+and reports the longest single block of the page's main thread (a 4 ms heartbeat plus the long task observer), when the
+dialog showed, when the colours were ready and the total. It is the proof that the quantiser (`src/pixel/quantise*.ts`)
+stays off the page's thread.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/palettepic.cjs --kind jpeg --max 32 --out /tmp/after-jpeg.json
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/palettepic.cjs --kind png --max 32
+```
+
+`PERF_RENDERER=dir` measures another renderer build (a private `vite build --outDir`), which is how a before and after are
+compared. Before the worker: 1028 ms (JPEG) and 5678 ms (PNG, plus 842 ms decoding it). After: 43 ms and 14 ms.
+
+## Connect Twitch: test/twitch and the pictures
+
+Everything is tested against a pretend Twitch (`test/twitch/fake.ts`: the sign-in and Helix calls, an EventSub socket you drive by hand, a clock you move by hand, and a key store that "encrypts" so a test can see plain text is not on disk). Nothing talks to real Twitch, and nothing in this repo has been run against it.
+
+```bash
+npx vitest run test/twitch
+```
+
+- `auth.test.ts` the device code flow: pending, slow down, denied, expired, cancelled, refresh, revoke.
+- `tokens.test.ts` the token store: encrypted, memory only without a key store, forgotten for real.
+- `eventsub.test.ts` the socket: welcome, subscribing, repeats, a dropped line, a quiet line, Twitch moving us, being signed out.
+- `session.test.ts` the desktop side as a whole, including the permissions asked for and that no token or code goes up to the page.
+- `rules.test.ts`, `link.test.ts`, `app.test.ts` the links, and each event reaching its action through the real gate (switch, cooldown, queue, interrupt switch, Stop).
+- `prefs.test.tsx` the settings block, and that stream-safe mode never draws or fetches the code.
+
+The pictures (`twitch`, `twitch-links`) come from `npm run help:media -- --only twitch,twitch-links`. The harness stubs the desktop side (`scripts/ipc-stubs.cjs`) with a made-up code and two made-up rewards, and `__framelingTwitch` (only with `?debug`) sets what the screen shows. A build signs in with `FRAMELING_TWITCH_CLIENT_ID` from the environment (a Public app at dev.twitch.tv); without it the screen says so and takes a pasted Client ID.
+
+## Tooltip placement looks: scripts/docs/ab-tooltips/tips.cjs
+
+The same tip over a toolbar button, a layers-list icon, a menu row and near the left, right, top and bottom edges, plus a clip of a
+button gliding to the right edge with its tip up (the arrow sliding as the tip is held on screen). Run it against two builds into two
+folders and compare; the `--renderer` path must be absolute:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs \
+  --entries scripts/docs/ab-tooltips --renderer <abs dist/renderer> --out <dir>
+```
+
+Each picture takes a throwaway shot and a pause first: without it a fresh tip can come out with no words in it (the old build does too, it
+is the software-drawn capture). The placement and arrow maths is `src/ui/tipPlace.ts`, tested in `test/ui/tipPlace.test.ts`; the tip in
+the page (above, arrow, following its thing, no arrow when it can't be near) in `test/ui/tip-arrow.test.tsx`.
+
+## Theme editor chrome and sticky page headers: scripts/ab/theme-chrome.cjs, scripts/ab/page-top.cjs
+
+`theme-chrome.cjs <outDir> <label> [distDir]` copies a built-in theme (`THEMES="Ice Camo,Midnight Sketchbook"`), opens the editor on the copy in a 1200 x 640 window and shoots the button row at rest and hovered (Delete, Duplicate, Undo), the editor at the top and scrolled down. `SET="text:#9fb4ba"` types colours into the hex boxes first, to make a theme that fights its own buttons. `page-top.cjs` shoots the Keyboard and Menus pages at the top and scrolled in both themes (`PAGES=` to narrow). Both take a dist folder, so a before is a build of the base commit. `test/ui/theme-readable.test.ts` proves every `--on-*` colour reads (4.5:1) on its fill across the built-ins and thousands of made-up themes; `test/ui/sticky-page-top.test.tsx` covers the header.
+
+## Brush import: test/brushes/importGimp.test.ts, importAbr.test.ts, importLibrary.test.ts, scripts/docs/ab-brush-import/
+
+`importGimp.test.ts` reads the real brushes that ship with GIMP (`test/fixtures/brushes/gimp`, CC0): a grey mask, a bigger one, a
+pipe, generated round, square and star brushes, plus `.gbr` files built to the published layout (version 1, colour, very
+colourful, empty margin) and damaged ones (cut short, a size with no pixels behind it, no marker, a header that runs off the end,
+odd pixel sizes, 16-bit float, random bytes). `importAbr.test.ts` reads real Photoshop files (`fixtures/brushes/abr`, with a
+`NOTICE.txt` for where each came from), and files built by a small descriptor writer in the test: every dynamics mapping, a
+switched-off group, bristle tips, raw and packed sampled tips, a set with one unreadable brush, version 1 and 2 records, and hostile
+ones (nested 200 deep, a list longer than the file, a tip that says it is 60000 pixels across, a packed row that overruns,
+nonsense numbers, every truncation of a real file). `importLibrary.test.ts` checks the brushes land in a group with their names,
+can be picked, and come back whole after a save and a read (a brushes file and the browser's storage).
+
+`sh scripts/docs/ab-brush-import/make.sh` (needs `npm run build` first) draws one stroke for each real file with the real importer,
+on a sprite of its own, and lays them out beside their names and settings in `brand/ab/brush-import/`, both themes (set
+`BRUSH_AB_EXTRA` to a folder holding a `special.abr` to add real Photoshop presets). The help picture is `scripts/docs/help/brush-import.cjs`
+(`npm run help:media -- --only brush-import`), from a made-up set built in `_brushset.cjs`; `?debug` pages expose `__brushImport.show`
+and `__brushImport.read` for them.
+`scripts/docs/ab-clone-curves/` makes the before and after of the clone stamp, Curves and the blur brush on one painted hillside (`_scene.cjs` writes the pictures straight into the pixels, so every look starts from the same one, and holds the helpers that drive the Curves dialog with real pointer events), plus a clip of each: `help-media.cjs --entries scripts/docs/ab-clone-curves --out <raw>`, then `crop.py <raw> <raw> brand/ab/clone-curves` crops them tight and puts each before beside its after with a caption. The help pictures are `scripts/docs/help/clone-stamp.cjs`, `curves-levels.cjs` and `blur-sharpen-brush.cjs`.
+
+## Paint brush looks: test/brushes/paintLooks.test.ts, paintPreviews.test.ts, scripts/docs/ab-brush-looks/, scripts/docs/ab-brush-survey/
+
+Oil paint, Bristle brush and Dry brush once drew as one speckled worm (grain holes cut out of one fill). The Library's pictures were
+honest; the brushes were wrong. `paintLooks.test.ts` holds each to what it is on numbers a person sees (a coverage measure on the
+shapes: oil closes into solid paint in three shades, the bristle brush is many separate hairs with gaps, the dry brush carries a paper
+tooth with big grain and full streak, the rake is six clear tines) and holds the bristle tip's `body`, `tone` and a dry tip's `streak`
+to their ranges and to old brushes drawing as before. `paintPreviews.test.ts` is the chalk lesson again for these three: the picture
+is drawn through the same tip and effects as the real line. `scripts/docs/ab-brush-looks/` is the before and after look (run
+`help-media.cjs --entries scripts/docs/ab-brush-looks --out <dir>` once with `--renderer` on an older build, once on this one, then
+`scripts/ab/brush-looks-compose.py <before> <after> brand/ab/brush-looks` and `ab-brush-looks/caption.sh` for the clips).
+`ab-brush-survey/` draws every vector starter as a real stroke, eight to a page, and `scripts/ab/brush-survey-compose.py` names them on
+one contact sheet: use it to ask of any new brush whether its picture reads as its name.

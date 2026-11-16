@@ -4,25 +4,42 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { celNameField } from '../core/celName';
+import { readNotes } from '../notes/model';
+import { readSavedSelections } from '../select/saved';
+import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
-import { readFolders, readLayerLook } from '../effects/io';
+import { readFolders, readLayerLook, withShapeEffects } from '../effects/io';
+import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
-import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
-import { MAX_UNZIPPED } from './ioJobs';
+import { decodePngsInWorkers, encodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
+import { ioTime, nowMs } from './ioTime';
+import { MAX_UNZIPPED, PNG_SAVE_LEVEL } from './ioJobs';
+import { readExports } from '../export/saved';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
+import { cleanOffset, versionFor } from '../core/offset';
 import { isEasing } from '../core/ease';
 import { readOrigin } from './shapes-extra';
 import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
+import { packPictures, readLayerPicture, unpackPictures } from './pictures-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
 import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
+import { encodeHistory, HISTORY_DATA_ENTRY, HISTORY_STEPS_ENTRY, readHistory, type HistorySaved, type HistorySource } from '../core/historyFile';
+import type { RestoredHistory } from '../core/store';
 import { readClip } from '../core/clipPlay';
+import { cleanStrokeStyle } from '../geometry/lineStyle';
+import { cleanTrim } from '../geometry/trim';
+import { cleanRepeat } from '../geometry/repeat';
+import { canRepeat } from '../core/repeats';
+import { readDataLayers, readTerrainMode, readTerrains, readTileExtras } from '../core/tileFormat';
+import { readTip } from '../geometry/tip';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -47,19 +64,111 @@ export interface LoadedFile {
   manifest: Manifest;
   /** Small repairs made while opening (a missing drawing dropped, and so on), in plain words. */
   warnings: string[];
+  /** The undo and redo steps the file carried, ready for `store().load` (missing = none, or none that fit the drawing). */
+  history?: RestoredHistory;
 }
 
 // Encoded PNGs by pixel array. Edits replace the array, so an unchanged drawing never gets encoded twice (autosave
 // runs every minute and most drawings are not touched between runs).
 const pngCache = new WeakMap<Uint8ClampedArray, Uint8Array>();
 
-function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray }): Uint8Array {
+type Img = { width: number; height: number; pixels: Uint8ClampedArray };
+
+/** Where a PNG comes from while a save is put together: `done` hears the bytes once they exist. */
+type PngSink = (img: Img, done?: (png: Uint8Array) => void) => Uint8Array;
+
+/** The PNG of a drawing's pixels, encoded here (the page) unless it has been before. */
+const pngFor: PngSink = (d, done) => {
   let png = pngCache.get(d.pixels);
   if (!png) {
-    png = encodePng({ width: d.width, height: d.height, pixels: d.pixels }, { level: 6 });
+    png = encodePng({ width: d.width, height: d.height, pixels: d.pixels }, { level: PNG_SAVE_LEVEL });
     pngCache.set(d.pixels, png);
   }
+  done?.(png);
   return png;
+};
+
+// A drawing with see-through margins is saved as just its painted part, which is a new pixel array every time, so the
+// cache above can't know it. This remembers, by the drawing's own array, which block was cut out and its PNG, so a
+// second save doesn't cut it out and encode it again. The cut-out pixels themselves are not kept.
+interface TrimMemo {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  /** The block that was cut out (width and height 0 when nothing was painted). */
+  rect: { x: number; y: number; width: number; height: number };
+  /** Its PNG; empty when there is no block. */
+  png: Uint8Array;
+}
+const trimMemo = new WeakMap<Uint8ClampedArray, TrimMemo>();
+const NO_PNG = new Uint8Array(0);
+
+/** The drawing with its block replaced by `rect` the way `trimmedDrawing` would (pixels are left as they were). */
+function withRect<T extends { x?: number; y?: number; width: number; height: number }>(d: T, rect: TrimMemo['rect']): T {
+  const out = { ...d, width: rect.width, height: rect.height } as T;
+  if (rect.x) out.x = rect.x;
+  else delete out.x;
+  if (rect.y) out.y = rect.y;
+  else delete out.y;
+  return out;
+}
+
+/** What `saveFileAsync` needs while the PNGs are made elsewhere: a stand-in for each PNG still to come. */
+interface PendingPng {
+  stand: Uint8Array;
+  img: Img;
+  done?: (png: Uint8Array) => void;
+}
+
+/** A sink that hands back an empty stand-in for each PNG it does not have yet, and lists what it still wants. */
+function collectingSink(pending: PendingPng[]): PngSink {
+  return (img, done) => {
+    const have = pngCache.get(img.pixels);
+    if (have) {
+      done?.(have);
+      return have;
+    }
+    const stand = new Uint8Array(0);
+    pending.push({ stand, img, done });
+    return stand;
+  };
+}
+
+/**
+ * Makes the PNGs `collectingSink` was asked for, on workers where it can (the page stays free to draw), and puts them
+ * in place of their stand-ins in `files`. Whatever a worker can't or won't do is encoded here, the same call as ever.
+ */
+async function fillPendingPngs(files: Zippable, pending: PendingPng[]): Promise<void> {
+  // One job per pixel array, however many entries want it.
+  const byPixels = new Map<Uint8ClampedArray, PendingPng[]>();
+  for (const p of pending) {
+    const list = byPixels.get(p.img.pixels);
+    if (list) list.push(p);
+    else byPixels.set(p.img.pixels, [p]);
+  }
+  const groups = [...byPixels.values()];
+  ioTime.pngs += groups.length;
+  const tPng = nowMs();
+  const made = await encodePngsInWorkers(groups.map((g) => g[0].img));
+  ioTime.pngWait += nowMs() - tPng;
+  const byStand = new Map<Uint8Array, Uint8Array>();
+  groups.forEach((g, i) => {
+    const img = g[0].img;
+    const png = made[i] ?? encodePng(img, { level: PNG_SAVE_LEVEL });
+    pngCache.set(img.pixels, png);
+    for (const p of g) {
+      byStand.set(p.stand, png);
+      p.done?.(png);
+    }
+  });
+  for (const name of Object.keys(files)) {
+    const f = files[name];
+    if (Array.isArray(f)) {
+      const png = byStand.get(f[0] as Uint8Array);
+      if (png) files[name] = [png, f[1]] as typeof f;
+    }
+  }
 }
 
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
@@ -154,7 +263,9 @@ function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): U
 }
 
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
-function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Zippable {
+function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions = {}, png: PngSink = pngFor): Zippable {
+  const reuse = !!opts.reuse;
+  const preview = opts.preview;
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
@@ -164,16 +275,22 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
   const keep = (id: string, d: Drawing, value: () => unknown): DrawingEntry => (reuse ? cachedEntry(id, d, value) : { id, value });
   const used = new Set<string>();
   // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
-  const diffs = variationDiffs(doc, files, pngFor);
+  const diffs = variationDiffs(doc, files, png);
   const tileFrames = new Set((doc.tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
     if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
       // Only the painted part is stored (tile frames are always whole tiles).
-      const t = tileFrames.has(id) ? d : trimmedDrawing(d);
+      const whole = tileFrames.has(id);
+      const memo = whole ? undefined : trimMemo.get(d.pixels);
+      const known = memo && memo.width === d.width && memo.height === d.height && memo.x === (d.x ?? 0) && memo.y === (d.y ?? 0) ? memo : undefined;
+      const tTrim = nowMs();
+      const t = known ? withRect(d, known.rect) : whole ? d : trimmedDrawing(d);
+      ioTime.trim += nowMs() - tTrim;
       if (t.width < 1 || t.height < 1) {
         // Nothing painted: no picture entry at all.
+        if (!known && !whole && t !== d) trimMemo.set(d.pixels, { width: d.width, height: d.height, x: d.x ?? 0, y: d.y ?? 0, rect: { x: 0, y: 0, width: 0, height: 0 }, png: NO_PNG });
         const empty = { ...t, width: 0, height: 0, pixels: '' };
         entries.push({ id, value: () => empty });
         continue;
@@ -181,7 +298,14 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
       used.add(name);
-      files[name] = [pngFor(t), { level: 0 }];
+      if (known) files[name] = [known.png, { level: 0 }];
+      else {
+        const cut = !whole && t !== d;
+        files[name] = [
+          png(t, cut ? (bytes) => trimMemo.set(d.pixels, { width: d.width, height: d.height, x: d.x ?? 0, y: d.y ?? 0, rect: { x: t.x ?? 0, y: t.y ?? 0, width: t.width, height: t.height }, png: bytes }) : undefined),
+          { level: 0 },
+        ];
+      }
       const saved = { ...t, pixels: name };
       entries.push({ id, value: () => saved });
     } else if (d.kind === 'tilemap') {
@@ -198,17 +322,31 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
       entries.push(d.kind === 'vector' ? keep(id, d, () => d) : { id, value: () => d });
     }
   }
-  const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
+  // The usual version, or the next when a key has an offset, so an older Frameling refuses the file instead of drawing parts in the wrong place.
+  const version = versionFor(doc);
+  const manifest: Manifest = { format: 'frameling', version, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
+  // A small picture of the drawing for lists of files. Stored as it is (a PNG is already packed), and older versions skip it.
+  if (preview?.length) files['preview.png'] = [preview, { level: 0 }];
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
+  // Reference pictures the same way, in `pictures/` (only those a layer still shows).
+  const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = docJsonBytes({ ...doc, drawings: DRAWINGS_MARK, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
+  // The undo steps, when asked for (never for exports or versions, which don't pass them; autosave does, so a recovery keeps them).
+  const tHist = nowMs();
+  const history = opts.history ? encodeHistory(opts.history) : null;
+  ioTime.history += nowMs() - tHist;
+  opts.onHistory?.(history);
+  if (history) Object.assign(files, history.files);
+  const tDoc = nowMs();
+  files['doc.json'] = docJsonBytes({ ...doc, version, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}), ...(history ? { history: history.note } : {}) }, entries);
+  ioTime.docjson += nowMs() - tDoc;
   return files;
 }
 
 export function saveFile(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Uint8Array {
-  return zipSync(filesToSave(open, appVersion, now, opts.reuse), { level: 6 });
+  return zipSync(filesToSave(open, appVersion, now, opts), { level: 6, mtime: now.getTime() });
 }
 
 export interface SaveOptions {
@@ -218,6 +356,15 @@ export interface SaveOptions {
    * something ever changed a drawing in place. See `cachedEntry`.
    */
   reuse?: boolean;
+  /** A small PNG of the drawing, kept in the file as `preview.png` for lists of files (Open recent). Made by io/preview.ts; optional. */
+  preview?: Uint8Array;
+  /**
+   * The undo and redo steps to put in the file (`store().historyForSave()`), so whoever opens it can step back through them.
+   * Left out, the file has none, which is what every export and every copy kept for later wants.
+   */
+  history?: HistorySource;
+  /** Told what went in: null when the file has no history (nothing to keep, or it can't be kept for this drawing). */
+  onHistory?: (saved: HistorySaved | null) => void;
 }
 
 /**
@@ -226,16 +373,30 @@ export interface SaveOptions {
  * versions use this.
  */
 export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
-  let files = filesToSave(open, appVersion, now, opts.reuse);
+  // The drawings' PNGs are the slow part of a first save, so they are made on workers too (see fillPendingPngs).
+  ioTime.saves++;
+  const make = async (): Promise<Zippable> => {
+    const pending: PendingPng[] = [];
+    const was = ioTime.trim + ioTime.history + ioTime.docjson;
+    const tWalk = nowMs();
+    const made = filesToSave(open, appVersion, now, opts, collectingSink(pending));
+    // `files` is the walk with the parts timed inside it taken off, so the five held numbers never count time twice.
+    ioTime.files += nowMs() - tWalk - (ioTime.trim + ioTime.history + ioTime.docjson - was);
+    if (pending.length) await fillPendingPngs(made, pending);
+    return made;
+  };
+  let files = await make();
   // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
   const size = doc instanceof Uint8Array ? doc.length : 0;
-  const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : []);
+  const tZip = nowMs();
+  const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
+  ioTime.zipWait += nowMs() - tZip;
   if (made) return made;
-  // No worker (or it failed): the handed over buffer is gone, so make the files again.
-  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse);
-  return new Promise((resolve, reject) => zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))));
+  // No worker (or it failed): the handed over buffer is gone, so make the files again (the PNGs are cached by now).
+  if (doc instanceof Uint8Array && doc.length !== size) files = await make();
+  return new Promise((resolve, reject) => zip(files, { level: 6, mtime: now.getTime() }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
 // ---------------------------------------------------------------- migration
@@ -345,7 +506,7 @@ export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
 function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/') || f.name.startsWith('history/')) });
   } catch {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
@@ -365,12 +526,13 @@ function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, 
   if (!isObj(manifest) || manifest.format !== 'frameling' || !isObj(raw)) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   const version = manifest.version;
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw damaged();
-  if (version > FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
+  if (version > NEWEST_FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
 
   const warnings: string[] = [];
   raw = migrate(raw, version);
   const doc = buildDoc(raw, entries, warnings, decoded);
-  return { doc, manifest, warnings };
+  const history = raw.history === undefined ? undefined : readHistory(doc, raw.history, entries[HISTORY_STEPS_ENTRY], entries[HISTORY_DATA_ENTRY]);
+  return { doc, manifest, warnings, ...(history ? { history } : {}) };
 }
 
 function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: string[], decoded?: Map<string, RawImage>): Doc {
@@ -394,8 +556,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
-          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanOrigin(cleanGradients(s)) as Shape);
-          if (read) shapes.push(withExt(read, s, warnings));
+          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
+          if (read) shapes.push(withRepeat(withShapeEffects(withExt(read, s, warnings), s), s));
           else lost = true;
         } else {
           // A kind of shape this version does not know: kept as it is, so saving never drops it.
@@ -441,6 +603,9 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     }
   }
 
+  // Reference pictures first, so a layer's shots can be checked against them.
+  const pictures = unpackPictures(raw.pictures, entries, warnings);
+  const pictureIds = new Set((pictures ?? []).map((p) => p.id));
   // The same reader does the stage's layers and every symbol's.
   const readLayers = (rawLayers: any[]): Layer[] => {
     const layers: Layer[] = [];
@@ -457,7 +622,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
           warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
           continue;
         }
-        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween), ...(c.autoHold === true ? { autoHold: true } : {}) });
+        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween), ...(c.autoHold === true ? { autoHold: true } : {}), ...celNameField(c.name), ...readOffset(c.offset) });
       }
       cels.sort((a, b) => a.start - b.start);
       const base = {
@@ -468,10 +633,12 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
         ...(l.onion === false ? { onion: false } : {}),
         ...(l.reference === true ? { reference: true } : {}),
+        ...readLayerPicture(l.picture, pictureIds),
         ...((LAYER_LABELS as readonly unknown[]).includes(l.label) ? { label: l.label as LayerLabel } : {}),
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
         ...readBind(l.bind),
         ...readLayerLook(l),
+        ...(typeof l.pair === 'string' && l.pair ? { pair: l.pair } : {}),
         ...readExt(l.ext, warnings),
         cels,
       };
@@ -480,6 +647,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       else if (l.kind === 'camera') layers.push({ ...base, kind: 'camera' });
       else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}), ...readRig(l.rig) });
     }
+    // A link to a layer that is not there, or that does not link back, is no pair.
+    sanitisePairs(layers);
     return layers;
   };
   const layers = readLayers(raw.layers);
@@ -501,6 +670,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     fps,
     ...(num(raw.dpi, 0) >= 1 && num(raw.dpi, 0) <= 10000 ? { dpi: num(raw.dpi, 0) } : {}),
     length,
+    ...(typeof raw.animated === 'boolean' ? { animated: raw.animated } : {}),
     background: typeof raw.background === 'string' ? raw.background : null,
     layers,
     drawings,
@@ -517,8 +687,15 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (tileset) doc.tileset = tileset;
   const audio = unpackAudio(raw.audio, entries, warnings);
   if (audio) doc.audio = audio;
+  if (pictures) doc.pictures = pictures;
   const guides = readGuides(raw.guides);
   if (guides) doc.guides = guides;
+  const notes = readNotes(raw.notes);
+  if (notes) doc.notes = notes;
+  const marks = readMarks(raw.marks);
+  if (marks) doc.marks = marks;
+  const selections = readSavedSelections(raw.selections);
+  if (selections) doc.selections = selections;
   if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
     const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
     const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));
@@ -528,6 +705,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
+  Object.assign(doc, readExports(raw.exports));
   if (isObj(raw.sprite) && ['picture', 'animation', 'boards', 'sheet'].includes(raw.sprite.way)) doc.sprite = { way: raw.sprite.way };
   // One layer stack for every artboard (frames on boards), never together with variations.
   const shared = raw.sharedLayers === true && Array.isArray(raw.artboards) && raw.artboards.length > 0 && !raw.artboards.some((a: any) => isObj(a) && typeof a.variationOf === 'string' && a.variationOf);
@@ -688,6 +866,12 @@ function readBind(b: unknown): { bind?: LayerBind } {
 }
 
 /** A key's in-betweens, if it has readable ones. */
+/** A key's offset: kept only when it moves the drawing, with absurd numbers pulled in (see `cleanOffset`). */
+function readOffset(v: unknown): { offset?: CelOffset } {
+  const offset = cleanOffset(v);
+  return offset ? { offset } : {};
+}
+
 function readTween(t: unknown): { tween?: Tween } {
   if (!isObj(t)) return {};
   const tween: Tween = { ...(t.kind === 'shape' ? { kind: 'shape' as const } : {}), ease: isEasing(t.ease) ? t.ease : 'linear' };
@@ -713,18 +897,77 @@ function readTween(t: unknown): { tween?: Tween } {
   return { tween };
 }
 
-/** The clip flow, keeping only transitions between clips that exist. */
+const FLOW_OPS = new Set(['>', '>=', '<', '<=', '==', '!=']);
+
+/** The checks on an arrow. One on a missing input is kept (the panel and the exports say it never goes), but nonsense is dropped. */
+function readConditions(raw: unknown): FlowCondition[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FlowCondition[] = [];
+  for (const c of raw.slice(0, 12)) {
+    if (!isObj(c) || typeof c.input !== 'string' || !c.input || !FLOW_OPS.has(c.op)) continue;
+    if (typeof c.value === 'boolean') out.push({ input: c.input.slice(0, 40), op: c.op === '!=' ? '!=' : '==', value: c.value });
+    else if (typeof c.value === 'number' && Number.isFinite(c.value)) out.push({ input: c.input.slice(0, 40), op: c.op, value: c.value });
+  }
+  return out;
+}
+
+/** The clip flow, keeping only transitions between clips that exist ("Any clip" arrows start from every clip). */
 export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | undefined {
   if (!isObj(raw)) return undefined;
   const ids = new Set(clips.map((c) => c.id));
   const transitions: ClipTransition[] = (Array.isArray(raw.transitions) ? raw.transitions : [])
-    .filter((t: any) => isObj(t) && ids.has(t.from) && ids.has(t.to))
-    .map((t: any, i: number) => ({ id: str(t.id, 't' + i), from: t.from, to: t.to, when: t.when === 'trigger' ? 'trigger' : 'end', ...(t.when === 'trigger' ? { trigger: str(t.trigger, 'go').slice(0, 60) } : {}) }));
+    .filter((t: any) => isObj(t) && (t.from === FLOW_ANY || ids.has(t.from)) && ids.has(t.to))
+    .map((t: any, i: number) => {
+      const when: ClipTransition['when'] = t.when === 'trigger' ? 'trigger' : t.when === 'now' ? 'now' : 'end';
+      const conditions = readConditions(t.conditions);
+      const blend = typeof t.blend === 'number' && Number.isFinite(t.blend) ? Math.min(MAX_FLOW_BLEND, Math.max(0, t.blend)) : 0;
+      return { id: str(t.id, 't' + i), from: t.from, to: t.to, when, ...(when === 'trigger' ? { trigger: str(t.trigger, 'go').slice(0, 60) } : {}), ...(conditions.length ? { conditions } : {}), ...(blend > 0 ? { blend } : {}) };
+    });
   const positions: Record<string, { x: number; y: number }> = {};
-  if (isObj(raw.positions)) for (const [id, p] of Object.entries<any>(raw.positions)) if (ids.has(id) && isObj(p)) positions[id] = { x: num(p.x, 0), y: num(p.y, 0) };
+  if (isObj(raw.positions)) for (const [id, p] of Object.entries<any>(raw.positions)) if ((id === FLOW_ANY || ids.has(id)) && isObj(p)) positions[id] = { x: num(p.x, 0), y: num(p.y, 0) };
   const start = typeof raw.start === 'string' && ids.has(raw.start) ? raw.start : undefined;
-  if (!transitions.length && !start && !Object.keys(positions).length) return undefined;
-  return { ...(start ? { start } : {}), transitions, ...(Object.keys(positions).length ? { positions } : {}) };
+  const inputs: FlowInput[] = [];
+  for (const i of (Array.isArray(raw.inputs) ? raw.inputs : []).slice(0, 32)) {
+    if (!isObj(i) || typeof i.name !== 'string' || !i.name.trim() || inputs.some((x) => x.name === i.name.slice(0, 40))) continue;
+    const kind = i.kind === 'number' ? 'number' : 'toggle';
+    const s = kind === 'toggle' ? (i.start === true ? true : undefined) : typeof i.start === 'number' && Number.isFinite(i.start) && i.start !== 0 ? i.start : undefined;
+    inputs.push({ name: i.name.slice(0, 40), kind, ...(s !== undefined ? { start: s } : {}) });
+  }
+  if (!transitions.length && !start && !Object.keys(positions).length && !inputs.length) return undefined;
+  return {
+    ...(start ? { start } : {}),
+    transitions,
+    ...(Object.keys(positions).length ? { positions } : {}),
+    ...(inputs.length ? { inputs } : {}),
+    ...(raw.anyFirst === false ? { anyFirst: false } : {}),
+  };
+}
+
+/** The shape with the repeat it was saved with, when it is one that can repeat and the repeat reads as one. */
+function withRepeat<T extends Shape>(shape: T, raw: Record<string, unknown>): T {
+  if (!('repeat' in raw) && !('repeat' in shape)) return shape;
+  // Whatever the shape carried over from the file is replaced by the cleaned repeat, or taken out.
+  const { repeat: _raw, ...rest } = shape as T & { repeat?: unknown };
+  const repeat = canRepeat(shape) ? cleanRepeat(raw.repeat) : undefined;
+  return (repeat ? { ...rest, repeat } : rest) as T;
+}
+
+/** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */
+function cleanLineStyle<T extends Record<string, any>>(s: T): T {
+  if (s.type === 'stroke' && isObj(s.brush) && 'tip' in s.brush) {
+    // A brush line's tip (chalk, stamps and so on): kept when it reads as one, otherwise the line is plain.
+    const { tip, ...brush } = s.brush;
+    const clean = readTip(tip);
+    s = { ...s, brush: clean ? { ...brush, tip: clean } : brush };
+  }
+  if (s.type === 'stroke' && 'trim' in s) {
+    // A brush line's trim (the part of the line that shows): sane numbers, or gone.
+    const { trim, ...rest } = s;
+    const clean = cleanTrim(trim);
+    return (clean ? { ...rest, trim: clean } : rest) as unknown as T;
+  }
+  if (s.type !== 'path' || !isObj(s.stroke)) return s;
+  return { ...s, stroke: cleanStrokeStyle(s.stroke as PathStroke) };
 }
 
 /** A stroke, fill or path shape with a bad `origin` taken out. */
@@ -768,6 +1011,8 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
   }
   const tiles: Tile[] = [];
   const keys = new Set<number>();
+  const dataLayers = readDataLayers(raw.dataLayers);
+  const terrains = readTerrains(raw.terrains);
   for (const t of Array.isArray(raw.tiles) ? raw.tiles : []) {
     const key = Math.round(num(t?.key, 0));
     if (!isObj(t) || key < 1 || key > 0x0fffffff || keys.has(key)) {
@@ -783,7 +1028,9 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
       continue;
     }
     keys.add(key);
-    tiles.push({ key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) });
+    const tile: Tile = { key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) };
+    readTileExtras(t, tile, { tileWidth, tileHeight, dataLayers, terrains });
+    tiles.push(tile);
   }
   const top = Math.max(0, ...keys);
   const edge = (v: unknown, size: number): number => {
@@ -792,7 +1039,19 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
   };
   const gridX = edge(raw.gridX, tileWidth);
   const gridY = edge(raw.gridY, tileHeight);
-  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))), ...(gridX ? { gridX } : {}), ...(gridY ? { gridY } : {}) };
+  const terrainMode = terrains ? readTerrainMode(raw.terrainMode) : undefined;
+  const nextTerrain = terrains ? Math.max(1 + Math.max(...terrains.map((t) => t.id)), Math.round(num(raw.nextTerrain, 1))) : 0;
+  return {
+    tileWidth,
+    tileHeight,
+    tiles,
+    nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))),
+    ...(gridX ? { gridX } : {}),
+    ...(gridY ? { gridY } : {}),
+    ...(dataLayers ? { dataLayers } : {}),
+    ...(terrains ? { terrains, nextTerrain } : {}),
+    ...(terrainMode ? { terrainMode } : {}),
+  };
 }
 
 /** The pixel palette, if the file has a usable one. */

@@ -5,6 +5,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { READABLE_TOKENS } from '../../src/ui/themes/contrast';
 import { ALL_TOKENS } from '../../src/ui/themes/tokens';
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '../../src');
@@ -23,7 +24,8 @@ const all = files(SRC).map((path) => ({ path, text: readFileSync(path, 'utf8').r
 /** Variables that are meant to be missing (set by a plugin or the page itself). Nothing so far; add one with a reason. */
 const ALLOWED_UNDEFINED = new Set<string>([]);
 
-const defined = new Set<string>(ALL_TOKENS);
+// The --on-* text colours are worked out from a theme's fills and written beside its tokens (readableTokens).
+const defined = new Set<string>([...ALL_TOKENS, ...READABLE_TOKENS]);
 for (const f of all) {
   // A declaration in CSS (`--x: ...`), or a name set from code (`'--x': v`, `['--x' as string]`, `style.setProperty('--x', v)`).
   for (const m of f.text.matchAll(/(?:^|[\s;{])--([a-z0-9-]+)\s*:/g)) defined.add(m[1]);

@@ -7,6 +7,7 @@ export const TIPS: string[] = [
   'Press F1 over anything to read about it.',
   'Made a mistake? {key:edit.undo} takes it back, as many times as you like.',
   'Hold Space and drag to slide the canvas around.',
+  'Hold Alt and drag on the canvas to turn the page to any angle. Alt and click still picks a colour.',
   'Drag a panel tab to another side to move it. It remembers where you put it.',
   'Rest your mouse on a button to see what it does, and its shortcut.',
   'Press Draw, Animate or Pixel at the top to change the layout. {key:view.workspace.pixel} jumps straight to Pixel.',

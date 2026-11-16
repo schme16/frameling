@@ -1,0 +1,308 @@
+{
+ "label": "sweep",
+ "when": "2026-11-15T02:07:52.802Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 3019,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 60.5,
+   "runs": [
+    60.5,
+    60.2,
+    79.6
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 15.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     35.4
+    ],
+    [
+     "Qxe index-BS106EV9.js:155",
+     8.1
+    ],
+    [
+     "(garbage collector) :0",
+     5.7
+    ],
+    [
+     "setAttribute :0",
+     1.2
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "createElementNS :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35.4
+    ],
+    [
+     "(anon) index-BS106EV9.js:9",
+     19
+    ],
+    [
+     "Pd index-BS106EV9.js:9",
+     18.4
+    ],
+    [
+     "Ef index-BS106EV9.js:9",
+     18.4
+    ],
+    [
+     "xf index-BS106EV9.js:9",
+     18.4
+    ],
+    [
+     "Cf index-BS106EV9.js:9",
+     18.4
+    ],
+    [
+     "mee index-BS106EV9.js:9",
+     11.9
+    ],
+    [
+     "ef index-BS106EV9.js:9",
+     11.9
+    ],
+    [
+     "Fd index-BS106EV9.js:9",
+     11.9
+    ],
+    [
+     "(anon) index-BS106EV9.js:155",
+     9
+    ],
+    [
+     "ml index-BS106EV9.js:9",
+     8.6
+    ],
+    [
+     "lu index-BS106EV9.js:9",
+     8.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 36.7,
+   "runs": [
+    36.7,
+    35.1,
+    49.2
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.2
+    ],
+    [
+     "(garbage collector) :0",
+     5.4
+    ],
+    [
+     "Xe index-BS106EV9.js:10",
+     2
+    ],
+    [
+     "Qxe index-BS106EV9.js:155",
+     1.7
+    ],
+    [
+     "drawImage :0",
+     0.9
+    ],
+    [
+     "us index-BS106EV9.js:132",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.2
+    ],
+    [
+     "(anon) index-BS106EV9.js:9",
+     6
+    ],
+    [
+     "frame index-BS106EV9.js:156",
+     5.7
+    ],
+    [
+     "Cf index-BS106EV9.js:9",
+     5.6
+    ],
+    [
+     "Pd index-BS106EV9.js:9",
+     5.5
+    ],
+    [
+     "Ef index-BS106EV9.js:9",
+     5.5
+    ],
+    [
+     "xf index-BS106EV9.js:9",
+     5.5
+    ],
+    [
+     "(garbage collector) :0",
+     5.4
+    ],
+    [
+     "drawMain index-BS106EV9.js:156",
+     4.2
+    ],
+    [
+     "paint index-BS106EV9.js:156",
+     3.9
+    ],
+    [
+     "paintStage index-BS106EV9.js:156",
+     3.7
+    ],
+    [
+     "EDe index-BS106EV9.js:156",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 400.5,
+   "runs": [
+    344.6,
+    404.8,
+    400.5
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 5.01,
+   "topSelf": [
+    [
+     "drawImage :0",
+     132
+    ],
+    [
+     "(program) :0",
+     130.4
+    ],
+    [
+     "F index-BS106EV9.js:10",
+     28.9
+    ],
+    [
+     "Eh index-BS106EV9.js:134",
+     11.9
+    ],
+    [
+     "(garbage collector) :0",
+     8
+    ],
+    [
+     "getContext :0",
+     7.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "t index-BS106EV9.js:156",
+     183.2
+    ],
+    [
+     "warm index-BS106EV9.js:156",
+     182.8
+    ],
+    [
+     "build index-BS106EV9.js:156",
+     152.2
+    ],
+    [
+     "drawImage :0",
+     132
+    ],
+    [
+     "(program) :0",
+     130.4
+    ],
+    [
+     "Sh index-BS106EV9.js:134",
+     39.2
+    ],
+    [
+     "frame index-BS106EV9.js:156",
+     35.8
+    ],
+    [
+     "drawMain index-BS106EV9.js:156",
+     33.4
+    ],
+    [
+     "F index-BS106EV9.js:10",
+     28.9
+    ],
+    [
+     "paint index-BS106EV9.js:156",
+     27.4
+    ],
+    [
+     "paintStage index-BS106EV9.js:156",
+     27.1
+    ],
+    [
+     "EDe index-BS106EV9.js:156",
+     27
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

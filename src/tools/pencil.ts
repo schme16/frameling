@@ -14,6 +14,7 @@ import { canEdit } from './util';
 import { startFromLast, VectorStroke } from './vectorStroke';
 import { viewSizeFactor } from './view-size';
 import { CleanLine } from './cleanLine';
+import { forgetHover, hoverSpot, hoverStart } from './endSnap';
 import { activePixelLayer, makePixelPencil } from '../pixel/tools';
 import { byLayerKind } from '../pixel/ToolOptions';
 import { vectorDynamics } from '../tablet/dynamics';
@@ -44,6 +45,7 @@ export const pencilTool: Tool = {
   cursor: 'crosshair',
   options: byLayerKind(PencilOptions, pix.options),
   down(e: ToolPointer, ctx: ToolContext) {
+    forgetHover();
     const px = activePixelLayer();
     if (px) {
       if (canEdit(ctx, 'pixel', 'The pencil')) pix.down(e, ctx, px);
@@ -55,6 +57,14 @@ export const pencilTool: Tool = {
     const f = viewSizeFactor();
     stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize * f) : new VectorStroke(...penStrokeArgs({ ...pencilBrush(), size: t.pencilSize * f }, store().get().ui.color, e));
     startFromLast(stroke, e, ctx.zoom);
+    if (stroke instanceof VectorStroke && !e.shift) stroke.watchHold(ctx.zoom, ctx.requestOverlay);
+  },
+  hover(e, ctx) {
+    if (activePixelLayer()) forgetHover();
+    else hoverStart(e, ctx.zoom);
+  },
+  leave() {
+    forgetHover();
   },
   move(e, ctx) {
     if (pix.active()) return pix.move(e);
@@ -68,17 +78,19 @@ export const pencilTool: Tool = {
     ctx.requestOverlay();
   },
   cancel(ctx) {
+    stroke?.stop();
     stroke = null;
     pix.cancel();
     ctx.requestOverlay();
   },
   overlay(g, ctx) {
-    if (stroke) return stroke.overlay(g);
+    if (stroke) return stroke instanceof VectorStroke ? stroke.overlay(g, ctx.zoom) : stroke.overlay(g);
     if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
     const h = getHover();
     if (!h) return;
     const m = activeVectorMirror();
-    for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (getToolSettings().pencilSize * viewSizeFactor()) / 2, 'pencil');
+    const at = hoverSpot() ?? h;
+    for (const p of m ? mirrorSpots(m, at.x, at.y) : [at]) drawRing(g, ctx, p.x, p.y, (getToolSettings().pencilSize * viewSizeFactor()) / 2, 'pencil');
   },
 };
 

@@ -2,6 +2,8 @@ import { registerCommand, registerCommands } from '../core/registry';
 import { desktop } from './desktop';
 import { closeDrawing } from './close';
 import { openDocument, saveDocument, saveDocumentAs } from './document';
+import { sendCopy } from './sendCopy';
+import { receiveWithCode, sendWithCode } from './share';
 import { openRecentDialog } from './RecentDialog';
 import { openRecoverDialog } from './RecoverDialog';
 import { isMacPlatform } from '../ui/keys';
@@ -43,6 +45,7 @@ registerCommands([
     category: 'File',
     keys: ['Mod+S'],
     description: 'Save your drawing.',
+    keywords: ['work', 'keep', 'store'],
     help: 'saving-and-opening',
     global: true,
     run: () => void saveDocument(),
@@ -57,6 +60,39 @@ registerCommands([
     keywords: ['copy', 'rename', 'duplicate'],
     global: true,
     run: () => void saveDocumentAs(),
+  },
+  {
+    id: 'file.sendCopy',
+    label: 'Send a copy...',
+    category: 'File',
+    keys: ['Mod+Alt+E'],
+    description: 'Save a copy of your drawing to send to someone, then show it in your file manager. Your drawing, its file and its history are left alone.',
+    help: 'send-a-copy',
+    keywords: ['share', 'send', 'email', 'give', 'friend', 'copy', 'export a copy', 'duplicate', 'hand over', 'attach', 'upload', 'history', 'undo history'],
+    global: true,
+    run: () => void sendCopy(),
+  },
+  {
+    id: 'file.shareCode',
+    label: 'Send with a code...',
+    category: 'File',
+    keys: ['Mod+Alt+Shift+E'],
+    description: 'Get a short code for your drawing and give it to someone: they type it in and it goes straight to them. You both need Frameling open at the same time, and nothing is stored anywhere.',
+    help: 'share-with-a-code',
+    keywords: ['share', 'send', 'friend', 'code', 'give', 'live', 'online', 'peer', 'direct', 'wormhole', 'words', 'hand over', 'copy'],
+    global: true,
+    run: () => void sendWithCode(),
+  },
+  {
+    id: 'file.receiveCode',
+    label: 'Receive with a code...',
+    category: 'File',
+    keys: ['Mod+Alt+Shift+G'],
+    description: 'Type in the code someone gave you, and their drawing comes straight to you. You both need Frameling open at the same time.',
+    help: 'share-with-a-code',
+    keywords: ['share', 'receive', 'get', 'friend', 'code', 'type in', 'online', 'peer', 'direct', 'words', 'open'],
+    global: true,
+    run: () => void receiveWithCode(),
   },
 ]);
 

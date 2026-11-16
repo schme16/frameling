@@ -11,6 +11,7 @@ import { formatCard, pickFormat } from '../quests/probe';
 import { paintedAt, paintedPixels } from '../quests/predicates';
 import type { Quest } from '../quests/types';
 import { isPixelDoc, newSpriteDoc, wayOf } from './way';
+import { questWord } from '../words/quests';
 
 const SEL = {
   canvas: '.cv-root',
@@ -90,32 +91,32 @@ const pickPencil = () => store().setUi({ tool: 'pencil', color: '#ff6f91', fillC
 
 export const ONE_TINY_PICTURE: Quest = {
   id: 'one-tiny-picture',
-  title: 'One tiny picture',
-  summary: 'Draw a little heart on a 16 by 16 picture, give it a second colour, and export it as a PNG.',
+  title: questWord('quest.one-tiny-picture.title'),
+  summary: questWord('quest.one-tiny-picture.summary'),
   minutes: 3,
   icon: 'heart',
   group: 'drawing',
-  badge: { id: 'icon-maker', name: 'Icon Maker', icon: 'heart', color: '--mint' },
+  badge: { id: 'icon-maker', name: questWord('quest.one-tiny-picture.badge'), icon: 'heart', color: '--mint' },
   requires: [],
-  finish: 'A whole icon from a handful of pixels! Keep going: a coin, a key, a potion. Quill is cheering.',
+  finish: questWord('quest.one-tiny-picture.finish'),
   prepare: prepareWay('picture', 16),
   ready: (s) => isPixelDoc(s.doc),
   steps: [
     {
       id: 'draw',
-      say: 'Draw a little heart with the Pencil. Every click paints one chunky pixel.',
-      why: 'The grid is 16 by 16, so a heart is only a few pixels wide. Wobbly is fine.',
+      say: questWord('quest.one-tiny-picture.draw.say'),
+      why: questWord('quest.one-tiny-picture.draw.why'),
       target: SEL.canvas,
       enter: pickPencil,
       done: (c) => paintedAt(c.state.doc, c.state.ui.frame) >= 8,
       show: () => void drawDemoPixelRing(),
-      hint: 'Click and drag over the grid. Paint is the front square at the top of the Palette.',
+      hint: questWord('quest.one-tiny-picture.draw.hint'),
       help: 'tool-pencil',
     },
     {
       id: 'swap',
-      say: 'Press X to swap Paint and Back. Watch the two big squares at the top of the Palette trade places.',
-      why: 'Paint is the colour you draw with. Back is your second colour, always one key away.',
+      say: questWord('quest.one-tiny-picture.swap.say'),
+      why: questWord('quest.one-tiny-picture.swap.why'),
       target: SEL.wells,
       done: (c) => c.state.ui.color === c.entry.state.ui.fillColor && c.state.ui.fillColor === c.entry.state.ui.color,
       show: 'pixel.swapPaintBack',
@@ -123,24 +124,24 @@ export const ONE_TINY_PICTURE: Quest = {
     },
     {
       id: 'back',
-      say: 'Right-click the grid to paint with Back. Dab a few pixels for a shine.',
+      say: questWord('quest.one-tiny-picture.back.say'),
       target: SEL.canvas,
       done: (c) => coloursAt(c.state.doc, c.state.ui.frame) >= 2,
       show: () => void dabBack(),
-      hint: 'Right-click and drag, just like drawing. A trackpad does it with a two finger tap.',
+      hint: questWord('quest.one-tiny-picture.back.hint'),
       help: 'pixel-wells',
     },
     {
       id: 'export',
-      say: 'Open Export and choose PNG picture (it lives under More formats).',
-      why: 'You do not have to save anything: close the window whenever you like.',
+      say: questWord('quest.one-tiny-picture.export.say'),
+      why: questWord('quest.one-tiny-picture.export.why'),
       target: () => formatCard('png') ?? first(SEL.export, SEL.menubar),
       done: (c) => c.probe.exportOpen && c.probe.exportFormat === 'png',
       show: () => {
         void getCommand('file.export')?.run();
         setTimeout(() => pickFormat('png'), 250);
       },
-      hint: 'File, then Export. PNG picture is the plain still image.',
+      hint: questWord('quest.one-tiny-picture.export.hint'),
       help: 'exporting',
     },
   ],
@@ -148,40 +149,40 @@ export const ONE_TINY_PICTURE: Quest = {
 
 export const BOARD_BY_BOARD: Quest = {
   id: 'board-by-board',
-  title: 'Board by board',
-  summary: 'Draw three frames on three boards, play them in order, and export them as a sprite sheet.',
+  title: questWord('quest.board-by-board.title'),
+  summary: questWord('quest.board-by-board.summary'),
   minutes: 4,
   icon: 'artboard',
   group: 'drawing',
-  badge: { id: 'storyboarder', name: 'Storyboarder', icon: 'artboard', color: '--sky' },
+  badge: { id: 'storyboarder', name: questWord('quest.board-by-board.badge'), icon: 'artboard', color: '--sky' },
   requires: [],
-  finish: 'Three boards, one animation! Each board is a frame, and the sheet holds them all in order.',
+  finish: questWord('quest.board-by-board.finish'),
   prepare: prepareWay('boards', 32),
   ready: (s) => isPixelDoc(s.doc),
   steps: [
     {
       id: 'one',
-      say: 'Draw something on Frame 1 with the Pencil. It is the first frame of your animation.',
+      say: questWord('quest.board-by-board.one.say'),
       target: SEL.canvas,
       enter: pickPencil,
       done: (c) => inkedBoards(c.state.doc) >= 1,
       show: () => void drawDemoPixelRing(),
-      hint: 'A blob, a face, a ball: anything that can move a little next.',
+      hint: questWord('quest.board-by-board.one.hint'),
       help: 'pixel-ways',
     },
     {
       id: 'two',
-      say: 'Click Frame 2 in the Artboards panel and draw it a little different.',
-      why: 'Every frame gets its own board. Tidy!',
+      say: questWord('quest.board-by-board.two.say'),
+      why: questWord('quest.board-by-board.two.why'),
       target: SEL.boards,
       done: (c) => inkedBoards(c.state.doc) >= 2,
       show: drawOnNextBoard,
-      hint: 'Move something a pixel or two, so it looks like it is moving.',
+      hint: questWord('quest.board-by-board.two.hint'),
       help: 'artboards',
     },
     {
       id: 'three',
-      say: 'Once more: Frame 3.',
+      say: questWord('quest.board-by-board.three.say'),
       target: SEL.boards,
       done: (c) => inkedBoards(c.state.doc) >= 3,
       show: drawOnNextBoard,
@@ -189,7 +190,7 @@ export const BOARD_BY_BOARD: Quest = {
     },
     {
       id: 'play',
-      say: 'Press Play all in order in the Artboards panel, and watch them go.',
+      say: questWord('quest.board-by-board.play.say'),
       target: () => first('[data-command="artboards.playAll"]', SEL.boards),
       done: (c) => c.ran.has('artboards.playAll'),
       show: 'artboards.playAll',
@@ -197,14 +198,14 @@ export const BOARD_BY_BOARD: Quest = {
     },
     {
       id: 'sheet',
-      say: 'Open Export and choose Sprite sheet. Every board becomes one frame.',
+      say: questWord('quest.board-by-board.sheet.say'),
       target: () => formatCard('sheet') ?? first(SEL.export, SEL.menubar),
       done: (c) => c.probe.exportOpen && c.probe.exportFormat === 'sheet',
       show: () => {
         void getCommand('file.export')?.run();
         setTimeout(() => pickFormat('sheet'), 250);
       },
-      hint: 'The Sprite sheet card says "For games".',
+      hint: questWord('quest.board-by-board.sheet.hint'),
       help: 'export-sprite-sheets',
     },
   ],
@@ -212,21 +213,21 @@ export const BOARD_BY_BOARD: Quest = {
 
 export const CAST_ON_A_SHEET: Quest = {
   id: 'cast-on-a-sheet',
-  title: 'A cast on one sheet',
-  summary: 'Draw a hero and a coin on their own boards, then pack them on one sheet for your game engine.',
+  title: questWord('quest.cast-on-a-sheet.title'),
+  summary: questWord('quest.cast-on-a-sheet.summary'),
   minutes: 4,
   icon: 'grid',
   group: 'drawing',
-  badge: { id: 'sheet-master', name: 'Sheet Master', icon: 'grid', color: '--sunny' },
+  badge: { id: 'sheet-master', name: questWord('quest.cast-on-a-sheet.badge'), icon: 'grid', color: '--sunny' },
   requires: [],
-  finish: 'A whole cast on one sheet, ready for Godot, Unity or Phaser. Add an enemy next!',
+  finish: questWord('quest.cast-on-a-sheet.finish'),
   prepare: prepareWay('sheet', 32),
   ready: (s) => isPixelDoc(s.doc),
   steps: [
     {
       id: 'hero',
-      say: 'Draw your hero on the Hero board with the Pencil.',
-      why: 'Every board is a sprite of its own. This one is already named Hero.',
+      say: questWord('quest.cast-on-a-sheet.hero.say'),
+      why: questWord('quest.cast-on-a-sheet.hero.why'),
       target: SEL.canvas,
       enter: pickPencil,
       done: (c) => inkedBoards(c.state.doc) >= 1,
@@ -235,23 +236,23 @@ export const CAST_ON_A_SHEET: Quest = {
     },
     {
       id: 'item',
-      say: 'Click Item in the Artboards panel and draw a coin.',
+      say: questWord('quest.cast-on-a-sheet.item.say'),
       target: SEL.boards,
       done: (c) => inkedBoards(c.state.doc) >= 2,
       show: drawOnNextBoard,
-      hint: 'A round blob with a shine is a fine coin.',
+      hint: questWord('quest.cast-on-a-sheet.item.hint'),
       help: 'artboards',
     },
     {
       id: 'sheet',
-      say: 'Open Export and choose Sprite sheet. The boards pack onto one picture, with the data for your engine.',
+      say: questWord('quest.cast-on-a-sheet.sheet.say'),
       target: () => formatCard('sheet') ?? first(SEL.export, SEL.menubar),
       done: (c) => c.probe.exportOpen && c.probe.exportFormat === 'sheet',
       show: () => {
         void getCommand('file.export')?.run();
         setTimeout(() => pickFormat('sheet'), 250);
       },
-      hint: 'The Sprite sheet card says "For games". Pick Godot, Unity, Phaser or PixiJS under it.',
+      hint: questWord('quest.cast-on-a-sheet.sheet.hint'),
       help: 'export-sprite-sheets',
     },
   ],

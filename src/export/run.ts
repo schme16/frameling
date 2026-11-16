@@ -6,11 +6,14 @@ import { planExport } from './plan';
 import { exporterOf, type RunEnv } from './registry';
 import { isCancelled, type Progress, type RunContext, type RunResult } from './runtime';
 import { formatInfo } from './types';
+import { withoutNotes } from '../notes/model';
 
 export { isCancelled, type Progress, type RunContext, type RunResult };
 
 export async function runExport(ctx: RunContext): Promise<RunResult> {
-  const { doc, settings, currentFrame, onProgress } = ctx;
+  const { settings, currentFrame, onProgress } = ctx;
+  // Notes and marks never go out: the document the formats see has none, whatever the caller passed.
+  const doc = withoutNotes(ctx.doc);
   const def = exporterOf(settings.format);
   if (!def) throw new Error('That kind of export is turned off.');
   const plan = planExport(doc, settings, currentFrame);
@@ -25,6 +28,16 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
   const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), target);
   const rgbaAt = (i: number) => readPixels(frameAt(i));
   const step = (done: number, label: string) => onProgress({ done, total: plan.count, label });
-  const env: RunEnv = { plan, bg, crisp, canvas, frameAt, rgbaAt, step };
+  const src = ctx.frames;
+  // Made pictures are put on the shared canvas, so formats that read the canvas see them as they would a drawn frame.
+  const frameAtAsync = src
+    ? async (i: number) => {
+        const img = await src.load(i);
+        canvas.getContext('2d')!.putImageData(new ImageData(img.pixels as Uint8ClampedArray<ArrayBuffer>, img.width, img.height), 0, 0);
+        return canvas;
+      }
+    : async (i: number) => frameAt(i);
+  const rgbaAtAsync = src ? (i: number) => src.load(i) : async (i: number) => rgbaAt(i);
+  const env: RunEnv = { plan, bg, crisp, canvas, frameAt, rgbaAt, frameAtAsync, rgbaAtAsync, step };
   return (await def.load()).run(ctx, env);
 }

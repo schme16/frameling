@@ -2,7 +2,7 @@
 import { trimmedDrawing } from '../core/pixelBounds';
 // exportDocument is the very function the dialog's Export button calls, so this runs the same path a person does.
 // Never on in normal use.
-import { rootDoc } from '../core/symbols';
+import { makeFramesSymbol, newInstance, rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
 import type { ClipDirection, Doc } from '../core/format';
 import { store } from '../core/store';
@@ -10,6 +10,10 @@ import { setChoice } from '../core/choices';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
 import { runExport } from './run';
+import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
+import { READBACK_FLAG } from './readback';
+import { formatInfo } from './types';
+import { allExporters } from './registry';
 import { defaultSettings, planExport } from './plan';
 import type { ExportSettings } from './types';
 
@@ -53,12 +57,48 @@ function stressDoc(): Doc {
   return doc;
 }
 
+/**
+ * A pixel walk of four drawings made into one looping symbol (the whole animation), with a second copy of it turned and
+ * faded on another layer: every export has to show each drawing on its own frame, in both copies.
+ */
+function pixelSymbolWalkDoc(): Doc {
+  const doc = newDoc({ name: 'Pixel symbol walk', width: 128, height: 96, fps: 8, length: 8, background: '#fffaf0' });
+  const lp = newPixelLayer('Walk', 4);
+  const cels: Doc['layers'][number]['cels'] = [];
+  [0, 1, 2, 3].forEach((i) => {
+    const px = newPixelDrawing(32, 24);
+    const x0 = 4 + i * 6;
+    for (let y = 8; y < 14; y++) for (let x = x0; x < x0 + 4; x++) px.pixels.set([255 - i * 60, 80 + i * 50, 120, 255], (y * 32 + x) * 4);
+    px.pixels.set([30, 30, 60, 255], (9 * 32 + x0 + 1) * 4);
+    doc.drawings[px.id] = trimmedDrawing(px);
+    cels.push({ id: `walk-${i}`, start: i * 2, length: 2, drawingId: px.id });
+  });
+  lp.cels = cels;
+  doc.layers = [lp];
+  const made = makeFramesSymbol(doc, lp.id, { name: 'Walk' });
+  if (made) {
+    const above = newVectorLayer('Second copy');
+    const held = newVectorDrawing();
+    const inst = newInstance(made.symbolId, { x: 40, y: 70 });
+    inst.transform.rotation = 20;
+    inst.transform.scaleX = 0.8;
+    inst.transform.scaleY = 0.8;
+    inst.opacity = 0.7;
+    held.shapes.push(inst);
+    doc.drawings[held.id] = held;
+    above.cels = [{ id: 'second', start: 0, length: 8, drawingId: held.id }];
+    doc.layers.push(above);
+  }
+  return doc;
+}
+
 if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __framelingExport: unknown }).__framelingExport = {
     // The templates load on demand, so a normal run never pays for them here.
     templates: async () => (await import('../templates')).TEMPLATES.map((t) => t.id),
     load: async (id: string) => store().load((await import('../templates')).findTemplate(id)!.make(), null),
     loadStress: () => store().load(stressDoc(), null),
+    loadPixelSymbolWalk: () => store().load(pixelSymbolWalkDoc(), null),
     // A symbol with bones, a camera, a far layer and an Add glow, for the Godot bones checks.
     loadBonesExtras: async (camera = true, extra: Record<string, unknown> = {}) => store().load((await import('./bonesExtrasDoc')).bonesExtrasDoc({ ...(camera ? { camera: { a: { x: 180, y: 135, zoom: 1, rotation: 0 }, b: { x: 215, y: 150, zoom: 1.4, rotation: 6 } } } : {}), ...extra }), null),
     // Every feature at once (symbols, tweens, effects, folders, masks, tiles, bones, sound): see kitchenSink.ts.
@@ -68,6 +108,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
+    // The formats registered right now. A format whose feature is switched off is not in here, so a harness can
+    // skip it instead of asking for it and getting an error.
+    formats: () => allExporters().map((d) => d.info.id),
     addClip: (name: string, start: number, end: number, loop = true, direction?: ClipDirection, repeat?: number) =>
       store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop, ...(direction ? { direction } : {}), ...(repeat ? { repeat } : {}) })),
     /** Sets (or with undefined, forgets) a remembered choice, like the one in Preferences > Behaviour. */
@@ -82,6 +125,55 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
       const r = await runExport({ doc: rootDoc(st.doc), settings: s, currentFrame: st.ui.frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'perf' });
       const bytes = r.kind === 'file' ? r.bytes.length : -1;
       return { bytes, ms: Math.round(performance.now() - t0) };
+    },
+    /**
+     * Draws and reads back every frame the export would, the way run.ts does (one canvas, drawFrame then readPixels), and
+     * adds up the two times apart (scripts/perf, test `export`). On a canvas the card draws, drawFrame only queues the
+     * work and readPixels is where it finishes, so read the sum (drawMs + readMs) as the true cost of a frame, and the
+     * split as where the time was waited for. `flag` is whether the canvases are made with willReadFrequently.
+     */
+    timeFrames: (s: ExportSettings) => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const plan = planExport(doc, s, st.ui.frame);
+      const bg = backgroundFor(doc, s.transparent, formatInfo(s.format).alpha);
+      const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig);
+      const target = { width: plan.width, height: plan.height, scale: s.scale, background: bg, crisp };
+      const canvas = makeCanvas(plan.width, plan.height);
+      let drawMs = 0;
+      let readMs = 0;
+      const t0 = performance.now();
+      for (let i = 0; i < plan.count; i++) {
+        const a = performance.now();
+        drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), target);
+        const b = performance.now();
+        readPixels(canvas);
+        readMs += performance.now() - b;
+        drawMs += b - a;
+      }
+      return { flag: READBACK_FLAG, frames: plan.count, width: plan.width, height: plan.height, drawMs, readMs, loopMs: performance.now() - t0 };
+    },
+    /** The PNG export of one frame, through the real exporter, as base64 (for A/B stills of an export beside the screen). */
+    pngBase64: async (frame = 0, scale = 1) => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const settings = { ...defaultSettings(doc), format: 'png', range: 'frame', clipId: null, scale } as unknown as ExportSettings;
+      const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'ab' });
+      if (r.kind !== 'file') return null;
+      let bin = '';
+      for (const b of r.bytes) bin += String.fromCharCode(b);
+      return btoa(bin);
+    },
+    /** One frame through the real exporter in any single-file format (svg, pdf, lottie, png...), as base64, for stills of an export beside the screen. */
+    fileBase64: async (format: string, frame = 0, range: 'frame' | 'all' = 'frame', extra: Partial<ExportSettings> = {}) => {
+      const st = store().get();
+      const doc = rootDoc(st.doc);
+      const settings = { ...defaultSettings(doc), format, range, clipId: null, scale: 1, ...extra } as unknown as ExportSettings;
+      const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'ab' });
+      if (r.kind !== 'file') return null;
+      let bin = '';
+      for (let i = 0; i < r.bytes.length; i += 0x8000) bin += String.fromCharCode(...r.bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
     },
     /** Runs an export. `cancelAfterMs` presses Cancel that long after the start. */
     run: async (s: ExportSettings, cancelAfterMs?: number) => {

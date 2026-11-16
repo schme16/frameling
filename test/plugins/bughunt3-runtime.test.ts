@@ -4,6 +4,7 @@ import { newDoc } from '../../src/core/doc';
 import { parseManifest, type Permission } from '../../src/plugins/manifest';
 import { PluginRuntime, type HostHooks } from '../../src/plugins/runtime';
 import { closeAll, runPlugin, settle } from './harness';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -50,10 +51,10 @@ describe('toasts', () => {
     const h = hooks();
     const { rt } = start(`frameling.commands.register({ id: 'say', label: 'Say' }, async () => { for (let i = 0; i < 12; i++) await frameling.ui.notify('m' + i); });`, [], h);
     await rt.runCommand('say');
-    await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(10));
+    await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(10), { timeout: WAIT_CEILING_MS });
     vi.setSystemTime(Date.now() + 11_000);
     await rt.runCommand('say');
-    await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(20));
+    await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(20), { timeout: WAIT_CEILING_MS });
   });
 });
 
@@ -88,7 +89,7 @@ describe('the file picker', () => {
     const { rt } = start(code, ['files.read'], h);
     const press = async (n: number) => {
       await rt.runCommand('pick');
-      await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(n));
+      await vi.waitFor(() => expect(h.log.filter((l) => l.startsWith('notify:')).length).toBe(n), { timeout: WAIT_CEILING_MS });
     };
     await press(1);
     expect(h.log.at(-1)).toBe('notify:info:none');

@@ -2,6 +2,7 @@
 //
 // Rules: typing in a text field never fires a command unless the command is `global`. While a big overlay is open
 // only `global` commands work. A held Space is the canvas's pan key, so nothing fires while it's down.
+import { noteKeyPress, swallowUndoRepeat } from '../core/pointUndo';
 import { allCommands, type Command } from '../core/registry';
 import { syncDynamicCommands } from './dynamic';
 import { activeOverrides, buildKeymap, comboFromEvent, comboToString } from './keys';
@@ -96,6 +97,7 @@ function overCanvas(): boolean {
 /** Handles one keydown. Returns true when a command took it. */
 export function dispatchKey(e: KeyboardEvent): boolean {
   if (e.defaultPrevented || e.isComposing || capturing) return false;
+  noteKeyPress(e.repeat);
   if (e.key === ' ') {
     spaceHeld = true;
     return false;
@@ -117,6 +119,11 @@ export function dispatchKey(e: KeyboardEvent): boolean {
     // Undo with nothing left to undo: a soft bonk, so you know the key did land.
     if (candidates.some((c) => c.id === 'edit.undo')) playCue('nothingToUndo');
     return false;
+  }
+  // Holding Ctrl+Z through the last point stops there instead of running on into the drawing.
+  if (cmd.id === 'edit.undo' && swallowUndoRepeat(e.repeat)) {
+    e.preventDefault();
+    return true;
   }
   e.preventDefault();
   runCommand(cmd);

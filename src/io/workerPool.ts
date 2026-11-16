@@ -2,6 +2,8 @@
  * A few worker threads that take jobs one at a time, started when the first job comes and let go after a while with
  * nothing to do. The worker is anything shaped like a Web Worker, so tests can hand in a fake one.
  */
+import { ioTime, nowMs } from './ioTime';
+
 export interface WorkerLike {
   postMessage(msg: unknown, transfer?: Transferable[]): void;
   terminate(): void;
@@ -28,6 +30,11 @@ export class WorkerPool {
     private max: number,
     private idleMs = 20_000,
   ) {}
+
+  /** How many jobs can be in hand at once, so a caller can get a job's data ready only when a worker is about to take it. */
+  get lanes(): number {
+    return this.max;
+  }
 
   /** Runs a job on a free worker (or waits for one). Rejects when the worker fails, so the caller can do the job itself. */
   run<R>(req: object, transfer: Transferable[] = []): Promise<R> {
@@ -58,7 +65,11 @@ export class WorkerPool {
       const job = this.queue.shift()!;
       this.busy.set(w, job);
       try {
+        // Timed: handing a job across copies everything in it that is not in `transfer`, on this thread (see ioTime).
+        const tPost = nowMs();
         w.postMessage(job.req, job.transfer);
+        ioTime.post += nowMs() - tPost;
+        ioTime.posts++;
       } catch (e) {
         this.busy.delete(w);
         w.terminate();

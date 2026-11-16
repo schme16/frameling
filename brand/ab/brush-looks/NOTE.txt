@@ -1,0 +1,10 @@
+Oil paint, Bristle brush and Dry brush used to draw as the same speckled worm. The Library's pictures were honest (same road
+as the canvas); the brushes were wrong: all three were one fill with grain holes cut out of it.
+
+before-<theme>.png   the Library (Paint folder, scrolled, Bristles folder) beside real strokes on the canvas, on the old build
+after-<theme>.png    the same, on the new build: Oil paint is solid streaked paint, Bristle brush is separate hairs with gaps, Dry brush
+                     skips where the paper is high, and Rake is clear tines instead of a solid band
+three-<theme>.png    just the three, before and after, side by side
+clip-*-<theme>.mp4   the three being drawn, before, after and side by side (H.264)
+
+Gouache and Hog bristle are in the canvas strip unchanged, for comparison.

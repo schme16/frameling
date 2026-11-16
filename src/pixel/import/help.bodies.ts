@@ -25,11 +25,32 @@ Tick **Add to the open drawing instead of making a new one** and the picture bec
 
 ## Colours
 
-**Put its colours in the palette** fills the drawing's palette with the colours the picture uses (the most used 256 for a photo). For a drawing you already have, the colours are added to its palette. You can also do this on its own: search **Take colours from a picture** in the command palette (Ctrl+K), or use the Palette panel.
+**Put its colours in the palette** fills the drawing's palette with the colours the picture uses (up to 256, the ones that stand for it best). For a drawing you already have, the colours are added to its palette. You can also do this on its own: search **Take colours from a picture** in the command palette (Ctrl+K), or use the Palette panel. [Taking the colours from a picture](help:palette-picture) says how to choose how many.
 
 ---
 
 Slices that come with an Aseprite sheet become [Slices](help:pixel-slices). Working on pixel art? See [Pixel art](help:pixel-art) and [Palette](help:palette).`,
+  'palette-picture': `Make a palette out of a picture: a sunset, a painting, a screenshot of a game you like. In the Pixel workspace, the Palette submenu of the Pixel menu has **Take colours from a picture...**, or press Ctrl+K and search for it. In the Palette panel, **From a picture...** does the same. You can also drop a picture on the window and choose **Put its colours in the palette**.
+
+A box opens with the picture. Nothing changes until you press **Take the colours**, and Cancel leaves everything as it was.
+
+## Most colours to take
+
+Type how many colours you want at most. The strip of swatches under it shows the ones Frameling will take, and it updates as you change the number. A photo has thousands of colours, so Frameling keeps the ones that stand for it best: a few more of the colours that fill most of the picture, and still one for a small bright detail. Fewer colours is a more "pixel art" look. A picture that has fewer colours than your limit keeps every one of them, just as they are.
+
+Frameling remembers the number you used last time. It starts at 32.
+
+## Add to my palette, or replace it
+
+**Add to my palette** keeps your colours and puts the new ones after them. **Replace my palette** swaps them all. Either way it is one undo step, and your choice is remembered too.
+
+## Big pictures
+
+A big picture (a 4000 by 3000 photo, say) is worked out in the background. A bar shows how far it has got, you can keep using Frameling while it works, and Cancel stops it straight away. Changing the number afterwards is instant, because the counting is already done.
+
+---
+
+Back to [Bringing in pictures](help:pixel-import), or see the [Palette panel](help:palette).`,
   'pixel-sheets': `Open a picture with several sprites on it (see [Bringing in pictures](help:pixel-import)) and choose **How to cut it**.
 
 - **One picture**: the whole thing is one frame.

@@ -11,6 +11,8 @@ import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
 import { PenOptions } from '../tablet/PenOptions';
+import { typedSize } from '../tools/brushRange';
+import { useBrushRange } from '../tools/options/useBrushRange';
 import './pixel.css';
 
 export function useLayerKind(): 'vector' | 'pixel' {
@@ -27,7 +29,8 @@ function PixelPerfectToggle() {
 
 function SizeSlider() {
   const size = useToolSettings((s) => s.pixelBrushSize);
-  return <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />;
+  const range = useBrushRange(true);
+  return <Slider label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />;
 }
 
 export function PixelPencilOptions() {
@@ -35,7 +38,6 @@ export function PixelPencilOptions() {
     <div className="cv-options">
       <SizeSlider />
       <PixelPerfectToggle />
-      <PenOptions tool="shade" size />
       <MirrorOptions />
       <PenOptions tool="pencil" size />
       <Tip>Size 1 is the plain pencil, and bigger sizes are the same pencil with a thicker tip. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
@@ -91,6 +93,7 @@ export function ShadeOptions() {
       <SizeSlider />
       <PixelPerfectToggle />
       <MirrorOptions />
+      <PenOptions tool="shade" size />
       <Tip>Shading moves each pixel one step along its colour ramp in the Palette panel. Go over it again to go further. Pixels that aren't palette colours are left alone.</Tip>
     </div>
   );

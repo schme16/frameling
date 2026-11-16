@@ -7,23 +7,28 @@ import { searchHelp } from '../../src/ui/help/search';
 import '../../src/renderer/features';
 
 const Q: [string, string][] = [
-  ['rubber', 'tool-eraser'], ['erase', 'tool-eraser'], ['rub out', 'tool-eraser'], ['pan', 'canvas-navigation'], ['move the page', 'canvas-navigation'], ['zoom', 'tool-zoom'],
+  ['pixel gradient', 'pixel-gradient'], ['sky fade', 'pixel-gradient'], ['rubber', 'tool-eraser'], ['erase', 'tool-eraser'], ['rub out', 'tool-eraser'], ['pan', 'canvas-navigation'], ['move the page', 'canvas-navigation'], ['zoom', 'tool-zoom'],
   ['pick colour', 'tool-eyedropper'], ['colour picker', 'tool-eyedropper'], ['mirror selection', 'flip'], ['mirror', 'mirror-drawing'], ['symmetry', 'mirror-drawing'], ['remember', 'remembered-settings'], ['restart', 'remembered-settings'], ['bring to front', 'arrange'], ['layer order', 'arrange'], ['on top', 'arrange'],
   ['save', 'saving-and-opening'], ['crash', 'autosave'], ['lost my work', 'autosave'], ['recover', 'autosave'], ['rename', 'document-name'], ['title', 'document-name'],
   ['inches', 'units'], ['print size', 'units'], ['dark mode', 'look-and-feel'], ['night mode', 'look-and-feel'], ['video', 'export-video-gif-apng'], ['gif', 'export-video-gif-apng'],
-  ['ghost', 'timeline-onion'], ['skeleton', 'rig'], ['puppet', 'rig'], ['talking', 'lip-sync'], ['mouth', 'lip-sync'], ['music', 'sound'], ['audio', 'sound'],
+  ['ghost', 'timeline-onion'], ['name a pose', 'timeline-drawings'], ['onion skin clips', 'timeline-onion'], ['skeleton', 'rig'], ['puppet', 'rig'], ['talking', 'lip-sync'], ['mouth', 'lip-sync'], ['music', 'sound'], ['audio', 'sound'],
   ['background sketch', 'reference-layers'], ['trace', 'reference-layers'], ['blur', 'effects'], ['shadow', 'effects'], ['snow', 'particles'], ['sparkles', 'particles'],
   ['resize canvas', 'canvas-size'], ['frame rate', 'canvas-size'], ['fps', 'canvas-size'], ['grid', 'pixel-grid'], ['straight line', 'tool-line'], ['square', 'tool-rect'], ['circle', 'tool-ellipse'],
   ['words', 'text'], ['type', 'text'], ['rotate', 'selecting'], ['scale', 'selecting'], ['tween', 'tweens'], ['in between', 'tweens'], ['morph', 'shape-tweens'], ['shortcut', 'keyboard-shortcuts'],
-  ['undo', 'undo'], ['go back', 'undo'], ['mistake', 'undo'], ['transparent background', 'export-video-gif-apng'], ['overview', 'whats-in-frameling'], ['features', 'whats-in-frameling'], ['what can it do', 'whats-in-frameling'],
+  ['undo', 'undo'], ['go back', 'undo'], ['mistake', 'undo'], ['transparent background', 'see-through-page'], ['see-through video', 'export-video-gif-apng'], ['overview', 'whats-in-frameling'], ['features', 'whats-in-frameling'], ['what can it do', 'whats-in-frameling'],
   ['tutorial', 'quests'], ['lesson', 'quests'], ['loop', 'timeline-playing'], ['play', 'timeline-playing'], ['speed', 'timeline-playing'], ['paint bucket', 'fill'], ['fill colour', 'fill-and-stroke'],
   ['outline colour', 'fill-and-stroke'], ['sprite sheet', 'export-sprite-sheets'], ['game', 'export-sprite-sheets'], ['copy', 'copy-paste'], ['paste', 'copy-paste'], ['delete', 'duplicate-delete'],
   ['remove', 'duplicate-delete'], ['palette', 'palette'], ['8 bit', 'pixel-art'], ['retro', 'pixel-art'], ['hand tool', 'tool-hand'], ['move tool', 'tool-select'], ['select', 'tool-select'],
   ['layers', 'timeline-layers'], ['new layer', 'timeline-layers'], ['hide layer', 'timeline-layers'], ['camera', 'camera'], ['parallax', 'camera'], ['reuse', 'symbols'], ['ease', 'easing'], ['slow in slow out', 'easing'],
   ['bounce', 'easing'], ['theme', 'themes'], ['colours of the app', 'themes'], ['panel', 'panels'], ['missing panel', 'panels'], ['layout', 'workspaces'], ['help', 'using-help'], ['search', 'command-palette'],
   ['plugin', 'plugins'], ['new drawing', 'new-document'], ['template', 'templates-yours'], ['mascot', 'meet-quill'], ['frames', 'timeline-frames'], ['hold', 'timeline-frames'], ['keyframe', 'timeline-frames'],
-  ['smooth line', 'tool-brush'], ['pressure', 'tool-brush'], ['pen', 'tool-brush'], ['thin line', 'tool-pencil'], ['sketch', 'tool-pencil'], ['lasso', 'lasso'], ['gap', 'fill-gaps'], ['leak', 'fill-gaps'],
-  ['turn off', 'features'], ['hide a panel i never use', 'features'],
+  ['smooth line', 'tool-brush'], ['pressure', 'tool-brush'], ['calligraphy', 'brush-own'], ['pattern brush', 'brush-own'], ['art brush', 'brush-own'], ['bristle', 'brush-own'], ['pen', 'tool-brush'], ['thin line', 'tool-pencil'], ['sketch', 'tool-pencil'], ['lasso', 'lasso'], ['gap', 'fill-gaps'], ['leak', 'fill-gaps'],
+  ['record a move', 'record-motion'], ['drag to animate', 'record-motion'], ['perform', 'record-motion'],
+  ['pixels on a vector layer', 'draw-anywhere'], ['a layer appeared', 'draw-anywhere'], ['two layers one row', 'draw-anywhere'], ['other half', 'draw-anywhere'],
+  ['turn off', 'features'], ['lock', 'lock-layout'], ['unlock', 'lock-layout'], ['stop moving', 'lock-layout'], ['hide a panel i never use', 'features'],
+  ['chat makes quill cheer', 'quill-reacts'], ['sign from chat', 'quill-reacts'], ['quill hop for viewers', 'quill-reacts'],
+  ['chat commands', 'chat-commands'], ['viewers type to vote', 'chat-commands'], ['chat bot', 'chat-commands'], ['!vote', 'chat-commands'], ['firebot http request', 'chat-commands-firebot'], ['streamer.bot c#', 'chat-commands-streamerbot'],
+  ['ideas from chat', 'prompt-jar'], ['what to draw suggestions', 'prompt-jar'], ['prompt jar', 'prompt-jar'], ['pull a random prompt', 'prompt-jar'],
 ];
 
 

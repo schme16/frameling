@@ -10,7 +10,8 @@ import { drawMirrorLines } from './tools';
 import './tools';
 import { activePixelLayer } from './tools';
 import { withMirror } from './ToolOptions';
-import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
+import { exportPalette, importPalette, paletteFromDrawing, paletteFromSwatchesNow } from './palette-files';
+import { paletteFromSwatches } from './palette';
 import { store } from '../core/store';
 import { dock, inPixelWorkspace, showPanel } from '../ui/dock';
 import { paintWellsOn, setPaintWells, setShapeFilledSource } from '../tools/pixelWells';
@@ -119,6 +120,16 @@ registerCommand({
   help: 'palette',
   keywords: ['palette', 'export', 'pal', 'jasc', 'paint shop'],
   run: () => void exportPalette('pal'),
+});
+registerCommand({
+  id: 'palette.fromSwatches',
+  label: 'Make a palette from the swatches',
+  category: 'Pixel',
+  description: "The file's named colours (its swatches) become the pixel palette, in the order they are listed.",
+  help: 'palette',
+  keywords: ['palette', 'swatches', 'colours', 'named colours', 'own colours', 'starter palette'],
+  enabled: (s) => paletteFromSwatches(s.doc) !== null,
+  run: paletteFromSwatchesNow,
 });
 registerCommand({
   id: 'palette.fromDrawing',

@@ -8,7 +8,7 @@
  */
 import { useMemo } from 'react';
 import type { Id } from '../core/format';
-import { useTimelineRows } from '../effects/rows';
+import { foldPairs, useTimelineRows } from '../effects/rows';
 import { buildLayout } from './layout';
 import { LayerList, LayerTools } from './Layers';
 
@@ -18,7 +18,8 @@ const NO_TRACKS = () => [];
 
 export function LayersPanel() {
   const rows = useTimelineRows();
-  const layout = useMemo(() => buildLayout(rows, 'clean', NONE, NO_TRACKS), [rows]);
+  // A pair (a vector layer and a pixel layer made together) is one row here; the timeline keeps both rows, lined up with their keys.
+  const layout = useMemo(() => buildLayout(foldPairs(rows), 'clean', NONE, NO_TRACKS), [rows]);
   return (
     <div className="lp-panel">
       <LayerTools inPanel />

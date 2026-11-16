@@ -27,7 +27,7 @@ describe('preferences', () => {
     expect(r.dataset.look).toBe('crisp');
     expect(r.dataset.motion).toBe('reduce');
     setPrefs({ theme: 'system', look: 'cosy', reduceMotion: false });
-    expect(r.dataset.theme).toBeUndefined();
+    expect(r.dataset.theme).toBe('dark'); // System: the theme showing (no computer here, so the dark pick)
     expect(r.dataset.look).toBe('cosy');
     expect(r.dataset.motion).toBeUndefined();
   });
@@ -108,6 +108,15 @@ describe('tooltips and context help', () => {
     expect(tip.title).toBe('Tippy');
     expect(tip.desc).toBe('Does a thing.');
     expect(tip.keys).toEqual(['Mod+t']);
+  });
+  it('a greyed command says what would turn it on, and an enabled one says nothing of the kind', () => {
+    let ready = false;
+    registerCommand({ id: 'tip.grey', label: 'Greyable', category: 'Test', enabled: () => ready, reason: () => 'Select some shapes first.', run: () => {} });
+    const el = document.createElement('button');
+    el.setAttribute('data-command', 'tip.grey');
+    expect(tipFor(el)!.why).toBe('Select some shapes first.');
+    ready = true;
+    expect(tipFor(el)!.why).toBeUndefined();
   });
   it('reads plain data-tip and title, title winning nothing over data-tip', () => {
     const el = document.createElement('div');

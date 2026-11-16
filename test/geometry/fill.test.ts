@@ -22,6 +22,16 @@ function paint(paths: SubPath[], w = 600, h = 600) {
   return m;
 }
 
+function fillSquare(id: string, x: number, y: number, size: number, hole = 0): Shape {
+  const sq = (x0: number, y0: number, n: number): SubPath => ({ closed: true, points: [{ x: x0, y: y0 }, { x: x0 + n, y: y0 }, { x: x0 + n, y: y0 + n }, { x: x0, y: y0 + n }] });
+  const paths = [sq(x, y, size)];
+  if (hole) paths.push(sq(x + (size - hole) / 2, y + (size - hole) / 2, hole));
+  return { id, type: 'fill', color: '#ff0000', opacity: 1, paths };
+}
+function fillBox(id: string, x0: number, y0: number, x1: number, y1: number): Shape {
+  return { id, type: 'fill', color: '#ff0000', opacity: 1, paths: [{ closed: true, points: [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }] }] };
+}
+
 describe('rasterising the barrier', () => {
   it('a stroke covers the pixels along its line and none far from it', () => {
     const { mask, w } = rasteriseBarrier([stroke([[100, 100], [300, 100]], 10)], BOUNDS, 1);
@@ -41,10 +51,20 @@ describe('rasterising the barrier', () => {
     expect(mask[150 * w + 100]).toBe(1);
   });
 
-  it('fills are paint, not walls, unless asked', () => {
-    const fillShape: Shape = { id: 'f', type: 'fill', color: '#f00', opacity: 1, paths: [{ closed: true, points: [{ x: 10, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 200 }, { x: 10, y: 200 }] }] };
+  it('a fill is a wall along its edge, except the fills under the click, and every fill when asked', () => {
+    const fillShape = fillSquare('f', 10, 10, 200);
+    const mid = { x: 100, y: 100 };
+    const out = { x: 400, y: 400 };
+    // No click given: fills are not walls.
     expect(rasteriseBarrier([fillShape], BOUNDS, 1).mask.some((v) => v)).toBe(false);
-    expect(rasteriseBarrier([fillShape], BOUNDS, 1, true).mask.some((v) => v)).toBe(true);
+    // A click outside it: its edge is a wall, its inside is not.
+    const { mask, w } = rasteriseBarrier([fillShape], BOUNDS, 1, false, out);
+    expect(mask[10 * w + 100]).toBe(1);
+    expect(mask[100 * w + 100]).toBe(0);
+    // A click under it: it is the paint being filled, so it is no wall at all.
+    expect(rasteriseBarrier([fillShape], BOUNDS, 1, false, mid).mask.some((v) => v)).toBe(false);
+    // Asked for: every fill, wherever the click is.
+    expect(rasteriseBarrier([fillShape], BOUNDS, 1, true, mid).mask.some((v) => v)).toBe(true);
   });
 
   it('keeps the mask to the pixel budget', () => {
@@ -203,5 +223,81 @@ describe('fill region', () => {
     const half = ok(fill([...circle, stroke([[190, 300], [410, 300]], 8)], 300, 250));
     expect(pathsOverlap(r.paths, half.paths, BOUNDS)).toBeLessThan(0.6);
     expect(pathsOverlap(r.paths, [], BOUNDS)).toBe(0);
+  });
+});
+
+describe('painted outlines (fills) as walls', () => {
+  it('an area outlined by a painted band fills just its inside', () => {
+    const band = [fillSquare('band', 100, 100, 300, 260)]; // a 20px painted frame, inside 120..380
+    const r = ok(fill(band, 250, 250));
+    expect(r.area).toBeGreaterThan(255 * 255);
+    expect(r.area).toBeLessThan(262 * 262);
+    expect(pointInPaths(r.paths, 250, 250)).toBe(true);
+    expect(pointInPaths(r.paths, 50, 50)).toBe(false);
+  });
+
+  it('a fill just made does not wall in the click that made it: filling it again gives the same area', () => {
+    const first = ok(fill([closedCircle(300, 300, 150)], 300, 300));
+    const made: Shape = { id: 'made', type: 'fill', color: '#00ff00', opacity: 1, paths: first.paths };
+    const again = ok(fill([closedCircle(300, 300, 150), made], 300, 300));
+    expect(Math.abs(again.area - first.area)).toBeLessThan(first.area * 0.01);
+    // And the outside is still just as open (it leaks) with the new fill sitting in the drawing.
+    expect(fill([closedCircle(300, 300, 150), made], 20, 20).kind).toBe('leak');
+  });
+
+  it('a fill covering the whole stage does not wall off anything', () => {
+    const background = fillSquare('bg', 0, 0, 600);
+    const withBg = ok(fill([closedCircle(300, 300, 150), background], 300, 300));
+    const without = ok(fill([closedCircle(300, 300, 150)], 300, 300));
+    expect(Math.abs(withBg.area - without.area)).toBeLessThan(without.area * 0.01);
+    expect(fill([background], 300, 300).kind).toBe('leak');
+  });
+
+  it('the hole in a painted ring is closed by the ring, and fills as its own area', () => {
+    const donut = fillSquare('donut', 100, 100, 400, 200); // hole 200x200 in the middle
+    const r = ok(fill([donut], 300, 300));
+    expect(r.area).toBeGreaterThan(190 * 190);
+    expect(r.area).toBeLessThan(205 * 205);
+    expect(pointInPaths(r.paths, 150, 150)).toBe(false);
+  });
+
+  it('a painted band with a gap in it is a gap like any other, closed by the gap setting', () => {
+    const shapes: Shape[] = [
+      fillBox('a', 100, 100, 290, 120),
+      fillBox('b', 300, 100, 400, 120),
+      fillBox('c', 100, 380, 400, 400),
+      fillBox('d', 100, 100, 120, 400),
+      fillBox('e', 380, 100, 400, 400),
+    ];
+    expect(fill(shapes, 250, 250, 0).kind).toBe('leak');
+    const r = ok(fill(shapes, 250, 250, 16));
+    expect(pointInPaths(r.paths, 250, 250)).toBe(true);
+    expect(pointInPaths(r.paths, 250, 50)).toBe(false);
+  });
+});
+
+describe('thin brush lines on a big canvas', () => {
+  const big = { x: 0, y: 0, width: 3840, height: 2160 };
+  const thin = (size: number) => [stroke(arc(1920, 1080, 600, 0, Math.PI * 2 + 0.1), size)];
+  it('a 1px line still closes a circle at the coarser mask a 4K canvas gets', () => {
+    expect(maskScale(3840, 2160)).toBeLessThan(0.7);
+    const r = fillRegion(thin(1), { x: 1920, y: 1080 }, { gap: 0, bounds: big });
+    expect(r.kind).toBe('ok');
+    if (r.kind === 'ok') expect(Math.abs(r.area - Math.PI * 600 * 600)).toBeLessThan(Math.PI * 600 * 600 * 0.03);
+  });
+
+  it('a 2px line closes a circle at a much coarser mask too', () => {
+    const r = fillRegion(thin(2), { x: 1920, y: 1080 }, { gap: 0, bounds: big, maxPixels: 1_000_000 });
+    expect(r.kind).toBe('ok');
+  });
+
+  it('a line that is open still leaks, and the floor keeps a wall to a pixel or two of mask', () => {
+    const open = [stroke(arc(1920, 1080, 600, 0, Math.PI * 1.5), 1)];
+    expect(fillRegion(open, { x: 1920, y: 1080 }, { gap: 0, bounds: big }).kind).toBe('leak');
+    const { mask, w } = rasteriseBarrier([stroke([[100, 100], [900, 100]], 1)], big, 0.5);
+    let rows = 0;
+    for (let y = 0; y < 200; y++) if (mask[y * w + 200]) rows++;
+    expect(rows).toBeLessThanOrEqual(4);
+    expect(rows).toBeGreaterThanOrEqual(1);
   });
 });

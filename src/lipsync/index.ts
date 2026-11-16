@@ -15,7 +15,7 @@ export const lipsyncFeature = defineFeature({
   panels: [{ id: 'lipsync', title: 'Lip sync', icon: 'mouth', component: lazyPanel(() => import('./LipSyncPanel').then((m) => m.LipSyncPanel)), zone: 'right', order: 70, help: 'lip-sync' }],
   help: lipsyncHelp,
   templates: ['lip-sync'],
-  menus: [{ menu: 'Animate', items: ['-', 'lipsync.auto', 'lipsync.autoWords', 'lipsync.nameFrames'] }],
+  menus: [{ menu: 'sub:sound', items: ['-', 'lipsync.auto', 'lipsync.autoWords', 'lipsync.nameFrames'] }],
   sections: {
     lipsync: { blurb: 'Match mouth shapes to a voice recording.', group: 'animate', keywords: ['mouth', 'voice', 'talking', 'phonemes'] },
   },

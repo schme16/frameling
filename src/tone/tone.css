@@ -1,0 +1,190 @@
+/* Curves and Levels dialog (ToneDialog.tsx). */
+.tn-body {
+  display: grid;
+  grid-template-columns: minmax(200px, 320px) minmax(260px, 330px);
+  gap: 18px;
+  align-items: start;
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .tn-body {
+    grid-template-columns: 1fr;
+  }
+}
+.tn-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+.tn-preview {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+  background-image: conic-gradient(color-mix(in srgb, var(--text) 8%, transparent) 25%, transparent 0 50%, color-mix(in srgb, var(--text) 8%, transparent) 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+.tn-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tn-tabs,
+.tn-channels,
+.tn-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tn-tab,
+.tn-chan,
+.tn-quick button {
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.tn-tab {
+  flex: 1;
+  font-weight: 700;
+  padding: 6px 12px;
+}
+.tn-tab[aria-selected='true'],
+.tn-chan[aria-checked='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: var(--chosen-bg);
+}
+.tn-tab:hover:not([aria-selected='true']),
+.tn-chan:hover:not([aria-checked='true']),
+.tn-quick button:hover {
+  background: var(--hover-bg);
+}
+.tn-tab:focus-visible,
+.tn-chan:focus-visible,
+.tn-quick button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.tn-chan i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--muted);
+}
+.tn-chan[data-channel='r'] i {
+  background: #e5484d;
+}
+.tn-chan[data-channel='g'] i {
+  background: #2fb170;
+}
+.tn-chan[data-channel='b'] i {
+  background: #3e7bfa;
+}
+.tn-graph {
+  width: 100%;
+  max-width: 300px;
+  align-self: center;
+  touch-action: none;
+  user-select: none;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  cursor: crosshair;
+}
+.tn-graph .tn-hist {
+  fill: color-mix(in srgb, var(--text) 22%, transparent);
+}
+.tn-graph .tn-grid {
+  stroke: color-mix(in srgb, var(--text) 14%, transparent);
+  stroke-width: 0.6;
+  fill: none;
+}
+.tn-graph .tn-ref {
+  stroke: color-mix(in srgb, var(--text) 30%, transparent);
+  stroke-width: 0.8;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+.tn-graph .tn-line {
+  stroke: var(--text);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linejoin: round;
+}
+.tn-graph[data-channel='r'] .tn-line {
+  stroke: #e5484d;
+}
+.tn-graph[data-channel='g'] .tn-line {
+  stroke: #2fb170;
+}
+.tn-graph[data-channel='b'] .tn-line {
+  stroke: #3e7bfa;
+}
+.tn-graph .tn-pt {
+  fill: var(--panel);
+  stroke: var(--text);
+  stroke-width: 1.6;
+  cursor: grab;
+}
+.tn-graph .tn-pt:focus-visible,
+.tn-graph .tn-pt[data-held='true'] {
+  fill: var(--chosen-bg);
+  outline: none;
+  stroke: var(--focus);
+  stroke-width: 2.4;
+}
+.tn-graph .tn-handle {
+  fill: var(--raised);
+  stroke: var(--text);
+  stroke-width: 1.4;
+  cursor: ew-resize;
+}
+.tn-graph .tn-handle:focus-visible {
+  outline: none;
+  stroke: var(--focus);
+  stroke-width: 2.6;
+}
+.tn-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.tn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-small);
+}
+.tn-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.tn-field span {
+  color: var(--muted);
+}
+.tn-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.tn-compare {
+  align-self: center;
+}

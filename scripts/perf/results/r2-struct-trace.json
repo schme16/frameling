@@ -1,0 +1,399 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:08:35.334Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 84.9,
+   "runs": [
+    84.9,
+    103.3,
+    83.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 28.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     49.8
+    ],
+    [
+     "(garbage collector) :0",
+     6.5
+    ],
+    [
+     "shallowCopy index-CGM3x_2d.js:11734",
+     5.2
+    ],
+    [
+     "pruneDrawings index-CGM3x_2d.js:12769",
+     2.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     49.8
+    ],
+    [
+     "performWorkOnRoot index-CGM3x_2d.js:7771",
+     15.8
+    ],
+    [
+     "performSyncWorkOnRoot index-CGM3x_2d.js:8600",
+     15.8
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-CGM3x_2d.js:8509",
+     15.8
+    ],
+    [
+     "processRootScheduleInMicrotask index-CGM3x_2d.js:8535",
+     15.8
+    ],
+    [
+     "(anon) index-CGM3x_2d.js:8605",
+     15.8
+    ],
+    [
+     "(anon) :0",
+     11.1
+    ],
+    [
+     "workLoopSync index-CGM3x_2d.js:8021",
+     11
+    ]
+   ],
+   "rendering": [
+    [
+     "#UpdateLayoutTree",
+     21
+    ],
+    [
+     "HitTest",
+     18.3
+    ],
+    [
+     "Paint",
+     11.4
+    ],
+    [
+     "Layerize",
+     7.7
+    ],
+    [
+     "#Layout",
+     6
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     4.1
+    ],
+    [
+     "FireAnimationFrame",
+     3.7
+    ],
+    [
+     "Commit",
+     2.3
+    ],
+    [
+     "Layout",
+     2.1
+    ],
+    [
+     "PrePaint",
+     2
+    ],
+    [
+     "MajorGC",
+     1
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     1
+    ],
+    [
+     "UpdateLayoutTree",
+     0.9
+    ],
+    [
+     "MinorGC",
+     0.7
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     0.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     0.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     0.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 60.8,
+   "runs": [
+    71.2,
+    52.6,
+    60.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 20.26,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.2
+    ],
+    [
+     "shallowCopy index-CGM3x_2d.js:11734",
+     6.5
+    ],
+    [
+     "fitLength index-CGM3x_2d.js:59414",
+     4.8
+    ],
+    [
+     "isDraftable index-CGM3x_2d.js:11677",
+     2.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "duplicateKey index-CGM3x_2d.js:59899",
+     25.6
+    ],
+    [
+     "run index-CGM3x_2d.js:118842",
+     25.6
+    ],
+    [
+     "run debug-CD-bbxmb.js:1586",
+     25.6
+    ],
+    [
+     "(anon) :0",
+     25.6
+    ],
+    [
+     "update index-CGM3x_2d.js:59842",
+     24.9
+    ],
+    [
+     "edit$3 index-CGM3x_2d.js:59875",
+     24.9
+    ],
+    [
+     "update index-CGM3x_2d.js:13144",
+     23.6
+    ],
+    [
+     "Immer2.produce index-CGM3x_2d.js:12128",
+     22.1
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     12.2
+    ],
+    [
+     "FireAnimationFrame",
+     5.6
+    ],
+    [
+     "#UpdateLayoutTree",
+     5
+    ],
+    [
+     "Layerize",
+     4.2
+    ],
+    [
+     "HitTest",
+     3.5
+    ],
+    [
+     "Layout",
+     3.4
+    ],
+    [
+     "#Layout",
+     3
+    ],
+    [
+     "PrePaint",
+     1.4
+    ],
+    [
+     "Commit",
+     1.1
+    ],
+    [
+     "MinorGC",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 46.4,
+   "runs": [
+    46.4,
+    45.1,
+    48
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 15.48,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.7
+    ],
+    [
+     "pruneDrawings index-CGM3x_2d.js:12769",
+     2.6
+    ],
+    [
+     "useLayers index-CGM3x_2d.js:12771",
+     0.6
+    ],
+    [
+     "updateProperties index-CGM3x_2d.js:9427",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.7
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-CGM3x_2d.js:8509",
+     5.7
+    ],
+    [
+     "processRootScheduleInMicrotask index-CGM3x_2d.js:8535",
+     5.7
+    ],
+    [
+     "(anon) index-CGM3x_2d.js:8605",
+     5.7
+    ],
+    [
+     "performWorkOnRoot index-CGM3x_2d.js:7771",
+     5.6
+    ],
+    [
+     "performSyncWorkOnRoot index-CGM3x_2d.js:8600",
+     5.6
+    ],
+    [
+     "deleteLayer index-CGM3x_2d.js:60011",
+     4.5
+    ],
+    [
+     "run index-CGM3x_2d.js:119008",
+     4.5
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     29.8
+    ],
+    [
+     "PrePaint",
+     5
+    ],
+    [
+     "#UpdateLayoutTree",
+     4
+    ],
+    [
+     "Layerize",
+     4
+    ],
+    [
+     "#Layout",
+     3
+    ],
+    [
+     "Layout",
+     2.3
+    ],
+    [
+     "HitTest",
+     2.1
+    ],
+    [
+     "FireAnimationFrame",
+     1.3
+    ],
+    [
+     "Commit",
+     1.1
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

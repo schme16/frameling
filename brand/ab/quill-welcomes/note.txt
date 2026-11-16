@@ -1,0 +1,3 @@
+Quill welcomes somebody new, dark and light (H.264, yuv420p).
+Clip: a follower welcomed by name (the question first, covered until Read it, then Say it), six more followers arriving while he is busy and welcomed together without the name (Leave the name out), then a raid by name.
+All names are made up. Every line he says is in src/ui/mascot/lines.json under stream.welcome.*.

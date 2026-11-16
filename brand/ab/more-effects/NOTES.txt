@@ -1,0 +1,5 @@
+grain.png: A: as drawn. B: Film grain, strength 35, speck size 1.5.
+wave.png: A: as drawn. B: Wave (heat shimmer, no ripple). C: Wave with rippling at 100%.
+fringe.png: A: as drawn. B: Colour fringe, 4 px apart, sideways.
+vignette.png: A: as drawn. B: Dark corners at the defaults (strength 45, clear middle 65, softness 60).
+motionblur.png: A: as drawn. B: Motion blur on the hero only, 36 px, trailing behind (moving right).

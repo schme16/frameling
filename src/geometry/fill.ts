@@ -1,10 +1,11 @@
 /**
  * The paint bucket's core: pure, DOM-free, runs in Node.
  *
- * 1. Rasterise every wall (stroke outlines, path edges) into a binary mask, at a scale that keeps it to about 4
+ * 1. Rasterise every wall (stroke outlines, path edges, the edges of fills not under the click) into a binary mask, at a scale that keeps it to about 4
  *    million pixels.
  * 2. Close gaps: dilate the walls by half the gap, flood fill from the click on that fatter mask, grow the filled
  *    area back by the same amount (plus a hair), and let it tuck a pixel under the lines so there are no slivers.
+ *    A channel narrower than the gap is shut on the fat mask, so it is filled on down its length separately.
  * 3. If the area touches the stage edge it leaked. If the click landed on a wall, say so.
  * 4. Trace the area's outer edge and holes (marching squares), simplify (RDP) and fit cubic beziers (Schneider), so
  *    the result is a smooth, lossless `FillShape` outline in document coordinates.
@@ -14,7 +15,7 @@
 import type { Shape, SubPath } from '../core/format';
 import { fitClosedLoop, DEFAULT_LOOP, type LoopOptions, type V } from './bezier';
 import { shapesToBarrier } from './barrier';
-import { floodSpans } from './flood';
+import { floodSpans, type FloodResult } from './flood';
 import { flattenSubPath } from './hit';
 import { dilate, discTable, stampSpans } from './morph';
 import { fillRings, ringArea2 } from './raster';
@@ -34,7 +35,7 @@ export interface FillRegionOptions {
   bounds: Rect;
   /** Mask size budget (default 4 million pixels). */
   maxPixels?: number;
-  /** Treat existing fills' edges as walls. */
+  /** Treat every existing fill's edge as a wall. Without it, fills still wall the click in, except the ones under the click. */
   includeFills?: boolean;
   /** Outline fitting settings, in mask pixels. */
   fit?: Partial<LoopOptions>;
@@ -47,12 +48,16 @@ export interface FillStats {
   height: number;
   /** The gap radius actually used in mask pixels (it shrinks if the click is boxed into a tiny pocket). */
   radius: number;
+  /** The gap radius the setting asked for, in mask pixels. Bigger than `radius` when the click had no room for it. */
+  wanted: number;
   ms: number;
 }
 
 export type FillResult =
   | { kind: 'ok'; paths: SubPath[]; area: number; box: Rect; stats: FillStats }
   | { kind: 'leak'; stats: FillStats }
+  /** Leaked, but only after the gap closing was cut down because the click had no room for all of it. */
+  | { kind: 'cramped'; stats: FillStats }
   | { kind: 'on-line'; stats: FillStats }
   | { kind: 'outside'; stats: FillStats };
 
@@ -61,6 +66,8 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
 /** How far past the closed gap the area is grown, and how far it tucks under a wall, in mask pixels. */
 const GROW_EXTRA = 1;
 const TUCK = 1;
+/** The outline fit is checked at least this often along a long edge, in mask pixels. */
+const FIT_SPAN = 8;
 
 /** The mask scale for a stage size under a pixel budget. */
 export function maskScale(width: number, height: number, maxPixels = 4_000_000): number {
@@ -68,12 +75,13 @@ export function maskScale(width: number, height: number, maxPixels = 4_000_000):
 }
 
 /** Rasterises walls into a fresh mask. */
-export function rasteriseBarrier(shapes: readonly Shape[], bounds: Rect, scale: number, includeFills = false): { mask: Uint8Array; w: number; h: number } {
+export function rasteriseBarrier(shapes: readonly Shape[], bounds: Rect, scale: number, includeFills = false, click?: { x: number; y: number }): { mask: Uint8Array; w: number; h: number } {
   const w = Math.max(1, Math.ceil(bounds.width * scale));
   const h = Math.max(1, Math.ceil(bounds.height * scale));
   const mask = new Uint8Array(w * h);
   // A wall under a pixel and a half wide can drop out of a mask, so thin edges are given that much.
-  const parts = shapesToBarrier(shapes, { thinWidth: 1.5 / scale, includeFills });
+  // Below full size, brush lines too thin for the mask are given that much as well (see `floorStrokes`).
+  const parts = shapesToBarrier(shapes, { thinWidth: 1.5 / scale, includeFills, fillsAround: click, floorStrokes: scale < 1 });
   for (const part of parts) {
     const rings = part.rings.map((ring) => {
       const out = new Float64Array(ring.length);
@@ -121,6 +129,88 @@ function findSeed(walls: Uint8Array, fat: Uint8Array, w: number, h: number, cx: 
   return -1;
 }
 
+/** The flood result with more pixels added, merged into runs. The pixels must be open and touch the filled area. */
+function withPixels(region: FloodResult, extra: number[], w: number): FloodResult {
+  const sorted = Int32Array.from(extra).sort();
+  const runs: number[] = [];
+  for (let k = 0; k < sorted.length; ) {
+    const i = sorted[k];
+    const y = (i / w) | 0;
+    let j = k;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1 && ((sorted[j + 1] / w) | 0) === y) j++;
+    runs.push(y, i - y * w, sorted[j] - y * w);
+    k = j + 1;
+  }
+  const spans = new Int32Array(region.spanCount * 3 + runs.length);
+  spans.set(region.spans.subarray(0, region.spanCount * 3));
+  spans.set(runs, region.spanCount * 3);
+  const mark = region.mark;
+  for (const i of sorted) mark[i] = 1;
+  return { ...region, spans, spanCount: region.spanCount + runs.length / 3, count: region.count + sorted.length };
+}
+
+/**
+ * Pixels the grow-back could not reach: the rest of a channel that is narrower than the gap closing.
+ *
+ * The fattened walls close such a channel completely, so the first flood stops at its mouth and the grow only
+ * reaches `gr` into it. A channel pixel is one that is open (not a real wall), not filled yet, and has no open
+ * pixel of the fattened mask within `gr`: it is deeper in than any wide ground could be, so it is a dead-end channel
+ * or the middle of a long slit, never the edge of a room. Walks out from the filled area through those pixels only.
+ * The shapes a gap leaks through (a short break in a line) are shorter than 2 * gr, so they have none, and the
+ * ground outside a closed shape is never entered. Returns the pixel indexes to add.
+ */
+function channelPixels(region: FloodResult, walls: Uint8Array, fat: Uint8Array, w: number, h: number, gr: number): number[] {
+  const hw = discTable(gr);
+  const m = hw.length - 1;
+  const added = new Set<number>();
+  const queue: number[] = [];
+  // Open ground within gr of (x, y), counting what is off the stage as open.
+  const near = (x: number, y: number): boolean => {
+    if (x < m || y < m || x + m >= w || y + m >= h) return true;
+    for (let dy = -m; dy <= m; dy++) {
+      const e = hw[dy < 0 ? -dy : dy];
+      const row = (y + dy) * w + x;
+      if (fat.subarray(row - e, row + e + 1).indexOf(0) !== -1) return true;
+    }
+    return false;
+  };
+  // Stepping one pixel from a pixel that has no open ground within gr, only the new edge of the disc needs a look.
+  const edgeOpen = (x: number, y: number, dx: number, dy: number): boolean => {
+    for (let k = -m; k <= m; k++) {
+      const e = hw[k < 0 ? -k : k];
+      const at = dx !== 0 ? (y + k) * w + x + dx * e : (y + dy * e) * w + x + k;
+      if (!fat[at]) return true;
+    }
+    return false;
+  };
+  // `dx, dy` is the step from a pixel already known to be a channel pixel, or 0, 0 for a first look.
+  const tryAdd = (x: number, y: number, dx: number, dy: number) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const i = y * w + x;
+    if (walls[i] || region.mark[i] || added.has(i)) return;
+    if (dx === 0 && dy === 0 ? near(x, y) : x < m || y < m || x + m >= w || y + m >= h || edgeOpen(x, y, dx, dy)) return;
+    added.add(i);
+    queue.push(i);
+  };
+  // Every unfilled open pixel next to the filled area sits beside the end of a run.
+  const { spans, spanCount } = region;
+  for (let k = 0; k < spanCount; k++) {
+    const y = spans[3 * k];
+    tryAdd(spans[3 * k + 1] - 1, y, 0, 0);
+    tryAdd(spans[3 * k + 2] + 1, y, 0, 0);
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const i = queue[head];
+    const x = i % w;
+    const y = (i / w) | 0;
+    tryAdd(x + 1, y, 1, 0);
+    tryAdd(x - 1, y, -1, 0);
+    tryAdd(x, y + 1, 0, 1);
+    tryAdd(x, y - 1, 0, -1);
+  }
+  return queue;
+}
+
 /**
  * Finds the area enclosed around `click` and returns it as smooth vector paths.
  * `ok` carries `paths` ready to drop into a `FillShape` (even-odd, outer edges and holes).
@@ -131,7 +221,7 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   const scale = maskScale(bounds.width, bounds.height, opts.maxPixels);
   const w = Math.max(1, Math.ceil(bounds.width * scale));
   const h = Math.max(1, Math.ceil(bounds.height * scale));
-  const stats: FillStats = { scale, width: w, height: h, radius: 0, ms: 0 };
+  const stats: FillStats = { scale, width: w, height: h, radius: 0, wanted: 0, ms: 0 };
   const done = <T extends FillResult>(r: T): T => {
     stats.ms = now() - t0;
     return r;
@@ -140,29 +230,45 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   const cy = Math.floor((click.y - bounds.y) * scale);
   if (!(cx >= 0 && cy >= 0 && cx < w && cy < h)) return done({ kind: 'outside', stats });
 
-  const { mask: walls } = rasteriseBarrier(shapes, bounds, scale, opts.includeFills);
+  const { mask: walls } = rasteriseBarrier(shapes, bounds, scale, opts.includeFills, click);
   if (walls[cy * w + cx]) return done({ kind: 'on-line', stats });
 
-  // Gap closing. If the click is boxed into a pocket smaller than the gap, try half the gap, and so on.
-  let r = Math.max(0, (opts.gap ?? 0) * 0.5 * scale);
-  let fat = walls;
-  let seed = cy * w + cx;
-  for (;;) {
-    fat = r >= 1 ? dilate(walls, w, h, r) : walls;
-    if (!fat[cy * w + cx]) {
-      seed = cy * w + cx;
-      break;
+  // Gap closing. The walls are fattened by the gap radius and flooded from the click. If the click is inside the
+  // fattened lines and there is no open ground near it (a narrow handle, a tight pocket), the radius has to come
+  // down. It comes down as little as it can, not by halves, so the gaps stay closed as far as the room allows.
+  const wanted = Math.max(0, (opts.gap ?? 0) * 0.5 * scale);
+  stats.wanted = wanted >= 1 ? wanted : 0;
+  const seedAt = (rad: number): { fat: Uint8Array; seed: number } => {
+    const f = rad >= 1 ? dilate(walls, w, h, rad) : walls;
+    if (!f[cy * w + cx]) return { fat: f, seed: cy * w + cx };
+    return { fat: f, seed: findSeed(walls, f, w, h, cx, cy, rad) };
+  };
+  let r = wanted;
+  let found = seedAt(r);
+  if (found.seed < 0) {
+    // Biggest whole radius under the wanted one that leaves room to start. A radius of 0 always does.
+    let lo = 0;
+    let hi = Math.ceil(wanted) - 1;
+    let best: { fat: Uint8Array; seed: number } | null = null;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const t = seedAt(mid);
+      if (t.seed >= 0) {
+        lo = mid;
+        best = t;
+      } else hi = mid - 1;
     }
-    seed = findSeed(walls, fat, w, h, cx, cy, r);
-    if (seed >= 0) break;
-    r = r > 2 ? Math.floor(r / 2) : 0;
+    r = lo;
+    found = best && lo >= 1 ? best : seedAt(r);
   }
+  const fat = found.fat;
+  const seed = found.seed;
   stats.radius = r >= 1 ? r : 0;
   const sx = seed % w;
   const sy = (seed / w) | 0;
 
   const first = floodSpans(fat, w, h, sx, sy);
-  if (first.touchesEdge) return done({ kind: 'leak', stats });
+  if (first.touchesEdge) return done({ kind: r < wanted - 0.5 ? 'cramped' : 'leak', stats });
 
   let region = first;
   if (r >= 1) {
@@ -182,6 +288,10 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
     const blocked = new Uint8Array(w * h).fill(1);
     for (let i = lo * w; i < (hi + 1) * w; i++) blocked[i] = grown[i] && !walls[i] ? 0 : 1;
     region = floodSpans(blocked, w, h, sx, sy);
+    // A channel narrower than the gap is shut on the fat mask, so the colour only gets as far as the grow reaches.
+    // Carry it on down the channel, through pixels that are far from any open ground (see `channelPixels`).
+    const extra = channelPixels(region, walls, fat, w, h, gr);
+    if (extra.length) region = withPixels(region, extra, w);
   }
 
   // Tuck a pixel under the walls, so no hairline of background shows between the paint and the line.
@@ -214,7 +324,7 @@ export function fillRegion(shapes: readonly Shape[], click: V, opts: FillRegionO
   y1 = Math.min(h - 1, y1 + TUCK + 1);
 
   const loops = traceMask(mark, w, h, { x0, y0, x1, y1 });
-  const fit: LoopOptions = { ...DEFAULT_LOOP, ...opts.fit };
+  const fit: LoopOptions = { ...DEFAULT_LOOP, span: FIT_SPAN, ...opts.fit };
   const paths: SubPath[] = [];
   for (const loop of loops) {
     const a2 = ringArea2(loop);

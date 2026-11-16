@@ -4,7 +4,7 @@
 // "core": something a person might want to change. The rest are "derived" from the core ones (a softer line, a hover
 // shade, shadows), and the editor recalculates those when the colours they depend on change. The brand tokens are the
 // friendly rainbow used for little highlights; themes keep them unless they have a reason to change them.
-import { alpha, hexToHsl, hslToHex, mix } from './color';
+import { alpha, ensureContrast, hexToHsl, hslToHex, mix } from './color';
 
 export type ThemeMode = 'dark' | 'light';
 export type ThemeTokens = Record<string, string>;
@@ -17,7 +17,7 @@ export const CORE_TOKENS = [
 export const BRAND_TOKENS = ['peach', 'rose', 'grape', 'sky', 'mint'] as const;
 
 /** One colour per thing a snap can land on: the line on the canvas and the dot in the "Snapped to" note. Same order as the snapping options. */
-export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-grid', 'snap-shapes', 'snap-spacing', 'snap-perspective', 'snap-plugins', 'snap-cells', 'snap-angles', 'snap-artboards'] as const;
+export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-grid', 'snap-points', 'snap-shapes', 'snap-spacing', 'snap-perspective', 'snap-plugins', 'snap-cells', 'snap-angles', 'snap-artboards'] as const;
 
 /**
  * What the snap colours start as (the same values canvas.css holds as a fallback). The dark set reads 3:1 on white and
@@ -25,11 +25,11 @@ export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-gri
  */
 export const SNAP_DEFAULTS: Record<ThemeMode, ThemeTokens> = {
   dark: {
-    'snap-page': '#0e9a8c', 'snap-centre': '#4d88e8', 'snap-guides': '#d757c2', 'snap-grid': '#798aa5', 'snap-shapes': '#e45b72',
+    'snap-page': '#0e9a8c', 'snap-centre': '#4d88e8', 'snap-guides': '#d757c2', 'snap-grid': '#798aa5', 'snap-points': '#7d9420', 'snap-shapes': '#e45b72',
     'snap-spacing': '#d1700a', 'snap-perspective': '#9873ef', 'snap-plugins': '#1a9cc8', 'snap-cells': '#798aa5', 'snap-angles': '#aa8400', 'snap-artboards': '#2f9d44',
   },
   light: {
-    'snap-page': '#00695f', 'snap-centre': '#1c4fb8', 'snap-guides': '#9c1488', 'snap-grid': '#4a5870', 'snap-shapes': '#b01f3e',
+    'snap-page': '#00695f', 'snap-centre': '#1c4fb8', 'snap-guides': '#9c1488', 'snap-grid': '#4a5870', 'snap-points': '#4f6200', 'snap-shapes': '#b01f3e',
     'snap-spacing': '#9a4a00', 'snap-perspective': '#5a30b8', 'snap-plugins': '#0b6a8c', 'snap-cells': '#4a5870', 'snap-angles': '#6b5000', 'snap-artboards': '#1a6b2a',
   },
 };
@@ -42,7 +42,7 @@ export function switchSnapMode(tokens: ThemeTokens, from: ThemeMode, to: ThemeMo
   return out;
 }
 
-export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'peach-soft', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small'] as const;
+export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'peach-soft', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small', 'tip-bg', 'tip-fg', 'tip-soft', 'tip-line', 'tip-link'] as const;
 
 /** Every token a theme has a value for. */
 export const ALL_TOKENS: readonly string[] = [...CORE_TOKENS, ...BRAND_TOKENS, ...SNAP_TOKENS, ...DERIVED_TOKENS];
@@ -64,6 +64,14 @@ export const BRAND: ThemeTokens = {
 
 type Deriver = (t: ThemeTokens, mode: ThemeMode) => string;
 
+/** How much of the raised colour a tooltip keeps (the rest is the text colour), and how much of its border is accent. */
+export const TIP_SURFACE = 0.86;
+export const TIP_ACCENT = 0.45;
+/** How much of the link colour is accent (the rest is the tip words). */
+export const TIP_LINK = 0.55;
+/** Words in a tooltip need this much against its fill. */
+export const TIP_WORDS_MIN = 4.5;
+
 /** How each derived token is worked out, and which core tokens it depends on. */
 export const DERIVED: Record<string, { deps: string[]; make: Deriver }> = {
   'line-soft': { deps: ['line', 'panel'], make: (t) => mix(t.line, t.panel, 0.5) },
@@ -83,6 +91,15 @@ export const DERIVED: Record<string, { deps: string[]; make: Deriver }> = {
       return hslToHex(h, s * 0.92, l - 0.11);
     },
   },
+  // The tooltip: a step past the menu surface (the raised colour a little way towards the text) so a tip reads as a
+  // label about something and not another menu, without being the brightest thing on screen. The accent in the border
+  // does the telling apart. The words are the theme's own, moved only as far as they need to reach 4.5:1 on that fill.
+  'tip-bg': { deps: ['raised', 'text'], make: (t) => mix(t.raised, t.text, TIP_SURFACE) },
+  'tip-fg': { deps: ['text', 'raised', 'tip-bg'], make: (t) => ensureContrast(t.text, t['tip-bg'], TIP_WORDS_MIN) },
+  'tip-soft': { deps: ['muted', 'raised', 'text', 'tip-bg'], make: (t) => ensureContrast(t.muted, t['tip-bg'], TIP_WORDS_MIN) },
+  'tip-line': { deps: ['accent', 'line'], make: (t) => mix(t.accent, t.line, TIP_ACCENT) },
+  // The "Learn more" link in a tip: the accent, leaning towards the tip words, moved only as far as it needs to read.
+  'tip-link': { deps: ['accent', 'tip-fg', 'tip-bg'], make: (t) => ensureContrast(mix(t.accent, t['tip-fg'], TIP_LINK), t['tip-bg'], TIP_WORDS_MIN) },
   'stage-shadow': { deps: ['text'], make: (t, m) => `0 6px 30px ${alpha(m === 'dark' ? '#000000' : t.text, m === 'dark' ? 0.45 : 0.18)}` },
   shadow: { deps: ['text'], make: (t, m) => `0 8px 28px ${alpha(m === 'dark' ? '#000000' : t.text, m === 'dark' ? 0.35 : 0.16)}` },
   'shadow-small': { deps: ['text'], make: (t, m) => `0 2px 8px ${alpha(m === 'dark' ? '#000000' : t.text, m === 'dark' ? 0.25 : 0.12)}` },
@@ -154,6 +171,7 @@ export const SNAP_CONTROLS: EditorControl[] = [
   { token: 'snap-centre', label: 'Page middle', hint: 'The middle of the page, across and down.', group: 'snapping' },
   { token: 'snap-guides', label: 'Guides', hint: 'Guide lines from the rulers.', group: 'snapping' },
   { token: 'snap-grid', label: 'Grid', hint: 'The square or isometric grid.', group: 'snapping' },
+  { token: 'snap-points', label: 'Line ends and points', hint: 'The end of another line, or a point of another path.', group: 'snapping' },
   { token: 'snap-shapes', label: 'Other shapes', hint: 'Edges and middles of other shapes.', group: 'snapping' },
   { token: 'snap-spacing', label: 'Equal gaps', hint: 'The bars and sizes of a gap. The number on them is black or white to suit.', group: 'snapping' },
   { token: 'snap-perspective', label: 'Perspective lines', hint: 'Lines that follow a vanishing point.', group: 'snapping' },

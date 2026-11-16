@@ -36,6 +36,26 @@ describe('one pass of a clip', () => {
     expect(cyclePositions(2, 'pingpong-reverse')).toEqual([1, 0]);
     expect(cycleLength(1, 'pingpong')).toBe(1);
   });
+  it('gives a fresh list every time, so a caller changing one does not change the next', () => {
+    const first = cyclePositions(6, 'pingpong');
+    first[0] = 99;
+    expect(cyclePositions(6, 'pingpong')[0]).toBe(0);
+    const baked = bakedPositions(6, 'pingpong', Infinity);
+    baked[1] = 99;
+    expect(bakedPositions(6, 'pingpong', Infinity)[1]).toBe(1);
+  });
+  it('is the order playback actually steps through, for every length and direction', () => {
+    const dirs = ['forward', 'reverse', 'pingpong', 'pingpong-reverse'] as const;
+    for (const dir of dirs) {
+      for (let len = 1; len <= 9; len++) {
+        const pass = cyclePositions(len, dir);
+        const cycle = cycleLength(len, dir);
+        // Two whole passes, to catch an off-by-one where the order starts again.
+        const stepped = Array.from({ length: cycle * 2 }, (_, i) => directedPosition(i, len, dir, Infinity).pos);
+        expect(stepped, `${dir} of ${len}`).toEqual([...pass, ...pass].slice(0, cycle * 2));
+      }
+    }
+  });
 });
 
 describe('where it is after some steps', () => {

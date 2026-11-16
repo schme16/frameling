@@ -7,6 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 export const ASEPRITE_MIME = 'application/x-aseprite';
+/** frameling:// links (a join link for a live review, or an Interactives "Edit in Frameling"). */
+export const SCHEME_MIME = 'x-scheme-handler/frameling';
 
 /**
  * The launcher. `%U` hands over file:// links for files (the app understands those) and frameling:// links as they are.
@@ -22,7 +24,7 @@ export function desktopEntry(target, icon, { beta = false } = {}) {
     `Icon=${icon}`,
     'Terminal=false',
     'Categories=Graphics;',
-    ...(beta ? [] : [`MimeType=${ASEPRITE_MIME};`]),
+    ...(beta ? [] : [`MimeType=${ASEPRITE_MIME};${SCHEME_MIME};`]),
     'StartupWMClass=frameling',
     '',
   ].join('\n');
@@ -77,6 +79,7 @@ export function installIntegration({ target, icon, mimeXml, beta = false, env = 
     quiet('update-mime-database', [path.join(dirs[0], 'mime')], env);
   }
   quiet('update-desktop-database', [apps], env);
+  // The launcher lists frameling:// links, so with nobody else claiming them the desktop sends them here.
   // With no default chosen, the desktop uses the first program that lists the type. Say so if that came out as us.
   let stolen = false;
   try {

@@ -7,7 +7,9 @@ import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 import { clampOutline, DEFAULT_OUTLINE } from '../pixel/thick';
 import { isSwitcherLook, type SwitcherLook } from './switcherModel';
 import { canSend } from '../beta/send';
+import { showExplanationsDefault } from './explainModel';
 import { DEFAULT_HISTORY_STEPS, HISTORY_STEPS_RANGE, setHistorySteps } from '../core/store';
+import { setStreamSafe } from '../core/streamSafe';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -35,20 +37,37 @@ export interface Prefs {
   showWelcome: boolean;
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
+  /**
+   * Keep the little explanations on show in panels and under controls. Off tucks them behind the help icon (the words
+   * are the same, in a tooltip). On for a new person, so they meet the words once; off for someone who was here first.
+   */
+  showExplanations: boolean;
   /** The workspace switcher beside the document name: small tabs, one chip with the name, or hidden. */
   workspaceSwitcher: SwitcherLook;
   /** Show the theme's texture around the page (camo print, strawberry seeds, sock stripes). On by default. */
   showTextures: boolean;
   /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
+  /** Which mascot shows. The id of one in src/ui/mascot/mascots.json; anything unknown means the standard one. */
+  mascot: string;
   /**
    * Beta reports: whether the panel in Preferences > Diagnostics offers to send one. On by default in a beta build
    * (which is what being a tester is), off everywhere else, and a tester can turn it off whenever they like. See
    * `defaultBetaReports` below and src/beta.
    */
   betaReports: boolean;
+  /**
+   * Look for a newer Frameling on this project's GitHub releases, a little after start-up and twice a day. A request to
+   * GitHub and nothing of yours goes with it. Off means no check ever happens by itself (the Check for updates command
+   * still works when you ask). See src/update.
+   */
+  updateCheck: boolean;
+  /** The version you chose Skip this one for. It is never offered again; a newer one still is. Empty when none. */
+  updateSkipped: string;
   /** How to get back to you about a report, only if you chose to give it. Kept on this computer, never anywhere else. */
   betaContact: string;
+  /** Put the processor, memory and graphics in a report. Always shown first; this just lets a person leave it out. */
+  betaMachine: boolean;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';
   /** The tool rail: every tool two wide in groups, or one button per group with the rest in a flyout. */
@@ -77,6 +96,8 @@ export interface Prefs {
   pixelThickOutlines: boolean;
   /** How thick that outline is, in art pixels (1 to 16). */
   pixelOutlineWidth: number;
+  /** How wide each square is (in page pixels) on a new pixel layer made when no other pixel layer shows the size to copy. */
+  newPixelSize: number;
   /** How many undo steps to keep (20 to 2000). A very long history still stops growing when it gets heavy. */
   historySteps: number;
   /** How big the whole interface is drawn, as a share of the usual size (0.75 to 2). For big, dense screens. */
@@ -85,6 +106,12 @@ export interface Prefs {
   themePicking: 'basic' | 'advanced';
   /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
+  /** Stream-safe mode: show friendly stand-ins for file paths, your name and keys, so a shared screen gives nothing away. Display only; off by default. See src/core/streamSafe.ts. */
+  streamSafe: boolean;
+  /** Going live with OBS: Frameling watches OBS (on this computer or your own network) and turns Stream-safe on by itself when you start streaming or recording. Off by default. The password is not here: it lives on the desktop side. See src/streamsafe/obsLink.ts. */
+  obsLink: boolean;
+  /** Where OBS's WebSocket server listens, as OBS shows it (OBS > Tools > WebSocket Server Settings). */
+  obsAddress: string;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -103,11 +130,16 @@ export const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
+  showExplanations: true,
   workspaceSwitcher: 'tabs',
   showTextures: true,
   showQuill: true,
+  mascot: 'quill',
   betaReports: canSend(),
   betaContact: '',
+  betaMachine: true,
+  updateCheck: true,
+  updateSkipped: '',
   rightSide: 'inspector',
   toolRail: 'two',
   toolSize: 'medium',
@@ -125,7 +157,11 @@ export const DEFAULT_PREFS: Prefs = {
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
+  newPixelSize: 8,
   pluginDiagnostics: false,
+  streamSafe: false,
+  obsLink: false,
+  obsAddress: 'localhost:4455',
 };
 
 /**
@@ -153,10 +189,15 @@ export function migratePrefs(raw: unknown): Prefs {
     reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    showExplanations: bool(r.showExplanations, showExplanationsDefault(r)),
     workspaceSwitcher: isSwitcherLook(r.workspaceSwitcher) ? r.workspaceSwitcher : DEFAULT_PREFS.workspaceSwitcher,
     showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    mascot: typeof r.mascot === 'string' && r.mascot ? r.mascot.slice(0, 40) : DEFAULT_PREFS.mascot,
     betaReports: bool(r.betaReports, DEFAULT_PREFS.betaReports),
+    updateCheck: bool(r.updateCheck, DEFAULT_PREFS.updateCheck),
+    updateSkipped: typeof r.updateSkipped === 'string' ? r.updateSkipped.slice(0, 40) : DEFAULT_PREFS.updateSkipped,
+    betaMachine: bool(r.betaMachine, DEFAULT_PREFS.betaMachine),
     betaContact: typeof r.betaContact === 'string' ? r.betaContact.slice(0, 200) : DEFAULT_PREFS.betaContact,
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
@@ -176,7 +217,11 @@ export function migratePrefs(raw: unknown): Prefs {
     cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
     pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
     pluginDiagnostics: bool(r.pluginDiagnostics, DEFAULT_PREFS.pluginDiagnostics),
+    streamSafe: bool(r.streamSafe, DEFAULT_PREFS.streamSafe),
+    obsLink: bool(r.obsLink, DEFAULT_PREFS.obsLink),
+    obsAddress: typeof r.obsAddress === 'string' && r.obsAddress.trim() ? r.obsAddress.slice(0, 200) : DEFAULT_PREFS.obsAddress,
     pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
+    newPixelSize: typeof r.newPixelSize === 'number' && Number.isFinite(r.newPixelSize) ? Math.min(64, Math.max(1, Math.round(r.newPixelSize))) : DEFAULT_PREFS.newPixelSize,
   };
 }
 
@@ -230,15 +275,15 @@ export function applyPrefs(): void {
   applyUiScale(p.uiScale);
   // The store keeps its own copy, so undo works the same in tests and harnesses with no DOM.
   setHistorySteps(p.historySteps);
+  setStreamSafe(p.streamSafe);
   if (typeof document === 'undefined') return;
   watchSystem();
   const root = document.documentElement;
   const theme = activeTheme();
   writeTheme(root, theme);
-  // data-theme only says dark or light, for the few stylesheet rules that care. With System it's left off so the
-  // computer's own setting decides them, which always agrees with the theme chosen above.
-  if (p.theme === 'system' && !preview) delete root.dataset.theme;
-  else root.dataset.theme = theme.mode;
+  // data-theme says whether the theme showing is dark or light, for the few stylesheet rules that care. It comes from
+  // the theme itself, never from the computer, because a light theme can sit in the dark slot.
+  root.dataset.theme = theme.mode;
   // A pattern around the page for the themes that have one (camo, strawberry seeds, sock stripes), unless textures
   // are turned off. Pure CSS, see canvas.css.
   const surround = p.showTextures ? surroundFor(theme) : null;

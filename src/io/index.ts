@@ -2,6 +2,7 @@
 // title, files opened from outside). Other areas can import the helpers below.
 import './commands';
 import './help';
+import './restart';
 import { startFileServices } from './autosave';
 import { registerSaveHook } from './document';
 import { startVersionHistory, versionOnSave } from './versions';

@@ -11,6 +11,7 @@ import { setDocPalette } from '../commands';
 import { docPalette } from '../palette';
 import { mergePalette, spriteDoc, spriteInto, spritePalette } from './build';
 import { ImportDialog, type ImportMode, type ImportRequest } from './ImportDialog';
+import { pickSpritePalette } from './spriteColours';
 import { decodePicture, PICTURE_ACCEPT, PICTURE_EXT, PictureProblem } from './picture';
 import { readSheetJson, type SheetData } from './sheetJson';
 
@@ -42,8 +43,17 @@ export async function pickSheetJson(): Promise<SheetData | null> {
 }
 
 /** The sprite as a new drawing, or added to the open one. */
-async function apply(req: ImportRequest, name: string): Promise<boolean> {
-  const { sprite, options } = req;
+export async function apply(req: ImportRequest, name: string): Promise<boolean> {
+  const { sprite } = req;
+  let options = req.options;
+  // The colours are picked here in small steps, so a big picture never holds the page up while it is built.
+  if (options.palette && options.colours === undefined) {
+    try {
+      options = { ...options, colours: await pickSpritePalette(sprite, options.name) };
+    } catch {
+      options = { ...options, colours: null };
+    }
+  }
   if (req.into) {
     if (store().nestedTag()) {
       notify('Close the symbol you are editing first, then add the picture to the drawing.', 'info');
@@ -78,7 +88,7 @@ async function apply(req: ImportRequest, name: string): Promise<boolean> {
 
 /** Takes the picture's colours as the drawing's palette: added to it, or in its place. */
 function colours(req: ImportRequest, name: string): void {
-  const p = spritePalette(req.sprite, name);
+  const p = req.picked ?? spritePalette(req.sprite, name);
   if (!p) return notify('The picture has no solid colours to take.', 'warn');
   const doc = store().get().doc;
   const next = req.paletteMode === 'add' ? { ...docPalette(doc), ...mergePalette(docPalette(doc), p) } : { ...p };
@@ -149,6 +159,13 @@ export async function dropPictures(files: File[]): Promise<void> {
   const image = files.find((f) => PICTURE_EXT.test(f.name));
   if (!image) return;
   const json = files.find((f) => /\.json$/i.test(f.name));
+  // Several pictures dropped together are the frames of one animation.
+  const images = files.filter((f) => PICTURE_EXT.test(f.name));
+  if (images.length > 1 && !json) {
+    const { importSequenceFiles } = await import('../../import/sequence/run');
+    await importSequenceFiles(images.map((file) => ({ path: file.name, file })));
+    return;
+  }
   const companion = json ? readSheetJson(await json.text()) : null;
   await importPicture(new Uint8Array(await image.arrayBuffer()), image.name, 'new', companion);
 }

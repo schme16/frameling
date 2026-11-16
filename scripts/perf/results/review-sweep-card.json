@@ -1,0 +1,6815 @@
+{
+ "label": "review-card",
+ "when": "2026-11-14T17:34:43.610Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "brush-stroke",
+   "busyMs": 13.9,
+   "runs": [
+    13.9,
+    12.7,
+    13.9
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.23,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.9
+    ],
+    [
+     "save :0",
+     0.4
+    ],
+    [
+     "fEe index-Doh7tA4P.js:150",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.9
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     3.4
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     2.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1
+    ],
+    [
+     "Vd index-Doh7tA4P.js:127",
+     1
+    ],
+    [
+     "Wd index-Doh7tA4P.js:127",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 51.7,
+   "runs": [
+    51.7,
+    48.5,
+    51.9
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.65,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.8
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.3
+    ],
+    [
+     "t index-Doh7tA4P.js:9",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     14.4
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     10.5
+    ],
+    [
+     "rh index-Doh7tA4P.js:10",
+     10.4
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     10.3
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     10.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "play",
+   "busyMs": 42.4,
+   "runs": [
+    44.9,
+    41.1,
+    42.4
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 28.28,
+   "topSelf": [
+    [
+     "(program) :0",
+     28.5
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.8
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     28.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.3
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     4.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 45.1,
+   "runs": [
+    48.8,
+    41.8,
+    45.1
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     6.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     17.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     16.3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     16.3
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     16.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     16.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-move",
+   "busyMs": 21.2,
+   "runs": [
+    22.7,
+    21.2,
+    20.6
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.71,
+   "topSelf": [
+    [
+     "(program) :0",
+     11
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.8
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     4.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     4.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-layer",
+   "busyMs": 15,
+   "runs": [
+    18.1,
+    15,
+    13.4
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.9
+    ],
+    [
+     "draw index-Doh7tA4P.js:161",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 17.5,
+   "runs": [
+    14.4,
+    22,
+    17.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 12,
+   "runs": [
+    18.2,
+    11.8,
+    12
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "n index-Doh7tA4P.js:166",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2.3
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     2.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 23.9,
+   "runs": [
+    23.9,
+    24.1,
+    22.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.98,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.4
+    ],
+    [
+     "clearRect :0",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 33.8,
+   "runs": [
+    33.9,
+    33.8,
+    32.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:168",
+     0.7
+    ],
+    [
+     "SM index-Doh7tA4P.js:142",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     11.1
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     10.3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     10.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     10.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 40.7,
+   "runs": [
+    40.7,
+    50.9,
+    38.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     22.1
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     2.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     22.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     11.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     11.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     10.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     10.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "export-dialog",
+   "busyMs": 7.5,
+   "runs": [
+    7.5,
+    14.3,
+    7.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 7.48,
+   "topSelf": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "focus :0",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     2.1
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     1.5
+    ],
+    [
+     "Ef index-Doh7tA4P.js:9",
+     1.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.3,
+    1.1,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     0.8
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.7
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     0.7
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.6
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "open-file",
+   "busyMs": 5.8,
+   "runs": [
+    5.8,
+    8,
+    3.9
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 5.85,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "e$ index-Doh7tA4P.js:161",
+     0.6
+    ],
+    [
+     "EBe index-Doh7tA4P.js:161",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "E1 index-Doh7tA4P.js:161",
+     2.2
+    ],
+    [
+     "openBytesAsync debug-BEDTqdE3.js:3",
+     2.1
+    ],
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "(anon) :1",
+     1.7
+    ],
+    [
+     "(anon) :0",
+     1.7
+    ],
+    [
+     "T$ index-Doh7tA4P.js:161",
+     1.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "autosave",
+   "busyMs": 1.1,
+   "runs": [
+    1.1,
+    0.8,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "invoke :0",
+     0.2
+    ],
+    [
+     "HVe index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "call preload.cjs:5",
+     0.3
+    ],
+    [
+     "write preload.cjs:66",
+     0.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 97.2,
+   "runs": [
+    93.3,
+    97.2,
+    101.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 16.2,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.4
+    ],
+    [
+     "(garbage collector) :0",
+     17.2
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     4.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.4
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     31.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     30.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     28.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     28.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     28.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "brush-stroke",
+   "busyMs": 13.4,
+   "runs": [
+    14.1,
+    13.4,
+    12.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "tN index-Doh7tA4P.js:149",
+     0.3
+    ],
+    [
+     "Vi index-Doh7tA4P.js:20",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     2.2
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     1.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1.3
+    ],
+    [
+     "onPointerMove index-Doh7tA4P.js:150",
+     1.1
+    ],
+    [
+     "t.overlay index-Doh7tA4P.js:161",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "scrub",
+   "busyMs": 65.6,
+   "runs": [
+    65.6,
+    63,
+    69.5
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     41.9
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     41.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     14.4
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     10.9
+    ],
+    [
+     "rh index-Doh7tA4P.js:10",
+     10.6
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     10.5
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     10.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "play",
+   "busyMs": 53,
+   "runs": [
+    59.1,
+    53,
+    51.5
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 35.32,
+   "topSelf": [
+    [
+     "(program) :0",
+     36
+    ],
+    [
+     "drawImage :0",
+     1.1
+    ],
+    [
+     "xh index-Doh7tA4P.js:128",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     6.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.8
+    ],
+    [
+     "MH index-Doh7tA4P.js:149",
+     4.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "select-click",
+   "busyMs": 5.9,
+   "runs": [
+    13.1,
+    5.3,
+    5.9
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 1.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     3.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "CM index-Doh7tA4P.js:142",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     3.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "CM index-Doh7tA4P.js:142",
+     0.8
+    ],
+    [
+     "EOe index-Doh7tA4P.js:150",
+     0.8
+    ],
+    [
+     "POe index-Doh7tA4P.js:150",
+     0.8
+    ],
+    [
+     "e index-Doh7tA4P.js:150",
+     0.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-layer",
+   "busyMs": 17.4,
+   "runs": [
+    17.4,
+    17.6,
+    17.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.81,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.9
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:10",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "delete-layer",
+   "busyMs": 21.6,
+   "runs": [
+    21.6,
+    22.1,
+    21.4
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 7.19,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.3
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     3.5
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     9.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     8.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-key",
+   "busyMs": 13.3,
+   "runs": [
+    13.3,
+    13.4,
+    12.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "emit index-Doh7tA4P.js:10",
+     0.3
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     2.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     2.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     2.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     2.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "undo-redo",
+   "busyMs": 38.9,
+   "runs": [
+    38.9,
+    37.1,
+    39.3
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.24,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     1.2
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     13.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     12.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     12.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     12.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     12.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "switch-artboard",
+   "busyMs": 50.4,
+   "runs": [
+    50.4,
+    51.3,
+    48.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.4,
+   "topSelf": [
+    [
+     "(program) :0",
+     17
+    ],
+    [
+     "getPropertyValue :0",
+     7.4
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     2.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "jd index-Doh7tA4P.js:9",
+     17.1
+    ],
+    [
+     "(program) :0",
+     17
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     15.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     14.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     14.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     14.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "export-dialog",
+   "busyMs": 11.8,
+   "runs": [
+    12.2,
+    10.7,
+    11.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 11.78,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.2
+    ],
+    [
+     "focus :0",
+     1.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:138",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     1.8
+    ],
+    [
+     "focus :0",
+     1.3
+    ],
+    [
+     "ju index-Doh7tA4P.js:9",
+     1
+    ],
+    [
+     "Mu index-Doh7tA4P.js:9",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "save-file",
+   "busyMs": 0.8,
+   "runs": [
+    0.6,
+    0.8,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.81,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "puppet",
+   "action": "open-file",
+   "busyMs": 16.7,
+   "runs": [
+    21.7,
+    16.7,
+    4.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 16.7,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     6.7
+    ],
+    [
+     "(program) :0",
+     2.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     6.7
+    ],
+    [
+     "(program) :0",
+     2.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     2.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     2.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    1.1,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.6,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "workspaces",
+   "busyMs": 120.1,
+   "runs": [
+    121.9,
+    105.5,
+    120.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 20.02,
+   "topSelf": [
+    [
+     "(program) :0",
+     44.3
+    ],
+    [
+     "(garbage collector) :0",
+     14.4
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     9.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     41.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     39.6
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     38.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     38.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     38.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "brush-stroke",
+   "busyMs": 12.5,
+   "runs": [
+    10.7,
+    12.7,
+    12.5
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.21,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "fill :0",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     2.4
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     2.3
+    ],
+    [
+     "t.overlay index-Doh7tA4P.js:161",
+     1.5
+    ],
+    [
+     "overlay index-Doh7tA4P.js:157",
+     1.4
+    ],
+    [
+     "rFe index-Doh7tA4P.js:157",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "scrub",
+   "busyMs": 58.5,
+   "runs": [
+    65.7,
+    58,
+    58.5
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.73,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.9
+    ],
+    [
+     "(garbage collector) :0",
+     3.6
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     17.2
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     12
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     11.8
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     11.8
+    ],
+    [
+     "rh index-Doh7tA4P.js:10",
+     11.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "play",
+   "busyMs": 44.5,
+   "runs": [
+    44.5,
+    56.4,
+    39.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 29.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     29.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     29.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-click",
+   "busyMs": 46.2,
+   "runs": [
+    47.3,
+    46.2,
+    38.6
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.5
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     6.8
+    ],
+    [
+     "(garbage collector) :0",
+     3.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     16.4
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     15.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-move",
+   "busyMs": 20.7,
+   "runs": [
+    30.2,
+    20.7,
+    19.3
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.2
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     4.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     4.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-layer",
+   "busyMs": 13.1,
+   "runs": [
+    12.8,
+    13.1,
+    14.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.38,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.8
+    ],
+    [
+     "SM index-Doh7tA4P.js:142",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-layer",
+   "busyMs": 13.9,
+   "runs": [
+    15,
+    13.9,
+    13.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:168",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-key",
+   "busyMs": 19.1,
+   "runs": [
+    20.3,
+    11.2,
+    19.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 6.36,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     3.7
+    ],
+    [
+     "iD index-Doh7tA4P.js:142",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     3.7
+    ],
+    [
+     "(anon) :0",
+     2.3
+    ],
+    [
+     "rP index-Doh7tA4P.js:149",
+     2.2
+    ],
+    [
+     "run index-Doh7tA4P.js:166",
+     2.2
+    ],
+    [
+     "run debug-BEDTqdE3.js:10",
+     2.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-key",
+   "busyMs": 22.1,
+   "runs": [
+    29.1,
+    22.1,
+    21.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.38,
+   "topSelf": [
+    [
+     "(program) :0",
+     14
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "undo-redo",
+   "busyMs": 29.5,
+   "runs": [
+    29.5,
+    24.9,
+    33.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.46,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     0.7
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     9.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     8.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     8.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "switch-artboard",
+   "busyMs": 36.9,
+   "runs": [
+    35.6,
+    50,
+    36.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.14,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     2.4
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     9.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     9.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     9.3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     9.3
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     9.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "export-dialog",
+   "busyMs": 7.8,
+   "runs": [
+    7.8,
+    15,
+    7.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 7.76,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.8
+    ],
+    [
+     "(garbage collector) :0",
+     1.5
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.8
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     1.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     1.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1.2
+    ],
+    [
+     "Ef index-Doh7tA4P.js:9",
+     1.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.1,
+    1.1,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "open-file",
+   "busyMs": 2.9,
+   "runs": [
+    4,
+    2.6,
+    2.9
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 2.9,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "OHe index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "e$ index-Doh7tA4P.js:161",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "E1 index-Doh7tA4P.js:161",
+     0.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     0.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     0.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     0.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.8,
+    0.6,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "workspaces",
+   "busyMs": 88.5,
+   "runs": [
+    85.8,
+    88.5,
+    91.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 14.75,
+   "topSelf": [
+    [
+     "(program) :0",
+     34.2
+    ],
+    [
+     "(garbage collector) :0",
+     14.2
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     4.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     34.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     28.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     27.6
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     26.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     26.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     26.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "pixel-stroke",
+   "busyMs": 12.8,
+   "runs": [
+    12.7,
+    12.8,
+    13.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.21,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.5
+    ],
+    [
+     "putImageData :0",
+     0.5
+    ],
+    [
+     "toPointer index-Doh7tA4P.js:150",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.5
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     2
+    ],
+    [
+     "onPointerMove index-Doh7tA4P.js:150",
+     1.6
+    ],
+    [
+     "drawMain index-Doh7tA4P.js:150",
+     1
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     0.9
+    ],
+    [
+     "paint index-Doh7tA4P.js:150",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "scrub",
+   "busyMs": 81.2,
+   "runs": [
+    84.4,
+    77.8,
+    81.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.01,
+   "topSelf": [
+    [
+     "(program) :0",
+     44.9
+    ],
+    [
+     "(garbage collector) :0",
+     6.9
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     22.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     11.4
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     11.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     11.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     11.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "play",
+   "busyMs": 55.8,
+   "runs": [
+    60.8,
+    55.8,
+    48.3
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 37.2,
+   "topSelf": [
+    [
+     "(program) :0",
+     35
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "yu index-Doh7tA4P.js:9",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     9.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-layer",
+   "busyMs": 17,
+   "runs": [
+    17.1,
+    17,
+    16.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.4
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.8
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-layer",
+   "busyMs": 17,
+   "runs": [
+    17,
+    19.3,
+    16.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.8
+    ],
+    [
+     "setAttribute :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     6.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     6.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     6.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-key",
+   "busyMs": 13.5,
+   "runs": [
+    12.7,
+    13.5,
+    20.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "n index-Doh7tA4P.js:166",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     2.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     2.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     2.6
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     2.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-key",
+   "busyMs": 24.8,
+   "runs": [
+    24.2,
+    24.8,
+    25.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.7
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     0.4
+    ],
+    [
+     "yC index-Doh7tA4P.js:140",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.3
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "undo-redo",
+   "busyMs": 42.3,
+   "runs": [
+    53.9,
+    42.3,
+    39.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.52,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.4
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     13.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     12.4
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     12.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     12.2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     12.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "switch-artboard",
+   "busyMs": 38.8,
+   "runs": [
+    38.8,
+    45.6,
+    37.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.2
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     1.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     9.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     9.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     8.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "export-dialog",
+   "busyMs": 8.1,
+   "runs": [
+    8.1,
+    8.6,
+    8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.05,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "focus :0",
+     0.5
+    ],
+    [
+     "URL :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     1.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     1.3
+    ],
+    [
+     "Ef index-Doh7tA4P.js:9",
+     1
+    ],
+    [
+     "Kd index-Doh7tA4P.js:9",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "save-file",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "open-file",
+   "busyMs": 3.2,
+   "runs": [
+    3.7,
+    3.2,
+    3
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 3.19,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "e$ index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "bC index-Doh7tA4P.js:140",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     0.8
+    ],
+    [
+     "E1 index-Doh7tA4P.js:161",
+     0.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     0.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     0.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "workspaces",
+   "busyMs": 89.5,
+   "runs": [
+    96.2,
+    87.6,
+    89.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 14.91,
+   "topSelf": [
+    [
+     "(program) :0",
+     37.7
+    ],
+    [
+     "(garbage collector) :0",
+     8.8
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     37.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     33.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     32.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     30.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     30.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     30.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "brush-stroke",
+   "busyMs": 29.9,
+   "runs": [
+    29.9,
+    29.4,
+    30.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.5,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "Xe index-Doh7tA4P.js:10",
+     2.1
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     4
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     3.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2.5
+    ],
+    [
+     "update index-Doh7tA4P.js:10",
+     2.5
+    ],
+    [
+     "u index-Doh7tA4P.js:142",
+     2.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 530.6,
+   "runs": [
+    505.7,
+    530.6,
+    558.6
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 6.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     357.8
+    ],
+    [
+     "drawImage :0",
+     43.8
+    ],
+    [
+     "I index-Doh7tA4P.js:10",
+     39.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     357.8
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     97.4
+    ],
+    [
+     "drawMain index-Doh7tA4P.js:150",
+     94.6
+    ],
+    [
+     "paint index-Doh7tA4P.js:150",
+     94.3
+    ],
+    [
+     "paintStage index-Doh7tA4P.js:150",
+     94.1
+    ],
+    [
+     "paintOnion index-Doh7tA4P.js:150",
+     67.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "play",
+   "busyMs": 637,
+   "runs": [
+    874.1,
+    637,
+    478.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 424.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     188.5
+    ],
+    [
+     "I index-Doh7tA4P.js:10",
+     141.4
+    ],
+    [
+     "drawImage :0",
+     129.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-Doh7tA4P.js:150",
+     449.4
+    ],
+    [
+     "warmAhead index-Doh7tA4P.js:150",
+     442.8
+    ],
+    [
+     "warm index-Doh7tA4P.js:150",
+     404.8
+    ],
+    [
+     "(program) :0",
+     188.5
+    ],
+    [
+     "I index-Doh7tA4P.js:10",
+     141.4
+    ],
+    [
+     "build index-Doh7tA4P.js:150",
+     137.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 119.3,
+   "runs": [
+    115.9,
+    119.3,
+    119.4
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 29.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     93.9
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     8.1
+    ],
+    [
+     "removeChild :0",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     93.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     18.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     17.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 87.8,
+   "runs": [
+    83.2,
+    87.8,
+    92.5
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 2.93,
+   "topSelf": [
+    [
+     "(program) :0",
+     66.8
+    ],
+    [
+     "Xe index-Doh7tA4P.js:10",
+     1.9
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     66.8
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     7.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     7.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     6.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     6.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-layer",
+   "busyMs": 84.4,
+   "runs": [
+    218,
+    84.4,
+    81.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 28.15,
+   "topSelf": [
+    [
+     "(program) :0",
+     65.5
+    ],
+    [
+     "_He index-Doh7tA4P.js:161",
+     20.6
+    ],
+    [
+     "encode :0",
+     15.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     65.5
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     43.3
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     43.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:167",
+     43.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     43.2
+    ],
+    [
+     "_He index-Doh7tA4P.js:161",
+     35.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 98.4,
+   "runs": [
+    98.4,
+    98.3,
+    99.1
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 32.8,
+   "topSelf": [
+    [
+     "(program) :0",
+     65.1
+    ],
+    [
+     "UN index-Doh7tA4P.js:149",
+     3.8
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     3.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     65.1
+    ],
+    [
+     "(anon) :0",
+     18.9
+    ],
+    [
+     "fP index-Doh7tA4P.js:149",
+     18.7
+    ],
+    [
+     "run index-Doh7tA4P.js:166",
+     18.7
+    ],
+    [
+     "run debug-BEDTqdE3.js:10",
+     18.7
+    ],
+    [
+     "ZN index-Doh7tA4P.js:149",
+     18.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 81.6,
+   "runs": [
+    79.1,
+    81.8,
+    81.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 27.19,
+   "topSelf": [
+    [
+     "(program) :0",
+     44.2
+    ],
+    [
+     "Xe index-Doh7tA4P.js:10",
+     5.4
+    ],
+    [
+     "Ae index-Doh7tA4P.js:10",
+     4.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44.2
+    ],
+    [
+     "(anon) :0",
+     22.8
+    ],
+    [
+     "rP index-Doh7tA4P.js:149",
+     22.7
+    ],
+    [
+     "run index-Doh7tA4P.js:166",
+     22.7
+    ],
+    [
+     "run debug-BEDTqdE3.js:10",
+     22.7
+    ],
+    [
+     "ZN index-Doh7tA4P.js:149",
+     22.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 201.9,
+   "runs": [
+    201.9,
+    199.1,
+    238.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 67.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     142.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     6.2
+    ],
+    [
+     "Xe index-Doh7tA4P.js:10",
+     5.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     142.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     34.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     30.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     30.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     30.1
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     30.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 234.4,
+   "runs": [
+    234.4,
+    231.5,
+    238.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 19.53,
+   "topSelf": [
+    [
+     "(program) :0",
+     172.4
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     15.1
+    ],
+    [
+     "LE index-Doh7tA4P.js:140",
+     4.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     172.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     33.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     24.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     24.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     24.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     24.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 320,
+   "runs": [
+    320,
+    371.5,
+    297.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 53.34,
+   "topSelf": [
+    [
+     "(program) :0",
+     182.6
+    ],
+    [
+     "getPropertyValue :0",
+     37.3
+    ],
+    [
+     "(garbage collector) :0",
+     10.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     182.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     69.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     60.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     54.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     54.1
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     54.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "export-dialog",
+   "busyMs": 38.7,
+   "runs": [
+    35.5,
+    40.3,
+    38.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 38.7,
+   "topSelf": [
+    [
+     "(program) :0",
+     31.2
+    ],
+    [
+     "(anon) ExportDialog-Crjn2EXb.js:1",
+     1.7
+    ],
+    [
+     "u carries-BL7HIgeG.js:1",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     31.2
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     5.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.3
+    ],
+    [
+     "Ef index-Doh7tA4P.js:9",
+     5.1
+    ],
+    [
+     "Kd index-Doh7tA4P.js:9",
+     5
+    ],
+    [
+     "Ud index-Doh7tA4P.js:9",
+     5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 187,
+   "runs": [
+    220.3,
+    183.1,
+    187
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 186.96,
+   "topSelf": [
+    [
+     "encode :0",
+     84.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     59.9
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     29.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     178.1
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     178
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     178
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     176.8
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     173.7
+    ],
+    [
+     "encode :0",
+     84.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "7.1 MB file"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 156.5,
+   "runs": [
+    167,
+    155.2,
+    156.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 156.47,
+   "topSelf": [
+    [
+     "E1 index-Doh7tA4P.js:161",
+     83
+    ],
+    [
+     "decode :0",
+     18
+    ],
+    [
+     "(garbage collector) :0",
+     15.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "E1 index-Doh7tA4P.js:161",
+     122.7
+    ],
+    [
+     "OHe index-Doh7tA4P.js:161",
+     19
+    ],
+    [
+     "decode :0",
+     18
+    ],
+    [
+     "x$ index-Doh7tA4P.js:161",
+     18
+    ],
+    [
+     "kHe index-Doh7tA4P.js:161",
+     17.3
+    ],
+    [
+     "(garbage collector) :0",
+     15.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "autosave",
+   "busyMs": 32.7,
+   "runs": [
+    36.8,
+    32.3,
+    32.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 32.7,
+   "topSelf": [
+    [
+     "bHe index-Doh7tA4P.js:161",
+     17.4
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     6.8
+    ],
+    [
+     "call preload.cjs:5",
+     3.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-Doh7tA4P.js:161",
+     32.6
+    ],
+    [
+     "(anon) :0",
+     25.8
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     22.1
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     21.3
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     18.8
+    ],
+    [
+     "call preload.cjs:5",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 277.8,
+   "runs": [
+    277.8,
+    276.8,
+    338.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 46.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     187.6
+    ],
+    [
+     "(garbage collector) :0",
+     18.4
+    ],
+    [
+     "drawImage :0",
+     11.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     187.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     56.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     39.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     32.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     32.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     32.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "pixel-stroke",
+   "busyMs": 25.2,
+   "runs": [
+    3299.8,
+    25.2,
+    20.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.42,
+   "topSelf": [
+    [
+     "VBe index-Doh7tA4P.js:161",
+     630.2
+    ],
+    [
+     "dBe index-Doh7tA4P.js:161",
+     386.2
+    ],
+    [
+     "p index-Doh7tA4P.js:161",
+     35.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "b1 index-Doh7tA4P.js:161",
+     1093.1
+    ],
+    [
+     "N1 index-Doh7tA4P.js:161",
+     1093.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:167",
+     1093.1
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     1092.5
+    ],
+    [
+     "M$ index-Doh7tA4P.js:161",
+     1091.9
+    ],
+    [
+     "fHe index-Doh7tA4P.js:161",
+     1091.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "scrub",
+   "busyMs": 104.3,
+   "runs": [
+    130.5,
+    104.3,
+    99.5
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     61.9
+    ],
+    [
+     "(garbage collector) :0",
+     6.6
+    ],
+    [
+     "qd index-Doh7tA4P.js:127",
+     4.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     61.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     28.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     17.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     17.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     17.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     17.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "play",
+   "busyMs": 52.4,
+   "runs": [
+    52,
+    52.8,
+    52.4
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 34.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.3
+    ],
+    [
+     "S$e index-Doh7tA4P.js:166",
+     0.8
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     10
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     8.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     8.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     8.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     8.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-layer",
+   "busyMs": 17,
+   "runs": [
+    28.8,
+    17,
+    16.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.9
+    ],
+    [
+     "WU index-Doh7tA4P.js:150",
+     2.1
+    ],
+    [
+     "nEe index-Doh7tA4P.js:150",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-layer",
+   "busyMs": 16.7,
+   "runs": [
+    15.7,
+    18.2,
+    16.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.7
+    ],
+    [
+     "SM index-Doh7tA4P.js:142",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     6.2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     6.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     6.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-key",
+   "busyMs": 21.9,
+   "runs": [
+    21.9,
+    47.3,
+    21.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.5
+    ],
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "pJ index-Doh7tA4P.js:154",
+     2.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.5
+    ],
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.5
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-key",
+   "busyMs": 25,
+   "runs": [
+    25,
+    25.1,
+    23.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.33,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     0.7
+    ],
+    [
+     "yC index-Doh7tA4P.js:140",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.8
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "undo-redo",
+   "busyMs": 40.4,
+   "runs": [
+    40.5,
+    39.2,
+    40.4
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.37,
+   "topSelf": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:168",
+     1
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     13.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     11.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     11.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     11.6
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     11.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "switch-artboard",
+   "busyMs": 37.7,
+   "runs": [
+    37.7,
+    46.7,
+    35.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.29,
+   "topSelf": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     1.9
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     8.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     7.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     7.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     7.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "export-dialog",
+   "busyMs": 10.7,
+   "runs": [
+    34.2,
+    10.7,
+    8.1
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 10.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "(garbage collector) :0",
+     6.7
+    ],
+    [
+     "focus :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "(garbage collector) :0",
+     6.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2.5
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     2.3
+    ],
+    [
+     "of index-Doh7tA4P.js:9",
+     1.6
+    ],
+    [
+     "ju index-Doh7tA4P.js:9",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 2.6,
+   "runs": [
+    2.6,
+    2.7,
+    2.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.59,
+   "topSelf": [
+    [
+     "Ep index-Doh7tA4P.js:127",
+     1
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "b1 index-Doh7tA4P.js:161",
+     2
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     2
+    ],
+    [
+     "(anon) :0",
+     2
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     1.3
+    ],
+    [
+     "Ep index-Doh7tA4P.js:127",
+     1
+    ],
+    [
+     "Pp index-Doh7tA4P.js:127",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "1.0 MB file"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "open-file",
+   "busyMs": 67.9,
+   "runs": [
+    59.2,
+    69.6,
+    67.9
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 67.88,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     33.6
+    ],
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "qd index-Doh7tA4P.js:127",
+     2.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     33.6
+    ],
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "e.onmessage index-Doh7tA4P.js:161",
+     4
+    ],
+    [
+     "E1 index-Doh7tA4P.js:161",
+     3.4
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     2.8
+    ],
+    [
+     "paintStage index-Doh7tA4P.js:150",
+     2.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 5,
+   "runs": [
+    5,
+    5.4,
+    4.5
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 4.96,
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.2
+    ],
+    [
+     "pump index-Doh7tA4P.js:161",
+     0.9
+    ],
+    [
+     "Ep index-Doh7tA4P.js:127",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-Doh7tA4P.js:161",
+     4.3
+    ],
+    [
+     "(anon) :0",
+     3.5
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     2.1
+    ],
+    [
+     "call preload.cjs:5",
+     1.2
+    ],
+    [
+     "write preload.cjs:66",
+     1.2
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "workspaces",
+   "busyMs": 122.1,
+   "runs": [
+    122.4,
+    122.1,
+    121.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 20.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     41.1
+    ],
+    [
+     "(garbage collector) :0",
+     33.7
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     6.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     41.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     35.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     33.9
+    ],
+    [
+     "(garbage collector) :0",
+     33.7
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     32.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     32.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "brush-stroke",
+   "busyMs": 11.7,
+   "runs": [
+    11.7,
+    13.1,
+    9.9
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.19,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.9
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.2
+    ],
+    [
+     "Pi index-Doh7tA4P.js:20",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.9
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     2.3
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     2.1
+    ],
+    [
+     "t.overlay index-Doh7tA4P.js:161",
+     1.3
+    ],
+    [
+     "rFe index-Doh7tA4P.js:157",
+     1.2
+    ],
+    [
+     "overlay index-Doh7tA4P.js:157",
+     1.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "scrub",
+   "busyMs": 55.6,
+   "runs": [
+    55.2,
+    55.6,
+    59.9
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     35.1
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     15.3
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     10.6
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     10.4
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     10.3
+    ],
+    [
+     "rh index-Doh7tA4P.js:10",
+     10.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "play",
+   "busyMs": 49.3,
+   "runs": [
+    49.3,
+    46.3,
+    69.5
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 32.9,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.4
+    ],
+    [
+     "(garbage collector) :0",
+     7
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.4
+    ],
+    [
+     "(garbage collector) :0",
+     7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     5.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-click",
+   "busyMs": 40.2,
+   "runs": [
+    40.2,
+    37,
+    40.9
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.04,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.7
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     7.2
+    ],
+    [
+     "insertBefore :0",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     16
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     15.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     15.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-move",
+   "busyMs": 20.2,
+   "runs": [
+    19.8,
+    20.6,
+    20.2
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     2
+    ],
+    [
+     "(garbage collector) :0",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     4.6
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     4.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "variations",
+   "action": "add-layer",
+   "busyMs": 15,
+   "runs": [
+    15.2,
+    15,
+    13.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     3.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-layer",
+   "busyMs": 18,
+   "runs": [
+    44.1,
+    18,
+    16.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.5
+    ],
+    [
+     "(garbage collector) :0",
+     6.4
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     7.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.7
+    ],
+    [
+     "(garbage collector) :0",
+     6.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     6.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     6.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "add-key",
+   "busyMs": 12.8,
+   "runs": [
+    12.6,
+    12.8,
+    12.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.4
+    ],
+    [
+     "getPropertyValue :0",
+     0.6
+    ],
+    [
+     "iD index-Doh7tA4P.js:142",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2.4
+    ],
+    [
+     "rP index-Doh7tA4P.js:149",
+     2.4
+    ],
+    [
+     "run index-Doh7tA4P.js:166",
+     2.4
+    ],
+    [
+     "run debug-BEDTqdE3.js:10",
+     2.4
+    ],
+    [
+     "(anon) :0",
+     2.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-key",
+   "busyMs": 23.8,
+   "runs": [
+    25.5,
+    23.8,
+    21.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.3
+    ],
+    [
+     "pje index-Doh7tA4P.js:155",
+     0.4
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3.2
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "undo-redo",
+   "busyMs": 33.9,
+   "runs": [
+    37.6,
+    33.9,
+    33.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.9
+    ],
+    [
+     "SM index-Doh7tA4P.js:142",
+     0.6
+    ],
+    [
+     "_He index-Doh7tA4P.js:161",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     11
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     10
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     9.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     9.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "switch-artboard",
+   "busyMs": 51.7,
+   "runs": [
+    51.7,
+    49.7,
+    73.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.62,
+   "topSelf": [
+    [
+     "(program) :0",
+     25.5
+    ],
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     4.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     25.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     17.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     17.6
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     17.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     17.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     17.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "export-dialog",
+   "busyMs": 8.2,
+   "runs": [
+    8.2,
+    9.4,
+    7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.1
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "Hhe index-Doh7tA4P.js:142",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.1
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     1.9
+    ],
+    [
+     "of index-Doh7tA4P.js:9",
+     1.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     1.1
+    ],
+    [
+     "focus :0",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    0.8,
+    1.6,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.14,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     0.3
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     0.5
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     0.5
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     0.5
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "variations",
+   "action": "open-file",
+   "busyMs": 4,
+   "runs": [
+    5.5,
+    4,
+    3.6
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 3.96,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.4
+    ],
+    [
+     "OHe index-Doh7tA4P.js:161",
+     0.4
+    ],
+    [
+     "EBe index-Doh7tA4P.js:161",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     1.4
+    ],
+    [
+     "E1 index-Doh7tA4P.js:161",
+     0.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     0.8
+    ],
+    [
+     "openBytesAsync debug-BEDTqdE3.js:3",
+     0.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     0.7
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.8,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.61,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "workspaces",
+   "busyMs": 96.9,
+   "runs": [
+    96.9,
+    113.4,
+    96.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 16.15,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.6
+    ],
+    [
+     "(garbage collector) :0",
+     24.7
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     27.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     26.5
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     25.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     25.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     25.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "brush-stroke",
+   "busyMs": 20.3,
+   "runs": [
+    20.3,
+    17.5,
+    47.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.34,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.5
+    ],
+    [
+     "(garbage collector) :0",
+     7.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:142",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.5
+    ],
+    [
+     "(garbage collector) :0",
+     7.5
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     5.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4.4
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     4.2
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     4.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "scrub",
+   "busyMs": 95.6,
+   "runs": [
+    87,
+    95.6,
+    100
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.2,
+   "topSelf": [
+    [
+     "(program) :0",
+     41.5
+    ],
+    [
+     "(garbage collector) :0",
+     26.5
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     1.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     41.5
+    ],
+    [
+     "(garbage collector) :0",
+     26.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     17
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     11.5
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     11.4
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     11.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "play",
+   "busyMs": 50.1,
+   "runs": [
+    50.9,
+    50.1,
+    47.7
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 33.37,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.7
+    ],
+    [
+     "xh index-Doh7tA4P.js:128",
+     1.8
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.7
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     5.4
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.4
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-click",
+   "busyMs": 44.2,
+   "runs": [
+    42.2,
+    75.5,
+    44.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.05,
+   "topSelf": [
+    [
+     "(program) :0",
+     22.6
+    ],
+    [
+     "(garbage collector) :0",
+     8.9
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     8.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     22.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     18.9
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     17.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     17.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-move",
+   "busyMs": 71,
+   "runs": [
+    71,
+    39.9,
+    88.6
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 2.37,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     17.6
+    ],
+    [
+     "(program) :0",
+     16
+    ],
+    [
+     "_He index-Doh7tA4P.js:161",
+     3.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     17.6
+    ],
+    [
+     "(program) :0",
+     16
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     11.4
+    ],
+    [
+     "drawMain index-Doh7tA4P.js:150",
+     10.5
+    ],
+    [
+     "paintStage index-Doh7tA4P.js:150",
+     10.1
+    ],
+    [
+     "paint index-Doh7tA4P.js:150",
+     10.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-layer",
+   "busyMs": 15.4,
+   "runs": [
+    16.5,
+    15.4,
+    13.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.1
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     0.8
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     4
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     3.3
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     3
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-layer",
+   "busyMs": 17.4,
+   "runs": [
+    16.8,
+    17.4,
+    49.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.1
+    ],
+    [
+     "(garbage collector) :0",
+     8.7
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.1
+    ],
+    [
+     "(garbage collector) :0",
+     8.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     6.2
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     6.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     5.7
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     5.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-key",
+   "busyMs": 38.9,
+   "runs": [
+    38.9,
+    38,
+    69.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 12.98,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     9.5
+    ],
+    [
+     "(program) :0",
+     9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:142",
+     3.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     11.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     10.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     10.8
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     10.8
+    ],
+    [
+     "Kd index-Doh7tA4P.js:9",
+     9.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-key",
+   "busyMs": 79.6,
+   "runs": [
+    76.2,
+    80,
+    79.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 26.55,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     26
+    ],
+    [
+     "(program) :0",
+     17.8
+    ],
+    [
+     "fill :0",
+     3.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     26
+    ],
+    [
+     "(program) :0",
+     17.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     12.6
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     11.2
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10.7
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     10.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "undo-redo",
+   "busyMs": 71.4,
+   "runs": [
+    71.4,
+    71.5,
+    71.3
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 5.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:142",
+     10.3
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:128",
+     7.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     42.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     40
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     39.9
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     39.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     39.9
+    ],
+    [
+     "Hd index-Doh7tA4P.js:9",
+     36.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "switch-artboard",
+   "busyMs": 42.2,
+   "runs": [
+    41.8,
+    42.5,
+    42.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.04,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.8
+    ],
+    [
+     "i index-Doh7tA4P.js:166",
+     2.1
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     10.8
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     9.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     8.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     8.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     8.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "export-dialog",
+   "busyMs": 9.2,
+   "runs": [
+    8.7,
+    10,
+    9.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.17,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "focus :0",
+     0.9
+    ],
+    [
+     "u carries-BL7HIgeG.js:1",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "D index-Doh7tA4P.js:2",
+     2.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     1.9
+    ],
+    [
+     "Ef index-Doh7tA4P.js:9",
+     1.5
+    ],
+    [
+     "Kd index-Doh7tA4P.js:9",
+     1.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "save-file",
+   "busyMs": 28.8,
+   "runs": [
+    28.8,
+    28.6,
+    29.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 28.83,
+   "topSelf": [
+    [
+     "encode :0",
+     12.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:161",
+     10.7
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     4.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "b1 index-Doh7tA4P.js:161",
+     28.1
+    ],
+    [
+     "saveBytesAsync debug-BEDTqdE3.js:3",
+     28.1
+    ],
+    [
+     "(anon) :0",
+     28.1
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     27.3
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     18.7
+    ],
+    [
+     "encode :0",
+     12.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.6 MB file"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "open-file",
+   "busyMs": 31.4,
+   "runs": [
+    32.7,
+    31.4,
+    31
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 31.35,
+   "topSelf": [
+    [
+     "E1 index-Doh7tA4P.js:161",
+     13.3
+    ],
+    [
+     "decode :0",
+     2.5
+    ],
+    [
+     "(program) :0",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "E1 index-Doh7tA4P.js:161",
+     20.3
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     4.9
+    ],
+    [
+     "paintStage index-Doh7tA4P.js:150",
+     4.7
+    ],
+    [
+     "paint index-Doh7tA4P.js:150",
+     4.7
+    ],
+    [
+     "drawMain index-Doh7tA4P.js:150",
+     4.7
+    ],
+    [
+     "OHe index-Doh7tA4P.js:161",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "autosave",
+   "busyMs": 5.2,
+   "runs": [
+    5.2,
+    5.5,
+    5.2
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.2,
+   "topSelf": [
+    [
+     "bHe index-Doh7tA4P.js:161",
+     2.8
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "call preload.cjs:5",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-Doh7tA4P.js:161",
+     4.7
+    ],
+    [
+     "(anon) :0",
+     4.2
+    ],
+    [
+     "b1 index-Doh7tA4P.js:161",
+     3.7
+    ],
+    [
+     "y1 index-Doh7tA4P.js:161",
+     3.6
+    ],
+    [
+     "bHe index-Doh7tA4P.js:161",
+     3
+    ],
+    [
+     "(program) :0",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "workspaces",
+   "busyMs": 146,
+   "runs": [
+    146,
+    150.1,
+    140.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 24.33,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     52.1
+    ],
+    [
+     "(program) :0",
+     39.5
+    ],
+    [
+     "fill :0",
+     4.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     52.1
+    ],
+    [
+     "(program) :0",
+     39.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     28.7
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     27.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     26.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     26.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

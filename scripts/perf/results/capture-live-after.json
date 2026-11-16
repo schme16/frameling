@@ -1,0 +1,300 @@
+{
+  "env": {
+    "reps": 7,
+    "moves": 150,
+    "gapMs": 8,
+    "root": "this checkout",
+    "electron": "45.3.0",
+    "when": "2026-11-15T05:38:00.395Z"
+  },
+  "cases": [
+    {
+      "doc": "vector",
+      "tool": "brush",
+      "closed": {
+        "taskMs": 32.4,
+        "scriptMs": 14.6,
+        "gapP95": 16.8,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 29.3,
+        "scriptMs": 15.2,
+        "gapP95": 16.8,
+        "gapMax": 16.8,
+        "popPaints": 41
+      },
+      "liveShare": [
+        20.6,
+        48.5,
+        74.1
+      ],
+      "liveFinal": 5097,
+      "costMs": -3.1
+    },
+    {
+      "doc": "vector",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 53.1,
+        "scriptMs": 33.9,
+        "gapP95": 16.7,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 53.5,
+        "scriptMs": 34.2,
+        "gapP95": 33.3,
+        "gapMax": 33.4,
+        "popPaints": 17
+      },
+      "liveShare": [
+        36.5,
+        73.4,
+        100
+      ],
+      "liveFinal": 1120,
+      "costMs": 0.4
+    },
+    {
+      "doc": "vector",
+      "tool": "rect",
+      "closed": {
+        "taskMs": 190.8,
+        "scriptMs": 41,
+        "gapP95": 33.4,
+        "gapMax": 50
+      },
+      "open": {
+        "taskMs": 113.2,
+        "scriptMs": 39.4,
+        "gapP95": 50,
+        "gapMax": 50.1,
+        "popPaints": 29
+      },
+      "liveShare": [
+        6.8,
+        26.9,
+        52.5
+      ],
+      "liveFinal": 13915,
+      "costMs": -77.6
+    },
+    {
+      "doc": "vector",
+      "tool": "ellipse",
+      "closed": {
+        "taskMs": 77.6,
+        "scriptMs": 29.2,
+        "gapP95": 16.7,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 72.1,
+        "scriptMs": 27.1,
+        "gapP95": 33.4,
+        "gapMax": 33.4,
+        "popPaints": 40
+      },
+      "liveShare": [
+        7.5,
+        25.9,
+        53
+      ],
+      "liveFinal": 11227,
+      "costMs": -5.5
+    },
+    {
+      "doc": "vector",
+      "tool": "star",
+      "closed": {
+        "taskMs": 72.9,
+        "scriptMs": 27.9,
+        "gapP95": 16.8,
+        "gapMax": 33.3
+      },
+      "open": {
+        "taskMs": 60.4,
+        "scriptMs": 25.3,
+        "gapP95": 33.4,
+        "gapMax": 33.5,
+        "popPaints": 38
+      },
+      "liveShare": [
+        9.5,
+        27.2,
+        57.6
+      ],
+      "liveFinal": 6303,
+      "costMs": -12.5
+    },
+    {
+      "doc": "vector",
+      "tool": "move",
+      "closed": {
+        "taskMs": 79.1,
+        "scriptMs": 45.7,
+        "gapP95": 33.3,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 59.8,
+        "scriptMs": 36.5,
+        "gapP95": 33.4,
+        "gapMax": 33.4,
+        "popPaints": 40
+      },
+      "liveShare": [
+        98.9,
+        95.6,
+        93.9
+      ],
+      "liveFinal": 13230,
+      "costMs": -19.3
+    },
+    {
+      "doc": "pixel",
+      "tool": "brush",
+      "closed": {
+        "taskMs": 43.1,
+        "scriptMs": 19.2,
+        "gapP95": 33.4,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 31.4,
+        "scriptMs": 16.7,
+        "gapP95": 33.4,
+        "gapMax": 33.5,
+        "popPaints": 40
+      },
+      "liveShare": [
+        20.6,
+        47.2,
+        72.6
+      ],
+      "liveFinal": 4509,
+      "costMs": -11.7
+    },
+    {
+      "doc": "pixel",
+      "tool": "pencil",
+      "closed": {
+        "taskMs": 71.4,
+        "scriptMs": 28,
+        "gapP95": 33.4,
+        "gapMax": 33.4
+      },
+      "open": {
+        "taskMs": 42.9,
+        "scriptMs": 22.7,
+        "gapP95": 50,
+        "gapMax": 66.6,
+        "popPaints": 37
+      },
+      "liveShare": [
+        18.3,
+        48.3,
+        75.8
+      ],
+      "liveFinal": 4509,
+      "costMs": -28.5
+    },
+    {
+      "doc": "pixel",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 67.8,
+        "scriptMs": 22.8,
+        "gapP95": 50,
+        "gapMax": 66.6
+      },
+      "open": {
+        "taskMs": 63.7,
+        "scriptMs": 27.6,
+        "gapP95": 83.3,
+        "gapMax": 83.4,
+        "popPaints": 14
+      },
+      "liveShare": [
+        18.3,
+        52.2,
+        75.9
+      ],
+      "liveFinal": 709,
+      "costMs": -4.1
+    },
+    {
+      "doc": "pixel",
+      "tool": "rect",
+      "closed": {
+        "taskMs": 434.4,
+        "scriptMs": 410.2,
+        "gapP95": 33.4,
+        "gapMax": 51.8
+      },
+      "open": {
+        "taskMs": 436.9,
+        "scriptMs": 419.4,
+        "gapP95": 50,
+        "gapMax": 50.1,
+        "popPaints": 36
+      },
+      "liveShare": [
+        7,
+        26.2,
+        54
+      ],
+      "liveFinal": 13846,
+      "costMs": 2.5
+    },
+    {
+      "doc": "pixel",
+      "tool": "line",
+      "closed": {
+        "taskMs": 112.8,
+        "scriptMs": 47.9,
+        "gapP95": 50,
+        "gapMax": 50.1
+      },
+      "open": {
+        "taskMs": 166.2,
+        "scriptMs": 109,
+        "gapP95": 66.7,
+        "gapMax": 66.8,
+        "popPaints": 26
+      },
+      "liveShare": [
+        19.7,
+        42.2,
+        65.1
+      ],
+      "liveFinal": 909,
+      "costMs": 53.4
+    },
+    {
+      "doc": "pixel",
+      "tool": "move",
+      "closed": {
+        "taskMs": 1192,
+        "scriptMs": 1174,
+        "gapP95": 533.4,
+        "gapMax": 533.4
+      },
+      "open": {
+        "taskMs": 1201,
+        "scriptMs": 1158.7,
+        "gapP95": 583.3,
+        "gapMax": 583.3,
+        "popPaints": 6
+      },
+      "liveShare": [
+        95.5,
+        99,
+        99.6
+      ],
+      "liveFinal": 21582,
+      "costMs": 9
+    }
+  ]
+}

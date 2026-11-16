@@ -1,11 +1,79 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'effects-finishing': `The finishing touches that make a short film or a game cut-scene feel finished. Add them like any effect: pick a layer (or a folder), open the **Effects** panel and click one. Your drawing isn't touched, and you can take them off any time.
+
+## Film grain
+
+Fine speckle, like old film or a printed poster.
+
+- **Strength** and **Speck size** set how strong and how coarse. **Colourful** makes the speckle coloured.
+- **New speckle every** is how many frames pass before the pattern changes: **1** shimmers like real film, **0** keeps one still pattern.
+- It only lands on drawing. Put it on a folder to grain the whole picture.
+
+## Wave
+
+Bends the layer: heat over a road, water, a dream starting.
+
+- **How far it bends**, **Distance between waves**, and **Turn** to run them up and down. **Rippling** makes shapes swim, not just slide.
+- To make the waves flow, press the **key** button on **Move the waves**, set 0 on one frame and 360 on a later one. See [animate an effect](help:effects).
+
+## Colour fringe
+
+Slides the red one way and the blue the other, like a cheap lens or a glitching screen. A few pixels is subtle; 20 is a proper glitch. Animate **How far apart** from 0 to 12 and back for a quick glitch.
+
+## Dark corners
+
+Darkens the edges so the eye settles in the middle (**Vignette** in other apps).
+
+- **Strength**, **Clear middle** and **Softness**. **Colour** needn't be black: warm orange gives a sunset, white a dreamy glow.
+- It is measured from the stage and covers everything under it, so the easy way is an empty layer at the top with just this effect.
+
+## Motion blur
+
+Smears the layer in one direction, so a fast move looks fast.
+
+- **How long the smear is** and **Direction**: match it to the way the layer moves. **Trail behind** at 100% puts the smear all behind it, like a streak.
+- It doesn't watch the move for you. For a ball that speeds up, animate the length so it grows as the ball speeds up.
+
+## Good to know
+
+- Your graphics card draws them when there is one, and the processor when there isn't. The picture is the same.
+- Picture exports (video, GIF, PNG, sprite sheets) keep them. SVG leaves them out and Lottie turns the layer into pictures; the Export window says so first.
+- A long motion blur on a big stage costs the most. If playback slows down, shorten it.
+
+See also [Effects](help:effects), [Blend modes](help:blend-modes) and [Exporting](help:exporting).
+`,
+  'shape-effects': `Give **one shape** a soft edge, a glow or a shadow, and leave the rest of the layer alone. A soft shadow under a character, a glow round a title: the shape you picked gets the effect, and everything else on the layer stays crisp.
+
+## Put an effect on a shape
+
+1. Pick the shape with the Select tool.
+2. Open the **Effects** panel (**View > Panels > Effects**, or **Effects**). It says **Shape: the one you picked** at the top.
+3. Click an effect, then move the sliders until it looks right.
+
+Pick two or more shapes and they take the same effect together: move a slider and every picked shape follows.
+
+The effect commands in the command palette do the same. The first time you use one with shapes picked, Frameling asks whether it goes on the shapes or the whole layer, then remembers. Change it in **Preferences > Behaviour**, or with **Change** at the top of the panel.
+
+## The order things run in
+
+A shape's effects run first to last on that shape alone. Then the layer's own effects run on the whole layer, then its folder's. So a shape's soft shadow is already there when the layer gets a glow.
+
+## Good to know
+
+- **They stay the same on every frame.** There is no key button on a shape's effects. To change one over time, give the shape a new key and set the effect there. To animate a whole layer, use a [layer effect](help:effects).
+- **A shape with an effect doesn't merge.** On a layer that merges shapes (see [merge drawing](help:merge-drawing)), a shape with an effect stays its own shape, like a grouped one: paint over it and it isn't cut or joined, because merging would lose the effect.
+- **Break apart** on a shape with an effect asks once whether the pieces keep the effect or become plain paint.
+- **Join** (see [combining shapes](help:combine-shapes)) treats the effect as part of the look: the joined shape wears the effects of the shape whose colours it takes.
+- **Take them off** with **Take effects off** in the panel, or **Take the effects off the picked shapes** in the **Effects** menu.
+- **Exports:** pictures and video draw it exactly. SVG makes real filters for soften, glow, shadow, colour adjust and outline. Lottie, PDF, Illustrator and Photoshop turn the layer holding it into a picture. The Export window says so first.
+`,
   effects: `Effects change how a whole layer looks, without touching your drawing. Take them off any time.
 
 ## Add one
 
 1. Pick the layer in the timeline.
-2. Open the **Effects** panel (View > Effects, or the Effects menu).
+2. Open the **Effects** panel (**View > Panels > Effects**, or the **Effects** menu).
 3. Click an effect, then move the sliders until it looks right.
 
 | Effect | Also called | What it does |
@@ -16,8 +84,18 @@ export const bodies: Record<string, string> = {
 | **Colour adjust** | Hue / saturation / brightness / contrast | Shifts the colours, makes them stronger or greyer, lighter or darker. |
 | **Outline** | Stroke | A solid line all the way round. Great for stickers and game sprites. |
 | **Pixelate** | Mosaic | Big squares, like a censored photo or a retro game. |
+| **Film grain** | Grain / noise | Fine speckle, like old film. |
+| **Wave** | Ripple / heat shimmer | Bends the layer in waves. |
+| **Colour fringe** | Chromatic aberration | Splits the red and blue apart, like a glitch. |
+| **Dark corners** | Vignette | Darkens the edges so the eye settles in the middle. |
+| **Motion blur** | Directional blur | Smears the layer in one direction, so a fast move looks fast. |
+| **Paper tooth** | Dry brush texture | Catches on paper, like chalk. See [brush tips](help:brush-tips). |
+
+The last five have their own page: [finishing touches](help:effects-finishing).
 
 Sizes are in stage pixels, so a blur looks the same at any zoom.
+
+To soften or glow just one shape instead of the whole layer, pick the shape first: see [effects on one shape](help:shape-effects).
 
 ## More than one
 
@@ -59,31 +137,37 @@ A blend mode mixes with **everything under the layer**, including the stage colo
 Also in the command palette (Ctrl+K): type "blend".`,
   masks: `## Clip to the layer below
 
-**Clip to the layer below** (a clipping mask) shows a layer only where the layer under it has drawing. Perfect for shading: draw the character's colours on one layer, put a shading layer above it, clip it, and scribble shadows without ever going over the edge.
+**Clip to the layer below** (a clipping mask) shows a layer only where the layer under it has drawing. Perfect for shading: colour the character on one layer, put a shading layer above it, clip it, and scribble shadows without going over the edge.
 
-- Pick the layer, then **Effects menu > Clip to the layer below** (Ctrl+Alt+G), or the switch in the Effects panel.
-- Several clipped layers in a row all clip to the same layer under them.
-- A clipped layer shows a little bent arrow in the timeline. Hide the layer it clips to and it hides too.
+Pick the layer, then **Layers and artboards > Layer > Clip to the layer below** (Ctrl+Alt+G). A clipped layer shows a little bent arrow in the timeline.
 
 ## Masks
 
-A **mask layer** (layer mask) is never shown itself. What you draw on it decides what shows of the layers under it:
+A **mask** is a layer that decides where the layer under it shows. You paint where it shows, instead of rubbing bits out, and you can change your mind any time.
 
-- **Show inside**: the layers under it only show where the mask has drawing. A reveal: a circle that grows, a window you look through.
-- **Hide inside**: the layers under it are hidden where the mask has drawing. A hole, a bite, an eraser you can animate.
+- **Add one:** pick the layer, then press **Mask** in the Layers panel (or **Layers and artboards > Layer > Add a mask to this layer**, Ctrl+Alt+Shift+M). A purple mask layer appears above it, picked and ready. The first time, Frameling asks whether a new mask starts as **Paint where it shows** or **Paint where it hides**.
+- **Paint on it** with any tool. What the mask hides shows faintly on the canvas, and what you've painted shows in purple. The eraser undoes a bit.
+- **Switch between the mask and the layer:** Ctrl+Alt+J, or click the little mask mark on either row. The next stroke goes on the one you picked.
+- **See which is which:** a mask row is purple and names the layers it masks, and those layers have a purple edge.
+- **Turn it off for a moment:** click the mask switch on its row, where the eye would be. The mask and its drawing are kept.
+- **Take it off for good:** **Take the mask off for good** in its menu. It becomes a plain layer that shows its drawing.
+- **Flip it:** **Flip the mask** swaps shows-where-painted and hides-where-painted.
 
-Make one with **Effects menu > Use layer as a mask**, or **Mask** in the Effects panel. The first time, Frameling asks whether it should mask just the layer under it or every layer under it, and puts them in a [folder](help:layer-folders) together. Drag more layers into the folder to mask them too.
+**Good to know:**
 
-A mask only reaches the layers under it in its own folder, so it never cuts into the rest of your picture. While a mask layer is picked, its drawing shows faintly in purple on the canvas so you can see what you're drawing. Masks animate like any layer: draw a different mask on each key, and soft edges come from a [Soften effect](help:effects) on the mask.`,
+- A mask only reaches the layers under it in its own [folder](help:layer-folders), so it never cuts into the rest of your picture. Drag a mask out of its folder and Frameling asks once whether to keep it a mask or make it a plain layer.
+- To mask with a layer you already drew, use **Layers and artboards > Layer > Use layer as a mask**.
+- Masks work the same on vector and pixel layers, and every export agrees with the canvas. An off mask exports as off.
+- Masks animate like any layer, and a [Soften effect](help:effects) on the mask gives soft edges.`,
   'layer-folders': `A **folder** (layer group) holds layers that belong together, like the parts of a character. Folders can hold other folders, up to 8 levels deep: a **Scene** folder can hold a **Character** folder, which holds an **Arm** folder.
 
-- **Make one:** pick a layer, then **Effects menu > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.
+- **Make one:** pick a layer, then **Layers and artboards > Layer > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.
 - **Add layers:** drag a layer onto a layer inside the folder, or onto the folder's row to put it at the top. You can also use **Move layer up** / **Move layer down** to step it in at the folder's edge.
-- **Take layers out:** drag a layer onto a layer outside, or step it past the folder's edge. **Effects menu > Take layer out of its folder** moves it just above the folder.
+- **Take layers out:** drag a layer onto a layer outside, or step it past the folder's edge. **Layers and artboards > Layer > Take layer out of its folder** moves it just above the folder.
 - **Folder in a folder:** drag the folder's row onto another folder's row (the middle of the row puts it inside; the top edge puts it above). Dragging a folder moves everything in it. **Put this folder in the folder next to it** does the same from the keyboard or the command palette.
 - **Fold it:** click the arrow on the folder's row to hide what is in it in the timeline. It still shows on the canvas.
 - **Hide it:** the eye on the folder's row hides everything in it, folders inside it too.
-- **Remove it:** **Effects menu > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
+- **Remove it:** **Layers and artboards > Layer > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
 
 **Keyboard:** with a layer or folder row picked in the list, the up and down arrows walk the rows, left folds a folder (or jumps to the folder it is in) and right unfolds it. Hold **Alt** and press an arrow to move the row itself: up and down step it through the list (into and out of folders as they come), left takes it out of its folder, right puts it into the folder next to it.
 

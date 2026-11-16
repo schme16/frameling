@@ -1,11 +1,12 @@
 // The commands the shell owns: new document, view (panels, workspaces, theme, palette, preferences) and help.
 import { getHelp, registerCommands } from '../core/registry';
+import { offFeatures, setFeatureOn } from '../features/host';
 import { contextualHelpId } from './help/context';
-import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { suggestForThisScreen } from './screenSize';
+import { toggleFit } from './screenFit';
 import { BUILT_IN_THEMES } from './themes/builtIn';
 import { selectTheme, themeById } from './themes/library';
 
@@ -31,6 +32,15 @@ registerCommands([
     help: 'new-document',
     keywords: ['create', 'blank', 'start', 'document', 'file'],
     run: () => openSheet('new'),
+  },
+  {
+    id: 'file.newCustom',
+    label: 'New drawing, your own size...',
+    category: 'File',
+    description: 'Start something new with a size, pixel art and animation you choose. Your last settings are there waiting.',
+    help: 'new-document',
+    keywords: ['custom', 'size', 'width', 'height', 'favourite', 'starter', 'animation', 'frames a second', 'fps', 'pixel art'],
+    run: () => openSheet('new', { custom: true }),
   },
   {
     id: 'file.openExample',
@@ -84,6 +94,16 @@ registerCommands([
     run: () => void suggestForThisScreen(),
   },
   {
+    id: 'view.tightLayout',
+    label: 'Tighten the layout for a small screen (or relax it)',
+    category: 'View',
+    description: 'On a small screen Frameling shrinks the tool buttons and panels to give your drawing the room. This turns that on or off for the screen you are on.',
+    help: 'small-screens',
+    keywords: ['small screen', 'laptop', 'compact', 'tight', 'roomy', 'cramped', '720', '1366', 'squeezed', 'canvas room', 'fit', 'tool rail scrolls'],
+    global: true,
+    run: () => toggleFit(),
+  },
+  {
     id: 'view.features',
     label: 'Features...',
     category: 'View',
@@ -92,6 +112,17 @@ registerCommands([
     keywords: ['turn off', 'turn on', 'switch', 'optional', 'simple', 'hide', 'lip sync', 'particles', 'text', 'tiles'],
     global: true,
     run: () => openPrefs('features'),
+  },
+  {
+    id: 'view.featuresAllOn',
+    label: 'Turn every feature back on',
+    category: 'View',
+    description: 'Brings back every part of Frameling that is switched off, like the ones Quill tucked away in his hello.',
+    help: 'features',
+    keywords: ['turn on', 'bring back', 'tucked away', 'everything', 'all', 'features', 'rig', 'lip sync', 'particles', 'tiles', 'camera'],
+    global: true,
+    enabled: () => offFeatures().length > 0,
+    run: () => offFeatures().forEach((f) => setFeatureOn(f.id, true)),
   },
   {
     id: 'view.toggleTheme',
@@ -151,15 +182,6 @@ registerCommands([
       setPrefs({ showTextures: on });
       toast(on ? 'Textures are on.' : 'Textures are off.', { kind: 'info' });
     },
-  },
-  {
-    id: 'view.resetLayout',
-    label: 'Reset layout',
-    category: 'View',
-    description: 'Put the panels back where this workspace started.',
-    help: 'workspaces',
-    keywords: ['panels', 'restore', 'default'],
-    run: () => resetLayoutAndAsk(),
   },
   {
     id: 'view.saveWorkspace',

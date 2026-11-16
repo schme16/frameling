@@ -11,15 +11,11 @@ import { activeArtboard, artboardDoc, artboardsOf, hasArtboards, sizeOf } from '
 import { rememberedFrame } from './ops';
 import { stackLook } from '../core/sharedLayers';
 import { readableOn } from './labelColor';
+import { cssVar } from '../canvas/theme';
 
 /** Bitmaps of artboards that aren't open, by artboard id: they only change when that artboard does. */
 const bitmaps = new Map<string, { key: unknown[]; canvas: OffscreenCanvas }>();
 const MAX_BITMAP = 4096;
-
-const css = (name: string, fallback: string) => {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-};
 
 function same(a: unknown[], b: unknown[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -35,9 +31,9 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
   const act = activeArtboard(doc);
   const k = view.zoom * dpr;
   // Names must read on the pasteboard in every theme: the gold of the open board is pale on a light one.
-  const pasteboard = css('--canvas-bg', '#121019');
-  const muted = readableOn(pasteboard, css('--muted', '#8a8598'));
-  const accent = readableOn(pasteboard, css('--chosen-bg', '#ffc94a'));
+  const pasteboard = cssVar('--canvas-bg', '#121019');
+  const muted = readableOn(pasteboard, cssVar('--muted', '#8a8598'));
+  const accent = readableOn(pasteboard, cssVar('--chosen-bg', '#ffc94a'));
   g.font = `${Math.round(12 * dpr)}px Nunito, Inter, system-ui, sans-serif`;
   g.textBaseline = 'bottom';
   for (const a of artboardsOf(doc)) {
@@ -58,7 +54,7 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.35)';
     g.shadowBlur = 8 * dpr;
-    g.fillStyle = ad.background ?? css('--raised', '#2a2633');
+    g.fillStyle = ad.background ?? cssVar('--raised', '#2a2633');
     g.fillRect(x, y, rw, rh);
     g.restore();
     if (!ad.background) paintChecker(g, x, y, rw, rh, dpr);

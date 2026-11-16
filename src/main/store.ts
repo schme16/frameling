@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveInfo, AutosaveMeta, KeptAutosave, RecentFile } from '../preload/api';
 import { pathKey } from './paths';
+import { pruneCopies } from './preview';
 
 const MAX_RECENT = 12;
 
@@ -46,17 +47,24 @@ function savePrefs(p: Prefs): void {
   }
 }
 
+/** The recent drawings. One that has gone (a drive unplugged, a file moved) stays on the list, marked, so it can be removed or found again. */
 export function listRecent(): RecentFile[] {
-  const p = loadPrefs();
-  const alive = p.recent.filter((r) => fs.existsSync(r.path));
-  if (alive.length !== p.recent.length) savePrefs({ ...p, recent: alive });
-  return alive;
+  return loadPrefs().recent.map((r) => (fs.existsSync(r.path) ? r : { ...r, missing: true }));
 }
+
+/** Whether a path is on the recent list (the only files the page may ask for a picture of). */
+export function isRecent(file: string): boolean {
+  return loadPrefs().recent.some((r) => pathKey(r.path) === pathKey(file));
+}
+
+/** The folder the app keeps pictures of drawings that had none of their own. */
+export const previewDir = () => dataPath('previews');
 
 export function addRecent(file: string): void {
   const p = loadPrefs();
   const recent = [{ path: file, name: path.basename(file, path.extname(file)), openedAt: Date.now() }, ...p.recent.filter((r) => pathKey(r.path) !== pathKey(file))].slice(0, MAX_RECENT);
   savePrefs({ ...p, recent });
+  pruneCopies(previewDir(), recent.map((r) => pathKey(r.path)));
   try {
     app.addRecentDocument(file);
   } catch {
@@ -66,12 +74,15 @@ export function addRecent(file: string): void {
 
 export function removeRecent(file: string): void {
   const p = loadPrefs();
-  savePrefs({ ...p, recent: p.recent.filter((r) => pathKey(r.path) !== pathKey(file)) });
+  const recent = p.recent.filter((r) => pathKey(r.path) !== pathKey(file));
+  savePrefs({ ...p, recent });
+  pruneCopies(previewDir(), recent.map((r) => pathKey(r.path)));
 }
 
 export function clearRecent(): void {
   const p = loadPrefs();
   savePrefs({ ...p, recent: [] });
+  pruneCopies(previewDir(), []);
   try {
     app.clearRecentDocuments();
   } catch {

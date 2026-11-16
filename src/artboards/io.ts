@@ -8,6 +8,7 @@ import type { Artboard, ArtboardContent, Cel, ClipFlow, Doc, DocPalette, Drawing
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { readClip } from '../core/clipPlay';
 import { readOverrides, variationForSave } from './variationsIo';
+import { readRate } from './rates';
 
 /** The artboards for doc.json, with each set-aside artboard's sound bytes added to the zip. Empty when there are none. */
 export function packArtboards(doc: Doc, files: Zippable, diffs?: Map<string, DrawingDiff>): { artboards?: unknown[]; activeArtboard?: string } {
@@ -70,7 +71,7 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
       out.push(base);
       continue;
     }
-    const content = readContent(a.content, entries, warnings, r);
+    const content = readContent(a.content, entries, warnings, r, readRate(raw.fps, 12));
     if (!content) {
       warnings.push(`The artboard "${base.name}" could not be read and was left out.`);
       continue;
@@ -109,7 +110,8 @@ function readCels(raw: unknown, stack: readonly Layer[], r: ArtboardReaders): Re
   return out;
 }
 
-function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: string[], r: ArtboardReaders): ArtboardContent | null {
+/** `docRate` is the file's own: an artboard that never said its rate (an older file) plays at it. */
+function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: string[], r: ArtboardReaders, docRate: number): ArtboardContent | null {
   if (!isObj(c) || !Array.isArray(c.layers)) return null;
   const width = num(c.width, 0);
   const height = num(c.height, 0);
@@ -132,7 +134,7 @@ function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: 
     background: typeof c.background === 'string' ? c.background : null,
     length: Math.max(1, Math.round(num(c.length, 1))),
     layers,
-    ...(cels ? { cels } : {}),
+    ...(cels ? { cels } : { fps: readRate(c.fps, docRate) }),
     clips,
     markers: Array.isArray(c.markers) ? c.markers.filter((x: any) => isObj(x) && typeof x.id === 'string') : [],
   };

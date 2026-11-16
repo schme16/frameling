@@ -9,18 +9,23 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
 import { useTl } from '../timeline/state';
-import { dock, hidePanel, setActive, toggleCollapsed } from './dock';
+import { useLocked } from './lockState';
+import { dock, MIN_SIZE, setActive, toggleCollapsed } from './dock';
+import { hidePanel } from './lockedDock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
 import { groupsOf } from './dockModel';
 import { dragging, PanelBoundary } from './dockShared';
 import { Icon } from './icons';
 import { openHelp } from './overlays';
+import { PanelHelp, PanelScope, useShowExplanations } from './explain/ExplainIcon';
+import { usePixelSelectionVersion } from '../select/pixel-state';
 import { groupWord, infoFor, planRight, sectionsNow, shortName, PANEL_INFO, type RightGroupPlan } from './panelInfo';
 import { PanelPicker } from './PanelPicker';
 import { ZoneStack } from './DockGroup';
 import { folded, foldAll, onlyOpen, panelPicker, setFolded, togglePicker, type RightStyle } from './rightStyle';
 import './rightDock.css';
+import { useShownZone } from './roomFolds';
 
 export const RAIL_W = 68;
 const PROPS = '__properties';
@@ -38,16 +43,17 @@ const bodyId = (group: number): string => (group === 0 ? 'rd-body' : `rd-body-${
  * every group's panels under that group's heading.
  */
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
   const merge = style === 'inspector';
-  const plans = planRight(groupsOf(z), merge);
+  const railAt = dock.use((d) => d.layout.railAt);
+  const plans = planRight(groupsOf(z), merge, railAt);
   const first = plans[0];
   const picker = panelPicker.use((v) => v);
   // Remember the Properties section in front, so pressing Properties on the rail comes back to it.
   if (first.onProps && first.active) lastSection = first.active;
   return (
-    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={{ width }} aria-label={`${zone} side`}>
+    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={z.collapsed ? { width } : { width, minWidth: MIN_SIZE[zone] + RAIL_W }} aria-label={`${zone} side`}>
       <div className="rd-top">
         {!z.collapsed && <ZoneStack zone={zone} render={(gi) => (plans[gi] ? <GroupBody zone={zone} plan={plans[gi]} /> : null)} />}
         <Rail zone={zone} plans={plans} />
@@ -60,6 +66,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
 /** One group's content: Properties, or its front panel under a heading with help and close. */
 function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
   const names = dock.use((d) => d.layout.names);
+  const showWords = useShowExplanations();
   const { active, onProps, sections } = plan;
   const panel = !onProps && active ? getPanel(active) : undefined;
   if (!onProps && !panel) return null;
@@ -73,18 +80,18 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
             <header className="rd-head">
               <Icon name={panel.icon} size={16} />
               <h2 className="rd-head-title">{names?.[panel.id] ?? panel.title}</h2>
-              <button type="button" className="ui-icon-btn" aria-label={`Help on ${panel.title}`} data-tip="What's this?" onClick={() => openHelp(panel.help ?? 'panels')}>
-                <Icon name="help" size={14} />
-              </button>
+              <PanelHelp id={panel.id} title={names?.[panel.id] ?? panel.title} help={panel.help} blurb={infoFor(panel).blurb} />
               <button type="button" className="ui-icon-btn" aria-label={`Close ${panel.title}`} data-tip={`Close ${panel.title}`} data-tip-desc="Bring it back from the Panels button or the View menu." onClick={() => hidePanel(panel.id)}>
                 <Icon name="close" size={13} />
               </button>
             </header>
-            <p className="rd-head-blurb">{infoFor(panel).blurb}</p>
+            {showWords && <p className="rd-head-blurb">{infoFor(panel).blurb}</p>}
             <div className="rd-scroll">
-              <PanelBoundary name={panel.title} key={panel.id}>
-                <panel.component />
-              </PanelBoundary>
+              <PanelScope id={panel.id} title={panel.title} help={panel.help} bar>
+                <PanelBoundary name={panel.title} key={panel.id}>
+                  <panel.component />
+                </PanelBoundary>
+              </PanelScope>
             </div>
           </>
         )
@@ -95,7 +102,8 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
 
 /** The one rail down the whole side. With stacked groups, each group's places sit under its own heading. */
 function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const locked = useLocked('panels');
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
   const dropAts = dragState.use((d) => plans.map((p) => dropIndexFor(d, { zone, group: p.index }, p.tabs.length) ?? '').join(','));
@@ -176,7 +184,7 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
         tabIndex={tabStop === id ? 0 : -1}
         data-help={isProps ? 'properties' : (pd!.help ?? 'panels')}
         data-tip={title}
-        data-tip-desc={`${blurb}${isProps ? '' : ' Drag to move it. Right-click for more.'}`}
+        data-tip-desc={`${blurb}${isProps ? '' : locked ? ' Right-click for more.' : ' Drag to move it. Right-click for more.'}`}
         data-dock-tab={id}
         data-panel-id={isProps ? undefined : id}
         onPointerDown={isProps ? undefined : (e) => startPanelDrag(e, id)}
@@ -272,16 +280,15 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
 // ---------------------------------------------------------------- Properties
 
 function Inspector({ sections, active }: { sections: string[]; active: string | null }) {
-  // The Clip section shows while a clip is picked on the timeline (that is not in the document store).
+  // The Clip section shows while a clip is picked on the timeline, and leads until you pick something else (neither
+  // is in the document store).
   useTl((t) => t.clipId);
+  useTl((t) => t.clipLead);
+  // Selected pixels are not in the store, but Position and size and Align turn up when there are some.
+  usePixelSelectionVersion();
   // Joined so the selector hands back something stable between renders.
-  const key = useStore((s) => {
-    const r = sectionsNow(sections, s, active);
-    return `${r.shown.join(',')}|${r.idle.join(',')}`;
-  });
-  const [shownKey, idleKey] = key.split('|');
-  const shown = shownKey ? shownKey.split(',') : [];
-  const idle = idleKey ? idleKey.split(',') : [];
+  const key = useStore((s) => sectionsNow(sections, s, active).shown.join(','));
+  const shown = key ? key.split(',') : [];
   const fold = folded.use((f) => f);
   const [flash, setFlash] = useState<string | null>(null);
   // Null at first, so coming back to Properties from another place also lands on the section asked for.
@@ -317,24 +324,6 @@ function Inspector({ sections, active }: { sections: string[]; active: string | 
       {shown.map((id) => (
         <Section key={id} id={id} open={!fold.includes(id)} flash={flash === id} all={shown} />
       ))}
-      {idle.length > 0 && (
-        <div className="rd-idle" role="group" aria-labelledby="rd-idle-title">
-          <h3 className="rd-idle-title" id="rd-idle-title">
-            Also here
-          </h3>
-          {idle.map((id) => {
-            const p = getPanel(id);
-            if (!p) return null;
-            return (
-              <button key={id} type="button" className="rd-idle-item" data-tip={p.title} data-tip-desc={infoFor(p).blurb} data-help={p.help ?? 'properties'} onClick={() => setActive('right', id)}>
-                <Icon name={p.icon} size={15} />
-                <span className="rd-idle-name">{p.title}</span>
-                <span className="rd-idle-why">{PANEL_INFO[id]?.idle}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -381,15 +370,15 @@ function Section({ id, open, flash, all }: { id: string; open: boolean; flash: b
           <span className="rd-sec-title">{p.title}</span>
           {detail && <span className="rd-sec-detail">{detail}</span>}
         </button>
-        <button type="button" className="ui-icon-btn rd-sec-help" aria-label={`Help on ${p.title}`} data-tip="What's this?" onClick={() => openHelp(p.help ?? 'properties')}>
-          <Icon name="help" size={13} />
-        </button>
+        <PanelHelp id={p.id} title={p.title} help={p.help ?? 'properties'} blurb={info?.blurb} size={13} className="rd-sec-help" />
       </h3>
       {open && (
         <div className="rd-sec-body" id={`rd-sec-b-${id}`}>
-          <PanelBoundary name={p.title}>
-            <p.component />
-          </PanelBoundary>
+          <PanelScope id={p.id} title={p.title} help={p.help ?? 'properties'} bar>
+            <PanelBoundary name={p.title}>
+              <p.component />
+            </PanelBoundary>
+          </PanelScope>
         </div>
       )}
     </section>

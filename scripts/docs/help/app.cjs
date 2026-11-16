@@ -92,7 +92,29 @@ const entries = [
   {
     name: 'new-document-cards',
     prefs: CALM,
-    steps: [template('bouncing-ball'), cmd('file.new'), wait(1300), ...shotOf('.ui-presets', null, 12)],
+    // Custom open, a favourite saved from an animation setup so it sits beside the cards, and the message about it gone.
+    steps: [
+      template('bouncing-ball'),
+      cmd('file.newCustom'),
+      wait(1300),
+      js(`(() => { const f = (t) => [...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith(t)).querySelector('input'); f('Width').focus(); })()`),
+      { type: '1920' },
+      js(`(() => { const f = (t) => [...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith(t)).querySelector('input'); f('Height').focus(); })()`),
+      { type: '1080' },
+      js(`[...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith('Add animation')).querySelector('input').click()`),
+      wait(300),
+      js(`[...document.querySelectorAll('.ui-custom label')].find((l) => l.textContent.trim().startsWith('Frames')).querySelector('input').focus()`),
+      { type: '24' },
+      js(`document.querySelector('[data-testid="welcome.custom.favourite"]').click()`),
+      wait(300),
+      js(`document.querySelector('[data-testid="welcome.favourite.name"]').focus()`),
+      { type: 'Film 1080' },
+      js(`document.querySelector('[data-testid="welcome.favourite.keep"]').click()`),
+      wait(5500),
+      { move: [1100, 40] },
+      wait(600),
+      ...shotOf('.ui-welcome', null, 0),
+    ],
   },
   // The welcome sheet: cards and the start of the examples.
   {
@@ -118,6 +140,13 @@ const entries = [
     prefs: CALM,
     steps: [template('bouncing-ball'), prefsPage('keyboard'), wait(900), ...shotOf('.ui-prefs', null, 10)],
   },
+  // Preferences, Performance: the card found (the harness gives a fixed ordinary report), and the settings under it.
+  {
+    name: 'performance',
+    prefs: CALM,
+    size: [1280, 1300],
+    steps: [template('bouncing-ball'), prefsPage('performance'), wait(1500), js(`document.querySelector('.ui-prefs').style.height = '1200px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
+  },
   // Preferences, General.
   {
     name: 'preferences',
@@ -142,7 +171,8 @@ const entries = [
   {
     name: 'features',
     size: [1280, 1000], // the list now has Camera, Particles, Text and Godot exports
-    steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
+    // With the streaming tools tucked away, scrolled to the bottom: the one Streaming tools switch, and the nine folded under it.
+    steps: [template('bouncing-ball'), js(`for (const id of ['stream-guess', 'stream-votes', 'stream-overlay', 'stream-twitch', 'prompt-jar', 'quill-reacts', 'stream-dares', 'stream-penmods', 'stream-door']) __framelingFeatures.set(id, false); true`), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), js(`(() => { let p = document.querySelector('.features-page'); while (p && p.scrollHeight <= p.clientHeight + 2) p = p.parentElement; if (p) p.scrollTop = p.scrollHeight; return true; })()`), wait(300), ...shotOf('.ui-prefs', null, 10)],
   },
 
   // Preferences, Behaviour: every choice listed, and the button that switches the questions off.
@@ -161,6 +191,19 @@ const entries = [
       js(`${F}.screenOffer({ id: 7, width: 3840, height: 2160, scaleFactor: 1, workWidth: 3840, workHeight: 2100 })`),
       wait(1200),
       ...shotOf('.ui-choice', null, 16),
+    ],
+  },
+  // The tightened layout on a 1280 x 720 screen (the capture window is that size, and told it is that screen).
+  {
+    name: 'small-screens',
+    prefs: CALM,
+    size: [1280, 720],
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.fit.consider({ id: 7, width: 1280, height: 720, scaleFactor: 1, workWidth: 1280, workHeight: 720 })`),
+      wait(1200),
+      ...settle,
+      { shot: '@' },
     ],
   },
   // Preferences, General: the top of the page (mode, theme, look).
@@ -231,7 +274,7 @@ const entries = [
       ...dragSlow([[72, 225], [76, 180], [83, 134]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
-      ...dragSlow([[30, 579], [40, 430], [56, 297]], { n: 8, after: 70, hold: 1200 }),
+      ...dragSlow([[30, 630], [40, 470], [56, 297]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
       // Then the new group gets a name: double-click the divider above it, type, Save.
@@ -248,6 +291,32 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // Moving the tool strip by its grip: first pulled wider by its edge, then out over the canvas, back on the left exactly as it was, then the right, the top and
+  // the bottom, a drop on the top bar that springs back, and home again. Edges are reached from the middle of the work area.
+  {
+    name: 'tool-move',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(1000),
+      // The width edge pulls the strip wider (a different thing from the grip), so the return shows the width is kept.
+      { dragOn: '.ui-rail-splitter', to: '.ui-rail-splitter', toDx: 64, steps: 10, delay: 40, hold: 500, after: 300 },
+      { move: [620, 420] },
+      wait(900),
+      { dragOn: '.ui-tools-grip', to: '.ui-canvas', steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 1500, after: 1200 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 610, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDy: -330, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDy: 330, steps: 12, delay: 45, hold: 1100, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-topbar', steps: 12, delay: 45, hold: 1300, after: 1300 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 900, after: 1500 },
+      { rec: 'stop' },
+    ],
+  },
+
   // Change the tools: open it, name a group, start one, move a tool, put one away, fold a group, put it all back.
   {
     name: 'tool-builder',
@@ -289,6 +358,35 @@ const entries = [
       { clickOn: '.ui-tb-back', after: 500 },
       { move: [560, 500] },
       wait(1800),
+      { rec: 'stop' },
+    ],
+  },
+  // Lock the tools: right-click the strip, Lock the tools, try to carry it (it says why), then Unlock and carry it.
+  {
+    name: 'lock-layout',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(900),
+      { rclick: [50, 420] },
+      wait(1200),
+      { clickOn: '.ui-menu-item', text: 'Lock the tools', after: 700 },
+      { move: [620, 420] },
+      wait(900),
+      // Locked: the grip is gone (a small lock sits where it was), and the rail's edge can't be grabbed.
+      wait(2600),
+      // The menu now offers Unlock, with the rest greyed and a reason under each.
+      { rclick: [50, 420] },
+      wait(2200),
+      { clickOn: '.ui-menu-item', text: 'Unlock the tools', after: 700 },
+      { move: [620, 420] },
+      wait(900),
+      // Unlocked: the same drag works.
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 610, steps: 12, delay: 45, hold: 1000, after: 1100 },
+      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: -610, steps: 12, delay: 45, hold: 900, after: 1300 },
       { rec: 'stop' },
     ],
   },
@@ -341,6 +439,19 @@ const entries = [
     prefs: CALM,
     steps: [template('bouncing-ball'), wait(800), clickText('[data-panels-button]', 'Panels'), wait(900), ...settle, wait(300), { shot: '@', crop: [760, 120, 520, 640] }],
   },
+  // The explanations tucked away: the Variations heading in the Artboards panel with its ? icon pointed at, the words in the tip.
+  {
+    name: 'explanations',
+    prefs: { ...CALM, showExplanations: false },
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.showPanel('artboards')`),
+      wait(1200),
+      ...settle,
+      { clickOn: '.sy-section-title .ui-explain', hover: true, after: 1400 },
+      { shot: '@', crop: [660, 90, 620, 440] },
+    ],
+  },
   // Stacked groups: Preview dragged off the rail to the bottom edge of the right side, then the line between them pulled.
   {
     name: 'panel-groups',
@@ -356,6 +467,39 @@ const entries = [
       ...dragSlow([[1090, 404], [1090, 360], [1090, 290]], { n: 8, after: 70, hold: 500 }),
       { move: [600, 500] },
       wait(1800),
+      { rec: 'stop' },
+    ],
+  },
+
+  // Put the panels back: a window dragged out, a panel stacked, two renamed or closed, the side pulled wide; then the menu entry, and its Undo.
+  {
+    name: 'panels-back',
+    prefs: CALM,
+    choices: { 'panels.putBackWindows': 'dock' },
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
+      wait(1000),
+      ...dragSlow([[1233, 338], [1100, 320], [600, 235]], { n: 9, after: 70, hold: 900 }),
+      wait(600),
+      ...dragSlow([[1233, 290], [1150, 480], [1090, 700], [1090, 712]], { n: 8, after: 70, hold: 700 }),
+      wait(500),
+      js(`${F}.dock.resizeZone('right', 440); ${F}.dock.renamePanel('layers', 'My layers'); ${F}.dock.hidePanel('history'); true`),
+      wait(1500),
+      { rclick: [1233, 165] },
+      wait(1300),
+      { clickOn: '.ui-menu-item', text: 'Put the panels back', after: 900 },
+      { move: [640, 420] },
+      wait(2600),
+      { clickOn: '.ui-toast button', text: 'Undo', after: 900 },
+      wait(1600),
+      { rclick: [1233, 165] },
+      wait(900),
+      { clickOn: '.ui-menu-item', text: 'Put the panels back', after: 900 },
+      { move: [640, 420] },
+      wait(2200),
       { rec: 'stop' },
     ],
   },
@@ -397,7 +541,7 @@ const entries = [
     ],
   },
 
-  // Quill's hello, step by step: hello, what you make, colours (looked at, not changed), settings, a name, the start.
+  // Quill's hello, step by step: hello, what you make, colours (looked at, not changed), settings, then the last page (a name, and the start).
   {
     name: 'first-run',
     steps: [
@@ -419,11 +563,9 @@ const entries = [
       next(),
       wait(3000),
       next(),
-      wait(500),
+      wait(1200),
       focusType('#ob-name-input', 'Bouncy Pancake'),
-      wait(2600),
-      next(),
-      wait(2600),
+      wait(3200),
       { rec: 'stop' },
     ],
   },
@@ -565,42 +707,100 @@ const entries = [
       { rec: 'stop' },
     ],
   },
-  // Quill's things: the drawings he has been given.
+  // The quest card finds free room beside what the step points at; drag it, tuck it away, bring it back.
+  {
+    name: 'quest-card',
+    size: [1280, 720],
+    prefs: { firstDrawn: true },
+    steps: [
+      js(`${F}.quests.start('first-animation')`),
+      wait(2200),
+      ...settle,
+      { rec: '@', crop: [0, 0, 1280, 720], every: 100 },
+      wait(1200),
+      clickText('.qb-go', 'Show me'),
+      wait(2600),
+      clickText('.qb-go', 'Next'),
+      wait(2600),
+      // Step two points at the Copy button in the timeline, and the card keeps off it. Drag the card across.
+      js(`(() => { const h = document.querySelector('.qb-head'); const r = h.getBoundingClientRect(); const x = r.left + 40, y = r.top + 12;
+        h.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y }));
+        let i = 0; const step = () => { i++; window.dispatchEvent(new PointerEvent('pointermove', { clientX: x + i * 26, clientY: y - i * 22 })); if (i < 14) setTimeout(step, 60); else window.dispatchEvent(new PointerEvent('pointerup', { clientX: x + i * 26, clientY: y - i * 22 })); };
+        step(); return true; })()`),
+      wait(2200),
+      // Tuck it away for a moment, then bring it back.
+      js(`document.querySelector('.qb-tuck').click()`),
+      wait(2000),
+      js(`document.querySelector('.qb-tuck').click()`),
+      wait(2400),
+      { rec: 'stop' },
+    ],
+  },
+  // The His things tab of Quill's house: the drawings he has been given.
   {
     name: 'quill-things',
     prefs: CALM,
     steps: [
       template('bouncing-ball'),
       wait(800),
-      panel('quill-things'),
+      panel('quill-pet'),
       wait(900),
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
       js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
-      tag('.qt-panel'),
+      tag('.qp-panel'),
       shotEl(2),
     ],
   },
-  // The presents Quill makes: his shelf with one on it, above the things you gave him.
+  // The Presents tab of Quill's house: a present he has made, with the tab bar above it.
   {
     name: 'quill-presents',
     prefs: CALM,
     steps: [
       template('bouncing-ball'),
       wait(800),
-      panel('quill-things'),
+      panel('quill-pet'),
       wait(900),
-      // Give him a couple of frames, then have him make one out of the newest.
+      // Give him a couple of frames on His things, then have him make one out of the newest and show the Presents tab.
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
       js(`(() => { const s = ${F}.store(); for (const f of [0, 8]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
       js(`window.__framelingQuillPet.present()`),
       wait(1800),
+      clickText('.qp-tabs .ui-seg', 'Presents'),
+      wait(600),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
-      tag('.qt-panel'),
+      tag('.qp-panel'),
       shotEl(2),
     ],
   },
-  // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
+  // The Room tab once you have made things: a drawing of yours on his wall and a sprite of yours as a toy on his floor.
+  {
+    name: 'quill-yours',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      js(`window.__framelingQuillPet.made.clear()`),
+      panel('quill-pet'),
+      wait(900),
+      js(`window.__framelingQuillPet.made.fromOpen('Bouncing ball', 6)`),
+      template('hero-sprites'),
+      wait(800),
+      js(`window.__framelingQuillPet.made.fromOpen('Hero', 0)`),
+      wait(900),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
+      ...settle,
+      tag('.qp-panel'),
+      shotEl(2),
+    ],
+  },
+  // The Quill tab: he potters about, you give him a stroke, and the bar shows how well you know each other.
   {
     name: 'quill-pet',
     prefs: CALM,
@@ -613,12 +813,54 @@ const entries = [
       wait(1200),
       ...settle,
       tag('.qp-panel'),
-      { rec: '@', el: '[data-shot]', pad: 10, every: 70 },
+      { rec: '@', el: '[data-shot]', pad: 0, every: 70 },
       wait(1600),
       clickText('.qp-pat', ''),
       wait(2000),
       // His pencils take the colour you are drawing with, and he keeps a picture of the frame you are on.
       clickText('.qp-feed', ''),
+      wait(2600),
+      { rec: 'stop' },
+    ],
+  },
+  // The Room after a long break: what he got up to, with the toy he moved on the floor and him found asleep somewhere new.
+  {
+    name: 'quill-lately',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      wait(900),
+      clickText('.qp-tabs .ui-seg', 'His things'),
+      wait(500),
+      js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } for (const c of ['#ff6f91', '#4cc9a0', '#5b8def']) __framelingQuillPet.tell({ kind: 'noticed', colour: c }); return true; })()`),
+      wait(2200),
+      js(`__framelingQuillPet.comeBack(400, 11)`),
+      // Let the fuss of giving settle first, so he is still asleep where he was found when the Room opens.
+      wait(4600),
+      clickText('.qp-tabs .ui-seg', 'Room'),
+      wait(900),
+      js(`document.querySelector('.qp-panel').scrollIntoView({ block: 'start' })`),
+      ...settle,
+      tag('.qp-panel'),
+      shotEl(2),
+    ],
+  },
+  // Quill waking from a nap: left alone for a minute he dozes off, then a nudge of the mouse wakes him with a stretch.
+  {
+    name: 'quill-wake',
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      wait(1500),
+      tag('.qp-him'),
+      // No input for the minute it takes him to nod off.
+      wait(64000),
+      { rec: '@', el: '[data-shot]', pad: 10, every: 50 },
+      wait(1200),
+      js(`window.dispatchEvent(new Event('pointermove')); true`),
       wait(2600),
       { rec: 'stop' },
     ],

@@ -9,18 +9,19 @@ import { celAt, findLayer, newVectorDrawing, uid } from '../core/doc';
 import { store } from '../core/store';
 import { currentChoice, type ChoiceDef } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
-import { boneBetween, boneForBox, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
+import { boneBetween, boneForBox, descendants, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
+import { choiceWord } from '../words/choices';
 
 export type NewPoseChoice = 'glide' | 'hold';
 
 export const newPoseChoice: ChoiceDef<NewPoseChoice> = {
   id: 'rig.newPose',
-  title: 'Posing on a new frame',
-  question: "You're posing bones on a frame that has no pose of its own yet. How should the frames in between move?",
+  title: choiceWord('choice.rig.newPose.title'),
+  question: choiceWord('choice.rig.newPose.question'),
   options: [
-    { value: 'glide', label: 'Glide from the last pose', detail: 'The bones move smoothly from the pose before to this one (a tween with easing).' },
-    { value: 'hold', label: 'Jump to the new pose', detail: 'The old pose holds until this frame, then the bones snap to the new one (good for snappy, stepped motion).' },
+    { value: 'glide', label: choiceWord('choice.rig.newPose.glide.label'), detail: choiceWord('choice.rig.newPose.glide.detail') },
+    { value: 'hold', label: choiceWord('choice.rig.newPose.hold.label'), detail: choiceWord('choice.rig.newPose.hold.detail') },
   ],
   default: 'glide',
   category: 'Animating',
@@ -147,25 +148,58 @@ export function moveJoint(rigId: Id, boneId: Id, which: 'base' | 'tip', p: Pt): 
   );
 }
 
-/** Deletes a bone. Its children hang from its parent instead, and layers attached to it move to its parent. */
-export function deleteBone(rigId: Id, boneId: Id): void {
+/**
+ * Deletes a bone. By default its children hang from its parent instead; with `withBranch` the bones hanging from it go
+ * too. Layers attached to a removed bone move to the nearest bone left above it.
+ */
+export function deleteBone(rigId: Id, boneId: Id, withBranch = false): void {
   store().update('Delete bone', (d) => {
     const rig = draftRig(d, rigId)?.rig;
     const b = rig?.bones.find((x) => x.id === boneId);
     if (!rig || !b) return;
-    for (const c of rig.bones) if (c.parent === boneId) c.parent = b.parent ?? null;
-    rig.bones = rig.bones.filter((x) => x.id !== boneId);
+    const byId = new Map(rig.bones.map((x) => [x.id, x]));
+    const gone = withBranch ? descendants(rig as Rig, boneId) : new Set<Id>([boneId]);
+    // The nearest bone above that is staying, or none.
+    const above = (id: Id): Id | null => {
+      let cur = byId.get(id)?.parent ?? null;
+      while (cur && gone.has(cur)) cur = byId.get(cur)?.parent ?? null;
+      return cur;
+    };
+    for (const c of rig.bones) if (!gone.has(c.id) && c.parent && gone.has(c.parent)) c.parent = above(c.parent);
+    rig.bones = rig.bones.filter((x) => !gone.has(x.id));
     for (const l of d.layers) {
       if (l.bind?.rig !== rigId) continue;
       if (l.bind.mesh) l.bind.mesh = skinMesh(rig as Rig, l.bind.mesh);
-      if (l.bind.bone === boneId) {
-        if (b.parent) l.bind.bone = b.parent;
+      if (gone.has(l.bind.bone)) {
+        const up = above(l.bind.bone);
+        if (up) l.bind.bone = up;
         else if (rig.bones[0]) l.bind.bone = rig.bones[0].id;
         else delete l.bind;
       }
     }
-    for (const p of rig.poses ?? []) delete p.pose[boneId];
+    for (const p of rig.poses ?? []) for (const id of gone) delete p.pose[id];
   });
+}
+
+/** What removing a bone that has bones hanging from it does (asked the first time, then remembered). */
+export type RemoveBoneChoice = 'keep' | 'branch';
+
+export const removeBoneChoice: ChoiceDef<RemoveBoneChoice> = {
+  id: 'rig.removeBone',
+  title: choiceWord('choice.rig.removeBone.title'),
+  question: choiceWord('choice.rig.removeBone.question'),
+  options: [
+    { value: 'keep', label: choiceWord('choice.rig.removeBone.keep.label'), detail: choiceWord('choice.rig.removeBone.keep.detail'), did: choiceWord('choice.rig.removeBone.keep.did') },
+    { value: 'branch', label: choiceWord('choice.rig.removeBone.branch.label'), detail: choiceWord('choice.rig.removeBone.branch.detail'), did: choiceWord('choice.rig.removeBone.branch.did') },
+  ],
+  default: 'keep',
+  category: 'Animating',
+  help: 'rig-bone-tools',
+};
+
+/** The bones hanging straight from a bone. */
+export function childBones(rig: Rig, id: Id): Bone[] {
+  return rig.bones.filter((b) => b.parent === id);
 }
 
 export function renameBone(rigId: Id, boneId: Id, name: string): void {

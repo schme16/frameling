@@ -10,6 +10,7 @@
  * You can read the whole thing before it goes: `reportText` is what the panel shows, and it is exactly what is sent.
  */
 import type { Doc } from '../core/format';
+import type { MachineFacts } from './machine';
 
 /** The board's ingest shape (see the Reports tab). Every field is optional at the far end; we fill what we can. */
 export interface IngestReport {
@@ -68,12 +69,14 @@ export function scrub(text: string): string {
 export interface ReportParts {
   /** What the person typed. Theirs, kept as they wrote it apart from paths and addresses. */
   note: string;
-  /** How to get back to them, only if they chose to give it. */
+  /** How to get back to them, only if they chose to give it. Kept exactly as typed: giving an address is the whole point of it, and the preview shows it as it will be sent. */
   contact?: string;
   /** Where in the app it happened, as a plain word ("Export", "Drawing"). */
   where?: string;
   env: Record<string, unknown>;
   shape?: DocShape;
+  /** The processor, memory and graphics. Only when the person left "Include details of this computer" on. */
+  machine?: MachineFacts | null;
   /** The last few things that went wrong in the page, already made safe. */
   problems?: string[];
 }
@@ -92,13 +95,14 @@ export function buildReport(p: ReportParts, app = 'Frameling'): IngestReport {
     app,
     version: String(p.env.appVersion ?? ''),
     platform: String(p.env.platform ?? ''),
-    ...(p.contact?.trim() ? { contact: scrub(p.contact.trim()).slice(0, 200) } : {}),
+    ...(p.contact?.trim() ? { contact: p.contact.trim().slice(0, 200) } : {}),
     summary: first || 'No note',
     text: note,
     data: {
       where: p.where ?? '',
       env: p.env,
       ...(p.shape ? { doc: p.shape } : {}),
+      ...(p.machine ? { machine: p.machine } : {}),
       ...(p.problems?.length ? { problems: p.problems.slice(-20).map((x) => scrub(x).slice(0, 500)) } : {}),
     },
   };

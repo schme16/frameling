@@ -9,7 +9,7 @@
  *
  * Shape and type belong to the look, a separate choice from the theme:
  *   data-look="cosy" | "crisp"    (cosy = soft and rounded, the default; crisp = tighter, like Interactives)
- * data-theme="dark" | "light" is also set (left off for System) for the few stylesheet rules that care about it.
+ * data-theme="dark" | "light" is also set, from the mode of the theme showing, for the few stylesheet rules that care.
  */
 @import '@fontsource-variable/nunito';
 @import '@fontsource-variable/inter';
@@ -43,6 +43,12 @@
   --hover-bg: color-mix(in srgb, var(--raised) 70%, var(--line));
   /* A faint warm tint of the panel behind warnings; it follows --panel in light and dark. */
   --peach-soft: color-mix(in srgb, var(--peach) 14%, var(--panel));
+  /* Tooltips: a step past the menu surface, with the accent in the border. Light themes use the same sums. */
+  --tip-bg: color-mix(in srgb, var(--raised) 86%, var(--text));
+  --tip-fg: var(--text);
+  --tip-soft: var(--muted);
+  --tip-line: color-mix(in srgb, var(--accent) 45%, var(--line));
+  --tip-link: color-mix(in srgb, var(--accent) 55%, var(--tip-fg));
   --accent: var(--grape);
   --focus: var(--sunny);
   --danger: #ff7b7b;
@@ -178,4 +184,24 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+/* The one rule for words on a control: they stay on one line. Where there is not room, the row answers (shorter words,
+   a sideways scroll marked data-scrolls, one per line on purpose, or icons with the words in the tooltip), the control
+   never breaks its label in two. A card or list row whose words are a sentence says so with data-wraps. The no-wrap
+   check (scripts/e2e/no-wrap.cjs) holds every control to this. */
+button,
+summary,
+[role='tab'],
+[role='radio'],
+[role='switch'],
+[role='checkbox'],
+[role='menuitem'],
+[role='menuitemradio'],
+[role='menuitemcheckbox'],
+[role='option'] {
+  white-space: nowrap;
+}
+[data-wraps],
+[data-wraps] * {
+  white-space: normal;
 }

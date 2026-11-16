@@ -8,12 +8,46 @@
  */
 import type { Doc, DocPalette } from '../core/format';
 import { parseHex } from '../canvas/colors';
+import { DEFAULT_SWATCHES } from '../core/doc';
 import { STARTER_PALETTES } from './builtin';
 import { variationPalette } from '../artboards/variations';
 
 /** The palette a document uses: its own (an open variation's colourway first), or the first starter palette when it has none yet. */
 export function docPalette(doc: Doc): DocPalette {
   return variationPalette(doc) ?? doc.palette ?? STARTER_PALETTES[0].palette;
+}
+
+/** The most colours a pixel palette holds. */
+export const MAX_PALETTE = 256;
+
+const defaultSwatchKey = DEFAULT_SWATCHES.map(([n, c]) => `${n.toLowerCase()}=${c.toLowerCase()}`).join('|');
+
+/**
+ * A palette made from the file's own named swatches, in the order they are listed, one ramp, each keeping its name.
+ * Null when there is nothing of the file's own to use: no swatches, or only the ten every new file starts with.
+ */
+export function paletteFromSwatches(doc: Pick<Doc, 'name' | 'swatches'>): DocPalette | null {
+  const list = doc.swatches ?? [];
+  if (!list.length) return null;
+  if (list.map((w) => `${w.name.toLowerCase()}=${w.color.toLowerCase()}`).join('|') === defaultSwatchKey) return null;
+  const seen = new Set<string>();
+  const colors: string[] = [];
+  const names: string[] = [];
+  for (const w of list) {
+    const k = w.color.toLowerCase();
+    if (seen.has(k) || !parseHex(w.color)) continue;
+    seen.add(k);
+    colors.push(w.color);
+    names.push(w.name);
+    if (colors.length >= MAX_PALETTE) break;
+  }
+  if (!colors.length) return null;
+  return { name: `${doc.name || 'Document'} swatches`, colors, ...(names.some(Boolean) ? { names } : {}) };
+}
+
+/** True when the file has swatches of its own but is still showing the starter palette, so the Palette panel offers them. */
+export function offerSwatchPalette(doc: Doc): boolean {
+  return !doc.palette && !variationPalette(doc) && paletteFromSwatches(doc) !== null;
 }
 
 /** A palette as packed RGB bytes (three per colour) for fast lookups. Cached per colour list. */
@@ -29,6 +63,23 @@ export function paletteRgb(colors: readonly string[]): Uint8Array {
     out![i * 3 + 2] = v[2];
   });
   rgbCache.set(colors, out);
+  return out;
+}
+
+/**
+ * How solid each palette colour is, one byte per colour (255 for a plain `#rrggbb`). A palette colour can be see-through
+ * (`#rrggbbaa`); the colour matching above only looks at the colour part, so two entries of one colour at different
+ * opacities can't be told apart, the first wins. Cached per colour list.
+ */
+const alphaCache = new WeakMap<readonly string[], Uint8Array>();
+export function paletteAlpha(colors: readonly string[]): Uint8Array {
+  let out = alphaCache.get(colors);
+  if (out) return out;
+  out = new Uint8Array(colors.length);
+  colors.forEach((c, i) => {
+    out![i] = parseHex(c)?.[3] ?? 255;
+  });
+  alphaCache.set(colors, out);
   return out;
 }
 
@@ -116,7 +167,7 @@ export function shadeStep(p: DocPalette, rgb: Uint8Array, index: number, lighter
  * Every pixel snapped to the nearest palette colour. Pixels less than half see-through become fully opaque; the rest
  * become fully clear, since a palette has no "half" colours. Returns a new array and how many pixels changed.
  */
-export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array): { pixels: Uint8ClampedArray; changed: number } {
+export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array, alpha?: Uint8Array): { pixels: Uint8ClampedArray; changed: number } {
   const out = new Uint8ClampedArray(pixels.length);
   const cache = new NearestCache(rgb);
   let changed = 0;
@@ -126,12 +177,14 @@ export function reduceToPalette(pixels: Uint8ClampedArray, rgb: Uint8Array): { p
       if (a !== 0) changed++;
       continue;
     }
-    const k = cache.get(pixels[i], pixels[i + 1], pixels[i + 2]) * 3;
+    const n = cache.get(pixels[i], pixels[i + 1], pixels[i + 2]);
+    const k = n * 3;
     out[i] = rgb[k];
     out[i + 1] = rgb[k + 1];
     out[i + 2] = rgb[k + 2];
-    out[i + 3] = 255;
-    if (out[i] !== pixels[i] || out[i + 1] !== pixels[i + 1] || out[i + 2] !== pixels[i + 2] || a !== 255) changed++;
+    // Each pixel comes out as its palette colour at that colour's own opacity: solid unless the palette colour is see-through.
+    out[i + 3] = alpha ? alpha[n] : 255;
+    if (out[i] !== pixels[i] || out[i + 1] !== pixels[i + 1] || out[i + 2] !== pixels[i + 2] || out[i + 3] !== a) changed++;
   }
   return { pixels: out, changed };
 }

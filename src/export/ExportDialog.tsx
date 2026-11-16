@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Doc } from '../core/format';
+import { ExAbout, ExNote, ExportExplainScope } from './ExNote';
+import type { Doc, SavedExport } from '../core/format';
 import { sceneOf } from '../core/symbols';
 import { store, useStore } from '../core/store';
 import { desktop } from '../io/desktop';
@@ -7,6 +8,10 @@ import { Modal, mountModal } from '../io/mount';
 import { Icon } from '../ui/icons';
 import { Quill, QuillSays } from '../ui/mascot';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
+import { SavedWays } from './SavedWays';
+import { docExports } from './savedOps';
+import { lastWayName } from './saved';
+import { notify } from '../io/notify';
 import { useChoice } from '../core/choices';
 import './choices';
 import { artScale, defaultSettings, sheetRealSize, withRealSize, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
@@ -30,21 +35,18 @@ import { pixelExportStart } from '../pixel/workspace';
 import { followWay } from '../pixel/sheetMode';
 import { SheetSays } from '../pixel/SheetSays';
 import { emitPluginEvent } from '../plugins/bus';
+import { isAnimated } from '../core/animation';
+import { addAnimationAndSay } from '../animation';
 
 /** The formats on offer: the built-in ones and those of the features that are on (Interactives goes while it is off, in Preferences > Features). */
 export function availableFormats(): FormatInfo[] {
   return allExporters().map((d) => d.info);
 }
 
-/** Last time's settings, repaired so they still make sense for this document. */
-function startingSettings(): ExportSettings {
-  const { doc } = sceneOf(store().get().doc, 0);
-  const base = defaultSettings(doc);
-  const extras = loadSheetExtras();
-  if (extras) base.sheet = { ...base.sheet, ...extras };
-  const last = loadLastSettings();
-  if (!last || !availableFormats().some((f) => f.id === last.format)) return base;
-  const s: ExportSettings = { ...base, ...last, sheet: { ...DEFAULT_SHEET, ...last.sheet, ...extras } };
+/** Saved choices, repaired so they still make sense for this document (a clip that is gone, a size it can't do). Null when the format is off. */
+function settingsFrom(last: ExportSettings, base: ExportSettings, doc: Doc, sheetExtras: ReturnType<typeof loadSheetExtras>): ExportSettings | null {
+  if (!availableFormats().some((f) => f.id === last.format)) return null;
+  const s: ExportSettings = { ...base, ...last, sheet: { ...DEFAULT_SHEET, ...last.sheet, ...sheetExtras } };
   if (s.range === 'clip' && !doc.clips.some((c) => c.id === s.clipId)) {
     s.range = 'all';
     s.clipId = null;
@@ -57,7 +59,28 @@ function startingSettings(): ExportSettings {
   return s;
 }
 
-function ExportDialog({ close, initial, autoStart }: { close: () => void; initial: ExportSettings; autoStart: boolean }) {
+/** How this drawing was last exported, else how any drawing was (a new drawing starts from the last choices anywhere). */
+function startingSettings(): ExportSettings {
+  const { doc } = sceneOf(store().get().doc, 0);
+  const base = defaultSettings(doc);
+  const mine = docExports()?.last?.settings as ExportSettings | undefined;
+  if (mine) return settingsFrom(mine, base, doc, null) ?? base;
+  const extras = loadSheetExtras();
+  if (extras) base.sheet = { ...base.sheet, ...extras };
+  const last = loadLastSettings();
+  return (last && settingsFrom(last, base, doc, extras)) || base;
+}
+
+/** A saved way as settings for this drawing. */
+function wayAsSettings(saved: SavedExport): ExportSettings {
+  const { doc } = sceneOf(store().get().doc, 0);
+  const base = defaultSettings(doc);
+  return settingsFrom(saved.settings as unknown as ExportSettings, base, doc, null) ?? base;
+}
+
+type Outcome = 'done' | 'cancelled' | 'stopped';
+
+function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: () => void; initial: ExportSettings; autoStart: boolean; label?: string; onOutcome?: (o: Outcome) => void }) {
   const open = useStore((s) => s.doc);
   const openFrame = useStore((s) => s.ui.frame);
   const { doc, frame } = sceneOf(open, openFrame);
@@ -96,6 +119,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const def = exporterOf(s.format);
   const video = !!def?.video;
   const aiOne = !!def?.singleFrame?.(s);
+  // A drawing with no animation has one frame: no whole animation, clip or play range to pick between.
+  const still = useStore((st) => !isAnimated(st.doc) && st.doc.length <= 1);
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
   // Ask what this computer can make, at the size that matters (a video is made at an even size, which is what the plan gives).
@@ -136,6 +161,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     emitPluginEvent('export.started', heard);
     try {
       const outcome = await exportDocument(s, ac.signal, setProgress);
+      onOutcome?.(outcome);
       if (outcome === 'done') ui?.exported?.({ ...uiProps, abPlan });
       emitPluginEvent('export.finished', { ...heard, ok: outcome === 'done', cancelled: outcome !== 'done' });
       if (outcome === 'done' || autoStart) return close();
@@ -170,9 +196,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   if (running) {
     const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
     return (
-      <Modal title={`Exporting ${info.title}`} onClose={() => abort.current?.abort()} canClose={false} className="ex-running">
+      <Modal title={label ? `Exporting ${label} (${info.title})` : `Exporting ${info.title}`} onClose={() => abort.current?.abort()} canClose={false} className="ex-running">
         <div className="ex-body ex-progress">
-          <Quill anim="think" size={96} className="ex-quill" />
+          <Quill surface="dialog" surfaceId="progress" anim="think" size={96} className="ex-quill" />
           <div className="ex-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Export progress">
             <div style={{ width: `${pct}%` }} />
           </div>
@@ -189,9 +215,12 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   }
 
   return (
-    <Modal title="Export" onClose={close} wide>
+    <Modal title="Export" onClose={close} wide headExtra={<ExAbout />}>
+      <ExportExplainScope>
       <div className="ex-body">
-        <div className="ex-cards" role="radiogroup" aria-label="Format">
+        <div className="ex-formats">
+        <h3 className="ex-h" id="ex-format-h">Format</h3>
+        <div className="ex-cards" role="radiogroup" aria-labelledby="ex-format-h">
           {[...groups.popular, ...(showMore ? groups.more : [])].map((f: FormatInfo) => {
             const why = unavailable(f.id);
             return (
@@ -199,6 +228,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 key={f.id}
                 type="button"
                 role="radio"
+                data-wraps
                 aria-checked={s.format === f.id}
                 className={`ex-card${s.format === f.id ? ' ex-chosen' : ''}`}
                 data-testid={`export.format.${f.id}`}
@@ -214,20 +244,23 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               </button>
             );
           })}
-          {!moreChosen && (
-            <button type="button" className="ex-more" data-testid="export.more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
-              <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
-              {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
-              {!showMore && <small>WebM, PNG picture, SVG, Lottie, PSD, PDF and more</small>}
-            </button>
-          )}
+        </div>
         </div>
 
         <div className="ex-options">
+          <SavedWays settings={s} onPick={(w) => setS(wayAsSettings(w))} />
           <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
           {ui?.Before && <ui.Before {...uiProps} />}
-          {info.animated && !aiOne ? (
+          {info.animated && !aiOne && still ? (
+            <p className="ex-note" data-testid="export-still">
+              This drawing is a picture, so it comes out as one frame{video ? ', and a video needs at least two' : ''}.{' '}
+              <button type="button" className="ex-link" onClick={addAnimationAndSay}>
+                Add animation
+              </button>{' '}
+              to give it frames to export.
+            </p>
+          ) : info.animated && !aiOne ? (
             <fieldset>
               <legend>What to export</legend>
               <div className="ex-seg">
@@ -275,7 +308,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           <fieldset>
             <legend>Size</legend>
             {realSize !== null ? (
-              <p className="ex-note ex-realsize">Real size: one art pixel is one pixel ({artPx} each frame). The game scales it up, which keeps the files small and the edges sharp.</p>
+              <ExNote className="ex-realsize">Real size: one art pixel is one pixel ({artPx} each frame). The game scales it up, which keeps the files small and the edges sharp.</ExNote>
             ) : (
               <>
                 <div className="ex-seg">
@@ -290,7 +323,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                     </button>
                   ))}
                 </div>
-                <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
+                <ExNote>{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</ExNote>
               </>
             )}
           </fieldset>
@@ -308,15 +341,30 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           {ui?.After && <ui.After {...uiProps} />}
         </div>
       </div>
+      </ExportExplainScope>
 
       {error && (
-        <QuillSays anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">
+        <QuillSays surface="dialog" surfaceId="error" anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">
           <span role="alert">
             <Icon name="warning" size={16} /> {error}
           </span>
         </QuillSays>
       )}
       <div className="io-foot ex-foot">
+        {!moreChosen && (
+          <button
+            type="button"
+            className="io-btn ex-more"
+            data-wraps
+            data-testid="export.more"
+            aria-expanded={showMore}
+            title={showMore ? 'Show the popular formats only' : 'WebM, PNG picture, SVG, Lottie, PSD, PDF and more'}
+            onClick={() => setMore((m) => !m)}
+          >
+            <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
+            {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
+          </button>
+        )}
         <span className={`ex-summary${problem ? ' ex-problem' : ''}`} aria-live="polite">
           {problem ?? summary}
         </span>
@@ -354,11 +402,44 @@ export async function openExportDialog(format?: FormatId): Promise<void> {
   mountModal((close) => <ExportDialog close={close} initial={initial} autoStart={false} />);
 }
 
-/** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */
+/** Runs the last export of this drawing again with the same settings, showing progress. Opens the dialog instead when this drawing has not been exported yet. */
 export async function exportAgain(): Promise<void> {
   await loadExportUis();
   leaveTileEdit();
-  const last = loadLastSettings();
+  const mine = docExports();
+  const last = mine?.last?.settings as ExportSettings | undefined;
   if (!last || !availableFormats().some((f) => f.id === last.format)) return openExportDialog();
-  mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart />);
+  mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart label={lastWayName(mine) ?? undefined} />);
+}
+
+/** Runs every saved way of this drawing, one after another, each asking where to save. Stops when one is cancelled or fails. */
+export async function exportAll(): Promise<void> {
+  await loadExportUis();
+  leaveTileEdit();
+  const ways = docExports()?.ways ?? [];
+  if (!ways.length) {
+    notify('This drawing has no saved ways yet. Pick your choices in Export, then Save these choices as...', 'info');
+    return openExportDialog();
+  }
+  let done = 0;
+  for (const way of ways) {
+    const res: { got: Outcome | 'failed' } = { got: 'failed' };
+    await new Promise<void>((resolve) => {
+      mountModal((close) => (
+        <ExportDialog
+          close={() => {
+            close();
+            resolve();
+          }}
+          initial={wayAsSettings(way)}
+          autoStart
+          label={way.name}
+          onOutcome={(o) => (res.got = o)}
+        />
+      ));
+    });
+    if (res.got !== 'done') return;
+    done++;
+  }
+  if (done > 1) notify(`Sent out all ${done} ways.`, 'success');
 }

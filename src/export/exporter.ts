@@ -6,6 +6,7 @@ import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
 import { notifySaved } from '../io/notify';
 import { extensionFor, filtersFor, planExport } from './plan';
+import { wantsSeeThrough } from './draw';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
 import './choices';
@@ -14,11 +15,17 @@ import { ExportProblem } from './problem';
 import type { RunContext } from './runtime';
 import type { Doc } from '../core/format';
 import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
+import { rememberExport } from './savedOps';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
+import { withoutNotes } from '../notes/model';
+import { displayFile } from '../core/streamSafe';
 
 const KEY = 'frameling.export.last';
 
-/** The settings used last time, if any (kept in the browser's own storage, so they survive restarts). */
+/**
+ * The settings used last time on any drawing, if any (kept in the browser's own storage, so they survive restarts). A
+ * drawing that has been exported keeps its own (Doc.exports); this is where a new drawing starts.
+ */
 export function loadLastSettings(): ExportSettings | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -102,18 +109,24 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
   if (!only && exportsSeveral(store().rootDoc(), settings)) {
     try {
-      return await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+      // An SVG with chalk or charcoal on paper asks how to write it once, for all the artboards, and the answer is not remembered with the settings.
+      const several = settings.format === 'svg' || settings.format === 'svganim' ? await exporterOf(settings.format)?.settle?.(store().rootDoc(), settings, st.ui.frame) : undefined;
+      const outcome = await exportArtboards(several ?? settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
+      if (outcome === 'done') rememberExport(settings);
+      return outcome;
     } catch (e) {
       throw e instanceof ArtboardExportProblem ? new ExportProblem(e.message) : e;
     }
   }
   // While a symbol is open, export the scene as it is saved.
-  const { doc, frame } = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
+  const scene = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
+  const doc = withoutNotes(scene.doc);
+  const frame = scene.frame;
   const picked = settings;
   const def = exporterOf(settings.format);
   if (!def) throw new ExportProblem('That kind of export is turned off. Turn it on in Preferences > Features.');
   // A format may need to settle something first (an MP4 whose sound would not play everywhere: ask what to do).
-  if (def.settle) settings = await def.settle(doc, settings);
+  if (def.settle) settings = await def.settle(doc, settings, frame);
   const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);
@@ -126,7 +139,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   if (!target) return 'cancelled';
 
   // Whether this computer can make it, and what it needs (the video codec).
-  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, settings) : {};
+  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, { ...settings, transparent: wantsSeeThrough(doc, settings.transparent) }) : {};
 
   if (made.direct) {
     try {
@@ -136,7 +149,8 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
       throw new ExportProblem(e instanceof Error ? e.message : String(e));
     }
     saveLastSettings(settings);
-    notifySaved(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
+    if (!only) rememberExport(settings);
+    notifySaved(`Exported ${displayFile(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
 
@@ -162,7 +176,8 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
   saveLastSettings(picked);
+  if (!only) rememberExport(picked);
   const note = result.kind === 'file' ? result.note : undefined;
-  notifySaved(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Exported ${displayFile(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }

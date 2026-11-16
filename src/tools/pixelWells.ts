@@ -40,7 +40,7 @@ export function usePaintWells(): boolean {
 }
 
 /** The tools a right-click paints with, using Back for that one stroke (the others leave the right button alone). */
-const RIGHT_PAINT = new Set(['pencil', 'brush', 'fill', 'shade', 'dither', 'spray', 'line', 'rect', 'ellipse', 'polygon', 'star']);
+const RIGHT_PAINT = new Set(['pencil', 'brush', 'fill', 'shade', 'dither', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush', 'line', 'rect', 'ellipse', 'polygon', 'star']);
 
 /** Does a press of this button, on this tool and layer, paint with Back? */
 export const rightPaints = (tool: string, layerKind: string | undefined, button: number): boolean => button === 2 && state.on && layerKind === 'pixel' && RIGHT_PAINT.has(tool);

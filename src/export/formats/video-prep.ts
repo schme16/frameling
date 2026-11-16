@@ -15,6 +15,7 @@ import type { ExportSettings } from '../types';
 type Video = 'mp4' | 'webm';
 
 export async function prepareVideo(plan: Plan, s: ExportSettings): Promise<Partial<RunContext>> {
+  // `s.transparent` already says whether this page is see-through (a page with no background colour is: see exporter.ts).
   const caps = await detectCapabilities(plan.width, plan.height);
   const c = caps[s.format as Video];
   if (!c.ok) throw new ExportProblem(c.reason ?? "This computer can't make that kind of video.");

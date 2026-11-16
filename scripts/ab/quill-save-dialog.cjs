@@ -7,6 +7,10 @@
 //   fallback  freeze the page, close the window: after the wait the old system box shows (system-<theme>.png).
 // Exits 0 when every check held, 1 otherwise.
 const electron = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { execFileSync, spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -34,6 +38,7 @@ electron.app.whenReady().then(async () => {
     await sleep(100);
     win = electron.BrowserWindow.getAllWindows()[0];
   }
+  await gpu.confirmOrExit(win);
   const js = (code) => win.webContents.executeJavaScript(code);
   const prefs = { theme, look: 'cosy', darkTheme: 'midnight-sketchbook', showWelcome: false, onboarded: true, showTips: false };
   await js(`localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); true`);

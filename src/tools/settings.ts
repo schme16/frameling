@@ -7,12 +7,15 @@
 import { useSyncExternalStore } from 'react';
 import type { PlaneChoice } from '../canvas/perspectivePlane';
 import type { RememberedUi } from '../core/uiMemory';
+import type { PixelStamp } from '../brushes/stamps';
 
 export interface ToolSettings {
   /** Pixel brush: size in art pixels, shape, and the corner clean-up. */
   pixelBrushSize: number;
   pixelBrushShape: 'square' | 'round';
   pixelPerfect: boolean;
+  /** A pixel brush made from a selection (null = the square or round one). Checked when it is read: see brushes/stamps.ts. */
+  pixelStamp: PixelStamp | null;
   /** Pencil: line width in document pixels. */
   pencilSize: number;
   /** Eraser: size in document pixels on vector layers, in art pixels on pixel layers. */
@@ -21,6 +24,13 @@ export interface ToolSettings {
   /** Rectangle, ellipse and line: outline thickness. Colours come from the fill and stroke boxes (wells.ts). */
   shapeStroke: number;
   cornerRadius: number;
+  /** New lines and shapes: dashes, how wide the line is along its length, and arrow heads on open lines (see geometry/lineStyle.ts). */
+  lineDash: string;
+  lineWidth: string;
+  arrowStart: string;
+  arrowEnd: string;
+  /** Hold to tidy: how long the pen stays still before a stroke is tidied, in milliseconds (see tools/quickshape.ts). */
+  quickHoldMs: number;
   /** Rectangle and ellipse with perspective guides showing: which plane they lie on (auto guesses from the drag). */
   perspectivePlane: PlaneChoice;
   /** Eyedropper: pick from the active layer only. */
@@ -31,6 +41,10 @@ export interface ToolSettings {
   starInner: number;
   /** Pencil on vector layers: false draws the hand-drawn outline, true a clean even line you can edit by its points. */
   pencilClean: boolean;
+  /** Record a move: how closely the keys follow the hand (0 loose, 1 a key on every frame), how the move is kept ('keys' or 'path'), and whether a path turns to face along it. */
+  recordDetail: number;
+  recordKeep: string;
+  recordFace: boolean;
   /**
    * The vector brush, the stroke and fill colours, loop playback and the onion skin. They live in the shared UI state
    * while you work, so src/tools/rememberUi.ts copies them here on every change and puts them back at launch. The
@@ -43,17 +57,26 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   pixelBrushSize: 1,
   pixelBrushShape: 'square',
   pixelPerfect: true,
+  pixelStamp: null,
   pencilSize: 2,
   eraserSize: 16,
   eraserPixelSize: 1,
   shapeStroke: 4,
   cornerRadius: 0,
+  lineDash: 'solid',
+  lineWidth: 'even',
+  arrowStart: 'none',
+  arrowEnd: 'none',
+  quickHoldMs: 600,
   perspectivePlane: 'auto',
   pickActiveLayerOnly: false,
   polygonSides: 6,
   starPoints: 5,
   starInner: 45,
   pencilClean: false,
+  recordDetail: 0.5,
+  recordKeep: 'keys',
+  recordFace: false,
   remembered: null,
 };
 

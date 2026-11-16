@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { endRun, judge, LAST_FILE, markOffered, MARKER_FILE, noteEvent, parseMarker, parseNotes, pidAlive, readLast, startRun, type Marker } from '../../src/main/crashMarker';
+import { beat, BEAT_MS, endRun, factsOf, judge, LAST_FILE, markOffered, MARKER_FILE, noteEvent, parseMarker, parseNotes, pidAlive, readLast, startRun, windowStopLine, type Marker } from '../../src/main/crashMarker';
 
 let dir = '';
 beforeEach(() => void (dir = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-crash-'))));
@@ -175,5 +175,110 @@ describe('Quill has offered it', () => {
     fs.writeFileSync(path.join(dir, LAST_FILE), 'nope');
     expect(readLast(dir)).toBeNull();
     expect(() => markOffered(dir)).not.toThrow();
+  });
+});
+
+const MIN = 60_000;
+const sample = (now: number, appMB: number, freeMB: number) => ({ now, appMB, freeMB });
+
+describe('a sign of life every so often', () => {
+  it('keeps the latest time, the most Frameling used and the least the computer had free', () => {
+    start(100, { now: 0 });
+    beat(dir, 100, sample(30_000, 800, 4000));
+    beat(dir, 100, sample(60_000, 2400, 900));
+    beat(dir, 100, sample(90_000, 1200, 3000));
+    expect(marker()!.alive).toEqual({ at: 90_000, peakMB: 2400, lowestFreeMB: 900 });
+  });
+
+  it('only ever touches its own run, and not after the quit', () => {
+    start(100);
+    beat(dir, 999, sample(5, 1, 1));
+    expect(marker()!.alive).toBeUndefined();
+    endRun(dir, 100);
+    beat(dir, 100, sample(5, 1, 1));
+    expect(has(MARKER_FILE)).toBe(false);
+  });
+
+  it('is cheap: one small file, no log that grows', () => {
+    start(100);
+    for (let i = 0; i < 500; i++) beat(dir, 100, sample(i * BEAT_MS, 1000 + i, 5000 - i));
+    expect(fs.statSync(path.join(dir, MARKER_FILE)).size).toBeLessThan(400);
+  });
+
+  it('a made-up or half-written sign of life is ignored, not trusted', () => {
+    const m = (alive: unknown) => parseMarker(JSON.stringify({ v: 1, state: 'running', pid: 4, startedAt: 9, alive }));
+    expect(m({ at: 'x', peakMB: 1, lowestFreeMB: 1 })!.alive).toBeUndefined();
+    expect(m({ at: 1, peakMB: -5, lowestFreeMB: 1 })!.alive).toBeUndefined();
+    expect(m({ at: 1, peakMB: 5, lowestFreeMB: 1 })!.alive).toEqual({ at: 1, peakMB: 5, lowestFreeMB: 1 });
+  });
+});
+
+describe('telling a stop apart from the notes', () => {
+  const base: Marker = { v: 1, state: 'running', pid: 500, startedAt: 0, version: '1', platform: 'linux', events: [], alive: { at: 50 * MIN, peakMB: 2430, lowestFreeMB: 212 } };
+
+  it('says how long it ran and rounds the memory, so nothing is more exact than it needs to be', () => {
+    expect(factsOf(base)).toEqual({ ranMinutes: 50, peakMB: 2450, lowestFreeMB: 200 });
+  });
+
+  it('a computer that started again after the last sign of life says so', () => {
+    expect(factsOf(base, 50 * MIN + 10 * MIN).restarted).toBe(true);
+    expect(factsOf(base, 50 * MIN + MIN).restarted).toBeUndefined();
+    expect(factsOf(base, -1 * MIN).restarted).toBeUndefined();
+    expect(factsOf(base).restarted).toBeUndefined();
+  });
+
+  it('a run that was closed properly after a window crash is never put down to a restart', () => {
+    expect(factsOf({ ...base, state: 'closed' }, 10 * 60 * MIN).restarted).toBeUndefined();
+  });
+
+  it('a run that died before its first sign of life still has what is known', () => {
+    expect(factsOf({ ...base, alive: undefined }, 600 * MIN)).toEqual({ restarted: true });
+    expect(factsOf({ ...base, alive: undefined })).toEqual({});
+  });
+
+  it('judging carries the facts into the notes, and parsing keeps them', () => {
+    const v = judge(base, 600, () => false, 80 * MIN);
+    expect(v.kind === 'crash' && v.notes).toMatchObject({ how: 'killed', facts: { ranMinutes: 50, peakMB: 2450, lowestFreeMB: 200, restarted: true } });
+    const back = parseNotes(JSON.parse(JSON.stringify(v.kind === 'crash' ? v.notes : null)));
+    expect(back?.facts).toEqual({ ranMinutes: 50, peakMB: 2450, lowestFreeMB: 200, restarted: true });
+  });
+
+  it('notes from an older version, with no facts, still read', () => {
+    expect(parseNotes({ how: 'killed', startedAt: 1, events: [] })).not.toHaveProperty('facts');
+    expect(parseNotes({ how: 'killed', startedAt: 1, events: [], facts: { ranMinutes: 'x', peakMB: -1, restarted: 'yes' } })).not.toHaveProperty('facts');
+  });
+});
+
+describe('the line for a window that stopped', () => {
+  it('says it in words first, with the reason and code after, for whoever reads the report', () => {
+    const l = windowStopLine({ reason: 'killed', exitCode: 61696 }, 50, 312);
+    expect(l).toBe('The drawing window stopped: it was stopped from outside, often by the system to free memory (killed, exit code 61696), 50 minutes in, 300 MB free on the computer.');
+    expect(windowStopLine({ reason: 'oom', exitCode: 0 }, 1)).toContain('ran out of memory');
+    expect(windowStopLine({ reason: 'something-new', exitCode: 3 })).toBe('The drawing window stopped: (something-new, exit code 3).');
+    expect(windowStopLine({ reason: 'crashed', exitCode: 1 }, 5, 100).length).toBeLessThan(300);
+  });
+});
+
+describe('a whole run, to the report', () => {
+  it('a window crash, a quit, a start: the notes carry the event and the run says how long it lasted', () => {
+    start(100, { now: 0 });
+    beat(dir, 100, sample(20 * MIN, 1500, 2000));
+    noteEvent(dir, 100, windowStopLine({ reason: 'oom', exitCode: 0 }, 20, 2000));
+    endRun(dir, 100);
+    expect(start(101).kind).toBe('crash');
+    const n = readLast(dir)!.notes;
+    expect(n.how).toBe('window');
+    expect(n.events).toHaveLength(1);
+    expect(n.facts).toEqual({ ranMinutes: 20, peakMB: 1500, lowestFreeMB: 2000 });
+  });
+
+  it('a window crash and then a hard stop keeps both, as both', () => {
+    start(100, { now: 0 });
+    noteEvent(dir, 100, 'The drawing window stopped: x.');
+    beat(dir, 100, sample(10 * MIN, 900, 150));
+    const v = start(101, { now: 12 * MIN });
+    expect(v.kind === 'crash' && v.notes.how).toBe('both');
+    expect(readLast(dir)!.notes.events).toEqual(['The drawing window stopped: x.']);
+    expect(readLast(dir)!.notes.facts?.lowestFreeMB).toBe(150);
   });
 });

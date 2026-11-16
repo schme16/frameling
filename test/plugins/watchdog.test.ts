@@ -6,6 +6,7 @@ import { parseManifest } from '../../src/plugins/manifest';
 import { PluginRuntime, type HostHooks } from '../../src/plugins/runtime';
 import { tripMessage, Watchdog, WATCHDOG, type Trip } from '../../src/plugins/watchdog';
 import { closeAll, runPlugin, settle } from './harness';
+import { waitUntil } from '../helpers/waits';
 
 const saved = { ...WATCHDOG };
 beforeEach(() => vi.useFakeTimers());
@@ -159,11 +160,14 @@ describe('with the real prelude', () => {
   it('a plugin that answers is left alone', async () => {
     vi.useRealTimers();
     WATCHDOG.pingEveryMs = 20;
-    WATCHDOG.stuckMs = 200;
+    // The limit is long enough that a busy machine pausing this thread for a moment is not read as a stuck worker.
+    WATCHDOG.stuckMs = 1000;
     const w = runPlugin('frameling.commands.register({ id: "x", label: "X" }, () => {});');
     const h = hooks();
     const rt = new PluginRuntime(manifest, [], w.transport, h);
-    await new Promise((r) => setTimeout(r, 500));
+    // Nothing should happen, so there is nothing to wait for: this one has to be a duration. It runs past the limit, so
+    // a worker that was not being answered would have been caught by now.
+    await new Promise((r) => setTimeout(r, 1500));
     expect(h.trips).toEqual([]);
     rt.stop();
   });
@@ -171,21 +175,24 @@ describe('with the real prelude', () => {
   it('a frozen worker (a loop that never ends) is caught', async () => {
     vi.useRealTimers();
     WATCHDOG.pingEveryMs = 20;
-    WATCHDOG.stuckMs = 200;
+    WATCHDOG.stuckMs = 1000;
     const w = runPlugin('frameling.commands.register({ id: "x", label: "X" }, () => {});');
     const h = hooks();
     const rt = new PluginRuntime(manifest, [], w.transport, h);
     await settle();
     w.freeze();
-    await new Promise((r) => setTimeout(r, 600));
+    await waitUntil(() => h.trips.length > 0, 'the frozen worker to be caught');
+    // It trips once, and then the watching stops.
+    await settle();
     expect(h.trips).toHaveLength(1);
     expect(h.trips[0].kind).toBe('stuck');
     rt.stop();
   });
 
   describe('progress from a long command', () => {
+    // 30 steps of 50 ms: a 1.5 s job against a 1 s limit, so it only survives if its reports buy it more time.
     const LONG = (reports: string) => `frameling.commands.register({ id: "x", label: "X" }, async () => {
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 30; i++) {
         await new Promise((r) => setTimeout(r, 50));
         ${reports}
       }
@@ -193,21 +200,23 @@ describe('with the real prelude', () => {
     async function run(code: string) {
       vi.useRealTimers();
       WATCHDOG.pingEveryMs = 20;
-      WATCHDOG.busyStuckMs = 300;
+      WATCHDOG.busyStuckMs = 1000;
       const w = runPlugin(code);
       const h = hooks();
       // The worker can't answer the host's pings (like one in a long loop), but it still hears the rest and its own messages arrive.
       const deaf = { ...w.transport, post: (m: unknown, t?: Transferable[]) => (m as { t?: string }).t === 'ping' || w.transport.post(m, t) };
       const rt = new PluginRuntime(manifest, [], deaf, h);
       await settle();
-      void rt.runCommand('x');
-      await new Promise((r) => setTimeout(r, 900));
+      let finished = false;
+      void rt.runCommand('x').then(() => void (finished = true));
+      // Either the job finishes (it kept reporting, so no trip), or the watchdog turns it off. Wait for one of the two.
+      await waitUntil(() => finished || h.trips.length > 0, 'the job to end or be turned off');
       rt.stop();
       return { trips: h.trips };
     }
 
-    it('a job of 600 ms against a 300 ms limit is fine while it keeps reporting', async () => {
-      const r = await run(LONG('frameling.progress(i, 12);'));
+    it('a job of 1.5 s against a 1 s limit is fine while it keeps reporting', async () => {
+      const r = await run(LONG('frameling.progress(i, 30);'));
       expect(r.trips).toEqual([]);
     });
 
@@ -217,12 +226,12 @@ describe('with the real prelude', () => {
     });
 
     it('a plugin that repeats the same number, or goes backwards, gets no extra time', async () => {
-      const r = await run(LONG('frameling.progress(1, 12);'));
+      const r = await run(LONG('frameling.progress(1, 30);'));
       expect(r.trips).toHaveLength(1);
     });
 
     it('reports with nonsense numbers are ignored', async () => {
-      const r = await run(LONG('frameling.progress("a", 12); frameling.progress(NaN, 12); frameling.progress(5, 0);'));
+      const r = await run(LONG('frameling.progress("a", 30); frameling.progress(NaN, 30); frameling.progress(5, 0);'));
       expect(r.trips).toHaveLength(1);
     });
   });
@@ -243,7 +252,10 @@ describe('with the real prelude', () => {
     let asked = 0;
     const o = hooks({ memory: async () => (asked++, 5000), diagnostics: () => false });
     const rtO = new PluginRuntime(manifest, [], off.transport, o);
-    await new Promise((r) => setTimeout(r, 400));
+    await waitUntil(() => g.trips.length > 0, 'the greedy plugin to be caught');
+    // The other two are checked on the same 40 ms rhythm. Nothing should happen to them, so give them a few more turns:
+    // this part has to be a duration, and a slow machine only makes it check fewer times, never fail.
+    await new Promise((r) => setTimeout(r, 200));
     expect(g.trips).toEqual([{ kind: 'memory', bytes: 5000 }]);
     expect(b.trips).toEqual([]);
     expect(o.trips).toEqual([]);
@@ -261,7 +273,7 @@ describe('with the real prelude', () => {
     const off = runPlugin(code);
     const rtOn = new PluginRuntime(manifest, [], on.transport, hooks({ diagnostics: () => true }));
     const rtOff = new PluginRuntime(manifest, [], off.transport, hooks({ diagnostics: () => false }));
-    await new Promise((r) => setTimeout(r, 400));
+    await waitUntil(() => rtOn.diag(1234).latencyMs !== null && rtOn.diag(1234).opsPerMin >= 2, 'the numbers to come in');
     const d = rtOn.diag(1234);
     expect(d.latencyMs).not.toBeNull();
     expect(d.latencyMaxMs).toBeGreaterThanOrEqual(0);
@@ -280,8 +292,47 @@ describe('with the real prelude', () => {
     const h = hooks({ watchdog: undefined });
     const rt = new PluginRuntime(manifest, [], w.transport, h);
     w.freeze();
+    // Nothing should happen, so this has to be a duration: long enough for the 100 ms limit to have passed three times.
     await new Promise((r) => setTimeout(r, 300));
     expect(h.trips).toEqual([]);
     rt.stop();
+  });
+});
+
+describe('a limit of its own (a script is stopped sooner than a plugin command)', () => {
+  it('uses the limit it is given, busy or not', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), busy: () => true, limit: () => 3000 });
+    wd.start();
+    vi.advanceTimersByTime(2500);
+    expect(trips).toEqual([]);
+    vi.advanceTimersByTime(2500);
+    expect(trips).toHaveLength(1);
+    expect(trips[0]).toMatchObject({ kind: 'stuck' });
+  });
+
+  it('still gives a script more time for each honest report of progress', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), limit: () => 3000 });
+    wd.start();
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(2000);
+      wd.progress();
+    }
+    expect(trips).toEqual([]);
+    vi.advanceTimersByTime(4000);
+    expect(trips).toHaveLength(1);
+  });
+
+  it('keeps a plugin command on the long limit when no limit is given', () => {
+    const trips: Trip[] = [];
+    const wd = new Watchdog({ ping: () => undefined, trip: (t) => trips.push(t), busy: () => true });
+    wd.start();
+    vi.advanceTimersByTime(WATCHDOG.busyStuckMs - 2000);
+    expect(trips).toEqual([]);
+  });
+
+  it('is shorter for a script than for anything else a plugin does', () => {
+    expect(WATCHDOG.scriptStuckMs).toBeLessThan(WATCHDOG.stuckMs);
   });
 });

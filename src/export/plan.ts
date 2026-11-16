@@ -2,6 +2,7 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
+import { isAnimated } from '../core/animation';
 import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
 import { exporterOf } from './registry';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, oneFrameOnly, type ExportSettings, type FormatId } from './types';
@@ -77,6 +78,13 @@ export function withRealSize(doc: Doc, s: ExportSettings): ExportSettings {
 /** The scale is one of the choices offered for this document. */
 export const scaleAllowed = (doc: Doc, scale: number): boolean => scaleChoices(doc).includes(scale) || scale === artScale(doc);
 
+/** The background of every artboard (the open one's is the document's own), or just the document's when there is one page. */
+export function boardBackgrounds(doc: Doc): (string | null)[] {
+  const list = doc.artboards;
+  if (!list || list.length < 2) return [doc.background];
+  return list.map((a) => (a.content ? a.content.background : doc.background));
+}
+
 export function defaultSettings(doc: Doc): ExportSettings {
   const pixel = hasPixelLayers(doc);
   return {
@@ -85,7 +93,9 @@ export function defaultSettings(doc: Doc): ExportSettings {
     clipId: null,
     // Pixel art starts big enough to see (about 512 pixels across), on a whole number so every art pixel stays square.
     scale: pixel ? [...scaleChoices(doc)].reverse().find((c) => c <= 512 / Math.max(doc.width, doc.height)) ?? 1 : 1,
-    transparent: doc.background === null,
+    // Several artboards: ticked only when every one is see-through, so a coloured board keeps its colour. A see-through
+    // board stays see-through either way (see wantsSeeThrough in draw.ts).
+    transparent: boardBackgrounds(doc).every((b) => b === null),
     loop: true,
     dither: false,
     sheet: { ...DEFAULT_SHEET },
@@ -211,15 +221,19 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, op
     const clip = doc.clips.find((c) => c.id === s.clipId);
     if (clip) name += '-' + fileSafe(clip.name);
   }
-  if (one && doc.length > 1) name += `-frame-${range.start + 1}`;
-  if (info.animated && !one && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
+  const suffix = exporterOf(s.format)?.nameSuffix;
+  if (suffix === undefined) {
+    if (one && doc.length > 1) name += `-frame-${range.start + 1}`;
+    if (info.animated && !one && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
+  } else name += suffix;
 
   let problem: string | null = null;
   if (!(s.scale > 0)) problem = 'Pick a size first.';
   else if (width > MAX_SIDE || height > MAX_SIDE) problem = `That is bigger than ${MAX_SIDE} pixels on one side. Choose a smaller size.`;
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
   else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
-  else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
+  else if (video && count < 2) problem = isAnimated(doc) ? 'A video needs at least two frames. Try the whole animation or a clip.' : 'A video needs at least two frames, and this drawing is a picture. Add animation first, then export again.';
+  if (!problem) problem = exporterOf(s.format)?.problem?.(doc, s, { range, count }) ?? null;
   const looping = exportLoop(doc, s);
   return { range, count, ...(order ? { order } : {}), loop: looping.loop, loopFromClip: looping.fromClip, width, height, name, problem };
 }

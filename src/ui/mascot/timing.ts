@@ -17,7 +17,52 @@ export interface Sheet {
   anims: Record<string, SheetAnim>;
 }
 
-export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops' | 'sad' | 'wave-sad' | 'dazed';
+/**
+ * The clips the app asks a mascot for, by name. This list is the contract: every mascot's sheet must have all of them
+ * (see docs/mascots.md and test/ui/mascots.test.ts). Adding a name here means every mascot has to draw it.
+ */
+export const CLIPS = ['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake'] as const;
+
+/**
+ * Clips a mascot may have but doesn't have to. These are the pet ones: a mascot without them still keeps the contract,
+ * and anything that asks for one falls back to the nearest clip every mascot does have (see `clipOr`). That way a new
+ * behaviour can use a richer animation where it exists without making every mascot draw five more poses.
+ */
+export const EXTRA_CLIPS = ['eat', 'nuzzle', 'hop', 'deep-sleep', 'holding'] as const;
+
+/** What to play instead when a mascot hasn't drawn the extra clip. Every fallback is in CLIPS, so it always resolves. */
+export const EXTRA_FALLBACK: Record<(typeof EXTRA_CLIPS)[number], (typeof CLIPS)[number]> = {
+  eat: 'talk',
+  nuzzle: 'idle',
+  hop: 'cheer',
+  'deep-sleep': 'sleep',
+  holding: 'draw',
+};
+
+export type QuillAnim = (typeof CLIPS)[number] | (typeof EXTRA_CLIPS)[number];
+
+/** The clip to actually play: the one asked for, or its fallback when this mascot hasn't drawn it. */
+export function clipOr(sheet: Sheet, anim: QuillAnim): QuillAnim {
+  if (sheet.anims[anim]) return anim;
+  const fallback = (EXTRA_FALLBACK as Record<string, (typeof CLIPS)[number]>)[anim];
+  return fallback ?? 'idle';
+}
+
+/** Clips that run for as long as they're wanted, so they must loop: resting and sleeping. */
+export const LOOPING_CLIPS: readonly QuillAnim[] = ['idle', 'sleep'];
+
+/** The extra clips that run for as long as they're wanted, so they must loop where a mascot has them. */
+export const LOOPING_EXTRA_CLIPS: readonly (typeof EXTRA_CLIPS)[number][] = ['deep-sleep', 'nuzzle', 'eat', 'holding'];
+
+/** What is wrong with a sheet as a mascot, in plain words. An empty list means it keeps the contract. */
+export function sheetProblems(sheet: Sheet): string[] {
+  const out: string[] = [];
+  for (const c of CLIPS) if (!sheet.anims[c]) out.push(`no "${c}" clip`);
+  for (const c of LOOPING_CLIPS) if (sheet.anims[c] && !sheet.anims[c].loop) out.push(`"${c}" must loop`);
+  // The extras are optional, but a mascot that has drawn one still has to let it loop where it should.
+  for (const c of LOOPING_EXTRA_CLIPS) if (sheet.anims[c] && !sheet.anims[c].loop) out.push(`"${c}" must loop`);
+  return out;
+}
 
 /** One step of a little performance: play `anim`, for `hold` ms if given (else once through, or forever if it loops). */
 export interface Beat {
@@ -65,6 +110,9 @@ export function totalMs(anim: SheetAnim): number {
 export function resolveAnim(sheet: Sheet, name: string, sleepy = false): string {
   if (name === 'idle' && sleepy && sheet.anims.sleep) return 'sleep';
   if (sheet.anims[name]) return name;
+  // A pet clip this mascot hasn't drawn plays as its nearest ordinary one (eat as talk), not as plain idle.
+  const near = clipOr(sheet, name as QuillAnim);
+  if (sheet.anims[near]) return near;
   if (sheet.anims.idle) return 'idle';
   return Object.keys(sheet.anims)[0];
 }
@@ -106,6 +154,22 @@ function frameIn(anim: SheetAnim, local: number): { index: number; next: number 
 export function toBeats(script: Script, then?: QuillAnim): Beat[] {
   const beats = typeof script === 'string' ? [{ anim: script }] : script.length ? script : [{ anim: 'idle' as const }];
   return then ? [...beats, { anim: then }] : beats;
+}
+
+/** The waking-up transition (a stir, a yawn, a stretch) then idle, or null when there is no wake art or motion is off. */
+export function wakeBeats(sheet: Sheet, still = false): Beat[] | null {
+  return sheet.anims.wake && !still ? [{ anim: 'wake' }, { anim: 'idle' }] : null;
+}
+
+/**
+ * What to play when `next` replaces `prev`. Coming out of an explicit sleep into plain idle, he wakes up first instead
+ * of snapping. Anything livelier (a wave, a cheer) goes straight in, so it is never held up.
+ */
+export function withWake(sheet: Sheet, prev: Beat[], next: Beat[], still = false): Beat[] {
+  const was = prev[prev.length - 1]?.anim;
+  if (was !== 'sleep' || next[0]?.anim !== 'idle') return next;
+  const wake = wakeBeats(sheet, still);
+  return wake ? [wake[0], ...next] : next;
 }
 
 export interface Pose {

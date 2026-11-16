@@ -1,5 +1,6 @@
 // Help pictures and clips for symbols, tweens, camera, artboards, clip flow, rigging, sound and lip sync.
 const L = require('./_lib.cjs');
+const { FROM_STAGE, edge } = require('./_shapes.cjs');
 
 /** Selects the first instance on `layer` at `frame` (0-based) with the Select tool, and goes to that frame. */
 const pick = (layer, frame) => L.js(`(() => { const s = __frameling.store(); const { doc } = s.get(); const l = doc.layers.find((x) => x.name === ${JSON.stringify(layer)}); const cel = l.cels.find((c) => c.start <= ${frame} && ${frame} < c.start + c.length); const d = doc.drawings[cel.drawingId]; s.setUi({ tool: 'select', activeLayerId: l.id, frame: ${frame}, selection: d.shapes.filter((x) => x.type === 'instance').slice(0, 1).map((x) => x.id) }); return true; })()`);
@@ -10,7 +11,15 @@ const scrollTo = (text, pad = 8) => L.js(`(() => { const el = [...document.query
 /** Takes the in-betweens off every layer of the open template, then starts the document afresh (no history, no unsaved dot). */
 const noTweens = () => L.js(`(() => { const s = __frameling.store(); s.update('setup', (d) => { for (const l of d.layers) for (const c of l.cels || []) delete c.tween; }); s.load(s.get().doc); return true; })()`);
 const fit = () => L.cmd('view.fit');
+/** The nth row of the Artboards panel's list, as page code (rows, not pixels, so the layout can move). */
+const ROW = (n) => `document.querySelectorAll('.ab-panel [data-artboard]')[${n}]`;
 
+
+
+/** The hero's clip flow with inputs: run on speed, jump only when grounded, hurt on a hit and die at no health, both from any clip. */
+const flowInputsDemo = () => L.js(`(() => { const s = __frameling.store(); s.update('setup', (d) => { const id = (n) => d.clips.find((c) => c.name === n).id; let k = 0; const t = (from, to, when, extra) => ({ id: 'd' + k++, from, to, when, ...extra }); d.flow = { start: id('idle'), inputs: [{ name: 'speed', kind: 'number' }, { name: 'grounded', kind: 'toggle', start: true }, { name: 'health', kind: 'number', start: 3 }], transitions: [ t(id('idle'), id('run'), 'now', { conditions: [{ input: 'speed', op: '>', value: 0.5 }] }), t(id('run'), id('idle'), 'now', { conditions: [{ input: 'speed', op: '<=', value: 0.5 }] }), t(id('run'), id('jump'), 'trigger', { trigger: 'jump', conditions: [{ input: 'grounded', op: '==', value: true }] }), t(id('jump'), id('idle'), 'end'), t('*', id('hurt'), 'trigger', { trigger: 'hit' }), t(id('hurt'), id('idle'), 'end'), t('*', id('die'), 'now', { conditions: [{ input: 'health', op: '<=', value: 0 }] }) ], positions: { [id('idle')]: { x: 10, y: 90 }, [id('run')]: { x: 190, y: 10 }, [id('jump')]: { x: 190, y: 130 }, [id('hurt')]: { x: 10, y: 190 }, [id('die')]: { x: 190, y: 250 }, '*': { x: 10, y: 290 } } }; }); return true; })()`);
+/** Types a number into one of the flow panel's number boxes, by its label. */
+const setFlowNum = (label, v) => L.js(`(() => { const i = document.querySelector('input[aria-label=' + JSON.stringify(${JSON.stringify(label)}) + ']'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, ${JSON.stringify(String(v))}); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 
 /** The puppet with the Bones layer on its first frame, tool and layer picked, the Rig panel open. */
 const rigged = (tool = 'pose') => L.js(`(() => { const s = __frameling.store(); const l = s.get().doc.layers.find((x) => x.name === 'Bones'); s.setUi({ tool: ${JSON.stringify(tool)}, activeLayerId: l.id, frame: 0, selection: [] }); return true; })()`);
@@ -37,15 +46,16 @@ const bendNoodle = () => L.js(`(() => { const s = __frameling.store(); s.setUi({
 /** Real speech for the lip sync clip ("Hello, I am Bob.", scripts/lipsync/say.py): the voice a synthesiser makes, added as a sound. */
 const speech = () => L.js(`(async () => { const b = atob(${JSON.stringify(require('fs').readFileSync(require('path').join(__dirname, 'assets', 'hello-speech.wav')).toString('base64'))}); const bytes = Array.from(b, (c) => c.charCodeAt(0)); return await __framelingAudio.addSound(bytes, 'hello', 'audio/wav'); })()`);
 
-// Rough layout of the 1280 x 800 window: the canvas is x 113-877, y 47-491; the right side x 886-1196; the timeline y 500-760.
-const CANVAS = [112, 44, 766, 448];
+// The pictures made from the stage are cropped from the stage as the running app has it (FROM_STAGE in _shapes.cjs). The other
+// numbers in this file are for a 1280 x 800 window: the right side x 886-1196, the timeline y 500-760.
+const CANVAS = FROM_STAGE({});
 // The puppet's stage and a little around it (720 x 540 document, fitted).
 const STAGE = [203, 47, 584, 444];
 
 const entries = [
   {
     name: 'symbols',
-    steps: [L.template('bouncing-logo'), L.wait(300), L.panel('library'), pick('Logo', 20), L.wait(1500), { shot: '@', crop: [108, 44, 1164, 450] }],
+    steps: [L.template('bouncing-logo'), L.wait(300), L.panel('library'), pick('Logo', 20), L.wait(1500), { shot: '@', crop: FROM_STAGE({ rightGap: 8 }) }],
   },
   {
     name: 'symbols-editing',
@@ -53,11 +63,23 @@ const entries = [
   },
   {
     name: 'symbol-properties',
-    steps: [L.template('bouncing-logo'), L.wait(300), pick('Logo', 24), L.wait(1200), { shot: '@', crop: [886, 92, 310, 660] }],
+    steps: [L.template('bouncing-logo'), L.wait(300), pick('Logo', 24), L.wait(1200), scrollTo('Symbol and motion', 8), L.wait(400), { shot: '@', crop: [886, 44, 310, 660] }],
+  },
+  {
+    // A plain shape picked with the Select tool: the Position and size section of Properties.
+    name: 'selection-numbers',
+    steps: [
+      L.template('bouncing-ball'),
+      L.wait(300),
+      L.js(`(() => { const s = __frameling.store(); const { doc } = s.get(); const l = doc.layers.find((x) => x.kind === 'vector' && x.cels.length && doc.drawings[x.cels[0].drawingId].shapes.some((sh) => sh.type === 'path' || sh.type === 'fill')); const sh = doc.drawings[l.cels[0].drawingId].shapes.find((x) => x.type === 'path' || x.type === 'fill'); s.setUi({ tool: 'select', activeLayerId: l.id, frame: 0, selection: [sh.id] }); return true; })()`),
+      L.panel('selection-numbers'),
+      L.wait(1200),
+      { shot: '@', crop: [886, 44, 310, 520] },
+    ],
   },
   {
     name: 'tween-offer',
-    steps: [L.template('morphing-shapes'), noTweens(), fit(), L.wait(500), { click: [361 + 22 * 6, 663] }, { move: [600, 300] }, L.wait(1500), { shot: '@', crop: [112, 505, 766, 235] }],
+    steps: [L.template('morphing-shapes'), noTweens(), fit(), L.wait(500), { click: edge(380, 616) }, { move: [600, 300] }, L.wait(1500), { shot: '@', crop: FROM_STAGE({ top: 458, height: 235, rightGap: 402 }) }],
   },
   {
     name: 'easing',
@@ -111,8 +133,8 @@ const entries = [
       L.wait(600),
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
       L.wait(800),
-      { clickOn: '.ui-menubar [role=menuitem]', text: 'Frames and motion', after: 900 },
-      { clickOn: '[role=menu] [role=menuitem]', text: 'One-click motions', hover: true, after: 1000 },
+      { clickOn: '.ui-menubar [role=menuitem]', text: 'Animation', after: 900 },
+      { clickOn: '[role=menu] [role=menuitem]', text: 'Ready-made motion', hover: true, after: 1000 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', hover: true, after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', after: 1800 },
       { click: [207, 560], after: 150 }, { move: [150, 120], after: 3500 },
@@ -150,6 +172,7 @@ const entries = [
   },
   {
     name: 'artboards',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
     steps: [
       L.js(`__framelingArtboards.load('sprites')`),
       L.wait(400),
@@ -159,17 +182,38 @@ const entries = [
       L.wait(1200),
       { rec: '@', crop: [60, 44, 1220, 716], every: 80 },
       L.wait(1000),
-      { click: [1041, 217], after: 1300 },
-      { click: [1041, 273], after: 1300 },
-      { click: [951, 326], after: 1700 },
-      { click: [1039, 382], after: 1500 },
-      { click: [1041, 161], after: 1500 },
+      // Pick the second and third boards, add a blank one and pick it, then back to the first (rows, by place in the list).
+      L.js(`${ROW(1)}.click()`),
+      L.wait(1300),
+      L.js(`${ROW(2)}.click()`),
+      L.wait(1300),
+      L.js(`document.querySelector('.ab-panel [aria-label="New blank artboard"]').click()`),
+      L.wait(1700),
+      L.js(`${ROW(3)}.click()`),
+      L.wait(1500),
+      L.js(`${ROW(0)}.click()`),
+      L.wait(1500),
       { rec: 'stop' },
     ],
   },
   {
     name: 'artboards-shots',
     steps: [L.js(`__framelingArtboards.load('shots')`), L.wait(400), L.js(`__framelingArtboards.player()`), L.wait(1500), { click: [704, 622], after: 700 }, { shot: '@', el: '[role=dialog]', pad: 0 }],
+  },
+  {
+    // Three sprites at 6, 12 and 24 fps: the panel names each board's speed, and the Speed box is under the list.
+    name: 'artboards-speed',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
+    steps: [
+      L.js(`__framelingArtboards.load('speeds')`),
+      L.wait(400),
+      L.panel('artboards'),
+      L.cmd('artboards.fitAll'),
+      L.wait(1200),
+      L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 0)`),
+      L.wait(400),
+      { shot: '@', crop: [60, 44, 1220, 716] },
+    ],
   },
   {
     name: 'artboards-letterbox',
@@ -184,20 +228,23 @@ const entries = [
     // Variations: the original and two linked copies side by side; open one to see what it changes; then recolour the
     // original's ground and watch both variations follow (the orange one keeps its own fainter ground).
     name: 'variations',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
     steps: [
       L.js(`__framelingArtboards.load('variations')`),
       L.wait(400),
       L.panel('artboards'),
       L.cmd('artboards.fitAll'),
       L.wait(1200),
-      { rec: '@', crop: [112, 44, 1168, 690], every: 80 },
+      { rec: '@', crop: FROM_STAGE({ rightGap: 0, down: 246 }), every: 80 },
       L.wait(1200),
-      { click: [1050, 218], after: 1500 },
+      L.js(`${ROW(1)}.click()`),
+      L.wait(1500),
       L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 330)`),
       L.wait(1800),
       L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 0)`),
       L.wait(600),
-      { click: [1050, 162], after: 1500 },
+      L.js(`${ROW(0)}.click()`),
+      L.wait(1500),
       L.js(`(() => { const s = __frameling.store(); s.update('Recolour the ground', (d) => { const l = d.layers.find((x) => x.name === 'Ground'); const dr = d.drawings[l.cels[0].drawingId]; dr.shapes[0].fill = '#e6c15a'; dr.shapes[1].fill = '#c9a227'; }); return true; })()`),
       L.wait(2200),
       { rec: 'stop' },
@@ -213,7 +260,15 @@ const entries = [
       L.wait(600),
       L.cmd('artboards.recolourVariation'),
       L.wait(900),
-      L.js(`(() => { const set = (label, v) => { const i = document.querySelector('input[aria-label="' + label + '"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; set('New colour for #ff9e1f', '#4f9bd1'); set('New colour for #6abf4b', '#c9a227'); return true; })()`),
+      // Each colour box opens the picker; the hex box in it takes the new colour, then the box is pressed again to close it.
+      ...[['#ff9e1f', '#4f9bd1'], ['#6abf4b', '#c9a227']].flatMap(([from, to]) => [
+        L.js(`document.querySelector('button[aria-label^="New colour for ${from}"]').click()`),
+        L.wait(400),
+        L.js(`(() => { const i = document.querySelector('.cp-pop input.cv-hex-input'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '${to}'); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
+        L.wait(300),
+        L.js(`document.querySelector('button[aria-label^="New colour for ${from}"]').click()`),
+        L.wait(400),
+      ]),
       L.wait(900),
       { shot: '@', el: '.io-modal', pad: 0 },
     ],
@@ -221,6 +276,31 @@ const entries = [
   {
     name: 'clip-flow',
     steps: [L.template('hero-sprites'), L.panel('clip-flow'), L.cmd('flow.try'), L.wait(800), { click: [987, 149] }, { move: [150, 250] }, L.wait(1000), { shot: '@', crop: [0, 0, 1280, 765] }],
+  },
+  {
+    // Inputs: Try it with a switch and number boxes; speed changes idle to run, a jump needs grounded, a hit plays hurt from any clip, no health plays die.
+    name: 'clip-flow-inputs',
+    steps: [
+      L.template('hero-sprites'),
+      flowInputsDemo(),
+      L.panel('clip-flow'),
+      L.wait(500),
+      { clickOn: 'button', text: 'Keep them', after: 400 },
+      L.cmd('flow.try'),
+      L.wait(600),
+      { rec: '@', crop: [0, 0, 1280, 765], every: 90 },
+      L.wait(900),
+      setFlowNum('Set speed', 0.9),
+      L.wait(1500),
+      { clickOn: '.fl-trigger', text: 'jump', after: 1800 },
+      setFlowNum('Set speed', 0.2),
+      L.wait(1300),
+      { clickOn: '.fl-trigger', text: 'hit', after: 700 },
+      L.wait(1200),
+      setFlowNum('Set health', 0),
+      L.wait(1500),
+      { rec: 'stop' },
+    ],
   },
   {
     name: 'rig-attach',
@@ -290,6 +370,38 @@ const entries = [
     ],
   },
   {
+    // Add, edit and remove bones with the buttons: draw a chain, add the next bone with a click, switch to Edit to move a tip
+    // and type a name, switch to Remove, hover a bone (it turns pink), click it, then Undo brings it back.
+    name: 'rig-bone-tools',
+    steps: [
+      L.template('puppet'),
+      bare(),
+      L.js(`__frameling.store().setUi({ tool: 'bone' })`),
+      fit(),
+      // A little closer, so the bones read clearly: the character stays centred in the canvas.
+      L.js(`__frameling.store().setUi({ zoom: 1, panX: 8, panY: -61 })`),
+      L.wait(800),
+      { rec: '@', crop: [143, 47, 1053, 444], every: 80 },
+      L.wait(800),
+      { drag: [[511, 296], [511, 252]], steps: 8, delay: 40, after: 400 },
+      { drag: [[511, 252], [511, 200]], steps: 8, delay: 40, after: 400 },
+      { drag: [[511, 200], [511, 122]], steps: 10, delay: 40, after: 700 },
+      { drag: [[511, 296], [513, 350]], steps: 8, delay: 40, after: 800 },
+      { clickOn: 'button.cv-action', text: 'Add next bone', after: 1200 },
+      { clickOn: 'button.cv-choice-btn', text: 'Edit', after: 900 },
+      { drag: [[513, 350], [531, 343]], steps: 10, delay: 40, after: 900 },
+      { clickOn: 'input[data-bone-name]', after: 300 },
+      { key: 'a', mods: ['control'], after: 200 },
+      { type: 'Left leg', after: 600 },
+      { key: 'Enter', after: 1000 },
+      { clickOn: 'button.cv-choice-btn', text: 'Remove', after: 700 },
+      { move: [511, 160], after: 1000 },
+      { click: [511, 160], after: 1200 },
+      { key: 'z', mods: ['control'], after: 1600 },
+      { rec: 'stop' },
+    ],
+  },
+  {
     name: 'rig',
     steps: [
       L.template('puppet'),
@@ -355,7 +467,7 @@ const entries = [
   },
   {
     name: 'sound',
-    steps: [L.template('lip-sync'), L.wait(300), speech(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: [112, 483, 766, 279] }],
+    steps: [L.template('lip-sync'), L.wait(300), speech(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: FROM_STAGE({ top: 436, height: 279, rightGap: 402 }) }],
   },
   {
     name: 'lip-sync',
@@ -382,7 +494,7 @@ const entries = [
 ];
 
 // Questions Frameling would ask the first time are answered up front, so no sheet gets in the shot.
-const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'motion.room': 'squeeze', 'workspace.follow': 'never' };
+const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'rig.removeBone': 'keep', 'motion.room': 'squeeze', 'workspace.follow': 'never' };
 const answer = L.js(Object.entries(ANSWERS).map(([k, v]) => `__framelingArtboards.setChoice(${JSON.stringify(k)}, ${JSON.stringify(v)})`).join(';') + ';true');
 
 // No status bar tips either: they change from run to run.

@@ -10,6 +10,7 @@ import { borders, keyAt, sliceAt, sliceColor, sliceOwners, type SliceOwner } fro
 import { deleteSlice, keySliceHere, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, stopSliceMoving, toggleNine, togglePivot, unkeySliceHere, usePickedSlice, createSlice, setSliceColor } from './state';
 import '../pixel.css';
 import './slices.css';
+import { ColourField } from '../../ui/colour/ColourPicker';
 
 function useLayer() {
   return useStore((s) => {
@@ -96,7 +97,7 @@ function Row({ slice, frame, open, canKey, onOpen }: { slice: Slice; frame: numb
           )}
           {!canKey ? null : slice.keys?.length ? (
             <div className="sl-keys">
-              <Tip>
+              <Tip stays>
                 Changes between frames: {slice.keys.length} {slice.keys.length === 1 ? 'key' : 'keys'} (frame {slice.keys.map((k) => k.frame + 1).join(', ')}). Move it at another frame to key it there.
               </Tip>
               <div className="px-row px-wrap">
@@ -124,7 +125,7 @@ function Row({ slice, frame, open, canKey, onOpen }: { slice: Slice; frame: numb
           )}
           <label className="sl-name">
             <span>Colour on the canvas</span>
-            <input type="color" value={color} onChange={(e) => setSliceColor(s.id, e.target.value)} aria-label="Slice colour" />
+            <ColourField label="Slice colour" value={color} alpha={false} why="A slice colour only helps you tell slices apart on the canvas, so it is always solid. It never reaches your export." onChange={(c) => setSliceColor(s.id, c)} />
           </label>
         </div>
       )}
@@ -189,7 +190,7 @@ export function SlicesPanel() {
       <div className="sl-panel">
         {adding}
         {slices.length === 0 ? (
-          <Tip>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out. Slices carry a name, a 9-patch and a pivot into your game engine.</Tip>
+          <Tip stays>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out. Slices carry a name, a 9-patch and a pivot into your game engine.</Tip>
         ) : (
           <ul className="sl-list" aria-label={`Slices on ${layer.name}`}>
             {slices.map((s) => (
@@ -204,7 +205,7 @@ export function SlicesPanel() {
   return (
     <div className="sl-panel">
       {adding}
-      {layer && !layer.slices?.length && <Tip>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out.</Tip>}
+      {layer && !layer.slices?.length && <Tip stays>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out.</Tip>}
       <ul className="sl-groups" aria-label="Slices on every layer and board">
         {owners.map((o) => (
           <Group key={o.layer.id} owner={o} title={many ? `${o.boardName} / ${o.layer.name}` : o.layer.name} note={o.layer.id === layer?.id && o.open ? 'this layer' : !o.layer.visible ? 'hidden, left out of exports' : undefined}>
@@ -212,7 +213,7 @@ export function SlicesPanel() {
           </Group>
         ))}
       </ul>
-      {owners.some((o) => !o.open) && <Tip>Slices on other boards show where they sit on their first frame. Open the board to key them at a frame.</Tip>}
+      {owners.some((o) => !o.open) && <Tip stays>Slices on other boards show where they sit on their first frame. Open the board to key them at a frame.</Tip>}
     </div>
   );
 }

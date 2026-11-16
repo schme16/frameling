@@ -1,0 +1,60 @@
+{
+  "env": {
+    "reps": 9,
+    "moves": 150,
+    "gapMs": 8,
+    "root": "/mnt/109313D2109313D2/projects/frameling-wt/capture-live-base",
+    "electron": "45.3.0",
+    "when": "2026-11-15T06:22:18.423Z"
+  },
+  "cases": [
+    {
+      "doc": "vector",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 70.8,
+        "scriptMs": 45.9,
+        "gapP95": 16.7,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 64.6,
+        "scriptMs": 44.7,
+        "gapP95": 33.4,
+        "gapMax": 33.4,
+        "popPaints": 19
+      },
+      "liveShare": [
+        23,
+        73,
+        100
+      ],
+      "liveFinal": 1381,
+      "costMs": -6.2
+    },
+    {
+      "doc": "pixel",
+      "tool": "eraser",
+      "closed": {
+        "taskMs": 37.1,
+        "scriptMs": 16.7,
+        "gapP95": 16.8,
+        "gapMax": 16.8
+      },
+      "open": {
+        "taskMs": 33.7,
+        "scriptMs": 15.3,
+        "gapP95": 16.8,
+        "gapMax": 33.3,
+        "popPaints": 0
+      },
+      "liveShare": [
+        0,
+        0,
+        0
+      ],
+      "liveFinal": 1082,
+      "costMs": -3.4
+    }
+  ]
+}

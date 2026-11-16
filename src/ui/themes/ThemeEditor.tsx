@@ -1,8 +1,10 @@
 // The theme editor: grouped colour controls with plain names, a live preview on the whole app, a "start from one
 // colour" helper, contrast warnings in plain words, undo, rename, delete, reset, duplicate and export. Every change
 // is saved as it happens (it's a copy, so nothing is at risk), and shows on the real app behind the dialog.
+import { Explainer } from '../explain/ExplainIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../icons';
+import { StickyPageTop } from '../StickyPageTop';
 import { getPrefs, setThemePreview, usePrefs } from '../prefs';
 import { toast } from '../toast';
 import { getBuiltIn } from './builtIn';
@@ -13,6 +15,7 @@ import { copyTheme, MAX_NAME, themeFileName, themeToFile } from './model';
 import { paletteFromColour } from './palette';
 import { ThemePreview } from './ThemePreview';
 import { deriveTokens, EDITOR_CONTROLS, EDITOR_GROUPS, SNAP_CONTROLS, switchSnapMode, type ThemeMode, type ThemeTokens } from './tokens';
+import { ColourField } from '../colour/ColourPicker';
 
 interface Snap {
   tokens: ThemeTokens;
@@ -66,15 +69,17 @@ function PeekButton() {
   );
 }
 
+/** Why a theme colour has no opacity slider. */
+const THEME_WHY = 'Theme colours are solid. Frameling mixes its own see-through shades from them where it needs them.';
+
 function ColourRow({ token, label, hint, value, warnings, onChange, onFix }: { token: string; label: string; hint: string; value: string; warnings: string[]; onChange: (v: string) => void; onFix?: () => void }) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
   return (
     <div className="th-row">
-      <label className="th-swatch" title={`Pick a colour for ${label.toLowerCase()}`}>
-        <input type="color" value={normHex(value)} aria-label={label} onChange={(e) => onChange(e.target.value)} />
+      <ColourField className="th-swatch cp-chip" label={label} title={`Pick a colour for ${label.toLowerCase()}`} value={normHex(value)} alpha={false} why={THEME_WHY} onChange={onChange}>
         <span style={{ background: value }} />
-      </label>
+      </ColourField>
       <div className="th-row-text">
         <strong>{label}</strong>
         <span>{hint}</span>
@@ -200,24 +205,26 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
 
   return (
     <div className="th-editor">
-      <div className="th-editor-top">
-        <button type="button" className="ui-btn ui-btn-small" onClick={onDone}>
-          <Icon name="prev" size={14} />
-          All themes
-        </button>
-        <input
-          className="th-name"
-          type="text"
-          maxLength={MAX_NAME}
-          aria-label="Theme name"
-          value={theme.name}
-          placeholder="Name your theme"
-          onChange={(e) => saveCustomTheme({ ...theme, name: e.target.value })}
-          onBlur={(e) => {
-            if (!e.target.value.trim()) saveCustomTheme({ ...theme, name: 'My theme' });
-          }}
-        />
-      </div>
+      <StickyPageTop>
+        <div className="th-editor-top">
+          <button type="button" className="ui-btn ui-btn-small" onClick={onDone}>
+            <Icon name="prev" size={14} />
+            All themes
+          </button>
+          <input
+            className="th-name"
+            type="text"
+            maxLength={MAX_NAME}
+            aria-label="Theme name"
+            value={theme.name}
+            placeholder="Name your theme"
+            onChange={(e) => saveCustomTheme({ ...theme, name: e.target.value })}
+            onBlur={(e) => {
+              if (!e.target.value.trim()) saveCustomTheme({ ...theme, name: 'My theme' });
+            }}
+          />
+        </div>
+      </StickyPageTop>
 
       <div className="th-editor-grid">
         <aside className="th-editor-side">
@@ -295,10 +302,9 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
             <h4>Start from a colour</h4>
             <p>Pick one colour you like and Frameling works out a whole set to go with it. You can undo it, and change anything after.</p>
             <div className="th-helper-row">
-              <label className="th-swatch" title="Pick your colour">
-                <input type="color" value={normHex(seed)} aria-label="Colour to start from" onChange={(e) => setSeed(e.target.value)} />
+              <ColourField className="th-swatch cp-chip" label="Colour to start from" title="Pick your colour" value={normHex(seed)} alpha={false} why={THEME_WHY} onChange={setSeed}>
                 <span style={{ background: seed }} />
-              </label>
+              </ColourField>
               <div className="ui-segmented" role="radiogroup" aria-label="Dark or light palette">
                 {(['dark', 'light'] as ThemeMode[]).map((m) => (
                   <button key={m} type="button" role="radio" aria-checked={seedMode === m} className={`ui-seg${seedMode === m ? ' is-chosen' : ''}`} onClick={() => setSeedMode(m)}>
@@ -334,7 +340,7 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
           {EDITOR_GROUPS.map((g) => (
             <section key={g.id} className="th-group" aria-label={g.label}>
               <h4>{g.label}</h4>
-              <p className="th-group-hint">{g.hint}</p>
+              <Explainer className="th-group-hint">{g.hint}</Explainer>
               {[...EDITOR_CONTROLS, ...SNAP_CONTROLS].filter((c) => c.group === g.id).map((c) => {
                 const probs = problemsFor(theme.tokens, c.token);
                 const fixable = probs.find((r) => r.fg === c.token);

@@ -2,30 +2,68 @@
 import { platformKeysText } from '../ui/keys';
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { Icon } from '../ui/icons';
+import { useStackWhenTight } from '../ui/fitRow';
 import { setFold, useFold } from './folds';
+import { ExplainIcon, Explainer, useShowExplanations } from '../ui/explain/ExplainIcon';
 import './canvas.css';
 
+/**
+ * The line a control used to carry under it. With the explanations on it is that line; with them tucked away it is a help
+ * icon beside the label, saying the same words in a tooltip. Either way `line` goes under the control and `icon` by the label.
+ */
+function useHint(label: string, hint?: string): { line: ReactNode; icon: ReactNode } {
+  const show = useShowExplanations();
+  if (!hint) return { line: null, icon: null };
+  return show ? { line: <div className="cv-field-hint">{hint}</div>, icon: null } : { line: null, icon: <ExplainIcon title={label} words={hint} size={13} className="cv-explain" /> };
+}
+
 export function Field({ label, value, children, hint }: { label: string; value?: ReactNode; children: ReactNode; hint?: string }) {
+  const h = useHint(label, hint);
   return (
     <div className="cv-field">
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
+        {h.icon}
         {value !== undefined && <span className="cv-field-value">{value}</span>}
       </div>
       {children}
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      {h.line}
     </div>
   );
 }
 
 /** Where a slider lands for a pointer at `x`, with modifiers: Alt or Ctrl moves ten times slower from where the fine drag
  * started (precision), Shift snaps to ten steps (speed). Pure, so it's tested. */
-export function sliderValueAt(o: { x: number; left: number; width: number; min: number; max: number; step: number; fine: { x: number; value: number } | null; coarse: boolean }): number {
+export function sliderValueAt(o: { x: number; left: number; width: number; min: number; max: number; step: number; fine: { x: number; value: number } | null; coarse: boolean; curve?: boolean }): number {
   const span = o.max - o.min;
-  const raw = o.fine ? o.fine.value + ((o.x - o.fine.x) / Math.max(1, o.width)) * span * 0.1 : o.min + ((o.x - o.left) / Math.max(1, o.width)) * span;
+  let raw: number;
+  if (o.curve) {
+    // On a curve the drag works in slider position, then turns that back into a value.
+    const w = Math.max(1, o.width);
+    const pos = o.fine ? curvePos(o.fine.value, o.min, o.max) + ((o.x - o.fine.x) / w) * 0.1 : (o.x - o.left) / w;
+    raw = curveValue(pos, o.min, o.max);
+  } else raw = o.fine ? o.fine.value + ((o.x - o.fine.x) / Math.max(1, o.width)) * span * 0.1 : o.min + ((o.x - o.left) / Math.max(1, o.width)) * span;
   const q = o.coarse ? o.step * 10 : o.fine ? o.step / 10 : o.step;
   const v = Math.round((raw - o.min) / q) * q + o.min;
   return clampTo(v, o.min, o.max);
+}
+
+/**
+ * Curved sliders, for a range that runs from one to thousands (a brush as big as the canvas): the first stretch of the
+ * slider takes the small sizes, where a pixel matters, and the last stretch takes the big ones. `pos` is 0 to 1 along the slider.
+ */
+const CURVE = 3;
+export function curvePos(value: number, min: number, max: number): number {
+  if (!(max > min)) return 0;
+  return Math.pow(Math.min(1, Math.max(0, (value - min) / (max - min))), 1 / CURVE);
+}
+export function curveValue(pos: number, min: number, max: number): number {
+  return min + (max - min) * Math.pow(Math.min(1, Math.max(0, pos)), CURVE);
+}
+
+/** How far an arrow key moves a value: a step, or on a curved slider a twentieth of the value, so reaching 4000 does not take 4000 presses. */
+export function keyStep(value: number, step: number, curve: boolean): number {
+  return curve ? Math.max(step, Math.round((value * 0.05) / step) * step) : step;
 }
 
 const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(min, Number(v.toFixed(6))));
@@ -34,14 +72,16 @@ const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(
  * A slider with its value shown as a button: click the number to type one in (Enter keeps it, Escape cancels).
  * Drag with Shift for big steps, Alt or Ctrl for fine control; the arrow keys do the same (Shift x10, Alt/Ctrl a tenth).
  */
-export function Slider({ label, value, min, max, step = 1, onChange, format, hint }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string }) {
+export function Slider({ label, value, min, max, step = 1, onChange, format, hint, curve = false, typeMax = max }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string; curve?: boolean; typeMax?: number }) {
+  const h = useHint(label, hint);
   const [typing, setTyping] = useState<string | null>(null);
   const fine = useRef<{ x: number; value: number } | null>(null);
   const shown = format ? format(value) : String(value);
   const commit = (text: string) => {
     const n = parseFloat(text.replace(/[^0-9.+-eE]/g, ''));
     setTyping(null);
-    if (Number.isFinite(n)) onChange(clampTo(n, min, max));
+    // The box takes more than the slider reaches: the slider is for reaching, the box is for meaning it.
+    if (Number.isFinite(n)) onChange(clampTo(n, min, Math.max(max, typeMax)));
   };
   const valueNode =
     typing === null ? (
@@ -54,7 +94,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
         type="text"
         inputMode="decimal"
         autoFocus
-        aria-label={`${label}, type a value from ${min} to ${max}`}
+        aria-label={`${label}, type a value from ${min} to ${Math.max(max, typeMax)}`}
         value={typing}
         onChange={(e) => setTyping(e.target.value)}
         onFocus={(e) => e.currentTarget.select()}
@@ -71,34 +111,39 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
     const precise = e.altKey || e.ctrlKey || e.metaKey;
     if (precise && !fine.current) fine.current = { x: e.clientX, value };
     if (!precise) fine.current = null;
-    const v = sliderValueAt({ x: e.clientX, left: r.left, width: r.width, min, max, step, fine: fine.current, coarse: e.shiftKey });
+    const v = sliderValueAt({ x: e.clientX, left: r.left, width: r.width, min, max, step, fine: fine.current, coarse: e.shiftKey, curve });
     if (v !== value) onChange(v);
   };
   const key = (e: KeyboardEvent<HTMLInputElement>) => {
     const dir = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
     if (!dir) return;
     e.preventDefault();
-    const by = e.shiftKey ? step * 10 : e.altKey || e.ctrlKey || e.metaKey ? step / 10 : step;
+    if (dir > 0 && value >= max) return;
+    const one = keyStep(value, step, curve);
+    const by = e.shiftKey ? one * 10 : e.altKey || e.ctrlKey || e.metaKey ? step / 10 : one;
     onChange(clampTo(value + dir * by, min, max));
   };
   return (
     <div className="cv-field">
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
+        {h.icon}
         {valueNode}
       </div>
       <input
         className="cv-slider"
         type="range"
-        min={min}
-        max={max}
+        min={curve ? 0 : min}
+        max={curve ? 1 : max}
         step="any"
-        value={value}
+        value={curve ? curvePos(value, min, max) : value}
         aria-label={label}
         aria-valuetext={shown}
         title="Shift: big steps. Alt or Ctrl: fine control."
         onChange={(e) => {
-          if (!fine.current) onChange(clampTo(Math.round((Number(e.target.value) - min) / step) * step + min, min, max));
+          if (fine.current) return;
+          const raw = curve ? curveValue(Number(e.target.value), min, max) : Number(e.target.value);
+          onChange(clampTo(Math.round((raw - min) / step) * step + min, min, max));
         }}
         onPointerDown={(e) => {
           if (!(e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)) return;
@@ -116,32 +161,39 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
         }}
         onKeyDown={key}
       />
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      {h.line}
     </div>
   );
 }
 
-export function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string }) {
+export function Toggle({ label, checked, onChange, hint, command }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string; /** The command that does the same thing as this switch. */ command?: string }) {
+  const h = useHint(label, hint);
   return (
     <div className="cv-field">
-      <label className="cv-toggle" data-on={checked}>
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        <span className="cv-toggle-track" aria-hidden="true">
-          <span className="cv-toggle-knob" />
-        </span>
-        <span className="cv-toggle-label">{label}</span>
-      </label>
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      <div className="cv-toggle-row" data-wraps>
+        <label className="cv-toggle" data-on={checked}>
+          <input type="checkbox" checked={checked} data-command={command} onChange={(e) => onChange(e.target.checked)} />
+          <span className="cv-toggle-track" aria-hidden="true">
+            <span className="cv-toggle-knob" />
+          </span>
+          <span className="cv-toggle-label">{label}</span>
+        </label>
+        {h.icon}
+      </div>
+      {h.line}
     </div>
   );
 }
 
-export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string }[]; onChange: (v: T) => void }) {
+export function Choice<T extends string>({ label, value, options, onChange, command }: { label: string; value: T; /** The command that does the same job as this whole row (one that steps through the choices, or flips between two), so the row and the command are known to be one. */ command?: string; options: { value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
+  // The words stay on one line; when they do not fit side by side the buttons stack one per line instead.
+  const row = useRef<HTMLDivElement>(null);
+  useStackWhenTight(row, [options.map((o) => o.label).join('|')]);
   return (
     <Field label={label}>
-      <div className="cv-choice" role="radiogroup" aria-label={label}>
+      <div className="cv-choice" role="radiogroup" aria-label={label} data-command={command} ref={row}>
         {options.map((o) => (
-          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} title={o.title} onClick={() => onChange(o.value)}>
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} data-command={o.command} title={o.title} onClick={() => onChange(o.value)}>
             {o.label}
           </button>
         ))}
@@ -150,14 +202,20 @@ export function Choice<T extends string>({ label, value, options, onChange }: { 
   );
 }
 
-export function Tip({ children }: { children: ReactNode }) {
+/**
+ * A line of explanation in a panel. With the explanations on it sits on show; with them tucked away its words go to the
+ * panel's help icon (or the section's), so nothing is lost and the panel is just its controls. `stays` is for a line the
+ * person needs in front of them: a warning, or what is going on right now ("The camera layer is hidden").
+ */
+export function Tip({ children, stays }: { children: ReactNode; stays?: boolean }) {
   // Plain text tips name keys the Mac way on a Mac.
-  return <p className="cv-tip">{typeof children === 'string' ? platformKeysText(children) : children}</p>;
+  const words = typeof children === 'string' ? platformKeysText(children) : children;
+  return stays ? <p className="cv-tip">{words}</p> : <Explainer>{words}</Explainer>;
 }
 
-export function ActionButton({ children, onClick, disabled, title }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {
+export function ActionButton({ children, onClick, disabled, title, pressed, command }: { children: ReactNode; /** The command that does the same thing as this button. */ command?: string; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
   return (
-    <button type="button" className="cv-action" onClick={onClick} disabled={disabled} title={title}>
+    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed} data-command={command}>
       {children}
     </button>
   );
@@ -167,12 +225,12 @@ export function ActionButton({ children, onClick, disabled, title }: { children:
  * A fold for the settings most people leave alone: a button that opens and shuts them, remembered per `name`.
  * `hint` says what's inside while it's shut, so nothing is a mystery.
  */
-export function MoreOptions({ name, label, hint, children }: { name: string; label: string; hint?: string; children: ReactNode }) {
+export function MoreOptions({ name, label, hint, command, children }: { name: string; label: string; hint?: string; /** The command that opens and shuts this fold. */ command?: string; children: ReactNode }) {
   const open = useFold(name);
   const id = `cv-more-${name}`;
   return (
     <div className="cv-more" data-open={open}>
-      <button type="button" className="cv-more-btn" aria-expanded={open} aria-controls={id} onClick={() => setFold(name, !open)}>
+      <button type="button" className="cv-more-btn" data-fold={name} aria-expanded={open} aria-controls={id} data-command={command} onClick={() => setFold(name, !open)}>
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
         <span>{label}</span>
       </button>

@@ -10,6 +10,7 @@ import { PERMISSIONS } from './manifest';
 import { diagnosticsOn, pluginDiag, plugins, refreshDiag, removePlugin, setEnabled, setPower } from './manager';
 import { diagLine } from './diagnostics';
 import { elevatedIn } from './powers';
+import { RemoteDoorPrefsRow } from '../remotedoor';
 import { installFromFile, installFromFolder, canInstallFolder } from './install';
 
 const STATUS: Record<string, string> = { starting: 'Starting', on: 'On', problem: 'Problem', off: 'Off' };
@@ -89,7 +90,7 @@ export function PluginsPage() {
                 </button>
               </div>
               {m.description && <p className="plugin-item-desc">{m.description}</p>}
-              {m.author && <p className="plugin-item-by">By {m.author}</p>}
+              {m.author && <p className="plugin-item-by">By {m.author /* stream-safe-ok: a plugin maker's name, not yours */}</p>}
               {m.permissions.includes('network') && (
                 <div className="plugin-powers">
                   <div className="plugin-power">
@@ -142,6 +143,7 @@ export function PluginsPage() {
           );
         })}
       </ul>
+      <RemoteDoorPrefsRow />
     </div>
   );
 }

@@ -1,0 +1,775 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T04:07:12.509Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  },
+  "bouncing-ball": {
+   "nodes": 1110,
+   "timelineNodes": 322,
+   "keys": 33,
+   "rows": 3,
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 84.5,
+   "runs": [
+    86.5,
+    77.8,
+    84.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 28.15,
+   "topSelf": [
+    [
+     "(program) :0",
+     45.2
+    ],
+    [
+     "$e index-CjCOVn8L.js:10",
+     5.4
+    ],
+    [
+     "_n index-CjCOVn8L.js:10",
+     2.5
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:178",
+     2.2
+    ],
+    [
+     "Hf index-CjCOVn8L.js:10",
+     2
+    ],
+    [
+     "Zze index-CjCOVn8L.js:158",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     45.2
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     18.9
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     15.9
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     15.9
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     15.9
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     15.9
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:178",
+     14.2
+    ],
+    [
+     "(anon) :0",
+     11.9
+    ],
+    [
+     "run index-CjCOVn8L.js:178",
+     11.6
+    ],
+    [
+     "run debug-CZiT0ET0.js:10",
+     11.6
+    ],
+    [
+     "update index-CjCOVn8L.js:10",
+     11.5
+    ],
+    [
+     "a1 index-CjCOVn8L.js:178",
+     11.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 47.8,
+   "runs": [
+    50.9,
+    45.1,
+    47.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 15.92,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "$e index-CjCOVn8L.js:10",
+     5.6
+    ],
+    [
+     "mDe index-CjCOVn8L.js:157",
+     2.9
+    ],
+    [
+     "Pe index-CjCOVn8L.js:10",
+     2
+    ],
+    [
+     "n index-CjCOVn8L.js:178",
+     1.8
+    ],
+    [
+     "Zze index-CjCOVn8L.js:158",
+     1.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "kDe index-CjCOVn8L.js:157",
+     17.7
+    ],
+    [
+     "run index-CjCOVn8L.js:178",
+     17.7
+    ],
+    [
+     "run debug-CZiT0ET0.js:10",
+     17.7
+    ],
+    [
+     "(anon) :0",
+     17.7
+    ],
+    [
+     "DM index-CjCOVn8L.js:157",
+     17.3
+    ],
+    [
+     "AM index-CjCOVn8L.js:157",
+     17.3
+    ],
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "update index-CjCOVn8L.js:10",
+     16.5
+    ],
+    [
+     "Ft.produce index-CjCOVn8L.js:10",
+     15.2
+    ],
+    [
+     "Ft.produceWithPatches index-CjCOVn8L.js:10",
+     15.2
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:157",
+     13.8
+    ],
+    [
+     "get index-CjCOVn8L.js:10",
+     10.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 41.5,
+   "runs": [
+    41.5,
+    39.8,
+    62.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 13.85,
+   "topSelf": [
+    [
+     "(program) :0",
+     28.3
+    ],
+    [
+     "(garbage collector) :0",
+     6.2
+    ],
+    [
+     "_n index-CjCOVn8L.js:10",
+     1.8
+    ],
+    [
+     "n index-CjCOVn8L.js:10",
+     1.3
+    ],
+    [
+     "Hf index-CjCOVn8L.js:10",
+     0.6
+    ],
+    [
+     "draw index-CjCOVn8L.js:173",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     28.3
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     6.5
+    ],
+    [
+     "(garbage collector) :0",
+     6.2
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     5.9
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     5.8
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     5.8
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     5.8
+    ],
+    [
+     "NM index-CjCOVn8L.js:157",
+     4.8
+    ],
+    [
+     "run index-CjCOVn8L.js:178",
+     4.8
+    ],
+    [
+     "run debug-CZiT0ET0.js:10",
+     4.8
+    ],
+    [
+     "(anon) :0",
+     4.8
+    ],
+    [
+     "DM index-CjCOVn8L.js:157",
+     4.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 112,
+   "runs": [
+    112,
+    111,
+    130.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 18.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     46.4
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     15.6
+    ],
+    [
+     "(garbage collector) :0",
+     6
+    ],
+    [
+     "removeChild :0",
+     4
+    ],
+    [
+     "setAttribute :0",
+     2.7
+    ],
+    [
+     "_oe index-CjCOVn8L.js:138",
+     2.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     46.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     32.8
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     30.5
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     25.3
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     25.1
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     25.1
+    ],
+    [
+     "zd index-CjCOVn8L.js:9",
+     20.3
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     20.3
+    ],
+    [
+     "r index-CjCOVn8L.js:163",
+     20.2
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     20
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     12
+    ],
+    [
+     "Dd index-CjCOVn8L.js:9",
+     10.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 24.2,
+   "runs": [
+    24.6,
+    24.2,
+    23.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.6
+    ],
+    [
+     "Hf index-CjCOVn8L.js:10",
+     0.5
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:178",
+     0.5
+    ],
+    [
+     "XA index-CjCOVn8L.js:150",
+     0.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:150",
+     0.3
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:304",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.6
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     7
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     5.4
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     5.4
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     5.4
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     5.4
+    ],
+    [
+     "zd index-CjCOVn8L.js:9",
+     4.1
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     4.1
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     3.8
+    ],
+    [
+     "Ac index-CjCOVn8L.js:9",
+     3
+    ],
+    [
+     "Wo index-CjCOVn8L.js:9",
+     2.8
+    ],
+    [
+     "emit index-CjCOVn8L.js:10",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 16.1,
+   "runs": [
+    15,
+    16.5,
+    16.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 5.37,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.1
+    ],
+    [
+     "XA index-CjCOVn8L.js:150",
+     0.4
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "Hf index-CjCOVn8L.js:10",
+     0.3
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:10",
+     0.3
+    ],
+    [
+     "Rf index-CjCOVn8L.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.1
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     4.7
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     4
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     4
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     4
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     3.9
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     2.8
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     2.4
+    ],
+    [
+     "(anon) :0",
+     2.4
+    ],
+    [
+     "kDe index-CjCOVn8L.js:157",
+     2.3
+    ],
+    [
+     "run index-CjCOVn8L.js:178",
+     2.3
+    ],
+    [
+     "run debug-CZiT0ET0.js:10",
+     2.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 13.7,
+   "runs": [
+    32.4,
+    13.7,
+    12.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.4
+    ],
+    [
+     "(garbage collector) :0",
+     5.6
+    ],
+    [
+     "XA index-CjCOVn8L.js:150",
+     0.5
+    ],
+    [
+     "Wo index-CjCOVn8L.js:9",
+     0.3
+    ],
+    [
+     "Uw index-CjCOVn8L.js:150",
+     0.3
+    ],
+    [
+     "Rf index-CjCOVn8L.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.4
+    ],
+    [
+     "(garbage collector) :0",
+     5.6
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     4
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     3.7
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     3.7
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     3.7
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     3.7
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     2.7
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     2.7
+    ],
+    [
+     "Ac index-CjCOVn8L.js:9",
+     1.9
+    ],
+    [
+     "Wo index-CjCOVn8L.js:9",
+     1.7
+    ],
+    [
+     "NM index-CjCOVn8L.js:157",
+     1.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 37.6,
+   "runs": [
+    37.6,
+    34,
+    38.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 6.26,
+   "topSelf": [
+    [
+     "(program) :0",
+     13.4
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     3.8
+    ],
+    [
+     "i index-CjCOVn8L.js:178",
+     1.9
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "setAttribute :0",
+     0.7
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:150",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     13.4
+    ],
+    [
+     "(anon) index-CjCOVn8L.js:9",
+     12.6
+    ],
+    [
+     "Ed index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "gf index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "ff index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "pf index-CjCOVn8L.js:9",
+     11.6
+    ],
+    [
+     "Rd index-CjCOVn8L.js:9",
+     8.1
+    ],
+    [
+     "Xc index-CjCOVn8L.js:9",
+     6.2
+    ],
+    [
+     "Ac index-CjCOVn8L.js:9",
+     5.3
+    ],
+    [
+     "Wo index-CjCOVn8L.js:9",
+     5.2
+    ],
+    [
+     "r index-CjCOVn8L.js:163",
+     4.7
+    ],
+    [
+     "zGe index-CjCOVn8L.js:163",
+     4.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

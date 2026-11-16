@@ -1,0 +1,241 @@
+{
+  "env": {
+    "label": "review-soak",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "dpr": 1,
+    "idleRafMs": 16.66666666666666,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/measure/dist/renderer",
+    "when": "2026-11-14T17:55:58.995Z"
+  },
+  "soak": {
+    "kitchenSink600": {
+      "frames": 600,
+      "heapMB": [
+        14.6,
+        17.5,
+        17.6,
+        17.8,
+        17.9
+      ],
+      "growthAfterRound2MB": 0.3,
+      "bitmapCache": [
+        {
+          "entries": 294,
+          "megapixels": 40
+        },
+        {
+          "entries": 294,
+          "megapixels": 40
+        },
+        {
+          "entries": 294,
+          "megapixels": 40
+        },
+        {
+          "entries": 294,
+          "megapixels": 40
+        }
+      ],
+      "exportMs": [
+        3267,
+        3219,
+        3228,
+        3177
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 281,
+        "top": [
+          {
+            "name": "(code)",
+            "dCount": 619,
+            "dKB": 234
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 67,
+            "dKB": 17
+          },
+          {
+            "name": "(array)",
+            "dCount": -1,
+            "dKB": 14
+          },
+          {
+            "name": "Object",
+            "dCount": 544,
+            "dKB": 11
+          },
+          {
+            "name": "(number)",
+            "dCount": 554,
+            "dKB": 6
+          },
+          {
+            "name": "LayoutShift",
+            "dCount": 12,
+            "dKB": 2
+          },
+          {
+            "name": "system / ProtectedFixedArray",
+            "dCount": 66,
+            "dKB": 1
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 24,
+            "dKB": 1
+          },
+          {
+            "name": "system / SharedFunctionInfoWrapper",
+            "dCount": 66,
+            "dKB": 1
+          },
+          {
+            "name": "PerformanceLongAnimationFrameTiming",
+            "dCount": 3,
+            "dKB": 1
+          },
+          {
+            "name": "(string)",
+            "dCount": 555,
+            "dKB": 0
+          },
+          {
+            "name": "(object shape)",
+            "dCount": 3,
+            "dKB": 0
+          }
+        ]
+      }
+    },
+    "strokes600": {
+      "frames": 600,
+      "heapMB": [
+        104.1,
+        108.9,
+        108.7,
+        108.4,
+        109.1
+      ],
+      "growthAfterRound2MB": 0.3,
+      "bitmapCache": [
+        {
+          "entries": 262,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 262,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 262,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 262,
+          "megapixels": 39.9
+        }
+      ],
+      "exportMs": [
+        3758,
+        3806,
+        3846,
+        3819
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 897,
+        "top": [
+          {
+            "name": "(array)",
+            "dCount": 12218,
+            "dKB": 358
+          },
+          {
+            "name": "(code)",
+            "dCount": 723,
+            "dKB": 303
+          },
+          {
+            "name": "Array",
+            "dCount": 12218,
+            "dKB": 191
+          },
+          {
+            "name": "(number)",
+            "dCount": 1345,
+            "dKB": 16
+          },
+          {
+            "name": "Object",
+            "dCount": 746,
+            "dKB": 16
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 6,
+            "dKB": 4
+          },
+          {
+            "name": "LayoutShift",
+            "dCount": 12,
+            "dKB": 2
+          },
+          {
+            "name": "(object shape)",
+            "dCount": 21,
+            "dKB": 1
+          },
+          {
+            "name": "system / ProtectedFixedArray",
+            "dCount": 87,
+            "dKB": 1
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 24,
+            "dKB": 1
+          },
+          {
+            "name": "system / SharedFunctionInfoWrapper",
+            "dCount": 87,
+            "dKB": 1
+          },
+          {
+            "name": "blink::HeapVectorBacking<std::pair<cppgc::internal::BasicMem",
+            "dCount": 0,
+            "dKB": 1
+          }
+        ]
+      }
+    }
+  },
+  "consoleErrors": []
+}

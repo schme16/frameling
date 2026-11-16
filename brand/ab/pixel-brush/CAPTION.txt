@@ -1,0 +1,1 @@
+Pixel brush, second slice: strokes from each new brush kind (pen, speed and fade dynamics, paper grain, dual tip, colour wobble, wet smear), in sharp pixels, both themes; the clip shows them being drawn.

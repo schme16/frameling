@@ -1,0 +1,103 @@
+/* The colour picker: its opacity strip, the chequerboard behind see-through colours, and the popover. */
+:root {
+  --cp-checker: conic-gradient(#c9c9c9 25%, #fff 0 50%, #c9c9c9 0 75%, #fff 0) 0 0 / 8px 8px;
+}
+.cp-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.cp-alpha-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cp-alpha {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(to right, transparent, var(--cp, #000)),
+    var(--cp-checker);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
+  cursor: pointer;
+  touch-action: none;
+}
+.cp-alpha-knob {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background:
+    linear-gradient(var(--cp, #000), var(--cp, #000)),
+    var(--cp-checker);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    var(--shadow-small);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cp-alpha-val {
+  min-width: 34px;
+  text-align: right;
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.cp-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cp-hex-row .cv-hex {
+  flex: 1;
+  min-width: 0;
+}
+/* A swatch: the colour over a chequerboard, so a see-through one reads as see-through. */
+.cp-chip {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background:
+    linear-gradient(var(--chip, #000), var(--chip, #000)),
+    var(--cp-checker);
+  cursor: pointer;
+}
+.cp-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.cp-chip-static {
+  width: 26px;
+  cursor: default;
+}
+.cp-note {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: var(--muted);
+}
+.cp-note[data-kind='why'] {
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.cp-pop {
+  position: fixed;
+  z-index: var(--z-flyout);
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}

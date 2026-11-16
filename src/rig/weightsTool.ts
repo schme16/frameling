@@ -83,7 +83,7 @@ export function setLayerMesh(layerId: Id, mesh: SkinMesh, label: string, coalesc
   );
 }
 
-const NO_MESH = 'Pick a layer that bends with the bones first: Rig > Bend this layer with the bones.';
+const NO_MESH = 'Pick a layer that bends with the bones first: Rigging > Bend this layer with the bones.';
 
 export function normaliseActive(): string | undefined {
   const t = paintTarget();
@@ -136,7 +136,7 @@ function strokeTo(p: Pt, alt: boolean): void {
 export const weightsTool: Tool = {
   id: 'weights',
   group: 'rig',
-  groupAt: 2,
+  groupAt: 4,
   label: 'Paint how much it bends',
   icon: 'weights',
   layers: ['vector', 'pixel'],

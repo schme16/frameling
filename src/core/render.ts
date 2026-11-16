@@ -13,11 +13,19 @@ import { folderChain } from './folders';
 import { shapeKind } from './shapeKinds';
 import { drawingKindOf } from './layerKinds';
 import { cameraViewAt, layerCameraMatrix } from './camera';
-import { compositePlan, EffectCache } from '../effects/composite';
+import { compositePlan, EffectCache, paintThroughEffects } from '../effects/composite';
+import { drawableShapeFx, shapeEffects, shapeFxReach } from '../effects/shapeFx';
+import { drawToothStroke } from '../effects/toothShape';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
-import { canvasGradient } from './gradient';
+import { canvasGradient, fillDiamond, strokeDiamond } from './gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
+import { trimActive, trimStrokePoints } from '../geometry/trim';
+import { tipReach } from '../geometry/tip';
+import { setTipOutliner, strokeParts } from './tips';
+import { setRepeatHelpers } from './repeats';
+import { moveForRepeat, shapeCentre } from '../canvas/repeatMove';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -37,14 +45,26 @@ export interface RenderOptions {
 const strokeCache = new WeakMap<StrokeShape, Path2D>();
 const pathCache = new WeakMap<FillShape | PathShape, Path2D>();
 const strokeOutlineCache = new WeakMap<StrokeShape, number[][]>();
+const wholeOutlineCache = new WeakMap<StrokeShape, number[][]>();
 
-/** The filled outline polygon of a brush stroke, worked out fresh. */
-function computeOutline(s: StrokeShape): number[][] {
-  const b = s.brush;
+/**
+ * The filled outline polygon of a brush stroke, worked out fresh. With a trim only the part that shows is outlined, and
+ * where the window cuts the line the end is a round pen tip, not a taper (so a line drawing itself keeps its full width).
+ */
+function computeOutline(s: StrokeShape, whole = false): number[][] {
+  let b = s.brush;
+  let points = s.points;
+  if (!whole && trimActive(s.trim)) {
+    const cut = trimStrokePoints(s.points, s.trim);
+    if (!cut) return [];
+    points = cut.points;
+    if (cut.cutStart) b = { ...b, taperStart: 0, capStart: true };
+    if (cut.cutEnd) b = { ...b, taperEnd: 0, capEnd: true };
+  }
   // Every point at the middle means nothing varied, so widths come from the speed instead. A pen's own widths stand.
   const simulate = !s.realPressure && s.points.every((p) => p.p === 0.5);
   return getStroke(
-    s.points.map((p) => [p.x, p.y, p.p]),
+    points.map((p) => [p.x, p.y, p.p]),
     {
       size: b.size,
       thinning: b.thinning,
@@ -67,6 +87,21 @@ export function strokeOutline(s: StrokeShape): number[][] {
   }
   return o;
 }
+
+/** The whole line's outline, whatever its trim hides: for picking, bounds and editing, which shouldn't lose a hidden line. */
+export function strokeOutlineWhole(s: StrokeShape): number[][] {
+  if (!trimActive(s.trim)) return strokeOutline(s);
+  let o = wholeOutlineCache.get(s);
+  if (!o) {
+    o = computeOutline(s, true);
+    wholeOutlineCache.set(s, o);
+  }
+  return o;
+}
+
+// Tipped lines ask for the outline of the line itself, whatever tip it has (the cache above keeps it).
+setRepeatHelpers({ move: (s, m) => moveForRepeat(s, m), centre: (s) => shapeCentre(s) });
+setTipOutliner((s, b) => (b === s.brush ? strokeOutline(s) : computeOutline({ ...s, brush: b })));
 
 /** Smooth closed Path2D through outline points (quadratic midpoints, as perfect-freehand recommends). */
 export function outlinePath(points: number[][]): Path2D {
@@ -100,7 +135,13 @@ export function strokePath(s: StrokeShape): Path2D {
   return p;
 }
 
-export function subPathsToPath2D(paths: SubPath[]): Path2D {
+/**
+ * `fillOnly`: the path will only ever be filled, never stroked. A fill closes every open piece by itself, so the
+ * `closePath` for each closed piece is left out. This matters because `closePath` slows down the
+ * more pieces the path already has (4000 pieces cost 42 ms, left open 0.3 ms), and grainy chalk and charcoal lines are
+ * thousands of pieces. The fill comes out the same.
+ */
+export function subPathsToPath2D(paths: SubPath[], fillOnly = false): Path2D {
   const p = new Path2D();
   for (const sp of paths) {
     const pts = sp.points;
@@ -114,7 +155,7 @@ export function subPathsToPath2D(paths: SubPath[]): Path2D {
     for (let i = 1; i < pts.length; i++) seg(i);
     if (sp.closed) {
       if (pts[0].c1 && pts[0].c2) seg(0);
-      p.closePath();
+      if (!fillOnly) p.closePath();
     }
   }
   return p;
@@ -123,7 +164,7 @@ export function subPathsToPath2D(paths: SubPath[]): Path2D {
 export function shapePath(s: FillShape | PathShape): Path2D {
   let p = pathCache.get(s);
   if (!p) {
-    p = subPathsToPath2D(s.paths);
+    p = subPathsToPath2D(s.paths, s.type === 'fill' || !s.stroke);
     pathCache.set(s, p);
   }
   return p;
@@ -138,26 +179,59 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeKind(s.type)?.draw(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
-    g.fillStyle = s.color;
-    g.fill(strokePath(s));
+    // A chalk, charcoal, watercolour or stamp line is drawn as the plain shapes it is made of.
+    const parts = s.brush.tip ? strokeParts(s) : null;
+    if (parts) {
+      g.globalAlpha = 1;
+      for (const p of parts) drawShape(g, p, at);
+    } else {
+      g.fillStyle = s.color;
+      g.fill(strokePath(s));
+    }
   } else if (s.type === 'fill') {
-    g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
-    g.fill(shapePath(s), 'evenodd');
-  } else {
-    const p = shapePath(s);
-    if (s.fill) {
+    if (s.gradient?.kind === 'diamond') fillDiamond(g, s.gradient, shapePath(s), 'evenodd');
+    else {
+      g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
+      g.fill(shapePath(s), 'evenodd');
+    }
+  } else if (hasLineStyle(s.stroke)) {
+    // Dashes, arrow heads or a changing width: the outline as the plain shapes that paint it.
+    for (const part of expandStroke(s)) drawPlainPath(g, part.shape);
+  } else drawPlainPath(g, s);
+  g.globalAlpha = 1;
+}
+
+function drawPlainPath(g: Ctx2D, s: PathShape): void {
+  const p = shapePath(s);
+  if (s.fill) {
+    if (s.fillGradient?.kind === 'diamond') fillDiamond(g, s.fillGradient, p, 'evenodd');
+    else {
       g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
       g.fill(p, 'evenodd');
     }
-    if (s.stroke) {
-      g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
-      g.lineWidth = s.stroke.width;
-      g.lineJoin = s.stroke.join;
-      g.lineCap = s.stroke.cap;
-      g.stroke(p);
-    }
   }
-  g.globalAlpha = 1;
+  if (s.stroke) {
+    const st = s.stroke;
+    const line = (c: Ctx2D, paint: string | CanvasGradient) => {
+      c.strokeStyle = paint;
+      c.lineWidth = st.width;
+      c.lineJoin = st.join;
+      c.lineCap = st.cap;
+      const dash = dashPx(st);
+      if (dash) {
+        c.setLineDash(dash);
+        c.lineDashOffset = dashOffsetPx(st);
+      }
+      c.stroke(p);
+      if (dash) {
+        c.setLineDash([]);
+        c.lineDashOffset = 0;
+      }
+    };
+    // A diamond is four gradients, so the line is drawn in plain black first and then coloured with it.
+    if (s.strokeGradient?.kind === 'diamond') strokeDiamond(g, s.strokeGradient, (c) => line(c, '#000'));
+    else line(g, s.strokeGradient ? canvasGradient(g, s.strokeGradient) : st.color);
+  }
 }
 
 // Pixel drawings become canvases once per pixel array (arrays are replaced on edit, never mutated).
@@ -198,10 +272,24 @@ export interface DrawContext {
   frame: number;
 }
 
+/**
+ * Draws one shape of a drawing, through its own effects when it has any (see effects/shapeFx.ts). The effects work on
+ * that shape alone, so a soft shadow under one shape does not touch the shapes round it.
+ */
+export function drawShapeFx(g: Ctx2D, s: Shape, at?: DrawContext): void {
+  if (!shapeEffects(s)?.length) return drawShape(g, s, at);
+  const fx = drawableShapeFx(s, at?.frame ?? 0);
+  if (!fx.length) return drawShape(g, s, at);
+  const sig = fx.some((e) => e.kind === 'grain') ? `${at?.frame ?? 0}|${JSON.stringify(shapeEffects(s))}` : JSON.stringify(shapeEffects(s));
+  // A brush line with paper tooth first lays its own dabs on the paper (it knows how hard each bit was pressed); the rest run on that.
+  if (s.type === 'stroke' && fx[0].kind === 'tooth') return drawToothStroke(g, s, fx[0].v, fx.slice(1), at?.doc ? { w: at.doc.width, h: at.doc.height } : undefined, sig);
+  paintThroughEffects(g, fx, at?.doc ? { w: at.doc.width, h: at.doc.height } : undefined, s, sig, (lg) => drawShape(lg, s, at));
+}
+
 /** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
 export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
   if (d.kind === 'vector') {
-    for (const s of d.shapes) drawShape(g, s, at);
+    for (const s of d.shapes) drawShapeFx(g, s, at);
   } else if (d.kind === 'tilemap') {
     if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
@@ -430,9 +518,15 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
     const o = doc ? tileOrigin(doc, pixelSize) : { x: 0, y: 0 };
     grow(b, o.x, o.y);
     grow(b, o.x + d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, o.y + d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
-  } else if (d.kind === 'vector')
+  } else if (d.kind === 'vector') {
+    // How far the effects on any one shape paint past the drawing: the whole box grows by the most of them.
+    let fxPad = 0;
     for (const s of d.shapes) {
-      if (s.type === 'stroke') for (const [x, y] of strokeOutline(s)) grow(b, x, y);
+      if (shapeEffects(s)?.length) fxPad = Math.max(fxPad, shapeFxReach(s, effectReach));
+      if (s.type === 'stroke') {
+        const reach = tipReach(s.brush);
+        for (const [x, y] of strokeOutline(s)) grow(b, x, y, reach);
+      }
       else if (s.type === 'fill' || s.type === 'path') {
         const r = s.type === 'path' && s.stroke ? s.stroke.width : 0;
         for (const sp of s.paths)
@@ -450,6 +544,13 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
         for (const [x, y] of [[ib.x0, ib.y0], [ib.x1, ib.y0], [ib.x0, ib.y1], [ib.x1, ib.y1]]) grow(b, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
       }
     }
+    if (fxPad > 0 && b.x1 >= b.x0) {
+      b.x0 -= fxPad;
+      b.y0 -= fxPad;
+      b.x1 += fxPad;
+      b.y1 += fxPad;
+    }
+  }
   boxCache.set(d, { ps: pixelSize, box: b });
   return b;
 }
@@ -484,6 +585,9 @@ export function effectReach(kind: string, v: Record<string, number | string>): n
   if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 3;
   if (kind === 'outline') return n('width') + 1;
   if (kind === 'pixelate') return n('size');
+  if (kind === 'wave') return n('amount') * Math.hypot(1, n('ripple') / 100) + 1;
+  if (kind === 'fringe') return n('distance') + 1;
+  if (kind === 'motionblur') return n('length') + 1;
   return 0;
 }
 

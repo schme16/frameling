@@ -4,6 +4,10 @@
 //   npm run build
 //   GODOT_BIN=/path/to/godot xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/aseprite-godot.cjs
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -27,6 +31,7 @@ async function main() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   const win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   const ev = (js) => win.webContents.executeJavaScript(js, true);
   for (let i = 0; i < 200 && !(await ev('!!(window.__framelingIo && window.__frameling && window.__framelingExport)').catch(() => false)); i++) await sleep(100);
   await sleep(500);

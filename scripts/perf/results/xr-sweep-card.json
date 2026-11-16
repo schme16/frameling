@@ -1,0 +1,13691 @@
+{
+ "label": "sweep",
+ "when": "2026-11-14T23:38:38.823Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 3,
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "brush-stroke",
+   "busyMs": 13.5,
+   "runs": [
+    14.1,
+    12.8,
+    13.5
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.23,
+   "topSelf": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "QM index-BwsiPy02.js:155",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ],
+    [
+     "bi index-BwsiPy02.js:20",
+     0.3
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.3
+    ],
+    [
+     "save :0",
+     0.2
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.9
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     2.5
+    ],
+    [
+     "t.overlay index-BwsiPy02.js:167",
+     1.2
+    ],
+    [
+     "overlay index-BwsiPy02.js:163",
+     1.1
+    ],
+    [
+     "NPe index-BwsiPy02.js:163",
+     1.1
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     1.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1
+    ],
+    [
+     "_ee index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "vK index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "eEe index-BwsiPy02.js:156",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 51.7,
+   "runs": [
+    48.7,
+    51.7,
+    61.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.65,
+   "topSelf": [
+    [
+     "(program) :0",
+     31.5
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     1.1
+    ],
+    [
+     "cs index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     31.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     16.1
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     12.4
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     11.9
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     11.8
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     11.6
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     9.1
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     8.6
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     8.6
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     8.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "Jw index-BwsiPy02.js:146",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "play",
+   "busyMs": 41.9,
+   "runs": [
+    40.8,
+    41.9,
+    49.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 27.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     27.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.9
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     0.8
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.7
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.6
+    ],
+    [
+     "cs index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     27.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     4.1
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.6
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     3.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     2.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 45.9,
+   "runs": [
+    46.5,
+    45.9,
+    42.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.48,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     6.9
+    ],
+    [
+     "(garbage collector) :0",
+     2.8
+    ],
+    [
+     "insertBefore :0",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "appendChild :0",
+     0.7
+    ],
+    [
+     "setAttribute :0",
+     0.7
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     16.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     15.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     15.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     15.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     15.7
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     10.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     10.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     10.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     7.3
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     6.9
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     6.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-move",
+   "busyMs": 23.4,
+   "runs": [
+    27.5,
+    23.4,
+    19.7
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.78,
+   "topSelf": [
+    [
+     "(program) :0",
+     11.4
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.8
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "sl index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.3
+    ],
+    [
+     "Bd index-BwsiPy02.js:133",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     3.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     2.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     2
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     1.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-layer",
+   "busyMs": 15.3,
+   "runs": [
+    18.6,
+    15.3,
+    14.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.9
+    ],
+    [
+     "draw index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "yM index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "nP index-BwsiPy02.js:155",
+     1.4
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.4
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.4
+    ],
+    [
+     "(anon) :0",
+     1.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 17.7,
+   "runs": [
+    15.9,
+    22.6,
+    17.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.89,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "draw index-BwsiPy02.js:167",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     1.8
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 14.6,
+   "runs": [
+    13,
+    14.6,
+    14.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.87,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "n index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "SD index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     2.4
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     2.4
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     2.4
+    ],
+    [
+     "(anon) :0",
+     2.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.2
+    ],
+    [
+     "UN index-BwsiPy02.js:155",
+     2
+    ],
+    [
+     "qN index-BwsiPy02.js:155",
+     2
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 22,
+   "runs": [
+    25,
+    22,
+    20.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.34,
+   "topSelf": [
+    [
+     "(program) :0",
+     13.5
+    ],
+    [
+     "yM index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     13.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     1.8
+    ],
+    [
+     "(anon) :0",
+     1.6
+    ],
+    [
+     "R3 index-BwsiPy02.js:172",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 34.1,
+   "runs": [
+    35,
+    34.1,
+    33.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.8
+    ],
+    [
+     "yM index-BwsiPy02.js:148",
+     0.9
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ],
+    [
+     "p index-BwsiPy02.js:9",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     11.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     10.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     10.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     10.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     10.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     7.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     4.3
+    ],
+    [
+     "(anon) :0",
+     3.5
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     3.4
+    ],
+    [
+     "run index-BwsiPy02.js:10",
+     3.4
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 47.7,
+   "runs": [
+    47.7,
+    40.9,
+    51.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     24
+    ],
+    [
+     "(garbage collector) :0",
+     3.1
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     2.4
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     11.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     11.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     10.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     10.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "(garbage collector) :0",
+     3.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "export-dialog",
+   "busyMs": 7.6,
+   "runs": [
+    7.8,
+    7.6,
+    7.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 7.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "focus :0",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.2
+    ],
+    [
+     "_ index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "querySelector :0",
+     0.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "J ExportDialog-pA9wiv-U.js:1",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "focus :0",
+     0.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.4,
+    1.1,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     0.6
+    ],
+    [
+     "(anon) :0",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "open-file",
+   "busyMs": 4.6,
+   "runs": [
+    6.2,
+    4.6,
+    4.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.57,
+   "topSelf": [
+    [
+     "dBe index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "(program) :0",
+     0.8
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "s$ index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "r index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "quadraticCurveTo :0",
+     0.2
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "n index-BwsiPy02.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-BwsiPy02.js:167",
+     1.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "openBytesAsync debug-Dze80odr.js:3",
+     1.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "(anon) :1",
+     1.2
+    ],
+    [
+     "(anon) :0",
+     1.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "dBe index-BwsiPy02.js:167",
+     1.1
+    ],
+    [
+     "M$ index-BwsiPy02.js:167",
+     1.1
+    ],
+    [
+     "fHe index-BwsiPy02.js:167",
+     1.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "autosave",
+   "busyMs": 1.1,
+   "runs": [
+    1.3,
+    1.1,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.09,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 102.3,
+   "runs": [
+    102.3,
+    96.3,
+    104.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 17.06,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.7
+    ],
+    [
+     "(garbage collector) :0",
+     19
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     4.5
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.3
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     2.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.2
+    ],
+    [
+     "removeChild :0",
+     1.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     32
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     31.3
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     29.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     29.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     29.1
+    ],
+    [
+     "(garbage collector) :0",
+     19
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     16.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     16.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     16.5
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     15.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     15.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     15
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     13.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     9.7
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     9.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "brush-stroke",
+   "busyMs": 14.7,
+   "runs": [
+    22.5,
+    14.7,
+    12
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.25,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "clearTimeout :0",
+     0.3
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "Ri index-BwsiPy02.js:20",
+     0.2
+    ],
+    [
+     "Phe index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "Ud index-BwsiPy02.js:133",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.4
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     2
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     1.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "APe index-BwsiPy02.js:163",
+     0.8
+    ],
+    [
+     "overlay index-BwsiPy02.js:163",
+     0.8
+    ],
+    [
+     "NPe index-BwsiPy02.js:163",
+     0.8
+    ],
+    [
+     "t.overlay index-BwsiPy02.js:167",
+     0.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.8
+    ],
+    [
+     "add index-BwsiPy02.js:163",
+     0.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "scrub",
+   "busyMs": 62.8,
+   "runs": [
+    68.2,
+    59.5,
+    62.8
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     41.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.7
+    ],
+    [
+     "hj index-BwsiPy02.js:148",
+     1
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.9
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.8
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "QM index-BwsiPy02.js:155",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     41.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     15.4
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     10.8
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     10.5
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     10.3
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     8.7
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     8.3
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     8.1
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     7.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "play",
+   "busyMs": 56.6,
+   "runs": [
+    60.9,
+    55.3,
+    56.6
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 37.71,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.9
+    ],
+    [
+     "Mhe index-BwsiPy02.js:148",
+     0.8
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     0.8
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "drawImage :0",
+     0.6
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.9
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     6.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     4.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     4.2
+    ],
+    [
+     "warmAhead index-BwsiPy02.js:156",
+     4.2
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     4.1
+    ],
+    [
+     "warm index-BwsiPy02.js:156",
+     3.7
+    ],
+    [
+     "Ch index-BwsiPy02.js:134",
+     3.3
+    ],
+    [
+     "wh index-BwsiPy02.js:134",
+     2.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "select-click",
+   "busyMs": 5.3,
+   "runs": [
+    5.3,
+    4.9,
+    5.4
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 1.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     2.7
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "wn index-BwsiPy02.js:9",
+     0.2
+    ],
+    [
+     "E index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "Xs index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "xhe index-BwsiPy02.js:148",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     2.7
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.9
+    ],
+    [
+     "sOe index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "hOe index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "e index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "qw index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "YTe index-BwsiPy02.js:156",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-layer",
+   "busyMs": 16.9,
+   "runs": [
+    18,
+    16.4,
+    16.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "(garbage collector) :0",
+     0.4
+    ],
+    [
+     "sp index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "get index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "nP index-BwsiPy02.js:155",
+     1.5
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.5
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.5
+    ],
+    [
+     "(anon) :0",
+     1.5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "delete-layer",
+   "busyMs": 21.7,
+   "runs": [
+    21.7,
+    20.9,
+    24.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 7.24,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.2
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     3.3
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "appendChild :0",
+     0.3
+    ],
+    [
+     "setItem :0",
+     0.3
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "hj index-BwsiPy02.js:148",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     8.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     8.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     8.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     8.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     3.6
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     3.3
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     3.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-key",
+   "busyMs": 13.7,
+   "runs": [
+    13.5,
+    14.4,
+    13.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "n index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "setTransform :0",
+     0.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     0.2
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "(anon) :0",
+     1.9
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.8
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.8
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     1.7
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "undo-redo",
+   "busyMs": 40.1,
+   "runs": [
+    40,
+    40.4,
+    40.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     1
+    ],
+    [
+     "(garbage collector) :0",
+     0.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "r index-BwsiPy02.js:148",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     14.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     13.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     13.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     13.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     13.2
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     8.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     6.8
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     6.6
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "(anon) :0",
+     3.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "switch-artboard",
+   "busyMs": 50.4,
+   "runs": [
+    53.1,
+    50.4,
+    50.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.4
+    ],
+    [
+     "getPropertyValue :0",
+     7.4
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     2.4
+    ],
+    [
+     "setAttribute :0",
+     1.9
+    ],
+    [
+     "removeChild :0",
+     1.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.7
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "Ad index-BwsiPy02.js:9",
+     17.8
+    ],
+    [
+     "(program) :0",
+     17.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     16.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     15.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     15.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     15.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     12.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     12.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     12.3
+    ],
+    [
+     "r index-BwsiPy02.js:161",
+     8.4
+    ],
+    [
+     "qAe index-BwsiPy02.js:161",
+     8.3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     8
+    ],
+    [
+     "GJ index-BwsiPy02.js:161",
+     7.5
+    ],
+    [
+     "getPropertyValue :0",
+     7.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     6.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     5.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "export-dialog",
+   "busyMs": 10.9,
+   "runs": [
+    11.4,
+    10.9,
+    10.1
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 10.88,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.6
+    ],
+    [
+     "focus :0",
+     1.1
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "e_ index-BwsiPy02.js:144",
+     0.2
+    ],
+    [
+     "createElementNS :0",
+     0.2
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "i controls-Dkbh6Oaf.js:1",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.6
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "focus :0",
+     1.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.8
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "save-file",
+   "busyMs": 0.8,
+   "runs": [
+    0.9,
+    0.8,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     0.3
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "puppet",
+   "action": "open-file",
+   "busyMs": 13.7,
+   "runs": [
+    23.5,
+    13.7,
+    6.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 13.71,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     6.9
+    ],
+    [
+     "(program) :0",
+     2.7
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "dBe index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "getContext :0",
+     0.3
+    ],
+    [
+     "setTransform :0",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     6.9
+    ],
+    [
+     "(program) :0",
+     2.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     1.1
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     1.1
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     1.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.5,
+    0.6,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.57,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "workspaces",
+   "busyMs": 123.3,
+   "runs": [
+    123.3,
+    107.3,
+    128.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 20.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     43
+    ],
+    [
+     "(garbage collector) :0",
+     18.9
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     9.7
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.5
+    ],
+    [
+     "setTransform :0",
+     2.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.9
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     1.9
+    ],
+    [
+     "setAttribute :0",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     43
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     42.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     40.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     39.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     38.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     38.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     22.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     22.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     22.2
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     20.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     20.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     20.1
+    ],
+    [
+     "(garbage collector) :0",
+     18.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     15
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     14.5
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     13.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "brush-stroke",
+   "busyMs": 10.2,
+   "runs": [
+    9.4,
+    10.2,
+    10.5
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.17,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.8
+    ],
+    [
+     "Fi index-BwsiPy02.js:20",
+     0.5
+    ],
+    [
+     "mr index-BwsiPy02.js:9",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.2
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "eEe index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.2
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     1.9
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     1.7
+    ],
+    [
+     "t.overlay index-BwsiPy02.js:167",
+     1.1
+    ],
+    [
+     "overlay index-BwsiPy02.js:163",
+     1
+    ],
+    [
+     "NPe index-BwsiPy02.js:163",
+     1
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "vK index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "_ee index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Bd index-BwsiPy02.js:133",
+     0.8
+    ],
+    [
+     "zi index-BwsiPy02.js:20",
+     0.7
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     0.7
+    ],
+    [
+     "Fi index-BwsiPy02.js:20",
+     0.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "scrub",
+   "busyMs": 53.6,
+   "runs": [
+    55.9,
+    53,
+    53.6
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.4
+    ],
+    [
+     "(garbage collector) :0",
+     5.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.6
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     1.4
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "removeChild :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     13.8
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     9.3
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     9.3
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     9.3
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     9.2
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     8.5
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     8.2
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     8.2
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     8.2
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     5.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "play",
+   "busyMs": 45.8,
+   "runs": [
+    43.9,
+    45.8,
+    53.8
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 30.54,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     1
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.5
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     0.5
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.4
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     4
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     3.4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     2.2
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-click",
+   "busyMs": 43.7,
+   "runs": [
+    46.7,
+    37,
+    43.7
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.93,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.4
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     6.9
+    ],
+    [
+     "(garbage collector) :0",
+     3.9
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "pse index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "insertBefore :0",
+     0.3
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     15.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     14.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     14.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     14.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     14.7
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     7.2
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     6.9
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     6.9
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     6.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-move",
+   "busyMs": 19.8,
+   "runs": [
+    17.3,
+    25.5,
+    19.8
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.8
+    ],
+    [
+     "measureText :0",
+     0.5
+    ],
+    [
+     "stroke :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     2.7
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.6
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     1.9
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.8
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     1.8
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-layer",
+   "busyMs": 13.6,
+   "runs": [
+    12.5,
+    13.6,
+    14.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.55,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.4
+    ],
+    [
+     "p index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "insertBefore :0",
+     0.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "r index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "ND index-BwsiPy02.js:148",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.5
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "nP index-BwsiPy02.js:155",
+     1.4
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.4
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.4
+    ],
+    [
+     "(anon) :0",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-layer",
+   "busyMs": 13.7,
+   "runs": [
+    13.7,
+    15.7,
+    12.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-key",
+   "busyMs": 14,
+   "runs": [
+    14,
+    21.9,
+    12.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "Tt index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     2.2
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     2.2
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     2.2
+    ],
+    [
+     "(anon) :0",
+     2.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.2
+    ],
+    [
+     "UN index-BwsiPy02.js:155",
+     1.9
+    ],
+    [
+     "qN index-BwsiPy02.js:155",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-key",
+   "busyMs": 22.5,
+   "runs": [
+    20.8,
+    22.5,
+    24
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.49,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "Dae index-BwsiPy02.js:144",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "(anon) :0",
+     1.7
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     1.6
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     1.6
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     1.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "undo-redo",
+   "busyMs": 31.3,
+   "runs": [
+    31.3,
+    27.5,
+    39.5
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.61,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.5
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "yM index-BwsiPy02.js:148",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9.3
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     6.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     6.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     6.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "(anon) :0",
+     2.9
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     2.9
+    ],
+    [
+     "run index-BwsiPy02.js:10",
+     2.8
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     2.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "switch-artboard",
+   "busyMs": 42.8,
+   "runs": [
+    45.4,
+    42.8,
+    36.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.4
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     2.1
+    ],
+    [
+     "removeChild :0",
+     1.1
+    ],
+    [
+     "getPropertyValue :0",
+     0.8
+    ],
+    [
+     "n index-BwsiPy02.js:172",
+     0.6
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     10.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     6.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     6.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     6.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "export-dialog",
+   "busyMs": 7,
+   "runs": [
+    8,
+    7,
+    6.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 6.98,
+   "topSelf": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "focus :0",
+     0.4
+    ],
+    [
+     "setAttribute :0",
+     0.2
+    ],
+    [
+     "querySelector :0",
+     0.2
+    ],
+    [
+     "no index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "r index-BwsiPy02.js:148",
+     0.1
+    ],
+    [
+     "J ExportDialog-pA9wiv-U.js:1",
+     0.1
+    ],
+    [
+     "Y ExportDialog-pA9wiv-U.js:1",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     4.6
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "ah index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "focus :0",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "save-file",
+   "busyMs": 0.9,
+   "runs": [
+    0.9,
+    0.8,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.87,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "encode :0",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     0.6
+    ],
+    [
+     "(anon) :0",
+     0.6
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "encode :0",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "open-file",
+   "busyMs": 4.5,
+   "runs": [
+    4.5,
+    12,
+    3.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.45,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "(program) :0",
+     1.3
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "dBe index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.2
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "(program) :0",
+     1.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "openBytesAsync debug-Dze80odr.js:3",
+     0.9
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     0.8
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "(anon) :1",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.57,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "setTimeout :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "setTimeout :0",
+     0.1
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "workspaces",
+   "busyMs": 92.6,
+   "runs": [
+    96.1,
+    84.9,
+    92.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 15.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.7
+    ],
+    [
+     "(garbage collector) :0",
+     15.5
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     4.4
+    ],
+    [
+     "getBoundingClientRect :0",
+     4
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     2
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.3
+    ],
+    [
+     "setAttribute :0",
+     1.1
+    ],
+    [
+     "appendChild :0",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     29.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     28.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     27.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     27.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     27
+    ],
+    [
+     "(garbage collector) :0",
+     15.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     15
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     15
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     14.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     11.4
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     9.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "pixel-stroke",
+   "busyMs": 13,
+   "runs": [
+    13,
+    13.5,
+    12.9
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.3
+    ],
+    [
+     "drawPixelGrid index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.2
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "save :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.5
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     1.5
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     1.3
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     1
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     0.8
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     0.8
+    ],
+    [
+     "move index-BwsiPy02.js:163",
+     0.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "moveTo index-BwsiPy02.js:163",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.7
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "scrub",
+   "busyMs": 71.2,
+   "runs": [
+    67.4,
+    82.4,
+    71.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.89,
+   "topSelf": [
+    [
+     "(program) :0",
+     41.6
+    ],
+    [
+     "(garbage collector) :0",
+     6.1
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.5
+    ],
+    [
+     "Yfe index-BwsiPy02.js:148",
+     1.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.9
+    ],
+    [
+     "drawImage :0",
+     0.9
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     41.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     20.2
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     10.5
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     10
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9.6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.6
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     8
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     7.6
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     7.5
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     7.5
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     7.3
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     6.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "play",
+   "busyMs": 53.5,
+   "runs": [
+    49.7,
+    59.5,
+    53.5
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 35.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     34.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.1
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.8
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     34.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     4.3
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-layer",
+   "busyMs": 16.2,
+   "runs": [
+    17.7,
+    16.2,
+    15.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.4
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "_ index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.5
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-layer",
+   "busyMs": 16.9,
+   "runs": [
+    16.9,
+    16.4,
+    25.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.62,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.7
+    ],
+    [
+     "removeChild :0",
+     0.5
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     6.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     6.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     6.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-key",
+   "busyMs": 14.5,
+   "runs": [
+    23.2,
+    13.5,
+    14.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.83,
+   "topSelf": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.6
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "fn index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "n index-BwsiPy02.js:172",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.5
+    ],
+    [
+     "(garbage collector) :0",
+     2.2
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "(anon) :0",
+     2
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     1.9
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-key",
+   "busyMs": 25,
+   "runs": [
+    25,
+    33.9,
+    24.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.2
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.5
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     7.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "(anon) :0",
+     1.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     1.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "undo-redo",
+   "busyMs": 40.2,
+   "runs": [
+    53.1,
+    40.2,
+    39
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     23.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.2
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     1.1
+    ],
+    [
+     "r index-BwsiPy02.js:148",
+     0.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.6
+    ],
+    [
+     "l index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "p index-BwsiPy02.js:9",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     13
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     8.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     3.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "switch-artboard",
+   "busyMs": 49.9,
+   "runs": [
+    39.8,
+    49.9,
+    51.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.32,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.9
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     2.1
+    ],
+    [
+     "(garbage collector) :0",
+     1.8
+    ],
+    [
+     "removeChild :0",
+     0.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.6
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     12.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     11.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     11.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     11.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.6
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     4.3
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     4.3
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     4.3
+    ],
+    [
+     "iH index-BwsiPy02.js:155",
+     3.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "export-dialog",
+   "busyMs": 9,
+   "runs": [
+    8.2,
+    9,
+    9.6
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.97,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "focus :0",
+     0.5
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "Yte index-BwsiPy02.js:144",
+     0.1
+    ],
+    [
+     "_ index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "focus :0",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "save-file",
+   "busyMs": 0.8,
+   "runs": [
+    0.6,
+    0.8,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "setTimeout :0",
+     0.2
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     0.2
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "setTimeout :0",
+     0.2
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "open-file",
+   "busyMs": 3.9,
+   "runs": [
+    3.5,
+    3.9,
+    3.9
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 3.9,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "s$ index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "lBe index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     0.1
+    ],
+    [
+     "cn index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "d index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "resolve :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "mHe index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.8,
+    0.8,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "Rj index-BwsiPy02.js:148",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.4
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "Rj index-BwsiPy02.js:148",
+     0.1
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "workspaces",
+   "busyMs": 98.4,
+   "runs": [
+    98.4,
+    92.1,
+    98.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 16.39,
+   "topSelf": [
+    [
+     "(program) :0",
+     39.9
+    ],
+    [
+     "(garbage collector) :0",
+     9.8
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     5.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.9
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     2.1
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.6
+    ],
+    [
+     "setAttribute :0",
+     1.3
+    ],
+    [
+     "removeChild :0",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     39.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     36.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     33.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     33
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     32.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     32.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     18.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     18.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     18.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     17.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     13.3
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     12
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     11.7
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     11.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "brush-stroke",
+   "busyMs": 28.3,
+   "runs": [
+    53.3,
+    27.2,
+    28.3
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "(garbage collector) :0",
+     7.2
+    ],
+    [
+     "Xe index-BwsiPy02.js:10",
+     2
+    ],
+    [
+     "TEe index-BwsiPy02.js:156",
+     0.6
+    ],
+    [
+     "save :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.2
+    ],
+    [
+     "(garbage collector) :0",
+     7.2
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     3.8
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     3.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     2.3
+    ],
+    [
+     "u index-BwsiPy02.js:148",
+     2.3
+    ],
+    [
+     "f index-BwsiPy02.js:148",
+     2.3
+    ],
+    [
+     "qD index-BwsiPy02.js:148",
+     2.3
+    ],
+    [
+     "RO index-BwsiPy02.js:148",
+     2.3
+    ],
+    [
+     "_K index-BwsiPy02.js:156",
+     2.3
+    ],
+    [
+     "commit index-BwsiPy02.js:163",
+     2.3
+    ],
+    [
+     "jPe index-BwsiPy02.js:163",
+     2.3
+    ],
+    [
+     "finishGesture index-BwsiPy02.js:156",
+     2.3
+    ],
+    [
+     "onPointerUp index-BwsiPy02.js:156",
+     2.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 526.2,
+   "runs": [
+    521.7,
+    526.2,
+    542.7
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 6.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     359.6
+    ],
+    [
+     "drawImage :0",
+     59.6
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     32.8
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     7.4
+    ],
+    [
+     "getContext :0",
+     6.9
+    ],
+    [
+     "setTransform :0",
+     4.5
+    ],
+    [
+     "save :0",
+     2.8
+    ],
+    [
+     "ns index-BwsiPy02.js:132",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     359.6
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     91.5
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     88.8
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     88.2
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     87.8
+    ],
+    [
+     "build index-BwsiPy02.js:156",
+     63.6
+    ],
+    [
+     "paintOnion index-BwsiPy02.js:156",
+     63.3
+    ],
+    [
+     "drawImage :0",
+     59.6
+    ],
+    [
+     "t index-BwsiPy02.js:156",
+     47.7
+    ],
+    [
+     "warm index-BwsiPy02.js:156",
+     47.4
+    ],
+    [
+     "Ch index-BwsiPy02.js:134",
+     43
+    ],
+    [
+     "paintOnionPass index-BwsiPy02.js:156",
+     36.7
+    ],
+    [
+     "onionBitmap index-BwsiPy02.js:156",
+     34.1
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     32.8
+    ],
+    [
+     "drawOnionItems index-BwsiPy02.js:156",
+     29
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     26.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "play",
+   "busyMs": 650.6,
+   "runs": [
+    880.2,
+    650.6,
+    396.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 433.74,
+   "topSelf": [
+    [
+     "(program) :0",
+     197.7
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     186.6
+    ],
+    [
+     "drawImage :0",
+     114.3
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     28.8
+    ],
+    [
+     "warm index-BwsiPy02.js:156",
+     26.4
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     18.3
+    ],
+    [
+     "Lm index-BwsiPy02.js:134",
+     10.3
+    ],
+    [
+     "(garbage collector) :0",
+     10.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-BwsiPy02.js:156",
+     418.8
+    ],
+    [
+     "warmAhead index-BwsiPy02.js:156",
+     412.4
+    ],
+    [
+     "warm index-BwsiPy02.js:156",
+     378.5
+    ],
+    [
+     "Ch index-BwsiPy02.js:134",
+     231.4
+    ],
+    [
+     "(program) :0",
+     197.7
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     186.6
+    ],
+    [
+     "wh index-BwsiPy02.js:134",
+     132
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     122.9
+    ],
+    [
+     "build index-BwsiPy02.js:156",
+     122.1
+    ],
+    [
+     "drawImage :0",
+     114.3
+    ],
+    [
+     "Eh index-BwsiPy02.js:134",
+     93.5
+    ],
+    [
+     "Th index-BwsiPy02.js:134",
+     93.4
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     29.4
+    ],
+    [
+     "mg index-BwsiPy02.js:134",
+     29.4
+    ],
+    [
+     "Xwe index-BwsiPy02.js:155",
+     28.2
+    ],
+    [
+     "Lm index-BwsiPy02.js:134",
+     10.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 118.4,
+   "runs": [
+    118.4,
+    120.5,
+    115.7
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 29.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     94.9
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.5
+    ],
+    [
+     "removeChild :0",
+     1.1
+    ],
+    [
+     "setAttribute :0",
+     1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     0.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     94.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     18.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     8.5
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.5
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     7.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 85.7,
+   "runs": [
+    85.7,
+    85,
+    85.8
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 2.86,
+   "topSelf": [
+    [
+     "(program) :0",
+     66.3
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.9
+    ],
+    [
+     "Xe index-BwsiPy02.js:10",
+     1.8
+    ],
+    [
+     "drawImage :0",
+     1.6
+    ],
+    [
+     "TEe index-BwsiPy02.js:156",
+     0.6
+    ],
+    [
+     "ns index-BwsiPy02.js:132",
+     0.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     0.5
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     66.3
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     7.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     5.3
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     5
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     4.9
+    ],
+    [
+     "lDe index-BwsiPy02.js:156",
+     3.5
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Xo index-BwsiPy02.js:132",
+     3.2
+    ],
+    [
+     "ns index-BwsiPy02.js:132",
+     3.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-layer",
+   "busyMs": 83.7,
+   "runs": [
+    226.3,
+    83.7,
+    74.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 27.91,
+   "topSelf": [
+    [
+     "(program) :0",
+     68.1
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     20.2
+    ],
+    [
+     "encode :0",
+     14
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     6.1
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     2.2
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     1.2
+    ],
+    [
+     "call preload.cjs:5",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     68.1
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     45.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:173",
+     42.3
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     42.2
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     42.1
+    ],
+    [
+     "l index-BwsiPy02.js:167",
+     33.9
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     33.7
+    ],
+    [
+     "encode :0",
+     14
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     7.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     7.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     7.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     7.5
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     6.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     5.1
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     5.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 92.5,
+   "runs": [
+    92.5,
+    92,
+    93.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 30.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     63.6
+    ],
+    [
+     "je index-BwsiPy02.js:10",
+     4.9
+    ],
+    [
+     "LN index-BwsiPy02.js:155",
+     3.5
+    ],
+    [
+     "hn index-BwsiPy02.js:10",
+     2.3
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.9
+    ],
+    [
+     "Ot.<computed> index-BwsiPy02.js:10",
+     1.2
+    ],
+    [
+     "Le index-BwsiPy02.js:10",
+     1.1
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     63.6
+    ],
+    [
+     "iP index-BwsiPy02.js:155",
+     17.9
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     17.9
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     17.9
+    ],
+    [
+     "(anon) :0",
+     17.9
+    ],
+    [
+     "UN index-BwsiPy02.js:155",
+     17.6
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     16.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     16.4
+    ],
+    [
+     "Nt.produce index-BwsiPy02.js:10",
+     15.6
+    ],
+    [
+     "Nt.produceWithPatches index-BwsiPy02.js:10",
+     15.6
+    ],
+    [
+     "LN index-BwsiPy02.js:155",
+     12.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     9.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 78.7,
+   "runs": [
+    81.7,
+    78.7,
+    78.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 26.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     44.2
+    ],
+    [
+     "Xe index-BwsiPy02.js:10",
+     5.6
+    ],
+    [
+     "je index-BwsiPy02.js:10",
+     4.6
+    ],
+    [
+     "LN index-BwsiPy02.js:155",
+     4.5
+    ],
+    [
+     "TEe index-BwsiPy02.js:156",
+     1.6
+    ],
+    [
+     "Ot.<computed> index-BwsiPy02.js:10",
+     1.2
+    ],
+    [
+     "Le index-BwsiPy02.js:10",
+     1.1
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44.2
+    ],
+    [
+     "(anon) :0",
+     22.1
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     22
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     22
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     22
+    ],
+    [
+     "UN index-BwsiPy02.js:155",
+     21.7
+    ],
+    [
+     "qN index-BwsiPy02.js:155",
+     21.7
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     20.5
+    ],
+    [
+     "Nt.produce index-BwsiPy02.js:10",
+     19.4
+    ],
+    [
+     "Nt.produceWithPatches index-BwsiPy02.js:10",
+     19.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     17.8
+    ],
+    [
+     "get index-BwsiPy02.js:10",
+     12.3
+    ],
+    [
+     "LN index-BwsiPy02.js:155",
+     12.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     7.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 202.5,
+   "runs": [
+    205.9,
+    196.7,
+    202.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 67.49,
+   "topSelf": [
+    [
+     "(program) :0",
+     133.2
+    ],
+    [
+     "Xe index-BwsiPy02.js:10",
+     5.5
+    ],
+    [
+     "je index-BwsiPy02.js:10",
+     5.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     4.9
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     3.7
+    ],
+    [
+     "LN index-BwsiPy02.js:155",
+     3.2
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "hn index-BwsiPy02.js:10",
+     2.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     133.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     36.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     34.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     34.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     34.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     34.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     27.8
+    ],
+    [
+     "(anon) :0",
+     24.8
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     24.3
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     24.3
+    ],
+    [
+     "R3 index-BwsiPy02.js:172",
+     23.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     23
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     22.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     22.8
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     22.8
+    ],
+    [
+     "Nt.produce index-BwsiPy02.js:10",
+     21.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 210.3,
+   "runs": [
+    211.1,
+    210.3,
+    206.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 17.52,
+   "topSelf": [
+    [
+     "(program) :0",
+     169.6
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     2.5
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     1.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.7
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     1.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     1.5
+    ],
+    [
+     "l index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     169.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     27.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     25.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     25.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     25.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     25.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     17.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     17.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     17.6
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     16.3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     10.6
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     10.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     7.6
+    ],
+    [
+     "bu index-BwsiPy02.js:9",
+     6.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 305.5,
+   "runs": [
+    320,
+    305.5,
+    296.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 50.91,
+   "topSelf": [
+    [
+     "(program) :0",
+     186.1
+    ],
+    [
+     "getPropertyValue :0",
+     16.4
+    ],
+    [
+     "removeChild :0",
+     11.2
+    ],
+    [
+     "Fn index-BwsiPy02.js:10",
+     10.2
+    ],
+    [
+     "setAttribute :0",
+     8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     5.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.9
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     186.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     69.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     62.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     54
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     54
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     54
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     42.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     42.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     42.4
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     26.7
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     26.7
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     26.7
+    ],
+    [
+     "Jd index-BwsiPy02.js:9",
+     22.4
+    ],
+    [
+     "qAe index-BwsiPy02.js:161",
+     22
+    ],
+    [
+     "r index-BwsiPy02.js:161",
+     22
+    ],
+    [
+     "sl index-BwsiPy02.js:9",
+     22
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "export-dialog",
+   "busyMs": 33.7,
+   "runs": [
+    33.3,
+    33.7,
+    40.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 33.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     28.5
+    ],
+    [
+     "(anon) ExportDialog-pA9wiv-U.js:1",
+     1.8
+    ],
+    [
+     "u carries-DRPMWxbi.js:1",
+     1.7
+    ],
+    [
+     "focus :0",
+     1.1
+    ],
+    [
+     "Sm index-BwsiPy02.js:134",
+     0.7
+    ],
+    [
+     "querySelector :0",
+     0.2
+    ],
+    [
+     "setAttribute :0",
+     0.2
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     28.5
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     5.2
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     4.6
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "(anon) ExportDialog-pA9wiv-U.js:1",
+     4.5
+    ],
+    [
+     "useMemo index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "e.useMemo index-BwsiPy02.js:2",
+     4.2
+    ],
+    [
+     "Ue ExportDialog-pA9wiv-U.js:1",
+     4.2
+    ],
+    [
+     "u carries-DRPMWxbi.js:1",
+     2.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 184.9,
+   "runs": [
+    217.4,
+    184.1,
+    184.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 184.94,
+   "topSelf": [
+    [
+     "encode :0",
+     83.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     59.3
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     29.8
+    ],
+    [
+     "(garbage collector) :0",
+     15.6
+    ],
+    [
+     "(program) :0",
+     3
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     2
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     176.8
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     176.7
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     176.7
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     175.8
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     172.9
+    ],
+    [
+     "encode :0",
+     83.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     59.6
+    ],
+    [
+     "(garbage collector) :0",
+     15.6
+    ],
+    [
+     "(program) :0",
+     3
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     1.1
+    ],
+    [
+     "Yp index-BwsiPy02.js:133",
+     1.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:133",
+     0.8
+    ],
+    [
+     "Xp index-BwsiPy02.js:133",
+     0.4
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "7.1 MB file"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 152.7,
+   "runs": [
+    163.9,
+    152.7,
+    152.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 152.69,
+   "topSelf": [
+    [
+     "N1 index-BwsiPy02.js:167",
+     82.7
+    ],
+    [
+     "decode :0",
+     17.8
+    ],
+    [
+     "(garbage collector) :0",
+     13.4
+    ],
+    [
+     "mHe index-BwsiPy02.js:167",
+     5.7
+    ],
+    [
+     "(program) :0",
+     4.3
+    ],
+    [
+     "uVe index-BwsiPy02.js:167",
+     3.8
+    ],
+    [
+     "kHe index-BwsiPy02.js:167",
+     3.8
+    ],
+    [
+     "zBe index-BwsiPy02.js:167",
+     2.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "N1 index-BwsiPy02.js:167",
+     121.2
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     18.1
+    ],
+    [
+     "decode :0",
+     17.8
+    ],
+    [
+     "O$ index-BwsiPy02.js:167",
+     17.8
+    ],
+    [
+     "mHe index-BwsiPy02.js:167",
+     17.2
+    ],
+    [
+     "(garbage collector) :0",
+     13.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     12.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     10.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     10.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     10.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     10.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     8.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     8.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "autosave",
+   "busyMs": 32.4,
+   "runs": [
+    33.4,
+    31.3,
+    32.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 32.43,
+   "topSelf": [
+    [
+     "aHe index-BwsiPy02.js:167",
+     17.3
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     6
+    ],
+    [
+     "call preload.cjs:5",
+     3.3
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     1.8
+    ],
+    [
+     "encode :0",
+     1.3
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "B1 index-BwsiPy02.js:167",
+     31.7
+    ],
+    [
+     "(anon) :0",
+     25.8
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     22.1
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     18.8
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     15.3
+    ],
+    [
+     "call preload.cjs:5",
+     3.5
+    ],
+    [
+     "write preload.cjs:66",
+     3.5
+    ],
+    [
+     "encode :0",
+     1.3
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "Yp index-BwsiPy02.js:133",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:133",
+     0.3
+    ],
+    [
+     "invoke :0",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 294.4,
+   "runs": [
+    281.8,
+    332.4,
+    294.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 49.07,
+   "topSelf": [
+    [
+     "(program) :0",
+     197.6
+    ],
+    [
+     "drawImage :0",
+     12.3
+    ],
+    [
+     "(garbage collector) :0",
+     11.1
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.1
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     4
+    ],
+    [
+     "removeChild :0",
+     3.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     3.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     3.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     197.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     57.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     40.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     33.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     33.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     33.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     32.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     31.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     31.9
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     25.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     24.9
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     24.9
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     24.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     24.8
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     23.9
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     21.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "pixel-stroke",
+   "busyMs": 21,
+   "runs": [
+    3289,
+    21,
+    18
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.35,
+   "topSelf": [
+    [
+     "EBe index-BwsiPy02.js:167",
+     625.1
+    ],
+    [
+     "Xze index-BwsiPy02.js:167",
+     382.5
+    ],
+    [
+     "p index-BwsiPy02.js:167",
+     36.1
+    ],
+    [
+     "TBe index-BwsiPy02.js:167",
+     35.2
+    ],
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ],
+    [
+     "h$ index-BwsiPy02.js:167",
+     2.1
+    ],
+    [
+     "l$ index-BwsiPy02.js:167",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "D1 index-BwsiPy02.js:167",
+     1088.3
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     1088.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:173",
+     1088.3
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     1087.9
+    ],
+    [
+     "z$ index-BwsiPy02.js:167",
+     1087.5
+    ],
+    [
+     "ZVe index-BwsiPy02.js:167",
+     1087.5
+    ],
+    [
+     "DBe index-BwsiPy02.js:167",
+     1086.5
+    ],
+    [
+     "EBe index-BwsiPy02.js:167",
+     661.5
+    ],
+    [
+     "pBe index-BwsiPy02.js:167",
+     424.9
+    ],
+    [
+     "Xze index-BwsiPy02.js:167",
+     388.6
+    ],
+    [
+     "_$ index-BwsiPy02.js:167",
+     388.6
+    ],
+    [
+     "p index-BwsiPy02.js:167",
+     36.1
+    ],
+    [
+     "TBe index-BwsiPy02.js:167",
+     35.2
+    ],
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "h$ index-BwsiPy02.js:167",
+     6.1
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "scrub",
+   "busyMs": 104.6,
+   "runs": [
+    104.6,
+    101.5,
+    122
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     64.7
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     3.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.4
+    ],
+    [
+     "setTransform :0",
+     1.4
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     1.2
+    ],
+    [
+     "cs index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     64.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     29.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     17
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     12.2
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     12.1
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     12.1
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     11.9
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     11.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     10.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     10.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     10.6
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     10.6
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     10.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "play",
+   "busyMs": 51.2,
+   "runs": [
+    51.2,
+    53.1,
+    49.5
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 34.11,
+   "topSelf": [
+    [
+     "(program) :0",
+     34.3
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.8
+    ],
+    [
+     "I index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.6
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.6
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.6
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     34.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     4.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     4.1
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     3.9
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.2
+    ],
+    [
+     "bu index-BwsiPy02.js:9",
+     3.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-layer",
+   "busyMs": 16.6,
+   "runs": [
+    30.1,
+    14.8,
+    16.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.52,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.4
+    ],
+    [
+     "$U index-BwsiPy02.js:156",
+     2.6
+    ],
+    [
+     "WTe index-BwsiPy02.js:156",
+     2
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "$U index-BwsiPy02.js:156",
+     4.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:156",
+     4.6
+    ],
+    [
+     "tW index-BwsiPy02.js:156",
+     4.6
+    ],
+    [
+     "ZTe index-BwsiPy02.js:156",
+     4.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.4
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-layer",
+   "busyMs": 16.6,
+   "runs": [
+    16.6,
+    16.7,
+    16.2
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.54,
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.4
+    ],
+    [
+     "removeChild :0",
+     0.4
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.4
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-key",
+   "busyMs": 24.7,
+   "runs": [
+    24.7,
+    50.8,
+    23.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.25,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.6
+    ],
+    [
+     "(garbage collector) :0",
+     6.1
+    ],
+    [
+     "dJ index-BwsiPy02.js:160",
+     3.1
+    ],
+    [
+     "SD index-BwsiPy02.js:148",
+     3
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     2.9
+    ],
+    [
+     "putImageData :0",
+     0.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     7.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "(garbage collector) :0",
+     6.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     5.6
+    ],
+    [
+     "(anon) :0",
+     5.3
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     5.3
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     5.2
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     5.2
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-key",
+   "busyMs": 24.7,
+   "runs": [
+    24.7,
+    23.5,
+    27.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.24,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.5
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.3
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "p index-BwsiPy02.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.6
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "undo-redo",
+   "busyMs": 40.3,
+   "runs": [
+    40.3,
+    39.8,
+    40.6
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.36,
+   "topSelf": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.8
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.6
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.6
+    ],
+    [
+     "GE index-BwsiPy02.js:146",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     13
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     11.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     11.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     11.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     11.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     8.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     8.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     8.5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     8
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     5.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "run index-BwsiPy02.js:10",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "switch-artboard",
+   "busyMs": 48,
+   "runs": [
+    61.9,
+    48,
+    39.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8,
+   "topSelf": [
+    [
+     "(program) :0",
+     23.7
+    ],
+    [
+     "(garbage collector) :0",
+     5.8
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     1.7
+    ],
+    [
+     "getPropertyValue :0",
+     0.8
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "drawImage :0",
+     0.6
+    ],
+    [
+     "l index-BwsiPy02.js:9",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     11.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     10.3
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "(garbage collector) :0",
+     5.8
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     3.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "export-dialog",
+   "busyMs": 10.7,
+   "runs": [
+    9.6,
+    83.2,
+    10.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 10.72,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     17.1
+    ],
+    [
+     "(program) :0",
+     14.8
+    ],
+    [
+     "focus :0",
+     0.6
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ],
+    [
+     "querySelector :0",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "Zf index-BwsiPy02.js:10",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     17.1
+    ],
+    [
+     "(program) :0",
+     14.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.1
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.8
+    ],
+    [
+     "ah index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 2.9,
+   "runs": [
+    3,
+    2.9,
+    2.3
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.92,
+   "topSelf": [
+    [
+     "pump index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "Ap index-BwsiPy02.js:133",
+     0.8
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     2
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     1.9
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     1.8
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     1
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "Ap index-BwsiPy02.js:133",
+     0.8
+    ],
+    [
+     "Rp index-BwsiPy02.js:133",
+     0.8
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "1.0 MB file"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "open-file",
+   "busyMs": 68.7,
+   "runs": [
+    60.5,
+    72.4,
+    68.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 68.71,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     36.8
+    ],
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     2.2
+    ],
+    [
+     "dJ index-BwsiPy02.js:160",
+     1
+    ],
+    [
+     "Ap index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.8
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.8
+    ],
+    [
+     "postMessage :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     36.8
+    ],
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     2.7
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     2.7
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     2.7
+    ],
+    [
+     "Zd index-BwsiPy02.js:133",
+     2.6
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     2.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 4.9,
+   "runs": [
+    5,
+    4.9,
+    4.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 4.88,
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.1
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "Ap index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "B1 index-BwsiPy02.js:167",
+     4.2
+    ],
+    [
+     "(anon) :0",
+     3.3
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     2.1
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     1.1
+    ],
+    [
+     "call preload.cjs:5",
+     1.1
+    ],
+    [
+     "write preload.cjs:66",
+     1.1
+    ],
+    [
+     "Ap index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "Rp index-BwsiPy02.js:133",
+     0.9
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "encode :0",
+     0.1
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "workspaces",
+   "busyMs": 122.6,
+   "runs": [
+    122.6,
+    128.7,
+    118.2
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 20.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     38.4
+    ],
+    [
+     "(garbage collector) :0",
+     36.6
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     6.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.9
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     1.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     1.6
+    ],
+    [
+     "setAttribute :0",
+     1.4
+    ],
+    [
+     "removeChild :0",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     38.4
+    ],
+    [
+     "(garbage collector) :0",
+     36.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     35.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     34.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     33.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     33.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     33.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     18.7
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     18.7
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     18.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     16.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     12.6
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     11.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "brush-stroke",
+   "busyMs": 11.2,
+   "runs": [
+    11.7,
+    10.9,
+    11.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.19,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "QM index-BwsiPy02.js:155",
+     0.3
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "toPointer index-BwsiPy02.js:156",
+     0.2
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "save :0",
+     0.2
+    ],
+    [
+     "P index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "fill :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     1.7
+    ],
+    [
+     "onPointerMove index-BwsiPy02.js:156",
+     0.9
+    ],
+    [
+     "eEe index-BwsiPy02.js:156",
+     0.7
+    ],
+    [
+     "overlay index-BwsiPy02.js:163",
+     0.6
+    ],
+    [
+     "NPe index-BwsiPy02.js:163",
+     0.6
+    ],
+    [
+     "t.overlay index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     0.5
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "u index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "f index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "qD index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "RO index-BwsiPy02.js:148",
+     0.5
+    ],
+    [
+     "_K index-BwsiPy02.js:156",
+     0.5
+    ],
+    [
+     "commit index-BwsiPy02.js:163",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "scrub",
+   "busyMs": 54.3,
+   "runs": [
+    51.2,
+    54.3,
+    81.7
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.68,
+   "topSelf": [
+    [
+     "(program) :0",
+     34.8
+    ],
+    [
+     "(garbage collector) :0",
+     7.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     2.2
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1.1
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     1.1
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "drawImage :0",
+     0.7
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     34.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     12
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     9.9
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     9.7
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     9.7
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     9.6
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     8.3
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     8.1
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     8
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     8
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     7.5
+    ],
+    [
+     "(garbage collector) :0",
+     7.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "qw index-BwsiPy02.js:146",
+     5.3
+    ],
+    [
+     "Jw index-BwsiPy02.js:146",
+     5.3
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     5.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "play",
+   "busyMs": 46.4,
+   "runs": [
+    48.5,
+    44.3,
+    46.4
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 30.93,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.9
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.7
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     0.5
+    ],
+    [
+     "(garbage collector) :0",
+     0.5
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "TC index-BwsiPy02.js:146",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.2
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     3.2
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     3.1
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     2.3
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     2
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-click",
+   "busyMs": 39.3,
+   "runs": [
+    39.1,
+    39.3,
+    44
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 9.81,
+   "topSelf": [
+    [
+     "(program) :0",
+     20
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.7
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ],
+    [
+     "insertBefore :0",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "(garbage collector) :0",
+     0.5
+    ],
+    [
+     "vu index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     17.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     16.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     16.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     16.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     16.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     8
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     7.9
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     7.8
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.7
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     7.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-move",
+   "busyMs": 19.3,
+   "runs": [
+    19,
+    21,
+    19.3
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.64,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.5
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "(garbage collector) :0",
+     0.5
+    ],
+    [
+     "HR index-BwsiPy02.js:155",
+     0.4
+    ],
+    [
+     "VR index-BwsiPy02.js:155",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     0.3
+    ],
+    [
+     "save :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.1
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.5
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     2.1
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "variations",
+   "action": "add-layer",
+   "busyMs": 15.1,
+   "runs": [
+    15.5,
+    15.1,
+    14.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.04,
+   "topSelf": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "getPropertyValue :0",
+     0.6
+    ],
+    [
+     "p index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "drawImage :0",
+     0.3
+    ],
+    [
+     "E index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "Yf index-BwsiPy02.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.7
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.8
+    ],
+    [
+     "(anon) :0",
+     1.8
+    ],
+    [
+     "nP index-BwsiPy02.js:155",
+     1.6
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.6
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     1.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-layer",
+   "busyMs": 17.5,
+   "runs": [
+    17.5,
+    18.2,
+    15.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.6
+    ],
+    [
+     "(garbage collector) :0",
+     0.5
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ],
+    [
+     "l index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "_ index-BwsiPy02.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.3
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "(anon) :0",
+     1.8
+    ],
+    [
+     "iP index-BwsiPy02.js:155",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "add-key",
+   "busyMs": 14.2,
+   "runs": [
+    14.7,
+    14.2,
+    14.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.74,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "drawImage :0",
+     0.6
+    ],
+    [
+     "Ae index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.2
+    ],
+    [
+     "qAe index-BwsiPy02.js:161",
+     0.2
+    ],
+    [
+     "cr index-BwsiPy02.js:20",
+     0.2
+    ],
+    [
+     "setAttribute :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "(anon) :0",
+     2.6
+    ],
+    [
+     "YN index-BwsiPy02.js:155",
+     2.5
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     2.5
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     2.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.3
+    ],
+    [
+     "update index-BwsiPy02.js:10",
+     2.1
+    ],
+    [
+     "UN index-BwsiPy02.js:155",
+     2.1
+    ],
+    [
+     "qN index-BwsiPy02.js:155",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-key",
+   "busyMs": 25.6,
+   "runs": [
+    24.6,
+    50.1,
+    25.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.54,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.5
+    ],
+    [
+     "(garbage collector) :0",
+     6.5
+    ],
+    [
+     "drawImage :0",
+     0.6
+    ],
+    [
+     "qAe index-BwsiPy02.js:161",
+     0.5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.4
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.4
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "is index-BwsiPy02.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.7
+    ],
+    [
+     "(garbage collector) :0",
+     6.5
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     4.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "(anon) :0",
+     2.4
+    ],
+    [
+     "R3 index-BwsiPy02.js:172",
+     1.8
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "undo-redo",
+   "busyMs": 33.9,
+   "runs": [
+    38.7,
+    33.9,
+    32.4
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.82,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.6
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     1.1
+    ],
+    [
+     "je index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     0.7
+    ],
+    [
+     "(garbage collector) :0",
+     0.6
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     7.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     7.4
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     7.4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     7
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.9
+    ],
+    [
+     "(anon) :0",
+     4.1
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     3.8
+    ],
+    [
+     "run index-BwsiPy02.js:10",
+     3.8
+    ],
+    [
+     "J9 index-BwsiPy02.js:174",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "switch-artboard",
+   "busyMs": 51,
+   "runs": [
+    50.6,
+    92.2,
+    51
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.8
+    ],
+    [
+     "(garbage collector) :0",
+     6.4
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     5.2
+    ],
+    [
+     "getPropertyValue :0",
+     2.1
+    ],
+    [
+     "setAttribute :0",
+     1.1
+    ],
+    [
+     "removeChild :0",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.9
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     18.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     18.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     18.6
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     18.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     18.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     9.5
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     9.1
+    ],
+    [
+     "(garbage collector) :0",
+     6.4
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     6.3
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     5.5
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "export-dialog",
+   "busyMs": 7.9,
+   "runs": [
+    7.7,
+    7.9,
+    8.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 7.88,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.4
+    ],
+    [
+     "focus :0",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ],
+    [
+     "appendChild :0",
+     0.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "wn index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "is index-BwsiPy02.js:9",
+     0.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:10",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.4
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     1.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "focus :0",
+     0.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "Au index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "ju index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "rf index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.7
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.6,
+    0.8,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.11,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.4
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "variations",
+   "action": "open-file",
+   "busyMs": 4.9,
+   "runs": [
+    5.5,
+    4.9,
+    3.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.93,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.2
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "dBe index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "drawImage :0",
+     0.2
+    ],
+    [
+     "he index-BwsiPy02.js:10",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.2
+    ],
+    [
+     "OVe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "(program) :0",
+     1.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     0.9
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     0.9
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     0.8
+    ],
+    [
+     "openBytesAsync debug-Dze80odr.js:3",
+     0.7
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     0.6
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     0.6
+    ],
+    [
+     "r index-BwsiPy02.js:161",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.8,
+    0.9,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.8,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "workspaces",
+   "busyMs": 91.3,
+   "runs": [
+    91.3,
+    91.1,
+    108.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 15.21,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "(garbage collector) :0",
+     22.8
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     4.2
+    ],
+    [
+     "getBoundingClientRect :0",
+     3.9
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     2.2
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     1.5
+    ],
+    [
+     "drawImage :0",
+     1.1
+    ],
+    [
+     "Unt index-BwsiPy02.js:174",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     28.5
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     27.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     25.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     25.8
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     25.8
+    ],
+    [
+     "(garbage collector) :0",
+     22.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     14.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     14.3
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     14.3
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     14.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     10.9
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     8.2
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "brush-stroke",
+   "busyMs": 17.3,
+   "runs": [
+    17,
+    17.3,
+    48.4
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.29,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     8.7
+    ],
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     1.8
+    ],
+    [
+     "fill :0",
+     1
+    ],
+    [
+     "F index-BwsiPy02.js:10",
+     0.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:134",
+     0.6
+    ],
+    [
+     "sh index-BwsiPy02.js:134",
+     0.5
+    ],
+    [
+     "drawOverlay index-BwsiPy02.js:156",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     8.7
+    ],
+    [
+     "(program) :0",
+     6.8
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     5.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     3.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     3.8
+    ],
+    [
+     "DXe index-BwsiPy02.js:172",
+     3.5
+    ],
+    [
+     "Ls index-BwsiPy02.js:9",
+     3.5
+    ],
+    [
+     "e.useMemo index-BwsiPy02.js:2",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "scrub",
+   "busyMs": 90.7,
+   "runs": [
+    94.1,
+    90.7,
+    86.8
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     39.9
+    ],
+    [
+     "(garbage collector) :0",
+     24.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     1.2
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     1
+    ],
+    [
+     "setTransform :0",
+     0.9
+    ],
+    [
+     "drawImage :0",
+     0.9
+    ],
+    [
+     "EC index-BwsiPy02.js:146",
+     0.9
+    ],
+    [
+     "t index-BwsiPy02.js:9",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     39.9
+    ],
+    [
+     "(garbage collector) :0",
+     24.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     16.2
+    ],
+    [
+     "sh index-BwsiPy02.js:10",
+     10.4
+    ],
+    [
+     "Bf index-BwsiPy02.js:9",
+     10.2
+    ],
+    [
+     "oh index-BwsiPy02.js:10",
+     10.2
+    ],
+    [
+     "Cn index-BwsiPy02.js:9",
+     10.1
+    ],
+    [
+     "Pf index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     8.2
+    ],
+    [
+     "UH index-BwsiPy02.js:155",
+     8.2
+    ],
+    [
+     "ge index-BwsiPy02.js:172",
+     8.2
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     7.7
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     6.2
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     6.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     6.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "play",
+   "busyMs": 48.4,
+   "runs": [
+    48.4,
+    49.8,
+    47.3
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 32.25,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.2
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     1.9
+    ],
+    [
+     "Lm index-BwsiPy02.js:134",
+     1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:146",
+     0.7
+    ],
+    [
+     "XQe index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "wC index-BwsiPy02.js:146",
+     0.7
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.7
+    ],
+    [
+     "dg index-BwsiPy02.js:134",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     6.7
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     6.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.2
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.2
+    ],
+    [
+     "warmAhead index-BwsiPy02.js:156",
+     5.1
+    ],
+    [
+     "Ch index-BwsiPy02.js:134",
+     4.9
+    ],
+    [
+     "wh index-BwsiPy02.js:134",
+     4.9
+    ],
+    [
+     "warm index-BwsiPy02.js:156",
+     4.6
+    ],
+    [
+     "Dh index-BwsiPy02.js:134",
+     4.3
+    ],
+    [
+     "VH index-BwsiPy02.js:155",
+     3.9
+    ],
+    [
+     "setUi index-BwsiPy02.js:10",
+     3.7
+    ],
+    [
+     "emit index-BwsiPy02.js:10",
+     3.5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-click",
+   "busyMs": 41.4,
+   "runs": [
+    71.8,
+    41.4,
+    40.1
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.34,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.9
+    ],
+    [
+     "(garbage collector) :0",
+     7.7
+    ],
+    [
+     "setAttribute :0",
+     1.3
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.7
+    ],
+    [
+     "insertBefore :0",
+     0.6
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     17.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     17.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     17.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     17.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     17.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     11.2
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     11.2
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     11.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     8.1
+    ],
+    [
+     "ul index-BwsiPy02.js:9",
+     8.1
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     7.9
+    ],
+    [
+     "n index-BwsiPy02.js:155",
+     7.9
+    ],
+    [
+     "au index-BwsiPy02.js:9",
+     7.9
+    ],
+    [
+     "Tu index-BwsiPy02.js:9",
+     7.9
+    ],
+    [
+     "$d index-BwsiPy02.js:9",
+     7.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-move",
+   "busyMs": 35.3,
+   "runs": [
+    35.3,
+    34.8,
+    58.8
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.18,
+   "topSelf": [
+    [
+     "(program) :0",
+     11.1
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     4.5
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     2
+    ],
+    [
+     "fill :0",
+     1.8
+    ],
+    [
+     "encode :0",
+     1.8
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     1.8
+    ],
+    [
+     "qd index-BwsiPy02.js:133",
+     1.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11.1
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     9.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     9.4
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     9
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     8.7
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     8.7
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     8.2
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     7.8
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     7.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:173",
+     7.8
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     6.8
+    ],
+    [
+     "Zd index-BwsiPy02.js:133",
+     6.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-layer",
+   "busyMs": 13.7,
+   "runs": [
+    13.7,
+    12.9,
+    13.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.58,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     0.9
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:174",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "Ja index-BwsiPy02.js:9",
+     0.2
+    ],
+    [
+     "l index-BwsiPy02.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     3.4
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2.2
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "nP index-BwsiPy02.js:155",
+     1.3
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     1.3
+    ],
+    [
+     "run debug-Dze80odr.js:10",
+     1.3
+    ],
+    [
+     "(anon) :0",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-layer",
+   "busyMs": 15.9,
+   "runs": [
+    16.8,
+    15.3,
+    15.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.32,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.7
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     1.9
+    ],
+    [
+     "hn index-BwsiPy02.js:10",
+     0.5
+    ],
+    [
+     "bM index-BwsiPy02.js:148",
+     0.4
+    ],
+    [
+     "setItem :0",
+     0.4
+    ],
+    [
+     "sl index-BwsiPy02.js:9",
+     0.3
+    ],
+    [
+     "$f index-BwsiPy02.js:10",
+     0.3
+    ],
+    [
+     "lu index-BwsiPy02.js:9",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.9
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     2.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:155",
+     2.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "iP index-BwsiPy02.js:155",
+     2
+    ],
+    [
+     "run index-BwsiPy02.js:172",
+     2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-key",
+   "busyMs": 71,
+   "runs": [
+    73.9,
+    71,
+    70
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 23.67,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     27.9
+    ],
+    [
+     "(program) :0",
+     10.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     3.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:134",
+     2.5
+    ],
+    [
+     "fill :0",
+     2.1
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     1.9
+    ],
+    [
+     "drawImage :0",
+     1.6
+    ],
+    [
+     "qd index-BwsiPy02.js:133",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     27.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     14.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     14.1
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     14.1
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     14.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     14.1
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     12.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     12.7
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     12.7
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     12.3
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     11.5
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     11.3
+    ],
+    [
+     "(program) :0",
+     10.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     10.2
+    ],
+    [
+     "yhe index-BwsiPy02.js:148",
+     9.7
+    ],
+    [
+     "DXe index-BwsiPy02.js:172",
+     9.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-key",
+   "busyMs": 84.2,
+   "runs": [
+    82.2,
+    84.5,
+    84.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 28.08,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     28.6
+    ],
+    [
+     "(program) :0",
+     18.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     4.1
+    ],
+    [
+     "fill :0",
+     3.5
+    ],
+    [
+     "qd index-BwsiPy02.js:133",
+     2.4
+    ],
+    [
+     "drawImage :0",
+     2.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:134",
+     1.9
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     1.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     28.6
+    ],
+    [
+     "(program) :0",
+     18.7
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     14.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     12.5
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     11.3
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     11.2
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     11.2
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     11.2
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     11
+    ],
+    [
+     "drawMain index-BwsiPy02.js:156",
+     10.7
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     10.6
+    ],
+    [
+     "paint index-BwsiPy02.js:156",
+     10.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     10.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "undo-redo",
+   "busyMs": 65.2,
+   "runs": [
+    63.6,
+    65.2,
+    67.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 5.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     18.3
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     13.8
+    ],
+    [
+     "(anon) index-BwsiPy02.js:134",
+     9.7
+    ],
+    [
+     "sh index-BwsiPy02.js:134",
+     4.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "e.transform.x index-BwsiPy02.js:148",
+     0.8
+    ],
+    [
+     "Lm index-BwsiPy02.js:134",
+     0.7
+    ],
+    [
+     "ahe index-BwsiPy02.js:148",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-BwsiPy02.js:9",
+     42.1
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     40.9
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     40.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     40.8
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     40.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     38
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     37.8
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     37.8
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     37.6
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     36.4
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     36.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     33.1
+    ],
+    [
+     "_Qe index-BwsiPy02.js:172",
+     32.2
+    ],
+    [
+     "Ls index-BwsiPy02.js:9",
+     32
+    ],
+    [
+     "jXe index-BwsiPy02.js:172",
+     31.9
+    ],
+    [
+     "e.useMemo index-BwsiPy02.js:2",
+     31.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "switch-artboard",
+   "busyMs": 43.4,
+   "runs": [
+    43.4,
+    35.2,
+    72.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.23,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "(garbage collector) :0",
+     8.8
+    ],
+    [
+     "i index-BwsiPy02.js:172",
+     1.9
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "UE index-BwsiPy02.js:146",
+     0.8
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.7
+    ],
+    [
+     "fill :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     10.4
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     9.7
+    ],
+    [
+     "(garbage collector) :0",
+     8.8
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     8.6
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     6.1
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     6
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     4.4
+    ],
+    [
+     "r index-BwsiPy02.js:161",
+     4.3
+    ],
+    [
+     "qAe index-BwsiPy02.js:161",
+     4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:172",
+     3.7
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     3.6
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     3.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "export-dialog",
+   "busyMs": 8.7,
+   "runs": [
+    10.7,
+    8.2,
+    8.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.73,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "Sm index-BwsiPy02.js:134",
+     0.5
+    ],
+    [
+     "(anon) ExportDialog-pA9wiv-U.js:1",
+     0.3
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ],
+    [
+     "u carries-DRPMWxbi.js:1",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "appendChild :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.6
+    ],
+    [
+     "D index-BwsiPy02.js:2",
+     2.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     1.8
+    ],
+    [
+     "wf index-BwsiPy02.js:9",
+     1.7
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     1.5
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     1.3
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     1.2
+    ],
+    [
+     "(anon) ExportDialog-pA9wiv-U.js:1",
+     1.1
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "useMemo index-BwsiPy02.js:9",
+     1
+    ],
+    [
+     "e.useMemo index-BwsiPy02.js:2",
+     1
+    ],
+    [
+     "Ue ExportDialog-pA9wiv-U.js:1",
+     1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "save-file",
+   "busyMs": 30.2,
+   "runs": [
+    29.8,
+    30.2,
+    60.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 30.19,
+   "topSelf": [
+    [
+     "encode :0",
+     12.3
+    ],
+    [
+     "(garbage collector) :0",
+     9.1
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     8.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     7.4
+    ],
+    [
+     "(program) :0",
+     2.3
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "setTimeout :0",
+     0.2
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "D1 index-BwsiPy02.js:167",
+     28.5
+    ],
+    [
+     "saveBytesAsync debug-Dze80odr.js:3",
+     28.5
+    ],
+    [
+     "(anon) :0",
+     28.5
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     27.9
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     19
+    ],
+    [
+     "encode :0",
+     12.3
+    ],
+    [
+     "(garbage collector) :0",
+     9.1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     7.5
+    ],
+    [
+     "(program) :0",
+     2.3
+    ],
+    [
+     "e.onmessage index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "setTimeout :0",
+     0.2
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.1
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.1
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.6 MB file"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "open-file",
+   "busyMs": 70.4,
+   "runs": [
+    76.3,
+    33.9,
+    70.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 70.36,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     24.9
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     13.4
+    ],
+    [
+     "(program) :0",
+     3.4
+    ],
+    [
+     "decode :0",
+     2.3
+    ],
+    [
+     "mHe index-BwsiPy02.js:167",
+     1.8
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     1
+    ],
+    [
+     "(anon) index-BwsiPy02.js:148",
+     0.9
+    ],
+    [
+     "(anon) index-BwsiPy02.js:134",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     24.9
+    ],
+    [
+     "N1 index-BwsiPy02.js:167",
+     21.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     5.7
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     5.3
+    ],
+    [
+     "pHe index-BwsiPy02.js:167",
+     5.3
+    ],
+    [
+     "el index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     5
+    ],
+    [
+     "frame index-BwsiPy02.js:156",
+     4.7
+    ],
+    [
+     "Vo index-BwsiPy02.js:9",
+     4.6
+    ],
+    [
+     "Nc index-BwsiPy02.js:9",
+     4.6
+    ],
+    [
+     "paintStage index-BwsiPy02.js:156",
+     4.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "autosave",
+   "busyMs": 5.7,
+   "runs": [
+    5.7,
+    5.4,
+    5.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.72,
+   "topSelf": [
+    [
+     "aHe index-BwsiPy02.js:167",
+     2.8
+    ],
+    [
+     "B1 index-BwsiPy02.js:167",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "call preload.cjs:5",
+     0.4
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "B1 index-BwsiPy02.js:167",
+     4.9
+    ],
+    [
+     "(anon) :0",
+     4.6
+    ],
+    [
+     "D1 index-BwsiPy02.js:167",
+     3.9
+    ],
+    [
+     "E1 index-BwsiPy02.js:167",
+     3.8
+    ],
+    [
+     "aHe index-BwsiPy02.js:167",
+     3
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "call preload.cjs:5",
+     0.4
+    ],
+    [
+     "write preload.cjs:66",
+     0.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:167",
+     0.3
+    ],
+    [
+     "Jp index-BwsiPy02.js:133",
+     0.3
+    ],
+    [
+     "Yp index-BwsiPy02.js:133",
+     0.3
+    ],
+    [
+     "pump index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "run index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "FBe index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "nHe index-BwsiPy02.js:167",
+     0.2
+    ],
+    [
+     "(anon) index-BwsiPy02.js:133",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "workspaces",
+   "busyMs": 145.1,
+   "runs": [
+    111.4,
+    145.7,
+    145.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 24.19,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     41
+    ],
+    [
+     "(program) :0",
+     37.8
+    ],
+    [
+     "Fxe index-BwsiPy02.js:155",
+     4.1
+    ],
+    [
+     "fill :0",
+     3.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     3.8
+    ],
+    [
+     "drawImage :0",
+     3.3
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     2.9
+    ],
+    [
+     "qd index-BwsiPy02.js:133",
+     2.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     41
+    ],
+    [
+     "(program) :0",
+     37.8
+    ],
+    [
+     "Ad index-BwsiPy02.js:9",
+     29.4
+    ],
+    [
+     "(anon) index-BwsiPy02.js:9",
+     28.6
+    ],
+    [
+     "Sf index-BwsiPy02.js:9",
+     27.3
+    ],
+    [
+     "Tf index-BwsiPy02.js:9",
+     27.2
+    ],
+    [
+     "bf index-BwsiPy02.js:9",
+     27.2
+    ],
+    [
+     "Xd index-BwsiPy02.js:9",
+     14.9
+    ],
+    [
+     "jd index-BwsiPy02.js:9",
+     14.9
+    ],
+    [
+     "vee index-BwsiPy02.js:9",
+     14.8
+    ],
+    [
+     "Hd index-BwsiPy02.js:9",
+     14.3
+    ],
+    [
+     "Ud index-BwsiPy02.js:9",
+     14
+    ],
+    [
+     "Gd index-BwsiPy02.js:9",
+     13.9
+    ],
+    [
+     "Yd index-BwsiPy02.js:133",
+     11.8
+    ],
+    [
+     "Zd index-BwsiPy02.js:133",
+     11.8
+    ],
+    [
+     "Kd index-BwsiPy02.js:133",
+     11.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

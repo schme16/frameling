@@ -1,0 +1,141 @@
+{
+ "label": "after3",
+ "when": "2026-11-14T22:17:30.672Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 144.3,
+   "runs": [
+    157.8,
+    170.4,
+    132.7,
+    144.3,
+    132.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 12.03,
+   "topSelf": [
+    [
+     "(program) :0",
+     104.9
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ],
+    [
+     "Qf index-abvT4iT3.js:10",
+     2.1
+    ],
+    [
+     "Yf index-abvT4iT3.js:10",
+     1.8
+    ],
+    [
+     "l index-abvT4iT3.js:9",
+     1.5
+    ],
+    [
+     "_ index-abvT4iT3.js:9",
+     1.4
+    ],
+    [
+     "h index-abvT4iT3.js:9",
+     1.4
+    ],
+    [
+     "(anon) index-abvT4iT3.js:166",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     104.9
+    ],
+    [
+     "(anon) index-abvT4iT3.js:9",
+     28.7
+    ],
+    [
+     "Sf index-abvT4iT3.js:9",
+     27
+    ],
+    [
+     "Tf index-abvT4iT3.js:9",
+     26.9
+    ],
+    [
+     "bf index-abvT4iT3.js:9",
+     26.9
+    ],
+    [
+     "kd index-abvT4iT3.js:9",
+     26.9
+    ],
+    [
+     "Bd index-abvT4iT3.js:9",
+     18.7
+    ],
+    [
+     "Vd index-abvT4iT3.js:9",
+     18.7
+    ],
+    [
+     "tl index-abvT4iT3.js:9",
+     17.3
+    ],
+    [
+     "Pc index-abvT4iT3.js:9",
+     10.7
+    ],
+    [
+     "Xd index-abvT4iT3.js:9",
+     8.2
+    ],
+    [
+     "Yd index-abvT4iT3.js:9",
+     8.2
+    ],
+    [
+     "Ad index-abvT4iT3.js:9",
+     8.2
+    ],
+    [
+     "bu index-abvT4iT3.js:9",
+     6.5
+    ],
+    [
+     "Qd index-abvT4iT3.js:9",
+     6.5
+    ],
+    [
+     "vu index-abvT4iT3.js:9",
+     6.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

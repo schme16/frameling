@@ -1,5 +1,5 @@
 // The Properties section for plugin shapes. It exists while some installed plugin may make shapes, so people who use no
-// such plugin never see it in "Also here".
+// such plugin never see it in the Panels list.
 import { lazyPanel } from '../core/lazy';
 import { registerPanel, unregisterPanel } from '../core/registry';
 import { syncPanels } from '../ui/dock';

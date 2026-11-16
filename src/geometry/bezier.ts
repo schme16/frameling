@@ -221,6 +221,64 @@ export interface LoopOptions {
    * bow between two kept points (what shows when the outline is opened large in another program).
    */
   dense?: boolean;
+  /**
+   * A cheaper answer than `dense`. A curve fitted to a few kept points is only checked at those points, so it can bow
+   * across a long straight edge between two of them (a wedge across a narrow neck). With this set, a stretch whose
+   * fit strays more than twice `tolerance` from its simplified polyline is fitted again with points added along it
+   * at least this often. Stretches that fit cleanly are left alone, so tidy shapes keep their few points.
+   */
+  span?: number;
+}
+
+/** How far `p` is from the segment `a` to `b`. */
+function distToSegment(p: V, a: V, b: V): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 < 1e-12 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+  return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+}
+
+/**
+ * True when any of the curves strays more than `limit` from the polyline. The curves follow the polyline in order, so
+ * each sample looks at the segment the last one was near first, and only searches the whole line when that is not close.
+ */
+function strays(curves: Cubic[], line: V[], limit: number): boolean {
+  let at = 1;
+  for (const c of curves) {
+    for (let k = 1; k < 8; k++) {
+      const q = evalCubic(c, k / 8);
+      let found = false;
+      for (let j = at; j <= Math.min(line.length - 1, at + 2) && !found; j++) {
+        if (distToSegment(q, line[j - 1], line[j]) <= limit) {
+          at = j;
+          found = true;
+        }
+      }
+      if (found) continue;
+      for (let j = 1; j < line.length && !found; j++) {
+        if (distToSegment(q, line[j - 1], line[j]) <= limit) {
+          at = j;
+          found = true;
+        }
+      }
+      if (!found) return true;
+    }
+  }
+  return false;
+}
+
+/** `pts` with extra points along any segment longer than `span`. */
+function densify(pts: V[], span: number): V[] {
+  const out: V[] = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const n = Math.ceil(len(sub(b, a)) / span);
+    for (let k = 1; k < n; k++) out.push({ x: a.x + ((b.x - a.x) * k) / n, y: a.y + ((b.y - a.y) * k) / n });
+    out.push(b);
+  }
+  return out;
 }
 
 export const DEFAULT_LOOP: LoopOptions = { simplify: 0.7, tolerance: 1, cornerAngle: 58 };
@@ -283,7 +341,17 @@ export function fitClosedLoop(loop: V[], opts: LoopOptions = DEFAULT_LOOP): SubP
       cubics.push([simple[0], simple[0], simple[1], simple[1]]);
       return;
     }
-    cubics.push(...fitCurve(opts.dense ? pts : simple, opts.tolerance, t1, t2));
+    if (opts.dense) {
+      cubics.push(...fitCurve(pts, opts.tolerance, t1, t2));
+      return;
+    }
+    let fitted = fitCurve(simple, opts.tolerance, t1, t2);
+    if (opts.span && strays(fitted, simple, opts.tolerance * 2)) {
+      // Two or three points is a straight edge with at most a jog in it: keep it straight. A longer stretch is a curve.
+      if (simple.length <= 3) fitted = simple.slice(1).map((q, i): Cubic => [simple[i], simple[i], q, q]);
+      else fitted = fitCurve(densify(simple, opts.span), opts.tolerance, t1, t2);
+    }
+    cubics.push(...fitted);
   };
   if (corners.length === 0) {
     // A smooth loop: cut it at point 0 and half way round, with the same centred tangent either side of each cut.

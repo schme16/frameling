@@ -28,7 +28,7 @@ On a pixel layer the paint bucket fills the joined-up pixels of the colour you c
 
 - **Close gaps**: how big a gap in your lines still counts as closed.
 - **Fill on top**: put the colour above your lines instead of behind them. Most of the time you want it off.
-- **Use lines from all layers**: the bucket sees lines on every visible layer, not just the one you are on. Keep your line art on one layer, pick a colour layer underneath, and fill there. Your lines stay clean and the colour is easy to change later. It works on pixel layers too.
+- **Use lines from all layers**: the bucket sees lines on every visible layer, not just the one you are on. Keep your line art on one layer, pick a colour layer underneath, and fill there. Your lines stay clean and the colour is easy to change later. It works on pixel layers too. Paint on a layer above yours counts as a line too, so a pan outlined in paint still holds the colour in. Paint below doesn't, and neither does a patch over the spot you click.
 - **Colour match** (pixel layers): how alike a colour has to be to get filled as well. **Exact colour** fills only the very same colour; raise it for art whose colours drift a little. See [Filling pixel art under your lines](help:fill-pixel).
 - **Fill all of this colour** (pixel layers): recolour every pixel of that colour on the frame, joined up or not.
 
@@ -36,7 +36,8 @@ On a pixel layer the paint bucket fills the joined-up pixels of the colour you c
 
 - Zoom in if you are not sure a line really meets. A gap you cannot see still lets colour out.
 - Fill the big areas first, then the small ones. Small shapes next to each other are easier to click that way.
-- Fills on vector layers are real shapes, so they stay sharp at any size.`,
+- Fills on vector layers are real shapes, so they stay sharp at any size.
+- An outline made of filled shapes (traced art, say) stops the colour just like a brush line.`,
   'fill-pixel': `The paint bucket works on pixel art the way it does on vectors: keep your lines on one layer, your flat colour on the one below, and fill inside the lines. Without help a pixel layer only sees itself, so a colour layer under your line art would flood the whole page.
 
 **Fill under your lines:**

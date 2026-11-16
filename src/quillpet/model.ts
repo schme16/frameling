@@ -6,6 +6,7 @@
 // month and he's delighted, not sulking. Every function below is written so that stays true, and the tests check it.
 import type { QuillAnim } from '../ui/mascot/timing';
 import type { ThingSource } from './crayon';
+import type { Lately } from './whileAway';
 
 /** A thing you gave him: a drawing of yours, kept as a small picture. */
 export interface PetThing {
@@ -60,6 +61,8 @@ export interface PetState {
   presents: Present[];
   /** When he last made you something, ms since epoch. 0 = never. */
   lastPresentAt: number;
+  /** What he got up to the last time you came back to find him busy. Only what he did, never how long it took. */
+  lately?: Lately;
 }
 
 export const FRESH_PET: PetState = { metAt: 0, closeness: 0, days: 0, lastDay: '', things: [], colours: [], seen: [], presents: [], lastPresentAt: 0 };
@@ -238,20 +241,28 @@ export interface NowCtx {
   justFinished: boolean;
   /** You just gave him something, fed him or stroked him. */
   justFussed: boolean;
+  /** Which of those it was, so he can answer in kind. Missing is treated as a stroke. */
+  fuss?: 'fed' | 'stroked' | 'given';
   /** Days since you were last here. */
   daysAway: number;
 }
+
+/** Left alone this long and the doze becomes a proper sleep. */
+export const DEEP_SLEEP_MS = 15 * 60 * 1000;
 
 export const NO_NOW: NowCtx = { sinceInput: 0, sinceEdit: Infinity, playing: false, justFinished: false, justFussed: false, daysAway: 0 };
 
 /** His mood, and the animation that goes with it. Order matters: the loudest thing wins. */
 export function moodNow(ctx: NowCtx): { mood: Mood; anim: QuillAnim } {
   if (ctx.justFinished) return { mood: 'proud', anim: 'cheer' };
-  if (ctx.justFussed) return { mood: 'happy', anim: 'cheer' };
+  // He answers a fuss in kind: a munch for food, a nuzzle for a stroke, and he holds up what you gave him.
+  if (ctx.justFussed) return { mood: 'happy', anim: ctx.fuss === 'fed' ? 'eat' : ctx.fuss === 'given' ? 'holding' : 'nuzzle' };
   // Back after a break is a happy thing. This is the line that keeps him from ever sulking about it.
   if (ctx.daysAway >= 1 && ctx.sinceInput < 20000) return { mood: 'excited', anim: 'wave' };
-  if (ctx.playing) return { mood: 'excited', anim: 'cheer' };
+  if (ctx.playing) return { mood: 'excited', anim: 'hop' };
   if (ctx.sinceEdit < 4000) return { mood: 'happy', anim: 'draw' };
+  // Right under is a doze; left alone for a quarter of an hour he goes properly under.
+  if (ctx.sinceInput > DEEP_SLEEP_MS) return { mood: 'asleep', anim: 'deep-sleep' };
   if (ctx.sinceInput > 180000) return { mood: 'asleep', anim: 'sleep' };
   if (ctx.sinceInput > 60000) return { mood: 'sleepy', anim: 'idle' };
   if (ctx.sinceEdit < 60000) return { mood: 'curious', anim: 'think' };

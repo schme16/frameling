@@ -2,13 +2,20 @@ import { useEffect, useRef } from 'react';
 import { PenOptions } from '../../tablet/PenOptions';
 import { findLayer } from '../../core/doc';
 import type { BrushSettings } from '../../core/format';
-import { drawShape } from '../../core/render';
 import { store, useStore } from '../../core/store';
 import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls';
-import { buildStroke } from '../vectorStroke';
+import { drawPreviewStroke } from '../../brushes/thumbs';
+import { inkFor, useThemeTick } from '../../brushes/ink';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
+import { HoldToTidyOptions } from './HoldToTidyOptions';
+import { BrushPresetRow } from '../../brushes/BrushPresetRow';
+import { TipOptions } from '../../brushes/TipOptions';
+import { PixelStampOptions } from '../../brushes/PixelStampOptions';
+import { readPixelStamp } from '../../brushes/stamps';
+import { typedSize } from '../brushRange';
+import { useBrushRange } from './useBrushRange';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -17,6 +24,7 @@ export function useActiveLayerKind(): 'vector' | 'pixel' {
 /** A sample squiggle drawn with the brush as set, so you can see what you're choosing. */
 export function BrushPreview({ brush, color }: { brush: BrushSettings; color: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const theme = useThemeTick();
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -37,8 +45,9 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     }
     // Keep the preview inside its box however big the brush gets.
     const size = Math.min(brush.size, h * 0.8);
-    drawShape(g, buildStroke(pts, { ...brush, size }, color));
-  }, [brush, color]);
+    // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
+    drawPreviewStroke(g, pts, { ...brush, size }, inkFor(c, color, 3));
+  }, [brush, color, theme]);
   return <canvas className="cv-preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }
 
@@ -55,17 +64,21 @@ function VectorBrushOptions() {
   const brush = useStore((s) => s.ui.brush);
   const color = useStore((s) => s.ui.color);
   const pressure = brush.thinning !== 0;
+  const range = useBrushRange(false);
   return (
     <div className="cv-options">
+      <BrushPresetRow />
       <BrushPreview brush={brush} color={color} />
-      <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
-      <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
+      <TipOptions />
+      <Slider label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+      <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
         <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
         {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
         <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
         <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+        <HoldToTidyOptions />
         <PenOptions tool="brush" opacity />
         <MirrorOptions />
       </MoreOptions>
@@ -77,10 +90,12 @@ function PixelBrushOptions() {
   const size = useToolSettings((s) => s.pixelBrushSize);
   const shape = useToolSettings((s) => s.pixelBrushShape);
   const perfect = useToolSettings((s) => s.pixelPerfect);
+  const stamp = readPixelStamp(useToolSettings((s) => s.pixelStamp));
+  const range = useBrushRange(true);
   return (
     <div className="cv-options">
-      <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />
-      {size > 2 && (
+      {!stamp && <Slider label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />}
+      {!stamp && size > 2 && (
         <Choice
           label="Shape"
           value={shape}
@@ -91,7 +106,8 @@ function PixelBrushOptions() {
           onChange={(v) => setToolSettings({ pixelBrushShape: v })}
         />
       )}
-      <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />
+      {!stamp && <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />}
+      <PixelStampOptions />
       <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>
       <PenOptions tool="brush" size />
     </div>

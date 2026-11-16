@@ -36,8 +36,8 @@ registerCommands([
     id: 'palette.fromPicture',
     label: 'Take colours from a picture...',
     category: 'Pixel',
-    description: 'Add the colours of a PNG, GIF or sprite sheet to the palette, or use them in its place.',
-    help: 'pixel-import',
+    description: 'Take the colours of a picture for the palette: you set the most to take, and big pictures never hold Frameling up.',
+    help: 'palette-picture',
     keywords: ['palette', 'colours', 'colors', 'extract', 'picture', 'png', 'gif', 'image', 'import', 'swatches'],
     run: () => run().then((m) => m.pickPictureForPalette()),
   },
@@ -74,5 +74,6 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
   w.__framelingPicture = {
     open: (bytes: number[], name: string) => openPictureBytes(Uint8Array.from(bytes), name),
     add: (bytes: number[], name: string) => addPictureBytes(Uint8Array.from(bytes), name),
+    palette: (bytes: number[] | Uint8Array, name: string) => run().then((m) => m.paletteFromPictureBytes(bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes), name)),
   };
 }

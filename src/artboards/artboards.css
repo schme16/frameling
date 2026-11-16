@@ -2,35 +2,59 @@
 .ab-underlay {
   z-index: 0;
 }
-.ab-item {
-  cursor: pointer;
+/* The list of artboards is the Layers panel's list (src/timeline/PieceRow.tsx): rows, header and marks come from there.
+   What is here is only what a board has and a layer does not: its picture and its size. */
+.ab-listed {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
-.ab-item.ab-open {
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-  border-color: var(--chosen-bg);
+.ab-listed .tl-layer-tools.in-panel {
+  border-bottom: 1px solid var(--line);
 }
-.ab-item.ab-open .sy-item-meta,
-.ab-item.ab-open .sy-icon-btn {
-  color: var(--chosen-fg);
+.ab-tip {
+  padding: 8px 12px 0;
 }
-.ab-item.ab-over {
-  box-shadow: 0 -3px 0 var(--focus);
+.ab-rows {
+  width: 100%;
 }
-.ab-name {
-  cursor: text;
+/* A long list wants its room for rows: the buttons for all of them shrink to their pictures (the words stay in the tips). */
+.ab-compact .tl-layer-new-label,
+.ab-compact .tl-btn-text {
+  display: none;
 }
-.ab-item .sy-item-meta {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.ab-find {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 4px;
+  color: var(--muted);
 }
-.ab-item .sy-icon-btn {
-  width: 22px;
-  height: 24px;
+.ab-find input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
 }
-.ab-item .sy-item-actions {
-  gap: 0;
+.ab-none {
+  padding: 4px 12px;
+}
+.ab-rows .tl-kind.tl-thumb {
+  width: 30px;
+  height: 30px;
+  background: none;
+  border-radius: 0;
+}
+.ab-rows .tl-thumb .sy-thumb {
+  display: block;
+}
+.ab-rest {
+  border-top: 1px solid var(--line);
 }
 .ab-fields {
   display: flex;
@@ -62,7 +86,7 @@
 .ab-bg > span {
   width: 72px;
 }
-.ab-bg input[type='color'] {
+.ab-bg .cp-chip {
   width: 32px;
   height: 24px;
   padding: 0;
@@ -154,9 +178,6 @@
 .ab-player-look .ab-pic-label {
   min-width: 6.5em;
 }
-.ab-item:not(:hover):not(:focus-within) .ab-move {
-  display: none;
-}
 .ab-pic {
   display: flex;
   flex-wrap: wrap;
@@ -192,14 +213,14 @@
 }
 
 /* Variations: the badge, the size cuts and the list of differences. */
-.ab-item.ab-var {
-  margin-left: 10px;
-}
-.ab-item.ab-var .sy-item-meta {
-  white-space: normal;
-}
 .ab-size {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--fs-small);
   white-space: nowrap;
+}
+.tl-layer.is-active .ab-size {
+  color: var(--text);
 }
 .ab-badge {
   display: inline-flex;

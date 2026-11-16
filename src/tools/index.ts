@@ -15,6 +15,12 @@ import './eyedropper';
 import './view-tools';
 import './edit-commands';
 import './merge-mode';
+import './combine';
+import './lineStyle';
+import './offset';
+import './width';
+import './shapeBuilder';
+import './quickshape';
 import './rememberUi';
 import './mirror-help';
 import './recolour-open';
@@ -24,4 +30,16 @@ import.meta.glob(['./fill*.ts', '!./**/*.bodies.ts'], { eager: true });
 
 // Pixel art tools, palette and commands. Last, since it adds mirror drawing to the brush and eraser above.
 import '../pixel';
+// Soft paint (airbrush, soft brush, soft eraser, highlighter, smudge) on pixel layers. After the pixel tools it builds on.
+import '../soft';
+// Chalk and charcoal on pixel layers, drawing onto paper. After soft paint, whose edge choice it shares.
+import '../dry';
+// The pixel brush (dabs, spacing, tips) and the pixel side of the brush library. After soft paint and charcoal, which it shares an edge answer and a library with.
+import '../dab';
+// The clone stamp and the blur and sharpen brushes: dab brushes that move each pixel toward a copy or a blur of the picture. After the pixel brush, whose engine they use.
+import '../retouch';
+// Curves and Levels: change the pixels of a layer by what each brightness becomes. Beside Colour adjust in the Effects menu.
+import '../tone';
 import '../select';
+import '../clipboard';
+import '../transform';

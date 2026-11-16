@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCommand } from '../core/registry';
 import { useStore } from '../core/store';
+import { isAnimated } from '../core/animation';
 import { findLayer } from '../core/doc';
 import { Icon } from './icons';
 import { usePrefs, reducedMotion } from './prefs';
@@ -10,18 +11,23 @@ import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
 import { SnapButton } from '../canvas/SnapOptions';
+import { describeTurn, getTurn, isTurned, resetTurn, setTurn, turnedBy, useTurn } from '../canvas/turn';
+import { hasArtboards } from '../artboards/model';
 import { artSizeOf, artZoomPercent } from '../pixel/units';
 import { dock, inPixelWorkspace, showPanel } from './dock';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
+  const turn = useTurn();
   const w = useStore((s) => s.doc.width);
   const h = useStore((s) => s.doc.height);
   const fps = useStore((s) => s.doc.fps);
+  const ownFps = useStore((s) => hasArtboards(s.doc) && !s.doc.sharedLayers);
   const dpi = useStore((s) => docDpi(s.doc));
   const units = usePrefs((p) => p.units);
   const frame = useStore((s) => s.ui.frame);
   const length = useStore((s) => s.doc.length);
+  const animated = useStore((s) => isAnimated(s.doc));
   const pixel = useStore((s) => {
     const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
     return l?.kind === 'pixel' ? l.pixelSize : 0;
@@ -70,6 +76,25 @@ export function StatusBar() {
         <Icon name="zoom" size={14} />
         {pixelWs ? artZoomPercent(zoom, pixel) : Math.round(zoom * 100)}%
       </button>
+      {!isTurned(turn) && (
+        <button
+          type="button"
+          className="ui-status-item ui-status-btn"
+          onClick={() => setTurn(turnedBy(getTurn(), 1))}
+          data-tip="Turn the page"
+          data-tip-desc="Hold Alt and drag on the canvas to turn the page to any angle, like a sheet on your desk. Press here to turn it a little. Only the view changes."
+          aria-label="Straight. Turn the page: hold Alt and drag on the canvas, or press here to turn it a little."
+        >
+          <Icon name="rotate" size={14} />
+          Straight
+        </button>
+      )}
+      {isTurned(turn) && (
+        <button type="button" className="ui-status-item ui-status-btn" onClick={() => resetTurn()} data-tip="The view is turned" data-tip-desc="Only how you look at the page: your drawing and exports aren't changed. Press to turn it back straight.">
+          <Icon name={turn.flip ? 'mirror' : 'rotate'} size={14} />
+          View {describeTurn(turn)}
+        </button>
+      )}
       <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('size')} data-tip="Drawing size" data-tip-desc={pixelWs ? `Pixels in your sprite. Each one is drawn ${pixel} times bigger on the page. Press to change the page size.` : `Press to change the page size.${units === 'px' ? '' : ` It is ${w} x ${h} px at ${dpi} DPI; change units in Preferences.`}`}>
         <Icon name={pixel ? 'pixel' : 'image'} size={14} />
         {pixelWs ? `${art.w} x ${art.h} pixels` : units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}
@@ -81,14 +106,23 @@ export function StatusBar() {
           {selSize}
         </span>
       )}
-      <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc="Press to change how many drawings show each second.">
-        <Icon name="film" size={14} />
-        {fps} fps
-      </button>
-      <button type="button" className="ui-status-item ui-status-btn" onClick={() => showPanel('timeline')} data-tip="Current frame" data-tip-desc="Press to bring the Timeline out in front.">
-        <Icon name="timeline" size={14} />
-        Frame {frame + 1} of {length}
-      </button>
+      {animated ? (
+        <>
+          <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('fps')} data-tip="Frames per second" data-tip-desc={ownFps ? "Press to change how many drawings show each second on this artboard. The others keep their own." : 'Press to change how many drawings show each second.'}>
+            <Icon name="film" size={14} />
+            {fps} fps
+          </button>
+          <button type="button" className="ui-status-item ui-status-btn" onClick={() => showPanel('timeline')} data-tip="Current frame" data-tip-desc="Press to bring the Timeline out in front.">
+            <Icon name="timeline" size={14} />
+            Frame {frame + 1} of {length}
+          </button>
+        </>
+      ) : (
+        <button type="button" className="ui-status-item ui-status-btn ui-status-add-animation" data-testid="status.addAnimation" onClick={() => { const c = getCommand('animation.add'); if (c) runCommand(c); }} data-tip="Add animation" data-tip-desc="Give this drawing frames, a timeline and playback. What you have drawn stays as frame 1.">
+          <Icon name="film" size={14} />
+          Add animation
+        </button>
+      )}
       <SnapButton />
       <span className="ui-status-spacer" />
       {showTips && (

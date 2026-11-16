@@ -2,17 +2,20 @@
 // with the pet off nothing here is listening and Quill is just the mascot again.
 import { store } from '../core/store';
 import { petStore, firstVisitToday, tellQuill } from './store';
-import { paintQuills, plainQuills } from './quills';
+import { forgetPaint, paintQuills, plainQuills } from './quills';
+import { onMascotSwitched } from '../ui/mascot/runtime';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
 import { noteSeen } from './store';
 import { stageOf } from './model';
+import { settleIn } from './welcome';
 
 const now = (): number => (typeof performance === 'undefined' ? Date.now() : performance.now());
 
 let lastEdit = -Infinity;
 let fussedAt = -Infinity;
 let finishedAt = -Infinity;
+let edited = false;
 
 /** Milliseconds since your last edit. Infinity until you've drawn something this run. */
 export const sinceEdit = (): number => now() - lastEdit;
@@ -21,10 +24,21 @@ export const sinceFuss = (): number => now() - fussedAt;
 /** Milliseconds since you last finished something. */
 export const sinceFinished = (): number => now() - finishedAt;
 
+/** True once you have drawn in the document that is open. Opening a file, a template or a new page starts it at false, so only work you actually made counts as yours. */
+export const editedByYou = (): boolean => edited;
+
+/** What the last fuss was, so he can answer it in kind: a munch, a nuzzle, or holding up what you gave him. */
+export type FussKind = 'fed' | 'stroked' | 'given';
+let fussKind: FussKind = 'stroked';
+
 /** Stroking him, feeding him, giving him something: he notices for a few seconds. */
-export function noteFuss(): void {
+export function noteFuss(kind: FussKind = 'stroked'): void {
   fussedAt = now();
+  fussKind = kind;
 }
+
+/** What the last fuss was. Only means anything while `sinceFuss()` is still small. */
+export const lastFuss = (): FussKind => fussKind;
 /** An export, a save, a quest finished: he's proud of you for a few seconds. */
 export function noteFinished(): void {
   finishedAt = now();
@@ -36,6 +50,7 @@ export function forgetNow(): void {
   lastEdit = -Infinity;
   fussedAt = -Infinity;
   finishedAt = -Infinity;
+  edited = false;
 }
 
 /**
@@ -56,6 +71,8 @@ export function startWatching(): () => void {
   const s = store();
   let prev = s.get();
   let loads = s.loads;
+  // Before he notes that you're here: the day still reads as new, so he can have news if you've been out.
+  settleIn();
   if (firstVisitToday()) tellQuill({ kind: 'visited' });
   const off = s.subscribe(() => {
     const next = s.get();
@@ -63,10 +80,12 @@ export function startWatching(): () => void {
     if (s.loads !== loads) {
       loads = s.loads;
       prev = next;
+      edited = false;
       return;
     }
     if (next.doc !== prev.doc) {
       lastEdit = now();
+      edited = true;
       tellQuill({ kind: 'drew' });
       // The colour you drew with goes in his quills. Worth no closeness: that would be paying you to change colour.
       if (next.ui.color) tellQuill({ kind: 'noticed', colour: next.ui.color });
@@ -80,9 +99,15 @@ export function startWatching(): () => void {
     sayIfCloser();
   });
   paintQuills(petStore.get().colours);
+  // Another mascot arrived: his pencils are his own, so start the painting again on his sheet.
+  const offSwitch = onMascotSwitched(() => {
+    forgetPaint();
+    paintQuills(petStore.get().colours);
+  });
   return () => {
     off();
     offPet();
+    offSwitch();
     plainQuills();
     forgetNow();
   };

@@ -65,6 +65,46 @@ export function applySettings(file: SettingsFile, storage: Storage | null = safe
   return n;
 }
 
+/** "12 Nov 2026" for a backup's save time, or "an earlier day" when the file has no readable one. */
+export function backupDay(savedAt: string | undefined): string {
+  const t = savedAt ? new Date(savedAt) : null;
+  if (!t || Number.isNaN(t.getTime())) return 'an earlier day';
+  return t.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** How a restore would change what is set now: settings that are new, different, or gone. */
+export function restoreChanges(current: SettingsFile, backup: SettingsFile): { added: number; changed: number; removed: number } {
+  let added = 0;
+  let changed = 0;
+  let removed = 0;
+  for (const [k, v] of Object.entries(backup.items)) {
+    if (!(k in current.items)) added++;
+    else if (current.items[k] !== v) changed++;
+  }
+  for (const k of Object.keys(current.items)) if (!(k in backup.items)) removed++;
+  return { added, changed, removed };
+}
+
+const settingsWord = (n: number) => (n === 1 ? '1 setting' : `${n} settings`);
+
+/** The question Restore asks before it replaces anything. */
+export function restoreQuestion(backup: SettingsFile, count: number): string {
+  return `Restore the backup from ${backupDay(backup.savedAt)}? It replaces everything you have set now with its ${settingsWord(count)}, and Frameling starts again.`;
+}
+
+/** What Restore says once it is done: which backup, and how much moved. */
+export function restoredMessage(backup: SettingsFile, ch: { added: number; changed: number; removed: number }): string {
+  const parts: string[] = [];
+  if (ch.changed) parts.push(`${ch.changed} changed`);
+  if (ch.added) parts.push(`${ch.added} added`);
+  if (ch.removed) parts.push(`${ch.removed} gone`);
+  const what = parts.length ? parts.join(', ') : 'nothing was different';
+  return `Restored the backup from ${backupDay(backup.savedAt)} (${what}). Frameling is starting again.`;
+}
+
+/** What Backup says once the file is saved. */
+export const backedUpMessage = (count: number): string => `Backup saved: ${settingsWord(count)}.`;
+
 export const settingsFileName = (now = new Date()): string => `frameling-settings-${now.toISOString().slice(0, 10)}.json`;
 
 export type SaveResult = 'saved' | 'cancelled' | 'failed';
@@ -76,7 +116,7 @@ export async function saveSettingsFile(): Promise<SaveResult> {
   const api = desktop();
   if (api) {
     try {
-      const target = await api.files.pickExportFile({ suggestedName: name, filters: [{ name: 'Frameling settings', extensions: ['json'] }], title: 'Save your settings' });
+      const target = await api.files.pickExportFile({ suggestedName: name, filters: [{ name: 'Frameling settings', extensions: ['json'] }], title: 'Backup your settings' });
       if (!target) return 'cancelled';
       const r = await api.files.write(target, bytes);
       return 'error' in r ? 'failed' : 'saved';
@@ -111,7 +151,7 @@ export async function pickSettingsFile(): Promise<{ ok: true; file: SettingsFile
 async function pickBytes(): Promise<Uint8Array | null | undefined> {
   const api = desktop();
   if (api?.files.openOther) {
-    const r = await api.files.openOther({ filters: [{ name: 'Frameling settings', extensions: ['json'] }], title: 'Open your settings' });
+    const r = await api.files.openOther({ filters: [{ name: 'Frameling settings', extensions: ['json'] }], title: 'Restore your settings' });
     if (!r) return null;
     return 'error' in r ? undefined : r.bytes;
   }

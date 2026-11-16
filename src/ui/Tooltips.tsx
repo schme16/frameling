@@ -7,13 +7,17 @@
 // `title` is moved to `data-tip` the first time it's pointed at, so the browser's own grey tooltip never shows.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCommand, getHelp } from '../core/registry';
+import { commandEnabled, commandReason } from './palette';
 import { effectiveKeys, platformKeysText } from './keys';
 import { openHelp } from './overlays';
 import { Keys } from './ShortcutChip';
+import { placeTip, type TipSide } from './tipPlace';
 
 export interface TipContent {
   title: string;
   desc?: string;
+  /** What would turn a greyed command on, shown above the description. */
+  why?: string;
   /** Raw shortcut strings (`Mod+Z`). */
   keys: string[];
   help?: string;
@@ -57,7 +61,9 @@ export function tipFor(el: Element): TipContent | null {
   const keys = keysAttr ? keysAttr.split(',').map((s) => s.trim()).filter(Boolean) : cmd ? effectiveKeys(cmd) : [];
   const help = el.getAttribute('data-help') || cmd?.help || undefined;
   const desc = el.getAttribute('data-tip-desc') || cmd?.description || undefined;
-  return { title: platformKeysText(title), desc: desc && platformKeysText(desc), keys, help: help && getHelp(help) ? help : undefined };
+  // A greyed command says what would turn it on, so the tip is the answer to "why is this grey?".
+  const why = cmd && !el.getAttribute('data-tip-desc') && !commandEnabled(cmd) ? commandReason(cmd) : undefined;
+  return { title: platformKeysText(title), desc: desc && platformKeysText(desc), why, keys, help: help && getHelp(help) ? help : undefined };
 }
 
 interface Shown {
@@ -65,17 +71,23 @@ interface Shown {
   rect: DOMRect;
   /** The thing is a menu row, so the tip goes beside the menu and takes no pointer. */
   aside?: boolean;
+  /** Pressed on a help icon (data-explain): the tip stays until Escape or a press elsewhere, so the link can be used. */
+  pinned?: boolean;
 }
 
 export function TooltipLayer() {
   const [shown, setShown] = useState<Shown | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; side: TipSide; arrow: number | null } | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const showTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
   const current = useRef<Element | null>(null);
   const lastShownAt = useRef(0);
   const overTip = useRef(false);
+  const pinnedBy = useRef<Element | null>(null);
+  const tipHasFocus = useRef(false);
+  // Escape gives focus back to the icon; that focus must not open its tip again.
+  const skipFocusTip = useRef<Element | null>(null);
 
   useEffect(() => {
     const clear = () => {
@@ -85,9 +97,12 @@ export function TooltipLayer() {
     const hide = () => {
       clear();
       current.current = null;
+      pinnedBy.current = null;
       setShown(null);
       setPos(null);
     };
+    // A pinned tip ignores the pointer leaving and focus moving into it; Escape, or a press anywhere else, closes it.
+    const pinned = () => !!pinnedBy.current;
     const show = (el: Element, delay: number) => {
       // Take the browser's own tooltip out of the picture, keep the words.
       const t = el.getAttribute('title');
@@ -103,7 +118,7 @@ export function TooltipLayer() {
       const go = () => {
         lastShownAt.current = Date.now();
         setPos(null);
-        setShown({ tip, rect: el.getBoundingClientRect(), ...(inMenu(el) ? { aside: true } : {}) });
+        setShown({ tip, rect: el.getBoundingClientRect(), ...(inMenu(el) ? { aside: true } : {}), ...(pinnedBy.current === el ? { pinned: true } : {}) });
       };
       const quick = Date.now() - lastShownAt.current < 400;
       if (delay === 0 || quick) go();
@@ -115,12 +130,14 @@ export function TooltipLayer() {
       if (current.current && !document.contains(current.current)) hide();
     }, 300);
     const over = (e: MouseEvent) => {
+      if (pinned()) return;
       const el = e.target instanceof Element ? e.target.closest(SELECTOR) : null;
       if (!el || el === current.current) return;
       if (el.closest('.ui-tip')) return;
       show(el, inMenu(el) ? 320 : 550);
     };
     const out = (e: MouseEvent) => {
+      if (pinned()) return;
       const to = e.relatedTarget instanceof Element ? e.relatedTarget : null;
       if (current.current && !(to && (current.current.contains(to) || to.closest('.ui-tip')))) {
         clear();
@@ -131,17 +148,55 @@ export function TooltipLayer() {
       }
     };
     const focusIn = (e: FocusEvent) => {
+      if (pinned()) {
+        // Focus going anywhere but the icon or the tip itself puts the tip away.
+        const t = e.target instanceof Element ? e.target : null;
+        if (t && !t.closest('.ui-tip') && t.closest('[data-explain]') !== pinnedBy.current) hide();
+        else return;
+      }
       const el = e.target instanceof Element ? e.target.closest(SELECTOR) : null;
+      if (el && el === skipFocusTip.current) {
+        skipFocusTip.current = null;
+        return;
+      }
       if (el && el.matches(':focus-visible')) show(el, 0);
     };
-    const focusOut = () => hide();
+    const focusOut = () => {
+      if (!pinned()) hide();
+    };
     const down = (e: Event) => {
       if (e.target instanceof Element && e.target.closest('.ui-tip')) return;
+      // Pressing the icon again is handled by its click, so the press itself leaves a pinned tip alone.
+      if (pinned() && e.target instanceof Element && e.target.closest('[data-explain]') === pinnedBy.current) return;
       hide();
     };
     const key = (e: KeyboardEvent) => {
+      if (pinned()) {
+        // Escape shuts it and gives focus back to the icon; Tab and the arrows are left to move through it.
+        if (e.key === 'Escape') {
+          const icon = pinnedBy.current;
+          hide();
+          if (icon !== document.activeElement) skipFocusTip.current = icon;
+          if (icon instanceof HTMLElement) icon.focus();
+          e.stopPropagation();
+        }
+        return;
+      }
       if (e.key !== 'F1') hide();
     };
+    // Pressing a help icon (a click, or Enter or Space on it) pins its tip: it opens at once and stays until closed.
+    const click = (e: MouseEvent) => {
+      const el = e.target instanceof Element ? e.target.closest('[data-explain]') : null;
+      if (!el) return;
+      if (pinnedBy.current === el) {
+        hide();
+        return;
+      }
+      pinnedBy.current = el;
+      tipHasFocus.current = e.detail === 0;
+      show(el, 0);
+    };
+    document.addEventListener('click', click);
     document.addEventListener('mouseover', over);
     document.addEventListener('mouseout', out);
     document.addEventListener('focusin', focusIn);
@@ -159,37 +214,49 @@ export function TooltipLayer() {
       document.removeEventListener('focusout', focusOut);
       document.removeEventListener('pointerdown', down, true);
       document.removeEventListener('keydown', key, true);
+      document.removeEventListener('click', click);
       window.removeEventListener('blur', hide);
       document.removeEventListener('scroll', hide, true);
     };
   }, []);
 
-  // Place it under the thing, or over it when there's no room, and keep it on screen.
+  // A tip opened from the keyboard hands focus to its link, so Enter again goes to the help.
+  useEffect(() => {
+    if (shown?.pinned && pos && tipHasFocus.current) {
+      tipHasFocus.current = false;
+      box.current?.querySelector<HTMLElement>('.ui-tip-more')?.focus();
+    }
+  }, [shown, pos]);
+
+  // Place it just above the thing (under it only when there's no room up there), keep it on screen, and point its
+  // arrow at the middle of the thing.
   useLayoutEffect(() => {
     if (!shown || !box.current) return;
     const b = box.current.getBoundingClientRect();
     const r = shown.rect;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // A menu row's tip goes beside every open menu, on whichever side has room, level with the row. Never over the
-    // menu, and never on the diagonal between a row and its submenu.
-    const menus = shown.aside ? menuBox() : null;
-    if (menus) {
-      const gap = 10;
-      const left = menus.right + gap + b.width <= vw - 8 ? menus.right + gap : Math.max(8, menus.left - gap - b.width);
-      setPos({ left, top: Math.max(8, Math.min(vh - b.height - 8, r.top - 6)) });
-      return;
-    }
-    let top = r.bottom + 8;
-    if (top + b.height > vh - 8) top = Math.max(8, r.top - b.height - 8);
-    // Tools sit at the left edge: put the tip beside them rather than over the canvas edge.
-    let left = r.left + r.width / 2 - b.width / 2;
-    if (r.width < 60 && r.left < 70 && r.height < 60) {
-      left = r.right + 8;
-      top = Math.max(8, Math.min(vh - b.height - 8, r.top + r.height / 2 - b.height / 2));
-    }
-    left = Math.max(8, Math.min(vw - b.width - 8, left));
-    setPos({ left, top });
+    const p = placeTip(r, { width: b.width, height: b.height }, { width: window.innerWidth, height: window.innerHeight }, shown.aside ? menuBox() : null, !!shown.aside);
+    setPos({ left: p.left, top: p.top, side: p.side, arrow: p.arrow });
+  }, [shown]);
+
+  // The thing can move while its tip is up (a panel opens beside it, the window is resized). The tip follows, and the
+  // arrow slides with it.
+  useEffect(() => {
+    if (!shown) return;
+    let raf = 0;
+    const watch = () => {
+      const el = current.current;
+      if (el && document.contains(el)) {
+        const n = el.getBoundingClientRect();
+        const o = shown.rect;
+        if (Math.abs(n.left - o.left) > 0.5 || Math.abs(n.top - o.top) > 0.5 || Math.abs(n.width - o.width) > 0.5 || Math.abs(n.height - o.height) > 0.5) {
+          setShown((s) => (s ? { ...s, rect: n } : s));
+          return;
+        }
+      }
+      raf = requestAnimationFrame(watch);
+    };
+    raf = requestAnimationFrame(watch);
+    return () => cancelAnimationFrame(raf);
   }, [shown]);
 
   if (!shown) return null;
@@ -197,25 +264,35 @@ export function TooltipLayer() {
   return (
     <div
       ref={box}
-      className={`ui-tip${shown.aside ? ' is-aside' : ''}`}
+      className={`ui-tip${shown.aside ? ' is-aside' : ''}${shown.pinned ? ' is-pinned' : ''}`}
+      data-side={pos?.side}
       role="tooltip"
       style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden' }}
       onMouseEnter={() => (overTip.current = true)}
       onMouseLeave={() => {
         overTip.current = false;
-        setShown(null);
+        if (!pinnedBy.current) setShown(null);
       }}
     >
+      {pos && pos.arrow !== null && pos.side !== 'aside' && (
+        <span
+          className="ui-tip-arrow"
+          aria-hidden="true"
+          style={pos.side === 'above' || pos.side === 'below' ? { left: pos.arrow } : { top: pos.arrow }}
+        />
+      )}
       <div className="ui-tip-head">
         <strong>{tip.title}</strong>
         {tip.keys[0] && <Keys shortcut={tip.keys[0]} />}
       </div>
+      {tip.why && <div className="ui-tip-why">{tip.why}</div>}
       {tip.desc && <div className="ui-tip-desc">{tip.desc}</div>}
       {tip.help && !shown.aside && (
         <button
           type="button"
           className="ui-tip-more"
           onClick={() => {
+            pinnedBy.current = null;
             setShown(null);
             openHelp(tip.help);
           }}

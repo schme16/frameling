@@ -8,6 +8,8 @@
 import { DEFAULT_TILE_SIZE, newPixelDrawing, tileOrigin, tilemapGrid } from '../core/doc';
 import type { Doc, Id, PixelDrawing, Tile, TilemapDrawing, TilemapLayer, Tileset } from '../core/format';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, TILE_KEY_MASK } from '../core/format';
+import { propsOf, writeProps } from './props';
+import { fitShapes } from './shapes';
 
 export const MIN_TILE = 1;
 export const MAX_TILE = 256;
@@ -111,6 +113,8 @@ export function duplicateTile(doc: Doc, key: number): Tile | null {
     return { drawingId: d.id, duration: f.duration };
   });
   const tile: Tile = { key: ts.nextKey, name: uniqueTileName(ts, src.name.replace(/ copy( \d+)?$/, '') + ' copy'), frames };
+  // Shapes, values and terrain come along: a copy of a spike is still a spike.
+  writeProps(tile, propsOf(src));
   ts.nextKey++;
   ts.tiles.splice(tileIndex(ts, key) + 1, 0, tile);
   return tile;
@@ -201,6 +205,12 @@ export function setTileSize(doc: Doc, w: number, h: number): boolean {
   const H = clampTile(h);
   if (W === ts.tileWidth && H === ts.tileHeight) return false;
   for (const t of ts.tiles) {
+    // Shapes follow the new size: a whole-tile shape stays whole, the rest are pulled inside.
+    if (t.collision) {
+      const shapes = fitShapes(t.collision.shapes, { w: ts.tileWidth, h: ts.tileHeight }, { w: W, h: H });
+      if (shapes.length) t.collision = { ...t.collision, shapes };
+      else delete t.collision;
+    }
     for (const f of t.frames) {
       const d = doc.drawings[f.drawingId];
       if (!d || d.kind !== 'pixel') continue;

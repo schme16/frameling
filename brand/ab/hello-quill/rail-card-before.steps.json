@@ -1,0 +1,16 @@
+[
+  {"eval": "__frameling.showPanel('quill-pet')"},
+  {"wait": 900},
+  {"shot": "rail-quill"},
+  {"eval": "__frameling.showPanel('quill-things')"},
+  {"wait": 900},
+  {"shot": "rail-things"},
+  {"eval": "__frameling.showPanel('quests')"},
+  {"wait": 900},
+  {"shot": "rail-quests"},
+  {"eval": "__frameling.quests.start('first-animation')"},
+  {"wait": 1500},
+  {"drag": [[560, 280], [620, 250], [690, 270], [700, 330], [640, 360], [580, 340], [560, 285]], "steps": 8, "delay": 20},
+  {"wait": 500},
+  {"shot": "great-work-card"}
+]

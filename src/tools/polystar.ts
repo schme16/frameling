@@ -4,12 +4,14 @@
  * points, and how deep a star's dips go.
  */
 import type { PathShape, SubPath } from '../core/format';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
 import { clearSnap, snapPt } from '../canvas/guides';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
+import { inkWanted, noteInk } from '../popout/ink';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { viewSizeFactor } from './view-size';
@@ -69,7 +71,7 @@ export function makePolyStar(kind: 'polygon' | 'star', a: Pt, b: Pt, mod: { shif
     type: 'path',
     paths: [polyStarSubPath(kind, r, mod.shift, s)],
     fill: colors.fill,
-    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke * viewSizeFactor(), join: 'round', cap: 'round' } : null,
+    stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width: s.shapeStroke * viewSizeFactor(), join: 'round', cap: 'round' }, s) : null,
     opacity: 1,
   };
 }
@@ -80,6 +82,11 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
     if (!drag) return null;
     const s = makePolyStar(kind, drag.start, drag.cur, drag.cur, shapeColors());
     return s && withWellGradients(s);
+  };
+  // What a second window sees while the drag goes on: made when the link asks (once a screen frame at most), not on every move.
+  const ink = () => {
+    const s = build();
+    return s && withMirror(s);
   };
   // On a pixel layer it's painted as clean pixels (src/pixel/tools.ts).
   const pix = makePixelPathShape(label, (a, e) => makePolyStar(kind, a, e, e, shapeColors()));
@@ -112,7 +119,10 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
     },
     move(e, ctx) {
       if (pix.active()) return pix.move(e);
-      if (drag) drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      if (drag) {
+        drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+        if (inkWanted()) noteInk(ink);
+      }
     },
     up(e, ctx) {
       if (pix.active()) return pix.up(e, ctx);
@@ -128,10 +138,13 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
           if (shape.stroke) noteColorUsed(shape.stroke.color);
         } else if (r !== 'nothing') reportEdit(ctx, r);
       }
+      // After the edit, so the finished shape is already there when the live one goes.
+      noteInk(null);
       ctx.requestOverlay();
     },
     cancel(ctx) {
       drag = null;
+      noteInk(null);
       clearSnap();
       pix.cancel();
       ctx.requestOverlay();

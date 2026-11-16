@@ -8,6 +8,7 @@ import { bakedFolderDoc, layeredPlan, soloDoc } from './layered';
 import { psdRecords } from './psd-layers';
 import { writePdf } from './pdf';
 import { writePsd, type PsdLayer } from './psd';
+import { exportContextOptions } from './readback';
 
 /** A picture of some layers on their own, at `scale`. `plain` takes the layer's blend and opacity off (PSD keeps them itself). */
 export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean, reveal = false, inside?: string[]): RawImage {
@@ -29,7 +30,7 @@ function drawPicture(doc: Doc, frame: number, scale: number, crisp: boolean, inc
   const w = Math.max(1, Math.round(doc.width * scale));
   const h = Math.max(1, Math.round(doc.height * scale));
   const c = makeCanvas(w, h);
-  const g = c.getContext('2d', { willReadFrequently: true })!;
+  const g = c.getContext('2d', exportContextOptions)!;
   g.scale(scale, scale);
   if (crisp) g.imageSmoothingEnabled = false;
   renderFrame(g, doc, frame, { background: false, includeHidden, layerFilter });
@@ -49,7 +50,7 @@ export function psdFile(doc: Doc, frame: number, scale: number, background: Back
   const out: PsdLayer[] = [];
   if (background !== 'none') {
     const bg = makeCanvas(w, h);
-    const g = bg.getContext('2d', { willReadFrequently: true })!;
+    const g = bg.getContext('2d', exportContextOptions)!;
     g.fillStyle = background === 'doc' && doc.background ? doc.background : '#ffffff';
     g.fillRect(0, 0, w, h);
     out.push({ name: 'Background', image: readPixels(bg), opacity: 1, blend: 'normal' });

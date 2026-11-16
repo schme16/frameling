@@ -1,0 +1,371 @@
+{
+ "label": "lc-new-card",
+ "when": "2026-11-14T17:06:29.351Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 153.9,
+   "runs": [
+    160.1,
+    147.2,
+    153.9,
+    157.5,
+    153.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 12.83,
+   "topSelf": [
+    [
+     "(program) :0",
+     95.8
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     14.1
+    ],
+    [
+     "_le index-Doh7tA4P.js:140",
+     7.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     95.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     33.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     25.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     25.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     25.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     25.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 440.5,
+   "runs": [
+    513.5,
+    445.2,
+    440.5,
+    413.5,
+    407.7
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 5.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     298.8
+    ],
+    [
+     "drawImage :0",
+     79.1
+    ],
+    [
+     "getContext :0",
+     4.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     298.8
+    ],
+    [
+     "t index-Doh7tA4P.js:150",
+     94.1
+    ],
+    [
+     "warm index-Doh7tA4P.js:150",
+     93.8
+    ],
+    [
+     "build index-Doh7tA4P.js:150",
+     91.7
+    ],
+    [
+     "drawImage :0",
+     79.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     24.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 285.1,
+   "runs": [
+    263.1,
+    293.8,
+    288.5,
+    285.1,
+    280.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 47.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     178.6
+    ],
+    [
+     "(garbage collector) :0",
+     16
+    ],
+    [
+     "drawImage :0",
+     5.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     178.6
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     63.4
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     42.8
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     36.9
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     36.9
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     36.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 30.7,
+   "runs": [
+    29,
+    52.2,
+    30.7,
+    30.1,
+    31.6
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.1
+    ],
+    [
+     "(garbage collector) :0",
+     2.8
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     11.1
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     10.1
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     10.1
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     10.1
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     10.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 50.2,
+   "runs": [
+    55.8,
+    50.2,
+    49.9,
+    56.2,
+    50
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     31.8
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ],
+    [
+     "vC index-Doh7tA4P.js:140",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     31.8
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     14
+    ],
+    [
+     "ih index-Doh7tA4P.js:10",
+     10.6
+    ],
+    [
+     "rh index-Doh7tA4P.js:10",
+     10.5
+    ],
+    [
+     "Hf index-Doh7tA4P.js:9",
+     10.2
+    ],
+    [
+     "Cn index-Doh7tA4P.js:9",
+     10.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 100.7,
+   "runs": [
+    96.6,
+    107.8,
+    96.7,
+    104.1,
+    100.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 16.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     36.5
+    ],
+    [
+     "(garbage collector) :0",
+     19
+    ],
+    [
+     "qxe index-Doh7tA4P.js:149",
+     5.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     36.5
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     33.6
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     31.5
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     30.8
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     30.8
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     30.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

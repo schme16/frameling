@@ -31,6 +31,8 @@ function usedIds(): Set<string> {
       for (const q of m[1].replace(/[!=]==\s*'[^']*'/g, '').matchAll(/'([\w.]+)'/g)) ids.add(q[1]);
     }
   }
+  // The Great work card's words are looked up by quest and step (src/quests/did.ts), so the code never spells the ids out.
+  if (code.some((src) => src.includes('quests.did.'))) for (const id of lineIds()) if (id.startsWith('quests.did.')) ids.add(id);
   return ids;
 }
 

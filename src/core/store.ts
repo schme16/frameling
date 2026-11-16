@@ -6,11 +6,13 @@
  *
  * React components read with `useStore(selector)`.
  */
+import { registerDocSource } from './docSource';
 import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Draft, type Patch } from 'immer';
 import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
 import { existingSelection, followSelection, type FollowMemory } from './followSelection';
+import { applyKeepingQuiet } from './quiet';
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
@@ -72,6 +74,11 @@ export interface OnionSettings {
   keysOnly?: boolean;
   /** Also ghost the artboards either side of the open one, like frames (missing = no). */
   boards?: boolean;
+  /**
+   * Walk over the end of a clip into the next one (missing = no: ghosts stay inside the clip you are in). The answer to
+   * the "Onion skin and clips" choice (src/timeline/choices.ts), kept here so the canvas can read it without asking.
+   */
+  acrossClips?: boolean;
 }
 
 export interface UiState {
@@ -114,7 +121,19 @@ export interface State {
   ui: UiState;
 }
 
-interface HistoryEntry {
+/** How the document got from one value to the next, when it was by patches (an edit, Undo, Redo). For anything that mirrors it elsewhere (the second window). */
+export interface DocChange {
+  from: Doc;
+  to: Doc;
+  patches: Patch[];
+}
+
+type Recipe = (doc: Draft<Doc>) => void;
+
+/** What a step that is rerun weighs: two small functions and their ids, whatever the drawing holds. */
+export const RERUN_WEIGHT = 96;
+
+export interface HistoryEntry {
   /** Stays the same through undo and redo, so other parts can remember things about a step. */
   id: number;
   patches: Patch[];
@@ -122,11 +141,56 @@ interface HistoryEntry {
   label: string;
   coalesce?: string;
   at: number;
+  /**
+   * A view change (looking at another artboard): kept so earlier steps still fit the content that is open, but never
+   * shown, never dirtying the file, and never the thing Undo stops on. Undo takes it along with the step before it.
+   */
+  view?: boolean;
+  /**
+   * A look that is taken back and done again by running a recipe, not by patches (`patches` and `inverse` are empty).
+   * For a step whose patches would only be a copy of a whole artboard's content, going back and forth. The recipe runs on
+   * the document as it is when Undo or Redo reaches the step, so it never writes old content over newer.
+   */
+  rerun?: { undo: Recipe; redo: Recipe };
   /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
   weight: number;
+  /** What the view goes back to when this step is undone (the layer you were on before a stroke made a layer to draw on). */
+  undoUi?: Partial<UiState>;
+  /** And what it goes to when the step is done again. */
+  redoUi?: Partial<UiState>;
+}
+
+/** A step as a file hands it back: what it did, and how to take it back. Gets an id and a weight when it joins the history. */
+export interface RestoredStep {
+  label: string;
+  at: number;
+  patches: Patch[];
+  inverse: Patch[];
+  /** A look at another artboard (see `HistoryEntry.view`). */
+  view?: boolean;
+}
+
+/** The steps a file carried: `undo` oldest first, `redo` with the next step to redo first. */
+export interface RestoredHistory {
+  undo: RestoredStep[];
+  redo: RestoredStep[];
+}
+
+/** One step of the history as the History panel shows it. */
+export interface HistoryStep {
+  id: number;
+  label: string;
+  at: number;
 }
 
 type Listener = () => void;
+
+/** Where a group of changes started (see `Store.startGroup`). */
+export interface GroupMark {
+  fromId: number;
+  tag: string | null;
+  redo: HistoryEntry[];
+}
 
 /** A document edited inside the open one (a tile), with the open document and its history put aside meanwhile. */
 interface Nested {
@@ -181,9 +245,24 @@ export function weighValue(v: unknown, depth = 0): number {
   return n;
 }
 
-const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
+/**
+ * The document after taking a step back (`dir` 'undo') or doing it again ('redo'), with the patches that made the change.
+ * A step that is rerun runs its recipe on `doc` as it is now; any other applies its patches.
+ */
+export function runStep(doc: Doc, e: HistoryEntry, dir: 'undo' | 'redo'): { doc: Doc; patches: Patch[] } {
+  if (e.rerun) {
+    const [next, patches] = produceWithPatches(doc, dir === 'undo' ? e.rerun.undo : e.rerun.redo);
+    return { doc: next, patches };
+  }
+  const patches = dir === 'undo' ? e.inverse : e.patches;
+  return { doc: applyKeepingQuiet(doc, patches, dir === 'undo' ? e.patches : e.inverse), patches };
+}
+
+export const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
+/** How long a step waits for the change that is to join it (a layer made for a stroke waits for the stroke, which can wait on a question). */
+const JOIN_MS = 120_000;
 
 export function initialUi(doc: Doc): UiState {
   return {
@@ -216,10 +295,16 @@ export class Store {
   private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
   /** What the selection stands for while it follows across keys (see followSelection). */
   private follow: FollowMemory | null = null;
+  private change: DocChange | null = null;
+  /** The last change made by patches. It only counts when `from` is the document you hold and `to` is the one now showing; anything else was a whole new document. */
+  lastChange(): DocChange | null {
+    return this.change;
+  }
   /** How many times a whole document has been put in (new or opened), so the canvas can refit even when it is the same file again. */
   loads = 0;
 
-  constructor(doc: Doc = newDoc()) {
+  // A new window opens on a still picture: no timeline until animation is added (src/core/animation.ts).
+  constructor(doc: Doc = newDoc({ animated: false })) {
     this.state = { doc, ui: initialUi(doc) };
   }
 
@@ -248,7 +333,7 @@ export class Store {
    * Changes the document. `label` names the step in Undo/Redo ("Undo Draw stroke"). Changes with the same `coalesce`
    * key within a moment of each other merge into one undo step.
    */
-  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string } = {}): void {
+  update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string; view?: boolean; rerun?: { undo: Recipe; redo: Recipe } } = {}): void {
     let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
     const before = this.state.doc;
@@ -257,29 +342,158 @@ export class Store {
       if (why) return blockedHandler(why);
     }
     const own = patches;
+    let settled = false;
     for (const settle of settlers) {
       const fix = settle(next, { patches: own, before });
       if (!fix) continue;
       const [n2, p2, i2] = produceWithPatches(next, fix);
       if (!p2.length) continue;
       next = n2;
+      settled = true;
       patches = [...patches, ...p2];
       inverse = [...i2, ...inverse];
     }
     const now = Date.now();
     const last = this.undoStack[this.undoStack.length - 1];
-    if (opts.coalesce && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
+    // A change asked to join the step before it (a layer made for a stroke, then the stroke) is one undo step with it.
+    const joining = this.joinTo !== null && !opts.view && !!last && last.id === this.joinTo && now - this.joinAt < JOIN_MS;
+    this.joinTo = null;
+    if (joining) {
+      last.patches.push(...patches);
+      last.inverse.unshift(...inverse);
+      last.at = now;
+      last.label = label;
+      last.coalesce = opts.coalesce;
+      last.weight += weighPatches(patches) + weighPatches(inverse);
+    } else if (opts.coalesce && !opts.view && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
       last.patches.push(...patches);
       last.inverse.unshift(...inverse);
       last.at = now;
       last.weight += weighPatches(patches) + weighPatches(inverse);
+    } else if (opts.rerun && opts.view && !settled) {
+      // Only the recipes are kept, so a look at another artboard weighs next to nothing instead of a copy of its content.
+      this.undoStack.push({ id: nextEntryId++, patches: [], inverse: [], rerun: opts.rerun, label, at: now, weight: RERUN_WEIGHT, view: true });
     } else {
-      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse) });
+      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse), ...(opts.view ? { view: true } : {}) });
     }
     this.trimHistory();
     this.redoStack = [];
+    this.change = { from: before, to: next, patches };
+    this.viewChange = !!opts.view;
+    // Looking around leaves the file as clean as it was.
+    this.state = { doc: next, ui: { ...this.state.ui, dirty: opts.view ? this.state.ui.dirty : true } };
+    this.emit();
+  }
+
+  /**
+   * Changes the document without a step in the history: Undo and Redo stay exactly as they were, and the next Undo is still
+   * the person's own last action. For what somebody else puts into the drawing while you work (a live reviewer's notes, see
+   * src/core/quiet.ts: Undo never cuts those out). Does nothing, and returns false, while a tile or symbol is open for
+   * editing, since the change would land in that and not in the drawing. Returns true when something changed.
+   */
+  updateQuiet(recipe: (doc: Draft<Doc>) => void): boolean {
+    if (this.nested) return false;
+    const [next, patches] = produceWithPatches(this.state.doc, recipe);
+    if (!patches.length) return false;
+    this.change = { from: this.state.doc, to: next, patches };
+    this.viewChange = false;
     this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
     this.emit();
+    return true;
+  }
+
+  private joinTo: number | null = null;
+  private joinAt = 0;
+
+  /**
+   * The next change joins the step just made, so the two are one Undo. For a stroke that had to make a layer first.
+   * `undoUi` is what the view goes back to when that step is undone.
+   */
+  joinNext(undoUi?: Partial<UiState>, redoUi?: Partial<UiState>): void {
+    const last = this.undoStack[this.undoStack.length - 1];
+    this.joinTo = last && !last.view ? last.id : null;
+    this.joinAt = Date.now();
+    if (last && undoUi) last.undoUi = undoUi;
+    if (last && redoUi) last.redoUi = redoUi;
+  }
+
+  /**
+   * Stops waiting for a change to join. If none came (the press drew nothing), the step that was waiting is taken back
+   * quietly, as if it never happened (no Redo). Returns true when it did that.
+   */
+  endJoin(): boolean {
+    const id = this.joinTo;
+    this.joinTo = null;
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (id === null || !last || last.id !== id) return false;
+    this.undoStack.pop();
+    this.afterHistory(applyPatches(this.state.doc, last.inverse), last.inverse);
+    if (last.undoUi) this.setUi(last.undoUi);
+    return true;
+  }
+
+  /**
+   * Starts a group: everything that changes the drawing from now until `endGroup` or `abortGroup` becomes one Undo step,
+   * or none at all. For a script run, which may press fifty commands and edit forty shapes.
+   */
+  startGroup(): GroupMark {
+    // Nothing the group does may merge into the step before it (a nudge a moment ago), or it could not be folded or taken back whole.
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (last) last.coalesce = undefined;
+    this.joinTo = null;
+    return { fromId: nextEntryId, tag: this.nested?.tag ?? null, redo: [...this.redoStack] };
+  }
+
+  /** The steps made since the mark, when they are all plain steps of the open drawing (looks at artboards and nested edits are not folded). */
+  private groupSteps(mark: GroupMark): HistoryEntry[] {
+    if ((this.nested?.tag ?? null) !== mark.tag) return [];
+    let at = this.undoStack.length;
+    while (at > 0 && this.undoStack[at - 1].id >= mark.fromId) at--;
+    return this.undoStack.slice(at);
+  }
+
+  /** Ends the group by folding its steps into one, named `label`. Returns how many steps it folded (0 when nothing changed). */
+  endGroup(mark: GroupMark, label: string): number {
+    const steps = this.groupSteps(mark);
+    if (!steps.length) return 0;
+    if (steps.some((e) => e.view || e.rerun)) return steps.length;
+    const first = steps[0];
+    if (steps.length > 1) {
+      const rest = steps.slice(1);
+      for (const e of rest) {
+        first.patches.push(...e.patches);
+        first.inverse.unshift(...e.inverse);
+        first.weight += e.weight;
+      }
+      this.undoStack.splice(this.undoStack.indexOf(first) + 1, rest.length);
+    }
+    first.label = label;
+    first.coalesce = undefined;
+    first.at = Date.now();
+    return steps.length;
+  }
+
+  /** Ends the group by taking everything it did back, as if it never happened: no Redo is left behind, and Redo is as it was. Returns how many steps it took back. */
+  abortGroup(mark: GroupMark): number {
+    const steps = this.groupSteps(mark);
+    if (!steps.length) return 0;
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    for (const e of [...steps].reverse()) {
+      this.undoStack.pop();
+      const r = runStep(doc, e, 'undo');
+      doc = r.doc;
+      patches.push(...r.patches);
+    }
+    this.redoStack = mark.redo;
+    this.afterHistory(doc, patches);
+    return steps.length;
+  }
+
+  private viewChange = false;
+  /** True when the newest change was only a look at another artboard (nothing was edited). */
+  lastChangeWasView(): boolean {
+    return this.viewChange;
   }
 
   /** Changes UI state (no undo). */
@@ -300,13 +514,19 @@ export class Store {
   }
 
   canUndo(): boolean {
-    return this.undoStack.length > 0;
+    return this.undoStack.some((e) => !e.view);
   }
   canRedo(): boolean {
-    return this.redoStack.length > 0;
+    return this.redoStack.some((e) => !e.view);
   }
   undoLabel(): string | null {
-    return this.undoStack[this.undoStack.length - 1]?.label ?? null;
+    return this.lastReal(this.undoStack)?.label ?? null;
+  }
+
+  /** The newest step that is an edit, not a look at another artboard. */
+  private lastReal(stack: HistoryEntry[]): HistoryEntry | undefined {
+    for (let i = stack.length - 1; i >= 0; i--) if (!stack[i].view) return stack[i];
+    return undefined;
   }
 
   /** Drops the oldest steps until the history is within the number you asked for, and within its memory budget. */
@@ -321,31 +541,106 @@ export class Store {
     return this.undoStack.reduce((n, e) => n + e.weight, 0);
   }
   redoLabel(): string | null {
-    return this.redoStack[this.redoStack.length - 1]?.label ?? null;
+    return this.lastReal(this.redoStack)?.label ?? null;
   }
 
   /** Ids of the steps Undo and Redo would take next (they keep their id as they move between the two). */
   historyIds(): { undo: number | null; redo: number | null } {
-    return { undo: this.undoStack[this.undoStack.length - 1]?.id ?? null, redo: this.redoStack[this.redoStack.length - 1]?.id ?? null };
+    return { undo: this.lastReal(this.undoStack)?.id ?? null, redo: this.lastReal(this.redoStack)?.id ?? null };
+  }
+
+  /** The steps you can see: done ones oldest first, then undone ones in the order Redo would put them back. */
+  historyList(): { done: HistoryStep[]; undone: HistoryStep[] } {
+    const view = (e: HistoryEntry): HistoryStep => ({ id: e.id, label: e.label, at: e.at });
+    return { done: this.undoStack.filter((e) => !e.view).map(view), undone: [...this.redoStack].reverse().filter((e) => !e.view).map(view) };
+  }
+
+  /**
+   * Goes to how the drawing stood just after the step `id` (or to before the first step, with `null`), by undoing or
+   * redoing as many steps as it takes, in one go. The steps you came back past stay for Redo until you change something.
+   * Returns false when there is no such step.
+   */
+  jumpToStep(id: number | null): boolean {
+    const doneAt = id === null ? -1 : this.undoStack.findIndex((e) => e.id === id);
+    let doc = this.state.doc;
+    if (doneAt >= 0 || id === null) {
+      if (this.undoStack.length - 1 === doneAt) return true;
+      while (this.undoStack.length - 1 > doneAt) {
+        const e = this.undoStack.pop()!;
+        this.redoStack.push(e);
+        doc = runStep(doc, e, 'undo').doc;
+      }
+    } else {
+      if (!this.redoStack.some((e) => e.id === id)) return false;
+      for (;;) {
+        const e = this.redoStack.pop()!;
+        this.undoStack.push({ ...e, coalesce: undefined });
+        doc = runStep(doc, e, 'redo').doc;
+        if (e.id === id) break;
+      }
+    }
+    this.afterHistory(doc);
+    return true;
+  }
+
+  /** The drawing as it stood just after the step `id` (or before the first one, with `null`), without changing anything. */
+  docAtStep(id: number | null): Doc | null {
+    let doc = this.state.doc;
+    const doneAt = id === null ? -1 : this.undoStack.findIndex((e) => e.id === id);
+    if (doneAt >= 0 || id === null) {
+      for (let i = this.undoStack.length - 1; i > doneAt; i--) doc = runStep(doc, this.undoStack[i], 'undo').doc;
+      return doc;
+    }
+    const at = this.redoStack.findIndex((e) => e.id === id);
+    if (at < 0) return null;
+    for (let i = this.redoStack.length - 1; i >= at; i--) doc = runStep(doc, this.redoStack[i], 'redo').doc;
+    return doc;
   }
 
   undo(): void {
-    const e = this.undoStack.pop();
-    if (!e) return;
-    this.redoStack.push(e);
-    this.afterHistory(applyPatches(this.state.doc, e.inverse));
+    if (!this.canUndo()) return;
+    // Looks at other artboards on top go back first (they are part of getting back to the step's own artboard).
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    let undoUi: Partial<UiState> | undefined;
+    this.joinTo = null;
+    for (;;) {
+      const e = this.undoStack.pop()!;
+      this.redoStack.push(e);
+      const r = runStep(doc, e, 'undo');
+      doc = r.doc;
+      patches.push(...r.patches);
+      if (e.undoUi) undoUi = e.undoUi;
+      if (!e.view) break;
+    }
+    this.afterHistory(doc, patches);
+    if (undoUi) this.setUi(undoUi);
   }
 
   redo(): void {
-    const e = this.redoStack.pop();
-    if (!e) return;
-    this.undoStack.push({ ...e, coalesce: undefined });
-    this.afterHistory(applyPatches(this.state.doc, e.patches));
+    if (!this.canRedo()) return;
+    // Looks that come before the step go first, so it lands on the artboard it was made on.
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    let redoUi: Partial<UiState> | undefined;
+    for (;;) {
+      const e = this.redoStack.pop()!;
+      this.undoStack.push({ ...e, coalesce: undefined });
+      const r = runStep(doc, e, 'redo');
+      doc = r.doc;
+      patches.push(...r.patches);
+      if (e.redoUi) redoUi = e.redoUi;
+      if (!e.view) break;
+    }
+    this.afterHistory(doc, patches);
+    if (redoUi) this.setUi(redoUi);
   }
 
   /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */
-  private afterHistory(doc: Doc): void {
+  private afterHistory(doc: Doc, patches?: Patch[]): void {
     const ui = this.state.ui;
+    this.viewChange = false;
+    if (patches) this.change = { from: this.state.doc, to: doc, patches };
     const keep = existingSelection(doc, ui.activeLayerId, ui.frame, ui.selection);
     this.state = { doc, ui: { ...ui, dirty: true, selection: keep.length === ui.selection.length ? ui.selection : keep } };
     this.emit();
@@ -405,13 +700,31 @@ export class Store {
     return out;
   }
 
-  /** Replaces the whole document (new or opened file). Clears history. */
-  load(doc: Doc, filePath: string | null = null): void {
+  /**
+   * The undo and redo steps with the document they belong to, for saving them in the file. Null when there is nothing
+   * to save, or while a tile is open for editing (the steps then belong to the tile, not to the file's drawing).
+   */
+  historyForSave(): { doc: Doc; undo: HistoryEntry[]; redo: HistoryEntry[] } | null {
+    if (this.nested || (!this.undoStack.length && !this.redoStack.length)) return null;
+    // The newest step can still grow (a stroke joins it), so it is copied; the rest never change once they are not the newest.
+    const top = this.undoStack.length - 1;
+    const undo = this.undoStack.map((e, i) => (i === top ? { ...e, patches: [...e.patches], inverse: [...e.inverse] } : e));
+    return { doc: this.state.doc, undo, redo: [...this.redoStack] };
+  }
+
+  /**
+   * Replaces the whole document (new or opened file). Clears history, unless the file carried its own: then Undo and
+   * Redo pick up where the last session left off (`history` as `readHistory` in src/core/historyFile.ts gives it).
+   */
+  load(doc: Doc, filePath: string | null = null, history?: RestoredHistory): void {
     this.nested = null;
     this.merged = null;
     this.follow = null;
-    this.undoStack = [];
-    this.redoStack = [];
+    const entry = (s: RestoredStep): HistoryEntry => ({ id: nextEntryId++, patches: s.patches, inverse: s.inverse, label: s.label, at: s.at, weight: weighPatches(s.patches) + weighPatches(s.inverse), ...(s.view ? { view: true } : {}) });
+    this.undoStack = history ? history.undo.map(entry) : [];
+    // The stack's top is the next step to redo, so the file's list (next first) goes in reversed.
+    this.redoStack = history ? history.redo.map(entry).reverse().slice(-historySteps) : [];
+    this.trimHistory();
     this.loads++;
     const u = this.state.ui;
     this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool, loopPlayback: u.loopPlayback, pingPong: u.pingPong, onion: u.onion } };
@@ -434,6 +747,7 @@ export class Store {
 }
 
 let current = new Store();
+registerDocSource(() => current.get().doc);
 
 /** The app's store. */
 export function store(): Store {

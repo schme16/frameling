@@ -1,5 +1,6 @@
 // Tile state that isn't part of the document: the tile being painted with, how it is turned, and tile mode.
 import { useSyncExternalStore } from 'react';
+import { onFreshDrawing } from '../core/fresh';
 
 export interface TileUi {
   /** The tile the tile tools paint with (a tile key), or 0 for none picked yet. */
@@ -10,9 +11,17 @@ export interface TileUi {
   tileMode: boolean;
   /** The Tileset panel's size and grid form is open. */
   sizeForm: boolean;
+  /** The Tileset panel's "add a custom value" form is open. */
+  valueForm: boolean;
+  /** The terrain the edge buttons in the panel paint with (a terrain id), or 0 for the first one. */
+  terrain: number;
+  /** What the Collision tool draws next: a box or a many-sided shape. */
+  shapeMode: 'box' | 'polygon';
+  /** Show every tile's collision shapes over the tile map while painting. */
+  showShapes: boolean;
 }
 
-let state: TileUi = { brush: 0, flags: 0, tileMode: false, sizeForm: false };
+let state: TileUi = { brush: 0, flags: 0, tileMode: false, sizeForm: false, valueForm: false, terrain: 0, shapeMode: 'box', showShapes: false };
 const listeners = new Set<() => void>();
 
 export function getTileUi(): TileUi {
@@ -21,7 +30,7 @@ export function getTileUi(): TileUi {
 
 export function setTileUi(patch: Partial<TileUi>): void {
   const next = { ...state, ...patch };
-  if (next.brush === state.brush && next.flags === state.flags && next.tileMode === state.tileMode && next.sizeForm === state.sizeForm) return;
+  if ((Object.keys(next) as (keyof TileUi)[]).every((k) => next[k] === state[k])) return;
   state = next;
   for (const fn of listeners) fn();
 }
@@ -49,3 +58,6 @@ export function wrap(n: number, size: number): number {
 export function gridHandleOn(alt: boolean, formOpen: boolean): boolean {
   return alt || formOpen;
 }
+
+// A tile key means something only in its own drawing's tileset. Tile mode is a choice, so it stays.
+onFreshDrawing(() => setTileUi({ brush: 0, flags: 0, sizeForm: false, valueForm: false, terrain: 0 }));

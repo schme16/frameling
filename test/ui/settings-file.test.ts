@@ -1,6 +1,6 @@
 // Backing up everything you have set, and putting it back.
 import { beforeEach, describe, expect, it } from 'vitest';
-import { applySettings, collectSettings, readSettings, settingsFileName, SETTINGS_FORMAT } from '../../src/ui/settingsFile';
+import { applySettings, backedUpMessage, backupDay, collectSettings, readSettings, restoreChanges, restoredMessage, restoreQuestion, settingsFileName, SETTINGS_FORMAT } from '../../src/ui/settingsFile';
 
 /** A storage of our own, so the test never touches the real one. */
 function fakeStorage(start: Record<string, string> = {}): Storage {
@@ -59,5 +59,34 @@ describe('putting a backup back', () => {
     // The pen settings were not in the backup, so they are gone rather than left behind from before.
     expect(store.getItem('frameling.pen.v1')).toBeNull();
     expect(store.getItem('someone.else')).toBe('not mine');
+  });
+});
+
+describe('the words around Backup and Restore', () => {
+  const backup = { ...SETTINGS_FORMAT, savedAt: '2026-11-12T23:30:00Z', items: { 'frameling.prefs.v1': '{"theme":"light"}', 'frameling.dock.v1': '{}' } };
+
+  it('counts what a restore would change, add and take away', () => {
+    expect(restoreChanges(collectSettings(store), backup)).toEqual({ added: 1, changed: 1, removed: 1 });
+    expect(restoreChanges(backup, backup)).toEqual({ added: 0, changed: 0, removed: 0 });
+  });
+
+  it('asks first, naming the backup and what it replaces, with the same two words as the buttons', () => {
+    const q = restoreQuestion(backup, 2);
+    expect(q).toContain('12 Nov 2026');
+    expect(q).toContain('replaces everything you have set now');
+    expect(q).toContain('2 settings');
+    expect(q).not.toMatch(/back up|put a backup|—/i);
+  });
+
+  it('says what changed afterwards', () => {
+    expect(restoredMessage(backup, { added: 1, changed: 1, removed: 1 })).toBe('Restored the backup from 12 Nov 2026 (1 changed, 1 added, 1 gone). Frameling is starting again.');
+    expect(restoredMessage(backup, { added: 0, changed: 0, removed: 0 })).toContain('nothing was different');
+  });
+
+  it('says a backup was saved, and copes with a file that has no readable day', () => {
+    expect(backedUpMessage(1)).toBe('Backup saved: 1 setting.');
+    expect(backedUpMessage(5)).toBe('Backup saved: 5 settings.');
+    expect(backupDay('nonsense')).toBe('an earlier day');
+    expect(backupDay(undefined)).toBe('an earlier day');
   });
 });

@@ -106,7 +106,7 @@ export function SizeRow({ label, size, onSize }: { label: string; size: { w: num
 }
 
 function Chooser({ close }: { close: () => void }) {
-  const quill = useQuillShown();
+  const quill = useQuillShown('dialog', { surfaceId: 'chooser' });
   // An animation starts picked, the one Quill recommends, so Enter always makes a sprite. Until you pick a card
   // yourself Quill says it was picked for you.
   const [way, setWay] = useState<SpriteWay>(DEFAULT_WAY);
@@ -119,7 +119,7 @@ function Chooser({ close }: { close: () => void }) {
   return (
     <Modal title="New pixel art" onClose={close} wide className="px-chooser">
       <div className="px-chooser-head">
-        {quill && <Quill anim={[{ anim: 'wave', hold: 1600 }, { anim: 'idle' }]} size={96} />}
+        {quill && <Quill surface="dialog" surfaceId="chooser" anim={[{ anim: 'wave', hold: 1600 }, { anim: 'idle' }]} size={96} />}
         <div>
           <h2>{line('pixel.chooser.title')}</h2>
           <p>{line('pixel.chooser.lead')}</p>
@@ -135,7 +135,7 @@ function Chooser({ close }: { close: () => void }) {
           }}
         />
         <SizeRow label={ASK[way]} size={size} onSize={setSize} />
-        <QuillSays side="left" anim={chose ? 'cheer' : 'think'} size={56} className="px-chooser-says" whenHidden={chose ? null : <span>{line('pixel.chooser.unsure')}</span>}>
+        <QuillSays surface="dialog" surfaceId="says" side="left" anim={chose ? 'cheer' : 'think'} size={56} className="px-chooser-says" whenHidden={chose ? null : <span>{line('pixel.chooser.unsure')}</span>}>
           <span aria-live="polite">{chose ? pickedLine(way) : line('pixel.chooser.unsure')}</span>
         </QuillSays>
       </div>

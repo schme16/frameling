@@ -8,8 +8,10 @@ import '../../src/timeline';
 import { CLIP_DIRECTIONS, DIRECTION_WORDS } from '../../src/core/clipPlay';
 import { ClipPanel } from '../../src/timeline/ClipPanel';
 import { DIRECTION_HELP } from '../../src/timeline/ClipPlay';
-import { setTl } from '../../src/timeline/state';
+import { setTl, tl } from '../../src/timeline/state';
 import { sectionsNow } from '../../src/ui/panelInfo';
+import { registerPanel, unregisterPanel } from '../../src/core/registry';
+import { dock, isVisible, resetDock } from '../../src/ui/dock';
 import { docWith } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -34,12 +36,34 @@ const withClip = () => {
 };
 
 describe('the Clip section of Properties', () => {
-  it('shows while a clip is picked, first in the list, and waits under Also here otherwise', () => {
+  it('shows while a clip is picked, first in the list, and is left out otherwise', () => {
     const s = withClip();
     const all = ['tool-options', 'clip-play', 'colors'];
-    expect(sectionsNow(all, s.get(), null)).toEqual({ shown: ['tool-options', 'colors'], idle: ['clip-play'] });
+    expect(sectionsNow(all, s.get(), null)).toEqual({ shown: ['colors', 'tool-options'], idle: ['clip-play'] });
     act(() => setTl({ clipId: 'k1' }));
-    expect(sectionsNow(all, s.get(), null).shown).toEqual(['clip-play', 'tool-options', 'colors']);
+    expect(sectionsNow(all, s.get(), null).shown).toEqual(['clip-play', 'colors', 'tool-options']);
+  });
+
+  it('leads only until you pick something after it: a canvas press, another layer or another tool', () => {
+    const s = withClip();
+    const all = ['tool-options', 'clip-play', 'colors'];
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    // A press on the canvas gives the lead back, and the clip stays picked.
+    act(() => setTl({ clipLead: null }));
+    expect(sectionsNow(all, s.get(), null).shown).toEqual(['colors', 'tool-options', 'clip-play']);
+    expect(tl().clipId).toBe('k1');
+    // Picking the clip again takes the lead back.
+    act(() => setTl({ clipId: null }));
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    // Another tool, or another layer, does the same.
+    act(() => s.setUi({ tool: 'text' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('colors');
+    act(() => setTl({ clipId: 'k1' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
+    act(() => s.setUi({ activeLayerId: 'other' }));
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('colors');
   });
 
   it('says how to pick a clip when none is picked', () => {
@@ -75,3 +99,30 @@ describe('plain words for the directions', () => {
     expect(DIRECTION_HELP['pingpong-reverse']).toBe('Back and forth, backward first');
   });
 });
+
+describe('a way to Clip flow, which starts put away', () => {
+  const flow = () => registerPanel({ id: 'clip-flow', title: 'Clip flow', icon: 'flow', component: () => null, zone: 'right', startsAway: true });
+  const button = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Open Clip flow');
+  it('is in the Clip section with a clip picked, and opens the panel from away', () => {
+    flow();
+    resetDock();
+    withClip();
+    act(() => setTl({ clipId: 'k1' }));
+    act(() => root.render(<ClipPanel />));
+    expect(isVisible('clip-flow')).toBe(false);
+    act(() => button()!.click());
+    expect(isVisible('clip-flow')).toBe(true);
+    expect(dock.get().layout.hidden).not.toContain('clip-flow');
+    unregisterPanel('clip-flow');
+  });
+  it('is there with no clip picked too, and absent when the Clip flow feature is off', () => {
+    withClip();
+    act(() => root.render(<ClipPanel />));
+    expect(button()).toBeUndefined();
+    flow();
+    act(() => root.render(<ClipPanel />));
+    expect(button()).toBeTruthy();
+    unregisterPanel('clip-flow');
+  });
+});
+

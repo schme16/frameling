@@ -11,6 +11,22 @@ registerHelpTopics([
     keywords: ['effect', 'fx', 'glow', 'shadow', 'drop shadow', 'blur', 'outline', 'stroke', 'pixelate', 'mosaic', 'hue', 'saturation', 'brightness', 'contrast', 'colour adjust', 'animate effect'],
   },
   {
+    id: 'shape-effects',
+    title: 'Effects on one shape: soft shadows and glows',
+    section: 'Effects',
+    media: 'shape-effects.png',
+    summary: 'Soften, glow or shadow just the shapes you picked, like a soft shadow under a character or a glow round a title, without a layer of their own.',
+    keywords: ['shape effect', 'feather', 'soft edge', 'soft shadow', 'glow round', 'one shape', 'picked shape', 'blur one shape', 'gaussian blur', 'illustrator effect', 'drop shadow', 'glow'],
+  },
+  {
+    id: 'effects-finishing',
+    title: 'Finishing touches: grain, wave, fringe, dark corners, motion blur',
+    section: 'Effects',
+    media: 'finishing-effects.png',
+    summary: 'Film grain, a heat shimmer or ripple, a glitchy colour split, dark corners and a smear for a fast move. Add them from the Effects panel.',
+    keywords: ['grain', 'film grain', 'noise', 'wave', 'ripple', 'heat', 'shimmer', 'water', 'fringe', 'colour fringe', 'chromatic aberration', 'rgb split', 'glitch', 'vignette', 'dark corners', 'motion blur', 'speed', 'smear', 'streak', 'finishing', 'filter'],
+  },
+  {
     id: 'blend-modes',
     title: 'Blend modes: how a layer mixes',
     section: 'Effects',
@@ -23,7 +39,7 @@ registerHelpTopics([
     title: 'Masks and clipping',
     section: 'Effects',
     media: 'masks.png',
-    summary: 'Show a layer only inside the one below it (clip), or use a drawing to show or hide the layers under it (mask).',
+    summary: 'Paint where a layer shows with a mask, in one press, and switch it off without losing it. Or clip a layer to the one below it.',
     keywords: ['mask', 'clipping mask', 'clip', 'clip to below', 'reveal', 'stencil', 'cut out', 'inside the lines', 'layer mask'],
   },
   {

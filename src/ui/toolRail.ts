@@ -1,14 +1,23 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
-import { allTools, getTool } from '../core/registry';
-import { defaultRailWidthOf, dock, flushDock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
-import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
+import { allTools, getCommand, getTool } from '../core/registry';
+import type { LayerKind } from '../core/format';
+import { store } from '../core/store';
+import { pickTool } from '../tools/pick';
+import { defaultRailWidthOf, dock, flushDock, setLock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
+import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, widthDiffersFromStyle, type RailSizes, type RailStyle } from './toolRailWidth';
+import { registerChoice, withChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
+import { fitRailSaved, fitToolSize, isCompact } from './screenFit';
 import { toast } from './toast';
-import { run } from './dockDrag';
-import { askRename, type DockMenuItem } from './dockMenus';
+import { refuseDrag, run } from './dockDrag';
+import { askRename, whenLocked, type DockMenuItem } from './dockMenus';
+import { openHelp } from './overlays';
+import { goToLayerKind, layerWord, topLayerOf } from './drawingMode';
 import { createStore } from './mini';
-import { canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
+import { railLocked, refuseIfLocked, teachLock } from './lockState';
+import { waitingWords, whyOff, type WaitingTool, canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -20,6 +29,7 @@ export const isCustomArrangement = (): boolean => !!dock.get().rails?.[dock.get(
 
 /** Saves what a pure move made of the arrangement. Nothing happens when it hands the same one back. */
 export function arrange(fn: (g: ToolGroup[]) => ToolGroup[]): boolean {
+  if (refuseIfLocked('tools', 'arrange')) return false;
   const now = currentGroups();
   const next = fn(now);
   if (next === now) return false;
@@ -86,14 +96,14 @@ export function groupMenu(groupId: string, at?: { x: number; y: number }, visibl
   if (!g) return [];
   const folded = !!g.fold;
   const above = groupAbove(groupId, visible);
-  return [
+  return whenLocked('tools', [
     { heading: groupName(g, groups) },
     { label: 'Rename group...', onClick: () => askGroupRename(groupId, at) },
     ...(hasOwnName(g, groups) ? [{ label: 'Use the usual name again', onClick: () => renameToolGroup(groupId, '') } satisfies DockMenuItem] : []),
     { separator: true },
     { label: folded ? 'Show every tool in this group' : 'Fold this group into one button', disabled: getPrefs().toolRail === 'stacked', onClick: () => foldToolGroup(groupId, !folded) },
     { label: 'Join the group above', disabled: !above, onClick: () => joinToolGroupAbove(groupId, visible) },
-  ];
+  ]);
 }
 
 /** The menu for one tool: where to move it, putting it away, dividing and folding its group. */
@@ -111,14 +121,24 @@ export function toolMenu(id: string, visible: (id: string) => boolean): DockMenu
   }
   items.push({ label: 'Hide this tool', onClick: () => putToolAway(id) });
   if (here) items.push({ separator: true }, { label: `Rename ${groupName(here, groups)}...`, onClick: () => askGroupRename(here.id) });
-  return items;
+  return whenLocked('tools', items);
 }
 
 // ---------------------------------------------------------------- the builder: change the tools
 
 /** True while the rail is being changed (the Change the tools panel is open). */
 export const toolbarEditing = createStore(false);
-export const setToolbarEditing = (on = !toolbarEditing.get()): void => toolbarEditing.set(on);
+export const setToolbarEditing = (on = !toolbarEditing.get()): void => {
+  if (on && refuseIfLocked('tools', 'edit')) return;
+  toolbarEditing.set(on);
+};
+// Locking while the tools are being changed (or moving to a locked workspace) puts the rail away from editing.
+dock.subscribe(() => {
+  if (toolbarEditing.get() && railLocked()) toolbarEditing.set(false);
+});
+
+/** Locks or unlocks the tool rail. */
+export const setRailLock = (on: boolean): void => setLock('tools', on);
 
 /** The group above one on the rail as it shows now (the groups with nothing showing do not count), or undefined. */
 export function groupAbove(groupId: string, visible: (id: string) => boolean = () => true): ToolGroup | undefined {
@@ -162,13 +182,13 @@ export const toolbarIsChanged = (): boolean => {
 // ---------------------------------------------------------------- the rail's width
 
 /** The pixel sizes of the rail's buttons now (button size and look). */
-export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, getPrefs().toolSize);
+export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, fitToolSize(getPrefs().toolSize, isCompact()));
 
 /** True when the person has pulled this workspace's rail to a width of their own. */
 export const isCustomWidth = (): boolean => dock.get().railWidths?.[dock.get().workspaceId] !== undefined;
 
 /** How wide the rail is now, in pixels: the one saved for this workspace, or its natural width. */
-export const toolRailWidth = (): number => railWidthNow(railWidthOf(dock.get()), railSizesNow(), getPrefs().toolRail);
+export const toolRailWidth = (): number => railWidthNow(fitRailSaved(railWidthOf(dock.get()), railSizesNow(), isCompact()), railSizesNow(), getPrefs().toolRail, getPrefs().toolNames);
 
 /** How many buttons fit across a group at the rail's width now. */
 export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizesNow(), getPrefs().toolRail);
@@ -179,21 +199,63 @@ export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizes
  * `persist` false while the edge is being dragged; call flushDock() at the end.
  */
 export function setToolRailWidth(px: number, persist = true): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const style = getPrefs().toolRail;
   const d = dock.get();
-  const chosen = chosenRailWidth(px, s, style);
-  setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style) : undefined), persist);
+  const names = getPrefs().toolNames;
+  const chosen = chosenRailWidth(px, s, style, names);
+  setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style, names) : undefined), persist);
+}
+
+// ---------------------------------------------------------------- changing the rail's style
+
+/** A rail you pulled to a width of your own, then changed to a style that would start at another width: keep yours, or take the style's? */
+export const STYLE_WIDTH_CHOICE = 'toolRail.widthOnStyle';
+
+registerChoice<'keep' | 'natural'>({
+  id: STYLE_WIDTH_CHOICE,
+  title: choiceWord('choice.toolRail.widthOnStyle.title'),
+  question: choiceWord('choice.toolRail.widthOnStyle.question'),
+  category: 'Tools',
+  help: 'tool-strip',
+  default: 'keep',
+  options: [
+    { value: 'keep', label: choiceWord('choice.toolRail.widthOnStyle.keep.label'), detail: choiceWord('choice.toolRail.widthOnStyle.keep.detail'), did: choiceWord('choice.toolRail.widthOnStyle.keep.did') },
+    { value: 'natural', label: choiceWord('choice.toolRail.widthOnStyle.natural.label'), detail: choiceWord('choice.toolRail.widthOnStyle.natural.detail'), did: choiceWord('choice.toolRail.widthOnStyle.natural.did') },
+  ],
+});
+
+/**
+ * Changes the rail's style (two wide, or one button per group). A rail that has never been pulled follows the style on
+ * its own. One that has a width of its own is asked about, once: keep that width, or start at the style's own.
+ */
+export function setToolRailStyle(style: RailStyle): void {
+  if (getPrefs().toolRail === style) return;
+  const id = dock.get().workspaceId;
+  const mine = dock.get().railWidths?.[id];
+  setPrefs({ toolRail: style });
+  const s = railSizesNow();
+  const names = getPrefs().toolNames;
+  if (railLocked() || !widthDiffersFromStyle(railWidthOf(dock.get()), s, style, names)) return;
+  withChoice<'keep' | 'natural'>(
+    STYLE_WIDTH_CHOICE,
+    (v) => {
+      if (v === 'natural') setToolRailWidth(naturalRailWidth(s, style, names));
+    },
+    { gently: { undo: () => setRailWidth(mine) } },
+  );
 }
 
 /** The width back to this workspace's own default (what it was saved with, or the natural width). */
-export const resetToolRailWidth = (): void => setRailWidth(undefined);
+export const resetToolRailWidth = (): void => void (!refuseIfLocked('tools', 'size') && setRailWidth(undefined));
 
 /** Ends a drag of the rail's edge: what was set on the way is saved. */
 export const endToolRailPull = (): void => flushDock();
 
 /** One more button across (1) or one fewer (-1). Says so when it is as wide or as narrow as it goes. */
 export function stepToolRail(dir: 1 | -1): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const before = toolRailWidth();
   setToolRailWidth(before + dir * columnStep(s));
@@ -206,10 +268,16 @@ export function wantedNamesWidth(nav: HTMLElement | null = document.querySelecto
   let wanted = 0;
   for (const head of nav.querySelectorAll<HTMLElement>('.ui-tool-head')) {
     const label = head.querySelector<HTMLElement>('.ui-tool-head-name') ?? head;
+    // The name on one line, whatever it takes on screen now (a name that has dropped to two lines still asks for its whole width).
+    const before = label.style.cssText;
+    label.style.whiteSpace = 'nowrap';
+    label.style.display = 'block';
+    label.style.setProperty('-webkit-line-clamp', 'none');
     const range = document.createRange();
     range.selectNodeContents(label);
     const cs = getComputedStyle(label);
     const text = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    label.style.cssText = before;
     // Whatever else shares the row (the fold arrow while the tools are being changed).
     wanted = Math.max(wanted, text + (head.offsetWidth - label.offsetWidth));
   }
@@ -221,12 +289,16 @@ export function wantedNamesWidth(nav: HTMLElement | null = document.querySelecto
  * natural width, so one gesture (double-click on the edge) is both ways.
  */
 export function fitToolRailNames(): void {
+  if (refuseIfLocked('tools', 'size')) return;
   const s = railSizesNow();
   const style = getPrefs().toolRail;
   const wanted = wantedNamesWidth();
   if (!wanted) return void toast('There are no group names to fit. Turn on Group names in Change the tools.', { duration: 2600, quill: null });
-  const fit = fitRailWidth(wanted, s, style);
-  setToolRailWidth(toolRailWidth() === fit ? naturalRailWidth(s, style) : fit);
+  const names = getPrefs().toolNames;
+  const fit = fitRailWidth(wanted, s, style, names);
+  const usual = naturalRailWidth(s, style, names);
+  if (fit === usual && toolRailWidth() === usual) return void toast('Every group name already shows whole.', { duration: 2200, quill: null });
+  setToolRailWidth(toolRailWidth() === fit ? usual : fit);
 }
 
 /** The preferences "Put the tools back" puts back with the arrangement. */
@@ -237,6 +309,7 @@ const TOOL_PREF_KEYS = ['toolSize', 'toolNames', 'toolRail', 'toolsOffLayer'] as
  * size, group names, rail style and what to do with tools that do not work on the layer. A toast offers Undo, because it undoes more than one thing.
  */
 export function putToolsBack(): void {
+  if (refuseIfLocked('tools', 'reset')) return;
   const d = dock.get();
   const id = d.workspaceId;
   const before = d.rails?.[id];
@@ -312,6 +385,8 @@ export function hitTool(x: number, y: number, groups: ToolGroup[], dragged: stri
 
 /** Pointer down on a tool: a click still picks it; carrying it past a few pixels lifts it to be put somewhere else. */
 export function startToolDrag(e: React.PointerEvent, id: string, groups: () => ToolGroup[], visible: (id: string) => boolean, onLift?: () => void): void {
+  // A locked rail still lets you press a tool to use it; carrying one is where it says no.
+  if (railLocked()) return refuseDrag(e, 'tools', 'arrange');
   run(
     e,
     (ev) => {
@@ -321,8 +396,49 @@ export function startToolDrag(e: React.PointerEvent, id: string, groups: () => T
     (_ev, ok) => {
       const d = toolDrag.get();
       toolDrag.set(null);
-      if (ok && d?.drop) moveToolTo(id, d.drop, visible);
+      if (ok && d?.drop) {
+        moveToolTo(id, d.drop, visible);
+        teachLock('tools', () => setRailLock(true));
+      }
     },
     onLift,
   );
+}
+
+/**
+ * Takes you to a layer a waiting tool works on and picks the tool: the top layer of that kind. With none, says why the
+ * tool isn't there and what to do (the same words a greyed-out tool gives).
+ */
+export function goToLayerFor(w: WaitingTool): void {
+  const { doc } = store().get();
+  const layer = [...doc.layers].reverse().find((l) => l.kind === w.needs);
+  const tool = getTool(w.id);
+  if (!layer || !tool) return void toast(whyOff({ label: w.label, layers: [w.needs] }, w.needs === 'pixel' ? 'vector' : 'pixel'), { quill: null });
+  store().setUi({ activeLayerId: layer.id });
+  pickTool(w.id);
+}
+
+/**
+ * What the layer line at the top of the rail opens: which layer you are on, a way to a layer of the other kind (or to
+ * make one, when there is none), and the two ways to treat tools that do not work here. The first item is the fix.
+ */
+export function layerLineMenu(kind: LayerKind, name: string, waiting: WaitingTool[]): DockMenuItem[] {
+  const layers = store().get().doc.layers;
+  const others: ('vector' | 'pixel')[] = waiting.length ? [waiting[0].needs] : kind === 'pixel' ? ['vector'] : kind === 'vector' ? ['pixel'] : ['vector', 'pixel'];
+  const items: DockMenuItem[] = [{ heading: `${layerWord(kind)}${name ? `: ${name}` : ''}` }];
+  if (waiting.length) items.push({ heading: waitingWords(waiting) });
+  for (const other of others) {
+    const there = topLayerOf(layers, other);
+    const add = getCommand(other === 'pixel' ? 'layers.addPixel' : 'layers.addVector');
+    items.push(there ? { label: `Go to the ${other} layer "${there.name}"`, onClick: () => void goToLayerKind(other) } : { label: `Add a ${other} layer`, onClick: () => void add?.run() });
+  }
+  const greyed = getPrefs().toolsOffLayer === 'grey';
+  items.push(
+    { separator: true },
+    { heading: 'Tools that do not work on this layer' },
+    { label: 'Hide them', checked: !greyed, onClick: () => setPrefs({ toolsOffLayer: 'hide' }) },
+    { label: 'Grey them out, in their places', checked: greyed, onClick: () => setPrefs({ toolsOffLayer: 'grey' }) },
+    { label: 'Why are some tools off?', onClick: () => openHelp('drawing-mode') },
+  );
+  return items;
 }

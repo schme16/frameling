@@ -1,12 +1,13 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 import { ix } from '../features/flags';
+import { stickerTable } from './icons';
 
 export const bodies: Record<string, string> = {
   exporting: `Saving keeps your drawing editable. **Exporting** makes something to share or use somewhere else, and leaves your drawing as it is.
 
 Press **Ctrl+E** (**Cmd+E** on a Mac), or choose **File > Export**, pick a format card, tweak the options if you like, and press **Export**. Frameling asks where to put it, then draws every frame and shows a progress bar. You can cancel any time.
 
-${ix('The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**.', 'The four formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence** and **Sprite sheet**.')} The others are under **More formats**. Every export is also in the **File > Export** submenu.
+${ix('The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**.', 'The four formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence** and **Sprite sheet**.')} The others are under **More formats**, bottom left of the window. Every export is also in the **File > Export** submenu.
 
 ## Which one?
 
@@ -17,7 +18,7 @@ ${ix('The five formats most people want come first: **Animated GIF**, **MP4 vide
 | Use it in a chat or forum | **Animated GIF** |
 | Something sharper than a GIF, with soft edges | **Animated PNG** |
 | One picture of the frame I'm on | **PNG picture** |
-| One picture per frame, for a video editor | **PNG sequence** |
+| A JPEG, a small WebP, an icon set or stickers | Under **More formats** |
 | Vector art that stays sharp at any size | **SVG drawing** |
 | Use it in a game or on a web page | **Sprite sheet** |
 ${ix('| Put it on an Interactives page and control it there | **Interactives** |\n')}| An app or website, as a small vector animation | **Lottie animation** |
@@ -39,11 +40,37 @@ ${ix('| Put it on an Interactives page and control it there | **Interactives** |
 
 ## Quick repeat
 
-**Ctrl+Shift+E** exports again with the same settings as last time, without asking questions (it still asks where to save).
+**Ctrl+Shift+E** exports again with the same settings as the last time you exported *this drawing*, without asking questions (it still asks where to save). The settings are kept in the drawing, so another file's export never changes what it repeats. To keep more than one way, see [Saved ways out](help:export-ways).
 
 Every export looks exactly like the canvas, and a slow computer makes the same file as a fast one.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), ${ix('[Interactives](help:export-interactives), ')}[ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator), [JPEG and WebP](help:export-jpeg-webp-contact), [Icons](help:export-icons-favicon), [Stickers](help:export-stickers).`,
+  'export-ways': `A drawing often leaves in more than one way: a sprite sheet for the game, a GIF for the web page, an MP4 for social. **Saved ways** keep each set of Export choices under a name, inside the drawing, so next week you send it out the same way without picking it all again.
+
+## Keep one
+
+1. Open **File > Export** and pick the format and options you want.
+2. Under **Your ways out**, press **Save these choices as...** and type a name, like *the sprite sheet* or *the web video*. Press **Enter**.
+
+Do that once for each way. Each one shows as a button.
+
+## Use them
+
+- **Bring one back:** press its button in the Export window. The choices fill in, and you can still change them before you press **Export**.
+- **Send them all:** **Export all saved ways** (in the command palette, **Ctrl+K**) runs every one, one after another. Each asks where to save, and the first one you cancel stops the rest.
+- **Repeat the last:** **Ctrl+Shift+E** repeats whatever you last exported from this drawing. It never repeats another file's export: a drawing you haven't exported yet opens the Export window instead.
+- **Update one:** pick it, change what you like, then **Save these choices as...** with the same name.
+- **Forget one:** press the small cross on its button.
+
+## Good to know
+
+- The ways live in the drawing's file, so they travel with it, and an older file simply has none.
+- A drawing keeps up to 12 ways.
+- A new drawing starts from the choices you used last on any drawing, until it has its own.
+- Which artboards go out is not part of a way; the Export window asks that each time.
+
+More about the formats: [Exporting](help:exporting).`,
+
   'export-video-gif-apng': `## MP4 video
 
 Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background. If your animation has sound, see [Sound](help:sound) for how it plays on Apple devices.
@@ -52,7 +79,7 @@ Plays almost everywhere: phones, social media, slides. It can't have a see-throu
 
 Great for websites. It can keep a **transparent background** on computers that support it. If yours doesn't, the option is greyed out and says so.
 
-WebM uses **AV1** when your computer can make it (smaller files, slower to make), and falls back to VP9, then VP8. You can pick **VP9** instead with the *Video codec* buttons in the export window, or in Preferences > Behaviour. If the codec you like can't keep a see-through background but another one can, Frameling uses that one when you ask for transparency.
+WebM uses **AV1**, which makes smaller files at the same quality and plays in today's browsers and players. **VP9** is the safer one if it has to play on something older. Pick one with the *Video codec* buttons in the export window, or in Preferences > Behaviour. A see-through background always uses a codec that can keep it, which means VP9 or VP8.
 
 ## Animated GIF
 
@@ -229,13 +256,24 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 ## What you get
 
 - **Vector layers** become real paths: every brush stroke becomes one filled shape, and shapes keep their curves, fills and outlines.
+- **Brush tips** (chalk, charcoal, watercolour, stamps) stay vector, written as plain shapes, so they look the same. Chalk and charcoal that catch on paper ask you how to write them, the first time (see below). See [brush tips](help:brush-tips).
 - **Pixel layers** become small rectangles: one for each run of pixels in the same colour. Nothing is lost, every pixel is still there, but a big pixel drawing makes a big file.
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Folders** are groups too, named after the folder, with the folder's layers inside (and folders inside folders as groups inside groups), even a folder that changes nothing. Other programs read the name from the group's id (spaces and symbols become dashes, and a repeated name gets an underscore). Inkscape shows the folder's own name, spelled the way you wrote it.
 - **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
-- **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
+- **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no SVG version, so they're left out (the Export window says so first).
 - **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
+
+## Chalk and charcoal on paper
+
+If your drawing has chalk or charcoal that catches on paper, the Export window asks how to write it:
+
+- **Scale forever** writes tiny shapes. They stay sharp at any size, but the grain is the older, simpler kind, so it looks less like charcoal.
+- **Look right** bakes a picture of each line, so it looks just as it does on the canvas. Those lines stop being sharp at any size (each picture is made at twice the file's size), and the file comes out much bigger.
+- **Ask me every time** asks again on every SVG export. It's never remembered.
+
+It only asks when such a line is really in the file. Change the answer any time in Preferences, Behaviour.
 
 ## Good to know
 
@@ -263,7 +301,7 @@ Under **File type** in the Export window:
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other.
-- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** for players that skip Lottie's effects.
+- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline, Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** for players that skip Lottie's effects.
 
 ## Pictures from effects
 
@@ -294,7 +332,89 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## Good to know
 
 - **Morphs (shape tweens)** are a drawing per frame, so long morphs make bigger files.
-- **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate is left out.
+- **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur are left out.
+- Chalk and charcoal that catch on paper work as in the still [SVG](help:export-svg): tiny shapes that scale forever, or a picture of each line that looks right but makes a much bigger file. A drawing that is held for several frames is baked once.
 - Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
+
+  'export-jpeg-webp-contact': `Three small jobs for the end of a project: a **JPEG** for a form that won't take a PNG, a **WebP** for a chat or a web page, and a **contact sheet** that puts every frame on one page.
+
+## JPEG picture
+
+Saves the frame you're on. JPEG has no see-through, so the background is painted in (white, if your drawing has none). Drag **Quality** to trade sharpness for file size: **90** looks the same to most eyes and is a lot smaller than a PNG.
+
+JPEG blurs hard edges a little, so it suits paintings and soft shading better than pixel art or text. For those, pick [PNG](help:exporting) or WebP.
+
+## WebP picture
+
+One frame gives a plain still WebP. A whole animation or a clip gives a **moving WebP**, which plays by itself in browsers and most chat apps, with soft see-through edges that a GIF can't do.
+
+- **Lose nothing (lossless):** every pixel stays exactly as drawn. It's on to begin with for pixel art, and it makes bigger files.
+- **Quality:** for everything else. Lower is smaller but blurrier.
+- **Loop forever:** untick it to play once.
+
+Frames that look the same as the one before are stored once and just show for longer, so a slow animation makes a small file.
+
+## Contact sheet
+
+Every frame as a small picture on one page, with its number under it and the name of your drawing on top. It's the quick way to look over a whole animation, or to send one picture to someone for a review.
+
+Pick **Small**, **Medium** or **Large** pictures, how many to put in a row (**Automatic** makes a page about the shape of a sheet of paper), a light or dark page, and whether to show the numbers. A clip's frames come out in the order the clip plays them.
+
+**Good to know:** a page can only be so big. If it's too much, the footer says so; choose smaller pictures or one clip at a time.
+
+Go to **File > Export** and pick one, or open the command palette and type **JPEG**, **WebP** or **contact sheet**.
+
+See also: [Video, GIF and APNG](help:export-video-gif-apng), [Exporting](help:exporting)`,
+
+  'export-icons-favicon': `An **app icon set** takes the frame you're looking at and draws it at every size an icon needs, then puts the lot in one zip. Each size is drawn fresh from your drawing, not shrunk from a big picture, so the 16 pixel one stays sharp.
+
+## What goes in it
+
+Tick what you want:
+
+- **A PNG at every size:** 16, 32, 48, 64, 128, 256, 512 and 1024, in a **png** folder.
+- **Windows icon (.ico):** one file holding 16 to 256.
+- **Mac icon (.icns):** one file holding 16 to 1024.
+- **iPhone, iPad and Android sizes:** an **ios** folder, and an **android** folder laid out the way Android Studio wants it (**mipmap-mdpi** and so on, plus the 512 Play Store picture).
+
+## A favicon
+
+**Favicon set** makes what a website needs: **favicon.ico**, two small PNGs, an iPhone touch icon, the 192 and 512 icons for Android, a **site.webmanifest** and a **head.html** with the lines to paste in.
+
+**Put it on a site:** unzip the files next to your **index.html**, then paste the lines from **head.html** into the head of each page.
+
+## A drawing that isn't square
+
+Icons are square. **Show it all** keeps your whole drawing with empty margins at the sides; **Fill the square** cuts off what sticks out. You can change it any time in **Preferences > Behaviour**.
+
+**Good to know:**
+- It uses the frame you're looking at, so go to the frame you want first.
+- A see-through background stays see-through. Untick **Transparent background** to paint your drawing's colour behind it.
+- Icons look best when the drawing is simple and bold. Fine detail disappears at 16 pixels.
+
+See also: [Exporting](help:exporting), [Sticker and emoji packs](help:export-stickers)`,
+
+  'export-stickers': `A **sticker and emoji pack** makes your frames at the sizes chat apps ask for, a folder for each app, all in one zip. Each frame becomes one picture, so a clip gives you a whole set.
+
+## Make one
+
+1. Choose **File > Export > Export a sticker or emoji pack**.
+2. Tick the apps you want: **Slack**, **Microsoft Teams**, **Discord** (emoji and stickers), **Telegram** (stickers and custom emoji), **WhatsApp**, **Signal**, **iMessage** and **LINE**.
+3. Pick **A clip** or **This frame** for just one sticker, or **Whole animation** for one per frame.
+4. Press **Export**.
+
+Slack, Teams, Discord, iMessage and LINE get PNGs. Telegram, WhatsApp and Signal get WebP pictures, and Frameling lowers the quality a step at a time until each fits the app's size limit. This is what each app gets:
+
+${stickerTable()}
+
+## Good to know
+
+- The pictures have a see-through background. They're square for every app but LINE, which asks for a wider 370 by 320. A drawing that doesn't match the shape follows the **Show it all** or **Fill the square** choice (see [App icons and favicons](help:export-icons-favicon)).
+- If a picture is still over an app's limit, Frameling tells you which app when it's done. A simpler drawing or fewer colours makes it lighter.
+- The apps change their rules now and then, so check the size your app asks for when you upload. Where an app publishes a size but not a weight limit, Frameling aims low on purpose: a slightly lighter picture always uploads, a heavy one can be turned away.
+- iMessage wants every sticker in a pack at the same size, so export the whole set in one go rather than a frame at a time.
+- Every frame is a still. For a moving sticker, use [WebP](help:export-jpeg-webp-contact) or [GIF](help:export-video-gif-apng).
+
+See also: [Exporting](help:exporting)`,
 };

@@ -3,6 +3,7 @@
 // (image size). Whatever changes lands as one undo step.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc } from '../core/format';
+import { isAnimated } from '../core/animation';
 import { store } from '../core/store';
 import { cleanDpi, docDpi, formatSize, pxTo, roundIn, toPx, unitInfo, type Unit } from '../core/units';
 import { mountModal, Modal } from '../io/mount';
@@ -11,10 +12,12 @@ import { fit, hint } from './controller';
 import { ANCHORS, anchorOffset, clampSize, hasPixelArt, MAX_SIZE, NOTE_TEXT, pixelScaleStep, resizeCanvas, scaleArtwork, scaledSize, type Anchor } from './resize';
 import { Icon } from '../ui/icons';
 import { activeId, findArtboard } from '../artboards/model';
+import { hasArtboards } from '../artboards/model';
 import { reframeVariations, setVariationSize, untouchedFramings } from '../artboards/variations';
 import { currentChoice } from '../core/choices';
 import type { FitMode } from '../artboards/fit';
 import './settings.css';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 type Mode = 'canvas' | 'scale';
 
@@ -77,8 +80,12 @@ function Preview({ doc, w, h, mode, anchor }: { doc: Doc; w: number; h: number; 
 /** Which field the dialog should open on, when something sent you here to change that one thing. */
 export type SettingsField = 'size' | 'fps';
 
+/** Why the background has no opacity slider, and where see-through lives instead. */
+const BG_WHY = 'The background is always solid. For none at all, turn on See-through (transparent) next to it.';
+
 function DocumentSettings({ close, field }: { close: () => void; field?: SettingsField }) {
   const doc = store().get().doc;
+  const many = hasArtboards(doc);
   const unit = getPrefs().units;
   const [mode, setMode] = useState<Mode>('canvas');
   const [w, setW] = useState(doc.width);
@@ -256,14 +263,17 @@ function DocumentSettings({ close, field }: { close: () => void; field?: Setting
         ))}
 
         <div className="ds-row">
-          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
-            <span>Speed (frames per second)</span>
-            <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
-          </label>
+          {/* A still picture has no frame rate to set: it comes back with Add animation, and the number is kept as it was. */}
+          {isAnimated(doc) && (
+            <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc={`How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.${many && !doc.sharedLayers ? ' With several artboards this is the speed of the one you are on.' : ''}`}>
+              <span>Speed (frames per second){many && !doc.sharedLayers ? ', this artboard' : ''}</span>
+              <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
+            </label>
+          )}
           <div className="ui-field">
             <span>Background</span>
             <div className="ds-bg">
-              <input type="color" value={bg} disabled={see} onChange={(e) => setBg(e.target.value)} aria-label="Background colour" />
+              <ColourField label="Background colour" value={bg} disabled={see} alpha={false} why={BG_WHY} onChange={setBg} />
               <label className="ui-check">
                 <input type="checkbox" checked={see} onChange={(e) => setSee(e.target.checked)} />
                 <span>See-through (transparent)</span>

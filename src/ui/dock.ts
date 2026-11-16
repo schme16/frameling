@@ -3,10 +3,15 @@
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
-import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
+import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, START_RAIL_AT, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
+import { isRoomFolded } from './roomFolds';
+import { toast } from './toast';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
+import { mergeLocks, sanitizeLockMap, savedLocks, withLock, type LockKind, type Locks } from './dockLock';
 import { cleanRailWidth } from './toolRailWidth';
+import type { MenuEdits } from './menuEdits';
+import { MENUS_KEY, menuEditsIn, migrateLegacyMenus, ownAfter, sanitizeMenuMap, withMenuEntry, withoutMenuEntry } from './workspaceMenus';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
 export * from './dockModel';
@@ -21,6 +26,10 @@ export interface DockState {
   rails?: Record<string, ToolGroup[]>;
   /** How wide the person pulled each workspace's tool rail, in pixels, by workspace id. A workspace missing here uses its own default (the natural width). */
   railWidths?: Record<string, number>;
+  /** What the person locked in each workspace (or unlocked, where the workspace brings a lock), by workspace id. */
+  locks?: Record<string, Locks>;
+  /** What the person changed in each workspace's menus, by workspace id. A workspace missing here uses what it brings, or the menus as they come. */
+  menus?: Record<string, MenuEdits>;
 }
 
 export const DOCK_KEY = 'frameling.dock.v1';
@@ -28,6 +37,11 @@ export const DOCK_KEY = 'frameling.dock.v1';
 export const RAIL_NOTE_KEY = 'frameling.dock.railNote.v1';
 /** The workspace a customised single arrangement moved to at start-up, until the person is told (see takeRailMigrationNote). */
 let railMoved: string | null = null;
+/** The workspace the menu changes moved to at start-up (they used to be one set for every workspace), until the person is told. */
+let menusMoved: string | null = null;
+/** True from the move until the dock has been saved with the menu changes in it: only then is the old storage key removed. */
+let legacyMenusPending = false;
+export const MENUS_NOTE_KEY = 'frameling.dock.menusNote.v1';
 /** Saved state is version 2 from the top zone, floating windows, the movable tool rail and panel names. Version 1 loads as it was. */
 const DOCK_VERSION = 2;
 
@@ -55,15 +69,18 @@ function sanitizeRailWidths(raw: unknown): Record<string, number> {
 
 const isHelp = (p: PanelDef) => /help/.test(p.id);
 const isColour = (p: PanelDef) => /colou?r|palette|swatch/.test(p.id);
-const isLayers = (p: PanelDef) => /layer/.test(p.id);
 
 /** Panels in their registered zones, in order, the first one (that isn't help) showing. */
 function layoutFrom(panels: PanelDef[], place: (p: PanelDef) => DockZone, order: (a: PanelDef, b: PanelDef) => number = () => 0): Layout {
   const l = emptyLayout();
   const sorted = [...panels].sort((a, b) => (isHelp(a) ? 1 : 0) - (isHelp(b) ? 1 : 0) || order(a, b));
-  for (const p of sorted) l.zones[place(p)].tabs.push(p.id);
+  // Panels that start put away are closed, the same state as one the person closed: in the Panels list, one press from open.
+  for (const p of sorted) (p.startsAway ? l.hidden : l.zones[place(p)].tabs).push(p.id);
   for (const z of ZONES) l.zones[z].active = l.zones[z].tabs[0] ?? null;
   l.known = panels.map((p) => p.id);
+  // Where the rail puts a panel other than in its usual group (Library: the end). Only a new layout says so.
+  const railAt = Object.fromEntries(panels.filter((p) => START_RAIL_AT[p.id]).map((p) => [p.id, START_RAIL_AT[p.id]]));
+  if (Object.keys(railAt).length) l.railAt = railAt;
   return l;
 }
 
@@ -75,10 +92,12 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   // Tall enough for the timeline buttons and two layer rows at the default window size.
   draw.zones.bottom.size = 260;
 
-  // Animate: the timeline gets room, layers lead the right side.
-  const animate = layoutFrom(panels, (p) => p.zone, (a, b) => (isLayers(b) ? 1 : 0) - (isLayers(a) ? 1 : 0));
+  // Animate: the timeline gets room. Its own layer column already lists the layers, so the Layers panel does not lead the
+  // right side here (it would show the same list twice, side by side): the right side starts as in Draw, and Layers is a
+  // tab away for a drawing with a great many layers.
+  const animate = layoutFrom(panels, (p) => p.zone);
   animate.zones.bottom.size = 330;
-  animate.zones.right.size = 280;
+  animate.zones.right.size = 316;
 
   // Pixel: a big palette on the left where it's always in reach, the real-size Preview leading the right, and the
   // panels pixel art never needs tucked away (View > Panels still has them).
@@ -104,15 +123,15 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   pixel.zones.bottom.size = 260;
 
   return [
-    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw, rail: BUILTIN_RAILS.draw },
-    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with Layers leading the right side.', layout: animate, rail: BUILTIN_RAILS.animate },
-    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
+    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath once the drawing has animation. Scripts opens in that same drawer (Ctrl+Shift+J).', layout: draw, rail: BUILTIN_RAILS.draw },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. On a drawing with no animation, an Add animation button stands where the timeline goes. The Layers panel is a tab away for long lists. Scripts opens in that same drawer (Ctrl+Shift+J).', layout: animate, rail: BUILTIN_RAILS.animate },
+    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview. Scripts opens in a drawer along the bottom (Ctrl+Shift+J).', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
   ];
 }
 
 /** The tools the Pixel workspace shows on a pixel layer, drawing tools first. Rig and vector-only tools are left out. */
 export const PIXEL_TOOLS = [
-  'pencil', 'eraser', 'fill', 'shade', 'dither', 'spray', 'line', 'rect', 'ellipse', 'polygon', 'star',
+  'pencil', 'eraser', 'fill', 'shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush', 'clone-stamp', 'blur-brush', 'sharpen-brush', 'line', 'rect', 'ellipse', 'polygon', 'star', 'text',
   // Each way of picking is its own tool (src/select/ways.ts).
   'pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand',
   'eyedropper', 'hand', 'zoom',
@@ -158,19 +177,41 @@ export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Lay
   const known = new Set(l.known);
   for (const p of panels) {
     if (known.has(p.id) || placed.has(p.id) || l.hidden.includes(p.id)) continue;
+    known.add(p.id);
+    // A panel this layout has never met and that starts put away goes to the closed list, not onto the rail.
+    if (p.startsAway) {
+      l.hidden.push(p.id);
+      continue;
+    }
     l.zones[p.zone].tabs.push(p.id);
     if (!l.zones[p.zone].active) l.zones[p.zone].active = p.id;
-    known.add(p.id);
   }
   l.known = [...new Set([...known, ...panels.map((p) => p.id)])];
   return l;
+}
+
+/** Menu changes from before each workspace had its own, moved to the workspace the person is on. */
+function menusFrom(saved: Record<string, unknown> | null, workspaceId: string): Record<string, MenuEdits> | undefined {
+  const own = saved?.menus === undefined ? undefined : sanitizeMenuMap(saved.menus);
+  const moved = migrateLegacyMenus(readRaw<unknown>(MENUS_KEY, null), own, workspaceId);
+  if (moved) {
+    legacyMenusPending = true;
+    menusMoved = workspaceId;
+    return moved;
+  }
+  // Moved already (or never changed): an old key left behind is cleared with the next save.
+  if (own !== undefined) legacyMenusPending = readRaw<unknown>(MENUS_KEY, null) !== null;
+  return own && Object.keys(own).length ? own : undefined;
 }
 
 function initial(): DockState {
   const saved = readRaw<Record<string, unknown> | null>(DOCK_KEY, null);
   const user = sanitizeWorkspaces(saved?.user);
   // Panels from other areas register after this file loads, so a first run waits for syncPanels() to build the layout.
-  if (!saved?.layout || typeof saved.layout !== 'object') return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true };
+  if (!saved?.layout || typeof saved.layout !== 'object') {
+    const menus = menusFrom(null, 'draw');
+    return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true, ...(menus ? { menus } : {}) };
+  }
   const layout = normaliseLayout(saved.layout);
   const workspaceId = typeof saved.workspaceId === 'string' ? saved.workspaceId : 'draw';
   const rails = sanitizeRails(saved.rails);
@@ -184,7 +225,9 @@ function initial(): DockState {
     delete layout.tools.groups;
   }
   const railWidths = sanitizeRailWidths(saved.railWidths);
-  return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}) };
+  const locks = sanitizeLockMap(saved.locks);
+  const menus = menusFrom(saved, workspaceId);
+  return { layout, workspaceId, user, ...(menus ? { menus } : {}), ...(Object.keys(rails).length ? { rails } : {}), ...(Object.keys(railWidths).length ? { railWidths } : {}), ...(Object.keys(locks).length ? { locks } : {}) };
 }
 
 export const dock = createStore<DockState>(initial());
@@ -202,12 +245,37 @@ export function takeRailMigrationNote(): string | null {
   return listWorkspaces().find((w) => w.id === id)?.name ?? null;
 }
 
+/**
+ * The name of the workspace the menu changes moved to when each workspace got its own, once. Null when there is nothing
+ * to say, or it has been said.
+ */
+export function takeMenusMigrationNote(): string | null {
+  const id = menusMoved;
+  menusMoved = null;
+  if (!id) return null;
+  if (readRaw<unknown>(MENUS_NOTE_KEY, null)) return null;
+  writeJson(MENUS_NOTE_KEY, 'told');
+  return listWorkspaces().find((w) => w.id === id)?.name ?? null;
+}
+
 /** True while the panels are put away for room to draw (Hide all panels). Not kept: a new session starts with them back. */
 export const panelsAway = createStore(false);
 export const togglePanelsAway = (to?: boolean): void => panelsAway.set(to ?? !panelsAway.get());
 
 function save(): void {
   writeJson(DOCK_KEY, { ...dock.get(), v: DOCK_VERSION });
+  // The old single set of menu changes goes only once the dock holds them, so a failed save loses nothing.
+  if (legacyMenusPending) {
+    try {
+      const back = JSON.parse(localStorage.getItem(DOCK_KEY) ?? 'null') as { menus?: unknown } | null;
+      if (back && (back.menus || !dock.get().menus)) {
+        localStorage.removeItem(MENUS_KEY);
+        legacyMenusPending = false;
+      }
+    } catch {
+      // Storage blocked: the old key stays, and the move is tried again next start.
+    }
+  }
 }
 
 function commit(next: DockState): void {
@@ -410,6 +478,11 @@ export function resizeZone(zone: DockZone, size: number): void {
 }
 
 export function toggleCollapsed(zone: DockZone, to?: boolean): void {
+  // Folded only for lack of room: opening it by hand would just squeeze the canvas, so say what would help instead.
+  if (to !== true && isRoomFolded(zone) && !dock.get().layout.zones[zone].collapsed) {
+    toast('There is not room for those panels at this size. A bigger window, or a smaller interface size, brings them back.', { duration: 6000 });
+    return;
+  }
   change((l) => void (l.zones[zone].collapsed = to ?? !l.zones[zone].collapsed));
 }
 
@@ -433,6 +506,11 @@ export function floatPanel(id: string, at?: { x: number; y: number }): void {
   const w = s?.w ?? 1200;
   const n = dock.get().layout.floats.length;
   placePanel(id, { newFloat: at ?? { x: Math.round(w / 2 - 190) + n * 28, y: 120 + n * 28 } });
+}
+
+/** Gives a panel a window at an exact place and size. */
+export function floatPlacement(id: string, box: { x: number; y: number; w: number; h: number }): void {
+  placePanel(id, { newFloat: box });
 }
 
 /** Puts a window's whole group into a zone or another window. */
@@ -567,6 +645,73 @@ export function setRailWidth(width: number | undefined, persist = true): void {
   else dock.set(next);
 }
 
+/** What a workspace brings locked (what it was saved with). */
+export function defaultLocksOf(s: Pick<DockState, 'user'>, workspaceId: string): Locks | undefined {
+  return s.user.find((w) => w.id === workspaceId)?.locks;
+}
+
+/** What is locked in the current workspace: your own choice for it on top of what it brings. Only kinds that are decided show. */
+export function locksOf(s: DockState): Locks {
+  return mergeLocks(defaultLocksOf(s, s.workspaceId), s.locks?.[s.workspaceId]);
+}
+
+/** What a workspace brings for its menus: changes from its file or from when it was saved. */
+export function defaultMenusOf(s: Pick<DockState, 'user'>, workspaceId: string): MenuEdits | undefined {
+  return s.user.find((w) => w.id === workspaceId)?.menus;
+}
+
+/** The menu changes in force: the person's own for the workspace, else the ones it brings, else none. */
+export function menuEditsOf(s: DockState): MenuEdits {
+  return menuEditsIn(s.menus?.[s.workspaceId], defaultMenusOf(s, s.workspaceId));
+}
+
+/** Sets the menu changes for the workspace the person is in. Kept with the workspace, and in its file when it is saved. */
+export function setWorkspaceMenus(next: MenuEdits): void {
+  const s = dock.get();
+  const id = s.workspaceId;
+  const menus = withMenuEntry(s.menus, id, ownAfter(next, defaultMenusOf(s, id)));
+  if (JSON.stringify(menus ?? {}) === JSON.stringify(s.menus ?? {})) return;
+  commit({ ...s, menus });
+}
+
+/** Every workspace's own menu changes, for undoing a change that touched more than one. */
+export const menuMapOf = (s: DockState): Record<string, MenuEdits> | undefined => s.menus;
+
+/** Puts back a map of menu changes taken with menuMapOf. */
+export function restoreMenuMap(menus: Record<string, MenuEdits> | undefined): void {
+  commit({ ...dock.get(), menus });
+}
+
+/** Gives every workspace, the ones that come with the app and your own, the menu changes of the one you are in. */
+export function shareMenusWithAll(): void {
+  const s = dock.get();
+  const now = menuEditsOf(s);
+  let menus = s.menus;
+  for (const w of listWorkspaces()) menus = withMenuEntry(menus, w.id, ownAfter(now, defaultMenusOf(s, w.id)));
+  commit({ ...s, menus });
+}
+
+/** The menu changes to save with a workspace: only when there are some, or undefined. */
+const menusNow = (s: DockState): MenuEdits | undefined => {
+  const e = menuEditsOf(s);
+  return ownAfter(e, undefined);
+};
+
+/** The locks to save with a workspace: only what is locked, or undefined. */
+const locksNow = (s: DockState) => savedLocks(locksOf(s));
+
+/** Locks or unlocks the tool rail or the panels in the current workspace. Kept with the workspace, and in its file when it is saved. */
+export function setLock(kind: LockKind, on: boolean): void {
+  const s = dock.get();
+  const id = s.workspaceId;
+  const own = withLock(s.locks?.[id], defaultLocksOf(s, id), kind, on);
+  const locks = { ...s.locks };
+  if (own) locks[id] = own;
+  else delete locks[id];
+  if (JSON.stringify(locks) === JSON.stringify(s.locks ?? {})) return;
+  commit({ ...s, locks: Object.keys(locks).length ? locks : undefined });
+}
+
 export function hidePanel(id: string): void {
   apply((l) => closePanel(l, id));
 }
@@ -638,10 +783,28 @@ export function applyWorkspace(id: string): boolean {
   return true;
 }
 
+/** The panels of the current workspace as it comes (or was saved), made to fit the panels there are. Nothing is changed. */
+export function workspaceLayoutNow(): Layout {
+  const w = currentWorkspace() ?? builtinWorkspaces().find((x) => x.id === 'draw')!;
+  return reconcile(w.layout);
+}
+
+/** Replaces the layout with one made by a pure function from the layout there is now, and saves it. */
+export function setPanelLayout(fn: (now: Layout) => Layout): void {
+  apply(fn);
+}
+
 /** Back to the current workspace as it was saved (or as it came with the app). */
 export function resetLayout(): void {
   const id = dock.get().workspaceId;
+  // A locked rail stays where it is, with its arrangement and width: the reset is about the panels then.
+  const railKept = locksOf(dock.get()).tools === true ? dock.get().layout.tools : null;
   if (!applyWorkspace(id)) return void applyWorkspace('draw');
+  if (railKept) {
+    const s = dock.get();
+    commit({ ...s, layout: { ...s.layout, tools: { ...railKept } } });
+    return;
+  }
   // One of your own goes back to the arrangement it was saved with; the ones that come with the app keep yours, like the rail place.
   const s = dock.get();
   if (s.rails?.[id] && s.user.some((w) => w.id === id)) {
@@ -673,12 +836,15 @@ export function saveWorkspace(name: string): Workspace | null {
   // The tool arrangement as it is now (yours, or the one the workspace brings) becomes this workspace's default.
   const rail = railOf(s);
   const railWidth = railWidthOf(s);
-  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}) };
+  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}), ...(railWidth ? { railWidth } : {}), ...(locksNow(s) ? { locks: locksNow(s) } : {}), ...(menusNow(s) ? { menus: clone(menusNow(s)!) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
   // A workspace saved again starts from what was just saved, so its own changes to the arrangement are folded in.
   const { [ws.id]: _folded, ...rails } = s.rails ?? {};
   const { [ws.id]: _foldedWidth, ...railWidths } = s.railWidths ?? {};
-  commit({ ...s, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined });
+  const { [ws.id]: _foldedLocks, ...locks } = s.locks ?? {};
+  // The menu changes in force go into the saved workspace, so the person's own entry for it is folded in.
+  const menus = withoutMenuEntry(s.menus, ws.id);
+  commit({ ...s, menus, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   return ws;
 }
 
@@ -687,12 +853,14 @@ export function deleteWorkspace(id: string): void {
   if (!s.user.some((w) => w.id === id)) return;
   const { [id]: _gone, ...rails } = s.rails ?? {};
   const { [id]: _goneWidth, ...railWidths } = s.railWidths ?? {};
+  const { [id]: _goneLocks, ...locks } = s.locks ?? {};
+  const menus = withoutMenuEntry(s.menus, id);
   const parked = readAllParked();
   if (parked[id]) {
     delete parked[id];
     writeAllParked(parked);
   }
-  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined });
+  commit({ ...s, menus, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined, railWidths: Object.keys(railWidths).length ? railWidths : undefined, locks: Object.keys(locks).length ? locks : undefined });
   if (s.workspaceId === id) applyWorkspace('draw');
 }
 
@@ -726,8 +894,10 @@ export function workspaceText(id?: string): string | null {
   const s = dock.get();
   const rail = s.rails?.[id ?? s.workspaceId] ?? (w ?? from)?.rail;
   const railWidth = s.railWidths?.[id ?? s.workspaceId] ?? (w ?? from)?.railWidth;
-  const { rail: _own, railWidth: _ownWidth, ...rest } = ws;
-  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), layout: reconcile(ws.layout) });
+  const lockState = savedLocks(mergeLocks((w ?? from)?.locks, s.locks?.[id ?? s.workspaceId]));
+  const menuState = ownAfter(menuEditsIn(s.menus?.[id ?? s.workspaceId], (w ?? from)?.menus), undefined);
+  const { rail: _own, railWidth: _ownWidth, locks: _ownLocks, menus: _ownMenus, ...rest } = ws;
+  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), ...(railWidth ? { railWidth } : {}), ...(lockState ? { locks: lockState } : {}), ...(menuState ? { menus: menuState } : {}), layout: reconcile(ws.layout) });
 }
 
 export type AddResult = { ok: true; workspace: Workspace } | { ok: false; error: string };

@@ -1,0 +1,16 @@
+Chalk and charcoal investigation (board doc: chalk-charcoal, card: chalk-charcoal-look). Branch wip/chalk.
+
+<brush>-strip-{dark,light}.png: one per brush (13: the eleven that lean on the chalk and charcoal tips, plus Chalk and Charcoal
+themselves). Each has four rows and four test marks across (firm, light, pressure ramp, three passes over one patch):
+  Now             what ships today: one solid fill with holes punched out, grain grid fixed to the page
+  Holes only      tip.trial "edge+press+seed": more holes near the edge, more where the pen was light, own holes per line
+  Layered         tip.trial "layers+seed": six see-through fills, a wide pale one and narrower darker ones where the pen was pressed
+  Layered + grain tip.trial "all": the layered model plus the hole tricks
+all-before-{dark,light}.png and all-layers-{dark,light}.png: every brush on one sheet, Now and Layered.
+
+Colour: dark ink on cream paper (light theme), cream ink on near-black (dark theme); Colour pencil, Soft pastel, Oil pastel,
+Crayon use a colour so tone and build-up show in a hue.
+Made with: npm run build; xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/chalk.cjs <rawDir> <brushes.json> <label>;
+then python3 scripts/ab/chalk-sheets.py <rawDir> brand/ab/chalk before=Now cheap=Holes\ only layers=Layered all=Layered\ +\ grain
+No preset was changed. The trials are reached only by the optional tip.trial word.
+Update: this was a dead end (the user's verdict: none of them look much like charcoal). tip.trial, its tests and this harness were removed; the replacement is the pixel-layer Chalk and charcoal tool, see brand/ab/charcoal.

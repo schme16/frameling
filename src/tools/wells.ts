@@ -13,7 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
-import { applyGradientToSelection, getGradientWells, swapGradientWells } from './gradient-wells';
+import { applyGradientToSelection, endGradientGesture, getGradientWells, matchSelectedColours, giveBare, matchSelectedGradients, paintView, setPaintKind, swapGradientWells, writeColour } from './gradient-wells';
 import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
@@ -111,6 +111,17 @@ export function setActiveColor(c: Color): void {
     if (ui.color !== c || !ui.strokeOn) store().setUi({ color: c, strokeOn: true });
     return;
   }
+  // Picked shapes that hold a plain colour on this side come first: they change, and the box follows the edit.
+  const v = paintView(ui.activeWell);
+  if (v.from === 'colour' || v.from === 'colours') {
+    writeColour(ui.activeWell, c);
+    return;
+  }
+  // Picked shapes with nothing on this side: the colour gives them something there, even when it is the box's own.
+  if (v.from === 'none') {
+    giveBare(ui.activeWell, c);
+    return;
+  }
   if (ui.activeWell === 'fill') {
     if (ui.fillColor === c) return;
     store().setUi({ fillColor: c });
@@ -179,6 +190,62 @@ export function setActiveNone(): void {
 }
 
 registerCommands([
+  {
+    id: 'colors.angular',
+    label: 'Make the box in front an angular gradient',
+    category: 'Colours',
+    description: 'Colours sweep once round the middle like a colour wheel or a pie. Good for metal, for a pie chart shape and for a spinning shine. The picked shapes (or the box in front, with nothing picked) change to it.',
+    help: 'gradient-angular',
+    keywords: ['angular', 'conic', 'sweep', 'pie', 'wheel', 'metal', 'chrome', 'shine', 'spin', 'gradient', 'colours'],
+    enabled: (s) => paintView(s.ui.activeWell).from !== 'none',
+    reason: () => 'Pick a shape that has a fill or an outline first, or click a colour so there is something to blend.',
+    run: () => {
+      setPaintKind(store().get().ui.activeWell, 'angular');
+      endGradientGesture();
+    },
+  },
+  {
+    id: 'colors.diamond',
+    label: 'Make the box in front a diamond gradient',
+    category: 'Colours',
+    description: 'Colours step out from the middle in a square turned on its corner. Good for a sheen on a flat panel, a soft box of light and a jewel facet. The picked shapes (or the box in front, with nothing picked) change to it.',
+    help: 'gradient-diamond',
+    keywords: ['diamond', 'square', 'rhombus', 'sheen', 'box of light', 'glow', 'glint', 'gradient', 'colours'],
+    enabled: (s) => paintView(s.ui.activeWell).from !== 'none',
+    reason: () => 'Pick a shape that has a fill or an outline first, or click a colour so there is something to blend.',
+    run: () => {
+      setPaintKind(store().get().ui.activeWell, 'diamond');
+      endGradientGesture();
+    },
+  },
+  {
+    id: 'colors.matchGradients',
+    label: 'Make picked gradients match the first',
+    category: 'Colours',
+    description: 'Give every picked shape the colours and direction of the first picked shape that has a gradient.',
+    help: 'tool-gradient',
+    keywords: ['gradient', 'match', 'same', 'different', 'differ', 'copy', 'colours'],
+    enabled: (s) => s.ui.selection.length > 1 && paintView(s.ui.activeWell).from === 'differ',
+    reason: () => 'Pick shapes with different gradients first.',
+    run: () => {
+      matchSelectedGradients(store().get().ui.activeWell);
+      endGradientGesture();
+    },
+  },
+  {
+    id: 'colors.matchColours',
+    label: 'Make picked colours match the first',
+    category: 'Colours',
+    description: 'Give every picked shape the fill or outline colour of the first picked shape, for the box in front.',
+    help: 'fill-and-stroke',
+    keywords: ['colour', 'color', 'match', 'same', 'different', 'differ', 'copy', 'fill', 'stroke'],
+    enabled: (s) => s.ui.selection.length > 1 && paintView(s.ui.activeWell).from === 'colours',
+    reason: () => 'Pick shapes with different colours first.',
+    run: () => {
+      matchSelectedColours(store().get().ui.activeWell);
+      endGradientGesture();
+    },
+  },
   {
     id: 'colors.toggleWell',
     label: 'Switch between fill and stroke colour',

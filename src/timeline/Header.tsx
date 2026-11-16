@@ -11,12 +11,13 @@ import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
 import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { hasArtboards } from '../artboards/model';
-import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
+import { cwToSlider, setTl, sliderToCw, tl, useTl } from './state';
 import { useFeaturesVersion } from '../features/use';
 import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
 import { moreRequest } from './headerMenu';
 import { LEVELS, chooseFold, droppedAt, foldedAtLevel, foldSlack, headerChange, switchLabel, type FoldStep, type WordStep } from './headerFold';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step, word }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep; word?: WordStep }) {
   return (
@@ -52,6 +53,8 @@ function Counter() {
 
 function FpsField() {
   const fps = useStore((s) => s.doc.fps);
+  // With several artboards the speed is this one's own; the others keep theirs.
+  const own = useStore((s) => hasArtboards(s.doc) && !s.doc.sharedLayers);
   const [text, setText] = useState<string | null>(null);
   const commit = (v: string) => {
     setText(null);
@@ -59,7 +62,7 @@ function FpsField() {
     if (Number.isFinite(n)) ops.setFps(n);
   };
   return (
-    <label className="tl-fps" title="How many frames play each second (fps). 12 is a classic hand-drawn pace, 24 is smooth film.">
+    <label className="tl-fps" title={`How many frames play each second (fps). 12 is a classic hand-drawn pace, 24 is smooth film.${own ? ' This artboard keeps its own speed; the others are not changed.' : ''}`}>
       <input
         type="text"
         inputMode="numeric"
@@ -142,6 +145,9 @@ function HoldButtons() {
 }
 
 /** The onion skin settings box. It sits at a point on screen, and is opened from its header button or, when that is folded, from the "more" menu. */
+/** Why onion skin colours have no opacity slider. */
+const ONION_WHY = 'Onion skin has its own Strength slider below, so these colours stay solid.';
+
 function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: () => void }) {
   const onion = useStore((s) => s.ui.onion);
   const boards = useStore((s) => hasArtboards(s.doc));
@@ -158,7 +164,7 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
           <output>{onion.before}</output>
           <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" data-testid="onion.beforeMore" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
         </span>
-        <input type="color" aria-label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} onChange={(e) => set({ beforeColor: e.target.value })} />
+        <ColourField label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} alpha={false} why={ONION_WHY} onChange={(c) => set({ beforeColor: c })} />
       </div>
       <div className="tl-pop-row">
         <span>Frames after</span>
@@ -167,7 +173,7 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
           <output>{onion.after}</output>
           <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" data-testid="onion.afterMore" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
         </span>
-        <input type="color" aria-label="Colour of frames after" value={onion.afterColor.slice(0, 7)} onChange={(e) => set({ afterColor: e.target.value })} />
+        <ColourField label="Colour of frames after" value={onion.afterColor.slice(0, 7)} alpha={false} why={ONION_WHY} onChange={(c) => set({ afterColor: c })} />
       </div>
       <label className="tl-pop-row">
         <span>Strength</span>
@@ -417,7 +423,7 @@ export function Header() {
   // A feature turned on or off adds or takes away buttons and the commands folded into "more".
   useFeaturesVersion();
   return (
-    <div ref={ref} className="tl-header" role="toolbar" aria-label="Timeline controls">
+    <div ref={ref} className="tl-header" data-scrolls role="toolbar" aria-label="Timeline controls">
       <span className="tl-group" role="group" aria-label="Playback">
         <Btn id="timeline.firstFrame" icon="first" title="Go to the first frame" />
         <Btn id="timeline.prevFrame" icon="prev" title="Back one frame" />
@@ -455,7 +461,7 @@ export function Header() {
         <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" data-testid="timeline.zoomFit" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />
         </button>
-        <input type="range" data-step="zoom" data-testid="timeline.zoom" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
+        <input type="range" data-step="zoom" data-testid="timeline.zoom" aria-label="Timeline zoom" min={0} max={1} step={0.001} value={cwToSlider(cw)} onChange={(e) => setTl({ cw: sliderToCw(Number(e.target.value)) })} />
       </label>
     </div>
   );

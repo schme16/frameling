@@ -1,0 +1,22 @@
+{
+	"$about": "The mascots the app knows. Read by the app (src/ui/mascot/mascots.ts) and by the build (scripts/build-mascot.mjs). Paths: source, icons and logo are from the repo root; sheet and meta are served from public/. See docs/mascots.md.",
+	"default": "quill",
+	"mascots": [
+		{
+			"id": "quill",
+			"name": "Quill",
+			"blurb": "A hedgehog whose quills are coloured pencils.",
+			"source": "brand/mascot/mascot.frameling",
+			"sheet": "mascot/mascot.png",
+			"meta": "mascot/mascot.json",
+			"appIcon": "brand/mascot/mascot-icon.frameling",
+			"pencils": [
+				{ "bright": "#4fd1a5", "shade": "#2fae85" },
+				{ "bright": "#9b7bff", "shade": "#7657e0" },
+				{ "bright": "#5ab8ff", "shade": "#3a8fe0" },
+				{ "bright": "#ff6f91", "shade": "#e04a72" },
+				{ "bright": "#ffc94a", "shade": "#f2a91c" }
+			]
+		}
+	]
+}

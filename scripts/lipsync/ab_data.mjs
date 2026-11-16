@@ -1,6 +1,7 @@
 // Makes the data for the before/after clip: two spoken lines joined into one wav, with the true mouths, the old guesses
 // and the new guesses (with and without the typed words) for every frame.
-//   node scripts/lipsync/ab_data.mjs <refs_dir> <out_dir> --before <old analysis.ts> [--lines flt0-032,flt0-033] [--fps 24]
+//   node scripts/lipsync/ab_data.mjs <refs_dir> <out_dir> --before <old analysis.ts> [--lines flt0-032,flt0-033] [--fps 24] [--model <model.ts>]
+// --model scores the 'after' with other classifier numbers (a cross-validation fold, so a real clip it never heard).
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,13 +18,14 @@ const RATE = 44100;
 const names = flag('--lines', 'flt0-032,flt0-033').split(',');
 mkdirSync(out, { recursive: true });
 
-async function load(src, tag) {
+async function load(src, tag, model) {
   const tmp = mkdtempSync(join(tmpdir(), 'lipab-'));
-  await build({ entryPoints: [resolve(src)], bundle: true, format: 'esm', platform: 'node', outfile: join(tmp, tag + '.mjs'), logLevel: 'error' });
+  const alias = model ? [{ name: 'alias-model', setup: (b) => b.onResolve({ filter: /\/model$/ }, () => ({ path: resolve(model) })) }] : [];
+  await build({ entryPoints: [resolve(src)], bundle: true, format: 'esm', platform: 'node', outfile: join(tmp, tag + '.mjs'), logLevel: 'error', plugins: alias });
   return import(pathToFileURL(join(tmp, tag + '.mjs')).href);
 }
 const before = await load(flag('--before'), 'before');
-const after = await load('src/lipsync/analysis.ts', 'after');
+const after = await load('src/lipsync/analysis.ts', 'after', flag('--model', ''));
 
 // Join the lines with a short gap.
 const parts = [];

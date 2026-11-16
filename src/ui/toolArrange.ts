@@ -23,10 +23,14 @@ export interface ToolGroup {
 
 /** The groups the rail starts with. A tool says which one it starts in (`group`) and where (`groupAt`) when it is registered. */
 export const DEFAULT_GROUPS: { id: string; name: string }[] = [
+  // Select is first: picking things up and moving them is the thing you reach for most. Only the order changed, never an id.
+  { id: 'select', name: 'Select' },
   { id: 'draw', name: 'Draw' },
-  { id: 'extras', name: 'Colour and pixel extras' },
+  // The id is the old one (it was "Colour and pixel extras"), so a rail saved with it still reads right. Shade, Dither and Spray
+  // are colour tools too: they change the colour of pixels, and they sit here on a pixel layer so the strip stays put.
+  { id: 'extras', name: 'Colour' },
   { id: 'shapes', name: 'Shapes' },
-  { id: 'select', name: 'Select and pen' },
+  { id: 'pen', name: 'Pen and edit' },
   { id: 'rig', name: 'Rig and motion' },
   { id: 'view', name: 'View' },
 ];
@@ -46,19 +50,20 @@ export interface ToolRef {
  * that start there (their `group` and `groupAt`) fill it. Draw is the standard order.
  */
 export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
-  // Drawing first, then colour extras, shapes, select and pen, rig, view.
+  // Select first, then drawing, colour, shapes, pen and edit, rig, view.
   draw: DEFAULT_GROUPS.map((g) => ({ id: g.id, tools: [] })),
-  // Drawing, then rig and motion straight after, then select and pen, shapes, extras and view.
-  animate: ['draw', 'rig', 'select', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
-  // Pixel tools first: draw with the eyedropper in reach, shade, dither and pixel select, then shapes; the vector-only
-  // tools (select and pen, rig) come after.
+  // Select first, then drawing, rig and motion straight after, then pen and edit, shapes, colour and view.
+  animate: ['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
+  // Pixel select first, then the pixel tools: draw with the eyedropper in reach, shade, dither, then shapes; the
+  // vector-only tools (pen, rig) come after.
   pixel: [
+    { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand', 'transform'] },
     { id: 'draw', tools: ['pencil', 'eraser', 'fill', 'eyedropper'] },
-    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'spray'] },
-    { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand'] },
+    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush', 'clone-stamp', 'blur-brush', 'sharpen-brush'] },
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },
+    { id: 'pen', tools: [] },
     { id: 'rig', tools: [] },
   ],
 };
@@ -69,9 +74,15 @@ const RESERVED = new Set(['__proto__', 'constructor', 'prototype']);
 const ID = /^[\w.:/-]{1,80}$/;
 const isId = (v: unknown): v is string => typeof v === 'string' && ID.test(v) && !RESERVED.has(v) && !v.includes('..');
 
-const rankOfGroup = (id: string): number => {
-  const i = DEFAULT_GROUPS.findIndex((g) => g.id === id);
-  return id === OTHER_GROUP.id ? DEFAULT_GROUPS.length : i < 0 ? DEFAULT_GROUPS.length + 1 : i;
+/**
+ * The order groups had before Select moved to the top. A rail someone saved is kept as it is: a group it lacks that
+ * turns up later goes where it would have gone then, not at the top.
+ */
+const LEGACY_ORDER = ['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view'];
+
+const rankOfGroup = (id: string, order: readonly string[] = DEFAULT_GROUPS.map((g) => g.id)): number => {
+  const i = order.indexOf(id);
+  return id === OTHER_GROUP.id ? order.length : i < 0 ? order.length + 1 : i;
 };
 
 /** Which default group a tool starts in (Other when it names none, or one that is not a default group). */
@@ -164,8 +175,9 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     if (!g) {
       const meta = gid === OTHER_GROUP.id ? OTHER_GROUP : DEFAULT_GROUPS.find((x) => x.id === gid)!;
       g = { id: gid, name: meta.name, tools: [] };
-      // Where it goes among the groups already there: before the first one that ranks after it.
-      const at = groups.findIndex((x) => rankOfGroup(x.id) > rankOfGroup(gid));
+      // Where it goes among the groups already there: before the first one that ranks after it. A saved rail keeps the old ranking.
+      const order = saved?.length ? LEGACY_ORDER : undefined;
+      const at = groups.findIndex((x) => rankOfGroup(x.id, order) > rankOfGroup(gid, order));
       if (at >= 0) groups.splice(at, 0, g);
       else groups.push(g);
     }
@@ -254,6 +266,38 @@ export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string
   return { shown: shown.map((t) => t.id), off: shown.filter((t) => !works(t)).map((t) => t.id) };
 }
 
+/** A tool the rail leaves out on this layer, and the kind of layer it needs. */
+export interface WaitingTool {
+  id: string;
+  label: string;
+  needs: 'vector' | 'pixel';
+}
+
+/**
+ * The tools that are missing from the rail only because of the layer you are on (Text and Gradient on a pixel layer, Shade
+ * and Dither on a vector one), so the rail can say so instead of just being shorter. A tool whose twin is on the rail
+ * (the Lasso and the Pixel lasso) isn't missing, and ones put away on purpose (`away`) aren't waiting for anything.
+ */
+export function waitingFor(tools: RailTool[], kind: LayerKind | null, away: ReadonlySet<string> = new Set()): WaitingTool[] {
+  if (!everyday(kind)) return [];
+  const works = (t: RailTool) => t.layers.includes(kind!);
+  const out: WaitingTool[] = [];
+  for (const t of tools) {
+    if (works(t) || away.has(t.id) || !t.layers.some(everyday)) continue;
+    if (t.slot && tools.some((o) => o.slot === t.slot && o.id !== t.id && works(o))) continue;
+    out.push({ id: t.id, label: t.label ?? t.id, needs: t.layers.includes('pixel') && !t.layers.includes('vector') ? 'pixel' : 'vector' });
+  }
+  return out;
+}
+
+/** "Text and Gradient work on vector layers." for the tools waiting for one kind of layer. */
+export function waitingWords(list: WaitingTool[]): string {
+  if (!list.length) return '';
+  const names = list.map((t) => t.label);
+  const joined = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+  return `${joined} ${names.length > 1 ? 'work' : 'works'} on ${list[0].needs} layers.`;
+}
+
 /** The tool of the same slot that works on this kind of layer, or null when it has no slot or none works. */
 export function twinFor(tools: RailTool[], id: string, kind: LayerKind | null): string | null {
   const me = tools.find((t) => t.id === id);
@@ -268,7 +312,7 @@ export function whyOff(tool: { label?: string; layers: LayerKind[] }, kind: Laye
   const name = tool.label ?? 'This tool';
   const needs = tool.layers.includes('pixel') && !tool.layers.includes('vector') ? 'pixel' : 'vector';
   const on = KIND_WORDS[kind ?? 'vector'];
-  return `${name} works on ${needs} layers, and you're on a ${on} layer. Click a ${needs} layer, or add one with ${needs === 'pixel' ? 'Pixel' : 'Vector'} in the Layers header.`;
+  return `${name} works on ${needs} layers, and you're on a ${on} layer. Pick ${tool.label ?? 'it'}, or press ${needs === 'pixel' ? 'Pixels' : 'Vectors'} at the top of the rail, and you switch to a ${needs} layer.`;
 }
 
 /** True when a group carries a name that is not the one it would have anyway (its usual name, or "Group N"). */

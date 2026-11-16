@@ -7,6 +7,7 @@ import { gridPixels } from '../core/pixelBounds';
 import { getCommand, registerCommand, registerCommands, type Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { hint } from '../canvas/controller';
+import { showPanel } from '../ui/dock';
 import { editPixels } from '../pixel/commands';
 import { cancelOpenLasso, lassoIsOpen } from '../tools/select';
 import { clearPixels, emptyMask, extractPixels, fullMask, invertMask, maskEmpty, resizeMask, resizePixels, type Mask } from './mask';
@@ -27,6 +28,7 @@ import {
 } from './pixel-state';
 import { cancelOpenPixelLasso, pixelLassoIsOpen } from './pixel-tool';
 import { isPixelSelectTool, toolFor, type SelectMode } from './ways';
+import { takeFocusWhenReady } from '../ui/takeFocusWhenReady';
 
 const onPixel = (): boolean => !!activePixelGrid();
 const hasSel = (): boolean => !!pixelSelection();
@@ -38,6 +40,8 @@ interface PixelClip {
   height: number;
   pixels: Uint8ClampedArray;
   mask: Mask;
+  /** Page units per art pixel on the layer it came from, so a paste on a vector layer keeps its size. */
+  pixelSize: number;
 }
 let clip: PixelClip | null = null;
 
@@ -52,15 +56,16 @@ export function clearPixelClipboard(): void {
 /** Copies the selected pixels (or the lifted ones, where they are now). */
 export function copyPixels(): boolean {
   const lifted = floatingPixels();
+  const pixelSize = activePixelGrid()?.layer.pixelSize ?? 1;
   if (lifted) {
-    clip = { width: lifted.mask.width, height: lifted.mask.height, pixels: lifted.pixels, mask: lifted.mask };
+    clip = { width: lifted.mask.width, height: lifted.mask.height, pixels: lifted.pixels, mask: lifted.mask, pixelSize };
     return true;
   }
   const m = pixelSelection();
   if (!m) return false;
   const d = activePixelDrawing();
   const pixels = d ? extractPixels(gridPixels(d, m.width, m.height), m) : new Uint8ClampedArray(m.width * m.height * 4);
-  clip = { width: m.width, height: m.height, pixels, mask: m };
+  clip = { width: m.width, height: m.height, pixels, mask: m, pixelSize };
   return true;
 }
 
@@ -187,6 +192,20 @@ const commands: Command[] = [
       if (isFloating()) dropFloating();
       const m = pixelSelection() ?? emptyMask(a.width, a.height);
       setPixelSelection(invertMask(m));
+    },
+  },
+  {
+    id: 'select.numbers',
+    label: 'Type an exact position and size',
+    category: 'Edit',
+    description: 'Opens the X, Y, Width, Height and Turn boxes for what is selected, shapes or pixels, so you can place it exactly.',
+    help: 'selection-numbers',
+    keywords: ['position', 'coordinates', 'x y', 'size', 'width', 'height', 'resize exactly', 'numbers', 'transform', 'rotate', 'turn', 'skew', 'slant', 'move exactly', 'precise', 'properties'],
+    enabled: (s) => s.ui.selection.length > 0 || hasSel(),
+    run: () => {
+      showPanel('selection-numbers');
+      // The panel may have just opened, so watch for its first box rather than guessing how long it takes to draw.
+      takeFocusWhenReady('.sy-props input[aria-label="X"]', { select: false });
     },
   },
   {

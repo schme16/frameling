@@ -5,7 +5,7 @@
 import type { DocPalette } from '../core/format';
 import type { RGBA } from '../canvas/pixels';
 import { ditherOn, type DitherPattern } from './dither';
-import { exactIndex, NearestCache, paletteRgb, shadeStep } from './palette';
+import { exactIndex, NearestCache, paletteAlpha, paletteRgb, shadeStep } from './palette';
 import type { SymmetryMode } from './settings';
 
 export interface Ink {
@@ -14,10 +14,13 @@ export interface Ink {
    * Returns false to leave the pixel alone.
    */
   color(x: number, y: number, base: Uint8ClampedArray, i: number, out: Uint8Array): boolean;
+  /** Set when every pixel gets this one colour whatever was there, so a row can be filled in one go. */
+  readonly solid?: RGBA;
 }
 
 export function solidInk(c: RGBA): Ink {
   return {
+    solid: c,
     color(_x, _y, _b, _i, out) {
       out[0] = c[0];
       out[1] = c[1];
@@ -65,20 +68,26 @@ export function ditherInk(pattern: DitherPattern, a: RGBA, b: RGBA | null): Ink 
   };
 }
 
-/** Wraps an ink so every colour it paints snaps to the nearest palette colour (clearing stays clearing). */
+/**
+ * Wraps an ink so every colour it paints snaps to the nearest palette colour (clearing stays clearing). The pixel takes
+ * that palette colour's own opacity: solid, unless the palette colour is see-through. What you were painting with has
+ * no say, so every pixel is one of the palette's colours, never something in between.
+ */
 export function lockedInk(inner: Ink, p: DocPalette): Ink {
   const rgb = paletteRgb(p.colors);
   if (!rgb.length) return inner;
+  const solid = paletteAlpha(p.colors);
   const near = new NearestCache(rgb);
   return {
     color(x, y, base, i, out) {
       if (!inner.color(x, y, base, i, out)) return false;
       if (out[3] === 0) return true;
-      const k = near.get(out[0], out[1], out[2]) * 3;
+      const n = near.get(out[0], out[1], out[2]);
+      const k = n * 3;
       out[0] = rgb[k];
       out[1] = rgb[k + 1];
       out[2] = rgb[k + 2];
-      out[3] = 255;
+      out[3] = solid[n];
       return true;
     },
   };
@@ -88,8 +97,8 @@ export function lockedInk(inner: Ink, p: DocPalette): Ink {
 export function snapToPalette(c: RGBA, p: DocPalette): RGBA {
   if (c[3] === 0 || !p.colors.length) return c;
   const rgb = paletteRgb(p.colors);
-  const k = new NearestCache(rgb).get(c[0], c[1], c[2]) * 3;
-  return [rgb[k], rgb[k + 1], rgb[k + 2], 255];
+  const n = new NearestCache(rgb).get(c[0], c[1], c[2]);
+  return [rgb[n * 3], rgb[n * 3 + 1], rgb[n * 3 + 2], paletteAlpha(p.colors)[n]];
 }
 
 export interface Mirror {

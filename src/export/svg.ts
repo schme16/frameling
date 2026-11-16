@@ -3,13 +3,17 @@
 import type { Doc, Drawing, Gradient, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
+import { strokeParts } from '../core/tips';
 import { encodePng } from '../io/png';
 import { flattenDrawing } from '../core/layerKinds';
 import { shapeExportOf } from './shapeExport';
-import { withSprites } from './svg-extra';
-import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
+import { noteShapeFx, withSprites } from './svg-extra';
+import { toothImage } from './svgTooth';
+import { hasShapeFx, shapeEffects } from '../effects/shapeFx';
+import { composeSvg, composeSymbol, effectsFilter, SHAPE_OWNER, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { gradientKey, sortedStops } from '../core/gradient';
+import { angularWedges, conicStart, diamondQuarters, gradientKey, sortedStops } from '../core/gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
 export function n4(v: number): string {
@@ -44,9 +48,62 @@ export function splitColor(c: string): { color: string; alpha: number } {
 
 const op = (v: number) => String(Math.round(v * 1000) / 1000);
 
-/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). */
-export function svgGradient(gr: Gradient): { id: string; def: string } {
-  const key = gradientKey(gr);
+/** How far a set of paths reaches from a point, with a margin for a line's width (an angular gradient's pieces have to cover that much). */
+export function reachOf(paths: readonly SubPath[], from: { x: number; y: number }, margin = 0): number {
+  let r = 0;
+  for (const sp of paths)
+    for (const p of sp.points)
+      for (const q of [p, p.c1, p.c2]) if (q) r = Math.max(r, Math.hypot(q.x - from.x, q.y - from.y));
+  return r + margin;
+}
+
+/**
+ * SVG has no angular gradient, so one is a pattern: a square round the centre holding thin wedges, each one plain colour
+ * (90 of them, so the steps are 4 degrees). The shape then fills with `url(#id)` like any other gradient. `reach` is how
+ * far the shape goes from the centre; the square is a little bigger than that so the pattern never repeats on the shape.
+ */
+export function angularPattern(id: string, gr: Gradient, reach: number): string {
+  const R = Math.ceil((Math.max(reach, Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y), 1) * 1.05 + 2) / 10) * 10;
+  const start = conicStart(gr);
+  const steps = 90;
+  // The wedge's outer corners sit past the square, so its straight edge never shows inside it. A hair of overlap hides the seams.
+  const far = (R * 1.5) / Math.cos(Math.PI / steps);
+  const pt = (turn: number) => `${n2(gr.from.x + Math.cos(start + turn * Math.PI * 2) * far)} ${n2(gr.from.y + Math.sin(start + turn * Math.PI * 2) * far)}`;
+  const wedges = angularWedges(gr.stops, steps)
+    .map((w) => {
+      const { color, alpha } = splitColor(w.color);
+      return `<path d="M${n2(gr.from.x)} ${n2(gr.from.y)}L${pt(w.from)}L${pt(w.to + 0.002)}Z" fill="${esc(color)}"${alpha < 1 ? ` fill-opacity="${op(alpha)}"` : ''}/>`;
+    })
+    .join('');
+  const box = `${n2(gr.from.x - R)} ${n2(gr.from.y - R)} ${n2(R * 2)} ${n2(R * 2)}`;
+  return `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(gr.from.x - R)}" y="${n2(gr.from.y - R)}" width="${n2(R * 2)}" height="${n2(R * 2)}" viewBox="${box}">${wedges}</pattern>`;
+}
+
+/**
+ * SVG has no diamond gradient either, so one is a pattern too: a square round the middle holding four pieces, one in each
+ * quarter, each filled with a straight gradient (the diamond is a straight gradient in each quarter, mirrored). Plain
+ * shapes with real gradients and no clipping, so it stays smooth at any size. Same size rule as `angularPattern`.
+ */
+export function diamondPattern(id: string, gr: Gradient, reach: number): string {
+  const R = Math.ceil((Math.max(reach, Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y), 1) * 1.05 + 2) / 10) * 10;
+  const stops = sortedStops(gr.stops)
+    .map((st) => {
+      const { color, alpha } = splitColor(st.color);
+      return `<stop offset="${op(st.at)}" stop-color="${esc(color)}"${alpha < 1 ? ` stop-opacity="${op(alpha)}"` : ''}/>`;
+    })
+    .join('');
+  // The pieces meet exactly and are drawn without edge smoothing, so each pixel belongs to one piece: no seam, and no double
+  // painting where the colours are see-through. (The meeting line is the same colour on both sides, so it does not look rough.)
+  const quarters = diamondQuarters(gr, R * 1.5);
+  const defs = quarters.map((q, i) => `<linearGradient id="${id}q${i}" gradientUnits="userSpaceOnUse" x1="${n2(q.from.x)}" y1="${n2(q.from.y)}" x2="${n2(q.to.x)}" y2="${n2(q.to.y)}">${stops}</linearGradient>`).join('');
+  const paths = quarters.map((q, i) => `<path d="M${q.poly.map((p) => `${n2(p.x)} ${n2(p.y)}`).join('L')}Z" fill="url(#${id}q${i})" shape-rendering="crispEdges"/>`).join('');
+  const box = `${n2(gr.from.x - R)} ${n2(gr.from.y - R)} ${n2(R * 2)} ${n2(R * 2)}`;
+  return `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(gr.from.x - R)}" y="${n2(gr.from.y - R)}" width="${n2(R * 2)}" height="${n2(R * 2)}" viewBox="${box}"><defs>${defs}</defs>${paths}</pattern>`;
+}
+
+/** A gradient as an SVG element with a name made from its content (the same gradient twice gets the same name). `reach` is only for an angular or diamond one. */
+export function svgGradient(gr: Gradient, reach = 0): { id: string; def: string } {
+  const key = gradientKey(gr) + (gr.kind === 'angular' || gr.kind === 'diamond' ? `|${Math.ceil(reach / 50)}` : '');
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (Math.imul(h, 31) + key.charCodeAt(i)) | 0;
   const id = `grad${(h >>> 0).toString(36)}`;
@@ -56,6 +113,8 @@ export function svgGradient(gr: Gradient): { id: string; def: string } {
       return `<stop offset="${op(st.at)}" stop-color="${esc(color)}"${alpha < 1 ? ` stop-opacity="${op(alpha)}"` : ''}/>`;
     })
     .join('');
+  if (gr.kind === 'angular') return { id, def: angularPattern(id, gr, reach) };
+  if (gr.kind === 'diamond') return { id, def: diamondPattern(id, gr, reach) };
   const def =
     gr.kind === 'radial'
       ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(gr.from.x)}" cy="${n2(gr.from.y)}" r="${n2(Math.hypot(gr.to.x - gr.from.x, gr.to.y - gr.from.y))}">${stops}</radialGradient>`
@@ -64,8 +123,8 @@ export function svgGradient(gr: Gradient): { id: string; def: string } {
 }
 
 /** A paint attribute for a gradient, with its definition to put alongside (inside a <defs> next to the shape). */
-function gradientPaint(attr: 'fill' | 'stroke', gr: Gradient, opacity: number, defs: string[]): string {
-  const g = svgGradient(gr);
+function gradientPaint(attr: 'fill' | 'stroke', gr: Gradient, opacity: number, defs: string[], reach = 0): string {
+  const g = svgGradient(gr, reach);
   defs.push(g.def);
   return ` ${attr}="url(#${g.id})"` + (opacity < 1 ? ` ${attr}-opacity="${op(opacity)}"` : '');
 }
@@ -115,11 +174,35 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
+/**
+ * One shape as SVG. A shape with effects sits in a group with a filter (the same filters a layer's effects use, see
+ * svg-look.ts), so the effect works on that shape alone. Effects SVG has nothing like are left out, and said so.
+ */
 export function shapeToSvg(s: Shape, doc?: Doc): string {
+  // A line on paper is a baked picture when the export asks for that (svgTooth.ts); its other effects then run on the picture.
+  const picture = s.type === 'stroke' ? toothImage(s) : null;
+  const el = picture ?? plainShapeToSvg(s, doc);
+  let fx = shapeEffects(s);
+  if (picture !== null && fx) {
+    const t = fx.find((e) => e.kind === 'tooth' && e.on !== false);
+    fx = fx.filter((e) => e !== t);
+  }
+  if (!el || !fx?.length || !hasShapeFx({ ...s, effects: fx } as Shape)) return el;
+  const defs: string[] = [];
+  const host = { doc: doc ?? ({ width: 4096, height: 4096 } as Doc), frames: [0], duration: 1, loop: false, body: () => '', defs, notes: new Set<string>() };
+  const id = effectsFilter(host, fx.map((e) => (e.keys ? { ...e, keys: undefined } : e)), SHAPE_OWNER);
+  for (const n of host.notes) noteShapeFx(n);
+  return id ? `<defs>${defs.join('')}</defs><g filter="url(#${id})">${el}</g>` : el;
+}
+
+function plainShapeToSvg(s: Shape, doc?: Doc): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
   // Text, particles and the like write themselves, through their registered export.
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
   if (s.type === 'stroke') {
+    // A chalk, charcoal, watercolour or stamp line is written as the plain shapes it is made of.
+    const parts = s.brush.tip ? strokeParts(s) : null;
+    if (parts) return parts.map((p) => shapeToSvg(p, doc)).join('');
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
   }
@@ -127,7 +210,7 @@ export function shapeToSvg(s: Shape, doc?: Doc): string {
     const d = subPathsToPathData(s.paths);
     if (!d) return '';
     const defs: string[] = [];
-    return withDefs(defs, `<path d="${d}"${s.gradient ? gradientPaint('fill', s.gradient, s.opacity, defs) : paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>`);
+    return withDefs(defs, `<path d="${d}"${s.gradient ? gradientPaint('fill', s.gradient, s.opacity, defs, reachOf(s.paths, s.gradient.from)) : paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>`);
   }
   return pathShapeToSvg(s);
 }
@@ -191,12 +274,27 @@ function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh:
 }
 
 function pathShapeToSvg(s: PathShape): string {
+  // Heads and a changing width become shapes of their own; dashes stay on the line as stroke-dasharray.
+  if (hasLineStyle(s.stroke)) {
+    const parts = expandStroke(s);
+    return parts.length === 1 && parts[0].shape === s ? plainPathToSvg(s) : parts.map((p) => plainPathToSvg(p.shape)).join('');
+  }
+  return plainPathToSvg(s);
+}
+
+function plainPathToSvg(s: PathShape): string {
   const d = subPathsToPathData(s.paths);
   if (!d) return '';
   const defs: string[] = [];
-  let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
+  let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs, reachOf(s.paths, s.fillGradient.from)) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
   if (s.stroke) {
-    a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
+    a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs, reachOf(s.paths, s.strokeGradient.from, s.stroke.width)) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
+    const dash = dashPx(s.stroke);
+    if (dash) {
+      a += ` stroke-dasharray="${dash.map((v) => n4(v)).join(' ')}"`;
+      const off = dashOffsetPx(s.stroke);
+      if (off) a += ` stroke-dashoffset="${n2(off)}"`;
+    }
   }
   return withDefs(defs, `<path d="${d}"${a}/>`);
 }
@@ -300,7 +398,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
   const view = cameraViewAt(doc, frame);
   const notes = new Set<string>();
   const defs: string[] = [];
-  const { value: body, defs: sprites } = withSprites(() =>
+  const { value: body, defs: sprites, notes: fxNotes } = withSprites(() =>
     composeSvg({
       doc,
       frames: [frame],
@@ -320,6 +418,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
   );
   // isolation: layers blend with each other only, not with the web page behind the picture (same as the animated SVG).
   const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">`];
+  for (const n of fxNotes) notes.add(n);
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

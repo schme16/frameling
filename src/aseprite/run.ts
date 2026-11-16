@@ -15,6 +15,7 @@ import { line } from '../ui/mascot/lines';
 
 import { choose } from '../core/choices';
 import { ASE_FILTERS, type DropChoice } from './drop';
+import { displayFile } from '../core/streamSafe';
 
 const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
@@ -95,7 +96,7 @@ export async function paletteFromAsepriteBytes(bytes: Uint8Array, path: string):
   }
   const colors = paletteColors(p).slice(0, 256);
   setDocPalette({ name: stripExt(baseName(path)) || 'Aseprite palette', colors }, 'Use palette from Aseprite file');
-  notify(`Loaded the palette from "${baseName(path)}": ${plural(colors.length, 'colour')}${p.length > 256 ? ' (the first 256)' : ''}.`, 'success');
+  notify(`Loaded the palette from "${displayFile(path)}": ${plural(colors.length, 'colour')}${p.length > 256 ? ' (the first 256)' : ''}.`, 'success');
   return true;
 }
 

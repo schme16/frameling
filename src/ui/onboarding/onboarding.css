@@ -42,6 +42,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Never scrolls: the sheet picks a smaller Quill and tighter bubbles until they all fit (Onboarding.tsx, FIT_LEVELS). */
+  flex: none;
+  /* Room for the little tail under the last bubble. */
+  padding-bottom: 9px;
 }
 .ob-bubble {
   white-space: pre-line;
@@ -71,6 +75,7 @@
 }
 .ob-quill-stand {
   position: relative;
+  flex: none;
   display: flex;
   align-items: flex-end;
   padding-left: 12px;
@@ -104,45 +109,61 @@
   color: var(--muted);
 }
 
-/* Hello: five little feature tiles. */
+/* Hello: what you can do, as a plain list. Nothing here is a button, so nothing is drawn like one. */
 .ob-hello {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
-  margin-top: 12px;
-}
-/* Five tiles: three across the top, two wider ones under them. */
-.ob-hello .ob-feature {
-  grid-column: span 2;
-  min-height: 132px;
-}
-.ob-hello .ob-feature:nth-child(n + 4) {
-  grid-column: span 3;
-}
-@media (max-width: 760px) {
-  .ob-hello {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .ob-hello .ob-feature,
-  .ob-hello .ob-feature:nth-child(n + 4) {
-    grid-column: span 1;
-  }
-}
-.ob-feature {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px;
-  border-radius: var(--radius);
-  background: var(--panel-2);
-  border: 1px solid var(--line-soft);
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ob-hello li {
+  display: grid;
+  grid-template-columns: 36px 110px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
   animation: ob-pop 0.38s var(--ease-bounce, ease-out) both;
 }
-.ob-feature span:last-child {
-  color: var(--muted);
-  font-size: 13px;
+.ob-hello li:last-child {
+  border-bottom: none;
 }
-.ob-feature-icon,
+.ob-hello li > span:last-child {
+  color: var(--muted);
+}
+.ob-hello-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--accent);
+}
+/* A tall window has the room: give the list some air. */
+@media (min-height: 800px) {
+  .ob-hello li {
+    padding: 14px 0;
+  }
+  .ob-hello-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .ob-hello li {
+    grid-template-columns: 40px 120px 1fr;
+    font-size: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .ob-hello li {
+    grid-template-columns: 36px 1fr;
+  }
+  .ob-hello li > span:last-child {
+    grid-column: 2;
+  }
+}
 .ob-card-icon {
   display: inline-grid;
   place-items: center;
@@ -196,34 +217,25 @@
   color: var(--chosen-fg);
 }
 
-/* Themes. */
-.ob-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.ob-row > span {
-  font-weight: 600;
-}
-.ob-theme-row h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 12px 0 8px;
-  font-size: 14px;
-  color: var(--muted);
-}
+/* Themes: one mode's at a time, small enough that two rows of them and the controls fit in a 720 px window. */
 .ob-themes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 10px;
+  margin-top: 10px;
+}
+/* A tall window has the room for bigger pictures: four across, three down. */
+@media (min-height: 860px) {
+  .ob-themes {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 .ob-theme {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px;
+  gap: 5px;
+  padding: 5px;
   font: inherit;
   color: var(--text);
   text-align: left;
@@ -238,26 +250,34 @@
   border-color: var(--chosen-bg);
 }
 .ob-theme-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  font-size: 13px;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.25;
   font-weight: 600;
 }
 .ob-fav {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 600;
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   background: var(--rose, var(--accent));
   color: #fff;
 }
 .ob-theme.is-fav {
   animation: ob-wiggle 1.4s var(--ease-bounce, ease-out) 0.6s 1;
+}
+.ob-looking {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: var(--fs-small);
 }
 
 /* Settings. */
@@ -282,6 +302,27 @@
 .ob-setting > div:first-child span {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* Tighter bubbles, for when the roomy ones do not fit the window's height. */
+.ob-quill.is-tight {
+  gap: 8px;
+  padding-top: 16px;
+}
+.ob-quill.is-tight .ob-bubbles {
+  gap: 6px;
+}
+.ob-quill.is-tight .ob-bubble {
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.ob-more {
+  margin-top: 14px;
+  font-size: 13px;
+}
+.ob-tuck {
+  margin-bottom: 8px;
 }
 
 /* Name. */
@@ -449,23 +490,108 @@
   }
 }
 
-/* The Auto / Light / Dark choice leads the theme step. */
-.ob-mode {
-  margin-bottom: 6px;
+/* The Auto / Light / Dark choice leads the theme step: its words on the left, the choice on the right. */
+.ob-mode-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
 }
 .ob-mode h3 {
   margin: 0 0 2px;
   font-size: 14px;
 }
 .ob-mode p {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--muted);
   font-size: var(--fs-small);
 }
-.ob-theme-row.is-unused {
-  opacity: 0.5;
+
+/* A short window (the interface size turned up on a small screen counts as one): tighter pages, so each still fits
+   without scrolling. Same shapes, less air. */
+@media (max-height: 680px) {
+  .ui-modal.ob {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 32px);
+  }
+  .ob-main {
+    padding: 16px 24px 8px;
+  }
+  .ob-title {
+    margin-bottom: 4px;
+    font-size: 22px;
+  }
+  .ob-lead {
+    margin-bottom: 8px;
+  }
+  .ob-hello li {
+    padding: 5px 0;
+  }
+  .ob-cards,
+  .ob-go-list {
+    gap: 8px;
+  }
+  .ob-card,
+  .ob-go {
+    padding: 10px 12px;
+    gap: 2px;
+  }
+  .ob-card-icon {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 0;
+  }
+  .ob-themes {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .ob-theme-name {
+    font-size: 11px;
+  }
+  .ob-looking {
+    margin-top: 6px;
+  }
+  .ob-setting {
+    padding: 6px 0;
+  }
+  .ob-name label {
+    margin: 4px 0;
+  }
+  .ob-name-row input,
+  .ob-dice {
+    height: 36px;
+    font-size: 16px;
+  }
+  .ob-name .ob-lead {
+    margin-top: 6px;
+  }
+  .ob-reads {
+    margin-top: 10px;
+  }
+  .ob-foot {
+    padding: 8px 16px;
+  }
 }
-.ob-theme-row.is-unused:hover,
-.ob-theme-row.is-unused:focus-within {
-  opacity: 1;
+
+/* A very short one (about 520 px high): Quill's side steps aside so the page has the whole width and height. His
+   words are all on the page too, so nothing is lost. */
+@media (max-height: 520px) {
+  .ob-body {
+    grid-template-columns: 1fr;
+  }
+  .ob-quill {
+    display: none;
+  }
+  /* The "rename it any time" hint is the first thing to go when height is this tight. */
+  .ob-name .ob-lead {
+    display: none;
+  }
+  .ob-tuck .ob-setting {
+    padding: 4px 0;
+  }
+  .ob-reads {
+    margin-top: 8px;
+  }
 }

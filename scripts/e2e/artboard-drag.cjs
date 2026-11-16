@@ -7,6 +7,10 @@
 //
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const path = require('node:path');
 const { runSteps, sleep, mockMain, makeWindow } = require('../docs/steps.cjs');
 
@@ -140,6 +144,7 @@ async function main() {
 }
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   try {
     await main();
   } catch (err) {

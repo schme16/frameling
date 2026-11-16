@@ -1,0 +1,197 @@
+// Palette commands for the Pixel brush: the tip, edges, turning with the line, scatter, spacing and the picture tip.
+import { registerCommands, type Command } from '../core/registry';
+import { pickKindReason } from '../core/reasons';
+import { toast } from '../ui/toast';
+import { toolEnabled } from '../ui/dynamic';
+import { pickTool } from '../tools/pick';
+import { showPanel } from '../ui/dock';
+import { TIP_SHAPES, type TipShape } from './maths';
+import { getDab, setDab } from './settings';
+import { routeFor, withRoute } from './dynamics';
+import { DEFAULT_DUAL, DEFAULT_GRAIN } from './texture';
+import { pictureFromSelection } from './Options';
+import { PIXEL_BRUSH_TOOL } from './live';
+
+const onPixel = () => toolEnabled(['pixel']);
+const reason = pickKindReason(['pixel'], 'The pixel brush');
+const base = { category: 'Pixel', layers: ['pixel' as const], enabled: onPixel, reason, help: 'pixel-brush' };
+const open = (): void => {
+  pickTool(PIXEL_BRUSH_TOOL);
+  showPanel('tool-options');
+};
+
+const TIP_WORDS: Record<TipShape, { label: string; hint: string; keywords: string[] }> = {
+  round: { label: 'round', hint: 'A round dab. Hardness sets how firm the edge is.', keywords: ['circle', 'dot', 'disc'] },
+  square: { label: 'square', hint: 'A square dab with corners. Turn it with Angle for a diamond or a chisel.', keywords: ['box', 'block', 'chisel', 'diamond'] },
+  picture: { label: 'picture', hint: 'A little picture of your own, stamped along the line.', keywords: ['stamp', 'custom', 'image', 'sprite'] },
+};
+
+/** The spacings the closer and wider commands step through, as shares of the size. */
+export const SPACING_STEPS = [0.1, 0.25, 0.5, 1, 1.5, 2.5];
+
+/** The next spacing in the list above (or the one before), staying at the ends. */
+export function stepSpacing(now: number, by: 1 | -1): number {
+  if (by === 1) return SPACING_STEPS.find((s) => s > now + 1e-9) ?? SPACING_STEPS[SPACING_STEPS.length - 1];
+  return [...SPACING_STEPS].reverse().find((s) => s < now - 1e-9) ?? SPACING_STEPS[0];
+}
+
+const tipCommands: Command[] = TIP_SHAPES.map((t) => ({
+  ...base,
+  id: `pixelbrush.tip.${t}`,
+  label: `Pixel brush tip: ${TIP_WORDS[t].label}`,
+  description: TIP_WORDS[t].hint,
+  keywords: ['pixel brush', 'tip', 'dab', ...TIP_WORDS[t].keywords],
+  checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().tip === t,
+  run: () => {
+    open();
+    if (t === 'picture' && !getDab().picture) void pictureFromSelection();
+    else setDab({ tip: t });
+  },
+}));
+
+registerCommands([
+  ...tipCommands,
+  {
+    ...base,
+    id: 'pixelbrush.smooth',
+    label: 'Pixel brush: smooth edges on or off',
+    description: 'Switch the pixel brush between sharp pixels (no anti-aliasing, the pixel art way) and a smooth see-through edge.',
+    keywords: ['pixel brush', 'anti-aliasing', 'antialiasing', 'aliased', 'smooth', 'sharp', 'jaggies', 'crisp', 'edges'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !getDab().aliased,
+    run: () => {
+      open();
+      const aliased = !getDab().aliased;
+      setDab({ aliased });
+      toast(aliased ? 'Sharp pixels: every pixel is all or nothing.' : 'Smooth edges: the edge fades with see-through pixels.', { duration: 1600 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.follow',
+    label: 'Pixel brush: turn with the line on or off',
+    description: 'The tip points along the way you draw, like a pen nib kept flat to the page.',
+    keywords: ['pixel brush', 'follow', 'direction', 'rotate', 'turn', 'angle', 'nib'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().follow,
+    run: () => {
+      open();
+      setDab({ follow: !getDab().follow });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.scatter',
+    label: 'Pixel brush: scatter on or off',
+    description: 'Let each dab land a little away from the line, for speckle, grass and spray. Set how far with the Scatter slider.',
+    keywords: ['pixel brush', 'scatter', 'jitter', 'spray', 'speckle', 'random'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().scatter > 0,
+    run: () => {
+      open();
+      setDab({ scatter: getDab().scatter > 0 ? 0 : 0.5 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.spacing.closer',
+    label: 'Pixel brush: dabs closer together',
+    description: 'A step tighter: from dots with gaps toward a smooth, solid line.',
+    keywords: ['pixel brush', 'spacing', 'closer', 'tighter', 'smoother', 'dabs'],
+    run: () => {
+      open();
+      const s = stepSpacing(getDab().spacing, -1);
+      setDab({ spacing: s });
+      toast(`Spacing ${Math.round(s * 100)}%`, { duration: 1200 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.spacing.wider',
+    label: 'Pixel brush: dabs further apart',
+    description: 'A step wider: from a smooth line toward beads, then dots with gaps.',
+    keywords: ['pixel brush', 'spacing', 'wider', 'further', 'dotted', 'dabs', 'gaps'],
+    run: () => {
+      open();
+      const s = stepSpacing(getDab().spacing, 1);
+      setDab({ spacing: s });
+      toast(`Spacing ${Math.round(s * 100)}%`, { duration: 1200 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.pen',
+    label: 'Pixel brush: pen pressure changes size on or off',
+    description: 'Press harder for a bigger mark and lighter for a smaller one. A mouse counts as full pressure. Set how much under Pen, speed and fade.',
+    keywords: ['pixel brush', 'pressure', 'pen', 'tablet', 'size', 'dynamics', 'wacom', 'control'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && routeFor(getDab().dynamics, 'size')?.from === 'pressure',
+    run: () => {
+      open();
+      const on = routeFor(getDab().dynamics, 'size')?.from === 'pressure';
+      setDab({ dynamics: withRoute(getDab().dynamics, 'size', on ? null : { from: 'pressure' }) });
+      toast(on ? 'Pressure no longer changes the size.' : 'Press harder for a bigger mark. A mouse paints at full size.', { duration: 1800 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.fade',
+    label: 'Pixel brush: taper the end of the stroke on or off',
+    description: 'The line starts at full size and thins to a point as it goes. Set how far under Pen, speed and fade.',
+    keywords: ['pixel brush', 'fade', 'taper', 'thin', 'point', 'dynamics', 'fade out'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && routeFor(getDab().dynamics, 'size')?.from === 'fade',
+    run: () => {
+      open();
+      const on = routeFor(getDab().dynamics, 'size')?.from === 'fade';
+      setDab({ dynamics: withRoute(getDab().dynamics, 'size', on ? null : { from: 'fade', amount: 1 }) });
+      toast(on ? 'Strokes stay one size.' : 'Strokes now thin to a point.', { duration: 1600 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.grain',
+    label: 'Pixel brush: paper grain on or off',
+    description: 'Paint catches on the high points of paper, so light strokes break into specks. The same papers as chalk and charcoal.',
+    keywords: ['pixel brush', 'grain', 'texture', 'paper', 'tooth', 'chalk', 'rough', 'speckle'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!getDab().grain,
+    run: () => {
+      open();
+      setDab({ grain: getDab().grain ? null : DEFAULT_GRAIN });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.dual',
+    label: 'Pixel brush: dual tip on or off',
+    description: 'A second tip of little dots: the brush only paints where its dots are, for spatter and bristle looks.',
+    keywords: ['pixel brush', 'dual', 'dual brush', 'second tip', 'texture', 'spatter', 'bristle', 'dots', 'photoshop'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!getDab().dual,
+    run: () => {
+      open();
+      setDab({ dual: getDab().dual ? null : DEFAULT_DUAL });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.wobble',
+    label: 'Pixel brush: colour wobble on or off',
+    description: 'Each dab shifts a little in hue and lightness, so a stroke wanders through nearby colours.',
+    keywords: ['pixel brush', 'colour', 'color', 'jitter', 'wobble', 'hue', 'lightness', 'variation', 'dynamics'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!routeFor(getDab().dynamics, 'hue'),
+    run: () => {
+      open();
+      const on = !!routeFor(getDab().dynamics, 'hue');
+      let r = withRoute(getDab().dynamics, 'hue', on ? null : { from: 'random', amount: 0.1 });
+      r = withRoute(r, 'lightness', on ? null : { from: 'random', amount: 0.25 });
+      setDab({ dynamics: r });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.wet',
+    label: 'Pixel brush: wet paint on or off',
+    description: 'The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other.',
+    keywords: ['pixel brush', 'wet', 'mix', 'mixing', 'smear', 'blend', 'smudge', 'oil', 'mixer brush'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().wet > 0,
+    run: () => {
+      open();
+      setDab({ wet: getDab().wet > 0 ? 0 : 0.7 });
+    },
+  },
+]);

@@ -125,8 +125,14 @@ If `FRAMELING_INGEST_KEY` is set in your environment, it builds a second copy as
 
 Quill, the mascot, is drawn in Frameling itself. The source files are in `brand/mascot/`:
 
-- `mascot.frameling`: every animation. A 48 x 48 pixel layer at 100 fps (one frame is 10 ms), with one clip per
-  animation (idle, wave, talk, point, cheer, think, draw, sleep, oops, sad, wave-sad). The clip's loop setting is whether it loops.
+- `mascot.frameling`: every animation, drawn as the parts of him. Eleven pixel layers, 48 x 48 at 100 fps (one frame
+  is 10 ms), in four folders: Body (Body, Feet), Head (Hood, Pencil quills, Ear, Face), Face (Cheeks, Eyes, Mouth) and
+  Arms and extras (Arms, Extras: tears, stars, Zs). Every animation (idle, wave, talk, point, cheer, think, draw, sleep,
+  oops, sad, wave-sad, dazed, wake) is an artboard of its own, so you open the one you are drawing and see only its
+  timeline. The layers are one shared stack, so a part is still one layer across all of them, and each artboard keeps
+  only its own drawings on it. The artboard's name is the animation's name; the clip across it says whether it loops.
+  A pose is whatever the layers show at one moment, so a new face is a change to Eyes or Mouth only. The colours are
+  the file's own palette, named, in ramps.
 - `mascot-icon.frameling`: the app icon. The 32 px icon is on frame 0 (clip `icon32`, layer "32 px") and the
   hand-drawn 16 px one is on frame 1 (clip `icon16`, layer "16 px", pixel size 2). The 16 px art is used at 16 and
   48 px, the 32 px art everywhere else.
@@ -136,16 +142,30 @@ first anyway). That writes `public/mascot/mascot.png` + `mascot.json` (what the 
 `build/icon.svg`, `build/icons/` and `public/mascot/logo.png`, touching only files that changed. Commit those along
 with the `.frameling` file.
 
-How the file becomes the sheet: each clip is an animation; a sheet frame lasts as long as its cels stay the same, so
-holding a drawing for 30 frames makes a 300 ms frame. Visible pixel layers are flattened (hidden layers are skipped,
-so a hidden layer is a good place for reference sketches); vector layers are left out with a warning. Keep clip names
-as they are: the app asks for animations by name. `brand/quill/` is the old generator the art was first made with,
-kept for history only.
+To add a pose or an animation: `node brand/mascot/mascot.mjs copy idle shy` adds a copy of an animation as a new
+artboard, named `shy`, after the last one, with drawings of its own (painting on the copy never touches `idle`). Open the
+file, pick `shy` in the Artboards panel, pick the layer that should change (usually Eyes or Mouth), go to the first frame
+of one of its drawings and draw. A drawing held over several frames changes for all of them. Where the head bobs, each
+bob position is its own drawing, so repeat it on those. Save, then `npm run build:mascot`. (The Artboards panel's own
+Duplicate does the same; the copy is named after the artboard either way.)
 
-Two scripts in `brand/mascot/` still compose poses from those old part grids (`compose.mjs`) and write them into
-`mascot.frameling`: `add-sad.mjs` adds the `sad` and `wave-sad` clips (`--force` redraws them, `--preview` only
-writes `brand/ab/sad-quill/contact-6x.png`), and `redraw-arms.mjs` swaps every old arm for the chunky ones built in
-`arms.mjs`, in place. Hand edits made in Frameling are left alone by both.
+Watch for drawings that more than one animation shows: most of Body, Feet, Hood, Ear and the quills are drawn once and
+reused, so a pixel drawn on one of those in one animation changes it in every animation that shows it. Frameling does
+not say when that is so. `node brand/mascot/mascot.mjs check` after saving tells you which animations changed, so a
+change meant for one animation that shows up in others is caught before it ships.
+
+The same script has `node brand/mascot/mascot.mjs` (what is in the file), `node brand/mascot/mascot.mjs poses` (every
+pose, a row per animation, in `brand/mascot/poses-dark.png` and `poses-light.png`) and `node brand/mascot/mascot.mjs check
+[file]`, which builds the sheet from the file and compares it, frame by frame, with the one that ships: after a save
+that was not meant to change him it says so, and after one that was, it lists exactly which frames of which animations
+look different. (`split` is the one-off that gave an older one-timeline file an artboard per clip.) It is the only script
+the mascot has; everything else is done in Frameling.
+
+How the file becomes the sheet: each artboard is an animation, walked in the order of the Artboards panel (that order is the order of the tiles in the sheet and the animations in `mascot.json`, so reordering artboards reorders them; a clip or a pose you add goes after the ones that exist); each clip is an animation; a sheet frame lasts as long as its layers stay the same, so
+holding a drawing for 30 frames makes a 300 ms frame. Visible pixel layers in visible folders are flattened, bottom
+first (hidden ones are skipped, so a hidden layer is a good place for reference sketches); vector layers are left out
+with a warning. Keep clip names as they are: the app asks for animations by name. `brand/quill/` is the old generator
+the art was first made with, kept for history only.
 
 ### Editing Quill's words
 
@@ -182,6 +202,14 @@ Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and
 placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
 line goes in `lines.json` with its `where`, and in the moments list in `shots.cjs`. `test/ui/quill-lines.test.ts`
 checks every line is used, every id used exists, and the placeholders match.
+
+### Editing the app's other words
+
+Everything else the app says is moving into `src/words/`, one JSON file per area, in the same shape as Quill's
+lines. Done so far: the questions the app asks once and remembers (`choices.json`) and the quests (`quests.json`).
+`npm run words:list` prints them to read in one sitting, and `npm run words:apply <changes.json>` merges edited words
+back in, refusing the whole file if a `{placeholder}` was lost or gained. Help topics stay in their own
+`*.bodies.ts` files. More in `docs/architecture.md`.
 
 ## In-app help
 
@@ -268,6 +296,12 @@ Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](d
 sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
 user data folder.
 
+## Scripts
+
+A few lines of JavaScript, run from a panel (**View > Panels > Scripts**, or `Ctrl+Shift+J`), on the same sandbox as plugins.
+A saved script is a command: in the palette, in **Edit > Scripts**, and on a key if you like. One run is one step in Undo.
+See [docs/scripting.md](docs/scripting.md).
+
 ## Templates
 
 Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`
@@ -314,3 +348,14 @@ Releases are signed the cheap way for now, like Godot's own builds:
 
 The in-app help topic "Installing Frameling" walks people through the first-run prompts. Moving to paid certificates
 later means setting `CSC_LINK`/`CSC_KEY_PASSWORD` (and Apple's notarisation variables) and removing the ad-hoc hook.
+
+## Licence
+
+Frameling is [MIT licensed](LICENSE): use it, change it, build on it, ship it, for free or for money. Keep the
+copyright line and the permission notice with any substantial piece you take, and that is the whole of it.
+
+The packages Frameling depends on keep their own licences, and so does anything it reads or writes: a file format
+being readable is not a licence to copy somebody's code for reading it.
+
+Packages that read file formats, and their licences: **fzstd** 0.1.1 (MIT, Arjun Barrett), which unpacks the zstandard
+tiles in Photocraft files (`src/import/layered/photocraft.ts`, checked first by `zstdSafe.ts`); **fflate** (MIT), for zips.

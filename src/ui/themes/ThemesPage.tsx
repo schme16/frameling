@@ -12,6 +12,7 @@ import { copyTheme, findTheme, importThemeText, MAX_FILE_BYTES } from './model';
 import { ThemeEditor } from './ThemeEditor';
 import { ThemePreview } from './ThemePreview';
 import type { ThemeMode } from './tokens';
+import { splotchEdgePoints, splotchFillPoints, useKind, USE_SAYS, useSplotches, type ThemeUse } from './useMark';
 
 /** The wave the card is cut along, as the ink line drawn over the join. The same points as the clip in ui.css. */
 const SQUIGGLE = '100,0 97.8,3.4 95.8,7 93.6,10.3 90.9,13.1 87.4,15.2 83.3,16.7 79.1,18 75.1,19.5 71.7,21.7 69.3,24.8 67.7,28.8 66.7,33.3 65.7,38 64.4,42.2 62.2,45.5 58.9,47.8 54.7,49.2 50,50 45.3,50.8 41.1,52.2 37.8,54.5 35.6,57.8 34.3,62 33.3,66.7 32.3,71.2 30.7,75.2 28.3,78.3 24.9,80.5 20.9,82 16.7,83.3 12.6,84.8 9.1,86.9 6.4,89.7 4.2,93 2.2,96.6 0,100';
@@ -48,31 +49,34 @@ function CurrentTheme({ dark, light }: { dark: Theme; light: Theme }) {
   );
 }
 
+/** For the shots only (a `?debug` window): pretends which themes are in use, so one grid can show every kind of card. */
+const debugUse = (): Record<string, ThemeUse> | undefined =>
+  /[?&]debug/.test(location.search) ? (window as unknown as { __framelingThemeUse?: Record<string, ThemeUse> }).__framelingThemeUse : undefined;
+
 /** The theme behind an id, falling back to the default for that mode if it has gone. */
 const themeOf = (id: string, mode: ThemeMode, custom: Theme[]): Theme => findTheme(id, custom) ?? BUILT_IN_THEMES.find((t) => t.mode === mode)!;
 
-/** A card in the gallery: the preview, the name, and badges saying which of your two themes it is, if either. */
-function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: { day: boolean; night: boolean }; onPick: (at: { x: number; y: number }) => void; onCopy: () => void; onEdit?: () => void }) {
-  const chosen = use.day || use.night;
-  const says = use.day && use.night ? 'your theme by day and at night' : use.day ? 'your theme by day' : use.night ? 'your theme at night' : 'not in use';
+/**
+ * A card in the gallery: the preview, the name, and a yellow splotch in a top corner for each of your two themes it is:
+ * the sun top left for day, the moon top right for night, both on a card used for both. The two are the same size and
+ * the same wobble, one the other's mirror. The chosen tick sits at the end of the name.
+ */
+function ThemeCard({ theme, use, onPick }: { theme: Theme; use: ThemeUse; onPick: (at: { x: number; y: number }) => void }) {
+  const kind = useKind(use);
+  const chosen = kind !== 'none';
   return (
-    <div className={`th-card${chosen ? ' is-chosen' : ''}`}>
-      <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} data-tip={theme.name} data-tip-desc={theme.description ?? 'Made by you.'} aria-label={`${theme.name}, ${says}. ${theme.description ?? 'Made by you.'}`}>
+    <div className={`th-card${chosen ? ' is-chosen' : ''}`} data-use={kind}>
+      <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} data-tip={theme.name} data-tip-desc={theme.description ?? 'Made by you.'} aria-label={`${theme.name}, ${USE_SAYS[kind]}. ${theme.description ?? 'Made by you.'}`}>
         <ThemePreview theme={theme} />
-        {chosen && (
-          <span className={`th-card-badges${use.day && use.night ? ' is-both' : ''}`} aria-hidden="true">
-            {use.day && (
-              <span className="th-card-badge is-day" title="Your theme by day">
-                <Icon name="sun" size={19} />
-              </span>
-            )}
-            {use.night && (
-              <span className="th-card-badge is-night" title="Your theme at night">
-                <Icon name="moon" size={19} />
-              </span>
-            )}
+        {useSplotches(use).map((side) => (
+          <span key={side} className={`th-card-splotch is-${side}`} title={side === 'day' ? 'Your theme by day' : 'Your theme at night'} aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polygon points={splotchFillPoints(side)} />
+              <polyline points={splotchEdgePoints(side)} vectorEffect="non-scaling-stroke" />
+            </svg>
+            <Icon name={side === 'day' ? 'sun' : 'moon'} size={15} />
           </span>
-        )}
+        ))}
         <span className="th-card-name">
           <strong>{theme.name}</strong>
           {chosen && (
@@ -82,28 +86,24 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
           )}
         </span>
       </button>
-      <div className="th-card-actions">
-        {onEdit && (
-          <button type="button" className="ui-btn ui-btn-small" onClick={onEdit}>
-            Edit
-          </button>
-        )}
-        <button type="button" className="ui-btn ui-btn-small ui-btn-quiet" onClick={onCopy} title="Make your own copy of this theme and change its colours">
-          <Icon name="duplicate" size={13} />
-          Duplicate and edit
-        </button>
-      </div>
     </div>
   );
 }
 
-/** Pressing a theme asks what it is for. Any theme can be either one, however bright or dark it is. */
-function askWhatFor(theme: Theme, at: { x: number; y: number }): void {
+/**
+ * Pressing a theme opens one menu: what it is for, then what can be done to it. Any theme can be either one, however
+ * bright or dark it is. Edit and Duplicate live here rather than on the card, so each card stays a clean picture of its
+ * theme and a press anywhere on it does the same thing.
+ */
+function askWhatFor(theme: Theme, at: { x: number; y: number }, onCopy: () => void, onEdit?: () => void): void {
   openDockMenu(at.x, at.y, [
     { heading: theme.name },
     { label: 'Use it by day', onClick: () => selectTheme(theme, 'light') },
     { label: 'Use it at night', onClick: () => selectTheme(theme, 'dark') },
     { label: 'Use it for both', onClick: () => { selectTheme(theme, 'light'); selectTheme(theme, 'dark'); } },
+    { separator: true },
+    ...(onEdit ? [{ label: 'Edit this theme', onClick: onEdit }] : []),
+    { label: 'Make a copy to change (duplicate)', onClick: onCopy },
   ]);
 }
 
@@ -115,11 +115,11 @@ function Gallery({ custom, day, night, onCopy, onEdit }: { custom: Theme[]; day:
       <h4>
         <Icon name="palette" size={15} />
         Every theme
-        <span className="th-now">press one and say what it is for</span>
+        <span className="th-now">press one to use it or change it</span>
       </h4>
       <div className="th-grid" role="group" aria-label="Themes">
         {all.map((t) => (
-          <ThemeCard key={t.id} theme={t} use={{ day: t.id === day, night: t.id === night }} onPick={(at) => askWhatFor(t, at)} onCopy={() => onCopy(t)} onEdit={t.builtIn ? undefined : () => onEdit(t.id)} />
+          <ThemeCard key={t.id} theme={t} use={debugUse()?.[t.id] ?? { day: t.id === day, night: t.id === night }} onPick={(at) => askWhatFor(t, at, () => onCopy(t), t.builtIn ? undefined : () => onEdit(t.id))} />
         ))}
       </div>
     </section>

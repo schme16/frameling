@@ -216,9 +216,16 @@
   transform: rotate(-90deg);
 }
 .rd-sec-title {
+  /* The detail ("Brush", "Select") gives way first; then the name is cut with an ellipsis, so neither runs under the ? icon. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .rd-sec-detail {
+  /* Gives way long before the name does. */
+  flex-shrink: 1000;
   min-width: 0;
   margin-left: auto;
   overflow: hidden;
@@ -240,51 +247,6 @@
 /* The panels inside carry their own padding; trim the top so the header sits close. */
 .rd-sec-body > :first-child {
   padding-top: 2px;
-}
-
-/* Sections that don't apply yet, and what would bring them up. */
-.rd-idle {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 8px 8px 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
-}
-.rd-idle-title {
-  margin: 0 4px 4px;
-  color: var(--muted);
-  font-size: var(--fs-small);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.rd-idle-item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 8px;
-  align-items: center;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: var(--radius-small);
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-}
-.rd-idle-item:hover {
-  background: var(--hover-bg);
-}
-.rd-idle-item .ui-icon {
-  grid-row: span 2;
-  color: var(--muted);
-}
-.rd-idle-name {
-  font-weight: 800;
-  font-size: var(--fs);
-}
-.rd-idle-why {
-  color: var(--muted);
-  font-size: var(--fs-small);
 }
 
 /* All panels: a searchable list with a sentence each. */
@@ -380,6 +342,12 @@
   font-size: var(--fs-small);
   line-height: 1.35;
 }
+.rd-picker-when {
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  line-height: 1.35;
+}
 .rd-picker-none {
   margin: 12px;
   color: var(--muted);
@@ -392,4 +360,18 @@
 /* Tool options says the tool's name in its header already. */
 #rd-sec-b-tool-options > .cv-panel > .cv-panel-title {
   display: none;
+}
+
+
+/* A small screen (screenFit.ts): the rail's places sit a little closer, so they all show without scrolling. */
+:root[data-fit='compact'] .rd-item {
+  padding: 4px 2px 3px;
+  gap: 1px;
+}
+:root[data-fit='compact'] .rd-rgroup + .rd-rgroup {
+  margin-top: 3px;
+  padding-top: 2px;
+}
+:root[data-fit='compact'] .rd-sep {
+  margin: 2px 8px;
 }

@@ -5,6 +5,7 @@ import { followSelection, resolveFollowed, shapeLineage } from '../../src/core/f
 import { eraseBits, geomArea, geomBox, shapeParts, sweepGeom } from '../../src/geometry/merge';
 import { pointInPaths } from '../../src/geometry/hit';
 import { rectPath, stroke } from './helpers';
+import { cpuMs } from '../helpers/clock';
 
 const area = (s: Shape) => shapeParts(s).reduce((a, p) => a + geomArea(p.geom), 0);
 const fills = (list: Shape[]) => list as FillShape[];
@@ -162,13 +163,13 @@ describe('eraseBits: cost', () => {
     const list: Shape[] = [];
     for (let i = 0; i < 400; i++) list.push(stroke([[(i % 20) * 40, Math.floor(i / 20) * 14], [(i % 20) * 40 + 30, Math.floor(i / 20) * 14 + 6]], 3));
     let shapes = list;
-    const t0 = performance.now();
+    const t0 = cpuMs();
     let n = 0;
     for (let x = 0; x < 800; x += 8) {
       shapes = eraseBits(shapes, swipe(x, 140, x + 8, 140, 10)).shapes;
       n++;
     }
-    const per = (performance.now() - t0) / n;
+    const per = (cpuMs() - t0) / n;
     // Loose on purpose: a slow machine must not fail this; it is here to catch a return to clipping everything.
     expect(per).toBeLessThan(25);
   });

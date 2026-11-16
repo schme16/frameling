@@ -1,0 +1,91 @@
+{
+  "env": {
+    "label": "default-after",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "dpr": 1,
+    "idleRafMs": 16.666666666666668,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling/dist/renderer",
+    "exportReadbackEnv": null,
+    "loadMs": [
+      151,
+      83
+    ],
+    "when": "2026-11-15T02:33:26.634Z"
+  },
+  "export": {
+    "readbackFlag": false,
+    "kitchenSink": {
+      "frames": 96,
+      "size": [
+        960,
+        576
+      ],
+      "drawMsPerFrame": 0.8,
+      "readMsPerFrame": 2.8,
+      "drawPlusReadMsPerFrame": 3.6,
+      "loopMs": 350.3,
+      "lapsMs": [
+        387.7,
+        350.3,
+        332.4
+      ],
+      "wallMs": 2423,
+      "wallLapsMs": [
+        2242,
+        2330,
+        2423
+      ]
+    },
+    "strokes": {
+      "frames": 48,
+      "size": [
+        1280,
+        720
+      ],
+      "drawMsPerFrame": 0.1,
+      "readMsPerFrame": 3.3,
+      "drawPlusReadMsPerFrame": 3.4,
+      "loopMs": 162.5,
+      "lapsMs": [
+        171.7,
+        162.5,
+        160.9
+      ],
+      "wallMs": 1207,
+      "wallLapsMs": [
+        1080,
+        1207,
+        1157
+      ]
+    }
+  },
+  "consoleErrors": []
+}

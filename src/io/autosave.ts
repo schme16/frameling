@@ -8,6 +8,8 @@ import { loadFileAsync } from './file';
 import { notify } from './notify';
 import { closeSheet, overlays } from '../ui/overlays';
 import { recovery, restorePending } from './recovery';
+import { bringBack } from './restart';
+import { streamSafe, subscribeStreamSafe } from '../core/streamSafe';
 
 export { autosaveNow };
 
@@ -24,6 +26,8 @@ export async function offerRecovery(): Promise<void> {
     await clearAutosaveCopy();
     return;
   }
+  // A check that the copy opens at all. Restoring goes through loadBytes, which puts the copy's undo and redo steps
+  // back too (store.load takes them), so Undo, Redo and the History panel carry on from before the crash.
   try {
     await loadFileAsync(found.bytes);
   } catch {
@@ -57,8 +61,9 @@ export function startFileServices(): void {
 
   setInterval(() => void autosaveNow(), AUTOSAVE_EVERY_MS);
   // Also when the window is hidden (another tab, minimised), as a browser tab can be closed without asking.
+  // Hidden means the window may be about to go away, so this one never waits for the hand to come off the canvas.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') void autosaveNow();
+    if (document.visibilityState === 'hidden') void autosaveNow({ now: true });
   });
 
   // Title bar and the desktop side's idea of "is there anything unsaved".
@@ -67,14 +72,16 @@ export function startFileServices(): void {
     const { ui } = store().get();
     const name = documentTitle();
     document.title = `${ui.dirty ? '● ' : ''}${name} - Frameling`;
-    const key = `${ui.dirty}|${name}|${ui.filePath}`;
+    const key = `${ui.dirty}|${name}|${ui.filePath}|${streamSafe()}`;
     if (key === last) return;
     last = key;
-    api.app.setDocumentState({ dirty: ui.dirty, name, filePath: ui.filePath });
+    api.app.setDocumentState({ dirty: ui.dirty, name, filePath: ui.filePath, hidePath: streamSafe() });
   };
   sync();
   // The store swaps its whole object when the document changes, so subscribing is cheap to filter.
   store().subscribe(sync);
+  // Turning stream-safe on or off changes the title right away.
+  subscribeStreamSafe(sync);
 
   api.app.onOpenFile((p) => void openPath(p));
   api.app.onSaveBeforeClose(() => saveDocument());
@@ -83,6 +90,13 @@ export function startFileServices(): void {
 
   void (async () => {
     const file = await api.app.getLaunchFile();
+    // A restart left word of where you were: open that drawing again, then go back to the same frame and view.
+    const restore = await api.app.getRestore?.().catch(() => null);
+    if (restore) {
+      // Unsaved work that came across is open again, still unsaved, so there is nothing to offer back.
+      if (!(await bringBack(restore))) await offerRecovery();
+      return;
+    }
     if (file) await openPath(file);
     await offerRecovery();
   })();

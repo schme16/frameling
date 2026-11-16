@@ -7,6 +7,10 @@
 //
 // Exits non-zero when anything fails. Files are only read.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -32,6 +36,7 @@ async function main() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   win.webContents.on('console-message', (e) => {
     if ((e.level ?? e.severity) === 'error' || (e.level ?? e.severity) === 3) pageErrors.push(String(e.message ?? e));
   });

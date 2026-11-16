@@ -35,7 +35,7 @@ export const DEFAULT_SWATCHES = [
   ['Stone', '#8a8598'],
 ] as const;
 
-export function newDoc(opts: Partial<Pick<Doc, 'name' | 'width' | 'height' | 'fps' | 'length' | 'background'>> & { pixel?: { pixelSize: number } } = {}): Doc {
+export function newDoc(opts: Partial<Pick<Doc, 'name' | 'width' | 'height' | 'fps' | 'length' | 'background' | 'animated'>> & { pixel?: { pixelSize: number } } = {}): Doc {
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
@@ -45,7 +45,9 @@ export function newDoc(opts: Partial<Pick<Doc, 'name' | 'width' | 'height' | 'fp
     width: opts.width ?? 1280,
     height: opts.height ?? 720,
     fps: opts.fps ?? 12,
-    length: opts.length ?? 24,
+    // A still picture is one frame; asking for no animation without a length gives that.
+    length: opts.length ?? (opts.animated === false ? 1 : 24),
+    ...(opts.animated === undefined ? {} : { animated: opts.animated }),
     background: opts.background === undefined ? '#ffffff' : opts.background,
     layers: [],
     drawings: {},

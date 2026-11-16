@@ -3,6 +3,10 @@
 //   npm run build && xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/close-drawing.cjs <dark|light> <out.mp4>
 // The native question is not part of the page, so a screen grab is the only way to see it. xdotool presses its button.
 const electron = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { execFileSync, spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -27,6 +31,7 @@ electron.app.whenReady().then(async () => {
     await sleep(100);
     win = electron.BrowserWindow.getAllWindows()[0];
   }
+  await gpu.confirmOrExit(win);
   const js = (code) => win.webContents.executeJavaScript(code);
   const prefs = { theme, look: 'cosy', darkTheme: 'midnight-sketchbook', showWelcome: false, onboarded: true, showTips: false };
   await js(`localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); true`);

@@ -4,11 +4,22 @@
  * - Brush strokes: the same outline the renderer paints (`strokeOutline`), flattened the same way.
  * - Path shapes: their stroke, at its real width. A path with a fill but no stroke still has a visible edge, so it
  *   gets a thin wall, and its inside stays open to be filled.
- * - Existing fills: not walls (a fill is paint, not a line), unless `includeFills` asks for their thin edge.
+ * - Existing fills: a thin wall along their edge, except the ones that cover the click (`fillsAround`), or every
+ *   fill when `includeFills` says so.
+ *
+ *   Why a fill's edge counts: a drawing can be outlined in paint (traced or imported art, a shape cut by the
+ *   bucket), and the area inside it is closed whether the outline is a line or a fill. A path with a fill and no
+ *   stroke is already treated this way.
+ *
+ *   Why not the fills under the click: they are the paint being filled into or recoloured, so their edge must not
+ *   box in the click. That is what keeps a fill you just made, or a big background fill, from walling off the next
+ *   one: a click inside either one is under it, so it is skipped, and a click outside it meets only its edge, the
+ *   same as meeting any line. Only the edge is a wall, never the inside, so a fill never hides a gap in a line it
+ *   sits next to.
  */
 import type { Shape, SubPath } from '../core/format';
-import { strokeOutline } from '../core/render';
-import { flattenSubPath } from './hit';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
+import { flattenSubPath, pathsBounds, pointInPaths } from './hit';
 import { ringArea2, type FillRule } from './raster';
 
 export interface BarrierPart {
@@ -20,8 +31,15 @@ export interface BarrierPart {
 export interface BarrierOptions {
   /** Width of the wall for edges that have no stroke of their own, in document pixels. */
   thinWidth: number;
-  /** Treat fills' edges as thin walls too. */
+  /** Treat every fill's edges as thin walls. */
   includeFills?: boolean;
+  /** Treat fills' edges as thin walls, except the fills that cover this point (the click). */
+  fillsAround?: { x: number; y: number };
+  /**
+   * Brush lines up to a few times `thinWidth` wide (pressure can thin them below it) get a centre line of that width added, so they do not drop out of a coarse
+   * mask. Off by default: only a mask scaled down needs it, and it costs a few more rectangles.
+   */
+  floorStrokes?: boolean;
 }
 
 /** Flattens perfect-freehand's outline the way `outlinePath` paints it (quadratic curves through the midpoints). */
@@ -105,6 +123,13 @@ function pathWalls(paths: SubPath[], width: number, out: BarrierPart[]) {
   if (rings.length) out.push({ rings, rule: 'nonzero' });
 }
 
+/** Whether a fill covers a point, the way it is painted (even-odd). */
+function fillCovers(paths: SubPath[], x: number, y: number): boolean {
+  const b = pathsBounds(paths);
+  if (!b || x < b.x0 || x > b.x1 || y < b.y0 || y > b.y1) return false;
+  return pointInPaths(paths, x, y);
+}
+
 export function shapesToBarrier(shapes: readonly Shape[], opts: BarrierOptions): BarrierPart[] {
   const out: BarrierPart[] = [];
   for (const s of shapes) {
@@ -112,11 +137,19 @@ export function shapesToBarrier(shapes: readonly Shape[], opts: BarrierOptions):
     if (s.type === 'stroke') {
       const flat = flattenOutline(strokeOutline(s));
       if (flat.length >= 6) out.push({ rings: [flat], rule: 'nonzero' });
+      if (opts.floorStrokes && s.brush.size < 4 * opts.thinWidth && s.points.length) {
+        // The renderer paints the line at its real width, so this only keeps the wall from vanishing in the mask.
+        const centre: number[] = [];
+        for (const p of s.points) centre.push(p.x, p.y);
+        const rings = thickPolyline(centre, false, opts.thinWidth);
+        if (rings.length) out.push({ rings, rule: 'nonzero' });
+      }
     } else if (s.type === 'path') {
       if (s.stroke) pathWalls(s.paths, Math.max(s.stroke.width, opts.thinWidth), out);
       else if (s.fill) pathWalls(s.paths, opts.thinWidth, out);
-    } else if (s.type === 'fill' && opts.includeFills) {
-      pathWalls(s.paths, opts.thinWidth, out);
+    } else if (s.type === 'fill') {
+      const around = opts.fillsAround;
+      if (opts.includeFills || (around && !fillCovers(s.paths, around.x, around.y))) pathWalls(s.paths, opts.thinWidth, out);
     }
   }
   return out;

@@ -7,17 +7,20 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import { beginStroke } from '../ui/drawAnywhere';
 import { altPicks, eyedropperTool, tempEyedropperTool } from '../tools/eyedropper';
 import { paintWellsOn, rightPaints } from '../tools/pixelWells';
 import { swapPaintBack } from '../tools/wells';
 import './choices';
-import type { SpaceTapMode, WheelMode } from './choices';
+import type { SpaceTapMode, WheelCtrl, WheelMode } from './choices';
 import * as ctl from './controller';
+import { subscribePictures } from '../reference/paint';
 import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
-import { pressesControl, SpaceTap, wheelIntent } from './input';
+import { heldByOverlay, pressesControl, SpaceTap, wheelIntent } from './input';
 import { attachPinch } from './pinch';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
+import { setTl, tl } from '../timeline/state';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
@@ -32,19 +35,28 @@ import { drawDecorations } from './decorations';
 import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
-import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
+import { screenToDoc, stageDeviceRect, zoomAbout, type Pt } from './view';
+import { sharedNotch } from './wheelNotch';
+import { WheelStream, ZOOM_SPEED_SCALE, type ZoomSpeed } from './wheelStream';
 import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
 import { meaningOfPress } from '../tablet/buttons';
 import { penFields } from '../tablet/input';
 import { penTools } from '../tablet/tool';
 import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
-import { Stabilizer } from '../tablet/stabilizer';
+import { PenFilter } from '../penmods/filter';
 import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
+import { roughNow, setKeptProbe, subscribeScrubbing } from '../gpu/settings';
+import { watchPixelRatio } from './pixelRatio';
+import { boxOffset, dragAngle, getTurn, isTurned, resetTurn, setTurn, subscribeTurn, turnAngleFor, turnBox, turnCss, unturnVector, windowToBox, type Turn } from './turn';
+import { altPressMoved, altPressReleased, altTurnPress } from './altPress';
+import { setHandBusy } from '../core/handBusy';
 
 export interface EngineElements {
   root: HTMLElement;
+  /** The box the canvas layers sit in, which the view's turn and flip are applied to. */
+  turn?: HTMLElement;
   stage: HTMLElement;
   main: HTMLCanvasElement;
   overlay: HTMLCanvasElement;
@@ -52,6 +64,9 @@ export interface EngineElements {
 
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
+  | { kind: 'turn'; pointerId: number; from: number; swung: number; start: Turn }
+  /** Alt is down on a free tool: a click picks a colour, a drag turns the view. Waits to see which (see altPress.ts). */
+  | { kind: 'altwait'; pointerId: number; down: PointerEvent; startX: number; startY: number }
   | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
   | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab }
   | { kind: 'pinch'; pointerId: number; ids: [number, number]; start: PinchStart };
@@ -84,10 +99,23 @@ export class CanvasEngine {
   private raf = 0;
   private dirtyMain = true;
   private dirtyOverlay = true;
-  private gesture: Gesture | null = null;
+  // Every place a gesture starts or ends goes through this pair, so the rest of the app can ask whether a hand is on
+  // the canvas (src/core/handBusy.ts). Autosave uses it to wait for the release instead of hitching a stroke.
+  private gestureNow: Gesture | null = null;
+
+  private get gesture(): Gesture | null {
+    return this.gestureNow;
+  }
+
+  private set gesture(g: Gesture | null) {
+    this.gestureNow = g;
+    setHandBusy(g !== null);
+  }
   private spaceDown = false;
   private spaceTap = new SpaceTap();
   private altDown = false;
+  /** True while a waiting Alt press is being replayed as the plain press it turned out to be. */
+  private altReplay = false;
   private inside = false;
   private cursorOverride: string | null = null;
   /** The cursor for a canvas handle under the pointer (a vanishing point), or null. */
@@ -105,8 +133,8 @@ export class CanvasEngine {
   private grabPt: Pt | null = null;
   /** The pen's eraser end is the one hovering, so the eraser's ring shows. */
   private hoverEraser = false;
-  /** Steadies the stroke in progress (pull string or average), when the tool has the stabilizer on. */
-  private stab: Stabilizer | null = null;
+  /** Steadies the stroke in progress (the stabilizer: pull string or average) and, for a pen modifier, shakes it. Null when neither is on. */
+  private penFilter: PenFilter | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
   private idleHandle = 0;
@@ -115,6 +143,12 @@ export class CanvasEngine {
   private docId: string;
   private loads: number;
   private bounds = { left: 0, top: 0 };
+  /** Stands in for the turn box when a caller (a test) has none. */
+  private spareTurn = document.createElement('div');
+  /** The window's own size (the canvas layers' box is bigger while the view is turned). */
+  private win = { w: 1, h: 1 };
+  /** How far the turn box sticks out left and top of the window. */
+  private boxOff = { x: 0, y: 0 };
   private cleanups: (() => void)[] = [];
   private lastDpr = 0;
   /** Called with a friendly message to show near the canvas. */
@@ -127,6 +161,7 @@ export class CanvasEngine {
     this.og = els.overlay.getContext('2d', { desynchronized: true } as CanvasRenderingContext2DSettings)!;
     this.prev = store().get();
     if (perf) perf.painter = this.painter;
+    setKeptProbe(() => this.painter.cache.size.pixels);
     this.docId = this.prev.doc.id;
     this.loads = store().loads;
     const self = this;
@@ -187,10 +222,17 @@ export class CanvasEngine {
     const ro = new ResizeObserver(() => this.resize());
     ro.observe(root);
     this.cleanups.push(() => ro.disconnect());
+    // A window dragged to a screen at another scale keeps its size, so no resize comes: ask for the new pixel ratio directly.
+    this.cleanups.push(watchPixelRatio(() => this.resize()));
     this.cleanups.push(store().subscribe(this.onStore));
+    // Starting or ending a drag along the timeline: paint again, with the extras left out or put back.
+    this.cleanups.push(subscribeScrubbing(() => this.invalidate(true, false)));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
+    // A reference picture that has just been read.
+    this.cleanups.push(subscribePictures(() => this.invalidate(true, false)));
+    this.cleanups.push(subscribeTurn(() => this.resize(true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
@@ -218,22 +260,44 @@ export class CanvasEngine {
 
   // ---------------------------------------------------------------- sizing
 
-  private resize = (): void => {
+  /** `turning`: the view's turn or flip changed, which keeps the zoom (as turning a sheet on a desk would) rather than refitting. */
+  private resize = (turning = false): void => {
     const { root, main, overlay } = this.els;
-    const w = Math.max(1, root.clientWidth);
-    const h = Math.max(1, root.clientHeight);
+    const turn = this.els.turn ?? this.spareTurn;
+    const winW = Math.max(1, root.clientWidth);
+    const winH = Math.max(1, root.clientHeight);
+    this.win = { w: winW, h: winH };
+    const t = getTurn();
+    // The canvas layers live in the turn box: the window's own size when straight, a little bigger when turned.
+    const box = turnBox(winW, winH, t);
+    const w = box.w;
+    const h = box.h;
     const dpr = window.devicePixelRatio || 1;
     const dw = Math.max(1, Math.round(w * dpr));
     const dh = Math.max(1, Math.round(h * dpr));
     const changed = main.width !== dw || main.height !== dh || dpr !== this.lastDpr;
     this.lastDpr = dpr;
+    const off = boxOffset(winW, winH, t);
+    const ts = turn.style;
+    ts.left = -off.x + 'px';
+    ts.top = -off.y + 'px';
+    ts.width = w + 'px';
+    ts.height = h + 'px';
+    ts.transform = turnCss(t);
+    // A turn or a flip keeps the picture where it is: the box grew or shrank about its centre, so the pan follows.
+    const keep = { x: off.x - this.boxOff.x, y: off.y - this.boxOff.y };
+    this.boxOff = off;
     if (changed) {
       main.width = overlay.width = dw;
       main.height = overlay.height = dh;
-      this.painter.clear();
+      this.painter.resized();
     }
-    ctl.setViewport({ w, h, dpr });
-    if (ctl.isAutoFit()) ctl.fit(true);
+    ctl.setViewport({ w, h, dpr, room: isTurned(t) ? { w: winW, h: winH, angle: t.angle } : undefined });
+    if (keep.x || keep.y) {
+      const ui = store().get().ui;
+      store().setUi({ panX: ui.panX + keep.x, panY: ui.panY + keep.y });
+    }
+    if (ctl.isAutoFit() && !turning) ctl.fit(true);
     this.invalidate(true, true);
   };
 
@@ -247,6 +311,9 @@ export class CanvasEngine {
 
   private frame = (): void => {
     this.raf = 0;
+    // The pixel ratio can change without a resize or a media query event reaching us (see pixelRatio.ts), so each frame
+    // makes sure the canvas still holds the right number of pixels. Reading it is free.
+    if ((window.devicePixelRatio || 1) !== this.lastDpr) this.resize();
     let mainMs = 0;
     if (this.dirtyMain) {
       const t0 = performance.now();
@@ -328,6 +395,8 @@ export class CanvasEngine {
     if (s.doc.id !== this.docId || store().loads !== this.loads) {
       this.docId = s.doc.id;
       this.loads = store().loads;
+      // The view's turn is for the file you were checking, not the next one.
+      resetTurn();
       this.painter.clear();
       ctl.setLive(null);
       ctl.fit(true);
@@ -362,7 +431,9 @@ export class CanvasEngine {
     this.els.stage.classList.toggle('cv-checker', !doc.background);
 
     const zooming = performance.now() < this.zoomingUntil;
-    const lt = ui.playing ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
+    // Playing, or dragging along the timeline with quick scrubbing on, leaves the onion skins, ghosts and light table out.
+    const bare = ui.playing || roughNow();
+    const lt = bare ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
     const settled = this.painter.paint(this.mg, {
       doc,
       frame: ui.frame,
@@ -371,14 +442,14 @@ export class CanvasEngine {
       height: this.els.main.height,
       live: ctl.getLive(),
       onion: ui.onion,
-      playing: ui.playing,
+      playing: bare,
       zooming,
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
-      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
+      ghost: getViewSettings().emptyGhost && !bare && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
       lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
     if (!settled) {
@@ -516,7 +587,7 @@ export class CanvasEngine {
 
   private updateCursor(): void {
     let c: string;
-    if (this.gesture?.kind === 'pan') c = 'grabbing';
+    if (this.gesture?.kind === 'pan' || this.gesture?.kind === 'turn') c = 'grabbing';
     else if (this.gesture?.kind === 'grab') c = 'grabbing';
     else if (this.grabHover && !this.spaceDown) c = this.grabHover;
     else if (this.spaceDown && this.inside) c = 'grab';
@@ -538,10 +609,23 @@ export class CanvasEngine {
     this.bounds.top = r.top;
   }
 
+  /** A pointer position on the screen to a position in the canvas layers' own frame (undoes the view's turn and flip). */
+  private rel(clientX: number, clientY: number): Pt {
+    return windowToBox(getTurn(), this.win.w, this.win.h, clientX - this.bounds.left, clientY - this.bounds.top);
+  }
+
+  /** The direction of the pointer from the middle of the window, in degrees (for the Turn drag). */
+  private pointerAngle(e: { clientX: number; clientY: number }): number {
+    const dx = e.clientX - (this.bounds.left + this.win.w / 2);
+    const dy = e.clientY - (this.bounds.top + this.win.h / 2);
+    return (Math.atan2(dy, dx) * 180) / Math.PI;
+  }
+
   /** The screen point in stage space. `forTool`: through the picked layer's own camera speed (a layer at another depth). */
   private toDocPoint(e: { clientX: number; clientY: number }, forTool = false): Pt {
     const { zoom, panX, panY } = store().get().ui;
-    const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    const q = this.rel(e.clientX, e.clientY);
+    const p = screenToDoc({ zoom, panX, panY }, q.x, q.y);
     // Through the camera, the screen shows camera space: tools still work in stage space.
     const cam = forTool ? overlayCamera(this.stageToolNow()) : canvasCamera()?.matrix;
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
@@ -594,7 +678,7 @@ export class CanvasEngine {
       if (g) this.cancelGesture();
       this.refreshBounds();
       const [i, j] = [...this.touches.keys()];
-      const rel = (k: number) => ({ x: this.touches.get(k)!.x - this.bounds.left, y: this.touches.get(k)!.y - this.bounds.top });
+      const rel = (k: number) => this.rel(this.touches.get(k)!.x, this.touches.get(k)!.y);
       const ui = store().get().ui;
       this.capture(i);
       this.capture(j);
@@ -622,7 +706,7 @@ export class CanvasEngine {
     const b = this.touches.get(g.ids[1]);
     if (!a || !b) return;
     this.refreshBounds();
-    const rel = (p: { x: number; y: number }) => ({ x: p.x - this.bounds.left, y: p.y - this.bounds.top });
+    const rel = (p: { x: number; y: number }) => this.rel(p.x, p.y);
     ctl.setView(pinchView(g.start, rel(a), rel(b)), true);
   }
 
@@ -635,9 +719,11 @@ export class CanvasEngine {
     }
     // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
     // pointer here would send the release to the canvas and the click would never happen.
-    if (pressesControl(e.target)) return;
+    if (pressesControl(e.target) || heldByOverlay(e)) return;
     if (e.pointerType === 'touch' && this.touchDown(e)) return;
     if (this.gesture) return;
+    // Pressing on the canvas is the latest thing you picked, so Properties stops leading with the Clip settings.
+    if (tl().clipLead !== null) setTl({ clipLead: null });
     this.penPressed = e.pointerType === 'pen' && e.pressure > 0;
     this.spaceTap.spoil();
     this.refreshBounds();
@@ -651,6 +737,21 @@ export class CanvasEngine {
     const button = meaning ? meaning.button : e.button;
     const penEraser = !!meaning?.eraser;
     const pick = !!meaning?.pick;
+    // Shift and Space together, then drag: turn the view about the middle of the window, in 15 degree steps.
+    if (button === 0 && this.spaceDown && e.shiftKey && !penEraser && !pick) {
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'turn', pointerId: e.pointerId, from: this.pointerAngle(e), swung: 0, start: getTurn() };
+      this.updateCursor();
+      return;
+    }
+    // Alt on a free tool: wait to see whether this is a click (picks a colour, or the tool's own click) or a drag (turns).
+    if (!this.altReplay && !penEraser && !pick && altTurnPress({ alt: e.altKey, shift: e.shiftKey, mod: e.ctrlKey || e.metaKey, button, tool: ui.tool, pointerType: e.pointerType })) {
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'altwait', pointerId: e.pointerId, down: e, startX: e.clientX, startY: e.clientY };
+      return;
+    }
     const wantPan = button === 1 || (button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser && !pick);
     if (wantPan) {
       e.preventDefault();
@@ -681,10 +782,17 @@ export class CanvasEngine {
     // A barrel button set to "Pick a colour" picks for as long as it is held, like holding the eyedropper's key.
     let tool = penEraser ? getTool('eraser') : pick ? eyedropperTool : getTool(ui.tool);
     if (!tool) return;
-    const layer = activeLayer().layer;
+    let layer = activeLayer().layer;
     // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
     if (!penEraser && !pick && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
     if (rightClick && (tool === tempEyedropperTool || !rightPaints(tool.id, layer?.kind, 2))) return;
+    // Draw anywhere: a stroke of the other kind goes to the other half of this layer's pair, made if it is missing.
+    const began = beginStroke(tool);
+    if (began.refused) {
+      this.ctx.hint(began.refused);
+      return;
+    }
+    layer = activeLayer().layer;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
       this.ctx.hint(`${tool.label} works on ${kinds} layers. Pick one in the timeline first.`);
@@ -708,12 +816,11 @@ export class CanvasEngine {
     this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool, swapped };
     const ptr = this.toPointer(e);
     this.lastPtr = ptr;
-    this.stab = null;
+    this.penFilter = null;
     const tp = PEN_TOOLS.includes(tool.id as PenTool) && !pick && !rightClick ? getPen().tools[tool.id as PenTool] : null;
-    if (tp && tp.stabilizer > 0) {
-      this.stab = new Stabilizer(tp.stabMode, tp.stabilizer, ui.zoom);
-      this.stab.start({ x: ptr.x, y: ptr.y, pressure: ptr.pressure });
-    }
+    // A pen modifier (src/penmods) lies over the person's own settings for this stroke; their settings are never changed.
+    const filter = tp ? new PenFilter(tp, ui.zoom, { x: ptr.x, y: ptr.y, pressure: ptr.pressure }) : null;
+    if (filter?.active) this.penFilter = filter;
     ctl.setHover(null);
     tool.down?.(ptr, this.ctx);
     this.invalidate(false, true);
@@ -736,7 +843,8 @@ export class CanvasEngine {
     if (g && e.pointerId === g.pointerId && this.releaseWentMissing(g, e)) {
       // The release never came (a button let go outside the window, a tip lifted with a barrel button held): end the
       // stroke where it last was, as a normal release would, then take this move as a hover.
-      this.finishGesture(g, null);
+      // A waiting Alt press that never got its release is still a click, so it is carried out rather than lost.
+      this.finishGesture(g, g.kind === 'altwait' ? e : null);
       this.onPointerMove(e);
       return;
     }
@@ -767,11 +875,26 @@ export class CanvasEngine {
       this.invalidate(false, true);
       return;
     }
+    if (g.kind === 'altwait') {
+      // Not yet a drag: the first move past the small distance makes it one, turning from where the pointer is now.
+      if (altPressMoved('waiting', e.clientX - g.startX, e.clientY - g.startY, e.pointerType) === 'turning') {
+        this.gesture = { kind: 'turn', pointerId: g.pointerId, from: this.pointerAngle(e), swung: 0, start: getTurn() };
+        this.updateCursor();
+      }
+      return;
+    }
+    if (g.kind === 'turn') {
+      // A mirrored view turns the other way on screen, so the drag reverses to keep the page following the pointer.
+      // Any angle, settling straight near a quarter turn; Shift while dragging gives 15 degree steps instead.
+      const now = this.pointerAngle(e);
+      g.swung += turnAngleFor(g.from, now);
+      g.from = now;
+      setTurn({ angle: dragAngle(g.start.angle, g.swung, g.start.flip, e.shiftKey), flip: g.start.flip });
+      return;
+    }
     if (g.kind === 'pan') {
-      ctl.setView(
-        { zoom: store().get().ui.zoom, panX: g.panX + (e.clientX - g.startX), panY: g.panY + (e.clientY - g.startY) },
-        true,
-      );
+      const d = unturnVector(getTurn(), e.clientX - g.startX, e.clientY - g.startY);
+      ctl.setView({ zoom: store().get().ui.zoom, panX: g.panX + d.x, panY: g.panY + d.y }, true);
       return;
     }
     if (perf) perf.pending.push(e.timeStamp);
@@ -784,15 +907,15 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     // The pen's predicted path draws ahead of the line for less lag, but not when the stabilizer holds the brush back.
-    const pred = !this.stab && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
+    const pred = !this.penFilter && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
     ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe, true))));
     this.invalidate(false, true);
   };
 
   /** The pointer sample as the stabilizer's brush sees it (unchanged when the stabilizer is off). */
   private steady(p: ToolPointer): ToolPointer {
-    if (!this.stab) return p;
-    const s = this.stab.push({ x: p.x, y: p.y, pressure: p.pressure });
+    if (!this.penFilter) return p;
+    const s = this.penFilter.push({ x: p.x, y: p.y, pressure: p.pressure });
     return { ...p, x: s.x, y: s.y, pressure: s.pressure };
   }
 
@@ -826,15 +949,21 @@ export class CanvasEngine {
       const raw = e ? this.toPointer(e) : last;
       const up = raw && last && (!e || e.pointerType === 'pen') ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
       if (up) {
-        if (this.stab) {
+        let lift = up;
+        if (this.penFilter) {
           // The brush walks the rest of the way to where the pen lifted.
-          const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
-          for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+          const end = this.penFilter.finish({ x: up.x, y: up.y, pressure: up.pressure });
+          for (const s of end.before) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+          lift = { ...up, x: end.last.x, y: end.last.y };
         }
-        g.tool.up?.(up, this.ctx);
+        g.tool.up?.(lift, this.ctx);
       } else g.tool.cancel?.(this.ctx);
-      this.stab = null;
+      this.penFilter = null;
       this.restoreTool(g);
+    } else if (g.kind === 'altwait') {
+      // Let go without moving far: not a turn after all, so the press is made as the tool would have taken it (a pick
+      // on a pixel layer). A press that is cancelled or loses the pointer (no release) does nothing.
+      if (e && altPressReleased('waiting') === 'pick') this.replayAltPress(g, e);
     } else if (g.kind === 'grab') {
       const at = e ? this.toDocPoint(e, true) : this.grabPt;
       if (at) g.grab.up(at);
@@ -844,6 +973,18 @@ export class CanvasEngine {
     this.grabPt = null;
     this.updateCursor();
     this.invalidate(false, true);
+  }
+
+  /** Makes a waiting Alt press as the plain press it was: down at the first point, up at the release. */
+  private replayAltPress(g: Extract<Gesture, { kind: 'altwait' }>, up: PointerEvent): void {
+    this.altReplay = true;
+    try {
+      this.onPointerDown(g.down);
+      const made = this.gesture as Gesture | null;
+      if (made && made.kind !== 'pinch') this.finishGesture(made, up);
+    } finally {
+      this.altReplay = false;
+    }
   }
 
   /** A move with no release before it: the button is no longer down, or a pen's tip has lifted but a barrel button is held. */
@@ -910,7 +1051,7 @@ export class CanvasEngine {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
-    this.stab = null;
+    this.penFilter = null;
     if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
     if (g.kind === 'grab') g.grab.cancel?.();
     if (g.kind === 'tool') {
@@ -918,6 +1059,8 @@ export class CanvasEngine {
       ctl.setPredicted([]);
       ctl.setLive(null);
       this.restoreTool(g);
+      // A layer made for a stroke that was called off goes too, as if it never happened.
+      store().endJoin();
     }
     this.lastPtr = null;
     this.updateCursor();
@@ -926,21 +1069,30 @@ export class CanvasEngine {
 
   // ---------------------------------------------------------------- wheel and keys
 
+  /** Watches the run of wheel events, to tell a mouse wheel from a pinch. */
+  private wheelStream = new WheelStream(sharedNotch());
+
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     this.refreshBounds();
-    const sx = e.clientX - this.bounds.left;
-    const sy = e.clientY - this.bounds.top;
+    const { x: sx, y: sy } = this.rel(e.clientX, e.clientY);
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
-    const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
-    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode, intent.step), sx, sy));
-    else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
+    const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'), currentChoice<WheelCtrl>('canvas.wheelCtrl'));
+    if (intent.kind === 'zoom') {
+      const speed = ZOOM_SPEED_SCALE[currentChoice<ZoomSpeed>('canvas.zoomSpeed')];
+      const read = this.wheelStream.read(e, e.timeStamp, { step: intent.step, dpr: window.devicePixelRatio, speed });
+      ctl.setView(zoomAbout(v, v.zoom * read.factor, sx, sy));
+    } else {
+      const d = unturnVector(getTurn(), intent.dx, intent.dy);
+      ctl.setView({ zoom: v.zoom, panX: v.panX - d.x, panY: v.panY - d.y });
+    }
   };
 
   private onPinch = (factor: number, clientX: number, clientY: number): void => {
     this.refreshBounds();
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
-    ctl.setView(zoomAbout(v, v.zoom * factor, clientX - this.bounds.left, clientY - this.bounds.top));
+    const q = this.rel(clientX, clientY);
+    ctl.setView(zoomAbout(v, v.zoom * factor, q.x, q.y));
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {

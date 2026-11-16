@@ -1,8 +1,11 @@
+import { ExplainIcon, Explainer, useShowExplanations } from './explain/ExplainIcon';
 import { line } from './mascot/lines';
+import { MascotRow } from './mascot/MascotRow';
 import type { SwitcherLook } from './switcherModel';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { WorkspacesPage } from './WorkspacesPage';
+import { MenusPage } from './MenusPage';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 import { QuillEmpty, setShowQuill } from './mascot';
@@ -21,26 +24,35 @@ import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
 import { wordsOf } from './match';
 import { Modal } from './Modal';
+import { StickyPageTop } from './StickyPageTop';
 import { PrefsSearch } from './PrefsSearchBox';
 import { lightRow } from './prefsLight';
 import type { PrefRow } from './prefsSearch';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, UI_SCALE_RANGE, usePrefs, type LookPref, type ThemePref } from './prefs';
+import { setToolRailStyle } from './toolRail';
 import { toast } from './toast';
-import { applySettings, pickSettingsFile, saveSettingsFile } from './settingsFile';
+import { applySettings, backedUpMessage, collectSettings, pickSettingsFile, restoreChanges, restoredMessage, restoreQuestion, saveSettingsFile, type SettingsFile } from './settingsFile';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
 import { FeaturesPage } from '../features/FeaturesPage';
+import { StreamingPage } from '../features/StreamingPage';
 import { UNITS, type Unit } from '../core/units';
 import { SnapPanel } from '../canvas/SnapOptions';
+import { setSnapOn } from '../canvas/snapOps';
+import { useViewSettings } from '../canvas/viewSettings';
+import { PrefTitle } from './PrefTitle';
 import { PenPage } from '../tablet/PenPage';
 import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
+import { GpuPage } from '../gpu/GpuPage';
+import { ObsPanel } from '../streamsafe/ObsPanel';
+import { setObsLink } from '../streamsafe/obs';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
 
-const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
+export const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'general', label: 'General', icon: 'settings', help: 'look-and-feel' },
   { id: 'themes', label: 'Themes', icon: 'palette', help: 'themes' },
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
@@ -48,8 +60,11 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'snapping', label: 'Snapping', icon: 'magnet', help: 'snapping' },
   { id: 'pen', label: 'Pen and tablet', icon: 'pen', help: 'pen-tablet' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
+  { id: 'menus', label: 'Menus', icon: 'sliders', help: 'change-the-menus' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
+  { id: 'streaming', label: 'Streaming', icon: 'live', help: 'streaming' },
+  { id: 'performance', label: 'Performance', icon: 'effects', help: 'performance' },
   { id: 'diagnostics', label: 'Diagnostics', icon: 'info', help: 'pen-check' },
 ];
 
@@ -95,24 +110,60 @@ function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string
           {current === 'keyboard' && <KeyboardPage key={focusCmd.n} focusId={focusCmd.id} />}
           {current === 'snapping' && <SnappingPage />}
           {current === 'pen' && <PenPage />}
+          {current === 'performance' && (
+            <GpuPage
+              onGeneral={() => {
+                setCurrent('general');
+                setLit({ words: 'Undo steps', n: Date.now() });
+              }}
+            />
+          )}
           {current === 'diagnostics' && <DiagnosticsPage />}
           {current === 'workspaces' && <WorkspacesPage />}
+          {current === 'menus' && <MenusPage />}
           {current === 'plugins' && <PluginsPage />}
           {current === 'features' && <FeaturesPage />}
+          {current === 'streaming' && <StreamingPage sharing={<SharingRows />} />}
         </div>
       </div>
     </Modal>
   );
 }
 
+/** The sharing settings on Preferences > Streaming: for anybody who shares a screen, not only streamers. */
+function SharingRows() {
+  const p = usePrefs((x) => x);
+  return (
+    <>
+      <Row label="Stream-safe mode" hint="For sharing your screen or streaming: file paths, your name and keys show as friendly stand-ins. Only what shows changes, never your drawing.">
+        <Switch label="Stream-safe mode" on={p.streamSafe} onChange={(streamSafe) => setPrefs({ streamSafe })} />
+      </Row>
+      <div data-obs-section>
+        <Row label="Going live with OBS" hint="Frameling watches OBS on your own computer and turns Stream-safe on by itself when you start streaming or recording. It asks before turning it off again. Off until you switch it on.">
+          <Switch label="Going live with OBS" on={p.obsLink} onChange={setObsLink} />
+        </Row>
+        {p.obsLink && (
+          <div className="ui-pref-row obs-row">
+            <ObsPanel />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- pieces
 
 export function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const show = useShowExplanations();
   return (
     <div className="ui-pref-row">
       <div className="ui-pref-text">
-        <strong>{label}</strong>
-        {hint && <span>{hint}</span>}
+        <strong>
+          {label}
+          {hint && !show && <ExplainIcon title={label} words={hint} help="preferences" size={13} />}
+        </strong>
+        {hint && show && <span>{hint}</span>}
       </div>
       <div className="ui-pref-control">{children}</div>
     </div>
@@ -143,11 +194,18 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
 // ---------------------------------------------------------------- snapping
 
 function SnappingPage() {
+  const on = useViewSettings((v) => v.snap);
   return (
     <>
-      <h3>Snapping</h3>
-      <p className="ui-pref-intro">Pick what shapes jump onto when they get close. The Snap button at the bottom of the window opens the same choices.</p>
-      <SnapPanel wide />
+      <PrefTitle
+        title="Snapping"
+        label="Snapping on or off"
+        on={on}
+        onChange={setSnapOn}
+        about={<Explainer className="ui-pref-intro">Pick what shapes jump onto when they get close. Hold Ctrl while dragging to skip it for a moment. The Snap button at the bottom of the window opens the same choices.</Explainer>}
+        status={on ? 'Snapping is on. Shapes jump onto what is ticked below.' : 'Snapping is off, so nothing jumps. Your ticks below are kept for when you switch it on.'}
+      />
+      <SnapPanel wide master={false} />
     </>
   );
 }
@@ -155,20 +213,33 @@ function SnappingPage() {
 // ---------------------------------------------------------------- general
 
 async function backUpSettings(): Promise<void> {
+  const n = Object.keys(collectSettings().items).length;
   const r = await saveSettingsFile();
-  if (r === 'saved') toast('Your settings are saved.', { kind: 'success' });
-  else if (r === 'failed') toast('That file could not be saved.', { kind: 'error' });
+  if (r === 'saved') toast(backedUpMessage(n), { kind: 'success' });
+  else if (r === 'failed') toast('That backup could not be saved.', { kind: 'error' });
 }
 
-/** Puts a backup back and starts Frameling again, so every part reads the restored settings. */
+/** Restore: reads a backup, says what it will do and waits for a yes, then puts it back and starts Frameling again. */
 async function restoreSettings(): Promise<void> {
   const r = await pickSettingsFile();
   if (!r) return;
   if (!r.ok) return void toast(r.why, { kind: 'error' });
-  const n = applySettings(r.file);
-  if (!n) return void toast('Those settings could not be put back.', { kind: 'error' });
-  toast('Your settings are back. Frameling is starting again.', { kind: 'success' });
-  setTimeout(() => location.reload(), 900);
+  toast(restoreQuestion(r.file, r.count), {
+    kind: 'warn',
+    duration: 0,
+    quill: null,
+    sound: null,
+    action: { label: 'Restore', id: 'restore-settings', run: () => applyRestore(r.file) },
+    decline: { label: 'Cancel', id: 'restore-cancel', run: () => {} },
+  });
+}
+
+function applyRestore(file: SettingsFile): void {
+  const changes = restoreChanges(collectSettings(), file);
+  const n = applySettings(file);
+  if (!n) return void toast('That backup could not be restored.', { kind: 'error' });
+  toast(restoredMessage(file, changes), { kind: 'success', duration: 2400 });
+  setTimeout(() => location.reload(), 1800);
 }
 
 function GeneralPage({ onThemes }: { onThemes: () => void }) {
@@ -278,6 +349,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
       </Row>
+      <Row label="Explanations" hint="The little lines that say what a panel or a setting is for. Off tucks them behind the ? icons: point at one to read it. Handy once you know your way round.">
+        <Switch label="Explanations" on={p.showExplanations} onChange={(showExplanations) => setPrefs({ showExplanations })} />
+      </Row>
       <Row label="Workspace switcher" hint="Which workspace you are in, beside the drawing's name. Tabs show them all at once, Chip shows just the one you are in, and Hidden leaves it to the View menu. A narrow window uses the chip.">
         <Segmented<SwitcherLook>
           label="Workspace switcher"
@@ -306,14 +380,14 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
         <Segmented<'two' | 'stacked'>
           label="Tool rail style"
           value={p.toolRail}
-          onChange={(toolRail) => setPrefs({ toolRail })}
+          onChange={setToolRailStyle}
           options={[
             { id: 'two', label: 'Two wide' },
             { id: 'stacked', label: 'Stacked' },
           ]}
         />
       </Row>
-      <Row label="Tool group names" hint="Each group of tools gets its name above it. Turn them off for a slimmer rail. A group you made and never named is just a divider either way.">
+      <Row label="Tool group names" hint="Each group of tools gets its name above it, and the rail starts wide enough to read them. Turn them off for a slimmer rail. A group you made and never named is just a divider either way. The Stacked rail shows names only once you pull it wider.">
         <Switch label="Tool group names" on={p.toolNames} onChange={(toolNames) => setPrefs({ toolNames })} />
       </Row>
       <Row label="Tool button size" hint="How big the buttons on the tool rail are. Change the tools, in the View menu, has this too.">
@@ -342,19 +416,28 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
         <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>
+      <MascotRow />
       <Row label="Fade tile copies" hint="In tile mode, fade the copies round the tile you're drawing so it stands out. Off shows them exactly as a game would.">
         <Switch label="Fade tile copies" on={p.fadeTileCopies} onChange={(fadeTileCopies) => setPrefs({ fadeTileCopies })} />
       </Row>
       <Row label="Thicker pixel outlines" hint="Pixel shapes (rectangle, ellipse, line, polygon, star) get an outline thicker than one pixel. Off keeps the classic one pixel line.">
         <Switch label="Thicker pixel outlines" on={p.pixelThickOutlines} onChange={(pixelThickOutlines) => setPrefs({ pixelThickOutlines })} />
       </Row>
+      <Row label="New pixel layer size" hint="How wide each square is on a pixel layer you make from the Pixels and Vectors switch, when no other pixel layer is there to copy. Bigger squares, chunkier art.">
+        <Segmented<'1' | '2' | '4' | '8' | '16' | '32'>
+          label="New pixel layer size"
+          value={String(p.newPixelSize) as '1' | '2' | '4' | '8' | '16' | '32'}
+          onChange={(v) => setPrefs({ newPixelSize: Number(v) })}
+          options={(['1', '2', '4', '8', '16', '32'] as const).map((id) => ({ id, label: id }))}
+        />
+      </Row>
       <Row label="Your settings" hint="Everything you have set: themes, shortcuts, pen settings, workspaces and the answers you have given. Keep a copy, or put one back on another computer.">
         <div className="ui-pref-volume">
           <button type="button" className="ui-btn ui-btn-small" onClick={() => void backUpSettings()}>
-            Back up...
+            Backup
           </button>
           <button type="button" className="ui-btn ui-btn-small" onClick={() => void restoreSettings()}>
-            Put a backup back...
+            Restore
           </button>
         </div>
       </Row>
@@ -461,15 +544,17 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
           ))}
         </select>
       </Row>
-      <div className="ui-keyboard-top">
-        <div className="ui-help-search">
-          <Icon name="search" size={15} />
-          <input type="search" aria-label="Search shortcuts" placeholder="Search commands or keys" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+      <StickyPageTop>
+        <div className="ui-keyboard-top">
+          <div className="ui-help-search">
+            <Icon name="search" size={15} />
+            <input type="search" aria-label="Search shortcuts" placeholder="Search commands or keys" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+          </div>
+          <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast(setId === 'frameling' ? 'All shortcuts are back to how they came.' : `All shortcuts are back to the ${keymapSet(setId).label} set.`, { kind: 'success' }))}>
+            Reset all
+          </button>
         </div>
-        <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast(setId === 'frameling' ? 'All shortcuts are back to how they came.' : `All shortcuts are back to the ${keymapSet(setId).label} set.`, { kind: 'success' }))}>
-          Reset all
-        </button>
-      </div>
+      </StickyPageTop>
       {conflicts.size > 0 && (
         <p className="ui-warn-line">
           <Icon name="warning" size={15} />

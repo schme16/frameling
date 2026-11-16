@@ -1,0 +1,3521 @@
+{
+ "label": "sweep",
+ "when": "2026-11-14T23:41:01.910Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 2,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "play",
+   "busyMs": 221.8,
+   "runs": [
+    221.4,
+    221.8
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 147.87,
+   "topSelf": [
+    [
+     "(program) :0",
+     162.2
+    ],
+    [
+     "poseCel index-IiVrbjwy.js:26495",
+     10.7
+    ],
+    [
+     "cyclePositions index-IiVrbjwy.js:27248",
+     10
+    ],
+    [
+     "poseAt$1 index-IiVrbjwy.js:26472",
+     4.7
+    ],
+    [
+     "isInstance index-IiVrbjwy.js:25745",
+     3.9
+    ],
+    [
+     "bump index-IiVrbjwy.js:72099",
+     1.8
+    ],
+    [
+     "has index-IiVrbjwy.js:72090",
+     1.7
+    ],
+    [
+     "warmAhead index-IiVrbjwy.js:73905",
+     1.5
+    ],
+    [
+     "drawImage :0",
+     1.4
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     1.4
+    ],
+    [
+     "touch index-IiVrbjwy.js:72094",
+     1.4
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     0.9
+    ],
+    [
+     "warm index-IiVrbjwy.js:72285",
+     0.9
+    ],
+    [
+     "neededWidth index-IiVrbjwy.js:114012",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     162.2
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     43.4
+    ],
+    [
+     "warmAhead index-IiVrbjwy.js:73905",
+     36
+    ],
+    [
+     "warm index-IiVrbjwy.js:72285",
+     25.1
+    ],
+    [
+     "poseAt$1 index-IiVrbjwy.js:26472",
+     20.2
+    ],
+    [
+     "poseCel index-IiVrbjwy.js:26495",
+     14.5
+    ],
+    [
+     "cyclePositions index-IiVrbjwy.js:27248",
+     10.5
+    ],
+    [
+     "directedPosition index-IiVrbjwy.js:27281",
+     10.4
+    ],
+    [
+     "upcomingFrames index-IiVrbjwy.js:67941",
+     9.7
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     6.7
+    ],
+    [
+     "tick$3 index-IiVrbjwy.js:68002",
+     6.5
+    ],
+    [
+     "paint index-IiVrbjwy.js:72311",
+     6.2
+    ],
+    [
+     "paintStage index-IiVrbjwy.js:72337",
+     5.9
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     5.8
+    ],
+    [
+     "paintComposited index-IiVrbjwy.js:71584",
+     5.7
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     5.6
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     5.5
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     5.5
+    ],
+    [
+     "compositePlan index-IiVrbjwy.js:16609",
+     5.4
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     5.4
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     5.3
+    ],
+    [
+     "drawLevel index-IiVrbjwy.js:16675",
+     5.3
+    ],
+    [
+     "compositeRun index-IiVrbjwy.js:16639",
+     5.3
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     5
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     4.4
+    ],
+    [
+     "isInstance index-IiVrbjwy.js:25745",
+     3.9
+    ],
+    [
+     "touch index-IiVrbjwy.js:72094",
+     2.9
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     2.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 512,
+   "runs": [
+    426.6,
+    512
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 6.4,
+   "topSelf": [
+    [
+     "(program) :0",
+     306.2
+    ],
+    [
+     "drawImage :0",
+     95.4
+    ],
+    [
+     "getContext :0",
+     6.1
+    ],
+    [
+     "poseCel index-IiVrbjwy.js:26495",
+     4.7
+    ],
+    [
+     "drawPlainPath index-IiVrbjwy.js:23519",
+     2.1
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     2
+    ],
+    [
+     "quadraticCurveTo :0",
+     1.8
+    ],
+    [
+     "celAt$1 index-IiVrbjwy.js:12728",
+     1.7
+    ],
+    [
+     "setTransform :0",
+     1.5
+    ],
+    [
+     "ensureRootIsScheduled index-IiVrbjwy.js:8504",
+     1.4
+    ],
+    [
+     "save :0",
+     1.3
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     1
+    ],
+    [
+     "L index-IiVrbjwy.js:14496",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     306.2
+    ],
+    [
+     "run index-IiVrbjwy.js:73928",
+     108.1
+    ],
+    [
+     "build index-IiVrbjwy.js:72122",
+     107.8
+    ],
+    [
+     "warm index-IiVrbjwy.js:72285",
+     107.4
+    ],
+    [
+     "drawImage :0",
+     95.4
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     24.6
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     22
+    ],
+    [
+     "paint index-IiVrbjwy.js:72311",
+     20.2
+    ],
+    [
+     "paintStage index-IiVrbjwy.js:72337",
+     20
+    ],
+    [
+     "paintComposited index-IiVrbjwy.js:71584",
+     19.7
+    ],
+    [
+     "compositePlan index-IiVrbjwy.js:16609",
+     18.8
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     18.5
+    ],
+    [
+     "drawLevel index-IiVrbjwy.js:16675",
+     18.5
+    ],
+    [
+     "compositeRun index-IiVrbjwy.js:16639",
+     18.5
+    ],
+    [
+     "dispatchEvent index-IiVrbjwy.js:10993",
+     16.2
+    ],
+    [
+     "dispatchEventForPluginEventSystem index-IiVrbjwy.js:8763",
+     16.1
+    ],
+    [
+     "dispatchContinuousEvent index-IiVrbjwy.js:10983",
+     16
+    ],
+    [
+     "batchedUpdates$1 index-IiVrbjwy.js:1977",
+     15.8
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8789",
+     15.7
+    ],
+    [
+     "paint index-IiVrbjwy.js:71589",
+     14.9
+    ],
+    [
+     "processDispatchQueue index-IiVrbjwy.js:8683",
+     13.6
+    ],
+    [
+     "onMove index-IiVrbjwy.js:111581",
+     12.8
+    ],
+    [
+     "goTo index-IiVrbjwy.js:68079",
+     12.7
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     12.6
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     11.8
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     11.4
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     11.4
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     11.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 295,
+   "runs": [
+    263.9,
+    295
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 49.17,
+   "topSelf": [
+    [
+     "(program) :0",
+     183
+    ],
+    [
+     "(garbage collector) :0",
+     6.6
+    ],
+    [
+     "drawImage :0",
+     6.3
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     4.5
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     4.1
+    ],
+    [
+     "getBoundingClientRect :0",
+     3.9
+    ],
+    [
+     "removeChild :0",
+     3.6
+    ],
+    [
+     "updateElement index-IiVrbjwy.js:3315",
+     2.4
+    ],
+    [
+     "setAttribute :0",
+     2.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:108695",
+     2.1
+    ],
+    [
+     "neededWidth index-IiVrbjwy.js:114012",
+     2
+    ],
+    [
+     "propagateParentContextChanges index-IiVrbjwy.js:2990",
+     2
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     1.7
+    ],
+    [
+     "querySelector :0",
+     1.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     183
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     63.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     36.9
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     36.8
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     36.1
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     36.1
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     35.7
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     35.6
+    ],
+    [
+     "performWorkUntilDeadline index-IiVrbjwy.js:122",
+     29.3
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     27.2
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     27.2
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     27.2
+    ],
+    [
+     "performWorkOnRootViaSchedulerTask index-IiVrbjwy.js:8589",
+     27
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     26.2
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     16
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     16
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     16
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     15.1
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     13.5
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     12.1
+    ],
+    [
+     "drawLevel index-IiVrbjwy.js:16675",
+     12.1
+    ],
+    [
+     "compositeRun index-IiVrbjwy.js:16639",
+     12.1
+    ],
+    [
+     "compositePlan index-IiVrbjwy.js:16609",
+     12.1
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     11.7
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     11.3
+    ],
+    [
+     "paint index-IiVrbjwy.js:72311",
+     10.9
+    ],
+    [
+     "paintStage index-IiVrbjwy.js:72337",
+     10.5
+    ],
+    [
+     "paintComposited index-IiVrbjwy.js:71584",
+     10.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 107.5,
+   "runs": [
+    105.1,
+    107.5
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 26.88,
+   "topSelf": [
+    [
+     "(program) :0",
+     82.8
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     7.5
+    ],
+    [
+     "setAttribute :0",
+     1.7
+    ],
+    [
+     "insertBefore :0",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "ensure index-IiVrbjwy.js:50210",
+     0.7
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.4
+    ],
+    [
+     "isHelp index-IiVrbjwy.js:37555",
+     0.4
+    ],
+    [
+     "reconcileChildrenArray index-IiVrbjwy.js:3382",
+     0.4
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     0.4
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.4
+    ],
+    [
+     "createElementNS :0",
+     0.4
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:60762",
+     0.4
+    ],
+    [
+     "drawStep index-IiVrbjwy.js:16695",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     82.8
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     16.5
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     16.5
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     16.5
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     16.5
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     16.5
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     10.7
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     10.7
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     10.7
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:60762",
+     7.8
+    ],
+    [
+     "commitHookEffectListMount index-IiVrbjwy.js:6147",
+     7.8
+    ],
+    [
+     "commitLayoutEffectOnFiber index-IiVrbjwy.js:6662",
+     7.8
+    ],
+    [
+     "recursivelyTraverseLayoutEffects index-IiVrbjwy.js:7314",
+     7.8
+    ],
+    [
+     "flushLayoutEffects index-IiVrbjwy.js:8324",
+     7.8
+    ],
+    [
+     "fit index-IiVrbjwy.js:60765",
+     7.7
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     7.5
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     5.8
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     5.8
+    ],
+    [
+     "completeWork index-IiVrbjwy.js:5809",
+     3.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     2.5
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     2.4
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     2.4
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     2.4
+    ],
+    [
+     "down index-IiVrbjwy.js:73159",
+     2.3
+    ],
+    [
+     "setInitialProperties index-IiVrbjwy.js:9268",
+     2.2
+    ],
+    [
+     "dispatchKey index-IiVrbjwy.js:73133",
+     2.1
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     2.1
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 71.2,
+   "runs": [
+    68.3,
+    71.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 23.75,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.8
+    ],
+    [
+     "shallowCopy index-IiVrbjwy.js:11734",
+     5.6
+    ],
+    [
+     "get index-IiVrbjwy.js:11976",
+     5
+    ],
+    [
+     "fitLength index-IiVrbjwy.js:55109",
+     4.4
+    ],
+    [
+     "arrayTraps.<computed> index-IiVrbjwy.js:12059",
+     1.8
+    ],
+    [
+     "allDrawingsBlank index-IiVrbjwy.js:70771",
+     1.5
+    ],
+    [
+     "follow index-IiVrbjwy.js:111364",
+     0.9
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:47198",
+     0.9
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.8
+    ],
+    [
+     "revokeDraft index-IiVrbjwy.js:11830",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.6
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     0.5
+    ],
+    [
+     "reconcileChildrenArray index-IiVrbjwy.js:3382",
+     0.5
+    ],
+    [
+     "weighValue index-IiVrbjwy.js:12976",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.8
+    ],
+    [
+     "duplicateKey index-IiVrbjwy.js:55572",
+     22.4
+    ],
+    [
+     "run index-IiVrbjwy.js:106060",
+     22.4
+    ],
+    [
+     "run debug-DDsKTktF.js:1295",
+     22.4
+    ],
+    [
+     "(anon) :0",
+     22.4
+    ],
+    [
+     "update index-IiVrbjwy.js:55515",
+     22.1
+    ],
+    [
+     "edit$3 index-IiVrbjwy.js:55548",
+     22.1
+    ],
+    [
+     "update index-IiVrbjwy.js:13066",
+     20.8
+    ],
+    [
+     "Immer2.produce index-IiVrbjwy.js:12128",
+     19.4
+    ],
+    [
+     "Immer2.produceWithPatches index-IiVrbjwy.js:12170",
+     19.4
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:55517",
+     17.3
+    ],
+    [
+     "get index-IiVrbjwy.js:11976",
+     11
+    ],
+    [
+     "fitLength index-IiVrbjwy.js:55109",
+     11
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     7.8
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     7.8
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     7.8
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     7.8
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     7.8
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:55556",
+     7.1
+    ],
+    [
+     "duplicateKey$1 index-IiVrbjwy.js:40407",
+     6.8
+    ],
+    [
+     "edit$3.both index-IiVrbjwy.js:55581",
+     6.8
+    ],
+    [
+     "shallowCopy index-IiVrbjwy.js:11734",
+     5.6
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     5.6
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     5.6
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     4.9
+    ],
+    [
+     "arrayTraps.<computed> index-IiVrbjwy.js:12059",
+     4.5
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     3.3
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "error": "the action made no edit (the harness is not driving the app)"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 271.8,
+   "runs": [
+    247.2,
+    271.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 45.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     94.6
+    ],
+    [
+     "getPropertyValue :0",
+     56.5
+    ],
+    [
+     "removeChild :0",
+     10
+    ],
+    [
+     "weighValue index-IiVrbjwy.js:12976",
+     9.2
+    ],
+    [
+     "setAttribute :0",
+     8.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:108695",
+     5.5
+    ],
+    [
+     "(garbage collector) :0",
+     4.2
+    ],
+    [
+     "paintUnderlay index-IiVrbjwy.js:79244",
+     3.2
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     3
+    ],
+    [
+     "appendChild :0",
+     2.9
+    ],
+    [
+     "detachDeletedInstance index-IiVrbjwy.js:1548",
+     2.6
+    ],
+    [
+     "completeWork index-IiVrbjwy.js:5809",
+     2.6
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     2.5
+    ],
+    [
+     "tally index-IiVrbjwy.js:39550",
+     2.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     94.6
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     74.1
+    ],
+    [
+     "draw index-IiVrbjwy.js:79340",
+     62.9
+    ],
+    [
+     "paintUnderlay index-IiVrbjwy.js:79244",
+     62.8
+    ],
+    [
+     "getPropertyValue :0",
+     56.5
+    ],
+    [
+     "css index-IiVrbjwy.js:79236",
+     56.5
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     56.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     56.3
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     56.2
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     56.1
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     48.8
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     48.7
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     25.3
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     25.3
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     25.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     23.6
+    ],
+    [
+     "completeWork index-IiVrbjwy.js:5809",
+     22.9
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     20.2
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     20.2
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     20.2
+    ],
+    [
+     "performWorkUntilDeadline index-IiVrbjwy.js:122",
+     19
+    ],
+    [
+     "performWorkOnRootViaSchedulerTask index-IiVrbjwy.js:8589",
+     18.1
+    ],
+    [
+     "goToArtboard index-IiVrbjwy.js:67529",
+     17.5
+    ],
+    [
+     "update index-IiVrbjwy.js:13066",
+     17.4
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     16.4
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     16.2
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     15.6
+    ],
+    [
+     "setInitialProperties index-IiVrbjwy.js:9268",
+     14.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 280.7,
+   "runs": [
+    280.7,
+    185
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 280.75,
+   "topSelf": [
+    [
+     "encode :0",
+     84.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97122",
+     59
+    ],
+    [
+     "docJsonBytes index-IiVrbjwy.js:97108",
+     31.2
+    ],
+    [
+     "(garbage collector) :0",
+     31
+    ],
+    [
+     "(program) :0",
+     22.8
+    ],
+    [
+     "filesToSave index-IiVrbjwy.js:97146",
+     2.4
+    ],
+    [
+     "anyOffset index-IiVrbjwy.js:25317",
+     0.6
+    ],
+    [
+     "isDerivedDrawing index-IiVrbjwy.js:96663",
+     0.4
+    ],
+    [
+     "saveFileAsync index-IiVrbjwy.js:97240",
+     0.3
+    ],
+    [
+     "draw index-IiVrbjwy.js:98867",
+     0.1
+    ],
+    [
+     "getActiveElement index-IiVrbjwy.js:2414",
+     0.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97201",
+     0.1
+    ],
+    [
+     "w.onmessage index-IiVrbjwy.js:95644",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "saveFileAsync index-IiVrbjwy.js:97240",
+     178.7
+    ],
+    [
+     "saveBytesAsync debug-DDsKTktF.js:1138",
+     178.7
+    ],
+    [
+     "(anon) :0",
+     178.7
+    ],
+    [
+     "filesToSave index-IiVrbjwy.js:97146",
+     178.4
+    ],
+    [
+     "docJsonBytes index-IiVrbjwy.js:97108",
+     175
+    ],
+    [
+     "encode :0",
+     84.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97122",
+     59.1
+    ],
+    [
+     "(garbage collector) :0",
+     31
+    ],
+    [
+     "(program) :0",
+     22.8
+    ],
+    [
+     "anyOffset index-IiVrbjwy.js:25317",
+     0.6
+    ],
+    [
+     "usesCelOffsets index-IiVrbjwy.js:25326",
+     0.6
+    ],
+    [
+     "versionFor index-IiVrbjwy.js:25330",
+     0.6
+    ],
+    [
+     "isDerivedDrawing index-IiVrbjwy.js:96663",
+     0.4
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:25319",
+     0.3
+    ],
+    [
+     "draw index-IiVrbjwy.js:98867",
+     0.1
+    ],
+    [
+     "tick$2 index-IiVrbjwy.js:98833",
+     0.1
+    ],
+    [
+     "getActiveElement index-IiVrbjwy.js:2414",
+     0.1
+    ],
+    [
+     "getActiveElementDeep index-IiVrbjwy.js:2455",
+     0.1
+    ],
+    [
+     "commitBeforeMutationEffects index-IiVrbjwy.js:6525",
+     0.1
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     0.1
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     0.1
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     0.1
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     0.1
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     0.1
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     0.1
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     0.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     0.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97201",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "7.1 MB file"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 155.9,
+   "runs": [
+    155.9,
+    150.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 155.93,
+   "topSelf": [
+    [
+     "loadFileAsync index-IiVrbjwy.js:97325",
+     83.6
+    ],
+    [
+     "decode :0",
+     17
+    ],
+    [
+     "(garbage collector) :0",
+     15.4
+    ],
+    [
+     "buildDoc index-IiVrbjwy.js:97366",
+     5.8
+    ],
+    [
+     "loadEntries index-IiVrbjwy.js:97345",
+     4.8
+    ],
+    [
+     "inflateDocInWorker index-IiVrbjwy.js:95738",
+     2.6
+    ],
+    [
+     "(program) :0",
+     2.4
+    ],
+    [
+     "cleanOrigin index-IiVrbjwy.js:97966",
+     2.2
+    ],
+    [
+     "cleanLineStyle index-IiVrbjwy.js:97939",
+     2.1
+    ],
+    [
+     "isInstance index-IiVrbjwy.js:25745",
+     1.8
+    ],
+    [
+     "drawImage :0",
+     1.1
+    ],
+    [
+     "DetailRow index-IiVrbjwy.js:108684",
+     0.8
+    ],
+    [
+     "instanceLists index-IiVrbjwy.js:46997",
+     0.7
+    ],
+    [
+     "updateSlot index-IiVrbjwy.js:3351",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "loadFileAsync index-IiVrbjwy.js:97325",
+     119.7
+    ],
+    [
+     "decode :0",
+     17
+    ],
+    [
+     "strFromU8 index-IiVrbjwy.js:94922",
+     17
+    ],
+    [
+     "loadEntries index-IiVrbjwy.js:97345",
+     16.3
+    ],
+    [
+     "(garbage collector) :0",
+     15.4
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     10.6
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     10.6
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     10.6
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     10.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     10.6
+    ],
+    [
+     "buildDoc index-IiVrbjwy.js:97366",
+     10.3
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     8.9
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     8.9
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     8.5
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     6.7
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     6.7
+    ],
+    [
+     "TimelineBody index-IiVrbjwy.js:111236",
+     4.7
+    ],
+    [
+     "openBytesAsync debug-DDsKTktF.js:1140",
+     4.7
+    ],
+    [
+     "layerTracks index-IiVrbjwy.js:47195",
+     4.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:108556",
+     4.6
+    ],
+    [
+     "buildLayout index-IiVrbjwy.js:108474",
+     4.6
+    ],
+    [
+     "updateMemo index-IiVrbjwy.js:4403",
+     4.6
+    ],
+    [
+     "exports.useMemo index-IiVrbjwy.js:654",
+     4.6
+    ],
+    [
+     "useLayout index-IiVrbjwy.js:108551",
+     4.6
+    ],
+    [
+     "rowTracks index-IiVrbjwy.js:47127",
+     4.4
+    ],
+    [
+     "instanceLists index-IiVrbjwy.js:46997",
+     3.2
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     3.1
+    ],
+    [
+     "inflateDocInWorker index-IiVrbjwy.js:95738",
+     2.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 161.9,
+   "runs": [
+    106.7,
+    161.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 13.49,
+   "topSelf": [
+    [
+     "(program) :0",
+     78.2
+    ],
+    [
+     "(garbage collector) :0",
+     20.6
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     2
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     1.4
+    ],
+    [
+     "drawImage :0",
+     1.1
+    ],
+    [
+     "propagateParentContextChanges index-IiVrbjwy.js:2990",
+     1.1
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     1.1
+    ],
+    [
+     "jsxProd index-IiVrbjwy.js:42102",
+     0.9
+    ],
+    [
+     "updateElement index-IiVrbjwy.js:3315",
+     0.9
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     0.9
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     0.8
+    ],
+    [
+     "shouldSetTextContent index-IiVrbjwy.js:9644",
+     0.8
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     0.7
+    ],
+    [
+     "reconcileChildrenArray index-IiVrbjwy.js:3382",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     78.2
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     25.3
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     25.3
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     25.3
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     25.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     25.3
+    ],
+    [
+     "(garbage collector) :0",
+     20.6
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     17.6
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     17.6
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     16.7
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     11.7
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     11.2
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     7.7
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     7.7
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     7.7
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     6.3
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     6.3
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     6.3
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     5.3
+    ],
+    [
+     "(anon) :0",
+     5
+    ],
+    [
+     "run debug-DDsKTktF.js:1295",
+     4.7
+    ],
+    [
+     "afterHistory index-IiVrbjwy.js:13311",
+     4.1
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     4
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     4
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     3.9
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     3.9
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     3.4
+    ],
+    [
+     "paintStage index-IiVrbjwy.js:72337",
+     3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "play",
+   "busyMs": 44.2,
+   "runs": [
+    44.2,
+    42.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 29.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     28.4
+    ],
+    [
+     "neededWidth index-IiVrbjwy.js:114012",
+     0.9
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     0.9
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     0.6
+    ],
+    [
+     "isHelp index-IiVrbjwy.js:37555",
+     0.5
+    ],
+    [
+     "postMessage :0",
+     0.5
+    ],
+    [
+     "ensureRootIsScheduled index-IiVrbjwy.js:8504",
+     0.4
+    ],
+    [
+     "celAt$1 index-IiVrbjwy.js:12728",
+     0.4
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     0.4
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.4
+    ],
+    [
+     "poseCel index-IiVrbjwy.js:26495",
+     0.4
+    ],
+    [
+     "celOffsetAt index-IiVrbjwy.js:26482",
+     0.3
+    ],
+    [
+     "performWorkUntilDeadline index-IiVrbjwy.js:122",
+     0.3
+    ],
+    [
+     "upcomingFrames index-IiVrbjwy.js:67941",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     28.4
+    ],
+    [
+     "tick$3 index-IiVrbjwy.js:68002",
+     4.3
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     4.2
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     4.2
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     4.2
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     4.2
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     4.2
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     4
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     4
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     3.5
+    ],
+    [
+     "workLoopSync index-IiVrbjwy.js:8021",
+     2.4
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     2.4
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     1.9
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:114051",
+     1.9
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     1.8
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     1.8
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     1.7
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     1.7
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     1.7
+    ],
+    [
+     "currentWorkspace index-IiVrbjwy.js:38251",
+     1.7
+    ],
+    [
+     "warmAhead index-IiVrbjwy.js:73905",
+     1.6
+    ],
+    [
+     "listWorkspaces index-IiVrbjwy.js:38248",
+     1.5
+    ],
+    [
+     "poseAt$1 index-IiVrbjwy.js:26472",
+     1.4
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     1.4
+    ],
+    [
+     "warm index-IiVrbjwy.js:72285",
+     1.3
+    ],
+    [
+     "ensureRootIsScheduled index-IiVrbjwy.js:8504",
+     1.3
+    ],
+    [
+     "scheduleUpdateOnFiber index-IiVrbjwy.js:7766",
+     1.3
+    ],
+    [
+     "forceStoreRerender index-IiVrbjwy.js:4102",
+     1.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 56.2,
+   "runs": [
+    53,
+    56.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 0.7,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     1.6
+    ],
+    [
+     "isHelp index-IiVrbjwy.js:37555",
+     1.3
+    ],
+    [
+     "ensureRootIsScheduled index-IiVrbjwy.js:8504",
+     1.1
+    ],
+    [
+     "SyntheticBaseEvent index-IiVrbjwy.js:2051",
+     1
+    ],
+    [
+     "layoutFrom index-IiVrbjwy.js:37558",
+     0.9
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.6
+    ],
+    [
+     "save :0",
+     0.5
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     0.5
+    ],
+    [
+     "queueMicrotask :0",
+     0.5
+    ],
+    [
+     "findLayer index-IiVrbjwy.js:12739",
+     0.4
+    ],
+    [
+     "hintTarget index-IiVrbjwy.js:66717",
+     0.4
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.3
+    ],
+    [
+     "dispatchEvent index-IiVrbjwy.js:10993",
+     11.1
+    ],
+    [
+     "dispatchContinuousEvent index-IiVrbjwy.js:10983",
+     10.9
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8789",
+     10.8
+    ],
+    [
+     "dispatchEventForPluginEventSystem index-IiVrbjwy.js:8763",
+     10.8
+    ],
+    [
+     "processDispatchQueue index-IiVrbjwy.js:8683",
+     9.2
+    ],
+    [
+     "onMove index-IiVrbjwy.js:111581",
+     9
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     8.6
+    ],
+    [
+     "goTo index-IiVrbjwy.js:68079",
+     8.6
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     8.2
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     4.6
+    ],
+    [
+     "listWorkspaces index-IiVrbjwy.js:38248",
+     4.6
+    ],
+    [
+     "currentWorkspace index-IiVrbjwy.js:38251",
+     4.6
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     4
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     4
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     4
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     4
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     4
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     3.8
+    ],
+    [
+     "inPixelWorkspace index-IiVrbjwy.js:37667",
+     3.5
+    ],
+    [
+     "ensureRootIsScheduled index-IiVrbjwy.js:8504",
+     3
+    ],
+    [
+     "scheduleUpdateOnFiber index-IiVrbjwy.js:7766",
+     3
+    ],
+    [
+     "forceStoreRerender index-IiVrbjwy.js:4102",
+     3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:4088",
+     3
+    ],
+    [
+     "drawOverlay index-IiVrbjwy.js:74022",
+     2.4
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     2
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     2
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     2
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 130.3,
+   "runs": [
+    130.3,
+    123.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 21.72,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     48.8
+    ],
+    [
+     "(program) :0",
+     36.1
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     4.6
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.4
+    ],
+    [
+     "neededWidth index-IiVrbjwy.js:114012",
+     1.9
+    ],
+    [
+     "setAttribute :0",
+     1.7
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     1.1
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     1
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "jsxProd index-IiVrbjwy.js:42102",
+     0.9
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.9
+    ],
+    [
+     "drawImage :0",
+     0.9
+    ],
+    [
+     "setTransform :0",
+     0.8
+    ],
+    [
+     "measure index-IiVrbjwy.js:136779",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     48.8
+    ],
+    [
+     "(program) :0",
+     36.1
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     30.1
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     27.6
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     27.6
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     27.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     27.6
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     15.8
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     14.3
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     14.3
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     14.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     11.8
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     9.7
+    ],
+    [
+     "commitHookEffectListMount index-IiVrbjwy.js:6147",
+     9.4
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     9.1
+    ],
+    [
+     "commitLayoutEffectOnFiber index-IiVrbjwy.js:6662",
+     8.5
+    ],
+    [
+     "recursivelyTraverseLayoutEffects index-IiVrbjwy.js:7314",
+     8.5
+    ],
+    [
+     "flushLayoutEffects index-IiVrbjwy.js:8324",
+     8.5
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     4.6
+    ],
+    [
+     "fit index-IiVrbjwy.js:60765",
+     4.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:60762",
+     4.6
+    ],
+    [
+     "getBoundingClientRect :0",
+     4.4
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     4.3
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     4.3
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     4.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:132001",
+     4.2
+    ],
+    [
+     "run index-IiVrbjwy.js:132000",
+     4.2
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:131993",
+     3.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 65.2,
+   "runs": [
+    41.3,
+    65.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 16.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "(garbage collector) :0",
+     11.6
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     7.1
+    ],
+    [
+     "removeChild :0",
+     0.9
+    ],
+    [
+     "setAttribute :0",
+     0.9
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.5
+    ],
+    [
+     "initInput index-IiVrbjwy.js:1748",
+     0.5
+    ],
+    [
+     "insertBefore :0",
+     0.5
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.4
+    ],
+    [
+     "isHelp index-IiVrbjwy.js:37555",
+     0.4
+    ],
+    [
+     "setInitialProperties index-IiVrbjwy.js:9268",
+     0.4
+    ],
+    [
+     "updateElement index-IiVrbjwy.js:3315",
+     0.4
+    ],
+    [
+     "propagateParentContextChanges index-IiVrbjwy.js:2990",
+     0.4
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     15.7
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     15.7
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     15.7
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     15.7
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     15.7
+    ],
+    [
+     "(garbage collector) :0",
+     11.6
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     10.4
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     10.4
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     10.4
+    ],
+    [
+     "commitHookEffectListMount index-IiVrbjwy.js:6147",
+     7.7
+    ],
+    [
+     "commitLayoutEffectOnFiber index-IiVrbjwy.js:6662",
+     7.3
+    ],
+    [
+     "recursivelyTraverseLayoutEffects index-IiVrbjwy.js:7314",
+     7.3
+    ],
+    [
+     "flushLayoutEffects index-IiVrbjwy.js:8324",
+     7.3
+    ],
+    [
+     "overflows index-IiVrbjwy.js:60753",
+     7.1
+    ],
+    [
+     "fit index-IiVrbjwy.js:60765",
+     7.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:60762",
+     7.1
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     5.3
+    ],
+    [
+     "completeWork index-IiVrbjwy.js:5809",
+     3.2
+    ],
+    [
+     "completeUnitOfWork index-IiVrbjwy.js:8169",
+     3.2
+    ],
+    [
+     "setInitialProperties index-IiVrbjwy.js:9268",
+     2.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     2.1
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     2.1
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     2.1
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     2.1
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     1.8
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.6
+    ],
+    [
+     "dispatchKey index-IiVrbjwy.js:73133",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 14.8,
+   "runs": [
+    14.8,
+    14.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "follow index-IiVrbjwy.js:111364",
+     0.6
+    ],
+    [
+     "reconcileChildrenArray index-IiVrbjwy.js:3382",
+     0.4
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "sync index-IiVrbjwy.js:117061",
+     0.4
+    ],
+    [
+     "(garbage collector) :0",
+     0.4
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     0.3
+    ],
+    [
+     "isDraftable index-IiVrbjwy.js:11677",
+     0.3
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.2
+    ],
+    [
+     "each index-IiVrbjwy.js:11697",
+     0.1
+    ],
+    [
+     "enabled index-IiVrbjwy.js:105041",
+     0.1
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     0.1
+    ],
+    [
+     "createProxyProxy index-IiVrbjwy.js:11948",
+     0.1
+    ],
+    [
+     "shouldSetTextContent index-IiVrbjwy.js:9644",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     3.3
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     3.3
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     3.3
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     3.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     3.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     2.3
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     2.3
+    ],
+    [
+     "duplicateKey index-IiVrbjwy.js:55572",
+     2.2
+    ],
+    [
+     "run index-IiVrbjwy.js:106060",
+     2.2
+    ],
+    [
+     "run debug-DDsKTktF.js:1295",
+     2.2
+    ],
+    [
+     "(anon) :0",
+     2.2
+    ],
+    [
+     "update index-IiVrbjwy.js:13066",
+     1.8
+    ],
+    [
+     "update index-IiVrbjwy.js:55515",
+     1.8
+    ],
+    [
+     "edit$3 index-IiVrbjwy.js:55548",
+     1.8
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     1.6
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     1.6
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.1
+    ],
+    [
+     "Immer2.produce index-IiVrbjwy.js:12128",
+     1
+    ],
+    [
+     "Immer2.produceWithPatches index-IiVrbjwy.js:12170",
+     1
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     1
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     1
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     1
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     0.9
+    ],
+    [
+     "paint index-IiVrbjwy.js:72311",
+     0.9
+    ],
+    [
+     "drawMain index-IiVrbjwy.js:73974",
+     0.9
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     0.9
+    ],
+    [
+     "build index-IiVrbjwy.js:72122",
+     0.8
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 24.5,
+   "runs": [
+    24.5,
+    23.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.16,
+   "topSelf": [
+    [
+     "(program) :0",
+     13.8
+    ],
+    [
+     "removeChild :0",
+     0.4
+    ],
+    [
+     "isHelp index-IiVrbjwy.js:37555",
+     0.4
+    ],
+    [
+     "querySelector :0",
+     0.4
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     0.3
+    ],
+    [
+     "reconcileChildrenArray index-IiVrbjwy.js:3382",
+     0.3
+    ],
+    [
+     "drawOverlay index-IiVrbjwy.js:74022",
+     0.3
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     0.3
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     0.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.2
+    ],
+    [
+     "SyntheticBaseEvent index-IiVrbjwy.js:2051",
+     0.2
+    ],
+    [
+     "performWorkUntilDeadline index-IiVrbjwy.js:122",
+     0.2
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     13.8
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     5.1
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     5.1
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     5.1
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     5.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     5.1
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     3.4
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     3.2
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     2.1
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     2.1
+    ],
+    [
+     "(anon) :0",
+     2
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     1.8
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     1.8
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     1.8
+    ],
+    [
+     "run index-IiVrbjwy.js:112607",
+     1.5
+    ],
+    [
+     "run debug-DDsKTktF.js:1295",
+     1.5
+    ],
+    [
+     "dispatchEvent index-IiVrbjwy.js:10993",
+     1.5
+    ],
+    [
+     "update index-IiVrbjwy.js:13066",
+     1.4
+    ],
+    [
+     "deleteKeys index-IiVrbjwy.js:110067",
+     1.4
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     1.3
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     1.3
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     1.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8789",
+     1.1
+    ],
+    [
+     "dispatchEventForPluginEventSystem index-IiVrbjwy.js:8763",
+     1.1
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.1
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     1
+    ],
+    [
+     "dispatchDiscreteEvent index-IiVrbjwy.js:10973",
+     1
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 60.8,
+   "runs": [
+    42.7,
+    60.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 10.14,
+   "topSelf": [
+    [
+     "(program) :0",
+     23
+    ],
+    [
+     "(garbage collector) :0",
+     8.9
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     2.3
+    ],
+    [
+     "setAttribute :0",
+     1.1
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "getPropertyValue :0",
+     0.7
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.5
+    ],
+    [
+     "ensure index-IiVrbjwy.js:50210",
+     0.5
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.5
+    ],
+    [
+     "shouldSetTextContent index-IiVrbjwy.js:9644",
+     0.4
+    ],
+    [
+     "appendChild :0",
+     0.4
+    ],
+    [
+     "reconcileChildFibersImpl index-IiVrbjwy.js:3437",
+     0.4
+    ],
+    [
+     "updateSyncExternalStore index-IiVrbjwy.js:4054",
+     0.4
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     23
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     12.2
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     10.9
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     10.9
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     10.8
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     10.8
+    ],
+    [
+     "(garbage collector) :0",
+     8.9
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     8.2
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     5.8
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     4.5
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     4.3
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     4
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     4
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     4
+    ],
+    [
+     "goToArtboard index-IiVrbjwy.js:67529",
+     2.7
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:114051",
+     2.5
+    ],
+    [
+     "update index-IiVrbjwy.js:13066",
+     2.4
+    ],
+    [
+     "fit index-IiVrbjwy.js:114039",
+     2.4
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     2.3
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     2.3
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     2.3
+    ],
+    [
+     "completeWork index-IiVrbjwy.js:5809",
+     2.2
+    ],
+    [
+     "completeUnitOfWork index-IiVrbjwy.js:8169",
+     2.2
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.9
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     1.9
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     1.7
+    ],
+    [
+     "setInitialProperties index-IiVrbjwy.js:9268",
+     1.6
+    ],
+    [
+     "setUi index-IiVrbjwy.js:13163",
+     1.5
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "save-file",
+   "busyMs": 3.2,
+   "runs": [
+    3.2,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3.15,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97122",
+     0.4
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:95601",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     1.1
+    ],
+    [
+     "saveFileAsync index-IiVrbjwy.js:97240",
+     0.8
+    ],
+    [
+     "saveBytesAsync debug-DDsKTktF.js:1138",
+     0.8
+    ],
+    [
+     "(anon) :0",
+     0.8
+    ],
+    [
+     "docJsonBytes index-IiVrbjwy.js:97108",
+     0.6
+    ],
+    [
+     "filesToSave index-IiVrbjwy.js:97146",
+     0.6
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:97122",
+     0.4
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "getBoundingClientRect :0",
+     0.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:135823",
+     0.3
+    ],
+    [
+     "commitHookEffectListMount index-IiVrbjwy.js:6147",
+     0.3
+    ],
+    [
+     "commitLayoutEffectOnFiber index-IiVrbjwy.js:6662",
+     0.3
+    ],
+    [
+     "recursivelyTraverseLayoutEffects index-IiVrbjwy.js:7314",
+     0.3
+    ],
+    [
+     "flushLayoutEffects index-IiVrbjwy.js:8324",
+     0.3
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     0.3
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     0.3
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     0.3
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     0.3
+    ],
+    [
+     "performWorkOnRootViaSchedulerTask index-IiVrbjwy.js:8589",
+     0.3
+    ],
+    [
+     "performWorkUntilDeadline index-IiVrbjwy.js:122",
+     0.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:95601",
+     0.1
+    ],
+    [
+     "run index-IiVrbjwy.js:95600",
+     0.1
+    ],
+    [
+     "zipInWorker index-IiVrbjwy.js:95682",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "open-file",
+   "busyMs": 31.8,
+   "runs": [
+    31.8,
+    6.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 31.79,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     11.8
+    ],
+    [
+     "(program) :0",
+     2.5
+    ],
+    [
+     "inflateSync index-IiVrbjwy.js:94827",
+     0.9
+    ],
+    [
+     "inflt index-IiVrbjwy.js:94208",
+     0.6
+    ],
+    [
+     "bits16 index-IiVrbjwy.js:94173",
+     0.5
+    ],
+    [
+     "loadEntries index-IiVrbjwy.js:97345",
+     0.3
+    ],
+    [
+     "updateElement index-IiVrbjwy.js:3315",
+     0.3
+    ],
+    [
+     "allPanels index-IiVrbjwy.js:11645",
+     0.1
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     0.1
+    ],
+    [
+     "layerTracks index-IiVrbjwy.js:47195",
+     0.1
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     0.1
+    ],
+    [
+     "setTransform :0",
+     0.1
+    ],
+    [
+     "ensure index-IiVrbjwy.js:50210",
+     0.1
+    ],
+    [
+     "setProp index-IiVrbjwy.js:9034",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     11.8
+    ],
+    [
+     "openBytesAsync debug-DDsKTktF.js:1140",
+     2.7
+    ],
+    [
+     "(program) :0",
+     2.5
+    ],
+    [
+     "loadFileAsync index-IiVrbjwy.js:97325",
+     2.5
+    ],
+    [
+     "inflateSync index-IiVrbjwy.js:94827",
+     2.2
+    ],
+    [
+     "unzipSync index-IiVrbjwy.js:95157",
+     2.2
+    ],
+    [
+     "unzipFile index-IiVrbjwy.js:97335",
+     2.2
+    ],
+    [
+     "(anon) :1",
+     2.2
+    ],
+    [
+     "(anon) :0",
+     2.2
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     1.5
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     1.5
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     1.5
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     1.5
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     1.5
+    ],
+    [
+     "inflt index-IiVrbjwy.js:94208",
+     1.3
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     1.3
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     0.9
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     0.6
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     0.6
+    ],
+    [
+     "bits16 index-IiVrbjwy.js:94173",
+     0.5
+    ],
+    [
+     "builtinWorkspaces index-IiVrbjwy.js:37569",
+     0.5
+    ],
+    [
+     "listWorkspaces index-IiVrbjwy.js:38248",
+     0.5
+    ],
+    [
+     "currentWorkspace index-IiVrbjwy.js:38251",
+     0.5
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     0.5
+    ],
+    [
+     "load index-IiVrbjwy.js:13409",
+     0.5
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     0.5
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     0.4
+    ],
+    [
+     "build index-IiVrbjwy.js:72122",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 32,
+   "runs": [
+    30,
+    32
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     15.3
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     0.9
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.6
+    ],
+    [
+     "ensure index-IiVrbjwy.js:50210",
+     0.6
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     0.6
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     0.5
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     0.5
+    ],
+    [
+     "layoutFrom index-IiVrbjwy.js:37558",
+     0.5
+    ],
+    [
+     "PieceRow index-IiVrbjwy.js:106875",
+     0.5
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "afterHistory index-IiVrbjwy.js:13311",
+     0.3
+    ],
+    [
+     "paintStage index-IiVrbjwy.js:72337",
+     0.3
+    ],
+    [
+     "reconcileChildFibersImpl index-IiVrbjwy.js:3437",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     15.3
+    ],
+    [
+     "(anon) index-IiVrbjwy.js:8605",
+     10.4
+    ],
+    [
+     "performWorkOnRoot index-IiVrbjwy.js:7771",
+     10.3
+    ],
+    [
+     "performSyncWorkOnRoot index-IiVrbjwy.js:8600",
+     10.3
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-IiVrbjwy.js:8509",
+     10.3
+    ],
+    [
+     "processRootScheduleInMicrotask index-IiVrbjwy.js:8535",
+     10.3
+    ],
+    [
+     "renderRootSync index-IiVrbjwy.js:7973",
+     7.5
+    ],
+    [
+     "beginWork index-IiVrbjwy.js:5620",
+     7.2
+    ],
+    [
+     "renderWithHooks index-IiVrbjwy.js:3799",
+     5.2
+    ],
+    [
+     "updateFunctionComponent index-IiVrbjwy.js:5198",
+     5.2
+    ],
+    [
+     "ToolStrip index-IiVrbjwy.js:134468",
+     3
+    ],
+    [
+     "commitRoot index-IiVrbjwy.js:8227",
+     2.8
+    ],
+    [
+     "completeRoot index-IiVrbjwy.js:8210",
+     2.8
+    ],
+    [
+     "completeRootWhenReady index-IiVrbjwy.js:7850",
+     2.8
+    ],
+    [
+     "run debug-DDsKTktF.js:1295",
+     2.6
+    ],
+    [
+     "(anon) :0",
+     2.6
+    ],
+    [
+     "commitMutationEffectsOnFiber index-IiVrbjwy.js:6986",
+     2.2
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-IiVrbjwy.js:6950",
+     2.2
+    ],
+    [
+     "flushMutationEffects index-IiVrbjwy.js:8265",
+     2.2
+    ],
+    [
+     "afterHistory index-IiVrbjwy.js:13311",
+     2.1
+    ],
+    [
+     "commitHostUpdate index-IiVrbjwy.js:6300",
+     2
+    ],
+    [
+     "emit index-IiVrbjwy.js:13059",
+     1.9
+    ],
+    [
+     "frame index-IiVrbjwy.js:73870",
+     1.6
+    ],
+    [
+     "redo index-IiVrbjwy.js:13291",
+     1.5
+    ],
+    [
+     "run index-IiVrbjwy.js:13488",
+     1.5
+    ],
+    [
+     "syncDynamicCommands index-IiVrbjwy.js:50229",
+     1.5
+    ],
+    [
+     "updateProperties index-IiVrbjwy.js:9427",
+     1.4
+    ],
+    [
+     "reconcileChildFibersImpl index-IiVrbjwy.js:3437",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

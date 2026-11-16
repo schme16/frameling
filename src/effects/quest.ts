@@ -10,6 +10,7 @@ import { INK, SUNNY, addVectorLayer, ellipsePath, emptyOf, fill, hold, pathShape
 import { addEffect, setBlend, setEffectAnimated, setEffectValue } from './ops';
 // The steps run these commands, so they must be registered wherever the quest is.
 import './commands';
+import { questWord } from '../words/quests';
 
 const LIT: Layer['blend'][] = ['add', 'screen', 'lighten', 'color-dodge'];
 
@@ -75,20 +76,20 @@ const SEL = {
 
 export const GLOW_QUEST: Quest = {
   id: 'make-it-glow',
-  title: 'Make it glow',
-  summary: 'Light up a lantern with a glow, a blend mode and a flicker.',
+  title: questWord('quest.make-it-glow.title'),
+  summary: questWord('quest.make-it-glow.summary'),
   minutes: 3,
   icon: 'fx-halo',
-  badge: { id: 'lamplighter', name: 'Lamplighter', icon: 'fx-halo', color: '--sunny' },
+  badge: { id: 'lamplighter', name: questWord('quest.make-it-glow.badge'), icon: 'fx-halo', color: '--sunny' },
   requires: ['first-animation'],
-  finish: 'Glow, blend and a flicker: the same three tricks make magic, neon signs and fireflies.',
+  finish: questWord('quest.make-it-glow.finish'),
   prepare: () => (isLanternScene(store().get()) ? true : freshPage(makeLanternScene)),
   ready: isLanternScene,
   steps: [
     {
       id: 'glow',
-      say: 'The Lantern layer is picked. In the Effects panel, add a Glow.',
-      why: 'An effect changes how a whole layer looks, without touching the drawing. Take it off any time.',
+      say: questWord('quest.make-it-glow.glow.say'),
+      why: questWord('quest.make-it-glow.glow.why'),
       target: SEL.fx,
       enter: () => {
         pickLayer('Lantern');
@@ -96,12 +97,12 @@ export const GLOW_QUEST: Quest = {
       },
       done: (c) => !!glow(c.state),
       show: 'effects.add.glow',
-      hint: 'Under Add an effect at the bottom of the Effects panel, press Glow.',
+      hint: questWord('quest.make-it-glow.glow.hint'),
       help: 'effects',
     },
     {
       id: 'size',
-      say: 'Make the glow bigger: drag its Size past 20.',
+      say: questWord('quest.make-it-glow.size.say'),
       target: SEL.fx,
       done: (c) => bigGlow(c.state),
       show: () => {
@@ -109,13 +110,13 @@ export const GLOW_QUEST: Quest = {
         const e = glow(store().get());
         if (t && e) setEffectValue(t, e.id, 'size', 32);
       },
-      hint: 'Size is the second slider under Glow.',
+      hint: questWord('quest.make-it-glow.size.hint'),
       help: 'effects',
     },
     {
       id: 'blend',
-      say: 'Now pick the Light layer and set its blend mode to Add.',
-      why: 'Add brightens whatever is under it, the way real light does. Normal just covers it up.',
+      say: questWord('quest.make-it-glow.blend.say'),
+      why: questWord('quest.make-it-glow.blend.why'),
       target: SEL.blend,
       enter: () => pickLayer('Light'),
       done: (c) => c.state.doc.layers.some((l) => LIT.includes(l.blend)),
@@ -123,13 +124,13 @@ export const GLOW_QUEST: Quest = {
         const l = layerNamed(store().get(), 'Light') ?? store().get().doc.layers[0];
         if (l) setBlend({ layer: l.id }, 'add');
       },
-      hint: 'The blend button is at the top of the Effects panel. It says Normal now.',
+      hint: questWord('quest.make-it-glow.blend.hint'),
       help: 'blend-modes',
     },
     {
       id: 'flicker',
-      say: 'Make it flicker: back on the Lantern, turn on Animate for the glow, go to frame 7 and change its Strength.',
-      why: 'Animated effect settings glide from one key to the next, just like drawings do.',
+      say: questWord('quest.make-it-glow.flicker.say'),
+      why: questWord('quest.make-it-glow.flicker.why'),
       target: SEL.fx,
       enter: () => {
         pickLayer('Lantern');
@@ -145,16 +146,16 @@ export const GLOW_QUEST: Quest = {
         store().setUi({ frame: 6 });
         setEffectValue(t, e.id, 'strength', 2.4);
       },
-      hint: 'The Animate button next to the word Glow turns animating on. Then move the playhead and drag Strength.',
+      hint: questWord('quest.make-it-glow.flicker.hint'),
       help: 'effects',
     },
     {
       id: 'play',
-      say: 'Press play and watch it flicker.',
+      say: questWord('quest.make-it-glow.play.say'),
       target: SEL.play,
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.make-it-glow.play.hint'),
     },
   ],
 };

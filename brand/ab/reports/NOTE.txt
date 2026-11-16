@@ -1,0 +1,5 @@
+The beta report panel (Preferences > Diagnostics), before and after, dark and light. A is the build before, B is after.
+ab-panel-<theme>.png: the panel at rest with a saved email. Before, "How can we reach you?" is a plain box like the two above it. After, it is a saved detail marked "Remembered on this computer" with Change and Forget it, and a tick box for including the computer's details.
+ab-preview-<theme>.png: after pressing Show me what you would send. After, a box "About this computer (this goes too)" shows the processor, memory, graphics card, drawing path, hardware drawing and switches in plain rows above the exact text.
+ab-sent-<theme>.png: the moment just after a send. Before, nothing says it went and the email is still in a box, so it looks as if it failed. After, a line says it was sent, the note is cleared, and the saved contact is labelled as saved.
+before-/after-<theme>-<state>.png are the single crops the sheets are made from. Made by scripts/ab/reports.cjs and scripts/ab/side-by-side.py (the build needs a pretend ingest key so Send shows; nothing is really sent).

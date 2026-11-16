@@ -283,6 +283,8 @@
 .tl-layer-new,
 .tl-layer-actions {
   display: inline-flex;
+  /* The buttons keep their words whole; in a narrow column they flow onto the next line. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
@@ -380,6 +382,82 @@
 }
 .tl-kind.is-pixel {
   background: color-mix(in srgb, var(--mint) 30%, transparent);
+}
+.tl-kind.is-pair {
+  width: 30px;
+  grid-auto-flow: column;
+  gap: 1px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--mint) 30%, transparent) 50%, color-mix(in srgb, var(--sky) 30%, transparent) 50%);
+}
+/* The two halves of a pair, side by side like the Pixels | Vectors switch: lit when it is the layer you draw on. */
+.tl-halves {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  background: var(--raised);
+}
+.tl-half {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius-small) - 1px);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-half:hover {
+  color: var(--text);
+}
+.tl-half.is-on.is-pixel {
+  background: color-mix(in srgb, var(--mint) 38%, transparent);
+  color: var(--text);
+}
+.tl-half.is-on.is-vector {
+  background: color-mix(in srgb, var(--sky) 38%, transparent);
+  color: var(--text);
+}
+.tl-half.is-off {
+  opacity: 0.55;
+}
+.tl-half-off {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 1.5px;
+  background: currentColor;
+  transform: rotate(-35deg);
+}
+.tl-half-lock {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  color: var(--text);
+}
+.tl-layer.is-pair .tl-layer-name {
+  font-weight: 600;
+}
+/* In the timeline, where a pair keeps both rows so each lines up with its keys, a bar joins them. */
+.tl-layer.is-paired::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--paired, var(--mint));
+}
+.tl-layer.is-paired.is-pixel-half {
+  --paired: var(--mint);
+}
+.tl-layer.is-paired.is-vector-half {
+  --paired: var(--sky);
 }
 .tl-layer-name {
   flex: 1;
@@ -564,7 +642,8 @@
 }
 
 .tl-marks,
-.tl-clips {
+.tl-clips,
+.tl-scene-only {
   position: relative;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -703,6 +782,9 @@
 .tl-row {
   position: relative;
   box-sizing: border-box;
+  /* A row is its own little world: when one drawing block changes (a hover outline, a key being picked) the browser
+     then repaints and re-layers that row alone instead of the whole timeline. */
+  contain: layout paint style;
   border-bottom: 1px solid var(--line-soft);
   background-color: var(--panel-2);
   background-image:
@@ -739,6 +821,17 @@
 .tl-cel.is-auto {
   background-color: color-mix(in srgb, var(--cel-hold) 55%, transparent);
 }
+/* A drawing that sits somewhere other than where it was drawn (see core/offset.ts): a small corner tick. */
+.tl-cel.is-moved::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border-style: solid;
+  border-width: 0 0 7px 7px;
+  border-color: transparent transparent var(--raised) transparent;
+  pointer-events: none;
+}
 .tl-row.is-hidden .tl-cel {
   opacity: 0.4;
 }
@@ -771,6 +864,33 @@
 }
 .tl-cel-handle:hover {
   background: color-mix(in srgb, var(--raised) 55%, transparent);
+}
+
+/* A drawing's name, after its key. Beside the cel (not in it) so it can run on over empty frames; clicks go through. */
+.tl-cel-name {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  border-radius: var(--radius-small);
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel-2) 78%, transparent);
+  pointer-events: none;
+}
+.tl-cel-name.is-editing {
+  padding: 0;
+  background: none;
+  pointer-events: auto;
+}
+.tl-cel-name.is-editing .tl-name-input {
+  font-size: 11px;
+  padding: 0 4px;
 }
 
 .tl-playhead {
@@ -850,7 +970,7 @@
 
 .tl-floating {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-flyout);
   box-sizing: border-box;
   padding: 4px;
   background: var(--raised);
@@ -941,7 +1061,7 @@
   width: 110px;
   accent-color: var(--accent);
 }
-.tl-pop-row input[type='color'] {
+.tl-pop-row .cp-chip {
   width: 28px;
   height: 24px;
   padding: 0;
@@ -1053,7 +1173,10 @@
 /* The header stays on one row: chips and labels fold to short forms as the timeline gets narrower. */
 .tl-header {
   flex-wrap: nowrap;
-  overflow: hidden;
+  /* The fold keeps it on one row; in a timeline too narrow even for that, the row scrolls sideways. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 .tl-header > * {
   flex-shrink: 0;
@@ -1186,6 +1309,16 @@
   flex: none;
   height: auto;
   border-bottom: 1px solid var(--line);
+  /* The row asks its own width, so the words "New layer" can give way before the buttons fall onto a second line. */
+  container-type: inline-size;
+  container-name: piecetools;
+}
+/* Too narrow for the label and every button: the words go (the group still says "New layer" to a screen reader, and
+   each button says what it adds) and the buttons stay on one line. */
+@container piecetools (max-width: 330px) {
+  .tl-layer-new-label {
+    display: none;
+  }
 }
 .lp-list {
   flex: 1;
@@ -1195,4 +1328,51 @@
 /* In the panel the rows fill the width, with no timeline column to keep to. */
 .lp-list .tl-layers {
   width: 100%;
+}
+
+/* A drawing shown in more than one place: a pale edge along the bottom, and a link with the count when there is room. */
+.tl-cel.is-shared::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: color-mix(in srgb, var(--text) 85%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.tl-shared {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  height: 14px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--text) 88%, transparent);
+  color: var(--panel);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+/* Frames squeezed very narrow: no gap lines inside a hold, no handle to grab, runs of tiny drawings as one band. */
+.tl-main.is-tiny .tl-cel {
+  background-image: none;
+}
+.tl-main.is-tiny .tl-cel-handle,
+.tl-cel.is-thin .tl-cel-handle {
+  display: none;
+}
+.tl-main.is-tiny .tl-cel-dot,
+.tl-main.is-tiny .tl-dkey {
+  display: none;
+}
+.tl-cel.is-dense {
+  background-color: color-mix(in srgb, var(--cel-key) 70%, var(--panel-2));
+  border-radius: 1px;
 }

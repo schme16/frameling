@@ -1,0 +1,3 @@
+Not an A/B: proof for the board look on ux-command-reasons.
+menu-dark/-light: Edit > Undo clicked while greyed. The menu stays open and says why, with a way to read more.
+palette-dark/-light: the palette row for Group, with "Select some shapes first." where its description would be.

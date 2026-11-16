@@ -16,6 +16,7 @@ import { inHarness } from './harness';
 import { moment } from './moments';
 import { boardCount, convertWay, isPixelDoc, totalFrames, wayOf, type Change } from './way';
 import { isBlankDocQuick } from './blank';
+import { choiceWord } from '../words/choices';
 
 /** Moves the open sprite to another way, as one undo step. Says what happened (or why not) in a toast. */
 export function changeWay(to: SpriteWay, say = true): Change {
@@ -53,15 +54,15 @@ export function makeItMove(): void {
 
 registerChoice<'boards' | 'sheet'>({
   id: 'pixel.twoBoards',
-  title: 'A second board in a one-picture sprite',
+  title: choiceWord('choice.pixel.twoBoards.title'),
   question: line('pixel.twoBoards.ask'),
   category: 'Pixel art',
   help: 'pixel-ways',
   default: 'boards',
   quill: true,
   options: [
-    { value: 'boards', label: 'Frames of one sprite', detail: 'Each board is a frame, and they play in order as one animation.' },
-    { value: 'sheet', label: 'Two different sprites', detail: 'Each board is a sprite of its own, and they pack onto one sheet.' },
+    { value: 'boards', label: choiceWord('choice.pixel.twoBoards.boards.label'), detail: choiceWord('choice.pixel.twoBoards.boards.detail') },
+    { value: 'sheet', label: choiceWord('choice.pixel.twoBoards.sheet.label'), detail: choiceWord('choice.pixel.twoBoards.sheet.detail') },
   ],
 });
 
@@ -105,16 +106,16 @@ export const SHARE_CHOICE = 'pixel.shareLayers';
 
 registerChoice<'share' | 'leave' | 'later'>({
   id: SHARE_CHOICE,
-  title: 'Frames on boards: one stack of layers',
-  question: 'Every board of this sprite has layers of its own. Put the frames on one stack, so a layer you add once shows on every frame?',
+  title: choiceWord('choice.pixel.shareLayers.title'),
+  question: choiceWord('choice.pixel.shareLayers.question'),
   category: 'Pixel art',
   help: 'pixel-shared-layers',
   default: 'later',
   dismiss: 'later',
   options: [
-    { value: 'share', label: 'One stack for all the frames', detail: 'Layers with the same name and kind join up, and every board keeps its own pixels. One undo step puts it back.' },
-    { value: 'leave', label: 'Leave my files as they are', detail: 'Each board keeps layers of its own. You can put them on one stack later, from the Pixel tools menu.' },
-    { value: 'later', label: 'Not now', detail: 'Ask again the next time a file like this opens.', once: true },
+    { value: 'share', label: choiceWord('choice.pixel.shareLayers.share.label'), detail: choiceWord('choice.pixel.shareLayers.share.detail') },
+    { value: 'leave', label: choiceWord('choice.pixel.shareLayers.leave.label'), detail: choiceWord('choice.pixel.shareLayers.leave.detail') },
+    { value: 'later', label: choiceWord('choice.pixel.shareLayers.later.label'), detail: choiceWord('choice.pixel.shareLayers.later.detail'), once: true },
   ],
 });
 
@@ -171,20 +172,27 @@ export interface Fit {
   timeline: 'fold' | 'open';
   /** Two panels to stack in the right zone, the first over the second (the second with its own tabs kept), if any. */
   stack: [string, string] | null;
+  /** How much of the zone the first of the two takes (missing = the dock's usual). A long list of boards asks for more. */
+  topShare?: number;
 }
+
+/** Past this many boards the Artboards panel takes more of the right side, so more of its rows show. */
+const MANY_BOARDS = 6;
+const MANY_BOARDS_SHARE = 0.52;
 
 /** What the workspace shows for each way: a picture folds the timeline; the board ways stack the Artboards panel over the Preview, so the Preview and its board strip stay in view. */
 export function layoutFor(doc: Doc): Fit {
   const way = wayOf(doc);
   if (way === 'picture') return { timeline: 'fold', stack: null };
   if (way === 'animation') return { timeline: 'open', stack: null };
-  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', stack: ['artboards', 'preview'] };
+  const many = boardCount(doc) > MANY_BOARDS;
+  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', stack: ['artboards', 'preview'], ...(many ? { topShare: MANY_BOARDS_SHARE } : {}) };
 }
 
 export interface WayDock {
   inPixelWorkspace(): boolean;
   fold(timeline: boolean): void;
-  stack(top: string, bottom: string): void;
+  stack(top: string, bottom: string, topShare?: number): void;
 }
 
 const realDock: WayDock = {
@@ -193,7 +201,7 @@ const realDock: WayDock = {
     const at = locate(dock.get().layout, 'timeline');
     if (at && 'zone' in at) toggleCollapsed(at.zone, on);
   },
-  stack: (top, bottom) => stackPanelsIn(top, bottom),
+  stack: (top, bottom, share) => stackPanelsIn(top, bottom, 'right', share),
 };
 
 /**
@@ -210,7 +218,7 @@ export function watchWayLayout(s: DocSource, d: WayDock = realDock): () => void 
     seen = { id: doc.id, way };
     const fit = layoutFor(doc);
     d.fold(fit.timeline === 'fold');
-    if (fit.stack) d.stack(...fit.stack);
+    if (fit.stack) d.stack(fit.stack[0], fit.stack[1], fit.topShare);
   };
   check();
   return s.subscribe(check);

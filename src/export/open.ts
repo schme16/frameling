@@ -11,3 +11,7 @@ export function openExportDialog(format?: FormatId): void {
 export function exportAgain(): void {
   void loadExportDialog().then((m) => m.exportAgain());
 }
+
+export function exportAll(): void {
+  void loadExportDialog().then((m) => m.exportAll());
+}

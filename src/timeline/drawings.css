@@ -1,0 +1,104 @@
+/* The Drawings panel: a wrap of pictures, each with its name under it. */
+.dr-panel {
+  gap: 8px;
+}
+.dr-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.dr-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dr-bar {
+  gap: 6px;
+}
+.dr-find {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+.dr-scope {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.dr-scope[aria-pressed='true'] {
+  border-color: var(--focus);
+}
+.dr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.dr-pic {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 96px;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.dr-pic:hover {
+  border-color: var(--cel-key);
+}
+.dr-tile.is-current .dr-pic {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+.dr-thumb {
+  display: block;
+}
+.dr-name {
+  max-width: 100%;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dr-name.is-none {
+  color: var(--faint);
+}
+.dr-tile .tl-name-input {
+  font-size: var(--fs-small);
+  text-align: center;
+}

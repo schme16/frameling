@@ -1,0 +1,41 @@
+The menu bar before and after. A is the old bar (nine menus), B is the new one (ten). Both themes.
+
+Sheets (A beside B, each with its own caption):
+  bar-*              the whole bar at 1280 px, before and after. B still fits at 1280.
+  tools-*            Tools and layers, and the Pixel tools menu that is gone, beside the new Tools.
+  layers-*           the layer commands in the old menu, beside the new Layers and artboards.
+  animation-*        Frames and motion beside Animation (the same list).
+  rigging-effects-*  Skeleton, effects and more beside Rigging and Effects.
+
+Each menu on its own: before-menu-*.png and after-menu-*.png. The bar alone at 1600 and 1280 px: before-bar-* and after-bar-*.
+Made by scripts/docs/ab/menus.cjs against the old build and the new one, and scripts/docs/ab-menu-bar/sheet.py.
+
+What moved, in plain words (the ids behind the words: Tools is Draw, Rigging is Extras, Animation is Animate):
+
+  Tools and layers is now two menus: Tools, and Layers and artboards.
+    The layer commands (new, duplicate, delete, move, show, lock, solo, reference, Pixels and vectors, Masks and folders,
+    the Layers panel) went from Tools and layers to Layers and artboards.
+    Tools' own list of tools is a submenu called Pick a tool (it was called Tools inside Tools and layers, and a Tools menu
+    opening on a submenu called Tools read badly).
+  Pixel tools is gone. Where each thing went:
+    Pencil, Shade, Dither, Gradient: only in Tools > Pick a tool, with the other tools (they were in both).
+    Spray, soft paint, chalk, charcoal and the pixel brush submenu: Tools > Spray, soft paint and charcoal.
+    Palette (lock, reduce, load, save): Tools > Palette. File > Import still has Load a palette.
+    Bigger brush, Smaller brush, Swap Paint and Back colours, Type pixel text, the pixel gradient and text styles:
+      Tools > Brush and tool options, under Pixel brush, Pixel gradient style and Pixel text headings.
+    Flip and turn the whole drawing: Tools > Arrange, group and transform, under a Flip and turn heading.
+    Add outline (outside), Add outline (inside the edge): Tools > Shapes and colour > Tidy and convert.
+    Mirror drawing: stays in Tools (it was in both).
+    Put the frames on one stack of layers, Give each board its own layers: Layers and artboards.
+    Change how this sprite is built, Turn boards into timeline frames, Turn timeline frames into boards: Layers and artboards, just below Artboards.
+    Make it move: Animation > More frame tools.
+    Zoom to a pixel size, Preview play and size, Show slices, Delete the picked slice: View > More view tools, under Pixel art and Zoom to a pixel size headings.
+    The Palette, Preview and Slices panels and the Pixel workspace: View > Panels and the workspaces in View, where every panel and workspace is anyway.
+  Frames and motion is now Animation, the same list. Make it move came in, inside More frame tools.
+  Skeleton, effects and more is now Rigging. The skeleton (rig) commands are listed straight in it instead of inside a
+    Skeleton (rig) submenu. Artboards moved to Layers and artboards. Effects is a menu of its own, also listed straight.
+    Tiles is still a submenu of Rigging for now: nobody has decided where tilemaps belong.
+
+The trade: ten menus instead of nine, with more of them and fewer things in each, but Tools is now bigger than it was
+(it took in the Pixel menu's drawing things), and View is ten commands bigger. Rigging at 954 px does not fit a 900 px
+window, the same as the Skeleton (rig) submenu did, because the rig list is that long.

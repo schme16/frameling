@@ -1,4 +1,5 @@
 // What a Lottie export asks: the kind of file, the dotLottie layout and how pictures made from effects are stored.
+import { ExNote } from '../ExNote';
 import type { ExportUiProps } from '../registry';
 import { bakesEffects, docFeatures, hasSoftOrShadow } from '../carries';
 import { FILE_CHOICES, LAYOUT_CHOICES, PICTURE_CHOICES } from '../lottie-choices';
@@ -9,7 +10,7 @@ export function LottieOptions(p: ExportUiProps) {
   const { s, set, doc } = p;
   return (
     <>
-      <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
+      <ExNote>No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</ExNote>
       <fieldset>
         <legend>File type</legend>
         <div className="ex-seg">
@@ -19,7 +20,7 @@ export function LottieOptions(p: ExportUiProps) {
             </button>
           ))}
         </div>
-        <p className="ex-note">{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</p>
+        <ExNote>{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</ExNote>
       </fieldset>
       {s.lottieFile === 'dotlottie' && (
         <fieldset>
@@ -31,7 +32,7 @@ export function LottieOptions(p: ExportUiProps) {
               </button>
             ))}
           </div>
-          <p className="ex-note">{LAYOUT_CHOICES.find((c) => c.id === (s.dotLottieVersion ?? 2))!.note}</p>
+          <ExNote>{LAYOUT_CHOICES.find((c) => c.id === (s.dotLottieVersion ?? 2))!.note}</ExNote>
         </fieldset>
       )}
       {s.lottieFile === 'dotlottie' && (
@@ -55,7 +56,7 @@ export function LottieOptions(p: ExportUiProps) {
               </button>
             ))}
           </div>
-          <p className="ex-note">{PICTURE_CHOICES.find((c) => c.id === (s.lottiePictures ?? 'balanced'))!.note}</p>
+          <ExNote>{PICTURE_CHOICES.find((c) => c.id === (s.lottiePictures ?? 'balanced'))!.note}</ExNote>
         </fieldset>
       )}
     </>

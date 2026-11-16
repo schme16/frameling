@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Quill, QuillEmpty, QuillSays } from '../../src/ui/mascot';
-import { playerCount, setQuillSheet } from '../../src/ui/mascot/runtime';
+import { noteInput, playerCount, setQuillSheet, SLEEP_AFTER } from '../../src/ui/mascot/runtime';
 import { resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { FAKE_SHEET } from '../fixtures/quill-sheet';
 
@@ -28,7 +28,7 @@ afterEach(() => {
 
 describe('Quill on screen', () => {
   it('draws the first frame at a whole-number scale, pixelated', async () => {
-    await act(async () => root.render(<Quill anim="wave" size={96} />));
+    await act(async () => root.render(<Quill surface="empty" anim="wave" size={96} />));
     const el = host.querySelector<HTMLElement>('.quill')!;
     expect(el).toBeTruthy();
     expect(el.style.width).toBe('96px');
@@ -42,14 +42,15 @@ describe('Quill on screen', () => {
     await act(async () =>
       root.render(
         <>
-          <Quill />
-          <QuillSays>
+          <Quill surface="empty" />
+          <QuillSays surface="panel">
             <p>Hello there</p>
           </QuillSays>
         </>,
       ),
     );
-    expect(host.querySelectorAll('.quill')).toHaveLength(2);
+    // Only one of him: the bubble's panel outranks the plain spot, so that is the one drawn.
+    expect(host.querySelectorAll('.quill')).toHaveLength(1);
     await act(async () => setPrefs({ showQuill: false }));
     expect(host.querySelector('.quill')).toBeNull();
     expect(host.textContent).toContain('Hello there');
@@ -61,10 +62,10 @@ describe('Quill on screen', () => {
     await act(async () =>
       root.render(
         <>
-          <QuillSays whenHidden={null}>
+          <QuillSays surface="panel" surfaceId="a" whenHidden={null}>
             <p>Chatter</p>
           </QuillSays>
-          <QuillSays whenHidden={<p>Plain words</p>}>
+          <QuillSays surface="panel" surfaceId="b" whenHidden={<p>Plain words</p>}>
             <p>Chatty words</p>
           </QuillSays>
           <QuillEmpty whenHidden="Nothing here.">I looked hard!</QuillEmpty>
@@ -85,7 +86,68 @@ describe('Quill on screen', () => {
 
   it('draws nothing while there is no sheet', async () => {
     setQuillSheet(null);
-    await act(async () => root.render(<Quill />));
+    await act(async () => root.render(<Quill surface="empty" />));
     expect(host.querySelector('.quill')).toBeNull();
+  });
+});
+
+describe('Quill waking from a nap', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    noteInput();
+  });
+
+  it('stirs and stretches through the wake frames, then settles into idle', async () => {
+    vi.useFakeTimers();
+    // The idle clock started on the real timer, so start it again on the fake one.
+    noteInput();
+    await act(async () => root.render(<Quill surface="empty" anim="idle" size={96} />));
+    const el = host.querySelector<HTMLElement>('.quill')!;
+    await act(async () => void vi.advanceTimersByTime(SLEEP_AFTER + 500));
+    expect(el.dataset.anim).toBe('sleep');
+    await act(async () => noteInput());
+    expect(el.dataset.anim).toBe('wake');
+    const seen = new Set<string>();
+    for (let i = 0; i < 20; i++) {
+      await act(async () => void vi.advanceTimersByTime(100));
+      seen.add(el.dataset.anim!);
+    }
+    expect([...seen]).toEqual(['wake', 'idle']);
+    expect(el.dataset.anim).toBe('idle');
+  });
+
+  it('wakes the same way when he was asked for idle then idle, as the Quill tab does', async () => {
+    vi.useFakeTimers();
+    noteInput();
+    await act(async () => root.render(<Quill surface="empty" anim="idle" then="idle" size={96} />));
+    const el = host.querySelector<HTMLElement>('.quill')!;
+    await act(async () => void vi.advanceTimersByTime(SLEEP_AFTER + 10_000));
+    expect(el.dataset.anim).toBe('sleep');
+    await act(async () => noteInput());
+    expect(el.dataset.anim).toBe('wake');
+  });
+
+  it('goes back to sleep without waking if he nods off again mid-stretch', async () => {
+    vi.useFakeTimers();
+    // The idle clock started on the real timer, so start it again on the fake one.
+    noteInput();
+    await act(async () => root.render(<Quill surface="empty" anim="idle" size={96} />));
+    const el = host.querySelector<HTMLElement>('.quill')!;
+    await act(async () => void vi.advanceTimersByTime(SLEEP_AFTER + 500));
+    await act(async () => noteInput());
+    expect(el.dataset.anim).toBe('wake');
+    await act(async () => void vi.advanceTimersByTime(SLEEP_AFTER + 500));
+    expect(el.dataset.anim).toBe('sleep');
+  });
+
+  it('wakes through the frames when an explicit sleep changes to idle, but a cheer goes straight in', async () => {
+    await act(async () => root.render(<Quill surface="empty" anim="sleep" size={96} />));
+    const el = host.querySelector<HTMLElement>('.quill')!;
+    expect(el.dataset.anim).toBe('sleep');
+    await act(async () => root.render(<Quill surface="empty" anim="idle" size={96} />));
+    expect(el.dataset.anim).toBe('wake');
+    await act(async () => root.render(<Quill surface="empty" anim="sleep" size={96} />));
+    await act(async () => root.render(<Quill surface="empty" anim="cheer" size={96} />));
+    expect(el.dataset.anim).toBe('cheer');
   });
 });

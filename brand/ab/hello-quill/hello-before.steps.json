@@ -1,0 +1,20 @@
+[
+  {"eval": "__frameling.run('help.meetQuill')"},
+  {"wait": 2500},
+  {"rec": "hello-before", "crop": [0, 0, 1280, 720], "every": 100},
+  {"wait": 3500},
+  {"shot": "01-hello-page-one"},
+  {"clickOn": ".ob-next"}, {"wait": 1800},
+  {"clickOn": ".ob-card", "text": "Sketches and cartoons"}, {"wait": 1200},
+  {"clickOn": ".ob-card", "text": "Game sprites and pixel art"}, {"wait": 1800},
+  {"shot": "02-make"},
+  {"clickOn": ".ob-next"}, {"wait": 2200},
+  {"shot": "03-colours"},
+  {"clickOn": ".ob-next"}, {"wait": 2200},
+  {"shot": "04-settings"},
+  {"clickOn": ".ob-next"}, {"wait": 2200},
+  {"shot": "05-name"},
+  {"clickOn": ".ob-next"}, {"wait": 2800},
+  {"shot": "06-done"},
+  {"rec": "stop"}
+]

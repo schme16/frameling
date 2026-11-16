@@ -1,7 +1,7 @@
 const F = '__frameling';
 const js = (code) => ({ eval: code });
 // The "ask the first time" questions (hold longer, mask scope...) are answered up front, so no dialog opens mid-clip.
-const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer' };
+const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.sharedDrawing': 'everywhere', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer', 'timeline.pasteOver': 'insert' };
 const PANELS = ['tool-options', 'timeline', 'colors', 'palette', 'library', 'tileset', 'symbol-props', 'effects', 'particles', 'camera', 'text', 'rig', 'clip-flow', 'artboards', 'lipsync', 'preview', 'quests', 'help'];
 // Properties (the right side) is one long list of sections. Folding all but the ones named in `keep` leaves them in view.
 const quiet = (keep, answers = {}) => [js(`localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify({ ...ANSWERS, ...answers }))}); localStorage.setItem('frameling.inspector.v1', ${JSON.stringify(JSON.stringify({ folded: keep.length ? PANELS.filter((p) => !keep.includes(p)) : [] }))}); setTimeout(() => location.reload(), 0); true`), { wait: 2500 }];
@@ -105,6 +105,22 @@ module.exports = [
     ],
   },
   {
+    // Quill's own file (one artboard per animation): the wave animation, its drawings named from their ids, and the
+    // Drawings panel showing each once. Done by opening the real file, so nothing here is a mock-up.
+    name: 'timeline-drawings',
+    size: [1400, 960],
+    prefs: { firstDrawn: true, showTips: false, showExplanations: false },
+    steps: [
+      js(`__framelingIo.openPath(${JSON.stringify(require('node:path').join(__dirname, '../../../brand/mascot/mascot.frameling'))})`), { wait: 2500 },
+      js(`${F}.dock.applyWorkspace('animate')`), { wait: 800 },
+      js(`(() => { const s = ${F}.store(); const m = __framelingArtboards.model; const d = s.get().doc; const b = m.artboardsOf(d).find((a) => a.name === 'wave'); s.update('Go to a board', (x) => void m.switchArtboard(x, b.id)); s.setUi({ frame: 40 }); return true })()`), { wait: 1200 },
+      js(`${F}.run('timeline.zoomFit')`),
+      js(`${F}.store().update('Name drawings', (d) => { for (const l of d.layers) for (const c of l.cels) c.name = c.drawingId.replace(/-/g, ' ') })`),
+      js(`${F}.showPanel('clip-drawings')`), { wait: 1500 },
+      { shot: '@', crop: [140, 40, 1260, 880] },
+    ],
+  },
+  {
     name: 'onion-skin',
     steps: [
       ...open('bouncing-ball'),
@@ -139,6 +155,32 @@ module.exports = [
       { key: 'Enter', after: 3600 },
       { key: 'Enter', after: 1200 },
       { rec: 'stop' },
+    ],
+  },
+  {
+    // The ground is shown on two layers with one drawing, so both blocks carry the link and the 2.
+    name: 'timeline-shared',
+    prefs: { showTips: false },
+    steps: [
+      ...open('bouncing-ball'),
+      js(`(() => { ${F}.store().update('setup', (d) => { const g = d.layers.find((l) => l.name === 'Ground'); const copy = JSON.parse(JSON.stringify(g)); copy.id = 'far-ground'; copy.name = 'Far ground'; copy.cels = g.cels.map((c, i) => ({ ...c, id: 'fg' + i })); d.layers.splice(d.layers.indexOf(g) + 1, 0, copy); d.layers = d.layers.filter((l) => l.name !== 'Shadow'); }); return 1; })()`),
+      { wait: 700 },
+      { move: PARK }, { move: [645, 785], after: 1500 },
+      { shot: '@', crop: [108, 430, 806, 232] },
+    ],
+  },
+  {
+    // 419 frames in one go: every drawing its own, lengths from one frame to a long hold, fitted across the window.
+    name: 'timeline-fit',
+    prefs: { showTips: false },
+    steps: [
+      ...open('bouncing-ball'),
+      js(`(() => { ${F}.store().update('setup', (d) => { const lens = { Ball: [1, 1, 2, 3, 1, 6, 1, 1, 12, 2, 1, 4, 1, 24, 1, 2], Shadow: [2, 1, 1, 8, 1, 1, 3, 30, 1, 2, 5, 1] }; for (const name of ['Ball', 'Shadow']) { const layer = d.layers.find((l) => l.name === name); const src = layer.cels.map((c) => d.drawings[c.drawingId]); let at = 0; const cels = []; let i = 0; while (at < 419) { const len = Math.min(lens[name][i % lens[name].length], 419 - at); const nd = JSON.parse(JSON.stringify(src[i % src.length])); nd.id = name + '-' + i; d.drawings[nd.id] = nd; cels.push({ id: name + 'c' + i, start: at, length: len, drawingId: nd.id }); at += len; i++; } layer.cels = cels; } d.layers.find((l) => l.name === 'Ground').cels[0].length = 419; d.length = 419; }); return 1; })()`),
+      { wait: 600 },
+      js(`${F}.run('timeline.zoomFit')`),
+      { wait: 800 },
+      { move: PARK }, { move: [645, 785], after: 1500 },
+      { shot: '@', crop: [108, 430, 806, 232] },
     ],
   },
   {
@@ -247,6 +289,20 @@ module.exports = [
     ],
   },
   {
+    name: 'finishing-effects',
+    steps: [
+      ...open('bouncing-ball', [js(`${F}.prefs.set({ firstDrawn: true, showExplanations: false })`)], ['effects']),
+      // Dark corners and a little grain on the Ball layer, with the Effects panel showing both.
+      js(`(() => { const s = ${F}.store(); const l = s.get().doc.layers.find((x) => x.name === 'Ball'); s.setUi({ activeLayerId: l.id, frame: 7 }); })()`), { wait: 400 },
+      js(`${F}.run('effects.add.vignette')`), { wait: 400 },
+      js(`${F}.run('effects.add.grain')`), { wait: 400 },
+      ...only('effects'),
+      js(`(() => { const sc = document.querySelector('.rd-props'); const h = [...document.querySelectorAll('#rd-sec-effects *')].find((e) => e.children.length === 0 && /first to last/.test(e.textContent)); if (h) sc.scrollTop += h.getBoundingClientRect().top - sc.getBoundingClientRect().top - 150; })()`),
+      { move: PARK }, { move: [645, 785], after: 1200 },
+      { shot: '@', crop: [108, 40, 1164, 750] },
+    ],
+  },
+  {
     name: 'blend-modes',
     steps: [
       ...open('bouncing-ball', [{ click: [fx(9), 621], after: 500 }, ...only('effects')]),
@@ -261,13 +317,13 @@ module.exports = [
   {
     name: 'masks',
     steps: [
-      ...open('bouncing-ball', [], [], { 'effects.maskScope': 'all' }),
-      js(`${F}.run('layers.addVector')`), { wait: 600 },
-      js(`${F}.store().update('Name the mask layer', (d) => { const l = d.layers.find((x) => x.name === 'Layer 4'); if (l) l.name = 'Window'; })`),
+      // One press adds a mask above the Ball; painting it with the Ellipse shows the Ball through it, and what it hides stays faint.
+      ...open('bouncing-ball', [], [], { 'effects.maskStart': 'show' }),
+      js(`(() => { const s = ${F}.store(); const l = s.get().doc.layers.find((x) => x.name === 'Ball'); s.setUi({ activeLayerId: l.id, frame: 7, color: '#1d1b26', fillColor: '#ff6f91' }); })()`), { wait: 500 },
+      js(`${F}.prefs.set({ firstDrawn: true, showExplanations: false })`),
+      js(`${F}.run('layers.addMask')`), { wait: 900 },
       ELLIPSE,
-      { drag: [[470, 190], [590, 310]], steps: 12, delay: 20, after: 600 },
-      js(`${F}.run('layers.useAsMask')`), { wait: 1000 },
-      { click: [fx(8), 621], after: 500 },
+      { drag: [[470, 175], [565, 240]], steps: 12, delay: 20, after: 600 },
       { move: PARK }, { move: [645, 785], after: 1200 },
       { shot: '@', crop: [108, 40, 812, 700] },
     ],
@@ -321,6 +377,27 @@ module.exports = [
       { drag: [[fx(26), RULER_Y], [fx(1), RULER_Y]], steps: 40, delay: 20, after: 300 },
       { drag: [[fx(1), RULER_Y], [fx(26), RULER_Y]], steps: 50, delay: 40, after: 1200 },
       { move: PARK, after: 300 },
+      { rec: 'stop' },
+    ],
+  },
+  // Four keys of the walk cycle picked (Shift+click), copied with Ctrl+C, pasted at frame 9 with Ctrl+V: the drawings in the way
+  // move later (the first time, a message says so, with a Change button) and the cycle goes round twice.
+  {
+    name: 'timeline-copy-keys',
+    prefs: { firstDrawn: true },
+    steps: [
+      ...open('walk-cycle', [], [], { 'timeline.pasteOver': undefined }),
+      { move: [700, 740] },
+      { rec: '@', crop: [108, 40, 812, 726], every: 80 },
+      { wait: 700 },
+      { click: [fx(1), BALL_Y], after: 500 },
+      { click: [fx(3), BALL_Y], mods: ['shift'], after: 450 },
+      { click: [fx(5), BALL_Y], mods: ['shift'], after: 450 },
+      { click: [fx(7), BALL_Y], mods: ['shift'], after: 700 },
+      { key: 'c', mods: ['control'], after: 1500 },
+      { click: [fx(9), BALL_Y], after: 900 },
+      { key: 'v', mods: ['control'], after: 2200 },
+      { move: PARK, after: 900 },
       { rec: 'stop' },
     ],
   },

@@ -1,0 +1,1 @@
+A (before) is the panel with the colour picker hidden on a side with no paint; B (after) has the picker and the Solid, Linear, Radial row back, with the box still see-through.

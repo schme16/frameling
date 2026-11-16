@@ -1,0 +1,17 @@
+Pixel brush, first slice: the dab engine, spacing, tips and the library. Every picture is in both themes (-dark, -light).
+
+spacing      The same round brush at 10%, 25%, 50%, 100% and 200% spacing, top to bottom. Spacing is how far apart the dabs go, as a share of the size.
+scatter      Scatter 0, 50%, 100% and 200% (top to bottom); the last row also has size jitter.
+picture      Picture tips: stars, hearts, a diamond chain that turns with the line, and a big star scaled up. Each is a little picture stamped along the stroke.
+antialias    The same brush with anti-aliasing OFF (top two strokes, sharp pixels) and ON (bottom two, smooth see-through edge), on a 48 pixel sprite so the pixels show.
+library      The pixel side of the brush picker, open: the same picker as the vector brushes, listing pixel brushes (starters in groups, soft paint, dry media). The live stroke is the brush picked.
+
+Made with scripts/docs/ab-pixel-brush (see docs/testing.md). The help picture is public/help/pixel-brush-dark.png and -light.png.
+Nothing is posted to the board.
+
+Second slice: dynamics, grain, dual tip, colour and wet paint. Both themes again (-dark, -light).
+kinds        One stroke of each kind, top to bottom: round, pressure pencil, tapered ink, fast is thin, chalk grain, spatter, bristles, rainbow trail, wet smear.
+dynamics     Round with no dynamics, then size from pen pressure, a fade-out taper, speed (fast is thin), and a pressure spray.
+texture      Round, chalk grain, pencil on paper (grain and pressure), sponge (a new patch of paper each dab), spatter and bristles (dual tip).
+colour       Round, rainbow trail (hue along a fade), autumn leaves (colour wobble), fade to the fill colour, wet smear over blue bars.
+feel-clip    The same strokes being drawn, as H.264 clips (-dark.mp4, -light.mp4, with a -poster.png): the point is how the size follows the pen and the speed.

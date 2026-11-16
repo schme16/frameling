@@ -6,6 +6,8 @@ import './ui.css';
 import './commands';
 import './rightCommands';
 import './dockCommands';
+import './menuCommands';
+import './explain/commands';
 import './helpTopics';
 import './quests';
 import './onboarding';

@@ -6,10 +6,11 @@ import { useMemo, useSyncExternalStore } from 'react';
 import type { Doc, Id, Layer, LayerFolder } from '../core/format';
 import { layerTree, nodeLayers, type TreeNode } from '../core/folders';
 import { useStore } from '../core/store';
+import { onFreshDrawing } from '../core/fresh';
 
 /** `depth` is how many folders it sits in (0 on the stage), for the indent. */
 export type TimelineRow =
-  | { type: 'layer'; layer: Layer; inFolder: boolean; depth: number }
+  | { type: 'layer'; layer: Layer; inFolder: boolean; depth: number; /** The pair's other half, when the two are shown as one row (see `foldPairs`). */ half?: Layer }
   | { type: 'folder'; folder: LayerFolder; layerIds: Id[]; collapsed: boolean; depth: number; parent?: Id };
 
 /** Builds the rows. Pure. Folders inside folders follow their parent; a folded folder hides everything in it. */
@@ -32,6 +33,26 @@ export function timelineRows(doc: Doc, collapsed: ReadonlySet<Id>): TimelineRow[
   return out;
 }
 
+/**
+ * Shows each pair as one row: the top half's row, carrying the bottom half as `half`. Only halves that sit side by side
+ * in one folder (so they are neighbours in the rows) are joined; a pair split apart by hand stays two rows. Pure.
+ */
+export function foldPairs(rows: TimelineRow[]): TimelineRow[] {
+  if (!rows.some((r) => r.type === 'layer' && r.layer.pair)) return rows;
+  const out: TimelineRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const a = rows[i];
+    const b = rows[i + 1];
+    if (a.type === 'layer' && b?.type === 'layer' && a.layer.pair === b.layer.id && b.layer.pair === a.layer.id && a.layer.kind !== b.layer.kind && (a.layer.kind === 'vector' || a.layer.kind === 'pixel') && (b.layer.kind === 'vector' || b.layer.kind === 'pixel') && (a.layer.folder ?? null) === (b.layer.folder ?? null)) {
+      out.push({ ...a, half: b.layer });
+      i++;
+      continue;
+    }
+    out.push(a);
+  }
+  return out;
+}
+
 /** The row a layer shows on: its own, or its folder's header when the folder is shut. -1 when it's not there. */
 export function rowOfLayer(rows: TimelineRow[], layerId: Id | null | undefined): number {
   if (!layerId) return -1;
@@ -48,6 +69,13 @@ const listeners = new Set<() => void>();
 export function collapsedFolders(): ReadonlySet<Id> {
   return shut;
 }
+
+// A new drawing has its folders open.
+onFreshDrawing(() => {
+  if (!shut.size) return;
+  shut = new Set();
+  listeners.forEach((f) => f());
+});
 
 export function toggleFolderCollapsed(id: Id, to?: boolean): void {
   const next = new Set(shut);

@@ -44,12 +44,12 @@ export function PixelSelectOptions() {
   return (
     <div className="cv-options">
       <Choice<SelectSettings['op']>
-        label="Each new pick"
+        label="Selection mode"
         value={op}
         options={[
-          { value: 'replace', label: 'Starts afresh', title: 'A new pick replaces the old one.' },
-          { value: 'add', label: 'Adds', title: 'A new pick adds to what is already selected (same as holding Shift).' },
-          { value: 'subtract', label: 'Takes away', title: 'A new pick takes pixels out of the selection (same as holding Alt).' },
+          { value: 'replace', label: 'New', title: 'A new pick replaces the old one.' },
+          { value: 'add', label: 'Add', title: 'A new pick adds to what is already selected (same as holding Shift).' },
+          { value: 'subtract', label: 'Remove', title: 'A new pick takes pixels out of the selection (same as holding Alt).' },
         ]}
         onChange={(v) => setSelectSettings({ op: v })}
       />
@@ -60,7 +60,7 @@ export function PixelSelectOptions() {
           <Toggle label="Only touching pixels" checked={contiguous} onChange={(v) => setSelectSettings({ contiguous: v })} hint="On: just the patch you clicked. Off: that colour everywhere on the drawing (contiguous)." />
         </>
       )}
-      <Tip>
+      <Tip stays>
         {count ? `${count} pixel${count === 1 ? '' : 's'} selected. Drag inside to move them (Alt+drag for a copy, Ctrl+D to duplicate); arrow keys nudge. ` : `${how} `}
         Shift adds, Alt takes away. Painting stays inside the selection.
       </Tip>

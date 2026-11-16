@@ -1,0 +1,120 @@
+{
+  "env": {
+    "label": "autosave-after",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "dpr": 1,
+    "idleRafMs": 16.664102564102567,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling/dist/renderer",
+    "exportReadbackEnv": null,
+    "loadMs": [
+      171,
+      100
+    ],
+    "when": "2026-11-16T03:30:06.354Z"
+  },
+  "combos": {
+    "strokeControl": {
+      "rafDelta": {
+        "n": 297,
+        "mean": 17.28,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "latencyAll": {
+        "n": 251,
+        "mean": 8.05,
+        "p50": 7.6,
+        "p95": 15.7,
+        "p99": 16.5,
+        "max": 21.5
+      },
+      "latencyMax": 21.5,
+      "overlayDrawMs": {
+        "n": 251,
+        "mean": 0.16,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.4,
+        "max": 0.4
+      },
+      "mainDrawMs": {
+        "n": 1,
+        "mean": 0.5,
+        "p50": 0.5,
+        "p95": 0.5,
+        "p99": 0.5,
+        "max": 0.5
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0
+    },
+    "strokeWithAutosave": {
+      "rafDelta": {
+        "n": 298,
+        "mean": 17.34,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "latencyAll": {
+        "n": 253,
+        "mean": 7.77,
+        "p50": 7.7,
+        "p95": 15.1,
+        "p99": 16.3,
+        "max": 20.7
+      },
+      "latencyMax": 20.7,
+      "overlayDrawMs": {
+        "n": 253,
+        "mean": 0.16,
+        "p50": 0.2,
+        "p95": 0.3,
+        "p99": 0.3,
+        "max": 0.3
+      },
+      "mainDrawMs": {
+        "n": 1,
+        "mean": 0.4,
+        "p50": 0.4,
+        "p95": 0.4,
+        "p99": 0.4,
+        "max": 0.4
+      },
+      "longTasks": 1,
+      "longTaskMaxMs": 231
+    }
+  },
+  "consoleErrors": []
+}

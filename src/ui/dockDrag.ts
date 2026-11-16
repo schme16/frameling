@@ -7,10 +7,13 @@
 //   data-dock-group, data-dock-groups, data-dock-stack    which stacked group of a zone it is, how many there are, and
 //                                                         which way they stack: the edges of a group make a new one
 //   data-dock-edge                                        the drop bands over the canvas edges while dragging
-import { dock, flushDock, moveFloatTo, panelTitle, placePanel, placeTools, setFloatWindowBox } from './dock';
+import { dock, flushDock, setLock, moveFloatTo, panelTitle, placePanel, placeTools, setFloatWindowBox } from './dock';
 import { floatTitle, MAX_GROUPS, type DockZone, type DropTarget, type FloatWin, type ToolsPlace } from './dockModel';
 import { dragging } from './dockShared';
 import { createStore } from './mini';
+import type { Doing } from './dockLock';
+import { lastDrag, panelsLocked, railLocked, refuse, teachLock } from './lockState';
+import { inRailEdge, railCorner, railDropAt, railDropNote, settleRail, type Box, type RailDrop, type RailGeometry } from './railDrop';
 
 export interface DragState {
   kind: 'panel' | 'group' | 'tools';
@@ -23,6 +26,8 @@ export interface DragState {
   target: DropTarget | null;
   /** For the tool rail: the edge it would dock on, or 'float'. */
   toolsAt?: ToolsPlace;
+  /** For the tool rail: what letting go would do, and the side it was on when picked up (null: floating). */
+  rail?: { drop: RailDrop; home: DockZone | null };
 }
 
 export const dragState = createStore<DragState | null>(null);
@@ -137,10 +142,13 @@ export function run(e: React.PointerEvent, move: (ev: PointerEvent) => void, end
   if (e.button !== 0) return;
   const x0 = e.clientX;
   const y0 = e.clientY;
+  const t0 = Date.now();
   let moving = false;
+  let px = 0;
   const onMove = (ev: PointerEvent) => {
+    px = Math.max(px, Math.hypot(ev.clientX - x0, ev.clientY - y0));
     if (!moving) {
-      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < THRESHOLD) return;
+      if (px < THRESHOLD) return;
       moving = true;
       document.body.classList.add('dock-dragging');
       start?.();
@@ -155,6 +163,8 @@ export function run(e: React.PointerEvent, move: (ev: PointerEvent) => void, end
     document.body.classList.remove('dock-dragging');
     if (!moving) return;
     swallowClick();
+    lastDrag.ms = Date.now() - t0;
+    lastDrag.px = px;
     end(ev, ok);
   };
   const onUp = (ev: PointerEvent) => finish(ev, true);
@@ -173,6 +183,7 @@ export function run(e: React.PointerEvent, move: (ev: PointerEvent) => void, end
 
 /** Pointer down on a panel's tab, rail item or section name: dragging it moves the panel; a plain click still presses it. */
 export function startPanelDrag(e: React.PointerEvent, id: string): void {
+  if (panelsLocked()) return refuseDrag(e, 'panels');
   const label = panelTitle(id);
   run(
     e,
@@ -181,7 +192,10 @@ export function startPanelDrag(e: React.PointerEvent, id: string): void {
       const d = dragState.get();
       dragState.set(null);
       dragging.set(null);
-      if (ok && d?.target) placePanel(id, d.target);
+      if (ok && d?.target) {
+        placePanel(id, d.target);
+        teachLock('panels', () => setLock('panels', true));
+      }
     },
     () => dragging.set(id),
   );
@@ -192,6 +206,7 @@ export function startPanelDrag(e: React.PointerEvent, id: string): void {
  * whole window's panels there; anywhere else it stays where it was put.
  */
 export function startFloatDrag(e: React.PointerEvent, f: FloatWin): void {
+  if (panelsLocked()) return refuseDrag(e, 'panels');
   const ox = e.clientX - f.x;
   const oy = e.clientY - f.y;
   const from = { x: f.x, y: f.y };
@@ -199,7 +214,7 @@ export function startFloatDrag(e: React.PointerEvent, f: FloatWin): void {
     e,
     (ev) => {
       setFloatWindowBox(f.id, clampPos(ev.clientX - ox, ev.clientY - oy, f.w));
-      const t = targetAt(ev.clientX, ev.clientY, { edges: true, strips: true, exclude: f.id });
+      const t = targetAt(ev.clientX, ev.clientY, { edges: true, strips: true, areas: true, exclude: f.id });
       const l = dock.get().layout;
       dragState.set({ kind: 'group', panels: f.tabs, label: floatTitle(l, f, panelTitle), x: ev.clientX, y: ev.clientY, target: 'newFloat' in t ? null : t });
     },
@@ -218,33 +233,78 @@ export function startFloatDrag(e: React.PointerEvent, f: FloatWin): void {
 
 const clampPos = (x: number, y: number, w: number) => ({ x: Math.max(0, Math.min(Math.round(x), window.innerWidth - Math.min(w, 120))), y: Math.max(0, Math.min(Math.round(y), window.innerHeight - 36)) });
 
+// Nothing in the dock moves while these say so (the lock, see lockState.ts); every drag and nudge here asks first.
+export { panelsLocked, railLocked };
+
+/** A press on something that is locked: carrying it past a few pixels says why it won't go. A plain click goes on as it was. */
+export function refuseDrag(e: React.PointerEvent, kind: 'tools' | 'panels', doing: Doing = 'move'): void {
+  if (e.button !== 0) return;
+  const x0 = e.clientX;
+  const y0 = e.clientY;
+  const off = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', off);
+    window.removeEventListener('pointercancel', off);
+  };
+  const move = (ev: PointerEvent) => {
+    if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < THRESHOLD) return;
+    off();
+    refuse(kind, doing);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', off);
+  window.addEventListener('pointercancel', off);
+}
+
+/** The three boxes the rail's drop rules read, from the page (the work area, the middle column, the canvas). */
+export function railGeometry(): RailGeometry | null {
+  const rect = (sel: string): Box | null => {
+    const r = document.querySelector(sel)?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : null;
+  };
+  const body = rect('.ui-body');
+  const center = rect('.ui-center');
+  const canvas = rect('.ui-canvas');
+  return body && center && canvas ? { body, center, canvas } : null;
+}
+
 /**
  * Pointer down on the tool rail's grip. The rail leaves its place as soon as it's carried and follows the pointer as a
- * small window; over an edge band, letting go docks it on that side. Escape puts it back where it was.
+ * small window. The four edges of the work area are bands to dock on (the side it came from says "as it was"), the
+ * canvas floats it where it is let go, and anywhere else, or Escape, puts it back exactly where it was picked up.
+ * The width edge of a docked rail belongs to the width: a press there never starts this.
  */
 export function startToolsDrag(e: React.PointerEvent, grab: { x: number; y: number }): void {
   const was = dock.get().layout.tools;
+  const nav = (e.currentTarget as HTMLElement).closest('nav')?.getBoundingClientRect();
+  if (nav && inRailEdge(e.clientX, nav, was.place)) return;
+  if (railLocked()) return refuseDrag(e, 'tools');
+  if (document.body.classList.contains('ui-resizing')) return;
+  const home: DockZone | null = was.place === 'float' ? (was.home ?? null) : was.place;
+  let drop: RailDrop = null;
+  let at = { x: was.x, y: was.y };
   run(
     e,
     (ev) => {
-      const x = Math.max(0, Math.min(ev.clientX - grab.x, window.innerWidth - 60));
-      const y = Math.max(0, Math.min(ev.clientY - grab.y, window.innerHeight - 60));
-      placeTools('float', { x, y }, false);
-      const t = targetAt(ev.clientX, ev.clientY, { edges: true });
-      dragState.set({ kind: 'tools', panels: [], label: 'Tools', x: ev.clientX, y: ev.clientY, target: null, toolsAt: 'zone' in t ? t.zone : 'float' });
+      at = railCorner(ev.clientX, ev.clientY, grab, { w: window.innerWidth, h: window.innerHeight });
+      placeTools('float', at, false);
+      const g = railGeometry();
+      drop = g ? railDropAt(ev.clientX, ev.clientY, g) : null;
+      dragState.set({ kind: 'tools', panels: [], label: 'Tools', x: ev.clientX, y: ev.clientY, target: null, toolsAt: drop && 'dock' in drop ? drop.dock : 'float', rail: { drop, home } });
     },
     (_ev, ok) => {
-      const d = dragState.get();
       dragState.set(null);
-      if (!ok) placeTools(was.place, { x: was.x, y: was.y });
-      else if (d?.toolsAt && d.toolsAt !== 'float') placeTools(d.toolsAt);
-      else flushDock();
+      const end = settleRail(ok, drop, was, at);
+      if (end.place === 'float') placeTools('float', end.at ?? at);
+      else placeTools(end.place);
+      if (end.place !== was.place || (end.place === 'float' && ok && drop)) teachLock('tools', () => setLock('tools', true));
     },
   );
 }
 
 /** Moves the floating tool rail with the arrow keys (the grip is a button). */
 export function nudgeTools(dx: number, dy: number): void {
+  if (railLocked()) return refuse('tools', 'move');
   const t = dock.get().layout.tools;
   placeTools('float', { x: Math.max(0, t.x + dx), y: Math.max(0, t.y + dy) });
 }
@@ -252,6 +312,7 @@ export function nudgeTools(dx: number, dy: number): void {
 /** Resizes a window from one of its edges or corners. `edge` says which sides move ('n', 'e', 's', 'w' and pairs). */
 export function startFloatResize(e: React.PointerEvent, f: FloatWin, edge: string): void {
   if (e.button !== 0) return;
+  if (panelsLocked()) return refuseDrag(e, 'panels', 'size');
   e.preventDefault();
   e.stopPropagation();
   const x0 = e.clientX;
@@ -286,7 +347,7 @@ export function startFloatResize(e: React.PointerEvent, f: FloatWin, edge: strin
 
 /** Words for the chip that follows the pointer. */
 export function dropNote(d: DragState): string {
-  if (d.kind === 'tools') return d.toolsAt && d.toolsAt !== 'float' ? `dock ${ZONE_WORDS[d.toolsAt]}` : 'floating';
+  if (d.kind === 'tools') return d.rail ? railDropNote(d.rail.drop, d.rail.home) : 'floating';
   const t = d.target;
   if (!t) return d.kind === 'group' ? 'drop on an edge or a tab bar to dock it' : '';
   if ('newFloat' in t) return 'new window';

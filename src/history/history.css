@@ -1,0 +1,119 @@
+/* The History panel. Theme tokens only. */
+.hi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  min-height: 0;
+}
+.hi-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hi-row {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius-small);
+  border: 1px solid transparent;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 30px;
+}
+.hi-row:hover {
+  background: var(--hover-bg);
+}
+.hi-row.current {
+  background: var(--chosen-bg);
+  border-color: var(--line);
+}
+.hi-step {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.hi-row.current .hi-step {
+  color: var(--chosen-fg);
+  font-weight: 600;
+}
+.hi-row.undone .hi-step {
+  color: var(--muted);
+  font-style: italic;
+}
+.hi-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  box-sizing: border-box;
+}
+.hi-row.done .hi-dot {
+  background: var(--muted);
+}
+.hi-row.current .hi-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.hi-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hi-when {
+  margin-left: auto;
+  flex: none;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 400;
+  font-style: normal;
+  white-space: nowrap;
+}
+.hi-row.current .hi-when {
+  color: inherit;
+  opacity: 0.8;
+}
+.hi-keep {
+  flex: none;
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-small);
+  padding: 0 8px;
+  cursor: pointer;
+  opacity: 0;
+}
+.hi-row:hover .hi-keep,
+.hi-row:focus-within .hi-keep,
+.hi-row.current .hi-keep {
+  opacity: 1;
+}
+.hi-row.current .hi-keep {
+  color: var(--chosen-fg);
+}
+.hi-keep:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--raised);
+}
+.hi-keep:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.hi-step:focus-visible,
+.hi-keep:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}

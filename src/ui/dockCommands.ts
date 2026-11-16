@@ -1,16 +1,22 @@
 // Commands for the dock: float and move panels, move the tool rail, hide all panels, step between workspaces, share one.
 // "This panel" is the one you last clicked in or tabbed into.
 import { getPanel, registerCommand, registerCommands } from '../core/registry';
-import { dock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
+import { dock, setLock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
 import { SPLIT_WORDS } from './dockDrag';
-import { groupCount, groupTabs, MAX_GROUPS, ZONES, type DockZone, type ToolsPlace } from './dockModel';
-import { askRename } from './dockMenus';
+import { groupCount, groupTabs, MAX_GROUPS, toolsHome, ZONES, type DockZone, type ToolsPlace } from './dockModel';
+import { askRename, panelsAreChanged, putPanelsBack } from './dockMenus';
+import { isLocked, refuseIfLocked } from './lockState';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { drawKindNow, goToSide, pressSide, sideOf } from './drawingMode';
+import { addHalfNow, missingHalfKind } from './drawAnywhere';
+import { pairOf } from '../core/pairs';
+import * as layerOps from '../timeline/ops';
+import { findLayer } from '../core/doc';
 import { store } from '../core/store';
-import { askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
+import { setToolRailStyle, setRailLock, askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -33,6 +39,7 @@ registerCommands([
     help: 'floating-windows',
     keywords: ['window', 'detach', 'undock', 'pop out', 'panel'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -60,6 +67,7 @@ registerCommands([
     help: 'panels',
     keywords: ['stack', 'split', 'group', 'tabs', 'below', 'beside', 'panel', 'layers', 'colours'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -79,6 +87,7 @@ registerCommands([
     help: 'panels',
     keywords: ['stack', 'merge', 'group', 'tabs', 'unstack', 'panel'],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       const at = placeOf(id);
@@ -94,7 +103,7 @@ registerCommands([
     help: 'floating-windows',
     keywords: ['windows', 'float', 'tidy', 'panels'],
     enabled: () => dock.get().layout.floats.length > 0,
-    run: () => dockEverythingBack(),
+    run: () => void (!refuseIfLocked('panels', 'move') && dockEverythingBack()),
   },
   {
     id: 'view.hidePanels',
@@ -185,6 +194,7 @@ for (const z of ZONES) {
     help: 'floating-windows',
     keywords: ['dock', 'panel', 'place', z],
     run: () => {
+      if (refuseIfLocked('panels', 'move')) return;
       const id = thisPanel();
       if (!id) return;
       placePanel(id, { zone: z });
@@ -203,9 +213,20 @@ for (const p of [...ZONES, 'float'] as ToolsPlace[]) {
     help: 'floating-windows',
     keywords: ['tools', 'toolbar', 'strip', 'move', p],
     checked: () => dock.get().layout.tools.place === p,
-    run: () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined),
+    run: () => void (!refuseIfLocked('tools', 'move') && placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined)),
   });
 }
+
+registerCommand({
+  id: 'view.toolsHome',
+  label: 'Dock the tools back where they were',
+  category: 'View',
+  description: 'Put a floating tool strip back on the side it was last docked on. You can also drag its grip there.',
+  help: 'tool-strip',
+  keywords: ['tools', 'toolbar', 'strip', 'dock', 'float', 'back', 'return', 'undock', 'home'],
+  enabled: () => dock.get().layout.tools.place === 'float',
+  run: () => void (!refuseIfLocked('tools', 'move') && placeTools(toolsHome(dock.get().layout))),
+});
 
 registerCommand({
   id: 'view.toolGroupRename',
@@ -230,6 +251,39 @@ registerCommand({
   keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange', 'reset', 'default', 'restore', 'undo changes'],
   enabled: () => toolbarIsChanged(),
   run: putToolsBack,
+});
+
+registerCommand({
+  id: 'view.lockTools',
+  label: 'Lock the tools',
+  category: 'View',
+  description: 'Keep the tool rail where it is: it can\'t be moved, resized, rearranged or changed until you unlock it. Every tool still works. A tick means it is locked; run it again to unlock.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'rail', 'lock', 'unlock', 'freeze', 'stop moving', 'accident', 'fix', 'pin'],
+  checked: () => isLocked('tools'),
+  run: () => setRailLock(!isLocked('tools')),
+});
+
+registerCommand({
+  id: 'view.panelsReset',
+  label: 'Put the panels back',
+  category: 'View',
+  description: 'Put this workspace\'s panels back the way it comes: which are open, which group each is in, the order of the tabs, the size of each side and group, and any names you gave. Panels in a window of their own are docked too, or left, as you choose the first time. Undo is on the message.',
+  help: 'panels-back',
+  keywords: ['panels', 'dock', 'tabs', 'windows', 'arrange', 'rearrange', 'tidy', 'mess', 'order', 'default', 'restore', 'undo changes', 'lost panel', 'panel gone', 'reset', 'reset layout', 'layout', 'start over'],
+  enabled: () => panelsAreChanged(),
+  run: putPanelsBack,
+});
+
+registerCommand({
+  id: 'view.lockPanels',
+  label: 'Lock the panels',
+  category: 'View',
+  description: 'Keep the panels and windows where they are: they can\'t be moved, resized, closed, renamed or regrouped until you unlock them. Everything in them still works. A tick means it is locked; run it again to unlock.',
+  help: 'panels',
+  keywords: ['panels', 'windows', 'dock', 'lock', 'unlock', 'freeze', 'stop moving', 'accident', 'fix', 'pin'],
+  checked: () => isLocked('panels'),
+  run: () => setLock('panels', !isLocked('panels')),
 });
 
 registerCommand({
@@ -410,6 +464,78 @@ for (const [style, label, about] of [
     help: 'tool-strip',
     keywords: ['tools', 'toolbar', 'rail', 'style', 'stacked', 'two wide', 'flyout'],
     checked: () => getPrefs().toolRail === style,
-    run: () => setPrefs({ toolRail: style }),
+    run: () => setToolRailStyle(style),
   });
 }
+
+// The Pixels | Vectors switch at the top of the tool rail, as commands. "Draw pixels" and "Draw vectors" are the switch:
+// they say what the next stroke is, and the stroke goes to the other half of the layer's pair (made if it is missing).
+// "Go to a pixel layer" really goes: the way back to a layer of that kind, or offers to make one (asked once, then remembered).
+for (const kind of ['pixel', 'vector'] as const) {
+  const word = kind === 'pixel' ? 'Pixels' : 'Vectors';
+  registerCommand({
+    id: `layers.draw.${kind}`,
+    label: `Draw ${kind === 'pixel' ? 'pixels' : 'vectors'} (${word})`,
+    category: 'Layers',
+    description: `The same as pressing ${word} on the tool rail. Your next stroke is ${kind === 'pixel' ? 'pixels' : 'vectors'}: it goes on a ${kind} layer next to this one, made for you if there is not one yet. You stay where you are until you draw.`,
+    help: 'draw-anywhere',
+    keywords: ['draw anywhere', 'switch', 'toggle', 'pair', 'sibling', 'other half', 'pixels', 'vectors', 'drawing mode', 'layer kind', kind],
+    checked: () => sideOf(drawKindNow()) === kind,
+    run: () => pressSide(kind),
+  });
+  registerCommand({
+    id: `layers.go.${kind}`,
+    label: `Go to a ${kind} layer`,
+    category: 'Layers',
+    description: `Picks the top ${kind} layer, which is where the ${kind === 'pixel' ? 'Shade, Dither and Spray' : 'Text, Gradient and curve'} tools work, or offers to make one.`,
+    help: 'drawing-mode',
+    keywords: ['layer', 'pick', 'tools missing', 'tools gone', 'drawing mode', 'layer kind', 'pixels', 'vectors', kind],
+    run: () => goToSide(kind),
+  });
+}
+
+registerCommand({
+  id: 'layers.draw.swap',
+  label: 'Swap Pixels and Vectors',
+  category: 'Layers',
+  keys: ['Mod+Alt+X'],
+  description: 'Flips the switch on the tool rail to the other side: if your next stroke is vectors it becomes pixels, and the other way round. You stay where you are until you draw.',
+  help: 'draw-anywhere',
+  keywords: ['draw anywhere', 'switch', 'toggle', 'flip', 'pixels', 'vectors', 'other kind', 'drawing mode'],
+  run: () => pressSide(sideOf(drawKindNow()) === 'pixel' ? 'vector' : 'pixel'),
+});
+
+// A pair is a vector layer and a pixel layer shown as one row. Drawing makes them; these make, split and delete them on purpose.
+const active = (s: ReturnType<typeof store>['get'] extends () => infer R ? R : never) => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+registerCommands([
+  {
+    id: 'layers.addHalf',
+    label: 'Add the other half (pixels or vectors) beside this layer',
+    category: 'Layers',
+    description: 'Makes the other kind of layer right next to this one, with the same frames, so one drawing can have both smooth lines and pixels. The two show as one row.',
+    help: 'draw-anywhere',
+    keywords: ['pair', 'sibling', 'pixel layer', 'vector layer', 'both', 'other kind', 'draw anywhere'],
+    enabled: (s) => !!missingHalfKind(s.doc.layers, active(s)),
+    run: () => addHalfNow(),
+  },
+  {
+    id: 'layers.unpair',
+    label: 'Split the pair into two layers',
+    category: 'Layers',
+    description: 'Shows the two halves as two ordinary layers again. Their frames and drawings stay, but they stop following each other.',
+    help: 'draw-anywhere',
+    keywords: ['pair', 'unpair', 'separate', 'two layers', 'ungroup'],
+    enabled: (s) => !!pairOf(s.doc.layers, active(s)),
+    run: () => void layerOps.unpairLayers(),
+  },
+  {
+    id: 'layers.deletePair',
+    label: 'Delete both halves of the pair',
+    category: 'Layers',
+    description: 'Removes the vector layer and the pixel layer of this pair, with everything drawn on them. You can undo it.',
+    help: 'draw-anywhere',
+    keywords: ['pair', 'delete', 'remove', 'both layers'],
+    enabled: (s) => !!pairOf(s.doc.layers, active(s)) && s.doc.layers.length > 2,
+    run: () => void layerOps.deletePair(),
+  },
+]);

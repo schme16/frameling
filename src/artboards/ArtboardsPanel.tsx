@@ -1,20 +1,25 @@
 // The Artboards panel: every artboard in the document, in order. Click one to open it, double-click to fill the
 // window with it, drag to reorder. Below the list: the open artboard's name, export name, size and background.
 import { useEffect, useRef, useState } from 'react';
-import type { Doc, Id } from '../core/format';
+import type { Artboard, Doc, Id } from '../core/format';
 import { store, useStore } from '../core/store';
 import { renderFrame } from '../core/render';
-import { ActionButton, Tip } from '../canvas/controls';
+import { Tip } from '../canvas/controls';
 import { Section } from '../symbols/PropertiesPanel';
 import { ArtboardFields } from './fields';
 import { Icon } from '../ui/icons';
-import { InlineName } from '../timeline/Menu';
+import { ContextMenu, type MenuItem } from '../timeline/Menu';
+import { PieceActions, PieceButton, PieceRow, PieceTools, dropIndex, pieceMenuBasics, useRowDrag } from '../timeline/PieceRow';
+import { runCmd, tip } from '../timeline/cmd';
+import { CLEAN_ROW_H } from '../timeline/layout';
 import { activeId, artboardDoc, artboardsOf, findArtboard, hasArtboards, sizeOf } from './model';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, renameArtboardById, reorderArtboardById, zoomToArtboard } from './ops';
 import { openShotsPlayer } from './player';
+import { SEARCH_FROM, findAnswered, matchArtboards, onFindRequest } from './find';
 import { openArtboardExport } from './exportDialog';
-import { VariationBadge, VariationSection } from './VariationPanel';
+import { VariationSection } from './VariationPanel';
 import { sourceOf } from './variations';
+import { mixedRates, rateOf } from './rates';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { artPixelOf, artSizeOf } from '../pixel/units';
 import '../symbols/symbols.css';
@@ -26,8 +31,6 @@ const sizeOfLength = (doc: Doc, id: Id): number => {
   const a = findArtboard(doc, id);
   return a?.content ? a.content.length : doc.length;
 };
-
-const DRAG_TYPE = 'application/x-frameling-artboard';
 
 /** Frame 0 of an artboard, fitted into a small box. */
 function Thumb({ doc, id, size = 40 }: { doc: Doc; id: Id; size?: number }) {
@@ -62,123 +65,242 @@ export function ArtboardsPanel() {
   const doc = useStore((s) => s.doc);
   const nested = useStore(() => store().nestedTag());
   const [renaming, setRenaming] = useState<Id | null>(null);
-  const [over, setOver] = useState<number | null>(null);
+  const [menu, setMenu] = useState<{ id: Id; x: number; y: number } | null>(null);
+  const dnd = useRowDrag<Id>();
+  const [query, setQuery] = useState('');
+  const [asked, setAsked] = useState(false);
+  const search = useRef<HTMLInputElement>(null);
+  // "Find an artboard" in the command palette shows the box and puts the cursor in it, even before the panel was open.
+  useEffect(
+    () =>
+      onFindRequest(() => {
+        findAnswered();
+        setAsked(true);
+        requestAnimationFrame(() => search.current?.focus());
+      }),
+    [],
+  );
+  // The open artboard stays in sight in a long list, however it was opened (a row, the Preview's numbers, Next artboard).
+  const openNow = activeId(doc);
+  useEffect(() => {
+    document.querySelector<HTMLElement>('.ab-rows [aria-current="true"]')?.scrollIntoView?.({ block: 'nearest' });
+  }, [openNow]);
   if (nested)
     return (
       <div className="cv-panel cv-options ab-panel" data-help="artboards">
-        <Tip>You're painting a tile right now. Press Done above the canvas to get back to your artboards.</Tip>
+        <Tip stays>You're painting a tile right now. Press Done above the canvas to get back to your artboards.</Tip>
       </div>
     );
   if (doc.editing?.length)
     return (
       <div className="cv-panel cv-options ab-panel" data-help="artboards">
-        <Tip>You're inside a symbol. Go back out to switch artboards.</Tip>
+        <Tip stays>You're inside a symbol. Go back out to switch artboards.</Tip>
       </div>
     );
   const list = artboardsOf(doc);
   const open = activeId(doc);
   const many = hasArtboards(doc);
+  // The speed shows on each row only once they differ: a file where every artboard is at 12 fps says nothing.
+  const mixed = many && mixedRates(doc);
+  const canVary = !doc.sharedLayers;
+  const showSearch = list.length > SEARCH_FROM || asked;
+  const shown = showSearch ? matchArtboards(list, query) : list;
+
+  const move = (id: Id, to: number) => {
+    reorderArtboardById(id, Math.max(0, Math.min(list.length - 1, to)));
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-artboard="${id}"]`)?.focus());
+  };
+  const drop = (over: Id) => {
+    const { node, where } = dnd.take();
+    const from = list.findIndex((x) => x.id === node);
+    const at = list.findIndex((x) => x.id === over);
+    if (node && from >= 0 && at >= 0 && node !== over) reorderArtboardById(node, dropIndex(from, at, where));
+  };
+  const aboutOf = (a: Artboard) => {
+    const px = artPixelOf(artboardDoc(doc, a.id));
+    const doc0 = sizeOf(doc, a);
+    const { w, h } = artSizeOf(doc0.w, doc0.h, px);
+    const len = a.content ? a.content.length : doc.length;
+    // Frames are worth saying when this board differs from the one it follows (or has any, on its own).
+    const frames = len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `${len} frames` : '';
+    return { w, h, frames, size: `${w} x ${h}` };
+  };
+
+  const menuFor = (a: Artboard): MenuItem[] => {
+    const i = list.findIndex((x) => x.id === a.id);
+    const { size, frames } = aboutOf(a);
+    const src = a.variationOf ? sourceOf(doc, a) : undefined;
+    return [
+      { heading: `${a.name} (artboard, ${size}${frames ? `, ${frames}` : ''}${src ? `, a variation of ${src.name}` : ''})` },
+      { separator: true },
+      ...pieceMenuBasics({
+        thing: 'artboard',
+        onRename: () => setRenaming(a.id),
+        onDuplicate: () => void duplicateArtboardById(a.id),
+        onDelete: () => void deleteArtboardById(a.id),
+        canDelete: many,
+        up: { label: 'Move up (earlier in Play all)', disabled: i <= 0, run: () => move(a.id, i - 1) },
+        down: { label: 'Move down (later in Play all)', disabled: i >= list.length - 1, run: () => move(a.id, i + 1) },
+      }),
+      { separator: true },
+      { label: 'Zoom to this artboard', onClick: () => zoomToArtboard(a.id) },
+      ...(src ? [{ label: 'Go to the original', onClick: () => goToArtboard(src.id, true) }] : []),
+      ...(canVary && !a.variationOf ? [{ label: 'Make a variation (linked copy)', onClick: () => void import('./variationOps').then((m) => m.makeVariationOf(a.id)) }] : []),
+      ...(a.variationOf
+        ? [
+            { label: 'Reset to the original', onClick: () => void import('./variationOps').then((m) => m.resetVariationById(a.id)) },
+            { label: 'Detach (make it a plain artboard)', onClick: () => void import('./variationOps').then((m) => m.detachVariationById(a.id)) },
+          ]
+        : []),
+      { separator: true },
+      { label: 'Add an artboard', onClick: () => void newArtboard() },
+    ];
+  };
+
   return (
-    <div className="cv-panel cv-options ab-panel" data-help="artboards">
-      {!many && <Tip>Every artboard shares your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>}
-      <ul className="sy-list ab-list" aria-label="Artboards">
-        {list.map((a, i) => {
-          const px = artPixelOf(artboardDoc(doc, a.id));
-          const doc0 = sizeOf(doc, a);
-          const { w, h } = artSizeOf(doc0.w, doc0.h, px);
-          const len = a.content ? a.content.length : doc.length;
-          return (
-            <li
-              key={a.id}
-              className={`sy-item ab-item${a.id === open ? ' ab-open' : ''}${over === i ? ' ab-over' : ''}${a.variationOf ? ' ab-var' : ''}`}
-              draggable={renaming !== a.id}
-              aria-current={a.id === open ? 'true' : undefined}
-              onDragStart={(e) => {
-                e.dataTransfer.setData(DRAG_TYPE, a.id);
-                e.dataTransfer.effectAllowed = 'move';
-              }}
-              onDragOver={(e) => {
-                if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
+    <div className="ab-panel ab-listed" data-help="artboards">
+      <PieceTools
+        name="Artboards"
+        newWord="New artboard"
+        inPanel
+        adds={
+          <>
+            <PieceButton text="Blank" tip={tip('artboards.new', 'A new empty artboard beside the others, the same size as this one')} label="New blank artboard" onClick={() => runCmd('artboards.new')} />
+            <PieceButton
+              icon="link"
+              text="Variation"
+              tip={canVary ? tip('artboards.makeVariation', 'A linked copy that follows this artboard: edit the original and it follows along') : 'Variations need layers of their own, so they are off while the frames share one set of layers'}
+              label="New variation"
+              disabled={!canVary}
+              onClick={() => runCmd('artboards.makeVariation')}
+            />
+          </>
+        }
+        actions={
+          <PieceActions
+            thing="artboard"
+            duplicate={{ tip: tip('artboards.duplicate', 'Make a copy beside it, with its own copy of every drawing'), run: () => runCmd('artboards.duplicate') }}
+            remove={{ tip: tip('artboards.delete', 'Delete this artboard'), run: () => runCmd('artboards.delete'), off: many ? undefined : 'You need at least one artboard' }}
+          />
+        }
+      >
+        {many && (
+          <span className={`tl-layer-new${list.length > SEARCH_FROM ? ' ab-compact' : ''}`} role="group" aria-label="All artboards">
+            <span className="tl-layer-new-label" aria-hidden="true">
+              All artboards
+            </span>
+            <PieceButton icon="zoom" text="Fit all" tip="Show every artboard at once" label="Fit all artboards" onClick={() => fitAllArtboards()} />
+            <PieceButton icon="grid" text="Line up" tip="Line them up in a row, in list order" label="Line up artboards" onClick={() => arrangeAll()} />
+            <PieceButton icon="play" text="Play all in order" tip="Play every artboard one after another, like shots in a film" label="Play all in order, every artboard" onClick={() => openShotsPlayer()} />
+            <PieceButton icon="export" text="Export artboards" tip="Export each artboard as its own file, or pack them all onto one sprite sheet" label="Export artboards" onClick={() => openArtboardExport()} />
+          </span>
+        )}
+      </PieceTools>
+      {!many && (
+        <div className="ab-tip">
+          <Tip>Every artboard shares your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>
+        </div>
+      )}
+      {showSearch && (
+        <div className="ab-find">
+          <Icon name="search" size={13} />
+          <input
+            ref={search}
+            type="search"
+            value={query}
+            placeholder={`Find an artboard (${list.length})`}
+            aria-label="Find an artboard"
+            title="Type part of a name. Enter opens the first match, Escape clears."
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Escape') {
                 e.preventDefault();
-                setOver(i);
+                setQuery('');
+              } else if (e.key === 'Enter' && shown[0]) {
+                e.preventDefault();
+                if (shown[0].id !== open) goToArtboard(shown[0].id, true);
+              }
+            }}
+          />
+        </div>
+      )}
+      <div className="tl-layers ab-rows" role="tree" aria-label="Artboards, in Play all order">
+        {showSearch && query.trim() && !shown.length ? <p className="cv-tip ab-none">No artboard has that in its name.</p> : null}
+        {shown.map((a) => {
+          const i = list.findIndex((x) => x.id === a.id);
+          const { size, frames } = aboutOf(a);
+          const src = a.variationOf ? sourceOf(doc, a) : undefined;
+          const rate = mixed ? `${rateOf(doc, a.id)} fps` : '';
+          return (
+            <PieceRow
+              key={a.id}
+              id={a.id}
+              attr="data-artboard"
+              h={CLEAN_ROW_H}
+              active={a.id === open}
+              inFolder={!!a.variationOf}
+              depth={a.variationOf ? 1 : 0}
+              className={a.variationOf ? 'ab-var' : ''}
+              // The words a person sees (name, then size and rate) come first and in order, so the spoken name holds the printed one.
+              label={`${a.name} ${size}${rate ? ` · ${rate}` : ''}, artboard${frames ? `, ${frames}` : ''}${src ? `, variation of ${src.name}` : ''}`}
+              drag={{
+                dropMark: dnd.mark(a.id, dnd.drag.node === a.id),
+                onDragStart: (id) => dnd.start(id),
+                onDragOver: (id, where) => dnd.over(id, where),
+                onDrop: drop,
+                onDragEnd: dnd.end,
               }}
-              onDragLeave={() => setOver(null)}
-              onDrop={(e) => {
-                const id = e.dataTransfer.getData(DRAG_TYPE);
-                setOver(null);
-                if (id) reorderArtboardById(id, i);
-              }}
-              onClick={() => a.id !== open && goToArtboard(a.id, true)}
+              onSelect={() => a.id !== open && goToArtboard(a.id, true)}
               onDoubleClick={() => zoomToArtboard(a.id)}
-              title="Click to draw on it, double-click to fill the window with it, drag to reorder. Double-click the name to rename it."
-            >
-              <Thumb doc={doc} id={a.id} />
-              <div className="sy-item-text">
-                {renaming === a.id ? (
-                  <InlineName
-                    value={a.name}
-                    label="Artboard name"
-                    onDone={(v) => {
-                      setRenaming(null);
-                      if (v) renameArtboardById(a.id, v);
-                    }}
-                  />
-                ) : (
-                  <span className="sy-item-name ab-name" onDoubleClick={(e) => (e.stopPropagation(), setRenaming(a.id))}>
-                    {a.name}
-                  </span>
-                )}
-                <span className="sy-item-meta">
-                  {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
-                  <span className="ab-size">
-                    {w} x {h}
-                    {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
-                  </span>
+              onMenu={(x, y) => setMenu({ id: a.id, x, y })}
+              onKey={(e) => {
+                if (e.target !== e.currentTarget || !e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return false;
+                e.preventDefault();
+                e.stopPropagation();
+                move(a.id, i + (e.key === 'ArrowUp' ? -1 : 1));
+                return true;
+              }}
+              lead={
+                <span className="tl-kind tl-thumb">
+                  <Thumb doc={doc} id={a.id} size={30} />
                 </span>
-              </div>
-              <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>
-                <button type="button" className="sy-icon-btn ab-move" aria-label={`Move ${a.name} up`} title="Earlier in the list (and in Play all)" disabled={i === 0} onClick={() => reorderArtboardById(a.id, i - 1)}>
-                  <Icon name="chevron-up" size={15} />
-                </button>
-                <button type="button" className="sy-icon-btn ab-move" aria-label={`Move ${a.name} down`} title="Later in the list (and in Play all)" disabled={i === list.length - 1} onClick={() => reorderArtboardById(a.id, i + 1)}>
-                  <Icon name="chevron-down" size={15} />
-                </button>
-                <button type="button" className="sy-icon-btn" aria-label={`Duplicate ${a.name}`} title="Make a copy beside it" onClick={() => duplicateArtboardById(a.id)}>
-                  <Icon name="duplicate" size={15} />
-                </button>
-                <button type="button" className="sy-icon-btn" aria-label={`Delete ${a.name}`} title={many ? 'Delete' : 'The only artboard stays'} disabled={!many} onClick={() => deleteArtboardById(a.id)}>
-                  <Icon name="trash" size={15} />
-                </button>
-              </div>
-            </li>
+              }
+              name={a.name}
+              nameLabel="Artboard name"
+              nameTitle="Double-click to rename. Click to draw on it, double-click the row to fill the window with it, drag to reorder."
+              editing={renaming === a.id}
+              onStartRename={() => setRenaming(a.id)}
+              onRename={(v) => {
+                setRenaming(null);
+                if (v) renameArtboardById(a.id, v);
+              }}
+              tags={
+                src ? (
+                  <small className="tl-ref-tag" title={`A variation (linked copy) of ${src.name}. It follows ${src.name} except for what you change in it.`}>
+                    <Icon name="link" size={10} />
+                  </small>
+                ) : null
+              }
+              meta={
+                <span className="ab-size" title={[frames, rate].filter(Boolean).join(', ') || undefined}>
+                  {size}
+                  {rate ? ` · ${rate}` : ''}
+                </span>
+              }
+              moreTitle="More: rename, move up or down, duplicate, delete, zoom to it"
+              moreLabel={`More options for ${a.name}`}
+            />
           );
         })}
-      </ul>
-      <div className="cv-row cv-wrap">
-        <ActionButton onClick={() => newArtboard()} title="A new empty artboard beside the others, the same size as this one">
-          New artboard
-        </ActionButton>
-        {many && (
-          <>
-            <ActionButton onClick={() => fitAllArtboards()} title="Show every artboard at once">
-              Fit all
-            </ActionButton>
-            <ActionButton onClick={() => openShotsPlayer()} title="Play every artboard one after another, like shots in a film">
-              Play all in order
-            </ActionButton>
-            <ActionButton onClick={() => openArtboardExport()} title="Export each artboard as its own file, or pack them all onto one sprite sheet">
-              Export artboards
-            </ActionButton>
-            <ActionButton onClick={() => arrangeAll()} title="Line them up in a row, in list order">
-              Line up
-            </ActionButton>
-          </>
-        )}
+        {menu && findArtboard(doc, menu.id) ? <ContextMenu x={menu.x} y={menu.y} onClose={() => setMenu(null)} items={menuFor(findArtboard(doc, menu.id)!)} /> : null}
       </div>
-      <VariationSection />
-      <Section title="This artboard">
-        <ArtboardFields id={open} />
-      </Section>
+      <div className="cv-panel cv-options ab-rest">
+        <VariationSection />
+        <Section title="This artboard">
+          <ArtboardFields id={open} />
+        </Section>
+      </div>
     </div>
   );
 }

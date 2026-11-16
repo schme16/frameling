@@ -3,12 +3,14 @@
  * ellipse round and a line at 45 degree steps. Alt draws from the centre. The options choose outline, fill or both.
  */
 import { shapeColors } from './wells';
+import { strokeWithStyle } from '../geometry/lineStyle';
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
-import { addDrawn, drawWithMirror } from './mirror';
+import { addDrawn, drawWithMirror, withMirror } from './mirror';
+import { inkWanted, noteInk } from '../popout/ink';
 import { clearSnap, snapLineEnd, snapPt, vanishingPoints } from '../canvas/guides';
 import { choosePlane, planeMap, projectedEllipse, projectSubPath } from '../canvas/perspectivePlane';
 import { viewSizeFactor } from './view-size';
@@ -122,7 +124,7 @@ export function makeShape(
       type: 'path',
       paths: [lineSubPath(p, q)],
       fill: null,
-      stroke: { color, width: s.shapeStroke, join: 'round', cap: 'round' },
+      stroke: strokeWithStyle({ color, width: s.shapeStroke, join: 'round', cap: 'round' }, s),
       opacity: 1,
     };
   }
@@ -143,7 +145,7 @@ export function makeShape(
     type: 'path',
     paths: [path],
     fill: colors.fill,
-    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
+    stroke: colors.stroke ? strokeWithStyle({ color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' }, s) : null,
     opacity: 1,
   };
 }
@@ -155,6 +157,11 @@ interface Drag {
 
 function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: string, key: string, order: number, help: string, what: string): Tool {
   let drag: Drag | null = null;
+  // What a second window sees while the drag goes on: made when the link asks (once a screen frame at most), not on every move.
+  const ink = () => {
+    const s = build();
+    return s && withMirror(s);
+  };
   // Where a pixel shape drag started, for pulling a line's end onto the perspective directions.
   let pixStart: Pt | null = null;
   // On a pixel layer the shape is painted as clean pixels instead (src/pixel/tools.ts).
@@ -207,7 +214,10 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     move(e, ctx) {
       if (pix.active()) return pix.move(pixEnd(e, ctx));
-      if (drag) drag.cur = endAt(drag.start, e, ctx);
+      if (drag) {
+        drag.cur = endAt(drag.start, e, ctx);
+        if (inkWanted()) noteInk(ink);
+      }
     },
     up(e, ctx) {
       if (pix.active()) {
@@ -228,10 +238,13 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
           if (shape.stroke) noteColorUsed(shape.stroke.color);
         } else if (r !== 'nothing') reportEdit(ctx, r);
       }
+      // After the edit, so the finished shape is already there when the live one goes.
+      noteInk(null);
       ctx.requestOverlay();
     },
     cancel(ctx) {
       drag = null;
+      noteInk(null);
       pixStart = null;
       clearSnap();
       pix.cancel();

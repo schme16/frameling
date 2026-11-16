@@ -1,7 +1,7 @@
 // Which plugin shape is picked, for the Properties section (PluginShapePanel.tsx). Pure.
 import { celAt, findLayer } from '../core/doc';
 import type { State } from '../core/store';
-import { extKeyOf, infoOf } from './shapes';
+import { extKeyOf, infoOf } from './shapeInfo';
 
 export interface PickedPluginShape {
   pluginId: string;

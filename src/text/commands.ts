@@ -10,6 +10,7 @@ import { showPanel } from '../ui/dock';
 import { TEXT_ANIMS } from './model';
 import { addAnimator, selectedTexts } from './ops';
 import { textToFill } from './convert';
+import { putTextOnCurve, takeTextOffCurve, whyNoTextOffPath, whyNoTextOnPath } from './onPathOps';
 
 /** Turns the selected text into filled shapes, as it looks on this frame. */
 export function convertSelectedText(): void {
@@ -36,6 +37,38 @@ export function convertSelectedText(): void {
 const hasText = () => selectedTexts().length > 0;
 
 export const textCommands: Command[] = [
+  {
+    id: 'text.swapFonts',
+    label: 'Swap fonts',
+    category: 'Edit',
+    description: 'Lists the fonts the drawing uses and where, says which are not on this computer, and swaps them for others in one undo step (replace fonts, missing fonts).',
+    help: 'text-swap-fonts',
+    keywords: ['replace font', 'replace fonts', 'missing font', 'missing fonts', 'change font', 'find font', 'font substitution', 'typeface', 'stand-in'],
+    run: () => void import('./FontSwapDialog').then((m) => m.openFontSwap()),
+  },
+  {
+    id: 'text.onPath',
+    label: 'Put text on a curve (text on a path)',
+    category: 'Draw',
+    description: 'Runs words along a line or round a shape: a name round a badge, a title along a wave. The words stay editable, and move with the curve. Pick the text and the curve, or just the curve and it adds words.',
+    help: 'text-on-path',
+    keywords: ['text on a path', 'text on path', 'curved text', 'circular text', 'round a circle', 'round a badge', 'arc text', 'wavy text', 'wave', 'bend text', 'warp text', 'text along', 'follow a curve', 'badge', 'stamp', 'ring', 'logo'],
+    keys: ['Mod+Alt+O'],
+    enabled: () => !whyNoTextOnPath(),
+    reason: () => whyNoTextOnPath(),
+    run: putTextOnCurve,
+  },
+  {
+    id: 'text.offPath',
+    label: 'Take text off the curve',
+    category: 'Draw',
+    description: 'Puts words that run along a curve back on a straight line, where they are now.',
+    help: 'text-on-path',
+    keywords: ['text off path', 'straighten text', 'release text', 'detach text', 'unbend text', 'remove from path'],
+    enabled: () => !whyNoTextOffPath(),
+    reason: () => whyNoTextOffPath(),
+    run: takeTextOffCurve,
+  },
   {
     id: 'text.toShapes',
     label: 'Convert text to shapes',

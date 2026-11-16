@@ -1,4 +1,4 @@
-// Blend modes, effects, clipping, masks and folders as commands: the palette, the Effects menu and shortcuts.
+// Blend modes, effects, clipping, masks and folders as commands: the palette, Effects and Masks and folders, and shortcuts.
 import { registerChoice, withChoice } from '../core/choices';
 import { findLayer } from '../core/doc';
 import type { Layer } from '../core/format';
@@ -8,21 +8,69 @@ import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { showPanel } from '../ui/dock';
 import { BLEND_MODES, EFFECTS } from './model';
+import { maskPartner } from './masks';
 import * as ops from './ops';
+import * as shapeOps from './shapeOps';
+import { choiceWord } from '../words/choices';
 
 export type MaskScope = 'below' | 'all';
 
 registerChoice<MaskScope>({
   id: 'effects.maskScope',
-  title: 'Using a layer as a mask',
-  question: 'This layer is going to be a mask: what is drawn on it shows the layers under it, and the rest is hidden. Which layers should it mask?',
+  title: choiceWord('choice.effects.maskScope.title'),
+  question: choiceWord('choice.effects.maskScope.question'),
   options: [
-    { value: 'below', label: 'Just the layer under it', detail: 'The mask and that one layer go into a folder together. Drag more layers into the folder to mask them too.' },
-    { value: 'all', label: 'Every layer under it', detail: 'The mask and every layer under it go into a folder together.' },
+    { value: 'below', label: choiceWord('choice.effects.maskScope.below.label'), detail: choiceWord('choice.effects.maskScope.below.detail') },
+    { value: 'all', label: choiceWord('choice.effects.maskScope.all.label'), detail: choiceWord('choice.effects.maskScope.all.detail') },
   ],
   default: 'below',
   category: 'Layers',
   help: 'masks',
+});
+
+export type MaskStart = 'show' | 'hide';
+
+registerChoice<MaskStart>({
+  id: 'effects.maskStart',
+  title: choiceWord('choice.effects.maskStart.title'),
+  question: choiceWord('choice.effects.maskStart.question'),
+  options: [
+    { value: 'show', label: choiceWord('choice.effects.maskStart.show.label'), detail: choiceWord('choice.effects.maskStart.show.detail'), did: choiceWord('choice.effects.maskStart.show.did') },
+    { value: 'hide', label: choiceWord('choice.effects.maskStart.hide.label'), detail: choiceWord('choice.effects.maskStart.hide.detail'), did: choiceWord('choice.effects.maskStart.hide.did') },
+  ],
+  default: 'show',
+  category: 'Layers',
+  help: 'masks',
+});
+
+export type MaskLeaves = 'keep' | 'plain';
+
+registerChoice<MaskLeaves>({
+  id: 'effects.maskLeavesFolder',
+  title: choiceWord('choice.effects.maskLeavesFolder.title'),
+  question: choiceWord('choice.effects.maskLeavesFolder.question'),
+  options: [
+    { value: 'keep', label: choiceWord('choice.effects.maskLeavesFolder.keep.label'), detail: choiceWord('choice.effects.maskLeavesFolder.keep.detail'), did: choiceWord('choice.effects.maskLeavesFolder.keep.did') },
+    { value: 'plain', label: choiceWord('choice.effects.maskLeavesFolder.plain.label'), detail: choiceWord('choice.effects.maskLeavesFolder.plain.detail'), did: choiceWord('choice.effects.maskLeavesFolder.plain.did') },
+  ],
+  default: 'keep',
+  category: 'Layers',
+  help: 'masks',
+});
+
+export type EffectTarget = 'shapes' | 'layer';
+
+registerChoice<EffectTarget>({
+  id: 'effects.addTarget',
+  title: choiceWord('choice.effects.addTarget.title'),
+  question: choiceWord('choice.effects.addTarget.question'),
+  options: [
+    { value: 'shapes', label: choiceWord('choice.effects.addTarget.shapes.label'), detail: choiceWord('choice.effects.addTarget.shapes.detail'), did: choiceWord('choice.effects.addTarget.shapes.did') },
+    { value: 'layer', label: choiceWord('choice.effects.addTarget.layer.label'), detail: choiceWord('choice.effects.addTarget.layer.detail'), did: choiceWord('choice.effects.addTarget.layer.did') },
+  ],
+  default: 'shapes',
+  category: 'Layers',
+  help: 'shape-effects',
 });
 
 const active = (s: State): Layer | undefined => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
@@ -50,6 +98,33 @@ export function toggleMask(layer: Layer | undefined = activeNow(), mode: 'show' 
   withChoice<MaskScope>('effects.maskScope', (scope) => void ops.useAsMask(layer.id, scope, mode));
 }
 
+/** Adds a new mask above the layer (asking the first time what it starts as) and picks it, ready to paint on. */
+export function addMask(layer: Layer | undefined = activeNow()): void {
+  if (!layer) return;
+  if (layer.kind === 'camera') {
+    toast('The camera has nothing to mask. Pick a drawing layer.');
+    return;
+  }
+  if (layer.mask) {
+    toast('This layer is a mask already. Paint on it, or pick the layer you want to mask.');
+    return;
+  }
+  withChoice<MaskStart>('effects.maskStart', (mode) => void ops.addMask(layer.id, mode));
+}
+
+/** Jumps between a mask and the layer it masks, so the next stroke goes on the other one. */
+export function switchMaskAndLayer(): void {
+  const s = store().get();
+  const l = active(s);
+  if (!l) return;
+  const other = maskPartner(s.doc, l.id);
+  if (!other) {
+    toast(l.mask ? 'This mask has no layer under it to switch to.' : 'No mask on this layer yet. Add one first.');
+    return;
+  }
+  store().setUi({ activeLayerId: other.id });
+}
+
 export function toggleClip(layer: Layer | undefined = activeNow()): void {
   if (!layer) return;
   if (!layer.clipToBelow && store().get().doc.layers[0]?.id === layer.id) {
@@ -57,6 +132,17 @@ export function toggleClip(layer: Layer | undefined = activeNow()): void {
     return;
   }
   ops.setClip(layer.id, !layer.clipToBelow);
+}
+
+/**
+ * Where an effect command goes: on the picked shapes when there are some (asked the first time, then remembered), else
+ * on the active layer. The Effects panel has a switch for the same thing.
+ */
+function withEffectTarget(then: (t: ops.AnyTarget) => void): void {
+  const layer = ops.activeTarget();
+  if (!layer) return;
+  if (!shapeOps.pickedShapes().length) return then(layer);
+  withChoice<EffectTarget>('effects.addTarget', (v) => then(v === 'layer' ? layer : { shapes: true }), { matters: true, gently: true });
 }
 
 const effectCommands: Command[] = EFFECTS.map((e) => ({
@@ -68,8 +154,7 @@ const effectCommands: Command[] = EFFECTS.map((e) => ({
   keywords: ['effect', 'fx', e.term.toLowerCase(), e.label.toLowerCase()],
   enabled: (s) => !!active(s),
   run: () => {
-    const t = ops.activeTarget();
-    if (t) ops.addEffect(t, e.kind);
+    withEffectTarget((t) => void ops.addEffect(t, e.kind));
     openPanel();
   },
 }));
@@ -105,6 +190,17 @@ registerCommands([
     },
   },
   {
+    id: 'effects.shapesReset',
+    label: 'Take the effects off the picked shapes',
+    category: 'Effects',
+    description: 'Put the picked shapes back to plain: no glow, shadow or blur on them. The layer itself is left as it is.',
+    help: 'shape-effects',
+    keywords: ['clear effects', 'remove effects', 'shape effects', 'unsoften', 'plain shape'],
+    enabled: () => shapeOps.pickedHaveFx(),
+    reason: () => 'Pick a shape that has an effect first.',
+    run: () => void shapeOps.clearEffects(),
+  },
+  {
     id: 'layers.clipToBelow',
     label: 'Clip to the layer below',
     category: 'Effects',
@@ -124,6 +220,71 @@ registerCommands([
     keywords: ['mask', 'reveal', 'cut out', 'layer mask', 'stencil'],
     checked: (s) => !!active(s)?.mask,
     run: () => toggleMask(),
+  },
+  {
+    id: 'layers.addMask',
+    label: 'Add a mask to this layer',
+    category: 'Effects',
+    keys: ['Mod+Alt+Shift+M'],
+    description: 'Adds a mask layer just above this one and picks it, so you paint where this layer shows. Paint with any tool.',
+    help: 'masks',
+    keywords: ['mask', 'layer mask', 'reveal', 'hide part', 'add mask', 'new mask', 'stencil'],
+    enabled: (s) => !!active(s) && active(s)!.kind !== 'camera' && !active(s)!.mask,
+    run: () => addMask(),
+  },
+  {
+    id: 'layers.maskSwitch',
+    label: 'Switch between the mask and its layer',
+    category: 'Effects',
+    keys: ['Mod+Alt+J'],
+    description: 'On a mask, picks the layer it masks. On a masked layer, picks its mask. The next stroke goes on the one you picked.',
+    help: 'masks',
+    keywords: ['mask', 'paint the mask', 'paint the layer', 'jump', 'switch'],
+    enabled: (s) => {
+      const l = active(s);
+      return !!l && !!maskPartner(s.doc, l.id);
+    },
+    run: () => switchMaskAndLayer(),
+  },
+  {
+    id: 'layers.maskOnOff',
+    label: 'Turn this mask on or off',
+    category: 'Effects',
+    description: 'Switches the mask off for a moment to see the layers without it. The mask and its drawing are kept, and it still exports as a mask.',
+    help: 'masks',
+    keywords: ['mask', 'disable mask', 'enable mask', 'switch off', 'peek'],
+    enabled: (s) => !!active(s)?.mask,
+    checked: (s) => !!active(s)?.mask && active(s)!.visible,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.setMaskOn(l.id, !l.visible);
+    },
+  },
+  {
+    id: 'layers.flipMask',
+    label: 'Flip the mask (show or hide where it is painted)',
+    category: 'Effects',
+    description: 'Swaps what the mask does: where you painted shows the layer, or where you painted hides it. The drawing stays as it is.',
+    help: 'masks',
+    keywords: ['mask', 'invert mask', 'reverse', 'flip'],
+    enabled: (s) => !!active(s)?.mask,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.flipMask(l.id);
+    },
+  },
+  {
+    id: 'layers.removeMask',
+    label: 'Take the mask off for good',
+    category: 'Effects',
+    description: 'The layer stops being a mask and becomes a plain layer that shows its drawing. To get rid of the drawing too, delete the layer.',
+    help: 'masks',
+    keywords: ['mask', 'remove mask', 'delete mask', 'unmask'],
+    enabled: (s) => !!active(s)?.mask,
+    run: () => {
+      const l = activeNow();
+      if (l?.mask) ops.setMask(l.id, null);
+    },
   },
   {
     id: 'layers.newFolder',

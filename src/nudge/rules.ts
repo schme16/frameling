@@ -11,11 +11,31 @@ export const MAX_SHOWS = 3;
 /** Tools that draw straight away, so the page can say "the brush is ready". */
 export const DRAWING_TOOLS = ['brush', 'pencil'];
 
+/** Whether every drawing is an empty vector one, remembered per drawings object (an edit that leaves them alone keeps the answer). */
+const blankDrawings = new WeakMap<object, boolean>();
+
+function allDrawingsBlank(drawings: Doc['drawings']): boolean {
+  let blank = blankDrawings.get(drawings);
+  if (blank === undefined) {
+    blank = true;
+    // for...in stops at the first drawing with anything on it, without first copying all of them into an array.
+    for (const id in drawings) {
+      const d = drawings[id];
+      if (d.kind !== 'vector' || d.shapes.length > 0) {
+        blank = false;
+        break;
+      }
+    }
+    blankDrawings.set(drawings, blank);
+  }
+  return blank;
+}
+
 /** An empty page that is a plain vector drawing: nothing drawn, no pixel or tile layers, no artboards, not inside a symbol. */
 export function isFreshVectorPage(doc: Doc): boolean {
   if (doc.artboards?.length || doc.editing?.length || doc.layers.length === 0) return false;
-  for (const d of Object.values(doc.drawings)) if (d.kind !== 'vector' || d.shapes.length > 0) return false;
-  return doc.layers.every((l) => l.kind === 'vector');
+  if (!doc.layers.every((l) => l.kind === 'vector')) return false;
+  return allDrawingsBlank(doc.drawings);
 }
 
 export interface Mood {

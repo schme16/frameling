@@ -1,5 +1,6 @@
 // Preferences > Workspaces: switch between the workspaces that come with Frameling and your own, save the layout you
 // have, rename, reorder and delete yours, and share them as files or text.
+import { Explainer } from './explain/ExplainIcon';
 import { useState } from 'react';
 import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, dockEverythingBack, listWorkspaces, MAX_SAVED, moveWorkspace, renameWorkspace, saveWorkspace, workspacesFull } from './dock';
 import { floatChrome, setFloatChrome, type FloatChrome } from './DockFloats';
@@ -116,7 +117,7 @@ export function WorkspacesPage() {
   return (
     <>
       <h3>Workspaces</h3>
-      <p className="ui-pref-intro">A workspace is a way of arranging your panels: which sides they sit on, which float in windows of their own, and how big each is. Switch between them any time.</p>
+      <Explainer className="ui-pref-intro">A workspace is a way of arranging your panels: which sides they sit on, which float in windows of their own, and how big each is. Switch between them any time.</Explainer>
       <ul className="ui-ws-list" aria-label="Workspaces that come with Frameling">
         {list.filter((w) => w.builtin).map(row)}
       </ul>

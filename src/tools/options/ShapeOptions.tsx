@@ -1,4 +1,6 @@
 import { useStore } from '../../core/store';
+import { typedSize } from '../brushRange';
+import { useBrushRange } from './useBrushRange';
 import { Choice, Slider, Tip } from '../../canvas/controls';
 import type { PlaneChoice } from '../../canvas/perspectivePlane';
 import { useViewSettings } from '../../canvas/viewSettings';
@@ -6,6 +8,7 @@ import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
 import { DrawModeToggle } from './DrawModeToggle';
 import { MirrorOptions } from './MirrorOptions';
+import { LineStyleOptions } from './LineStyleOptions';
 
 /** "On a plane": where a rectangle or ellipse lies when the perspective guides are showing. Shared with pixel shapes. */
 export function PlaneOption({ show = true }: { show?: boolean }) {
@@ -39,11 +42,13 @@ export function ShapeOptions() {
   const stroke = useToolSettings((s) => s.shapeStroke);
   const radius = useToolSettings((s) => s.cornerRadius);
   const isLine = tool === 'line';
+  const range = useBrushRange(false);
   return (
     <div className="cv-options">
       <DrawModeToggle />
       <Wells />
-      {(isLine || strokeOn) && <Slider label={isLine ? 'Thickness' : 'Outline thickness'} value={stroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
+      {(isLine || strokeOn) && <Slider label={isLine ? 'Thickness' : 'Outline thickness'} value={stroke} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: typedSize(v) })} />}
+      {(isLine || strokeOn) && <LineStyleOptions arrows={isLine} />}
       {tool === 'rect' && <Slider label="Rounded corners" value={radius} min={0} max={200} format={(v) => (v ? `${v}px` : 'Square')} onChange={(v) => setToolSettings({ cornerRadius: v })} />}
       <PlaneOption show={!isLine} />
       <MirrorOptions />

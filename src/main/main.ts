@@ -1,24 +1,42 @@
 import './profile';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from 'electron';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { grantFile, registerIpc } from './ipc';
+import { closeActionsDoor, closeRemoteDoor, grantFile, registerIpc, stopReviewHost, stopReviews } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
+import { makeReviewLinks } from './reviewLink';
+import { registerLinkHandler } from './linkHandler';
 import { watchDisplay } from './display';
-import { clearAutosave, keepAutosave, pruneKept } from './store';
+import { clearAutosave, keepAutosave, pruneKept, writeFileAtomic } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
-import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
+import { beat, BEAT_MS, endRun, markOffered, noteEvent, readLast, startRun, windowStopLine } from './crashMarker';
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
+import { createPanicKey } from './panicKey';
+import { addFeatures, applyGpuOff, logDrawingPath } from './gpu';
+import { colourSwitches } from './gpuFlags';
+import { makePopout } from './popoutWindow';
+import { makeStreamboard } from './streamboardWindow';
+import { createRestarter, fitWindow, readState, relaunchPlan, type RestartState, type WindowPlace } from './restart';
+
+// The colour profile is pinned to sRGB before the engine starts (see gpuFlags.ts for what that means on a wide-gamut screen).
+for (const [name, value] of colourSwitches()) value === undefined ? app.commandLine.appendSwitch(name) : app.commandLine.appendSwitch(name, value);
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
-if (isolationWanted(app.getPath('userData'))) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+if (isolationWanted(app.getPath('userData'))) addFeatures([PLUGIN_PROCESS_FEATURE]);
+
+// Hardware drawing: off for the gpu-off file or FRAMELING_GPU=off, otherwise asked for by name on Linux (see gpuFlags.ts).
+// Read before any window exists.
+const relaunchingForCard = applyGpuOff();
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.
-const gotLock = app.requestSingleInstanceLock();
+// (A copy that has just started itself again, to be on the discrete card, leaves the lock for the new one.)
+const gotLock = !relaunchingForCard && app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 // Spotting a crash (see crashMarker.ts): a marker written at start and taken away on a proper quit. Only the copy that
@@ -26,10 +44,54 @@ if (!gotLock) app.quit();
 // the installed app does (a dev run killed with Ctrl+C is not a crash worth Quill's time).
 const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_MARKER === '1');
 let quitting = false;
+let runStartedAt = Date.now();
+/** Everything Frameling is using across its processes, in MB. */
+const appMemoryMB = () => Math.round(app.getAppMetrics().reduce((n, p) => n + (p.memory?.workingSetSize ?? 0), 0) / 1024);
+// Anything that says "restart" (an update, hardware drawing, plugin memory, the command) comes through here: close the
+// way closing always does, then open again with the drawing and the window as they were (see restart.ts).
+const restartFile = () => path.join(app.getPath('userData'), 'restart.json');
+let lastPlace: WindowPlace | null = null;
+const restarter = createRestarter({
+  plan: () =>
+    relaunchPlan({
+      platform: process.platform,
+      packaged: app.isPackaged,
+      appImage: process.env.APPIMAGE ?? '',
+      portableFile: process.env.PORTABLE_EXECUTABLE_FILE ?? '',
+      exists: (f) => fs.existsSync(f),
+    }),
+  // Work that is safe in the autosave goes straight away (the close is let through unasked); otherwise it asks first.
+  quit: (ask) => {
+    if (!ask) closeApproved = true;
+    app.quit();
+  },
+  state: (view): RestartState => {
+    const w = win && !win.isDestroyed() && !win.isMinimized() ? win : null;
+    if (w) lastPlace = { ...w.getNormalBounds(), maximized: w.isMaximized(), fullScreen: w.isFullScreen() };
+    return { at: Date.now(), file: docState.filePath, view, window: lastPlace };
+  },
+  writeState: (s) => writeFileAtomic(restartFile(), JSON.stringify(s)),
+  relaunch: (execPath) => app.relaunch(execPath ? { execPath } : undefined),
+});
+// What the last restart left for this start, read once and taken away.
+let restoring: RestartState | null = null;
 const dataDir = () => app.getPath('userData');
 
 
 let win: BrowserWindow | null = null;
+
+// The audience Stop key, from any window, only while the person is on air (see panicKey.ts).
+const panicKey = createPanicKey({
+  register: (key, fn) => globalShortcut.register(key, fn),
+  unregister: (key) => globalShortcut.unregister(key),
+  send: () => {
+    if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) win.webContents.send('app:panicKey');
+  },
+});
+// The picture window: a second window that shows the drawing big and follows the drawing window (see popout.ts).
+const popout = makePopout({ main: () => win, dataDir: () => app.getPath('userData'), dir: __dirname });
+// The Stream control board: a window of buttons for a second screen (see streamboardWindow.ts).
+const streamboard = makeStreamboard({ main: () => win, dataDir: () => app.getPath('userData'), dir: __dirname });
 let docState: DocumentState = { dirty: false, name: 'Untitled', filePath: null };
 // A file waiting to be opened by the page (given on the command line, or by the system before the window was ready).
 let launchFile: string | null = null;
@@ -46,11 +108,10 @@ let keepDone: (() => void) | null = null;
 // build/installer.nsh), so a dev run never takes it over. The Windows portable build runs from a temporary copy of
 // itself, so it registers the .exe the person actually has. A profile copy (the beta one) never claims it, so the
 // ordinary copy keeps the links.
-if (app.isPackaged && !PROFILE) {
-  const portable = process.env.PORTABLE_EXECUTABLE_FILE;
-  if (process.platform === 'win32' && portable) app.setAsDefaultProtocolClient(PROTOCOL, portable, []);
-  else app.setAsDefaultProtocolClient(PROTOCOL);
-}
+if (app.isPackaged && !PROFILE) registerLinkHandler(app, PROTOCOL);
+
+// frameling://review?code=... asks the drawing window whether to join a live review (see reviewLink.ts). It never joins by itself.
+const reviewLinks = makeReviewLinks({ window: () => win });
 
 function openFileInWindow(file: string) {
   grantFile(file);
@@ -92,11 +153,25 @@ const closeAsker = createCloseAsker({
   clearTimer: (t) => clearTimeout(t as NodeJS.Timeout),
 });
 
+/** Reads the file a restart left (and takes it away, so an ordinary start never finds it). */
+function takeRestartState(): RestartState | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(restartFile(), 'utf8'));
+    return readState(raw);
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(restartFile(), { force: true });
+  }
+}
+
 function createWindow() {
   closeApproved = false;
+  const where = restoring?.window ? fitWindow(restoring.window, screen.getAllDisplays().map((d) => d.workArea)) : null;
   win = new BrowserWindow({
     width: 1400,
     height: 900,
+    ...(where ?? {}),
     minWidth: 800,
     minHeight: 560,
     title: 'Frameling',
@@ -114,10 +189,14 @@ function createWindow() {
       additionalArguments: [`--frameling-version=${app.getVersion()}`],
     },
   });
-  win.once('ready-to-show', () => win?.show());
+  if (restoring?.window?.maximized) win.maximize();
+  win.once('ready-to-show', () => {
+    if (restoring?.window?.fullScreen) win?.setFullScreen(true);
+    win?.show();
+  });
   // The drawing window dying is a crash even if the app is then closed properly, so it goes in the marker.
   win.webContents.on('render-process-gone', (_e, d) => {
-    if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, `The drawing window stopped (${d.reason}, exit code ${d.exitCode}).`);
+    if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, windowStopLine(d, Math.round((Date.now() - runStartedAt) / 60_000), Math.round(os.freemem() / 1048576)));
   });
   // Dragged onto another screen: tell the page, which may offer a better interface size for it.
   const stopWatching = watchDisplay(win, (d) => win?.webContents.send('app:displayChanged', d));
@@ -136,6 +215,9 @@ function createWindow() {
   // and Quit (Ctrl+Q is the page closing its own window; a Mac's Cmd+Q and a system shutdown go through app.quit, which
   // closes the windows too) both end up here, and a close we prevent also stops the quit.
   win.on('close', (e) => {
+    // Where the window is now, for a restart to put it back.
+    const w = win;
+    if (w && !w.isMinimized()) lastPlace = { ...w.getNormalBounds(), maximized: w.isMaximized(), fullScreen: w.isFullScreen() };
     if (!holdClose({ approved: closeApproved, dirty: docState.dirty })) return;
     e.preventDefault();
     if (askingClose) return;
@@ -151,6 +233,7 @@ function createWindow() {
       askingClose = false;
       if (step === 'stay-open') {
         quitRequested = false;
+        restarter.cancelled();
         return;
       }
       // "Don't save" still puts a copy aside for a week (Recover unsaved work...). The page makes the copy fresh
@@ -180,7 +263,29 @@ function createWindow() {
   const devUrl = process.env.FRAMELING_DEV_URL;
   if (devUrl) void win.loadURL(devUrl);
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'));
-  win.on('closed', () => (win = null));
+  // The picture window goes with the drawing window, and gets a fresh link if the page is loaded again.
+  win.webContents.on('did-finish-load', () => {
+    popout.mainReloaded();
+    streamboard.mainReloaded();
+  });
+  // The actions door is answered by the page, so it closes when the page goes (it opens again when the page asks).
+  win.webContents.on('did-start-loading', () => {
+    void closeActionsDoor();
+    stopReviewHost();
+  });
+  // The remote door goes when the page itself is loaded again. Not on every 'did-start-loading': a script's sandbox is a
+  // frame inside the page, and starting one fires it too, which would shut the door in the face of the script that asked.
+  win.webContents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) void closeRemoteDoor();
+  });
+  win.on('closed', () => {
+    void closeActionsDoor();
+    void closeRemoteDoor();
+    stopReviews();
+    win = null;
+    popout.mainClosed();
+    streamboard.mainClosed();
+  });
 }
 
 registerIpc({
@@ -195,7 +300,7 @@ registerIpc({
     if (!win) return;
     // The Mac title bar shows the little dot and the file's icon.
     win.setDocumentEdited(s.dirty);
-    win.setRepresentedFilename(s.filePath ?? '');
+    win.setRepresentedFilename(s.hidePath ? '' : (s.filePath ?? ''));
   },
   keepUnsavedDone: () => keepDone?.(),
   lastCrash: () => readLast(dataDir()),
@@ -204,15 +309,27 @@ registerIpc({
     askingClose = false;
     if (!ok) {
       quitRequested = false;
+      restarter.cancelled();
       return;
     }
     finishClose();
   },
+  setPanicKey: (on) => panicKey.set(on),
   closeQuestionShown: (id) => closeAsker.shown(id),
   closeQuestionAnswer: (id, answer) => closeAsker.answered(id, answer),
+  restart: (view, carry) => restarter.request(view, carry),
+  takeRestore: () => {
+    const r = restoring;
+    restoring = null;
+    return r ? { file: r.file, view: r.view, carry: r.carry === true } : null;
+  },
+  finishUpdate: () => app.quit(),
+  popout,
+  streamboard,
 });
 
 app.on('second-instance', (_e, argv, cwd) => {
+  if (reviewLinks.fromArgs(argv.slice(1))) return;
   const f = fileFromArgs(argv.slice(1), cwd);
   if (f) openFileInWindow(f);
   else if (win) {
@@ -230,26 +347,41 @@ app.on('open-file', (e, file) => {
 // macOS hands frameling:// links over this way.
 app.on('open-url', (e, url) => {
   e.preventDefault();
+  if (reviewLinks.fromUrl(url)) return;
   const f = fileFromUrl(url);
   if (f) openFileInWindow(f);
 });
 
 app.whenReady().then(() => {
-  if (watchCrashes) startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}` });
+  if (watchCrashes) {
+    runStartedAt = Date.now();
+    startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}`, bootedAt: Date.now() - os.uptime() * 1000 });
+    // A small note in the run's own file, now and every half minute, so a stop with no warning can still be told apart (see beat).
+    const sign = () => beat(dataDir(), process.pid, { now: Date.now(), appMB: appMemoryMB(), freeMB: Math.round(os.freemem() / 1048576) });
+    sign();
+    setInterval(sign, BEAT_MS).unref();
+  }
   setupMenu();
+  // A restart left word of what to come back to: the drawing it had open wins over a file on the command line.
+  restoring = takeRestartState();
   // Whatever a crash left behind is put aside too, so it can still be found after the "Restore it?" question goes away.
+  // Not the work a restart carried across: that is about to be opened, not put aside.
   try {
-    keepAutosave();
+    if (!restoring?.carry) keepAutosave();
     pruneKept();
   } catch {
     // A tidy-up, nothing more.
   }
-  const f = fileFromArgs(process.argv.slice(1));
+  const f = restoring?.file && fs.existsSync(restoring.file) ? restoring.file : fileFromArgs(process.argv.slice(1));
   if (f) {
     grantFile(f);
-    launchFile = f;
+    // Carried work opens from the autosave (the page does that), not from the saved file.
+    if (!restoring?.carry) launchFile = f;
   }
   createWindow();
+  // Started by a review link: the page asks about it once it is up.
+  reviewLinks.fromArgs(process.argv.slice(1));
+  void logDrawingPath();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -269,6 +401,10 @@ app.on('window-all-closed', () => {
 // stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
 app.on('will-quit', () => {
   quitting = true;
+  panicKey.set(false);
+  void closeActionsDoor();
+  void closeRemoteDoor();
+  restarter.quitting();
   if (watchCrashes) endRun(dataDir(), process.pid);
 });
 if (watchCrashes && process.platform !== 'win32') {

@@ -4,10 +4,12 @@ import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } f
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
 import { celAt, findLayer } from '../core/doc';
+import { placesOf } from '../core/sharedDrawings';
 import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { playCue } from '../ui/sounds';
+import { newPixelLayerNote } from '../pixel/units';
 
 // A soft page-flip when stepping by hand. Never while playing (stepping then just moves the playhead).
 const tick = () => void (store().get().ui.playing || playCue('tick'));
@@ -17,10 +19,23 @@ import { setTl, tl } from './state';
 import type { Clip, ClipDirection } from '../core/format';
 import { clipDirection, clipPlays } from '../core/clipPlay';
 import { ix } from '../features/flags';
+import { fitLayersCommand } from './fitHeight';
 
 /** Runs an op and, when it was refused for a reason worth knowing, says so gently. */
 export function say(o: ops.Outcome): ops.Outcome {
   if (!o.ok && o.reason && o.reason !== 'no-change') toast(ops.whyNot(o));
+  return o;
+}
+
+/** Copies a clip onto the end, picks the copy so it can be renamed or played straight away, and says where it went. */
+export function duplicateClipAndPick(id: string): ops.Outcome {
+  const before = store().get().doc.clips.find((c) => c.id === id);
+  const o = say(ops.duplicateClip(id));
+  if (o.ok && o.id) {
+    setTl({ clipId: o.id });
+    const made = store().get().doc.clips.find((c) => c.id === o.id);
+    if (made) toast(`Copied ${before?.name ?? 'the clip'} as ${made.name}, after the last frame.`);
+  }
   return o;
 }
 
@@ -102,6 +117,28 @@ registerCommands([
   directionCommand('timeline.clipBackAndForthEnd', 'pingpong-reverse', 'Clip plays back and forth, backward first', 'Like back and forth, but it starts from the last frame and goes backward first.', ['ping pong', 'pingpong', 'reverse']),
   repeatCommand('timeline.clipForever', 'forever', 'Clip repeats forever (loops)', 'The clip you picked starts again each time it finishes. Games and sprite sheets read this too.', ['loop', 'forever']),
   repeatCommand('timeline.clipOnce', 1, 'Clip plays once, then holds the last frame', 'The clip you picked plays one time and stays on its last frame. Right-click a clip to repeat it a number of times.', ['once', 'one shot', 'no loop']),
+  {
+    id: 'timeline.fitLayers',
+    label: 'Fit layers',
+    category: 'Timeline',
+    description: 'Make the Timeline tall enough to show every layer, as far as the window allows.',
+    help: 'timeline-layers',
+    keywords: ['timeline', 'height', 'taller', 'bigger', 'layers', 'scroll', 'show all layers', 'resize'],
+    run: () => fitLayersCommand(),
+  },
+  {
+    id: 'timeline.clipDuplicate',
+    label: 'Duplicate clip',
+    category: 'Timeline',
+    description: 'Copy the clip you picked, with its drawings, onto the end of the animation, so you can change the copy and keep the first.',
+    help: 'timeline-clips',
+    keywords: ['clip', 'copy', 'duplicate', 'clone', 'variation', 'new pose'],
+    enabled: (s: WithClips) => !!pickedClip(s),
+    run: () => {
+      const c = pickedClip(store().get());
+      if (c) duplicateClipAndPick(c.id);
+    },
+  },
   {
     id: 'timeline.play',
     label: 'Play or pause',
@@ -206,6 +243,20 @@ registerCommands([
     keywords: ['copy', 'clone', 'duplicate frame'],
     run: () => void say(ops.duplicateKey()),
   },
+  {
+    id: 'timeline.makeOwnDrawing',
+    label: 'Make this drawing its own (stop sharing it)',
+    category: 'Timeline',
+    description: "When this drawing is shown in more than one place (the link mark on its block says so), give this place a copy of its own. It looks the same, and changing it no longer changes the other places.",
+    help: 'timeline-shared',
+    keywords: ['shared drawing', 'unlink', 'unshare', 'detach', 'make unique', 'copy drawing', 'used in several places', 'linked'],
+    enabled: (s) => {
+      const layer = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+      const cel = layer && celAt(layer, s.ui.frame);
+      return !!cel && placesOf(s.doc, cel.drawingId) > 1;
+    },
+    run: () => void say(ops.makeOwnDrawing()),
+  },
   { id: 'timeline.clearKey', label: 'Clear this drawing', category: 'Timeline', description: 'Wipe this drawing clean. The frame stays, with the same hold.', help: 'timeline-frames', keywords: ['erase', 'empty'], run: () => void say(ops.clearKey()) },
   { id: 'timeline.emptyFrame', label: 'Make these frames empty', category: 'Timeline', description: 'Take the drawing away, so these frames show nothing on this layer.', help: 'timeline-frames', run: () => void say(ops.deleteKey()) },
   {
@@ -271,6 +322,7 @@ registerCommands([
     keywords: ['event', 'flag', 'note'],
     run: () => {
       const o = ops.addMarker();
+      say(o);
       if (o.id) setTl({ editing: { kind: 'marker', id: o.id } });
     },
   },
@@ -291,7 +343,15 @@ registerCommands([
     description: 'A layer for pixel art, drawn one square at a time.',
     help: 'timeline-layers',
     keywords: ['add layer', 'pixel art', 'sprite'],
-    run: () => void ops.addPixelLayer(),
+    run: () => {
+      const { doc } = store().get();
+      const hadPixel = doc.layers.some((l) => l.kind === 'pixel');
+      const o = ops.addPixelLayer();
+      const layer = o.ok ? findLayer(store().get().doc, o.id ?? null) : null;
+      // The first pixel layer on a page picks its own size from the page, so say what it came out as.
+      const note = layer?.kind === 'pixel' ? newPixelLayerNote(doc.width, doc.height, layer.pixelSize, hadPixel) : null;
+      if (note) toast(note, { action: { label: 'Change size', run: () => void import('../canvas/DocumentSettings').then((m) => m.openDocumentSettings('size')) } });
+    },
   },
   { id: 'layers.delete', label: 'Delete layer', category: 'Layers', description: 'Remove this layer and everything drawn on it. You can undo it.', help: 'timeline-layers', enabled: (s) => s.doc.layers.length > 1, run: () => void say(ops.deleteLayer()) },
   { id: 'layers.duplicate', label: 'Duplicate layer', category: 'Layers', description: 'Make a copy of this layer with all its drawings.', help: 'timeline-layers', run: () => void say(ops.duplicateLayer()) },
@@ -323,7 +383,7 @@ registerCommands([
     category: 'Layers',
     description: 'You still see it while drawing, but videos, pictures and sprite sheets leave it out. Good for ground lines and sketches.',
     help: 'reference-layers',
-    keywords: ['guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper', 'reference'],
+    keywords: ['guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper', 'reference', 'trace', 'picture'],
     checked: (s) => !!findLayer(s.doc, s.ui.activeLayerId)?.reference,
     run: () => void ops.toggleLayerReference(),
   },

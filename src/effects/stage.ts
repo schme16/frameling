@@ -4,15 +4,18 @@
  * playing over held drawings with a glow blurs nothing new.
  */
 import type { Doc, Layer } from '../core/format';
-import { poseAt, poseLive } from '../core/symbols';
+import { celOffsetAt, poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
 import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
+import { offsetMatrix } from '../core/offset';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
+import { paintLayerPicture } from '../reference/paint';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
 import { compositePlan } from './composite';
+import { ghostPlan } from './masks';
 import { buildPlan } from './plan';
 
 let tintPool: BufferPool | null = null;
@@ -25,6 +28,14 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   const sy = rect.h / doc.height;
   const paint = (lg: Ctx, layer: Layer) => {
     if (layer.kind === 'camera') return;
+    // A reference picture (the layer's fade is the compositor's here).
+    if (layer.picture) {
+      const pc = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+      lg.save();
+      if (pc) lg.transform(pc[0], pc[1], pc[2], pc[3], pc[4], pc[5]);
+      paintLayerPicture(lg, doc, layer, p.frame, false);
+      lg.restore();
+    }
     const lv = p.live && p.live.layerId === layer.id ? p.live : null;
     const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
     // Looking through the camera: drawn straight through it (stage-sized bitmaps would cut off what's outside).
@@ -33,13 +44,18 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const d = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
       lg.save();
       lg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
-      if (lv?.kind === 'pixel') drawLivePixels(lg, lv, pixelSize);
-      else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
+      if (lv?.kind === 'pixel') {
+        const pm = offsetMatrix(celOffsetAt(layer, p.frame));
+        if (pm) lg.transform(pm[0], pm[1], pm[2], pm[3], pm[4], pm[5]);
+        drawLivePixels(lg, lv, pixelSize);
+      } else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
       lg.restore();
       return;
     }
     if (lv?.kind === 'pixel') {
       lg.save();
+      const pm = offsetMatrix(celOffsetAt(layer, p.frame));
+      if (pm) lg.transform(pm[0], pm[1], pm[2], pm[3], pm[4], pm[5]);
       drawLivePixels(lg, lv, pixelSize);
       lg.restore();
       return;
@@ -73,14 +89,26 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
   compositePlan(g, doc, p.frame, buildPlan(doc, (l) => l.visible), { paint, key }, p.zooming ? undefined : painter.effects);
 
-  // A mask layer is never shown, which makes drawing on one blind. While it's the one being worked on, its drawing
-  // shows faintly on top in the mask colour.
+  // A mask layer is never shown, which makes drawing on one blind. While it's the one being worked on, what it hides
+  // shows faintly (a ghost of the layers it cuts, cut the other way round) and its own drawing shows in the mask colour.
   const active = p.activeLayerId ? doc.layers.find((l) => l.id === p.activeLayerId) : undefined;
   if (active?.mask && active.visible) {
     const w = Math.max(1, (g.canvas as HTMLCanvasElement).width);
     const h = Math.max(1, (g.canvas as HTMLCanvasElement).height);
     if (!tintPool) tintPool = new BufferPool(w, h);
     tintPool.resize(w, h);
+    const ghost = ghostPlan(doc, active.id);
+    if (ghost) {
+      const gc = tintPool.get();
+      const gg = ctx2(gc);
+      gg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+      compositePlan(gg, ghost.doc, p.frame, ghost.steps, { paint, key }, p.zooming ? undefined : painter.effects);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalAlpha = GHOST_ALPHA;
+      g.drawImage(gc, 0, 0);
+      g.globalAlpha = 1;
+      tintPool.put(gc);
+    }
     const c = tintPool.get();
     const cg = ctx2(c);
     cg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
@@ -101,6 +129,9 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
 
 /** The colour a mask layer shows in while it's being drawn. */
 export const MASK_TINT = '#9b7bff';
+
+/** How strongly the part a mask hides shows while the mask is being painted. */
+export const GHOST_ALPHA = 0.28;
 
 /** Picking a mask layer, or leaving one, changes the canvas (the faint mask overlay). */
 export function maskFocusChanged(s: { doc: Doc; ui: { activeLayerId: string | null } }, p: { doc: Doc; ui: { activeLayerId: string | null } }): boolean {

@@ -17,13 +17,15 @@
 }
 .fl-fill-seg {
   display: flex;
+  /* The words on each button stay on one line; a narrow panel flows the buttons onto the next line. */
+  flex-wrap: wrap;
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
   overflow: hidden;
   background: var(--panel-2);
 }
 .fl-fill-seg-btn {
-  flex: 1;
+  flex: 1 1 auto;
   padding: 5px 8px;
   border: 0;
   border-right: 1px solid var(--line-soft);

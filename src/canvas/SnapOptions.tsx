@@ -1,18 +1,20 @@
 // The snapping choices: a master switch and, for each kind of work, a tick for each thing to snap to. The same panel
 // sits in a popover on the status bar's Snap button and on the Preferences page. Changes take effect straight away.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { usePopover } from '../ui/popover';
-import { describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
-import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
+import { describeSnap, DRAW_DISTANCE, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
+import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapDraw, setSnapDrawDistance, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
 import { snappedKinds, snapVersion, subscribeSnap } from './snap';
 import { useViewSettings } from './viewSettings';
 
-function Tick({ label, on, disabled, onChange, tip }: { label: string; on: boolean; disabled?: boolean; onChange: (v: boolean) => void; tip?: string }) {
+/** `command` is the command that does the same as this tick, so the tick and the command are known to be one. */
+function Tick({ label, on, disabled, onChange, tip, command }: { label: string; on: boolean; disabled?: boolean; onChange: (v: boolean) => void; tip?: string; command?: string }) {
   return (
-    <input type="checkbox" className="sn-tick" checked={on} disabled={disabled} aria-label={label} data-tip={disabled ? tip : undefined} onChange={(e) => onChange(e.target.checked)} />
+    <input type="checkbox" className="sn-tick" checked={on} disabled={disabled} aria-label={label} data-command={command} data-tip={disabled ? tip : undefined} onChange={(e) => onChange(e.target.checked)} />
   );
 }
 
@@ -30,26 +32,30 @@ function Name({ t }: { t: SnapTargetInfo }) {
 }
 
 /** The master switch, the ticks, and the reset. */
-export function SnapPanel({ wide = false }: { wide?: boolean }) {
+export function SnapPanel({ wide = false, master = true }: { wide?: boolean; /** False when the page shows the master switch opposite its own title (Preferences > Snapping). */ master?: boolean }) {
   const on = useViewSettings((v) => v.snap);
   const picks = useViewSettings((v) => v.snapPicks);
   const distance = useViewSettings((v) => v.snapDistance);
   const allLayers = useViewSettings((v) => v.snapAllLayers);
+  const draw = useViewSettings((v) => v.snapDraw);
+  const drawDistance = useViewSettings((v) => v.snapDrawDistance);
   const here = useStore(() => currentSnapContext());
   const cellsOn = !!picks.pixel.cells;
   const layerRows = SNAP_TARGETS.filter((t) => t.contexts.includes('vector') || t.contexts.includes('pixel'));
   const col = (c: SnapContext) => (here === c ? ' is-here' : '');
   return (
     <div className={`sn-panel${wide ? ' is-wide' : ''}${on ? '' : ' is-off'}`}>
-      <label className="sn-master">
-        <button type="button" role="switch" aria-checked={on} aria-label="Snapping" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => setSnapOn(!on)}>
-          <span className="ui-switch-knob" />
-        </button>
-        <span>
-          <strong>Snapping {on ? 'is on' : 'is off'}</strong>
-          <small>Hold Ctrl while dragging to skip it for a moment.</small>
-        </span>
-      </label>
+      {master && (
+        <label className="sn-master">
+          <button type="button" role="switch" aria-checked={on} aria-label="Snapping" className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => setSnapOn(!on)}>
+            <span className="ui-switch-knob" />
+          </button>
+          <span>
+            <strong>Snapping {on ? 'is on' : 'is off'}</strong>
+            <small>Hold Ctrl while dragging to skip it for a moment.</small>
+          </span>
+        </label>
+      )}
       <div className="sn-grid" role="group" aria-label="What to snap to">
         <span />
         <b className={`sn-head${col('vector')}`}>Vector layers</b>
@@ -64,7 +70,7 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
               return (
                 <span key={c} className={`sn-cell${col(c)}`}>
                   {applies ? (
-                    <Tick label={`${t.label}, ${c === 'vector' ? 'vector layers' : 'pixel layers'}`} on={!!picks[c][t.id]} disabled={blocked} tip="Untick Pixel cells to snap pixel layers to this" onChange={(v) => setSnapPick(c, t.id, v)} />
+                    <Tick label={`${t.label}, ${c === 'vector' ? 'vector layers' : 'pixel layers'}`} on={!!picks[c][t.id]} disabled={blocked} tip="Untick Pixel cells to snap pixel layers to this" onChange={(v) => setSnapPick(c, t.id, v)} command={`view.snap.${t.id}`} />
                   ) : (
                     <span className="sn-na" aria-hidden="true">
                       -
@@ -77,7 +83,7 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
         ))}
       </div>
       <label className="sn-row sn-all-layers" data-tip="All layers, not just this one" data-tip-desc="Other shapes and equal gaps look at every visible layer. Untick it to look at the open layer only.">
-        <Tick label="All layers, not just this one" on={allLayers} onChange={setSnapAllLayers} />
+        <Tick label="All layers, not just this one" on={allLayers} onChange={setSnapAllLayers} command="view.snap.allLayers" />
         <span className="sn-name">All layers, not just this one</span>
       </label>
       <div className="sn-distance" data-tip="Snap distance" data-tip-desc="How close, in screen pixels, something has to come before it snaps.">
@@ -85,15 +91,26 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
         <input type="range" className="cv-slider" min={SNAP_DISTANCE.min} max={SNAP_DISTANCE.max} step={1} value={distance} aria-label="Snap distance in pixels" aria-valuetext={`${distance} pixels`} onChange={(e) => setSnapDistance(Number(e.target.value))} />
         <span className="sn-distance-value">{distance} px</span>
       </div>
+      <label className="sn-row sn-draw" data-tip="Pen, pencil and brush" data-tip-desc="The start and end of a line you draw pull onto line ends, guides, the grid and the page. The middle of the line is never moved. Ctrl skips it.">
+        <Tick label="Pen, pencil and brush snap their start and end" on={draw} onChange={setSnapDraw} command="view.snap.draw" />
+        <span className="sn-name">
+          Pen, pencil and brush snap their start and end
+        </span>
+      </label>
+      <div className={`sn-distance sn-draw-distance${draw ? '' : ' is-off'}`} data-tip="Pull for drawing tools" data-tip-desc="How close, in screen pixels, the start or end of a line has to be before it is pulled.">
+        <span className="sn-name">Pull for drawing tools</span>
+        <input type="range" className="cv-slider" min={DRAW_DISTANCE.min} max={DRAW_DISTANCE.max} step={1} value={drawDistance} disabled={!draw} aria-label="Pull for pen, pencil and brush in pixels" aria-valuetext={`${drawDistance} pixels`} onChange={(e) => setSnapDrawDistance(Number(e.target.value))} />
+        <span className="sn-distance-value">{drawDistance} px</span>
+      </div>
       <div className="sn-extra">
         {SNAP_TARGETS.filter((t) => t.contexts.includes('artboard')).map((t) => (
           <label key={t.id} className="sn-row">
-            <Tick label={`${t.label}`} on={!!picks.artboard[t.id]} onChange={(v) => setSnapPick('artboard', t.id, v)} />
+            <Tick label={`${t.label}`} on={!!picks.artboard[t.id]} onChange={(v) => setSnapPick('artboard', t.id, v)} command={`view.snap.${t.id}`} />
             <Name t={t} />
           </label>
         ))}
       </div>
-      <p className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Perspective lines and the grid only snap while they show.</p>
+      <Explainer className="sn-note">Angle steps work with Shift, so the switch and Ctrl don&apos;t stop them. Pen, pencil and brush only pull the start and end of a line, never the middle. Perspective lines and the grid only snap while they show.</Explainer>
       <button type="button" className="ui-btn ui-btn-small ui-btn-quiet sn-reset" onClick={resetSnapPicks}>
         Back to the usual choices
       </button>

@@ -13,20 +13,24 @@ import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { Mat } from '../core/symbols';
 import { mul, poseAt, poseLive, rootDoc } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
-import { bindMatrixAt } from '../rig/pose';
-import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
+import { placementAt } from '../rig/pose';
+import { drawDrawing, drawShapeFx, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
 import { drawLivePixels } from './livePixels';
 import type { Rect } from './view';
 import { paintComposited } from '../effects/stage';
+import { paintLayerPicture } from '../reference/paint';
 import { EffectCache } from '../effects/composite';
+import { budgetPixels } from '../gpu/settings';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
 import { onionBoards, onionFrames } from './onion';
 import { artboardDoc } from '../artboards/model';
 import { blitEntry, blitEntryStretched } from './bitmapBlit';
+import { perf } from './perf';
 import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
+import { cssVar } from './theme';
 
 export interface FrameParams {
   doc: Doc;
@@ -81,6 +85,8 @@ const ctxOf = (c: Canvas2) => c.getContext('2d') as CanvasRenderingContext2D | O
 
 // Total bitmap memory we'll hold (in pixels, 4 bytes each), across all layers and frames.
 export const BUDGET_PIXELS = 40_000_000;
+/** What the cache holds to right now: the default above unless Preferences > Performance changed it. */
+const budget = (): number => budgetPixels();
 
 export interface Entry {
   drawing: Drawing;
@@ -101,6 +107,9 @@ export interface Entry {
   used: number;
   list: Entry[];
 }
+
+/** How many other scales of a drawing stay in the cache once a new one is made (see `dropOtherScales`). */
+export const KEEP_OTHER_SCALES = 2;
 
 export class BitmapCache {
   private map = new WeakMap<Drawing, Entry[]>();
@@ -166,6 +175,9 @@ export class BitmapCache {
     const grown = from && from.drawing.kind === 'vector' && d.kind === 'vector' ? from : undefined;
     const fw = Math.trunc(w);
     const fh = Math.trunc(h);
+    // Where the time in here goes, split four ways, only when the page was opened with ?perf (see canvas/perf.ts).
+    const mark = perf ? () => performance.now() : null;
+    let t = mark ? mark() : 0;
     let crop: CropRect | null = null;
     if (this.crop && d.kind === 'vector') {
       // Only the part of the frame the drawing can touch. When it grew from an earlier bitmap, that and the new shapes.
@@ -173,6 +185,10 @@ export class BitmapCache {
       const c = cropFor(shapesInk(added), doc.width, doc.height, w, h);
       if (c) crop = grown ? unionCrop({ x: grown.x, y: grown.y, w: grown.canvas.width, h: grown.canvas.height }, c) : c;
       if (crop && crop.w * crop.h * 2 > fw * fh) crop = null;
+    }
+    if (perf && mark) {
+      perf.build.ink += mark() - t;
+      t = mark();
     }
     let canvas: Canvas2;
     let at = { x: 0, y: 0 };
@@ -186,15 +202,28 @@ export class BitmapCache {
       sg.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
       this.paintInto(sg, doc, d, pixelSize, grown);
       sg.restore();
+      if (perf && mark) {
+        perf.build.paint += mark() - t;
+        t = mark();
+      }
       canvas = makeCanvas(crop.w, crop.h);
       ctxOf(canvas).drawImage(sg.canvas as CanvasImageSource, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
       at = { x: crop.x, y: crop.y };
+      if (perf && mark) {
+        perf.build.copy += mark() - t;
+        t = mark();
+      }
     } else {
       canvas = makeCanvas(w, h);
       const g = ctxOf(canvas);
       if (grown) g.drawImage(grown.canvas, grown.x, grown.y);
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
       this.paintInto(g, doc, d, pixelSize, grown);
+      // Nothing is lifted out on this path: the whole-frame canvas IS the bitmap.
+      if (perf && mark) {
+        perf.build.paint += mark() - t;
+        t = mark();
+      }
     }
     this.builds++;
     let list = this.map.get(d);
@@ -204,13 +233,18 @@ export class BitmapCache {
     this.all.add(e);
     this.total += e.pixels;
     this.trim(e);
+    if (perf && mark) {
+      perf.build.trim += mark() - t;
+      perf.build.n++;
+      if (grown) perf.build.appends++;
+    }
     return e;
   }
 
   /** Draws the drawing (or only the shapes added to `grown`'s) with `g` already set to the stage's scale. */
   private paintInto(g: Ctx2, doc: Doc, d: Drawing, pixelSize: number, grown?: Entry): void {
     if (grown && grown.drawing.kind === 'vector' && d.kind === 'vector') {
-      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
+      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShapeFx(g, d.shapes[i], { doc, frame: 0 });
       this.appends++;
     } else {
       // The frame only matters to tilemaps, and those inside symbols carry their own.
@@ -238,11 +272,16 @@ export class BitmapCache {
     return g;
   }
 
-  /** Drops bitmaps of other scales for a drawing (after a zoom settles). */
-  dropOtherScales(d: Drawing, w: number, h: number): void {
+  /**
+   * Drops bitmaps of other scales for a drawing (after a zoom settles), except the few used most recently: switching
+   * workspace resizes the canvas, and going back to a layout seen a moment ago finds its bitmaps still here. The memory
+   * budget still evicts the oldest first, so the ones kept never push out anything fresher.
+   */
+  dropOtherScales(d: Drawing, w: number, h: number, keep = KEEP_OTHER_SCALES): void {
     const list = this.map.get(d);
     if (!list) return;
-    for (const e of [...list]) if (e.w !== w || e.h !== h) this.remove(e);
+    const others = list.filter((e) => e.w !== w || e.h !== h).sort((a, b) => b.used - a.used);
+    for (const e of others.slice(keep)) this.remove(e);
   }
 
   private remove(e: Entry): void {
@@ -253,10 +292,10 @@ export class BitmapCache {
   }
 
   private trim(keep: Entry): void {
-    if (this.total <= BUDGET_PIXELS) return;
+    if (this.total <= budget()) return;
     // Oldest first. Removing while iterating a Set is fine.
     for (const e of this.all) {
-      if (this.total <= BUDGET_PIXELS) break;
+      if (this.total <= budget()) break;
       if (e !== keep) {
         this.remove(e);
         this.evictions++;
@@ -318,7 +357,7 @@ export class FramePainter {
     const whole = rect.w * rect.h;
     // Needs a fair sample (a frame's worth), and never assumes bitmaps smaller than a 40th of the stage.
     const each = entries >= layers ? Math.min(whole, Math.max(whole / 40, pixels / entries)) : whole;
-    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * each))));
+    return Math.max(0, Math.min(48, Math.floor((budget() * 0.5) / (layers * each))));
   }
 
   /**
@@ -402,6 +441,8 @@ export class FramePainter {
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
     else for (const layer of doc.layers) {
       if (!layer.visible) continue;
+      // A reference picture sits in the layer's place in the stack. Only this canvas draws it; exports never do.
+      if (layer.picture) this.paintPicture(g, p, layer);
       const lv = p.live && p.live.layerId === layer.id ? p.live : null;
       if (layer.kind === 'camera') continue;
       const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
@@ -414,8 +455,8 @@ export class FramePainter {
         g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
         const lc = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
         if (lc) g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
-        // Pixels being painted on a part attached to a bone show where the part is.
-        const bm = bindMatrixAt(doc, layer, p.frame);
+        // Pixels being painted on a part attached to a bone, or moved by its key's offset, show where the part is.
+        const bm = placementAt(doc, layer, p.frame);
         if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
         drawLivePixels(g, lv, pixelSize);
         g.restore();
@@ -469,6 +510,17 @@ export class FramePainter {
     }
     g.restore();
     return settled;
+  }
+
+  /** A reference layer's picture, placed on the stage (and carried by the camera like the layer's drawing would be). */
+  private paintPicture(g: CanvasRenderingContext2D, p: FrameParams, layer: Layer): void {
+    const { doc, rect } = p;
+    g.save();
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    const cam = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+    if (cam) g.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
+    paintLayerPicture(g, doc, layer, p.frame);
+    g.restore();
   }
 
   /**
@@ -549,7 +601,7 @@ export class FramePainter {
     }
     // Faded towards the canvas colour, so the stage still reads as the stage.
     g.globalAlpha = 0.55;
-    g.fillStyle = getComputedStyleSafe('--canvas-bg', '#121019');
+    g.fillStyle = cssVar('--canvas-bg', '#121019');
     if (frame) {
       // Faded outside the camera's view only.
       g.beginPath();
@@ -707,6 +759,17 @@ export class FramePainter {
     return e;
   }
 
+  /**
+   * The canvas changed size (a panel opened, a workspace switched). The layer bitmaps are made for the stage's own size
+   * on screen, not the canvas's, so they stay: a zoomed view finds every one still good, and a fitted one finds the
+   * sizes it just left. What is picture-sized (effects, onion skin, scratch canvases) is for the old size and goes.
+   */
+  resized(): void {
+    this.effects.clear();
+    this.onionCache = [];
+    this.scratch = this.scratch2 = null;
+  }
+
   clear(): void {
     this.effects.clear();
     this.cache.clear();
@@ -714,9 +777,4 @@ export class FramePainter {
     this.scratch = this.scratch2 = null;
     this.lastVector.clear();
   }
-}
-
-function getComputedStyleSafe(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }

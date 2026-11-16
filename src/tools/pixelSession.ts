@@ -13,7 +13,7 @@ import { pixelGrid } from '../core/doc';
 import { dropPixelCanvas, peekPixelCanvas, pixelCanvas, seedPixelCanvas } from '../core/render';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
-import type { PxPt, RGBA } from '../canvas/pixels';
+import type { BrushSpan, PxPt, RGBA } from '../canvas/pixels';
 import { activeGrid, editActiveDrawing, type EditResult } from './edit';
 import { forgetGrids, setPlaced, trimPixels, unionRect } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
@@ -23,8 +23,22 @@ import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../p
 import { docPalette } from '../pixel/palette';
 import { getPixelSettings } from '../pixel/settings';
 import { pixelSelection } from '../select/pixel-state';
+import { mixPixel } from '../select/mask';
+import { notePixels, pixelsWanted, type PixelFeed } from '../popout/ink';
+import type { PixelPatch } from '../popout/protocol';
 
 type LiveCanvas = HTMLCanvasElement | OffscreenCanvas;
+type Box = { x0: number; y0: number; x1: number; y1: number };
+
+/** Takes row `y` from `x0` to `x1` into a rectangle (made when there is none yet). */
+function widen(b: Box | null, x0: number, x1: number, y: number): Box {
+  if (!b) return { x0, y0: y, x1, y1: y };
+  if (x0 < b.x0) b.x0 = x0;
+  if (y < b.y0) b.y0 = y;
+  if (x1 > b.x1) b.x1 = x1;
+  if (y > b.y1) b.y1 = y;
+  return b;
+}
 
 function makeLiveCanvas(w: number, h: number): LiveCanvas | null {
   if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
@@ -45,6 +59,8 @@ function makeLiveCanvas(w: number, h: number): LiveCanvas | null {
 const TS = 128;
 const SHIFT = 7;
 const MASK = TS - 1;
+/** A layer bigger than this many art pixels is not followed live in a second window (its copy there would be too big). */
+const MAX_FOLLOWED = 4096 * 4096;
 /** How far past the painted area the live canvas grows each time, so a long stroke does not rebuild it on every tile. */
 const MARGIN = 256;
 
@@ -78,16 +94,29 @@ export class PixelSession {
   /** Where the drawing's block sat when the session began (none when a new drawing starts). */
   private was: { x?: number; y?: number; width: number; height: number } = { width: 0, height: 0 };
   changed = false;
+  /** What changed since the second window (if one is open) was last given pixels, and whether it was given a start yet. */
+  private pending: Box | null = null;
+  private started = false;
+  /** Everything changed since the last reset (a rubber-band shape's current extent). */
+  private shapeBox: Box | null = null;
   /** Mirror drawing, read once when the session starts. */
   readonly mirror: Mirror;
   /** Turns an ink into one that snaps to the palette, when the layer has its palette lock on. */
   readonly lock: (ink: Ink) => Ink;
   /** The selection: when there is one, painting stays inside it. */
   private clip: Uint8Array | null = null;
+  /** How much of each pixel the selection holds, when its edge is feathered: paint only goes in that far. */
+  private soft: Uint8Array | null = null;
+  private mixed = new Uint8ClampedArray(4);
   private pts = new Int32Array(8);
   private rgba = new Uint8Array(4);
   /** One pixel of the old picture, handed to inks. */
   private basePx = new Uint8ClampedArray(4);
+  /** One pixel as a tile stores it, and the same four bytes as a number (for filling a row). */
+  private one = new Uint8ClampedArray(4);
+  private one32 = new Uint32Array(this.one.buffer);
+  /** Whole-number views of the tiles, made when a row first fills one. */
+  private views: (Uint32Array | undefined)[] = [];
 
   /** Painting on a frame that only carries the last drawing along: this starts a new drawing there. */
   private fresh = false;
@@ -116,7 +145,10 @@ export class PixelSession {
     const pal = layer.paletteLock ? docPalette(doc) : null;
     this.lock = pal ? (ink) => lockedInk(ink, pal) : (ink) => ink;
     const sel = pixelSelection();
-    if (sel && sel.width === this.width && sel.height === this.height) this.clip = sel.bits;
+    if (sel && sel.width === this.width && sel.height === this.height) {
+      this.clip = sel.bits;
+      this.soft = sel.soft ?? null;
+    }
   }
 
   /** The old picture's pixel (x, y) written into `out` at `o`. */
@@ -157,6 +189,16 @@ export class PixelSession {
     return [t[i], t[i + 1], t[i + 2], t[i + 3]];
   }
 
+  /** The pixel as it was when the session began, written into `out` (r, g, b, a) without making a new array. */
+  baseInto(x: number, y: number, out: Uint8ClampedArray | number[]): void {
+    this.readBase(x, y, this.basePx, 0);
+    const o = this.basePx;
+    out[0] = o[0];
+    out[1] = o[1];
+    out[2] = o[2];
+    out[3] = o[3];
+  }
+
   getBase(x: number, y: number): RGBA {
     const o = this.basePx;
     this.readBase(x, y, o, 0);
@@ -170,7 +212,20 @@ export class PixelSession {
       x = wrap(x, this.width);
       y = wrap(y, this.height);
     } else if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
-    if (this.clip && !this.clip[y * this.width + x]) return;
+    if (this.clip) {
+      const at = y * this.width + x;
+      if (this.soft) {
+        const k = this.soft[at];
+        if (!k) return;
+        if (k < 255) {
+          // A feathered edge: the new colour goes in part way, mixed with what was there.
+          const b = this.basePx;
+          this.readBase(x, y, b, 0);
+          mixPixel(b, c, 0, k, this.mixed);
+          c = [this.mixed[0], this.mixed[1], this.mixed[2], this.mixed[3]];
+        }
+      } else if (!this.clip[at]) return;
+    }
     const ti = (y >> SHIFT) * this.tilesAcross + (x >> SHIFT);
     let t = this.tiles[ti];
     if (!t) {
@@ -188,22 +243,7 @@ export class PixelSession {
     t[i + 2] = c[2];
     t[i + 3] = c[3];
     this.changed = true;
-    const tc = this.touched;
-    if (!tc) this.touched = { x0: x, y0: y, x1: x, y1: y };
-    else {
-      if (x < tc.x0) tc.x0 = x;
-      if (y < tc.y0) tc.y0 = y;
-      if (x > tc.x1) tc.x1 = x;
-      if (y > tc.y1) tc.y1 = y;
-    }
-    const d = this.dirty;
-    if (!d) this.dirty = { x0: x, y0: y, x1: x, y1: y };
-    else {
-      if (x < d.x0) d.x0 = x;
-      if (y < d.y0) d.y0 = y;
-      if (x > d.x1) d.x1 = x;
-      if (y > d.y1) d.y1 = y;
-    }
+    this.grow(x, x, y);
   }
 
   /** Paints one pixel (and its mirror images) with an ink. The ink sees the pixel as it was before the session. */
@@ -236,6 +276,154 @@ export class PixelSession {
     for (const o of offsets) this.paint(p.x + o.x, p.y + o.y, ink);
   }
 
+  /**
+   * Paints a brush footprint made of rows around a pixel. `after` is a footprint just painted (its centre and rows):
+   * what it already covered is skipped, which is what makes a long drag with a big brush cheap, since each step only
+   * adds a thin crescent. Safe because painting a pixel twice in one stroke gives the same pixel (inks read the picture
+   * from before the stroke).
+   */
+  stampSpans(p: PxPt, spans: readonly BrushSpan[], ink: Ink, after: { x: number; y: number; spans: readonly BrushSpan[] } | null): void {
+    const olo = after && after.spans.length ? after.spans[0].y : 0;
+    // Only what can land on the picture is worked through: a brush far bigger than the canvas would otherwise loop over
+    // millions of pixels that are thrown away. A mirror brings images back from the far side, and tile mode wraps round, so those widen it.
+    const box = this.reach();
+    const rows = this.plain(ink);
+    const row = (y: number, x0: number, x1: number): void => {
+      if (rows) this.fillRow(y, x0, x1);
+      else for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+    };
+    for (const s of spans) {
+      const y = p.y + s.y;
+      if (y < box.y0 || y > box.y1) continue;
+      const x0 = Math.max(box.x0, p.x + s.x0);
+      const x1 = Math.min(box.x1, p.x + s.x1);
+      if (x1 < x0) continue;
+      let k = -1;
+      if (after) k = y - after.y - olo;
+      if (!after || k < 0 || k >= after.spans.length) {
+        row(y, x0, x1);
+        continue;
+      }
+      const o = after.spans[k];
+      const a0 = after.x + o.x0;
+      const a1 = after.x + o.x1;
+      if (x1 < a0 || x0 > a1) {
+        row(y, x0, x1);
+        continue;
+      }
+      row(y, x0, Math.min(a0 - 1, x1));
+      row(y, Math.max(x0, a1 + 1), x1);
+    }
+  }
+
+  /**
+   * Paints the pixels from `x0` to `x1` in row `y` with an ink: just what `paint` on each of them does. A plain colour
+   * (no mirror, no selection, no tile mode) is written a row of a tile at a time, so a brush as big as the canvas is a
+   * few thousand fills rather than millions of single pixels. Anything else goes pixel by pixel.
+   */
+  paintRow(y: number, x0: number, x1: number, ink: Ink): void {
+    if (this.plain(ink)) this.fillRow(y, x0, x1);
+    else for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+  }
+
+  /** True when an ink can be written a row at a time (see `paintRow`); readies the colour for `fillRow`. */
+  private plain(ink: Ink): boolean {
+    const solid = ink.solid;
+    if (!solid || this.clip || this.mirror.mode !== 'off' || tileModeOn()) return false;
+    // Whole colours only: a stored byte of 214 is never equal to a painted 214.4, which `set` would count as a change every time.
+    for (let k = 0; k < 4; k++) if (!Number.isInteger(solid[k]) || solid[k] < 0 || solid[k] > 255) return false;
+    // The colour as a tile stores it, and as one 32 bit number.
+    const one = this.one;
+    one[0] = solid[0];
+    one[1] = solid[1];
+    one[2] = solid[2];
+    one[3] = solid[3];
+    return true;
+  }
+
+  /** Fills the pixels from `x0` to `x1` in row `y` with the colour `plain` readied, keeping to the picture. */
+  private fillRow(y: number, x0: number, x1: number): void {
+    if (y < 0 || y >= this.height) return;
+    if (x0 < 0) x0 = 0;
+    if (x1 > this.width - 1) x1 = this.width - 1;
+    if (x1 < x0) return;
+    const one = this.one;
+    const c32 = this.one32[0];
+    const b = this.basePx;
+    for (let tx = x0 >> SHIFT; tx <= x1 >> SHIFT; tx++) {
+      const sx0 = Math.max(x0, tx << SHIFT);
+      const sx1 = Math.min(x1, ((tx + 1) << SHIFT) - 1);
+      const ti = (y >> SHIFT) * this.tilesAcross + tx;
+      let t = this.tiles[ti];
+      if (!t) {
+        // A tile is made only when something in this stretch would change.
+        let x = sx0;
+        for (; x <= sx1; x++) {
+          this.readBase(x, y, b, 0);
+          if (b[0] !== one[0] || b[1] !== one[1] || b[2] !== one[2] || b[3] !== one[3]) break;
+        }
+        if (x > sx1) continue;
+        t = new Uint8ClampedArray(TS * TS * 4);
+        this.fillTile(t, tx, y >> SHIFT);
+        this.tiles[ti] = t;
+      }
+      const v = (this.views[ti] ??= new Uint32Array(t.buffer, t.byteOffset, TS * TS));
+      const row = (y & MASK) * TS;
+      const gx = tx << SHIFT;
+      let lo = row + (sx0 - gx);
+      let hi = row + (sx1 - gx);
+      while (lo <= hi && v[lo] === c32) lo++;
+      if (lo > hi) continue;
+      while (v[hi] === c32) hi--;
+      v.fill(c32, lo, hi + 1);
+      this.changed = true;
+      this.grow(gx + (lo - row), gx + (hi - row), y);
+    }
+  }
+
+  /** Widens the changed rectangles to take in the pixels from `x0` to `x1` in row `y`. */
+  private grow(x0: number, x1: number, y: number): void {
+    const tc = this.touched;
+    if (!tc) this.touched = { x0, y0: y, x1, y1: y };
+    else {
+      if (x0 < tc.x0) tc.x0 = x0;
+      if (y < tc.y0) tc.y0 = y;
+      if (x1 > tc.x1) tc.x1 = x1;
+      if (y > tc.y1) tc.y1 = y;
+    }
+    const d = this.dirty;
+    if (!d) this.dirty = { x0, y0: y, x1, y1: y };
+    else {
+      if (x0 < d.x0) d.x0 = x0;
+      if (y < d.y0) d.y0 = y;
+      if (x1 > d.x1) d.x1 = x1;
+      if (y > d.y1) d.y1 = y;
+    }
+    // For the second window: what the changes since the last reset cover (a rubber-band shape erases that area when it
+    // is redrawn), and what it has not been given yet. Tighter than `dirty`, which a reset widens to whole tiles.
+    this.shapeBox = widen(this.shapeBox, x0, x1, y);
+    if (pixelsWanted()) this.pending = widen(this.pending, x0, x1, y);
+  }
+
+  /** The pixels a stroke can reach: the picture, plus (with a mirror) where its far-side images come from. Unbounded in tile mode. */
+  private reach(): { x0: number; y0: number; x1: number; y1: number } {
+    if (tileModeOn()) return { x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    const m = this.mirror;
+    let x0 = 0;
+    let x1 = this.width - 1;
+    let y0 = 0;
+    let y1 = this.height - 1;
+    if (m.mode === 'h' || m.mode === 'both') {
+      x0 = Math.min(x0, m.ax2 - this.width);
+      x1 = Math.max(x1, m.ax2 - 1);
+    }
+    if (m.mode === 'v' || m.mode === 'both') {
+      y0 = Math.min(y0, m.ay2 - this.height);
+      y1 = Math.max(y1, m.ay2 - 1);
+    }
+    return { x0, y0, x1, y1 };
+  }
+
   /** Paints a brush footprint around a pixel. */
   stamp(p: PxPt, offsets: PxPt[], c: RGBA): void {
     for (const o of offsets) this.set(p.x + o.x, p.y + o.y, c);
@@ -243,6 +431,13 @@ export class PixelSession {
 
   /** Puts everything back to how it was when the session started (for rubber-band lines). */
   reset(): void {
+    // The shape drawn so far goes, so the second window must be given that area again too.
+    const sb = this.shapeBox;
+    if (sb && pixelsWanted()) {
+      this.pending = widen(this.pending, sb.x0, sb.x1, sb.y0);
+      this.pending = widen(this.pending, sb.x0, sb.x1, sb.y1);
+    }
+    this.shapeBox = null;
     let d: PixelSession['dirty'] = null;
     for (let ti = 0; ti < this.tiles.length; ti++) {
       const t = this.tiles[ti];
@@ -353,10 +548,37 @@ export class PixelSession {
     return { layerId: this.layerId, kind: 'pixel' as const, canvas: c, x: this.cx, y: this.cy, width: this.cw, height: this.ch, ...(this.filled ? {} : { sparse: { base: this.baseDrawing, tiles: this.liveTiles, fill: this.fill } }) };
   }
 
+  /**
+   * The second window's way in: hands over the pixels changed since the last time as a piece of the picture (the whole
+   * painted area the first time, or when asked to start again). The link calls this at most once per screen frame.
+   */
+  readonly feed: PixelFeed = {
+    take: (restart) => {
+      const first = !this.started || restart;
+      const area = first ? (this.touched ?? this.pending) : this.pending;
+      this.pending = null;
+      if (!area) return null;
+      const x0 = Math.max(0, area.x0);
+      const y0 = Math.max(0, area.y0);
+      const w = Math.min(this.width - 1, area.x1) - x0 + 1;
+      const h = Math.min(this.height - 1, area.y1) - y0 + 1;
+      if (w <= 0 || h <= 0) return null;
+      this.started = true;
+      const patch: PixelPatch = { layerId: this.layerId, width: this.width, height: this.height, start: first, base: this.baseDrawing !== null && this.src.width > 0, x: x0, y: y0, w, h, data: this.crop({ x: x0, y: y0, w, h }) };
+      return patch;
+    },
+  };
+
+  /** Tells the second window, if one is open, that there is something new. Costs one check and four numbers. */
+  private offer(): void {
+    if (pixelsWanted() && this.pending && this.width * this.height <= MAX_FOLLOWED) notePixels(this.feed);
+  }
+
   /** Sends what changed to the screen. */
   flush(): void {
     const d = this.dirty;
     if (!d) return;
+    this.offer();
     if (typeof OffscreenCanvas === 'undefined' && typeof document === 'undefined') return;
     const tx0 = d.x0 >> SHIFT;
     const tx1 = d.x1 >> SHIFT;

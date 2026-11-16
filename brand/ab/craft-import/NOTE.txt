@@ -1,0 +1,18 @@
+Importing the two sample files, each in dark and light.
+
+vectorcraft-dusk-poster-{dark,light}.png
+  dusk-poster.vectorcraft opened with File > Open (or File > Import > VectorCraft file). A 600 x 800 drawing with one
+  layer: 39 shapes and 2 pieces of text (the title stays editable text), the sky, sun and lake gradients, the sun's glow,
+  and 46 colours in the swatches. The toast says what was left out.
+
+vectorcraft-left-out-{dark,light}.png
+  The same import, after pressing "See what was left out": the sun's glow blend mode, one shape with no paint at all,
+  shape names (Frameling shapes have none), and gradient swatches (swatches here are single colours).
+
+photocraft-test-{dark,light}.png
+  test.pcraft opened as a drawing of its own: one layer ("Background"), 640 x 360, nothing left out. The pixels are
+  exactly the ones in the file's own flattened preview (a test checks this). The unrelated Twitch toast is the harness's
+  usual one, it is in every help picture.
+
+Made in xvfb with scripts/docs/help-media.cjs --entries (entries kept outside the repo). The help topics
+import-vectorcraft and import-photocraft have their own pictures in public/help (both themes).

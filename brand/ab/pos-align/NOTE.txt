@@ -1,0 +1,9 @@
+Position and size, and Align and space out, leave Symbol and motion and become sections of Properties about whatever is selected.
+A is the build before, B is after. Every pair is in dark and light. Made with scripts/docs/ab-pos-align/shots.cjs
+(SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-pos-align --renderer <dist dir> --out <dir>).
+
+low-one-shape      one plain shape picked, Properties scrolled to where Position and size is. A: the boxes sit inside Symbol and motion, under a heading about symbols. B: Position and size has its own heading, straight after Colours, with Align and space out under it.
+low-two-shapes     two plain shapes picked, so Align and space out is in play. A: Align is a sub-heading of Symbol and motion. B: its own section, with Line up to (their box or the page) and the spacing buttons.
+motion-one-shape   one plain shape picked, scrolled to Symbol and motion. A: it led the panel and told you to "select a symbol" while the controls for what you had selected were right above it. B: it follows everything else, holds only the in-betweens, and says "What you picked isn't a symbol" with the Make the selection a symbol link.
+props-symbol       a symbol picked (A has the symbol's own boxes inside Symbol and motion). B: its X, Y, Width, Height, Turn, Slant and Reset size and turn are in Position and size; Symbol and motion keeps Shows, See-through, Colour wash and its animation.
+pixel-selected     whole pixels selected on a pixel layer. A: the pixel boxes were inside Symbol and motion, which the Pixel workspace hides, so they only turned up if you asked for them. B: Position and size (pixels) and Align turn up by themselves.

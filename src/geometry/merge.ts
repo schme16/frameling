@@ -8,10 +8,11 @@
  */
 import polygonClipping, { type MultiPolygon, type Pair, type Polygon } from 'polygon-clipping';
 import type { Color, FillShape, Gradient, Id, PathShape, Shape, SubPath } from '../core/format';
-import { strokeOutline } from '../core/render';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { uid } from '../core/doc';
 import { rdp } from './bezier';
 import { gradientKey } from '../core/gradient';
+import { cloneEffects, shapeEffects } from '../effects/shapeFx';
 
 export type Geom = MultiPolygon;
 export interface Box {
@@ -85,10 +86,10 @@ function safe(op: (a: Geom, ...b: Geom[]) => Geom, a: Geom, ...b: Geom[]): Geom 
   }
 }
 
-const union = (a: Geom, ...b: Geom[]) => safe(polygonClipping.union, a, ...b);
-const difference = (a: Geom, ...b: Geom[]) => safe(polygonClipping.difference, a, ...b);
-const intersection = (a: Geom, ...b: Geom[]) => safe(polygonClipping.intersection, a, ...b);
-const xor = (a: Geom, ...b: Geom[]) => safe(polygonClipping.xor, a, ...b);
+export const union = (a: Geom, ...b: Geom[]) => safe(polygonClipping.union, a, ...b);
+export const difference = (a: Geom, ...b: Geom[]) => safe(polygonClipping.difference, a, ...b);
+export const intersection = (a: Geom, ...b: Geom[]) => safe(polygonClipping.intersection, a, ...b);
+export const xor = (a: Geom, ...b: Geom[]) => safe(polygonClipping.xor, a, ...b);
 
 /** The area inside subpaths, even-odd like the renderer fills them. */
 export function areaOfPaths(paths: SubPath[]): Geom {
@@ -239,7 +240,7 @@ export function geomBox(g: Geom): Box | null {
   return x0 === Infinity ? null : { x0, y0, x1, y1 };
 }
 
-function ringArea(r: Pair[]): number {
+export function ringArea(r: Pair[]): number {
   let a = 0;
   for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1];
   return a / 2;
@@ -305,8 +306,11 @@ export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id,
 
 // ---------------------------------------------------------------- merging
 
-/** Shapes that take part in merging: anything not in a group. */
-export const mergeable = (s: Shape): boolean => !s.group && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
+/**
+ * Shapes that take part in merging: anything not in a group, and not holding an effect. Merging rebuilds shapes from
+ * their outlines, which would quietly lose the effect, so a shape with one stays its own object (like a grouped one).
+ */
+export const mergeable = (s: Shape): boolean => !s.group && !shapeEffects(s)?.length && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
 
 // A gradient is its own paint: it only joins the very same gradient.
 const keyOf = (color: Color, opacity: number, gradient?: Gradient) => `${color.toLowerCase()}@${opacity}${gradient ? '/' + gradientKey(gradient) : ''}`;
@@ -547,6 +551,8 @@ function pushPieces(out: Shape[], g: Geom, p: Part, from: Shape, lineage: Id, fi
     // The piece that keeps the id also keeps what the shape had: its lineage, group and where it sat.
     if (from.origin || !(first && i === 0)) f.origin = lineage;
     if (from.group) f.group = from.group;
+    // A rubbed shape keeps its effects: every piece wears them.
+    if (shapeEffects(from)?.length) f.effects = cloneEffects(shapeEffects(from));
   });
   out.push(...fills);
   return fills.length;

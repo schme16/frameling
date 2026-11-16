@@ -11,38 +11,55 @@ import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDraw
 import { celAt, findLayer, newDrawingFor, pixelGrid, uid } from '../core/doc';
 import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { cutProblem, cutTween, takeTurns, OVERSHOOT_CUT_WHY } from '../core/tweenCut';
-import { isInBetween, nextKey, shownDrawing } from '../core/symbols';
+import { celOffsetAt, isInBetween, nextKey, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
-import { autoHeldAt, newKeySpan, splitAutoHold } from '../timeline/edit-core';
+import { placesOf } from '../core/sharedDrawings';
+import { autoHeldAt, cloneDrawing, newKeySpan, splitAutoHold } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
+import { choiceWord } from '../words/choices';
 
 export type HeldFrameChoice = 'new-key' | 'edit-held';
 
 registerChoice<HeldFrameChoice>({
   id: 'draw.heldFrame',
-  title: 'Drawing on a held frame',
+  title: choiceWord('choice.draw.heldFrame.title'),
   question:
-    "This frame is still showing a drawing from an earlier frame (it's being held). When you draw here, what should happen?",
+    choiceWord('choice.draw.heldFrame.question'),
   options: [
-    { value: 'new-key', label: 'Make a new drawing here', detail: 'This frame gets its own copy of the drawing, with your change. Earlier frames stay as they were.' },
-    { value: 'edit-held', label: 'Change the held drawing', detail: 'Your change shows on every frame that holds that drawing.' },
+    { value: 'new-key', label: choiceWord('choice.draw.heldFrame.new-key.label'), detail: choiceWord('choice.draw.heldFrame.new-key.detail') },
+    { value: 'edit-held', label: choiceWord('choice.draw.heldFrame.edit-held.label'), detail: choiceWord('choice.draw.heldFrame.edit-held.detail') },
   ],
   default: 'new-key',
   category: 'Drawing',
   help: 'timeline-frames',
 });
 
+export type SharedDrawingChoice = 'everywhere' | 'own';
+
+registerChoice<SharedDrawingChoice>({
+  id: 'draw.sharedDrawing',
+  title: choiceWord('choice.draw.sharedDrawing.title'),
+  question: choiceWord('choice.draw.sharedDrawing.question'),
+  options: [
+    { value: 'everywhere', label: choiceWord('choice.draw.sharedDrawing.everywhere.label'), detail: choiceWord('choice.draw.sharedDrawing.everywhere.detail'), did: choiceWord('choice.draw.sharedDrawing.everywhere.did') },
+    { value: 'own', label: choiceWord('choice.draw.sharedDrawing.own.label'), detail: choiceWord('choice.draw.sharedDrawing.own.detail'), did: choiceWord('choice.draw.sharedDrawing.own.did') },
+  ],
+  default: 'everywhere',
+  category: 'Drawing',
+  help: 'timeline-shared',
+});
+
 export type TweenFrameChoice = 'new-key' | 'edit-key';
 
 registerChoice<TweenFrameChoice>({
   id: 'draw.tweenFrame',
-  title: 'Changing an in-between',
+  title: choiceWord('choice.draw.tweenFrame.title'),
   question:
-    "This frame is an in-between: Frameling works it out from the keys on either side. When you move or change something here, what should happen?",
+    choiceWord('choice.draw.tweenFrame.question'),
   options: [
-    { value: 'new-key', label: 'Make a key here', detail: 'This frame becomes a key with your change, and the glide goes through it. The keys on either side stay as they were.' },
-    { value: 'edit-key', label: 'Change the key before', detail: 'Your change goes to the key the in-betweens start from, so the whole glide changes.' },
+    { value: 'new-key', label: choiceWord('choice.draw.tweenFrame.new-key.label'), detail: choiceWord('choice.draw.tweenFrame.new-key.detail') },
+    { value: 'edit-key', label: choiceWord('choice.draw.tweenFrame.edit-key.label'), detail: choiceWord('choice.draw.tweenFrame.edit-key.detail') },
   ],
   default: 'new-key',
   category: 'Drawing',
@@ -109,7 +126,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   // On an in-between the new key starts from what shows there, not from the key before.
   const tweened = isInBetween(store().get().doc, layer, frame);
   const shown = tweened ? shownDrawing(store().get().doc, layer, frame) : undefined;
-  const apply = (split: boolean) =>
+  const apply = (split: boolean, own = false) =>
     store().update(
       label,
       (doc) => {
@@ -118,6 +135,8 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
         if (cel && split && cel.start < frame) {
           // Make a new key here: the held cel ends just before this frame, and a copy of its drawing takes over.
           const src = doc.drawings[cel.drawingId];
+          // The new key sits where the old one was (or where its glide had got to), so a moved drawing doesn't jump.
+          const moved = celOffsetAt(current(l) as Layer, frame);
           const copy = (shown ? structuredClone(shown) : structuredClone(current(src))) as Draft<Drawing>;
           copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
@@ -132,9 +151,15 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           }
           const tween = cut?.second;
           cel.length = frame - cel.start;
-          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}) });
+          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}), ...(moved ? { offset: { ...moved } } : {}) });
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
+        }
+        // This place gets a drawing of its own, so the other places that show the old one stay as they are.
+        if (own && cel) {
+          const copy = cloneDrawing(current(doc.drawings[cel.drawingId]) as Drawing) as Draft<Drawing>;
+          doc.drawings[copy.id] = copy;
+          cel.drawingId = copy.id;
         }
         const auto = opts.adds && cel ? autoHeldAt(l as Layer, frame) : undefined;
         if (auto) {
@@ -160,18 +185,26 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
       },
       { coalesce: opts.coalesce },
     );
-  if (!held || held.start === frame || (opts.adds && autoHeldAt(layer, frame))) {
-    apply(false);
+  // Changing a drawing that other places show would change them too. Asked the first time, then remembered
+  // (Preferences > Behaviour). Not when a new drawing is about to be made here, which nothing else shows.
+  const autoNew = !!opts.adds && !!autoHeldAt(layer, frame);
+  const run = (split: boolean) => {
+    const shared = !!held && !autoNew && !(split && held.start < frame) && placesOf(store().get().doc, held.drawingId) > 1;
+    if (shared) withChoice<SharedDrawingChoice>('draw.sharedDrawing', (v) => apply(split, v === 'own'));
+    else apply(split);
+  };
+  if (!held || held.start === frame || autoNew) {
+    run(false);
     return 'ok';
   }
   if (held.tween?.kind === 'shape' && frame > held.start && nextKey(layer, held)) return 'morph';
   if (tweened && cutProblem(held.tween, (frame - held.start) / held.length, held.length)) return 'overshoot';
   if (tweened) {
-    withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => apply(v === 'new-key'));
+    withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => run(v === 'new-key'));
     return 'ok';
   }
   // Drawing on a held frame. Asked the first time, then remembered (Preferences > Behaviour).
-  withChoice<HeldFrameChoice>('draw.heldFrame', (v) => apply(v === 'new-key'));
+  withChoice<HeldFrameChoice>('draw.heldFrame', (v) => run(v === 'new-key'));
   return 'ok';
 }
 

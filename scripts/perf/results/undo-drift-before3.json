@@ -1,0 +1,141 @@
+{
+ "label": "before3",
+ "when": "2026-11-14T22:17:17.850Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "reps": 5,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 175.1,
+   "runs": [
+    175.1,
+    180.7,
+    163.1,
+    176.4,
+    162.8
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 14.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     108.1
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     15.2
+    ],
+    [
+     "RE index-Doh7tA4P.js:140",
+     4.9
+    ],
+    [
+     "BE index-Doh7tA4P.js:142",
+     3.4
+    ],
+    [
+     "ep index-Doh7tA4P.js:10",
+     1.9
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:166",
+     1.6
+    ],
+    [
+     "Zf index-Doh7tA4P.js:10",
+     1.5
+    ],
+    [
+     "h index-Doh7tA4P.js:9",
+     1.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     108.1
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:9",
+     36.4
+    ],
+    [
+     "wf index-Doh7tA4P.js:9",
+     26.3
+    ],
+    [
+     "Sf index-Doh7tA4P.js:9",
+     26.3
+    ],
+    [
+     "Df index-Doh7tA4P.js:9",
+     26.2
+    ],
+    [
+     "jd index-Doh7tA4P.js:9",
+     26.1
+    ],
+    [
+     "frame index-Doh7tA4P.js:150",
+     20.1
+    ],
+    [
+     "Hd index-Doh7tA4P.js:9",
+     18.1
+    ],
+    [
+     "Ud index-Doh7tA4P.js:9",
+     18
+    ],
+    [
+     "nl index-Doh7tA4P.js:9",
+     16.6
+    ],
+    [
+     "drawOverlay index-Doh7tA4P.js:150",
+     15.7
+    ],
+    [
+     "fEe index-Doh7tA4P.js:150",
+     15.5
+    ],
+    [
+     "(anon) index-Doh7tA4P.js:150",
+     15.4
+    ],
+    [
+     "UEe index-Doh7tA4P.js:150",
+     15.2
+    ],
+    [
+     "rG index-Doh7tA4P.js:150",
+     15.2
+    ],
+    [
+     "(anon) :0",
+     13
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

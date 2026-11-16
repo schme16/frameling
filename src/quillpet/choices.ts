@@ -2,19 +2,59 @@
 // the first present is still a surprise. Changeable any time in Preferences > Behaviour.
 import { registerChoice } from '../core/choices';
 import { PRESENTS_CHOICE } from './gifts';
+import { YOURS_CHOICE } from './made';
+import { LATELY_CHOICE } from './welcome';
+import { choiceWord } from '../words/choices';
 
 export function registerPresentChoice(): void {
   registerChoice<'yes' | 'no'>({
     id: PRESENTS_CHOICE,
-    title: "Quill's presents",
-    question: 'Quill made you something out of a drawing you gave him. Would you like him to do that now and then?',
+    title: choiceWord('choice.quill.presents.title'),
+    question: choiceWord('choice.quill.presents.question'),
     options: [
-      { value: 'yes', label: 'Yes, now and then', detail: 'He makes you one once in a while, as a quiet toast you can ignore. Never more than one a day.' },
-      { value: 'no', label: 'No thank you', detail: 'He keeps the drawings you give him and makes nothing from them.' },
+      { value: 'yes', label: choiceWord('choice.quill.presents.yes.label'), detail: choiceWord('choice.quill.presents.yes.detail') },
+      { value: 'no', label: choiceWord('choice.quill.presents.no.label'), detail: choiceWord('choice.quill.presents.no.detail') },
     ],
     default: 'yes',
     category: 'Quill',
     quill: true,
     help: 'quill-presents',
+  });
+}
+
+/** Whether his room shows what you have made. A preference, never a question: it is on, and this is how to turn it off. */
+export function registerYoursChoice(): void {
+  registerChoice<'show' | 'hide'>({
+    id: YOURS_CHOICE,
+    title: choiceWord('choice.quill.yours.title'),
+    question: choiceWord('choice.quill.yours.question'),
+    options: [
+      { value: 'show', label: choiceWord('choice.quill.yours.show.label'), detail: choiceWord('choice.quill.yours.show.detail') },
+      { value: 'hide', label: choiceWord('choice.quill.yours.hide.label'), detail: choiceWord('choice.quill.yours.hide.detail') },
+    ],
+    default: 'show',
+    category: 'Quill',
+    silent: true,
+    help: 'quill-yours',
+  });
+}
+
+/**
+ * Whether he gets up to things when you're out. A preference more than a question, so it's never asked: it sits in
+ * Preferences > Behaviour with its usual answer, and a room kept exactly as you left it is one click away.
+ */
+export function registerLatelyChoice(): void {
+  registerChoice<'yes' | 'no'>({
+    id: LATELY_CHOICE,
+    title: choiceWord('choice.quill.lately.title'),
+    question: choiceWord('choice.quill.lately.question'),
+    options: [
+      { value: 'yes', label: choiceWord('choice.quill.lately.yes.label'), detail: choiceWord('choice.quill.lately.yes.detail') },
+      { value: 'no', label: choiceWord('choice.quill.lately.no.label'), detail: choiceWord('choice.quill.lately.no.detail') },
+    ],
+    default: 'yes',
+    category: 'Quill',
+    silent: true,
+    help: 'quill-pet',
   });
 }

@@ -5,7 +5,7 @@ import type { ClipDirection, Doc, Drawing, Layer, Shape } from '../core/format';
 import { CLIP_DIRECTIONS, MAX_REPEAT, cleanRepeat, isDirection } from '../core/clipPlay';
 import { pixelGrid, uid } from '../core/doc';
 import { gridPixels, placeOnGrid, setGridPixels, setPlaced, trimPixels } from '../core/pixelBounds';
-import { scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
+import { carryRepeat, scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
 import { flipH, flipV } from '../pixel/transform';
 
 export type PluginOp =
@@ -64,7 +64,7 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       if (o.axis !== 'horizontal' && o.axis !== 'vertical') throw new OpProblem('axis must be "horizontal" or "vertical".');
       if (d.kind === 'vector') {
         const m = o.axis === 'horizontal' ? scaleAbout(-1, 1, doc.width / 2, doc.height / 2) : scaleAbout(1, -1, doc.width / 2, doc.height / 2);
-        d.shapes = transformShapes(d.shapes as Shape[], m) as Draft<Shape>[];
+        d.shapes = transformShapes(d.shapes as Shape[], m).map((s) => carryRepeat(s, m)) as Draft<Shape>[];
       } else if (d.kind === 'pixel') {
         // Flipped across the whole art grid (the drawing only holds its painted part).
         const l = doc.layers.find((x) => x.kind === 'pixel' && x.cels.some((c) => c.drawingId === d.id));
@@ -79,7 +79,7 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       if (d.kind !== 'vector') throw new OpProblem('transformDrawing works on vector drawings only.');
       const m = o.matrix;
       if (!Array.isArray(m) || m.length !== 6 || !m.every(fin)) throw new OpProblem('matrix must be six numbers [a, b, c, d, e, f].');
-      d.shapes = transformShapes(d.shapes as Shape[], m as unknown as Matrix) as Draft<Shape>[];
+      d.shapes = transformShapes(d.shapes as Shape[], m as unknown as Matrix).map((s) => carryRepeat(s, m as unknown as Matrix)) as Draft<Shape>[];
       return;
     }
     case 'setPixels': {

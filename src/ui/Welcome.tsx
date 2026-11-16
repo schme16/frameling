@@ -5,13 +5,15 @@ import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import type { Doc } from '../core/format';
 import { askAboutUnsavedChanges, listRecentFiles, openPath } from '../io/document';
+import { RecentPicture, useRecentPictures } from '../io/RecentPicture';
 import type { RecentFile } from '../preload/api';
 import { Icon, Logo } from './icons';
 import { Quill, useQuillShown, useShowQuill } from './mascot';
 import { Modal } from './Modal';
 import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
-import { clampInt, docFromCustom, docFromPreset, isBlankDoc, PRESETS, sizeLabel, type CustomSpec } from './presets';
+import { clampInt, docFromCustom, docFromPreset, isBlankDoc, PRESETS, rememberable, setPixelMode, sizeLabel, type CustomSpec } from './presets';
+import { customStart, docFromFavourite, favouriteKind, favouriteSize, MAX_FAVOURITES, MAX_FAVOURITE_NAME, moveFavouriteKept, newDrawingKept, removeFavouriteKept, renameFavouriteKept, rememberCustom, saveFavourite, suggestedName } from './favourites';
 import { setPrefs, usePrefs } from './prefs';
 import { cleanDpi, formatSize, pxTo, roundIn, toPx, type Unit } from '../core/units';
 import { getQuest, startQuest } from './quests';
@@ -23,6 +25,8 @@ import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 import { hiddenTemplateIds } from '../features/host';
 import { openPixelChooser, PixelStarters } from '../pixel/Chooser';
+import { shownRecent } from '../io/recentShown';
+import { useStreamSafe } from '../core/streamSafe';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -34,19 +38,25 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const mode = sheetMode === 'welcome' ? 'welcome' : 'new';
   const showWelcome = usePrefs((p) => p.showWelcome);
   const units = usePrefs((p) => p.units);
-  const [custom, setCustom] = useState(false);
-  const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
+  const [custom, setCustom] = useState(() => !!overlays.get().customOpen);
+  // Starts from what you used last time (the name is always Untitled), or fresh if Preferences says so.
+  const [spec, setSpec] = useState<CustomSpec>(customStart);
+  const favs = newDrawingKept.use((k) => k.favourites);
+  const [naming, setNaming] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  useStreamSafe();
   const [recent, setRecent] = useState<RecentFile[]>([]);
+  const pics = useRecentPictures(recent);
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
-  const quill = useQuillShown();
+  const quill = useQuillShown('hello');
   const quillOn = useShowQuill();
   const found = recovery.use((r) => r);
   const firstDrawn = usePrefs((p) => p.firstDrawn);
 
   useEffect(() => {
     let live = true;
-    void listRecentFiles().then((r) => live && setRecent(r.slice(0, 4)));
+    void listRecentFiles().then((r) => live && setRecent(r.filter((f) => !f.missing).slice(0, 4)));
     return () => void (live = false);
   }, []);
 
@@ -59,12 +69,17 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   };
 
   const num = (key: 'width' | 'height' | 'fps' | 'pixelSize') => (e: React.ChangeEvent<HTMLInputElement>) => setSpec((s) => ({ ...s, [key]: e.target.value === '' ? 0 : Number(e.target.value) }));
+  const keepFavourite = () => {
+    const f = saveFavourite(naming ?? '', rememberable(spec));
+    setNaming(null);
+    toast(f ? `Saved ${f.name}. It sits beside Doodle and Square.` : `You have ${MAX_FAVOURITES} favourites already. Remove one to make room.`, { kind: f ? 'success' : 'warn' });
+  };
   const dims = spec.pixel ? { w: clampInt(spec.width, 1, 512, 64) * clampInt(spec.pixelSize, 1, 64, 8), h: clampInt(spec.height, 1, 512, 64) * clampInt(spec.pixelSize, 1, 64, 8) } : { w: clampInt(spec.width, 1, 8192, 1280), h: clampInt(spec.height, 1, 8192, 720) };
 
   return (
     <Modal title={mode === 'welcome' ? 'Welcome to Frameling' : 'New drawing'} size="lg" hideHeader className="ui-welcome" onClose={closeSheet} initialFocus=".ui-preset">
       <div className="ui-welcome-head">
-        {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
+        {quill ? <Quill surface="hello" anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
         <div>
           <h2>{quillOn ? line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new') : mode === 'welcome' ? 'What would you like to make?' : 'Start something new'}</h2>
           <p>{line('welcome.lead')}</p>
@@ -121,19 +136,19 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         <div className="ui-recent" data-help="saving-and-opening">
           <h3>Pick up where you left off</h3>
           <div className="ui-recent-list">
-            {recent.map((r) => (
+            {shownRecent(recent).map(({ file: r, name, tip }) => (
               <button
                 key={r.path}
                 type="button"
                 className="ui-recent-item"
-                data-tip={r.path}
+                data-tip={tip}
                 onClick={() => {
                   closeSheet();
                   window.setTimeout(() => void openPath(r.path), 0);
                 }}
               >
-                <Icon name="film" size={16} />
-                <span>{r.name}</span>
+                <RecentPicture preview={pics[r.path]} size={44} />
+                <span>{name}</span>
               </button>
             ))}
           </div>
@@ -142,7 +157,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
       <div className="ui-presets" data-help="new-document">
         {PRESETS.filter((p) => !p.pixelSize).map((p, i) => (
-          <button key={p.id} type="button" className="ui-preset" data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
+          <button key={p.id} type="button" className="ui-preset" data-wraps data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
             <span className={`ui-preset-art ${p.pixelSize ? 'is-pixel' : ''}`}>
               <span className="ui-preset-shape" style={{ aspectRatio: `${p.width} / ${p.height}` }} />
               <Icon name={p.icon} size={22} />
@@ -156,6 +171,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <button
             type="button"
             className="ui-preset"
+            data-wraps
             style={{ animationDelay: '100ms' }}
             data-help="pixel-new"
             data-testid="welcome.preset.pixel"
@@ -173,13 +189,71 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-preset-blurb">One picture, an animation, frames on boards or sprites on a sheet. Quill asks which.</span>
           </button>
         )}
-        <button type="button" className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
+        {favs.map((f, i) => (
+          <div key={f.id} className="ui-fav-wrap" data-testid={`welcome.favourite.${f.id}`}>
+            <button type="button" className="ui-preset ui-fav" data-wraps data-testid="welcome.favourite" onClick={() => void make(docFromFavourite(f), f.name.toLowerCase())}>
+              <span className={`ui-preset-art ${f.spec.pixel ? 'is-pixel' : ''}`}>
+                <span className="ui-preset-shape" style={{ aspectRatio: `${f.spec.width} / ${f.spec.height}` }} />
+                <Icon name="heart" size={22} />
+              </span>
+              <strong>{f.name}</strong>
+              <span className="ui-preset-size">{favouriteSize(f, units)}</span>
+              <span className="ui-preset-blurb">{favouriteKind(f)}</span>
+            </button>
+            {renaming === f.id && (
+              <input
+                className="ui-fav-rename"
+                type="text"
+                aria-label={`New name for ${f.name}`}
+                defaultValue={f.name}
+                maxLength={MAX_FAVOURITE_NAME}
+                autoFocus
+                onFocus={(e) => e.currentTarget.select()}
+                onBlur={() => setRenaming(null)}
+                onKeyDown={(e) => {
+                  // Enter keeps the name; Escape only cancels the rename (preventDefault stops it closing the sheet).
+                  if (e.key === 'Enter') {
+                    renameFavouriteKept(f.id, e.currentTarget.value);
+                    setRenaming(null);
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setRenaming(null);
+                  }
+                }}
+              />
+            )}
+            <span className="ui-fav-tools">
+              <button type="button" className="ui-icon-btn" aria-label={`Rename ${f.name}`} data-tip="Rename" onClick={() => setRenaming(f.id)}>
+                <Icon name="pencil" size={14} />
+              </button>
+              <button type="button" className="ui-icon-btn" aria-label={`Move ${f.name} earlier`} data-tip="Move earlier" disabled={i === 0} onClick={() => moveFavouriteKept(f.id, -1)}>
+                <Icon name="chevron-left" size={14} />
+              </button>
+              <button type="button" className="ui-icon-btn" aria-label={`Move ${f.name} later`} data-tip="Move later" disabled={i === favs.length - 1} onClick={() => moveFavouriteKept(f.id, 1)}>
+                <Icon name="chevron-right" size={14} />
+              </button>
+              <button
+                type="button"
+                className="ui-icon-btn"
+                aria-label={`Remove ${f.name}`}
+                data-tip="Remove from your favourites"
+                onClick={() => {
+                  const undo = removeFavouriteKept(f.id);
+                  if (undo) toast(`Removed ${f.name} from your favourites.`, { action: { label: 'Undo', run: undo } });
+                }}
+              >
+                <Icon name="trash" size={14} />
+              </button>
+            </span>
+          </div>
+        ))}
+        <button type="button" data-wraps className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
           <span className="ui-preset-art">
             <Icon name="settings" size={22} />
           </span>
           <strong>Custom</strong>
           <span className="ui-preset-size">Your own size</span>
-          <span className="ui-preset-blurb">Choose the size, the speed and pixel art or not.</span>
+          <span className="ui-preset-blurb">Choose the size, pixel art or not, and whether it moves.</span>
         </button>
       </div>
 
@@ -190,6 +264,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           className="ui-custom"
           onSubmit={(e) => {
             e.preventDefault();
+            rememberCustom(spec);
             void make(docFromCustom(spec), 'drawing');
           }}
         >
@@ -205,14 +280,22 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span>{spec.pixel ? 'Grid height' : units === 'px' ? 'Height' : `Height (${units})`}</span>
             {spec.pixel || units === 'px' ? <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.height || ''} onChange={num('height')} /> : <UnitInput px={spec.height} unit={units} dpi={spec.dpi} onPx={(height) => setSpec((s) => ({ ...s, height }))} />}
           </label>
-          <label className="ui-field">
-            <span>Frames a second</span>
-            <input type="number" min={1} max={60} value={spec.fps || ''} onChange={num('fps')} />
-          </label>
-          <label className="ui-check ui-field">
-            <input type="checkbox" checked={spec.pixel} onChange={(e) => setSpec((s) => ({ ...s, pixel: e.target.checked, width: e.target.checked ? 64 : 800, height: e.target.checked ? 64 : 600 }))} />
-            <span>Pixel art</span>
-          </label>
+          <div className="ui-custom-ticks ui-field-wide">
+            <label className="ui-check ui-field">
+              <input type="checkbox" checked={spec.pixel} onChange={(e) => setSpec((s) => setPixelMode(s, e.target.checked))} />
+              <span>Pixel art</span>
+            </label>
+            <label className="ui-check ui-field" data-tip="Add animation" data-tip-desc="Tick it to make something that moves, frame by frame. Leave it off for a single picture; you can add animation later.">
+              <input type="checkbox" data-testid="welcome.custom.animate" checked={!!spec.animate} onChange={(e) => setSpec((s) => ({ ...s, animate: e.target.checked }))} />
+              <span>Add animation</span>
+            </label>
+          </div>
+          {spec.animate && (
+            <label className="ui-field">
+              <span>Frames a second</span>
+              <input type="number" min={1} max={60} value={spec.fps || ''} onChange={num('fps')} />
+            </label>
+          )}
           {!spec.pixel && units !== 'px' && (
             <label className="ui-field" data-tip="Dots per inch" data-tip-desc="How many pixels make an inch. 96 matches screens and the web; 300 is sharp for print.">
               <span>DPI</span>
@@ -232,10 +315,54 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
               <input type="number" min={1} max={64} value={spec.pixelSize || ''} onChange={num('pixelSize')} />
             </label>
           )}
+          {naming !== null && (
+            <div className="ui-fav-save ui-field-wide" role="group" aria-label="Save as favourite">
+              <label className="ui-field">
+                <span>Name this favourite</span>
+                <input
+                  type="text"
+                  data-testid="welcome.favourite.name"
+                  value={naming}
+                  maxLength={MAX_FAVOURITE_NAME}
+                  autoFocus
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => setNaming(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter saves the favourite here; it must not start the drawing.
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      keepFavourite();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setNaming(null);
+                    }
+                  }}
+                />
+              </label>
+              <button type="button" className="ui-btn ui-btn-primary" data-testid="welcome.favourite.keep" onClick={keepFavourite}>
+                Save
+              </button>
+              <button type="button" className="ui-btn" onClick={() => setNaming(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
           <div className="ui-custom-end">
             <span className="ui-custom-sum">
               Makes a {dims.w} x {dims.h} drawing{!spec.pixel && units !== 'px' ? ` (${formatSize(dims.w, dims.h, units, cleanDpi(spec.dpi))})` : ''}.
             </span>
+            <button
+              type="button"
+              className="ui-btn"
+              data-testid="welcome.custom.favourite"
+              disabled={favs.length >= MAX_FAVOURITES}
+              data-tip={favs.length >= MAX_FAVOURITES ? `You have ${MAX_FAVOURITES} favourites. Remove one to make room.` : 'Save as favourite'}
+              data-tip-desc={favs.length >= MAX_FAVOURITES ? undefined : 'Keep these settings as a card beside Doodle and Square, so next time it is one press.'}
+              onClick={() => setNaming(suggestedName(rememberable(spec)))}
+            >
+              <Icon name="heart" size={16} />
+              Save as favourite
+            </button>
             <button type="submit" className="ui-btn ui-btn-primary" data-testid="welcome.custom.start">
               Start
             </button>
@@ -488,7 +615,7 @@ function TabbedExamples({
         <>
           <div className="ui-example-list" role="tabpanel">
             {examples.map(({ template: t }) => (
-              <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+              <button key={t.id} type="button" data-wraps className="ui-example" onClick={() => pick(t)}>
                 <span className="ui-example-art">
                   <Thumb template={t} />
                   {/* On the picture's corner, so long names get the whole width. */}

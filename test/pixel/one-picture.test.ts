@@ -27,8 +27,9 @@ describe('starting lengths', () => {
     expect(level.length).toBe(1);
     expect(level.layers[0].cels.every((c) => c.start + c.length <= level.length)).toBe(true);
   });
-  it('vector pages and their usual length are left alone', () => {
-    expect(preset('doodle').length).toBe(24);
+  it('vector pages and their usual length are left alone, and a preset page is one picture until Add animation', () => {
+    expect(preset('doodle').length).toBe(1);
+    expect(preset('doodle').animated).toBe(false);
     expect(docFromCustom({ name: 'x', width: 100, height: 100, fps: 12, pixel: false, pixelSize: 8 }).length).toBe(24);
   });
 });

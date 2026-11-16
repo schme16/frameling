@@ -1,30 +1,75 @@
 // The words of the topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'quill-pet': `**Quill** is the little hedgehog with coloured pencils for quills. Open **Quill's corner** and he has a panel of his own, where he potters about while you draw.
+  'quill-pet': `**Quill** is the little hedgehog with coloured pencils for quills. His house is in the right rail, called **Quill** wherever you meet it, with three tabs along the top: **Room**, **His things** and **Presents**.
 
-**Open it:** **View > Quill's corner**, or press the **Quill** button on the panel rail.
+**Open it:** **View > Quill's house > Quill**, or press the **Quill** button on the panel rail. It opens on the **Room**, and after that it stays on whichever tab you last chose. **View > Quill's house > Quill: his things** and **View > Quill's house > Quill: his presents** open it on those tabs.
 
-**Give him a stroke:** click him. He likes it, and the two of you get a touch closer.
+**Room** is where he lives:
+- **Him.** Click him for a scratch. He likes it, and the two of you get a touch closer. The line under him says what he's up to: he draws along while you draw, [dozes off](help:quill-naps) when it's quiet, and is proud when you finish something. In between he potters round his room. He only does it while you can see him, and with **Reduce motion** on he sits still.
+- **His pencils.** The quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five.
+- **Your work.** The room fills up with what you have made: your newest drawings hang on his wall and your newest sprite is a [toy on his floor](help:quill-yours) that he plays with. Press either for a word from him.
+- **How well you know each other.** The bar fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
+- **Lessons with Quill.** **Open Quests** takes you to the [Quests](help:quests) panel, which keeps its own tab because the list is long.
 
-**How he's feeling:** the line under him says what he's up to. He draws along while you're drawing, watches when you stop, dozes off when nothing's happened for a minute, and is proud of you when you finish something.
+**His things** holds [the drawings you give him](help:quill-things), with **Give him this drawing** to add the frame you're on.
 
-**His pencils:** the quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five, and any pencil you haven't given a colour to stays as the art drew it.
-
-**His things:** they live in their own panel, [Quill's things](help:quill-things), along with [the presents he makes you](help:quill-presents).
-
-**How well you know each other:** the bar at the bottom. It fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
+**Presents** holds [the presents he makes you](help:quill-presents). When he has left one you haven't opened, a small dot shows on the **Presents** tab, so it's easy to spot from the **Room**.
 
 **Good to know:**
-- He never minds being left alone. Come back after a week, a month or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross.
+- He never minds being left alone. Come back after a week or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross. [What he got up to](help:quill-lately).
 - Drawing is what he likes best, so you feed him by getting on with your work. There's nothing to remember to do.
-- Nothing you make depends on him, and giving something back never touches your file. He keeps a little picture of each thing, and the shapes of the newest few, which is what lets him make you [a present](help:quill-presents).
-- Had enough of the panel? Turn **Quill's corner** off in **Preferences > Features** and he goes back to being just the mascot, saying hello and lending a hand where he always did.
-- Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included, and anything you actually need to read stays as a plain note.
+- There's only one of him. If a message, a lesson or the welcome wants him, he steps out of his room for a moment and comes back when it's done.
+- Nothing you make depends on him, and giving something back never touches your file.
+- Had enough? Turn **Quill** off in **Preferences > Features** for just the mascot, or **Show Quill** in **Preferences** to hide him everywhere.
 
-help:quill-things help:quill-presents help:quests help:preferences`,
-  'quill-things': `The drawings you've given **Quill**, all in one place, with **From Quill** at the top for the things he's made you. He keeps a little picture of each one, about 72 pixels across, so nothing you make depends on him.
+help:quill-things help:quill-presents help:quill-yours help:quill-lately help:quill-naps help:quests help:preferences`,
+  'quill-yours': `**Quill's room is yours as much as his.** The more you make, the more it shows: your newest drawings hang on his wall, and your newest sprite lies on his floor as a toy he plays with.
 
-**Give him one:** press **Give him this** and he keeps the frame you're on. **View > Give this drawing to Quill** does the same from anywhere.
+**What goes in:** only work you really made. When you **save** a drawing you have drawn in, a small picture of it goes up. A template, an example, or a file you opened and left alone never does. A sprite is pixel art up to 256 pixels across, and a bigger picture goes on the wall. If you have made nothing yet, the room is simply emptier, and that is fine.
+
+**It looks after itself:** save something new and it appears, with no question asked. Save the same drawing again and its picture is refreshed instead of added twice. The wall shows your newest three, the floor your newest sprite.
+
+**Play:** he potters over to the toy now and then and bats it about. Press it to give it a push, or press a picture on the wall for a word from him.
+
+**Nothing is ever taken away.** Not because time went by, and not because you were out. He keeps a small picture of everything you have saved, so the room is always as full as your work is.
+
+**Stream-safe:** while [Stream-safe](help:stream-safe) is on, the names of your drawings become plain stand-ins like **My drawing 1** and the little pictures go blank, so nothing gives a drawing away.
+
+**Turn it off:** **Quill: show or hide my work in his room** in the command palette, or **Your work in Quill's room** in **Preferences > Behaviour**. Hiding it loses nothing, and turning it back on brings it all back.
+
+**Good to know:**
+- It is a small picture drawn once, when you save. Having the room open costs a few tiny images and nothing else.
+- Nothing you make depends on him, and your files are never touched.
+
+help:quill-pet help:quill-things help:stream-safe`,
+  'quill-lately': `Open Frameling and **Quill** may have been busy. His **Room** shows a short list called **What he got up to**: a drawing of his own, a toy of yours he moved somewhere new, a good look out of the window, his pencils put in a better order. Sometimes he is found fast asleep somewhere that isn't his bed, and a scratch wakes him.
+
+**The longer you were out, the more there is.** A day or two gives you one thing, a week gives you a few, and a long time gives you the most, plus a rare find in his pocket. It never goes the other way: he is never worse off for being left, and he is never sad about it. He was fine. He was busy.
+
+**What he remembers** is what you gave him and the date you gave it: press one of his things and he says it, like "on 3 March". He never counts how long you were out, and nothing in Frameling does either.
+
+**Good to know:**
+- It's only news. There is nothing to press, nothing to keep up and nothing you owe him.
+- It shows the first time you open Frameling on a new day. If you open it again the same day, you get the same news.
+- Turn it off in **Preferences > Behaviour** under **Quill gets up to things**. He still says hello.
+- The **Show Quill** switch in **Preferences** hides him, and this, everywhere.
+
+help:quill-pet help:quill-things help:preferences`,
+  'quill-naps': `Leave Frameling alone for about a minute and **Quill** nods off, curled up with a little **Z** over his head. He's not bored, just resting.
+
+**Waking him:** move the mouse or press any key. He doesn't jump up. He stirs, peeks out, sits up, gives a big yawning stretch, blinks, and settles back to his usual self. It takes a second or so and happens once.
+
+**Good to know:**
+- Any key or mouse move counts, so he wakes the moment you are back.
+- With **Reduce motion** on, he skips the stretch and just goes back to idle.
+- Hide him with **Show Quill** in **Preferences** and none of this shows.
+
+help:quill-pet help:meet-quill`,
+  'quill-things': `The drawings you've given **Quill**, on the **His things** tab of Quill's house. The presents he's made you have their own tab beside it. He keeps a little picture of each one, about 72 pixels across, so nothing you make depends on him.
+
+**Find it:** **View > Quill's house > Quill: his things**, or the **His things** tab in the Quill panel.
+
+**Give him one:** press **Give him this drawing** and he keeps the frame you're on. **View > Quill's house > Give this drawing to Quill** does the same from anywhere.
 
 **Ask him about one:** press it, and he'll tell you what he thinks of it.
 
@@ -33,17 +78,17 @@ help:quill-things help:quill-presents help:quests help:preferences`,
 **Good to know:**
 - He keeps the last 24. Give him a 25th and the oldest quietly makes room.
 - The newest three keep their shapes as well as their picture, so he has something to work from when he makes you [a present](help:quill-presents). A drawing too big to tuck away keeps its picture alone.
-- His things are kept on this computer, with the rest of your settings, not in your file.
-- Giving him a drawing is one of the things that brings you closer, so his collection and the bar in [his corner](help:quill-pet) grow together.
+- What you give him is kept on this computer, with the rest of your settings, not in your file.
+- Giving him a drawing is one of the things that brings you closer, so his collection and the bar on the [Room](help:quill-pet) tab grow together.
 
 help:quill-pet help:quill-presents`,
-  'quill-presents': `Now and then **Quill** takes one of the drawings you've given him, redraws it with a wobbly hand, and leaves it on his shelf for you. It opens as a drawing of your own, to carry on with however you like.
+  'quill-presents': `Now and then **Quill** takes one of the drawings you've given him, redraws it with a wobbly hand, and leaves it for you on the Presents tab. It opens as a drawing of your own, to carry on with however you like.
 
-**Where they go:** **From Quill**, at the top of [Quill's things](help:quill-things). One you haven't opened has a little dot on it.
+**Where they go:** the **Presents** tab of [Quill's house](help:quill-pet), or **View > Quill's house > Quill: his presents**. One you haven't opened has a little dot on it, and the **Presents** tab shows a dot too, so you can see it from the other tabs. The [things you gave him](help:quill-things) have their own tab.
 
 **Open one:** press it. It opens as a new document called **<name> in crayon**, with your work asked about first if you have any unsaved.
 
-**Let one go:** the small **x** in its corner, the same as his other things.
+**Let one go:** the small **x** in its corner, the same as the things you gave him.
 
 **When he makes one:** he decides. When the two of you reach a new step of knowing each other, or when he's been given a few drawings and hasn't made you anything in a while. Never while you're drawing, and never more than one a day. The first time, he asks whether you'd like him to carry on; **Preferences > Behaviour** changes your mind any time.
 

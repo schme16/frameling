@@ -4,6 +4,7 @@ import { useEffect, useRef, useSyncExternalStore, type MouseEvent } from 'react'
 import type { Id, TextShape } from '../core/format';
 import { uid } from '../core/doc';
 import { store, useStore } from '../core/store';
+import { getTurn, windowToBox } from '../canvas/turn';
 import { screenToDoc } from '../canvas/view';
 import { topShapeAt } from '../canvas/geometry';
 import { currentKey } from '../symbols/ops';
@@ -115,7 +116,8 @@ export function onTextDoubleClick(e: MouseEvent<HTMLElement>): boolean {
   const { ui } = store().get();
   if (ui.tool !== 'select' && ui.tool !== 'text') return false;
   const r = e.currentTarget.getBoundingClientRect();
-  const sp = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, e.clientX - r.left, e.clientY - r.top);
+  const q = windowToBox(getTurn(), r.width, r.height, e.clientX - r.left, e.clientY - r.top);
+  const sp = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, q.x, q.y);
   // Looking through the camera, the screen shows camera space; text lives in stage space.
   const cam = canvasCamera()?.matrix;
   const p = cam ? applyMat(invert(cam), sp.x, sp.y) : sp;
@@ -163,6 +165,34 @@ export function TextEditor() {
   const top = -baselineInLine(shape);
   const lines = Math.max(1, shape.text.split('\n').length);
   const z = zoom;
+  if (shape.onPath) {
+    // Words on a curve: a straight caret over curved letters would sit in the wrong place, so a small box of words floats
+    // under them instead, and the curve updates as you type.
+    const b = layout.box;
+    const mid = applyMat(m, b.x + b.w / 2, b.y + b.h);
+    const floating = { left: `${z * mid.x + panX}px`, top: `${z * mid.y + panY}px` } as const;
+    return (
+      <textarea
+        ref={ref}
+        className="tx-editor tx-editor-path"
+        style={floating}
+        value={shape.text}
+        spellCheck={false}
+        rows={2}
+        aria-label="Words on the curve"
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => stopEditingText()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            stopEditingText();
+          }
+        }}
+      />
+    );
+  }
   const style = {
     left: 0,
     top: 0,

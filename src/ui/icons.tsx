@@ -13,6 +13,8 @@ const ICONS: Record<string, ReactNode> = {
       {dot(19, 12, 1.8)}
     </>
   ),
+  // scripts: angle brackets with a slash, as code is written
+  script: <path d="M9 7l-5 5 5 5M15 7l5 5-5 5M13.5 5.5l-3 13" />,
   // plugins and templates
   plugin: <path d="M9 4.5a2 2 0 0 1 4 0V7h4a1 1 0 0 1 1 1v3.5h-1.5a2 2 0 0 0 0 4H18V19a1 1 0 0 1-1 1h-3.5v-1.5a2 2 0 0 0-4 0V20H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V8a1 1 0 0 1 1-1h3z" />,
   template: (
@@ -50,6 +52,22 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M17 4.5l3 2.5-3 2.5" />
     </>
   ),
+  // record a move: a dotted trail with a filled dot at the end, like a hand being followed
+  live: (
+    <>
+      <circle cx="12" cy="12" r="1.8" />
+      <path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6" />
+      <path d="M5.4 5.4a9.4 9.4 0 0 0 0 13.2M18.6 5.4a9.4 9.4 0 0 1 0 13.2" />
+    </>
+  ),
+  record: (
+    <>
+      <path d="M4 17c2-7 5-7 8-3s5 1 6-6" strokeDasharray="1 3.2" />
+      <circle cx="18.5" cy="6.5" r="2.6" />
+      {dot(18.5, 6.5, 1.3)}
+      {dot(4.5, 17.5, 1.6)}
+    </>
+  ),
   // shape tweens, camera, clip flow
   morph: (
     <>
@@ -85,6 +103,31 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="6" cy="18" r="2.6" />
       <path d="M8 16.2L16.6 6.8l1.9 1.9L9.8 18" />
       <circle cx="18" cy="6" r="1.6" />
+    </>
+  ),
+  // The three bone tools: a short bone with a badge for what it does.
+  'bone-add': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M18 3v6M15 6h6" />
+    </>
+  ),
+  'bone-edit': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M15 6h6M16.8 4.2L15 6l1.8 1.8M19.2 4.2L21 6l-1.8 1.8" />
+    </>
+  ),
+  'bone-remove': (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.4" />
+      <path d="M7.3 16.7l5.4-5.4" />
+      <circle cx="14" cy="10" r="1.4" />
+      <path d="M15.5 3.5l5 5M20.5 3.5l-5 5" />
     </>
   ),
   pose: (
@@ -169,6 +212,32 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="17.6" cy="7.6" r="1.3" fill="currentColor" />
     </>
   ),
+  // Width: a line that swells in the middle, with a point on each edge there.
+  width: (
+    <>
+      <path d="M3 12c4 0 5-5.5 9-5.5S17 12 21 12c-4 0-5 5.5-9 5.5S7 12 3 12z" />
+      <path d="M12 6.5v11" />
+      <circle cx="12" cy="6.5" r="1.3" fill="currentColor" />
+      <circle cx="12" cy="17.5" r="1.3" fill="currentColor" />
+    </>
+  ),
+  // Repeat: a shape and its copies in a grid, the last one still to come.
+  repeat: (
+    <>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8" strokeDasharray="2 2" />
+    </>
+  ),
+  // Shape builder: two circles that cross, with the lens between them filled.
+  'shape-builder': (
+    <>
+      <circle cx="9" cy="12" r="5.6" />
+      <circle cx="15" cy="12" r="5.6" />
+      <path d="M12 7.3a5.6 5.6 0 0 1 0 9.4a5.6 5.6 0 0 1 0-9.4z" fill="currentColor" />
+    </>
+  ),
   polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
   pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
   gradient: (
@@ -180,6 +249,18 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
+  // Transform: a box with a handle on each corner, and the round turn knob above it.
+  transform: (
+    <>
+      <rect x="5" y="9.5" width="14" height="10" rx="0.6" />
+      <path d="M12 9.5V5.2" />
+      <circle cx="12" cy="3.8" r="1.6" />
+      <rect x="3.6" y="8.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="17.6" y="8.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="3.6" y="18.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+      <rect x="17.6" y="18.1" width="2.8" height="2.8" rx="0.5" fill="currentColor" />
+    </>
+  ),
   lasso: (
     <>
       <path d="M8.5 15.5C5.2 14.6 3 12.6 3 10.2 3 6.8 7 4 12 4s9 2.8 9 6.2-4 6.2-9 6.2" />
@@ -237,6 +318,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   marker: <path d="M6.5 20.5V4M6.5 5h11l-2.6 3.6 2.6 3.6h-11" />,
+  note: (
+    <>
+      <path d="M5 4.5h14v10l-5 5H5z" />
+      <path d="M14 19.5v-5h5" />
+      <path d="M8.5 9h7M8.5 12.5h4" />
+    </>
+  ),
+  mark: (
+    <>
+      <ellipse cx="14.5" cy="9.5" rx="6.2" ry="5.2" />
+      <path d="M3.8 20.2l6.4-6.2M3.8 20.2l.3-4.4M3.8 20.2l4.4-.3" />
+    </>
+  ),
   key: <path d="M12 3.8l7.8 8.2-7.8 8.2L4.2 12z" fill="currentColor" />,
   hold: (
     <>
@@ -456,6 +550,7 @@ const ICONS: Record<string, ReactNode> = {
   folder: <path d="M3.6 7.4a2 2 0 0 1 2-2h3.6l2.2 2.5h7a2 2 0 0 1 2 2v7.6a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2z" />,
   undo: <path d="M9 5.5L4.5 10 9 14.5M5 10h9.5a4.5 4.5 0 0 1 0 9H11" />,
   redo: <path d="M15 5.5l4.5 4.5-4.5 4.5M19 10H9.5a4.5 4.5 0 0 0 0 9H13" />,
+  history: <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4.5v3.7h3.7M12 8v4.2l2.8 1.8" />,
   // the small stuff
   close: <path d="M6 6l12 12M18 6L6 18" />,
   check: <path d="M5 12.8l4.4 4.4L19 7.6" />,
@@ -500,6 +595,14 @@ const ICONS: Record<string, ReactNode> = {
     <>
       <path d="M12 6.6C10.3 5.3 7.8 4.6 4 4.6v13.2c3.8 0 6.3.7 8 2 1.7-1.3 4.2-2 8-2V4.6c-3.8 0-6.3.7-8 2z" />
       <path d="M12 6.6v13.2" />
+    </>
+  ),
+  // A jar with a lid and a slip of paper standing out of it.
+  jar: (
+    <>
+      <path d="M7.5 6.5h9M8.5 6.5V4.5h7v2" />
+      <path d="M7.5 6.5c-1.6 1.2-2.5 2.6-2.5 4.4v6.6A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-6.6c0-1.8-.9-3.2-2.5-4.4" />
+      <path d="M9.5 14.5h5" />
     </>
   ),
   heart: <path d="M12 20s-7.7-4.7-7.7-10.4a4.3 4.3 0 0 1 7.7-2.5 4.3 4.3 0 0 1 7.7 2.5C19.7 15.3 12 20 12 20z" />,
@@ -604,6 +707,88 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="15" y="15" width="2.5" height="2.5" fill="currentColor" stroke="none" />
     </>
   ),
+  'soft-brush': (
+    <>
+      <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity="0.16" stroke="none" />
+      <circle cx="12" cy="12" r="6.2" fill="currentColor" fillOpacity="0.34" stroke="none" />
+      <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  airbrush: (
+    <>
+      <path d="M4 20l4.5-4.5 2.2 2.2L6.2 22z" />
+      <path d="M8.5 15.5l2.6-2.6" />
+      <circle cx="14.5" cy="9.5" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="6" r="1.1" fill="currentColor" fillOpacity="0.7" stroke="none" />
+      <circle cx="19.5" cy="11" r="0.9" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="11" cy="6" r="0.9" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="15.5" cy="3.8" r="0.7" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
+  charcoal: (
+    <>
+      <path d="M5 19.5l9.5-9.5 3.5 3.5L8.5 23z" transform="translate(0 -3)" />
+      <path d="M14.5 7l3.5 3.5" transform="translate(0 -0.5)" />
+      <circle cx="19.5" cy="6.5" r="0.9" fill="currentColor" fillOpacity="0.8" stroke="none" />
+      <circle cx="21" cy="10" r="0.7" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="17" cy="3.8" r="0.7" fill="currentColor" fillOpacity="0.55" stroke="none" />
+      <circle cx="6" cy="21.5" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="10" cy="22" r="0.6" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
+  'pixel-brush': (
+    <>
+      <rect x="3.5" y="16.5" width="4" height="4" rx="0.6" />
+      <rect x="9.5" y="11.5" width="4" height="4" rx="0.6" />
+      <rect x="15.5" y="6.5" width="4" height="4" rx="0.6" />
+      <circle cx="21" cy="3.6" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="3.2" cy="12.5" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+      <circle cx="12" cy="20.8" r="0.7" fill="currentColor" fillOpacity="0.5" stroke="none" />
+    </>
+  ),
+  highlighter: (
+    <>
+      <path d="M14.5 3.5l6 6-8 8-6-6z" />
+      <path d="M6.5 11.5L4 19l7.5-2" />
+      <rect x="3" y="20" width="12" height="2.4" rx="1" fill="currentColor" fillOpacity="0.4" stroke="none" />
+    </>
+  ),
+  'soft-eraser': (
+    <>
+      <path d="M7.5 19.5l-4-4L14 5l6.5 6.5-8 8z" />
+      <path d="M9 11l6.5 6.5" />
+      <path d="M14.5 20.5H21" strokeDasharray="1 2.2" />
+    </>
+  ),
+  smudge: (
+    <>
+      <circle cx="6.5" cy="12" r="3" fill="currentColor" stroke="none" />
+      <path d="M10 9.5c3.5-1 6.5 0 10-1M10 12h10M10 14.5c3.5 1 6.5 0 10 1" />
+    </>
+  ),
+  // clone stamp: a rubber stamp, with the copy it leaves underneath
+  'clone-stamp': (
+    <>
+      <path d="M9 3.5h6v5l2.5 3.5h-11L9 8.5z" />
+      <path d="M5.5 15.5h13v2h-13z" />
+      <path d="M7 20.5h10" strokeDasharray="1.6 2" />
+    </>
+  ),
+  // blur brush: a drop with its edge going soft
+  'blur-brush': (
+    <>
+      <path d="M12 3.5c3.2 4 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.3-5.6 5.5-9.6z" />
+      <path d="M9.6 13.4c0 1.6 1 2.6 2.4 2.8" strokeOpacity="0.5" />
+      <path d="M3 21h3.5M8 21h2.5M12.5 21h1.5" strokeOpacity="0.5" />
+    </>
+  ),
+  // sharpen brush: a crisp point with rays
+  'sharpen-brush': (
+    <>
+      <path d="M12 3.5l6 9-6 9-6-9z" />
+      <path d="M12 3.5v18M6 12.5h12" strokeOpacity="0.55" />
+    </>
+  ),
   mirror: (
     <>
       <path d="M12 3v18" strokeDasharray="2 2.6" />
@@ -687,6 +872,52 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="4" y="13" width="7" height="7" rx="1" />
     </>
   ),
+  'fx-grain': (
+    <>
+      <circle cx="6" cy="7" r="1.1" fill="currentColor" />
+      <circle cx="12" cy="5" r="0.9" fill="currentColor" />
+      <circle cx="18" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="8.5" cy="12.5" r="1.3" fill="currentColor" />
+      <circle cx="15" cy="13" r="0.9" fill="currentColor" />
+      <circle cx="5" cy="18" r="0.9" fill="currentColor" />
+      <circle cx="11.5" cy="18.5" r="1.2" fill="currentColor" />
+      <circle cx="18.5" cy="18" r="1" fill="currentColor" />
+    </>
+  ),
+  'fx-wave': (
+    <>
+      <path d="M3 8c2.2-3 4.4-3 6 0s3.8 3 6 0 3.4-3 6 0" />
+      <path d="M3 14c2.2-3 4.4-3 6 0s3.8 3 6 0 3.4-3 6 0" opacity="0.6" />
+      <path d="M3 20c2.2-3 4.4-3 6 0s3.8 3 6 0 3.4-3 6 0" opacity="0.3" />
+    </>
+  ),
+  'fx-fringe': (
+    <>
+      <circle cx="9" cy="12" r="6" opacity="0.9" />
+      <circle cx="15" cy="12" r="6" opacity="0.5" strokeDasharray="3 2.4" />
+    </>
+  ),
+  'fx-vignette': (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <ellipse cx="12" cy="12" rx="5" ry="3.4" fill="currentColor" opacity="0.4" stroke="none" />
+    </>
+  ),
+  'fx-tooth': (
+    <>
+      <path d="M3 17.5c2-3 3.4-3 5-.2 1.6 2.8 2.8 2.8 4.5-.3 1.5-2.7 3-2.7 4.6.1 1.2 2 2.6 2 4.4-.6" />
+      <path d="M4 12.5c2.4-3.4 4.2-3.2 6.2-.2 2 3 3.8 2.8 6-.4 1.4-2 2.8-2 4.2-.6" />
+      <circle cx="7" cy="7" r="1" fill="currentColor" />
+      <circle cx="13" cy="6" r="0.9" fill="currentColor" />
+      <circle cx="18" cy="8" r="1.1" fill="currentColor" />
+    </>
+  ),
+  'fx-motion': (
+    <>
+      <circle cx="16" cy="12" r="3.6" fill="currentColor" />
+      <path d="M3 8.5h6.5M2 12h8M3 15.5h6.5" />
+    </>
+  ),
   text: (
     <>
       <path d="M5 6.5V5h14v1.5" />
@@ -730,6 +961,24 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="9" y="11" width="4" height="2.4" rx="0.5" transform="rotate(10 11 12)" fill="currentColor" />
       <rect x="16" y="14" width="4" height="2.4" rx="0.5" transform="rotate(-35 18 15)" fill="currentColor" />
       <rect x="5" y="17" width="4" height="2.4" rx="0.5" transform="rotate(40 7 18)" />
+    </>
+  ),
+  // a line drawing itself: the part drawn so far, then the part still to come, faint
+  'draw-on': (
+    <>
+      <path d="M4 17c3-9 6 3 9-5" />
+      <path d="M13 12c1.5-2.5 3-3.5 7-4.5" opacity="0.35" strokeDasharray="1.5 3" />
+      {dot(13, 12, 1.8)}
+    </>
+  ),
+  // shapes into pixels and back: a round shape, an arrow, and a few pixels
+  convert: (
+    <>
+      <circle cx="7" cy="12" r="4" />
+      <path d="M13 12h3.5" />
+      <path d="M15 10l2 2-2 2" />
+      <rect x="18" y="9" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="18" y="12" width="3" height="3" fill="currentColor" stroke="none" opacity="0.5" />
     </>
   ),
   'pt-dust': (

@@ -21,10 +21,10 @@ describe('Aseprite import in the app', () => {
     expect(getChoiceDef('aseprite.drop')?.default).toBe('open');
   });
 
-  it('puts them in the File > Import submenu and the Pixel menu', () => {
+  it('puts them in the File > Import submenu and Pixel tools > Palette', () => {
     expect(MENUS.find((m) => m.label === 'File')!.items).toContain('sub:import');
     expect(SUBMENUS.import.items).toContain('file.importAseprite');
-    expect(MENUS.find((m) => m.label === 'Pixel')!.items).toContain('palette.fromAseprite');
+    expect(SUBMENUS.palette.items).toContain('palette.fromAseprite');
   });
 
   it('opens the help sample made by the real Aseprite', () => {
