@@ -120,7 +120,7 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
 export function sameDab(a: DabBrush, b: DabBrush): boolean {
   const close = (x: number, y: number) => Math.abs(x - y) < 1e-6;
   // The picture only counts when a picture tip is using it.
-  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join());
+  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && !!a.picture.soft === !!b.picture.soft && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join());
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
@@ -140,8 +140,8 @@ export const snapAxis = (v: number, across: number): number => (Math.round(acros
 export interface Picture {
   w: number;
   h: number;
-  /** 1 where the picture has paint, 0 where it is clear. */
-  mask: Uint8Array;
+  /** 1 where the picture has paint, 0 where it is clear (a soft tip has the shades between). */
+  mask: Float32Array;
   /** Each cell's own colour (r, g, b, a), for a picture that keeps its colours. */
   rgba: Uint8Array;
   keep: boolean;
@@ -154,13 +154,14 @@ export function pictureOf(st: PixelStamp): Picture {
   const have = made.get(st);
   if (have) return have;
   const cols = st.colours.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16), h.length > 7 ? parseInt(h.slice(7, 9), 16) : 255]);
-  const mask = new Uint8Array(st.w * st.h);
+  const mask = new Float32Array(st.w * st.h);
   const rgba = new Uint8Array(st.w * st.h * 4);
   for (let i = 0; i < mask.length; i++) {
     const k = st.cells[i];
     if (k > 0) {
-      mask[i] = 1;
       const c = cols[k - 1];
+      // A soft tip lays down as much paint as the cell's see-through says; any other tip is all or nothing.
+      mask[i] = st.soft ? c[3] / 255 : 1;
       rgba[i * 4] = c[0];
       rgba[i * 4 + 1] = c[1];
       rgba[i * 4 + 2] = c[2];

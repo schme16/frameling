@@ -22,6 +22,7 @@ export function StampPicture({ stamp, color }: { stamp: PixelStamp; color: strin
     const cy = Math.floor((stamp.h - 1) / 2);
     for (const cell of stampCells(stamp)) {
       g.fillStyle = stamp.keep ? `rgb(${cell.rgba[0]} ${cell.rgba[1]} ${cell.rgba[2]} / ${cell.rgba[3] / 255})` : color;
+      g.globalAlpha = stamp.soft ? cell.rgba[3] / 255 : 1;
       g.fillRect((cell.x + cx) * k, (cell.y + cy) * k, k, k);
     }
   }, [stamp, color]);
