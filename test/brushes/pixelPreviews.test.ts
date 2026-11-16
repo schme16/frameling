@@ -16,7 +16,7 @@ import { setSoftTool } from '../../src/soft/settings';
 import { setDryTool, setMedium, setPaper } from '../../src/dry/settings';
 import { MEDIA } from '../../src/dry/maths';
 import { PIXEL_STARTERS } from '../../src/brushes/pixelStarters';
-import { renderPixelPreview, previewInk, previewSize, underlay, wavePoints, LIVELY_INK, PIXEL_PREVIEW_SEED, needsBase } from '../../src/brushes/pixelPreview';
+import { renderPixelPreview, previewInk, previewSize, underlay, wavePoints, LIVELY_INK, PIXEL_PREVIEW_SEED, needsBase, wetBackdrop, wetBandCount, WET_BANDS } from '../../src/brushes/pixelPreview';
 import type { PixelSpec } from '../../src/dab/spec';
 import { ctx, drag, ptr } from '../tools/helpers';
 import '../../src/soft';
@@ -172,6 +172,119 @@ describe('what the pictures say', () => {
     expect(previewInk(rainbow, INK)).toEqual(LIVELY_INK);
     expect(previewInk(rainbow, [200, 30, 30])).toEqual([200, 30, 30]);
     expect(previewInk(plain, INK)).toEqual(INK);
+  });
+});
+
+const starter = (name: string): PixelSpec => PIXEL_STARTERS.find((b) => b.name === name)!.pixel!;
+
+/** The size of every separate clump of painted pixels (a clump is pixels touching, corners too). */
+function clumps(px: Uint8ClampedArray, w: number, h: number): number[] {
+  const seen = new Uint8Array(w * h);
+  const sizes: number[] = [];
+  for (let start = 0; start < w * h; start++) {
+    if (seen[start] || px[start * 4 + 3] < 40) continue;
+    let n = 0;
+    const todo = [start];
+    seen[start] = 1;
+    while (todo.length) {
+      const at = todo.pop()!;
+      n++;
+      const x = at % w;
+      const y = (at / w) | 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          const to = ny * w + nx;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h || seen[to] || px[to * 4 + 3] < 40) continue;
+          seen[to] = 1;
+          todo.push(to);
+        }
+    }
+    sizes.push(n);
+  }
+  return sizes;
+}
+
+describe('the wet brush is drawn over colour it can smear', () => {
+  const wet = starter('Wet smear');
+  it('knows a wet brush needs paint under it, and a dry one does not', () => {
+    expect(needsBase(wet)).toBe(true);
+    expect(needsBase(starter('Round 6'))).toBe(false);
+  });
+
+  it('has bands of different colours edge to edge, three for a stroke and two for a dab', () => {
+    for (const kind of ['stroke', 'dab'] as const) {
+      const px = wetBackdrop(W, H, kind);
+      for (let i = 3; i < px.length; i += 4) expect(px[i]).toBe(255);
+      const colours = new Set<string>();
+      for (let x = 0; x < W; x++) colours.add(`${px[x * 4]},${px[x * 4 + 1]},${px[x * 4 + 2]}`);
+      expect(colours.size).toBe(wetBandCount(kind));
+    }
+    expect(WET_BANDS.length).toBeGreaterThanOrEqual(wetBandCount('stroke'));
+  });
+
+  it('is what the picture is drawn over, and only for a brush that is wet', () => {
+    expect(Array.from(underlay(wet, W, H, INK))).toEqual(Array.from(wetBackdrop(W, H, 'stroke')));
+    expect(Array.from(underlay(wet, W, H, INK, 'dab'))).toEqual(Array.from(wetBackdrop(W, H, 'dab')));
+    const dry = starter('Round 6');
+    expect(underlay(dry, W, H, INK).some((v) => v)).toBe(false);
+  });
+
+  it('smears: the trail takes on the bands it crosses, so it is not the ink and not the plain band either', () => {
+    const base = wetBackdrop(W, H, 'stroke');
+    const px = renderPixelPreview(wet, 'stroke', W, H, INK);
+    expect(Array.from(px.slice(3, 4))).toEqual([255]);
+    let changed = 0;
+    let inkLike = 0;
+    const seen = new Set<string>();
+    for (let i = 0; i < W * H; i++) {
+      const d = Math.abs(px[i * 4] - base[i * 4]) + Math.abs(px[i * 4 + 1] - base[i * 4 + 1]) + Math.abs(px[i * 4 + 2] - base[i * 4 + 2]);
+      if (d > 30) changed++;
+      if (d > 30 && Math.abs(px[i * 4] - INK[0]) + Math.abs(px[i * 4 + 1] - INK[1]) + Math.abs(px[i * 4 + 2] - INK[2]) < 12) inkLike++;
+      if (d > 30) seen.add(`${Math.round(px[i * 4] / 40)},${Math.round(px[i * 4 + 1] / 40)},${Math.round(px[i * 4 + 2] / 40)}`);
+    }
+    expect(changed).toBeGreaterThan(300);
+    // Not one flat ink colour all the way: the load changes as it crosses from band to band.
+    expect(inkLike).toBeLessThan(changed * 0.6);
+    expect(seen.size).toBeGreaterThan(5);
+  });
+
+  it('shows the dab as a pull that moves colour, not a blank', () => {
+    const base = wetBackdrop(60, 30, 'dab');
+    const px = renderPixelPreview(wet, 'dab', 60, 30, INK);
+    let moved = 0;
+    for (let i = 0; i < px.length; i++) if (px[i] !== base[i]) moved++;
+    expect(moved).toBeGreaterThan(40);
+  });
+});
+
+describe('the pressure spray is a spray', () => {
+  const spray = starter('Pressure spray');
+  it('lays many separate clumps of small dots, and no solid disc anywhere', () => {
+    const px = renderPixelPreview(spray, 'stroke', W, H, INK);
+    // Many separate clumps (a row of spaced discs gives about as many as it has discs, a spray crowds far more of them).
+    const all = clumps(px, W, H);
+    expect(all.length).toBeGreaterThanOrEqual(20);
+    expect(all.filter((n) => n <= 12).length).toBeGreaterThanOrEqual(8);
+    // A spray is never solid for a whole 6 by 6 patch; a row of 14 pixel discs is.
+    let solid = false;
+    for (let y = 0; y + 6 <= H && !solid; y++)
+      for (let x = 0; x + 6 <= W && !solid; x++) {
+        let all = true;
+        for (let dy = 0; dy < 6 && all; dy++) for (let dx = 0; dx < 6 && all; dx++) all = px[((y + dy) * W + x + dx) * 4 + 3] >= 40;
+        solid = all;
+      }
+    expect(solid).toBe(false);
+  });
+
+  it('is a scatter brush: a small tip flung a good way, and a harder press flings it further', () => {
+    if (spray.kind !== 'dab') throw new Error('not a dab brush');
+    expect(spray.dab.size).toBeLessThanOrEqual(4);
+    expect(spray.dab.scatter * spray.dab.size).toBeGreaterThanOrEqual(3);
+    expect(spray.dab.dynamics.some((r) => r.from === 'pressure' && r.to === 'scatter')).toBe(true);
+    // Its spacing is tight enough that the dots crowd rather than sit in a row.
+    expect(spray.dab.spacing).toBeLessThanOrEqual(0.5);
   });
 });
 

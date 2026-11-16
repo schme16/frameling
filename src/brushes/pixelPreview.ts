@@ -3,8 +3,9 @@
 // the highlighter is see-through, the airbrush builds soft and chalk catches on the paper's tooth because the tool does.
 // A pixel dab brush is the dab engine's own picture (see src/dab/sample.ts), so it is handed straight on.
 //
-// A tool that works on what is already there (the highlighter, the soft eraser, smudge) is drawn over something: a line
-// of words, a bar, two tones. On a blank picture it would show nothing, or show the opposite of what it does.
+// A tool that works on what is already there (the highlighter, the soft eraser, smudge, a wet brush) is drawn over
+// something: a line of words, a bar, two tones, bands of colour. On a blank picture it would show nothing, or show the
+// opposite of what it does.
 import { edgeFor, type SoftKind } from '../soft/maths';
 import { SmudgeStroke, SoftStroke, type PaintSurface } from '../soft/stroke';
 import { DryStroke } from '../dry/stroke';
@@ -57,7 +58,29 @@ export function wavePoints(w: number, h: number): { x: number; y: number }[] {
 export const previewSize = (size: number, h: number): number => Math.max(1, Math.round(Math.min(size, h * 0.8)));
 
 /** True for the tools that need something under them to show what they do. */
-export const needsBase = (spec: PixelSpec): boolean => spec.kind === 'soft' && (spec.tool === 'highlighter' || spec.tool === 'soft-eraser' || spec.tool === 'smudge');
+export const needsBase = (spec: PixelSpec): boolean =>
+  spec.kind === 'dab' ? spec.dab.wet > 0 : spec.kind === 'soft' && (spec.tool === 'highlighter' || spec.tool === 'soft-eraser' || spec.tool === 'smudge');
+
+/** The bands a wet brush drags through: three colours that sit well on both a light and a dark page and are far from each other, so a smear of one into the next shows. */
+export const WET_BANDS: readonly [number, number, number][] = [
+  [226, 96, 54],
+  [46, 160, 190],
+  [236, 190, 60],
+];
+
+/** How many colour bands a wet brush picture has: a long stroke crosses three, a single pull two. */
+export const wetBandCount = (kind: SampleKind): number => (kind === 'dab' ? 2 : 3);
+
+/** The bands as an RGBA picture: upright stripes of solid colour edge to edge, so the stroke runs from one into the next. */
+export function wetBackdrop(w: number, h: number, kind: SampleKind): Uint8ClampedArray {
+  const px = new Uint8ClampedArray(w * h * 4);
+  const n = wetBandCount(kind);
+  for (let i = 0; i < n; i++) {
+    const c = WET_BANDS[i];
+    paintRect(px, w, h, Math.round((w * i) / n), 0, Math.round((w * (i + 1)) / n), h, [c[0], c[1], c[2], 255]);
+  }
+  return px;
+}
 
 const paintRect = (px: Uint8ClampedArray, w: number, h: number, x0: number, y0: number, x1: number, y1: number, c: RGBA): void => {
   for (let y = Math.max(0, y0); y < Math.min(h, y1); y++)
@@ -70,8 +93,9 @@ const paintRect = (px: Uint8ClampedArray, w: number, h: number, x0: number, y0: 
     }
 };
 
-/** What the tool is drawn over: lines of words for the highlighter, a bar for the eraser, two tones for smudge. Blank for the rest. */
+/** What the tool is drawn over: lines of words for the highlighter, a bar for the eraser, two tones for smudge, bands of colour for a wet brush. Blank for the rest. */
 export function underlay(spec: PixelSpec, w: number, h: number, ink: [number, number, number], kind: SampleKind = 'stroke'): Uint8ClampedArray {
+  if (spec.kind === 'dab' && spec.dab.wet > 0) return wetBackdrop(w, h, kind);
   const px = new Uint8ClampedArray(w * h * 4);
   if (spec.kind !== 'soft') return px;
   const solid: RGBA = [ink[0], ink[1], ink[2], 255];
@@ -112,7 +136,7 @@ export function previewInk(spec: PixelSpec, ink: [number, number, number]): [num
 
 /** An RGBA picture, `w` by `h`, of the tool's stroke or dab in `ink`. Nothing is drawn where the tool leaves the box empty. */
 export function renderPixelPreview(spec: PixelSpec, kind: SampleKind, w: number, h: number, ink: [number, number, number]): Uint8ClampedArray {
-  if (spec.kind === 'dab') return renderSample(spec, kind, w, h, previewInk(spec, ink));
+  if (spec.kind === 'dab') return renderSample(spec, kind, w, h, previewInk(spec, ink), needsBase(spec) ? underlay(spec, w, h, ink, kind) : undefined);
   const px = underlay(spec, w, h, ink, kind);
   const surface = pictureSurface(px, w, h);
   const color: RGBA = [ink[0], ink[1], ink[2], 255];

@@ -77,7 +77,8 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   dab('pressure-pencil', 'Pressure pencil', 'Pen and speed', { size: 5, spacing: 0.12, dynamics: [r('pressure', 'size', 0.8)] }),
   dab('tapered-ink', 'Tapered ink', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('fade', 'size', 1)], fadeLength: 160 }),
   dab('speed-nib', 'Fast is thin', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('speed', 'size', 0.75, true)] }),
-  dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 14, spacing: 0.8, scatter: 0.4, dynamics: [r('pressure', 'scatter', 0.8), r('pressure', 'flow', 0.5)] }),
+  // Many small dots flung about the line (a size-14 disc at a wide spacing was a row of discs, not a spray). A harder press flings them further and lays them thicker.
+  dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 2, spacing: 0.25, scatter: 2, dynamics: [r('pressure', 'scatter', 1), r('pressure', 'flow', 0.4)] }),
   dab('pressure-felt', 'Pressure felt tip', 'Pen and speed', { size: 12, hardness: 0.8, aliased: false, spacing: 0.08, dynamics: [r('pressure', 'size', 0.5), r('pressure', 'flow', 0.7)] }),
 
   dab('chalk-grain', 'Chalk grain', 'Grain and texture', { size: 12, spacing: 0.12, flow: 0.5, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } }),
