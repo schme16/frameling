@@ -1,0 +1,6 @@
+Chalk and charcoal options: the stick is a picker like Brush and Tip, lined up under them, instead of nine word chips under Catch on paper.
+
+panel-*    BEFORE a row of word chips under Catch on paper | AFTER a Stick picker straight under Tip, same width, height and spacing as Brush and Tip
+open-*     AFTER the list dropped open: nine sticks in three groups, each a real stroke, with search
+off-*      Catch on paper off, before | after (Stick stays in place, greyed, says it needs Catch on paper)
+narrow-*   the same panel in a window of its own, 230 px wide, before | after (long names end in an ellipsis)

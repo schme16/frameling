@@ -45,8 +45,8 @@ import {
   useRowStyle,
 } from './picker';
 import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
-import { customOf, tipHint, tipIdOf, tipRows, type PickerSide } from './tipList';
-import { pickTip } from './tips';
+import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, type PickerSide } from './tipList';
+import { pickStick, pickTip } from './tips';
 import { currentSpec, putSpec } from '../dab/live';
 import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
 import { specSize, withSize, type PixelSpec } from '../dab/spec';
@@ -179,19 +179,23 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const range = useBrushRange(false);
   const rows = useRowStyle();
   const scale = rowScale();
-  const tips = side === 'tip';
+  const tips = isFixedSide(side);
+  const words = side === 'stick' ? FIXED_WORDS.stick : FIXED_WORDS.tip;
   const custom = customOf(live.tip);
-  const tipList = useMemo(() => (tips ? tipRows(live, custom) : []), [tips, live, custom]);
+  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom) : []), [tips, side, live, custom]);
   const all = tips ? tipList : brushesOnSide(side);
-  const { activeId } = tips ? { activeId: tipIdOf(live.tip) } : stateFor(side);
+  const { activeId } = tips ? { activeId: fixedActiveId(side, live) } : stateFor(side);
   const liveSpec = side === 'pixel' ? currentSpec() : null;
   const big = all.length > SMALL_LIBRARY;
   // The tips have no favourites or recent: it is a short list, shown with every group open at once.
   const favs = tips ? [] : favouriteIds();
   const favSet = useMemo(() => new Set(favs), [favs]);
-  const opened = tips ? (openGroups() ?? groupsOf(all).map((g) => groupKey(g.name))) : openGroups();
+  // The sticks keep their own folds for as long as the list is open, so folding a group of tips never closes them.
+  const [stickOpen, setStickOpen] = useState<readonly string[] | null>(null);
+  const setOpen = side === 'stick' ? setStickOpen : setOpenGroups;
+  const opened = side === 'stick' ? (stickOpen ?? groupsOf(all).map((g) => groupKey(g.name))) : tips ? (openGroups() ?? groupsOf(all).map((g) => groupKey(g.name))) : openGroups();
   const recent = tips ? [] : recentIds();
-  const noun = tips ? 'tip' : 'brush';
+  const noun = tips ? words.noun : 'brush';
   const [query, setQuery] = useState('');
   const [hot, setHot] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -250,15 +254,15 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
 
   const pick = useCallback(
     (id: string) => {
-      if (tips ? pickTip(id) : applyPreset(id)) onPicked();
+      if ((side === 'stick' ? pickStick(id) : tips ? pickTip(id) : applyPreset(id))) onPicked();
     },
-    [onPicked, tips],
+    [onPicked, tips, side],
   );
   const star = useCallback((id: string) => void toggleFavourite(id), []);
   const toggleSection = (key: string, to?: boolean) => {
     const now = sections.filter((s) => s.open).map((s) => s.key);
     const open = to ?? !now.includes(key);
-    setOpenGroups(open ? [...now.filter((k) => k !== key), key] : now.filter((k) => k !== key));
+    setOpen(open ? [...now.filter((k) => k !== key), key] : now.filter((k) => k !== key));
   };
 
   const onKeyDown = (e: ReactKey<HTMLDivElement>) => {
@@ -291,7 +295,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
 
   const allKeys = foldableKeys({ all }).filter((k) => !tips || k.startsWith('group:'));
   const allOpen = allKeys.every((k) => sections.find((s) => s.key === k)?.open);
-  const hintFor = (b: import('./model').BrushPreset): string | undefined => (tips ? tipHint(b.id) : undefined);
+  const hintFor = (b: import('./model').BrushPreset): string | undefined => (tips ? fixedHint(side, b.id) : undefined);
   const hint: Record<string, string> = { favourites: 'Star a brush and it shows up here.', recent: 'The brushes you use show up here.' };
   const firstGroup = sections.findIndex((s) => s.kind === 'group');
 
@@ -342,7 +346,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
             <span className="pk-count">{s.count}</span>
           </button>
         )}
-        {s.kind === 'found' && !s.count && <p className="pk-empty">{tips ? 'No tip called that. Try a shorter word, like "stamp".' : 'No brush called that. Try a shorter word, like "pen".'}</p>}
+        {s.kind === 'found' && !s.count && <p className="pk-empty">{tips ? words.none : 'No brush called that. Try a shorter word, like "pen".'}</p>}
         {s.open && s.count === 0 && s.kind !== 'found' && <p className="pk-empty pk-empty-in">{hint[s.kind]}</p>}
         {s.open && s.count > 0 && (
           <div className={`pk-rows pk-rows-${rows}`} role="group" aria-label={s.name}>
@@ -358,7 +362,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const height = big ? Math.min(box.h ?? 580, maxH) : undefined;
   const activeRow = hotIdx !== undefined ? `pk-i${hotIdx}` : undefined;
   return createPortal(
-    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? 'Pick a pen tip' : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH, zIndex: flyoutLayer(anchor) }} onKeyDown={onKeyDown}>
+    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? words.dialog : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH, zIndex: flyoutLayer(anchor) }} onKeyDown={onKeyDown}>
       {!tips && (
         <div className="pk-live">
           <div className="pk-dial" aria-hidden="true">
@@ -401,7 +405,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
               }}
             />
           </label>
-          <button type="button" className="pk-icon" title={allOpen ? 'Fold every group' : 'Open every group'} aria-label={allOpen ? 'Fold every group' : 'Open every group'} onClick={() => setOpenGroups(allOpen ? [] : allKeys)}>
+          <button type="button" className="pk-icon" title={allOpen ? 'Fold every group' : 'Open every group'} aria-label={allOpen ? 'Fold every group' : 'Open every group'} onClick={() => setOpen(allOpen ? [] : allKeys)}>
             <Svg>{allOpen ? <path d="M3 6l5-3 5 3M3 10l5 3 5-3" /> : <path d="M3 3l5 3 5-3M3 13l5-3 5 3" />}</Svg>
           </button>
           <button type="button" className="pk-icon" title={rows === 'tip' ? 'Two columns, denser' : 'One column'} aria-label={rows === 'tip' ? 'Show two columns' : 'Show one column'} onClick={() => void flipRowStyle()}>
@@ -430,7 +434,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
         ref={listRef}
         className="pk-list"
         role={big ? 'tree' : 'listbox'}
-        aria-label={tips ? 'Tips' : 'Brushes'}
+        aria-label={tips ? words.list : 'Brushes'}
         tabIndex={big ? -1 : 0}
         aria-activedescendant={big ? undefined : activeRow}
         onMouseDown={(e) => {

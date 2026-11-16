@@ -15,6 +15,8 @@ import { defaultTip, STAMPS, TIPS } from '../geometry/tip';
 import { MAX_STAMP, hasColours, pixelStampFrom, readPixelStamp, vectorStampFrom, type PixelStamp } from './stamps';
 import { choiceWord } from '../words/choices';
 import { parseTipId } from './tipList';
+import { parseStickId } from './stickList';
+import type { DryId } from '../dry/maths';
 
 export type PixelStampColours = 'own' | 'mine';
 
@@ -72,6 +74,19 @@ export function pickTip(id: string): boolean {
   setTipKind(p.kind);
   if (p.shape) setStampShape(p.shape);
   return true;
+}
+
+/** Picks a stick from the picker by its id (see stickList.ts). False for anything else. */
+export function pickStick(id: string): boolean {
+  const dry = parseStickId(id);
+  if (!dry) return false;
+  setStick(dry);
+  return true;
+}
+
+/** Draws with this stick: on a chalk or charcoal tip it swaps the stick, on any other tip it becomes Chalk on paper first. */
+export function setStick(dry: DryId): void {
+  setBrush((b) => ({ ...b, tip: { ...(b.tip && (b.tip.kind === 'chalk' || b.tip.kind === 'charcoal') ? b.tip : defaultTip('chalk')), dry } }));
 }
 
 /** The next (or previous) tip: Plain, then each kind. */

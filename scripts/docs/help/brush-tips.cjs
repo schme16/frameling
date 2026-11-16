@@ -1,4 +1,4 @@
-// Help clip for Brush tips: the Tip row, with a wave drawn in chalk, charcoal, watercolour and then a leaf stamp.
+// Help clip for Brush tips: the Tip row, with a wave drawn in chalk, charcoal, charcoal with the Stick picker on soft pastel, watercolour and then a leaf stamp.
 // Where things land comes from the running app (view() and at() in _shapes.cjs), so no window numbers are kept here.
 const L = require('./_lib.cjs');
 const { view, at, UI } = require('./_shapes.cjs');
@@ -9,6 +9,14 @@ const tip = (name) => [
   L.wait(500),
   L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
 ];
+// The Stick picker's list, and the row with this name.
+const stick = (name) => [
+  L.js(`document.querySelector('[data-testid="brush-stick"] .pk-btn').click()`),
+  L.wait(500),
+  L.js(`[...document.querySelectorAll('.pk-row')].find((r) => r.querySelector('.pk-name-text').textContent === ${JSON.stringify(name)}).click()`),
+];
+// The options panel scrolled so Brush, Tip and Stick sit together at the top of the picture.
+const toTop = L.js(`document.querySelector('[data-panel-id="tool-options"]')?.scrollIntoView({ block: 'start' })`);
 const set = (patch) => L.js(`__frameling.store().setUi((u) => ({ brush: { ...u.brush, ...${JSON.stringify(patch)} } }))`);
 const fit = view(0.5);
 const away = { move: [720, 28] };
@@ -23,10 +31,11 @@ module.exports = [
       { shot: 'warm', crop: [0, 0, 32, 32] },
       { rec: '@', crop: { stageCrop: { rightGap: 80, down: 109 } }, every: 80 },
       L.wait(700),
-      ...tip('Chalk'), L.wait(900), wave(170), L.wait(500),
-      ...tip('Charcoal'), L.wait(900), wave(300), L.wait(500),
-      ...tip('Watercolour'), L.wait(900), set({ size: 34, thinning: 0 }), L.wait(500), wave(430), L.wait(500),
-      ...tip('Leaf'), L.wait(900), set({ size: 24, thinning: 0 }), L.wait(500), wave(560), L.wait(1600),
+      ...tip('Chalk'), L.wait(900), toTop, L.wait(400), wave(150), L.wait(500),
+      ...tip('Charcoal'), L.wait(900), wave(260), L.wait(500),
+      ...stick('Soft pastel'), L.wait(900), wave(370), L.wait(500),
+      ...tip('Watercolour'), L.wait(900), set({ size: 34, thinning: 0 }), L.wait(500), wave(480), L.wait(500),
+      ...tip('Leaf'), L.wait(900), set({ size: 24, thinning: 0 }), L.wait(500), wave(590), L.wait(1600),
       { rec: 'stop' },
     ],
   },

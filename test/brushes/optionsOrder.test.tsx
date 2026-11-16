@@ -46,10 +46,10 @@ const at = (sel: string): number => {
 };
 
 describe('Brush tool options order', () => {
-  it('puts the preview first, then Brush and Tip together, then Size, then saving and sharing', () => {
+  it('puts the preview first, then Brush, Tip and Stick together, the paper controls, then Size, then saving and sharing', () => {
     store().setUi((u) => ({ brush: { ...u.brush, tip: defaultTip('chalk') } }));
     act(() => root.render(<BrushOptions />));
-    const order = ['canvas.cv-preview', '[data-testid="brush-presets"]', '[data-testid="brush-tips"]', '.cv-slider', '[data-testid="brush-keep"]'].map(at);
+    const order = ['canvas.cv-preview', '[data-testid="brush-presets"]', '[data-testid="brush-tips"]', '[data-testid="brush-stick"]', '[data-testid="brush-paper"]', '.cv-slider', '[data-testid="brush-keep"]'].map(at);
     expect(order.every((n) => n >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     // Nothing but the options container comes before the preview.
@@ -59,14 +59,16 @@ describe('Brush tool options order', () => {
     act(() => root.render(<BrushOptions />));
     const titles = [...host.querySelectorAll('.tp-label')].map((t) => t.textContent);
     expect(titles).toEqual(['Brush', 'Tip']);
+    act(() => store().setUi((u) => ({ brush: { ...u.brush, tip: defaultTip('chalk') } })));
+    expect([...host.querySelectorAll('.tp-label')].map((t) => t.textContent)).toEqual(['Brush', 'Tip', 'Stick']);
     expect(host.querySelector('[data-testid="brush-keep"]')!.textContent).toContain('Save as...');
     expect(host.querySelector('[data-testid="brush-keep"]')!.textContent).toContain('Share your brushes');
     expect(host.querySelector('[data-testid="brush-presets"]')!.textContent).not.toContain('Save as...');
   });
-  it('keeps Catch on paper straight under the Tip picker, above its grain controls', () => {
+  it('keeps Catch on paper under the three pickers, above its grain controls', () => {
     store().setUi((u) => ({ brush: { ...u.brush, tip: defaultTip('chalk') } }));
     act(() => root.render(<BrushOptions />));
-    const tips = host.querySelector('[data-testid="brush-tips"]')!;
+    const tips = host.querySelector('[data-testid="brush-paper"]')!;
     const labels = [...tips.querySelectorAll('.cv-toggle, .cv-field-head')].map((n) => n.textContent ?? '');
     expect(labels[0]).toContain('Catch on paper');
     expect(labels.findIndex((l) => l.includes('Grain size'))).toBeGreaterThan(0);
