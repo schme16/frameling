@@ -10,6 +10,7 @@
 import type { Pair } from 'polygon-clipping';
 import type { Id, PathPoint, PathShape, Shape, SubPath } from '../core/format';
 import { fitCurve, rdp, type Cubic, type V } from './bezier';
+import { cloneEffects, shapeEffects } from '../effects/shapeFx';
 import { areaOfPaths, difference, flattenRing, geomArea, intersection, lineArea, ringArea, shapeParts, union, xor, type Geom } from './merge';
 
 export type CombineOp = 'join' | 'cut' | 'overlap' | 'punch';
@@ -192,10 +193,15 @@ export function wearLook(look: Shape, paths: SubPath[]): PathShape {
   }
   if (look.origin) out.origin = look.origin;
   if (look.ext) out.ext = look.ext;
+  // The effects are part of the look: the result wears them like it wears the colours.
+  if (shapeEffects(look)?.length) out.effects = cloneEffects(shapeEffects(look));
   return out;
 }
 
 const sameLook = (a: Shape, b: Shape): boolean => {
+  // Effects are part of the look too.
+  const fx = (x: Shape) => JSON.stringify((shapeEffects(x) ?? []).map((e) => [e.kind, e.on !== false, e.values]));
+  if (fx(a) !== fx(b)) return false;
   const key = (s: Shape) => {
     if (s.type === 'path') return JSON.stringify([s.fill, s.fillGradient, s.stroke, s.strokeGradient, s.opacity]);
     if (s.type === 'fill') return JSON.stringify([s.color, s.gradient, s.opacity]);

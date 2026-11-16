@@ -1,0 +1,9 @@
+Effects on one shape, not just a whole layer, in dark and light.
+
+A soft shadow under a character (shadow-*) and a glow round a title (glow-*), each done two ways:
+  -old    the shape on a layer of its own, with the effect on that layer (the only way until now; the Shadow or Title layer is in the list)
+  -new    the shape picked on the one Lines layer, with the effect on the shape (no extra layer)
+The pictures on the canvas match: it is the same soften and glow, drawn by the same code.
+  -panel  the Effects panel with the shape picked: "Shape: the one you picked" at the top, no blend or clip, and no key button.
+
+Made with: SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-shape-fx --out brand/ab/shape-fx

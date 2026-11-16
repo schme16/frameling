@@ -10,6 +10,12 @@ import * as edit from './edit';
 import { masksThatLeft } from './masks';
 import type { Target } from './edit';
 import { blendInfo, effectInfo } from './model';
+import * as shapeOps from './shapeOps';
+import type { ShapesTarget } from './shapeOps';
+
+/** A layer, a folder, or the picked shapes. */
+export type AnyTarget = Target | ShapesTarget;
+const onShapes = (t: AnyTarget): t is ShapesTarget => 'shapes' in t;
 
 function run(label: string, fn: (d: Parameters<Parameters<ReturnType<typeof store>['update']>[1]>[0]) => unknown, coalesce?: string): boolean {
   let did = false;
@@ -31,21 +37,22 @@ export function setBlend(t: Target, mode: BlendMode): boolean {
   return run(`Blend mode: ${blendInfo(mode).label}`, (d) => edit.setBlend(d, t, mode));
 }
 
-export function addEffect(t: Target, kind: EffectKind): Id | null {
+export function addEffect(t: AnyTarget, kind: EffectKind): Id | null {
+  if (onShapes(t)) return shapeOps.addEffect(kind) ? 'shapes' : null;
   let id: Id | null = null;
   run(`Add ${effectInfo(kind).label.toLowerCase()}`, (d) => (id = edit.addEffect(d, t, kind)));
   return id;
 }
 
-export const removeEffect = (t: Target, id: Id) => run('Remove effect', (d) => edit.removeEffect(d, t, id));
-export const moveEffect = (t: Target, id: Id, dir: -1 | 1) => run('Reorder effects', (d) => edit.moveEffect(d, t, id, dir));
-export const setEffectOn = (t: Target, id: Id, on: boolean) => run(on ? 'Turn effect on' : 'Turn effect off', (d) => edit.setEffectOn(d, t, id, on));
-export const setEffectValue = (t: Target, id: Id, key: string, v: number | string) =>
-  run('Change effect', (d) => edit.setEffectValue(d, t, id, key, v, frame()), `fx:${tkey(t)}:${id}:${key}:${frame()}`);
+export const removeEffect = (t: AnyTarget, id: Id) => (onShapes(t) ? shapeOps.removeEffect(id) : run('Remove effect', (d) => edit.removeEffect(d, t, id)));
+export const moveEffect = (t: AnyTarget, id: Id, dir: -1 | 1) => (onShapes(t) ? shapeOps.moveEffect(id, dir) : run('Reorder effects', (d) => edit.moveEffect(d, t, id, dir)));
+export const setEffectOn = (t: AnyTarget, id: Id, on: boolean) => (onShapes(t) ? shapeOps.setEffectOn(id, on) : run(on ? 'Turn effect on' : 'Turn effect off', (d) => edit.setEffectOn(d, t, id, on)));
+export const setEffectValue = (t: AnyTarget, id: Id, key: string, v: number | string) =>
+  onShapes(t) ? shapeOps.setEffectValue(id, key, v) : run('Change effect', (d) => edit.setEffectValue(d, t, id, key, v, frame()), `fx:${tkey(t)}:${id}:${key}:${frame()}`);
 export const setEffectAnimated = (t: Target, id: Id, on: boolean) => run(on ? 'Animate effect' : 'Stop animating effect', (d) => edit.setEffectAnimated(d, t, id, on, frame()));
 export const removeEffectKey = (t: Target, id: Id) => run('Remove effect key', (d) => edit.removeEffectKey(d, t, id, frame()));
-export const resetEffect = (t: Target, id: Id) => run('Reset effect', (d) => edit.resetEffect(d, t, id));
-export const resetLook = (t: Target) => run('Reset blend and effects', (d) => edit.resetLook(d, t));
+export const resetEffect = (t: AnyTarget, id: Id) => (onShapes(t) ? shapeOps.resetEffect(id) : run('Reset effect', (d) => edit.resetEffect(d, t, id)));
+export const resetLook = (t: AnyTarget) => (onShapes(t) ? shapeOps.clearEffects() : run('Reset blend and effects', (d) => edit.resetLook(d, t)));
 
 export const setClip = (layerId: Id, on: boolean) => run(on ? 'Clip to the layer below' : 'Stop clipping', (d) => edit.setClip(d, layerId, on));
 export const setMask = (layerId: Id, mode: 'show' | 'hide' | null) => run(mode ? 'Make mask' : 'Stop being a mask', (d) => edit.setMask(d, layerId, mode));

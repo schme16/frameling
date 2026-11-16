@@ -59,6 +59,9 @@ function prim(host: SvgLookHost, tag: string, fixed: string, values: Record<stri
   return anim ? `<${tag}${fixed}${attr}>${anim}</${tag}>` : `<${tag}${fixed}${attr}/>`;
 }
 
+/** Stands for "a shape" as the owner of effects in the notes (an effect on one shape has no name to quote). */
+export const SHAPE_OWNER = '\u0000shape';
+
 /** The effects as one SVG filter (its id), or '' when none of them do anything. */
 export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefined, owner: string): string {
   const list = (effects ?? []).filter((e) => e.on !== false && !host.frames.every((f) => isNoop(e.kind, valuesAt(e, f))));
@@ -126,7 +129,7 @@ export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefi
       parts.push(`<feMerge result="${out}"><feMergeNode in="${c}"/><feMergeNode in="${prev}"/></feMerge>`);
       prev = out;
     } else {
-      host.notes.add(`${effectInfo(e.kind).label} on "${owner}" was left out: SVG has nothing like it.`);
+      host.notes.add(`${effectInfo(e.kind).label} on ${owner === SHAPE_OWNER ? 'a shape' : `"${owner}"`} was left out: SVG has nothing like it.`);
     }
   }
   if (!parts.length) return '';

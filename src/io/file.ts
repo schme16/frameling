@@ -8,7 +8,7 @@ import { celNameField } from '../core/celName';
 import { readNotes } from '../notes/model';
 import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
-import { readFolders, readLayerLook } from '../effects/io';
+import { readFolders, readLayerLook, withShapeEffects } from '../effects/io';
 import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
@@ -537,7 +537,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
           const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
-          if (read) shapes.push(withExt(read, s, warnings));
+          if (read) shapes.push(withShapeEffects(withExt(read, s, warnings), s));
           else lost = true;
         } else {
           // A kind of shape this version does not know: kept as it is, so saving never drops it.

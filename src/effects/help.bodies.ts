@@ -43,6 +43,31 @@ Smears the layer in one direction, so a fast move looks fast.
 
 See also [Effects](help:effects), [Blend modes](help:blend-modes) and [Exporting](help:exporting).
 `,
+  'shape-effects': `Give **one shape** a soft edge, a glow or a shadow, and leave the rest of the layer alone. A soft shadow under a character, a glow round a title: the shape you picked gets the effect, and everything else on the layer stays crisp.
+
+## Put an effect on a shape
+
+1. Pick the shape with the Select tool.
+2. Open the **Effects** panel (**View > Panels > Effects**, or **Skeleton, effects and more > Effects**). It says **Shape: the one you picked** at the top.
+3. Click an effect, then move the sliders until it looks right.
+
+Pick two or more shapes and they take the same effect together: move a slider and every picked shape follows.
+
+The effect commands in the command palette do the same. The first time you use one with shapes picked, Frameling asks whether it goes on the shapes or the whole layer, then remembers. Change it in **Preferences > Behaviour**, or with **Change** at the top of the panel.
+
+## The order things run in
+
+A shape's effects run first to last on that shape alone. Then the layer's own effects run on the whole layer, then its folder's. So a shape's soft shadow is already there when the layer gets a glow.
+
+## Good to know
+
+- **They stay the same on every frame.** There is no key button on a shape's effects. To change one over time, give the shape a new key and set the effect there. To animate a whole layer, use a [layer effect](help:effects).
+- **A shape with an effect doesn't merge.** On a layer that merges shapes (see [merge drawing](help:merge-drawing)), a shape with an effect stays its own shape, like a grouped one: paint over it and it isn't cut or joined, because merging would lose the effect.
+- **Break apart** on a shape with an effect asks once whether the pieces keep the effect or become plain paint.
+- **Join** (see [combining shapes](help:combine-shapes)) treats the effect as part of the look: the joined shape wears the effects of the shape whose colours it takes.
+- **Take them off** with **Take effects off** in the panel, or **Take the effects off the picked shapes** in the **Effects** menu.
+- **Exports:** pictures and video draw it exactly. SVG makes real filters for soften, glow, shadow, colour adjust and outline. Lottie, PDF, Illustrator and Photoshop turn the layer holding it into a picture. The Export window says so first.
+`,
   effects: `Effects change how a whole layer looks, without touching your drawing. Take them off any time.
 
 ## Add one
@@ -68,6 +93,8 @@ See also [Effects](help:effects), [Blend modes](help:blend-modes) and [Exporting
 The last five have their own page: [finishing touches](help:effects-finishing).
 
 Sizes are in stage pixels, so a blur looks the same at any zoom.
+
+To soften or glow just one shape instead of the whole layer, pick the shape first: see [effects on one shape](help:shape-effects).
 
 ## More than one
 

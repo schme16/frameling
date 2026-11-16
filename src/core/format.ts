@@ -831,6 +831,8 @@ export interface StrokeShape {
   type: 'stroke';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   points: StrokePoint[];
   brush: BrushSettings;
   /** The widths came from a real pen, so they are never made up from how fast the line was drawn (missing = work it out). */
@@ -867,6 +869,8 @@ export interface FillShape {
   type: 'fill';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   paths: SubPath[];
   color: Color;
   opacity: number;
@@ -931,6 +935,8 @@ export interface PathShape {
   type: 'path';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   paths: SubPath[];
   fill: Color | null;
   stroke: PathStroke | null;
@@ -1094,6 +1100,8 @@ export interface InstanceShape {
   type: 'instance';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   symbolId: Id;
   transform: Transform2D;
   opacity: number;
@@ -1209,6 +1217,8 @@ export interface TextShape {
   type: 'text';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   text: string;
   /** Font family name ('Nunito', 'Inter', or a font on this computer). */
   font: string;
@@ -1243,6 +1253,8 @@ export interface ParticlesShape {
   type: 'particles';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Effects on this shape alone, applied first to last, inside whatever the layer does to the lot (missing = none). Not animated: each key can hold its own copy. See src/effects/shapeFx.ts. */
+  effects?: LayerEffect[];
   /** Where the emitter sits and how it is turned and stretched (origin = its centre). */
   transform: Transform2D;
   /** Where particles start: one point, along a line (`width` long) or inside a box (`width` x `height`). */

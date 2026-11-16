@@ -426,6 +426,12 @@ when comparing two drawings for "same look" (as `id` is ignored).
   settings are all optional on read and take their defaults (`src/effects/model.ts`, `EFFECTS`). Grain's moving pattern is
   worked out from the frame and the `seed` and `change` settings, never stored.
 
+- Shapes can carry `effects?: LayerEffect[]` too (every kind of shape: stroke, fill, path, instance, text, particles). It is
+  the same list a layer has, run on that shape alone before the layer's own effects. Optional: a file from before has none and
+  writes back without the field, and an older build ignores it. `keys` are not kept (a shape's effects are the same on every
+  frame); a bad list or kind is dropped on read (`withShapeEffects`, `src/effects/io.ts`). A shape with effects is left out of
+  merge drawing (`mergeable`, `src/geometry/merge.ts`).
+
 See `docs/effects.md`.
 
 ### Clips, markers, swatches, palette, tiles

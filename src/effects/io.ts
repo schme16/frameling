@@ -3,7 +3,7 @@
  * failing the whole file: a layer that loses a glow is better than a document that won't open.
  */
 import { MAX_FOLDER_DEPTH, folderChain } from '../core/folders';
-import type { EffectKey, Layer, LayerEffect, LayerFolder } from '../core/format';
+import type { EffectKey, Layer, LayerEffect, LayerFolder, Shape } from '../core/format';
 import { defaultValues, effectInfo, isBlendMode, isEffectKind } from './model';
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -96,4 +96,18 @@ export function readFolders(raw: unknown, layers: Layer[]): { folders?: Record<s
   for (const id of Object.keys(folders)) if (!used.has(id)) delete folders[id];
   for (const f of Object.values(folders)) if (f.parent && !folders[f.parent]) delete f.parent;
   return Object.keys(folders).length ? { folders } : {};
+}
+
+/**
+ * A shape read from a file, with its effects checked (see src/effects/shapeFx.ts). Shapes written before shapes had
+ * effects have none and come back as they are; a bad list is dropped rather than failing the file. Keys are left out:
+ * a shape's settings are the same on every frame.
+ */
+export function withShapeEffects<T extends Shape>(shape: T, raw: unknown): T {
+  const fx = isObj(raw) ? readEffects(raw.effects)?.map((e) => (e.keys ? { id: e.id, kind: e.kind, ...(e.on === false ? { on: false } : {}), values: e.values } : e)) : undefined;
+  const out = shape as T & { effects?: LayerEffect[] };
+  if (fx) return { ...out, effects: fx };
+  if (out.effects === undefined) return shape;
+  const { effects: _drop, ...rest } = out;
+  return rest as unknown as T;
 }

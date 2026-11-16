@@ -36,6 +36,7 @@ import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/ren
 import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
+import { layerHasShapeFx, layerShapeFxKinds } from '../effects/shapeFx';
 import { shapeExportOf } from './shapeExport';
 import { clampZoom, cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
@@ -1507,6 +1508,16 @@ function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: 
   for (let f = r.from; f <= r.to; f++) frames.push(f);
   const times = frames.map((f) => f - r.offset);
   const active = (look.effects ?? []).filter((e) => e.on !== false);
+  // An effect on one shape can't be a Lottie effect (those belong to a whole layer), so a layer holding one is a picture.
+  if (node.type === 'layer' && layerHasShapeFx(ctx.doc, node.layer, frames)) {
+    const kinds = [...layerShapeFxKinds(ctx.doc, node.layer, frames)].map((k) => effectInfo(k).label.toLowerCase());
+    const pic = bakeNode(ctx, node, frames, r);
+    if (pic) {
+      ctx.notes.add(`"${node.layer.name}" became pictures, since a shape on it has ${kinds.join(' or ')} and Lottie only puts effects on a whole layer.`);
+      return { pieces: pic, ef: [] };
+    }
+    ctx.notes.add(`The ${kinds.join(' and ')} on shapes of "${node.layer.name}" ${kinds.length > 1 ? 'were' : 'was'} left out (they need the app to draw them).`);
+  }
   const native = nativeEffects(active, frames, times);
   const chosen = !!native && !!ctx.bakeSoft && active.length > 0;
   if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native, room: shadowRoom(ctx, node, native, frames) };

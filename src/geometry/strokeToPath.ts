@@ -1,6 +1,7 @@
 // A brush stroke as a shape with a few smooth points, so it can be reshaped with Edit points. The stroke's own outline
 // (which already carries its width, taper and round or flat ends) is fitted with cubic curves; the Smoothness chosen is
 // how far the curves may stray from that outline. Pure.
+import { cloneEffects } from '../effects/shapeFx';
 import type { PathPoint, PathShape, Shape, StrokeShape } from '../core/format';
 import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { fitClosed, sampleMidpointSpline, type Cubic } from '../export/curve-fit';
@@ -38,6 +39,7 @@ export function strokeToPath(s: StrokeShape, smoothness: number): PathShape | nu
   if (s.origin) out.origin = s.origin;
   if (s.group) out.group = s.group;
   if (s.ext) out.ext = s.ext;
+  if (s.effects?.length) out.effects = cloneEffects(s.effects);
   return out;
 }
 

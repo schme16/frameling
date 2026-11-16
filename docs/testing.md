@@ -600,6 +600,12 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects.cjs
 ```
 
+The last five cases are effects on one shape (a soft edge on one shape and not its neighbour, a shadow from one shape, the shape's
+effects running before the layer's, colour adjust on one shape). `FILTER=fallback` runs them on the JS blur too.
+`scripts/docs/ab-shape-fx` is the look for them: a soft shadow under a character and a glow round a title, the old way (the shape
+alone on its own layer) against the new (`--entries scripts/docs/ab-shape-fx --out brand/ab/shape-fx`). `test/effects/shape-fx*.test.ts`
+cover the format, the edits, merging, the exporters and the panel.
+
 ## Shadow and glow softness per format: scripts/e2e/shadow-sigma.cjs
 
 Draws a box with a Shadow or a Glow of several softness values in the editor (native canvas filter and the JS fallback)
