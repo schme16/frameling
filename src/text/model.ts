@@ -7,6 +7,7 @@
  */
 import type { Easing, TextAnimKind, TextAnimator, TextShape, TextUnit, Transform2D } from '../core/format';
 import { ease } from '../core/ease';
+import { glyphCentre, layoutOnPath } from './onPath';
 
 // ---------------------------------------------------------------- fonts
 
@@ -63,6 +64,8 @@ export interface Glyph {
   word: number;
   /** Letter index across the whole text, spaces skipped (-1 for spaces). */
   letter: number;
+  /** Radians the letter is turned about its left baseline corner (text on a path; missing = 0). */
+  rot?: number;
 }
 
 export interface TextLayout {
@@ -86,8 +89,12 @@ export function lineHeightOf(s: Pick<TextShape, 'size' | 'lineHeight'>): number 
   return s.size * (s.lineHeight ?? 1.2);
 }
 
-/** Lays the text out: every glyph's place, line by line. The first baseline is y = 0. */
+/** Lays the text out: every glyph's place, line by line. The first baseline is y = 0. Text on a path runs along its curve. */
 export function layoutText(s: TextShape, measure: Measure = estimateMeasure): TextLayout {
+  return s.onPath ? layoutOnPath(s, measure, layoutStraight) : layoutStraight(s, measure);
+}
+
+function layoutStraight(s: TextShape, measure: Measure): TextLayout {
   const font = cssFont(s, s.size);
   const spacing = s.letterSpacing ?? 0;
   const lh = lineHeightOf(s);
@@ -298,7 +305,13 @@ export function piecesOf(layout: TextLayout, by: TextUnit): number[][] {
  * Glyphs in a word or line move as one.
  */
 export function glyphLooks(s: TextShape, layout: TextLayout, frame: number): { look: PieceLook; cx: number; cy: number }[] {
-  const out = layout.glyphs.map((g) => ({ look: { ...PLAIN }, cx: g.x + g.w / 2, cy: g.y - layout.ascent * 0.35 }));
+  const out = layout.glyphs.map((g) => {
+    if (g.rot === undefined) return { look: { ...PLAIN }, cx: g.x + g.w / 2, cy: g.y - layout.ascent * 0.35 };
+    // On a path the letters are turned, so the centre is worked out along the letter's own turn.
+    const c = glyphCentre(g, layout.ascent);
+    return { look: { ...PLAIN }, cx: c.x, cy: c.y };
+  });
+  const base = out.map((o) => ({ cx: o.cx, cy: o.cy }));
   for (const a of activeAnimators(s)) {
     const pieces = piecesOf(layout, a.by);
     const order = pieceOrder(pieces.length, a.order, a.seed ?? 0);
@@ -311,11 +324,15 @@ export function glyphLooks(s: TextShape, layout: TextLayout, frame: number): { l
         x1 = Math.max(x1, g.x + g.w);
       }
       const cy = layout.glyphs[p[0]].y - layout.ascent * 0.35;
+      // A word on a path turns about the middle of its letters' centres.
+      const onPath = layout.glyphs[p[0]].rot !== undefined;
+      const mx = onPath ? p.reduce((t, gi) => t + base[gi].cx, 0) / p.length : (x0 + x1) / 2;
+      const my = onPath ? p.reduce((t, gi) => t + base[gi].cy, 0) / p.length : cy;
       for (const gi of p) {
         out[gi].look = applyAnimator(out[gi].look, a, order[k], frame);
         if (a.by !== 'letter') {
-          out[gi].cx = (x0 + x1) / 2;
-          out[gi].cy = cy;
+          out[gi].cx = mx;
+          out[gi].cy = my;
         }
       }
     });

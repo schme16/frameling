@@ -101,8 +101,10 @@ export const BIG_MENUS: Record<string, number> = {
   // The bar was split into Tools (id Draw), Layers (Layers and artboards), Animation, Rigging (id Extras) and Effects. Counts before -> after: Draw 146 -> 175, Layers (new) 65, Animate 120 -> 121, Extras 101 -> 51, Effects (new) 22, Pixel 88 -> gone. In all, 335 under the old Draw, Pixel and Extras became 313 under Tools, Layers, Rigging and Effects (a command that was in two of them is now counted once).
   // Draw is over the cap because it took in the Pixel menu's drawing things: the soft paint, chalk and charcoal submenu (30 commands), the palette submenu (12), and the pixel brush, gradient and text settings. The layer commands left it for Layers, which is why it is not higher. The soft paint family is the next thing to move out if Tools needs to shrink.
   // 175 down to 146 when the soft paint family (30) got a Soft paint menu of its own. Draw is under its cap again.
-  // Then one back for the Shape builder, which is a tool, so it comes in under Tools with the others.
-  Draw: 147,
+  // Then one back for the Shape builder, which is a tool, so it comes in under Tools with the others, and two for text
+  // on a curve: putting words on one and taking them off again. 149 against a cap of 150, so the next thing to arrive
+  // has to pay its way out of somewhere.
+  Draw: 149,
 };
 
 /**
@@ -158,8 +160,9 @@ export const STILL_LOAD = {
   // light table, look through the camera while playing, import sound and make a symbol from the whole animation now
   // needing animation first. -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
   // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
-  // on both sides for Repeat. And +1 palette and +1 menu on both sides for the Shape builder, which works on shapes
-  // whether a drawing is animated or not. The gap is unchanged by all of it.
-  still: { palette: 556, menu: 741, animateMenu: 8 },
-  animated: { palette: 605, menu: 865, animateMenu: 123 },
+  // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. And +2 menu on both sides
+  // for text on a curve, which does not touch the palette numbers because both its commands need words and a line
+  // picked first. None of it has anything to do with animation, so the gap is unchanged.
+  still: { palette: 556, menu: 743, animateMenu: 8 },
+  animated: { palette: 605, menu: 867, animateMenu: 123 },
 };

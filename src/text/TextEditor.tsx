@@ -165,6 +165,34 @@ export function TextEditor() {
   const top = -baselineInLine(shape);
   const lines = Math.max(1, shape.text.split('\n').length);
   const z = zoom;
+  if (shape.onPath) {
+    // Words on a curve: a straight caret over curved letters would sit in the wrong place, so a small box of words floats
+    // under them instead, and the curve updates as you type.
+    const b = layout.box;
+    const mid = applyMat(m, b.x + b.w / 2, b.y + b.h);
+    const floating = { left: `${z * mid.x + panX}px`, top: `${z * mid.y + panY}px` } as const;
+    return (
+      <textarea
+        ref={ref}
+        className="tx-editor tx-editor-path"
+        style={floating}
+        value={shape.text}
+        spellCheck={false}
+        rows={2}
+        aria-label="Words on the curve"
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => stopEditingText()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            stopEditingText();
+          }
+        }}
+      />
+    );
+  }
   const style = {
     left: 0,
     top: 0,

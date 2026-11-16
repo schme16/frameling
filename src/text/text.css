@@ -68,6 +68,25 @@
   white-space: pre;
   transform-origin: 0 0;
 }
+.tx-editor-path {
+  width: 240px;
+  transform: translate(-50%, 14px);
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  outline-offset: 0;
+  background: var(--panel);
+  color: var(--text);
+  font: 600 14px/1.3 system-ui, sans-serif;
+  letter-spacing: normal;
+  box-shadow: var(--raised, 0 4px 14px rgb(0 0 0 / 0.25));
+  white-space: pre-wrap;
+}
+.tx-editor-path::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text);
+}
+
 .tx-editor::selection {
   background: color-mix(in srgb, var(--accent) 35%, transparent);
   color: transparent;

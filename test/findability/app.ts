@@ -35,6 +35,8 @@ import { setTl } from '../../src/timeline/state';
 import { setPixelText } from '../../src/text/pixel/settings';
 import { DEFAULT_PIXEL_TEXT } from '../../src/text/pixel/font';
 import { newParticles } from '../../src/particles/model';
+import { newTextShape } from '../../src/text/model';
+import { newOnPath } from '../../src/text/onPath';
 import { resetDrawingState } from '../../src/core/fresh';
 import '../../src/renderer/features';
 
@@ -420,6 +422,19 @@ export const FEATURE_STATES: FeatureState[] = [
       store().setUi({ selection: ['particles-a'] });
     },
     proves: { on: ['particles.shuffle'], grey: [] },
+  },
+  {
+    id: 'text-on-curve',
+    about: 'Words that run round a curve are selected.',
+    desktop: false,
+    set: () => {
+      const doc = vectorDoc();
+      const words = newTextShape('words-a', { x: 0, y: 0 }, { text: 'Round and round', size: 24, align: 'center', onPath: newOnPath({ closed: true, points: [{ x: 200, y: 60 }, { x: 260, y: 150 }, { x: 200, y: 240 }, { x: 140, y: 150 }] }, 'shape-a') });
+      (Object.values(doc.drawings)[0] as unknown as { shapes: unknown[] }).shapes.push(words);
+      fresh(doc);
+      store().setUi({ selection: ['words-a'] });
+    },
+    proves: { on: ['text.offPath'], grey: [] },
   },
   {
     id: 'pixel-text-big',

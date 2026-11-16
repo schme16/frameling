@@ -7,6 +7,7 @@ import { registerShapeKind } from '../core/shapeKinds';
 import { registerShapeExport } from '../export/shapeExport';
 import { drawText, hitText, textBounds } from './draw';
 import { isAnimatedText } from './model';
+import './onPathSettle';
 import { readTextShape } from './read';
 
 registerShapeKind<TextShape>({

@@ -1,0 +1,1 @@
+Words on a curve, both themes: round a circle (circle-*), along a wave (wave-*), and the same words still being retyped after they are on the curve (editing-*, Text panel open, the words box under the ring).

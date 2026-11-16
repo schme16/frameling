@@ -32,4 +32,17 @@ const pixelClickAway: ChoiceDef<ClickAway> = {
   ],
 };
 
-export const textChoices = [fontSwapScope, pixelClickAway];
+const pathSide: ChoiceDef<'outside' | 'inside'> = {
+  id: 'text.pathSide',
+  title: choiceWord('choice.text.pathSide.title'),
+  question: choiceWord('choice.text.pathSide.question'),
+  category: 'Draw',
+  default: 'outside',
+  help: 'text-on-path',
+  options: [
+    { value: 'outside', label: choiceWord('choice.text.pathSide.outside.label'), detail: choiceWord('choice.text.pathSide.outside.detail'), did: choiceWord('choice.text.pathSide.outside.did') },
+    { value: 'inside', label: choiceWord('choice.text.pathSide.inside.label'), detail: choiceWord('choice.text.pathSide.inside.detail'), did: choiceWord('choice.text.pathSide.inside.did') },
+  ],
+};
+
+export const textChoices = [fontSwapScope, pixelClickAway, pathSide];

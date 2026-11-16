@@ -47,6 +47,7 @@ export const HISTORY: History = {
     { on: D, n: 175, why: 'The menu bar reshape: Tools absorbed the old Pixel menu\'s drawing things, the soft paint, chalk and charcoal submenu (30), the palette submenu (12) and the pixel brush and text.' },
     { on: D, n: 146, why: 'view-ledger: the soft paint family (30 commands) got a Soft paint menu of its own, because it is one family that only works on a pixel layer, so Tools is back under its cap of 150.' },
     { on: D, n: 147, why: 'Shape builder: it is a tool, so it comes in under Tools with the others rather than getting a home of its own. There is room now that soft paint has a menu of its own.' },
+    { on: D, n: 149, why: 'text-on-path: Put text on a curve and Take text off the curve join Tools > Shapes and colour, beside Convert text to shapes, because words round a circle or along a wave is a way of working on text and a line you already have, and a person looking for it would look there. Still under the cap of 150.' },
   ],
   'STREAM_LOAD.palette': [{ on: D, n: 79, why: BASE }],
   'STREAM_LOAD.menu': [{ on: D, n: 79, why: BASE }],
@@ -69,6 +70,7 @@ export const HISTORY: History = {
     { on: D, n: 733, why: 'Merging scripts-bottom and inbox-fixes: one more for Scripts in their own window in Edit > Scripts, and six fewer menu entries from the animation commands that now wait until a drawing has animation.' },
     { on: D, n: 740, why: 'Repeat: seven menu entries, the submenu under Edit for rows and columns, a ring, a mirror, the tool, turn into shapes and take the repeat off, plus the panel show-and-hide in View.' },
     { on: D, n: 741, why: 'Shape builder: one entry under Tools, beside the other tools, for the same reason as the palette command.' },
+    { on: D, n: 743, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -84,6 +86,7 @@ export const HISTORY: History = {
     { on: D, n: 857, why: 'Merging scripts-bottom: Scripts in their own window sits in Edit > Scripts, and nothing left the menus on this side, so it goes up by the one.' },
     { on: D, n: 864, why: 'Repeat: the same seven as a still gains, because repeating a shape has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 865, why: 'Shape builder: the same one as a still gains, because building a shape has nothing to do with animation.' },
+    { on: D, n: 867, why: 'text-on-path: Put text on a curve and Take text off the curve are two more menu entries in Tools, in a still and in a drawing with animation alike (text is not animation), so the gap between the two is unchanged.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

@@ -415,6 +415,23 @@
     "text": "Any font in the list can be swapped for another.",
     "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Swap fonts changes\"."
   },
+  "choice.text.pathSide.title": { "text": "Words round a shape", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.text.pathSide.question": {
+    "text": "Which side of the shape should the words run on?",
+    "where": "The question the \"Words round a shape\" dialog asks, the first time words are put on a closed shape like a circle."
+  },
+  "choice.text.pathSide.outside.label": { "text": "Round the outside", "where": "Dialog and Preferences: the button for the answer \"outside\" in \"Words round a shape\"." },
+  "choice.text.pathSide.outside.detail": {
+    "text": "The letters stand on the edge with their tops pointing out, and read clockwise, like the name round a badge. On a line that is not closed they sit on top of it.",
+    "where": "Dialog and Preferences: the small line under the \"outside\" answer in \"Words round a shape\"."
+  },
+  "choice.text.pathSide.outside.did": { "text": "Put the words round the outside.", "where": "Toast when \"outside\" is used without asking (\"Words round a shape\"), in the past tense." },
+  "choice.text.pathSide.inside.label": { "text": "Round the inside", "where": "Dialog and Preferences: the button for the answer \"inside\" in \"Words round a shape\"." },
+  "choice.text.pathSide.inside.detail": {
+    "text": "The letters stand on the edge with their tops pointing in, and read anticlockwise, like words along the bottom of a coin. On a line that is not closed they hang under it.",
+    "where": "Dialog and Preferences: the small line under the \"inside\" answer in \"Words round a shape\"."
+  },
+  "choice.text.pathSide.inside.did": { "text": "Put the words round the inside.", "where": "Toast when \"inside\" is used without asking (\"Words round a shape\"), in the past tense." },
   "choice.text.pixelClickAway.title": { "text": "Clicking away from pixel text", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
   "choice.text.pixelClickAway.question": {
     "text": "When you are typing pixel text and click somewhere else on the picture, what should happen?",

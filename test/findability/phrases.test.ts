@@ -32,6 +32,13 @@ const P = (say: string, ...wants: string[]): Phrase => ({ say, wants });
 
 export const PHRASES: Phrase[] = [
   // Drawing
+  P('text on a path', 'text.onPath'),
+  P('curved text', 'text.onPath'),
+  P('bend text', 'text.onPath'),
+  P('put words round a circle', 'text.onPath', 'help:text-on-path'),
+  P('name round a badge', 'text.onPath'),
+  P('words along a wave', 'text.onPath', 'help:text-on-path'),
+  P('straighten text', 'text.offPath'),
   P('rub out', 'tools.eraser'),
   P('rubber', 'tools.eraser'),
   P('draw with a pencil', 'tools.pencil'),
