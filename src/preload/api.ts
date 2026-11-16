@@ -239,6 +239,21 @@ export interface DoorBridge {
   answer(id: number, answer: unknown): Promise<void>;
 }
 
+/** The remote door: a little web server on this computer, opened only when the person switches it on, that another program can call to drive Frameling (src/main/remoteDoor.ts, src/remotedoor). Missing in the web build. */
+export interface RemoteBridge {
+  /** Opens the door on a port. With `fallback` a busy port moves on to the next free one. Nothing listens until this is called. */
+  open(port: number, fallback: boolean): Promise<import('../shared/remoteDoor').RemoteStatus>;
+  close(): Promise<void>;
+  status(): Promise<import('../shared/remoteDoor').RemoteStatus>;
+  /** The key a program must send. Only the settings screen asks, when the person reveals or copies it. */
+  key(): Promise<string>;
+  /** Makes a new key; the old one stops working at once. */
+  roll(): Promise<string>;
+  /** Called with each question the door has for the page. Answer it with `answer`. Returns an unsubscribe function. */
+  onAsk(handler: (id: number, op: import('../shared/remoteDoor').RemoteAsk) => void): () => void;
+  answer(id: number, answer: unknown): Promise<void>;
+}
+
 /** The stream overlay: a page on the actions door's server that OBS loads as a browser source (src/main/overlayHandler.ts, src/streamoverlay). Missing in the web build. */
 export interface OverlayBridge {
   /** Says whether the overlay is wanted. Off, every overlay address answers as if it were not there. */
@@ -446,6 +461,8 @@ export interface FramelingApi {
   door?: DoorBridge;
   /** The stream overlay page for OBS, on the door's server (desktop only). */
   overlay?: OverlayBridge;
+  /** The remote door: lets another program on this computer drive Frameling, only once it is switched on (desktop only). */
+  remote?: RemoteBridge;
   /** Pictures and text to and from the system clipboard (desktop only). */
   clipboard?: ClipboardBridge;
   /** What the app found out about the graphics card, and the switch for hardware drawing (Preferences > Performance). */

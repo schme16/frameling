@@ -7,7 +7,7 @@ describe('what a script may press', () => {
   });
 
   it('may not press what reaches outside the drawing', () => {
-    for (const id of ['file.save', 'file.open', 'file.exportPdf', 'file.importSvg', 'app.restart', 'plugins.install', 'plugin.x.y', 'script.sabc12', 'scripts.open', 'audience.start', 'streamdoor.roll', 'stream.obsLink', 'twitch.connect', 'review.join', 'help.checkUpdates', 'help.sendReport', 'help.about', 'settings.reset', 'edit.undo', 'edit.redo', 'history.back', 'pixel.new', 'keys.set.flash', 'features.streamingOff', 'quests.open', 'perf.copyReport', 'view.preferences', 'popout.toggle', 'capture.start', 'timelapse.start']) expect(isRunnable(id), id).toBe(false);
+    for (const id of ['file.save', 'file.open', 'file.exportPdf', 'file.importSvg', 'app.restart', 'plugins.install', 'plugin.x.y', 'script.sabc12', 'scripts.open', 'audience.start', 'streamdoor.roll', 'stream.obsLink', 'twitch.connect', 'review.join', 'help.checkUpdates', 'help.sendReport', 'help.about', 'settings.reset', 'edit.undo', 'edit.redo', 'history.back', 'pixel.new', 'keys.set.flash', 'features.streamingOff', 'quests.open', 'perf.copyReport', 'view.preferences', 'popout.toggle', 'capture.start', 'timelapse.start', 'view.streamSafe', 'remote.toggle', 'remote.roll', 'remote.copyKey']) expect(isRunnable(id), id).toBe(false);
   });
 
   it('refuses ids that are not ids at all', () => {

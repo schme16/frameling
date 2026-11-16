@@ -10,6 +10,7 @@ import { StreamSafeBadge } from '../streamsafe/StreamSafeBadge';
 import { LivePill } from './LivePill';
 import { JarChip } from '../promptjar/JarCard';
 import { ReviewChip } from '../livereview/ReviewCard';
+import { RemoteBadge } from '../remotedoor';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -92,6 +93,7 @@ export function TopBar() {
       </div>
       <div className="ui-topbar-end">
         <LivePill />
+        <RemoteBadge />
         <ReviewChip />
         <JarChip />
         <StreamSafeBadge />

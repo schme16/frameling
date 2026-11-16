@@ -65,6 +65,13 @@ function invokeStubs(library) {
     'door:key': () => 'fld_PretendKeyForPicturesOnlyNotReal0123',
     'door:roll': () => 'fld_AnotherPretendKeyForPicturesOnly4567',
     'door:answer': () => undefined,
+    // The remote door: pretend it opens, so a picture can show the switch on and the pill. Nothing really listens.
+    'remote:open': (_e, port) => ({ running: true, port: port || 47231, address: `http://127.0.0.1:${port || 47231}`, moved: false, problem: '' }),
+    'remote:close': () => undefined,
+    'remote:status': () => ({ running: false, port: 47231, address: '', moved: false, problem: '' }),
+    'remote:key': () => 'frd_PretendKeyForPicturesOnlyNotReal0123',
+    'remote:roll': () => 'frd_AnotherPretendKeyForPicturesOnly4567',
+    'remote:answer': () => undefined,
     // The stream overlay: no real server either. A made-up address that opens nothing.
     'overlay:on': () => undefined,
     'overlay:push': () => undefined,

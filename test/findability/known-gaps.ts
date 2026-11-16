@@ -160,9 +160,11 @@ export const STILL_LOAD = {
   // light table, look through the camera while playing, import sound and make a symbol from the whole animation now
   // needing animation first. -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
   // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
-  // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. And +2 menu on both sides
-  // for text on a curve, which does not touch the palette numbers because both its commands need words and a line
-  // picked first. None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 556, menu: 743, animateMenu: 8 },
-  animated: { palette: 605, menu: 867, animateMenu: 123 },
+  // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
+  // text on a curve, which does not touch the palette numbers because both its commands need words and a line picked
+  // first. And the remote door: +2 palette (what it has done, and its settings; the switch itself waits for the
+  // desktop app) and +3 menu, those two and the switch, in Edit > Scripts. None of it has anything to do with
+  // animation, so the gap is unchanged.
+  still: { palette: 558, menu: 746, animateMenu: 8 },
+  animated: { palette: 607, menu: 870, animateMenu: 123 },
 };

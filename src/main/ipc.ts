@@ -9,6 +9,7 @@ import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { registerBetaIpc } from './beta';
 import { registerDoorIpc } from './actionsDoor';
+import { registerRemoteIpc } from './remoteDoor';
 import { registerGpuIpc } from './gpu';
 import { registerClipboardIpc } from './clipboard';
 import { registerUpdateIpc } from './update';
@@ -107,12 +108,15 @@ function automationTarget(suggestedName: string, forceExt?: string): string | nu
 }
 
 let doorIpc: { close(): Promise<void> } | null = null;
+let remoteIpc: { close(): Promise<void> } | null = null;
 let review: ReviewControl | null = null;
 /** The drawing window is going: every live review ends with it. */
 export const stopReviews = (): void => review?.stopAll();
 export const stopReviewHost = (): void => review?.stopHost();
 /** Closes the actions door if it is open (the page reloaded or the app is quitting: it must not outlive what answers it). */
 export const closeActionsDoor = (): Promise<void> => doorIpc?.close() ?? Promise.resolve();
+/** The same for the remote door (src/main/remoteDoor.ts): it is answered by the page too, so it goes when the page goes. */
+export const closeRemoteDoor = (): Promise<void> => remoteIpc?.close() ?? Promise.resolve();
 
 export function registerIpc(hooks: IpcHooks): void {
   // Only our own window may ask.
@@ -346,6 +350,7 @@ export function registerIpc(hooks: IpcHooks): void {
   registerVideoIpc(handle, (p) => granted.has(key(p)));
   registerBetaIpc(handle);
   doorIpc = registerDoorIpc(handle, hooks.window, () => app.getPath('userData'), () => path.join(__dirname, process.env.FRAMELING_DEV_URL ? '../../public/mascot' : '../renderer/mascot'));
+  remoteIpc = registerRemoteIpc(handle, hooks.window, () => app.getPath('userData'));
   registerGpuIpc(handle);
   registerClipboardIpc(handle);
   registerUpdateIpc(handle, hooks.window, hooks.finishUpdate);

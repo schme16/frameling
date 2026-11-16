@@ -1093,6 +1093,27 @@ Cancel runs nothing and trusting it clears the mark. `?debug` exposes `__frameli
 The help clip for Scripts is `scripts/docs/help/scripts.cjs` (`npm run help:media -- --only scripts`); the look for the board is
 `brand/ab/scripting/`.
 
+## The remote door: scripts/e2e/remote-door.cjs, scripts-door.cjs, remote-door-media.cjs
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/remote-door.cjs
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/scripts-door.cjs
+```
+
+All three run the real built app in-process (`scripts/e2e/popout-lib.cjs`, via `remote-door-lib.cjs`) and talk to the door over real
+HTTP with the real key. `remote-door.cjs`: nothing listening and no files before the switch; the key file private; no key, a wrong
+key, an Origin and a bad body refused; the commands it may not press (Stream-safe, audience, remote, file, Undo) refused and
+absent from the list; a run of three steps is one Undo step and one Undo takes it back; a request with a dialog open or a button
+held down is `409 busy`; **Stop everything** and a page reload close it. `scripts-door.cjs` is the run checks of `scripts.cjs`
+(one Undo step, the line of an error, a failed script leaves nothing, no Save, no internet, an endless loop stopped) driven through
+the door: what it could not convert, and why, is written at the bottom of the file. The page is reached for two things only: the
+person's switch (`remote.toggle`, the command the Preferences switch runs) and opening the document.
+
+`remote-door-media.cjs --theme dark|light` makes the help clip (`public/help/remote-door-*.mp4`, entry `scripts/docs/help/remote-door.cjs`)
+and the board look in `brand/ab/remote-door/`: the app on the left, and on the right a window showing what a real `curl` and the
+real `docs/examples/remote-door.py` printed. See [remote-door.md](remote-door.md).
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in
