@@ -1885,3 +1885,7 @@ SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/he
 Each picture takes a throwaway shot and a pause first: without it a fresh tip can come out with no words in it (the old build does too, it
 is the software-drawn capture). The placement and arrow maths is `src/ui/tipPlace.ts`, tested in `test/ui/tipPlace.test.ts`; the tip in
 the page (above, arrow, following its thing, no arrow when it can't be near) in `test/ui/tip-arrow.test.tsx`.
+
+## Theme editor chrome and sticky page headers: scripts/ab/theme-chrome.cjs, scripts/ab/page-top.cjs
+
+`theme-chrome.cjs <outDir> <label> [distDir]` copies a built-in theme (`THEMES="Ice Camo,Midnight Sketchbook"`), opens the editor on the copy in a 1200 x 640 window and shoots the button row at rest and hovered (Delete, Duplicate, Undo), the editor at the top and scrolled down. `SET="text:#9fb4ba"` types colours into the hex boxes first, to make a theme that fights its own buttons. `page-top.cjs` shoots the Keyboard and Menus pages at the top and scrolled in both themes (`PAGES=` to narrow). Both take a dist folder, so a before is a build of the base commit. `test/ui/theme-readable.test.ts` proves every `--on-*` colour reads (4.5:1) on its fill across the built-ins and thousands of made-up themes; `test/ui/sticky-page-top.test.tsx` covers the header.
