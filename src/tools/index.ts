@@ -19,6 +19,7 @@ import './combine';
 import './lineStyle';
 import './offset';
 import './width';
+import './shapeBuilder';
 import './quickshape';
 import './rememberUi';
 import './mirror-help';

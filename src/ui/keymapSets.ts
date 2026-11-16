@@ -70,6 +70,8 @@ export const KEYMAP_SETS: KeymapSet[] = [
       'tools.polygon': ['Shift+D'],
       'tools.star': ['Shift+P'],
       'tools.pen': ['Shift+Alt+P'],
+      // Shift+N is Aseprite's new pixel layer here, so the Shape builder takes the Alt version.
+      'tools.shape-builder': ['Shift+Alt+N'],
       'tools.pixel-select': ['m', 'v'],
       'select.lasso': ['q'],
       // Q is Aseprite's lasso, so Transform takes Shift+Q here

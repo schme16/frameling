@@ -1,0 +1,8 @@
+Shape builder. Every picture is in the real app, once in dark and once in light (-dark / -light in the name). Three circles that all overlap, so there are seven bits.
+
+sb-0-before: the circles as drawn, the pointer over the bit where two cross (it lights up, and the other bits show faint dashed edges).
+sb-1-mid-drag: part way through a drag from the coral bit across the lens to the mint bit, button still down. Each bit it has reached is tinted and framed, and the pale line is where the pointer has been.
+sb-2-after: after letting go. Those three bits are one coral shape (it took the colours of the bit the drag started on); the bits it didn't touch stay as shapes of their own.
+sb-3-mid-alt: Alt held, drag down the middle, button still down. Bits that will go are red and striped, so the colour isn't the only clue.
+sb-4-after-alt: after letting go. The bottom bit and the middle one are gone, and the paper shows through.
+sb-clip: a short clip (H.264) of the whole thing: point at a bit, join three, Alt-drag two away.

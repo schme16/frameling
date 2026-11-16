@@ -144,8 +144,10 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
     } else if (s.down || s.held || s.up) {
       // Hold the button over several steps, for a shot in the middle of a drag: down, then held moves, then up.
       const [x, y] = s.down || s.held || s.up;
-      if (s.down) send({ type: 'mouseMove', x, y });
-      send({ type: s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove', x, y, button: 'left', clickCount: 1, modifiers: s.held ? ['leftButtonDown'] : [] });
+      // "mods": ["alt"] keeps keys down through the step (an Alt-drag held part way for a shot).
+      const held = s.mods ?? [];
+      if (s.down) send({ type: 'mouseMove', x, y, modifiers: held });
+      send({ type: s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove', x, y, button: 'left', clickCount: 1, modifiers: [...held, ...(s.held ? ['leftButtonDown'] : [])] });
       await sleep(s.after ?? 60);
     } else if (s.move) {
       send({ type: 'mouseMove', x: s.move[0], y: s.move[1] });

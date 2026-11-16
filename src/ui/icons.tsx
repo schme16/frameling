@@ -221,6 +221,14 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="12" cy="17.5" r="1.3" fill="currentColor" />
     </>
   ),
+  // Shape builder: two circles that cross, with the lens between them filled.
+  'shape-builder': (
+    <>
+      <circle cx="9" cy="12" r="5.6" />
+      <circle cx="15" cy="12" r="5.6" />
+      <path d="M12 7.3a5.6 5.6 0 0 1 0 9.4a5.6 5.6 0 0 1 0-9.4z" fill="currentColor" />
+    </>
+  ),
   polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
   pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
   gradient: (
