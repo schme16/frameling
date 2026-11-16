@@ -510,6 +510,59 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ combinations
+  // Costs that are fine on their own stack up when they happen together. This is the one a person actually feels:
+  // the autosave clock does not care that your pen is down, so on a big document a minute's autosave can land in the
+  // middle of a stroke. The control draws the same stroke on the same document with no autosave, so the pair says
+  // what autosave costs inside a stroke rather than what a stroke costs.
+  async function combos() {
+    const out = {};
+    const spec = { frames: 120, layers: 10, strokesPer: 40, pts: 20 };
+    for (const withSave of [false, true]) {
+      await setDoc(spec);
+      const box = await canvasBox();
+      const pts = wiggle(box, 1200);
+      // Autosave only runs on a changed document, so make one small change first and let it settle.
+      await strokeThrough(wiggle(box, 60));
+      await sleep(300);
+      await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+      await strokeThroughWithSave(pts, withSave);
+      await sleep(300);
+      const raf = await js('window.__h.stopRaf()');
+      const longs = await js('window.__h.takeLongs()');
+      const bag = await readBag();
+      out[withSave ? 'strokeWithAutosave' : 'strokeControl'] = {
+        rafDelta: stats(deltas(raf)),
+        latencyAll: stats(bag.latency),
+        latencyMax: bag.latency.length ? Math.round(Math.max(...bag.latency) * 10) / 10 : 0,
+        overlayDrawMs: stats(bag.overlayMs),
+        mainDrawMs: stats(bag.mainMs),
+        longTasks: longs.length,
+        longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
+      };
+    }
+    return out;
+  }
+
+  /** The same stroke as strokeThrough, with one autosave fired at the half way point when `withSave`. */
+  async function strokeThroughWithSave(pts, withSave, { perTick = 4, tickMs = 16 } = {}) {
+    const half = Math.floor(pts.length / 2);
+    send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+    send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+    await sleep(tickMs);
+    let fired = false;
+    for (let i = 1; i < pts.length; i += perTick) {
+      for (let k = i; k < Math.min(pts.length, i + perTick); k++) send({ type: 'mouseMove', x: pts[k][0], y: pts[k][1], modifiers: ['leftButtonDown'] });
+      if (withSave && !fired && i >= half) {
+        fired = true;
+        await js('window.__frameling.autosaveNow()');
+      }
+      await sleep(tickMs);
+    }
+    const l = pts[pts.length - 1];
+    send({ type: 'mouseUp', x: l[0], y: l[1], button: 'left', clickCount: 1 });
+  }
+
   // ------------------------------------------------------------------ zoom and pan
   async function zoomPan() {
     const out = {};
@@ -816,7 +869,7 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak, export: exportTest };
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, combos, soak, export: exportTest };
   await load();
   const feat = app.getGPUFeatureStatus();
   results.env = {

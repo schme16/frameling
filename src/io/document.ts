@@ -17,6 +17,7 @@ import { thumbnailOf } from './thumb';
 import { previewBytes } from './preview';
 import { handoverFits } from '../shared/handover';
 import { displayPath, streamSafe } from '../core/streamSafe';
+import { handIsBusy, whenHandIsFree } from '../core/handBusy';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
@@ -62,6 +63,11 @@ export function historyNote(saved: Pick<HistorySaved, 'kept' | 'dropped'> | null
 }
 
 let lastDoc: unknown = null;
+/** An autosave that is waiting for the hand to come off the canvas. */
+let saveWaiting = false;
+
+/** How long after the pen lifts a waiting autosave runs, so it never lands on the frame that finishes the stroke. */
+const AFTER_STROKE_MS = 300;
 
 /** Lets go of the drawing the autosave last wrote, so a closed drawing isn't held in memory. */
 export function forgetAutosaved(): void {
@@ -80,11 +86,28 @@ export async function autosaveBytes(doc: Doc, appVersion: string, withHistory = 
   return saveFileAsync(doc, appVersion, new Date(), { reuse: true, ...(history ? { history } : {}) });
 }
 
-export async function autosaveNow(): Promise<void> {
+export async function autosaveNow(opts: { now?: boolean } = {}): Promise<void> {
   const api = desktop();
   const { ui } = store().get();
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
+  // The clock does not care that a pen is down. On a big document the copy takes tens of milliseconds on the main
+  // thread, and in the middle of a stroke that is a hitch in the line. Wait for the release: a second later is just
+  // as good a copy. Only one waits at a time, because the next minute's autosave finds this one already pending.
+  if (handIsBusy() && !opts.now) {
+    if (!saveWaiting) {
+      saveWaiting = true;
+      whenHandIsFree(() => {
+        // Not on the release itself: lifting the pen already finishes the stroke and repaints, and a save on that
+        // same frame would only move the hitch to the end of the line. A moment later nobody is waiting on it.
+        setTimeout(() => {
+          saveWaiting = false;
+          void autosaveNow();
+        }, AFTER_STROKE_MS);
+      });
+    }
+    return;
+  }
   try {
     const bytes = await autosaveBytes(doc, api.versions.app);
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });

@@ -61,8 +61,9 @@ export function startFileServices(): void {
 
   setInterval(() => void autosaveNow(), AUTOSAVE_EVERY_MS);
   // Also when the window is hidden (another tab, minimised), as a browser tab can be closed without asking.
+  // Hidden means the window may be about to go away, so this one never waits for the hand to come off the canvas.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') void autosaveNow();
+    if (document.visibilityState === 'hidden') void autosaveNow({ now: true });
   });
 
   // Title bar and the desktop side's idea of "is there anything unsaved".

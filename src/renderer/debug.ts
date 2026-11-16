@@ -42,6 +42,7 @@ import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runti
 import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
+import { autosaveNow } from '../io/document';
 import { setCheckMemory } from '../tablet/check/state';
 import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/settings';
 import { penTools } from '../tablet/tool';
@@ -145,6 +146,9 @@ if (new URLSearchParams(location.search).has('debug')) {
     toast,
     // Work found after a crash, for shots of the welcome sheet's recovery card.
     recovery,
+    // Autosave on demand, so the performance harness can land one in the middle of a stroke on purpose
+    // (scripts/perf/run.cjs, the combos test). Nothing in the app calls this: the clock does.
+    autosaveNow: () => void autosaveNow(),
     overlays: { openHelp, openPrefs, closeSheet, state: overlays },
     // Pen and tablet settings, for the pen check (scripts/e2e/pen.cjs).
     pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen, forgetTools: () => penTools.reset() },

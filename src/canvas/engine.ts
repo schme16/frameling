@@ -51,6 +51,7 @@ import { roughNow, setKeptProbe, subscribeScrubbing } from '../gpu/settings';
 import { watchPixelRatio } from './pixelRatio';
 import { boxOffset, dragAngle, getTurn, isTurned, resetTurn, setTurn, subscribeTurn, turnAngleFor, turnBox, turnCss, unturnVector, windowToBox, type Turn } from './turn';
 import { altPressMoved, altPressReleased, altTurnPress } from './altPress';
+import { setHandBusy } from '../core/handBusy';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -98,7 +99,18 @@ export class CanvasEngine {
   private raf = 0;
   private dirtyMain = true;
   private dirtyOverlay = true;
-  private gesture: Gesture | null = null;
+  // Every place a gesture starts or ends goes through this pair, so the rest of the app can ask whether a hand is on
+  // the canvas (src/core/handBusy.ts). Autosave uses it to wait for the release instead of hitching a stroke.
+  private gestureNow: Gesture | null = null;
+
+  private get gesture(): Gesture | null {
+    return this.gestureNow;
+  }
+
+  private set gesture(g: Gesture | null) {
+    this.gestureNow = g;
+    setHandBusy(g !== null);
+  }
   private spaceDown = false;
   private spaceTap = new SpaceTap();
   private altDown = false;
