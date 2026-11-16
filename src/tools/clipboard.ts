@@ -33,6 +33,30 @@ function regroup(shapes: Shape[]): Shape[] {
   });
 }
 
+/**
+ * Words on a curve follow the copy of their line when the line was copied with them. With no line in the batch they keep
+ * the curve they have and follow nothing (a lone copy left following the original line would snap back onto it).
+ */
+function relinkPathText(copies: Shape[], renamed: Map<Id, Id>): Shape[] {
+  return copies.map((s) => {
+    if (s.type !== 'text' || !s.onPath?.source) return s;
+    const { source, ...rest } = s.onPath;
+    const next = renamed.get(source);
+    return { ...s, onPath: next ? { ...rest, source: next } : rest };
+  });
+}
+
+/** Moved copies of shapes under new ids, with groups and words-on-a-curve pointing at the copies and not the originals. */
+function freshCopies(shapes: Shape[], move: ReturnType<typeof translate>): Shape[] {
+  const renamed = new Map<Id, Id>();
+  const copies = shapes.map((s) => {
+    const c = cloneShape(s, uid('sh'));
+    renamed.set(s.id, c.id);
+    return carryRepeat(transformShape(c, move), move);
+  });
+  return regroup(relinkPathText(copies, renamed));
+}
+
 export function clipboardHasShapes(): boolean {
   return !!clip && clip.shapes.length > 0;
 }
@@ -44,7 +68,7 @@ export function pasteFromClipboard(target: Id | null): Shape[] {
   // there, so it steps aside.
   const n = (target ? (clip.pastes.get(target) ?? 0) : 0) + (clip.from !== null && clip.from === target ? 1 : 0);
   const move = translate(n * PASTE_STEP, n * PASTE_STEP);
-  return regroup(clip.shapes.map((s) => carryRepeat(transformShape(cloneShape(s, uid('sh')), move), move)));
+  return freshCopies(clip.shapes, move);
 }
 
 /** Tells the clipboard a paste landed in this drawing, so the next one steps along. */
@@ -55,7 +79,7 @@ export function notePasted(target: Id | null | undefined): void {
 /** Copies of shapes with new ids, nudged aside (Duplicate). */
 export function duplicateShapes(shapes: Shape[]): Shape[] {
   const move = translate(PASTE_STEP, PASTE_STEP);
-  return regroup(shapes.map((s) => carryRepeat(transformShape(cloneShape(s, uid('sh')), move), move)));
+  return freshCopies(shapes, move);
 }
 
 export function clearClipboard(): void {
