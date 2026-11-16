@@ -49,6 +49,7 @@ export const HISTORY: History = {
     { on: D, n: 147, why: 'Shape builder: it is a tool, so it comes in under Tools with the others rather than getting a home of its own. There is room now that soft paint has a menu of its own.' },
     { on: D, n: 149, why: 'text-on-path: Put text on a curve and Take text off the curve join Tools > Shapes and colour, beside Convert text to shapes, because words round a circle or along a wave is a way of working on text and a line you already have, and a person looking for it would look there. Still under the cap of 150.' },
     { on: D, n: 82, why: 'tools-room: 67 entries left Tools. The tool list went (31 tools are a button on the rail wherever the menu listed them; Spray is in Soft paint and New tile and draw it joined Tiles), the Line style submenu (12) went because each has a row in the Dashes, arrows and width options, and 21 more went because a row in a tool\'s own options does the same job. Five tools the Pixel rail leaves off stay, in Tools off the Pixel rail. That is room for what comes next.' },
+    { on: '2026-11-16', n: 65, why: 'tips-palette: 17 of the 20 Brush tips entries left the menu, because each tip is a row in the Tip picker and the selection, Along the line, Edged part and pixel reset entries are buttons in the brush options. Next tip, Previous tip and Turn brush lines into plain shapes stay, with no control on screen.' },
   ],
   'STREAM_LOAD.palette': [{ on: D, n: 79, why: BASE }],
   'STREAM_LOAD.menu': [{ on: D, n: 79, why: BASE }],
@@ -85,6 +86,7 @@ export const HISTORY: History = {
     { on: D, n: 734, why: 'clone-curves: the blur and sharpen brushes are two more tools in Soft paint, the same two on both sides, because softening and crisping an edge has nothing to do with animation, so the gap does not move.' },
     { on: D, n: 735, why: 'brush-engine2: Change how the pen feels is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
     { on: D, n: 736, why: 'brush-engine2: Next paint mode is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
+    { on: '2026-11-16', n: 719, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, so a still has 17 fewer menu entries and the same palette.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -114,6 +116,7 @@ export const HISTORY: History = {
     { on: D, n: 858, why: 'clone-curves: the same two as a still gains, so the gap between the two sides does not move.' },
     { on: D, n: 859, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 860, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: '2026-11-16', n: 843, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, and none of them has anything to do with animation.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };
