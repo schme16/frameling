@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cardAsk, hasDrawingDriver, isDiscrete, readCards, steering, type Card } from '../../src/main/gpuPick';
+import { cardAsk, hasDrawingDriver, isDiscrete, readCards, steering, type Card, type SysfsIO } from '../../src/main/gpuPick';
 
 const nvidia: Card = { pci: '0000:01:00.0', vendorId: 0x10de, deviceId: 0x2702, driver: 'nvidia' };
 const intelOnboard: Card = { pci: '0000:00:02.0', vendorId: 0x8086, deviceId: 0x4680, driver: 'i915' };
@@ -66,7 +66,45 @@ describe('steering to the discrete card', () => {
 });
 
 describe('reading the cards from the system', () => {
+  // A made-up /sys/bus/pci/devices, so the same check runs on every machine (Windows cannot name a folder 0000:01:00.0).
+  const ROOT = '/sys/bus/pci/devices';
+  function fakeSys() {
+    const files = new Map<string, string>();
+    const links = new Map<string, string>();
+    const dirs = new Set<string>();
+    const add = (addr: string, cls: string, vendor: string, device: string, driver?: string, vram?: string) => {
+      dirs.add(addr);
+      files.set(`${ROOT}/${addr}/class`, cls + '\n');
+      files.set(`${ROOT}/${addr}/vendor`, vendor + '\n');
+      files.set(`${ROOT}/${addr}/device`, device + '\n');
+      if (driver) links.set(`${ROOT}/${addr}/driver`, '/sys/bus/pci/drivers/' + driver);
+      if (vram) files.set(`${ROOT}/${addr}/mem_info_vram_total`, vram + '\n');
+    };
+    const io: SysfsIO = {
+      readdir: (d) => {
+        if (d !== ROOT) throw new Error('ENOENT');
+        return [...dirs];
+      },
+      read: (f) => (files.has(f) ? files.get(f)!.trim() : null),
+      readlink: (f) => links.get(f) ?? null,
+    };
+    return { add, io };
+  }
+  const expected = [
+    { pci: '0000:01:00.0', vendorId: 0x10de, deviceId: 0x2702, driver: 'nvidia', vramBytes: undefined },
+    { pci: '0000:16:00.0', vendorId: 0x1002, deviceId: 0x164e, driver: 'vfio-pci', vramBytes: 536870912 },
+  ];
   it('lists display cards with their driver and memory, and nothing else', () => {
+    const { add, io } = fakeSys();
+    add('0000:01:00.0', '0x030000', '0x10de', '0x2702', 'nvidia');
+    add('0000:16:00.0', '0x030000', '0x1002', '0x164e', 'vfio-pci', '536870912');
+    add('0000:00:1f.3', '0x040300', '0x8086', '0x51c8', 'snd_hda_intel');
+    expect(readCards(ROOT, io)).toEqual(expected);
+  });
+  // The same read against real folders and a real symlink. Skipped on Windows only: a folder named 0000:01:00.0 cannot
+  // exist there (the colon is not allowed in a name), and the real thing only ever reads /sys on Linux. The made-up
+  // /sys above runs everywhere.
+  it.skipIf(process.platform === 'win32')('reads real folders and a real link the same way', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'frameling-pci-'));
     const add = (addr: string, cls: string, vendor: string, device: string, driver?: string, vram?: string) => {
       const d = path.join(root, addr);
@@ -80,11 +118,7 @@ describe('reading the cards from the system', () => {
     add('0000:01:00.0', '0x030000', '0x10de', '0x2702', 'nvidia');
     add('0000:16:00.0', '0x030000', '0x1002', '0x164e', 'vfio-pci', '536870912');
     add('0000:00:1f.3', '0x040300', '0x8086', '0x51c8', 'snd_hda_intel');
-    const cards = readCards(root);
-    expect(cards).toEqual([
-      { pci: '0000:01:00.0', vendorId: 0x10de, deviceId: 0x2702, driver: 'nvidia', vramBytes: undefined },
-      { pci: '0000:16:00.0', vendorId: 0x1002, deviceId: 0x164e, driver: 'vfio-pci', vramBytes: 536870912 },
-    ]);
+    expect(readCards(root)).toEqual(expected);
   });
   it('gives an empty list, not a failure, when there is nothing to read', () => expect(readCards('/no/such/folder')).toEqual([]));
 });

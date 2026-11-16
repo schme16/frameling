@@ -3,8 +3,8 @@
 // hold a claim on him at once, if his house stops being the lowest claim, or if a new place draws him without asking.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Quill, QuillEmpty, QuillSays } from '../../src/ui/mascot';
 import { claimQuill, claimsNow, holder, PRIORITY, resetClaims, SURFACES } from '../../src/ui/mascot/claims';
@@ -16,6 +16,7 @@ import { QuillPetPanel } from '../../src/quillpet/QuillPetPanel';
 import { FRESH_PET } from '../../src/quillpet/model';
 import { setPet } from '../../src/quillpet/store';
 import { FAKE_SHEET } from '../fixtures/quill-sheet';
+import { relative, sourceFiles } from '../helpers/files';
 import '../../src/renderer/features';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -200,15 +201,6 @@ describe('what is on screen', () => {
 
 // ---------------------------------------------------------------- the rule can't decay
 
-function sourceFiles(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) sourceFiles(p, out);
-    else if (/\.(ts|tsx)$/.test(name)) out.push(p);
-  }
-  return out;
-}
-
 /** The attributes of the JSX tag that starts at `from`, up to its closing `>` (skipping any inside braces or quotes). */
 function tagAt(src: string, from: number): string {
   let depth = 0;
@@ -228,6 +220,8 @@ function tagAt(src: string, from: number): string {
 describe('no place draws him without asking', () => {
   const root = join(__dirname, '..', '..', 'src');
   const files = sourceFiles(root).filter((f) => !/ui\/mascot\/(Quill\.tsx|claims\.ts)$/.test(f));
+
+  it('is looking at the source at all (a scan that finds no files would pass without saying so)', () => expect(files.length).toBeGreaterThan(300));
 
   it('every <Quill> and <QuillSays> names its surface', () => {
     const bad: string[] = [];

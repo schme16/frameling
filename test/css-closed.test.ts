@@ -54,7 +54,7 @@ function unclosed(css: string): string[] {
 it('every CSS rule is closed', () => {
   const bad: string[] = [];
   for (const f of walk(path.join(root, 'src'))) {
-    for (const r of unclosed(fs.readFileSync(f, 'utf8'))) bad.push(`${path.relative(root, f)} ${r}`);
+    for (const r of unclosed(fs.readFileSync(f, 'utf8'))) bad.push(`${path.relative(root, f).replace(/\\/g, '/')} ${r}`);
   }
   expect(bad).toEqual([]);
 });

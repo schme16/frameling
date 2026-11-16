@@ -1,17 +1,26 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { relative, walkFiles } from '../helpers/files';
 import { findRawDisplays, SAFE_CALLS } from './scan';
 const SAFE = [...SAFE_CALLS];
 
 const src = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src');
-const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => (statSync(path.join(dir, f)).isDirectory() ? walk(path.join(dir, f)) : [path.join(dir, f)]));
+const walk = (dir: string): string[] => walkFiles(dir);
 const files = walk(src).filter((f) => /\.tsx$/.test(f));
+
+describe('the scan itself', () => {
+  it('sees the source, with forward slashes on every system', () => {
+    expect(files.length).toBeGreaterThan(50);
+    expect(files.some((f) => f.includes('\\'))).toBe(false);
+    expect(relative(src, files.find((f) => f.endsWith('/io/RecentDialog.tsx'))!)).toBe('io/RecentDialog.tsx');
+  });
+});
 
 describe('every screen shows paths, names and keys through the stream-safe helper', () => {
   it('finds no raw path, name or key on any screen', () => {
-    const bad = files.flatMap((f) => findRawDisplays(f, readFileSync(f, 'utf8')).map((x) => `${path.relative(src, f)}:${x.line}  ${x.text}  (${x.why})`));
+    const bad = files.flatMap((f) => findRawDisplays(f, readFileSync(f, 'utf8')).map((x) => `${relative(src, f)}:${x.line}  ${x.text}  (${x.why})`));
     expect(bad).toEqual([]);
   });
 });
@@ -20,7 +29,7 @@ import { findRawMessages } from './scan';
 describe('every toast shows paths and file names through the helper', () => {
   it('finds no raw path or file name in a toast', () => {
     const all = walk(src).filter((f) => /\.tsx?$/.test(f) && !/\.bodies\.ts$/.test(f) && !/src\/(main|preload)\//.test(f));
-    const bad = all.flatMap((f) => findRawMessages(f, readFileSync(f, 'utf8')).map((x) => `${path.relative(src, f)}:${x.line}  ${x.text}  (${x.why})`));
+    const bad = all.flatMap((f) => findRawMessages(f, readFileSync(f, 'utf8')).map((x) => `${relative(src, f)}:${x.line}  ${x.text}  (${x.why})`));
     expect(bad).toEqual([]);
   });
 });
@@ -60,13 +69,13 @@ describe('the lists of recent drawings and the title bar cannot be added around 
       .filter((f) => /\.tsx?$/.test(f) && !/src\/(main|preload)\//.test(f) && !/io\/(recentShown|document|index)\.ts$/.test(f) && !f.endsWith('RecentPicture.tsx'))
       .filter((f) => /\blistRecentFiles\b|\brecent\.list\b/.test(readFileSync(f, 'utf8')))
       .filter((f) => !/\bshownRecent\b/.test(readFileSync(f, 'utf8')));
-    expect(readers.map((f) => path.relative(src, f))).toEqual([]);
+    expect(readers.map((f) => relative(src, f))).toEqual([]);
   });
   it('the window title is only set from the stream-safe title', () => {
     const setters = walk(src)
       .filter((f) => /\.tsx?$/.test(f) && !/src\/main\//.test(f))
       .filter((f) => /document\.title\s*=/.test(readFileSync(f, 'utf8')))
-      .map((f) => path.relative(src, f))
+      .map((f) => relative(src, f))
       .sort();
     // autosave.ts sets it from documentTitle(); the second window's title comes from the same name over the link.
     expect(setters).toEqual(['io/autosave.ts', 'popout/page.tsx']);
