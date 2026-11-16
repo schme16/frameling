@@ -75,10 +75,27 @@ async function stopRec(r) {
   fs.writeFileSync(path.join(r.dir, 'list.txt'), lines.join('\n') + '\n');
 }
 
+/**
+ * Swaps any `{ stagePoint: { x, y, z, cx, cy } }` in a step for a window position, measured from the stage as it is now:
+ * the point (x, y) on a stage shown at zoom z with (cx, cy) in the middle. The helpers in help/_shapes.cjs write these, so a
+ * drag lands right whatever width the side rail has, without a number copied from the app that goes stale.
+ */
+async function resolveStage(wc, step) {
+  const text = JSON.stringify(step);
+  if (!text || !text.includes('"stagePoint"')) return step;
+  const b = await wc.executeJavaScript(`(() => { const r = document.querySelector('.cv-layer')?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height]; })()`);
+  if (!b) throw new Error('stagePoint: the stage is not on screen');
+  return JSON.parse(text, (_k, v) => {
+    const p = v && typeof v === 'object' && !Array.isArray(v) ? v.stagePoint : null;
+    return p ? [Math.round(b[0] + b[2] / 2 + (p.x - p.cx) * p.z), Math.round(b[1] + b[3] / 2 + (p.y - p.cy) * p.z)] : v;
+  });
+}
+
 async function runSteps(win, steps, { outDir, width, height, name }) {
   const wc = win.webContents;
   const send = (e) => wc.sendInputEvent(e);
-  for (const s of steps) {
+  for (const step of steps) {
+    const s = await resolveStage(wc, step);
     if (s.eval) await wc.executeJavaScript(s.eval);
     else if (s.log) console.log(JSON.stringify(await wc.executeJavaScript(s.log)));
     // {"write": "js returning base64", "file": "name.png"}: saves what the page hands back (an exported picture) into the output folder.

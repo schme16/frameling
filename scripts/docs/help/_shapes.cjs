@@ -1,5 +1,7 @@
 // Helpers shared by the entries for combining shapes, line styles and hold to tidy (help topics and the before/after looks).
-// Window coordinates: the canvas viewport is 764 x 444 at (113, 47); view(z, cx, cy) puts stage point (cx, cy) at its middle.
+// view(z, cx, cy) puts stage point (cx, cy) at the middle of the canvas, and at(x, y) says where stage point (x, y) lands in the
+// window. Neither holds a pixel number: view() measures the canvas when it runs, and at() leaves a marker that the step runner
+// (scripts/docs/steps.cjs) turns into a position when the step runs, so a wider rail or a taller window can't make them drift.
 const dom = (js) => ({ eval: js });
 const UI = (o) => dom(`__frameling.store().setUi(${JSON.stringify(o)})`);
 const T = (id) => dom(`__frameling.template(${JSON.stringify(id)})`);
@@ -7,9 +9,13 @@ const away = { move: [720, 28] };
 let view_ = { z: 0.6, cx: 640, cy: 360 };
 const view = (z = 0.6, cx = 640, cy = 360) => {
   view_ = { z, cx, cy };
-  return UI({ zoom: z, panX: 382 - cx * z, panY: 222 - cy * z });
+  // Waits for the canvas to stop changing size first: loading a template settles the panels and refits the page a moment
+  // after, which undoes a zoom set too early.
+  return dom(`(async () => { const el = () => document.querySelector('.cv-layer'); let last = '', since = Date.now(); const end = since + 6000;
+    for (;;) { const r = el().getBoundingClientRect(); const k = [r.x, r.y, r.width, r.height].join(); if (k !== last) { last = k; since = Date.now(); } if (Date.now() - since >= 400 || Date.now() > end) break; await new Promise((f) => setTimeout(f, 50)); }
+    const b = el().getBoundingClientRect(); __frameling.store().setUi({ zoom: ${z}, panX: b.width / 2 - ${cx} * ${z}, panY: b.height / 2 - ${cy} * ${z} }); })()`);
 };
-const at = (x, y) => [Math.round(495 + (x - view_.cx) * view_.z), Math.round(269 + (y - view_.cy) * view_.z)];
+const at = (x, y) => ({ stagePoint: { x, y, z: view_.z, cx: view_.cx, cy: view_.cy } });
 const INK = '#1d1b26';
 const KAPPA = 0.5522847498307936;
 let nid = 0;
