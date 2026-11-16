@@ -34,8 +34,10 @@ describe('the pixel brush tool', () => {
 
   it('has a palette command for every setting you flip, each with the pixel brush help', () => {
     const mine = allCommands().filter((c) => c.id.startsWith('pixelbrush.'));
-    expect(mine.map((c) => c.id).sort()).toEqual(['pixelbrush.dual', 'pixelbrush.fade', 'pixelbrush.follow', 'pixelbrush.grain', 'pixelbrush.pen', 'pixelbrush.scatter', 'pixelbrush.smooth', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', 'pixelbrush.tip.picture', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.wet', 'pixelbrush.wobble']);
-    for (const c of mine) expect(c.help).toBe('pixel-brush');
+    expect(mine.map((c) => c.id).sort()).toEqual(['pixelbrush.blend', 'pixelbrush.dual', 'pixelbrush.fade', 'pixelbrush.feel', 'pixelbrush.follow', 'pixelbrush.grain', 'pixelbrush.pen', 'pixelbrush.scatter', 'pixelbrush.smooth', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', 'pixelbrush.tip.picture', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.wet', 'pixelbrush.wobble']);
+    // Each of the folds has its own topic where it has one.
+    const own: Record<string, string> = { 'pixelbrush.feel': 'pixel-brush-curves', 'pixelbrush.blend': 'pixel-brush-blend' };
+    for (const c of mine) expect(c.help).toBe(own[c.id] ?? 'pixel-brush');
   });
 
   it('flips smooth edges, turning with the line and scatter from the palette', () => {

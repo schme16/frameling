@@ -24,3 +24,60 @@
   padding-left: 10px;
   border-left: 2px solid var(--line);
 }
+
+/* The response curve graph. */
+.dab-curve {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dab-curve-feels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dab-curve-graph {
+  align-self: flex-start;
+  max-width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  background: var(--well, var(--panel-2));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+.dab-curve-box {
+  fill: none;
+  stroke: var(--line);
+}
+.dab-curve-grid line {
+  stroke: var(--line);
+  stroke-width: 0.5;
+  opacity: 0.6;
+}
+.dab-curve-diag {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+.dab-curve-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dab-curve-dot {
+  fill: var(--panel-2);
+  stroke: var(--accent);
+  stroke-width: 2;
+  cursor: grab;
+}
+.dab-curve-dot:hover,
+.dab-curve-dot.is-drag {
+  fill: var(--accent);
+}
+.dab-curve-dot:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}

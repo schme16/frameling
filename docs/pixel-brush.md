@@ -21,7 +21,8 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 | `fadeLength` | Pixels of line a `fade` source takes to run out | PS Fade steps (steps are dabs, so steps times spacing times size), Krita fade sensor |
 | `grain` (`paper`, `depth`, `scale`, `moving`) | A paper the paint catches on | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
 | `dual` (`tip`, `size`, `density`, `cut`) | A second tip of dots the first is let through | PS Dual brush (tip, diameter, scatter, count), Krita masking brush |
-| `wet` 0 to 1 | Carries colour from under the brush along the stroke | PS Mixer brush wetness and load, Krita colour smudge, Procreate blend |
+| `wet` 0 to 1 | Carries colour from under the brush along the stroke, and mixes with the stroke's own paint | PS Mixer brush wetness and load, Krita colour smudge, Procreate blend |
+| `blend` (any layer blend mode but Add; `normal` is paint over) | How the paint joins what is on the layer | PS brush Mode, Krita composite op, Procreate brush blend mode |
 
 ### Dynamics are a list of routes
 
@@ -35,8 +36,13 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
   `lightness` (swing both ways round the middle of the source, so a `random` source is a plain jitter).
 - Several routes to one target multiply (size, flow) or add (the rest). The options show the first route per target and say
   when a brush file brought more.
-- Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve is not
-  kept (no curve yet): take the nearest straight line and say so in the import note. Opacity and flow are both `flow` here, so
+- A route can carry a `curve` (`src/dab/curve.ts`): a list of 2 to 8 `[x, y]` points, x from 0 (first point) to 1 (last), y 0 to 1,
+  joined by a monotone smooth line. It bends the source before the flip (`invert`), so the graph always reads as drawn. A straight
+  curve is left out. Read with `cleanCurve`, which mends what is off (order, range, ends, crowded points) and thins a long list with
+  `thin` (so a Photoshop or Krita curve of any length comes in as its nearest 8 points). Photoshop's control curves and Krita's sensor
+  curves land here; Procreate's pressure curve too. Pass the points as 0 to 1, with the input on x.
+- Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve is kept now:
+  put its points in `curve` instead of flattening to a straight line. Opacity and flow are both `flow` here, so
   a file that puts pressure on both gets one route, not two. The full mapping is in [brush-import.md](brush-import.md).
 - `angle` is clockwise on screen. Photoshop's control numbers and GIMP's counter-clockwise angle are in brush-import.md.
 - The Pen page's pressure for size and flow is skipped when the brush has its own pressure or tilt route to that target, so it
@@ -54,20 +60,19 @@ dots and one stroke is stable).
 
 ## Not built, with the reason
 
-- **Pressure curves** (Procreate, Krita): routes are straight lines. A curve field on the route is the extension point.
 - **Texture from a picture, and a second brush with its own spacing and scatter** (PS dual with scatter and count, PS texture from a
   pattern): grain is the five papers and dual is dots of one size. A `Grain`/`Dual` tile from an image is the extension point
   (`paperTile`, `dualTile` return `Uint8Array(256*256)`).
-- **Blend modes per brush** (PS dual's multiply/subtract/overlay): only keep and cut.
+- **Blend modes inside the dual tip** (PS dual's multiply/subtract/overlay): the dual tip is only keep and cut. The brush's own `blend` is built.
 - **Smoothing, stabiliser per brush**: the Pen page's stabiliser stays per tool.
 - **Brush tip editor** (drawing a tip in a window): the tip is made from a selection.
 - **Affinity** brush files: nothing public.
-- **Wet mixing across the stroke's own paint**: the load picks up the picture as it was before the stroke, not the stroke's own paint.
+- **Wet paint is not a full mixer**: the load drifts toward what it crosses and dabs mix with the stroke's own paint in proportion, but there is no separate bristle load, no dry-out and no paint amount that runs low (PS Mixer brush load and mix).
 
 ## Where each piece lives
 
 `maths.ts` (the brush, the tip sampler, `DabPath` that walks the pointer and makes dabs), `stroke.ts` (`DabStroke`: per pixel paint,
-flow and opacity, crisp dither, palette snap, mirror, texture, colour), `dynamics.ts`, `texture.ts`, `colour.ts`, `sense.ts` (pointer
+flow and opacity, crisp dither, palette snap, mirror, texture, colour), `dynamics.ts`, `curve.ts` (pen curves) and `CurveEditor.tsx`, `blend.ts` (paint modes), `texture.ts`, `colour.ts`, `sense.ts` (pointer
 to inputs, speed), `spec.ts` (what a saved brush is, read defensively), `sample.ts` (picker thumbnails by the real engine, with a pretend
 pen), `cursor.ts` (the tip as the cursor), `tools.ts`, `Options.tsx` and `DynamicsOptions.tsx`. Starters: `src/brushes/pixelStarters.ts`.
 

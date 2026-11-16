@@ -1,0 +1,11 @@
+{
+  "best": {
+    "plain-40": 16,
+    "plain-hard-300": 39.5,
+    "pressure-40": 11.9,
+    "wet-40": 16
+  },
+  "ratios": {
+    "wet-40 / plain-40": 1
+  }
+}

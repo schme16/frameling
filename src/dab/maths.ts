@@ -5,6 +5,8 @@
  */
 import { readPixelStamp, type PixelStamp } from '../brushes/stamps';
 import { MIN_SMOOTH_EDGE, mirrorCentres } from '../soft/maths';
+import type { BlendMode } from '../core/format';
+import { cleanBlend } from './blend';
 import { cleanRoutes, effectsOf, FADE_DEFAULT, FADE_RANGE, lerpInputs, newEffects, NEUTRAL, sameRoutes, type DynRoute, type Effects, type Inputs } from './dynamics';
 import { cleanDual, cleanGrain, sameDual, sameGrain, type Dual, type Grain } from './texture';
 
@@ -50,6 +52,8 @@ export interface DabBrush {
   dual: Dual | null;
   /** 0 (paints its own colour) to 1 (carries the colour it passes over along the stroke, like wet paint). */
   wet: number;
+  /** How the paint joins what is on the layer: normal, or a blend mode like a layer's (see blend.ts). */
+  blend: BlendMode;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
@@ -80,6 +84,7 @@ export const DEFAULT_DAB: DabBrush = {
   grain: null,
   dual: null,
   wet: 0,
+  blend: 'normal',
 };
 
 const num = (v: unknown, lo: number, hi: number, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback);
@@ -113,6 +118,7 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
     grain: r.grain === undefined ? base.grain : cleanGrain(r.grain),
     dual: r.dual === undefined ? base.dual : cleanDual(r.dual),
     wet: round3(num(r.wet, 0, 1, base.wet)),
+    blend: cleanBlend(r.blend, base.blend),
   };
 }
 
@@ -124,7 +130,7 @@ export function sameDab(a: DabBrush, b: DabBrush): boolean {
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
-    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet)
+    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend
   );
 }
 

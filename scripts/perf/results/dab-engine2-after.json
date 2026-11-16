@@ -1,0 +1,15 @@
+{
+  "best": {
+    "plain-40": 16.1,
+    "plain-hard-300": 39.8,
+    "pressure-40": 11.9,
+    "pressure-curve-40": 11.9,
+    "multiply-40": 26.1,
+    "wet-40": 17.9
+  },
+  "ratios": {
+    "pressure-curve-40 / pressure-40": 1,
+    "multiply-40 / plain-40": 1.62,
+    "wet-40 / plain-40": 1.11
+  }
+}

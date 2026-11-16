@@ -7,6 +7,8 @@
  * targets are the dab's own settings. Pure functions, no DOM, so every law here is tested on its own.
  */
 
+import { cleanCurve, sameCurve, shape, type Curve } from './curve';
+
 export type DynSource = 'pressure' | 'tilt' | 'twist' | 'speed' | 'direction' | 'fade' | 'random';
 export type DynTarget = 'size' | 'flow' | 'angle' | 'scatter' | 'mix' | 'hue' | 'saturation' | 'lightness';
 
@@ -19,6 +21,8 @@ export interface DynRoute {
   to: DynTarget;
   amount: number;
   invert: boolean;
+  /** How the source turns into what the route feels, before it is flipped: a bent line instead of a straight one (see curve.ts). Left out: straight. */
+  curve?: Curve;
 }
 
 /** More routes than this in a brush are dropped when it is read: no real brush needs more, and a file is not trusted. */
@@ -43,13 +47,16 @@ export function cleanRoutes(raw: unknown): DynRoute[] {
     const o = r as Record<string, unknown>;
     if (!isSource(o.from) || !isTarget(o.to)) continue;
     const amount = typeof o.amount === 'number' && Number.isFinite(o.amount) ? clamp01(o.amount) : 1;
-    out.push({ from: o.from, to: o.to, amount: round3(amount), invert: o.invert === true });
+    const route: DynRoute = { from: o.from, to: o.to, amount: round3(amount), invert: o.invert === true };
+    const curve = cleanCurve(o.curve);
+    if (curve) route.curve = curve;
+    out.push(route);
   }
   return out;
 }
 
 export const sameRoutes = (a: readonly DynRoute[], b: readonly DynRoute[]): boolean =>
-  a.length === b.length && a.every((r, i) => r.from === b[i].from && r.to === b[i].to && r.invert === b[i].invert && Math.abs(r.amount - b[i].amount) < 1e-6);
+  a.length === b.length && a.every((r, i) => r.from === b[i].from && r.to === b[i].to && r.invert === b[i].invert && Math.abs(r.amount - b[i].amount) < 1e-6 && sameCurve(r.curve, b[i].curve));
 
 /** What a dab can feel right now. A source the device cannot give (a mouse has no tilt) is left undefined, and its routes sit out. */
 export interface Inputs {
@@ -141,6 +148,7 @@ export function effectsOf(routes: readonly DynRoute[], i: Inputs, fade: number, 
   for (const r of routes) {
     let v = sourceValue(r.from, i, fade);
     if (v === null) continue;
+    if (r.curve) v = shape(r.curve, v);
     if (r.invert) v = 1 - v;
     const a = r.amount;
     switch (r.to) {

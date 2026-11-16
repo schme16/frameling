@@ -8,6 +8,9 @@ import { showPanel } from '../ui/dock';
 import { TIP_SHAPES, type TipShape } from './maths';
 import { getDab, setDab } from './settings';
 import { routeFor, withRoute } from './dynamics';
+import { FEELS, feelOf } from './curve';
+import { stepBlend } from './blend';
+import { blendInfo } from '../effects/model';
 import { DEFAULT_DUAL, DEFAULT_GRAIN } from './texture';
 import { pictureFromSelection } from './Options';
 import { PIXEL_BRUSH_TOOL } from './live';
@@ -127,6 +130,42 @@ registerCommands([
       const on = routeFor(getDab().dynamics, 'size')?.from === 'pressure';
       setDab({ dynamics: withRoute(getDab().dynamics, 'size', on ? null : { from: 'pressure' }) });
       toast(on ? 'Pressure no longer changes the size.' : 'Press harder for a bigger mark. A mouse paints at full size.', { duration: 1800 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.feel',
+    help: 'pixel-brush-curves',
+    label: 'Pixel brush: change how the pen feels (next response curve)',
+    description: 'Steps the pen pressure through the ready-made feels: even, light touch, firm hand, soft ends, ignore the lightest. Bend your own under Pen, speed and fade.',
+    keywords: ['pixel brush', 'pressure', 'curve', 'pen', 'tablet', 'feel', 'response', 'sensitivity', 'light', 'firm', 'soft', 'wacom', 'procreate'],
+    run: () => {
+      open();
+      const routes = getDab().dynamics;
+      const mine = routes.filter((r) => r.from === 'pressure');
+      if (mine.length === 0) {
+        setDab({ dynamics: withRoute(routes, 'size', { from: 'pressure', curve: FEELS[1].curve }) });
+        toast('Pen pressure now changes the size, with a light touch.', { duration: 1800 });
+        return;
+      }
+      const now = feelOf(mine[0].curve);
+      const next = FEELS[((now ? FEELS.indexOf(now) : -1) + 1) % FEELS.length];
+      setDab({ dynamics: routes.map((r) => (r.from === 'pressure' ? { ...r, curve: next.id === 'straight' ? undefined : next.curve } : r)) });
+      toast(`Pen feel: ${next.label}. ${next.hint}`, { duration: 2400 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.blend',
+    help: 'pixel-brush-blend',
+    label: 'Pixel brush: next paint mode (Multiply, Screen, Overlay...)',
+    description: 'Changes how the brush joins what is on the layer, one step at a time: paint over it, darken, lighten, tint and the rest of the layer blend modes. Pick one by name under Colour changes.',
+    keywords: ['pixel brush', 'blend', 'blend mode', 'mode', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'dodge', 'burn', 'colour', 'tint', 'shade', 'photoshop', 'krita'],
+    run: () => {
+      open();
+      const next = stepBlend(getDab().blend, 1);
+      setDab({ blend: next });
+      toast(next === 'normal' ? 'Paint mode: paint over what is there.' : `Paint mode: ${blendInfo(next).label} (${blendInfo(next).term}).`, { duration: 1800 });
     },
   },
   {
