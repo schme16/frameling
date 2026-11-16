@@ -1,11 +1,14 @@
 // The gradient part of the Colours panel: Solid / Linear / Radial for the box in front, and for a gradient a bar of
 // its colours with a marker per colour. Click a marker to change its colour with the picker above, drag it to move
-// it, drag it off the bar (or press its x) to take it away, and click the bar to add a colour there.
+// it, drag it off the bar (or press its x) to take it away, and click the bar to add a colour there. Shapes you have
+// picked come first: when they share a gradient the bar is theirs, and when they differ it says so and offers to match.
 import { useRef, type PointerEvent as RPointerEvent } from 'react';
-import { useStore } from '../../core/store';
 import { gradientCss } from '../../core/gradient';
+import { hasAlpha } from '../colors';
 import { Choice, Slider, Tip } from '../controls';
-import { addStop, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, useGradientWells, type PaintKind } from '../../tools/gradient-wells';
+import { getCommand } from '../../core/registry';
+import { useStore } from '../../core/store';
+import { addStop, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
 
 /** How far below the bar (in screen pixels) a dragged marker has to go to be taken away. */
 const DRAG_OFF = 36;
@@ -19,8 +22,8 @@ if (typeof window !== 'undefined' && typeof location !== 'undefined' && new URLS
 
 export function GradientEditor() {
   const well = useStore((s) => s.ui.activeWell);
-  const on = useStore((s) => (well === 'fill' ? s.ui.fillColor !== null : s.ui.strokeOn));
-  const g = useGradientWells((s) => (on ? s[well] : null));
+  const view = usePaintView(well);
+  const g = view.from === 'differ' ? null : view.style;
   const sel = useGradientWells((s) => s.stop[well]);
   const bar = useRef<HTMLDivElement>(null);
   const drag = useRef<{ i: number; moved: boolean; off: boolean } | null>(null);
@@ -51,20 +54,39 @@ export function GradientEditor() {
     drag.current = null;
     e.currentTarget.style.opacity = '';
     if (d?.off) removeStop(well, d.i);
+    endGradientGesture();
   };
 
   return (
     <div className="cv-gradient" data-quest="gradient-editor">
       <Choice<PaintKind>
         label={well === 'fill' ? 'Fill' : 'Stroke'}
-        value={kind}
+        value={view.from === 'differ' ? ('' as PaintKind) : kind}
         options={[
           { value: 'solid', label: 'Solid', title: 'One colour' },
           { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
           { value: 'radial', label: 'Radial', title: 'Colours blending out from the middle in a circle (radial gradient)' },
         ]}
-        onChange={(k) => setPaintKind(well, k)}
+        onChange={(k) => {
+          setPaintKind(well, k);
+          endGradientGesture();
+        }}
       />
+      {view.from === 'differ' && (
+        <div className="cv-gradient-differ" role="group" aria-label="The picked shapes have different gradients">
+          <p className="cv-tip" data-testid="gradient-differ">
+            These {view.count} shapes have different gradients.
+          </p>
+          <button
+            type="button"
+            className="cv-action"
+            title="Give every picked shape the colours and direction of the first one"
+            onClick={() => getCommand('colors.matchGradients')?.run()}
+          >
+            Make them all match the first
+          </button>
+        </div>
+      )}
       {g && look === 'list' && (
         <>
           <div className="cv-gradient-preview" style={{ backgroundImage: gradientCss({ kind: 'linear', stops: g.stops }) }} aria-hidden="true" />
@@ -82,7 +104,10 @@ export function GradientEditor() {
             <button type="button" className="cv-action" onClick={() => addStop(well, 0.5)}>
               Add a colour
             </button>
-            <button type="button" className="cv-action" onClick={() => reverseStops(well)}>
+            <button type="button" className="cv-action" onClick={() => {
+                reverseStops(well);
+                endGradientGesture();
+              }}>
               Reverse
             </button>
           </div>
@@ -97,9 +122,12 @@ export function GradientEditor() {
             role="group"
             aria-label="Gradient colours. Click to add a colour."
             title="Click to add a colour here"
-            style={{ backgroundImage: `${gradientCss({ kind: 'linear', stops: g.stops })}` }}
+            style={{ background: g.stops.some((s) => hasAlpha(s.color)) ? `${gradientCss({ kind: 'linear', stops: g.stops })}, var(--cp-checker)` : gradientCss({ kind: 'linear', stops: g.stops }) }}
             onPointerDown={(e) => {
-              if (e.target === bar.current) addStop(well, atOf(e.clientX));
+              if (e.target === bar.current) {
+                addStop(well, atOf(e.clientX));
+                endGradientGesture();
+              }
             }}
           >
             {g.stops.map((s, i) => (
@@ -120,10 +148,12 @@ export function GradientEditor() {
                     e.preventDefault();
                     e.stopPropagation();
                     moveStop(well, i, s.at + (e.key === 'ArrowLeft' ? -0.01 : 0.01) * (e.shiftKey ? 10 : 1));
+                    endGradientGesture();
                   } else if ((e.key === 'Delete' || e.key === 'Backspace') && g.stops.length > 2) {
                     e.preventDefault();
                     e.stopPropagation();
                     removeStop(well, i);
+                    endGradientGesture();
                   }
                 }}
               />
@@ -131,7 +161,10 @@ export function GradientEditor() {
           </div>
           <div className="cv-gradient-row">
             {g.kind === 'linear' && <Slider label="Direction" value={g.angle} min={0} max={359} format={(v) => `${v} deg`} onChange={(v) => setAngle(well, v)} />}
-            <button type="button" className="cv-action" title="Turn the colours round, end to end" onClick={() => reverseStops(well)}>
+            <button type="button" className="cv-action" title="Turn the colours round, end to end" onClick={() => {
+                reverseStops(well);
+                endGradientGesture();
+              }}>
               Reverse
             </button>
           </div>

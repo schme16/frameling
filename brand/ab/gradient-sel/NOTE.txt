@@ -1,0 +1,11 @@
+Selecting a gradient shape: the Colours panel shows its gradient and edits it.
+
+A (before-pick-*): a sky with a gradient fill and a plain outline, picked with the Select tool. The panel shows the
+   stroke box and a plain colour picker with Solid lit. The gradient the shape has is nowhere to be seen.
+B (after-pick-*): the same pick. The fill comes to the front, Linear is lit, the bar shows the shape's three
+   colours, and Direction shows its angle.
+Clip (after-edit-*): the middle marker is dragged along the bar, then the last one is picked and recoloured with
+   the picker. The sky on the canvas changes as it goes. H.264, 1000 wide, both themes.
+
+Made with scripts/docs/ab-gradient-sel/gradient-sel.cjs (SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron
+scripts/docs/help-media.cjs --entries scripts/docs/ab-gradient-sel --out <dir> [--renderer <dir of the old build>]).

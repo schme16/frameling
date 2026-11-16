@@ -182,3 +182,24 @@ export function blendGradient(a: Gradient | undefined, b: Gradient | undefined, 
     to: { x: l(a.to.x, b.to.x), y: l(a.to.y, b.to.y) },
   };
 }
+
+/** What a set of shapes holds for one side (fill or stroke): nothing to edit, plain colours, one shared gradient, or a mix. */
+export type SharedPaint = { state: 'none' } | { state: 'plain' } | { state: 'same'; style: GradientStyle } | { state: 'differ'; count: number };
+
+/** The colours and kind of a gradient, in a stable string. Where the ends sit is left out: it belongs to each shape. */
+export function stopsKey(g: Pick<Gradient, 'kind' | 'stops'>): string {
+  return `${g.kind}:${sortedStops(g.stops).map((s) => `${Math.round(s.at * 1000) / 1000}=${s.color.toLowerCase()}`).join(',')}`;
+}
+
+/**
+ * What one side of the selected shapes holds. `list` has one entry per shape that can have that paint (a gradient or
+ * undefined for a plain colour). Shapes with the same colours count as one gradient, wherever their ends sit.
+ */
+export function sharedPaint(list: readonly (Gradient | undefined)[]): SharedPaint {
+  if (!list.length) return { state: 'none' };
+  const first = list.find((g) => g);
+  if (!first) return { state: 'plain' };
+  const key = stopsKey(first);
+  if (list.every((g) => g && stopsKey(g) === key)) return { state: 'same', style: styleOf(first) };
+  return { state: 'differ', count: list.length };
+}

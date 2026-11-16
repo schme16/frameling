@@ -10,6 +10,12 @@ export const bodies: Record<string, string> = {
 
 The paint bucket pours the fill box's gradient too.
 
+## Changing a gradient you've already made
+
+Pick the shape with the Select tool (**V**). The **Colours** panel shows its gradient, on whichever side has one: the fill, or the outline when only that has a gradient. Change it the same way as below. The shape changes as you go, and the colour box takes the same gradient (just like a plain colour does), so the next shape you draw gets it too. Only picking a shape leaves the box alone.
+
+Pick several shapes with different gradients and the panel says so. **Make them all match the first** gives every one the first one's colours and direction.
+
 ## Changing the colours
 
 - **Click the bar** to add a colour there.

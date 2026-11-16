@@ -6,24 +6,29 @@ import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
 import { GradientEditor } from './GradientEditor';
-import { setStopColor, stopColor, useGradientWells, wellGradient } from '../../tools/gradient-wells';
+import { endGradientGesture, paintView, setStopColor, stopColor, usePaintView, useGradientWells } from '../../tools/gradient-wells';
 import { openRecolour } from '../../tools/recolour-open';
 import { usePopover } from '../../ui/popover';
 import { ColourPicker } from '../../ui/colour/ColourPicker';
 import { chipBackground } from '../../ui/colour/chip';
 import { usePaintRules } from '../../pixel/colourRules';
 
-// Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes. When that box
-// holds a gradient, it changes the gradient colour being edited instead.
+// Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes. When the picked
+// shapes share a gradient, or the box holds one, it changes the gradient colour being edited instead (the picked
+// shapes' own gradient is theirs to change: the box is left as it was).
 function setColor(c: string): void {
   const w = store().get().ui.activeWell;
-  if (wellGradient(w)) setStopColor(w, c);
+  const v = paintView(w);
+  if (v.from === 'differ') return;
+  if (v.style) setStopColor(w, c);
   else setActiveColor(c);
 }
 
 function noteNow(): void {
-  const c = activeColor();
+  const w = store().get().ui.activeWell;
+  const c = stopColor(w) ?? activeColor();
   if (c) noteColorUsed(c);
+  endGradientGesture();
 }
 
 interface MenuState {
@@ -87,7 +92,7 @@ export function ColorsPanel() {
   const plain = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   const well = useStore((s) => s.ui.activeWell);
   // Re-read when the gradient changes, so the picker follows the marker being edited.
-  useGradientWells((s) => s[well]);
+  const view = usePaintView(well);
   useGradientWells((s) => s.stop[well]);
   const color = stopColor(well) ?? plain;
   const swatches = useStore((s) => s.doc.swatches);
@@ -98,7 +103,7 @@ export function ColorsPanel() {
   return (
     <div className="cv-panel cv-colors">
       <Wells />
-      <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />
+      {view.from !== 'differ' && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
       <GradientEditor />
 
       <div className="cv-field-head">
@@ -118,6 +123,7 @@ export function ColorsPanel() {
             onClick={() => {
               setColor(s.color);
               noteColorUsed(s.color);
+              endGradientGesture();
             }}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -144,7 +150,10 @@ export function ColorsPanel() {
           </div>
           <div className="cv-swatches">
             {recent.map((c) => (
-              <button key={c} type="button" className="cv-swatch" data-on={c === color.toLowerCase()} aria-pressed={c === color.toLowerCase()} style={chipBackground(c)} title={c} aria-label={`Recent colour ${c}`} onClick={() => setColor(c)} />
+              <button key={c} type="button" className="cv-swatch" data-on={c === color.toLowerCase()} aria-pressed={c === color.toLowerCase()} style={chipBackground(c)} title={c} aria-label={`Recent colour ${c}`} onClick={() => {
+                  setColor(c);
+                  endGradientGesture();
+                }} />
             ))}
           </div>
         </>
