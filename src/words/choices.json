@@ -2371,6 +2371,29 @@
     "where": "Dialog and Preferences: the small line under the \"smooth\" answer in \"Soft paint with Pixel perfect on\"."
   },
   "choice.soft.edge.smooth.did": { "text": "Made the soft edge smooth.", "where": "Toast when \"smooth\" is used without asking (\"Soft paint with Pixel perfect on\"), in the past tense." },
+  "choice.clone.align.title": { "text": "Clone stamp after you lift the pen", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.clone.align.question": {
+    "text": "You have just made your first clone stroke. When you lift the pen and start another, where should the copy come from?",
+    "where": "The question the \"Clone stamp after you lift the pen\" dialog asks."
+  },
+  "choice.clone.align.aligned.label": { "text": "Carry on where it left off", "where": "Dialog and Preferences: the button for the answer \"aligned\" in \"Clone stamp after you lift the pen\"." },
+  "choice.clone.align.aligned.detail": {
+    "text": "The copy keeps the same gap from your hand, so a second stroke carries on the picture the first one started. Best for covering a big area in several goes. This is the usual way in other programs.",
+    "where": "Dialog and Preferences: the small line under the \"aligned\" answer in \"Clone stamp after you lift the pen\"."
+  },
+  "choice.clone.align.aligned.did": {
+    "text": "Cloning carries on in step after you lift the pen.",
+    "where": "Toast when \"aligned\" is used without asking (\"Clone stamp after you lift the pen\"), in the past tense."
+  },
+  "choice.clone.align.restart.label": { "text": "Start from the source again", "where": "Dialog and Preferences: the button for the answer \"restart\" in \"Clone stamp after you lift the pen\"." },
+  "choice.clone.align.restart.detail": {
+    "text": "Every stroke begins by copying the spot you chose, so you can stamp the same thing again and again. Best for repeating one patch, like a leaf or a brick.",
+    "where": "Dialog and Preferences: the small line under the \"restart\" answer in \"Clone stamp after you lift the pen\"."
+  },
+  "choice.clone.align.restart.did": {
+    "text": "Cloning starts from the source again after you lift the pen.",
+    "where": "Toast when \"restart\" is used without asking (\"Clone stamp after you lift the pen\"), in the past tense."
+  },
   "choice.scripts.home.title": { "text": "Where new scripts are kept", "where": "Name of this choice in Preferences > Behaviour (group: Scripts)." },
   "choice.scripts.home.question": {
     "text": "Where should this script live? With Frameling, every drawing you open can use it. Inside the drawing, it travels with the file.",

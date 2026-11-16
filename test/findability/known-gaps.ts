@@ -30,11 +30,13 @@ export const CEILINGS = {
    * by default), counted per state. Slot twins (Select and Pixel select) are not counted, they stand in for each other.
    * The palette still lists them greyed with a reason, but the rail itself says nothing.
    */
+  // Two more since the blur and sharpen brushes (Alt+Shift+U and Alt+Shift+Y), pixel layer tools in Soft paint beside the clone stamp.
+  // One more since the clone stamp (Alt+Shift+S), a pixel layer tool in Soft paint like the soft brushes: it paints pixels copied from the picture.
   // One more since the pixel brush (Alt+Shift+N), which like soft paint and charcoal works on pixel layers only: its dabs are pixels, and a vector shape cannot hold sharp pixels or a pixel picture tip. It could not share a slot with the Brush tool, which stays on the rail on a pixel layer too. The mode line over the rail names it, and picking it flips to a pixel layer.
   // One more since chalk and charcoal, which like the soft paint tools works on pixel layers only (paper tooth is pixels, not a vector shape).
   // Five more since soft paint: the Soft brush, Airbrush, Highlighter, Soft eraser and Smudge work on pixel layers only (a vector shape cannot fade at its edge). The mode line over the rail names them, and picking one flips to a pixel layer.
   // One more on the pixel and tilemap layers since the Shape builder (Shift+N): it cuts overlapping vector shapes into bits, and a pixel or tile layer has no shapes to cut. It is on the rail on every vector layer, and the mode line over the rail names it on the others.
-  railToolsVanish: { blank: 17, vector: 17, 'vector-selected': 17, pixel: 9, tilemap: 40, 'symbol-open': 17, playing: 17, 'has-clips': 17 } as Record<string, number>,
+  railToolsVanish: { blank: 20, vector: 20, 'vector-selected': 20, pixel: 9, tilemap: 43, 'symbol-open': 20, playing: 20, 'has-clips': 20 } as Record<string, number>,
   /** The same tools leave the Draw menu, which lists only the ones that work on the current layer, with no grey and no note. */
   // Two more in every state but the pixel one since the Pixel menu went: it listed Shade and Dither all the time, and now they are only in the Tools menu's tool list, which shows the tools that work on the layer you are on, the same as the Wand and Slice. They are still on the pixel rail, and in the palette greyed with a reason on a vector layer. Tilemap goes 23 to 27 because on a tilemap layer the Pencil, Shade, Dither and Gradient all leave, where the Pixel menu showed them.
   // One more on the pixel and tilemap layers since the Shape builder: its entry in Tools lists only on a vector layer, like the Pen and Edit points beside it, and it is in the palette greyed with a reason on the others.
@@ -170,6 +172,9 @@ export const STILL_LOAD = {
   // +6 menu, the angular commands being palette only because Tools is at its cap. And the pixel brush: +16 palette
   // and +22 menu on both sides, the 16 ready made brushes and the 6 switches, in the Pixel brush submenu under Soft
   // paint, so Draw is untouched. None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 577, menu: 774, animateMenu: 8 },
-  animated: { palette: 626, menu: 898, animateMenu: 123 },
+  // And the clone stamp: +7 menu on both sides, the tool and six commands in its own submenu under Soft paint.
+  // And Curves and Levels: +3 menu on both sides (Levels, Curves and the one step auto levels, in the Effects menu beside Colour adjust).
+  // And the blur and sharpen brushes: +2 menu on both sides, two tools in Soft paint.
+  still: { palette: 577, menu: 786, animateMenu: 8 },
+  animated: { palette: 626, menu: 910, animateMenu: 123 },
 };

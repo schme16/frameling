@@ -40,7 +40,7 @@ const ROW: Record<'size' | 'flow' | 'angle' | 'scatter' | 'mix', { label: string
 };
 
 /** One setting driven by one source: a picker for the source, and how much of the range it uses. */
-function RouteRow({ b, to }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'scatter' | 'mix' }) {
+function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'scatter' | 'mix'; set?: (patch: Partial<DabBrush>) => void }) {
   const r = routeFor(b.dynamics, to);
   const words = ROW[to];
   const extra = b.dynamics.filter((x) => x.to === to).length - 1;
@@ -51,7 +51,7 @@ function RouteRow({ b, to }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'sca
           className="dab-select"
           aria-label={words.label}
           value={r?.from ?? ''}
-          onChange={(e) => setDab({ dynamics: withRoute(b.dynamics, to, e.target.value ? { from: e.target.value as DynSource } : null) })}
+          onChange={(e) => set({ dynamics: withRoute(b.dynamics, to, e.target.value ? { from: e.target.value as DynSource } : null) })}
         >
           <option value="">Nothing</option>
           {OFFERED[to].map((s) => (
@@ -63,8 +63,8 @@ function RouteRow({ b, to }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'sca
       </Field>
       {r && (
         <div className="dab-sub">
-          <Slider label="Amount" value={Math.round(r.amount * 100)} min={5} max={100} format={(v) => words.amount(v, r.invert)} onChange={(v) => setDab({ dynamics: withRoute(b.dynamics, to, { amount: v / 100 }) })} />
-          <Toggle label="The other way round" checked={r.invert} onChange={(invert) => setDab({ dynamics: withRoute(b.dynamics, to, { invert }) })} hint="Flips it: a pen that makes the mark bigger when pressed harder makes it smaller instead." />
+          <Slider label="Amount" value={Math.round(r.amount * 100)} min={5} max={100} format={(v) => words.amount(v, r.invert)} onChange={(v) => set({ dynamics: withRoute(b.dynamics, to, { amount: v / 100 }) })} />
+          <Toggle label="The other way round" checked={r.invert} onChange={(invert) => set({ dynamics: withRoute(b.dynamics, to, { invert }) })} hint="Flips it: a pen that makes the mark bigger when pressed harder makes it smaller instead." />
         </div>
       )}
       {extra > 0 && <div className="cv-field-hint">{`And ${extra} more from the brush file, kept as they came.`}</div>}
@@ -79,17 +79,28 @@ function Wobble({ b, to, label, hint, format }: { b: DabBrush; to: 'hue' | 'satu
   return <Slider label={label} value={v} min={0} max={100} format={(x) => (x === 0 ? 'None' : format(x))} onChange={(x) => setDab({ dynamics: x === 0 ? withRoute(b.dynamics, to, null) : withRoute(b.dynamics, to, r ? { amount: x / 100 } : { from: 'random', amount: x / 100 }) })} hint={hint} />;
 }
 
+/** Where a brush's settings live, so the same options can sit on the pixel brush and on the retouch brushes (which each keep their own brush). */
+export interface DabHandle {
+  use<S>(selector: (b: DabBrush) => S): S;
+  set(patch: Partial<DabBrush>): void;
+  /** The name the fold is remembered under. */
+  fold: string;
+}
+
+export const PIXEL_HANDLE: DabHandle = { use: useDab, set: setDab, fold: 'pixel-brush-dynamics' };
+
 /** What the pen, the hand and the stroke do to each dab. */
-export function DynamicsSection() {
-  const b = useDab((x) => x);
+export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle } = {}) {
+  const b = handle.use((x) => x);
+  const set = handle.set;
   const usesFade = b.dynamics.some((r) => r.from === 'fade');
   return (
-    <MoreOptions name="pixel-brush-dynamics" label="Pen, speed and fade" hint="Pressure, tilt, speed or a fade-out changing the size, flow, angle or scatter.">
-      <RouteRow b={b} to="size" />
-      <RouteRow b={b} to="flow" />
-      <RouteRow b={b} to="angle" />
-      <RouteRow b={b} to="scatter" />
-      {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => setDab({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
+    <MoreOptions name={handle.fold} label="Pen, speed and fade" hint="Pressure, tilt, speed or a fade-out changing the size, flow, angle or scatter.">
+      <RouteRow b={b} to="size" set={set} />
+      <RouteRow b={b} to="flow" set={set} />
+      <RouteRow b={b} to="angle" set={set} />
+      <RouteRow b={b} to="scatter" set={set} />
+      {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
     </MoreOptions>
   );
 }
