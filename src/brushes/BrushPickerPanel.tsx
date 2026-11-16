@@ -3,6 +3,7 @@
 // picker.ts. Keyboard: arrows move the highlight, Enter picks, typing goes to the search box, Escape closes.
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKey, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { flyoutLayer } from '../ui/layers';
 import { Slider } from '../canvas/controls';
 import { typedSize } from '../tools/brushRange';
 import { useBrushRange } from '../tools/options/useBrushRange';
@@ -357,7 +358,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const height = big ? Math.min(box.h ?? 580, maxH) : undefined;
   const activeRow = hotIdx !== undefined ? `pk-i${hotIdx}` : undefined;
   return createPortal(
-    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? 'Pick a pen tip' : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH }} onKeyDown={onKeyDown}>
+    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? 'Pick a pen tip' : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH, zIndex: flyoutLayer(anchor) }} onKeyDown={onKeyDown}>
       {!tips && (
         <div className="pk-live">
           <div className="pk-dial" aria-hidden="true">

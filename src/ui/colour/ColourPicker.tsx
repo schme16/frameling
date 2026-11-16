@@ -6,6 +6,7 @@
 // Where a colour can't be see-through, pass `alpha={false}` and say why in `why`: the picker then shows that line
 // instead of a slider that would do nothing. Where it can, `note` is for anything that bends what see-through means.
 import { createPortal } from 'react-dom';
+import { flyoutLayer } from '../layers';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { alphaByte, alphaPercent, hexToHsv, hsvToHex, readColourText, solidOf, withAlpha, withAlphaPercent, type HSV } from '../../canvas/colors';
 import { usePopover } from '../popover';
@@ -245,7 +246,7 @@ export function ColourPopover({
   }, [opener]);
   usePopover(ref, close);
   return createPortal(
-    <div ref={ref} className="cp-pop" role="dialog" aria-label={label} style={{ left: pos.left, top: pos.top, width: WIDTH }}>
+    <div ref={ref} className="cp-pop" role="dialog" aria-label={label} style={{ left: pos.left, top: pos.top, width: WIDTH, zIndex: flyoutLayer(opener) }}>
       <ColourPicker value={draft} onChange={change} alpha={alpha} why={why} note={note} />
     </div>,
     document.body,

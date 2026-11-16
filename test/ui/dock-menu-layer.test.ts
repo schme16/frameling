@@ -7,11 +7,20 @@ import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(join(__dirname, '../../src/ui/ui.css'), 'utf8');
 
-/** The z-index a plain selector rule sets, the first time it does. */
+/** A level named on :root, from the ladder at the top of ui.css (see src/ui/layers.ts). */
+function levelOf(name: string): number {
+  const m = new RegExp(`${name}:\\s*(\\d+);`).exec(css);
+  expect(m, `${name} is set on :root`).toBeTruthy();
+  return Number(m![1]);
+}
+
+/** The z-index a plain selector rule sets, the first time it does, following a var() to the ladder. */
 function zOf(selector: string): number {
   const at = css.indexOf(`\n${selector} {`);
   expect(at, `${selector} has a rule`).toBeGreaterThan(-1);
   const body = css.slice(at, css.indexOf('}', at));
+  const named = /z-index:\s*var\((--[\w-]+)\)/.exec(body);
+  if (named) return levelOf(named[1]);
   const m = /z-index:\s*(\d+)/.exec(body);
   expect(m, `${selector} sets a z-index`).toBeTruthy();
   return Number(m![1]);
