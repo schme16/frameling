@@ -200,6 +200,8 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const opened = side === 'stick' ? (stickOpen ?? groupsOf(all).map((g) => groupKey(g.name))) : tips ? (openGroups() ?? groupsOf(all).map((g) => groupKey(g.name))) : openGroups();
   const recent = tips ? [] : recentIds();
   const noun = tips ? words.noun : 'brush';
+  // "brush" needs an "es", so the list never says "brushs".
+  const nouns = /(s|sh|ch|x|z)$/.test(noun) ? `${noun}es` : `${noun}s`;
   const [query, setQuery] = useState('');
   const [hot, setHot] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -325,7 +327,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
       <section key={s.key} role="presentation">
         {n === firstGroup && (
           <p className="pk-label">
-            All {noun}s <span>{all.length}</span>
+            All {nouns} <span>{all.length}</span>
           </p>
         )}
         {s.kind === 'found' ? (
@@ -398,11 +400,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
               aria-expanded="true"
               aria-controls="pk-list"
               aria-activedescendant={activeRow}
-              aria-label={`Search ${noun}s`}
+              aria-label={`Search ${nouns}`}
               autoComplete="off"
               spellCheck={false}
               value={query}
-              placeholder={`Search ${noun}s`}
+              placeholder={`Search ${nouns}`}
               onChange={(e) => {
                 setQuery(e.target.value);
                 setHot(null);
