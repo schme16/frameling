@@ -12,6 +12,7 @@ import { artScale } from '../../src/export/plan';
 import { DEFAULT_SHEET, normalizeSheet, type SheetSettings } from '../../src/export/types';
 import { makeHeroSprite } from '../../src/templates/hero-sprite';
 import { artFrames } from './helpers';
+import { cpuMs } from '../helpers/clock';
 
 const clear: [number, number, number, number] = [0, 0, 0, 0];
 function img(w: number, h: number, fn: (x: number, y: number) => [number, number, number, number]): RawImage {
@@ -42,9 +43,9 @@ describe('packing', () => {
     const few = packSheet(Array.from({ length: 20 }, () => ({ w: 20, h: 18 })), { maxSide: 8192 })!;
     expect(Math.max(few.width, few.height) / Math.min(few.width, few.height)).toBeLessThan(2);
     const many = Array.from({ length: 1500 }, (_, i) => ({ w: 8 + ((i * 37) % 40), h: 8 + ((i * 53) % 40) }));
-    const t = performance.now();
+    const t = cpuMs();
     const p = packSheet(many, { maxSide: 16384 })!;
-    expect(performance.now() - t).toBeLessThan(2000);
+    expect(cpuMs() - t).toBeLessThan(2000);
     const rects = p.positions.map((q, i) => ({ ...q, ...many[i] }));
     // Spot-check overlaps on a slice (all pairs would be slow).
     rects.slice(0, 200).forEach((r, i) => rects.slice(i + 1).forEach((o) => expect(overlaps(r, o)).toBe(false)));

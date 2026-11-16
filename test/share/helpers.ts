@@ -9,6 +9,9 @@ export class FakeStream extends EventEmitter implements ShareStream {
   closed = false;
   /** Milliseconds between one write reaching the other end and the next, to make a transfer take a while. */
   pace = 0;
+  /** Once this many bytes have been written, the connection breaks instead of delivering that write (0 = never). */
+  breakAfterBytes = 0;
+  private sentBytes = 0;
   private nextAt = 0;
   /** Everything written to this end, so a test can see what the other side was ever told. */
   readonly written: Buffer[] = [];
@@ -19,6 +22,12 @@ export class FakeStream extends EventEmitter implements ShareStream {
     if (this.closed) return false;
     const copy = Buffer.from(data);
     this.written.push(copy);
+    this.sentBytes += copy.length;
+    // A break at a counted place, so a test does not have to catch a moment in time (which a busy machine can skip).
+    if (this.breakAfterBytes && this.sentBytes > this.breakAfterBytes) {
+      this.destroy();
+      return false;
+    }
     const to = this.peer;
     // Delivered a moment later, as a real socket would.
     if (!to) return true;

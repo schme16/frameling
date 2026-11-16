@@ -4,6 +4,7 @@ import { cutOut, eraseArea, explode, geomArea, lineArea, mergeShapes, placeMoved
 import { pointInPaths } from '../../src/geometry/hit';
 import { transformShape, translate } from '../../src/canvas/geometry';
 import { rectPath, stroke } from './helpers';
+import { cpuMs } from '../helpers/clock';
 
 const red = '#ff0000';
 const blue = '#0000ff';
@@ -159,9 +160,9 @@ describe('merge drawing geometry', () => {
     }
     // A filled drawing first, then time adding one more stroke to it: what each brush stroke costs.
     for (const st of strokes) shapes = mergeShapes(shapes, [st]).shapes;
-    const t0 = performance.now();
+    const t0 = cpuMs();
     mergeShapes(shapes, [stroke([[0, 150], [400, 150]], 10, red)]);
-    const ms = performance.now() - t0;
+    const ms = cpuMs() - t0;
     // Lenient: well under a frame budget on a normal machine, but CI boxes can be slow.
     expect(ms).toBeLessThan(250);
     expect(shapes.every((x) => x.type === 'fill')).toBe(true);

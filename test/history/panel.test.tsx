@@ -8,6 +8,7 @@ import { newDoc } from '../../src/core/doc';
 import { getCommand, getPanel } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { HistoryPanel } from '../../src/history/HistoryPanel';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 Element.prototype.scrollIntoView = () => {};
@@ -82,7 +83,7 @@ describe('History panel', () => {
     show();
     const before = store().get().doc;
     await act(async () => (host!.querySelectorAll<HTMLButtonElement>('.hi-keep')[1]).click());
-    await vi.waitFor(() => expect(take).toHaveBeenCalled());
+    await vi.waitFor(() => expect(take).toHaveBeenCalled(), { timeout: WAIT_CEILING_MS });
     const arg = take.mock.calls[0][0]!;
     expect(arg.name).toBe('Two (1 step back)');
     expect(arg.doc!.name).toBe('Two');

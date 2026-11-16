@@ -8,6 +8,7 @@ import { resetStore } from '../../src/core/store';
 import { applyWorkspace, dock } from '../../src/ui/dock';
 import { StatusBar } from '../../src/ui/StatusBar';
 import '../../src/renderer/features';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -40,9 +41,9 @@ describe('the footer bar', () => {
     const mod = await import('../../src/canvas/DocumentSettings');
     const open = vi.spyOn(mod, 'openDocumentSettings').mockImplementation(() => {});
     click(chip('320 x 200'));
-    await vi.waitFor(() => expect(open).toHaveBeenCalledWith('size'));
+    await vi.waitFor(() => expect(open).toHaveBeenCalledWith('size'), { timeout: WAIT_CEILING_MS });
     click(chip('fps'));
-    await vi.waitFor(() => expect(open).toHaveBeenCalledWith('fps'));
+    await vi.waitFor(() => expect(open).toHaveBeenCalledWith('fps'), { timeout: WAIT_CEILING_MS });
   });
 
   it('the frame chip brings the timeline out in front', () => {
