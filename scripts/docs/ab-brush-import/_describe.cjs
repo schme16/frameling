@@ -2,9 +2,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { readBrushFile } = require(process.argv[2]);
-const { GIMP, PHOTOSHOP } = require('./_rows.cjs');
+const { GIMP, PHOTOSHOP, KRITA } = require('./_rows.cjs');
 const out = {};
-for (const [k, list] of Object.entries({ gimp: GIMP, photoshop: PHOTOSHOP })) {
+for (const [k, list] of Object.entries({ gimp: GIMP, photoshop: PHOTOSHOP, krita: KRITA }).filter(([, l]) => l.length)) {
   out[k] = list.map((r) => {
     const res = readBrushFile(new Uint8Array(fs.readFileSync(r.file)), path.basename(r.file));
     if (!res.ok) return { label: r.label, error: res.error };
