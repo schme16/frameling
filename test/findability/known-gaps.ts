@@ -163,10 +163,13 @@ export const STILL_LOAD = {
   // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
   // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
   // text on a curve, which does not touch the palette numbers because both its commands need words and a line picked
-  // first. The remote door: +2 palette and +3 menu in Edit > Scripts. And selection-gradients: +3 palette and +6 menu
-  // on both sides, the selection edge card with grow, shrink and feather, saving a selection and the saved list, all
-  // in one Edit submenu, plus the two angular gradient commands, which are palette only because Tools is at its cap.
-  // None of it has anything to do with animation, so the gap is unchanged.
-  still: { palette: 561, menu: 752, animateMenu: 8 },
-  animated: { palette: 610, menu: 876, animateMenu: 123 },
+  // needing animation first. -1 palette (Reset layout joined Put the panels back) with -44 menu on both sides, the
+  // View entries that moved to the palette because a control on screen already does their job. +2 palette and +7 menu
+  // on both sides for Repeat. +1 palette and +1 menu on both sides for the Shape builder. +2 menu on both sides for
+  // text on a curve. The remote door: +2 palette and +3 menu in Edit > Scripts. selection-gradients: +3 palette and
+  // +6 menu, the angular commands being palette only because Tools is at its cap. And the pixel brush: +16 palette
+  // and +22 menu on both sides, the 16 ready made brushes and the 6 switches, in the Pixel brush submenu under Soft
+  // paint, so Draw is untouched. None of it has anything to do with animation, so the gap is unchanged.
+  still: { palette: 577, menu: 774, animateMenu: 8 },
+  animated: { palette: 626, menu: 898, animateMenu: 123 },
 };

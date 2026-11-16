@@ -7,6 +7,8 @@ import { pickTool } from '../tools/pick';
 import { showPanel } from '../ui/dock';
 import { TIP_SHAPES, type TipShape } from './maths';
 import { getDab, setDab } from './settings';
+import { routeFor, withRoute } from './dynamics';
+import { DEFAULT_DUAL, DEFAULT_GRAIN } from './texture';
 import { pictureFromSelection } from './Options';
 import { PIXEL_BRUSH_TOOL } from './live';
 
@@ -111,6 +113,85 @@ registerCommands([
       const s = stepSpacing(getDab().spacing, 1);
       setDab({ spacing: s });
       toast(`Spacing ${Math.round(s * 100)}%`, { duration: 1200 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.pen',
+    label: 'Pixel brush: pen pressure changes size on or off',
+    description: 'Press harder for a bigger mark and lighter for a smaller one. A mouse counts as full pressure. Set how much under Pen, speed and fade.',
+    keywords: ['pixel brush', 'pressure', 'pen', 'tablet', 'size', 'dynamics', 'wacom', 'control'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && routeFor(getDab().dynamics, 'size')?.from === 'pressure',
+    run: () => {
+      open();
+      const on = routeFor(getDab().dynamics, 'size')?.from === 'pressure';
+      setDab({ dynamics: withRoute(getDab().dynamics, 'size', on ? null : { from: 'pressure' }) });
+      toast(on ? 'Pressure no longer changes the size.' : 'Press harder for a bigger mark. A mouse paints at full size.', { duration: 1800 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.fade',
+    label: 'Pixel brush: taper the end of the stroke on or off',
+    description: 'The line starts at full size and thins to a point as it goes. Set how far under Pen, speed and fade.',
+    keywords: ['pixel brush', 'fade', 'taper', 'thin', 'point', 'dynamics', 'fade out'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && routeFor(getDab().dynamics, 'size')?.from === 'fade',
+    run: () => {
+      open();
+      const on = routeFor(getDab().dynamics, 'size')?.from === 'fade';
+      setDab({ dynamics: withRoute(getDab().dynamics, 'size', on ? null : { from: 'fade', amount: 1 }) });
+      toast(on ? 'Strokes stay one size.' : 'Strokes now thin to a point.', { duration: 1600 });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.grain',
+    label: 'Pixel brush: paper grain on or off',
+    description: 'Paint catches on the high points of paper, so light strokes break into specks. The same papers as chalk and charcoal.',
+    keywords: ['pixel brush', 'grain', 'texture', 'paper', 'tooth', 'chalk', 'rough', 'speckle'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!getDab().grain,
+    run: () => {
+      open();
+      setDab({ grain: getDab().grain ? null : DEFAULT_GRAIN });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.dual',
+    label: 'Pixel brush: dual tip on or off',
+    description: 'A second tip of little dots: the brush only paints where its dots are, for spatter and bristle looks.',
+    keywords: ['pixel brush', 'dual', 'dual brush', 'second tip', 'texture', 'spatter', 'bristle', 'dots', 'photoshop'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!getDab().dual,
+    run: () => {
+      open();
+      setDab({ dual: getDab().dual ? null : DEFAULT_DUAL });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.wobble',
+    label: 'Pixel brush: colour wobble on or off',
+    description: 'Each dab shifts a little in hue and lightness, so a stroke wanders through nearby colours.',
+    keywords: ['pixel brush', 'colour', 'color', 'jitter', 'wobble', 'hue', 'lightness', 'variation', 'dynamics'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!routeFor(getDab().dynamics, 'hue'),
+    run: () => {
+      open();
+      const on = !!routeFor(getDab().dynamics, 'hue');
+      let r = withRoute(getDab().dynamics, 'hue', on ? null : { from: 'random', amount: 0.1 });
+      r = withRoute(r, 'lightness', on ? null : { from: 'random', amount: 0.25 });
+      setDab({ dynamics: r });
+    },
+  },
+  {
+    ...base,
+    id: 'pixelbrush.wet',
+    label: 'Pixel brush: wet paint on or off',
+    description: 'The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other.',
+    keywords: ['pixel brush', 'wet', 'mix', 'mixing', 'smear', 'blend', 'smudge', 'oil', 'mixer brush'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && getDab().wet > 0,
+    run: () => {
+      open();
+      setDab({ wet: getDab().wet > 0 ? 0 : 0.7 });
     },
   },
 ]);

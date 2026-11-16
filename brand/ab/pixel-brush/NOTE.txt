@@ -8,3 +8,10 @@ library      The pixel side of the brush picker, open: the same picker as the ve
 
 Made with scripts/docs/ab-pixel-brush (see docs/testing.md). The help picture is public/help/pixel-brush-dark.png and -light.png.
 Nothing is posted to the board.
+
+Second slice: dynamics, grain, dual tip, colour and wet paint. Both themes again (-dark, -light).
+kinds        One stroke of each kind, top to bottom: round, pressure pencil, tapered ink, fast is thin, chalk grain, spatter, bristles, rainbow trail, wet smear.
+dynamics     Round with no dynamics, then size from pen pressure, a fade-out taper, speed (fast is thin), and a pressure spray.
+texture      Round, chalk grain, pencil on paper (grain and pressure), sponge (a new patch of paper each dab), spatter and bristles (dual tip).
+colour       Round, rainbow trail (hue along a fade), autumn leaves (colour wobble), fade to the fill colour, wet smear over blue bars.
+feel-clip    The same strokes being drawn, as H.264 clips (-dark.mp4, -light.mp4, with a -poster.png): the point is how the size follows the pen and the speed.

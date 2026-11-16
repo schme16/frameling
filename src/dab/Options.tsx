@@ -13,6 +13,8 @@ import { MirrorOptions } from '../tools/options/MirrorOptions';
 import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
 import { FLOW_RANGE, ROUND_RANGE, SCATTER_RANGE, SIZE_RANGE, SPACING_RANGE, type TipShape } from './maths';
+import { drivesFrom } from './dynamics';
+import { ColourSection, DynamicsSection, TextureSection } from './DynamicsOptions';
 import { setDab, useDab } from './settings';
 
 /** The tip made from the selection, kept in the brush (so a saved brush carries its picture). */
@@ -118,9 +120,12 @@ export function DabOptionsPanel() {
         <Slider label="Flow" value={Math.round(b.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ flow: v / 100 })} hint="How much paint one dab lays down. Low flow is see-through and builds up as dabs overlap." />
         <Slider label="Opacity" value={Math.round(b.opacity * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ opacity: v / 100 })} hint="The most paint any pixel can get in one stroke, however many dabs cross it. Flow is how fast it builds, opacity is where it stops." />
       </MoreOptions>
+      <DynamicsSection />
+      <TextureSection />
+      <ColourSection />
       <MirrorOptions />
       <Tip>Dabs go along the line you draw. Tight spacing makes a solid line; wide spacing makes dots or stamps.</Tip>
-      <PenOptions tool="pixel-brush" size flow />
+      <PenOptions tool="pixel-brush" size={!drivesFrom(b.dynamics, 'size', ['pressure', 'tilt'])} flow={!drivesFrom(b.dynamics, 'flow', ['pressure', 'tilt'])} />
     </div>
   );
 }

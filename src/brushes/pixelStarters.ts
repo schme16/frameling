@@ -4,13 +4,14 @@
 import { DEFAULT_BRUSH } from '../core/doc';
 import { DEFAULT_DAB, cleanDab, type DabBrush } from '../dab/maths';
 import type { PixelSpec } from '../dab/spec';
+import type { DynRoute } from '../dab/dynamics';
 import { MEDIA, type DryId } from '../dry/maths';
 import { DEFAULT_SOFT } from '../soft/settings';
 import type { PixelStamp } from './stamps';
 import type { BrushPreset } from './model';
 
 /** The groups the pixel starters sit in, in the order the picker lists them. */
-export const PIXEL_GROUPS = ['Pixel basics', 'Shapes', 'Scatter and spray', 'Picture tips', 'Smooth edges', 'Soft paint', 'Dry media'] as const;
+export const PIXEL_GROUPS = ['Pixel basics', 'Shapes', 'Scatter and spray', 'Picture tips', 'Pen and speed', 'Grain and texture', 'Colour', 'Smooth edges', 'Soft paint', 'Dry media'] as const;
 export type PixelGroup = (typeof PIXEL_GROUPS)[number];
 
 /** A one-colour picture from rows of text: `#` is paint, anything else is clear. */
@@ -25,6 +26,8 @@ const STAR = pictureFromRows(['..#..', '.###.', '#####', '.###.', '#...#']);
 const HEART = pictureFromRows(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']);
 const SPARKLE = pictureFromRows(['..#..', '..#..', '#####', '..#..', '..#..']);
 const DIAMOND = pictureFromRows(['..#..', '.###.', '#####', '.###.', '..#..']);
+
+const r = (from: DynRoute['from'], to: DynRoute['to'], amount: number, invert = false): DynRoute => ({ from, to, amount, invert });
 
 const dab = (id: string, name: string, group: PixelGroup, b: Partial<DabBrush>): BrushPreset => ({
   id: `starter:px-${id}`,
@@ -68,6 +71,25 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   dab('hearts', 'Pixel hearts', 'Picture tips', { tip: 'picture', picture: HEART, size: 7, spacing: 1.8, scatter: 0.3 }),
   dab('sparkles', 'Pixel sparkles', 'Picture tips', { tip: 'picture', picture: SPARKLE, size: 5, spacing: 1.4, scatter: 0.8, sizeJitter: 0.4 }),
   dab('diamonds', 'Diamond chain', 'Picture tips', { tip: 'picture', picture: DIAMOND, size: 5, spacing: 1, follow: true }),
+
+  dab('pressure-pencil', 'Pressure pencil', 'Pen and speed', { size: 5, spacing: 0.12, dynamics: [r('pressure', 'size', 0.8)] }),
+  dab('tapered-ink', 'Tapered ink', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('fade', 'size', 1)], fadeLength: 160 }),
+  dab('speed-nib', 'Fast is thin', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('speed', 'size', 0.75, true)] }),
+  dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 14, spacing: 0.8, scatter: 0.4, dynamics: [r('pressure', 'scatter', 0.8), r('pressure', 'flow', 0.5)] }),
+  dab('pressure-felt', 'Pressure felt tip', 'Pen and speed', { size: 12, hardness: 0.8, aliased: false, spacing: 0.08, dynamics: [r('pressure', 'size', 0.5), r('pressure', 'flow', 0.7)] }),
+
+  dab('chalk-grain', 'Chalk grain', 'Grain and texture', { size: 12, spacing: 0.12, flow: 0.5, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } }),
+  dab('pencil-paper', 'Pencil on paper', 'Grain and texture', { size: 3, spacing: 0.12, flow: 0.65, grain: { paper: 'fine', depth: 0.9, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
+  dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { paper: 'medium', depth: 1, scale: 2, moving: true } }),
+  dab('spatter', 'Pixel spatter', 'Grain and texture', { size: 16, spacing: 0.2, dual: { tip: 'round', size: 2, density: 0.25, cut: false } }),
+  dab('bristles', 'Pixel bristles', 'Grain and texture', { size: 14, spacing: 0.08, follow: true, dual: { tip: 'square', size: 1, density: 0.5, cut: false } }),
+  dab('cracked', 'Cracked paint', 'Grain and texture', { size: 14, spacing: 0.15, dual: { tip: 'round', size: 3, density: 0.2, cut: true } }),
+
+  dab('rainbow', 'Rainbow trail', 'Colour', { size: 6, spacing: 0.12, dynamics: [r('fade', 'hue', 1)], fadeLength: 260 }),
+  dab('autumn', 'Autumn leaves', 'Colour', { tip: 'square', size: 4, spacing: 1, scatter: 1.6, sizeJitter: 0.4, dynamics: [r('random', 'hue', 0.12), r('random', 'lightness', 0.3)] }),
+  dab('confetti', 'Pixel confetti', 'Colour', { tip: 'square', size: 3, spacing: 1.2, scatter: 2, angleJitter: 1, dynamics: [r('random', 'hue', 1), r('random', 'saturation', 0.2)] }),
+  dab('to-fill', 'Fades to the fill colour', 'Colour', { size: 8, spacing: 0.1, dynamics: [r('fade', 'mix', 1)], fadeLength: 200 }),
+  dab('wet-smear', 'Wet smear', 'Colour', { size: 12, hardness: 0.7, aliased: false, spacing: 0.1, wet: 0.85 }),
 
   dab('smooth-pen', 'Smooth pen', 'Smooth edges', { size: 4, aliased: false, spacing: 0.1 }),
   dab('smooth-felt', 'Smooth felt tip', 'Smooth edges', { size: 10, hardness: 0.85, aliased: false, spacing: 0.1, opacity: 0.85 }),

@@ -12,7 +12,9 @@ import { SPACING_STEPS, stepSpacing } from '../../src/dab/commands';
 import { edgeNote } from '../../src/dab/Options';
 import { renderSample, sampleBrush } from '../../src/dab/sample';
 import { dabEdge } from '../../src/dab/tools';
+import { footprint } from '../../src/dab/cursor';
 import { getCommand } from '../../src/core/registry';
+import { PIXEL_STARTERS } from '../../src/brushes/pixelStarters';
 import '../../src/dab';
 
 beforeEach(() => {
@@ -32,7 +34,7 @@ describe('the pixel brush tool', () => {
 
   it('has a palette command for every setting you flip, each with the pixel brush help', () => {
     const mine = allCommands().filter((c) => c.id.startsWith('pixelbrush.'));
-    expect(mine.map((c) => c.id).sort()).toEqual(['pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.smooth', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', 'pixelbrush.tip.picture', 'pixelbrush.tip.round', 'pixelbrush.tip.square']);
+    expect(mine.map((c) => c.id).sort()).toEqual(['pixelbrush.dual', 'pixelbrush.fade', 'pixelbrush.follow', 'pixelbrush.grain', 'pixelbrush.pen', 'pixelbrush.scatter', 'pixelbrush.smooth', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', 'pixelbrush.tip.picture', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.wet', 'pixelbrush.wobble']);
     for (const c of mine) expect(c.help).toBe('pixel-brush');
   });
 
@@ -128,5 +130,33 @@ describe('the sample pictures in the picker', () => {
     const alphas = new Set<number>();
     for (let i = 3; i < dry.length; i += 4) alphas.add(dry[i]);
     expect(alphas.size).toBeGreaterThan(2);
+  });
+});
+
+describe('the cursor footprint', () => {
+  it('is the pixels the first dab would paint, whatever the tip', () => {
+    expect(footprint({ ...DEFAULT_DAB, size: 5 }, 5, 10.2, 10.7)).toHaveLength(21);
+    expect(footprint({ ...DEFAULT_DAB, tip: 'square', size: 3 }, 3, 10, 10)).toHaveLength(9);
+    expect(footprint({ ...DEFAULT_DAB, size: 1 }, 1, 4.9, 4.1)).toEqual([{ x: 4, y: 4 }]);
+  });
+
+  it('turns and flattens with the brush', () => {
+    const flat = footprint({ ...DEFAULT_DAB, tip: 'square', size: 11, roundness: 0.2 }, 11, 20.5, 20.5);
+    const wide = Math.max(...flat.map((c) => c.x)) - Math.min(...flat.map((c) => c.x));
+    const tall = Math.max(...flat.map((c) => c.y)) - Math.min(...flat.map((c) => c.y));
+    expect(wide).toBeGreaterThan(tall * 2);
+    const turned = footprint({ ...DEFAULT_DAB, tip: 'square', size: 11, roundness: 0.2, angle: 90 }, 11, 20.5, 20.5);
+    expect(Math.max(...turned.map((c) => c.y)) - Math.min(...turned.map((c) => c.y))).toBeGreaterThan(tall * 2);
+  });
+});
+
+describe('the new starters', () => {
+  it('draw as pictures in the picker: dynamics, grain, dual tip and colour all render a stroke', () => {
+    for (const s of PIXEL_STARTERS.filter((x) => x.pixel?.kind === 'dab' && ['Pen and speed', 'Grain and texture', 'Colour'].includes(x.group ?? ''))) {
+      const px = renderSample(s.pixel!, 'stroke', 120, 32, [20, 20, 20]);
+      let n = 0;
+      for (let i = 3; i < px.length; i += 4) if (px[i]) n++;
+      expect(n, s.name).toBeGreaterThan(10);
+    }
   });
 });

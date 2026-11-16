@@ -49,3 +49,32 @@ describe('size and tool', () => {
     expect([dab, soft, dry].map(specTool)).toEqual(['pixel-brush', 'airbrush', 'charcoal']);
   });
 });
+
+describe('a saved brush with dynamics, grain, a dual tip and wet paint', () => {
+  const rich: PixelSpec = {
+    kind: 'dab',
+    dab: { ...DEFAULT_DAB, size: 12, dynamics: [{ from: 'pressure', to: 'size', amount: 0.6, invert: false }, { from: 'random', to: 'hue', amount: 0.2, invert: false }], fadeLength: 90, grain: { paper: 'laid', depth: 0.5, scale: 2, moving: true }, dual: { tip: 'square', size: 3, density: 0.3, cut: true }, wet: 0.4 },
+  };
+
+  it('comes back exactly through a file', () => {
+    expect(cleanSpec(JSON.parse(JSON.stringify(rich)))).toEqual(rich);
+  });
+
+  it('is told apart from the same brush without them, and from one with a different route', () => {
+    expect(sameSpec(rich, { kind: 'dab', dab: { ...(rich as { dab: typeof DEFAULT_DAB }).dab, dynamics: [] } })).toBe(false);
+    expect(sameSpec(rich, JSON.parse(JSON.stringify(rich)))).toBe(true);
+    const r = rich as { dab: typeof DEFAULT_DAB };
+    expect(sameSpec(rich, { kind: 'dab', dab: { ...r.dab, grain: null } })).toBe(false);
+    expect(sameSpec(rich, { kind: 'dab', dab: { ...r.dab, wet: 0 } })).toBe(false);
+  });
+
+  it('is a plain brush when an old file has none of it', () => {
+    const old = cleanSpec({ kind: 'dab', dab: { size: 5, spacing: 0.5 } });
+    expect(old).toMatchObject({ kind: 'dab', dab: { size: 5, dynamics: [], grain: null, dual: null, wet: 0 } });
+  });
+
+  it('never lets a bad file in: odd routes, grain and dual are dropped or put right', () => {
+    const s = cleanSpec({ kind: 'dab', dab: { dynamics: [{ from: 'pressure', to: 'size', amount: 99 }, 'x'], grain: 5, dual: { size: 1e9 }, wet: 7, fadeLength: -4 } });
+    expect(s).toMatchObject({ kind: 'dab', dab: { dynamics: [{ from: 'pressure', to: 'size', amount: 1 }], grain: null, dual: { size: 64 }, wet: 1, fadeLength: 10 } });
+  });
+});

@@ -5,6 +5,8 @@
  */
 import { readPixelStamp, type PixelStamp } from '../brushes/stamps';
 import { MIN_SMOOTH_EDGE, mirrorCentres } from '../soft/maths';
+import { cleanRoutes, effectsOf, FADE_DEFAULT, FADE_RANGE, lerpInputs, newEffects, NEUTRAL, sameRoutes, type DynRoute, type Effects, type Inputs } from './dynamics';
+import { cleanDual, cleanGrain, sameDual, sameGrain, type Dual, type Grain } from './texture';
 
 export type TipShape = 'round' | 'square' | 'picture';
 export const TIP_SHAPES: TipShape[] = ['round', 'square', 'picture'];
@@ -38,6 +40,16 @@ export interface DabBrush {
   opacity: number;
   /** True: every pixel is all or nothing (no anti-aliasing). False: a smooth, see-through edge. */
   aliased: boolean;
+  /** What the pen, the hand and the stroke do to each dab (see dynamics.ts). Empty: nothing, every dab the same. */
+  dynamics: DynRoute[];
+  /** How many pixels of line a "fade" source takes to run out. */
+  fadeLength: number;
+  /** A paper the paint catches on, or null for none (see texture.ts). */
+  grain: Grain | null;
+  /** A second tip the first is let through, or null for none. */
+  dual: Dual | null;
+  /** 0 (paints its own colour) to 1 (carries the colour it passes over along the stroke, like wet paint). */
+  wet: number;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
@@ -63,6 +75,11 @@ export const DEFAULT_DAB: DabBrush = {
   flow: 1,
   opacity: 1,
   aliased: true,
+  dynamics: [],
+  fadeLength: FADE_DEFAULT,
+  grain: null,
+  dual: null,
+  wet: 0,
 };
 
 const num = (v: unknown, lo: number, hi: number, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback);
@@ -91,6 +108,11 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
     flow: round3(num(r.flow, FLOW_RANGE.min, 1, base.flow)),
     opacity: round3(num(r.opacity, FLOW_RANGE.min, 1, base.opacity)),
     aliased: bool(r.aliased, base.aliased),
+    dynamics: r.dynamics === undefined ? base.dynamics : cleanRoutes(r.dynamics),
+    fadeLength: Math.round(num(r.fadeLength, FADE_RANGE.min, FADE_RANGE.max, base.fadeLength)),
+    grain: r.grain === undefined ? base.grain : cleanGrain(r.grain),
+    dual: r.dual === undefined ? base.dual : cleanDual(r.dual),
+    wet: round3(num(r.wet, 0, 1, base.wet)),
   };
 }
 
@@ -101,7 +123,8 @@ export function sameDab(a: DabBrush, b: DabBrush): boolean {
   const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join());
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
-    close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased
+    close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
+    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet)
   );
 }
 
@@ -158,6 +181,11 @@ export interface Dab {
   size: number;
   angle: number;
   flow: number;
+  /** Colour pushes from the brush's dynamics, left out when there are none (see dynamics.ts). */
+  mix?: number;
+  hue?: number;
+  sat?: number;
+  light?: number;
 }
 
 /** What a dab says about the pixel at an offset from its middle. */
@@ -302,61 +330,128 @@ interface Pt {
   y: number;
 }
 
+/** What the pen and hand are doing at one pointer event (see Inputs in dynamics.ts); a missing source means the device lacks it. */
+export type Sense = Pick<Inputs, 'pressure' | 'tilt' | 'twist' | 'speed'>;
+
+/** A place along the line where a dab goes, with how big it is there and what the dynamics make of it. */
+interface Spot extends Pt {
+  size: number;
+  flow: number;
+  fx: Effects;
+}
+
 /**
  * Walks a pointer's path and says where each dab goes, how big and which way round it is. Spacing is a share of the
- * brush's size, so the dabs sit the same distance apart however fast the hand moves. With `follow` on, a dab turns to
- * point along the line, and the very first one waits until the line has a direction.
+ * brush's size, so the dabs sit the same distance apart however fast the hand moves, and when the size changes along the
+ * line (pressure, speed, fading out) the gap follows it. With `follow` on, a dab turns to point along the line, and the very
+ * first one waits until the line has a direction.
  */
 export class DabPath {
   private last: Pt | null = null;
+  private lastSense: Sense = {};
+  private lastSize = 0;
+  private lastFlow = 1;
   private owed = 0;
+  private step = 0.5;
+  private travelled = 0;
+  private heading = 0;
   private dirX = 1;
   private dirY = 0;
   private prev: Pt | null = null;
-  private waiting: { at: Pt; size: number; flow: number } | null = null;
+  private waiting: Spot | null = null;
   private any = false;
+  private readonly routes: readonly DynRoute[];
+  private readonly inputs: Inputs = {};
+  private readonly sense: Sense = {};
 
   constructor(
     private readonly b: DabBrush,
     private readonly rng: () => number,
-  ) {}
+  ) {
+    this.routes = b.dynamics;
+  }
 
-  /** Points along the way from the last point to `to`, one `step` apart (the first call gives `to` itself). */
-  private walk(to: Pt, step: number): Pt[] {
+  /** The dab spot at a point, with the dynamics worked out for it (the shared neutral push when the brush has none). */
+  private spot(at: Pt, size: number, flow: number, s: Sense): Spot {
+    if (this.routes.length === 0) return { x: at.x, y: at.y, size, flow, fx: NEUTRAL };
+    const i = this.inputs;
+    i.pressure = s.pressure;
+    i.tilt = s.tilt;
+    i.twist = s.twist;
+    i.speed = s.speed;
+    i.heading = this.heading;
+    i.travelled = this.travelled;
+    i.random = this.rng;
+    const fx = effectsOf(this.routes, i, this.b.fadeLength, newEffects());
+    return { x: at.x, y: at.y, size: Math.max(0.5, size * fx.size), flow: Math.min(1, flow * fx.flow), fx };
+  }
+
+  /** Points along the way from the last point to `to`, a step apart (the first call gives `to` itself). */
+  private walk(to: Pt, size: number, flow: number, sense: Sense): Spot[] {
     const from = this.last;
+    const s0 = this.lastSense;
+    const size0 = this.lastSize;
+    const flow0 = this.lastFlow;
     this.last = to;
-    if (!from) return [to];
-    const out: Pt[] = [];
+    this.lastSense = { ...sense };
+    this.lastSize = size;
+    this.lastFlow = flow;
+    if (!from) {
+      const sp = this.spot(to, size, flow, sense);
+      this.step = stepFor(sp.size, this.b.spacing);
+      return [sp];
+    }
+    const out: Spot[] = [];
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const len = Math.hypot(dx, dy);
     if (len === 0) return out;
-    let d = step - this.owed;
+    this.heading = Math.atan2(dy, dx);
+    const plain = this.routes.length === 0;
+    let d = this.step - this.owed;
+    const base = this.travelled;
     while (d <= len) {
-      out.push({ x: from.x + (dx * d) / len, y: from.y + (dy * d) / len });
-      d += step;
+      const k = d / len;
+      const at = { x: from.x + dx * k, y: from.y + dy * k };
+      // Without dynamics the size is the event's own all along the segment, as it always was.
+      const sz = plain ? size : size0 + (size - size0) * k;
+      const fl = plain ? flow : flow0 + (flow - flow0) * k;
+      this.travelled = base + d;
+      const sp = this.spot(at, sz, fl, plain ? sense : lerpInputs(s0, sense, k, this.sense));
+      out.push(sp);
+      this.step = stepFor(sp.size, this.b.spacing);
+      d += this.step;
     }
-    this.owed = len - (d - step);
+    this.owed = len - (d - this.step);
+    this.travelled = base + len;
     return out;
   }
 
-  /** One dab at a point, with the brush's jitter and scatter on it. */
-  private make(at: Pt, size: number, flow: number): Dab {
+  /** One dab at a spot, with the brush's jitter and scatter on it. */
+  private make(at: Spot): Dab {
     const b = this.b;
     const rng = this.rng;
+    const size = at.size;
     let x = at.x;
     let y = at.y;
-    if (b.scatter > 0) {
+    const scatter = b.scatter + at.fx.scatter;
+    if (scatter > 0) {
       const a = rng() * Math.PI * 2;
-      const r = b.scatter * size * Math.sqrt(rng());
+      const r = scatter * size * Math.sqrt(rng());
       x += Math.cos(a) * r;
       y += Math.sin(a) * r;
     }
     const s = b.sizeJitter > 0 ? Math.max(0.5, size * (1 - b.sizeJitter * rng())) : size;
-    let angle = (b.angle * Math.PI) / 180;
+    let angle = (b.angle * Math.PI) / 180 + at.fx.angle;
     if (b.follow) angle += Math.atan2(this.dirY, this.dirX);
     if (b.angleJitter > 0) angle += (rng() * 2 - 1) * Math.PI * b.angleJitter;
-    return { x, y, size: s, angle, flow };
+    const d: Dab = { x, y, size: s, angle, flow: at.flow };
+    const fx = at.fx;
+    if (fx.mix) d.mix = fx.mix;
+    if (fx.hue) d.hue = fx.hue;
+    if (fx.sat) d.sat = fx.sat;
+    if (fx.light) d.light = fx.light;
+    return d;
   }
 
   /** Turns toward the heading from the last dab to this one, a little at a time so a corner does not make the tip jump. */
@@ -374,14 +469,17 @@ export class DabPath {
     this.dirY /= n;
   }
 
-  /** The dabs to lay to get to `to`. `size` is how wide the brush is right now (pressure can change it), `flow` the paint per dab. */
-  to(to: Pt, size: number, flow: number): Dab[] {
+  /**
+   * The dabs to lay to get to `to`. `size` is how wide the brush is right now (the pen page can change it) and `flow` the
+   * paint per dab. `sense` says what the pen and hand are doing, for the brush's own dynamics.
+   */
+  to(to: Pt, size: number, flow: number, sense: Sense = {}): Dab[] {
     const out: Dab[] = [];
-    for (const at of this.walk(to, stepFor(size, this.b.spacing))) {
+    for (const at of this.walk(to, size, flow, sense)) {
       if (this.b.follow && !this.prev && !this.any) {
         // The first dab waits for a direction.
         if (!this.waiting) {
-          this.waiting = { at, size, flow };
+          this.waiting = at;
           this.prev = at;
           continue;
         }
@@ -389,18 +487,18 @@ export class DabPath {
       if (this.waiting) {
         const w = this.waiting;
         this.waiting = null;
-        const dx = at.x - w.at.x;
-        const dy = at.y - w.at.y;
+        const dx = at.x - w.x;
+        const dy = at.y - w.y;
         const len = Math.hypot(dx, dy) || 1;
         this.dirX = dx / len;
         this.dirY = dy / len;
-        out.push(this.make(w.at, w.size, w.flow));
+        out.push(this.make(w));
         this.any = true;
-        this.prev = w.at;
+        this.prev = w;
       }
       this.steer(at);
       this.prev = at;
-      out.push(this.make(at, size, flow));
+      out.push(this.make(at));
       this.any = true;
     }
     return out;
@@ -412,6 +510,6 @@ export class DabPath {
     this.waiting = null;
     if (!w) return [];
     this.any = true;
-    return [this.make(w.at, w.size, w.flow)];
+    return [this.make(w)];
   }
 }
