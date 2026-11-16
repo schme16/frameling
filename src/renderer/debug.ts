@@ -59,7 +59,8 @@ import { pretendReport } from '../gpu/report';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
-import { setTl } from '../timeline/state';
+import { pickKeys, setTl } from '../timeline/state';
+import { celRef } from '../timeline/tracks';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
 import { allChoices, askAgain, forgetAnswers } from '../core/choices';
 import { pretend as pretendReviewLink } from '../livereview/link';
@@ -118,6 +119,17 @@ if (new URLSearchParams(location.search).has('debug')) {
     saveQuestion: (neverSaved = false) => void askSaveInPage(neverSaved ? 'Untitled' : 'Ball bounce', neverSaved),
     // The timeline's frame width (pixels a frame), for shots of a zoom the slider is too coarse to land on.
     timelineZoom: (cw: number) => setTl({ cw }),
+    // Picks the drawings at these frames on a layer (by name, or the last one), for shots of picked keys: clicking
+    // one and then holding Shift lands differently every run, which is no good for an A/B.
+    pickKeys: (frames: number[], layerName?: string) => {
+      const { doc } = store().get();
+      const layer = layerName ? doc.layers.find((l) => l.name === layerName) : doc.layers[doc.layers.length - 1];
+      if (!layer) return 0;
+      const refs = layer.cels.filter((c) => frames.some((f) => f >= c.start && f < c.start + c.length)).map((c) => celRef(layer.id, c.id));
+      pickKeys(refs);
+      store().setUi({ activeLayerId: layer.id, frame: frames[0] ?? 0 });
+      return refs.length;
+    },
     commands: () => allCommands().map((c) => c.id),
     /** Every help topic with its picture or clip, for the web check that every file is served. */
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),

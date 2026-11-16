@@ -497,6 +497,69 @@ const ACTIONS = {
       }
     },
   },
+  // Moving the pointer along a row of drawings, which is what you do on the way to every click and drag in the
+  // timeline. Nothing changes and no frame is drawn, so what this costs is the browser hit-testing the timeline's
+  // elements, once per move. That is the number on its own, away from the edit that usually follows it.
+  'hover-keys': {
+    kinds: ['vector', 'pixel'], unit: 'moves', units: 58,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      // Only the rows on screen are drawn in full, so bring this layer's row into view and let it fill in.
+      await ev(`(() => { const r = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); return true; })()`);
+      await sleep(250);
+      this.box = await ev(`(() => {
+        const e = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]');
+        if (!e) return null;
+        const r = e.getBoundingClientRect(), v = document.querySelector('.tl-body').getBoundingClientRect();
+        const left = Math.max(r.left, v.left), right = Math.min(r.right, v.right);
+        return { x: left, y: r.top, w: right - left, h: r.height };
+      })()`);
+      if (!this.box || this.box.w < 80) throw new Skip('no row of keys on screen');
+    },
+    async act() {
+      const b = this.box, y = Math.round(b.y + b.h / 2), pts = [];
+      for (let i = 0; i < 30; i++) pts.push(Math.round(b.x + 8 + (i * (b.w - 16)) / 29));
+      for (let i = 28; i >= 0; i--) pts.push(Math.round(b.x + 8 + (i * (b.w - 16)) / 29));
+      for (const x of pts) { send({ type: 'mouseMove', x, y }); await sleep(16); }
+      await sleep(120);
+    },
+  },
+  // Growing a picked block of keys with Shift and the right arrow: one press changes which keys are picked, and the
+  // timeline has to show that. The frame moves with the cursor too, as it does for a person, so this is the whole
+  // cost of picking your way along a row, not the restyle on its own.
+  'pick-keys': {
+    kinds: ['vector', 'pixel'], unit: 'presses', units: 24,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      await ev(`(() => { const r = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); return true; })()`);
+      await sleep(250);
+      // A click on the key puts the focus on the frames and sets the anchor the picked block grows from.
+      const at = await ev(`(() => {
+        const l = window.__sw.last(), c = l.cels.find((c) => c.start === 3) || l.cels[3];
+        const e = c && document.querySelector('[data-cel="' + c.id + '"]');
+        if (!e) return null;
+        e.scrollIntoView({ block: 'center', inline: 'center' });
+        const b = e.getBoundingClientRect();
+        return { x: Math.round(b.left + Math.min(b.width / 2, 8)), y: Math.round(b.top + b.height / 2) };
+      })()`);
+      if (!at) throw new Skip('no key to pick');
+      send({ type: 'mouseMove', x: at.x, y: at.y });
+      send({ type: 'mouseDown', x: at.x, y: at.y, button: 'left', clickCount: 1 });
+      send({ type: 'mouseUp', x: at.x, y: at.y, button: 'left', clickCount: 1 });
+      await sleep(150);
+    },
+    async act() {
+      for (let i = 0; i < 24; i++) {
+        send({ type: 'keyDown', keyCode: 'Right', modifiers: ['shift'] });
+        send({ type: 'keyUp', keyCode: 'Right', modifiers: ['shift'] });
+        await sleep(16);
+      }
+      await sleep(150);
+      this.picked = await ev(`(() => document.querySelectorAll('.tl-rows .is-picked').length)()`);
+      await escape(1);
+      if (!this.picked) throw new Error('nothing got picked (the harness is not driving the app)');
+    },
+  },
   'undo-redo': {
     kinds: ['vector', 'pixel'], unit: 'steps', units: 12,
     async setup() {
@@ -751,10 +814,20 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
     // document, and that is decided by how many elements are on screen, so the number belongs beside the timings.
     doc.page = await ev(`(() => {
       const n = (q) => document.querySelectorAll(q).length;
-      return { nodes: n('*'), timelineNodes: n('.tl-body *'), keys: n('[data-key], .tl-key'), rows: n('[data-row]'), layers: window.__frameling.store().get().doc.layers.length };
+      // Which classes the timeline's elements are, biggest group first: without it a big number says nothing about
+      // what to do with it.
+      const by = {};
+      for (const e of document.querySelectorAll('.tl-body *')) {
+        const c = e.className && typeof e.className === 'string' ? e.className.split(' ').filter((x) => x.startsWith('tl-'))[0] : '';
+        const k = c || e.tagName.toLowerCase();
+        by[k] = (by[k] || 0) + 1;
+      }
+      const parts = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      return { nodes: n('*'), timelineNodes: n('.tl-body *'), keys: n('[data-key], .tl-key'), rows: n('[data-row]'), hittable: n('.tl-body *'), parts, layers: window.__frameling.store().get().doc.layers.length };
     })()`);
     pages[dn] = doc.page;
     console.error(`doc ${dn} ready (${Date.now() - t0} ms), ${doc.page.nodes} elements, ${doc.page.timelineNodes} of them in the timeline`);
+    if (doc.page.parts) console.error(`        timeline elements: ${doc.page.parts.map(([k, v]) => `${k} ${v}`).join(', ')}`);
     for (const an of actionNames) {
       const a = ACTIONS[an];
       if (!a) { console.error('unknown action', an); continue; }

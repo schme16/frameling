@@ -225,10 +225,16 @@ steps by adding a line to the drawing on the active layer n times, the shape of 
 reports the steps and the memory the history holds. `stress-pixel-hd` (twelve 1920 x 1080 frames, painted edge to
 edge, so nothing is trimmed away on save) is only run when asked for with `--docs`.
 
-Each result file also carries `pages`: how many elements each document puts on screen, and how many of those are the
-timeline's. Browser style, layout and paint is most of what a click costs on a big document, and that is decided by how
-many elements are on screen, so the number belongs beside the timings. For scale, the built-in templates make a page of
-about 1050 to 2200 elements; the 40 layers by 240 keys document makes 8155, and 7281 of those are the timeline's.
+Each result file also carries `pages`: how many elements each document puts on screen, how many of those are the
+timeline's, and `parts`, which says what classes they are, biggest group first. The browser's own work (hit testing,
+paint, layerizing) is most of what a click costs on a big document, so these numbers belong beside the timings. For
+scale, the 40 layers by 240 keys document makes a page of 2954 elements with 2145 of them in the timeline, and 1540 of
+those are the 385 drawing blocks on screen with their four elements each.
+
+**But element count is not the lever it looks like.** Taking 385 of those elements out of that document (one per
+drawing) moved no timing at all. What did move things was giving each row `contain: layout paint style`, so one block
+repainting does not make the browser repaint and re-layer the whole timeline: moving the pointer along a row went 9.3
+to 6.5 ms a move at 4x, a key delete 114 to 95, a layer delete 66 to 45.
 
 **How much a difference has to be before it means anything.** The busy-ms figures drift between whole runs, not just
 between reps inside one: two full sweeps of the same build, 122 rows, came out a mean 3.4% apart with single rows as far
@@ -240,8 +246,9 @@ played, so it rises when the warm-ahead manages more work. Judge playback on `la
 
 Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
 `select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
-`undo-redo`, `switch-artboard`, `export-dialog` (warm), `save-file` (the path Save uses), `open-file`, `autosave`,
-`workspaces`. Saving has a warm and a first kind, and they are very different on a pixel document: `save-file` and
+`hover-keys` (the pointer along a row, changing nothing, so the cost is purely what the browser does per move),
+`pick-keys` (Shift and the right arrow, growing a picked block), `undo-redo`, `switch-artboard`, `export-dialog`
+(warm), `save-file` (the path Save uses), `open-file`, `autosave`, `workspaces`. Saving has a warm and a first kind, and they are very different on a pixel document: `save-file` and
 `autosave` are saves after an earlier save, where the encoded PNGs are cached by pixel array (so they cost almost nothing,
 because the unmeasured warm-up run fills the cache), and `save-file-first` and `autosave-first` give every pixel drawing a
 fresh pixel array before each run (as opening a file does), so the PNG encoding is paid. The saves also report `wall`, the

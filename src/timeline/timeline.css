@@ -782,6 +782,9 @@
 .tl-row {
   position: relative;
   box-sizing: border-box;
+  /* A row is its own little world: when one drawing block changes (a hover outline, a key being picked) the browser
+     then repaints and re-layers that row alone instead of the whole timeline. */
+  contain: layout paint style;
   border-bottom: 1px solid var(--line-soft);
   background-color: var(--panel-2);
   background-image:

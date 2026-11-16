@@ -1,0 +1,425 @@
+{
+ "label": "tl-ptr-before-1",
+ "when": "2026-11-16T05:17:39.000Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "hover-keys",
+   "busyMs": 545.7,
+   "worstTaskMs": 23.3,
+   "runs": [
+    545.7,
+    559.8,
+    538
+   ],
+   "unit": "moves",
+   "units": 58,
+   "perUnitMs": 9.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     526.1
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     3.3
+    ],
+    [
+     "t index-CfT5N-4h.js:9",
+     2.9
+    ],
+    [
+     "En index-CfT5N-4h.js:9",
+     2.7
+    ],
+    [
+     "clearTimeout :0",
+     1.3
+    ],
+    [
+     "Vm index-CfT5N-4h.js:10",
+     0.9
+    ],
+    [
+     "g index-CfT5N-4h.js:304",
+     0.9
+    ],
+    [
+     "postMessage :0",
+     0.8
+    ],
+    [
+     "bn index-CfT5N-4h.js:9",
+     0.7
+    ],
+    [
+     "setTimeout :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     526.1
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     13.4
+    ],
+    [
+     "Lm index-CfT5N-4h.js:10",
+     11.6
+    ],
+    [
+     "Rm index-CfT5N-4h.js:10",
+     11.4
+    ],
+    [
+     "Af index-CfT5N-4h.js:9",
+     9.8
+    ],
+    [
+     "Tn index-CfT5N-4h.js:9",
+     9.4
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     3.5
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     3.5
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     3.5
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     3.5
+    ],
+    [
+     "t index-CfT5N-4h.js:9",
+     3
+    ],
+    [
+     "h index-CfT5N-4h.js:304",
+     2.8
+    ],
+    [
+     "En index-CfT5N-4h.js:9",
+     2.7
+    ],
+    [
+     "p index-CfT5N-4h.js:304",
+     2.4
+    ],
+    [
+     "g index-CfT5N-4h.js:304",
+     2.4
+    ],
+    [
+     "Gd index-CfT5N-4h.js:9",
+     1.8
+    ],
+    [
+     "Dd index-CfT5N-4h.js:9",
+     1.8
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     1.7
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     1.7
+    ],
+    [
+     "Cee index-CfT5N-4h.js:9",
+     1.7
+    ]
+   ],
+   "rendering": [
+    [
+     "HitTest",
+     166.9
+    ],
+    [
+     "Paint",
+     143.2
+    ],
+    [
+     "Layerize",
+     116.3
+    ],
+    [
+     "#UpdateLayoutTree",
+     34.7
+    ],
+    [
+     "Commit",
+     22.3
+    ],
+    [
+     "PrePaint",
+     10.1
+    ],
+    [
+     "UpdateLayoutTree",
+     7.8
+    ],
+    [
+     "#Layout",
+     2
+    ],
+    [
+     "UpdateLayer",
+     1.7
+    ],
+    [
+     "Layout",
+     1.7
+    ],
+    [
+     "IntersectionObserverController::computeIntersections",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "pick-keys",
+   "busyMs": 500,
+   "worstTaskMs": 45.8,
+   "runs": [
+    487.1,
+    513.4,
+    500
+   ],
+   "unit": "presses",
+   "units": 24,
+   "perUnitMs": 20.83,
+   "topSelf": [
+    [
+     "(program) :0",
+     232.6
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:178",
+     24
+    ],
+    [
+     "Hf index-CfT5N-4h.js:10",
+     21.8
+    ],
+    [
+     "drawImage :0",
+     19.1
+    ],
+    [
+     "mu index-CfT5N-4h.js:9",
+     12.3
+    ],
+    [
+     "r index-CfT5N-4h.js:150",
+     9.6
+    ],
+    [
+     "mn index-CfT5N-4h.js:9",
+     7.5
+    ],
+    [
+     "h index-CfT5N-4h.js:9",
+     7.4
+    ],
+    [
+     "(garbage collector) :0",
+     6.5
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     6.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     232.6
+    ],
+    [
+     "(anon) index-CfT5N-4h.js:9",
+     196.7
+    ],
+    [
+     "Ed index-CfT5N-4h.js:9",
+     174
+    ],
+    [
+     "pf index-CfT5N-4h.js:9",
+     170
+    ],
+    [
+     "gf index-CfT5N-4h.js:9",
+     169.8
+    ],
+    [
+     "ff index-CfT5N-4h.js:9",
+     169.8
+    ],
+    [
+     "Rd index-CfT5N-4h.js:9",
+     111.1
+    ],
+    [
+     "zd index-CfT5N-4h.js:9",
+     110.3
+    ],
+    [
+     "Xc index-CfT5N-4h.js:9",
+     98.7
+    ],
+    [
+     "Gd index-CfT5N-4h.js:9",
+     62.7
+    ],
+    [
+     "Dd index-CfT5N-4h.js:9",
+     62.7
+    ],
+    [
+     "Cee index-CfT5N-4h.js:9",
+     62.4
+    ],
+    [
+     "Ac index-CfT5N-4h.js:9",
+     61.4
+    ],
+    [
+     "Wo index-CfT5N-4h.js:9",
+     58.3
+    ],
+    [
+     "Kd index-CfT5N-4h.js:9",
+     54.7
+    ],
+    [
+     "gu index-CfT5N-4h.js:9",
+     54.6
+    ],
+    [
+     "mu index-CfT5N-4h.js:9",
+     54.4
+    ],
+    [
+     "frame index-CfT5N-4h.js:158",
+     51.4
+    ],
+    [
+     "drawMain index-CfT5N-4h.js:158",
+     49.8
+    ],
+    [
+     "paint index-CfT5N-4h.js:158",
+     47.9
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     113.8
+    ],
+    [
+     "Layerize",
+     57.9
+    ],
+    [
+     "FireAnimationFrame",
+     53.8
+    ],
+    [
+     "Layout",
+     31.6
+    ],
+    [
+     "Commit",
+     20.8
+    ],
+    [
+     "PrePaint",
+     14.6
+    ],
+    [
+     "HitTest",
+     14.3
+    ],
+    [
+     "#UpdateLayoutTree",
+     12.7
+    ],
+    [
+     "#Layout",
+     11.7
+    ],
+    [
+     "MinorGC",
+     3.7
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     3.4
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     3.2
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.7
+    ],
+    [
+     "UpdateLayoutTree",
+     1.3
+    ],
+    [
+     "UpdateLayer",
+     0.9
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
