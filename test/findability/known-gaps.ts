@@ -137,6 +137,10 @@ export const STREAM_LOAD_TUCKED = { palette: 13, menu: 13, switches: 0, help: 2 
  */
 export const STILL_LOAD = {
   /** Palette: commands that work right now. Menu: commands in any menu. animateMenu: commands in the Animate menu. */
-  still: { palette: 555, menu: 780, animateMenu: 8 },
-  animated: { palette: 599, menu: 898, animateMenu: 123 },
+  // 16 November 2026: +3 palette and +2 menu on both sides, from work that landed the same day and has nothing to do
+  // with animation: the Offset card and the Width tool (palette only, no menu home, because Draw is over its cap), and
+  // the two craft importers in File > Import. The gap is what this ledger is for and the gap did not move: 44 palette
+  // commands and 118 menu commands are still out of the way on a still.
+  still: { palette: 558, menu: 782, animateMenu: 8 },
+  animated: { palette: 602, menu: 900, animateMenu: 123 },
 };
