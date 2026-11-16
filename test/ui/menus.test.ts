@@ -59,7 +59,7 @@ describe('menu filtering', () => {
     expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
   });
   it('a menu that moved inside another still takes what a feature adds by its old name', () => {
-    expect(MENU_HOMES).toEqual({ Rig: 'Extras', 'sub:rig': 'Extras', 'sub:effects': 'Effects', Artboards: 'sub:artboards', Plugins: 'sub:plugins', Pixel: 'Draw', 'sub:tools': 'Draw' });
+    expect(MENU_HOMES).toEqual({ Rig: 'Extras', 'sub:rig': 'Extras', 'sub:effects': 'Effects', Artboards: 'sub:artboards', 'sub:masks': 'sub:layer', 'sub:pairs': 'Layers', Plugins: 'sub:plugins', Pixel: 'Draw', 'sub:tools': 'Draw' });
     // Every home is a menu on the bar or a submenu that exists, so what a feature adds is never dropped.
     for (const home of Object.values(MENU_HOMES)) expect(home.startsWith('sub:') ? SUBMENUS[home.slice(4)] : MENUS.find((m) => m.label === home), home).toBeDefined();
   });
@@ -230,6 +230,26 @@ describe('the real menus', async () => {
     const own = flat(sub && sub.kind === 'submenu' ? sub.items : []);
     for (const id of ['artboards.new', 'artboards.delete', 'artboards.makeVariation', 'artboards.fitFill', 'artboards.pictureFirst', 'artboards.zoomTo']) expect(own).toContain(id);
     expect(flat(menu('View')).filter((id) => id.startsWith('artboards.') && id !== 'view.panel.artboards')).toEqual([]);
+  });
+  it('Layers and artboards opens with Layer, Artboards and Tiles, then the sprite rows, then the Layers panel', () => {
+    const inside = menu('Layers');
+    const top = inside.filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
+    expect(top).toEqual(['Layer', 'Artboards', 'Tiles']);
+    // The three submenus are the first three rows, with a divider after them and the panel last.
+    expect(inside.slice(0, 3).map((i) => i.kind)).toEqual(['submenu', 'submenu', 'submenu']);
+    expect(inside[3].kind).toBe('separator');
+    const rest = flat(inside.slice(4));
+    expect(rest.slice(0, 5)).toEqual(['pixel.shareLayers', 'pixel.unshareLayers', 'pixel.changeWay', 'pixel.boardsToFrames', 'pixel.framesToBoards']);
+    expect(rest[rest.length - 1]).toBe('view.panel.layers');
+    // No layer command is left flat down the top: they are all in Layer, or in the Pixels and vectors group.
+    const flatLayer = inside.filter((i) => i.kind === 'command').map((i) => (i.kind === 'command' ? i.command.id : '')).filter((id) => id.startsWith('layers.') && !id.startsWith('layers.draw.') && !id.startsWith('layers.go.') && !['layers.addHalf', 'layers.unpair', 'layers.deletePair'].includes(id));
+    expect(flatLayer).toEqual([]);
+    const layer = inside.find((i) => i.kind === 'submenu' && i.label === 'Layer');
+    const own = flat(layer && layer.kind === 'submenu' ? layer.items : []);
+    for (const id of ['layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', 'layers.clipToBelow', 'layers.addMask', 'layers.newFolder']) expect(own, id).toContain(id);
+    // Masks and folders is a headed group inside Layer (a menu has one level of submenu), and the list stays within what fits on screen.
+    expect(layer && layer.kind === 'submenu' && layer.items.some((i) => i.kind === 'heading' && i.label === 'Masks and folders')).toBe(true);
+    expect(own.length).toBeLessThanOrEqual(30);
   });
   it('the skeleton is in Rigging, Effects has a menu of its own, and each is a plain list (a click, a submenu, a command)', () => {
     const subs = (label: string) => menu(label).filter((i) => i.kind === 'submenu').map((i) => (i.kind === 'submenu' ? i.label : ''));
