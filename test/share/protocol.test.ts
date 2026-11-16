@@ -176,12 +176,12 @@ describe('a connection that breaks part-way', () => {
     // arrive between two polls.
     s.breakAfterBytes = 100_000;
     await until(() => t.got.some((e) => e.type === 'progress' && e.done > 0 && e.done < 400_000));
-    await until(() => t.sent.some((e) => e.type === 'dropped'));
+    // Each end hears the close on its own turn: the sender first, the receiver a turn later. Wait for both, because a
+    // check between the two turns sees one dropped and not the other (about one run in ten in a tight loop).
+    await until(() => t.sent.some((e) => e.type === 'dropped') && t.got.some((e) => e.type === 'dropped'));
     expect(t.sender.finished).toBe(false);
-    expect(t.got.some((e) => e.type === 'dropped')).toBe(true);
     t.connect();
-    await until(() => t.sent.some((e) => e.type === 'sent'));
-    expect(t.got.some((e) => e.type === 'received')).toBe(true);
+    await until(() => t.sent.some((e) => e.type === 'sent') && t.got.some((e) => e.type === 'received'));
   });
 });
 
