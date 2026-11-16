@@ -1,0 +1,116 @@
+{
+ "gpuRun": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "results": [
+  {
+   "strokes": 50,
+   "scale": 1,
+   "plain": {
+    "coldMs": 16.8,
+    "warmMs": 1.8
+   },
+   "holes": {
+    "coldMs": 77.5,
+    "warmMs": 5.2
+   },
+   "tooth": {
+    "coldMs": 105.2,
+    "warmMs": 4
+   }
+  },
+  {
+   "strokes": 50,
+   "scale": 2,
+   "plain": {
+    "coldMs": 3.1,
+    "warmMs": 3.1
+   },
+   "holes": {
+    "coldMs": 73.3,
+    "warmMs": 5.1
+   },
+   "tooth": {
+    "coldMs": 221.6,
+    "warmMs": 4.2
+   }
+  },
+  {
+   "strokes": 150,
+   "scale": 1,
+   "plain": {
+    "coldMs": 9.1,
+    "warmMs": 3.6
+   },
+   "holes": {
+    "coldMs": 232,
+    "warmMs": 12.3
+   },
+   "tooth": {
+    "coldMs": 267.3,
+    "warmMs": 14.5
+   }
+  },
+  {
+   "strokes": 150,
+   "scale": 2,
+   "plain": {
+    "coldMs": 15.9,
+    "warmMs": 9.1
+   },
+   "holes": {
+    "coldMs": 233.9,
+    "warmMs": 15.7
+   },
+   "tooth": {
+    "coldMs": 740.6,
+    "warmMs": 14.5
+   }
+  },
+  {
+   "strokes": 400,
+   "scale": 1,
+   "plain": {
+    "coldMs": 39.6,
+    "warmMs": 16.4
+   },
+   "holes": {
+    "coldMs": 805.3,
+    "warmMs": 29.8
+   },
+   "tooth": {
+    "coldMs": 884.3,
+    "warmMs": 52.4
+   }
+  },
+  {
+   "strokes": 400,
+   "scale": 2,
+   "plain": {
+    "coldMs": 33.4,
+    "warmMs": 22.7
+   },
+   "holes": {
+    "coldMs": 441.7,
+    "warmMs": 36.3
+   },
+   "tooth": {
+    "coldMs": 1906.3,
+    "warmMs": 44.6
+   }
+  }
+ ]
+}

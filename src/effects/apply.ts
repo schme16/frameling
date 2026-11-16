@@ -13,6 +13,7 @@ import type { EffectKind } from '../core/format';
 import { runEffectGpu } from './effectsGL';
 import { canFallback, nativeFilterWorks } from './filterSupport';
 import { isKernelKind, kernelParams, runKernelBytes, type StageRect } from './kernels';
+import { toothBytes, toothParams } from '../dry/tooth';
 import { adjustPixels, blurPixels, MIN_SIGMA } from './softBlur';
 
 export type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
@@ -149,11 +150,22 @@ function applyKernel(src: Canvas2, kind: Parameters<typeof kernelParams>[0], v: 
   return src;
 }
 
+/** Paper tooth on a whole picture: the picture's see-through says how far the stick reaches, and the paper decides what it catches. Done in JS, in place. */
+function applyTooth(src: Canvas2, v: Record<string, number | string>, scale: number, origin: { x: number; y: number }): Canvas2 {
+  const g = ctx2(src);
+  if (!canFallback(g)) return src;
+  const img = g.getImageData(0, 0, src.width, src.height);
+  toothBytes(img.data, src.width, src.height, toothParams(v), { a: scale, b: 0, c: 0, d: scale, e: origin.x, f: origin.y });
+  g.putImageData(img, 0, 0);
+  return src;
+}
+
 /**
  * Applies one effect to `src` and returns the result: `src` itself when changed in place, or a canvas from the pool
  * (and `src` goes back to the pool). The caller owns what's returned.
  */
 export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, number | string>, scale: number, origin: { x: number; y: number }, pool: BufferPool, stage?: { w: number; h: number }): Canvas2 {
+  if (kind === 'tooth') return applyTooth(src, v, scale, origin);
   if (isKernelKind(kind)) return applyKernel(src, kind, v, scale, { x: origin.x, y: origin.y, w: stage?.w ?? src.width, h: stage?.h ?? src.height }, pool);
   const n = (k: string) => Number(v[k]);
   const filter = filterFor(kind, v, scale);

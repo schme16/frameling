@@ -12,6 +12,9 @@ export function setTipOutliner(fn: OutlineFn): void {
 
 const parts = new WeakMap<StrokeShape, Shape[] | null>();
 
+/** A line with Paper tooth switched on is drawn as pigment on paper straight from its points (effects/toothShape.ts), so it is not swapped for shapes. */
+export const onPaper = (s: StrokeShape): boolean => !!s.effects?.some((e) => e.kind === 'tooth' && e.on !== false);
+
 /** The shapes a line with a tip is made of, or null for a plain line (or one with too little to draw). Worked out once per line. */
 export function strokeParts(s: StrokeShape): Shape[] | null {
   if (!s.brush.tip || !outliner) return null;
@@ -31,12 +34,12 @@ export function withTips(d: Drawing): Drawing {
   const known = expanded.get(d);
   if (known) return known;
   let any = false;
-  for (const s of d.shapes) if (s.type === 'stroke' && s.brush.tip) any = true;
+  for (const s of d.shapes) if (s.type === 'stroke' && s.brush.tip && !onPaper(s)) any = true;
   let out: Drawing = d;
   if (any) {
     const shapes: Shape[] = [];
     for (const s of d.shapes) {
-      const p = s.type === 'stroke' && s.brush.tip ? strokeParts(s) : null;
+      const p = s.type === 'stroke' && s.brush.tip && !onPaper(s) ? strokeParts(s) : null;
       if (p) shapes.push(...p);
       else shapes.push(s);
     }

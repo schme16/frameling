@@ -769,6 +769,8 @@ export interface BrushTip {
   amount?: number;
   /** Chalk and charcoal: how coarse the grain is, 0.5 to 3 (1 = usual). */
   grain?: number;
+  /** Chalk and charcoal: the dry medium (see src/dry/maths.ts) whose paper tooth the line catches on. The line then carries a Paper tooth effect, so it is drawn as a picture of pigment on paper, not as tiny shapes. Missing = the grain made of tiny shapes. */
+  dry?: 'vine-charcoal' | 'compressed-charcoal' | 'chalk' | 'soft-pastel' | 'oil-pastel' | 'crayon' | 'sketch-pencil' | 'soft-pencil' | 'colour-pencil';
   /** Stamp: which shape, and how far apart the stamps are (a share of the brush size, 0.2 to 4). */
   shape?: StampShape;
   spacing?: number;
@@ -1021,7 +1023,7 @@ export type BlendMode =
   /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
   | 'divide';
 
-export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate' | 'grain' | 'wave' | 'fringe' | 'vignette' | 'motionblur';
+export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate' | 'grain' | 'wave' | 'fringe' | 'vignette' | 'motionblur' | 'tooth';
 
 /**
  * One effect in a layer's stack. `values` holds every setting (numbers, and colours as hex). Numbers can be animated

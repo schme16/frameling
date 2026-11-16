@@ -301,6 +301,23 @@ picture), and shapes to pixels and pixels to a picture with the words each says.
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/clipboard.cjs [outDir] [--stills <dir>]
 ```
 
+## Paper tooth on vector lines: three harnesses
+
+Chalk and charcoal brush lines that catch on paper (`src/dry/tooth.ts`, `src/effects/toothShape.ts`).
+
+- `scripts/docs/ab-vector-charcoal/` shoots every dry brush drawing the firm, light, pressure ramp and three passes marks, and a
+  shaded ball, in both themes, on a 400 x 400 page. `scripts/ab/vector-charcoal-compare.py` lays them beside the pixel version and the
+  public domain scans in `brand/ab/charcoal/ref/`. `ONLY=a,b` limits the brushes, `HOLES=1` draws the older tiny-shape grain, `SIZE=<px>` sets the size.
+
+  ```
+  SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-vector-charcoal --out <dir>
+  python3 scripts/ab/vector-charcoal-compare.py <dir> brand/ab/vector-charcoal
+  ```
+- `scripts/e2e/tooth-export.cjs` writes one toothed line through every export format and says what is inside each file (PNG grain, SVG tiny
+  shapes, PDF, Illustrator and Lottie a picture, Photoshop pixels). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/tooth-export.cjs [outDir]`
+- `scripts/perf/tooth.cjs` times a busy page of lines drawn plain, with the older grain and with paper tooth, cold (every line worked out) and warm
+  (a held drawing). Put the two graphics variables from the perf skill in front of `xvfb-run`; results go in `scripts/perf/results/tooth-*.json`.
+
 ## Export end to end: scripts/e2e/export.cjs
 
 Starts the real main process (`dist/main/main.cjs`) with `FRAMELING_AUTOMATION_DIR` set, so save dialogs answer

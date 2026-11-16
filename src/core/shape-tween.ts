@@ -699,6 +699,8 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
         id: p.id,
         type: 'stroke',
         ...(a.group ? { group: a.group } : {}),
+        // Paper tooth and other effects on the line stay on it through the in-betweens.
+        ...(a.effects ? { effects: a.effects } : {}),
         points: p.pa.map((q, i) => ({ x: lerp(q.x, p.pb[i].x, t), y: lerp(q.y, p.pb[i].y, t), p: Math.max(0, Math.min(1, lerp(q.p, p.pb[i].p, t))) })),
         brush: br,
         color: mixColors(a.color, b.color, t) ?? a.color,

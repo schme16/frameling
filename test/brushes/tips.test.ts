@@ -119,7 +119,9 @@ describe('saved brushes remember the tip', () => {
   });
   it('a brush that matches a tipped starter is found by its tip, not just its sliders', () => {
     expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: undefined })).toBe(false);
-    expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: { kind: 'chalk' } })).toBe(true);
+    expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: { kind: 'chalk', dry: 'chalk' } })).toBe(true);
+    // Chalk on paper and chalk made of tiny shapes are different brushes.
+    expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: { kind: 'chalk' } })).toBe(false);
   });
   it('goes through sharing as text, custom stamp and all, and an old file without tips still reads', () => {
     store().setUi({ brush: { ...DEFAULT_BRUSH, tip: { kind: 'stamp', shape: 'custom', custom: [[-0.5, -0.5, 0.5, -0.5, 0, 0.5]], angle: 'upright' } } });

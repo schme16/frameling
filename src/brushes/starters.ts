@@ -5,6 +5,7 @@
 // can't carry a fading edge.
 import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
+import type { DryId } from '../dry/maths';
 import { defaultTip, startBattlements, startLink, startRibbon, startVine } from '../geometry/tip';
 import type { BrushPreset } from './model';
 
@@ -14,7 +15,10 @@ export type StarterGroup = (typeof STARTER_GROUPS)[number];
 
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
 
-const grain = (kind: 'chalk' | 'charcoal', amount: number, coarse: number) => ({ ...defaultTip(kind), amount, grain: coarse });
+// Grain made of tiny shapes (oil, bristle and dry brush paint). The `amount` also serves the dry ones below as the shapes they turn into where paper tooth cannot go (SVG).
+const grain = (kind: 'chalk' | 'charcoal', amount: number, coarse: number) => ({ kind, amount, grain: coarse });
+// Chalk and charcoal on paper: the line catches on the paper's tooth, as the dry media do on a pixel layer.
+const dry = (kind: 'chalk' | 'charcoal', medium: DryId, amount: number) => ({ kind, amount, grain: 1, dry: medium });
 const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
   ...defaultTip('stamp'),
   shape,
@@ -31,9 +35,9 @@ export const STARTERS: readonly BrushPreset[] = [
   // Pencils
   make('pencil', 'Pencil', 'Pencils', { size: 2, thinning: 0.25, smoothing: 0.3, streamline: 0.25 }),
   make('mechanical', 'Mechanical pencil', 'Pencils', { size: 1.6, thinning: 0.1, smoothing: 0.3, streamline: 0.2 }),
-  make('soft-pencil', 'Soft pencil (6B)', 'Pencils', { size: 5, thinning: 0.5, smoothing: 0.35, streamline: 0.3, tip: grain('chalk', 0.3, 0.5) }),
-  make('colour-pencil', 'Colour pencil', 'Pencils', { size: 4, thinning: 0.3, smoothing: 0.35, streamline: 0.3, tip: grain('chalk', 0.4, 0.6) }),
-  make('sketch-pencil', 'Sketch pencil', 'Pencils', { size: 3, thinning: 0.6, smoothing: 0.3, streamline: 0.25, tip: grain('charcoal', 0.3, 0.5) }),
+  make('soft-pencil', 'Soft pencil (6B)', 'Pencils', { size: 5, thinning: 0.5, smoothing: 0.35, streamline: 0.3, tip: dry('chalk', 'soft-pencil', 0.3) }),
+  make('colour-pencil', 'Colour pencil', 'Pencils', { size: 4, thinning: 0.3, smoothing: 0.35, streamline: 0.3, tip: dry('chalk', 'colour-pencil', 0.4) }),
+  make('sketch-pencil', 'Sketch pencil', 'Pencils', { size: 3, thinning: 0.6, smoothing: 0.3, streamline: 0.25, tip: dry('charcoal', 'sketch-pencil', 0.3) }),
   // Pens
   make('ink', 'Ink', 'Pens', { size: 5, thinning: 0.5, smoothing: 0.7, streamline: 0.7 }),
   make('fineliner', 'Fine liner', 'Pens', { size: 2.5, thinning: 0.1, smoothing: 0.6, streamline: 0.6 }),
@@ -59,11 +63,11 @@ export const STARTERS: readonly BrushPreset[] = [
   // Chalk and charcoal
   make('chalk', 'Chalk', 'Chalk and charcoal', { size: 18, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: defaultTip('chalk') }),
   make('charcoal', 'Charcoal', 'Chalk and charcoal', { size: 22, thinning: 0.4, smoothing: 0.4, streamline: 0.4, tip: defaultTip('charcoal') }),
-  make('soft-pastel', 'Soft pastel', 'Chalk and charcoal', { size: 30, thinning: 0.2, smoothing: 0.45, streamline: 0.45, tip: grain('chalk', 0.45, 1.5) }),
-  make('oil-pastel', 'Oil pastel', 'Chalk and charcoal', { size: 22, thinning: 0.1, smoothing: 0.45, streamline: 0.4, tip: grain('chalk', 0.2, 0.8) }),
-  make('crayon', 'Crayon', 'Chalk and charcoal', { size: 12, thinning: 0.15, smoothing: 0.4, streamline: 0.35, tip: grain('charcoal', 0.4, 1.3) }),
-  make('vine-charcoal', 'Vine charcoal', 'Chalk and charcoal', { size: 10, thinning: 0.5, smoothing: 0.4, streamline: 0.4, tip: grain('charcoal', 0.65, 1) }),
-  make('compressed-charcoal', 'Compressed charcoal', 'Chalk and charcoal', { size: 20, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: grain('charcoal', 0.35, 0.8) }),
+  make('soft-pastel', 'Soft pastel', 'Chalk and charcoal', { size: 30, thinning: 0.2, smoothing: 0.45, streamline: 0.45, tip: dry('chalk', 'soft-pastel', 0.45) }),
+  make('oil-pastel', 'Oil pastel', 'Chalk and charcoal', { size: 22, thinning: 0.1, smoothing: 0.45, streamline: 0.4, tip: dry('chalk', 'oil-pastel', 0.2) }),
+  make('crayon', 'Crayon', 'Chalk and charcoal', { size: 12, thinning: 0.15, smoothing: 0.4, streamline: 0.35, tip: dry('charcoal', 'crayon', 0.4) }),
+  make('vine-charcoal', 'Vine charcoal', 'Chalk and charcoal', { size: 24, thinning: 0.5, smoothing: 0.4, streamline: 0.4, tip: dry('charcoal', 'vine-charcoal', 0.65) }),
+  make('compressed-charcoal', 'Compressed charcoal', 'Chalk and charcoal', { size: 20, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: dry('charcoal', 'compressed-charcoal', 0.35) }),
   // Watercolour
   make('watercolour', 'Watercolour', 'Watercolour', { size: 30, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: defaultTip('watercolour') }),
   make('wet-wash', 'Wet wash', 'Watercolour', { size: 60, thinning: 0, smoothing: 0.65, streamline: 0.65, tip: { ...defaultTip('watercolour'), amount: 0.25 } }),

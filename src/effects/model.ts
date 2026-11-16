@@ -215,6 +215,24 @@ export const EFFECTS: EffectInfo[] = [
       { key: 'trail', label: 'Trail behind (not both ways)', type: 'number', default: 0, min: 0, max: 100, step: 1, unit: '%' },
     ],
   },
+  {
+    kind: 'tooth',
+    label: 'Paper tooth',
+    term: 'Dry brush texture / paper grain',
+    description: 'Makes the drawing catch on a sheet of paper, the way chalk and charcoal do: light pressure leaves only specks, hard pressure fills the dips. On a brush line it follows how hard the line was pressed.',
+    icon: 'fx-tooth',
+    params: [
+      { key: 'press', label: 'How hard it is pressed', type: 'number', default: 80, min: 5, max: 100, step: 1, unit: '%' },
+      { key: 'tooth', label: 'How much the paper shows', type: 'number', default: 100, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'edge', label: 'Firm edge', type: 'number', default: 30, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'soft', label: 'Soft grain', type: 'number', default: 42, min: 3, max: 100, step: 1, unit: '%' },
+      { key: 'cover', label: 'Most it covers', type: 'number', default: 98, min: 5, max: 100, step: 1, unit: '%' },
+      { key: 'streak', label: 'Streaks along the line', type: 'number', default: 35, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'paper', label: 'Paper (0 smooth, 1 fine, 2 medium, 3 laid, 4 rough)', type: 'number', default: 2, min: 0, max: 4, step: 1 },
+      { key: 'grain', label: 'Grain size', type: 'number', default: 1, min: 0.25, max: 8, step: 0.05, unit: '×' },
+      { key: 'seed', label: 'Which stick', type: 'number', default: 0, min: 0, max: 999, step: 1 },
+    ],
+  },
 ];
 
 export function effectInfo(kind: EffectKind): EffectInfo {
@@ -322,6 +340,8 @@ export function isNoop(kind: EffectKind, v: Record<string, number | string>): bo
       return !(n('amount') > 0);
     case 'motionblur':
       return !(n('length') > 0);
+    case 'tooth':
+      return false;
   }
 }
 

@@ -7,7 +7,7 @@
 import { findLayer, uid } from '../core/doc';
 import type { Shape } from '../core/format';
 import { scaleAbout, transformShape, type Matrix } from '../canvas/geometry';
-import { drawShape } from '../core/render';
+import { drawShapeFx } from '../core/render';
 import { getPixelSettings, type SymmetryMode } from '../pixel/settings';
 import { store } from '../core/store';
 import { addShapes } from './merge-mode';
@@ -87,9 +87,9 @@ export function withMirror(shape: Shape): Shape | Shape[] {
 
 /** Draws a shape in progress, and its reflections, so the preview shows what will be committed. */
 export function drawWithMirror(g: CanvasRenderingContext2D, shape: Shape): void {
-  drawShape(g, shape);
+  drawShapeFx(g, shape);
   const m = activeVectorMirror();
-  if (m) for (const c of mirrorShapes([shape], m, () => shape.id)) drawShape(g, c);
+  if (m) for (const c of mirrorShapes([shape], m, () => shape.id)) drawShapeFx(g, c);
 }
 
 /** Tools that copy across the mirror on a vector layer. */

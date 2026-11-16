@@ -24,7 +24,7 @@ describe('blend modes and the effect catalogue', () => {
     expect(compositeOp(undefined)).toBe('source-over');
     expect(compositeOp('add')).toBe('lighter');
     expect(compositeOp('multiply')).toBe('multiply');
-    expect(EFFECTS.map((e) => e.kind)).toEqual(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate', 'grain', 'wave', 'fringe', 'vignette', 'motionblur']);
+    expect(EFFECTS.map((e) => e.kind)).toEqual(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate', 'grain', 'wave', 'fringe', 'vignette', 'motionblur', 'tooth']);
   });
 
   it('skips effects that would change nothing', () => {

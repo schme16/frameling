@@ -1,0 +1,35 @@
+Vector chalk and charcoal that catch on paper (board doc: vector-charcoal). Branch wip/vector-charcoal.
+
+What this is: the paper maths of the pixel Chalk and charcoal tool (src/dry/paper.ts and maths.ts, shared, not copied) run on a vector brush
+line. The line stays its points (reshape it, restyle it, tween it). When it is drawn, dabs go along it the way the pixel tool lays them, each
+as wide as the line is there and as hard as the pen pressed there, and every pixel takes pigment from that reach and the height of a paper tile
+held still against the page. Light pressure leaves specks, hard pressure fills the dips, a pen ramp goes from specks to solid. The line carries
+a Paper tooth effect (new, in the Effects panel), which is where its settings live. Chalk, Charcoal, Soft pastel, Oil pastel, Crayon,
+Vine and Compressed charcoal and the three pencils are on it by default; Oil paint, Bristle and Dry brush keep the older tiny-shape grain.
+Catch on paper (Brush options, Tip) turns it off for any chalk or charcoal tip.
+
+Files (all in both themes):
+  <brush>-{dark,light}.png          four marks: firm stroke, light stroke, pen pressure ramp, three passes over each other
+  ball-<brush>-{dark,light}.png     the same brush shading a ball with hatching, so it is judged as a drawing and not test marks
+  <brush>-holes-{dark,light}.png    the same marks with the OLDER tiny-shape grain (vine, compressed, chalk, soft pastel only)
+  compare-<brush>-{dark,light}.png  vector marks | vector ball | (older grain) | the pixel version | the real scan
+  overview-{dark,light}.png         all nine brushes' marks on one sheet
+  export-png-svg-pdf.png            one toothed line as it comes out of PNG (left, magnified), SVG (middle) and PDF (right)
+
+Judged against: the same public domain scans as the pixel version (brand/ab/charcoal/ref/): Degas jockey (vine charcoal), Seurat L'Echo
+(compressed charcoal), Degas Ballet Rehearsal (soft pastel), Munch (sketch and soft pencil), Saint-Aubin (colour pencil). Chalk, oil pastel
+and crayon have no scan, for the licence reason in brand/ab/charcoal/NOTE.txt, so those compare sheets have no real panel. Krita and Clip
+Studio were not compared (not installed).
+
+Verdict, plainly: it matches the pixel version the user approved ("Yes, that is charcoal") and is a different thing from the tiny-shape
+version they rejected. Beside the scans it has the same limit the pixel version has: compressed charcoal against Seurat is close (grain over
+paper tooth, tone from pressure and passes); vine charcoal against Degas has the dusty light stroke but is speckled where the real stroke is
+smoky, because the grain is whole pixels and a scan has sub-pixel grain. A second pass over a stroke does not fill the pits the first
+pass touched the way the pixel tool's does (a vector line cannot see the pigment under it), so passes add by laying different specks,
+not by building. Pencils are thin lines with a toothy edge, as in the pixel version.
+
+Made with: npm run build; then
+  SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-vector-charcoal --out <dir>
+  (ONLY=a,b limits the brushes; HOLES=1 for the older grain)
+  python3 scripts/ab/vector-charcoal-compare.py <dir> brand/ab/vector-charcoal
+Strokes are real pointer events with a pretend pen (pressure), on a 400 x 400 page at the same size as the pixel shots.
