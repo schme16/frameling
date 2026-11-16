@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BUILT_IN_THEMES } from '../../src/ui/themes/builtIn';
 import { contrast, toHex } from '../../src/ui/themes/color';
-import { READABLE_MIN, READABLE_TOKENS, readableTokens } from '../../src/ui/themes/contrast';
+import { MARK_MIN, READABLE_MIN, READABLE_TOKENS, readableTokens } from '../../src/ui/themes/contrast';
 import { clearTheme, themeStyle, writeTheme } from '../../src/ui/themes/model';
 import { deriveTokens, type ThemeTokens } from '../../src/ui/themes/tokens';
 
@@ -15,6 +15,8 @@ const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../sr
 
 /** Which fill each --on-* colour has to read against. */
 const FILLS: Record<string, [string, string]> = {
+  'chosen-mark': ['panel-2', 'chosen-mark'], // a shape on the card, so the lower bar
+  'on-chosen-mark': ['chosen-mark', 'on-chosen-mark'],
   'on-bg': ['bg', 'on-bg'],
   'on-panel': ['panel', 'on-panel'],
   'on-muted': ['panel', 'on-muted'],
@@ -30,7 +32,7 @@ const FILLS: Record<string, [string, string]> = {
 
 const reads = (tokens: ThemeTokens, on = readableTokens(tokens)): string[] =>
   Object.entries(FILLS)
-    .filter(([name]) => contrast(on[name], tokens[FILLS[name][0]]) < READABLE_MIN)
+    .filter(([name]) => contrast(on[name], on[FILLS[name][0]] ?? tokens[FILLS[name][0]]) < (name === 'chosen-mark' ? MARK_MIN : READABLE_MIN))
     .map(([name]) => name);
 
 describe('readable text colours', () => {
@@ -78,6 +80,49 @@ describe('readable text colours', () => {
     expect(Object.keys(themeStyle(t))).toEqual(expect.arrayContaining(READABLE_TOKENS.map((n) => `--${n}`)));
     clearTheme(el);
     for (const n of READABLE_TOKENS) expect(el.style.getPropertyValue(`--${n}`)).toBe('');
+  });
+});
+
+describe('the chosen tick and mark on a theme card', () => {
+  const sits = (tokens: ThemeTokens) => contrast(readableTokens(tokens)['chosen-mark'], tokens['panel-2']);
+
+  it('stands out from the card in every built-in theme, and its icon reads on it', () => {
+    for (const t of BUILT_IN_THEMES) {
+      const on = readableTokens(t.tokens);
+      expect(sits(t.tokens), t.name).toBeGreaterThanOrEqual(MARK_MIN);
+      expect(contrast(on['on-chosen-mark'], on['chosen-mark']), t.name).toBeGreaterThanOrEqual(READABLE_MIN);
+    }
+  });
+
+  it('keeps the plain gold where it already stands out (the dark themes), and only moves it on a pale card', () => {
+    for (const t of BUILT_IN_THEMES) {
+      const on = readableTokens(t.tokens);
+      if (contrast(t.tokens['chosen-bg'], t.tokens['panel-2']) >= MARK_MIN) expect(on['chosen-mark'], t.name).toBe(t.tokens['chosen-bg'].toLowerCase());
+    }
+    const milk = BUILT_IN_THEMES.find((t) => t.id === 'strawberry-milk')!;
+    expect(contrast(milk.tokens['chosen-bg'], milk.tokens['panel-2'])).toBeLessThan(MARK_MIN);
+    expect(readableTokens(milk.tokens)['chosen-mark']).not.toBe(milk.tokens['chosen-bg'].toLowerCase());
+  });
+
+  it('holds for any colours a theme picked, over thousands of made-up sets, pale cards and dark cards alike', () => {
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+    const colour = () => toHex([rnd() * 255, rnd() * 255, rnd() * 255]);
+    const base = BUILT_IN_THEMES[0].tokens;
+    for (let i = 0; i < 3000; i++) {
+      const picks = { 'panel-2': colour(), 'chosen-bg': colour(), 'chosen-fg': colour() };
+      const tokens = deriveTokens({ ...base, ...picks }, rnd() < 0.5 ? 'dark' : 'light');
+      const on = readableTokens(tokens);
+      expect(contrast(on['chosen-mark'], tokens['panel-2']), JSON.stringify(picks)).toBeGreaterThanOrEqual(MARK_MIN);
+      expect(contrast(on['on-chosen-mark'], on['chosen-mark']), JSON.stringify(picks)).toBeGreaterThanOrEqual(READABLE_MIN);
+    }
+  });
+
+  it('is what the card draws with, falling back to the plain chosen colour', () => {
+    const at = css.indexOf('.th-card-tick {');
+    const tick = css.slice(at, css.indexOf('}', at));
+    expect(tick).toContain('var(--chosen-mark, var(--chosen-bg))');
+    expect(tick).toContain('var(--on-chosen-mark, var(--chosen-fg))');
   });
 });
 

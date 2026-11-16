@@ -428,7 +428,7 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. Every theme sits in one grid
 
 The same menu has **Edit this theme** (your own themes) and **Make a copy to change** (any theme).
 
-The change is instant. Your two wear a badge in the corner of the card, a sun by day and a moon at night, with a gold edge round them. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
+The change is instant. Your two get a gold edge, a tick and a line under the name: a sun for by day, a moon for at night, both for day and night. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
 
 ## Dark, light and System
 

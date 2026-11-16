@@ -95,7 +95,10 @@ export const READABLE_MIN = 4.5;
  * far as it needs to reach 4.5:1, with black or white as the last resort (always at least 4.5 against anything).
  * The editor shows the app in the theme being made, so the chrome around the colours has to be readable in it.
  */
-export const READABLE_TOKENS = ['on-bg', 'on-panel', 'on-muted', 'on-raised', 'on-hover', 'on-danger', 'on-chosen', 'on-chosen-deep', 'on-tip', 'on-tip-soft', 'on-tip-link'] as const;
+export const READABLE_TOKENS = ['chosen-mark', 'on-chosen-mark', 'on-bg', 'on-panel', 'on-muted', 'on-raised', 'on-hover', 'on-danger', 'on-chosen', 'on-chosen-deep', 'on-tip', 'on-tip-soft', 'on-tip-link'] as const;
+
+/** A shape (a tick, a ring) has to stand out from what it sits on by this much. 3 is the usual bar for shapes. */
+export const MARK_MIN = 3;
 
 export function readableTokens(tokens: ThemeTokens): ThemeTokens {
   const text = tokens.text;
@@ -110,6 +113,11 @@ export function readableTokens(tokens: ThemeTokens): ThemeTokens {
   set('on-raised', on(text, tokens.raised));
   set('on-hover', on(text, tokens['hover-bg']));
   set('on-danger', on(tokens.bg, tokens.danger));
+  // The chosen colour as a small mark on a card (the tick, the sun and moon, the edge): moved only as far as it needs
+  // to stand out from the card's own fill, so a pale card cannot lose a pale tick. Its icon reads on it.
+  const mark = tokens['chosen-bg'] && tokens['panel-2'] ? ensureContrast(tokens['chosen-bg'], tokens['panel-2'], MARK_MIN) : undefined;
+  set('chosen-mark', mark);
+  set('on-chosen-mark', on(tokens['chosen-fg'], mark));
   set('on-chosen', on(tokens['chosen-fg'], tokens['chosen-bg']));
   set('on-chosen-deep', on(tokens['chosen-fg'], tokens['sunny-deep']));
   // A tooltip's words, whatever tip colours a theme file carried: they cannot end up unreadable on the tip fill.
