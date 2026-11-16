@@ -35,6 +35,8 @@ import { pixelExportStart } from '../pixel/workspace';
 import { followWay } from '../pixel/sheetMode';
 import { SheetSays } from '../pixel/SheetSays';
 import { emitPluginEvent } from '../plugins/bus';
+import { isAnimated } from '../core/animation';
+import { addAnimationAndSay } from '../animation';
 
 /** The formats on offer: the built-in ones and those of the features that are on (Interactives goes while it is off, in Preferences > Features). */
 export function availableFormats(): FormatInfo[] {
@@ -117,6 +119,8 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
   const def = exporterOf(s.format);
   const video = !!def?.video;
   const aiOne = !!def?.singleFrame?.(s);
+  // A drawing with no animation has one frame: no whole animation, clip or play range to pick between.
+  const still = useStore((st) => !isAnimated(st.doc) && st.doc.length <= 1);
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
   // Ask what this computer can make, at the size that matters (a video is made at an even size, which is what the plan gives).
@@ -248,7 +252,15 @@ function ExportDialog({ close, initial, autoStart, label, onOutcome }: { close: 
           <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
           {ui?.Before && <ui.Before {...uiProps} />}
-          {info.animated && !aiOne ? (
+          {info.animated && !aiOne && still ? (
+            <p className="ex-note" data-testid="export-still">
+              This drawing is a picture, so it comes out as one frame{video ? ', and a video needs at least two' : ''}.{' '}
+              <button type="button" className="ex-link" onClick={addAnimationAndSay}>
+                Add animation
+              </button>{' '}
+              to give it frames to export.
+            </p>
+          ) : info.animated && !aiOne ? (
             <fieldset>
               <legend>What to export</legend>
               <div className="ex-seg">

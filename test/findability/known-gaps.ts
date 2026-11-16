@@ -141,6 +141,8 @@ export const STILL_LOAD = {
   // with animation: the Offset card and the Width tool (palette only, no menu home, because Draw is over its cap), and
   // the two craft importers in File > Import. The gap is what this ledger is for and the gap did not move: 44 palette
   // commands and 118 menu commands are still out of the way on a still.
-  still: { palette: 558, menu: 782, animateMenu: 8 },
+  // Later the same day: -5 palette and -6 menu on a still, from the clean timeline, ghost on empty frames, light table,
+  // look through the camera while playing, import sound and make a symbol from the whole animation now needing animation.
+  still: { palette: 553, menu: 776, animateMenu: 8 },
   animated: { palette: 602, menu: 900, animateMenu: 123 },
 };

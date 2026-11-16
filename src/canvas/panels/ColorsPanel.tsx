@@ -6,6 +6,7 @@ import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
 import { GradientEditor } from './GradientEditor';
+import { isAnimated } from '../../core/animation';
 import { endGradientGesture, paintView, setStopColor, showsPicker, stopColor, usePaintView, useGradientWells } from '../../tools/gradient-wells';
 import { openRecolour } from '../../tools/recolour-open';
 import { usePopover } from '../../ui/popover';
@@ -92,6 +93,7 @@ export function ColorsPanel() {
   // starting point; picking any colour turns "none" off.
   const plain = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   const well = useStore((s) => s.ui.activeWell);
+  const animated = useStore((s) => isAnimated(s.doc));
   // Re-read when the gradient changes, so the picker follows the marker being edited.
   const view = usePaintView(well);
   useGradientWells((s) => s.stop[well]);
@@ -159,8 +161,8 @@ export function ColorsPanel() {
           </div>
         </>
       )}
-      <button type="button" className="cv-action cv-recolour-open" title="Recolour the whole animation: swap one colour for another everywhere, on every frame and every layer, vector and pixel (palette swap)" aria-label="Recolour the whole animation" onClick={() => openRecolour()}>
-        <span className="cv-words-long">Recolour the whole animation...</span>
+      <button type="button" className="cv-action cv-recolour-open" title={`Recolour the whole ${animated ? 'animation' : 'drawing'}: swap one colour for another everywhere, on every frame and every layer, vector and pixel (palette swap)`} aria-label={`Recolour the whole ${animated ? 'animation' : 'drawing'}`} onClick={() => openRecolour()}>
+        <span className="cv-words-long">{animated ? 'Recolour the whole animation...' : 'Recolour the whole drawing...'}</span>
         <span className="cv-words-short" aria-hidden="true">
           Recolour all...
         </span>
