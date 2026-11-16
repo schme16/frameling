@@ -25,7 +25,7 @@ const click = (testid, after = 500) => ({ clickOn: `[data-testid="${testid}"]`, 
 const seed = (colours, x, y, pick = true) => js(`${S}.seed(${JSON.stringify(colours)}, { x: ${x}, y: ${y} }, ${pick}); true`);
 const away = { move: [700, 760] };
 /** Shows the Scripts panel with the page set up: three green circles on the canvas, picked. */
-const setup = [L.template('blank-vector'), wait(500), seed(['#4fd1a5', '#4fd1a5', '#4fd1a5'], 300, 250), L.panel('scripts'), wait(900)];
+const setup = [L.template('blank-vector'), wait(500), seed(['#4fd1a5', '#4fd1a5', '#4fd1a5'], 300, 250), L.cmd('scripts.open'), wait(900)];
 
 module.exports = [
   {

@@ -4,11 +4,15 @@ export const bodies: Record<string, string> = {
 
 ## Write one and run it
 
-1. Open **View > Panels > Scripts** (or press **Ctrl+Shift+J**).
+1. Press **Ctrl+Shift+J** (or **View > Panels > Scripts**). Scripts opens in the drawer along the bottom, a tab beside the timeline, because lines of code are wide.
 2. Press **New**, or choose one under **Start from an example...**.
 3. Press **Run** (or **Ctrl+Enter** in the box).
 
 What happened shows under the box. If something went wrong you get the **line** it went wrong on, and the box jumps to it.
+
+## Give it room
+
+A long script wants a wide place. Press **Own window** (top right of Scripts) and it gets a window of its own over the canvas, as wide as you like. **Back in the drawer** puts it away again. You can also drag the Scripts tab out of the drawer, and drag the edge of the drawer to make it taller.
 
 ## Put it on a key
 

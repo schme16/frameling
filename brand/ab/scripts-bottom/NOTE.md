@@ -1,0 +1,1 @@
+A: the Scripts panel as it was, in the narrow right-hand column (`a-right-panel-*`). B: the same script in the bottom drawer, a tab beside the timeline, with the name, Run and what it printed in a column to the right of the code (`b-bottom-drawer-*`). `ab-*` puts them side by side. Same four-line-plus script (lines up to about 190 characters wide), same drawing, both themes.

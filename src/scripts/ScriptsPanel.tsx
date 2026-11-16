@@ -13,6 +13,9 @@ import { allowDrawingScripts, lastRun, newScript, openScript, runScript, setPane
 import { running } from './runner';
 import { deleteScript, moveScript, openId, scripts, updateScript, findScript } from './state';
 import { EXAMPLES, BLANK } from './examples';
+import { dock } from '../ui/dock';
+import { scriptsPlace } from './place';
+import { toggleScriptsWindow } from './placeRun';
 import { API, CANNOT, commandMatches, listCommands } from './reference';
 
 /** The line numbers beside the box, one per line, scrolling with it. */
@@ -262,110 +265,135 @@ function Editor({ script }: { script: Script }) {
           </p>
         </div>
       )}
-      <label className="scr-field">
-        <span>Name</span>
-        <input
-          type="text"
-          value={name}
-          maxLength={60}
-          data-testid="scripts.name"
-          onChange={(e) => {
-            setName(e.target.value);
-            latest.current.name = e.target.value;
-          }}
-          onBlur={() => name.trim() && name.trim() !== script.name && updateScript(script.id, { name })}
-          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        />
-      </label>
-      <div className="scr-box">
-        <Gutter lines={lineCount} errorLine={errLine} scrollTop={scroll} />
-        <textarea
-          ref={area}
-          className="scr-code"
-          value={code}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoCorrect="off"
-          wrap="off"
-          aria-label="Script"
-          data-testid="scripts.code"
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => change(e.target.value)}
-          onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
-          onKeyDown={onKey}
-          onBlur={flush}
-          onPaste={(e) => outside(e.clipboardData.getData('text/plain'))}
-          onDrop={(e) => outside(e.dataTransfer.getData('text/plain') || ' '.repeat(30))}
-        />
-      </div>
-      <p className="scr-hint">Ctrl+Enter runs it. Tab indents; press Esc, then Tab, to leave the box.</p>
-      <div className="scr-row">
-        {busy ? (
-          <button type="button" className="ui-btn ui-btn-danger" onClick={() => stopRunning()} data-testid="scripts.stop">
-            Stop
-          </button>
-        ) : (
-          <button type="button" className="ui-btn ui-btn-primary" onClick={() => void go()} disabled={off} data-testid="scripts.run">
-            Run
-          </button>
-        )}
-      </div>
-      <Output />
-      {cmd && !off && (
-        <Section title="Use it anywhere" open>
-          <p className="scr-hint">
-            "{script.name}" is a command now: find it in the command palette (Ctrl+K), or in <strong>Edit &gt; Scripts</strong>. Give it a key:
-          </p>
-          <KeyRow script={script} />
-        </Section>
-      )}
-      <Section title="What you can use" open={false}>
-        <Reference onInsert={insert} />
-      </Section>
-      <Section title="More" open={false}>
-        <label className="scr-field">
-          <span>Kept</span>
-          <select
-            value={script.home}
-            data-testid="scripts.home"
-            onChange={(e) => {
-              const r = moveScript(script.id, e.target.value as ScriptHome);
-              if (!r.ok) notify(r.why, 'warn');
-            }}
-          >
-            <option value="app">With Frameling (every drawing)</option>
-            <option value="doc">Inside this drawing (travels with the file)</option>
-          </select>
-        </label>
-        {script.home === 'doc' && <p className="scr-hint">Whoever opens this drawing is asked before its scripts can run.</p>}
-        <div className="scr-row">
-          <button
-            type="button"
-            className="ui-btn"
-            onClick={() => {
-              flush();
-              void import('../plugins/manager').then((m) => m.installFrom(scriptAsPluginZip(findScript(script.id) ?? script)));
-            }}
-            data-tip={`Same code, now a plugin called "${scriptAsPlugin(script).manifest.id}". You are asked about its powers first.`}
-          >
-            Make it a plugin
-          </button>
-          <button type="button" className="ui-btn" onClick={() => download(`${scriptAsPlugin(script).manifest.id}.js`, new TextEncoder().encode(code))}>
-            Save as a .js file
-          </button>
-          <button
-            type="button"
-            className="ui-btn ui-btn-danger"
-            onClick={() => {
-              resetBindings(commandIdOf(script.id));
-              deleteScript(script.id);
-            }}
-            data-testid="scripts.delete"
-          >
-            Delete
-          </button>
+      <div className="scr-cols">
+        <div className="scr-code-col">
+          <div className="scr-box">
+            <Gutter lines={lineCount} errorLine={errLine} scrollTop={scroll} />
+            <textarea
+              ref={area}
+              className="scr-code"
+              value={code}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              wrap="off"
+              aria-label="Script"
+              data-testid="scripts.code"
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => change(e.target.value)}
+              onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
+              onKeyDown={onKey}
+              onBlur={flush}
+              onPaste={(e) => outside(e.clipboardData.getData('text/plain'))}
+              onDrop={(e) => outside(e.dataTransfer.getData('text/plain') || ' '.repeat(30))}
+            />
+          </div>
+          <p className="scr-hint">Ctrl+Enter runs it. Tab indents; press Esc, then Tab, to leave the box.</p>
         </div>
-      </Section>
+        <div className="scr-side-col">
+          <div className="scr-head">
+            <label className="scr-field scr-name">
+              <span>Name</span>
+              <input
+                type="text"
+                value={name}
+                maxLength={60}
+                data-testid="scripts.name"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  latest.current.name = e.target.value;
+                }}
+                onBlur={() => name.trim() && name.trim() !== script.name && updateScript(script.id, { name })}
+                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              />
+            </label>
+            <div className="scr-row">
+              {busy ? (
+                <button type="button" className="ui-btn ui-btn-danger" onClick={() => stopRunning()} data-testid="scripts.stop">
+                  Stop
+                </button>
+              ) : (
+                <button type="button" className="ui-btn ui-btn-primary" onClick={() => void go()} disabled={off} data-testid="scripts.run">
+                  Run
+                </button>
+              )}
+            </div>
+          </div>
+          <Output />
+          {cmd && !off && (
+            <Section title="Use it anywhere" open>
+              <p className="scr-hint">
+                "{script.name}" is a command now: find it in the command palette (Ctrl+K), or in <strong>Edit &gt; Scripts</strong>. Give it a key:
+              </p>
+              <KeyRow script={script} />
+            </Section>
+          )}
+          <Section title="What you can use" open={false}>
+            <Reference onInsert={insert} />
+          </Section>
+          <Section title="More" open={false}>
+            <label className="scr-field">
+              <span>Kept</span>
+              <select
+                value={script.home}
+                data-testid="scripts.home"
+                onChange={(e) => {
+                  const r = moveScript(script.id, e.target.value as ScriptHome);
+                  if (!r.ok) notify(r.why, 'warn');
+                }}
+              >
+                <option value="app">With Frameling (every drawing)</option>
+                <option value="doc">Inside this drawing (travels with the file)</option>
+              </select>
+            </label>
+            {script.home === 'doc' && <p className="scr-hint">Whoever opens this drawing is asked before its scripts can run.</p>}
+            <div className="scr-row">
+              <button
+                type="button"
+                className="ui-btn"
+                onClick={() => {
+                  flush();
+                  void import('../plugins/manager').then((m) => m.installFrom(scriptAsPluginZip(findScript(script.id) ?? script)));
+                }}
+                data-tip={`Same code, now a plugin called "${scriptAsPlugin(script).manifest.id}". You are asked about its powers first.`}
+              >
+                Make it a plugin
+              </button>
+              <button type="button" className="ui-btn" onClick={() => download(`${scriptAsPlugin(script).manifest.id}.js`, new TextEncoder().encode(code))}>
+                Save as a .js file
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={() => {
+                  resetBindings(commandIdOf(script.id));
+                  deleteScript(script.id);
+                }}
+                data-testid="scripts.delete"
+              >
+                Delete
+              </button>
+            </div>
+          </Section>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** Own window, or back in the drawer: a long script wants a wide window, and one press undoes it. */
+function PlaceButton() {
+  const place = dock.use((d) => scriptsPlace(d.layout));
+  const inWindow = place === 'window';
+  return (
+    <button
+      type="button"
+      className="ui-btn scr-place"
+      onClick={() => toggleScriptsWindow()}
+      data-testid="scripts.window"
+      data-tip={inWindow ? 'Put Scripts back in the drawer along the bottom' : 'Give Scripts a wide window of its own, for a long script'}
+    >
+      {inWindow ? 'Back in the drawer' : 'Own window'}
+    </button>
   );
 }
 
@@ -419,6 +447,7 @@ function Picker() {
         >
           Open a .js file
         </button>
+        <PlaceButton />
       </div>
     </div>
   );
@@ -446,7 +475,7 @@ export function ScriptsPanel() {
 }
 
 setPanelOpener(() => {
-  void import('../ui/dock').then((d) => d.showPanel('scripts'));
+  void import('./placeRun').then((p) => p.openScriptsPanel());
 });
 
 export { openScript, store };
