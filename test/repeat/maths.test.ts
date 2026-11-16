@@ -144,3 +144,24 @@ describe('reading a repeat', () => {
     expect(cleanRepeat({ kind: 'mirror', x: 1, y: 2, point: true, angle: 30 })).toEqual({ kind: 'mirror', x: 1, y: 2, point: true });
   });
 });
+
+describe('carrying a repeat with the thing it belongs to', () => {
+  it('moves a ring’s centre and a mirror line with a paste, and leaves a grid’s steps', async () => {
+    const { transformRepeat } = await import('../../src/geometry/repeat');
+    const { translate } = await import('../../src/geometry/matrix');
+    expect(transformRepeat({ kind: 'ring', count: 5, cx: 100, cy: 50 }, translate(10, 20))).toEqual({ kind: 'ring', count: 5, cx: 110, cy: 70 });
+    expect(transformRepeat({ kind: 'mirror', x: 100, y: 50, angle: 30 }, translate(10, 20))).toMatchObject({ x: 110, y: 70, angle: 30 });
+    expect(transformRepeat({ kind: 'grid', cols: 2, rows: 2, dx: 10, dy: 5 }, translate(10, 20))).toEqual({ kind: 'grid', cols: 2, rows: 2, dx: 10, dy: 5 });
+  });
+
+  it('scales the steps with the page and turns the other way when flipped', async () => {
+    const { transformRepeat } = await import('../../src/geometry/repeat');
+    const { scaleBy, scaleAbout } = await import('../../src/geometry/matrix');
+    expect(transformRepeat({ kind: 'grid', cols: 2, rows: 2, dx: 10, dy: 5 }, scaleBy(2, 3))).toMatchObject({ dx: 20, dy: 15 });
+    expect(transformRepeat({ kind: 'ring', count: 4, cx: 10, cy: 0, sweep: 90 }, scaleAbout(-1, 1, 0, 0))).toMatchObject({ cx: -10, sweep: -90 });
+    // A slanted line stays the mirror of what it was when the page is flipped.
+    const flipped = transformRepeat({ kind: 'mirror', x: 0, y: 0, angle: 45 }, scaleAbout(-1, 1, 0, 0));
+    expect(flipped).toMatchObject({ kind: 'mirror' });
+    if (flipped.kind === 'mirror') expect(flipped.angle).toBeCloseTo(135, 9);
+  });
+});

@@ -7,7 +7,7 @@ import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { Num } from '../symbols/Num';
 import '../symbols/symbols.css';
 import { pickTool } from '../tools/pick';
-import { changeRepeat, pageMiddle, pickedBox, repeatAsGrid, repeatAsMirror, repeatAsRing, startingRepeat, takeRepeatOff, turnIntoShapes, useRepeatState, type RepeatKind, type RingTurn } from './ops';
+import { changeRepeat, pageMiddle, repeatWords, pickedBox, repeatAsGrid, repeatAsMirror, repeatAsRing, startingRepeat, takeRepeatOff, turnIntoShapes, useRepeatState, type RepeatKind, type RingTurn } from './ops';
 
 const KINDS: { value: RepeatKind; label: string; title: string }[] = [
   { value: 'grid', label: 'Rows and columns', title: 'A grid of copies: so many across and so many down' },
@@ -26,6 +26,7 @@ function Grid({ r }: { r: GridRepeat }) {
     <>
       <Slider label="Across" value={r.cols} min={1} max={12} typeMax={MAX_REPEAT} onChange={(v) => change<GridRepeat>('Repeat: across', 'cols', (g) => ({ ...g, cols: Math.round(v) }))} hint="How many copies in each row, the first one included." />
       <Slider label="Down" value={r.rows} min={1} max={12} typeMax={MAX_REPEAT} onChange={(v) => change<GridRepeat>('Repeat: down', 'rows', (g) => ({ ...g, rows: Math.round(v) }))} hint="How many rows." />
+      {r.cols * r.rows > MAX_REPEAT && <Tip stays>{repeatWords.held}</Tip>}
       <div className="sy-grid">
         <Num label="Step across" suffix="px" value={r.dx} title="How far each copy sits from the one before it, along the row. A minus number goes left." onChange={(v) => change<GridRepeat>('Repeat: step across', 'dx', (g) => ({ ...g, dx: v }))} />
         <Num label="Step down" suffix="px" value={r.dy} title="How far each row sits below the one before it. A minus number goes up." onChange={(v) => change<GridRepeat>('Repeat: step down', 'dy', (g) => ({ ...g, dy: v }))} />

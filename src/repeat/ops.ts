@@ -9,7 +9,7 @@ import { store, useStore } from '../core/store';
 import { shapesBounds, shapesExtent, type Pt, type Rect } from '../canvas/geometry';
 import { MAX_REPEAT, repeatCount } from '../geometry/repeat';
 import { activeDrawing, activeLayer, EDIT_HINTS } from '../tools/edit';
-import { editShapes, groupShapes, selected, withGroups } from '../tools/merge-mode';
+import { activeIsMerge, editShapes, groupShapes, selected, withGroups } from '../tools/merge-mode';
 import { toast } from '../ui/toast';
 import { choiceWord } from '../words/choices';
 
@@ -37,6 +37,7 @@ export const repeatWords = {
     if (k === 'mirror') return 'Repeated as a mirror image. Drag the line to move it.';
     return `Repeated ${n - 1} more ${n === 2 ? 'time' : 'times'}, as ${k === 'grid' ? 'rows and columns' : 'a ring'}.`;
   },
+  merged: 'This layer is set to Merge drawing, which joins shapes together. Switch it to Keep separate first, so the shapes stay shapes a repeat can copy.',
   held: `That is the most copies one repeat makes (${MAX_REPEAT} shapes in all), so it stops there.`,
 };
 
@@ -95,6 +96,7 @@ function put(label: string, make: (box: Rect) => Repeat): Repeat | null {
   if (layer.problem) return tell(EDIT_HINTS[layer.problem]);
   const picked = pickedRepeatable();
   if (!picked.length) return tell(repeatWords.nothingPicked);
+  if (activeIsMerge()) return tell(repeatWords.merged);
   const box = shapesBounds(picked)!;
   const repeat = make(box);
   const drawing = activeDrawing();

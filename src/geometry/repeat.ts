@@ -4,7 +4,7 @@
  * or sideways gives the very same copy whichever of them made it. Nothing here touches a document.
  */
 import type { GridRepeat, Id, MirrorRepeat, Repeat, RingRepeat, Shape } from '../core/format';
-import { about, IDENTITY, rotateAbout, scaleAbout, translate, type Matrix } from './matrix';
+import { about, flips, IDENTITY, rotateAbout, scaleAbout, translate, type Matrix } from './matrix';
 
 /** The most shapes one repeat makes, the original included. A bigger ask is held to this rather than slowing the page. */
 export const MAX_REPEAT = 400;
@@ -189,4 +189,34 @@ export function dragRepeat(r: Repeat, id: HandleId, to: Pt, from: Pt, opts: { st
     return out;
   }
   return r;
+}
+
+// ---------------------------------------------------------------- carrying a repeat along
+
+/**
+ * The repeat after the whole thing it belongs to is moved, scaled or flipped by `m` (a copy pasted somewhere else, the page
+ * resized): the centre or the line goes where it goes, and a grid's steps grow and flip with it. Dragging just the shape
+ * does not use this, because then the centre and the line stay where they are. A grid's rows and columns stay straight, so
+ * a turn is not carried into them.
+ */
+export function transformRepeat(r: Repeat, m: Matrix): Repeat {
+  const at = (x: number, y: number) => ({ x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] });
+  if (r.kind === 'grid') return { ...r, dx: r.dx * m[0], dy: r.dy * m[3] };
+  if (r.kind === 'ring') {
+    const c = at(r.cx, r.cy);
+    const out: RingRepeat = { ...r, cx: c.x, cy: c.y };
+    if (flips(m) && r.sweep !== undefined && Math.abs(r.sweep) < RING_FULL) out.sweep = -r.sweep;
+    return out;
+  }
+  const p = at(r.x, r.y);
+  const out: MirrorRepeat = { ...r, x: p.x, y: p.y };
+  if (!r.point) {
+    const t = (r.angle ?? 90) * RAD;
+    const dx = m[0] * Math.cos(t) + m[2] * Math.sin(t);
+    const dy = m[1] * Math.cos(t) + m[3] * Math.sin(t);
+    const a = lineAngle({ x: 0, y: 0 }, { x: dx, y: dy });
+    if (a === 90) delete out.angle;
+    else out.angle = a;
+  }
+  return out;
 }

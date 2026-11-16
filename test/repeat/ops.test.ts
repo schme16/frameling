@@ -199,3 +199,31 @@ describe('the mirror here and the mirror drawing mode', () => {
     expect((out.shapes[1] as PathShape).paths).toEqual(drawn.paths);
   });
 });
+
+describe('layers that merge', () => {
+  it('say why a repeat is not on offer, and make none', () => {
+    store().update('merge', (d) => {
+      const l = d.layers[d.layers.length - 1];
+      if (l.kind === 'vector') l.drawMode = 'merge';
+    });
+    addShapes(box('a', 50, 50, 40, 30));
+    pick('a');
+    const c = getCommand('repeat.grid')!;
+    expect(c.enabled?.(store().get())).toBe(false);
+    expect(c.reason?.(store().get())).toMatch(/Merge drawing/);
+    run('repeat.grid');
+    expect(repeatOf('a')).toBeUndefined();
+  });
+});
+
+describe('copies of a shape that repeats', () => {
+  it('Duplicate takes the ring with it, so the new shape has a ring of its own', () => {
+    addShapes(box('a', 50, 50, 40, 30));
+    pick('a');
+    run('repeat.ring');
+    run('edit.duplicate');
+    const [a, b] = shapesNow() as (PathShape & { repeat?: Repeat })[];
+    expect(a.repeat).toMatchObject({ cx: 200, cy: 150 });
+    expect(b.repeat).toMatchObject({ kind: 'ring', cx: 214, cy: 164 });
+  });
+});

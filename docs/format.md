@@ -382,6 +382,16 @@ when comparing two drawings for "same look" (as `id` is ignored).
   same `trim?` on the shape. Cleaned on open by `cleanTrim`. Between two drawing keys joined by a classic tween the trims
   of the same shape (found by `origin`) blend at the eased progress (`src/core/trimTween.ts`); the timeline shows it as
   the "Draw on" row (`trim`). See `test/trim/`.
+- Stroke, fill, path, symbol and text shapes take an optional `repeat?: Repeat`: `{kind: 'grid', cols, rows, dx, dy}`
+  (rows and columns, steps in document pixels, either sign), `{kind: 'ring', count, cx, cy, sweep?, turn?}` (round a
+  centre; `sweep` degrees, missing = 360, a full ring; `turn: false` keeps each copy upright, missing = turned to
+  follow the ring) or `{kind: 'mirror', x, y, angle?, point?}` (across the line through the point at `angle` degrees,
+  missing = 90, up and down; `point: true` reflects through the point). The copies are never stored: `src/core/repeats.ts`
+  makes them when the drawing is posed (like tipped lines, so the canvas and every writer that reads `poseAt` see them),
+  after the shape, with ids `<id>~r<n>`. At most 400 shapes in all. A copy can't be clicked and isn't a snap target.
+  The centre and the line are in document pixels and stay put when the shape moves, so moving the shape changes the
+  ring's radius or the copy's distance from the line. Cleaned on open by `cleanRepeat` (`src/geometry/repeat.ts`), which
+  drops one that makes no sense. An older file has none. See `test/repeat/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
 - `Gradient` is `{kind: 'linear' | 'radial', stops: {at, color}[], from, to}` in document pixels, so it moves with
   the shape.

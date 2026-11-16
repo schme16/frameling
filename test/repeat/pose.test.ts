@@ -184,3 +184,15 @@ describe('in the file', () => {
     expect(posed(roundTrip(doc)).length).toBeLessThanOrEqual(400);
   });
 });
+
+describe('through an in-between', () => {
+  it('keeps the repeat on a shape that melts into another, so its copies do not vanish', async () => {
+    const { morphShapes } = await import('../../src/core/shape-tween');
+    const a = { ...box('a', 10, 10, 40, 30), repeat: grid } as PathShape;
+    const b = box('a', 20, 20, 40, 30);
+    const from = { id: 'v1', kind: 'vector' as const, shapes: [a] };
+    const to = { id: 'v2', kind: 'vector' as const, shapes: [b] };
+    const mid = morphShapes(from, to, 0.5, [], (x) => x as never) as (PathShape & { repeat?: Repeat })[];
+    expect(mid[0].repeat).toEqual(grid);
+  });
+});

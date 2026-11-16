@@ -5,16 +5,17 @@ import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import { say } from '../core/reasons';
 import { activeLayer } from '../tools/edit';
+import { activeIsMerge } from '../tools/merge-mode';
 import { pickTool } from '../tools/pick';
 import './tool';
 import './help';
-import { currentRepeat, pickedRepeatable, repeatAsGrid, repeatAsMirror, repeatAsRing, takeRepeatOff, turnIntoShapes } from './ops';
+import { currentRepeat, pickedRepeatable, repeatWords, repeatAsGrid, repeatAsMirror, repeatAsRing, takeRepeatOff, turnIntoShapes } from './ops';
 import { openPanel } from './show';
 
 registerPanel({ id: 'repeat', title: 'Repeat', icon: 'repeat', component: lazyPanel(() => import('./RepeatControls').then((m) => m.RepeatControls)), zone: 'right', order: 38, help: 'repeat' });
 
-const canPick = () => pickedRepeatable().length > 0;
-const needShape = say('Select a shape on a vector layer first.');
+const canPick = () => pickedRepeatable().length > 0 && !activeIsMerge();
+const needShape = (): string => (pickedRepeatable().length ? repeatWords.merged : 'Select a shape on a vector layer first.');
 const hasRepeat = () => !!currentRepeat();
 const noRepeat = say('Select a shape that repeats first.');
 const KEYWORDS = ['repeat', 'pattern', 'array', 'duplicate many', 'copies', 'copy many', 'tile', 'row', 'column', 'grid', 'ring', 'circle', 'circular', 'polar', 'radial', 'round', 'mirror', 'symmetry', 'reflect', 'flip', 'kaleidoscope', 'wheel', 'petals', 'fan'];
@@ -84,7 +85,7 @@ registerCommands([
   },
   {
     id: 'repeat.off',
-    label: 'Take the repeat off a shape',
+    label: 'Take the repeat off',
     category: 'Vector',
     description: 'Keep the shape and drop all its copies.',
     help: 'repeat',

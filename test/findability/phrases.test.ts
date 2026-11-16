@@ -44,6 +44,17 @@ export const PHRASES: Phrase[] = [
   P('move the page around', 'tools.hand'),
   P('make a shadow', 'effects.add.shadow'),
   P('blur', 'effects.add.blur'),
+  // Repeating a shape
+  P('repeat a shape', 'help:repeat', 'repeat.grid', 'repeat.ring', 'repeat.mirror'),
+  P('make a pattern', 'help:repeat', 'repeat.grid', 'repeat.ring'),
+  P('rows and columns of copies', 'repeat.grid'),
+  P('circular pattern', 'repeat.ring'),
+  P('put copies round a circle', 'repeat.ring'),
+  P('petals round a middle', 'repeat.ring'),
+  P('mirror a shape', 'repeat.mirror'),
+  P('make it symmetrical', 'repeat.mirror', 'pixel.mirror'),
+  P('stop repeating', 'repeat.off'),
+  P('edit one of the copies', 'repeat.expand'),
   // Playing and timing
   P('make it play', 'timeline.play'),
   P('make it loop', 'timeline.toggleLoop'),

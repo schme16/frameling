@@ -286,7 +286,7 @@ export function planRight(groups: { tabs: string[]; active: string | null }[], m
 }
 
 /** The sections about a selection that come first among them, in this order. */
-const ABOUT_FIRST = ['selection-numbers', 'align'];
+const ABOUT_FIRST = ['selection-numbers', 'align', 'repeat'];
 
 /**
  * Which sections Properties shows now, and which are left out (the Panels list says when each turns up). A section shows when it applies, or when

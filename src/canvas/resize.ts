@@ -11,7 +11,7 @@
 import type { CameraDrawing, Cel, Doc, Drawing, Guide, Layer, LayerEffect, PixelDrawing, Shape, SymbolDef, TilemapDrawing, VectorDrawing } from '../core/format';
 import { DEFAULT_TILE_SIZE, tileOrigin } from '../core/doc';
 import { EFFECTS } from '../effects/model';
-import { scaleBy, transformShape, translate, type Matrix } from './geometry';
+import { carryRepeat, scaleBy, transformShape, translate, type Matrix } from './geometry';
 
 /** Which way the new space goes: 'nw' keeps the top-left corner where it is, 'c' grows evenly all round. */
 export type Anchor = 'nw' | 'n' | 'ne' | 'w' | 'c' | 'e' | 'sw' | 's' | 'se';
@@ -131,7 +131,7 @@ function tileSize(doc: Doc): { w: number; h: number } {
 const mapXY = (m: Matrix, p: { x: number; y: number }) => ({ x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] });
 
 function mapShape(s: Shape, m: Matrix): Shape {
-  if (s.type !== 'instance') return transformShape(s, m);
+  if (s.type !== 'instance') return carryRepeat(transformShape(s, m), m);
   // Instances: done here so no symbol lookup is needed (only scale and move ever reach this).
   const t = s.transform;
   return { ...s, transform: { ...t, x: m[0] * t.x + m[4], y: m[3] * t.y + m[5], scaleX: t.scaleX * m[0], scaleY: t.scaleY * m[3] } };

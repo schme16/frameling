@@ -1,0 +1,1 @@
+Ring, grid and mirror looks, in dark and light. A ring of 12 petals round a centre snapped to a guide crossing, rows and columns of a tile, a wing mirrored across a guide, and a short clip of changing the ring's count in the Repeat panel and then dragging its centre while every copy follows.

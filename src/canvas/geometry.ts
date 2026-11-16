@@ -11,6 +11,7 @@ import type { Pt, Rect } from './view';
 import { apply, IDENTITY, matrixScale, multiply, rotateAbout, scaleAbout, type Matrix } from '../geometry/matrix';
 import { kindOf } from '../core/shapeKinds';
 import { repeatCopies } from '../core/repeats';
+import { transformRepeat } from '../geometry/repeat';
 
 export type { Pt, Rect } from './view';
 
@@ -389,6 +390,15 @@ export function transformShape<S extends Shape>(s: S, m: Matrix): S {
   if (ps.fillGradient) out.fillGradient = mg(ps.fillGradient);
   if (ps.strokeGradient) out.strokeGradient = mg(ps.strokeGradient);
   return out as S;
+}
+
+/**
+ * The shape with its repeat carried by `m` as well, for when the whole thing moves (a paste, a duplicate, the page resized).
+ * `transformShape` alone leaves the repeat's centre and line where they are, which is what dragging one shape wants.
+ */
+export function carryRepeat<S extends Shape>(s: S, m: Matrix): S {
+  if (!('repeat' in s) || !s.repeat) return s;
+  return { ...s, repeat: transformRepeat(s.repeat, m) };
 }
 
 export function transformShapes(shapes: Shape[], m: Matrix): Shape[] {
