@@ -17,6 +17,8 @@ import './edit-commands';
 import './merge-mode';
 import './combine';
 import './lineStyle';
+import './offset';
+import './width';
 import './quickshape';
 import './rememberUi';
 import './mirror-help';

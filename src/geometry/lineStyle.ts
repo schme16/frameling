@@ -215,7 +215,7 @@ const q = (v: number) => Math.round(v * 100) / 100;
 /** The longest piece a straight run is cut into, so a width that changes along it follows smoothly. */
 const PIECE = 2.5;
 
-interface Run {
+export interface Run {
   pts: V[];
   /** Distance along the line at each point. */
   at: number[];
@@ -224,7 +224,7 @@ interface Run {
 }
 
 /** A subpath as points about a pixel apart, corners kept as points of their own. */
-function flatten(sp: SubPath): Run {
+export function flatten(sp: SubPath): Run {
   const p = sp.points;
   const pts: V[] = [];
   const add = (v: V) => {

@@ -15,6 +15,7 @@ const ACTIONS: [string, string][] = [
   ['arrange.forward', 'Bring forward'],
   ['arrange.backward', 'Send back'],
   ['edit.duplicate', 'Duplicate'],
+  ['offset.card', 'Copy bigger or smaller...'],
   ['edit.delete', 'Delete'],
 ];
 

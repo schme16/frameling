@@ -1,0 +1,9 @@
+Offset path and the Width tool. Every picture is in the real app, once in dark and once in light (-dark / -light in the name).
+
+offset-0-as-drawn: A, the ghost as drawn. A closed shape with curves, a dark outline and a lilac fill.
+offset-1-out: B, Offset path out by 16 px with round corners, copy behind the original and recoloured yellow: an outline round a character (a sticker edge).
+offset-2-in: B, Offset path in by 12 px, copy in front and recoloured as a dashed red line: a cut line or inner stroke. The hem is thin, so the copy follows it closely there.
+offset-all-three: the same three side by side, as the help topic shows them.
+width-0-even: A, a line the same width all the way, as the Pen or Line tool draws it.
+width-1-fat: B, the same line after three drags with the Width tool: fat in the middle, a little fat near the start, thin near the end. The little squares are the width points, one on each edge.
+width-drag: a short clip (H.264) of those three drags, grabbing the line and pulling its edge.

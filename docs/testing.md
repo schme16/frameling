@@ -1779,6 +1779,8 @@ asks the real board's health address when the computer is online (`BETA_NET_OFFL
 and which board it sends to, without printing the key; `--expect-key` makes it exit 1 when there is none, so run it before
 handing a build to a tester. `FRAMELING_BETA=1` on the build itself stops with an error if `FRAMELING_INGEST_KEY` is missing.
 
+`scripts/docs/ab-offset-width/shots.cjs` is the board look for Offset path and the Width tool: a ghost as drawn, offset out and offset in through the real card, and a line even then made fat with three Width tool drags, once per theme (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" node_modules/.bin/electron scripts/docs/help-media.cjs --entries scripts/docs/ab-offset-width --out <dir>`). The builders it shares with the two help entries (`offset-path`, `tool-width`) are in `scripts/docs/help/_offsetwidth.cjs`. `test/geometry/offset.test.ts` and `width-edit.test.ts` are the pure maths, `test/tools/offset-width.test.ts` the commands and the tool.
+
 ### Quill's save question: scripts/ab/quill-save-dialog.cjs
 
 Real built app, real window close and real Quit. `dialog` mode checks the close is held, the dialog's focus, name and role, Escape

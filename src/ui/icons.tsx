@@ -212,6 +212,15 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="17.6" cy="7.6" r="1.3" fill="currentColor" />
     </>
   ),
+  // Width: a line that swells in the middle, with a point on each edge there.
+  width: (
+    <>
+      <path d="M3 12c4 0 5-5.5 9-5.5S17 12 21 12c-4 0-5 5.5-9 5.5S7 12 3 12z" />
+      <path d="M12 6.5v11" />
+      <circle cx="12" cy="6.5" r="1.3" fill="currentColor" />
+      <circle cx="12" cy="17.5" r="1.3" fill="currentColor" />
+    </>
+  ),
   polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
   pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
   gradient: (
