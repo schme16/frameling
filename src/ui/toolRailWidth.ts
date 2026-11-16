@@ -189,6 +189,14 @@ export function fitRailWidth(wanted: number, s: RailSizes, style: RailStyle, nam
 }
 
 /**
+ * True when a width that is saved (pulled by hand, or brought by the workspace) is not what a style would start at, so
+ * changing to that style is worth a word about it. No saved width follows the style on its own, so there is nothing to ask.
+ */
+export function widthDiffersFromStyle(saved: number | undefined, s: RailSizes, style: RailStyle, names = false): boolean {
+  return saved !== undefined && clampRailWidth(saved, s) !== naturalRailWidth(s, style, names);
+}
+
+/**
  * What a saved width becomes once it is chosen: the natural width, or one close enough to it to be the same thing,
  * is kept as "no width" so the rail goes on following its style and button size.
  */

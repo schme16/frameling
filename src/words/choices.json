@@ -1429,6 +1429,32 @@
     "text": "Tools that do not work on this layer are greyed out, in their usual places.",
     "where": "Toast when \"grey\" is used without asking (\"Tools that do not work on this layer\"), in the past tense."
   },
+  "choice.toolRail.widthOnStyle.title": { "text": "Tool rail width when you change its style", "where": "Name of this choice in Preferences > Behaviour (group: Tools)." },
+  "choice.toolRail.widthOnStyle.question": {
+    "text": "You pulled the tool rail to a width of your own. Keep that width in the new style, or start the new style at its own usual width?",
+    "where": "The question the \"Tool rail width when you change its style\" dialog asks."
+  },
+  "choice.toolRail.widthOnStyle.keep.label": { "text": "Keep my width", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Tool rail width when you change its style\"." },
+  "choice.toolRail.widthOnStyle.keep.detail": {
+    "text": "The rail stays as wide as you pulled it, even if a group name is cut short in the new style.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Tool rail width when you change its style\"."
+  },
+  "choice.toolRail.widthOnStyle.keep.did": {
+    "text": "Kept the rail at the width you pulled it to.",
+    "where": "Toast when \"keep\" is used without asking (\"Tool rail width when you change its style\"), in the past tense."
+  },
+  "choice.toolRail.widthOnStyle.natural.label": {
+    "text": "Use the style's usual width",
+    "where": "Dialog and Preferences: the button for the answer \"natural\" in \"Tool rail width when you change its style\"."
+  },
+  "choice.toolRail.widthOnStyle.natural.detail": {
+    "text": "The rail starts at the width that suits the new style, with room for the group names. Pull it again whenever you like.",
+    "where": "Dialog and Preferences: the small line under the \"natural\" answer in \"Tool rail width when you change its style\"."
+  },
+  "choice.toolRail.widthOnStyle.natural.did": {
+    "text": "Put the rail at the new style's usual width.",
+    "where": "Toast when \"natural\" is used without asking (\"Tool rail width when you change its style\"), in the past tense."
+  },
   "choice.workspace.follow.title": { "text": "Workspace follows the drawing", "where": "Name of this choice in Preferences > Behaviour (group: Workspace)." },
   "choice.workspace.follow.question": {
     "text": "Switch workspaces to match the kind of drawing? (Pixel for pixel art, Draw for drawings)",

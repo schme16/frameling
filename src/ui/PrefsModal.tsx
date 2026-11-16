@@ -30,6 +30,7 @@ import { lightRow } from './prefsLight';
 import type { PrefRow } from './prefsSearch';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, UI_SCALE_RANGE, usePrefs, type LookPref, type ThemePref } from './prefs';
+import { setToolRailStyle } from './toolRail';
 import { toast } from './toast';
 import { applySettings, backedUpMessage, collectSettings, pickSettingsFile, restoreChanges, restoredMessage, restoreQuestion, saveSettingsFile, type SettingsFile } from './settingsFile';
 import { BehaviourPage } from './ChoiceDialog';
@@ -379,7 +380,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
         <Segmented<'two' | 'stacked'>
           label="Tool rail style"
           value={p.toolRail}
-          onChange={(toolRail) => setPrefs({ toolRail })}
+          onChange={setToolRailStyle}
           options={[
             { id: 'two', label: 'Two wide' },
             { id: 'stacked', label: 'Stacked' },
