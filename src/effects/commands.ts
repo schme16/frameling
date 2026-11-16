@@ -10,6 +10,7 @@ import { showPanel } from '../ui/dock';
 import { BLEND_MODES, EFFECTS } from './model';
 import { maskPartner } from './masks';
 import * as ops from './ops';
+import * as shapeOps from './shapeOps';
 import { choiceWord } from '../words/choices';
 
 export type MaskScope = 'below' | 'all';
@@ -55,6 +56,21 @@ registerChoice<MaskLeaves>({
   default: 'keep',
   category: 'Layers',
   help: 'masks',
+});
+
+export type EffectTarget = 'shapes' | 'layer';
+
+registerChoice<EffectTarget>({
+  id: 'effects.addTarget',
+  title: choiceWord('choice.effects.addTarget.title'),
+  question: choiceWord('choice.effects.addTarget.question'),
+  options: [
+    { value: 'shapes', label: choiceWord('choice.effects.addTarget.shapes.label'), detail: choiceWord('choice.effects.addTarget.shapes.detail'), did: choiceWord('choice.effects.addTarget.shapes.did') },
+    { value: 'layer', label: choiceWord('choice.effects.addTarget.layer.label'), detail: choiceWord('choice.effects.addTarget.layer.detail'), did: choiceWord('choice.effects.addTarget.layer.did') },
+  ],
+  default: 'shapes',
+  category: 'Layers',
+  help: 'shape-effects',
 });
 
 const active = (s: State): Layer | undefined => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
@@ -118,6 +134,17 @@ export function toggleClip(layer: Layer | undefined = activeNow()): void {
   ops.setClip(layer.id, !layer.clipToBelow);
 }
 
+/**
+ * Where an effect command goes: on the picked shapes when there are some (asked the first time, then remembered), else
+ * on the active layer. The Effects panel has a switch for the same thing.
+ */
+function withEffectTarget(then: (t: ops.AnyTarget) => void): void {
+  const layer = ops.activeTarget();
+  if (!layer) return;
+  if (!shapeOps.pickedShapes().length) return then(layer);
+  withChoice<EffectTarget>('effects.addTarget', (v) => then(v === 'layer' ? layer : { shapes: true }), { matters: true, gently: true });
+}
+
 const effectCommands: Command[] = EFFECTS.map((e) => ({
   id: `effects.add.${e.kind}`,
   label: `Add ${e.label.toLowerCase()} (${e.term})`,
@@ -127,8 +154,7 @@ const effectCommands: Command[] = EFFECTS.map((e) => ({
   keywords: ['effect', 'fx', e.term.toLowerCase(), e.label.toLowerCase()],
   enabled: (s) => !!active(s),
   run: () => {
-    const t = ops.activeTarget();
-    if (t) ops.addEffect(t, e.kind);
+    withEffectTarget((t) => void ops.addEffect(t, e.kind));
     openPanel();
   },
 }));
@@ -162,6 +188,17 @@ registerCommands([
       const t = ops.activeTarget();
       if (t) ops.resetLook(t);
     },
+  },
+  {
+    id: 'effects.shapesReset',
+    label: 'Take the effects off the picked shapes',
+    category: 'Effects',
+    description: 'Put the picked shapes back to plain: no glow, shadow or blur on them. The layer itself is left as it is.',
+    help: 'shape-effects',
+    keywords: ['clear effects', 'remove effects', 'shape effects', 'unsoften', 'plain shape'],
+    enabled: () => shapeOps.pickedHaveFx(),
+    reason: () => 'Pick a shape that has an effect first.',
+    run: () => void shapeOps.clearEffects(),
   },
   {
     id: 'layers.clipToBelow',

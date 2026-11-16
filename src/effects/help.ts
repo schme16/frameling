@@ -11,6 +11,14 @@ registerHelpTopics([
     keywords: ['effect', 'fx', 'glow', 'shadow', 'drop shadow', 'blur', 'outline', 'stroke', 'pixelate', 'mosaic', 'hue', 'saturation', 'brightness', 'contrast', 'colour adjust', 'animate effect'],
   },
   {
+    id: 'shape-effects',
+    title: 'Effects on one shape: soft shadows and glows',
+    section: 'Effects',
+    media: 'shape-effects.png',
+    summary: 'Soften, glow or shadow just the shapes you picked, like a soft shadow under a character or a glow round a title, without a layer of their own.',
+    keywords: ['shape effect', 'feather', 'soft edge', 'soft shadow', 'glow round', 'one shape', 'picked shape', 'blur one shape', 'gaussian blur', 'illustrator effect', 'drop shadow', 'glow'],
+  },
+  {
     id: 'effects-finishing',
     title: 'Finishing touches: grain, wave, fringe, dark corners, motion blur',
     section: 'Effects',

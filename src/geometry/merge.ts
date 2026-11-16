@@ -12,6 +12,7 @@ import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { uid } from '../core/doc';
 import { rdp } from './bezier';
 import { gradientKey } from '../core/gradient';
+import { cloneEffects, shapeEffects } from '../effects/shapeFx';
 
 export type Geom = MultiPolygon;
 export interface Box {
@@ -305,8 +306,11 @@ export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id,
 
 // ---------------------------------------------------------------- merging
 
-/** Shapes that take part in merging: anything not in a group. */
-export const mergeable = (s: Shape): boolean => !s.group && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
+/**
+ * Shapes that take part in merging: anything not in a group, and not holding an effect. Merging rebuilds shapes from
+ * their outlines, which would quietly lose the effect, so a shape with one stays its own object (like a grouped one).
+ */
+export const mergeable = (s: Shape): boolean => !s.group && !shapeEffects(s)?.length && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
 
 // A gradient is its own paint: it only joins the very same gradient.
 const keyOf = (color: Color, opacity: number, gradient?: Gradient) => `${color.toLowerCase()}@${opacity}${gradient ? '/' + gradientKey(gradient) : ''}`;
@@ -547,6 +551,8 @@ function pushPieces(out: Shape[], g: Geom, p: Part, from: Shape, lineage: Id, fi
     // The piece that keeps the id also keeps what the shape had: its lineage, group and where it sat.
     if (from.origin || !(first && i === 0)) f.origin = lineage;
     if (from.group) f.group = from.group;
+    // A rubbed shape keeps its effects: every piece wears them.
+    if (shapeEffects(from)?.length) f.effects = cloneEffects(shapeEffects(from));
   });
   out.push(...fills);
   return fills.length;

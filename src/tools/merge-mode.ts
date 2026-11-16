@@ -12,6 +12,8 @@ import { toast } from '../ui/toast';
 import { openStrokeLineBar } from './StrokeLineBar';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS, type EditResult } from './edit';
 import { choiceWord } from '../words/choices';
+import { cloneEffects, hasShapeFx, shapeEffects } from '../effects/shapeFx';
+import { withChoice } from '../core/choices';
 
 export type DrawMode = 'object' | 'merge';
 
@@ -27,6 +29,21 @@ registerChoice<DrawMode>({
   category: 'Drawing',
   help: 'merge-drawing',
   silent: true,
+});
+
+export type FxOnBreak = 'keep' | 'drop';
+
+registerChoice<FxOnBreak>({
+  id: 'effects.breakApart',
+  title: choiceWord('choice.effects.breakApart.title'),
+  question: choiceWord('choice.effects.breakApart.question'),
+  options: [
+    { value: 'keep', label: choiceWord('choice.effects.breakApart.keep.label'), detail: choiceWord('choice.effects.breakApart.keep.detail'), did: choiceWord('choice.effects.breakApart.keep.did') },
+    { value: 'drop', label: choiceWord('choice.effects.breakApart.drop.label'), detail: choiceWord('choice.effects.breakApart.drop.detail'), did: choiceWord('choice.effects.breakApart.drop.did') },
+  ],
+  default: 'keep',
+  category: 'Drawing',
+  help: 'shape-effects',
 });
 
 export const isMergeLayer = (l: Layer | undefined | null): boolean => !!l && l.kind === 'vector' && l.drawMode === 'merge';
@@ -167,7 +184,16 @@ export function ungroupShapes(shapes: readonly Shape[], ids: ReadonlySet<Id>): S
  * Break apart: the shapes become plain fills (brush strokes and outlines turn into painted areas) and leave their
  * group. On a merge layer they then merge with what's around them.
  */
-export function breakApart(shapes: readonly Shape[], ids: ReadonlySet<Id>, merge: boolean): { shapes: Shape[]; ids: Id[] } {
+export function breakApart(shapes: readonly Shape[], ids: ReadonlySet<Id>, merge: boolean, fx: FxOnBreak = 'drop'): { shapes: Shape[]; ids: Id[] } {
+  // Effects: merging would lose them, so 'keep' leaves each piece a shape of its own that wears them, and 'drop' lets
+  // the pieces be plain paint.
+  const bare = (s: Shape): Shape => {
+    if (!shapeEffects(s)?.length) return s;
+    const c = { ...s } as Shape & { effects?: unknown };
+    delete c.effects;
+    return c;
+  };
+  const wearing = (from: Shape, pieces: Shape[]): Shape[] => (fx === 'keep' && shapeEffects(from)?.length ? pieces.map((p) => ({ ...p, effects: cloneEffects(shapeEffects(from)) }) as Shape) : pieces);
   if (!merge) {
     const out: Shape[] = [];
     const made: Id[] = [];
@@ -176,20 +202,25 @@ export function breakApart(shapes: readonly Shape[], ids: ReadonlySet<Id>, merge
         out.push(s);
         continue;
       }
-      const f = explode(s);
+      const f = wearing(s, explode(bare(s)));
       out.push(...f);
       made.push(...f.map((x) => x.id));
     }
     return { shapes: out, ids: made };
   }
   const rest = shapes.filter((s) => !ids.has(s.id));
-  const loose = shapes.filter((s) => ids.has(s.id)).map((s) => {
-    const c = { ...s };
+  const apart: Shape[] = [];
+  const loose: Shape[] = [];
+  for (const s of shapes) {
+    if (!ids.has(s.id)) continue;
+    const c = { ...bare(s) };
     delete c.group;
-    return c;
-  });
+    if (fx === 'keep' && shapeEffects(s)?.length) apart.push(...wearing(s, explode(c)));
+    else loose.push(c);
+  }
   const r = mergeShapes(rest, loose);
-  return { shapes: r.shapes, ids: r.added };
+  // Pieces that keep an effect are not merged into anything: they go on top as shapes of their own.
+  return { shapes: [...r.shapes, ...apart], ids: [...r.added, ...apart.map((x) => x.id)] };
 }
 
 const say = (r: EditResult | 'nothing') => {
@@ -273,13 +304,16 @@ registerCommands([
       if (!ids.size) return;
       let made: Id[] = [];
       const merge = activeIsMerge();
-      const r = editShapes('Break apart', (before) => {
-        const b = breakApart(cutBase(before), ids, merge);
-        made = b.ids;
-        return b.shapes;
-      });
-      say(r);
-      if (r === 'ok') store().setUi({ selection: made });
+      const go = (fx: FxOnBreak) => {
+        const r = editShapes('Break apart', (before) => {
+          const b = breakApart(cutBase(before), ids, merge, fx);
+          made = b.ids;
+          return b.shapes;
+        });
+        say(r);
+        if (r === 'ok') store().setUi({ selection: made });
+      };
+      withChoice<FxOnBreak>('effects.breakApart', go, { matters: selected().some(hasShapeFx), gently: true });
     },
   },
 ]);

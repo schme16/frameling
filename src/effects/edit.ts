@@ -23,70 +23,100 @@ export function setBlend(doc: Doc, t: Target, mode: BlendMode): boolean {
   return true;
 }
 
+/** Anything that holds an effect list: a layer, a folder or a shape. */
+export type Holder = { effects?: LayerEffect[] };
+
 export function addEffect(doc: Doc, t: Target, kind: EffectKind): Id | null {
   const o = lookOf(doc, t);
-  if (!o) return null;
-  const e: LayerEffect = { id: uid('fx'), kind, values: defaultValues(kind) };
-  (o.effects ??= []).push(e);
-  return e.id;
+  return o ? addEffectTo([o], kind) : null;
 }
 
-function effectOf(doc: Doc, t: Target, id: Id): { o: Layer | LayerFolder; e: LayerEffect; i: number } | null {
+/** Adds one effect to every holder, with the same id on each, so the Effects panel can edit them together. */
+export function addEffectTo(holders: Holder[], kind: EffectKind): Id | null {
+  if (!holders.length) return null;
+  const id = uid('fx');
+  for (const o of holders) (o.effects ??= []).push({ id, kind, values: defaultValues(kind) });
+  return id;
+}
+
+function found(holders: Holder[], id: Id): { o: Holder; e: LayerEffect; i: number }[] {
+  const out: { o: Holder; e: LayerEffect; i: number }[] = [];
+  for (const o of holders) {
+    const i = o.effects?.findIndex((e) => e.id === id) ?? -1;
+    if (i >= 0) out.push({ o, e: o.effects![i], i });
+  }
+  return out;
+}
+
+const holdersOf = (doc: Doc, t: Target): Holder[] => {
   const o = lookOf(doc, t);
-  const i = o?.effects?.findIndex((e) => e.id === id) ?? -1;
-  return o && i >= 0 ? { o, e: o.effects![i], i } : null;
-}
+  return o ? [o] : [];
+};
 
-export function removeEffect(doc: Doc, t: Target, id: Id): boolean {
-  const f = effectOf(doc, t, id);
-  if (!f) return false;
-  f.o.effects!.splice(f.i, 1);
-  if (!f.o.effects!.length) delete f.o.effects;
-  return true;
+export const removeEffect = (doc: Doc, t: Target, id: Id): boolean => removeEffectFrom(holdersOf(doc, t), id);
+export function removeEffectFrom(holders: Holder[], id: Id): boolean {
+  const f = found(holders, id);
+  for (const x of f) {
+    x.o.effects!.splice(x.i, 1);
+    if (!x.o.effects!.length) delete x.o.effects;
+  }
+  return f.length > 0;
 }
 
 /** Moves an effect one place earlier (-1) or later (1) in the stack. */
-export function moveEffect(doc: Doc, t: Target, id: Id, dir: -1 | 1): boolean {
-  const f = effectOf(doc, t, id);
-  if (!f) return false;
-  const j = f.i + dir;
-  const list = f.o.effects!;
-  if (j < 0 || j >= list.length) return false;
-  const [e] = list.splice(f.i, 1);
-  list.splice(j, 0, e);
-  return true;
+export const moveEffect = (doc: Doc, t: Target, id: Id, dir: -1 | 1): boolean => moveEffectIn(holdersOf(doc, t), id, dir);
+export function moveEffectIn(holders: Holder[], id: Id, dir: -1 | 1): boolean {
+  let did = false;
+  for (const f of found(holders, id)) {
+    const j = f.i + dir;
+    const list = f.o.effects!;
+    if (j < 0 || j >= list.length) continue;
+    const [e] = list.splice(f.i, 1);
+    list.splice(j, 0, e);
+    did = true;
+  }
+  return did;
 }
 
-export function setEffectOn(doc: Doc, t: Target, id: Id, on: boolean): boolean {
-  const f = effectOf(doc, t, id);
-  if (!f || (f.e.on !== false) === on) return false;
-  if (on) delete f.e.on;
-  else f.e.on = false;
-  return true;
+export const setEffectOn = (doc: Doc, t: Target, id: Id, on: boolean): boolean => setEffectOnIn(holdersOf(doc, t), id, on);
+export function setEffectOnIn(holders: Holder[], id: Id, on: boolean): boolean {
+  let did = false;
+  for (const f of found(holders, id)) {
+    if ((f.e.on !== false) === on) continue;
+    if (on) delete f.e.on;
+    else f.e.on = false;
+    did = true;
+  }
+  return did;
 }
 
 /**
  * Changes one setting. Numbers on an animated effect go into a key at `frame` (made if there isn't one), so moving
  * a slider on another frame animates it. Colours are never animated.
  */
-export function setEffectValue(doc: Doc, t: Target, id: Id, key: string, value: number | string, frame: number): boolean {
-  const f = effectOf(doc, t, id);
-  if (!f) return false;
-  const p = effectInfo(f.e.kind).params.find((x) => x.key === key);
-  if (!p) return false;
-  if (p.type === 'color') {
-    if (typeof value !== 'string' || f.e.values[key] === value) return false;
-    f.e.values[key] = value;
-    return true;
+export const setEffectValue = (doc: Doc, t: Target, id: Id, key: string, value: number | string, frame: number): boolean => setEffectValueIn(holdersOf(doc, t), id, key, value, frame);
+export function setEffectValueIn(holders: Holder[], id: Id, key: string, value: number | string, frame: number): boolean {
+  let did = false;
+  for (const f of found(holders, id)) {
+    const p = effectInfo(f.e.kind).params.find((x) => x.key === key);
+    if (!p) continue;
+    if (p.type === 'color') {
+      if (typeof value !== 'string' || f.e.values[key] === value) continue;
+      f.e.values[key] = value;
+      did = true;
+      continue;
+    }
+    const v = clampParam(p, Number(value));
+    if (f.e.keys?.length) {
+      f.e.keys = withKey(f.e.keys, frame, { [key]: v });
+      did = true;
+      continue;
+    }
+    if (f.e.values[key] === v) continue;
+    f.e.values[key] = v;
+    did = true;
   }
-  const v = clampParam(p, Number(value));
-  if (f.e.keys?.length) {
-    f.e.keys = withKey(f.e.keys, frame, { [key]: v });
-    return true;
-  }
-  if (f.e.values[key] === v) return false;
-  f.e.values[key] = v;
-  return true;
+  return did;
 }
 
 /**
@@ -94,7 +124,7 @@ export function setEffectValue(doc: Doc, t: Target, id: Id, key: string, value: 
  * `frame` become the only ones).
  */
 export function setEffectAnimated(doc: Doc, t: Target, id: Id, on: boolean, frame: number): boolean {
-  const f = effectOf(doc, t, id);
+  const f = found(holdersOf(doc, t), id)[0];
   if (!f || !!f.e.keys?.length === on) return false;
   const now = valuesAt(f.e, frame);
   if (on) {
@@ -110,7 +140,7 @@ export function setEffectAnimated(doc: Doc, t: Target, id: Id, on: boolean, fram
 
 /** Removes the key at `frame`, if there is one. The last key going turns animating off. */
 export function removeEffectKey(doc: Doc, t: Target, id: Id, frame: number): boolean {
-  const f = effectOf(doc, t, id);
+  const f = found(holdersOf(doc, t), id)[0];
   const i = f?.e.keys?.findIndex((k) => k.frame === frame) ?? -1;
   if (!f || i < 0) return false;
   if (f.e.keys!.length === 1) {
@@ -121,13 +151,15 @@ export function removeEffectKey(doc: Doc, t: Target, id: Id, frame: number): boo
 }
 
 /** Puts one effect back to how it starts (keeps it in the stack). */
-export function resetEffect(doc: Doc, t: Target, id: Id): boolean {
-  const f = effectOf(doc, t, id);
-  if (!f) return false;
-  f.e.values = defaultValues(f.e.kind);
-  delete f.e.keys;
-  delete f.e.on;
-  return true;
+export const resetEffect = (doc: Doc, t: Target, id: Id): boolean => resetEffectIn(holdersOf(doc, t), id);
+export function resetEffectIn(holders: Holder[], id: Id): boolean {
+  const all = found(holders, id);
+  for (const f of all) {
+    f.e.values = defaultValues(f.e.kind);
+    delete f.e.keys;
+    delete f.e.on;
+  }
+  return all.length > 0;
 }
 
 /** Back to plain: normal blend and no effects. */
@@ -137,6 +169,17 @@ export function resetLook(doc: Doc, t: Target): boolean {
   delete o.effects;
   delete o.blend;
   return true;
+}
+
+/** Takes every effect off these shapes (or whatever holds them). */
+export function clearEffectsOf(holders: Holder[]): boolean {
+  let did = false;
+  for (const o of holders) {
+    if (!o.effects?.length) continue;
+    delete o.effects;
+    did = true;
+  }
+  return did;
 }
 
 // ---------------------------------------------------------------- clipping and masks

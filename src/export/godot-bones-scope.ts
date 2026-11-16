@@ -7,6 +7,7 @@
  * A scope is a list of layers over a range of frames: the stage over the exported range, or a symbol over its own
  * timeline. A symbol that has bones (or holds symbols that do) becomes a nested rig under its instance.
  */
+import { layerShapeFxKinds } from '../effects/shapeFx';
 import type { Doc, Drawing, Id, Layer, LayerEffect, LayerFolder, SkinMesh, VectorDrawing } from '../core/format';
 import { activeCamera } from '../core/camera';
 import { celAt } from '../core/doc';
@@ -318,6 +319,8 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
     if (isShaderBlend(nb.blend)) notes.native.add('Screen, Glow brighter (plain), Take away and Brighten by dividing blend modes: a small included shader that reads what is behind, so they mix with the stage but not inside a faded group');
     if (!nb.exact && mode) notes.skip(`${blendWord(mode)} drawn as normal`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
+    // An effect on one shape is baked into the part's picture too, since the picture is drawn by the app.
+    for (const k of layerShapeFxKinds(doc, layer)) notes.bake(`${effectInfo(k).label} (one shape)`, layer.name);
     if (around.some((f) => f.effects?.length)) notes.skip('Folder effects go on each layer separately', layer.name);
   }
   return { opacity, blend: nb.blend, effects };

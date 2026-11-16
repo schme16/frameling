@@ -281,6 +281,70 @@ function layerPicture(run: Run, layer: Layer): Picture | null {
   return { canvas: c, done: () => run.pool.put(c) };
 }
 
+// ---------------------------------------------------------------- effects on one shape
+
+// Finished pictures of shapes with effects, by shape object, so a held drawing with a soft shadow on one shape is
+// blurred once, not every frame.
+const shapeCache = new EffectCache(16_000_000);
+
+/** Pictures of shapes built and reused, for tests. */
+export function shapeFxStats(): { built: number; reused: number } {
+  return { built: shapeCache.builds, reused: shapeCache.hits };
+}
+
+/**
+ * Paints something through a list of effects onto `g`: it is painted alone on a clear canvas the size of the target
+ * (with `g`'s transform), the effects run on that, and the result goes onto `g` as it is. This is how an effect on one
+ * shape works; the layer's own effects then run on the layer, so a shape's come first. `stage` is the stage's size in
+ * document pixels (dark corners and pixelate are measured from it), `key` is the shape (a picture is reused while the
+ * shape and `sig` stay the same), and nothing is left changed on `g`.
+ */
+export function paintThroughEffects(g: Ctx, fx: { kind: LayerEffect['kind']; v: Record<string, number | string> }[], stage: { w: number; h: number } | undefined, key: object | undefined, sig: string, paint: (lg: Ctx) => void): void {
+  const target = g.canvas as { width: number; height: number };
+  const w = Math.max(1, target.width);
+  const h = Math.max(1, target.height);
+  const raw = g.getTransform();
+  const m = typeof raw.a === 'number' ? raw : new DOMMatrix();
+  const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
+  const origin = { x: m.e, y: m.f };
+  const stagePx = { w: (stage?.w ?? w / scale) * scale, h: (stage?.h ?? h / scale) * scale };
+  const full = key ? `${w}x${h}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${stagePx.w}x${stagePx.h}|${g.imageSmoothingEnabled ? 1 : 0}|${sig}` : '';
+  let pic = key ? shapeCache.get(key, full) : undefined;
+  if (!pic) {
+    const pool = poolFor(w, h);
+    depth++;
+    try {
+      let c = pool.get();
+      const cg = ctx2(c);
+      cg.setTransform(m);
+      cg.imageSmoothingEnabled = g.imageSmoothingEnabled;
+      paint(cg);
+      cg.setTransform(1, 0, 0, 1, 0, 0);
+      for (const e of fx) c = applyEffect(c, e.kind, e.v, scale, origin, pool, stagePx);
+      if (key) {
+        const keep = makeCanvas(c.width, c.height);
+        ctx2(keep).drawImage(c, 0, 0);
+        shapeCache.set(key, full, keep);
+        pool.put(c);
+        pic = keep;
+      } else {
+        g.save();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.drawImage(c, 0, 0);
+        g.restore();
+        pool.put(c);
+        return;
+      }
+    } finally {
+      depth--;
+    }
+  }
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(pic, 0, 0);
+  g.restore();
+}
+
 function folderPicture(run: Run, node: Extract<PlanNode, { type: 'folder' }>): Picture | null {
   let c = run.pool.get();
   drawLevel(run, ctx2(c), node.steps);

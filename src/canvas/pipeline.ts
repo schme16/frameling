@@ -14,7 +14,7 @@ import type { Mat } from '../core/symbols';
 import { mul, poseAt, poseLive, rootDoc } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
 import { placementAt } from '../rig/pose';
-import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
+import { drawDrawing, drawShapeFx, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
 import { drawLivePixels } from './livePixels';
@@ -244,7 +244,7 @@ export class BitmapCache {
   /** Draws the drawing (or only the shapes added to `grown`'s) with `g` already set to the stage's scale. */
   private paintInto(g: Ctx2, doc: Doc, d: Drawing, pixelSize: number, grown?: Entry): void {
     if (grown && grown.drawing.kind === 'vector' && d.kind === 'vector') {
-      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
+      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShapeFx(g, d.shapes[i], { doc, frame: 0 });
       this.appends++;
     } else {
       // The frame only matters to tilemaps, and those inside symbols carry their own.

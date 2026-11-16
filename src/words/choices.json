@@ -2317,5 +2317,54 @@
   "choice.scripts.inFiles.never.did": {
     "text": "Left the scripts in this drawing off.",
     "where": "Toast when \"never\" is used without asking (\"Scripts inside a drawing you open\"), in the past tense."
+  },
+  "choice.effects.breakApart.title": { "text": "Break apart on a shape with an effect", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.effects.breakApart.question": {
+    "text": "That shape has an effect on it, and joining it to the paint around it would lose the effect. What should Break apart do?",
+    "where": "The question the \"Break apart on a shape with an effect\" dialog asks."
+  },
+  "choice.effects.breakApart.keep.label": { "text": "Keep the effect", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Break apart on a shape with an effect\"." },
+  "choice.effects.breakApart.keep.detail": {
+    "text": "The pieces stay shapes of their own and each one keeps the effect, so they do not merge with what is around them.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Break apart on a shape with an effect\"."
+  },
+  "choice.effects.breakApart.keep.did": {
+    "text": "Kept the effect on the pieces.",
+    "where": "Toast when \"keep\" is used without asking (\"Break apart on a shape with an effect\"), in the past tense."
+  },
+  "choice.effects.breakApart.drop.label": { "text": "Make plain paint", "where": "Dialog and Preferences: the button for the answer \"drop\" in \"Break apart on a shape with an effect\"." },
+  "choice.effects.breakApart.drop.detail": {
+    "text": "The pieces lose the effect and merge with the drawing like any paint. Undo brings it back.",
+    "where": "Dialog and Preferences: the small line under the \"drop\" answer in \"Break apart on a shape with an effect\"."
+  },
+  "choice.effects.breakApart.drop.did": {
+    "text": "Made plain paint, without the effect.",
+    "where": "Toast when \"drop\" is used without asking (\"Break apart on a shape with an effect\"), in the past tense."
+  },
+  "choice.effects.addTarget.title": { "text": "Effects on picked shapes or the whole layer", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.effects.addTarget.question": {
+    "text": "You have shapes picked. Should the effect go on just those shapes, or on the whole layer?",
+    "where": "The question the \"Effects on picked shapes or the whole layer\" dialog asks."
+  },
+  "choice.effects.addTarget.shapes.label": {
+    "text": "Just the picked shapes",
+    "where": "Dialog and Preferences: the button for the answer \"shapes\" in \"Effects on picked shapes or the whole layer\"."
+  },
+  "choice.effects.addTarget.shapes.detail": {
+    "text": "A soft shadow under one shape, a glow round a title. The rest of the layer is left alone.",
+    "where": "Dialog and Preferences: the small line under the \"shapes\" answer in \"Effects on picked shapes or the whole layer\"."
+  },
+  "choice.effects.addTarget.shapes.did": {
+    "text": "Put the effect on the picked shapes.",
+    "where": "Toast when \"shapes\" is used without asking (\"Effects on picked shapes or the whole layer\"), in the past tense."
+  },
+  "choice.effects.addTarget.layer.label": { "text": "The whole layer", "where": "Dialog and Preferences: the button for the answer \"layer\" in \"Effects on picked shapes or the whole layer\"." },
+  "choice.effects.addTarget.layer.detail": {
+    "text": "Everything on the layer takes it together, the way a layer effect always has.",
+    "where": "Dialog and Preferences: the small line under the \"layer\" answer in \"Effects on picked shapes or the whole layer\"."
+  },
+  "choice.effects.addTarget.layer.did": {
+    "text": "Put the effect on the whole layer.",
+    "where": "Toast when \"layer\" is used without asking (\"Effects on picked shapes or the whole layer\"), in the past tense."
   }
 }

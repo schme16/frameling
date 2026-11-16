@@ -7,8 +7,9 @@ import { strokeParts } from '../core/tips';
 import { encodePng } from '../io/png';
 import { flattenDrawing } from '../core/layerKinds';
 import { shapeExportOf } from './shapeExport';
-import { withSprites } from './svg-extra';
-import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
+import { noteShapeFx, withSprites } from './svg-extra';
+import { hasShapeFx, shapeEffects } from '../effects/shapeFx';
+import { composeSvg, composeSymbol, effectsFilter, SHAPE_OWNER, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import { gradientKey, sortedStops } from '../core/gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
@@ -117,7 +118,22 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
+/**
+ * One shape as SVG. A shape with effects sits in a group with a filter (the same filters a layer's effects use, see
+ * svg-look.ts), so the effect works on that shape alone. Effects SVG has nothing like are left out, and said so.
+ */
 export function shapeToSvg(s: Shape, doc?: Doc): string {
+  const el = plainShapeToSvg(s, doc);
+  const fx = shapeEffects(s);
+  if (!el || !fx?.length || !hasShapeFx(s)) return el;
+  const defs: string[] = [];
+  const host = { doc: doc ?? ({ width: 4096, height: 4096 } as Doc), frames: [0], duration: 1, loop: false, body: () => '', defs, notes: new Set<string>() };
+  const id = effectsFilter(host, fx.map((e) => (e.keys ? { ...e, keys: undefined } : e)), SHAPE_OWNER);
+  for (const n of host.notes) noteShapeFx(n);
+  return id ? `<defs>${defs.join('')}</defs><g filter="url(#${id})">${el}</g>` : el;
+}
+
+function plainShapeToSvg(s: Shape, doc?: Doc): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
   // Text, particles and the like write themselves, through their registered export.
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
@@ -320,7 +336,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
   const view = cameraViewAt(doc, frame);
   const notes = new Set<string>();
   const defs: string[] = [];
-  const { value: body, defs: sprites } = withSprites(() =>
+  const { value: body, defs: sprites, notes: fxNotes } = withSprites(() =>
     composeSvg({
       doc,
       frames: [frame],
@@ -340,6 +356,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
   );
   // isolation: layers blend with each other only, not with the web page behind the picture (same as the animated SVG).
   const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">`];
+  for (const n of fxNotes) notes.add(n);
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

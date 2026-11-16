@@ -1,5 +1,6 @@
 // How a frame's layers become the layers of a PSD or a PDF: what stays a layer, what becomes a group, and (for PDF)
 // what has to be flattened into a picture because the format can't express it. Pure, so it can be tested.
+import { layerHasShapeFx } from '../effects/shapeFx';
 import type { Doc, Layer, LayerFolder } from '../core/format';
 import { folderChain, layerTree, type TreeNode } from '../core/folders';
 import { activeEffects } from '../effects/model';
@@ -131,6 +132,8 @@ export function drawingHasLook(d: Drawing | undefined, depth = 0): boolean {
 export function needsPicture(l: Layer, frame: number, doc?: Doc): boolean {
   if ((l.kind !== 'vector' && l.kind !== 'camera') || activeEffects(l.effects, frame).length > 0) return true;
   if (!doc || l.kind !== 'vector') return false;
+  // An effect on one shape can't be drawn as vector either, so the layer holding it is a picture.
+  if (layerHasShapeFx(doc, l, [frame])) return true;
   const d = poseAt(doc, l, frame);
   return drawingHasMesh(d) || drawingHasLook(d);
 }

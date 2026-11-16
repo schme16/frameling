@@ -264,7 +264,8 @@ export function animatedSvgExport(doc: Doc, opts: AnimatedSvgOptions = {}): { sv
     }
     return g;
   };
-  const { value: content, defs: sprites } = withSprites(() => composeSvg({ doc, frames: allFrames, duration: count / doc.fps, loop, defs, notes, ids: used, body }));
+  const { value: content, defs: sprites, notes: fxNotes } = withSprites(() => composeSvg({ doc, frames: allFrames, duration: count / doc.fps, loop, defs, notes, ids: used, body }));
+  for (const n of fxNotes) notes.add(n);
   const out: string[] = [];
   if (doc.background && !opts.transparent) out.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   if (content) out.push(content);

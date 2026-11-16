@@ -222,6 +222,36 @@ add('animated blur, frame 1: sharp', doc([layer('a', box(), { effects: anim() })
 add('animated blur, frame 11: soft', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [200, 200, 200, 255], 50]], 10);
 
 // A rejection must end the run with a failure, not leave Electron hanging with the window hidden.
+// Effects on one shape (src/effects/shapeFx.ts): the shape goes through its own effects, the shapes round it do not, and the
+// layer's effects then run on the layer as a whole.
+const withFx = (shape, ...effects) => ({ ...shape, effects });
+const crisp = () => rect('c', 0, 0, 2, 2, '#000000');
+add('an effect on one shape softens that shape and leaves its neighbour crisp', doc([layer('a', [crisp(), withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'b', kind: 'blur', values: { radius: 2 } })])]), [
+  [8, 8, [145, 145, 145, 255], 30],
+  [4, 8, [215, 215, 215, 255], 40],
+  [0, 0, [0, 0, 0, 255], 1],
+  [1, 1, [0, 0, 0, 255], 1],
+  [2, 2, [255, 255, 255, 255], 1],
+]);
+add('a shape\'s soft edge is the one a layer of its own would give', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'b', kind: 'blur', values: { radius: 2 } })])]), [
+  [8, 8, [145, 145, 145, 255], 30],
+  [4, 8, [215, 215, 215, 255], 40],
+]);
+add('a shadow on one shape falls from that shape only', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 's', kind: 'shadow', values: { color: '#ff0000', opacity: 1, x: 4, y: 4, softness: 0 } }), rect('y', 0, 12, 3, 3, '#000000')])]), [
+  [12, 12, [255, 0, 0, 255], 2],
+  [7, 7, [0, 0, 0, 255], 1],
+  [1, 13, [0, 0, 0, 255], 1],
+  [4, 15, [255, 255, 255, 255], 1],
+]);
+add('a shape\'s effects run first, then the layer\'s on the whole layer', doc([layer('a', [withFx(rect('x', 6, 6, 4, 4, '#000000'), { id: 'o', kind: 'outline', values: { color: '#ff0000', width: 2 } })], { effects: [{ id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 200, contrast: 100 } }] })]), [
+  // The red outline the shape made is there for the layer's brighten to work on (red doubled stays red; black stays black).
+  [5, 7, [255, 0, 0, 255], 2],
+  [7, 7, [0, 0, 0, 255], 1],
+]);
+add('colour adjust on one shape recolours that shape only', doc([layer('a', [withFx(rect('x', 0, 0, 8, H, '#ff8800'), { id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 0, contrast: 100 } }), rect('y', 8, 0, 8, H, '#ff8800')])]), [
+  [4, 4, [0, 0, 0, 255], 1],
+  [12, 4, [255, 136, 0, 255], 2],
+]);
 const bail = (e) => {
   console.error('FAIL harness error:', e && e.stack ? e.stack : e);
   app.exit(1);

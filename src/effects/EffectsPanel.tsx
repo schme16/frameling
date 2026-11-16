@@ -1,7 +1,7 @@
 // The Effects panel: how the active layer (or its folder) mixes with what's under it, and its stack of effects.
 // Every change shows on the canvas straight away. Plain words first, the industry term second.
-import { useState, useSyncExternalStore } from 'react';
-import { findLayer } from '../core/doc';
+import { useMemo, useState, useSyncExternalStore } from 'react';
+import { celAt, findLayer } from '../core/doc';
 import type { BlendMode, EffectKind, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { folderChain } from '../core/folders';
 import { useStore } from '../core/store';
@@ -10,8 +10,10 @@ import { Icon } from '../ui/icons';
 import { ContextMenu, Floating } from '../timeline/Menu';
 import { setLayerOpacity } from '../timeline/ops';
 import type { Target } from './edit';
+import { stackOf } from './shapeFx';
 import { BLEND_MODES, blendInfo, EFFECTS, effectInfo, valuesAt, type EffectParam } from './model';
 import * as ops from './ops';
+import type { AnyTarget } from './ops';
 import { toggleClip, toggleMask } from './commands';
 import '../canvas/canvas.css';
 import './effects.css';
@@ -38,21 +40,38 @@ function useAddStyle(): AddStyle {
 export function EffectsPanel() {
   const layer = useStore((s) => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1]);
   const folders = useStore((s) => s.doc.folders);
+  const selection = useStore((s) => s.ui.selection);
+  // The drawing showing on the active layer now: the picked shapes live in it.
+  const drawing = useStore((s) => {
+    const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    const cel = l && l.kind === 'vector' ? celAt(l, s.ui.frame) : undefined;
+    return cel ? s.doc.drawings[cel.drawingId] : undefined;
+  });
   // The folders around the layer, the nearest first: any of them can be changed as a whole.
   const around = layer ? folderChain(folders, layer.folder).reverse() : [];
-  const [pick, setPick] = useState<string>('layer');
+  // 'auto': the picked shapes when there are some, else the layer.
+  const [pick, setPick] = useState<string>('auto');
+  const picked = useMemo(() => {
+    if (!drawing || drawing.kind !== 'vector' || !selection.length) return [];
+    const ids = new Set(selection);
+    return drawing.shapes.filter((x) => ids.has(x.id));
+  }, [drawing, selection]);
   if (!layer) return <div className="cv-panel-empty">Add a layer to give it effects.</div>;
   const folder = around.find((f) => f.id === pick) ?? (pick === 'folder' ? around[0] : undefined);
+  const onShapes = !folder && picked.length > 0 && pick !== 'layer';
   const useFolder = !!folder;
-  const target: Target = useFolder ? { folder: folder!.id } : { layer: layer.id };
-  const look: Layer | LayerFolder = useFolder ? folder! : layer;
+  const target: AnyTarget = onShapes ? { shapes: true } : useFolder ? { folder: folder!.id } : { layer: layer.id };
+  const look: Layer | LayerFolder | undefined = onShapes ? undefined : useFolder ? folder! : layer;
+  const stack = onShapes ? stackOf(picked) : { effects: look?.effects ?? [], mixed: false };
+  const word = picked.length === 1 ? 'the picked shape' : `the ${picked.length} picked shapes`;
   return (
     <div className="cv-panel fx-panel" aria-label="Effects">
-      {around.length ? (
+      {around.length || picked.length ? (
         <Choice
           label="Change"
-          value={folder ? folder.id : 'layer'}
+          value={onShapes ? 'shapes' : folder ? folder.id : 'layer'}
           options={[
+            ...(picked.length ? [{ value: 'shapes', label: `Shape: ${picked.length === 1 ? 'the one you picked' : `${picked.length} you picked`}`, title: 'Change just the shape or shapes you picked: a soft shadow under one shape, a glow round a title. The rest of the layer is left alone.' }] : []),
             { value: 'layer', label: `Layer: ${layer.name}`, title: 'Change this layer on its own' },
             ...around.map((f) => ({ value: f.id, label: `Folder: ${f.name}`, title: 'Change the whole folder: everything in it fades, blends and takes effects together' })),
           ]}
@@ -66,10 +85,10 @@ export function EffectsPanel() {
       )}
 
       {/* A mask only decides where, so how see-through it is changes nothing. */}
-      {layer.mask && !useFolder ? null : (
+      {onShapes || (layer.mask && !useFolder) ? null : (
         <Slider
           label="See-through (opacity)"
-          value={Math.round(look.opacity * 100)}
+          value={Math.round(look!.opacity * 100)}
           min={0}
           max={100}
           format={(v) => `${v}%`}
@@ -77,15 +96,27 @@ export function EffectsPanel() {
         />
       )}
 
-      {layer.mask && !useFolder ? null : <BlendPicker value={look.blend ?? 'normal'} onChange={(m) => ops.setBlend(target, m)} />}
+      {onShapes || (layer.mask && !useFolder) ? null : <BlendPicker value={look!.blend ?? 'normal'} onChange={(m) => ops.setBlend(target as Target, m)} />}
 
-      {!useFolder && <ClipAndMask layer={layer} />}
+      {!useFolder && !onShapes && <ClipAndMask layer={layer} />}
 
-      <EffectStack target={target} effects={look.effects ?? []} />
+      {onShapes && (
+        <p className="fx-empty" data-testid="fx-shape-note">
+          {stack.mixed
+            ? `These shapes have different effects. You see the first one's. Adding or changing an effect here goes on every shape that has it.`
+            : `These go on ${word} only, before anything the layer does to all of it. They stay the same on every frame; to change them over time, give the shape a new key.`}
+        </p>
+      )}
+
+      <EffectStack target={target} effects={stack.effects} on={onShapes ? word : 'this layer'} />
 
       <div className="fx-footer">
-        <ActionButton title="Normal blend and no effects" disabled={!look.effects?.length && (look.blend ?? 'normal') === 'normal'} onClick={() => ops.resetLook(target)}>
-          Reset all
+        <ActionButton
+          title={onShapes ? 'Take every effect off the picked shapes' : 'Normal blend and no effects'}
+          disabled={onShapes ? !picked.some((x) => (x as { effects?: unknown[] }).effects?.length) : !look!.effects?.length && (look!.blend ?? 'normal') === 'normal'}
+          onClick={() => ops.resetLook(target)}
+        >
+          {onShapes ? 'Take effects off' : 'Reset all'}
         </ActionButton>
       </div>
     </div>
@@ -185,12 +216,12 @@ function ClipAndMask({ layer }: { layer: Layer }) {
 
 // ---------------------------------------------------------------- the effect stack
 
-function EffectStack({ target, effects }: { target: Target; effects: LayerEffect[] }) {
+function EffectStack({ target, effects, on }: { target: AnyTarget; effects: LayerEffect[]; on: string }) {
   const style = useAddStyle();
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const add = (k: EffectKind) => ops.addEffect(target, k);
   return (
-    <section className="fx-stack" aria-label="Effects on this layer">
+    <section className="fx-stack" aria-label={`Effects on ${on}`}>
       <div className="fx-stack-head">
         <span className="cv-field-label">Effects</span>
         {effects.length > 1 && <span className="fx-stack-order">first to last</span>}
@@ -235,12 +266,13 @@ function EffectStack({ target, effects }: { target: Target; effects: LayerEffect
   );
 }
 
-function EffectCard({ target, effect, first, last }: { target: Target; effect: LayerEffect; first: boolean; last: boolean }) {
+function EffectCard({ target, effect, first, last }: { target: AnyTarget; effect: LayerEffect; first: boolean; last: boolean }) {
+  const shapes = 'shapes' in target;
   const info = effectInfo(effect.kind);
   const frame = useStore((s) => s.ui.frame);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const on = effect.on !== false;
-  const animated = !!effect.keys?.length;
+  const animated = !shapes && !!effect.keys?.length;
   const keyHere = !!effect.keys?.some((k) => k.frame === frame);
   const v = valuesAt(effect, frame);
   return (
@@ -254,17 +286,17 @@ function EffectCard({ target, effect, first, last }: { target: Target; effect: L
           {info.label}
           {info.term !== info.label && <span className="fx-term">{info.term}</span>}
         </span>
-        <button
+        {!shapes && <button
           type="button"
           className="fx-icon-btn fx-anim"
           data-on={animated}
           aria-pressed={animated}
           title={animated ? 'Animated: moving a slider sets a key on this frame. Click to stop animating.' : 'Animate: change the settings over time with keys'}
           aria-label={animated ? 'Stop animating' : 'Animate'}
-          onClick={() => ops.setEffectAnimated(target, effect.id, !animated)}
+          onClick={() => ops.setEffectAnimated(target as Target, effect.id, !animated)}
         >
           <Icon name="key" size={14} />
-        </button>
+        </button>}
         <button
           type="button"
           className="fx-icon-btn"
@@ -284,7 +316,7 @@ function EffectCard({ target, effect, first, last }: { target: Target; effect: L
           <span className="fx-key-dot" data-on={keyHere} aria-hidden="true" />
           <span>{keyHere ? `Key on frame ${frame + 1}` : `Between keys. Move a slider to add a key on frame ${frame + 1}.`}</span>
           {keyHere && (
-            <button type="button" className="fx-link" onClick={() => ops.removeEffectKey(target, effect.id)}>
+            <button type="button" className="fx-link" onClick={() => ops.removeEffectKey(target as Target, effect.id)}>
               Remove key
             </button>
           )}

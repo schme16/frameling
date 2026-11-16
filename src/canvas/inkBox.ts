@@ -8,6 +8,7 @@
 import { tipReach } from '../geometry/tip';
 import type { PathPoint, Shape, StrokeShape, SubPath } from '../core/format';
 import { styleReach } from '../geometry/lineStyle';
+import { shapeEffects } from '../effects/shapeFx';
 
 export interface InkBox {
   x0: number;
@@ -62,6 +63,8 @@ function addPaths(b: InkBox, paths: readonly SubPath[], r: number): boolean {
 export function shapesInk(shapes: readonly Shape[]): InkBox | null {
   const b: InkBox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
   for (const s of shapes) {
+    // An effect can paint well past the outline (and a wave or a smear a long way), so the bitmap keeps the whole stage.
+    if (shapeEffects(s)?.length) return null;
     if (s.type === 'stroke') {
       const r = strokeReach(s);
       for (const p of s.points) if (!grow(b, p.x, p.y, r)) return null;

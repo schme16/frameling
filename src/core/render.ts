@@ -13,7 +13,8 @@ import { folderChain } from './folders';
 import { shapeKind } from './shapeKinds';
 import { drawingKindOf } from './layerKinds';
 import { cameraViewAt, layerCameraMatrix } from './camera';
-import { compositePlan, EffectCache } from '../effects/composite';
+import { compositePlan, EffectCache, paintThroughEffects } from '../effects/composite';
+import { drawableShapeFx, shapeEffects, shapeFxReach } from '../effects/shapeFx';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
@@ -255,10 +256,22 @@ export interface DrawContext {
   frame: number;
 }
 
+/**
+ * Draws one shape of a drawing, through its own effects when it has any (see effects/shapeFx.ts). The effects work on
+ * that shape alone, so a soft shadow under one shape does not touch the shapes round it.
+ */
+export function drawShapeFx(g: Ctx2D, s: Shape, at?: DrawContext): void {
+  if (!shapeEffects(s)?.length) return drawShape(g, s, at);
+  const fx = drawableShapeFx(s, at?.frame ?? 0);
+  if (!fx.length) return drawShape(g, s, at);
+  const sig = fx.some((e) => e.kind === 'grain') ? `${at?.frame ?? 0}|${JSON.stringify(shapeEffects(s))}` : JSON.stringify(shapeEffects(s));
+  paintThroughEffects(g, fx, at?.doc ? { w: at.doc.width, h: at.doc.height } : undefined, s, sig, (lg) => drawShape(lg, s, at));
+}
+
 /** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
 export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
   if (d.kind === 'vector') {
-    for (const s of d.shapes) drawShape(g, s, at);
+    for (const s of d.shapes) drawShapeFx(g, s, at);
   } else if (d.kind === 'tilemap') {
     if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
@@ -487,8 +500,11 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
     const o = doc ? tileOrigin(doc, pixelSize) : { x: 0, y: 0 };
     grow(b, o.x, o.y);
     grow(b, o.x + d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, o.y + d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
-  } else if (d.kind === 'vector')
+  } else if (d.kind === 'vector') {
+    // How far the effects on any one shape paint past the drawing: the whole box grows by the most of them.
+    let fxPad = 0;
     for (const s of d.shapes) {
+      if (shapeEffects(s)?.length) fxPad = Math.max(fxPad, shapeFxReach(s, effectReach));
       if (s.type === 'stroke') {
         const reach = tipReach(s.brush);
         for (const [x, y] of strokeOutline(s)) grow(b, x, y, reach);
@@ -510,6 +526,13 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
         for (const [x, y] of [[ib.x0, ib.y0], [ib.x1, ib.y0], [ib.x0, ib.y1], [ib.x1, ib.y1]]) grow(b, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
       }
     }
+    if (fxPad > 0 && b.x1 >= b.x0) {
+      b.x0 -= fxPad;
+      b.y0 -= fxPad;
+      b.x1 += fxPad;
+      b.y1 += fxPad;
+    }
+  }
   boxCache.set(d, { ps: pixelSize, box: b });
   return b;
 }

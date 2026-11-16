@@ -23,6 +23,7 @@ import { effectInfo } from '../effects/model';
 import { shapeFeatureOf } from './shapeExport';
 import { trimOf } from '../core/trimTween';
 import { trimActive } from '../geometry/trim';
+import { shapeFxKinds } from '../effects/shapeFx';
 import { isGrainy } from '../geometry/tip';
 import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
 import './builtin';
@@ -54,12 +55,16 @@ export function carryOf(format: FormatId): FormatCarry {
 /** What a document uses that some formats can't carry exactly. Effects are listed by kind. */
 export interface DocFeatures {
   features: Set<Feature>;
+  /** Effects on layers and folders. */
   effectKinds: Set<EffectKind>;
+  /** Effects on single shapes (they are said separately, since a format that has layer effects can still lack these). */
+  shapeEffectKinds: Set<EffectKind>;
 }
 
 export function docFeatures(doc: Doc): DocFeatures {
   const features = new Set<Feature>();
   const effectKinds = new Set<EffectKind>();
+  const shapeEffectKinds = new Set<EffectKind>();
   const layers = [...doc.layers, ...Object.values(doc.symbols ?? {}).flatMap((s) => s.layers)];
   for (const l of layers) {
     if (l.blend && l.blend !== 'normal') features.add('blend');
@@ -71,9 +76,9 @@ export function docFeatures(doc: Doc): DocFeatures {
     if ((l as { bind?: unknown }).bind) features.add('bones');
   }
   for (const f of Object.values(doc.folders ?? {})) for (const e of f.effects ?? []) if (e.on !== false) effectKinds.add(e.kind);
-  if (effectKinds.size) features.add('effects');
   for (const d of Object.values(doc.drawings)) {
     if (d.kind !== 'vector') continue;
+    shapeFxKinds(d, shapeEffectKinds);
     for (const s of d.shapes) {
       if (trimActive(trimOf(s))) features.add('trim');
       if (s.type === 'stroke' && isGrainy(s.brush)) features.add('grain');
@@ -86,14 +91,16 @@ export function docFeatures(doc: Doc): DocFeatures {
       }
     }
   }
-  return { features, effectKinds };
+  if (effectKinds.size || shapeEffectKinds.size) features.add('effects');
+  return { features, effectKinds, shapeEffectKinds };
 }
 
 /** Does this document have effects a format has no version of, so they'd become pictures there? */
 export function bakesEffects(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): boolean {
   const c = carryOf(format);
   const native = new Set(c.nativeEffects ?? []);
-  return c.rows?.effects === 'picture' && [...found.effectKinds].some((k) => !native.has(k));
+  // An effect on one shape is a picture in every format that makes layer effects into pictures, native kinds included.
+  return c.rows?.effects === 'picture' && ([...found.effectKinds].some((k) => !native.has(k)) || found.shapeEffectKinds.size > 0);
 }
 
 /** Does this document have Soften or Shadow, which Lottie can do itself but not every player draws? */
@@ -126,6 +133,15 @@ export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = d
     const how = c.rows.effects ?? 'kept';
     if (how === 'picture' && other.length) pictures.push(`layers with ${list(other)}`);
     else if (how === 'kept' && other.length) left.push(list(other));
+  }
+  // An effect on one shape: a picture of its layer where the format has pictures for effects, left out where it only keeps what it has a version of.
+  if (found.shapeEffectKinds.size) {
+    const native = new Set(c.nativeEffects ?? []);
+    const how = c.rows.effects ?? 'kept';
+    const all = [...found.shapeEffectKinds].map((k) => effectInfo(k).label.toLowerCase());
+    const other = [...found.shapeEffectKinds].filter((k) => !native.has(k)).map((k) => effectInfo(k).label.toLowerCase());
+    if (how === 'picture') pictures.push(`layers with a shape that has ${list(all)}`);
+    else if (other.length) left.push(`${list(other)} on single shapes`);
   }
   // Grain stays vector in the formats that carry shapes, but it is a lot of shapes.
   if (found.features.has('grain') && c.rows.grain === 'shapes') out.push(GRAIN_NOTE);

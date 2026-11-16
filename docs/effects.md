@@ -121,6 +121,40 @@ modes mix with it the same way exports do.
   in their folder), folder opacity, hidden folders, each effect and an animated blur.
   `npm run build && xvfb-run -a npx electron scripts/e2e/effects.cjs`.
 
+## Effects on one shape
+
+`effects?` on a shape (`StrokeShape`, `FillShape`, `PathShape`, `InstanceShape`, `TextShape`, `ParticlesShape`) is the same list a layer
+has. The pure parts are in `src/effects/shapeFx.ts`, the edits in `shapeOps.ts` (through `editActiveDrawing`, so held frames and
+shared drawings ask what drawing always asks) and `edit.ts` (`addEffectTo` and friends work on any holder of a list).
+
+- **Order.** A shape's effects run first to last on that shape alone, then the layer's, then its folder's. Not a choice: the
+  layer's effects work on the finished layer, so they cannot go under a shape's.
+- **Drawing.** `drawDrawing` goes through `drawShapeFx`: a shape with effects is painted on a scratch canvas the size of the
+  target (the pool in `composite.ts`, one per nesting depth), put through `applyEffect`, and drawn on 1:1
+  (`paintThroughEffects`). The picture is cached per shape object and settings (`shapeFxStats`), so a held drawing is blurred
+  once. Shapes are never animated: the values ignore `keys`, so the editor's cached layer bitmaps stay right. To change one
+  over time, give the shape a new key.
+- **Room.** `drawingBox` grows by the effect's reach (`effectReach`); a layer bitmap with such a shape keeps the whole stage
+  (`shapesInk` answers "unknown").
+- **Merging.** `mergeable` is false for a shape with effects, so merge drawing, its eraser and moving shapes on a merge layer
+  leave it alone, like a grouped shape. The object eraser's pieces and "Turn into an editable line" keep the effects. Join,
+  Keep the overlap and Punch a hole wear the effects of the shape whose look they take (`wearLook`); effects count in
+  `looksDiffer`, so the existing "colours when shapes are combined" question covers them. Break apart on a shape with
+  effects asks `effects.breakApart`: keep the effect on the pieces (they stay separate shapes) or make plain paint.
+- **Commands.** The effect commands go on the picked shapes when there are some, asked once (`effects.addTarget`: just the
+  picked shapes, or the whole layer). The Effects panel has a "Change" switch for the same thing and shows the first picked
+  shape's stack (the same effect goes on every picked shape with the same id, so they edit together).
+- **Exports.** Pictures of frames (PNG, GIF, video, sheets, Godot sheets, Interactives) and PSD draw through the renderer, so
+  they are exact. SVG and moving SVG wrap the shape in `<g filter>` with the same filters a layer's effects use
+  (`shapeToSvg`), and leave out the kinds SVG has nothing like, with a note. Lottie, PDF and Illustrator turn the layer
+  holding the shape into a picture (`layerHasShapeFx` in `lottie.ts` `nodePicture`, `needsPicture` in `layered.ts`), since
+  Lottie's effects belong to a whole layer and the other two have none. Godot bones scenes bake it into the part's picture
+  and say so. `carryWarnings` tells the person in the Export window first (`shapeEffectKinds` in `DocFeatures`).
+- **Known gaps.** The morph (shape tween) between two shapes drops the effects; the onion skin draws a shape's effects but not
+  a layer's.
+- Pixel checks: the last five cases in `scripts/e2e/effects.cjs`. The old way (a shape alone on its own layer) against the
+  new is `scripts/docs/ab-shape-fx`.
+
 ## Known gaps
 
 - SVG has no Pixelate, Film grain, Wave, Colour fringe, Dark corners or Motion blur, so the still and moving SVG leave them out (the Export window says so first).
