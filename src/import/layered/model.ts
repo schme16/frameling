@@ -1,4 +1,4 @@
-// What a layered file (Photoshop, OpenRaster) comes to once it is read: a tree of picture layers and groups, bottom
+// What a layered file (Photoshop, OpenRaster, Photocraft) comes to once it is read: a tree of picture layers and groups, bottom
 // first, plus plain sentences about what it could not carry. The readers (psd.ts, ora.ts) make this; build.ts turns it
 // into Frameling layers.
 import type { BlendMode } from '../../core/format';
@@ -74,7 +74,7 @@ export interface TextNode {
 export type LayerNode = RasterNode | GroupNode | TextNode;
 
 export interface LayeredFile {
-  format: 'psd' | 'ora';
+  format: 'psd' | 'ora' | 'photocraft';
   width: number;
   height: number;
   /** Bottom first. */

@@ -14,6 +14,10 @@ import { encodePng } from '../../src/io/png';
 import { importLayeredBytes } from '../../src/import/layered/run';
 import { importSequenceZip, importSequenceFiles } from '../../src/import/sequence/run';
 import { importSvgBytes } from '../../src/import/svg/run';
+import { importVectorcraftBytes } from '../../src/import/craft/run';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { pcraft, rasterLayer } from './craftBuilder';
 import { buildPsd, solid } from './psdBuilder';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -276,5 +280,86 @@ describe('a sequence of pictures', () => {
     expect(doc.layers.map((l) => l.name)).toEqual(['Layer 1', 'run']);
     expect(doc.length).toBe(12);
     expect(lastToast().message).toMatch(/^Added "run"/);
+  });
+});
+
+describe('VectorCraft and Photocraft files', () => {
+  const dusk = () => new Uint8Array(readFileSync(join(process.cwd(), 'test/fixtures/import/dusk-poster.vectorcraft')));
+  const realPcraft = () => new Uint8Array(readFileSync(join(process.cwd(), 'test/fixtures/import/test.pcraft')));
+
+  it('opens dusk-poster.vectorcraft as a drawing of its own on a blank page, with its swatches and a toast that says what was left out', async () => {
+    expect(await importVectorcraftBytes(dusk(), 'dusk-poster.vectorcraft')).toBe(true);
+    const doc = store().get().doc;
+    expect([doc.name, doc.width, doc.height, doc.layers.length, doc.swatches.length]).toEqual(['Dusk Poster', 600, 800, 1, 46]);
+    const d = Object.values(doc.drawings)[0];
+    expect(d.kind === 'vector' && d.shapes.length).toBe(41);
+    const t = lastToast();
+    expect(t.kind).toBe('warn');
+    expect(t.message).toBe('Opened "Dusk Poster": 39 shapes and 2 pieces of text on 1 layer. 46 colours joined the swatches. 4 things couldn\'t be brought in.');
+    expect(store().get().ui.dirty).toBe(true);
+    await act(async () => t.action!.run());
+    expect(document.querySelector('[data-testid="import.report.left"]')!.textContent).toMatch(/with names \("Sky"/);
+  });
+
+  it('adds to a drawing that has something on it when that is the answer, one undo step, colours added once', async () => {
+    resetStore(drawnDoc());
+    setChoice('import.where', 'add');
+    const had = store().get().doc.swatches.length;
+    expect(await importVectorcraftBytes(dusk(), 'dusk-poster.vectorcraft')).toBe(true);
+    const doc = store().get().doc;
+    expect([doc.name, doc.layers.length, doc.width, doc.height]).toEqual(['mine', 2, 100, 80]);
+    expect(doc.swatches.length).toBeGreaterThan(had);
+    expect(lastToast().message).toMatch(/^Added "Dusk Poster".* It was made 10% of its size to fit/);
+    store().undo();
+    expect(store().get().doc.layers).toHaveLength(1);
+    expect(store().get().doc.swatches.length).toBe(had);
+  });
+
+  it('opens a file with several artboards as its own drawing, even when asked to add', async () => {
+    resetStore(drawnDoc());
+    setChoice('import.where', 'add');
+    const rect = (x0: number, y0: number, x1: number, y1: number) => ({ subpaths: [{ anchors: [{ p: [x0, y0] }, { p: [x1, y0] }, { p: [x1, y1] }, { p: [x0, y1] }], closed: true }] });
+    const sh = (path: unknown) => ({ id: 1, appearance: { items: [{ kind: 'fill', paint: { type: 'solid', color: { model: 'rgb', r: 1, g: 0, b: 0 } } }] }, kind: { type: 'path', path } });
+    const two = { format: 'vectorcraft', version: 4, document: { title: 'Two', artboards: [{ id: 1, name: 'A', rect: { x0: 0, y0: 0, x1: 50, y1: 50 } }, { id: 2, name: 'B', rect: { x0: 100, y0: 0, x1: 150, y1: 50 } }], layers: [{ id: 1, name: 'L', kind: { type: 'layer', children: [sh(rect(5, 5, 20, 20)), sh(rect(110, 5, 130, 20))] } }], swatches: [] } };
+    expect(await importVectorcraftBytes(bytesOf(JSON.stringify(two)), 'two.vectorcraft', true)).toBe(true);
+    const doc = store().get().doc;
+    expect([doc.name, doc.artboards?.length, doc.width]).toEqual(['Two', 2, 50]);
+    expect(lastToast().message).toBe('Opened "Two": 2 shapes on 2 artboards.');
+  });
+
+  it('says why when the file cannot be read, and leaves the drawing alone', async () => {
+    resetStore(drawnDoc());
+    const before = store().get().doc;
+    for (const [bytes, re] of [
+      [bytesOf('not json at all'), /doesn't look like a VectorCraft file/],
+      [bytesOf('{"format":"svg"}'), /not a VectorCraft file/],
+      [new Uint8Array(0), /empty/],
+      [bytesOf(JSON.stringify({ format: 'vectorcraft', version: 4, document: { layers: [{ id: 1, kind: { type: 'layer', children: [] } }], artboards: [{ id: 1, rect: { x0: 0, y0: 0, x1: 4, y1: 4 } }] } })), /nothing drawn/],
+    ] as [Uint8Array, RegExp][]) {
+      clearToasts();
+      expect(await importVectorcraftBytes(bytes, 'bad.vectorcraft')).toBe(false);
+      expect(lastToast().message).toMatch(re);
+      expect(store().get().doc).toBe(before);
+    }
+  });
+
+  it('opens test.pcraft as a drawing of its own: one layer, 640 x 360, nothing left out', async () => {
+    expect(await importLayeredBytes(realPcraft(), 'test.pcraft')).toBe(true);
+    const doc = store().get().doc;
+    expect([doc.name, doc.width, doc.height, doc.layers.length, doc.layers[0].name]).toEqual(['test', 640, 360, 1, 'Background']);
+    expect(lastToast().kind).toBe('success');
+    expect(lastToast().message).toBe('Opened "test": 1 layer, 640 x 360.');
+  });
+
+  it('says what a Photocraft file lost, and refuses one that cannot be trusted without touching the drawing', async () => {
+    const a = rasterLayer('Hero', [{ tx: 0, ty: 0 }], { mask: { rect: [] } });
+    expect(await importLayeredBytes(pcraft([a]), 'hero.photocraft')).toBe(true);
+    expect(lastToast().kind).toBe('warn');
+    resetStore(drawnDoc());
+    const before = store().get().doc;
+    clearToasts();
+    expect(await importLayeredBytes(pcraft([a], { files: { '../x': new Uint8Array(1) } }), 'evil.pcraft')).toBe(false);
+    expect(lastToast().message).toMatch(/can't be trusted/);
+    expect(store().get().doc).toBe(before);
   });
 });

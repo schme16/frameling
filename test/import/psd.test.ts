@@ -233,10 +233,10 @@ describe('a PSD that cannot be read says why, and never throws anything else', (
   it('refuses the wrong kind of file in plain words', async () => {
     await says(new Uint8Array(0), /empty/);
     await says(new TextEncoder().encode('just some words in a text file'), /couldn't tell what that file is/);
-    await says(new Uint8Array(40).fill(7), /neither/);
-    await says(new TextEncoder().encode('<svg/>'), /neither/);
-    await says(good.subarray(0, 20), /neither/);
-    await says(new TextEncoder().encode('xx'), /kra|neither/, 'drawing.kra').catch(() => {});
+    await says(new Uint8Array(40).fill(7), /none of them/);
+    await says(new TextEncoder().encode('<svg/>'), /none of them/);
+    await says(good.subarray(0, 20), /none of them/);
+    await says(new TextEncoder().encode('xx'), /kra|none of them/, 'drawing.kra').catch(() => {});
   });
 
   it('refuses colour modes and depths it does not read, and tells you the way round', async () => {

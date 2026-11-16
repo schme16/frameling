@@ -1,4 +1,4 @@
-// Bringing a layered file in (Photoshop .psd, OpenRaster .ora): as a new drawing (File > Open) or on top of the open one
+// Bringing a layered file in (Photoshop .psd, OpenRaster .ora, Photocraft .pcraft): as a new drawing (File > Open) or on top of the open one
 // (File > Import), every picture layer as a pixel layer.
 import { store } from '../../core/store';
 import type { Id } from '../../core/format';
@@ -66,6 +66,12 @@ export const openLayeredBytes = (bytes: Uint8Array, path: string): Promise<boole
 /** File > Import > Layered file: pick a file and bring it in. */
 export async function pickAndImportLayered(): Promise<void> {
   const [f] = await pickFiles(LAYERED_ACCEPT);
+  if (f) await importLayeredBytes(new Uint8Array(await f.file.arrayBuffer()), f.path);
+}
+
+/** File > Import > Photocraft file: the same, asking only for Photocraft files. */
+export async function pickAndImportPhotocraft(): Promise<void> {
+  const [f] = await pickFiles('.pcraft,.photocraft');
   if (f) await importLayeredBytes(new Uint8Array(await f.file.arrayBuffer()), f.path);
 }
 

@@ -1,15 +1,17 @@
-// Which reader a layered file needs: Photoshop's, or OpenRaster's (a zip). By what is inside, not what the name says.
+// Which reader a layered file needs: Photoshop's, OpenRaster's or Photocraft's (both zips). By what is inside, not what the name says.
+import { unzipSync } from 'fflate';
 import { desktop } from '../../io/desktop';
 import { canvasMeasure } from '../../text/draw';
 import { fontLooksInstalled } from '../../text/fonts';
 import { SHIPPED_FONTS } from '../../text/model';
 import { LayeredProblem, type LayeredFile, type LayerNode } from './model';
 import { isZip, readOra } from './ora';
+import { looksLikePhotocraft, PHOTOCRAFT_EXT, readPhotocraft } from './photocraft';
 import { isPsd, readPsd } from './psd';
 import { settleText, type FontEnv } from './psdfonts';
 
-export const LAYERED_EXT = /\.(psd|ora)$/i;
-export const LAYERED_ACCEPT = '.psd,.ora';
+export const LAYERED_EXT = /\.(psd|ora|pcraft|photocraft)$/i;
+export const LAYERED_ACCEPT = '.psd,.ora,.pcraft,.photocraft';
 
 /** The families the text layers of a file use that Frameling doesn't ship. */
 function textFamilies(nodes: LayerNode[], out = new Map<string, { family: string; weight: number; italic: boolean }>()) {
@@ -44,7 +46,18 @@ export async function readLayered(bytes: Uint8Array, path = ''): Promise<Layered
     if (textFamilies(file.nodes).size) settleText(file, await fontsHere(file.nodes));
     return file;
   }
-  if (isZip(bytes)) return readOra(bytes);
+  if (isZip(bytes)) {
+    // The directory of the zip says which kind it is, without unpacking anything.
+    const names: string[] = [];
+    try {
+      unzipSync(bytes, { filter: (f) => (names.push(f.name), false) });
+    } catch {
+      // not a zip that can be listed: the OpenRaster reader gives the plain message
+    }
+    return looksLikePhotocraft(names) ? readPhotocraft(bytes) : readOra(bytes);
+  }
   if (/\.kra$/i.test(path)) throw new LayeredProblem("That is a Krita file (.kra), which Frameling can't read yet. In Krita choose File > Export, save it as OpenRaster (.ora) or Photoshop (.psd), and bring that in: the layers come across.");
-  throw new LayeredProblem("Frameling couldn't tell what that file is. It reads Photoshop (.psd) and OpenRaster (.ora) files, and this is neither.");
+  if (PHOTOCRAFT_EXT.test(path)) throw new LayeredProblem("That file is named like a Photocraft file, but a Photocraft file is a zip and this isn't one. It may be damaged, cut short, or a different kind of file saved with that name.");
+  if (/\.vectorcraft$/i.test(path)) throw new LayeredProblem("That is a VectorCraft file (.vectorcraft): bring it in with File > Import > VectorCraft file, which keeps its shapes as shapes.");
+  throw new LayeredProblem("Frameling couldn't tell what that file is. It reads Photoshop (.psd), OpenRaster (.ora) and Photocraft (.pcraft, .photocraft) files, and this is none of them.");
 }

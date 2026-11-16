@@ -13,6 +13,8 @@ export interface Pieces {
   layers: Layer[];
   drawings: Record<Id, Drawing>;
   folders: Record<Id, LayerFolder>;
+  /** Colours the file came with, for the drawing's swatches (missing = none). */
+  swatches?: { name: string; color: string }[];
   /** Set when a picture was made smaller to fit (1 = as it was drawn). */
   scale?: number;
 }
@@ -54,7 +56,7 @@ export function mapShape(s: Shape, k: number, dx: number, dy: number): Shape {
 export const MAX_SIDE = 4096;
 
 /** A vector layer per group of shapes, each on a drawing held for `length` frames. */
-export function vectorPieces(layers: { name: string; visible: boolean; shapes: Shape[] }[], size: Stage, opts: { stage?: Stage | null; length: number }): Pieces {
+export function vectorPieces(layers: { name: string; visible: boolean; opacity?: number; locked?: boolean; shapes: Shape[] }[], size: Stage, opts: { stage?: Stage | null; length: number }): Pieces {
   const stage = opts.stage ?? null;
   // Into an open drawing: as big as it was drawn when it fits, smaller when it doesn't, and in the middle.
   const k = stage ? fitScale(size.width, size.height, stage) : Math.min(1, MAX_SIDE / Math.max(size.width, size.height));
@@ -64,6 +66,8 @@ export function vectorPieces(layers: { name: string; visible: boolean; shapes: S
   for (const l of layers) {
     const layer = newVectorLayer(l.name);
     layer.visible = l.visible;
+    if (l.opacity !== undefined) layer.opacity = l.opacity;
+    if (l.locked) layer.locked = true;
     const d: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: k === 1 && !dx && !dy ? l.shapes : l.shapes.map((s) => mapShape(s, k, dx, dy)) };
     out.drawings[d.id] = d;
     layer.cels.push({ id: uid('c'), start: 0, length: opts.length, drawingId: d.id });
@@ -139,6 +143,8 @@ export function docFromPieces(p: Pieces, name: string, opts: { length?: number; 
   doc.layers = p.layers.length ? p.layers : [newVectorLayer('Layer 1')];
   doc.drawings = { ...p.drawings };
   if (Object.keys(p.folders).length) doc.folders = { ...p.folders };
+  // The file's own colours replace the stock ones: they are the drawing's palette.
+  if (p.swatches?.length) doc.swatches = p.swatches.map((s) => ({ id: uid('s'), name: s.name, color: s.color }));
   return doc;
 }
 
@@ -148,6 +154,8 @@ export function addPieces(doc: Draft<Doc>, p: Pieces): void {
   d.layers.push(...p.layers);
   Object.assign(d.drawings, p.drawings);
   if (Object.keys(p.folders).length) d.folders = { ...d.folders, ...p.folders };
+  // Colours the drawing doesn't have yet are added to its swatches.
+  for (const s of p.swatches ?? []) if (!d.swatches.some((x) => x.color.toLowerCase() === s.color.toLowerCase())) d.swatches.push({ id: uid('s'), name: s.name, color: s.color });
 }
 
 /** The blank pixel layer a pixel drawing starts with, for callers that want one on an empty page. */

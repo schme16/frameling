@@ -36,6 +36,7 @@
   "dependencies": {
     "@noble/curves": "2.4.0",
     "fflate": "^0.8.3",
+    "fzstd": "0.1.1",
     "gifenc": "^1.0.3",
     "hyperswarm": "4.17.2",
     "immer": "^11.2.10",

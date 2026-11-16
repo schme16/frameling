@@ -25,4 +25,20 @@ registerHelpTopics([
     summary: 'A layered .psd or .ora file opens with every layer on its own, and Photoshop text stays text you can edit. What can\'t come across is listed.',
     keywords: ['import', 'psd', 'photoshop', 'ora', 'openraster', 'krita', 'gimp', 'procreate', 'layers', 'groups', 'blend', 'open', 'kra', 'text', 'font', 'editable'],
   },
+  {
+    id: 'import-vectorcraft',
+    media: 'import-vectorcraft.png',
+    title: 'Bringing in a VectorCraft file',
+    section: 'Files',
+    summary: 'A .vectorcraft drawing comes in as vector shapes on layers, with its gradients, text, artboards and colours. Anything it can\'t carry is listed.',
+    keywords: ['import', 'vectorcraft', 'vector', 'artboard', 'swatches', 'gradient', 'text', 'shapes', 'open', 'poster', 'illustrator'],
+  },
+  {
+    id: 'import-photocraft',
+    media: 'import-photocraft.png',
+    title: 'Bringing in a Photocraft file',
+    section: 'Files',
+    summary: 'A .pcraft or .photocraft file comes in with every picture layer on its own: names, order, opacity, blend modes and hiding kept. Anything it can\'t carry is listed.',
+    keywords: ['import', 'photocraft', 'pcraft', 'layers', 'raster', 'tiles', 'zstd', 'open', 'blend', 'groups'],
+  },
 ]);

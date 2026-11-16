@@ -51,4 +51,48 @@ Good to know:
 - A file that is damaged, or isn't what its name says, gives a plain message saying why and changes nothing.
 
 For a pixel animation instead, see [Bringing in Aseprite files](help:aseprite-import).`,
+
+  'import-vectorcraft': `A **VectorCraft** file (.vectorcraft) comes in as vector shapes, not a picture, so you can animate it and export it again.
+
+**Bring one in:** choose **File > Import > VectorCraft file...**, or open it with **File > Open**, or drag it onto the window.
+
+**What comes across:**
+- Every path, with its fill, its line (colour, width, round or square ends and joins) and how see-through it is. Curves stay curves.
+- Linear and radial gradients, with every colour stop.
+- Text, as text you can still edit: words, font, weight, size, spacing, alignment and where it sits. Fonts you don't have are swapped for the nearest one, so install the original to get it back.
+- Layers, with their names, order, hiding, locks and see-through. Groups stay together.
+- **Artboards.** One artboard sets the size of the drawing. Several come in as several artboards, in the places they had.
+- Swatches, as plain colours in your swatches. Greys and CMYK are turned into screen colours.
+- An outer glow, as a glow.
+
+**Where it goes.** The first time you bring one in while the drawing already has something on it, Frameling asks whether to add it to this drawing or open it as a new one, then remembers. A file with several artboards always opens as a drawing of its own. Change the answer any time in **Preferences > Behaviour**.
+
+**What can't, and is said:** pictures inside the file, other effects (shadows and the like), pattern fills, dashed lines, gradients that aren't linear or radial, and text in several looks (it takes the first look). Shapes lose their names, since Frameling shapes don't have any.
+
+Good to know:
+- A message says **See what was left out** and lists it.
+- It is one undo step when you add it to a drawing.
+- A file that is damaged, or isn't what its name says, gives a plain message and changes nothing. Nothing in the file is ever run.
+
+For logos from other tools, see [Bringing in an SVG or a logo](help:import-svg).`,
+
+  'import-photocraft': `A **Photocraft** file (.pcraft or .photocraft) is a layered picture. It comes in with every layer on its own, so you can paint over it, hide parts, or animate the layers.
+
+**Bring one in:** choose **File > Import > Photocraft file...**, or open it with **File > Open**.
+
+**What comes across:**
+- Every picture layer, as a pixel layer, with its name, order, see-through, blend mode, whether it is showing, and its lock.
+- Groups, as layer folders.
+- Clipping (a layer that only shows where the one under it does).
+
+**What can't, and is said:** layer masks, layer styles (shadows, glows, strokes), text, shape and adjustment layers (levels, curves and the like), blend modes Frameling doesn't have (they come in as normal), and anything that isn't RGB or grey at 8 bits. Each is named, with the layers it affected.
+
+If no layer can be read but the file keeps a flattened preview, you get that on one layer, and it says so.
+
+Good to know:
+- The first time you add one to a drawing that already has something on it, Frameling asks whether to add it or open it as a new drawing, then remembers. Change it any time in **Preferences > Behaviour**.
+- The file is treated with care: sizes are checked before anything is unpacked, and a file that points outside itself is refused. Nothing in it is ever run.
+- A file that is damaged, or isn't what its name says, gives a plain message saying why and changes nothing.
+
+For Photoshop and OpenRaster files, see [Opening a Photoshop, Krita or OpenRaster file](help:import-layered).`,
 };
