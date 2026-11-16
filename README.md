@@ -356,3 +356,6 @@ copyright line and the permission notice with any substantial piece you take, an
 
 The packages Frameling depends on keep their own licences, and so does anything it reads or writes: a file format
 being readable is not a licence to copy somebody's code for reading it.
+
+Packages that read file formats, and their licences: **fzstd** 0.1.1 (MIT, Arjun Barrett), which unpacks the zstandard
+tiles in Photocraft files (`src/import/layered/photocraft.ts`, checked first by `zstdSafe.ts`); **fflate** (MIT), for zips.

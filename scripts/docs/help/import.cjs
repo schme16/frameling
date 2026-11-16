@@ -6,6 +6,8 @@ const path = require('node:path');
 const { js, wait } = require('./_lib.cjs');
 
 const asset = (name) => path.join(__dirname, 'assets', name);
+const fixture = (name) => path.join(__dirname, '..', '..', '..', 'test', 'fixtures', 'import', name);
+const fixtureBytes = (name) => JSON.stringify(Array.from(fs.readFileSync(fixture(name))));
 const bytes = (name) => JSON.stringify(Array.from(fs.readFileSync(asset(name))));
 const text = (name) => JSON.stringify(fs.readFileSync(asset(name), 'utf8'));
 
@@ -51,5 +53,17 @@ module.exports = [
     name: 'import-layered',
     prefs: { showTips: false, firstDrawn: true },
     steps: [js(`void __framelingImport.layered(${bytes('import-scene.psd')}, 'scene.psd', false); 0`), wait(1500), { shot: '@' }],
+  },
+  {
+    // A poster from VectorCraft: shapes with gradients, the title as text, and a toast saying what couldn't come across.
+    name: 'import-vectorcraft',
+    prefs: { showTips: false, firstDrawn: true },
+    steps: [js(`void __framelingImport.vectorcraft(${fixtureBytes('dusk-poster.vectorcraft')}, 'dusk-poster.vectorcraft', false); 0`), wait(2000), { shot: '@' }],
+  },
+  {
+    // A Photocraft file: its layer comes in, and the toast says what came in.
+    name: 'import-photocraft',
+    prefs: { showTips: false, firstDrawn: true },
+    steps: [js(`void __framelingImport.layered(${fixtureBytes('test.pcraft')}, 'test.pcraft', false); 0`), wait(1500), { shot: '@' }],
   },
 ];
