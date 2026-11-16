@@ -47,7 +47,7 @@ export const LAYER_ORDER: LayerName[] = ['inPanel', 'panel', 'panelFloat', 'dock
  * popovers carry it (the snapping popover, the prompt jar card, the panel picker) and those are page flyouts
  * themselves: a colour picker opened from one of those still belongs under a backdrop.
  */
-const MODAL_SELECTOR = '.ui-backdrop, .ui-modal, .io-backdrop, .io-modal, [aria-modal="true"]';
+export const MODAL_SELECTOR = '.ui-backdrop, .ui-modal, .io-backdrop, .io-modal, [aria-modal="true"]';
 
 /**
  * How high a picker, menu or popover should sit. Opened from the page it stays under a dialog's backdrop, so a modal

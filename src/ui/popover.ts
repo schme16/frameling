@@ -4,6 +4,7 @@
 // somewhere else closes it too. A popup that opens another popup (a menu with a colour picker, say) counts focus
 // inside that child as its own, and Escape closes the innermost one first.
 import { useEffect, useRef, type RefObject } from 'react';
+import { MODAL_SELECTOR } from './layers';
 
 const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
@@ -50,6 +51,36 @@ function childrenOf(e: Entry, seen = new Set<Entry>()): Entry[] {
 /** Whether a node is inside this popup or inside any popup opened from it. */
 function owns(e: Entry, node: Node | null): boolean {
   return !!node && (e.el.contains(node) || childrenOf(e).some((c) => c.el.contains(node)));
+}
+
+// A dialog that opens while a popover is up (the save question when the window is closed, say) puts the page out of
+// reach, so every popover that did not come from inside that dialog closes. Z-order alone is not enough: a popover left
+// open under the dim area is still there when the dialog goes, and one opened from inside another dialog sits above it.
+const closers = new Set<{ entry: Entry; shut: () => void }>();
+let watcher: MutationObserver | null = null;
+
+function modalsIn(node: Node): HTMLElement[] {
+  if (!(node instanceof HTMLElement)) return [];
+  return [...(node.matches(MODAL_SELECTOR) ? [node] : []), ...node.querySelectorAll<HTMLElement>(MODAL_SELECTOR)];
+}
+
+/** Closes the popovers that are open and did not come from inside `modal`. Exposed for the watcher and for tests. */
+export function closePopoversOutside(modal: Element): void {
+  for (const c of [...closers]) if (!(c.entry.opener && modal.contains(c.entry.opener))) c.shut();
+}
+
+function startWatching(): void {
+  if (watcher || typeof MutationObserver === 'undefined') return;
+  watcher = new MutationObserver((records) => {
+    for (const r of records) for (const n of r.addedNodes) for (const m of modalsIn(n)) closePopoversOutside(m);
+  });
+  watcher.observe(document.body, { childList: true, subtree: true });
+}
+
+function stopWatching(): void {
+  if (closers.size || !watcher) return;
+  watcher.disconnect();
+  watcher = null;
 }
 
 export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => void): void {
@@ -104,7 +135,14 @@ export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => vo
     window.addEventListener('pointerup', up, true);
     window.addEventListener('pointercancel', up, true);
     el?.addEventListener('focusout', out);
+    const closer = entry ? { entry, shut } : null;
+    if (closer) {
+      closers.add(closer);
+      startWatching();
+    }
     return () => {
+      if (closer) closers.delete(closer);
+      stopWatching();
       window.removeEventListener('keydown', tab, true);
       window.removeEventListener('pointerdown', down, true);
       window.removeEventListener('pointerup', up, true);
