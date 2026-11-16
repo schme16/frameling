@@ -16,8 +16,11 @@ registerPanel({
   title: 'Scripts',
   icon: 'script',
   component: lazyPanel(() => import('./ScriptsPanel').then((m) => m.ScriptsPanel)),
-  zone: 'right',
+  // The bottom drawer, beside the timeline: a line of code is wide. Closed until asked for, so a drawing that is only a
+  // picture has no drawer until Scripts opens in it (see src/ui/stillZone.ts), and one with frames keeps its timeline.
+  zone: 'bottom',
   order: 91,
+  startsAway: true,
   help: 'scripts',
 });
 
@@ -26,11 +29,20 @@ registerCommands([
     id: 'scripts.open',
     label: 'Write a script',
     category: 'Scripts',
-    description: 'Open the Scripts panel: write a few lines of JavaScript, run them, and keep them as a command.',
+    description: 'Open Scripts in the drawer along the bottom: write a few lines of JavaScript, run them, and keep them as a command.',
     keys: ['Mod+Shift+J'],
     help: 'scripts',
     keywords: ['script', 'scripts', 'scripting', 'javascript', 'macro', 'automate', 'code', 'js', 'repeat', 'batch'],
-    run: () => void loadControl().then(() => import('../ui/dock').then((d) => d.showPanel('scripts'))),
+    run: () => void loadControl().then(() => import('./placeRun').then((p) => p.openScriptsPanel())),
+  },
+  {
+    id: 'scripts.window',
+    label: 'Scripts in their own window',
+    category: 'Scripts',
+    description: 'Give Scripts a wide window of its own over the canvas, for a long script. Run it again to put it back in the drawer.',
+    help: 'scripts',
+    keywords: ['script', 'scripts', 'window', 'float', 'wide', 'bigger', 'pop out', 'detach', 'undock', 'long'],
+    run: () => void import('./placeRun').then((p) => p.toggleScriptsWindow()),
   },
   {
     id: 'scripts.new',

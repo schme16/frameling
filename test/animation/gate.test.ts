@@ -128,6 +128,11 @@ describe('the drawer', () => {
     expect(leftOutForStill('bottom', [], false, 'draw')).toBe(false);
     expect(leftOutForStill('left', ['timeline'], false, 'draw')).toBe(false);
   });
+  it('the drawer exists when either the timeline or Scripts wants it: Scripts open in it keeps it on a still', () => {
+    expect(leftOutForStill('bottom', ['timeline', 'scripts'], false, 'draw')).toBe(false);
+    expect(leftOutForStill('bottom', ['scripts'], false, 'draw')).toBe(false);
+    expect(leftOutForStill('bottom', ['timeline'], false, 'draw')).toBe(true);
+  });
   it('an animation keeps it, and so does the Animate room, which shows the Add animation card in its place', () => {
     expect(leftOutForStill('bottom', ['timeline'], true, 'draw')).toBe(false);
     expect(leftOutForStill('bottom', ['timeline'], false, 'animate')).toBe(false);

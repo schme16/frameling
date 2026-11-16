@@ -158,6 +158,9 @@ export const PHRASES: Phrase[] = [
   P('colour it in', 'tools.fill'),
   P('flip it', 'select.flipH', 'select.flipV'),
   P('turn off stream stuff', 'features.streamingOff'),
+  // Scripts lives in the bottom drawer; a long one wants a window of its own.
+  P('write some code', 'scripts.open', 'scripts.new', 'help:scripts'),
+  P('scripts in a bigger window', 'scripts.window', 'scripts.open'),
 ];
 
 /**

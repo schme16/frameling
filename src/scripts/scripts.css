@@ -1,15 +1,20 @@
 /* Scripts: the panel where you write one, run it and give it a key. Theme tokens only, so both themes work. */
 
 .scr-panel {
+  container: scr / inline-size;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
+  min-height: 100%;
   padding: 10px;
   font-size: var(--fs);
   color: var(--text);
 }
 .scr-pick,
-.scr-editor {
+.scr-editor,
+.scr-code-col,
+.scr-side-col {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -220,4 +225,106 @@
 }
 .scr-cannot li {
   margin-bottom: 4px;
+}
+
+/* Where the code and the buttons sit. Narrow (a side panel, a small window): one column, name and Run first, then the
+   box, then what it printed and the rest. The wrappers only exist for the wide layout below. */
+.scr-cols,
+.scr-code-col,
+.scr-side-col {
+  display: contents;
+}
+.scr-editor {
+  gap: 8px;
+}
+.scr-side-col > * {
+  order: 4;
+}
+.scr-side-col > .scr-head {
+  order: 1;
+}
+.scr-code-col > .scr-box {
+  order: 2;
+}
+.scr-code-col > .scr-hint {
+  order: 3;
+}
+.scr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.scr-name {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.scr-head > .scr-row {
+  flex: 0 0 auto;
+}
+
+/* Wide (the drawer along the bottom, or a wide window): the picking and the buttons in one line, the code taking the room
+   it needs on the left, and what it printed, its key and its settings in a column on the right. */
+@container scr (min-width: 600px) {
+  .scr-panel {
+    height: 100%;
+    min-height: 0;
+    gap: 8px;
+  }
+  .scr-pick {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+  }
+  .scr-pick > .scr-row {
+    flex-wrap: nowrap;
+  }
+  .scr-pick > .scr-row > select {
+    flex: 0 1 220px;
+  }
+  .scr-pick > .scr-row:last-child {
+    flex: 1 1 auto;
+  }
+  .scr-place {
+    margin-left: auto;
+  }
+  .scr-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .scr-cols {
+    display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
+    gap: 12px;
+  }
+  .scr-code-col,
+  .scr-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+  .scr-side-col {
+    overflow: auto;
+    padding-right: 2px;
+  }
+  .scr-side-col > *,
+  .scr-side-col > .scr-head,
+  .scr-code-col > .scr-box,
+  .scr-code-col > .scr-hint {
+    order: 0;
+  }
+  .scr-head {
+    flex-wrap: nowrap;
+  }
+  .scr-box {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 96px;
+    max-height: none;
+    resize: none;
+  }
 }

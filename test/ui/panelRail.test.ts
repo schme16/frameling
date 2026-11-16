@@ -8,7 +8,9 @@ import { parseWorkspaceText, workspaceToText } from '../../src/ui/workspaceFile'
 import { planRight } from '../../src/ui/panelInfo';
 import '../../src/renderer/features';
 
-const AWAY = ['clip-drawings', 'clip-flow', 'draw-on'];
+// Scripts starts closed too: it lives in the bottom drawer, which a drawing that is only a picture does not have until asked.
+const AWAY = ['clip-drawings', 'clip-flow', 'draw-on', 'scripts'];
+
 beforeEach(() => resetDock());
 
 /** A layout as it was saved before this change: Library third on the rail, Clip flow and Draw on placed, every panel known. */
@@ -140,8 +142,8 @@ describe('opening a panel that is put away', () => {
       expect(dock.get().layout.hidden).toContain(id);
       showPanel(id);
       expect(isVisible(id), id).toBe(true);
-      expect(zoneOf(id)).toBe('right');
-      expect(dock.get().layout.zones.right.active).toBe(id);
+      expect(zoneOf(id)).toBe(id === 'scripts' ? 'bottom' : 'right');
+      expect(dock.get().layout.zones[id === 'scripts' ? 'bottom' : 'right'].active).toBe(id);
       expect(dock.get().layout.hidden).not.toContain(id);
     }
   });

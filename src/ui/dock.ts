@@ -123,9 +123,9 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   pixel.zones.bottom.size = 260;
 
   return [
-    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath once the drawing has animation.', layout: draw, rail: BUILTIN_RAILS.draw },
-    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. On a drawing with no animation, an Add animation button stands where the timeline goes. The Layers panel is a tab away for long lists.', layout: animate, rail: BUILTIN_RAILS.animate },
-    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
+    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath once the drawing has animation. Scripts opens in that same drawer (Ctrl+Shift+J).', layout: draw, rail: BUILTIN_RAILS.draw },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with its layer list down the side. On a drawing with no animation, an Add animation button stands where the timeline goes. The Layers panel is a tab away for long lists. Scripts opens in that same drawer (Ctrl+Shift+J).', layout: animate, rail: BUILTIN_RAILS.animate },
+    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview. Scripts opens in a drawer along the bottom (Ctrl+Shift+J).', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
   ];
 }
 
@@ -506,6 +506,11 @@ export function floatPanel(id: string, at?: { x: number; y: number }): void {
   const w = s?.w ?? 1200;
   const n = dock.get().layout.floats.length;
   placePanel(id, { newFloat: at ?? { x: Math.round(w / 2 - 190) + n * 28, y: 120 + n * 28 } });
+}
+
+/** Gives a panel a window at an exact place and size. */
+export function floatPlacement(id: string, box: { x: number; y: number; w: number; h: number }): void {
+  placePanel(id, { newFloat: box });
 }
 
 /** Puts a window's whole group into a zone or another window. */
