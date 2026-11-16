@@ -184,6 +184,13 @@ export interface HistoryStep {
 
 type Listener = () => void;
 
+/** Where a group of changes started (see `Store.startGroup`). */
+export interface GroupMark {
+  fromId: number;
+  tag: string | null;
+  redo: HistoryEntry[];
+}
+
 /** A document edited inside the open one (a tile), with the open document and its history put aside meanwhile. */
 interface Nested {
   tag: string;
@@ -421,6 +428,64 @@ export class Store {
     this.afterHistory(applyPatches(this.state.doc, last.inverse), last.inverse);
     if (last.undoUi) this.setUi(last.undoUi);
     return true;
+  }
+
+  /**
+   * Starts a group: everything that changes the drawing from now until `endGroup` or `abortGroup` becomes one Undo step,
+   * or none at all. For a script run, which may press fifty commands and edit forty shapes.
+   */
+  startGroup(): GroupMark {
+    // Nothing the group does may merge into the step before it (a nudge a moment ago), or it could not be folded or taken back whole.
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (last) last.coalesce = undefined;
+    this.joinTo = null;
+    return { fromId: nextEntryId, tag: this.nested?.tag ?? null, redo: [...this.redoStack] };
+  }
+
+  /** The steps made since the mark, when they are all plain steps of the open drawing (looks at artboards and nested edits are not folded). */
+  private groupSteps(mark: GroupMark): HistoryEntry[] {
+    if ((this.nested?.tag ?? null) !== mark.tag) return [];
+    let at = this.undoStack.length;
+    while (at > 0 && this.undoStack[at - 1].id >= mark.fromId) at--;
+    return this.undoStack.slice(at);
+  }
+
+  /** Ends the group by folding its steps into one, named `label`. Returns how many steps it folded (0 when nothing changed). */
+  endGroup(mark: GroupMark, label: string): number {
+    const steps = this.groupSteps(mark);
+    if (!steps.length) return 0;
+    if (steps.some((e) => e.view || e.rerun)) return steps.length;
+    const first = steps[0];
+    if (steps.length > 1) {
+      const rest = steps.slice(1);
+      for (const e of rest) {
+        first.patches.push(...e.patches);
+        first.inverse.unshift(...e.inverse);
+        first.weight += e.weight;
+      }
+      this.undoStack.splice(this.undoStack.indexOf(first) + 1, rest.length);
+    }
+    first.label = label;
+    first.coalesce = undefined;
+    first.at = Date.now();
+    return steps.length;
+  }
+
+  /** Ends the group by taking everything it did back, as if it never happened: no Redo is left behind, and Redo is as it was. Returns how many steps it took back. */
+  abortGroup(mark: GroupMark): number {
+    const steps = this.groupSteps(mark);
+    if (!steps.length) return 0;
+    let doc = this.state.doc;
+    const patches: Patch[] = [];
+    for (const e of [...steps].reverse()) {
+      this.undoStack.pop();
+      const r = runStep(doc, e, 'undo');
+      doc = r.doc;
+      patches.push(...r.patches);
+    }
+    this.redoStack = mark.redo;
+    this.afterHistory(doc, patches);
+    return steps.length;
   }
 
   private viewChange = false;

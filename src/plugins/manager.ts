@@ -27,6 +27,7 @@ import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } f
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
+import { appCommands, appRun, appSet } from './appBridge';
 import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
 import { codeFingerprint } from './fingerprint';
 import { forgetValues } from './options';
@@ -224,6 +225,9 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
       return { name: baseName(r.path), bytes: r.bytes };
     },
     subscriptionsChanged: () => syncEventPump(),
+    appCommands,
+    appRun,
+    appSet,
     problem: (message, loading) => {
       if (loading) patch(pid, { status: 'problem', problem: message });
       notify(`The "${m.name}" plugin hit a problem: ${message}`, 'error', { label: 'Turn it off', run: () => void setEnabled(pid, false) }, 9000);

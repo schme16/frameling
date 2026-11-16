@@ -60,7 +60,8 @@ What's in `test/`, by folder:
 | `pixel/` | Pixel tools, maths, paths, the pixel workspace. Picture import: `import-gif.test.ts` (the GIF reader against real GIFs in `test/fixtures/gif`, made by `scripts/fixtures/make-gif-fixtures.py` with Pillow, ImageMagick and ffmpeg, next to what Pillow says each frame is), `import-apng.test.ts` (the animated PNG reader against real files in `test/fixtures/apng`, made by `scripts/fixtures/make-apng-fixtures.py` with Pillow and ffmpeg, plus a hand-made file for blend-over and dispose-previous; interlaced (Adam7) APNG and still PNG files are in the same folder; animated WebP needs a real Chromium and is checked with and without ImageDecoder: `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/webp-import.cjs`; `import-webp.test.ts` covers the pure-JS WebP demuxer and the frame compositing), `import-trim.test.ts` and `commit-rect.test.ts` (trimmed on build, dirty-rectangle commit; `test/perf/pixel-commit.test.ts` prints the 4000 x 4000 numbers), `session-tiles.test.ts` (the pixel session copies tiles on first touch and matches a whole-grid edit), `slice-keys.test.ts` (slices that change between frames), `slices-boards.test.tsx` (slices on every board and layer), `import-sheet.test.ts` (grid and gap slicing, sheet JSON, the four ways, adding to a drawing), `import-dialog.test.tsx`; slices: `slices.test.ts` (maths, file, Aseprite, the export text), `slices-ui.test.tsx` (tool and panel); `import-aseprite-bin.test.ts` needs `ASEPRITE_BIN`. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
 | `soft/` | Soft paint on pixel layers: the falloff, dithering and blend maths, strokes through a real pixel session, the settings and the tools' registration. |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
-| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
+| `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). `app-power.test.ts` is the `app` permission (a plugin must ask, and a command that reaches outside the drawing is refused whatever it sends) and `console.log` through the host. |
+| `scripts/` | The Scripts feature: the model (wrapping, pasted-code rules, becoming a plugin), what may be pressed, undo grouping in the store (`group.test.ts`), the runner against the real prelude and runtime (one Undo step, nothing half done, Stop, the watchdog), where scripts are kept and what happens to ones inside a drawing (`state.test.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
 | `golive/` | The Go live quest: the checks as pure functions (`logic.test.ts`), and the quest in the real app (`quest.test.tsx`): offered only while the streaming tools are on, asks audience features' two questions itself instead of deferring them, waits for a copy or a save to really happen, and agrees with the palette command, the Streaming menu, the Streaming tab button and the help route. |
 | `rig/` | Bone maths, posing, caches, stretch, weights. |
@@ -1026,6 +1027,23 @@ still, once per drawing (`--drawing light` or `dark`). It stops only the Electro
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/overlay-clip.cjs --drawing light --out brand/ab/stream-overlay
 ```
+
+## Scripts: scripts/e2e/scripts.cjs
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/scripts.cjs
+```
+
+The real app, the real sandbox: a script runs and its three edits are one Undo step; a mistake reports its line (a syntax error
+too, found with a throwaway worker); a script that fails halfway leaves the drawing as it was; Save, the internet and plugin
+commands are refused; `while (true) {}` is stopped by the watchdog (shortened to 1.5 s here with `__framelingScripts.watchdog`)
+and by Stop, and the app and the next script carry on; a saved script is a command, takes a key from the panel's **Set a key**
+and runs from it; a script pasted in (real clipboard, real paste) is marked, and running it shows the look-first sheet, where
+Cancel runs nothing and trusting it clears the mark. `?debug` exposes `__framelingScripts` (src/scripts/debug.ts) for this.
+
+The help clip for Scripts is `scripts/docs/help/scripts.cjs` (`npm run help:media -- --only scripts`); the look for the board is
+`brand/ab/scripting/`.
 
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 

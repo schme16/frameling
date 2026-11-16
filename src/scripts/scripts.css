@@ -1,0 +1,223 @@
+/* Scripts: the panel where you write one, run it and give it a key. Theme tokens only, so both themes work. */
+
+.scr-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  font-size: var(--fs);
+  color: var(--text);
+}
+.scr-pick,
+.scr-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.scr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.scr-row > select {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.scr-label {
+  min-width: 32px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.scr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.scr-field > input,
+.scr-field > select {
+  color: var(--text);
+}
+.scr-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.scr-empty p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.scr-box {
+  display: flex;
+  min-height: 180px;
+  height: 220px;
+  max-height: 60vh;
+  resize: vertical;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--canvas-bg);
+}
+.scr-box:focus-within {
+  border-color: var(--focus);
+}
+.scr-gutter {
+  flex: 0 0 auto;
+  min-width: 34px;
+  padding: 8px 6px 8px 8px;
+  overflow: hidden;
+  border-right: 1px solid var(--line-soft);
+  background: var(--panel-2);
+  color: var(--faint);
+  font: 12px/18px var(--font-mono);
+  text-align: right;
+  user-select: none;
+}
+.scr-gutter .is-error {
+  color: var(--danger);
+  font-weight: 800;
+}
+.scr-code {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: 12px/18px var(--font-mono);
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+}
+
+.scr-banner {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+}
+.scr-banner.is-warn {
+  border-color: var(--sunny-deep);
+  background: var(--peach-soft);
+}
+.scr-banner p {
+  margin: 0 0 6px;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.scr-banner p:last-child {
+  margin-bottom: 0;
+}
+
+.scr-out {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scr-status {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.scr-status.is-ok {
+  border-left: 3px solid var(--ok);
+}
+.scr-status.is-bad {
+  border-left: 3px solid var(--danger);
+}
+.scr-status.is-warn {
+  border-left: 3px solid var(--sunny-deep);
+}
+.scr-printed {
+  max-height: 160px;
+  margin: 0;
+  padding: 6px 10px;
+  overflow: auto;
+  border-radius: var(--radius-small);
+  background: var(--canvas-bg);
+  font: 12px/17px var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.scr-printed .is-warn {
+  color: var(--sunny);
+}
+.scr-printed .is-error {
+  color: var(--danger);
+}
+
+.scr-api,
+.scr-cmds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scr-api li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  line-height: 1.4;
+}
+.scr-api-code,
+.scr-cmd {
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font: 12px/1.4 var(--font-mono);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.scr-api-code:hover,
+.scr-cmd:hover {
+  background: var(--hover-bg);
+}
+.scr-cmds {
+  max-height: 200px;
+  overflow: auto;
+}
+.scr-cmd {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  font-family: var(--font);
+}
+.scr-cmd code {
+  color: var(--faint);
+  font: 11px var(--font-mono);
+}
+.scr-cmd.is-off span {
+  color: var(--muted);
+}
+.scr-cannot {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.scr-cannot ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.45;
+}
+.scr-cannot li {
+  margin-bottom: 4px;
+}

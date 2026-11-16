@@ -99,7 +99,7 @@ function snippet(text: string, word: string): string {
 }
 
 /** Contents order: the way a beginner meets things, from the first drawing to sharing it. Anything else after, alphabetically. */
-export const SECTION_ORDER = ['Getting started', 'Basics', 'Drawing', 'Animating', 'Pixel art', 'Symbols and motion', 'Rigging', 'Effects', 'Sound', 'Files', 'Exporting', 'Workspace', 'Settings', 'Streaming', 'Plugins'];
+export const SECTION_ORDER = ['Getting started', 'Basics', 'Drawing', 'Animating', 'Pixel art', 'Symbols and motion', 'Rigging', 'Effects', 'Sound', 'Files', 'Exporting', 'Workspace', 'Settings', 'Streaming', 'Scripts', 'Plugins'];
 
 export function sections(topics: HelpTopic[] = allHelp()): { name: string; topics: HelpTopic[] }[] {
   const map = new Map<string, HelpTopic[]>();

@@ -77,7 +77,8 @@ export const BIG_MENUS: Record<string, number> = {
   // Two more for the pen, pencil and brush snapping: Snap to line ends and points, and Snap the pen, pencil and brush.
   // One more for Put the panels back, which sits beside Dock every window back under View > Panel windows and tools.
   // It is the panels' half of a pair the tool strip already had, so it is the price of matching them, not drift.
-  View: 188,
+  // One more for the Scripts panel's show-and-hide, which sits in View > Panels with every other panel's. The scripts themselves are in Edit > Scripts, not here.
+  View: 189,
   // Draw (199) and Animate (172) are under the cap since Skeleton, Artboards, Effects and Tiles got their own menu.
 };
 

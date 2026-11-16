@@ -33,6 +33,7 @@ export function runPlugin(code: string, opts: { id?: string; network?: boolean }
     addEventListener: (t: string, f: (e: unknown) => void) => (listeners[t] ??= []).push(f),
     __framelingLoad: (src: string, api: unknown) => new Function('frameling', 'self', src)(api, self),
     fetch: () => 'reached the network',
+    console: { log() {}, info() {}, warn() {}, error() {} },
   };
   new Function('self', PRELUDE_BODY)(self);
   const ch = new MessageChannel();
