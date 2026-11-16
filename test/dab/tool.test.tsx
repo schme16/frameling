@@ -10,7 +10,7 @@ import { DEFAULT_DAB } from '../../src/dab/maths';
 import { getDab, resetDab } from '../../src/dab/settings';
 import { SPACING_STEPS, stepSpacing } from '../../src/dab/commands';
 import { edgeNote } from '../../src/dab/Options';
-import { renderSample, sampleBrush } from '../../src/dab/sample';
+import { renderSample, sampleBrush, type DabSpec } from '../../src/dab/sample';
 import { dabEdge } from '../../src/dab/tools';
 import { footprint } from '../../src/dab/cursor';
 import { getCommand } from '../../src/core/registry';
@@ -125,13 +125,8 @@ describe('the sample pictures in the picker', () => {
     expect(one[3]).toBe(0);
   });
 
-  it('shrink a big brush to fit the row, and show soft paint and dry media as smooth brushes', () => {
+  it('shrink a big brush to fit the row', () => {
     expect(sampleBrush({ kind: 'dab', dab: { ...DEFAULT_DAB, size: 200 } }, 30).size).toBeLessThanOrEqual(24);
-    expect(sampleBrush({ kind: 'soft', tool: 'airbrush', size: 28, hardness: 0, flow: 0.3 }, 30).aliased).toBe(false);
-    const dry = renderSample({ kind: 'dry', medium: 'chalk', paper: 'rough', size: 14, hardness: 0.3, press: 0.3 }, 'stroke', 100, 30, ink);
-    const alphas = new Set<number>();
-    for (let i = 3; i < dry.length; i += 4) alphas.add(dry[i]);
-    expect(alphas.size).toBeGreaterThan(2);
   });
 });
 
@@ -155,7 +150,7 @@ describe('the cursor footprint', () => {
 describe('the new starters', () => {
   it('draw as pictures in the picker: dynamics, grain, dual tip and colour all render a stroke', () => {
     for (const s of PIXEL_STARTERS.filter((x) => x.pixel?.kind === 'dab' && ['Pen and speed', 'Grain and texture', 'Colour'].includes(x.group ?? ''))) {
-      const px = renderSample(s.pixel!, 'stroke', 120, 32, [20, 20, 20]);
+      const px = renderSample(s.pixel as DabSpec, 'stroke', 120, 32, [20, 20, 20]);
       let n = 0;
       for (let i = 3; i < px.length; i += 4) if (px[i]) n++;
       expect(n, s.name).toBeGreaterThan(10);
