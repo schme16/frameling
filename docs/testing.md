@@ -1323,6 +1323,12 @@ node scripts/perf/compare.cjs scripts/perf/results/before.json scripts/perf/resu
 Environment: `PERF_RENDERER=<dir>` (measure a renderer built elsewhere with `npx vite build --outDir <dir>`),
 `PERF_CPU_SLOWDOWN=4`, `PERF_SHOW=1`, `PERF_HIDDEN=1`.
 
+`gradients.cjs` (with `gradients-summary.cjs`): what many angular or diamond shapes cost on a big canvas, next to the same
+scene in radial gradients, drawn one frame at a time and played with a new drawing on every frame. Angular is the browser's own
+gradient and costs the same as radial; a diamond is painted from pieces and costs about 8 times radial (fine up to a few hundred
+shapes). Method, command and the 2026-11-16 numbers are in `scripts/perf/README.md`; results in
+`scripts/perf/results/gradients-*.json`.
+
 `startup.cjs`: launches the built app as a fresh process again and again and times launch to the
 `frameling:interactive` mark (set in `src/renderer/App.tsx`), plus the JS needed before start. It starts Electron
 through `launch.cjs`, which keeps every window unfocusable. Under xvfb (the way to run it) the window stays on-screen in
