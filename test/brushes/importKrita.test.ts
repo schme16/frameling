@@ -6,6 +6,7 @@ import { inflateCapped, unzlibCapped } from '../../src/brushes/import/inflate';
 import { routeOf } from '../../src/brushes/import/krita';
 import { parseXml } from '../../src/brushes/import/xml';
 import { cleanDab } from '../../src/dab/maths';
+import { bufferSurface, DabStroke } from '../../src/dab/stroke';
 import { encodePng, makeChunk, PNG_SIGNATURE } from '../../src/io/png';
 
 const fx = (n: string): Uint8Array => new Uint8Array(readFileSync(new URL(`../fixtures/brushes/krita/${n}`, import.meta.url)));
@@ -54,6 +55,28 @@ describe('Krita .kpp', () => {
     expect(b.changed.join(' ')).not.toMatch(/curve/);
     expect(b.dropped.join(' ')).not.toMatch(/curve/);
     expect(cleanDab(b.dab)).toEqual(b.dab);
+  });
+
+  it('every press of the real Basic-5 Size leaves a stroke on the page, each wider than the one before, wherever the line falls', () => {
+    const r = readBrushFile(fx('Basic-5_Size_default.kpp'), 'Basic-5_Size_default.kpp');
+    if (!r.ok) throw new Error(r.error);
+    const dab = r.brushes[0].dab;
+    const inkOf = (pressure: number, y: number): number => {
+      const W = 60;
+      const H = 40;
+      const px = new Uint8ClampedArray(W * H * 4);
+      const s = new DabStroke(bufferSurface(px, W, H), { brush: dab, color: [0, 0, 0, 255], edge: 'smooth', seed: 1 });
+      for (let x = 5; x < 55; x++) s.moveTo({ x, y }, dab.size, 1, { pressure, speed: 0.4 });
+      s.finish();
+      let n = 0;
+      for (let k = 3; k < px.length; k += 4) n += px[k];
+      return n;
+    };
+    for (const y of [20, 20.25, 20.5]) {
+      const inks = [0.15, 0.3, 0.5, 1].map((p) => inkOf(p, y));
+      expect(inks[0], `the light press at y ${y} still marks the page`).toBeGreaterThan(0);
+      for (let i = 1; i < inks.length; i++) expect(inks[i], `press ${i} at y ${y}`).toBeGreaterThan(inks[i - 1]);
+    }
   });
 
   it('reads the settings from a compressed text chunk as well as a plain one', () => {

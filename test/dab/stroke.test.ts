@@ -183,3 +183,26 @@ describe('the edges of the picture', () => {
     expect(count(g)).toBeGreaterThan(0);
   });
 });
+
+describe('a very thin smooth line', () => {
+  const line = (size: number, y: number) =>
+    draw({ size, hardness: 1, aliased: false }, Array.from({ length: 40 }, (_, i) => [8 + i, y] as [number, number]), { size });
+  const ink = (g: Uint8ClampedArray) => { let n = 0; for (let i = 3; i < g.length; i += 4) n += g[i]; return n; };
+
+  it('shows wherever it falls, on a pixel, between two rows or in a corner, not only when the pen is lucky', () => {
+    for (const size of [0.5, 0.9, 1.2, 1.6]) for (const y of [20, 20.25, 20.5, 20.75]) expect(count(line(size, y)), `size ${size} at y ${y}`).toBeGreaterThan(30);
+  });
+
+  it('is fainter the thinner it gets, and not by chance of where it sits', () => {
+    for (const y of [20, 20.5]) {
+      const inks = [0.5, 0.9, 1.6, 2.5].map((s) => ink(line(s, y)));
+      for (let i = 1; i < inks.length; i++) expect(inks[i], `at y ${y}`).toBeGreaterThan(inks[i - 1]);
+    }
+  });
+
+  it('keeps about the same ink wherever it falls', () => {
+    const a = ink(line(0.9, 20));
+    const b = ink(line(0.9, 20.5));
+    expect(Math.min(a, b) / Math.max(a, b)).toBeGreaterThan(0.6);
+  });
+});

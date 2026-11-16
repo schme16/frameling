@@ -270,7 +270,12 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
       },
     };
   }
-  const r = Math.max(0.5, size / 2);
+  // A smooth dab under two pixels wide is drawn as a two pixel one with its paint scaled by how much narrower it is. Its own
+  // edge (at least a pixel wide) would otherwise leave no pixel under a thin line that falls between two rows, so a hair
+  // line came and went with where the pen happened to be. A crisp dab sits on whole pixels already and is left as it is.
+  const thin = !crisp && size < 2;
+  const gain = thin ? Math.max(0.5, size) / 2 : 1;
+  const r = thin ? 1 : Math.max(0.5, size / 2);
   const w = Math.max((1 - b.hardness) * r, crisp ? 0 : MIN_SMOOTH_EDGE);
   const inner = r - w;
   const inner2 = inner > 0 ? inner * inner : -1;
@@ -294,13 +299,13 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
       if (square) {
         const d = Math.max(Math.abs(u), Math.abs(v));
         if (d >= r) return 0;
-        if (w <= 0 || d <= inner) return 1;
-        return fall(d);
+        if (w <= 0 || d <= inner) return gain;
+        return fall(d) * gain;
       }
       const d2 = u * u + v * v;
       if (d2 >= r2) return 0;
-      if (w <= 0 || d2 <= inner2) return 1;
-      return fall(Math.sqrt(d2));
+      if (w <= 0 || d2 <= inner2) return gain;
+      return fall(Math.sqrt(d2)) * gain;
     },
   };
 }
