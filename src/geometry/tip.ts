@@ -146,10 +146,12 @@ export interface ResolvedTip {
   pieces: TipPieces;
   count: number;
   stiffness: number;
+  body: number;
+  tone: number;
 }
 
 type Plain = Omit<ResolvedTip, 'kind' | 'custom' | 'seed' | 'pieces'>;
-const BASE: Plain = { amount: 0.6, grain: 1, shape: 'leaf', spacing: 1, jitter: 0, angle: 'follow', scatter: 0, turn: 0, fixedSize: false, gapVary: 0, roundness: 0.3, nibAngle: 40, fit: 'stretch', count: 14, stiffness: 0.6 };
+const BASE: Plain = { amount: 0.6, grain: 1, shape: 'leaf', spacing: 1, jitter: 0, angle: 'follow', scatter: 0, turn: 0, fixedSize: false, gapVary: 0, roundness: 0.3, nibAngle: 40, fit: 'stretch', count: 14, stiffness: 0.6, body: 0, tone: 0 };
 const DEFAULTS: Record<TipKind, Plain> = {
   chalk: BASE,
   charcoal: { ...BASE, amount: 0.75, grain: 1.2 },
@@ -197,6 +199,8 @@ export function resolveTip(t: BrushTip): ResolvedTip {
     pieces: t.pieces ?? {},
     count: Math.round(t.count ?? d.count),
     stiffness: t.stiffness ?? d.stiffness,
+    body: t.body ?? d.body,
+    tone: t.tone ?? d.tone,
   };
 }
 
@@ -241,7 +245,11 @@ export function readTip(raw: unknown): BrushTip | undefined {
   if (amount !== undefined) tip.amount = amount;
   const grain = num(r.grain, 0.5, 3);
   if (grain !== undefined) tip.grain = grain;
-  if ((tip.kind === 'chalk' || tip.kind === 'charcoal') && isMedium(r.dry)) tip.dry = r.dry;
+  if ((tip.kind === 'chalk' || tip.kind === 'charcoal') && isMedium(r.dry)) {
+    tip.dry = r.dry;
+    const streak = num(r.streak, 0, 1);
+    if (streak !== undefined) tip.streak = streak;
+  }
   if (tip.kind === 'stamp') {
     if (typeof r.shape === 'string' && SHAPES.has(r.shape)) tip.shape = r.shape as StampShape;
     const spacing = num(r.spacing, 0.2, 4);
@@ -288,6 +296,10 @@ export function readTip(raw: unknown): BrushTip | undefined {
     if (count !== undefined) tip.count = Math.round(count);
     const stiffness = num(r.stiffness, 0, 1);
     if (stiffness !== undefined) tip.stiffness = stiffness;
+    const body = num(r.body, -1, 1);
+    if (body !== undefined) tip.body = body;
+    const tone = num(r.tone, 0, 1);
+    if (tone !== undefined) tip.tone = tone;
   }
   if (usesSeed(tip.kind)) {
     const seed = num(r.seed, 1, 2 ** 31 - 1);
@@ -304,9 +316,9 @@ export function sameTip(a: BrushTip | undefined, b: BrushTip | undefined): boole
   if (a.kind !== b.kind) return false;
   const x = resolveTip(a);
   const y = resolveTip(b);
-  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry) return false;
+  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry || a.streak !== b.streak) return false;
   if (a.kind === 'nib') return x.angle === y.angle && close(x.roundness, y.roundness, 0.3) && close(x.nibAngle, y.nibAngle, 40);
-  if (a.kind === 'bristle') return x.count === y.count && close(x.stiffness, y.stiffness, 0.6);
+  if (a.kind === 'bristle') return x.count === y.count && close(x.stiffness, y.stiffness, 0.6) && close(x.body, y.body, 0) && close(x.tone, y.tone, 0);
   if (a.kind === 'along' || a.kind === 'edged') return x.fit === y.fit && JSON.stringify(x.custom) === JSON.stringify(y.custom) && JSON.stringify(x.pieces) === JSON.stringify(y.pieces);
   if (a.kind !== 'stamp') return true;
   return x.shape === y.shape && x.angle === y.angle && close(x.spacing, y.spacing, 1) && close(x.jitter, y.jitter, 0) && close(x.scatter, y.scatter, 0) && close(x.turn, y.turn, 0) && x.fixedSize === y.fixedSize && close(x.gapVary, y.gapVary, 0) && JSON.stringify(x.custom) === JSON.stringify(y.custom);

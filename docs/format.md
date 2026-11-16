@@ -347,13 +347,13 @@ when comparing two drawings for "same look" (as `id` is ignored).
   BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`, and `tip?`), `color`,
   `opacity`. Kept as input points so it re-renders losslessly. **Brush tips** (`brush.tip`, all optional, missing = a plain
   line, so older files read unchanged): `kind` is `'chalk' | 'charcoal' | 'watercolour' | 'stamp'`, and the rest depend on it:
-  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; watercolour: `amount` is the edge
+  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; on a dry medium `streak` 0 to 1 overrides how much the stick's bumps streak along the line; watercolour: `amount` is the edge
   strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | paw | custom`), `spacing` (a share of the
   brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
   outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is
   drawn, so the random parts stay put). Four more kinds are the brushes you build yourself (`src/geometry/tipRibbon.ts`), each
   field optional: `'nib'` (`roundness` 0.05 to 1, `nibAngle` -90 to 90 degrees, `angle` `upright` = fixed on the page or
-  `follow` = measured from the line), `'bristle'` (`count` 3 to 60, `stiffness` 0 to 1, `amount` = dry gaps, `seed`), `'along'`
+  `follow` = measured from the line), `'bristle'` (`count` 3 to 60, `stiffness` 0 to 1, `amount` = dry gaps, `body` -1 to 1 = how fat each bristle is next to its gap (below 0 clear tines, above 0 closing into solid paint), `tone` 0 to 1 = how far bristles run lighter and darker than the colour in broad streaks, `seed`), `'along'`
   (`custom` is the drawing, up to 240 points, 4 digits, and `fit` `stretch | repeat`) and `'edged'` (`custom` is the sides,
   `pieces: { start?, end?, inner?, outer? }` the other drawings). A stamp also takes `turn` (0 to 1, random spin), `fixedSize`
   (true ignores pen pressure) and `gapVary` (0 to 1). `along` and `edged` with no usable drawing read back as a plain line.

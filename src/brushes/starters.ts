@@ -15,8 +15,6 @@ export type StarterGroup = (typeof STARTER_GROUPS)[number];
 
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
 
-// Grain made of tiny shapes (oil, bristle and dry brush paint). The `amount` also serves the dry ones below as the shapes they turn into where paper tooth cannot go (SVG).
-const grain = (kind: 'chalk' | 'charcoal', amount: number, coarse: number) => ({ kind, amount, grain: coarse });
 // Chalk and charcoal on paper: the line catches on the paper's tooth, as the dry media do on a pixel layer.
 const dry = (kind: 'chalk' | 'charcoal', medium: DryId, amount: number) => ({ kind, amount, grain: 1, dry: medium });
 const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
@@ -57,9 +55,12 @@ export const STARTERS: readonly BrushPreset[] = [
   make('tapered', 'Tapered brush', 'Paint', { size: 14, thinning: 0.6, smoothing: 0.6, streamline: 0.6, taperStart: 40, taperEnd: 60 }),
   make('round-brush', 'Round brush', 'Paint', { size: 16, thinning: 0.7, smoothing: 0.6, streamline: 0.6, taperStart: 12, taperEnd: 50 }),
   make('gouache', 'Gouache', 'Paint', { size: 26, thinning: 0.15, smoothing: 0.6, streamline: 0.55 }),
-  make('oil', 'Oil paint', 'Paint', { size: 30, thinning: 0.3, smoothing: 0.55, streamline: 0.5, tip: grain('chalk', 0.18, 0.6) }),
-  make('bristle', 'Bristle brush', 'Paint', { size: 40, thinning: 0.2, smoothing: 0.5, streamline: 0.45, tip: grain('chalk', 0.28, 0.5) }),
-  make('dry-brush', 'Dry brush', 'Paint', { size: 34, thinning: 0.25, smoothing: 0.5, streamline: 0.45, tip: grain('charcoal', 0.6, 1.5) }),
+  // Oil paint is a full brush of paint: bristles fat enough to close into one solid body, run lighter and darker in broad streaks, with blunt rounded ends.
+  make('oil', 'Oil paint', 'Paint', { size: 30, thinning: 0.3, smoothing: 0.55, streamline: 0.5, taperStart: 10, taperEnd: 26, tip: { ...defaultTip('bristle'), count: 36, stiffness: 0.85, amount: 0, body: 0.6, tone: 1 } }),
+  // A bristle brush is separate hairs: a few dark lines and gaps between them, streaking along the line.
+  make('bristle', 'Bristle brush', 'Paint', { size: 40, thinning: 0.2, smoothing: 0.5, streamline: 0.45, tip: { ...defaultTip('bristle'), count: 12, stiffness: 0.55, amount: 0.15, body: -0.1, tone: 0.8 } }),
+  // A dry brush drags over paper and skips where it is high: paper tooth with big grain and long streaks.
+  make('dry-brush', 'Dry brush', 'Paint', { size: 34, thinning: 0.25, smoothing: 0.5, streamline: 0.45, tip: { kind: 'charcoal', amount: 0.4, grain: 2, dry: 'crayon', streak: 1 } }),
   // Chalk and charcoal
   make('chalk', 'Chalk', 'Chalk and charcoal', { size: 18, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: defaultTip('chalk') }),
   make('charcoal', 'Charcoal', 'Chalk and charcoal', { size: 22, thinning: 0.4, smoothing: 0.4, streamline: 0.4, tip: defaultTip('charcoal') }),
@@ -96,7 +97,7 @@ export const STARTERS: readonly BrushPreset[] = [
   make('hog', 'Hog bristle', 'Bristles', { size: 36, thinning: 0.4, smoothing: 0.55, streamline: 0.55, tip: { ...defaultTip('bristle'), count: 18, stiffness: 0.7, amount: 0.2 } }),
   make('dry-bristle', 'Dry bristle', 'Bristles', { size: 40, thinning: 0.5, smoothing: 0.5, streamline: 0.5, tip: { ...defaultTip('bristle'), count: 24, stiffness: 0.5, amount: 0.65 } }),
   make('fan', 'Fan brush', 'Bristles', { size: 56, thinning: 0.2, smoothing: 0.55, streamline: 0.55, tip: { ...defaultTip('bristle'), count: 32, stiffness: 0.9, amount: 0.35 } }),
-  make('rake', 'Rake', 'Bristles', { size: 30, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: { ...defaultTip('bristle'), count: 6, stiffness: 1, amount: 0 } }),
+  make('rake', 'Rake', 'Bristles', { size: 30, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: { ...defaultTip('bristle'), count: 6, stiffness: 1, amount: 0, body: -0.85 } }),
   // Along the line: a drawing bent along it
   make('ribbon', 'Ribbon', 'Along the line', { size: 18, thinning: 0.6, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startRibbon(), fit: 'stretch' } }),
   make('thread', 'Thread', 'Along the line', { size: 7, thinning: 0.3, smoothing: 0.65, streamline: 0.65, tip: { kind: 'along', custom: startRibbon(), fit: 'stretch' } }),
