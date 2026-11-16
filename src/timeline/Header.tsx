@@ -17,6 +17,7 @@ import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
 import { moreRequest } from './headerMenu';
 import { LEVELS, chooseFold, droppedAt, foldedAtLevel, foldSlack, headerChange, switchLabel, type FoldStep, type WordStep } from './headerFold';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step, word }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep; word?: WordStep }) {
   return (
@@ -144,6 +145,9 @@ function HoldButtons() {
 }
 
 /** The onion skin settings box. It sits at a point on screen, and is opened from its header button or, when that is folded, from the "more" menu. */
+/** Why onion skin colours have no opacity slider. */
+const ONION_WHY = 'Onion skin has its own Strength slider below, so these colours stay solid.';
+
 function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: () => void }) {
   const onion = useStore((s) => s.ui.onion);
   const boards = useStore((s) => hasArtboards(s.doc));
@@ -160,7 +164,7 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
           <output>{onion.before}</output>
           <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" data-testid="onion.beforeMore" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
         </span>
-        <input type="color" aria-label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} onChange={(e) => set({ beforeColor: e.target.value })} />
+        <ColourField label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} alpha={false} why={ONION_WHY} onChange={(c) => set({ beforeColor: c })} />
       </div>
       <div className="tl-pop-row">
         <span>Frames after</span>
@@ -169,7 +173,7 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
           <output>{onion.after}</output>
           <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" data-testid="onion.afterMore" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
         </span>
-        <input type="color" aria-label="Colour of frames after" value={onion.afterColor.slice(0, 7)} onChange={(e) => set({ afterColor: e.target.value })} />
+        <ColourField label="Colour of frames after" value={onion.afterColor.slice(0, 7)} alpha={false} why={ONION_WHY} onChange={(c) => set({ afterColor: c })} />
       </div>
       <label className="tl-pop-row">
         <span>Strength</span>

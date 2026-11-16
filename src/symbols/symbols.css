@@ -149,14 +149,9 @@
   font-style: normal;
   color: var(--faint);
 }
-.sy-color {
+.sy-color.cp-chip {
   width: 34px;
   height: 28px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-small);
-  background: none;
-  cursor: pointer;
 }
 .sy-link {
   all: unset;

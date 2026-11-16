@@ -221,11 +221,16 @@ async function section() {
     out.where = document.querySelector('[data-testid=recolour-where]')?.textContent ?? '';
     sw?.click();
     await wait(100);
-    const input = document.querySelector('input[type=color][aria-label="New colour"]');
+    // The colour box opens the app's own picker; the hex box in it takes the colour.
+    const chip = document.querySelector('button[aria-label^="New colour"]');
+    chip.click();
+    await wait(200);
+    const input = document.querySelector('.cp-pop input.cv-hex-input');
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setter.call(input, '#3366ff');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(200);
+    chip.click();
     await wait(300);
     const btn = document.querySelector('[data-testid="recolour.apply"]');
     out.canApply = !!btn && !btn.disabled;

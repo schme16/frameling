@@ -8,11 +8,11 @@ import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { paletteScope, recolourOpenVariation, setVariationPalette, sharedEditNote } from '../artboards/variations';
-import { parseHex } from '../canvas/colors';
+import { parseHex, solidOf } from '../canvas/colors';
 import { hint } from '../canvas/controller';
 import { activeDrawing, activeGrid, activeLayer, EDIT_HINTS, setActivePixels } from '../tools/edit';
 import { gridPixels } from '../core/pixelBounds';
-import { docPalette, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
+import { docPalette, paletteAlpha, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
 import { getPixelSettings, setPixelSettings, type SymmetryMode } from './settings';
 import { activePixelLayer } from './tools';
 import { flipH, flipV, outline, rotateQuarter, type Img } from './transform';
@@ -73,6 +73,13 @@ export function changePaletteColor(index: number, color: string): void {
   const old = p.colors[index];
   if (!old || old.toLowerCase() === color.toLowerCase()) return;
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
+  // Only the opacity changed: nothing painted needs recolouring, so there is nothing to ask. Painted pixels keep their own opacity.
+  if (solidOf(old).toLowerCase() === solidOf(color).toLowerCase()) {
+    store().update('Change palette colour', (d) => {
+      if (!setVariationPalette(d as Doc, next)) d.palette = next as Draft<DocPalette>;
+    });
+    return;
+  }
   const [r, g, b] = rgb3(old);
   const scope = paletteScope(doc, old);
   const inVariation = !!sharedEditNote(doc, 'palette');
@@ -169,7 +176,7 @@ export function reduceActiveToPalette(): boolean {
     return false;
   }
   return editPixels('Reduce to palette', (d) => {
-    const r = reduceToPalette(d.pixels, paletteRgb(p.colors));
+    const r = reduceToPalette(d.pixels, paletteRgb(p.colors), paletteAlpha(p.colors));
     if (!r.changed) {
       hint('Every pixel already uses a palette colour.');
       return null;

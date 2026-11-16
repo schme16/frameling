@@ -1,0 +1,22 @@
+colour: Colours at the top of Properties, and one colour picker with an Opacity (alpha) bar wherever see-through makes sense.
+
+Properties order (before-* from the development build, after-* from this branch, compare-* side by side):
+  props-picked   a symbol picked. Before: the symbol's settings lead and the colours are far below. After: Colours lead,
+                 and what is about the pick comes straight after. (A picked clip still leads over both, as before.)
+  props-drawing  nothing picked. Before: Tool options first. After: Colours first, Tool options just under.
+  The old order is one answer away: Preferences > Behaviour > "What leads the Properties panel" > What I picked.
+
+The picker (all after, nothing to compare with: the old build opened the system's own colour dialog, which has no opacity):
+  colours-opacity        the Colours panel with a half see-through fill: the Opacity bar, 60%, and #9b7bff99 in the Hex box.
+  picker-open            opened from the Paint colour in the Pixel workspace, Opacity at 60%. The swatch shows a chequerboard.
+  palette-opacity        a palette colour (double-click it, or right-click > Change colour) with Opacity at 50% and the plain
+                         note about what that means: it paints see-through by exactly that much, even on a layer locked to the
+                         palette; pixels already painted keep what they had.
+  palette-opacity-done   the palette after closing it: that colour now has a chequerboard behind it.
+  opacity-not-offered    the document background: no Opacity bar, the reason in its place ("always solid, for none at all
+                         turn on See-through"). Same for artboard backgrounds, theme colours, effects, tints, onion skin, recolour,
+                         slice and terrain colours, plugin colours: each says why.
+  opacity-locked         the Paint colour's picker on a layer locked to the palette: no bar, because paint takes the opacity of the
+                         palette colour it snaps to; it points at the Palette panel instead.
+
+Made with scripts/docs/ab-colour/shots.cjs (help-media.cjs --entries ... --renderer old and new build), in xvfb, both themes.

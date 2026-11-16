@@ -8,7 +8,7 @@ import { uid } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
 import { encodePng } from '../io/png';
 import { shapeToSvg, n2 } from '../export/svg';
-import { docPalette, paletteRgb, reduceToPalette } from '../pixel/palette';
+import { docPalette, paletteAlpha, paletteRgb, reduceToPalette } from '../pixel/palette';
 import { hardenEdges } from './plan';
 import { newInstance } from '../core/symbols';
 import { trimPixels } from '../core/pixelBounds';
@@ -106,7 +106,8 @@ export function shapesToPixels(doc: Doc, shapes: Shape[], grid: { width: number;
   let pixels = hard.pixels;
   let recoloured = 0;
   if (lockedPalette) {
-    const r = reduceToPalette(pixels, paletteRgb(docPalette(doc).colors));
+    const colors = docPalette(doc).colors;
+    const r = reduceToPalette(pixels, paletteRgb(colors), paletteAlpha(colors));
     pixels = r.pixels;
     recoloured = r.changed;
   }

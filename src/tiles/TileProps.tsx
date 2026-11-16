@@ -11,6 +11,7 @@ import { PEERING, TERRAIN_MODES, modeOf, modeUses } from './terrain';
 import { setTileUi, useTileUi } from './state';
 import { TileThumb } from './TileThumb';
 import type { Doc } from '../core/format';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 const run = (id: string) => void getCommand(id)?.run();
 
@@ -216,7 +217,7 @@ function Terrains({ doc, ts, tile }: { doc: Doc; ts: Tileset; tile: Tile | undef
           <div className="tz-terrains">
             {terrains.map((t) => (
               <div key={t.id} className={`tz-terrain${t.id === paint ? ' is-chosen' : ''}`}>
-                <input type="color" aria-label={`${t.name} colour`} value={t.color} onChange={(e) => ops.recolourTerrain(t.id, e.target.value)} />
+                <ColourField label={`${t.name} colour`} value={t.color} alpha={false} why="A terrain colour only marks the terrain in the editor, so it is always solid. It never reaches your drawing." onChange={(c) => ops.recolourTerrain(t.id, c)} />
                 <input
                   key={`${t.id}:${t.name}`}
                   className="tz-terrain-name"

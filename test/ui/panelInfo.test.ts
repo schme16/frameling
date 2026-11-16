@@ -10,6 +10,8 @@ import { rigFeature } from '../../src/rig';
 import { textFeature } from '../../src/text';
 import { tilesFeature } from '../../src/tiles';
 import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone, whenShown } from '../../src/ui/panelInfo';
+import { setChoice } from '../../src/core/choices';
+import { PROPS_ORDER_CHOICE } from '../../src/ui/propsOrder';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
 // A feature adds its own entry when it is on.
@@ -82,7 +84,7 @@ describe('right side: which panel goes where', () => {
 describe('Properties: what shows now', () => {
   it('shows the tool and colours while drawing, the rest are left out of Properties', () => {
     const r = sectionsNow(SECTIONS, state({ tool: 'brush' }), 'tool-options');
-    expect(r.shown).toEqual(['tool-options', 'colors']);
+    expect(r.shown).toEqual(['colors', 'tool-options']);
     expect(r.idle).toEqual(['palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig']);
   });
 
@@ -97,7 +99,8 @@ describe('Properties: what shows now', () => {
     expect(sectionsNow(SECTIONS, state({}, false), null).shown).not.toContain('palette');
   });
 
-  it('puts the sections about a selection first', () => {
+  /** A text shape picked on the top layer. */
+  const picked = () => {
     const s = new Store(newDoc());
     const doc = s.get().doc;
     const layer = doc.layers[doc.layers.length - 1];
@@ -108,9 +111,26 @@ describe('Properties: what shows now', () => {
       l.cels = [{ id: 'cel1', start: 0, length: 4, drawingId: 'dr1' }];
     });
     s.setUi({ activeLayerId: layer.id, selection: [id], tool: 'select' });
-    const r = sectionsNow(SECTIONS, s.get(), 'tool-options');
-    expect(r.shown.slice(0, 3)).toEqual(['symbol-props', 'effects', 'text']);
+    return s;
+  };
+
+  it('puts Colours first, then the sections about a selection, then the rest', () => {
+    const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
+    expect(r.shown.slice(0, 4)).toEqual(['colors', 'symbol-props', 'effects', 'text']);
     expect(r.shown).toContain('tool-options');
+  });
+
+  it('puts the sections about a selection first when that is the answer in Preferences', () => {
+    setChoice(PROPS_ORDER_CHOICE, 'selection');
+    try {
+      const r = sectionsNow(SECTIONS, picked().get(), 'tool-options');
+      expect(r.shown.slice(0, 3)).toEqual(['symbol-props', 'effects', 'text']);
+      expect(r.shown.indexOf('colors')).toBeGreaterThan(2);
+      // With nothing picked the answer makes no difference: Colours still lead.
+      expect(sectionsNow(SECTIONS, state(), null).shown[0]).toBe('colors');
+    } finally {
+      setChoice(PROPS_ORDER_CHOICE, undefined);
+    }
   });
 
   it('a broken relevance check shows the section rather than losing it', () => {

@@ -223,6 +223,20 @@ module.exports = [
     ],
   },
   {
+    // The colour picker, opened from the Paint colour, with the Opacity bar part way along.
+    name: 'colour-picker',
+    size: [1280, 1000],
+    steps: [
+      ...pixelDoc(slimeRows(), ['p']),
+      setUi({ color: '#4f9bd1' }),
+      js(`document.querySelector('.px-well-paint').click()`),
+      wait(500),
+      ...Array.from({ length: 4 }, () => [js(`document.querySelector('.cp-alpha').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }))`), wait(120)]).flat(),
+      wait(400),
+      { shot: '@', crop: [0, 80, 520, 400] },
+    ],
+  },
+  {
     name: 'palette-panel',
     size: [1280, 1000], // the panel grew a From a picture button
     steps: [...pixelDoc(slimeRows(), ['p']), away, wait(300), { shot: '@', el: '.px-palette', pad: 0 }],

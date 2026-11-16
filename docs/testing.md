@@ -608,6 +608,8 @@ effects running before the layer's, colour adjust on one shape). `FILTER=fallbac
 alone on its own layer) against the new (`--entries scripts/docs/ab-shape-fx --out brand/ab/shape-fx`). `test/effects/shape-fx*.test.ts`
 cover the format, the edits, merging, the exporters and the panel.
 
+`scripts/docs/ab-colour/shots.cjs` is the look for the colour picker and the Properties order (`--entries scripts/docs/ab-colour --renderer <dist dir> --out <dir>`, once against an older build with `--only props-picked,props-drawing`, once against the new one): Properties with Colours on top, the picker with its Opacity bar, a palette colour being given opacity, a place where opacity is left out (the background), and the palette lock case. `test/canvas/colour-alpha.test.ts` is the colour reading and writing (six digit colours stay six digits), `test/pixel/palette-alpha.test.ts` what a see-through palette colour means for the lock, Reduce to palette and changing a colour, and `test/ui/colour-picker.test.tsx` the picker itself (the Opacity bar where it belongs, the reason where it does not).
+
 ## Shadow and glow softness per format: scripts/e2e/shadow-sigma.cjs
 
 Draws a box with a Shadow or a Glow of several softness values in the editor (native canvas filter and the JS fallback)

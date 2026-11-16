@@ -112,7 +112,7 @@ Repaired quietly (defaults filled, values clamped):
 - Gradients that don't parse are removed from the shape (`cleanGradients` in `src/core/gradient.ts`).
 - Text and particles are read field by field with clamps and defaults (`src/io/shapes-extra.ts`); particle defaults
   come from the shape's `preset`.
-- Palette colours must be hex, at most 256; ramps must point inside the palette. `dpi` outside 1..10000 is dropped.
+- Palette colours must be hex (`#rrggbb`, or `#rrggbbaa` for a see-through one), at most 256; ramps must point inside the palette. A six digit colour is fully solid and is always written back as six digits. On a layer with `paletteLock`, painting and Reduce to palette give each pixel its palette colour's own opacity (solid unless the entry has an `aa`); colour matching looks at the `rrggbb` part only. `dpi` outside 1..10000 is dropped.
   `inOut` is clamped to the length and put in order; `perspective` keeps at most two points. `exports` keeps only plain
   settings (no format means the entry is dropped), ways without a name or with a repeated id are dropped, and at most 12
   ways are kept (`readExports` in `src/export/saved.ts`).

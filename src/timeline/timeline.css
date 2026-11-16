@@ -1058,7 +1058,7 @@
   width: 110px;
   accent-color: var(--accent);
 }
-.tl-pop-row input[type='color'] {
+.tl-pop-row .cp-chip {
   width: 28px;
   height: 24px;
   padding: 0;

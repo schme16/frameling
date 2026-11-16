@@ -2366,5 +2366,20 @@
   "choice.effects.addTarget.layer.did": {
     "text": "Put the effect on the whole layer.",
     "where": "Toast when \"layer\" is used without asking (\"Effects on picked shapes or the whole layer\"), in the past tense."
+  },
+  "choice.props.order.title": { "text": "What leads the Properties panel", "where": "Name of this choice in Preferences > Behaviour (group: View)." },
+  "choice.props.order.question": {
+    "text": "When you have something picked, which part of Properties should come first?",
+    "where": "The question the \"What leads the Properties panel\" dialog would ask. It is never asked, only changed in Preferences."
+  },
+  "choice.props.order.colours.label": { "text": "Colours", "where": "Preferences: the button for the answer \"colours\" in \"What leads the Properties panel\"." },
+  "choice.props.order.colours.detail": {
+    "text": "Your fill and stroke colours stay at the top, so they are always in the same place. What is about your pick comes next.",
+    "where": "Preferences: the small line under the \"colours\" answer in \"What leads the Properties panel\"."
+  },
+  "choice.props.order.selection.label": { "text": "What I picked", "where": "Preferences: the button for the answer \"selection\" in \"What leads the Properties panel\"." },
+  "choice.props.order.selection.detail": {
+    "text": "The settings for the shape, text or symbol you picked lead, with the colours below them.",
+    "where": "Preferences: the small line under the \"selection\" answer in \"What leads the Properties panel\"."
   }
 }

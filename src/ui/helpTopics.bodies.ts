@@ -535,9 +535,10 @@ Prefer it another way? **Preferences**, **General**, **Right side** offers **Rai
 
 ## What shows
 
-- **Tool options** and **Colours** are always there while you draw.
+- **Colours** are always at the top, so your fill and stroke are in the same place whatever you pick. **Tool options** come just below.
 - Click a clip on the timeline and its **Clip** settings lead, until you press on the canvas or pick another layer or tool. Properties follows what you picked last.
-- Select a **symbol** and its size, turn, fade and in-betweens (**Symbol and motion**) show, with **Effects** for its layer. Selected things come first.
+- Select a **symbol** and its size, turn, fade and in-betweens (**Symbol and motion**) show, with **Effects** for its layer. What is about your pick comes straight after Colours.
+- Rather have what you picked lead, with Colours below it? Change **What leads the Properties panel** in **Preferences > Behaviour**.
 - Pick the **Text** tool or select text and the text settings show. Select particles, pick the camera layer or the **Bone** tool and theirs do.
 
 ## Where's the rest?

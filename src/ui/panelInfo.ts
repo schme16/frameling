@@ -8,6 +8,8 @@ import type { State } from '../core/store';
 import { ownedUndo } from '../core/owners';
 import { allSliceCount } from '../pixel/slices/model';
 import { leadKeyOf, tl } from '../timeline/state';
+import { currentChoice } from '../core/choices';
+import { COLOURS, PROPS_ORDER_CHOICE, type PropsOrder } from './propsOrder';
 import { RAIL_GROUPS, type RailGroup } from './dockModel';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
@@ -252,15 +254,21 @@ export function sectionsNow(sections: string[], s: State, active: string | null)
     }
     (on || id === active ? shown : idle).push(id);
   }
-  // Like Illustrator's Properties: with something selected, what's about it comes first, the tool and colours after.
-  // A clip you just clicked leads: its settings are what you came for. Once you press on the canvas, or pick another
-  // layer or tool, what you picked last leads instead, and the clip's settings stay below (it is still picked).
-  if (shown.includes('clip-play') && tl().clipLead === leadKeyOf(s)) shown.splice(0, 0, ...shown.splice(shown.indexOf('clip-play'), 1));
-  if (s.ui.selection.length) {
+  // Colours lead by default, so the colours you draw with are always in the same place. The other way round (what's
+  // about the selection first, like Illustrator's Properties) is a choice in Preferences > Behaviour. A clip you just
+  // clicked leads either way: its settings are what you came for. Once you press on the canvas, or pick another layer
+  // or tool, what you picked last leads instead, and the clip's settings stay below (it is still picked).
+  let out = shown;
+  if (s.ui.selection.length && currentChoice<PropsOrder>(PROPS_ORDER_CHOICE) === 'selection') {
     const first = shown.filter((id) => PANEL_INFO[id]?.selection);
-    return { shown: [...first, ...shown.filter((id) => !first.includes(id))], idle };
+    out = [...first, ...shown.filter((id) => !first.includes(id))];
+  } else {
+    const lead = shown.filter((id) => id === COLOURS);
+    const about = s.ui.selection.length ? shown.filter((id) => id !== COLOURS && PANEL_INFO[id]?.selection) : [];
+    out = [...lead, ...about, ...shown.filter((id) => !lead.includes(id) && !about.includes(id))];
   }
-  return { shown, idle };
+  if (out.includes('clip-play') && tl().clipLead === leadKeyOf(s)) out = ['clip-play', ...out.filter((id) => id !== 'clip-play')];
+  return { shown: out, idle };
 }
 
 /**

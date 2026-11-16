@@ -86,7 +86,7 @@
 .ab-bg > span {
   width: 72px;
 }
-.ab-bg input[type='color'] {
+.ab-bg .cp-chip {
   width: 32px;
   height: 24px;
   padding: 0;

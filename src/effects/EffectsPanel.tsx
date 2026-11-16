@@ -17,6 +17,7 @@ import type { AnyTarget } from './ops';
 import { toggleClip, toggleMask } from './commands';
 import '../canvas/canvas.css';
 import './effects.css';
+import { ColourField } from '../ui/colour/ColourPicker';
 
 // ---------------------------------------------------------------- look variant (A/B)
 
@@ -346,11 +347,14 @@ function EffectCard({ target, effect, first, last }: { target: AnyTarget; effect
   );
 }
 
+/** Why an effect's colour has no opacity slider. */
+const FX_WHY = 'Effects have their own strength and opacity sliders, so their colour stays solid.';
+
 function ParamRow({ p, value, onChange }: { p: EffectParam; value: number | string; onChange: (v: number | string) => void }) {
   if (p.type === 'color') {
     return (
       <Field label={p.label} value={<code className="fx-hex">{String(value).slice(0, 7)}</code>}>
-        <input className="fx-color" type="color" value={String(value).slice(0, 7)} aria-label={p.label} onChange={(e) => onChange(e.target.value)} />
+        <ColourField className="fx-color cp-chip" label={p.label} value={String(value).slice(0, 7)} alpha={false} why={FX_WHY} onChange={onChange} />
       </Field>
     );
   }

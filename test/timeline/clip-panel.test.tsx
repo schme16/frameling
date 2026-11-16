@@ -39,9 +39,9 @@ describe('the Clip section of Properties', () => {
   it('shows while a clip is picked, first in the list, and is left out otherwise', () => {
     const s = withClip();
     const all = ['tool-options', 'clip-play', 'colors'];
-    expect(sectionsNow(all, s.get(), null)).toEqual({ shown: ['tool-options', 'colors'], idle: ['clip-play'] });
+    expect(sectionsNow(all, s.get(), null)).toEqual({ shown: ['colors', 'tool-options'], idle: ['clip-play'] });
     act(() => setTl({ clipId: 'k1' }));
-    expect(sectionsNow(all, s.get(), null).shown).toEqual(['clip-play', 'tool-options', 'colors']);
+    expect(sectionsNow(all, s.get(), null).shown).toEqual(['clip-play', 'colors', 'tool-options']);
   });
 
   it('leads only until you pick something after it: a canvas press, another layer or another tool', () => {
@@ -51,7 +51,7 @@ describe('the Clip section of Properties', () => {
     expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
     // A press on the canvas gives the lead back, and the clip stays picked.
     act(() => setTl({ clipLead: null }));
-    expect(sectionsNow(all, s.get(), null).shown).toEqual(['tool-options', 'clip-play', 'colors']);
+    expect(sectionsNow(all, s.get(), null).shown).toEqual(['colors', 'tool-options', 'clip-play']);
     expect(tl().clipId).toBe('k1');
     // Picking the clip again takes the lead back.
     act(() => setTl({ clipId: null }));
@@ -59,11 +59,11 @@ describe('the Clip section of Properties', () => {
     expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
     // Another tool, or another layer, does the same.
     act(() => s.setUi({ tool: 'text' }));
-    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('tool-options');
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('colors');
     act(() => setTl({ clipId: 'k1' }));
     expect(sectionsNow(all, s.get(), null).shown[0]).toBe('clip-play');
     act(() => s.setUi({ activeLayerId: 'other' }));
-    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('tool-options');
+    expect(sectionsNow(all, s.get(), null).shown[0]).toBe('colors');
   });
 
   it('says how to pick a clip when none is picked', () => {
