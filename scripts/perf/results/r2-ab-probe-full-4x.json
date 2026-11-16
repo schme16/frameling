@@ -1,0 +1,242 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T05:51:51.751Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 505.3,
+   "worstTaskMs": 69.2,
+   "runs": [
+    487.3,
+    525.9,
+    505.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 84.21,
+   "topSelf": [
+    [
+     "(program) :0",
+     189.9
+    ],
+    [
+     "zGe index-BrGCKc9o.js:163",
+     84.5
+    ],
+    [
+     "(garbage collector) :0",
+     13.9
+    ],
+    [
+     "removeChild :0",
+     13.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     189.9
+    ],
+    [
+     "(anon) index-BrGCKc9o.js:9",
+     143
+    ],
+    [
+     "Ed index-BrGCKc9o.js:9",
+     138.2
+    ],
+    [
+     "pf index-BrGCKc9o.js:9",
+     109.3
+    ],
+    [
+     "gf index-BrGCKc9o.js:9",
+     109.1
+    ],
+    [
+     "ff index-BrGCKc9o.js:9",
+     109.1
+    ],
+    [
+     "r index-BrGCKc9o.js:163",
+     97.8
+    ],
+    [
+     "zGe index-BrGCKc9o.js:163",
+     97.4
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     126.5
+    ],
+    [
+     "FireAnimationFrame",
+     105.9
+    ],
+    [
+     "Layout",
+     85.8
+    ],
+    [
+     "Layerize",
+     33.1
+    ],
+    [
+     "PrePaint",
+     21.9
+    ],
+    [
+     "#UpdateLayoutTree",
+     18.3
+    ],
+    [
+     "#Layout",
+     15.3
+    ],
+    [
+     "Commit",
+     10.1
+    ],
+    [
+     "HitTest",
+     7.2
+    ],
+    [
+     "UpdateLayoutTree",
+     6.9
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     4.5
+    ],
+    [
+     "MajorGC",
+     4.1
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     4
+    ],
+    [
+     "MinorGC",
+     3.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     3.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     3.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.9
+    ],
+    [
+     "UpdateLayer",
+     1.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     1.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.6
+    ],
+    [
+     "V8.GC_HEAP_EMBEDDER_TRACING_EPILOGUE",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

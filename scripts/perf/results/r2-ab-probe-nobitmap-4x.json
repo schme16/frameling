@@ -1,0 +1,290 @@
+{
+ "label": "sweep",
+ "when": "2026-11-16T05:52:34.354Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2954,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 515.1,
+   "worstTaskMs": 65.6,
+   "runs": [
+    515.1,
+    477.3,
+    542.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 85.86,
+   "topSelf": [
+    [
+     "(program) :0",
+     187.2
+    ],
+    [
+     "zGe index-BrGCKc9o.js:163",
+     76
+    ],
+    [
+     "(garbage collector) :0",
+     21.5
+    ],
+    [
+     "setAttribute :0",
+     11.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     187.2
+    ],
+    [
+     "(anon) index-BrGCKc9o.js:9",
+     150.3
+    ],
+    [
+     "Ed index-BrGCKc9o.js:9",
+     139.3
+    ],
+    [
+     "pf index-BrGCKc9o.js:9",
+     112.9
+    ],
+    [
+     "ff index-BrGCKc9o.js:9",
+     112
+    ],
+    [
+     "gf index-BrGCKc9o.js:9",
+     112
+    ],
+    [
+     "r index-BrGCKc9o.js:163",
+     95.3
+    ],
+    [
+     "zGe index-BrGCKc9o.js:163",
+     94.7
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     120.5
+    ],
+    [
+     "FireAnimationFrame",
+     103
+    ],
+    [
+     "Layout",
+     81.6
+    ],
+    [
+     "Layerize",
+     33.1
+    ],
+    [
+     "PrePaint",
+     21.8
+    ],
+    [
+     "#UpdateLayoutTree",
+     18
+    ],
+    [
+     "#Layout",
+     15.3
+    ],
+    [
+     "Commit",
+     9.5
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     8.9
+    ],
+    [
+     "MajorGC",
+     7.8
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     7.8
+    ],
+    [
+     "UpdateLayoutTree",
+     5.7
+    ],
+    [
+     "HitTest",
+     5.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     3
+    ],
+    [
+     "MinorGC",
+     2.6
+    ],
+    [
+     "UpdateLayer",
+     2.3
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     2.2
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     2.2
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1.7
+    ],
+    [
+     "V8.GC_MC_MARK",
+     1.4
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.3
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     0.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY",
+     0.9
+    ],
+    [
+     "V8.GC_MC_MARK_FULL_CLOSURE_PARALLEL",
+     0.8
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     0.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_SLOTS_MAIN",
+     0.8
+    ],
+    [
+     "V8.GC_MC_MARK_EMBEDDER_TRACING",
+     0.7
+    ],
+    [
+     "V8.GC_MC_MARK_WEAK_CLOSURE_EPHEMERON_MARKING",
+     0.6
+    ],
+    [
+     "V8.GC_MC_CLEAR_JOIN_JOB",
+     0.6
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     0.6
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY_PARALLEL",
+     0.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_PARALLEL",
+     0.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_POINTER_TABLES",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
