@@ -142,7 +142,7 @@ describe('the moment just after a send', () => {
     await click(button('Send it'));
     expect(q<HTMLTextAreaElement>('textarea')!.value).toBe('');
     expect(prefs.getPrefs().betaContact).toBe('ada@example.com');
-    const said = host.querySelector('[role="status"]')!;
+    const said = host.querySelector('[data-testid="beta.said"]')!;
     expect(said.textContent).toMatch(/Sent\./);
     expect(said.textContent).toMatch(/note is cleared/);
     expect(said.textContent).toMatch(/contact details are still saved/);
@@ -154,7 +154,7 @@ describe('the moment just after a send', () => {
     await type(q<HTMLTextAreaElement>('textarea')!, 'It froze');
     await click(button('Show me what you would send'));
     await click(button('Send it'));
-    expect(host.querySelector('[role="status"]')!.textContent).not.toMatch(/contact/);
+    expect(host.querySelector('[data-testid="beta.said"]')!.textContent).not.toMatch(/contact/);
   });
 });
 
