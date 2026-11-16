@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Gradient, PathShape, Shape, StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
-import { bareWords, endGradientGesture, followPick, getGradientWells, isMixed, matchSelectedColours, paintView, setPaintKind } from '../../src/tools/gradient-wells';
+import { bareWords, endGradientGesture, followPick, getGradientWells, isMixed, matchSelectedColours, paintView, setPaintKind, showsPaintKind, showsPicker } from '../../src/tools/gradient-wells';
 import { setActiveColor } from '../../src/tools/wells';
 import { getCommand } from '../../src/core/registry';
 import '../../src/tools/wells';
@@ -207,5 +207,36 @@ describe('some picked shapes with paint and some without', () => {
     expect(shape('c').fill).toBe('#ff0000');
     expect(shape('b').fill).toBeNull();
     expect(paintView('fill')).toEqual({ from: 'colour', color: '#ff0000', bare: 1 });
+  });
+});
+
+describe('a side with nothing on it hides its colour tools', () => {
+  it('drops the picker and the Solid/Linear/Radial choice, leaving the words and the swatches', () => {
+    addShapes(lineOnly('a'));
+    pick(['a'], 'fill');
+    expect(showsPicker(paintView('fill'))).toBe(false);
+    expect(showsPaintKind(paintView('fill'))).toBe(false);
+    expect(bareWords(paintView('fill'), 'fill')).toMatch(/no fill/);
+  });
+
+  it('keeps them for the side that has paint, for nothing picked, and for a mix with some paint', () => {
+    addShapes(lineOnly('a'), both('b'));
+    pick(['a'], 'stroke');
+    expect(showsPicker(paintView('stroke'))).toBe(true);
+    expect(showsPaintKind(paintView('stroke'))).toBe(true);
+    pick([], 'fill');
+    expect(showsPicker(paintView('fill'))).toBe(true);
+    pick(['a', 'b'], 'fill');
+    expect(showsPicker(paintView('fill'))).toBe(true);
+    expect(showsPaintKind(paintView('fill'))).toBe(true);
+  });
+
+  it('brings them back as soon as a colour is given', () => {
+    addShapes(lineOnly('a'));
+    pick(['a'], 'fill');
+    expect(showsPicker(paintView('fill'))).toBe(false);
+    store().setUi({ activeWell: 'fill' });
+    setActiveColor('#123456');
+    expect(showsPicker(paintView('fill'))).toBe(true);
   });
 });

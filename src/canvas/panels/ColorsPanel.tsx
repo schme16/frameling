@@ -6,7 +6,7 @@ import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
 import { GradientEditor } from './GradientEditor';
-import { endGradientGesture, paintView, setStopColor, stopColor, usePaintView, useGradientWells } from '../../tools/gradient-wells';
+import { endGradientGesture, paintView, setStopColor, showsPicker, stopColor, usePaintView, useGradientWells } from '../../tools/gradient-wells';
 import { openRecolour } from '../../tools/recolour-open';
 import { usePopover } from '../../ui/popover';
 import { ColourPicker } from '../../ui/colour/ColourPicker';
@@ -104,7 +104,7 @@ export function ColorsPanel() {
   return (
     <div className="cv-panel cv-colors">
       <Wells />
-      {view.from !== 'differ' && view.from !== 'colours' && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
+      {showsPicker(view) && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
       <GradientEditor />
 
       <div className="cv-field-head">

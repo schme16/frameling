@@ -8,7 +8,7 @@ import { hasAlpha } from '../colors';
 import { Choice, Slider, Tip } from '../controls';
 import { getCommand } from '../../core/registry';
 import { useStore } from '../../core/store';
-import { addStop, bareWords, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
+import { addStop, bareWords, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, showsPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
 
 /** How far below the bar (in screen pixels) a dragged marker has to go to be taken away. */
 const DRAG_OFF = 36;
@@ -60,19 +60,21 @@ export function GradientEditor() {
 
   return (
     <div className="cv-gradient" data-quest="gradient-editor">
-      <Choice<PaintKind>
-        label={well === 'fill' ? 'Fill' : 'Stroke'}
-        value={mixed ? ('' as PaintKind) : kind}
-        options={[
-          { value: 'solid', label: 'Solid', title: 'One colour' },
-          { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
-          { value: 'radial', label: 'Radial', title: 'Colours blending out from the middle in a circle (radial gradient)' },
-        ]}
-        onChange={(k) => {
-          setPaintKind(well, k);
-          endGradientGesture();
-        }}
-      />
+      {showsPaintKind(view) && (
+        <Choice<PaintKind>
+          label={well === 'fill' ? 'Fill' : 'Stroke'}
+          value={mixed ? ('' as PaintKind) : kind}
+          options={[
+            { value: 'solid', label: 'Solid', title: 'One colour' },
+            { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
+            { value: 'radial', label: 'Radial', title: 'Colours blending out from the middle in a circle (radial gradient)' },
+          ]}
+          onChange={(k) => {
+            setPaintKind(well, k);
+            endGradientGesture();
+          }}
+        />
+      )}
       {bareWords(view, well) && (
         <p className="cv-tip" data-testid="paint-bare">
           {bareWords(view, well)}
