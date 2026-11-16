@@ -12,6 +12,7 @@ import { encodeHistory, FILE_HISTORY_BYTES, HISTORY_DATA_ENTRY, HISTORY_STEPS_EN
 import { gridPixels, setGridPixels } from '../../src/core/pixelBounds';
 import { resetStore, store, type Store } from '../../src/core/store';
 import { HistoryPanel } from '../../src/history/HistoryPanel';
+import { settled } from '../helpers/waits';
 import { autosaveNow } from '../../src/io/document';
 import { offerRecovery } from '../../src/io/autosave';
 import { loadFile } from '../../src/io/file';
@@ -85,7 +86,7 @@ function states(s: Store): Doc[] {
 
 /** Waits for the recovery's async load to land. */
 async function waitFor(ok: () => boolean): Promise<void> {
-  for (let i = 0; i < 300 && !ok(); i++) await new Promise((r) => setTimeout(r, 10));
+  await settled(ok, (v) => v);
   expect(ok()).toBe(true);
 }
 

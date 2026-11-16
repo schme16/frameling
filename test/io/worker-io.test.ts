@@ -8,6 +8,7 @@ import { setIoPool, pngPixels } from '../../src/io/ioClient';
 import { runJob, type IoRequest } from '../../src/io/ioJobs';
 import { encodePng, decodePng } from '../../src/io/png';
 import { WorkerPool, type WorkerLike } from '../../src/io/workerPool';
+import { waitUntil } from '../helpers/waits';
 
 class FakeWorker implements WorkerLike {
   onmessage: ((e: { data: any }) => void) | null = null;
@@ -89,7 +90,8 @@ describe('WorkerPool', () => {
     const { p, made } = pool();
     await p.run({ kind: 'png', bytes: encodePng({ width: 1, height: 1, pixels: new Uint8ClampedArray(4) }) });
     expect(made[0].terminated).toBe(false);
-    await new Promise((r) => setTimeout(r, 120));
+    // The pool lets a worker go 50 ms after it goes idle; wait for that to happen rather than for a guessed 120 ms.
+    await waitUntil(() => made[0].terminated, 'the idle worker to be let go');
     expect(made[0].terminated).toBe(true);
   });
   it('rejects when a worker fails or cannot start, and keeps going with the rest', async () => {

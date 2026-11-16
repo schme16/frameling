@@ -16,6 +16,7 @@ import { decide } from '../../src/plugins/powers';
 import { PluginRuntime, type HostHooks } from '../../src/plugins/runtime';
 import { memoryLibrary, setLibraryForTests } from '../../src/platform/library';
 import { closeAll, runPlugin, settle } from './harness';
+import { waitUntil } from '../helpers/waits';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -154,7 +155,7 @@ describe('the tool event pipe', () => {
       wanted.push(`down${i * 10}`, `up${i * 10 + 2}`, `cancel${i * 10 + 3}`);
     }
     release();
-    await new Promise((r) => setTimeout(r, 20));
+    await waitUntil(() => seen.filter((s) => !s.startsWith('move')).length >= wanted.length, 'the pipe to hand every event on');
     expect(seen.filter((s) => !s.startsWith('move'))).toEqual(wanted);
   });
 });

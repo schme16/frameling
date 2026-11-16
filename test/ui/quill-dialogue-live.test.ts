@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // @ts-expect-error jsdom has no type declarations here
 import { JSDOM } from 'jsdom';
+import { waitUntil } from '../helpers/waits';
 import data from '../../src/ui/mascot/lines.json';
 import {
   boxToText, createBoard, formatEntry, formatLines, joinDraft, mergeTask, problemsFor, pullMaster, reconcile, splitDraft, styleNotes, textToBox, usableChanges,
@@ -216,14 +217,15 @@ describe('the page, end to end', () => {
       },
     });
     const w = dom.window;
-    for (let i = 0; i < 60 && !w.document.querySelector('section.line'); i++) await new Promise((r) => setTimeout(r, 25));
+    // The page builds its lines after its own async load; wait for them rather than for a guessed moment.
+    await waitUntil(() => !!w.document.querySelector('section.line'), 'the lines to appear');
     return { w, doc: w.document, clip };
   }
   const type = (w: Window, box: HTMLTextAreaElement, value: string) => {
     box.value = value;
     box.dispatchEvent(new (w as unknown as { Event: typeof Event }).Event('input', { bubbles: true }));
   };
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const lineBox = (doc: Document, id: string) => doc.querySelector<HTMLTextAreaElement>(`section[data-id="${id}"] textarea`)!;
 
   it('pulls the live list, saves as you type, flags a lost placeholder and raises the task', async () => {
@@ -241,18 +243,18 @@ describe('the page, end to end', () => {
     expect(doc.querySelector(`section[data-id="${plain}"]`)!.classList.contains('is-changed')).toBe(true);
     expect(doc.querySelector(`section[data-id="${plain}"] .becomes pre`)!.textContent).toBe(formatEntry(plain, { ...master[plain], text: 'My better words.' }).trim());
     expect(doc.getElementById('sync')!.textContent).toBe('Saving');
-    await wait(1000);
+    await waitUntil(() => same(board.state.saved.at(-1), { [plain]: 'My better words.' }) && doc.getElementById('sync')!.textContent === 'Saved on the board', 'the first save');
     expect(board.state.saved.at(-1)).toEqual({ [plain]: 'My better words.' });
     expect(doc.getElementById('sync')!.textContent).toBe('Saved on the board');
 
     // Losing a {curly} word is flagged, kept apart ("$unfinished"), and left out of the task.
     type(w as never, lineBox(doc, withVar), 'No curly word at all');
     expect(doc.querySelector(`section[data-id="${withVar}"] .warn`)!.textContent).toMatch(/^Needs exactly: /);
-    await wait(1000);
+    await waitUntil(() => !!(board.state.saved.at(-1) as Record<string, unknown> | undefined)?.$unfinished, 'the unfinished line to be saved');
     expect(board.state.saved.at(-1)).toEqual({ [plain]: 'My better words.', $unfinished: { [withVar]: 'No curly word at all' } });
 
     (doc.getElementById('raise') as HTMLButtonElement).click();
-    await wait(300);
+    await waitUntil(() => board.state.created.length === 1, 'the task to be raised');
     expect(board.state.created).toHaveLength(1);
     const task = board.state.created[0] as { body: string };
     expect(task.body).toContain(plain);
@@ -266,7 +268,7 @@ describe('the page, end to end', () => {
     expect(doc.getElementById('count')!.textContent).toMatch(/1 changed/);
     expect(doc.getElementById('held')!.hidden).toBe(false);
     expect(doc.getElementById('held')!.textContent).toContain('gone.line');
-    await wait(1000);
+    await waitUntil(() => board.state.saved.length > 0 && (board.state.saved.at(-1) as Record<string, unknown>)[firstList] === undefined, 'the tidied copy to be saved');
     expect((board.state.saved.at(-1) as Record<string, unknown>)[firstList]).toBeUndefined();
   });
 
@@ -279,10 +281,10 @@ describe('the page, end to end', () => {
     expect(JSON.parse(w.localStorage.getItem('quill-lines-draft.v2')!).changes[plain]).toBe('Offline words');
     expect(doc.getElementById('raise')!.textContent).toBe('Copy a task for the board');
     (doc.getElementById('raise') as HTMLButtonElement).click();
-    await wait(100);
+    await waitUntil(() => clip.length >= 1, 'the task text to be copied');
     expect(clip[0]).toContain('Put 1 edited Quill line into lines.json');
     (doc.getElementById('copyChanged') as HTMLButtonElement).click();
-    await wait(50);
+    await waitUntil(() => clip.length >= 2, 'the changed lines to be copied');
     expect(JSON.parse(clip[1])).toEqual({ [plain]: 'Offline words' });
   });
 

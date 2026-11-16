@@ -4,6 +4,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrushPicker } from '../../src/brushes/BrushPicker';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 import { resetStore, store } from '../../src/core/store';
 import { newDoc } from '../../src/core/doc';
 
@@ -17,7 +18,7 @@ export async function preloadPicker(): Promise<void> {
   await act(async () => host.querySelector<HTMLButtonElement>('.pk-btn')!.click());
   // Wait for the panel to arrive rather than for a fixed moment: on a busy machine the import can take longer than
   // any single sleep we would pick, and a test that fails only when the machine is loaded is worse than no test.
-  const until = Date.now() + 5000;
+  const until = Date.now() + WAIT_CEILING_MS;
   while (!document.querySelector('.pk-pop') && Date.now() < until) {
     await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
   }

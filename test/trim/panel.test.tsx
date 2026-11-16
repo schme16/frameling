@@ -12,6 +12,7 @@ import { resetStore, store } from '../../src/core/store';
 import { trimOf } from '../../src/core/trimTween';
 import { addVectorLayer, hold, linePath, pathShape, vectorDrawing } from '../../src/templates/build';
 import { TrimPanel } from '../../src/trim/TrimPanel';
+import { waitUntil } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -103,7 +104,7 @@ describe('the commands', () => {
       return { value: 'inOrder', remember: true };
     });
     run('trim.drawOn');
-    return new Promise((r) => setTimeout(r, 10)).then(() => {
+    return waitUntil(() => asked.length > 0 && rememberedChoice('trim.order') === 'inOrder', 'the question to be asked and remembered').then(() => {
       expect(asked).toEqual(['trim.order']);
       expect(rememberedChoice('trim.order')).toBe('inOrder');
       const d = store().get().doc.drawings[store().get().doc.layers[0].cels[0].drawingId];

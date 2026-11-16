@@ -4,6 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { TooltipLayer } from '../../src/ui/Tooltips';
+import { WAIT_CEILING_MS } from '../helpers/waits';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -64,9 +65,10 @@ describe('tip arrow', () => {
     const before = parseFloat(document.querySelector<HTMLElement>('.ui-tip')!.style.left);
     // The thing slides to the right edge: the tip is held on screen and the arrow slides along it.
     thing = rect(window.innerWidth - 30, 400, 24, 30);
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 80));
-    });
+    // The tip follows on the next animation frames; wait for it to arrive rather than for a guessed 80 ms.
+    const arrived = () => parseFloat(document.querySelector<HTMLElement>('.ui-tip')!.style.left) === window.innerWidth - 200 - 8;
+    const end = Date.now() + WAIT_CEILING_MS;
+    while (!arrived() && Date.now() < end) await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
     const tip = document.querySelector<HTMLElement>('.ui-tip')!;
     expect(parseFloat(tip.style.left)).toBe(window.innerWidth - 200 - 8);
     expect(parseFloat(tip.style.left)).toBeGreaterThan(before);
