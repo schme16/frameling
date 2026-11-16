@@ -1,0 +1,13 @@
+Selecting plain-colour shapes: the Colours panel and the fill and stroke boxes show what the shapes have.
+
+A (before-pick-*): one red shape picked with the Select tool while the colour box holds a blue. The fill box, the
+   picker and the hex field all show the blue, not the red shape's colour.
+B (after-pick-*): the same pick. The fill box, the picker and the hex field show the shape's red (#e0382f). The box
+   itself is untouched until you change a colour.
+before-differ-*: three shapes (red, green, purple) all picked. The panel shows the box's blue and one change would overwrite all three.
+after-differ-*: the same pick. The fill box is striped ("mixed"), the picker steps aside, and the panel says
+   "These 3 shapes have different colours" with Make them all match the first. Clicking a swatch gives them all that colour.
+
+Both themes (dark = Midnight Sketchbook, light = Paper and Honey), cropped to the canvas and the Colours panel.
+Made with scripts/docs/ab-plain-colour-pick/plain-colour-pick.cjs (SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron
+scripts/docs/help-media.cjs --entries scripts/docs/ab-plain-colour-pick --out <dir> [--renderer <dir of the old build>]).
