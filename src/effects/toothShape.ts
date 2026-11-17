@@ -60,6 +60,11 @@ export function toothStats(): { built: number; reused: number } {
   return { built: cache.builds, reused: cache.hits };
 }
 
+/** Sets how many pixels of tooth pictures are kept (measuring: a small number stands in for a drawing with more lines than the cache holds). */
+export function setToothBudget(px: number): void {
+  cache.budget = px;
+}
+
 /** Pictures forgotten, so the next draw works them out again (tests and measuring). */
 export function clearToothCache(): void {
   cache.clear();

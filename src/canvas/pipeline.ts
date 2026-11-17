@@ -31,7 +31,7 @@ import { blitEntry, blitEntryStretched } from './bitmapBlit';
 import { perf } from './perf';
 import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
 import { cssVar } from './theme';
-import { runSliced } from '../core/slice';
+import { runProgressive, runSliced } from '../core/slice';
 import { giveUp, overviewSize, SLICE_MS, visibleSlice } from './zoomProxy';
 
 export interface FrameParams {
@@ -243,6 +243,34 @@ export class BitmapCache {
     return e;
   }
 
+  /** A bitmap being drawn a few shapes at a time (see buildSliced): what for, the whole-frame canvas it is going onto, and how many shapes are on it. */
+  private partial: { d: Drawing; pixelSize: number; w: number; h: number; canvas: Canvas2; done: number } | null = null;
+
+  /**
+   * Like build, for a drawing that is slow to draw (paper tooth and the like), but a few milliseconds at a time: returns null
+   * until it is all drawn, and carries on from where it got to the next call. The bitmap comes out the same as build's (the same
+   * drawing, on a whole-frame canvas, at the same scale), only without the trimming to the part that has ink.
+   */
+  buildSliced(doc: Doc, d: Drawing, pixelSize: number, w: number, h: number, ms: number): Entry | null {
+    let pr = this.partial;
+    if (!pr || pr.d !== d || pr.pixelSize !== pixelSize || pr.w !== w || pr.h !== h) pr = this.partial = { d, pixelSize, w, h, canvas: makeCanvas(w, h), done: 0 };
+    const g = ctxOf(pr.canvas);
+    g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
+    const r = runProgressive(ms, pr.done, () => drawDrawing(g, d, pixelSize, { doc, frame: 0 }));
+    pr.done = r.done;
+    if (!r.complete) return null;
+    this.partial = null;
+    this.builds++;
+    let list = this.map.get(d);
+    if (!list) this.map.set(d, (list = []));
+    const e: Entry = { drawing: d, pixelSize, w, h, x: 0, y: 0, canvas: pr.canvas, pixels: pr.canvas.width * pr.canvas.height, used: ++this.tick, list };
+    list.push(e);
+    this.all.add(e);
+    this.total += e.pixels;
+    this.trim(e);
+    return e;
+  }
+
   /** Draws the drawing (or only the shapes added to `grown`'s) with `g` already set to the stage's scale. */
   private paintInto(g: Ctx2, doc: Doc, d: Drawing, pixelSize: number, grown?: Entry): void {
     if (grown && grown.drawing.kind === 'vector' && d.kind === 'vector') {
@@ -310,6 +338,7 @@ export class BitmapCache {
     this.all.clear();
     this.total = 0;
     this.map = new WeakMap();
+    this.partial = null;
   }
 }
 
@@ -477,17 +506,46 @@ export class FramePainter {
   }
 
   /**
-   * One slice of working out the sharp zoomed in picture, drawn off screen so nobody sees it half done. True when it all
-   * got done (the real draw then finds every picture ready), or when it is taking too long to be worth slicing.
+   * Whether the frame is only layers of drawings, each fully opaque, so it can be drawn a few shapes at a time onto a canvas
+   * that is kept (the layers' own drawings are all there is to it: no onion skin, ghost, light table, symbol backdrop, reference
+   * picture, blend, mask or effect on a layer, nothing that is drawn around the shapes).
    */
-  private catchUp(p: FrameParams): boolean {
+  private plainFrame(p: FrameParams): boolean {
+    const { doc } = p;
+    if (p.onion.enabled || p.ghost?.length || p.lightTable?.items.length || doc.editing?.length || needsCompositor(doc)) return false;
+    return doc.layers.every((l) => !l.visible || (l.opacity >= 1 && !l.picture && (l.kind === 'vector' || l.kind === 'pixel' || l.kind === 'tilemap' || l.kind === 'camera')));
+  }
+
+  /**
+   * One slice of working out the sharp zoomed in picture, drawn off screen so nobody sees it half done.
+   * 'drawn': it is all done and now on `g`. 'more': carry on next frame. 'direct': slicing is not working here, draw it plainly.
+   * A plain frame is drawn a few shapes at a time onto a canvas kept between slices, so it finishes however little the picture
+   * caches hold (zoomed in, a drawing with a lot of tooth needs more than they can). Any other frame goes through the caches and
+   * gives up after a while.
+   */
+  private catchUp(g: CanvasRenderingContext2D, p: FrameParams): 'drawn' | 'more' | 'direct' {
     const c = (this.warmCanvas = this.sized(this.warmCanvas, p.width, p.height));
     const wg = ctxOf(c);
+    this.slices++;
+    if (this.plainFrame(p)) {
+      const key: unknown[] = [p.doc, p.frame, p.rect.x, p.rect.y, p.rect.w, p.rect.h, p.width, p.height, c];
+      if (!this.prog || this.prog.key.length !== key.length || this.prog.key.some((v, i) => v !== key[i])) {
+        wg.setTransform(1, 0, 0, 1, 0, 0);
+        wg.clearRect(0, 0, p.width, p.height);
+        this.prog = { key, done: 0 };
+      }
+      const r = runProgressive(SLICE_MS, this.prog.done, () => this.paintStage(wg as CanvasRenderingContext2D, p, false));
+      this.prog.done = r.done;
+      if (!r.complete) return 'more';
+      this.prog = null;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.drawImage(c as CanvasImageSource, 0, 0);
+      return 'drawn';
+    }
     wg.setTransform(1, 0, 0, 1, 0, 0);
     wg.clearRect(0, 0, p.width, p.height);
     const done = runSliced(SLICE_MS, () => this.paintStage(wg as CanvasRenderingContext2D, p, false));
-    this.slices++;
-    return done || giveUp(this.slices, performance.now() - this.owedSince);
+    return done || giveUp(this.slices, performance.now() - this.owedSince) ? 'direct' : 'more';
   }
 
   /** True when the zoomed in picture is still waiting to get sharp, so the next frame should come at once. */
@@ -499,6 +557,8 @@ export class FramePainter {
   /** The stage's size the last time it was drawn from bitmaps that were all ready (so the overview can be made from them cheaply). */
   private lastFit: { w: number; h: number; docW: number; docH: number } | null = null;
   private warmCanvas: Canvas2 | null = null;
+  /** The progressive catch-up's place: what it was for and how many units are on the warm canvas. */
+  private prog: { key: unknown[]; done: number } | null = null;
   private lastParams: FrameParams | null = null;
 
   /** Whether the overview is worth making while the machine is idle: zoomed in, still, and it is missing or out of date. */
@@ -526,16 +586,19 @@ export class FramePainter {
         this.owed = true;
         this.owedSince = performance.now();
         this.slices = 0;
+        this.prog = null;
         this.paintProxy(g, p);
         return false;
       }
       if (this.owed) {
-        if (!this.catchUp(p)) {
+        const r = this.catchUp(g, p);
+        if (r === 'more') {
           this.paintProxy(g, p);
           this.catchingUp = true;
           return false;
         }
         this.owed = false;
+        if (r === 'drawn') return true;
       }
     } else this.owed = false;
     if (!p.tileMode) {
@@ -623,6 +686,21 @@ export class FramePainter {
             g.globalAlpha = 1;
             settled = false;
             continue;
+          }
+        }
+        if (!e && !p.zooming && !p.playing && !copy && this.hasSlowLook(p)) {
+          // The zoom has stopped and the old picture is stretched to size: a slow drawing is redrawn a few shapes a frame behind it.
+          const old = this.cache.stale(drawing, pixelSize);
+          if (old && !this.growthSource(layer.id, drawing, pixelSize, rect.w, rect.h)) {
+            e = this.cache.buildSliced(doc, drawing, pixelSize, rect.w, rect.h, SLICE_MS) ?? undefined;
+            if (!e) {
+              g.globalAlpha = layer.opacity;
+              blitEntryStretched(g, old, rect.x, rect.y, rect.w, rect.h);
+              g.globalAlpha = 1;
+              settled = false;
+              this.catchingUp = true;
+              continue;
+            }
           }
         }
         if (!e) {
@@ -919,7 +997,7 @@ export class FramePainter {
     this.onionCache = [];
     this.scratch = this.scratch2 = null;
     this.lastVector.clear();
-    this.overview = this.warmCanvas = this.lastParams = this.lastFit = null;
+    this.overview = this.warmCanvas = this.lastParams = this.lastFit = this.prog = null;
     this.owed = this.catchingUp = false;
   }
 }

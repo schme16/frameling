@@ -7,9 +7,9 @@
 
 /** How long one catch-up slice may spend on new pictures, in ms. A frame is about 16, and a stroke's picture is the smallest piece. */
 export const SLICE_MS = 8;
-/** Catch-up gives up after this many slices or this long (ms), and draws the sharp picture in one go, so it always ends. */
-export const MAX_SLICES = 90;
-export const MAX_CATCH_UP_MS = 2500;
+/** Catch-up through the caches (a frame that is not plain) gives up after this many slices or this long (ms) and draws in one go, so it always ends. A plain frame is drawn progressively and never needs this. */
+export const MAX_SLICES = 40;
+export const MAX_CATCH_UP_MS = 1500;
 
 /** The overview's size: the stage's shape at about one screen of pixels (never more than the cacheable limit). */
 export function overviewSize(stageW: number, stageH: number, screenW: number, screenH: number): { w: number; h: number } {

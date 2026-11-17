@@ -19,9 +19,9 @@
       "electron": "45.3.0",
       "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
     },
-    "renderer": "/tmp/claude-1000/-mnt-109313D2109313D2-projects-frameling/51641969-29e2-4bea-b9dc-379871bd755d/scratchpad/renderer-before",
+    "renderer": "/tmp/claude-1000/-mnt-109313D2109313D2-projects-frameling/51641969-29e2-4bea-b9dc-379871bd755d/scratchpad/renderer-dev-merged",
     "doc": "undo-test.frameling",
-    "when": "2026-11-17T22:56:43.961Z"
+    "when": "2026-11-17T23:40:39.411Z"
   },
   "counts": {
     "layers": 1,
@@ -31,382 +31,345 @@
     "artboards": 0,
     "width": 1920,
     "height": 1080,
-    "ui": 0.39479166666666665
+    "ui": 0.39479166666666665,
+    "dpr": 1,
+    "canvas": "854x814"
   },
+  "speed": 1.073529411737314,
+  "calMs": 7.2999999998137355,
   "results": {
     "notch": {
       "rafDelta": {
-        "n": 8,
-        "mean": 637.48,
-        "p50": 583.4,
-        "p95": 1100,
-        "p99": 1100,
-        "max": 1100
+        "n": 6,
+        "mean": 849.96,
+        "p50": 833.27,
+        "p95": 1383.2,
+        "p99": 1383.2,
+        "max": 1383.2
       },
       "rafDeltaAll": {
-        "n": 8,
-        "mean": 637.48,
-        "p50": 583.4,
-        "p95": 1100,
-        "p99": 1100,
-        "max": 1100
+        "n": 6,
+        "mean": 849.96,
+        "p50": 833.27,
+        "p95": 1383.2,
+        "p99": 1383.2,
+        "max": 1383.2
       },
       "mainDrawMs": {
-        "n": 11,
-        "mean": 572.87,
-        "p50": 474.7,
-        "p95": 1088.3,
-        "p99": 1088.3,
-        "max": 1088.3
+        "n": 9,
+        "mean": 727.4,
+        "p50": 544.1,
+        "p95": 1377.7,
+        "p99": 1377.7,
+        "max": 1377.7
       },
       "slowDraws": [
         [
           0,
-          743.9
+          834.6
         ],
         [
           1,
-          1088.3
+          1377.7
         ],
         [
           2,
-          987.3
+          1186.5
         ],
         [
           3,
-          576.1
+          777.3
         ],
         [
           4,
-          474.7
+          449.4
         ],
         [
           5,
-          359.1
+          423.7
         ],
         [
           6,
-          430.9
+          469.5
         ],
         [
           7,
-          361.6
+          483.8
         ],
         [
           8,
-          425
-        ],
-        [
-          9,
-          525.2
-        ],
-        [
-          10,
-          329.5
+          544.1
         ]
       ],
-      "longTasks": 10,
-      "longTaskMaxMs": 1091,
+      "longTasks": 8,
+      "longTaskMaxMs": 1382,
       "bitmapBuilds": 2,
       "zoomRange": [
         1.48,
-        8.59
+        5.53
       ],
       "zoomTrace": [
         1.48
       ],
-      "framesOver33": 8
+      "framesOver33": 6
     },
     "pinch": {
       "rafDelta": {
-        "n": 12,
-        "mean": 477.75,
-        "p50": 433.3,
-        "p95": 1566.6,
-        "p99": 1566.6,
-        "max": 1566.6
+        "n": 43,
+        "mean": 149.99,
+        "p50": 16.7,
+        "p95": 983.4,
+        "p99": 1283.2,
+        "max": 1283.2
       },
       "rafDeltaAll": {
-        "n": 12,
-        "mean": 477.75,
-        "p50": 433.3,
-        "p95": 1566.6,
-        "p99": 1566.6,
-        "max": 1566.6
+        "n": 43,
+        "mean": 149.99,
+        "p50": 16.7,
+        "p95": 983.4,
+        "p99": 1283.2,
+        "max": 1283.2
       },
       "mainDrawMs": {
-        "n": 15,
-        "mean": 542.56,
-        "p50": 568.6,
-        "p95": 1541.6,
-        "p99": 1541.6,
-        "max": 1541.6
+        "n": 23,
+        "mean": 291.29,
+        "p50": 0.2,
+        "p95": 1129.3,
+        "p99": 1265.4,
+        "max": 1265.4
       },
       "slowDraws": [
         [
-          6,
-          1541.6
-        ],
-        [
-          7,
-          1383
-        ],
-        [
-          8,
-          756.3
-        ],
-        [
-          9,
-          398.5
-        ],
-        [
-          10,
-          634.5
-        ],
-        [
-          11,
-          568.6
-        ],
-        [
-          12,
-          919.8
-        ],
-        [
-          13,
-          1228.6
-        ],
-        [
           14,
-          701.1
-        ]
-      ],
-      "longTasks": 7,
-      "longTaskMaxMs": 1567,
-      "bitmapBuilds": 3,
-      "zoomRange": [
-        0.61,
-        8.59
-      ],
-      "zoomTrace": [
-        0.61
-      ],
-      "framesOver33": 11
-    },
-    "settle1.5": {
-      "reachedZoom": 3.56,
-      "frameMs": {
-        "n": 4,
-        "mean": 537.48,
-        "p50": 583.3,
-        "p95": 650,
-        "p99": 650,
-        "max": 650
-      },
-      "longTasks": 6,
-      "longTaskMaxMs": 743,
-      "owedAll": 0,
-      "framesAll": 9,
-      "owedFrames": 0,
-      "lastOwedAt": 0,
-      "slow": [
-        [
-          0,
-          450
+          780.2
         ],
         [
-          1,
-          467
+          15,
+          970.6
         ],
         [
-          2,
-          583
+          16,
+          1129.3
         ],
         [
-          3,
-          650
-        ]
-      ],
-      "sharpAfterMs": null,
-      "framesOver33": 4
-    },
-    "settle3": {
-      "reachedZoom": 3.88,
-      "frameMs": {
-        "n": 4,
-        "mean": 570.83,
-        "p50": 566.7,
-        "p95": 716.7,
-        "p99": 716.7,
-        "max": 716.7
-      },
-      "longTasks": 7,
-      "longTaskMaxMs": 1089,
-      "owedAll": 0,
-      "framesAll": 75,
-      "owedFrames": 0,
-      "lastOwedAt": 0,
-      "slow": [
-        [
-          0,
-          450
+          17,
+          1265.4
         ],
         [
-          1,
-          567
-        ],
-        [
-          2,
-          550
-        ],
-        [
-          3,
-          717
-        ]
-      ],
-      "sharpAfterMs": null,
-      "framesOver33": 4
-    },
-    "settle8": {
-      "reachedZoom": 10.33,
-      "frameMs": {
-        "n": 10,
-        "mean": 238.32,
-        "p50": 200,
-        "p95": 466.6,
-        "p99": 466.6,
-        "max": 466.6
-      },
-      "longTasks": 13,
-      "longTaskMaxMs": 464,
-      "owedAll": 0,
-      "framesAll": 33,
-      "owedFrames": 0,
-      "lastOwedAt": 0,
-      "slow": [
-        [
-          0,
-          467
-        ],
-        [
-          1,
-          350
-        ],
-        [
-          2,
-          217
-        ],
-        [
-          3,
-          183
-        ],
-        [
-          4,
-          200
-        ],
-        [
-          5,
-          200
-        ],
-        [
-          6,
-          200
-        ],
-        [
-          7,
-          183
-        ],
-        [
-          8,
-          200
-        ],
-        [
-          9,
-          183
-        ]
-      ],
-      "sharpAfterMs": null,
-      "framesOver33": 10
-    },
-    "settle24": {
-      "reachedZoom": 33.34,
-      "frameMs": {
-        "n": 24,
-        "mean": 115.97,
-        "p50": 183.3,
-        "p95": 183.4,
-        "p99": 216.7,
-        "max": 216.7
-      },
-      "longTasks": 16,
-      "longTaskMaxMs": 193,
-      "owedAll": 0,
-      "framesAll": 61,
-      "owedFrames": 0,
-      "lastOwedAt": 0,
-      "slow": [
-        [
-          0,
-          183
-        ],
-        [
-          1,
-          183
-        ],
-        [
-          2,
-          183
-        ],
-        [
-          3,
-          183
-        ],
-        [
-          4,
-          183
-        ],
-        [
-          5,
-          217
-        ],
-        [
-          6,
-          183
-        ],
-        [
-          7,
-          183
-        ],
-        [
-          8,
-          183
-        ],
-        [
-          9,
-          50
+          18,
+          832.4
         ],
         [
           19,
-          167
+          415.3
         ],
         [
           20,
-          183
+          372.4
         ],
         [
           21,
-          183
+          445
         ],
         [
           22,
-          183
+          465.7
+        ]
+      ],
+      "longTasks": 8,
+      "longTaskMaxMs": 1272,
+      "bitmapBuilds": 3,
+      "zoomRange": [
+        0.05,
+        4.07
+      ],
+      "zoomTrace": [
+        0.05,
+        0.05,
+        0.23
+      ],
+      "framesOver33": 17
+    },
+    "settle1.5": {
+      "sharpOk": true,
+      "idleDraws": 42,
+      "idleOwedFrames": 0,
+      "owedAtEnd": false,
+      "drawMs": {
+        "n": 172,
+        "mean": 235.97,
+        "p50": 214.5,
+        "p95": 755.3,
+        "p99": 1226.7,
+        "max": 1416
+      },
+      "reachedZoom": 0.05,
+      "frameMs": {
+        "n": 135,
+        "mean": 38.02,
+        "p50": 16.7,
+        "p95": 66.6,
+        "p99": 533.2,
+        "max": 583.4
+      },
+      "longTasks": 6,
+      "longTaskMaxMs": 593,
+      "owedAll": 0,
+      "framesAll": 265,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [
+        [
+          99,
+          67
         ],
         [
-          23,
-          183
+          101,
+          50
+        ],
+        [
+          102,
+          50
+        ],
+        [
+          103,
+          50
+        ],
+        [
+          104,
+          34
+        ],
+        [
+          105,
+          50
+        ],
+        [
+          106,
+          67
+        ],
+        [
+          107,
+          50
+        ],
+        [
+          130,
+          350
+        ],
+        [
+          131,
+          400
+        ],
+        [
+          132,
+          500
+        ],
+        [
+          133,
+          583
+        ],
+        [
+          134,
+          533
         ]
       ],
       "sharpAfterMs": null,
-      "framesOver33": 15
+      "framesOver33": 13
+    },
+    "settle3": {
+      "sharpOk": true,
+      "idleDraws": 9,
+      "idleOwedFrames": 0,
+      "owedAtEnd": false,
+      "drawMs": {
+        "n": 141,
+        "mean": 233.81,
+        "p50": 213.2,
+        "p95": 714.5,
+        "p99": 1023.5,
+        "max": 1079.2
+      },
+      "reachedZoom": 0.05,
+      "frameMs": {
+        "n": 232,
+        "mean": 17.6,
+        "p50": 16.7,
+        "p95": 33.3,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "owedAll": 0,
+      "framesAll": 374,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [],
+      "sharpAfterMs": null,
+      "framesOver33": 3
+    },
+    "settle8": {
+      "sharpOk": true,
+      "idleDraws": 0,
+      "idleOwedFrames": 0,
+      "owedAtEnd": false,
+      "drawMs": {
+        "n": 14,
+        "mean": 309.51,
+        "p50": 285.1,
+        "p95": 794.3,
+        "p99": 794.3,
+        "max": 794.3
+      },
+      "reachedZoom": 8.59,
+      "frameMs": {
+        "n": 244,
+        "mean": 16.73,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 33.3
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "owedAll": 0,
+      "framesAll": 279,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [],
+      "sharpAfterMs": null,
+      "framesOver33": 0
+    },
+    "settle24": {
+      "sharpOk": true,
+      "idleDraws": 0,
+      "idleOwedFrames": 0,
+      "owedAtEnd": false,
+      "drawMs": {
+        "n": 19,
+        "mean": 292.36,
+        "p50": 263.2,
+        "p95": 808.5,
+        "p99": 808.5,
+        "max": 808.5
+      },
+      "reachedZoom": 25.81,
+      "frameMs": {
+        "n": 245,
+        "mean": 16.67,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 16.8
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "owedAll": 0,
+      "framesAll": 290,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [],
+      "sharpAfterMs": null,
+      "framesOver33": 0
     }
   },
   "consoleErrors": []

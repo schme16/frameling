@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { giveUp, MAX_CATCH_UP_MS, MAX_SLICES, overviewSize, visibleSlice } from '../../src/canvas/zoomProxy';
-import { mayBuild, runSliced, slicing } from '../../src/core/slice';
+import { mayBuild, runProgressive, runSliced, slicing, unitBegin, unitEnd } from '../../src/core/slice';
 
 describe('overviewSize', () => {
   it('keeps the stage shape at about one screen of pixels', () => {
@@ -98,5 +98,88 @@ describe('runSliced', () => {
     ).toThrow('boom');
     expect(slicing()).toBe(false);
     expect(mayBuild()).toBe(true);
+  });
+});
+
+describe('runProgressive', () => {
+  // What drawDrawing does for each shape, with the draw itself a log line.
+  const drawAll = (log: number[], n: number) => () => {
+    for (let i = 0; i < n; i++) {
+      const u = unitBegin();
+      if (u === 'skip') continue;
+      if (u === 'stop') return;
+      try {
+        log.push(i);
+      } finally {
+        unitEnd();
+      }
+    }
+  };
+
+  it('is a plain draw outside a run', () => {
+    expect(unitBegin()).toBe('draw');
+    unitEnd();
+  });
+
+  it('draws every unit once across runs, in order, however the time falls', () => {
+    const now = vi.spyOn(performance, 'now');
+    let t = 0;
+    now.mockImplementation(() => (t += 3)); // each look at the clock costs 3 ms: a slow machine
+    const log: number[] = [];
+    let from = 0;
+    let runs = 0;
+    for (; runs < 100; runs++) {
+      const r = runProgressive(8, from, drawAll(log, 20));
+      from = r.done;
+      if (r.complete) break;
+    }
+    now.mockRestore();
+    expect(log).toEqual(Array.from({ length: 20 }, (_, i) => i));
+    expect(runs).toBeGreaterThan(1);
+    expect(runs).toBeLessThan(100);
+  });
+
+  it('always does at least one unit per run, so a run that is already out of time still moves on', () => {
+    const now = vi.spyOn(performance, 'now');
+    const log: number[] = [];
+    // Time is spent from the start: one unit per run.
+    let t = 1000;
+    now.mockImplementation(() => (t += 50));
+    let from = 0;
+    let runs = 0;
+    while (runs < 50) {
+      const r = runProgressive(8, from, drawAll(log, 5));
+      runs++;
+      from = r.done;
+      if (r.complete) break;
+    }
+    now.mockRestore();
+    expect(log).toEqual([0, 1, 2, 3, 4]);
+    expect(runs).toBe(5);
+  });
+
+  it('counts a nested draw inside a unit as part of it', () => {
+    const log: string[] = [];
+    const draw = () => {
+      for (let i = 0; i < 3; i++) {
+        const u = unitBegin();
+        if (u === 'skip') continue;
+        if (u === 'stop') return;
+        try {
+          log.push('unit' + i);
+          const inner = unitBegin(); // a symbol's own drawing
+          expect(inner).toBe('draw');
+          log.push('inner' + i);
+          unitEnd();
+        } finally {
+          unitEnd();
+        }
+      }
+    };
+    const r = runProgressive(1000, 0, draw);
+    expect(r).toEqual({ done: 3, complete: true });
+    expect(log).toEqual(['unit0', 'inner0', 'unit1', 'inner1', 'unit2', 'inner2']);
+    expect(runProgressive(1000, 2, () => { log.length = 0; draw(); }).done).toBe(3);
+    expect(log).toEqual(['unit2', 'inner2']);
   });
 });

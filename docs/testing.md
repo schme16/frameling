@@ -965,18 +965,29 @@ fill-only path by `test/canvas/fill-path.test.ts`.
 Zooming into a drawing whose lines carry paper tooth (chalk, charcoal) or other per-shape effects used to cost a fifth of a
 second to most of a second a frame: once the stage is too big for a bitmap the page is drawn from its shapes, and each zoom
 step needs a new tooth picture per line. Now, while the zoom moves, the page is drawn from a small overview stretched to size
-(`overviewFor` in `src/canvas/pipeline.ts`), and once it stops the sharp picture is worked out a few milliseconds a frame
-(`src/core/slice.ts`, `catchUp`) and swapped in when ready, so the settled picture is the same as before. Plain shapes and
-pixel art skip this and draw straight, as they always did.
+(`overviewFor` in `src/canvas/pipeline.ts`). Once it stops, the sharp picture is drawn a few milliseconds a frame onto a canvas
+that is kept between frames (`runProgressive` in `src/core/slice.ts`: `drawDrawing` counts each shape as a unit, a run skips the
+units already on the canvas and stops after the first one that starts past its 8 ms), and when the last unit is on it the canvas
+is copied over the overview. Because the work is kept on that canvas and not in the picture caches, it finishes however little the
+caches hold (the first version leaned on the tooth cache, and with more lines than the cache holds it never finished and gave up
+after 2.5 s with one long frame). A frame that is not plain (onion skin, layer opacity, blend, effects on a layer) still goes
+through the caches and gives up after 1.5 s. The same slicing covers the stop at a depth where a whole-stage bitmap still fits
+(`BitmapCache.buildSliced`): that used to be one frame of 0.2 to 0.7 s. The settled picture is the same as before (a hash of the
+canvas at five views matches). Plain shapes and pixel art skip all this and draw straight, as they always did.
 
 `scripts/perf/zoomfile.cjs` zooms a real file with a wheel (notches) and a pinch, in and out, then zooms to four depths and
 stops, and reports frame times for each. `ZOOM_DOC=/path/to/file.frameling` measures that file where it is; without it a
-stand-in with the same kinds of lines is used. `--check` fails when a gesture's p95 frame is over 40 ms or a frame after the
-zoom stops is over 150 ms (the check for the lag coming back; it fails on a build from before the fix). `ZOOM_HASH=1`
-prints a hash of the settled picture at five views, to compare two builds exactly. `ZOOM_CLIP=1` runs the gesture to film
-(see `/shots`). The two graphics variables from the perf skill go in front of `xvfb-run`; `PERF_RENDERER` points at another
-build. `test/canvas/zoom-proxy.test.ts` covers the sums (overview size, which part of it shows, when slicing gives up, the
-time slice).
+stand-in with the same kinds of lines is used. `--check` is the check for the lag coming back. It judges main thread draw time
+and long tasks, not the raw frame gap, because the frame gap also grows when other programs use the machine and the check must
+not cry wolf then; and it scales those limits by how slow the page's JavaScript measures at the start (a fixed calculation,
+against a quiet machine), so a busy machine or `ZOOM_THROTTLE=4` does not fail it. After each stop it requires the sharp
+picture to land, nothing owed afterwards, and no drawing at all while idle. It runs with the tooth cache shrunk to 3,000,000
+pixels (`ZOOM_TOOTH_BUDGET`) so a drawing with more lines than the cache holds is covered, and it fails on a build from before
+the fix. `ZOOM_DPR=2` runs at that screen scaling (frames are slower there in xvfb whatever the page does; not part of the
+check), `ZOOM_HASH=1` prints a hash of the settled picture at five views to compare two builds exactly, `ZOOM_CLIP=1` runs the
+gesture to film (see `/shots`). The two graphics variables from the perf skill go in front of `xvfb-run`; `PERF_RENDERER` points
+at another build. `test/canvas/zoom-proxy.test.ts` covers the sums (overview size, which part of it shows, when slicing gives
+up, the time slice, the progressive run).
 
 ## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
 

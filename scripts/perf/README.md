@@ -181,8 +181,11 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
 
 `zoomfile.cjs` zooms a drawing with paper tooth on its lines (a real file with `ZOOM_DOC=/path/file.frameling`, or a stand-in) by
 wheel notches and by a pinch, in and out, then stops at four depths and watches the frames while the sharp picture catches up.
-`--check` fails when a gesture's p95 frame is over `ZOOM_BUDGET_MS` (40) or a frame after the stop is over
-`ZOOM_SETTLE_MAX_MS` (150). `ZOOM_HASH=1` hashes the settled picture at five views; `ZOOM_PROFILE=1` prints a CPU profile.
+`--check` fails when drawing a frame takes too long (p95, worst, long tasks), when the sharp picture does not land after a stop,
+or when anything is still owed or drawn while idle; the limits scale with how slow the page's JavaScript measures at the start, so
+a busy machine does not fail it (details in docs/testing.md). `ZOOM_HASH=1` hashes the settled picture at five views;
+`ZOOM_PROFILE=1` prints a CPU profile; `ZOOM_DPR=2`, `ZOOM_THROTTLE=4` and `ZOOM_TOOTH_BUDGET=3000000` stand in for a sharper
+screen, a slower machine and a drawing with more lines than the cache holds.
 
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/zoomfile.cjs --check --out scripts/perf/results/zoomfile.json
