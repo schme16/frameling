@@ -53,7 +53,7 @@ describe('Brush tool options order', () => {
     expect(order.every((n) => n >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     // Nothing but the options container comes before the preview.
-    expect(host.querySelector('.cv-options')!.firstElementChild!.matches('canvas.cv-preview')).toBe(true);
+    expect(host.querySelector('.cv-options')!.firstElementChild!.querySelector('canvas.cv-preview')).not.toBeNull();
   });
   it('gives the Brush picker the same title as Tip, and keeps Save as and Share below them', () => {
     act(() => root.render(<BrushOptions />));

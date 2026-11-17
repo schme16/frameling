@@ -40,10 +40,14 @@ import {
   type PresetState,
 } from './model';
 import { noteRecent, toggleFavourite } from './picker';
+import { readPicked } from './parts';
+import { startBrushFlash } from './flash';
 import './help';
 import { choiceWord } from '../words/choices';
 
 const KEY = 'frameling.brushPresets';
+/** Which brush was picked, kept so a brush you changed still says so after a restart (and not "Custom brush"). */
+const PICKED_KEY = 'frameling.brushPicked';
 
 export type BrushEdits = 'keep' | 'follow';
 
@@ -73,6 +77,24 @@ try {
   }
 } catch {
   // unreadable saved brushes: start with none of your own
+}
+
+function setPicked(id: string | null): void {
+  pickedId = id;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (id) localStorage.setItem(PICKED_KEY, JSON.stringify(id));
+      else localStorage.removeItem(PICKED_KEY);
+    }
+  } catch {
+    // not remembered this time
+  }
+}
+
+try {
+  if (typeof localStorage !== 'undefined') pickedId = readPicked(JSON.parse(localStorage.getItem(PICKED_KEY) ?? 'null'), allPresets(mine).map((p) => p.id));
+} catch {
+  // unreadable: nothing was picked
 }
 
 /** Says why nothing happened, and answers false. */
@@ -152,7 +174,7 @@ export function activeOwn(side: Side = currentSide()): BrushPreset | undefined {
 export function applyPreset(id: string): boolean {
   const p = everyBrush().find((x) => x.id === id);
   if (!p) return false;
-  pickedId = p.id;
+  setPicked(p.id);
   if (p.tool === 'pixel' && p.pixel) applySpec(p.pixel);
   else store().setUi({ brush: { ...p.brush } });
   noteRecent(p.id);
@@ -169,7 +191,7 @@ export function saveCurrentAs(name: string, group?: string): BrushPreset | null 
     return null;
   }
   setMine(r.list);
-  pickedId = r.preset.id;
+  setPicked(r.preset.id);
   noteRecent(r.preset.id);
   naming = null;
   toast(r.replaced ? `Updated "${r.preset.name}" with this brush.` : `Saved "${r.preset.name}". Find it in the brush picker, under the preview.`, { kind: 'success' });
@@ -214,7 +236,7 @@ export function deleteActive(): boolean {
   if (!own) return false;
   const at = mine.findIndex((p) => p.id === own.id);
   setMine(deletePreset(mine, own.id));
-  if (pickedId === own.id) pickedId = null;
+  if (pickedId === own.id) setPicked(null);
   toast(`Deleted "${own.name}".`, {
     action: {
       label: 'Undo',
@@ -223,7 +245,7 @@ export function deleteActive(): boolean {
         const list = [...mine];
         list.splice(Math.min(at, list.length), 0, own);
         setMine(list);
-        pickedId = own.id;
+        setPicked(own.id);
         emit();
       },
     },
@@ -284,10 +306,12 @@ export function startBrushPresets(): () => void {
     lastTool = t;
     if (isPixelBrushTool(t)) emit();
   });
+  const offFlash = startBrushFlash();
   return () => {
     offVector();
     offSpecs();
     offTool();
+    offFlash();
   };
 }
 

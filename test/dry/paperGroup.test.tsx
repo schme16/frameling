@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The Paper group is one control: the same chips and the same words in chalk and charcoal, the pixel brush and a chalk tip
+// The Paper group is one control: the same picker and the same words in chalk and charcoal, the pixel brush and a chalk tip
 // that catches on paper. It says which paper you are on, and a brush that keeps its own says so.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,9 +26,23 @@ let host: HTMLElement;
 let root: Root;
 const render = (el: React.ReactElement) => act(() => root.render(el));
 const group = () => host.querySelector<HTMLElement>('[data-testid="paper-group"]');
-const chips = () => [...(group()?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? [])];
-const on = () => chips().find((c) => c.getAttribute('aria-checked') === 'true')?.textContent;
-const chip = (name: string) => chips().find((c) => c.textContent === name)!;
+// The paper is one picker: a button with a swatch, and a list of the five papers that opens from it.
+const picker = () => group()?.querySelector<HTMLButtonElement>('[data-control="paper-choice"] .pk-btn') ?? null;
+const options = () => [...document.querySelectorAll<HTMLElement>('.pp-menu [role="option"]')];
+const nameOf = (o: HTMLElement) => o.querySelector('.pk-name-text')!.textContent;
+const chips = () => {
+  const b = picker();
+  if (!b) return [];
+  if (!options().length) act(() => b.click());
+  return options();
+};
+const on = () => picker()?.querySelector('.pk-btn-name-text')?.textContent;
+const chip = (name: string) => ({
+  click: () => {
+    const o = chips().find((c) => nameOf(c) === name)!;
+    act(() => o.click());
+  },
+});
 const text = () => group()?.textContent ?? '';
 const button = (name: RegExp) => [...(group()?.querySelectorAll<HTMLButtonElement>('button.cv-action') ?? [])].find((b) => name.test(b.textContent ?? ''));
 
@@ -47,18 +61,19 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  document.querySelectorAll('.pp-menu').forEach((n) => n.remove());
 });
 
 describe('in chalk and charcoal', () => {
   it('is always there, with the five papers and the one the sheet is on chosen', () => {
     render(<DryOptionsPanel />);
-    expect(chips().map((c) => c.textContent)).toEqual(['Smooth', 'Fine', 'Medium', 'Laid', 'Rough']);
+    expect(chips().map(nameOf)).toEqual(['Smooth', 'Fine', 'Medium', 'Laid', 'Rough']);
     expect(on()).toBe('Medium');
     expect(text()).toContain('Medium, the sheet’s');
   });
   it('picking a paper changes the sheet', () => {
     render(<DryOptionsPanel />);
-    act(() => chip('Rough').click());
+    chip('Rough').click();
     expect(getDry().paper).toBe('rough');
     expect(on()).toBe('Rough');
   });
@@ -77,7 +92,7 @@ describe('in the pixel brush', () => {
     render(<PaperSection />);
     expect(on()).toBe('Laid');
     expect(text()).toContain('Laid, the sheet’s');
-    act(() => chip('Fine').click());
+    chip('Fine').click();
     expect(getDry().paper).toBe('fine');
     expect(getDab().grain?.paper).toBeUndefined();
   });
@@ -93,7 +108,7 @@ describe('in the pixel brush', () => {
     setPaper('rough');
     setDab({ grain: { paper: 'fine', depth: 0.8, scale: 1, moving: false } });
     render(<PaperSection />);
-    act(() => chip('Laid').click());
+    chip('Laid').click();
     expect(getDab().grain?.paper).toBe('laid');
     expect(getDry().paper).toBe('rough');
   });
@@ -102,7 +117,7 @@ describe('in the pixel brush', () => {
     setPaper('rough');
     setDab({ grain: { paper: 'fine', depth: 0.8, scale: 1, moving: false } });
     render(<PaperSection />);
-    act(() => chip('Laid').click());
+    chip('Laid').click();
     expect(getDry().paper).toBe('laid');
     expect(getDab().grain?.paper).toBeUndefined();
   });
@@ -128,7 +143,7 @@ describe('in the brush with a chalk tip', () => {
     expect(text()).toContain('Catch on paper');
     expect(text()).toContain('Grain size');
     act(() => patchTip({ dry: 'chalk' }));
-    expect(chips().map((c) => c.textContent)).toEqual(['Smooth', 'Fine', 'Medium', 'Laid', 'Rough']);
+    expect(chips().map(nameOf)).toEqual(['Smooth', 'Fine', 'Medium', 'Laid', 'Rough']);
     act(() => setPaper('rough'));
     expect(on()).toBe('Rough');
   });
@@ -153,13 +168,13 @@ describe('one control, not several that look alike', () => {
     expect(read('dab/DynamicsOptions.tsx')).toContain('<PaperGroup');
     expect(read('brushes/TipOptions.tsx')).toContain('<PaperGroup');
   });
-  it('and nothing else lays out its own row of papers', () => {
+  it('and nothing but the Paper picker lays out the list of papers', () => {
     const own: string[] = [];
     const walk = (dir: string) => {
       for (const e of fs.readdirSync(path.join(__dirname, '../../src', dir), { withFileTypes: true })) {
         const rel = path.posix.join(dir, e.name);
         if (e.isDirectory()) walk(rel);
-        else if (e.name.endsWith('.tsx') && rel !== 'dry/PaperGroup.tsx' && /PAPERS\.map/.test(read(rel))) own.push(rel);
+        else if (e.name.endsWith('.tsx') && rel !== 'dry/PaperPicker.tsx' && /PAPERS\.map/.test(read(rel))) own.push(rel);
       }
     };
     walk('.');

@@ -13,6 +13,8 @@ import { customOf, fixedActiveId, fixedRows, FIXED_WORDS, isFixedSide, type Pick
 import { tipName } from '../geometry/tip';
 import { PixelStroke } from './PixelSample';
 import { Stroke } from './Stroke';
+import { StickPicture, TipPicture } from './pictures';
+import { activeStick } from './stickList';
 import './picker.css';
 
 const Panel = lazyComponent(lazyModule(() => import('./BrushPickerPanel').then((m) => m.Panel), { warm: true }));
@@ -33,6 +35,8 @@ export function BrushPicker({ side = 'vector', disabled }: { side?: PickerSide; 
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const big = all.length > SMALL_LIBRARY;
+  // The row says where the brush lives, not how long the list is (the open list has the counts).
+  const sub = disabled ? 'Needs Catch on paper' : active && big && !tips ? groupOf(active) : '';
   const asks = usePicker(pickerRequests);
 
   // A command asked for the picker (Ctrl+K, a menu).
@@ -63,14 +67,14 @@ export function BrushPicker({ side = 'vector', disabled }: { side?: PickerSide; 
         onClick={() => (open ? close(true) : setOpen(true))}
       >
         <span className="pk-btn-sample">
-          {spec ? <PixelStroke spec={spec} h={30} /> : <Stroke brush={side === 'stick' && active ? active.brush : live} h={30} />}
+          {spec ? <PixelStroke spec={spec} h={30} /> : side === 'stick' ? <StickPicture dry={activeStick(live.tip)} h={30} /> : side === 'tip' ? <TipPicture tip={live.tip} h={30} /> : <Stroke brush={live} h={30} />}
         </span>
         <span className="pk-btn-text">
           <span className="pk-btn-name">
             <span className="pk-btn-name-text">{side === 'stick' ? active?.name : tips ? tipName(live.tip) : active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}</span>
             {active && changed && <i className="bp-changed" aria-label="changed" />}
           </span>
-          <span className="pk-btn-sub">{disabled ? 'Needs Catch on paper' : `${active && big && !tips ? `${groupOf(active)} · ` : ''}${all.length} ${tips ? `${words.noun}s` : 'brushes'}`}</span>
+          {sub && <span className="pk-btn-sub">{sub}</span>}
         </span>
         <span className="pk-caret" aria-hidden="true">
           <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
