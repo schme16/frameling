@@ -38,13 +38,24 @@ export const PIXELS_PER_SIZE = 100;
 const MAX_SIZE = 300;
 
 /**
- * How much of a Procreate paper's depth a stand in paper takes. Procreate's own papers are gentler at the same number
- * than Frameling's, so a 6B pencil at full depth came out as a dotted scrape rather than a gritty line. Settled by eye
- * against Procreate's own picture of the 6B Pencil and the Sketch pencil. It came down from 0.7 once a paper that
- * stays put began holding the whole stroke back rather than each dab (see stroke.ts): the speckles now stay open on
- * their own, so the paper no longer has to be deep to keep them.
+ * How much of a Procreate paper's depth a stand in paper takes. Procreate's grain bites far less at the same number
+ * than Frameling's does, so a 6B pencil at full depth came out as a dotted scrape rather than a gritty line. Settled
+ * by eye against Procreate's own picture of the 6B Pencil and the Sketch pencil. It came down from 0.45 once a paper
+ * that stays put began holding the whole stroke back as well as each dab (see stroke.ts): with both working at once a
+ * deep paper never let the middle of a pencil line go dark, so the stroke read as flat grey where Procreate's has a
+ * dark heart and a speckled fringe.
  */
-const GRAIN_DEPTH_SHARE = 0.45;
+const GRAIN_DEPTH_SHARE = 0.25;
+
+/**
+ * The same again for a grain picture the file carries itself. Procreate's own depth number is on its own scale: Cat
+ * Thorne's Basic 01 asks for all of it and still draws a dense black stroke in Procreate, while at full depth here the
+ * paper shredded it into patches. A third of the file's depth draws the stroke Procreate shows, ragged edge and all.
+ */
+const PICTURE_DEPTH_SHARE = 0.35;
+
+/** A deep grain picture takes the share; a shallow one is near enough as the file has it. */
+const pictureDepth = (d: number): number => d * (PICTURE_DEPTH_SHARE + (1 - PICTURE_DEPTH_SHARE) * (1 - d));
 
 /**
  * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
@@ -379,7 +390,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
         raw.grain = {
           picture: r.picture,
           ...(s.bool('textureInverted') ? { invert: true } : {}),
-          depth: clamp(s.num('grainDepth', 0.8), 0, 1),
+          depth: clamp(pictureDepth(s.num('grainDepth', 0.8)), 0, 1),
           scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
           moving: s.num('textureMovement', 0) >= 0.5,
         };

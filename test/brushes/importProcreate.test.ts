@@ -554,14 +554,16 @@ describe('settings, built to the layout', () => {
     for (let i = 0; i < 64 * 64; i++) noise.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);
     const grainPng = encodePng({ width: 64, height: 64, pixels: noise });
     const withPicture = one(brush({ grainDepth: 0.5, textureScale: 2, textureMovement: 1, textureInverted: true }, { 'Grain.png': grainPng })).dab;
-    expect(withPicture.grain).toMatchObject({ depth: 0.5, scale: 2, moving: true, invert: true });
+    // A file's own grain picture comes in gentler too: Procreate's depth number bites far less there than here.
+    expect(withPicture.grain).toMatchObject({ scale: 2, moving: true, invert: true });
+    expect(withPicture.grain!.depth).toBeCloseTo(0.3375, 2);
     expect(withPicture.grain?.picture?.side).toBeGreaterThanOrEqual(8);
     // Procreate's own papers are not in the file, only named. A name that says what tooth it has gets the nearest
     // paper Frameling draws itself, so a pencil arrives gritty rather than smooth, and the brush says which stood in.
     const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1 }));
     expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false });
     // A stand in paper is gentler than the file asks, because Frameling's papers bite harder than Procreate's.
-    expect(named.dab.grain!.depth).toBeCloseTo(0.45, 2);
+    expect(named.dab.grain!.depth).toBeCloseTo(0.25, 2);
     expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid' });
     // A name that says nothing about tooth gets no stand in: Shenbot's Inking Pen names "Brush-Artery-Splatters.png"
