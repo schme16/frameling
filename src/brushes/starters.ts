@@ -10,14 +10,14 @@ import { defaultTip, startBattlements, startLink, startRibbon, startVine } from 
 import type { BrushPreset } from './model';
 
 /** The groups the starters sit in, in the order the picker lists them. */
-export const STARTER_GROUPS = ['Pencils', 'Pens', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture', 'Calligraphy', 'Bristles', 'Along the line', 'Edged'] as const;
+export const STARTER_GROUPS = ['Pencils', 'Pens', 'Pen and speed', 'Markers', 'Paint', 'Chalk and charcoal', 'Watercolour', 'Stamps and texture', 'Scatter and spray', 'Calligraphy', 'Shapes', 'Bristles', 'Along the line', 'Edged'] as const;
 export type StarterGroup = (typeof STARTER_GROUPS)[number];
 
 const make = (id: string, name: string, group: StarterGroup, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, group, brush: { ...DEFAULT_BRUSH, ...brush } });
 
 // Chalk and charcoal on paper: the line catches on the paper's tooth, as the dry media do on a pixel layer.
 const dry = (kind: 'chalk' | 'charcoal', medium: DryId, amount: number) => ({ kind, amount, grain: 1, dry: medium });
-const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
+const stamp = (shape: 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw' | 'custom', angle: 'follow' | 'upright' | 'random', spacing: number, jitter: number, scatter: number) => ({
   ...defaultTip('stamp'),
   shape,
   angle,
@@ -45,6 +45,9 @@ export const STARTERS: readonly BrushPreset[] = [
   make('comic', 'Comic pen (G-pen)', 'Pens', { size: 7, thinning: 0.7, smoothing: 0.65, streamline: 0.7, taperStart: 8, taperEnd: 30 }),
   make('brush-pen', 'Brush pen', 'Pens', { size: 12, thinning: 0.8, smoothing: 0.7, streamline: 0.75, taperStart: 20, taperEnd: 70 }),
   make('dip-pen', 'Dip pen', 'Pens', { size: 9, thinning: 0.9, smoothing: 0.6, streamline: 0.65, taperStart: 6, taperEnd: 24 }),
+  // Pen and speed: the pressure brushes that the pixel side has too (same names, same groups, so they pair)
+  make('pressure-pencil', 'Pressure pencil', 'Pen and speed', { size: 3, thinning: 0.667, smoothing: 0.3, streamline: 0.25 }),
+  make('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 2, thinning: 0.5, smoothing: 0.6, streamline: 0.6, tip: { ...stamp('dot', 'upright', 0.25, 0, 2), fixedSize: false } }),
   // Markers
   make('marker', 'Marker', 'Markers', { size: 28, thinning: 0, smoothing: 0.5, streamline: 0.4 }),
   make('felt-tip', 'Felt-tip marker', 'Markers', { size: 10, thinning: 0, smoothing: 0.5, streamline: 0.45 }),
@@ -88,6 +91,10 @@ export const STARTERS: readonly BrushPreset[] = [
   make('stipple', 'Stipple', 'Stamps and texture', { size: 5, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: stamp('dot', 'random', 0.6, 0.7, 1.1) }),
   make('spatter', 'Spatter', 'Stamps and texture', { size: 14, thinning: 0, smoothing: 0.5, streamline: 0.5, tip: stamp('dot', 'upright', 0.8, 0.9, 1.6) }),
   make('confetti', 'Confetti', 'Stamps and texture', { size: 12, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: stamp('diamond', 'random', 1.3, 0.5, 1) }),
+  // Scatter and spray, and Shapes: also on the pixel side, with the same names
+  make('speckle', 'Speckle', 'Scatter and spray', { size: 3, thinning: 0.4, smoothing: 0.6, streamline: 0.6, tip: stamp('dot', 'upright', 1.2, 0.857, 1.2) }),
+  make('sprinkle', 'Sprinkle', 'Scatter and spray', { size: 2, thinning: 0.4, smoothing: 0.6, streamline: 0.6, tip: { ...stamp('custom', 'upright', 1, 0, 2), custom: [[-0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5]] } }),
+  make('slash', 'Slash', 'Shapes', { size: 8, thinning: 0.4, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.3, nibAngle: -45 } }),
   // Calligraphy: a pen nib with an angle
   make('italic', 'Italic nib', 'Calligraphy', { size: 14, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.18, nibAngle: 40 } }),
   make('broad', 'Broad nib', 'Calligraphy', { size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('nib'), roundness: 0.12, nibAngle: 30 } }),

@@ -426,11 +426,13 @@ export function syncPickCommands(): void {
       registered.delete(id);
     }
   }
+  // The two sides now share some names (Mechanical pencil, Leaves...): the pixel one says so, so the palette never lists two the same.
+  const vectorNames = new Set(all.filter((p) => p.tool !== 'pixel').map((p) => p.name.toLowerCase()));
   for (const p of all) {
     const id = `brush.pick.${p.id}`;
     registerCommand({
       id,
-      label: `Brush: ${p.name}`,
+      label: `Brush: ${p.name}${p.tool === 'pixel' && vectorNames.has(p.name.toLowerCase()) ? ' (pixels)' : ''}`,
       category: 'Draw',
       description: `Draw with the ${p.name} brush${p.builtin ? ' that comes with Frameling' : ' you saved'}.`,
       help: 'brush-presets',

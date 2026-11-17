@@ -16,7 +16,7 @@ const wave = Array.from({ length: 50 }, (_, i) => ({ x: 30 + i * 6, y: 120 + Mat
 describe('the built-in brushes', () => {
   it('list their groups in the order the picker shows them, after My brushes', () => {
     const names = groupsOf(allPresets([{ id: 'm', name: 'Mine', tool: 'brush', brush: STARTERS[0].brush }])).map((g) => g.name);
-    expect(names).toEqual([MY_GROUP, ...STARTER_GROUPS, ...PIXEL_GROUPS]);
+    expect(names).toEqual([MY_GROUP, ...new Set<string>([...STARTER_GROUPS, ...PIXEL_GROUPS])]);
   });
   it('put every brush in one of the groups', () => {
     for (const s of STARTERS) expect(STARTER_GROUPS).toContain(groupOf(s));

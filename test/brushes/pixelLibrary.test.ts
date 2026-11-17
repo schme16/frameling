@@ -36,7 +36,9 @@ describe('the pixel starters', () => {
   it('are built in, on the pixel side, with their own ids and names, in groups that exist', () => {
     const all = [...STARTERS, ...PIXEL_STARTERS];
     expect(new Set(all.map((s) => s.id)).size).toBe(all.length);
-    expect(new Set(all.map((s) => s.name.toLowerCase())).size).toBe(all.length);
+    // A name can be on both sides (Leaves, Mechanical pencil): that is how the two lists pair up. Within a side it is one brush.
+    expect(new Set(STARTERS.map((s) => s.name.toLowerCase())).size).toBe(STARTERS.length);
+    expect(new Set(PIXEL_STARTERS.map((s) => s.name.toLowerCase())).size).toBe(PIXEL_STARTERS.length);
     expect(new Set(PIXEL_STARTERS.map((s) => s.group))).toEqual(new Set(PIXEL_GROUPS));
     for (const s of PIXEL_STARTERS) {
       expect(s.builtin).toBe(true);

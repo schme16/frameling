@@ -219,6 +219,11 @@ one side only has to be in `parityGaps.ts`; an id in `parityGaps.ts` that is now
 **Brushes.** Every vector starter and every pixel starter is either in `BRUSH_PAIRS` (the same job on both sides) or in
 `ONE_SIDED_VECTOR_BRUSHES` / `ONE_SIDED_PIXEL_BRUSHES`.
 
+**Preset sheets and stroke times.** `scripts/brush-parity-presets.cjs` draws each new pixel brush beside the vector brush of the same name
+(same path, same pen pressure, on white, both at 100%), and `scripts/docs/ab-brush-parity/sheets.py` makes one sheet a group in
+`brand/ab/brush-parity/presets/`. `scripts/docs/ab-brush-parity/timing.cjs` times a 160 move stroke with each of them. Run them in xvfb,
+after `npm run build`; the first lines of each file say how.
+
 **Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
 (`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
 test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For
@@ -1602,7 +1607,7 @@ npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the e
 
 `scripts/docs/ab-paw-brush/paw.cjs` shoots the Paw prints brush: its row in the picker (scrolled into view in the Stamps and texture group) and strokes drawn with it picked from the picker, in both themes (`brand/ab/paw-brush`). `scripts/steps/rail-vector.json`, `rail-pixel.json` and `rail-pixel-workspace.json` open a vector layer, a pixel layer and the Pixel workspace for shooting the tool rail with `screen-shoot.cjs` (`brand/ab/select-first`).
 
-`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (62 brushes in 11 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
+`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (67 brushes in 14 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
 
 `scripts/docs/ab-tip-picker/shots.cjs` shoots the Tip picker in the brush options: the options panel with a stamp, a plain and a chalk tip (`stamp`, `plain`, `chalk`, run on the chips build and the picker build at the same crop, with a `log` step printing the Tip block's height in px), the picker open in both row styles (`open`, `open-dense`) and a stamp chosen from it (`chosen`). Build each side with `npx vite build --outDir <dir>` (the before from a detached worktree of the base commit) and run `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-tip-picker --renderer <dir> --out <raw>`. `test/brushes/tipList.test.ts` and `pickerTips.test.tsx` cover the list and the picker.
 

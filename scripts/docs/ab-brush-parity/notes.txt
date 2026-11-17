@@ -1,0 +1,26 @@
+Mechanical pencil|Close. The pixel line is a touch lighter.
+Colour pencil|Close. Same stick on the same paper.
+Sketch pencil|Close. Same stick on the same paper.
+Gel pen|Close.
+Ballpoint pen|Close.
+Brush pen|Close. The pixel point is straighter and a little longer.
+Dip pen|Close.
+Fine marker|Close. The pixel line is a little thinner.
+Block marker|Close. The pixel ends are a turned square tip, the vector ends are flat across the line.
+Brush marker|Close, but the pixel tail end hooks a little where the taper is redrawn.
+Tapered brush|Close. The pixel point is straighter and a little longer.
+Round brush|Close.
+Dry brush|DOES NOT MATCH. The vector brush drags coarse streaks, the pixel one is fine specks. Same Crayon stick and paper, different grain. Left as it is.
+Charcoal|Close. Same stick on the same paper; the pixel grain is starker.
+Oil pastel|Close. Same stick on the same paper; the pixel body is denser.
+Leaves|Close. The shapes are the vector outlines, laid on a 32 by 32 picture.
+Falling leaves|Close. The tumble is random on both, so each leaf lands differently.
+Paw prints|Close.
+Dashed line|Close.
+Broad nib|Close.
+Round nib|Close.
+Pressure pencil|Close.
+Pressure spray|Only roughly. The pixel brush also thins its flow with a light press and scatters wider with a hard one; the vector stamp can do neither.
+Speckle|Close in character. A pen shrinks the pixel dots more at a light press (the Pen page's own pressure, which this old pixel brush still takes).
+Sprinkle|Close in character. A pen shrinks the pixel dots more at a light press (as Speckle).
+Slash|Close in character. A pen thins the pixel blade more at a light press (as Speckle).
