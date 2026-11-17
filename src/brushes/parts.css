@@ -16,20 +16,16 @@
 .bp-parts .pk-btn { padding: 3px 8px; }
 .bp-parts-foot { margin: 0; font-size: 11px; color: var(--muted); }
 
-/* The flash: a ring round the row that changed, and a wipe and a tag on the preview. */
+/* The flash: a ring round the row that changed, and a tag on the preview, whose line is drawn on again (BrushPreview). */
 .bf-box { position: relative; }
 .bf-box[data-lit] .pk-btn { border-color: var(--focus); }
 .bf-ring { position: absolute; inset: -3px; border-radius: calc(var(--radius-small) + 3px); border: 2px solid var(--focus); animation: bf-ring 1.4s ease-out both; pointer-events: none; }
 .bf-prev { position: relative; border-radius: var(--radius-small); }
 .bf-prev .cv-preview { display: block; }
-.bf-wipe { position: absolute; inset: 0; border-radius: var(--radius-small); background: var(--panel); transform-origin: right center; animation: bf-wipe 0.7s cubic-bezier(0.3, 0.7, 0.2, 1) both; pointer-events: none; }
 .bf-tag { position: absolute; left: 8px; top: 8px; max-width: calc(100% - 16px); padding: 2px 9px; border-radius: var(--radius-pill); background: var(--focus); color: var(--chosen-fg, #1d1b26); font-size: 11px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-@keyframes bf-wipe { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes bf-ring { 0% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--focus) 60%, transparent); } 60% { opacity: 1; box-shadow: 0 0 0 7px transparent; } 100% { opacity: 1; box-shadow: 0 0 0 0 transparent; } }
-/* Reduced motion: no wipe and no pulse. The tag and a plain ring still show for as long as the flash does. */
-:root[data-motion='reduce'] .bf-wipe { display: none; }
+/* Reduced motion: no drawing on and no pulse. The tag and a plain ring still show for as long as the flash does. */
 :root[data-motion='reduce'] .bf-ring { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .bf-wipe { display: none; }
   .bf-ring { animation: none; }
 }
