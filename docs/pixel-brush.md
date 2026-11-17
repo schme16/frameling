@@ -21,7 +21,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 | `dynamics` (routes) | What drives what. See below | PS Control menus and minimum values, Krita sensors, Procreate pressure/speed/tilt curves |
 | `fadeLength` | Pixels of line a `fade` source takes to run out | PS Fade steps (steps are dabs, so steps times spacing times size), Krita fade sensor |
 | `grain` (`paper`, `depth`, `scale`, `moving`, `thin`, `hold`) | A paper the paint catches on. `thin`: the paper multiplies each dab instead of stopping paint that cannot reach a pit (Procreate's way). `hold` (0 to 1, left out is 1): how much of the depth caps the whole stroke when the paper stays put | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
-| `dual` (`tip`, `size`, `density`, `cut`) | A second tip of dots the first is let through | PS Dual brush (tip, diameter, scatter, count), Krita masking brush |
+| `dual` (`tip`, `size`, `density`, `cut`, and optionally `laid`) | A second tip of dots the first is let through. With `laid` (a tip, its width as a share of the brush, spacing, scatter) it is instead a second brush laid along the line on its own spacing, and the first brush's paint is capped by it (a Procreate dual brush) | PS Dual brush (tip, diameter, scatter, count), Krita masking brush, Procreate dual brush |
 | `wet` 0 to 1 | Carries colour from under the brush along the stroke, and mixes with the stroke's own paint | PS Mixer brush wetness and load, Krita colour smudge, Procreate blend |
 | `blend` (any layer blend mode but Add; `normal` is paint over) | How the paint joins what is on the layer | PS brush Mode, Krita composite op, Procreate brush blend mode |
 
