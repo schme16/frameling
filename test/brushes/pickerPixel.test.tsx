@@ -70,7 +70,8 @@ describe('the pixel side of the picker', () => {
     const shown = names();
     expect(shown).toContain(PIXEL_STARTERS[0].name);
     for (const s of STARTERS) expect(shown).not.toContain(s.name);
-    expect(host.querySelector('.pk-btn-sub')!.textContent).toContain(`${PIXEL_STARTERS.length} brushes`);
+    // The count is in the open list, not on the button.
+    expect(document.querySelector('.pk-pop .pk-label')!.textContent).toContain(String(PIXEL_STARTERS.length));
   });
 
   it('lights the brush in use, and says Custom pixel brush when it matches none', () => {

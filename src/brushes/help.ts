@@ -2,6 +2,15 @@ import { registerHelpTopics } from '../core/registry';
 
 registerHelpTopics([
   {
+    id: 'brush-parts',
+    order: 8.05,
+    media: 'brush-parts.mp4',
+    title: 'A brush, its tip, its stick and its paper',
+    section: 'Drawing',
+    summary: 'What each one is and how they fit: a brush holds a tip, a chalk or charcoal tip holds a stick, and the paper is the sheet\'s. See what you changed, put it back in one press, and watch the preview name what just changed.',
+    keywords: ['brush', 'tip', 'stick', 'paper', 'parts of this brush', 'parts', 'changed', 'as it comes', 'back to how it came', 'revert', 'reset', 'undo changes', 'put it back', 'original', 'what is a stick', 'what is a tip', 'what is a brush', 'flash', 'tag', 'which is which', 'confusing'],
+  },
+  {
     id: 'brush-presets',
     order: 8.2,
     media: 'brush-presets.mp4',

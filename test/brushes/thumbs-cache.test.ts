@@ -3,12 +3,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_BRUSH } from '../../src/core/doc';
 import { drawShapeFx } from '../../src/core/render';
-import { clearThumbs, THUMB_CACHE_MAX, thumbFor, thumbsDrawn, thumbsKept } from '../../src/brushes/thumbs';
+import { clearThumbs, THUMB_CACHE_MAX, thumbFor, thumbKey, thumbsDrawn, thumbsKept } from '../../src/brushes/thumbs';
+import { resetDry, setPaper } from '../../src/dry/settings';
 import { defaultTip } from '../../src/geometry/tip';
 
 vi.mock('../../src/core/render', () => ({ drawShapeFx: vi.fn() }));
 
 beforeEach(() => {
+  resetDry();
   clearThumbs();
   vi.mocked(drawShapeFx).mockClear();
   // jsdom has no canvas: a stand-in that accepts the one call the cache makes.
@@ -45,5 +47,37 @@ describe('thumbFor', () => {
   });
   it('gives nothing for a box with no size', () => {
     expect(thumbFor(DEFAULT_BRUSH, 'dab', 0, 30, 1, '#fff')).toBeNull();
+  });
+});
+
+describe('the paper in a picture', () => {
+  const chalk = { ...DEFAULT_BRUSH, tip: defaultTip('chalk') }; // catches on paper
+  it('gives a line that catches on paper a new key when the paper changes', () => {
+    setPaper('smooth');
+    const a = thumbKey(chalk, 'stroke', 90, 30, 1, '#fff');
+    setPaper('rough');
+    expect(thumbKey(chalk, 'stroke', 90, 30, 1, '#fff')).not.toBe(a);
+  });
+  it('draws it again on the new paper, and not for a paper that is not the sheet\'s', () => {
+    setPaper('smooth');
+    thumbFor(chalk, 'stroke', 90, 30, 1, '#fff');
+    setPaper('rough');
+    thumbFor(chalk, 'stroke', 90, 30, 1, '#fff');
+    expect(drawShapeFx).toHaveBeenCalledTimes(2);
+    // A picture asked for on its own paper ignores the sheet: smooth was drawn already, so it is copied, whatever the sheet is on.
+    thumbFor(chalk, 'stroke', 90, 30, 1, '#fff', 'smooth');
+    setPaper('laid');
+    thumbFor(chalk, 'stroke', 90, 30, 1, '#fff', 'smooth');
+    expect(drawShapeFx).toHaveBeenCalledTimes(2);
+    thumbFor(chalk, 'stroke', 90, 30, 1, '#fff', 'fine');
+    expect(drawShapeFx).toHaveBeenCalledTimes(3);
+  });
+  it('leaves a line that does not catch on paper alone, so its pictures are kept when the paper changes', () => {
+    setPaper('smooth');
+    const a = thumbKey(DEFAULT_BRUSH, 'stroke', 90, 30, 1, '#fff');
+    setPaper('rough');
+    expect(thumbKey(DEFAULT_BRUSH, 'stroke', 90, 30, 1, '#fff')).toBe(a);
+    const noPaper = { ...DEFAULT_BRUSH, tip: { ...defaultTip('chalk'), dry: undefined } };
+    expect(thumbKey(noPaper, 'stroke', 90, 30, 1, '#fff')).toBe(thumbKey({ ...noPaper }, 'stroke', 90, 30, 1, '#fff'));
   });
 });

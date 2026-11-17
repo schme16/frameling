@@ -943,6 +943,19 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/brush-size.cjs /tmp/bs
 ```
 
+## How long the brush lists take to open: scripts/docs/ab-brush-parts/timing.cjs
+
+Opens the Brush, Tip, Stick and Paper lists cold (the first time, pictures not drawn yet) and warm (the second, pictures kept)
+and prints the milliseconds for each, in five fresh pages so a median can be read. The capture window is hidden, so animation
+frames come about once a second and say nothing about the work: the entry turns the visibility watcher off so the rows draw at
+once, and waits on message ports instead. What it times is the script work, building the rows and drawing the pictures.
+`--renderer` takes a private `vite build --outDir`, so a before and an after can be measured without rebuilding between them.
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs \
+  --entries scripts/docs/ab-brush-parts --only t1,t2,t3,t4,t5 --theme dark --renderer /tmp/after-renderer --out /tmp/timing
+```
+
 ## Same pixels after a speed-up: scripts/e2e/tip-same.cjs
 
 Draws chalk and charcoal (everyday and huge sizes, short and long strokes), the other tips, and plain fills and outlined paths

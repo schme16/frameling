@@ -57,19 +57,19 @@ describe('the stick picker', () => {
     expect(btn()).not.toBeNull();
   });
 
-  it('is a picker like the Tip one: a heading, a stroke, the stick in use and a count of nine', () => {
+  it('is a picker like the Tip one: a heading, a stroke of the stick on its own, and the stick in use', () => {
     act(() => setTipKind('chalk'));
-    expect(host.querySelector('[data-testid="brush-stick"] .tp-label')!.textContent).toBe('Stick');
+    expect(host.querySelector('[data-control="stick-picker"] .tp-label')!.textContent).toBe('Stick');
     expect(btn().querySelector('canvas')).not.toBeNull();
     expect(btn().querySelector('.pk-btn-name')!.textContent).toBe('Chalk');
-    expect(btn().querySelector('.pk-btn-sub')!.textContent).toBe('9 sticks');
+    expect(btn().querySelector('.pk-btn-sub')).toBeNull();
     expect(host.querySelectorAll('.bp-chip')).toHaveLength(0);
   });
 
   it('sits straight under the Tip picker, with the paper controls under it', () => {
     act(() => setTipKind('chalk'));
-    const kids = [...host.children].map((c) => c.getAttribute('data-testid'));
-    expect(kids.slice(0, 3)).toEqual(['brush-tips', 'brush-stick', 'brush-paper']);
+    const ids = [...host.querySelectorAll('[data-testid]')].map((c) => c.getAttribute('data-testid')).filter((t) => ['brush-tips', 'brush-stick', 'brush-paper'].includes(t!));
+    expect(ids).toEqual(['brush-tips', 'brush-stick', 'brush-paper']);
     expect(host.querySelector('[data-testid="brush-paper"]')!.textContent).toContain('Catch on paper');
   });
 

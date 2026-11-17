@@ -6,7 +6,8 @@ import type { BrushTip, StampAngle } from '../core/format';
 import { resolveTip } from '../geometry/tip';
 import { PaperGroup } from '../dry/PaperGroup';
 import { clearEdgedPiece, EDGED_SLOTS, edgedHas, makeAlongBrush, setEdgedPiece } from './own';
-import { BrushPicker } from './BrushPicker';
+import { BrushPresetPicker } from './BrushPresetRow';
+import { LitRow, PartsBox } from './PartsOptions';
 import { makeBrushFromSelection, patchTip, setMatte } from './tips';
 import './brushes.css';
 
@@ -79,26 +80,19 @@ function PaperControls({ tip }: { tip: BrushTip }) {
   );
 }
 
-/** The tip: its picker, then (for chalk and charcoal) the stick picker with the paper controls under it, then what the tip in use has. */
+/** The Brush, with the tip and the stick folded under it as its parts, then the paper (the sheet's) for chalk and charcoal, then what the tip in use has. */
 export function TipOptions() {
   const tip = useStore((s) => s.ui.brush.tip);
   const t = tip ? resolveTip(tip) : null;
   const kind = tip?.kind ?? null;
+  const catchy = !!tip && (kind === 'chalk' || kind === 'charcoal');
   return (
     <>
-      <div className="tp-row" data-testid="brush-tips" data-control="tip-picker">
-        <div className="tp-label">Tip</div>
-        <BrushPicker side="tip" />
-      </div>
-      {tip && (kind === 'chalk' || kind === 'charcoal') && (
-        <>
-          <div className="tp-row" data-testid="brush-stick" data-control="stick-picker">
-            <div className="tp-label">Stick</div>
-            <BrushPicker side="stick" disabled={tip.dry ? undefined : 'Turn on Catch on paper to pick a stick'} />
-          </div>
-          <PaperControls tip={tip} />
-        </>
-      )}
+      <LitRow part="brush">
+        <BrushPresetPicker title="Brush" />
+      </LitRow>
+      <PartsBox stick={catchy} stickOff={catchy && !tip?.dry} paperBelow={catchy} />
+      {catchy && tip && <PaperControls tip={tip} />}
       <div className="tp-row" data-testid="brush-tip-more">
       {t && kind === 'watercolour' && <Slider control="wash-edge" label="Edge" value={Math.round(t.amount * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How dark and bold the edge of the wash is, where the paint gathers." />}
       {t && kind === 'stamp' && (
