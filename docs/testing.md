@@ -524,6 +524,14 @@ ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" 
 | `--only=a,b` | Cases: `layers-folders nested-folders hidden-layers hidden-in-effect-folder paths gradients gradients-pdf masks text text-live text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
 | `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
 
+**On Windows** with Illustrator installed, no Wine: leave `ILLUSTRATOR_PREFIX` unset and run `npx electron scripts/e2e/illustrator.cjs [outDir] [--only=a,b]`
+(no xvfb; the Frameling window stays hidden, and Illustrator opens on the desktop and closes itself when done). It drives
+Illustrator through COM from PowerShell with the same `illustrator-check.jsx`, refuses to start when Illustrator is
+already open (pass `--keep-going` to use the open one, which it then leaves open), compares pictures in plain Node
+(`scripts/lib/png-node.cjs`, the same RMSE on magenta as ImageMagick's), writes the side by sides without a caption,
+skips the layer tree pictures, and skips the PDF reader check when `pdftoppm` is not on PATH. First run on 2026-11-17
+with Illustrator 30.5.1 on Windows 11: every case passed (49 checks, and 5 for `frames-files`).
+
 It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
 inside the xvfb screen, started the way Lutris starts it (DXVK in the prefix, `dxgi` native then builtin), with an
 ExtendScript (`illustrator-check.jsx`) passed as the file to open. A screenshot loop presses the two boxes that would
@@ -550,6 +558,25 @@ ExtendScript (`doc.saveAs` with `Compatibility.ILLUSTRATOR17` and `compressed = 
 streams; the layer, path, gradient and raster operators in `ai-native.ts` were worked out that way.
 
 Live text (`ai-text.ts`) is in the setup part of the data, as `%AI11_BeginTextDocument` with one `/AI11TextDocument : /ASCII85Decode` block: the text engine's document, nested dictionaries with numbers for keys. Facts found by saving texts from Illustrator and decoding that block: whole numbers and reals are different types (a size written `36` is read as 36/65536, write `36.0`); the fill is a `/SimplePaint` with `[alpha r g b]` (a `/CAITextPaint` without its id string is ignored); each story has a text ending in a return, a character run, an optional paragraph run (`/0` is 0 left, 1 right, 2 centre) and a layout cache that may be an empty list (Illustrator lays the text out itself, but a missing cache key hangs it); each frame has an origin and a matrix `[a b c d tx ty]` in a y down space whose (0, 0) is the file's (0, 0) moved by the ruler origin (8191 less half the artboard, plus a half point). The layer item only says which story it is (`/AI11Text` with `/StoryIndex`). Probe by decoding with a small script: ASCII85 the lines after `/AI11TextDocument`, each with its leading `%` taken off.
+
+## Photoshop end to end: scripts/e2e/photoshop-psd.cjs (Windows)
+
+Opens Frameling's PSD exports in a real Adobe Photoshop through COM and checks two things for each file: Photoshop's own
+flatten of the layers against the finished picture Frameling stores in the file (laid on white, a pixel counts as off
+when it is more than 8 of 255 away), and every layer and group as Photoshop reads it (name, visible, opacity, blend mode,
+clipping, group or not, layer mask) against what Frameling wrote, read back with ag-psd.
+
+```bash
+npm run build
+npx electron scripts/e2e/export.cjs <outDir> --only=psd --skip=files,godot,unity,web
+node scripts/e2e/photoshop-psd.cjs <outDir> [--keep-going]
+```
+
+It refuses to start when Photoshop is already open unless `--keep-going` is given (then it uses that Photoshop, closes
+only the files it opened, and leaves it open); otherwise it quits Photoshop at the end. The ExtendScript is
+`photoshop-psd-check.jsx`. It flattens a copy before it looks at the layers, because selecting a hidden layer from a
+script switches it on. First run on 2026-11-17 with Photoshop 2026 (27.7) on Windows 11: all 28 PSDs from export.cjs
+(every template, with defaults, see-through, extras and a bigger size) passed, pictures within 2 of 255.
 
 ## Colour and the engine: scripts/lib/gpu.cjs and scripts/e2e/colour.cjs
 

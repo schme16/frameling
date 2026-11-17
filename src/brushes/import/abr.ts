@@ -209,7 +209,8 @@ function mapPreset(preset: DescObject, tips: Tips, index: number): ImportedBrush
   b.dab.spacing = spacing;
   if (!spacingOn) b.changed.push('Its spacing was set to follow the stroke automatically; it came at 25%.');
   b.dab.roundness = pct(getNum(shape, 'Rndn'), 100);
-  b.dab.angle = getNum(shape, 'Angl') ?? 0;
+  // Photoshop's angle turns counter-clockwise on screen (checked in Photoshop 2026), Frameling's clockwise.
+  b.dab.angle = -(getNum(shape, 'Angl') ?? 0);
   let size = diameter;
   if (shape.type === 'computedBrush') {
     b.dab.tip = 'round';
@@ -344,7 +345,7 @@ function readLegacy(r: Reader, version: number, fileName: string): ImportResult 
         const roundness = body.u16();
         const angle = body.i16();
         const hardness = body.u16();
-        const dab = cleanDab({ tip: 'round', size: diameter, hardness: hardness / 100, roundness: roundness / 100, angle, spacing: spacing / 100, aliased: false });
+        const dab = cleanDab({ tip: 'round', size: diameter, hardness: hardness / 100, roundness: roundness / 100, angle: -angle, spacing: spacing / 100, aliased: false });
         brushes.push({ name: `Round ${diameter}`, dab, dropped: [], changed: [] });
       } else if (type === 2) {
         body.skip(4);

@@ -300,7 +300,8 @@ describe('people who finished the hello before it asked', () => {
     expect(asked()).toBe(1);
     expect(streamingOn()).toBe(false);
     expect(rememberedChoice(STREAM_OFFER_ID)).toBe('no');
-    expect(toasts.get().some((t) => t.action?.label === 'Bring them back')).toBe(true);
+    // One toast: saying no used to tuck them away again from inside itself, a toast each time (four on a real start).
+    expect(toasts.get().filter((t) => t.action?.label === 'Bring them back')).toHaveLength(1);
     expect(await considerStreamOffer()).toBe('waiting');
     expect(asked()).toBe(1);
   });

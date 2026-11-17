@@ -143,4 +143,5 @@ po.pageToOpen = oldPage;
 po.pDFCropToBox = oldBox;
 writeText(MANIFEST + '.result.json', toJson({ version: app.version, results: results }));
 writeText(MANIFEST + '.done', 'done');
-app.quit();
+// Under Wine the script is the file Illustrator was started with, so it quits here. On Windows (COM) the caller decides.
+if (typeof KEEP_OPEN === 'undefined') app.quit();

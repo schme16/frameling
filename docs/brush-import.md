@@ -63,7 +63,7 @@ the `size`; `aspect ratio` is `1 / roundness`; the star's points and spikes are 
 
 Photoshop (descriptor keys as in the files): `Brsh` is the tip (`computedBrush` round with `Hrdn` hardness, `sampledBrush`
 picture, `dBrush` and `dTips` round with a note); `Dmtr`, `Angl`, `Rndn`, `Spcn` (when `Intr`) are size, angle, roundness,
-spacing. A sampled tip's `Dmtr` is across the whole picture, so `size = Dmtr x visible share`.
+spacing. `Angl` turns counter-clockwise on screen and Frameling's angle clockwise, so it comes in negated (as GIMP's does). A sampled tip's `Dmtr` is across the whole picture, so `size = Dmtr x visible share`.
 
 - A Control menu number (`bVTy`): 1 fade, 2 pen pressure, 3 pen tilt, 4 stylus wheel (dropped: no such input), 5 and 6
   direction (`follow` for the angle; 5 is "initial direction" and comes as the same, with a note), 7 and 8 pen rotation
@@ -140,14 +140,21 @@ a blend mode and the smoothing keys are dropped with a note when the brush uses 
   jitter, the minimum and the step count (see `photoshop_dynamics.abr`), and GIMP's `.vbr` has no pen controls at all, so there is
   nothing for those readers to keep or flatten. If a Photoshop file with a curve turns up, its key is not read yet.
 
-- **The direction of an angle.** GIMP's `.vbr` angle is taken as counter-clockwise (turned the other way for Frameling);
-  Photoshop's `Angl` is taken as clockwise (AbrKit's note). Neither was checked against the program, which is not on this
-  machine. It only shows on a flattened or square tip.
+- **The direction of an angle.** Photoshop's `Angl` is **counter-clockwise on screen, checked in Photoshop 2026** (27.7, on
+  Windows, 2026-11-17): a round tip at 120 px, roundness 15%, angle 30 stamped once leans up to the right, its long axis at
+  -30.1 degrees in screen (y down) coordinates. AbrKit's note said clockwise and the importer followed it until then, so
+  every angled or flattened Photoshop tip came in mirrored. The importer now negates `Angl`, and the version 1 and 2 angle
+  with it (assumed to be the same convention; no old file was checked). GIMP's `.vbr` angle is taken as counter-clockwise
+  too, still unchecked against GIMP. It only shows on a flattened or square tip, or a picture tip.
 - **The control numbers** 5 to 8 come from AbrKit's list and one real file; 1 to 3 are confirmed by real files.
 - **Dual brush and texture** are the engine's nearest things (a field of dots, five papers), not a copy. A Photoshop brush
   built on them looks like itself in spirit only, and says so.
-- **Colour dynamics** are dropped for want of a real file to read the key names from. They could map to the `hue`, `saturation`,
-  `lightness` and `mix` routes.
+- **Colour dynamics** are dropped. The key names are now known, read from Photoshop 2026's brush tool settings with colour
+  dynamics switched on (the same descriptor a preset saves, but not yet seen inside a saved `.abr`): `useColorDynamics`
+  (on or off), `clVr` (foreground/background jitter: an object with `bVTy` control, `fStp`, `jitter` and `Mnm ` minimum, as
+  the other dynamics), `H   ` hue jitter, `Strt` saturation jitter, `Brgh` brightness jitter, `purity` (-100 to 100, a fixed
+  shift, not a jitter) and `colorDynamicsPerTip` (each dab, or once a stroke). All are percent units. They could map to the
+  `hue`, `saturation`, `lightness` and `mix` routes; Frameling has nothing for once-a-stroke or for purity.
 - Version 1 and 2 `.abr` have no real fixture.
 - **Procreate: size and the newer spacing are not settled by anything we hold**, and the pen controls, the grain, the wet mix and the blend numbers are read by their key names only. The full list, with what was checked, is in [Procreate](#procreate-brush-brushset).
 

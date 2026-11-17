@@ -70,7 +70,7 @@ describe('Photoshop .abr, real files', () => {
   it('maps what it can of a real brush with dynamics and says what it cannot', () => {
     const b = read(fx('photoshop_dynamics.abr')).brushes[0];
     expect(b.name).toBe('Patchy Dynamics Probe Dyn');
-    expect(b.dab).toMatchObject({ tip: 'picture', spacing: 0.4, angle: 30, roundness: 0.6, sizeJitter: 0.37, angleJitter: 0.1, scatter: 2 });
+    expect(b.dab).toMatchObject({ tip: 'picture', spacing: 0.4, angle: 330, roundness: 0.6, sizeJitter: 0.37, angleJitter: 0.1, scatter: 2 });
     // Opacity jitter 25% became a flow jitter; angle control by pen rotation became a twist route.
     expect(b.dab.dynamics).toContainEqual({ from: 'random', to: 'flow', amount: 0.25, invert: false });
     expect(b.dab.dynamics.some((r) => r.from === 'twist' && r.to === 'angle')).toBe(true);
@@ -172,7 +172,7 @@ describe('Photoshop .abr, version 1 and 2', () => {
   const computedRecord = cat(u16(1), u32(14), u32(0), u16(25), u16(30), u16(80), u16(45), u16(70));
   it('reads a computed brush', () => {
     const r = read(new Uint8Array(cat(u16(1), u16(1), computedRecord)));
-    expect(r.brushes[0].dab).toMatchObject({ tip: 'round', size: 30, hardness: 0.7, roundness: 0.8, angle: 45, spacing: 0.25 });
+    expect(r.brushes[0].dab).toMatchObject({ tip: 'round', size: 30, hardness: 0.7, roundness: 0.8, angle: 315, spacing: 0.25 });
   });
   it('reads a sampled brush with its name (version 2) and without (version 1)', () => {
     const two = read(new Uint8Array(cat(u16(2), u16(1), sampledRecord(2, 6, 6, 'Chalk')))).brushes[0];
