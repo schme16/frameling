@@ -403,7 +403,7 @@ describe('Krita .kpp', () => {
     expect(d.roundness).toBeGreaterThanOrEqual(0.05);
     expect(d.hardness).toBeLessThanOrEqual(1);
     expect(d.hardness).toBeGreaterThanOrEqual(0);
-    expect(d.spacing).toBeGreaterThanOrEqual(0.05);
+    expect(d.spacing).toBeGreaterThanOrEqual(0.01);
     expect(d.flow).toBeLessThanOrEqual(1);
     expect(d.opacity).toBeGreaterThanOrEqual(0.05);
     expect(d.scatter).toBeLessThanOrEqual(2);

@@ -13,7 +13,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 |---|---|---|
 | `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
 | `size` 1 to 300 px, `hardness` 0 to 1, `angle`, `roundness` 0.05 to 1, `follow` | Size, edge, rotation, flattening, turning with the line | PS diameter, hardness, angle, roundness; Krita size, fade, rotation, ratio |
-| `spacing` 0.05 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
+| `spacing` 0.01 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
 | `scatter` 0 to 2 (share of size), `sizeJitter`, `angleJitter` | Random position, size and angle per dab | PS shape dynamics jitter, scattering; Krita scatter |
 | `flow`, `opacity` | Flow: paint per dab, builds up as dabs overlap. Opacity: the most any pixel gets in one stroke | PS flow and opacity, Krita flow and opacity, Procreate flow |
 | `aliased` | Sharp pixels (all or nothing). The default, and a first-class switch | none: a pixel art switch |
@@ -57,7 +57,13 @@ paper's height: light paint lands on the peaks first, full paint always fills. (
 pigment on the peaks. It used to be the other way round; the direction is invisible on the built-in papers and only shows
 on a picture used as grain, where the paint now catches on the light parts, with Invert to swap it back: see the board
 card grain-peaks-or-pits and the look look-grain-dir.) With sharp pixels the paper replaces the page's ordered
-dither as the threshold, so grain makes whole pixels. Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own
+dither as the threshold, so grain makes whole pixels.
+
+A paper that stays put (`moving` off) also holds back the **whole stroke**, not only each dab: a pixel can never take more
+paint than `1 - depth x (1 - height)` of the brush's opacity, whatever crosses it. Without that, a brush that lays its
+dabs a twentieth of a width apart fills its own valleys in a few passes and a chalk or pencil line comes out solid, which
+is what Procreate's 6B Pencil showed up. A paper that moves finds fresh ground for every dab, so it holds nothing back
+across the stroke. It lives in `DabStroke.touch` (the `ceiling`). Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own
 dots and one stroke is stable).
 
 ### Pictures: a tip you draw, grain and dots from an image

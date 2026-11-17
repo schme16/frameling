@@ -180,7 +180,7 @@ export class DabStroke {
   }
 
   /** Adds this much paint to a pixel (up to the opacity) and repaints it when its look changed. */
-  private touch(x: number, y: number, add: number, cell: Uint8Array): void {
+  private touch(x: number, y: number, add: number, cell: Uint8Array, ceiling = 1): void {
     if (this.wrapEdges) {
       x = wrap(x, this.w);
       y = wrap(y, this.h);
@@ -190,7 +190,11 @@ export class DabStroke {
     if (!t) t = this.tiles[ti] = new Float32Array(TS * TS);
     const i = (y & MASK) * TS + (x & MASK);
     const have = t[i];
-    const cap = this.p.brush.opacity;
+    // A paper that stays put holds the stroke back, not each dab: once a valley has taken all the paint the paper lets
+    // it have, more dabs over the same spot cannot fill it in. That is what keeps a pencil speckled all the way through
+    // when its dabs sit a twentieth of a width apart. A paper that moves finds fresh ground for every dab, so it holds
+    // nothing back across the stroke.
+    const cap = this.p.brush.opacity * ceiling;
     if (have >= cap) return;
     let next = have + add * (1 - have);
     if (next > cap) next = cap;
@@ -303,13 +307,16 @@ export class DabStroke {
         const c = sm.cov(x + 0.5 - d.x, dy);
         if (c <= 0) continue;
         let add = c * d.flow;
+        let ceiling = 1;
         if (grain !== null) {
           const sx = gs > 1 ? Math.floor(x / gs) : x;
           const sy = gs > 1 ? Math.floor(y / gs) : y;
-          add = grainCut(add, grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255, depth);
+          const height = grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255;
+          add = grainCut(add, height, depth);
           if (add <= 0) continue;
+          if (!this.grainMoving) ceiling = 1 - depth * (1 - height);
         }
-        this.touch(x, y, add, cell);
+        this.touch(x, y, add, cell, ceiling);
       }
     }
   }

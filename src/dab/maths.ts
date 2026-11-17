@@ -57,7 +57,7 @@ export interface DabBrush {
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
-export const SPACING_RANGE = { min: 0.05, max: 4 };
+export const SPACING_RANGE = { min: 0.01, max: 4 };
 export const SCATTER_RANGE = { min: 0, max: 2 };
 export const FLOW_RANGE = { min: 0.05, max: 1 };
 export const ROUND_RANGE = { min: 0.05, max: 1 };

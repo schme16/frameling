@@ -397,8 +397,8 @@ describe('the real Procreate brushes', () => {
     // Procreate's picture of this stroke is a 219 pixel ribbon; paintSize is 1, which would have said 100.
     expect(d.size).toBe(219);
     expect(b.changed.join(' ')).toMatch(/measured off Procreate's own picture/);
-    // plotSpacing 0.0026 is closer than Frameling's closest, which is 5%.
-    expect(d.spacing).toBe(0.05);
+    // plotSpacing 0.0026 is closer than Frameling's closest, which is 1%.
+    expect(d.spacing).toBe(0.01);
     expect(d.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 1, invert: false }]);
     // grainDepth is 1, but the grain is Procreate's blank one, which catches nothing: so there is no grain.
     expect(d.grain).toBe(null);
@@ -463,7 +463,15 @@ describe('settings, built to the layout', () => {
     expect(b.dab.follow).toBe(true);
     expect(b.dab.angleJitter).toBe(1);
     expect(b.changed.join(' ')).toMatch(/jitter came as scatter/);
-    expect(b.changed.join(' ')).toMatch(/random turning/);
+    expect(b.changed.join(' ')).toMatch(/turned at random/);
+  });
+
+  it('scatter turns the tip too, unless the tip follows the line', () => {
+    // Procreate's scatter turns the shape as well as throwing it, so any scatter at all means a full random turn.
+    expect(one(brush({ shapeScatter: 0.3, plotSpacing: 1 })).dab.angleJitter).toBe(1);
+    // A tip told to follow the line keeps following it: the two cannot both happen, and following is the clearer ask.
+    expect(one(brush({ shapeScatter: 0.3, plotSpacing: 1, shapeRotation: 1 })).dab.angleJitter).toBe(0);
+    expect(one(brush({ shapeScatter: 0, plotSpacing: 1 })).dab.angleJitter).toBe(0);
   });
 
   // The finding that fixed the inking pens. Procreate's own picture of the stroke, which every .brush carries, shows
@@ -552,7 +560,8 @@ describe('settings, built to the layout', () => {
     // paper Frameling draws itself, so a pencil arrives gritty rather than smooth, and the brush says which stood in.
     const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1 }));
     expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false });
-    expect(named.dab.grain!.depth).toBeGreaterThan(0.5);
+    // A stand in paper is gentler than the file asks, because Frameling's papers bite harder than Procreate's.
+    expect(named.dab.grain!.depth).toBeCloseTo(0.45, 2);
     expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid' });
     // A name that says nothing about tooth gets no stand in: Shenbot's Inking Pen names "Brush-Artery-Splatters.png"
@@ -571,7 +580,7 @@ describe('settings, built to the layout', () => {
     expect(d.size).toBeLessThanOrEqual(300);
     expect(d.opacity).toBeGreaterThanOrEqual(0.05);
     expect(d.roundness).toBeGreaterThanOrEqual(0.05);
-    expect(d.spacing).toBeGreaterThanOrEqual(0.05);
+    expect(d.spacing).toBeGreaterThanOrEqual(0.01);
     expect(d.scatter).toBeGreaterThanOrEqual(0);
   });
 

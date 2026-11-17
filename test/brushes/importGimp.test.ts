@@ -218,7 +218,7 @@ describe('GIMP .vbr', () => {
     if (!r.ok) throw new Error(r.error);
     const d = r.brushes[0].dab;
     expect(d.size).toBeLessThanOrEqual(300);
-    expect(d.spacing).toBeGreaterThanOrEqual(0.05);
+    expect(d.spacing).toBeGreaterThanOrEqual(0.01);
     expect(d.roundness).toBeGreaterThanOrEqual(0.05);
     expect(d.hardness).toBeLessThanOrEqual(1);
   });

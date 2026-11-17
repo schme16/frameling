@@ -40,9 +40,11 @@ const MAX_SIZE = 300;
 /**
  * How much of a Procreate paper's depth a stand in paper takes. Procreate's own papers are gentler at the same number
  * than Frameling's, so a 6B pencil at full depth came out as a dotted scrape rather than a gritty line. Settled by eye
- * against Procreate's own picture of the 6B Pencil and the Sketch pencil.
+ * against Procreate's own picture of the 6B Pencil and the Sketch pencil. It came down from 0.7 once a paper that
+ * stays put began holding the whole stroke back rather than each dab (see stroke.ts): the speckles now stay open on
+ * their own, so the paper no longer has to be deep to keep them.
  */
-const GRAIN_DEPTH_SHARE = 0.7;
+const GRAIN_DEPTH_SHARE = 0.45;
 
 /**
  * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
@@ -313,9 +315,14 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   const rot = s.num('shapeRotation', 0);
   if (rot >= 0.5) raw.follow = true;
   if (rot > 0.01 && rot < 0.99) changed.push(`Its tip follows the line ${pct(rot)} of the way; Frameling's tip either follows it or does not, so it came as ${rot >= 0.5 ? 'following' : 'not following'}.`);
-  if (s.bool('shapeRandomise')) {
+  // Procreate's scatter turns the tip as well as throwing it. Its own pictures say so: Cat Thorne's sequins lie at a
+  // different angle in every stamp, and Graphite ink, whose tip is a page of little scratches, draws a cloud of specks
+  // rather than the rows of combed scratches an unturned tip gives. A brush that leaves scatter alone (Plain Stitch)
+  // keeps its stitches lined up along the line. Frameling turns a tip at random or not at all, so any scatter at all
+  // means the whole way round.
+  if (s.bool('shapeRandomise') || (s.num('shapeScatter', 0) > 0.01 && !raw.follow)) {
     raw.angleJitter = 1;
-    changed.push('Its random turning of the tip came as a full random turn for every dab.');
+    changed.push('Its tip is turned at random for every dab. Frameling turns a tip the whole way round or not at all, so a brush that only turned its tip a little now turns it the whole way.');
   }
   const fixed = s.num('shapeAngle', 0);
   if (Math.abs(fixed) > 0.001) dropped.push('Its fixed tip angle. Frameling has not seen how Procreate stores it, so the tip came at its own angle.');

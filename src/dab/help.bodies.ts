@@ -109,12 +109,12 @@ The rest (colour dodge and burn, hard and soft light, difference, exclusion, hue
 See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-presets).`,
   'pixel-brush-texture': `**Grain** and a **dual tip** are the two ways to make a brush speckled, rough or bristly instead of smooth. Grain is the **Paper** box in the [Pixel brush](help:pixel-brush) options, and the dual tip is under it.
 
-**Catch on paper:** switch it on in the **Paper** box and the paint catches on the high points of the sheet's paper, so light strokes break into specks and pressing harder fills the dips in. It is the same paper as [chalk and charcoal](help:paper), so a stroke here and a stroke there meet the same bumps.
+**Catch on paper:** switch it on in the **Paper** box and the paint catches on the high points of the sheet's paper, so light strokes break into specks and pressing harder fills the dips in. The paper holds back the whole stroke, not each dab, so a chalky line stays chalky. It is the same paper as [chalk and charcoal](help:paper).
 - **Paper:** smooth, fine, medium, laid or rough. This is the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper if you want this brush to stay put when the sheet changes.
 - **How much it catches:** at the top the paint only lands on the high points. Lower the **Flow** to see it best.
 - **Grain size:** makes each bump a block of pixels, for a chunkier paper.
 - **Use a picture as the paper...:** pick a picture file (a canvas weave, a scribble) and the brush catches on its light parts instead of a paper, the same way it catches on the high points of paper. **Catch on the dark parts instead** swaps them.
-- **A new patch of paper for every dab:** off, the paper is fixed to the page and two strokes over each other catch on the same bumps. On, every dab finds new paper, so overlapping dabs fill each other in, like a sponge.
+- **A new patch of paper for every dab:** off, the paper is fixed to the page: the dips stay light however long you work a spot. On, every dab finds new paper, so dabs fill each other in, like a sponge.
 
 **Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
 - **Dot shape, Dot size** and **How many dots** set the dots. Every stroke gets its own scatter of them.
