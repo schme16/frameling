@@ -1,10 +1,15 @@
 name: Build desktop apps
 
-# Builds Frameling for Windows, macOS and Linux whenever a pull request targets main, and on demand.
-# The installers are attached to the run as artifacts. Windows is signed with a self-signed certificate and macOS is
-# ad-hoc signed, so both need allowing once on first run (see the 'Installing Frameling' help topic).
+# Builds Frameling for Windows, macOS and Linux whenever a pull request targets main, when a merge lands on main, and
+# on demand. The installers are attached to the run as artifacts. Windows is signed with a self-signed certificate and
+# macOS is ad-hoc signed, so both need allowing once on first run (see the 'Installing Frameling' help topic).
+#
+# A merge into main also leaves a draft release with the five installers on it and a summary taken from the pull
+# request that was merged. Nothing is public until the draft is published by hand, on the repo's Releases page.
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -59,3 +64,53 @@ jobs:
             release/*.dmg
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    name: Draft release
+    # Only for a merge that has landed on main: a pull request build and a manual run stop at the artifacts.
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      SHA: ${{ github.sha }}
+      BEFORE: ${{ github.event.before }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          pattern: frameling-*
+          merge-multiple: true
+      - name: Name the release
+        run: |
+          short="${SHA:0:7}"
+          day="$(date -u +%Y.%m.%d)"
+          echo "TAG=build-$day-$short" >> "$GITHUB_ENV"
+          echo "TITLE=Frameling $day ($short)" >> "$GITHUB_ENV"
+      - name: Write the summary
+        # The words come from the pull request that was merged. They are written straight to a file, never through the
+        # shell, so nothing in a title or a body can run.
+        run: |
+          gh api "repos/$GH_REPO/commits/$SHA/pulls" --jq '.[0] // empty | "## \(.title) (#\(.number))\n\n\(.body // "")"' > notes.md || true
+          if [ ! -s notes.md ]; then
+            echo "## Changes" > notes.md
+            echo >> notes.md
+            gh api "repos/$GH_REPO/compare/$BEFORE...$SHA" --jq '.commits[] | "- " + (.commit.message | split("\n")[0])' >> notes.md || true
+          fi
+          {
+            echo
+            echo "---"
+            echo
+            echo "**Installing:** Windows is signed with Frameling's own certificate and macOS is ad-hoc signed, so each needs allowing once on first run. Linux is an AppImage: make it executable and run it."
+            echo
+            echo "Every change: https://github.com/$GH_REPO/compare/$BEFORE...$SHA"
+          } >> notes.md
+      - name: Create the draft
+        run: |
+          ls -la release
+          gh release create "$TAG" release/* --draft --target "$SHA" --title "$TITLE" --notes-file notes.md
+

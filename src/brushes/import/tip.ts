@@ -2,7 +2,7 @@
 // picture tip holds (32 by 32), the empty margin trimmed off so "size" means the part you can see, and the colours cut to
 // what a saved brush can keep. A grey tip (one that is only a shape, with shades for how much paint) becomes a soft
 // tip, so its shading stays; a colour tip keeps its own colours. Pure, no DOM.
-import { MAX_STAMP, type PixelStamp } from '../stamps';
+import { MAX_STAMP, packCells, type PixelStamp } from '../stamps';
 import { BrushProblem } from './types';
 
 /** Fills `out` with the pixel at x, y as 0 to 255 red, green, blue and see-through. */
@@ -22,12 +22,12 @@ export interface Tip {
 const FAINT = 6;
 const hex2 = (n: number): string => n.toString(16).padStart(2, '0');
 
-export function tipFrom(w: number, h: number, read: PixelReader, colour: boolean): Tip {
+export function tipFrom(w: number, h: number, read: PixelReader, colour: boolean, most: number = MAX_STAMP): Tip {
   if (!(w >= 1 && h >= 1)) throw new BrushProblem('That brush has no picture in it.');
   const longer = Math.max(w, h);
-  const f = longer > MAX_STAMP ? longer / MAX_STAMP : 1;
-  const ow = Math.max(1, Math.min(MAX_STAMP, Math.round(w / f)));
-  const oh = Math.max(1, Math.min(MAX_STAMP, Math.round(h / f)));
+  const f = longer > most ? longer / most : 1;
+  const ow = Math.max(1, Math.min(most, Math.round(w / f)));
+  const oh = Math.max(1, Math.min(most, Math.round(h / f)));
   const sum = new Float64Array(ow * oh * 4);
   const count = new Float64Array(ow * oh);
   const px = [0, 0, 0, 0];
@@ -119,7 +119,7 @@ export function tipFrom(w: number, h: number, read: PixelReader, colour: boolean
     }
     if (bits === depths[depths.length - 1]) throw new BrushProblem('That brush has too many colours to keep.');
   }
-  const stamp: PixelStamp = { w: cw, h: ch, colours: [...colours], cells: out, keep: colour && colours.length > 1 };
+  const stamp: PixelStamp = { w: cw, h: ch, colours: [...colours], cells: colour ? out : packCells(out), keep: colour && colours.length > 1 };
   if (!colour) stamp.soft = true;
   return { stamp, size, shrunk: f > 1, reduced };
 }

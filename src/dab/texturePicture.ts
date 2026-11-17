@@ -4,15 +4,19 @@
  * never grow the brush, then repeated into the same 256 by 256 tile the papers and the dots use. The dab loop never sees
  * it: it only ever looks up a tile. Pure functions, no DOM.
  */
+import { deflateSync, inflateSync } from 'fflate';
 import { TILE } from '../dry/paper';
 
-export const TEXTURE_SIDES = [8, 16, 32, 64] as const;
+export const TEXTURE_SIDES = [8, 16, 32, 64, 128, 256] as const;
+/** The most a picture you pick is boiled down to. */
 export const MAX_TEXTURE_SIDE = 64;
+/** The most a grain read from a brush file keeps: the whole tile, so the fine tooth of a photographed paper survives. */
+export const MAX_FILE_TEXTURE_SIDE = 256;
 const SIDE_MIN = TEXTURE_SIDES[0];
 
-/** A texture picture as it is saved: `data` is how light each pixel is (0 black, 255 white), one byte a pixel, row by row, in base 64. */
+/** A texture picture as it is saved: `data` is how light each pixel is (0 black, 255 white), one byte a pixel, row by row, in base 64. When that is shorter squeezed it is saved packed, as `"z1:..."` (the same packing a soft tip's cells get). A picture is held in the form it is saved in, so nothing is packed or unpacked until a tile is made. */
 export interface TexturePicture {
-  /** Pixels across and down: 8, 16, 32 or 64. */
+  /** Pixels across and down: 8 to 256, a power of two. */
   side: number;
   data: string;
 }
@@ -20,14 +24,48 @@ export interface TexturePicture {
 const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
 const b64Length = (bytes: number): number => 4 * Math.ceil(bytes / 3);
 
+/** What a packed list of bytes starts with when it is saved, so a later way of packing can be told apart. */
+export const PACKED = 'z1:';
+
+/** The bytes squeezed (deflate) and in base 64 after `"z1:"`. The same text for the same bytes. */
+export function packBytes(bytes: Uint8Array): string {
+  return PACKED + encodeBytes(deflateSync(bytes, { level: 9 }));
+}
+
+/** `length` bytes from a packed string (`"z1:..."`), or null when it is not one, is not exactly that long or is made up. The size is checked before anything is allocated, and a squeezed bomb stops at one byte over. */
+export function unpackBytes(text: string, length: number): Uint8Array | null {
+  if (!text.startsWith(PACKED)) return null;
+  const b64 = text.slice(PACKED.length);
+  // A squeezed list can be a touch longer than the bytes it holds when they will not squeeze; never much more.
+  if (b64.length > b64Length(length + 64) || !B64.test(b64)) return null;
+  try {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const raw = inflateSync(bytes, { out: new Uint8Array(length + 1) });
+    return raw.length === length ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 export function encodeBytes(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 3000) s += String.fromCharCode(...bytes.subarray(i, i + 3000));
   return btoa(s);
 }
 
-/** The bytes in a base 64 string, or null when it is not base 64 or is not exactly `length` bytes. Never allocates by what the string claims. */
+/** A picture's text: packed when that is shorter than plain base 64, plain otherwise. */
+export function packedData(bytes: Uint8Array): string {
+  const plain = encodeBytes(bytes);
+  const packed = packBytes(bytes);
+  return packed.length < plain.length ? packed : plain;
+}
+
+/** A texture picture of this side from its bytes, held in the form it is saved in. */
+export const pictureFromBytes = (side: number, bytes: Uint8Array): TexturePicture => ({ side, data: packedData(bytes) });
+
+/** The bytes in a picture's text (plain base 64 or packed), or null when it is neither or is not exactly `length` bytes. Never allocates by what the string claims. */
 export function decodeBytes(data: string, length: number): Uint8Array | null {
+  if (data.startsWith(PACKED)) return unpackBytes(data, length);
   if (data.length !== b64Length(length) || !B64.test(data)) return null;
   let s: string;
   try {
@@ -48,16 +86,18 @@ export function cleanPicture(raw: unknown): TexturePicture | null {
   const side = r.side;
   if (typeof side !== 'number' || !(TEXTURE_SIDES as readonly number[]).includes(side)) return null;
   if (typeof r.data !== 'string') return null;
-  if (!decodeBytes(r.data, side * side)) return null;
-  return { side, data: r.data };
+  const bytes = decodeBytes(r.data, side * side);
+  if (!bytes) return null;
+  // An older picture is plain base 64; held packed it saves packed next time.
+  return r.data.startsWith(PACKED) ? { side, data: r.data } : pictureFromBytes(side, bytes);
 }
 
 export const samePicture = (a: TexturePicture | undefined, b: TexturePicture | undefined): boolean => (!a || !b ? !a && !b : a.side === b.side && a.data === b.data);
 
 /** The side a picture of this longer side is boiled down to: the nearest power of two, from 8 to 64. */
-export function sideFor(longer: number): number {
+export function sideFor(longer: number, most: number = MAX_TEXTURE_SIDE): number {
   const p = 2 ** Math.round(Math.log2(Math.max(1, longer)));
-  return Math.min(MAX_TEXTURE_SIDE, Math.max(SIDE_MIN, p));
+  return Math.min(most, Math.max(SIDE_MIN, p));
 }
 
 export type PictureResult = { ok: true; picture: TexturePicture } | { ok: false; why: 'empty' | 'flat' };
@@ -67,9 +107,9 @@ export type PictureResult = { ok: true; picture: TexturePicture } | { ok: false;
  * see-through counting as white paper, so a dark shape on a clear background is dark where the shape is. Flat pictures are
  * refused: they would make no texture at all.
  */
-export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array): PictureResult {
+export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array, most: number = MAX_TEXTURE_SIDE): PictureResult {
   if (!(w >= 1 && h >= 1) || rgba.length < w * h * 4) return { ok: false, why: 'empty' };
-  const side = sideFor(Math.max(w, h));
+  const side = sideFor(Math.max(w, h), most);
   const out = new Uint8Array(side * side);
   let lo = 255;
   let hi = 0;
@@ -95,19 +135,27 @@ export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray 
     }
   }
   if (hi - lo < 8) return { ok: false, why: 'flat' };
-  return { ok: true, picture: { side, data: encodeBytes(out) } };
+  return { ok: true, picture: pictureFromBytes(side, out) };
 }
 
 // ---------------------------------------------------------------- tiles
 
 const MAX_KEPT = 24;
+/** A scaled paper can be 2048 pixels across (4 MB), so what is kept is capped by size as well as by count. */
+const MAX_KEPT_BYTES = 48 * 1024 * 1024;
 const kept = new Map<string, Uint8Array>();
+let keptBytes = 0;
 function keep(key: string, make: () => Uint8Array): Uint8Array {
   const have = kept.get(key);
   if (have) return have;
   const t = make();
-  if (kept.size >= MAX_KEPT) kept.delete(kept.keys().next().value as string);
+  while (kept.size > 0 && (kept.size >= MAX_KEPT || keptBytes + t.length > MAX_KEPT_BYTES)) {
+    const old = kept.keys().next().value as string;
+    keptBytes -= kept.get(old)!.length;
+    kept.delete(old);
+  }
   kept.set(key, t);
+  keptBytes += t.length;
   return t;
 }
 
@@ -145,12 +193,71 @@ export function repeatInto(src: Uint8Array, side: number, scale = 1): Uint8Array
 }
 
 /**
- * The paper tile for a grain made from a picture. Light parts are the high values and dark parts the low ones (flipped with
- * `invert`), and the paint lands on the low values first, the same way it does on a paper, so the dark parts of a picture
- * are where it catches.
+ * A square tile of greys (`TILE` across, repeating) scaled by `scale` into one `round(TILE * scale)` across that still repeats
+ * without a seam, so it can be read a pixel at a time. Bigger than 1 blows it up with bilinear filtering (soft, not blocks);
+ * smaller averages the pixels each new one covers. `even` spreads the greys evenly again afterwards, since smoothing pulls
+ * them toward the middle and a paper's share of pixels reached at a given pressure is meant to stay the same. At scale 1 it
+ * is the tile itself. Made once and kept, under `key`.
  */
-export function grainTileFromPicture(pic: TexturePicture, invert: boolean): Uint8Array {
-  return keep(`g|${pic.side}|${invert ? 1 : 0}|${pic.data}`, () => repeatInto(evenOut(greys(pic, invert)), pic.side));
+export function scaleTile(key: string, src: Uint8Array, scale: number, even = true): Uint8Array {
+  const n = Math.max(8, Math.min(TILE * 8, Math.round(TILE * scale)));
+  if (n === TILE) return src;
+  return keep(`s|${n}|${even ? 1 : 0}|${key}`, () => {
+    const out = scaled(src, n);
+    return even ? evenOut(out) : out;
+  });
+}
+
+/** `src` (TILE square, wrapping) resampled to `n` square, wrapping. */
+export function scaled(src: Uint8Array, n: number): Uint8Array {
+  const out = new Uint8Array(n * n);
+  const ratio = TILE / n;
+  // Taps along each axis: one bilinear read when blowing up, enough to cover the footprint when shrinking.
+  const taps = Math.max(1, Math.ceil(ratio));
+  const i0 = new Int32Array(n * taps);
+  const i1 = new Int32Array(n * taps);
+  const f = new Float32Array(n * taps);
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < taps; k++) {
+      // The middle of this output pixel (or this slice of it) in source pixels, the centre of a source pixel being at .5.
+      const u = (i + (k + 0.5) / taps) * ratio - 0.5;
+      const fl = Math.floor(u);
+      i0[i * taps + k] = ((fl % TILE) + TILE) % TILE;
+      i1[i * taps + k] = (((fl + 1) % TILE) + TILE) % TILE;
+      f[i * taps + k] = u - fl;
+    }
+  const share = 1 / (taps * taps);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let sum = 0;
+      for (let ky = 0; ky < taps; ky++) {
+        const a = y * taps + ky;
+        const r0 = i0[a] * TILE;
+        const r1 = i1[a] * TILE;
+        const fy = f[a];
+        for (let kx = 0; kx < taps; kx++) {
+          const b = x * taps + kx;
+          const fx = f[b];
+          const top = src[r0 + i0[b]] * (1 - fx) + src[r0 + i1[b]] * fx;
+          const bot = src[r1 + i0[b]] * (1 - fx) + src[r1 + i1[b]] * fx;
+          sum += top * (1 - fy) + bot * fy;
+        }
+      }
+      out[y * n + x] = Math.round(sum * share);
+    }
+  }
+  return out;
+}
+
+/**
+ * The paper tile for a grain made from a picture. Light parts are the high values and dark parts the low ones (flipped with
+ * `invert`), and the paint lands on the high values first, the same way it does on a paper, so the light parts of a picture
+ * are where it catches: a photo of canvas lights the thread tops, and that is where the paint lands.
+ */
+export function grainTileFromPicture(pic: TexturePicture, invert: boolean, asIs = false): Uint8Array {
+  // `asIs` keeps the picture's own greys (a paper that thins the paint means them as they are: a picture that is
+  // nearly all white barely bites). Otherwise they are spread evenly, the way the papers are made.
+  return keep(`g|${pic.side}|${invert ? 1 : 0}|${asIs ? 1 : 0}|${pic.data}`, () => repeatInto(asIs ? greys(pic, invert) : evenOut(greys(pic, invert)), pic.side));
 }
 
 /** How many pixels one picture pixel covers in a dual tip: a power of two, 1 to 8, and small enough that the picture fits the tile. */

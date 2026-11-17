@@ -1,0 +1,174 @@
+{
+ "label": "open-split2",
+ "when": "2026-11-17T02:22:41.073Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 6,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 632.4,
+   "runs": [
+    632.4,
+    643.8,
+    628.6,
+    587.1,
+    566.5,
+    676.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 632.39,
+   "topSelf": [
+    [
+     "M3e index-C4etWHwG.js:169",
+     352.4
+    ],
+    [
+     "decode :0",
+     66.5
+    ],
+    [
+     "(garbage collector) :0",
+     40.7
+    ],
+    [
+     "F3e index-C4etWHwG.js:169",
+     27.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "M3e index-C4etWHwG.js:169",
+     507.8
+    ],
+    [
+     "P3e index-C4etWHwG.js:169",
+     74.2
+    ],
+    [
+     "F3e index-C4etWHwG.js:169",
+     70.1
+    ],
+    [
+     "decode :0",
+     66.5
+    ],
+    [
+     "rk index-C4etWHwG.js:150",
+     66.5
+    ],
+    [
+     "(anon) index-C4etWHwG.js:9",
+     45.1
+    ],
+    [
+     "(garbage collector) :0",
+     40.7
+    ],
+    [
+     "Xd index-C4etWHwG.js:9",
+     37.6
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 599,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 0,
+    "pngWait": 0,
+    "zipWait": 0,
+    "held": 0,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 0,
+    "openScan": 0,
+    "openJson": 457.7,
+    "openDecode": 66.9,
+    "openDocBytes": 36621592,
+    "openUnzip": 3.5,
+    "openBuild": 74.8,
+    "openHistory": 0,
+    "openJsonWait": 88,
+    "openPngWait": 0.1,
+    "openHeld": 536.1,
+    "opens": 1
+   },
+   "note": ""
+  }
+ ]
+}

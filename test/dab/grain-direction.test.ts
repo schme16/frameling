@@ -1,28 +1,29 @@
-// The question board card grain-peaks-or-pits asks: does paint from a grain land on the peaks of the paper or in the pits?
-// These tests do not say which is right. They pin what the code does today, so that the direction cannot change by accident.
-// If you mean to flip it, change these on purpose and look at brand/ab/grain-dir first (the same stroke both ways).
+// The board card grain-peaks-or-pits asked: does paint from a grain land on the peaks of the paper or in the pits?
+// The look look-grain-dir settled it: on the peaks, the way real chalk catches on the tooth of the paper, which is also
+// what the dry media already did. These tests pin that direction so it cannot change by accident. If you mean to flip it
+// again, change these on purpose and look at brand/ab/grain-dir first (the same stroke both ways).
 import { describe, expect, it } from 'vitest';
 import { grainCut, grainHeight } from '../../src/dab/texture';
 import { MEDIA, pigmentAt } from '../../src/dry/maths';
 import { paperHeight, paperTile, PAPER_IDS, TILE } from '../../src/dry/paper';
 
 // On paper, a height of 1 is a peak (the top of the tooth) and 0 is a pit. The tile is 0 to 255 and grainHeight reads it as 0 to 1.
-describe('grain direction as it is today (dab engine)', () => {
-  it('a pit (height 0) takes paint straight away, however light', () => {
-    expect(grainCut(0.1, 0, 1)).toBeGreaterThan(0);
-    expect(grainCut(0.01, 0, 1)).toBeGreaterThan(0);
+describe('grain direction (dab engine)', () => {
+  it('a peak (height 1) takes paint straight away, however light', () => {
+    expect(grainCut(0.1, 1, 1)).toBeGreaterThan(0);
+    expect(grainCut(0.01, 1, 1)).toBeGreaterThan(0);
   });
 
-  it('a peak (height 1) takes nothing until the paint is full, so light paint skips the peaks', () => {
-    expect(grainCut(0.5, 1, 1)).toBe(0);
-    expect(grainCut(0.99, 1, 1)).toBe(0);
-    expect(grainCut(1, 1, 1)).toBe(0);
+  it('a pit (height 0) takes nothing until the paint is full, so light paint skips the pits', () => {
+    expect(grainCut(0.5, 0, 1)).toBe(0);
+    expect(grainCut(0.99, 0, 1)).toBe(0);
+    expect(grainCut(1, 0, 1)).toBe(0);
   });
 
-  it('paint lands on lower paper before higher paper, at any strength', () => {
+  it('paint lands on higher paper before lower paper, at any strength', () => {
     for (const add of [0.2, 0.5, 0.8]) {
       let last = Infinity;
-      for (const h of [0, 0.25, 0.5, 0.75, 1]) {
+      for (const h of [1, 0.75, 0.5, 0.25, 0]) {
         const got = grainCut(add, h, 1);
         expect(got).toBeLessThanOrEqual(last);
         last = got;
@@ -50,8 +51,8 @@ describe('grain direction as it is today (dab engine)', () => {
   });
 });
 
-describe('dry media (chalk, charcoal on pixel layers and vector strokes) go the other way today', () => {
-  // The dry media take pigment on the peaks first. The dab engine's grain takes it in the pits first. This pins that they differ.
+describe('the dry media (chalk, charcoal on pixel layers and vector strokes) go the same way', () => {
+  // The dry media take pigment on the peaks first. Since the look, so does the dab engine's grain. This pins that they agree.
   const chalk = MEDIA.find((m) => m.id === 'chalk')!;
   it('light pressure reaches a peak and not a pit', () => {
     const light = 0.3;
@@ -59,11 +60,10 @@ describe('dry media (chalk, charcoal on pixel layers and vector strokes) go the 
     expect(pigmentAt(chalk, 'rough', 0, light, 0)).toBe(0);
   });
 
-  it('so the dab grain and the dry media disagree about which end of the paper catches first', () => {
+  it('so the dab grain and the dry media agree about which end of the paper catches first', () => {
     const light = 0.3;
-    const dryPeak = pigmentAt(chalk, 'rough', 1, light, 0) > 0;
-    const dabPeak = grainCut(light, 1, 1) > 0;
-    expect(dryPeak).toBe(true);
-    expect(dabPeak).toBe(false);
+    expect(pigmentAt(chalk, 'rough', 1, light, 0) > 0).toBe(true);
+    expect(grainCut(light, 1, 1) > 0).toBe(true);
+    expect(grainCut(light, 0, 1) > 0).toBe(false);
   });
 });

@@ -384,7 +384,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   pixelbrush: {
     label: 'Pixel brush',
-    items: ['tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', '-', 'pixelbrush.pen', 'pixelbrush.feel', 'pixelbrush.fade', 'pixelbrush.grain', 'pixelbrush.dual', 'pixelbrush.wobble', 'pixelbrush.wet', 'pixelbrush.blend'],
+    items: ['tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.taper', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', '-', 'pixelbrush.pen', 'pixelbrush.feel', 'pixelbrush.fade', 'pixelbrush.grain', 'pixelbrush.dual', 'pixelbrush.wobble', 'pixelbrush.wet', 'pixelbrush.blend'],
   },
   range: {
     label: 'Play range',

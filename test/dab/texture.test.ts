@@ -9,14 +9,14 @@ describe('grain', () => {
     for (const h of [0, 0.4, 1]) expect(grainCut(0.5, h, 0)).toBe(0.5);
   });
 
-  it('lets nothing through where the paint is lighter than the paper is high, at depth 1', () => {
+  it('lets nothing through where the paint is lighter than the paper is deep, at depth 1', () => {
     expect(grainCut(0.3, 0.5, 1)).toBe(0);
     expect(grainCut(0.5, 0.5, 1)).toBe(0);
     expect(grainCut(0.8, 0.5, 1)).toBeCloseTo(0.6, 9);
   });
 
   it('always lets full paint through, so pressing hard fills the pits', () => {
-    for (const depth of [0.2, 0.7, 1]) for (const h of [0, 0.5, 0.99]) expect(grainCut(1, h, depth)).toBeCloseTo(1, 9);
+    for (const depth of [0.2, 0.7, 1]) for (const h of [1, 0.5, 0.01]) expect(grainCut(1, h, depth)).toBeCloseTo(1, 9);
   });
 
   it('catches on more pixels as the paint gets heavier', () => {

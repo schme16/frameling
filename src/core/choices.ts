@@ -351,9 +351,13 @@ export function withChoice<V extends string = string>(id: string, fn: (value: V)
 /** Calls `fn` whenever a remembered answer changes, with the choice and its new value (undefined = forgotten). */
 export function onChoiceChange(fn: (id: string, value: string | undefined) => void): () => void {
   let seen = { ...answers };
+  // What has been seen is noted before the listener runs: a listener that changes a choice itself makes a nested check,
+  // which must not hear the same change again (it did, and "Do you stream?: no" tucked the tools away four times).
   const check = () => {
-    for (const id of new Set([...Object.keys(seen), ...Object.keys(answers)])) if (seen[id] !== answers[id]) fn(id, answers[id]);
-    seen = { ...answers };
+    const before = seen;
+    const now = { ...answers };
+    seen = now;
+    for (const id of new Set([...Object.keys(before), ...Object.keys(now)])) if (before[id] !== now[id]) fn(id, now[id]);
   };
   listeners.add(check);
   return () => void listeners.delete(check);

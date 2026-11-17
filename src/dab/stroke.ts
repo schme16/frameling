@@ -14,8 +14,9 @@ import type { BlendMode } from '../core/format';
 import { blendPaint } from './blend';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
-import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
-import { dualAt, dualTile, grainCut, grainTile } from './texture';
+import { cleanDab, DabPath, gritty, makeRng, mirrorDabs, samplerFor, snapAxis, taperAt, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
+import { LAID_MAX_PIXELS } from './dualLaid';
+import { dualAt, dualTile, grainCut, grainIsSmooth, grainTile, tileSide } from './texture';
 import { TILE, type PaperKind } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
@@ -131,10 +132,19 @@ export class DabStroke {
   private readonly grainTile: Uint8Array | null;
   private readonly grainDepth: number;
   private readonly grainScale: number;
+  /** A smooth paper arrives already scaled, this many pixels across (0 when the loop scales a plain tile itself). */
+  private readonly grainSide: number;
   private readonly grainMoving: boolean;
+  private readonly grainThin: boolean;
+  private readonly grainHold: number;
   private readonly dual: Uint8Array | null;
   private readonly dualOx: number;
   private readonly dualOy: number;
+  // A dual brush laid along the stroke: its own path of dabs, and what it has drawn so far (how much of the first brush may land on each pixel).
+  private readonly laidPath: DabPath | null;
+  private readonly laidBrush: DabBrush | null;
+  private readonly laidShare: number;
+  private readonly maskTiles: (Float32Array | undefined)[] | null;
   private gOx = 0;
   private gOy = 0;
   private readonly look: () => number;
@@ -147,6 +157,16 @@ export class DabStroke {
   private readonly wake: number;
   private readonly load: Rgb;
   private readonly under = new Uint8ClampedArray(4);
+  // The end taper. The line can only thin toward its end once the pen has lifted, so the last stretch is kept in a
+  // form that can be drawn again: the dabs that made it, and what each block of paint held before each short run of
+  // them (`runs`). Older runs are let go as the line moves on, so a long stroke keeps only its tail.
+  private tailOn: boolean;
+  private readonly tailLen: number;
+  private readonly runLen: number;
+  private runs: { start: number; saved: Map<number, Float32Array | null> }[] = [];
+  private readonly tileRun: Int32Array;
+  private runNo = 0;
+  private tailDabs: Dab[] = [];
 
   constructor(
     private readonly surface: Surface,
@@ -157,40 +177,67 @@ export class DabStroke {
     this.h = surface.height;
     this.across = Math.ceil(this.w / TS);
     this.tiles = new Array(this.across * Math.ceil(this.h / TS));
+    this.maskTiles = p.brush.dual?.laid ? new Array(this.tiles.length) : null;
     this.crisp = p.edge === 'crisp';
     this.mixTiles = p.brush.wet > 0 && !p.pick && !(p.brush.tip === 'picture' && p.brush.picture?.keep) ? new Array(this.tiles.length) : null;
     this.blend = p.brush.blend;
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
     const g = p.brush.grain;
-    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet) : null;
+    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet, p.brush.aliased) : null;
+    const smooth = !!g && grainIsSmooth(g, p.brush.aliased);
+    this.grainSide = smooth && this.grainTile ? tileSide(this.grainTile) : 0;
     this.grainDepth = g?.depth ?? 0;
-    this.grainScale = g?.scale ?? 1;
+    this.grainScale = smooth ? 1 : g?.scale ?? 1;
     this.grainMoving = !!g?.moving;
+    this.grainThin = !!g?.thin;
+    this.grainHold = (g?.depth ?? 0) * (g?.hold ?? 1);
     const d = p.brush.dual;
-    this.dual = d ? dualTile(d) : null;
+    this.dual = d && !d.laid ? dualTile(d) : null;
+    const l = d?.laid;
+    this.laidBrush = l ? cleanDab({ tip: l.tip, picture: l.picture ?? null, size: 1, hardness: l.hardness, roundness: l.roundness, spacing: l.spacing, scatter: l.scatter, angleJitter: l.angleJitter, follow: l.follow, aliased: false, dynamics: [], taper: null }) : null;
+    this.laidShare = l ? l.size : 0;
+    this.laidPath = this.laidBrush ? new DabPath(this.laidBrush, makeRng((p.seed ?? 1) + 313)) : null;
     const start = makeRng((p.seed ?? 1) + 77);
     this.dualOx = (start() * TILE) | 0;
     this.dualOy = (start() * TILE) | 0;
     this.look = makeRng((p.seed ?? 1) + 991);
     this.wake = Math.max(2, Math.ceil(1 / Math.max(0.05, p.brush.spacing)) + 1);
+    const tp = p.brush.taper;
+    this.tailLen = tp && tp.end > 0 ? tp.end * p.brush.size : 0;
+    this.runLen = Math.max(16, this.tailLen / 3);
+    // Not for a picked, coloured picture or sharp pixel line: those are left as they were drawn, because drawing
+    // the tail again would not give the same paint back. A wet brush gets its tail: the colour it picks up is only
+    // slightly different the second time round, and an inking pen with a wet mix (Dry Ink v2) must still come to a point.
+    this.tailOn = this.tailLen > 0 && !this.crisp && !p.pick && !this.keep;
+    this.tileRun = this.tailOn ? new Int32Array(this.tiles.length).fill(-1) : new Int32Array(0);
     this.colourFx = touchesColour(p.brush.dynamics) || p.brush.wet > 0;
     this.cur = [p.color[0], p.color[1], p.color[2]];
     this.load = [p.color[0], p.color[1], p.color[2]];
   }
 
   /** Adds this much paint to a pixel (up to the opacity) and repaints it when its look changed. */
-  private touch(x: number, y: number, add: number, cell: Uint8Array): void {
+  private touch(x: number, y: number, add: number, cell: Uint8Array, ceiling = 1): void {
+    // `ceiling` already holds the dab's own opacity when a pen control drives it (see stampAt).
     if (this.wrapEdges) {
       x = wrap(x, this.w);
       y = wrap(y, this.h);
     } else if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
     const ti = (y >> SHIFT) * this.across + (x >> SHIFT);
     let t = this.tiles[ti];
+    if (this.tailOn && this.tileRun[ti] !== this.runNo) {
+      // First touch of this block in this run of the line: keep what it held, so the tail can be taken back.
+      this.tileRun[ti] = this.runNo;
+      this.runs[this.runs.length - 1]?.saved.set(ti, t ? t.slice() : null);
+    }
     if (!t) t = this.tiles[ti] = new Float32Array(TS * TS);
     const i = (y & MASK) * TS + (x & MASK);
     const have = t[i];
-    const cap = this.p.brush.opacity;
+    // A paper that stays put holds the stroke back, not each dab: once a valley has taken all the paint the paper lets
+    // it have, more dabs over the same spot cannot fill it in. That is what keeps a pencil speckled all the way through
+    // when its dabs sit a twentieth of a width apart. A paper that moves finds fresh ground for every dab, so it holds
+    // nothing back across the stroke.
+    const cap = this.p.brush.opacity * ceiling;
     if (have >= cap) return;
     let next = have + add * (1 - have);
     if (next > cap) next = cap;
@@ -276,11 +323,17 @@ export class DabStroke {
     const dual = this.dual;
     const grain = this.grainTile;
     const gs = this.grainScale;
+    const gside = this.grainSide;
     const depth = this.grainDepth;
+    const thin = this.grainThin;
+    const hold = this.grainHold;
+    // A pen control on opacity: this dab can only take a pixel so far, however many like it overlap. A heavier dab later lifts it.
+    const dabCap = d.cap ?? 1;
     const gox = this.gOx;
     const goy = this.gOy;
     const dox = this.dualOx;
     const doy = this.dualOy;
+    const mask = this.maskTiles;
     for (let y = y0; y <= y1; y++) {
       const dy = y + 0.5 - d.y;
       let x0 = Math.floor(d.x - reach);
@@ -303,14 +356,101 @@ export class DabStroke {
         const c = sm.cov(x + 0.5 - d.x, dy);
         if (c <= 0) continue;
         let add = c * d.flow;
+        let ceiling = dabCap;
         if (grain !== null) {
-          const sx = gs > 1 ? Math.floor(x / gs) : x;
-          const sy = gs > 1 ? Math.floor(y / gs) : y;
-          add = grainCut(add, grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255, depth);
-          if (add <= 0) continue;
+          let height: number;
+          if (gside === 0) {
+            const sx = gs > 1 ? Math.floor(x / gs) : x;
+            const sy = gs > 1 ? Math.floor(y / gs) : y;
+            height = grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255;
+          } else {
+            // A smooth paper, already scaled: a square `gside` across, any size, so it wraps with a remainder.
+            let sx = (x + gox) % gside;
+            if (sx < 0) sx += gside;
+            let sy = (y + goy) % gside;
+            if (sy < 0) sy += gside;
+            height = grain[sy * gside + sx] / 255;
+          }
+          if (thin) {
+            // A paper that thins: every dab leaves a share of its paint wherever it lands, so a light touch is an
+            // even grey with the paper showing through, not specks on the peaks. One that stays put still says how
+            // dark each pixel may get in the stroke.
+            add *= 1 - depth * (1 - height);
+            if (add <= 0) continue;
+            if (!this.grainMoving) ceiling = dabCap * (1 - hold * (1 - height));
+          } else {
+            add = grainCut(add, height, depth);
+            if (add <= 0) continue;
+            if (!this.grainMoving) ceiling = dabCap * (1 - hold * (1 - height));
+          }
         }
-        this.touch(x, y, add, cell);
+        if (mask !== null) {
+          // The second brush's stroke is a mask on the whole stroke: the pixel can only get as much paint as the mask lets through.
+          const m = this.maskAt(x, y);
+          if (m <= 0) continue;
+          ceiling *= m;
+        }
+        this.touch(x, y, add, cell, ceiling);
       }
+    }
+  }
+
+  /** How much of the second brush's stroke is on a pixel so far, 0 to 1. */
+  private maskAt(x: number, y: number): number {
+    if (this.wrapEdges) {
+      x = wrap(x, this.w);
+      y = wrap(y, this.h);
+    } else if (x < 0 || y < 0 || x >= this.w || y >= this.h) return 0;
+    const t = this.maskTiles![(y >> SHIFT) * this.across + (x >> SHIFT)];
+    return t ? t[(y & MASK) * TS + (x & MASK)] : 0;
+  }
+
+  /** One dab of the second brush: adds what its tip covers to the mask (two dabs over a pixel make it more covered, never less). */
+  private stampMask(d: Dab, sm: Sampler): void {
+    const reach = sm.reach + 1;
+    const y0 = Math.floor(d.y - reach);
+    const y1 = Math.ceil(d.y + reach);
+    const circle = this.laidBrush!.tip === 'round' && this.laidBrush!.roundness === 1;
+    const r2 = reach * reach;
+    const tiles = this.maskTiles!;
+    for (let y = y0; y <= y1; y++) {
+      const dy = y + 0.5 - d.y;
+      let x0 = Math.floor(d.x - reach);
+      let x1 = Math.ceil(d.x + reach);
+      if (circle) {
+        const c = Math.sqrt(Math.max(0, r2 - dy * dy));
+        x0 = Math.max(x0, Math.floor(d.x - c));
+        x1 = Math.min(x1, Math.ceil(d.x + c));
+      }
+      let py = y;
+      if (this.wrapEdges) py = wrap(y, this.h);
+      else if (y < 0 || y >= this.h) continue;
+      if (!this.wrapEdges) {
+        x0 = Math.max(x0, 0);
+        x1 = Math.min(x1, this.w - 1);
+      }
+      for (let x = x0; x <= x1; x++) {
+        const c = sm.cov(x + 0.5 - d.x, dy);
+        if (c <= 0) continue;
+        const px = this.wrapEdges ? wrap(x, this.w) : x;
+        const ti = (py >> SHIFT) * this.across + (px >> SHIFT);
+        let t = tiles[ti];
+        if (!t) t = tiles[ti] = new Float32Array(TS * TS);
+        const i = (py & MASK) * TS + (px & MASK);
+        const have = t[i];
+        if (have < 1) t[i] = have + c * (1 - have);
+      }
+    }
+  }
+
+  /** Lays the second brush's dabs into the mask (mirrored like the first brush's). */
+  private layMask(dabs: Dab[]): void {
+    const b = this.laidBrush!;
+    const m = this.p.mirror;
+    for (const d of dabs) {
+      const sm = samplerFor(b, d.size, d.angle, this.crisp);
+      if (!m || m.mode === 'off') this.stampMask(d, sm);
+      else mirrorDabs(m.mode, m.ax2, m.ay2, d).forEach((e, i) => this.stampMask(e, i === 0 ? sm : samplerFor(b, e.size, e.angle, this.crisp)));
     }
   }
 
@@ -341,13 +481,97 @@ export class DabStroke {
     if (d.hue || d.sat || d.light) shiftColour(cur[0], cur[1], cur[2], d.hue ?? 0, d.sat ?? 0, d.light ?? 0, cur);
   }
 
+  /** Notes a dab for the end taper, and starts a new run of the line when this one has gone far enough. */
+  private note(d: Dab): void {
+    const at = d.at ?? 0;
+    const runs = this.runs;
+    if (runs.length === 0 || at >= runs[runs.length - 1].start + this.runLen) {
+      runs.push({ start: at, saved: new Map() });
+      this.runNo++;
+      // A run is let go once the next one starts before the tail could: the tail can never reach back into it.
+      while (runs.length > 1 && runs[1].start <= at - this.tailLen) runs.shift();
+      const from = runs[0].start;
+      if (this.tailDabs.length > 0 && (this.tailDabs[0].at ?? 0) < from) this.tailDabs = this.tailDabs.filter((x) => (x.at ?? 0) >= from);
+    }
+    this.tailDabs.push(d);
+  }
+
+  /** The pen has lifted: takes back the last stretch of the line and draws it again thinning to its end. */
+  private taperEnd(): void {
+    const tp = this.p.brush.taper;
+    const dabs = this.tailDabs;
+    const runs = this.runs;
+    this.tailOn = false;
+    if (!tp || dabs.length === 0 || runs.length === 0) return;
+    const total = dabs[dabs.length - 1].at ?? 0;
+    // A line shorter than its two tapers shares itself between them, so a quick flick is still a line and not a dot.
+    const startLen = tp.start * this.p.brush.size;
+    const len = Math.min(this.tailLen, startLen > 0 ? (total * this.tailLen) / (this.tailLen + startLen) : total);
+    if (len <= 0) return;
+    const from = total - len;
+    let k = 0;
+    while (k + 1 < runs.length && runs[k + 1].start <= from) k++;
+    // Back to how the paint stood before run k: the newest runs first, so the oldest keeping of each block wins.
+    const was = new Map<number, Float32Array>();
+    for (let j = runs.length - 1; j >= k; j--)
+      for (const [ti, kept] of runs[j].saved) {
+        const now = this.tiles[ti];
+        if (now && !was.has(ti)) was.set(ti, now);
+        this.tiles[ti] = kept ? kept.slice() : new Float32Array(TS * TS);
+      }
+    const grit = gritty(this.p.brush);
+    const again: Dab[] = [];
+    for (const d of dabs) {
+      const at = d.at ?? 0;
+      if (at < runs[k].start) continue;
+      if (at <= from) again.push(d);
+      else {
+        const f = taperAt(tp, total - at, len);
+        again.push(grit ? { ...d, size: Math.max(0.5, d.size * f.size), flow: d.flow * f.cap } : { ...d, size: Math.max(0.5, d.size * f.size), cap: (d.cap ?? 1) * f.cap });
+      }
+    }
+    this.lay(again);
+    // Any pixel left with less paint than it had is put back to what that paint makes of it.
+    const b = this.base;
+    const o = this.out;
+    const pc = this.p.color;
+    const c = this.col;
+    for (const [ti, old] of was) {
+      const now = this.tiles[ti];
+      if (!now) continue;
+      const tx = (ti % this.across) << SHIFT;
+      const ty = Math.floor(ti / this.across) << SHIFT;
+      for (let i = 0; i < TS * TS; i++) {
+        const s = now[i];
+        if (s >= old[i] || ((s * 255 + 0.5) | 0) === ((old[i] * 255 + 0.5) | 0)) continue;
+        const x = tx + (i & MASK);
+        const y = ty + (i >> SHIFT);
+        if (x >= this.w || y >= this.h) continue;
+        this.surface.read(x, y, b);
+        // The colour the stroke ended on (the one picked, unless a pen control was moving it).
+        c[0] = this.cur[0];
+        c[1] = this.cur[1];
+        c[2] = this.cur[2];
+        c[3] = pc[3];
+        if (this.blend !== 'normal') blendPaint(this.blend, b, c, s, o);
+        else paintOver(b, 0, c, s, o);
+        this.p.snap?.(o);
+        this.surface.write(x, y, o[0], o[1], o[2], o[3]);
+      }
+    }
+    this.tailDabs = [];
+    this.runs = [];
+  }
+
   private lay(dabs: Dab[]): void {
     const { brush, mirror: m } = this.p;
     for (const d of dabs) {
+      if (this.tailOn) this.note(d);
       if (this.colourFx) this.colourFor(d);
       if (this.grainMoving) {
-        this.gOx = (this.look() * TILE) | 0;
-        this.gOy = (this.look() * TILE) | 0;
+        const span = this.grainSide || TILE;
+        this.gOx = (this.look() * span) | 0;
+        this.gOy = (this.look() * span) | 0;
       }
       const sm = samplerFor(brush, d.size, d.angle, this.crisp);
       // An aliased brush puts its middle on the pixel grid, so its shape is the same wherever it lands. Snap first and
@@ -360,12 +584,15 @@ export class DabStroke {
 
   /** Moves the brush to `to` (art pixels, fractions allowed), laying dabs on the way. `size` is how wide it is now; `flow` is the paint per dab, 0 to 1; `sense` is what the pen and hand are doing, for the brush's dynamics. */
   moveTo(to: Pt, size: number, flow: number, sense?: Sense): void {
+    if (this.laidPath) this.layMask(this.laidPath.to(to, Math.min(LAID_MAX_PIXELS, Math.max(0.5, size * this.laidShare)), 1));
     this.lay(this.path.to(to, size, flow, sense));
   }
 
   /** The stroke is over. A click with no movement still lays its dab. */
   finish(): void {
+    if (this.laidPath) this.layMask(this.laidPath.end());
     this.lay(this.path.end());
+    if (this.tailOn) this.taperEnd();
   }
 }
 

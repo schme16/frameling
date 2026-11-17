@@ -1,0 +1,214 @@
+{
+ "label": "r2-switch-two-before",
+ "when": "2026-11-17T09:12:27.506Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "two-boards": {
+   "nodes": 1369,
+   "timelineNodes": 379,
+   "keys": 41,
+   "rows": 3,
+   "hittable": 379,
+   "parts": [
+    [
+     "circle",
+     42
+    ],
+    [
+     "tl-cel",
+     41
+    ],
+    [
+     "tl-dkey-cell",
+     41
+    ],
+    [
+     "tl-dkey",
+     41
+    ],
+    [
+     "tl-cel-handle",
+     41
+    ],
+    [
+     "svg",
+     27
+    ],
+    [
+     "rect",
+     21
+    ],
+    [
+     "tl-icon-btn",
+     15
+    ],
+    [
+     "path",
+     13
+    ],
+    [
+     "tl-clip-edge",
+     10
+    ]
+   ],
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "two-boards",
+   "action": "switch-artboard",
+   "busyMs": 159.8,
+   "worstTaskMs": 15.8,
+   "runs": [
+    159.8,
+    162.3,
+    155.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 26.64,
+   "topSelf": [
+    [
+     "(program) :0",
+     80
+    ],
+    [
+     "removeChild :0",
+     5.2
+    ],
+    [
+     "Y$e index-D9QDUvx6.js:165",
+     3.9
+    ],
+    [
+     "Sje index-D9QDUvx6.js:152",
+     2.7
+    ],
+    [
+     "eT index-D9QDUvx6.js:150",
+     2.7
+    ],
+    [
+     "(anon) index-D9QDUvx6.js:309",
+     2.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     80
+    ],
+    [
+     "(anon) index-D9QDUvx6.js:9",
+     57.8
+    ],
+    [
+     "lf index-D9QDUvx6.js:9",
+     55.6
+    ],
+    [
+     "cf index-D9QDUvx6.js:9",
+     55.5
+    ],
+    [
+     "yd index-D9QDUvx6.js:9",
+     55.2
+    ],
+    [
+     "ff index-D9QDUvx6.js:9",
+     55.2
+    ],
+    [
+     "Ad index-D9QDUvx6.js:9",
+     39.1
+    ],
+    [
+     "jd index-D9QDUvx6.js:9",
+     38.8
+    ],
+    [
+     "Kc index-D9QDUvx6.js:9",
+     29.3
+    ],
+    [
+     "Ec index-D9QDUvx6.js:9",
+     21.3
+    ],
+    [
+     "Ro index-D9QDUvx6.js:9",
+     20.5
+    ],
+    [
+     "Nd index-D9QDUvx6.js:9",
+     20.4
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     34.8
+    ],
+    [
+     "Layout",
+     21.3
+    ],
+    [
+     "#UpdateLayoutTree",
+     12
+    ],
+    [
+     "#Layout",
+     12
+    ],
+    [
+     "FireAnimationFrame",
+     10.2
+    ],
+    [
+     "Layerize",
+     8.8
+    ],
+    [
+     "PrePaint",
+     7
+    ],
+    [
+     "Commit",
+     4.8
+    ],
+    [
+     "HitTest",
+     3.2
+    ],
+    [
+     "UpdateLayer",
+     1.2
+    ],
+    [
+     "IntersectionObserverController::computeIntersections",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

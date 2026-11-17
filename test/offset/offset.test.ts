@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cleanOffset, canOffset, mixOffsets, offsetDrawing, snapOffset, usesCelOffsets, versionFor, OFFSET_LIMIT } from '../../src/core/offset';
-import { FORMAT_VERSION, NEWEST_FORMAT_VERSION, OFFSET_FORMAT_VERSION } from '../../src/core/format';
+import { FORMAT_VERSION, NEWEST_FORMAT_VERSION, OFFSET_FORMAT_VERSION, PACKED_POINTS_FORMAT_VERSION } from '../../src/core/format';
 import type { Doc, VectorDrawing } from '../../src/core/format';
 import { isPosed, poseAt, celOffsetAt } from '../../src/core/symbols';
 import { symbolBounds } from '../../src/canvas/geometry';
@@ -135,7 +135,7 @@ describe('the saved version', () => {
     moved(d, 1, 0);
     expect(versionFor(d)).toBe(OFFSET_FORMAT_VERSION);
     expect(OFFSET_FORMAT_VERSION).toBe(FORMAT_VERSION + 1);
-    expect(NEWEST_FORMAT_VERSION).toBe(OFFSET_FORMAT_VERSION);
+    expect(NEWEST_FORMAT_VERSION).toBe(PACKED_POINTS_FORMAT_VERSION);
   });
 
   it('finds an offset in a symbol, in a set-aside artboard and in what a variation changes', () => {
@@ -189,7 +189,7 @@ describe('the saved version', () => {
 
   it('still refuses a file from a version this one does not know', () => {
     const files = unzipSync(saveFile(docWith([[0, 1]]), 'x'));
-    files['manifest.json'] = strToU8(JSON.stringify({ format: 'frameling', version: OFFSET_FORMAT_VERSION + 1, app: 't', created: '', name: 'n' }));
+    files['manifest.json'] = strToU8(JSON.stringify({ format: 'frameling', version: NEWEST_FORMAT_VERSION + 1, app: 't', created: '', name: 'n' }));
     expect(() => loadFile(zipSync(files as never))).toThrow(/newer Frameling/);
   });
 });

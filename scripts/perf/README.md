@@ -280,6 +280,15 @@ drawing) moved no timing at all. What did move things was giving each row `conta
 repainting does not make the browser repaint and re-layer the whole timeline: moving the pointer along a row went 9.3
 to 6.5 ms a move at 4x, a key delete 114 to 95, a layer delete 66 to 45.
 
+**Undoing a structural change is not the timeline rebuilding, whatever the artboard rows suggest.** Putting three
+deleted layers back on the 40 by 240 document measured 107 ms an undo at 4x, and 171 of its 176 ms were inside immer:
+`applyPatches` runs patches in a `produce`, which drafts the document and then walks the whole result to turn drafts
+back into values. That walk costs the same whether the step moved one number or put a whole layer back. Paint over the
+same three undos was 49.7 ms, so the DOM was a fifth of it. `src/core/patch.ts` now runs the patches straight, copying
+only the containers along each path, and the undo call went 176 to 48.7 ms inclusive, the action 322 to 184 ms busy
+(reps 347/314/315/322 against 184/257/173/184). `undo-delete-key` did not move: one row's drawings are a small patch
+either way. Results: `r2-undo-structural-1-4x.json` and `r2-undo-structural-2-after-4x.json`.
+
 **How much a difference has to be before it means anything.** The busy-ms figures drift between whole runs, not just
 between reps inside one: two full sweeps of the same build, 122 rows, came out a mean 3.4% apart with single rows as far
 as 53% down and 50% up. `--reps` repeats the action inside one page session, which does not catch that. So a single
@@ -291,7 +300,9 @@ played, so it rises when the warm-ahead manages more work. Judge playback on `la
 Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
 `select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
 `hover-keys` (the pointer along a row, changing nothing, so the cost is purely what the browser does per move),
-`pick-keys` (Shift and the right arrow, growing a picked block), `undo-redo`, `switch-artboard`, `export-dialog`
+`pick-keys` (Shift and the right arrow, growing a picked block), `undo-redo`, `undo-delete-layer` and
+`undo-delete-key` (undoing a structural change, with the delete that set it up left out of the timing),
+`switch-artboard`, `export-dialog`
 (warm), `save-file` (the path Save uses), `open-file`, `autosave`, `workspaces`. Saving has a warm and a first kind, and they are very different on a pixel document: `save-file` and
 `autosave` are saves after an earlier save, where the encoded PNGs are cached by pixel array (so they cost almost nothing,
 because the unmeasured warm-up run fills the cache), and `save-file-first` and `autosave-first` give every pixel drawing a

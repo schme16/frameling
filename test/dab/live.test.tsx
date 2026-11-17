@@ -99,7 +99,7 @@ describe('putting a saved brush back', () => {
 describe('the pixel brush settings', () => {
   it('keep every number in range and fall back to round when a picture tip has no picture', () => {
     setDab({ size: 5000, spacing: 0, tip: 'picture' });
-    expect(getDab()).toMatchObject({ size: 300, spacing: 0.05, tip: 'round' });
+    expect(getDab()).toMatchObject({ size: 300, spacing: 0.01, tip: 'round' });
   });
 
   it('are remembered as the brush was left', () => {

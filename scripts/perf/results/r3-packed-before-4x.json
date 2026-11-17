@@ -1,0 +1,501 @@
+{
+ "label": "packed-before",
+ "when": "2026-11-17T04:32:24.101Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 6,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 623.2,
+   "worstTaskMs": 615.3,
+   "runs": [
+    623.2,
+    646.4,
+    619.7,
+    650.7,
+    616.3,
+    622.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 623.25,
+   "topSelf": [
+    [
+     "M3e index-C4etWHwG.js:169",
+     352.2
+    ],
+    [
+     "decode :0",
+     63.1
+    ],
+    [
+     "(garbage collector) :0",
+     48
+    ],
+    [
+     "F3e index-C4etWHwG.js:169",
+     29
+    ],
+    [
+     "Z3e index-C4etWHwG.js:169",
+     16
+    ],
+    [
+     "$2e index-C4etWHwG.js:169",
+     11.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "M3e index-C4etWHwG.js:169",
+     508.4
+    ],
+    [
+     "P3e index-C4etWHwG.js:169",
+     76.8
+    ],
+    [
+     "F3e index-C4etWHwG.js:169",
+     70.2
+    ],
+    [
+     "decode :0",
+     63.1
+    ],
+    [
+     "rk index-C4etWHwG.js:150",
+     63.1
+    ],
+    [
+     "(garbage collector) :0",
+     48
+    ],
+    [
+     "(anon) index-C4etWHwG.js:9",
+     45.5
+    ],
+    [
+     "Xd index-C4etWHwG.js:9",
+     38.8
+    ],
+    [
+     "ld index-C4etWHwG.js:9",
+     38.8
+    ],
+    [
+     "$d index-C4etWHwG.js:9",
+     38.8
+    ],
+    [
+     "Yd index-C4etWHwG.js:9",
+     38.8
+    ],
+    [
+     "bd index-C4etWHwG.js:9",
+     33.2
+    ]
+   ],
+   "rendering": [
+    [
+     "MajorGC",
+     21.6
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     21.6
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     15.5
+    ],
+    [
+     "FireAnimationFrame",
+     14.3
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     11.3
+    ],
+    [
+     "V8.GC_MC_MARK",
+     7.8
+    ],
+    [
+     "MinorGC",
+     7.1
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     7.1
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     7.1
+    ],
+    [
+     "V8.GC_MC_MARK_FULL_CLOSURE_PARALLEL",
+     7
+    ],
+    [
+     "V8.GC_MC_MARK_WEAK_CLOSURE_EPHEMERON_MARKING",
+     6.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     6
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY",
+     5.6
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     4.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     3.5
+    ],
+    [
+     "Commit",
+     3.4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_COPY_PARALLEL",
+     3
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL",
+     2.9
+    ],
+    [
+     "V8.GC_HEAP_ENSURE_SWEEPING_COMPLETED",
+     2.8
+    ],
+    [
+     "V8.GC_SCAVENGER_COMPLETE_SWEEP_ARRAY_BUFFERS",
+     2.8
+    ],
+    [
+     "V8.GC_YOUNG_ARRAY_BUFFER_SWEEP",
+     2.3
+    ],
+    [
+     "HitTest",
+     2.3
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     2.2
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     1.8
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     1.3
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     0.9
+    ],
+    [
+     "V8.GC_MC_CLEAR_JOIN_JOB",
+     0.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE_EPILOGUE",
+     0.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_SLOTS_MAIN",
+     0.6
+    ]
+   ],
+   "cache": null,
+   "longestMs": 588,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 0,
+    "pngWait": 0,
+    "zipWait": 0,
+    "held": 0,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 0,
+    "openScan": 0.1,
+    "openJson": 462,
+    "openDecode": 63.3,
+    "openDocBytes": 36621592,
+    "openUnzip": 5.5,
+    "openBuild": 77.6,
+    "openHistory": 0,
+    "openJsonWait": 89.9,
+    "openPngWait": 0,
+    "openHeld": 545.3,
+    "opens": 1
+   },
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 791,
+   "worstTaskMs": 808.5,
+   "runs": [
+    814.7,
+    791,
+    841.2,
+    769.8,
+    780,
+    777.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 791,
+   "wallMs": 1460.2,
+   "runsWall": [
+    1565.1,
+    1848.1,
+    1460.2,
+    1426.7,
+    1429.9,
+    1430.6
+   ],
+   "topSelf": [
+    [
+     "encode :0",
+     339
+    ],
+    [
+     "(anon) index-C4etWHwG.js:169",
+     291.8
+    ],
+    [
+     "S3e index-C4etWHwG.js:169",
+     116.7
+    ],
+    [
+     "(garbage collector) :0",
+     22.5
+    ],
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "C3e index-C4etWHwG.js:169",
+     8.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "NW index-C4etWHwG.js:169",
+     761.3
+    ],
+    [
+     "(anon) :0",
+     760.7
+    ],
+    [
+     "i index-C4etWHwG.js:169",
+     760.6
+    ],
+    [
+     "saveBytesAsync debug-DP4zvNU6.js:3",
+     760.6
+    ],
+    [
+     "(anon) :1",
+     760.6
+    ],
+    [
+     "C3e index-C4etWHwG.js:169",
+     759.1
+    ],
+    [
+     "S3e index-C4etWHwG.js:169",
+     747.4
+    ],
+    [
+     "encode :0",
+     339
+    ],
+    [
+     "(anon) index-C4etWHwG.js:169",
+     292.6
+    ],
+    [
+     "(garbage collector) :0",
+     22.5
+    ],
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "Zoe index-C4etWHwG.js:137",
+     2.4
+    ]
+   ],
+   "rendering": [
+    [
+     "MinorGC",
+     18.9
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     18.5
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     18.5
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     16.3
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL",
+     9.1
+    ],
+    [
+     "MajorGC",
+     2
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     1.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     0.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_FINALIZE",
+     0.7
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_COLLECT_OLD_TO_NEW_PAGES",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "longestMs": 782,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 767.6,
+    "files": 13.5,
+    "pngCopy": 0,
+    "post": 0.4,
+    "pngWait": 0,
+    "zipWait": 745.5,
+    "held": 781.6,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 1,
+    "openScan": 0,
+    "openJson": 0,
+    "openDecode": 0,
+    "openDocBytes": 0,
+    "openUnzip": 0,
+    "openBuild": 0,
+    "openHistory": 0,
+    "openJsonWait": 0,
+    "openPngWait": 0,
+    "openHeld": 0,
+    "opens": 0
+   },
+   "note": "7.1 MB file, wall 1460 ms"
+  }
+ ]
+}

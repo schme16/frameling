@@ -14,10 +14,10 @@ registerHelpTopics([
     id: 'brush-import',
     order: 8.25,
     media: 'brush-import.png',
-    title: 'Brushes from Photoshop and GIMP',
+    title: 'Brushes from other programs',
     section: 'Drawing',
-    summary: 'Bring in a Photoshop brush set (.abr) or GIMP brushes (.gbr, .gih, .vbr), see which ones come in whole, and keep the ones you want.',
-    keywords: ['brush', 'import', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'procreate', 'brush set', 'download brushes', 'add brushes', 'free brushes', 'other programs', 'sampled brush', 'brush pack'],
+    summary: 'Bring in brushes from Photoshop (.abr), GIMP (.gbr, .gih, .vbr), Krita (.kpp, .bundle) or Procreate (.brush, .brushset), see which ones come in whole, and keep the ones you want.',
+    keywords: ['brush', 'import', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'kpp', 'procreate', 'brushset', 'brush set', 'download brushes', 'add brushes', 'free brushes', 'other programs', 'sampled brush', 'brush pack'],
   },
   {
     id: 'brush-tips',

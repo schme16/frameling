@@ -11,16 +11,17 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 
 | Field | Meaning | Maps from |
 |---|---|---|
-| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
+| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32, or 256 by 256 when `soft`; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading, and a soft tip is saved packed as `cells: "z1:..."`, see `docs/brush-import.md`) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
 | `size` 1 to 300 px, `hardness` 0 to 1, `angle`, `roundness` 0.05 to 1, `follow` | Size, edge, rotation, flattening, turning with the line | PS diameter, hardness, angle, roundness; Krita size, fade, rotation, ratio |
-| `spacing` 0.05 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
+| `spacing` 0.01 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
 | `scatter` 0 to 2 (share of size), `sizeJitter`, `angleJitter` | Random position, size and angle per dab | PS shape dynamics jitter, scattering; Krita scatter |
 | `flow`, `opacity` | Flow: paint per dab, builds up as dabs overlap. Opacity: the most any pixel gets in one stroke | PS flow and opacity, Krita flow and opacity, Procreate flow |
 | `aliased` | Sharp pixels (all or nothing). The default, and a first-class switch | none: a pixel art switch |
+| `taper` (`start`, `end`, `size`, `opacity`), left out for none | The line thins to a point at its ends whatever the pen does. Lengths in brush widths. The start is live; the end is drawn again when the pen lifts, from the dabs and the paint kept for the last stretch (`DabStroke.taperEnd`). Not for sharp pixels, wet paint, retouch or a coloured picture tip. Under a paper that stops the paint the taper's opacity thins the flow instead | Procreate taper |
 | `dynamics` (routes) | What drives what. See below | PS Control menus and minimum values, Krita sensors, Procreate pressure/speed/tilt curves |
 | `fadeLength` | Pixels of line a `fade` source takes to run out | PS Fade steps (steps are dabs, so steps times spacing times size), Krita fade sensor |
-| `grain` (`paper`, `depth`, `scale`, `moving`) | A paper the paint catches on | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
-| `dual` (`tip`, `size`, `density`, `cut`) | A second tip of dots the first is let through | PS Dual brush (tip, diameter, scatter, count), Krita masking brush |
+| `grain` (`paper`, `depth`, `scale`, `moving`, `thin`, `hold`) | A paper the paint catches on. `thin`: the paper multiplies each dab instead of stopping paint that cannot reach a pit (Procreate's way). `hold` (0 to 1, left out is 1): how much of the depth caps the whole stroke when the paper stays put | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
+| `dual` (`tip`, `size`, `density`, `cut`, and optionally `laid`) | A second tip of dots the first is let through. With `laid` (a tip, its width as a share of the brush, spacing, scatter) it is instead a second brush laid along the line on its own spacing, and the first brush's paint is capped by it (a Procreate dual brush) | PS Dual brush (tip, diameter, scatter, count), Krita masking brush, Procreate dual brush |
 | `wet` 0 to 1 | Carries colour from under the brush along the stroke, and mixes with the stroke's own paint | PS Mixer brush wetness and load, Krita colour smudge, Procreate blend |
 | `blend` (any layer blend mode but Add; `normal` is paint over) | How the paint joins what is on the layer | PS brush Mode, Krita composite op, Procreate brush blend mode |
 
@@ -32,18 +33,20 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
   stroke start to 0 at `fadeLength`), `random`. A source the device lacks (a mouse has no tilt) leaves its routes out, so a
   mouse gets the plain brush, never a missing one.
 - Targets: `size`, `flow` (multiply: at source 0 the dab is `1 - amount` of its own; Photoshop's "minimum" is `1 - amount`),
+  `opacity` (multiplies too, but it is the most this dab may leave on a pixel, a share of the brush's opacity: overlapping
+  dabs do not build past it and a firmer dab later lifts it. Procreate's opacity controls land here),
   `angle` (adds up to a full turn), `scatter` (adds up to a whole size), `mix` (toward the back colour), `hue`, `saturation`,
   `lightness` (swing both ways round the middle of the source, so a `random` source is a plain jitter).
-- Several routes to one target multiply (size, flow) or add (the rest). The options show the first route per target and say
+- Several routes to one target multiply (size, flow, opacity) or add (the rest). The options show the first route per target and say
   when a brush file brought more.
 - A route can carry a `curve` (`src/dab/curve.ts`): a list of 2 to 8 `[x, y]` points, x from 0 (first point) to 1 (last), y 0 to 1,
   joined by a monotone smooth line. It bends the source before the flip (`invert`), so the graph always reads as drawn. A straight
   curve is left out. Read with `cleanCurve`, which mends what is off (order, range, ends, crowded points) and thins a long list with
-  `thin` (so a curve of any length comes in as its nearest 8 points). Krita's sensor curves land here (Photoshop's and GIMP's files carry none); Procreate's pressure curve would too. Pass the points as 0 to 1, with the input on x.
+  `thin` (so a curve of any length comes in as its nearest 8 points). Krita's sensor curves land here (Photoshop's and GIMP's files carry none); Procreate's pressure curves land here too (`procreate.ts`). Pass the points as 0 to 1, with the input on x.
 - Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve goes in `curve` as its points, never flattened
   to a straight line (Krita's reader does this, see `routeOf`). Opacity and flow are both `flow` here, so
   a file that puts pressure on both gets one route, not two. The full mapping is in [brush-import.md](brush-import.md).
-- `angle` is clockwise on screen. Photoshop's control numbers and GIMP's counter-clockwise angle are in brush-import.md.
+- `angle` is clockwise on screen. Photoshop's and GIMP's angles are counter-clockwise (Photoshop's checked in Photoshop), so both come in negated; the control numbers are in brush-import.md.
 - The Pen page's pressure for size and flow is skipped when the brush has its own pressure or tilt route to that target, so it
   never counts twice (`drivesFrom`).
 - The back colour is the Fill colour (Photoshop's background).
@@ -53,10 +56,17 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 Grain and dual are small repeating tiles looked up one pixel at a time (256 by 256; a read and a mask each). Grain reuses the dry
 media's paper tiles (`src/dry/paper.ts`), so chalk and charcoal and the pixel brush share one set of papers, and one paper: the sheet's (`DrySettings.paper`, chosen in the shared Paper group, `src/dry/PaperGroup.tsx`). A grain's `paper` is optional; left out it follows the sheet, set it and the brush keeps its own (`src/dry/sheet.ts` has the rules, `DabParams.sheet` carries the sheet's paper into a stroke). The chalk and
 charcoal look card should build on `grainCut`/`grainHeight` in `src/dab/texture.ts`. Grain cuts the paint of each dab (`add`) by the
-paper's height: light paint lands in the pits first, full paint always fills. (That is the opposite of the dry media,
-which take pigment on the peaks. It is invisible on the built-in papers and only shows on a picture used as grain: see the
-board card grain-peaks-or-pits.) With sharp pixels the paper replaces the page's ordered
-dither as the threshold, so grain makes whole pixels. Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own
+paper's height: light paint lands on the peaks first, full paint always fills. (That matches the dry media, which take
+pigment on the peaks. It used to be the other way round; the direction is invisible on the built-in papers and only shows
+on a picture used as grain, where the paint now catches on the light parts, with Invert to swap it back: see the board
+card grain-peaks-or-pits and the look look-grain-dir.) With sharp pixels the paper replaces the page's ordered
+dither as the threshold, so grain makes whole pixels.
+
+A paper that stays put (`moving` off) also holds back the **whole stroke**, not only each dab: a pixel can never take more
+paint than `1 - depth x (1 - height)` of the brush's opacity, whatever crosses it. Without that, a brush that lays its
+dabs a twentieth of a width apart fills its own valleys in a few passes and a chalk or pencil line comes out solid, which
+is what Procreate's 6B Pencil showed up. A paper that moves finds fresh ground for every dab, so it holds nothing back
+across the stroke. It lives in `DabStroke.touch` (the `ceiling`). Dual tiles are canvas-fixed with a per-stroke offset (so every stroke has its own
 dots and one stroke is stable).
 
 ### Pictures: a tip you draw, grain and dots from an image
@@ -74,7 +84,7 @@ same file goes on to be boiled down at once, so no big buffer outlives the call.
   (reduced to 256 by `tipFrom` when there are more). A picture with see-through parts is taken as its own shape; a solid one asks
   once (`brush.imageTipReading`: dark parts, light parts or the whole picture), and several colours ask `brush.pixelStampColours`.
 - **Grain and dual from a picture** (`src/dab/texturePicture.ts`): `Grain.picture` and `Dual.picture` are a `TexturePicture`, a square of
-  lightness 8, 16, 32 or 64 across (see-through counts as white paper), saved as base 64 (at most 5.5 KB). `grainTileFromPicture`
+  lightness 8, 16, 32 or 64 across (see-through counts as white paper), saved as base 64 (at most 5.5 KB). A grain read from a brush file may be 128 or 256 across (the whole tile, about 87 KB as plain base 64), so a photographed paper keeps its tooth. A picture is saved packed when that is shorter: the bytes squeezed (deflate) in base 64, as `data: "z1:..."`, the same packing a soft tip's cells get (`packBytes` and `unpackBytes` in `src/dab/texturePicture.ts`; see `docs/brush-import.md`). The old plain base 64 is still read, and a picture is held in the form it is saved in, so an old brush saves packed the next time and the dab loop never unpacks anything (a tile is made once and kept). `grainTileFromPicture`
   evens the greys out (histogram equalising, like the papers) and repeats them into the 256 tile; the paint catches on the dark
   parts, as it does on a paper's low values. `dualTileFromPicture` lets paint through the darkest `density` of the picture, scaled 1,
   2, 4 or 8 times as far as it fits the tile. `invert` swaps light and dark. Both end as the same `Uint8Array(256*256)` the dab loop

@@ -10,10 +10,10 @@
 import { cleanCurve, sameCurve, shape, type Curve } from './curve';
 
 export type DynSource = 'pressure' | 'tilt' | 'twist' | 'speed' | 'direction' | 'fade' | 'random';
-export type DynTarget = 'size' | 'flow' | 'angle' | 'scatter' | 'mix' | 'hue' | 'saturation' | 'lightness';
+export type DynTarget = 'size' | 'flow' | 'opacity' | 'angle' | 'scatter' | 'mix' | 'hue' | 'saturation' | 'lightness';
 
 export const DYN_SOURCES: DynSource[] = ['pressure', 'tilt', 'twist', 'speed', 'direction', 'fade', 'random'];
-export const DYN_TARGETS: DynTarget[] = ['size', 'flow', 'angle', 'scatter', 'mix', 'hue', 'saturation', 'lightness'];
+export const DYN_TARGETS: DynTarget[] = ['size', 'flow', 'opacity', 'angle', 'scatter', 'mix', 'hue', 'saturation', 'lightness'];
 
 /** One input driving one setting. `amount` is how much of the range it uses (0 to 1); `invert` flips the source. */
 export interface DynRoute {
@@ -76,6 +76,8 @@ export interface Inputs {
 export interface Effects {
   size: number;
   flow: number;
+  /** The most paint this dab may leave on a pixel, as a share of the brush's opacity. */
+  opacity: number;
   /** Radians added to the dab's angle. */
   angle: number;
   /** Added to the scatter, as a share of the size. */
@@ -90,7 +92,7 @@ export interface Effects {
   light: number;
 }
 
-export const newEffects = (): Effects => ({ size: 1, flow: 1, angle: 0, scatter: 0, mix: 0, hue: 0, sat: 0, light: 0 });
+export const newEffects = (): Effects => ({ size: 1, flow: 1, opacity: 1, angle: 0, scatter: 0, mix: 0, hue: 0, sat: 0, light: 0 });
 /** No push at all. Shared and never written to. */
 export const NEUTRAL: Readonly<Effects> = Object.freeze(newEffects());
 
@@ -131,7 +133,7 @@ export function sourceValue(s: DynSource, i: Inputs, fade: number): number | nul
 }
 
 /**
- * What all the routes do together at one dab, written into `out` (made fresh when left out). Size and flow multiply: a
+ * What all the routes do together at one dab, written into `out` (made fresh when left out). Size, flow and opacity multiply: a
  * route at amount 1 shrinks the dab to nothing where its source is 0 and leaves it alone where it is 1, and at amount 0.6
  * it never goes under 40% (Photoshop's "minimum diameter" is one minus this). Angle turns up to a full turn; scatter adds up
  * to a whole size; the colour ones swing both ways round the middle of the source.
@@ -139,6 +141,7 @@ export function sourceValue(s: DynSource, i: Inputs, fade: number): number | nul
 export function effectsOf(routes: readonly DynRoute[], i: Inputs, fade: number, out: Effects = newEffects()): Effects {
   out.size = 1;
   out.flow = 1;
+  out.opacity = 1;
   out.angle = 0;
   out.scatter = 0;
   out.mix = 0;
@@ -157,6 +160,9 @@ export function effectsOf(routes: readonly DynRoute[], i: Inputs, fade: number, 
         break;
       case 'flow':
         out.flow *= 1 - a * (1 - v);
+        break;
+      case 'opacity':
+        out.opacity *= 1 - a * (1 - v);
         break;
       case 'angle':
         out.angle += a * v * Math.PI * 2;
@@ -192,7 +198,7 @@ export function lerpInputs(a: Inputs, b: Inputs, k: number, into: Inputs): Input
 }
 
 /** The amount a route starts at when a source is first picked for a setting: enough to see, not enough to surprise. */
-export const START_AMOUNT: Record<DynTarget, number> = { size: 0.7, flow: 0.7, angle: 0.25, scatter: 0.5, mix: 1, hue: 0.15, saturation: 0.3, lightness: 0.25 };
+export const START_AMOUNT: Record<DynTarget, number> = { size: 0.7, flow: 0.7, opacity: 0.7, angle: 0.25, scatter: 0.5, mix: 1, hue: 0.15, saturation: 0.3, lightness: 0.25 };
 
 /** The first route that drives a setting (the one the options show), or null. A brush read from a file can hold more. */
 export const routeFor = (routes: readonly DynRoute[], to: DynTarget): DynRoute | null => routes.find((r) => r.to === to) ?? null;

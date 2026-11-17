@@ -110,30 +110,30 @@ help:brush-presets help:brush-own help:tool-brush help:exporting`,
 - A line drawn with a brush can't be changed afterwards. Undo, change the brush and draw it again.
 
 help:brush-tips help:brush-presets help:brush-picker help:exporting`,
-  'brush-import': `Brushes made in **Photoshop** (**.abr**), **GIMP** (**.gbr**, **.gih**, **.vbr**) and **Krita** (**.kpp**, **.bundle**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, brush by brush, and says plainly what did not come across.
+  'brush-import': `Brushes made in **Photoshop** (**.abr**), **GIMP** (**.gbr**, **.gih**, **.vbr**), **Krita** (**.kpp**, **.bundle**) and **Procreate** (**.brush**, **.brushset**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, and says what did not come across.
 
 **Bring some in:**
 1. **Tools > Saved brushes > Add brushes from a file...** (or search the command palette for **Add brushes**).
 2. Pick the file. A window lists every brush in it with a little picture of its tip.
 3. Untick any you don't want, name the group they go in, and press **Add**.
 
-They land in your [brush picker](help:brush-picker) beside the ones that come ready, under the set's name, and they are kept with your other saved brushes.
+They land in your [brush picker](help:brush-picker) under the set's name, and are kept with your other saved brushes.
 
-**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what was left out or changed underneath. **Only the whole ones** ticks just the brushes that lost nothing, handy for a big set.
+**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what changed. **Only the whole ones** ticks just those that lost nothing, handy for a big set.
 
 **What comes across:**
-- The tip: a round or square shape, or a picture. A picture tip is shrunk to fit 32 by 32 pixels, with its soft shading kept (so a charcoal or sponge tip still has its texture).
-- Size, hardness, angle, roundness and spacing.
-- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, with the bend of each curve (a long curve is thinned to its nearest 8 points, and says so).
-- A texture becomes one of the [papers](help:pixel-brush-texture), and a dual brush with a textured tip becomes a field of dots, both with a note saying so.
+- The tip: a round or square shape, or a picture, shrunk to fit 32 by 32 pixels with its soft shading kept.
+- Size, hardness, angle, roundness, spacing and scatter.
+- Pen controls (tilt, speed, direction, twist) for size, flow, opacity and angle, with each curve's bend (a long one is thinned to 8 points, and says so), and jitter.
+- A texture becomes one of the [papers](help:pixel-brush-texture), and a Photoshop dual brush with a textured tip becomes a field of dots. Both say so.
 
-**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP and Krita pick between them as you paint; Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes, and every brush engine that isn't the pixel brush. Each one is named in the window when a brush had it.
+**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, count, a pipe of several pictures (Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes and every engine that isn't the pixel brush. From Procreate: glaze, blend modes, and its own tips and papers, which aren't in the file: the tip comes as a plain round one, and the paper as the nearest of Frameling's own when the name says its tooth (charcoal, canvas), or none when it doesn't. Each is named in the window.
 
 **Good to know:**
-- A Photoshop set or a Krita **.bundle** is one file with many brushes. A GIMP file or a Krita **.kpp** is one brush.
-- A lone Krita **.kpp** that paints with a picture tip can't come in, because the picture isn't inside it. Make a bundle in Krita's **Manage Resources** window (it carries the pictures) and add that instead.
-- A file that is damaged or isn't a brush file is refused with a reason, and nothing is added.
-- Procreate, Clip Studio Paint and Affinity brushes can't be read yet.
+- A Photoshop set, a Krita **.bundle** or a Procreate **.brushset** is one file with many brushes. A GIMP file, a Krita **.kpp** or a Procreate **.brush** is one brush.
+- Procreate doesn't say how big its brushes are, so the size is measured off its own picture of the stroke, which every brush file carries: a brush arrives looking like its picture. Change it with the size slider. Only its paint version comes across, not smudge and erase. A dual brush is laid along the line.
+- A lone Krita **.kpp** with a picture tip can't come in, because the picture isn't inside it. Make a bundle in Krita's **Manage Resources** window instead.
+- A damaged file, or one that isn't a brush file, is refused with a reason. Clip Studio Paint and Affinity brushes can't be read yet.
 - Open the brush in the [Pixel brush](help:pixel-brush) options afterwards to change anything, then **Save as...** to keep your version.
 
 help:brush-presets help:brush-picker help:pixel-brush-dynamics`,

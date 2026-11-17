@@ -1,0 +1,334 @@
+{
+ "label": "swap-before",
+ "when": "2026-11-17T02:15:58.650Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 8,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 426.1,
+   "runs": [
+    525.8,
+    418.6,
+    491.8,
+    406.6,
+    426.1,
+    391.3,
+    431.1,
+    396
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 71.02,
+   "topSelf": [
+    [
+     "(program) :0",
+     155.7
+    ],
+    [
+     "k1e index-Cnpo5kdD.js:165",
+     69.2
+    ],
+    [
+     "removeChild :0",
+     13.9
+    ],
+    [
+     "setAttribute :0",
+     12.2
+    ],
+    [
+     "(garbage collector) :0",
+     8.8
+    ],
+    [
+     "fce index-Cnpo5kdD.js:138",
+     8.8
+    ],
+    [
+     "i index-Cnpo5kdD.js:180",
+     7.7
+    ],
+    [
+     "Xx index-Cnpo5kdD.js:150",
+     7.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     155.7
+    ],
+    [
+     "(anon) index-Cnpo5kdD.js:9",
+     131.4
+    ],
+    [
+     "ud index-Cnpo5kdD.js:9",
+     124.1
+    ],
+    [
+     "Zd index-Cnpo5kdD.js:9",
+     100.9
+    ],
+    [
+     "ef index-Cnpo5kdD.js:9",
+     100.4
+    ],
+    [
+     "Xd index-Cnpo5kdD.js:9",
+     100.4
+    ],
+    [
+     "r index-Cnpo5kdD.js:165",
+     87.4
+    ],
+    [
+     "k1e index-Cnpo5kdD.js:165",
+     87
+    ],
+    [
+     "xd index-Cnpo5kdD.js:9",
+     83.4
+    ],
+    [
+     "zee index-Cnpo5kdD.js:9",
+     83.2
+    ],
+    [
+     "zc index-Cnpo5kdD.js:9",
+     48.5
+    ],
+    [
+     "(anon) index-Cnpo5kdD.js:180",
+     41.5
+    ],
+    [
+     "Od index-Cnpo5kdD.js:9",
+     40.6
+    ],
+    [
+     "dd index-Cnpo5kdD.js:9",
+     40.6
+    ],
+    [
+     "Vee index-Cnpo5kdD.js:9",
+     40.6
+    ],
+    [
+     "OR index-Cnpo5kdD.js:159",
+     37
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 574.6,
+   "runs": [
+    613.6,
+    626.2,
+    573.6,
+    564.7,
+    574.6,
+    555.2,
+    562.8,
+    647.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 574.65,
+   "topSelf": [
+    [
+     "M3e index-Cnpo5kdD.js:169",
+     343.5
+    ],
+    [
+     "decode :0",
+     66.8
+    ],
+    [
+     "(garbage collector) :0",
+     33.3
+    ],
+    [
+     "F3e index-Cnpo5kdD.js:169",
+     20.2
+    ],
+    [
+     "Z3e index-Cnpo5kdD.js:169",
+     12.5
+    ],
+    [
+     "P3e index-Cnpo5kdD.js:169",
+     12.2
+    ],
+    [
+     "$2e index-Cnpo5kdD.js:169",
+     10.7
+    ],
+    [
+     "zne index-Cnpo5kdD.js:137",
+     8.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "M3e index-Cnpo5kdD.js:169",
+     489.6
+    ],
+    [
+     "P3e index-Cnpo5kdD.js:169",
+     67.4
+    ],
+    [
+     "decode :0",
+     66.8
+    ],
+    [
+     "ik index-Cnpo5kdD.js:150",
+     66.8
+    ],
+    [
+     "F3e index-Cnpo5kdD.js:169",
+     52.2
+    ],
+    [
+     "(anon) index-Cnpo5kdD.js:9",
+     39.4
+    ],
+    [
+     "(garbage collector) :0",
+     33.3
+    ],
+    [
+     "Zd index-Cnpo5kdD.js:9",
+     33.3
+    ],
+    [
+     "ud index-Cnpo5kdD.js:9",
+     33.2
+    ],
+    [
+     "ef index-Cnpo5kdD.js:9",
+     33.2
+    ],
+    [
+     "Xd index-Cnpo5kdD.js:9",
+     33.2
+    ],
+    [
+     "xd index-Cnpo5kdD.js:9",
+     28.6
+    ],
+    [
+     "zee index-Cnpo5kdD.js:9",
+     28.6
+    ],
+    [
+     "zc index-Cnpo5kdD.js:9",
+     27.9
+    ],
+    [
+     "(anon) index-Cnpo5kdD.js:180",
+     25.4
+    ],
+    [
+     "vc index-Cnpo5kdD.js:9",
+     25.3
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 536,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 0.2,
+    "pngWait": 0,
+    "zipWait": 0,
+    "held": 0.2,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 0
+   },
+   "note": ""
+  }
+ ]
+}

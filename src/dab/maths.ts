@@ -11,6 +11,47 @@ import { cleanRoutes, effectsOf, FADE_DEFAULT, FADE_RANGE, lerpInputs, newEffect
 import { cleanDual, cleanGrain, sameDual, sameGrain, type Dual, type Grain } from './texture';
 
 export type TipShape = 'round' | 'square' | 'picture';
+
+/**
+ * A line that thins to a point at its ends, whatever the pen is doing. The lengths are in brush widths, so a bigger
+ * brush tapers over a longer run. The start is drawn as you go; the end is only known when the pen lifts, so the last
+ * stretch of the line is drawn again then.
+ */
+export interface Taper {
+  /** How long the line takes to reach full width from its start, in brush widths. 0 is no taper there. */
+  start: number;
+  /** How long before its end the line begins to thin, in brush widths. 0 is no taper there. */
+  end: number;
+  /** 0 to 1: how much of the width the taper takes away at the very tip. 1 is down to a point. */
+  size: number;
+  /** 0 to 1: how much of the opacity it takes away at the very tip. */
+  opacity: number;
+  /** The same at the start of the line, when it differs (a Procreate taper fades the end it has a length for). Left out: the same as `opacity`. */
+  startOpacity?: number;
+}
+export const TAPER_RANGE = { min: 0, max: 60 };
+export const DEFAULT_TAPER: Taper = { start: 4, end: 4, size: 1, opacity: 0 };
+
+/** A taper read from saved data: null when there is none or it does nothing. */
+export function cleanTaper(raw: unknown): Taper | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const n = (v: unknown, hi: number, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(hi, Math.max(0, v)) * 1000) / 1000 : d);
+  const t: Taper = { start: n(r.start, TAPER_RANGE.max, 0), end: n(r.end, TAPER_RANGE.max, 0), size: n(r.size, 1, 1), opacity: n(r.opacity, 1, 0) };
+  const so = typeof r.startOpacity === 'number' && Number.isFinite(r.startOpacity) ? n(r.startOpacity, 1, t.opacity) : t.opacity;
+  if (so !== t.opacity) t.startOpacity = so;
+  return (t.start > 0 || t.end > 0) && (t.size > 0 || t.opacity > 0) ? t : null;
+}
+export const sameTaper = (a: Taper | null | undefined, b: Taper | null | undefined): boolean => (!a || !b ? !a === !b : a.start === b.start && a.end === b.end && a.size === b.size && a.opacity === b.opacity && (a.startOpacity ?? a.opacity) === (b.startOpacity ?? b.opacity));
+
+/** True when the brush's paper stops paint that cannot reach a pit (see texture.ts), so faint paint is specks on the peaks. */
+export const gritty = (b: DabBrush): boolean => !!b.grain && b.grain.depth > 0 && !b.grain.thin;
+
+/** How much of a dab's width and opacity is left `along` pixels into a taper `length` pixels long (the tip is at 0). */
+export function taperAt(t: Taper, along: number, length: number, opacity: number = t.opacity): { size: number; cap: number } {
+  const k = length <= 0 ? 1 : Math.min(1, Math.max(0, along / length));
+  return { size: 1 - t.size * (1 - k), cap: 1 - opacity * (1 - k) };
+}
 export const TIP_SHAPES: TipShape[] = ['round', 'square', 'picture'];
 
 /** One pixel brush: everything that makes its dab and how dabs follow each other. Colour is never part of it. */
@@ -54,10 +95,17 @@ export interface DabBrush {
   wet: number;
   /** How the paint joins what is on the layer: normal, or a blend mode like a layer's (see blend.ts). */
   blend: BlendMode;
+  /** The line thins to a point at its ends. Left out or null: it does not. */
+  taper?: Taper | null;
+  /**
+   * A picture tip is sampled as it was saved, cell by cell, with no smoothing and no smaller copy for a small dab, so the fine
+   * specks of a tip stay crisp the way they do in Procreate. Left out or false: the tip is smoothed as before.
+   */
+  sharp?: boolean;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
-export const SPACING_RANGE = { min: 0.05, max: 4 };
+export const SPACING_RANGE = { min: 0.01, max: 4 };
 export const SCATTER_RANGE = { min: 0, max: 2 };
 export const FLOW_RANGE = { min: 0.05, max: 1 };
 export const ROUND_RANGE = { min: 0.05, max: 1 };
@@ -119,6 +167,11 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
     dual: r.dual === undefined ? base.dual : cleanDual(r.dual),
     wet: round3(num(r.wet, 0, 1, base.wet)),
     blend: cleanBlend(r.blend, base.blend),
+    ...((): { taper?: Taper } => {
+      const t = r.taper === undefined ? (base.taper ?? null) : cleanTaper(r.taper);
+      return t ? { taper: t } : {};
+    })(),
+    ...((r.sharp === undefined ? base.sharp : r.sharp === true) ? { sharp: true } : {}),
   };
 }
 
@@ -126,11 +179,12 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
 export function sameDab(a: DabBrush, b: DabBrush): boolean {
   const close = (x: number, y: number) => Math.abs(x - y) < 1e-6;
   // The picture only counts when a picture tip is using it.
-  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && !!a.picture.soft === !!b.picture.soft && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join());
+  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && (a.picture === b.picture || (a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && !!a.picture.soft === !!b.picture.soft && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join())));
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
-    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend
+    !!a.sharp === !!b.sharp &&
+    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend && sameTaper(a.taper, b.taper)
   );
 }
 
@@ -142,15 +196,63 @@ export const snapAxis = (v: number, across: number): number => (Math.round(acros
 
 // ---------------------------------------------------------------- the picture tip
 
-/** A picture tip made ready to sample: which cells have paint, and the colour and see-through of each. */
-export interface Picture {
+/** One resolution of a picture tip: which cells have paint, and the colour and see-through of each. */
+export interface PictureLevel {
   w: number;
   h: number;
   /** 1 where the picture has paint, 0 where it is clear (a soft tip has the shades between). */
   mask: Float32Array;
   /** Each cell's own colour (r, g, b, a), for a picture that keeps its colours. */
   rgba: Uint8Array;
+}
+
+/** A picture tip made ready to sample: the tip as it is saved, and smaller copies of it for dabs much smaller than it. */
+export interface Picture extends PictureLevel {
   keep: boolean;
+  /** The tip, then the same tip halved, then halved again (up to two smaller copies; only a tip too big to draw by hand has them). */
+  levels: PictureLevel[];
+}
+
+/** Tips this big or smaller are drawn by hand or are pixel art, and are always sampled as they are. */
+const MIN_LEVELLED_SIDE = 33;
+const MAX_HALVINGS = 2;
+
+/** A level at half the width and height: each cell the average of the four under it (past the edge counts as clear), colour weighted by paint. */
+function halve(l: PictureLevel): PictureLevel {
+  const w = Math.ceil(l.w / 2);
+  const h = Math.ceil(l.h / 2);
+  const mask = new Float32Array(w * h);
+  const rgba = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      let a = 0;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let dy = 0; dy < 2; dy++)
+        for (let dx = 0; dx < 2; dx++) {
+          const sx = x * 2 + dx;
+          const sy = y * 2 + dy;
+          if (sx >= l.w || sy >= l.h) continue;
+          const i = sy * l.w + sx;
+          const ca = l.rgba[i * 4 + 3];
+          m += l.mask[i];
+          a += ca;
+          r += l.rgba[i * 4] * ca;
+          g += l.rgba[i * 4 + 1] * ca;
+          b += l.rgba[i * 4 + 2] * ca;
+        }
+      const o = y * w + x;
+      mask[o] = m / 4;
+      if (a > 0) {
+        rgba[o * 4] = Math.round(r / a);
+        rgba[o * 4 + 1] = Math.round(g / a);
+        rgba[o * 4 + 2] = Math.round(b / a);
+        rgba[o * 4 + 3] = Math.round(a / 4);
+      }
+    }
+  return { w, h, mask, rgba };
 }
 
 const made = new WeakMap<PixelStamp, Picture>();
@@ -174,9 +276,21 @@ export function pictureOf(st: PixelStamp): Picture {
       rgba[i * 4 + 3] = c[3];
     }
   }
-  const p = { w: st.w, h: st.h, mask, rgba, keep: st.keep };
+  const levels: PictureLevel[] = [{ w: st.w, h: st.h, mask, rgba }];
+  if (Math.max(st.w, st.h) >= MIN_LEVELLED_SIDE) for (let i = 0; i < MAX_HALVINGS; i++) levels.push(halve(levels[i]));
+  const p: Picture = { w: st.w, h: st.h, mask, rgba, keep: st.keep, levels };
   made.set(st, p);
   return p;
+}
+
+/**
+ * Which copy of a picture to sample for a dab drawn `s` pixels to a cell (a dab's width over the picture's longer side): the
+ * saved tip down to half a pixel a cell, then a copy halved once, then twice. A tip sampled from four cells while it is
+ * drawn at a quarter of its size skips most of it, and a stroke of such dabs shimmers; each halving takes the average first.
+ */
+export function levelFor(pic: Picture, s: number): number {
+  const want = s >= 0.5 ? 0 : s >= 0.25 ? 1 : 2;
+  return Math.min(want, pic.levels.length - 1);
 }
 
 // ---------------------------------------------------------------- one dab
@@ -188,6 +302,10 @@ export interface Dab {
   size: number;
   angle: number;
   flow: number;
+  /** The most paint this dab may leave on a pixel (a share of the brush's opacity), left out when nothing drives it. */
+  cap?: number;
+  /** How far along the stroke this dab is, in pixels of line. */
+  at?: number;
   /** Colour pushes from the brush's dynamics, left out when there are none (see dynamics.ts). */
   mix?: number;
   hue?: number;
@@ -220,11 +338,15 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
   if (b.tip === 'picture' && b.picture) {
     const pic = pictureOf(b.picture);
     const s = Math.max(0.01, size) / Math.max(pic.w, pic.h);
-    const hw = pic.w / 2;
-    const hh = pic.h / 2;
-    const inv = 1 / s;
+    // A crisp dab takes the saved tip as it is; a smooth one much smaller than the tip takes a smaller copy of it.
+    const sharp = crisp || !!b.sharp;
+    const level = sharp ? 0 : levelFor(pic, s);
+    const k = 1 / (1 << level);
+    const hw = (pic.w / 2) * k;
+    const hh = (pic.h / 2) * k;
+    const inv = k / s;
     const invRho = inv / rho;
-    const { mask, rgba, w, h } = pic;
+    const { mask, rgba, w, h } = pic.levels[level];
     const reach = Math.hypot(pic.w * s, pic.h * s * rho) / 2;
     const at = (ix: number, iy: number): number => (ix < 0 || iy < 0 || ix >= w || iy >= h ? 0 : mask[iy * w + ix]);
     return {
@@ -240,7 +362,7 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
         let ix = Math.floor(fx);
         let iy = Math.floor(fy);
         let c: number;
-        if (crisp) {
+        if (sharp) {
           c = at(ix, iy);
         } else {
           // Smooth: blend the four cells round this spot, so a turned or resized picture has a soft edge. The colour comes
@@ -350,6 +472,10 @@ interface Spot extends Pt {
   size: number;
   flow: number;
   fx: Effects;
+  /** How far along the stroke, in pixels of line. */
+  at: number;
+  /** What the start taper leaves of the opacity here (1 when there is none). */
+  cap: number;
 }
 
 /**
@@ -385,7 +511,17 @@ export class DabPath {
 
   /** The dab spot at a point, with the dynamics worked out for it (the shared neutral push when the brush has none). */
   private spot(at: Pt, size: number, flow: number, s: Sense): Spot {
-    if (this.routes.length === 0) return { x: at.x, y: at.y, size, flow, fx: NEUTRAL };
+    // The start of a tapered line: thin at first, full width once it has run the taper's length.
+    let cap = 1;
+    const t = this.b.taper;
+    if (t && t.start > 0) {
+      const k = taperAt(t, this.travelled, t.start * this.b.size, t.startOpacity);
+      size = Math.max(0.5, size * k.size);
+      // Under a paper that stops the paint a fainter tip is fewer specks, not an even grey: there it thins the flow.
+      if (gritty(this.b)) flow *= k.cap;
+      else cap = k.cap;
+    }
+    if (this.routes.length === 0) return { x: at.x, y: at.y, size, flow, fx: NEUTRAL, at: this.travelled, cap };
     const i = this.inputs;
     i.pressure = s.pressure;
     i.tilt = s.tilt;
@@ -395,7 +531,7 @@ export class DabPath {
     i.travelled = this.travelled;
     i.random = this.rng;
     const fx = effectsOf(this.routes, i, this.b.fadeLength, newEffects());
-    return { x: at.x, y: at.y, size: Math.max(0.5, size * fx.size), flow: Math.min(1, flow * fx.flow), fx };
+    return { x: at.x, y: at.y, size: Math.max(0.5, size * fx.size), flow: Math.min(1, flow * fx.flow), fx, at: this.travelled, cap };
   }
 
   /** Points along the way from the last point to `to`, a step apart (the first call gives `to` itself). */
@@ -457,8 +593,9 @@ export class DabPath {
     let angle = (b.angle * Math.PI) / 180 + at.fx.angle;
     if (b.follow) angle += Math.atan2(this.dirY, this.dirX);
     if (b.angleJitter > 0) angle += (rng() * 2 - 1) * Math.PI * b.angleJitter;
-    const d: Dab = { x, y, size: s, angle, flow: at.flow };
+    const d: Dab = { x, y, size: s, angle, flow: at.flow, at: at.at };
     const fx = at.fx;
+    if (fx.opacity < 1 || at.cap < 1) d.cap = fx.opacity * at.cap;
     if (fx.mix) d.mix = fx.mix;
     if (fx.hue) d.hue = fx.hue;
     if (fx.sat) d.sat = fx.sat;

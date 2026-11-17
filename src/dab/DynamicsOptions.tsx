@@ -7,10 +7,11 @@ import { BRUSH_BLENDS } from './blend';
 import { blendInfo } from '../effects/model';
 import { PaperGroup } from '../dry/PaperGroup';
 import { DYN_SOURCES, FADE_RANGE, routeFor, withRoute, type DynSource, type DynTarget } from './dynamics';
-import type { DabBrush } from './maths';
+import { DEFAULT_TAPER, type DabBrush } from './maths';
 import { setDab, useDab } from './settings';
 import { DEFAULT_DUAL, DEFAULT_GRAIN, DUAL_DENSITY, DUAL_SIZE, GRAIN_SCALE } from './texture';
 import { dualPictureScale } from './texturePicture';
+import { LAID_SCATTER, LAID_SIZE, LAID_SPACING } from './dualLaid';
 import { TextureSwatch } from './TextureSwatch';
 import { dualFromPicture, grainFromPicture } from './pictureTip';
 import './dab.css';
@@ -29,6 +30,7 @@ export const SOURCE_WORDS: Record<DynSource, { label: string; hint: string }> = 
 const OFFERED: Record<DynTarget, DynSource[]> = {
   size: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   flow: ['pressure', 'tilt', 'speed', 'fade', 'random'],
+  opacity: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   angle: ['pressure', 'tilt', 'twist', 'speed', 'direction', 'random'],
   scatter: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   mix: DYN_SOURCES,
@@ -37,16 +39,17 @@ const OFFERED: Record<DynTarget, DynSource[]> = {
   lightness: ['random'],
 };
 
-const ROW: Record<'size' | 'flow' | 'angle' | 'scatter' | 'mix', { label: string; hint: string; amount: (v: number, backwards: boolean) => string }> = {
+const ROW: Record<'size' | 'flow' | 'opacity' | 'angle' | 'scatter' | 'mix', { label: string; hint: string; amount: (v: number, backwards: boolean) => string }> = {
   size: { label: 'Size follows', hint: 'What makes the dab bigger or smaller as you draw.', amount: (v) => `down to ${100 - v}%` },
   flow: { label: 'Flow follows', hint: 'What makes the paint heavier or lighter as you draw.', amount: (v) => `down to ${100 - v}%` },
+  opacity: { label: 'Opacity follows', hint: 'What makes the whole line fainter or stronger as you draw. Unlike flow, going over the same spot does not build it back up.', amount: (v) => `down to ${100 - v}%` },
   angle: { label: 'Angle follows', hint: 'What turns the tip as you draw.', amount: (v) => `${Math.round(v * 3.6)}° of turn` },
   scatter: { label: 'Scatter follows', hint: 'What lets the dabs wander off the line.', amount: (v) => `${v}% of the size` },
   mix: { label: 'Colour mixes toward the fill colour', hint: 'Paints in the colour you picked and shifts toward the Fill colour as the source rises.', amount: (v) => `${v}% of the way` },
 };
 
 /** One setting driven by one source: a picker for the source, and how much of the range it uses. */
-function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'scatter' | 'mix'; set?: (patch: Partial<DabBrush>) => void }) {
+function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 'opacity' | 'angle' | 'scatter' | 'mix'; set?: (patch: Partial<DabBrush>) => void }) {
   const r = routeFor(b.dynamics, to);
   const words = ROW[to];
   const extra = b.dynamics.filter((x) => x.to === to).length - 1;
@@ -109,8 +112,18 @@ export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle 
     <MoreOptions name={handle.fold} label="Pen, speed and fade" hint="Pressure, tilt, speed or a fade-out changing the size, flow, angle or scatter.">
       <RouteRow b={b} to="size" set={set} />
       <RouteRow b={b} to="flow" set={set} />
+      <RouteRow b={b} to="opacity" set={set} />
       <RouteRow b={b} to="angle" set={set} />
       <RouteRow b={b} to="scatter" set={set} />
+      <Toggle label="Thin to a point at the ends" checked={!!b.taper} onChange={(on) => set({ taper: on ? DEFAULT_TAPER : null })} hint="The line starts and ends in a point, whatever the pen is doing, so a mouse draws a tapered line too. The end is drawn when you let go." />
+      {b.taper && (
+        <>
+          <Slider label="Start taper" value={Math.round(b.taper.start * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, start: v / 10 } })} hint="How far the line runs before it is full width." />
+          <Slider label="End taper" value={Math.round(b.taper.end * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, end: v / 10 } })} hint="How far before its end the line begins to thin." />
+          <Slider label="How thin the tip gets" value={Math.round(b.taper.size * 100)} min={0} max={100} format={(v) => (v >= 100 ? 'A point' : `${100 - v}% of the width`)} onChange={(v) => set({ taper: { ...b.taper!, size: v / 100 } })} />
+          <Slider label="How faint the tip gets" value={Math.round(b.taper.opacity * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Not at all' : `down to ${100 - v}%`)} onChange={(v) => set({ taper: { ...b.taper!, opacity: v / 100 } })} />
+        </>
+      )}
       {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
     </MoreOptions>
   );
@@ -154,8 +167,8 @@ export function PaperSection() {
           {g.picture ? (
             <div className="dab-sub">
               <TextureSwatch picture={g.picture} invert={g.invert} label="The picture this brush catches on" />
-              <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the dark parts of it.</Tip>
-              <Toggle label="Catch on the light parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round." />
+              <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the light parts of it, the way it catches on the high points of paper.</Tip>
+              <Toggle label="Catch on the dark parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round: dark for the high points." />
               <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Pick another picture file to catch on">
                 Use another picture...
               </ActionButton>
@@ -170,7 +183,14 @@ export function PaperSection() {
           )}
           <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
           <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
+          {g.scale > 1 && (
+            <Toggle label="Soften the bumps of a bigger paper" checked={!!g.smooth} onChange={(smooth) => setDab({ grain: { ...g, smooth: smooth || undefined } })} hint="Off: each bump is a sharp block of whole pixels, which is right for pixel art. On: the paper is blown up softly, so a big soft pencil keeps a soft grain. A sharp pixel brush always uses blocks." />
+          )}
           <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
+          <Toggle label="Thin the paint instead of stopping it" checked={!!g.thin} onChange={(thin) => setDab({ grain: { ...g, thin: thin || undefined } })} hint="Off: light paint only lands on the high points, so a light touch is specks. On: the paper thins every dab a little, so a light touch is an even grey with the paper showing through. Brushes from Procreate come with this on." />
+          {!g.moving && (
+            <Slider label="How much it holds the whole line back" value={Math.round((g.hold ?? 1) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, hold: v >= 100 ? undefined : v / 100 } })} hint="At the top a dip in the paper never takes more than the paper lets it, however long you work the spot. At the bottom, going over and over fills every dip in the end." />
+          )}
         </>
       )}
     </PaperGroup>
@@ -186,7 +206,17 @@ export function TextureSection() {
       <Toggle label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
       {d && (
         <div className="dab-sub">
-          {d.picture ? (
+          {d.laid ? (
+            <>
+              <Tip stays>This dual tip is a second brush laid along your line (it came with an imported brush). The brush only paints where the second brush has been.</Tip>
+              <Slider label="Second brush width" value={Math.round(d.laid.size * 100)} min={Math.round(LAID_SIZE.min * 100)} max={Math.round(LAID_SIZE.max * 100)} curve format={(v) => `${v}% as wide as the brush`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, size: v / 100 } } })} />
+              <Slider label="Second brush spacing" value={Math.round(d.laid.spacing * 100)} min={Math.round(LAID_SPACING.min * 100)} max={Math.round(LAID_SPACING.max * 100)} curve format={(v) => `${v}% of its width apart`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, spacing: v / 100 } } })} />
+              <Slider label="Second brush scatter" value={Math.round(d.laid.scatter * 100)} min={0} max={Math.round(LAID_SCATTER.max * 100)} format={(v) => (v === 0 ? 'on the line' : `up to ${v}% of its width off it`)} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, scatter: v / 100 } } })} />
+              <ActionButton onClick={() => setDab({ dual: { ...d, laid: undefined } })} title="Go back to round or square dots">
+                Back to plain dots
+              </ActionButton>
+            </>
+          ) : d.picture ? (
             <>
               <TextureSwatch picture={d.picture} invert={d.invert} label="The picture the dots come from" />
               <Tip stays>The dots come from your picture: its dark parts, as much of it as How much of the picture says.</Tip>
@@ -208,8 +238,8 @@ export function TextureSection() {
               </ActionButton>
             </>
           )}
-          <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />
-          <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />
+          {!d.laid && <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />}
+          {!d.laid && <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />}
         </div>
       )}
     </MoreOptions>

@@ -1,4 +1,5 @@
 // Palette commands for the Pixel brush: the tip, edges, turning with the line, scatter, spacing and the picture tip.
+import { DEFAULT_TAPER } from './maths';
 import { registerCommands, type Command } from '../core/registry';
 import { pickKindReason } from '../core/reasons';
 import { toast } from '../ui/toast';
@@ -196,6 +197,18 @@ registerCommands([
   },
   {
     ...base,
+    id: 'pixelbrush.taper',
+    label: 'Pixel brush: thin to a point at the ends, on or off',
+    description: 'The line starts and ends in a point whatever the pen is doing, so a mouse draws a tapered line too. The end is drawn when you let go.',
+    keywords: ['pixel brush', 'taper', 'point', 'thin', 'ends', 'inking', 'pressure', 'mouse', 'procreate', 'streamline'],
+    checked: (s) => s.ui.tool === PIXEL_BRUSH_TOOL && !!getDab().taper,
+    run: () => {
+      open();
+      setDab({ taper: getDab().taper ? null : DEFAULT_TAPER });
+    },
+  },
+  {
+    ...base,
     id: 'pixelbrush.dual',
     label: 'Pixel brush: dual tip on or off',
     description: 'A second tip of little dots: the brush only paints where its dots are, for spatter and bristle looks.',
@@ -235,7 +248,7 @@ registerCommands([
     id: 'pixelbrush.grain.picture',
     help: 'pixel-brush-texture',
     label: 'Pixel brush: grain from a picture',
-    description: 'Pick a picture file and the brush catches on it instead of paper: it catches on the dark parts. Switches grain on if it was off.',
+    description: 'Pick a picture file and the brush catches on it instead of paper: it catches on the light parts. Switches grain on if it was off.',
     keywords: ['pixel brush', 'grain', 'texture', 'picture', 'image', 'pattern', 'canvas', 'weave', 'custom texture', 'photoshop', 'krita'],
     run: () => {
       open();

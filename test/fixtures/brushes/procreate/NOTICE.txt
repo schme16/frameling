@@ -1,0 +1,19 @@
+Procreate brush files used as test fixtures for the importer (src/brushes/import/procreate.ts). All three are free to use and
+redistribute. Their thumbnails (QuickLook/Thumbnail.png inside each) are Procreate's own picture of the stroke, which is what the
+units were checked against (docs/brush-import.md, scripts/docs/ab-procreate/).
+
+Sequins.brush
+  Source: https://www.versluis.com/2015/01/procreate-stitch-and-sequin-brushes/ (the Sequins brush, 2015).
+  Licence: CC0, as the page says.
+  Changed: the only change is that Shape.png (the tip picture) was shrunk from 1024 by 1024 to 256 by 256 pixels, to keep the
+  fixture small (the original is 279 KB). The settings, the thumbnail and every other file are the original's bytes.
+
+Plain_Stitch.brush
+  Source: https://www.versluis.com/2015/01/procreate-stitch-and-sequin-brushes/ (the Plain Stitch brush, 2015).
+  Licence: CC0, as the page says.
+  Unchanged.
+
+Seed.brush
+  Source: https://github.com/Leon-Schoenbrunn/CSP2PC (Seed.brush, 2025: the template the CSP2PC converter writes into).
+  Licence: MIT, as that repository says.
+  Unchanged.

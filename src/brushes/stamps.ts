@@ -6,6 +6,7 @@ import { rdp } from '../geometry/bezier';
 import { geomBox, shapeParts, union, type Geom } from '../geometry/merge';
 import { MAX_CUSTOM_POINTS, MAX_CUSTOM_RINGS, MAX_TILE_POINTS, MAX_TILE_RINGS } from '../geometry/tip';
 import type { RGBA } from '../canvas/pixels';
+import { packBytes, unpackBytes } from '../dab/texturePicture';
 import { maskBounds, type Mask } from '../select/mask';
 
 // ---------------------------------------------------------------- vector
@@ -74,6 +75,54 @@ function simplifyRing(r: { x: number; y: number }[], eps: number): { x: number; 
 
 /** The most a pixel brush picture can be, each way. */
 export const MAX_STAMP = 32;
+/**
+ * A soft tip (one read from a brush file) may be this big. A tip drawn by hand is pixels you place one at a time, so 32
+ * is plenty; a tip from a painting app is a photograph of bristles or scratches, and at 32 across the scratches are gone.
+ * A saved soft tip is packed small (see `SoftCells`), so this can be generous.
+ */
+export const MAX_SOFT_STAMP = 256;
+
+// ---------------------------------------------------------------- packed cells
+
+/** What a packed list of cells starts with when it is saved, so a later way of packing can be told apart. */
+
+/**
+ * The cells of a soft tip, as a plain list of numbers that knows how to save itself small. A soft tip from a brush file
+ * is up to 256 by 256 cells, and as a list of numbers in JSON that is 180 KB; saved as `"z1:..."` (the cells as bytes,
+ * squeezed, in base 64) the same tip is a few KB. Anything that reads a cell reads it as before, and `JSON.stringify`
+ * on a stamp does the packing, so no saving code had to learn about it. A copy made by `map` or `slice` is a plain list.
+ */
+export class SoftCells extends Array<number> {
+  static get [Symbol.species](): ArrayConstructor {
+    return Array;
+  }
+  toJSON(): string {
+    let text = packed.get(this);
+    if (text === undefined) packed.set(this, (text = packBytes(Uint8Array.from(this))));
+    return text;
+  }
+}
+/** Each list's packed text, made the first time it is saved (a list is never changed once it is a tip's). */
+const packed = new WeakMap<SoftCells, string>();
+
+/** The cells as a list that saves itself packed, when they are a soft tip's (every cell a place in 255 or fewer colours). */
+export function packCells(cells: readonly number[]): number[] {
+  if (cells instanceof SoftCells) return cells as number[];
+  for (let i = 0; i < cells.length; i++) if (!(cells[i] >= 0 && cells[i] <= 255)) return cells as number[];
+  const out = new SoftCells(cells.length);
+  for (let i = 0; i < cells.length; i++) out[i] = cells[i];
+  return out;
+}
+
+
+/** `count` cells from a packed string (`"z1:..."`), or null when it is not one, is not exactly that long or is made up. */
+export function unpackCells(text: string, count: number): number[] | null {
+  const raw = unpackBytes(text, count);
+  if (!raw) return null;
+  const out = new SoftCells(count);
+  for (let i = 0; i < count; i++) out[i] = raw[i];
+  return out;
+}
 
 export interface PixelStamp {
   w: number;
@@ -128,20 +177,28 @@ export function pixelStampFrom(pixels: Uint8ClampedArray, width: number, mask: M
 /** A saved brush picture read back, or null when it isn't one. */
 export function readPixelStamp(raw: unknown): PixelStamp | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  // One this function already made is read once: the same object comes back, so what is built from it (see `pictureOf`) is kept.
+  if (read.has(raw)) return raw as PixelStamp;
   const r = raw as Record<string, unknown>;
   const w = r.w;
   const h = r.h;
-  if (typeof w !== 'number' || typeof h !== 'number' || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > MAX_STAMP || h > MAX_STAMP) return null;
-  if (!Array.isArray(r.colours) || r.colours.length > 256 || !r.colours.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c))) return null;
-  if (!Array.isArray(r.cells) || r.cells.length !== w * h) return null;
-  const n = r.colours.length;
-  if (!r.cells.every((c) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= n)) return null;
-  if (!r.cells.some((c) => c > 0)) return null;
+  if (typeof w !== 'number' || typeof h !== 'number' || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1) return null;
   const soft = r.soft === true;
-  const stamp: PixelStamp = { w, h, colours: r.colours as string[], cells: r.cells as number[], keep: !soft && r.keep === true };
+  const most = soft ? MAX_SOFT_STAMP : MAX_STAMP;
+  if (w > most || h > most) return null;
+  if (!Array.isArray(r.colours) || r.colours.length > 256 || !r.colours.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c))) return null;
+  // A saved soft tip has its cells packed in a string; an older one, and any other tip, has a plain list.
+  const cells = typeof r.cells === 'string' ? (soft ? unpackCells(r.cells, w * h) : null) : r.cells;
+  if (!Array.isArray(cells) || cells.length !== w * h) return null;
+  const n = r.colours.length;
+  if (!cells.every((c) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= n)) return null;
+  if (!cells.some((c) => c > 0)) return null;
+  const stamp: PixelStamp = { w, h, colours: r.colours as string[], cells: soft ? packCells(cells) : (cells as number[]), keep: !soft && r.keep === true };
   if (soft) stamp.soft = true;
+  read.add(stamp);
   return stamp;
 }
+const read = new WeakSet<object>();
 
 export interface StampCell {
   /** Where it sits from the brush's centre pixel. */

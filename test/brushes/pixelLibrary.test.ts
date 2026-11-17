@@ -25,7 +25,7 @@ import {
   type BrushPreset,
 } from '../../src/brushes/model';
 import { groupOf } from '../../src/brushes/library';
-import { PIXEL_GROUPS } from '../../src/brushes/pixelStarters';
+import { PIXEL_GROUPS, softPicture } from '../../src/brushes/pixelStarters';
 
 const wide = { ...DEFAULT_BRUSH, size: 40 };
 const dab = (size: number): PixelSpec => ({ kind: 'dab', dab: { ...DEFAULT_DAB, size } });
@@ -66,6 +66,20 @@ describe('the pixel starters', () => {
     function by(g: string) {
       return PIXEL_STARTERS.filter((s) => s.group === g);
     }
+  });
+
+  it('have a sketch and ink group: smooth edged pens, pencils and paint brushes, with the bristle and marker tips drawn the same every time', () => {
+    const ink = PIXEL_STARTERS.filter((s) => s.group === 'Sketch and ink');
+    expect(ink.map((s) => s.name)).toEqual(['Inking pen', 'Dry ink', 'Ink bleed', 'Colouring pen', 'Soft 6B pencil', 'Light sketch pencil', 'Felt marker', 'Dry bristle brush', 'Canvas brush']);
+    for (const s of ink) expect(s.pixel).toMatchObject({ kind: 'dab', dab: { aliased: false } });
+    const pictures = ink.flatMap((s) => (s.pixel?.kind === 'dab' && s.pixel.dab.picture ? [s.pixel.dab.picture] : []));
+    expect(pictures).toHaveLength(2);
+    for (const p of pictures) {
+      expect(p.soft).toBe(true);
+      // Several strengths of paint, not one flat colour, or the stroke would show no bristles or felt.
+      expect(new Set(p.cells.filter((c) => c > 0)).size).toBeGreaterThan(2);
+    }
+    expect(softPicture(3, 1, (x) => x / 2).cells).toEqual([0, 4, 8]);
   });
 
   it('sit in their own groups and never show on the vector side', () => {

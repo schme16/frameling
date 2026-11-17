@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
 import { newDoc, newVectorLayer } from '../../src/core/doc';
 import type { Doc, PathShape, VectorDrawing } from '../../src/core/format';
-import { OFFSET_FORMAT_VERSION } from '../../src/core/format';
+import { PACKED_POINTS_FORMAT_VERSION } from '../../src/core/format';
 import { resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
 import { artboardDoc, artboardsOf, switchArtboard } from '../../src/artboards/model';
@@ -29,7 +29,9 @@ describe('a move made in a variation', () => {
     expect(artboardDoc(doc(), root).layers[0].cels[0].offset).toBeUndefined();
 
     const bytes = saveFile(doc());
-    expect(JSON.parse(strFromU8(unzipSync(bytes)['manifest.json'])).version).toBe(OFFSET_FORMAT_VERSION);
+    // This one's strokes pack their points, which raises the version further than the offset does on its own (the
+    // offset's own bump is in test/offset/offset.test.ts). Either way an older Frameling refuses the file.
+    expect(JSON.parse(strFromU8(unzipSync(bytes)['manifest.json'])).version).toBe(PACKED_POINTS_FORMAT_VERSION);
     const loaded = loadFile(bytes).doc;
     expect(artboardDoc(loaded, v).layers[0].cels[0].offset).toEqual({ x: 3, y: -2 });
     expect(artboardDoc(loaded, root).layers[0].cels[0].offset).toBeUndefined();

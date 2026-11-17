@@ -12,7 +12,7 @@ import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook, withShapeEffects } from '../effects/io';
 import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
+import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, PACKED_POINTS_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, encodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { ioTime, nowMs } from './ioTime';
@@ -27,6 +27,7 @@ import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
 import { packPictures, readLayerPicture, unpackPictures } from './pictures-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
+import { packShapes, unpackRawShape, usesPackedPoints } from './packPoints';
 import { packArtboards, readArtboards } from '../artboards/io';
 import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
@@ -311,19 +312,22 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
     } else if (d.kind === 'tilemap') {
       // Not cached: its cells are a typed array, which nothing stops from being written in place.
       entries.push({ id, value: () => ({ ...d, cells: Array.from(d.cells) }) });
-    } else if (d.kind === 'vector' && d.kept?.length) {
+    } else if (d.kind === 'vector') {
+      // Points go in as flat numbers (src/io/packPoints.ts), with any shapes of a kind this build does not know put
+      // back where they were.
       entries.push(
         keep(id, d, () => {
           const { kept: _kept, ...rest } = d;
-          return { ...rest, shapes: shapesForSave(d) };
+          return { ...rest, shapes: packShapes(shapesForSave(d)) };
         }),
       );
     } else {
-      entries.push(d.kind === 'vector' ? keep(id, d, () => d) : { id, value: () => d });
+      entries.push({ id, value: () => d });
     }
   }
-  // The usual version, or the next when a key has an offset, so an older Frameling refuses the file instead of drawing parts in the wrong place.
-  const version = versionFor(doc);
+  // The usual version, or a later one when the file holds something an older Frameling would read wrongly rather than
+  // refuse: a key with an offset, or points written as flat numbers.
+  const version = Math.max(versionFor(doc), usesPackedPoints(doc) ? PACKED_POINTS_FORMAT_VERSION : 0);
   const manifest: Manifest = { format: 'frameling', version, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   // A small picture of the drawing for lists of files. Stored as it is (a PNG is already packed), and older versions skip it.
@@ -468,6 +472,7 @@ export const loadTuning = { minDocJson: 1 << 20 };
 /** What `doc.json` inflates to, from the zip's directory alone (nothing is inflated); 0 when it cannot say. */
 function docJsonSize(bytes: Uint8Array): number {
   let size = 0;
+  const t = nowMs();
   try {
     unzipSync(bytes, {
       filter: (f) => {
@@ -476,8 +481,10 @@ function docJsonSize(bytes: Uint8Array): number {
       },
     });
   } catch {
+    ioTime.openScan += nowMs() - t;
     return 0;
   }
+  ioTime.openScan += nowMs() - t;
   return size;
 }
 
@@ -491,25 +498,39 @@ export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
   let parsed: { raw: unknown } | null = null;
   if (docJsonSize(bytes) >= loadTuning.minDocJson) {
     try {
+      const tWait = nowMs();
       const inflated = await inflateDocInWorker(bytes);
-      if (inflated) parsed = { raw: JSON.parse(strFromU8(inflated)) };
+      ioTime.openJsonWait += nowMs() - tWait;
+      if (inflated) {
+        const tJson = nowMs();
+        ioTime.openDocBytes += inflated.length;
+        const text = strFromU8(inflated);
+        ioTime.openDecode += nowMs() - tJson;
+        parsed = { raw: JSON.parse(text) };
+        ioTime.openJson += nowMs() - tJson;
+      }
     } catch {
       // Left for the plain path below, which reports it.
     }
   }
   const entries = unzipFile(bytes, !!parsed);
+  const tPng = nowMs();
   const decoded = await decodePngsInWorkers(entries);
+  ioTime.openPngWait += nowMs() - tPng;
   return loadEntries(entries, decoded, parsed ?? undefined);
 }
 
 /** The entries of a file that matter. With `skipDoc` (its JSON was read elsewhere) `doc.json` is left uninflated. */
 function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
+  const t = nowMs();
   try {
     entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/') || f.name.startsWith('history/')) });
   } catch {
+    ioTime.openUnzip += nowMs() - t;
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
+  ioTime.openUnzip += nowMs() - t;
   if (!entries['manifest.json'] || (!skipDoc && !entries['doc.json'])) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   return entries;
 }
@@ -517,21 +538,29 @@ function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Arra
 function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>, parsed?: { raw: unknown }): LoadedFile {
   let manifest: Manifest;
   let raw: any;
+  const tJson = nowMs();
   try {
     manifest = JSON.parse(strFromU8(entries['manifest.json']));
     raw = parsed?.raw ?? JSON.parse(strFromU8(entries['doc.json']));
   } catch {
+    ioTime.openJson += nowMs() - tJson;
     throw damaged();
   }
+  ioTime.openJson += nowMs() - tJson;
   if (!isObj(manifest) || manifest.format !== 'frameling' || !isObj(raw)) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   const version = manifest.version;
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw damaged();
   if (version > NEWEST_FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
 
   const warnings: string[] = [];
+  const tBuild = nowMs();
   raw = migrate(raw, version);
   const doc = buildDoc(raw, entries, warnings, decoded);
+  ioTime.openBuild += nowMs() - tBuild;
+  const tHist = nowMs();
   const history = raw.history === undefined ? undefined : readHistory(doc, raw.history, entries[HISTORY_STEPS_ENTRY], entries[HISTORY_DATA_ENTRY]);
+  ioTime.openHistory += nowMs() - tHist;
+  ioTime.opens++;
   return { doc, manifest, warnings, ...(history ? { history } : {}) };
 }
 
@@ -556,6 +585,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
+          // Points written as flat numbers become point objects again, in place (see src/io/packPoints.ts).
+          unpackRawShape(s);
           const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
           if (read) shapes.push(withRepeat(withShapeEffects(withExt(read, s, warnings), s), s));
           else lost = true;

@@ -571,6 +571,46 @@ const ACTIONS = {
       for (let i = 0; i < 6; i++) { await run('edit.redo'); await sleep(60); }
     },
   },
+  // Undoing a structural change: putting three deleted layers back. The fifth pass of the extreme perf review
+  // claimed the timeline's wholesale rebuild was shared with structural undo, and never measured it. This is that
+  // measurement, away from the delete that set it up (the delete is in setup, which is not timed).
+  'undo-delete-layer': {
+    edits: true,
+    kinds: ['vector', 'pixel'], unit: 'undos', units: 3,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ tool: 'select', selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      for (let i = 0; i < 3; i++) { await run('layers.delete'); await sleep(80); }
+      await sleep(150);
+    },
+    async act() { for (let i = 0; i < 3; i++) { await run('edit.undo'); await sleep(80); } },
+  },
+  // The same for a deleted drawing rather than a whole layer: one row's cels change instead of the layer list, so
+  // this says whether the cost is the rebuild of every row or just the row that moved.
+  'undo-delete-key': {
+    edits: true,
+    kinds: ['vector', 'pixel'], unit: 'undos', units: 3,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      await ev(`(() => { const r = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); return true; })()`);
+      await sleep(250);
+      const n = await ev(`(() => {
+        const S = window.__frameling.store(), l = window.__sw.last();
+        let done = 0;
+        for (let i = 0; i < 3; i++) {
+          const d = S.get().doc.layers.find((x) => x.id === l.id);
+          const c = d && d.cels.find((c) => c.start === 3 + i);
+          if (!c) break;
+          S.update('Delete drawing', (doc) => { const y = doc.layers.find((x) => x.id === l.id); const k = y.cels.findIndex((z) => z.id === c.id); if (k >= 0) y.cels.splice(k, 1); });
+          done++;
+        }
+        return done;
+      })()`);
+      if (!n) throw new Skip('no drawing to delete');
+      this.n = n;
+      await sleep(150);
+    },
+    async act() { for (let i = 0; i < this.n; i++) { await run('edit.undo'); await sleep(80); } },
+  },
   'switch-artboard': {
     kinds: ['vector', 'pixel'], unit: 'switches', units: 6,
     async setup() {
@@ -742,7 +782,7 @@ async function measure(name, a, dbg) {
 }
 
 /** The save split (page opened with ?debug): where the time inside a save went, see src/io/ioTime.ts. */
-const IO_KEYS = ['trim', 'history', 'docjson', 'files', 'pngCopy', 'post', 'pngWait', 'zipWait', 'held', 'posts', 'pngs', 'saves'];
+const IO_KEYS = ['trim', 'history', 'docjson', 'files', 'pngCopy', 'post', 'pngWait', 'zipWait', 'held', 'posts', 'pngs', 'saves', 'openScan', 'openJson', 'openDecode', 'openDocBytes', 'openUnzip', 'openBuild', 'openHistory', 'openJsonWait', 'openPngWait', 'openHeld', 'opens'];
 const ioReset = () => ev('window.__framelingIo.ioTime.reset(); true');
 const ioNow = () => ev(`(() => { const t = window.__framelingIo.ioTime; const o = {}; for (const k of ${JSON.stringify(IO_KEYS)}) o[k] = t[k]; return o; })()`);
 
@@ -840,7 +880,8 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
         const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), worstTaskMs: m.worstTaskMs === null ? undefined : +m.worstTaskMs.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), wallMs: m.wall === null ? undefined : +m.wall.toFixed(1), runsWall: m.wall === null ? undefined : m.wallAll.map((x) => +x.toFixed(1)), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, longestMs: m.longestMs === null ? undefined : m.longestMs, longBlocks: m.longBlocks === null ? undefined : m.longBlocks, io: m.io ? Object.fromEntries(Object.entries(m.io).map(([k, v]) => [k, +v.toFixed(1)])) : undefined, note: [ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '', m.wall === null ? '' : `wall ${m.wall.toFixed(0)} ms`].filter(Boolean).join(', ') };
         results.push(row);
         console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]${m.wall === null ? '' : `  wall ${num(m.wall)} ms [${m.wallAll.map((x) => x.toFixed(0)).join(' ')}]`}  after: ${st.layers} layers, undo "${st.undo}"`);
-        if (row.io) console.error(`  ${pad('', 15)} ${pad('', 16)} save split: held ${num(row.io.held)} ms = trim ${num(row.io.trim)} + history ${num(row.io.history)} + doc.json ${num(row.io.docjson)} + walk ${num(row.io.files)} + png copy ${num(row.io.pngCopy)} + hand over ${num(row.io.post)}; waited on workers ${num(row.io.pngWait)} png + ${num(row.io.zipWait)} zip, ${row.io.pngs} pngs made; longest single block ${num(row.longestMs)} ms of ${row.longBlocks} over 50 ms`);
+        if (row.io && row.io.opens) console.error(`  ${pad('', 15)} ${pad('', 16)} open split: held ${num(row.io.openHeld)} ms = directory ${num(row.io.openScan)} + doc.json to objects ${num(row.io.openJson)} (decode ${num(row.io.openDecode)} of ${(row.io.openDocBytes / 1048576).toFixed(1)} MB) + inflate the rest ${num(row.io.openUnzip)} + build the document ${num(row.io.openBuild)} + read the history ${num(row.io.openHistory)}; waited on workers ${num(row.io.openJsonWait)} doc.json + ${num(row.io.openPngWait)} pictures, ${row.io.opens} opens; longest single block ${num(row.longestMs)} ms of ${row.longBlocks} over 50 ms`);
+        if (row.io && row.io.saves) console.error(`  ${pad('', 15)} ${pad('', 16)} save split: held ${num(row.io.held)} ms = trim ${num(row.io.trim)} + history ${num(row.io.history)} + doc.json ${num(row.io.docjson)} + walk ${num(row.io.files)} + png copy ${num(row.io.pngCopy)} + hand over ${num(row.io.post)}; waited on workers ${num(row.io.pngWait)} png + ${num(row.io.zipWait)} zip, ${row.io.pngs} pngs made; longest single block ${num(row.longestMs)} ms of ${row.longBlocks} over 50 ms`);
         if (profDir && m.profile) fs.writeFileSync(path.join(profDir, `${dn}.${an}.cpuprofile`), JSON.stringify(m.profile));
         if (m.cache) console.error(`        bitmaps per run: ${m.cache.builds.toFixed(0)} built, ${m.cache.hits.toFixed(0)} found, ${m.cache.evictions.toFixed(0)} evicted; held ${m.cache.entries} (${m.cache.mpix.toFixed(1)} Mpx)`);
         if (trace && m.worstTaskMs !== null) console.error(`        worst single block ${m.worstTaskMs.toFixed(1)} ms${m.worstTaskMs > 16.7 ? ' (a dropped frame)' : ' (inside a frame)'}`);
