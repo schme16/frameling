@@ -566,12 +566,32 @@ describe('settings, built to the layout', () => {
     expect(b.dropped.join(' ')).toMatch(/at most 16 pen controls/);
   });
 
+  it('taper comes across: the pen one, in brush widths, thinning only', () => {
+    // A taper of 1 is 530 pixels of Procreate's own picture, whatever the brush's size. This made up brush has no
+    // picture, so it comes in at 0.3 x 100 x 0.7 of its tip = 21 pixels.
+    const b = one(brush({ taperVersion: 1, pencilTaperStartLength: 0.2, pencilTaperEndLength: 0.4, pencilTaperSize: 1, pencilTaperOpacity: 1, taperStartLength: 0.9 }));
+    const size = b.dab.size;
+    expect(b.dab.taper!.start).toBeCloseTo((0.2 * 530) / size, 1);
+    expect(b.dab.taper!.end).toBeCloseTo((0.4 * 530) / size, 1);
+    // The fade is left out: Procreate's own pictures are as dark at the tip as in the middle.
+    expect(b.dab.taper).toMatchObject({ size: 1, opacity: 0 });
+    expect(b.changed.join(' ')).toMatch(/taper came across/);
+    // An older file keeps one length that counts at both ends.
+    const old = one(brush({ pencilTaperStartLength: 0.01, pencilTaperEndLength: 0.4, pencilTaperSize: 1 })).dab.taper!;
+    expect(old.start).toBe(old.end);
+    // One that only fades does fade (Shenbot's Background keeps its width and goes soft at both ends).
+    expect(one(brush({ taperVersion: 1, pencilTaperEndLength: 0.4, pencilTaperSize: 0, pencilTaperOpacity: 1 })).dab.taper).toMatchObject({ size: 0, opacity: 1 });
+    // No taper, or one that thins nothing, is no taper.
+    expect(one(brush({})).dab.taper).toBeUndefined();
+    expect(one(brush({ taperVersion: 1, pencilTaperEndLength: 0.4, pencilTaperSize: 0 })).dab.taper).toBeUndefined();
+  });
+
   it('what has no equivalent is named, only when the brush really uses it', () => {
     const plain = one(brush({}));
     expect(plain.dropped).toEqual([]);
-    const b = one(brush({ taperStartLength: 0.5, plotSmoothing: 0.4, metallicAmount: 0.7, burntEdgesAmount: 0.2, wetEdgesAmount: 0.3, dynamicsGlaze: true, dynamicsBlur: 0.5, shapeAzimuth: true, shapeAngle: 1.2 }));
+    const b = one(brush({ plotSmoothing: 0.4, metallicAmount: 0.7, burntEdgesAmount: 0.2, wetEdgesAmount: 0.3, dynamicsGlaze: true, dynamicsBlur: 0.5, shapeAzimuth: true, shapeAngle: 1.2 }));
     const said = b.dropped.join(' | ');
-    for (const w of [/taper/, /smoothing/, /metallic/, /burnt edges/, /wet edges/, /glazing/, /bleed and blur/, /direction or roll/, /fixed tip angle/]) expect(said).toMatch(w);
+    for (const w of [/smoothing/, /metallic/, /burnt edges/, /wet edges/, /glazing/, /bleed and blur/, /direction or roll/, /fixed tip angle/]) expect(said).toMatch(w);
   });
 
   it('a blend mode is left out with its number, a dual brush is left out, the wet mix is kept', () => {

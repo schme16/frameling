@@ -11,6 +11,43 @@ import { cleanRoutes, effectsOf, FADE_DEFAULT, FADE_RANGE, lerpInputs, newEffect
 import { cleanDual, cleanGrain, sameDual, sameGrain, type Dual, type Grain } from './texture';
 
 export type TipShape = 'round' | 'square' | 'picture';
+
+/**
+ * A line that thins to a point at its ends, whatever the pen is doing. The lengths are in brush widths, so a bigger
+ * brush tapers over a longer run. The start is drawn as you go; the end is only known when the pen lifts, so the last
+ * stretch of the line is drawn again then.
+ */
+export interface Taper {
+  /** How long the line takes to reach full width from its start, in brush widths. 0 is no taper there. */
+  start: number;
+  /** How long before its end the line begins to thin, in brush widths. 0 is no taper there. */
+  end: number;
+  /** 0 to 1: how much of the width the taper takes away at the very tip. 1 is down to a point. */
+  size: number;
+  /** 0 to 1: how much of the opacity it takes away at the very tip. */
+  opacity: number;
+}
+export const TAPER_RANGE = { min: 0, max: 60 };
+export const DEFAULT_TAPER: Taper = { start: 4, end: 4, size: 1, opacity: 0 };
+
+/** A taper read from saved data: null when there is none or it does nothing. */
+export function cleanTaper(raw: unknown): Taper | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const n = (v: unknown, hi: number, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(hi, Math.max(0, v)) * 1000) / 1000 : d);
+  const t: Taper = { start: n(r.start, TAPER_RANGE.max, 0), end: n(r.end, TAPER_RANGE.max, 0), size: n(r.size, 1, 1), opacity: n(r.opacity, 1, 0) };
+  return (t.start > 0 || t.end > 0) && (t.size > 0 || t.opacity > 0) ? t : null;
+}
+export const sameTaper = (a: Taper | null | undefined, b: Taper | null | undefined): boolean => (!a || !b ? !a === !b : a.start === b.start && a.end === b.end && a.size === b.size && a.opacity === b.opacity);
+
+/** True when the brush's paper stops paint that cannot reach a pit (see texture.ts), so faint paint is specks on the peaks. */
+export const gritty = (b: DabBrush): boolean => !!b.grain && b.grain.depth > 0 && !b.grain.thin;
+
+/** How much of a dab's width and opacity is left `along` pixels into a taper `length` pixels long (the tip is at 0). */
+export function taperAt(t: Taper, along: number, length: number): { size: number; cap: number } {
+  const k = length <= 0 ? 1 : Math.min(1, Math.max(0, along / length));
+  return { size: 1 - t.size * (1 - k), cap: 1 - t.opacity * (1 - k) };
+}
 export const TIP_SHAPES: TipShape[] = ['round', 'square', 'picture'];
 
 /** One pixel brush: everything that makes its dab and how dabs follow each other. Colour is never part of it. */
@@ -54,6 +91,8 @@ export interface DabBrush {
   wet: number;
   /** How the paint joins what is on the layer: normal, or a blend mode like a layer's (see blend.ts). */
   blend: BlendMode;
+  /** The line thins to a point at its ends. Left out or null: it does not. */
+  taper?: Taper | null;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
@@ -119,6 +158,10 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
     dual: r.dual === undefined ? base.dual : cleanDual(r.dual),
     wet: round3(num(r.wet, 0, 1, base.wet)),
     blend: cleanBlend(r.blend, base.blend),
+    ...((): { taper?: Taper } => {
+      const t = r.taper === undefined ? (base.taper ?? null) : cleanTaper(r.taper);
+      return t ? { taper: t } : {};
+    })(),
   };
 }
 
@@ -130,7 +173,7 @@ export function sameDab(a: DabBrush, b: DabBrush): boolean {
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
-    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend
+    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend && sameTaper(a.taper, b.taper)
   );
 }
 
@@ -190,6 +233,8 @@ export interface Dab {
   flow: number;
   /** The most paint this dab may leave on a pixel (a share of the brush's opacity), left out when nothing drives it. */
   cap?: number;
+  /** How far along the stroke this dab is, in pixels of line. */
+  at?: number;
   /** Colour pushes from the brush's dynamics, left out when there are none (see dynamics.ts). */
   mix?: number;
   hue?: number;
@@ -352,6 +397,10 @@ interface Spot extends Pt {
   size: number;
   flow: number;
   fx: Effects;
+  /** How far along the stroke, in pixels of line. */
+  at: number;
+  /** What the start taper leaves of the opacity here (1 when there is none). */
+  cap: number;
 }
 
 /**
@@ -387,7 +436,17 @@ export class DabPath {
 
   /** The dab spot at a point, with the dynamics worked out for it (the shared neutral push when the brush has none). */
   private spot(at: Pt, size: number, flow: number, s: Sense): Spot {
-    if (this.routes.length === 0) return { x: at.x, y: at.y, size, flow, fx: NEUTRAL };
+    // The start of a tapered line: thin at first, full width once it has run the taper's length.
+    let cap = 1;
+    const t = this.b.taper;
+    if (t && t.start > 0) {
+      const k = taperAt(t, this.travelled, t.start * this.b.size);
+      size = Math.max(0.5, size * k.size);
+      // Under a paper that stops the paint a fainter tip is fewer specks, not an even grey: there it thins the flow.
+      if (gritty(this.b)) flow *= k.cap;
+      else cap = k.cap;
+    }
+    if (this.routes.length === 0) return { x: at.x, y: at.y, size, flow, fx: NEUTRAL, at: this.travelled, cap };
     const i = this.inputs;
     i.pressure = s.pressure;
     i.tilt = s.tilt;
@@ -397,7 +456,7 @@ export class DabPath {
     i.travelled = this.travelled;
     i.random = this.rng;
     const fx = effectsOf(this.routes, i, this.b.fadeLength, newEffects());
-    return { x: at.x, y: at.y, size: Math.max(0.5, size * fx.size), flow: Math.min(1, flow * fx.flow), fx };
+    return { x: at.x, y: at.y, size: Math.max(0.5, size * fx.size), flow: Math.min(1, flow * fx.flow), fx, at: this.travelled, cap };
   }
 
   /** Points along the way from the last point to `to`, a step apart (the first call gives `to` itself). */
@@ -459,9 +518,9 @@ export class DabPath {
     let angle = (b.angle * Math.PI) / 180 + at.fx.angle;
     if (b.follow) angle += Math.atan2(this.dirY, this.dirX);
     if (b.angleJitter > 0) angle += (rng() * 2 - 1) * Math.PI * b.angleJitter;
-    const d: Dab = { x, y, size: s, angle, flow: at.flow };
+    const d: Dab = { x, y, size: s, angle, flow: at.flow, at: at.at };
     const fx = at.fx;
-    if (fx.opacity < 1) d.cap = fx.opacity;
+    if (fx.opacity < 1 || at.cap < 1) d.cap = fx.opacity * at.cap;
     if (fx.mix) d.mix = fx.mix;
     if (fx.hue) d.hue = fx.hue;
     if (fx.sat) d.sat = fx.sat;

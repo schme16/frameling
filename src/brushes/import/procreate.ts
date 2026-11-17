@@ -48,6 +48,15 @@ const TIP_GAMMA = 2.2;
 const TIP_LIGHT = Array.from({ length: 256 }, (_, v) => 255 * Math.pow(v / 255, TIP_GAMMA));
 
 /**
+ * How long a taper of 1 is, in pixels of Procreate's own picture of the stroke (which is the scale a brush's size is
+ * measured in): half the picture's width. Measured off the pictures: Ink Bleed 1 has no pressure on size at all, so
+ * its width is the taper alone, and it reaches full width a fifth of the way along with a start of 0.26; the copy of it
+ * with a start of 0.59 takes twice as long. Dry Ink v2 (end 1) and Graphite ink (start 0.86, end 1) fit the same rule
+ * at 14 and 80 pixels across, so the length does not go with the brush's size.
+ */
+const TAPER_PIXELS = 530;
+
+/**
  * How far Procreate's jitter throws a dab off the line, as a share of the brush width for a jitter of 1. Settled by
  * eye against Procreate's own pictures: Graphite ink (0.54) is a loose cloud about half as wide again as its tip, and
  * Basic 01 (1.67) has a ragged edge but is still one stroke.
@@ -185,7 +194,7 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
  * Checked against the three brushes whose dabs were measured by hand off their pictures: Sequins comes out 57 where the
  * hand said 57, Seed 219 where the hand said 190, Plain Stitch 27 where the hand said 34.
  */
-function strokeWidth(png: Uint8Array, budget: Budget, thrown = false, slanted = false): number | null {
+function strokeWidth(png: Uint8Array, budget: Budget, thrown = false, slanted = false, ran?: { length: number }): number | null {
   const { w, h, px } = decodeTipPng(png);
   budget.spend(w * h);
   if (w < 8 || h < 8) return null;
@@ -208,6 +217,7 @@ function strokeWidth(png: Uint8Array, budget: Budget, thrown = false, slanted = 
     if (best > 0) runs.push(thrown ? last - first + 1 : best);
   }
   if (runs.length < 8) return null;
+  if (ran) ran.length = runs.length;
   runs.sort((a, b) => a - b);
   // A long thin tip that turns along the line (a stitch, a dash) is cut on the slant by most columns, which reads it
   // thicker than it is: there the middle column is the fair one, not the ninth of ten.
@@ -238,7 +248,6 @@ const TARGETS: { words: string[]; to: DynTarget; what: string }[] = [
 
 /** Settings that Frameling has nothing for, said only when the brush really uses them (more than this). */
 const DROPS: { keys: string[]; flag?: boolean; over?: number; words: string }[] = [
-  { keys: ['taperStartLength', 'taperEndLength', 'pencilTaperStartLength', 'pencilTaperEndLength'], over: 0.001, words: 'Its taper (the line thinning out at the start and end of a stroke).' },
   { keys: ['shapeFlipXJitter', 'shapeFlipYJitter'], flag: true, words: 'Its random flipping of the tip.' },
   { keys: ['shapeAzimuth', 'shapeRoll'], flag: true, words: "Its tip turning with the pen's direction or roll." },
   { keys: ['plotSmoothing', 'plotMovingAverageStabilization', 'plotFFTSmoothingAmount', 'dynamicsPressureSmoothing'], over: 0.01, words: "Its stroke smoothing. Frameling's stabiliser is a setting of the tool, not of the brush." },
@@ -309,7 +318,26 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     try {
       // Only a new file's jitter makes a cloud; an old file's scatter goes with wide spacing, where each dab stands alone.
       const thrown = (jitter * JITTER_THROW) / share > 0.05;
-      const wide = strokeWidth(pics.thumb, budget, thrown, across < 0.5 && s.num('shapeRotation', 0) >= 0.5);
+      const ran = { length: 0 };
+      let wide = strokeWidth(pics.thumb, budget, thrown, across < 0.5 && s.num('shapeRotation', 0) >= 0.5, ran);
+      // The picture is drawn with the taper on, so its widest point may be short of the brush's real width. A short
+      // picture is the start of a stroke that never gets out of its start taper (Teardrop Ink's runs 177 pixels of a
+      // taper 530 long). A whole one whose two tapers meet in the middle never reaches full width either (the 6B
+      // Pencil's tapers are each two thirds of the stroke). So the width is divided by the most the tapers let through.
+      const tv = s.has('pencilTaperStartLength') || s.has('pencilTaperEndLength') ? 'pencilTaper' : 'taper';
+      const tEndLen = clamp(s.num(`${tv}EndLength`, 0), 0, 1) * TAPER_PIXELS;
+      const tStartLen = s.num('taperVersion', 0) < 1 && s.num(`${tv}StartLength`, 0) < 0.02 ? tEndLen : clamp(s.num(`${tv}StartLength`, 0), 0, 1) * TAPER_PIXELS;
+      const tAmount = clamp(s.num(`${tv}Size`, 0), 0, 1);
+      if (wide !== null && tAmount > 0.01) {
+        const whole = ran.length >= 500;
+        let most = 0;
+        for (let x = 0; x <= ran.length; x += 4) {
+          const a = tStartLen > 0 ? 1 - tAmount * (1 - Math.min(1, x / tStartLen)) : 1;
+          const b = whole && tEndLen > 0 ? 1 - tAmount * (1 - Math.min(1, (ran.length - x) / tEndLen)) : 1;
+          most = Math.max(most, a * b);
+        }
+        wide /= Math.max(0.2, most);
+      }
       // The picture shows the tip and the throw together; most dabs land well inside the furthest throw.
       if (wide !== null) measured = Math.round(clamp(wide / (across + (thrown ? (1.5 * jitter * JITTER_THROW) / share : 0)), MIN_SIZE, MAX_SIZE));
     } catch (e) {
@@ -344,6 +372,25 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   // Stitch) keeps its stitches lined up along the line.
   const turn = s.bool('shapeRandomise') ? 1 : clamp(s.num('shapeScatter', 0), 0, 1);
   if (turn > 0.01) raw.angleJitter = turn;
+  // ---- taper: the line thinning to a point at each end. Procreate keeps one for a pen and one for a finger; its own
+  // pictures are drawn with the pen's (Ink Bleed 1 and its copy differ only there, and their pictures differ).
+  const pen = s.has('pencilTaperStartLength') || s.has('pencilTaperEndLength') ? 'pencilTaper' : 'taper';
+  const tEnd = clamp(s.num(`${pen}EndLength`, 0), 0, 1);
+  // An older file (taper version 0) keeps one length that counts at both ends, whatever its start says: Velvet int,
+  // Basic 01, the 6B Pencil and Dry Ink v2 all have a start of nearly nothing, and Procreate's pictures of all four
+  // grow from a point over the length their end gives.
+  const oneLength = s.num('taperVersion', 0) < 1 && s.num(`${pen}StartLength`, 0) < 0.02;
+  const tStart = oneLength ? tEnd : clamp(s.num(`${pen}StartLength`, 0), 0, 1);
+  const tSize = clamp(s.num(`${pen}Size`, 0), 0, 1);
+  const tOpacity = clamp(s.num(`${pen}Opacity`, 0), 0, 1);
+  if ((tStart > 0.01 || tEnd > 0.01) && (tSize > 0.01 || tOpacity > 0.01)) {
+    const size = raw.size as number;
+    // A taper that thins the line does not fade it as well: the 6B Pencil, Dry Ink 1 and Dry Ink v2 all ask for a full
+    // fade and Procreate's pictures of them are as dark at the tip as in the middle. One that only fades does fade:
+    // Shenbot's Background keeps its width and its picture goes soft at both ends.
+    raw.taper = { start: tStart > 0.01 ? (tStart * TAPER_PIXELS) / size : 0, end: tEnd > 0.01 ? (tEnd * TAPER_PIXELS) / size : 0, size: tSize, opacity: tSize > 0.01 ? 0 : tOpacity };
+    changed.push("Its taper came across: the line thins to a point at each end. The end is drawn when you lift the pen. How long a taper is was measured off Procreate's own pictures, at the size the brush came in at.");
+  }
   const fixed = s.num('shapeAngle', 0);
   if (Math.abs(fixed) > 0.001) dropped.push('Its fixed tip angle. Frameling has not seen how Procreate stores it, so the tip came at its own angle.');
 

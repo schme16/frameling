@@ -89,6 +89,7 @@ export const HISTORY: History = {
     { on: D, n: 736, why: 'brush-engine2: Next paint mode is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
     { on: '2026-11-16', n: 719, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, so a still has 17 fewer menu entries and the same palette.' },
     { on: '2026-11-17', n: 728, why: 'sketch-and-ink: the same nine brushes each have an entry under the brush lists, as every brush in the library does.' },
+    { on: '2026-11-17', n: 729, why: 'taper: Thin to a point at the ends is one more switch in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -121,6 +122,7 @@ export const HISTORY: History = {
     { on: D, n: 860, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: '2026-11-16', n: 843, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, and none of them has anything to do with animation.' },
     { on: '2026-11-17', n: 852, why: 'sketch-and-ink: the same nine as a still gains, so the gap between the two sides does not move.' },
+    { on: '2026-11-17', n: 853, why: 'taper: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

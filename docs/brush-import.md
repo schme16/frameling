@@ -202,7 +202,21 @@ The first readings were tuned one number at a time against the thumbnails and ke
 - **`paintOpacity` is where the slider was left**, like `paintSize`. The Sketch pencil is saved at 53% and its picture is black. So a brush comes at full strength and says where the slider was.
 - **Speed runs the other way from pressure**: a positive `dynamicsSpeed...` fades or thins the line as the hand goes faster. Read the same way round as pressure, a slow hand drew a fainter 6B Pencil.
 
-Still not read, and the first thing to do next: **taper** (every Procreate picture thins to a point at both ends; ours end as blunt as the pressure leaves them), and **the dual brush** (Graphite ink has one, a plain disc; its cloud came out right without it).
+Still not read: **the dual brush** (Graphite ink has one, a plain disc; its cloud came out right without it).
+
+### Taper, and the pen Procreate draws its pictures with
+
+The start and end of nearly every picture is taper, not pressure. Ink Bleed 1 has no pressure on size at all, and its picture is a line that thins to a point at both ends. So:
+
+- **Taper is `DabBrush.taper`** (`start`, `end` in brush widths, `size`, `opacity`). The start is drawn live; the end is drawn when the pen lifts (`DabStroke.taperEnd`), as Procreate does it.
+- **The pen's set is the one read** (`pencilTaper...`; `taper...` is the finger's and is the fallback). Ink Bleed 1 and its copy differ only in `pencilTaperStartLength` (0.26 and 0.59) and their pictures differ: the copy takes twice as long to reach full width.
+- **A length of 1 is 530 pixels of the picture** (half its width), whatever the brush's size: Ink Bleed 1 (17 px, start 0.26) is full width a fifth of the way along an 817 pixel stroke, Dry Ink v2 (14 px, end 1) starts thinning a third of the way along, Graphite ink (80 px, start 0.86, end 1) peaks just before the middle. It is kept in brush widths (530 x length / the size it came in at), so it grows with the brush.
+- **`taperVersion` 0 keeps one length for both ends.** Velvet int, Basic 01, the 6B Pencil and Dry Ink v2 have a start of 0.016 or 0 and an end of 0.5 or 1, and all four pictures grow from a point over the length the end gives.
+- **A taper that thins does not fade as well** (`opacity` 0). The 6B Pencil, Dry Ink 1 and Dry Ink v2 ask for a full fade and their pictures are as dark at the tip as in the middle. One that only fades does: Shenbot's Background keeps its width and its picture goes soft at both ends.
+- **The size allows for it.** The picture is drawn with the taper on, so its widest point can be short of the brush: a short picture is the start of a stroke still inside its start taper (Teardrop Ink: 177 pixels of 530), and two long tapers that meet in the middle never let the full width through (the 6B Pencil comes in at 220, not 139). The measured width is divided by the most the tapers let through.
+- **The pen in the pictures** presses as the square root of a half sine over a stroke 817 pixels long (read off Coloring Pen, which has pressure on size at 1 and no taper), and a short picture is the first part of the same stroke with the pen still down. The comparison harness draws with that pen now, where it used to read a pressure off how much ink each column held, which mixed the taper into the pressure.
+
+Not explained: older files' strokes also swell more slowly than that pen would make them (`dynamicsPressureSizeSpeed`, a lag on the pressure, is the likely cause and is not read).
 
 ### What is still a guess
 
@@ -220,7 +234,7 @@ Each of these is read by its key's name, with nothing to compare against. Where 
 
 ### What is left out, with a note
 
-`taper*` and the `pencilTaper*` set (we have a start fade, not an end taper), count jitter, flip jitters, `shapeAzimuth` and `shapeRoll`, the smoothing keys (the stabiliser is the tool's), `dynamicsGlaze` and the `rendering*` modes, bleed and blur, `metallic*`, `burntEdges*`, `wetEdges*`, secondary colour and per stroke colour jitter, the tip getting rounder with pressure or tilt (only when its minimum is under 1). These are named only when a brush really uses them (a number over a hair, a flag on). A Procreate brush is three brushes in one (paint, smudge and erase: `smudge*`, `erase*`): only the paint one comes across, and that is said in the help, not on each brush. Ours with nothing to fill it from: `aliased` and `hardness` (a Procreate tip is a picture; a built in shape that is not in the file comes as a hard round tip), `fadeLength`. Over `MAX_ROUTES` pen controls are cut with a note.
+The taper's opacity on a taper that also thins, and its tip shape (`...TaperShape`), count jitter, flip jitters, `shapeAzimuth` and `shapeRoll`, the smoothing keys (the stabiliser is the tool's), `dynamicsGlaze` and the `rendering*` modes, bleed and blur, `metallic*`, `burntEdges*`, `wetEdges*`, secondary colour and per stroke colour jitter, the tip getting rounder with pressure or tilt (only when its minimum is under 1). These are named only when a brush really uses them (a number over a hair, a flag on). A Procreate brush is three brushes in one (paint, smudge and erase: `smudge*`, `erase*`): only the paint one comes across, and that is said in the help, not on each brush. Ours with nothing to fill it from: `aliased` and `hardness` (a Procreate tip is a picture; a built in shape that is not in the file comes as a hard round tip), `fadeLength`. Over `MAX_ROUTES` pen controls are cut with a note.
 
 ### Limits
 

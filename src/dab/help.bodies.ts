@@ -53,6 +53,7 @@ Nothing changes until you press **Use this tip**. Escape throws the changes away
 **What it moves:**
 - **Size** and **Flow:** **How much** says how small or light it gets when the source is at its lowest. 80% goes down to a fifth. **The other way round** flips it, so a fast hand makes a thin line.
 - **Opacity:** like flow, but for the whole line: a light touch stays faint however closely the dabs sit, the way a pencil does.
+- **Thin to a point at the ends:** a **taper**. The line starts and ends in a point even with a mouse. The end is drawn when you let go.
 - **Angle:** turns the tip, up to a full turn.
 - **Scatter:** lets dabs wander off the line.
 

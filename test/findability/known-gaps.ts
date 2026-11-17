@@ -183,6 +183,8 @@ export const STILL_LOAD = {
   // on screen does their job, with no palette change and no change for animation.
   // 17 November 2026, sketch-and-ink: +9 palette and +9 menu on both sides, nine new ready-made pixel brushes (each brush
   // in the library is a command and a brush list entry). Nothing to do with animation, so the gap is unchanged.
-  still: { palette: 588, menu: 728, animateMenu: 8 },
-  animated: { palette: 637, menu: 852, animateMenu: 123 },
+  // 17 November 2026, taper: +1 menu on both sides, the Thin to a point at the ends switch in the Pixel brush
+  // submenu under Soft paint. Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 588, menu: 729, animateMenu: 8 },
+  animated: { palette: 637, menu: 853, animateMenu: 123 },
 };

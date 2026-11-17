@@ -7,7 +7,7 @@ import { BRUSH_BLENDS } from './blend';
 import { blendInfo } from '../effects/model';
 import { PaperGroup } from '../dry/PaperGroup';
 import { DYN_SOURCES, FADE_RANGE, routeFor, withRoute, type DynSource, type DynTarget } from './dynamics';
-import type { DabBrush } from './maths';
+import { DEFAULT_TAPER, type DabBrush } from './maths';
 import { setDab, useDab } from './settings';
 import { DEFAULT_DUAL, DEFAULT_GRAIN, DUAL_DENSITY, DUAL_SIZE, GRAIN_SCALE } from './texture';
 import { dualPictureScale } from './texturePicture';
@@ -114,6 +114,15 @@ export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle 
       <RouteRow b={b} to="opacity" set={set} />
       <RouteRow b={b} to="angle" set={set} />
       <RouteRow b={b} to="scatter" set={set} />
+      <Toggle label="Thin to a point at the ends" checked={!!b.taper} onChange={(on) => set({ taper: on ? DEFAULT_TAPER : null })} hint="The line starts and ends in a point, whatever the pen is doing, so a mouse draws a tapered line too. The end is drawn when you let go." />
+      {b.taper && (
+        <>
+          <Slider label="Start taper" value={Math.round(b.taper.start * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, start: v / 10 } })} hint="How far the line runs before it is full width." />
+          <Slider label="End taper" value={Math.round(b.taper.end * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, end: v / 10 } })} hint="How far before its end the line begins to thin." />
+          <Slider label="How thin the tip gets" value={Math.round(b.taper.size * 100)} min={0} max={100} format={(v) => (v >= 100 ? 'A point' : `${100 - v}% of the width`)} onChange={(v) => set({ taper: { ...b.taper!, size: v / 100 } })} />
+          <Slider label="How faint the tip gets" value={Math.round(b.taper.opacity * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Not at all' : `down to ${100 - v}%`)} onChange={(v) => set({ taper: { ...b.taper!, opacity: v / 100 } })} />
+        </>
+      )}
       {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
     </MoreOptions>
   );
