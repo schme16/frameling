@@ -89,7 +89,7 @@ class Settings {
 export type TipLookup = (fileName: string) => Uint8Array | null;
 
 /** A PNG tip as pixels, after checking its size and that it does not unpack to more than it says. */
-function decodeTipPng(bytes: Uint8Array): { w: number; h: number; px: Uint8ClampedArray } {
+export function decodeTipPng(bytes: Uint8Array): { w: number; h: number; px: Uint8ClampedArray } {
   try {
     const chunks = readChunks(bytes);
     const head = chunks[0]?.type === 'IHDR' ? chunks[0].data : null;

@@ -275,9 +275,9 @@ registerCommands([
     id: 'brush.addFile',
     label: 'Add brushes from a file...',
     category: 'Draw',
-    description: 'Add the brushes in a file someone sent you: one made in Frameling, or a GIMP, Photoshop or Krita brush file. You see what is in it first, and what did not come across.',
+    description: 'Add the brushes in a file someone sent you: one made in Frameling, or a GIMP, Photoshop, Krita or Procreate brush file. You see what is in it first, and what did not come across.',
     help: 'brush-presets',
-    keywords: ['brush', 'preset', 'import', 'open', 'file', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'kpp', 'bundle', 'procreate', 'brush set', 'brushes from other programs', 'download'],
+    keywords: ['brush', 'preset', 'import', 'open', 'file', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'kpp', 'bundle', 'procreate', 'brushset', 'brush set', 'brushes from other programs', 'download'],
     run: () => void addBrushesFromFile(),
   },
   {
