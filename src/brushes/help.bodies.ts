@@ -119,21 +119,21 @@ help:brush-tips help:brush-presets help:brush-picker help:exporting`,
 
 They land in your [brush picker](help:brush-picker) under the set's name, and are kept with your other saved brushes.
 
-**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what was left out or changed. **Only the whole ones** ticks just the brushes that lost nothing, handy for a big set.
+**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what changed. **Only the whole ones** ticks just those that lost nothing, handy for a big set.
 
 **What comes across:**
 - The tip: a round or square shape, or a picture, shrunk to fit 32 by 32 pixels with its soft shading kept.
 - Size, hardness, angle, roundness, spacing and scatter.
-- Pen controls (tilt, speed, direction, twist) for size, flow, opacity and angle, with the bend of each curve (a long curve is thinned to its nearest 8 points, and says so), and jitter.
-- A texture becomes one of the [papers](help:pixel-brush-texture) (a Procreate grain picture becomes a small paper of its own), and a Photoshop dual brush with a textured tip becomes a field of dots. Both say so.
+- Pen controls (tilt, speed, direction, twist) for size, flow, opacity and angle, with each curve's bend (a long one is thinned to 8 points, and says so), and jitter.
+- A texture becomes one of the [papers](help:pixel-brush-texture), and a Photoshop dual brush with a textured tip becomes a field of dots. Both say so.
 
-**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, count, a pipe of several pictures (Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes and every engine that isn't the pixel brush. From Procreate: taper, glaze, blend modes, a dual brush's second brush, and tips and grains of its own that aren't in the file (they come as a plain round tip and your sheet's paper). Each one is named in the window when a brush had it.
+**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, count, a pipe of several pictures (Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes and every engine that isn't the pixel brush. From Procreate: taper, glaze, blend modes, a dual brush's second brush, and its own tips and papers that aren't in the file (the tip comes as a plain round one, the brush with no paper, naming the one it wanted). Each is named in the window.
 
 **Good to know:**
 - A Photoshop set, a Krita **.bundle** or a Procreate **.brushset** is one file with many brushes. A GIMP file, a Krita **.kpp** or a Procreate **.brush** is one brush.
-- Procreate doesn't say how big its brushes are in pixels, so they come in at a middle size: change it with the size slider. Only a Procreate brush's paint version comes across, not its smudge and erase ones.
+- Procreate doesn't say how big its brushes are in pixels, so they come in at a middle size: change it with the size slider. Only its paint version comes across, not smudge and erase.
 - A lone Krita **.kpp** with a picture tip can't come in, because the picture isn't inside it. Make a bundle in Krita's **Manage Resources** window instead.
-- A damaged file, or one that isn't a brush file, is refused with a reason and nothing is added. Clip Studio Paint and Affinity brushes can't be read yet.
+- A damaged file, or one that isn't a brush file, is refused with a reason. Clip Studio Paint and Affinity brushes can't be read yet.
 - Open the brush in the [Pixel brush](help:pixel-brush) options afterwards to change anything, then **Save as...** to keep your version.
 
 help:brush-presets help:brush-picker help:pixel-brush-dynamics`,

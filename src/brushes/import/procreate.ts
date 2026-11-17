@@ -32,6 +32,13 @@ const MAX_PIXEL_BUDGET = 256 * 1024 * 1024;
  */
 export const PIXELS_PER_SIZE = 100;
 
+/**
+ * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
+ * the slider, which is one pixel), and a one pixel brush draws a faint dotted thread rather than the stroke Procreate
+ * shows. Since the size is a choice anyway, nothing arrives unusable.
+ */
+const MIN_SIZE = 6;
+
 /** The built in blank grain Procreate names when a brush has no paper: nothing to catch on. */
 const BLANK_GRAIN = /blank/i;
 
@@ -184,20 +191,35 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
 
   // ---- size, spacing, scatter, angle
   const paintSize = s.num('paintSize', 0.2);
-  raw.size = Math.max(1, Math.round(paintSize * PIXELS_PER_SIZE * share));
+  const wanted = Math.round(paintSize * PIXELS_PER_SIZE * share);
+  raw.size = Math.max(MIN_SIZE, wanted);
+  if (wanted < MIN_SIZE) changed.push(`It asked for a brush ${wanted} pixel${wanted === 1 ? '' : 's'} across, too small to draw with, so it came at ${MIN_SIZE}. Procreate's sizes are a share of its own slider and do not say how many pixels they are, so set the size you want after it lands.`);
   // Procreate counts spacing and scatter in the whole tip picture; ours count in the part you can see, which is `share` of it.
   const spacing = s.num('plotSpacing', 0.1);
   raw.spacing = spacing / share;
   if ((raw.spacing as number) > 4) changed.push(`Its spacing of ${pct(spacing)} was wider than Frameling goes, so it came at the widest, 400%.`);
   if (s.num('plotSpacingVersion', 0) >= 1 && (raw.spacing as number) > 0.06) changed.push('This file keeps its spacing the way newer Procreate does. That has not been checked, so the dabs may sit closer or further apart than in Procreate.');
-  let scatter = s.num('shapeScatter', 0) / share;
+  // How far a dab lands off the line, and this is the part that used to make inking pens arrive as wide clouds.
+  //
+  // `shapeScatter` is not a share of the brush width on its own: it goes with the spacing. Procreate's own picture of
+  // the stroke, which every .brush file carries, settles it both ways. Sequins has shapeScatter 0.877 with the dabs a
+  // whole width apart, and its sequins really do sit above and below the line. Shenbot's Dry Ink v2 has shapeScatter 1,
+  // more than Sequins, with spacing 0, and its stroke is a clean thin tapered line with nothing off it. The same
+  // number cannot mean the same throw in both. Multiplying by the spacing fits every real file seen: a brush whose
+  // dabs sit on top of each other has nowhere to scatter to, and one that stamps a shape every width or so scatters
+  // as far as the gap. It also leaves Sequins where it was measured, because its spacing is almost exactly 1.
+  //
+  // This is a model fitted to the real files, not something Procreate documents, so the brush says so.
+  const rawSpacing = s.num('plotSpacing', 0.1);
+  let scatter = (s.num('shapeScatter', 0) * rawSpacing) / share;
   const jitter = s.num('plotJitter', 0);
   if (jitter > 0.001) {
-    scatter += jitter / share;
-    changed.push("Its jitter came as scatter, which spreads dabs in every direction, not only across the line.");
+    scatter += (jitter * rawSpacing) / share;
+    changed.push('Its jitter came as scatter, which spreads dabs in every direction, not only across the line.');
   }
   raw.scatter = clamp(scatter, 0, 2);
-  if (scatter > 2) changed.push(`Its scatter was more than Frameling goes, so it came at the most, 200%.`);
+  if (scatter > 0.01) changed.push("How far its dabs land off the line was worked out from the scatter and the spacing together, matched against Procreate's own picture of the stroke in the file. Procreate does not say how it does this, so a very scattered brush may sit differently.");
+  if (scatter > 2) changed.push('Its scatter was more than Frameling goes, so it came at the most, 200%.');
   raw.roundness = clamp(s.num('shapeRoundness', 1), 0.05, 1);
   const rot = s.num('shapeRotation', 0);
   if (rot >= 0.5) raw.follow = true;
@@ -272,8 +294,11 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       dropped.push(`Its grain picture: ${e.message}`);
     }
   } else if (grainName && !BLANK_GRAIN.test(grainName)) {
-    raw.grain = { depth: clamp(s.num('grainDepth', 0.8), 0, 1), scale: 1, moving: s.num('textureMovement', 0) >= 0.5 };
-    changed.push(`Its grain ("${grainName}") is one of Procreate's own, which is not in the file, so it came as your sheet's paper at the same depth.`);
+    // Procreate's own papers are not in the file, and standing your sheet's paper in for one is worse than having
+    // none: Shenbot's Inking Pen names "Brush-Artery-Splatters.png", and Procreate's own picture of its stroke in the
+    // file is smooth and solid, while the paper underneath turned it speckly. A brush that arrives plain and says so
+    // is closer to the file than one that arrives grainy in a way the file never asked for.
+    dropped.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, so this brush came with no paper. Pick one in the brush options if you want the paint to catch.`);
   }
 
   // ---- wet mix, dual brush, blend

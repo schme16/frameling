@@ -436,12 +436,24 @@ describe('settings, built to the layout', () => {
   });
 
   it('scatter, jitter, rotation and the random turn', () => {
-    const b = one(brush({ shapeScatter: 0.3, plotJitter: 0.1, shapeRotation: 1, shapeRandomise: true }));
-    expect(b.dab.scatter).toBeGreaterThan(0.4);
+    const b = one(brush({ shapeScatter: 0.3, plotJitter: 0.1, plotSpacing: 1, shapeRotation: 1, shapeRandomise: true }));
+    expect(b.dab.scatter).toBeGreaterThan(0.3);
     expect(b.dab.follow).toBe(true);
     expect(b.dab.angleJitter).toBe(1);
     expect(b.changed.join(' ')).toMatch(/jitter came as scatter/);
     expect(b.changed.join(' ')).toMatch(/random turning/);
+  });
+
+  // The finding that fixed the inking pens. Procreate's own picture of the stroke, which every .brush carries, shows
+  // Sequins (scatter 0.877, dabs a width apart) throwing its sequins off the line, and Dry Ink v2 (scatter 1, spacing
+  // 0) drawing a clean thin line with nothing off it. So the number is not a share of the brush width on its own: it
+  // goes with the spacing, and a brush whose dabs sit on top of each other has nowhere to scatter to.
+  it('scatter goes with the spacing: the same number scatters a stamped brush and not a solid one', () => {
+    const stamped = one(brush({ shapeScatter: 1, plotSpacing: 1 }));
+    const solid = one(brush({ shapeScatter: 1, plotSpacing: 0 }));
+    expect(stamped.dab.scatter).toBeGreaterThan(0.8);
+    expect(solid.dab.scatter).toBe(0);
+    expect(stamped.changed.join(' ')).toMatch(/scatter and the spacing together/);
   });
 
   it('a scatter or spacing past what Frameling goes is held, and says so', () => {
@@ -507,17 +519,19 @@ describe('settings, built to the layout', () => {
     expect(r.ok && r.brushes).toHaveLength(1);
   });
 
-  it('a grain picture becomes the paper, with a note; a named built in grain follows the sheet; the blank one is no grain', () => {
+  it('a grain picture becomes the paper, with a note; a named built in grain is left out; the blank one is no grain', () => {
     const noise = new Uint8ClampedArray(64 * 64 * 4);
     for (let i = 0; i < 64 * 64; i++) noise.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);
     const grainPng = encodePng({ width: 64, height: 64, pixels: noise });
     const withPicture = one(brush({ grainDepth: 0.5, textureScale: 2, textureMovement: 1, textureInverted: true }, { 'Grain.png': grainPng })).dab;
     expect(withPicture.grain).toMatchObject({ depth: 0.5, scale: 2, moving: true, invert: true });
     expect(withPicture.grain?.picture?.side).toBeGreaterThanOrEqual(8);
+    // Procreate's own papers are not in the file, and standing the sheet's paper in for one made inking pens speckly
+    // when Procreate's own picture of the stroke shows them smooth. The brush comes with no paper and names the one
+    // it wanted, so nothing arrives grainy in a way the file never asked for.
     const named = one(brush({ bundledGrainPath: 'Brush-Preset-Rough.png', grainDepth: 0.7 }));
-    expect(named.dab.grain).toMatchObject({ depth: 0.7 });
-    expect(named.dab.grain?.picture).toBeUndefined();
-    expect(named.changed.join(' ')).toMatch(/Brush-Preset-Rough\.png.*your sheet's paper/);
+    expect(named.dab.grain).toBe(null);
+    expect(named.dropped.join(' ')).toMatch(/Brush-Preset-Rough\.png.*no paper/);
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Blank.png', grainDepth: 1 })).dab.grain).toBe(null);
     // A grain picture with nothing in it (flat grey) catches nothing, so there is no grain.
     const flatPng = encodePng({ width: 32, height: 32, pixels: new Uint8ClampedArray(32 * 32 * 4).fill(128) });
