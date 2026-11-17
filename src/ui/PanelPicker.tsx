@@ -7,6 +7,8 @@ import { Icon } from './icons';
 import { GROUP_NAMES, infoFor, isSection, matchPanel, RAIL_GROUPS, whenShown } from './panelInfo';
 import { rightStyle } from './rightStyle';
 import { usePopover } from './popover';
+import { animationOnlyPanels } from '../core/animationOnly';
+import { useStill } from './stillDock';
 
 const ZONE_NAMES = { left: 'Left side', right: 'Right side', bottom: 'Bottom', top: 'Top' } as const;
 
@@ -15,6 +17,7 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
   const [q, setQ] = useState('');
   const [cur, setCur] = useState(0);
   const layout = dock.use((d) => d.layout);
+  const still = useStill();
   const uid = useId();
   const merged = rightStyle.use((v) => v === 'inspector');
   usePopover(ref, onClose);
@@ -29,9 +32,9 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
     return () => window.removeEventListener('pointerdown', down, true);
   }, [onClose]);
   const groups = useMemo(() => {
-    const ps = allPanels().filter((p) => matchPanel(p, q));
+    const ps = allPanels().filter((p) => !(still && animationOnlyPanels().has(p.id)) && matchPanel(p, q));
     return RAIL_GROUPS.map((g) => ({ g, ps: ps.filter((p) => infoFor(p).group === g) })).filter((x) => x.ps.length);
-  }, [q]);
+  }, [q, still]);
   const flat = groups.flatMap((x) => x.ps);
   const pick = (id: string) => {
     showPanel(id);

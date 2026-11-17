@@ -28,5 +28,7 @@ It hides the line on this frame, makes a second key a second later (if there isn
 - **Show it all** takes the trim off every key.
 - **Lottie** and **animated SVG** keep the line as a line, so it stays sharp and small. A brush line or an outline with a changing width is saved as a picture per frame of its shape, which still stays vector.
 
-To make other things move, see [In-betweens](help:tweens).`,
+To make other things move, see [In-betweens](help:tweens).
+
+**Good to know:** the Draw on panel shows once the drawing has animation. On a picture, **Add animation** brings it (it also offers that if you search for it).`,
 };

@@ -8,6 +8,7 @@ import { listWorkspaces } from './dock';
 import { ownedUndo } from '../core/owners';
 import { currentChoice } from '../core/choices';
 import { animationKind } from '../core/animationGate';
+import { isAnimationOnly } from '../core/animationOnly';
 import { isAnimated } from '../core/animation';
 import { store } from '../core/store';
 import { getMenuEdits } from './menuState';
@@ -633,6 +634,7 @@ export function resolveMenus(): { menu: MenuDef; items: MenuItem[] }[] {
   // A drawing with no animation leaves the animation entries out of every menu but Add animation, which is the way in (src/core/animationGate.ts).
   const still = !isAnimated(store().get().doc);
   return shape.menus
+    .filter((menu) => !still || !isAnimationOnly('menu', menu.label))
     .map((menu) => {
       const items = resolveMenu(menu, shape.menus, getCommand, all, shape.subs, hidden, named);
       return { menu, items: still ? withoutAnimation(items) : items };

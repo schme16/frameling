@@ -28,7 +28,7 @@ describe('which kind a command is', () => {
     expect(animationKind({ id: 'view.panel.timeline', category: 'View' })).toBe('makes');
     expect(animationKind({ id: 'timeline.play', category: 'Timeline' })).toBe('needs');
     expect(animationKind({ id: 'tween.make', category: 'Animate' })).toBe('needs');
-    expect(animationKind({ id: 'tools.motion-path', category: 'Tools' })).toBe('needs');
+    expect(animationKind({ id: 'tools.motion-path', category: 'Tools' })).toBe('offers');
     expect(animationKind({ id: 'edit.undo', category: 'Edit' })).toBe('open');
     expect(animationKind({ id: 'tools.brush', category: 'Tools' })).toBe('open');
   });

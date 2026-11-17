@@ -15,6 +15,7 @@ import { panelPicker, togglePicker } from './rightStyle';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
 import { PanelScope } from './explain/ExplainIcon';
 import { useShownZone } from './roomFolds';
+import { useStillZone } from './stillDock';
 
 const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down', top: 'chevron-up' };
 const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up', top: 'chevron-down' };
@@ -24,7 +25,7 @@ const acrossOf = (zone: DockZone): boolean => zone === 'bottom' || zone === 'top
 
 /** A zone's groups, each in a box that takes its share of the room, with a splitter between each two. */
 export function ZoneStack({ zone, render }: { zone: DockZone; render: (group: number) => ReactNode }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useStillZone(zone);
   const ref = useRef<HTMLDivElement>(null);
   const n = groupCount(z);
   const shares = sharesOf(z);
@@ -68,7 +69,7 @@ const BIG_STEP = 0.1;
 
 /** The line between two stacked groups. Pull it, or use the arrow keys (Shift for bigger steps, Home and End, Enter to even them out). */
 function GroupSplitter({ zone, boundary, stack }: { zone: DockZone; boundary: number; stack: React.RefObject<HTMLDivElement | null> }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useStillZone(zone);
   const start = useRef<{ pos: number; first: number; extent: number } | null>(null);
   const across = acrossOf(zone);
   const shares = sharesOf(z);
@@ -133,7 +134,7 @@ function GroupSplitter({ zone, boundary, stack }: { zone: DockZone; boundary: nu
 export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; group: number; panelsButton?: boolean }) {
   const locked = useLocked('panels');
   const picker = panelPicker.use((v) => (panelsButton ? v : null));
-  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const z = useShownZone(useStillZone(zone), zone);
   const g = groupsOf(z)[group] ?? { tabs: [], active: null };
   const drag = dragState.use((d) => (d && d.kind !== 'tools' ? d.panels[0] : null));
   const dropAt = dragState.use((d) => dropIndexFor(d, { zone, group }, g.tabs.length));

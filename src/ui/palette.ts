@@ -2,7 +2,7 @@
 import { allCommands, allHelp, getCommand, type Command, type HelpTopic } from '../core/registry';
 import { store } from '../core/store';
 import { reasonFor } from '../core/commandReasons';
-import { animationKind, gateEnabled, gateReason } from '../core/animationGate';
+import { animationKind, gateEnabled, gateReason, offerWords } from '../core/animationGate';
 import { isAnimated } from '../core/animation';
 import { scoreWord, wordsOf } from './match';
 import { readRaw, writeJson } from './mini';
@@ -331,6 +331,22 @@ function runById(id: string): void {
 
 export function runCommand(c: Command): boolean {
   if (!commandEnabled(c)) return false;
+  // Something a picture leaves out of sight: offer Add animation, and carry on to it once that is done (see src/core/animationOnly.ts).
+  if (animationKind(c) === 'offers' && !isAnimated(store().get().doc)) {
+    toast(offerWords(c.label), {
+      kind: 'info',
+      duration: 9000,
+      action: {
+        label: 'Add animation',
+        id: 'add-animation',
+        run: () => {
+          runById('animation.add');
+          if (isAnimated(store().get().doc)) runCommand(c);
+        },
+      },
+    });
+    return true;
+  }
   try {
     // Asking for a frame on a still picture turns animation on first, and says so (see src/core/animationGate.ts).
     if (animationKind(c) === 'makes' && !isAnimated(store().get().doc)) runById('animation.add');

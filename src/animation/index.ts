@@ -11,6 +11,7 @@ import { toast } from '../ui/toast';
 import { addAnimationNow, hideAnimationNow, whyNotNow } from './ops';
 import './help';
 import './settle';
+import './stillFallbacks';
 
 export type OpenAnimateChoice = 'add' | 'offer';
 
