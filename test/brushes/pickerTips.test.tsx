@@ -50,7 +50,7 @@ afterEach(() => {
 describe('the tip picker in the brush options', () => {
   it('is one button where there were two rows of chips', () => {
     expect(host.querySelectorAll('.bp-chip')).toHaveLength(0);
-    expect(host.querySelectorAll('.pk-btn')).toHaveLength(1);
+    expect(host.querySelectorAll('[data-testid="brush-tips"] .pk-btn')).toHaveLength(1);
     expect(btn().querySelector('.pk-btn-name')!.textContent).toBe('Plain');
     expect(btn().querySelector('canvas')).not.toBeNull();
   });
@@ -63,7 +63,10 @@ describe('the tip picker in the brush options', () => {
       store().setUi((u) => ({ brush: { ...u.brush, tip: { ...u.brush.tip!, shape: 'heart' } } }));
     });
     expect(btn().querySelector('.pk-btn-name')!.textContent).toBe('Heart stamp');
-    expect(btn().querySelector('.pk-btn-sub')!.textContent).toBe('15 tips');
+    // The row says what the tip is, not how long the list is: the count is in the open list.
+    expect(btn().querySelector('.pk-btn-sub')).toBeNull();
+    open();
+    expect(document.querySelector('.pk-pop .pk-label')!.textContent).toContain('15');
   });
 
   it('lists every tip with the stamp shapes folded in, in groups, all open, with no stars or size numbers', () => {
@@ -143,7 +146,13 @@ describe('the tip picker in the brush options', () => {
     P.startNaming(null);
     K.requestPicker();
     act(() => void 0);
-    expect(document.querySelector('.pk-pop')).toBeNull();
+    // The request is for the Brush picker (the one above the parts), never the Tip one.
+    expect(document.querySelector('.pk-pop')?.getAttribute('aria-label') ?? 'Pick a brush').toBe('Pick a brush');
+    expect(btn().getAttribute('aria-expanded')).toBe('false');
+    act(() => root.unmount());
+    document.querySelectorAll('.pk-pop').forEach((n) => n.remove());
+    root = createRoot(host);
+    act(() => root.render(<TipOptions />));
     open();
     act(() => row('Chalk').click());
     expect(K.recentIds()).toEqual([]);

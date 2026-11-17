@@ -10,7 +10,9 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
-import { BrushPresetActions, BrushPresetPicker } from '../../brushes/BrushPresetRow';
+import { BrushPresetActions } from '../../brushes/BrushPresetRow';
+import { PreviewFlash } from '../../brushes/PartsOptions';
+import { useDry } from '../../dry/settings';
 import { TipOptions } from '../../brushes/TipOptions';
 import { PixelStampOptions } from '../../brushes/PixelStampOptions';
 import { readPixelStamp } from '../../brushes/stamps';
@@ -25,6 +27,8 @@ export function useActiveLayerKind(): 'vector' | 'pixel' {
 export function BrushPreview({ brush, color }: { brush: BrushSettings; color: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const theme = useThemeTick();
+  // A line that catches on paper is drawn on the sheet's paper, so the picture is drawn again when the paper changes.
+  const paper = useDry((s) => s.paper);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -47,7 +51,7 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     const size = Math.min(brush.size, h * 0.8);
     // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
     drawPreviewStroke(g, pts, { ...brush, size }, inkFor(c, color, 3));
-  }, [brush, color, theme]);
+  }, [brush, color, theme, paper]);
   return <canvas className="cv-preview" data-control="preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }
 
@@ -67,11 +71,12 @@ function VectorBrushOptions() {
   const range = useBrushRange(false);
   return (
     <div className="cv-options">
-      <BrushPreview brush={brush} color={color} />
-      <BrushPresetPicker title="Brush" />
+      <PreviewFlash>
+        <BrushPreview brush={brush} color={color} />
+      </PreviewFlash>
       <TipOptions />
       <Slider control="size" label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-      <BrushPresetActions />
+      <BrushPresetActions revert={false} />
       <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider control="smoothing" label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />

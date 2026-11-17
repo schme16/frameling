@@ -121,7 +121,7 @@ export function BrushPresetPicker({ side = 'vector', title }: { side?: Side; tit
 }
 
 /** What you can do to the brush in use: keep it, update it, put it back, rename it, delete it, and share your brushes. */
-export function BrushPresetActions({ side = 'vector' }: { side?: Side }) {
+export function BrushPresetActions({ side = 'vector', revert = true }: { side?: Side; revert?: boolean }) {
   useStore((s) => s.ui.brush);
   useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
@@ -143,9 +143,9 @@ export function BrushPresetActions({ side = 'vector' }: { side?: Side }) {
               Update
             </ActionButton>
           )}
-          {changed && (
+          {changed && revert && (
             <ActionButton control="revert" onClick={() => void revertActive()} title="Go back to this brush as it was saved">
-              Revert
+              Back to how it came
             </ActionButton>
           )}
           {own && (

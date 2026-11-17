@@ -4,6 +4,8 @@
 // scrolling back over a brush costs a copy, not a redraw.
 import type { BrushSettings, StrokePoint } from '../core/format';
 import { drawShapeFx } from '../core/render';
+import { getDry } from '../dry/settings';
+import { PAPERS, type PaperKind } from '../dry/paper';
 import { buildStroke } from '../tools/vectorStroke';
 
 /** The points of the long sample: one slow wave with a swell in the middle, as wide as the box. */
@@ -24,9 +26,16 @@ export const PREVIEW_SEED = 7;
  * Draws a sample line the way the canvas draws a real one: through the shape's own effects, so a chalk or charcoal line
  * catches on the paper's tooth here exactly as it does on the page. Every preview of a brush goes through this.
  */
-export function drawPreviewStroke(g: CanvasRenderingContext2D, points: StrokePoint[], brush: BrushSettings, color: string): void {
-  drawShapeFx(g, buildStroke(points, brush, color, 1, false, PREVIEW_SEED));
+export function drawPreviewStroke(g: CanvasRenderingContext2D, points: StrokePoint[], brush: BrushSettings, color: string, paper?: PaperKind): void {
+  const shape = buildStroke(points, brush, color, 1, false, PREVIEW_SEED);
+  // A picture can be drawn on a paper of its own (the stick pictures use the smoothest), not the sheet's.
+  const at = paper ? PAPERS.findIndex((p) => p.id === paper) : -1;
+  const effects = at >= 0 ? shape.effects?.map((e) => (e.kind === 'tooth' ? { ...e, values: { ...e.values, paper: at } } : e)) : undefined;
+  drawShapeFx(g, effects ? { ...shape, effects } : shape);
 }
+
+/** The paper a picture of this brush is drawn on: only a line that catches on paper (a stick) has one to tell. */
+export const paperOf = (brush: BrushSettings, paper?: PaperKind): string => (brush.tip?.dry ? (paper ?? getDry().paper) : '');
 
 /** The size the long sample is drawn at: the brush's own, scaled down to fit the row and capped so a fat brush stays inside. */
 export const sampleSize = (size: number, h: number): number => Math.max(1.2, Math.min(size * 0.6, h * 0.66));
@@ -66,10 +75,10 @@ export function thumbBrush(brush: BrushSettings, kind: ThumbKind, h: number): Br
   return { ...brush, size: sampleSize(brush.size, h), taperStart: brush.taperStart * 0.5, taperEnd: brush.taperEnd * 0.5 };
 }
 
-/** What makes two pictures the same: the brush's looks (not its name), the box, the screen's sharpness and the ink colour. */
-export function thumbKey(brush: BrushSettings, kind: ThumbKind, w: number, h: number, dpr: number, color: string): string {
+/** What makes two pictures the same: the brush's looks (not its name), the box, the screen's sharpness, the ink colour and, for a line that catches on paper, the paper. */
+export function thumbKey(brush: BrushSettings, kind: ThumbKind, w: number, h: number, dpr: number, color: string, paper?: PaperKind): string {
   const { size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd, tip } = brush;
-  return JSON.stringify([kind, w, h, dpr, color, size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd, tip ?? null]);
+  return JSON.stringify([kind, w, h, dpr, color, size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd, tip ?? null, paperOf(brush, paper)]);
 }
 
 /** Most pictures kept. A hundred rows at two sizes and both themes fit with room to spare, and each is a few KB. */
@@ -85,9 +94,9 @@ export function clearThumbs(): void {
 }
 
 /** The picture for a brush at a size, from the cache or drawn now. Null where there is no canvas to draw on. */
-export function thumbFor(brush: BrushSettings, kind: ThumbKind, w: number, h: number, dpr: number, color: string): HTMLCanvasElement | null {
+export function thumbFor(brush: BrushSettings, kind: ThumbKind, w: number, h: number, dpr: number, color: string, paper?: PaperKind): HTMLCanvasElement | null {
   if (typeof document === 'undefined' || w < 1 || h < 1) return null;
-  const key = thumbKey(brush, kind, w, h, dpr, color);
+  const key = thumbKey(brush, kind, w, h, dpr, color, paper);
   const have = cache.get(key);
   if (have) {
     // Most recently used goes to the back, so the oldest is what gets dropped.
@@ -103,7 +112,7 @@ export function thumbFor(brush: BrushSettings, kind: ThumbKind, w: number, h: nu
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   const used = thumbBrush(brush, kind, h);
   const pts = kind === 'dab' ? dabPoints(w, h, used.size, brush.tip?.kind === 'bristle') : samplePoints(w, h);
-  drawPreviewStroke(g, pts, used, color);
+  drawPreviewStroke(g, pts, used, color, paper);
   drawn++;
   cache.set(key, c);
   if (cache.size > THUMB_CACHE_MAX) cache.delete(cache.keys().next().value as string);

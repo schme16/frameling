@@ -55,6 +55,8 @@ import { SIZE_RANGE as SOFT_SIZE } from '../soft/settings';
 import { SIZE_RANGE as DRY_SIZE } from '../dry/settings';
 import { PixelStroke, PixelTip } from './PixelSample';
 import { Stroke, TipThumb } from './Stroke';
+import { StickPicture, TipPicture } from './pictures';
+import { parseStickId } from './stickList';
 import './picker.css';
 
 // ---------------------------------------------------------------- small pieces
@@ -126,6 +128,7 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
   const tip = rows === 'tip';
   // A pen tip row does what the Brush tip command of the same name does (every stamp shape is the Stamp tip).
   const tipKind = tips ? parseTipId(b.id) : null;
+  const stickDry = tips ? parseStickId(b.id) : null;
   const command = tipKind ? `brush.tip.${tipKind.kind ?? 'plain'}` : undefined;
   return (
     <div
@@ -139,9 +142,9 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
       title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >
-      {tip && <Tip brush={brush} spec={spec} scale={scale} on={on} size={!tips} />}
+      {tip && !tips && <Tip brush={brush} spec={spec} scale={scale} on={on} size />}
       <span className="pk-main">
-        {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
+        {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : tips ? (stickDry ? <StickPicture dry={stickDry} h={Math.round((tip ? 30 : 26) * scale)} /> : <TipPicture tip={b.brush.tip} h={Math.round((tip ? 30 : 26) * scale)} />) : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
         <span className="pk-name">
           <span className="pk-name-text">{b.name}</span>
           {showGroup && <em>{groupOf(b)}</em>}

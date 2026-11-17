@@ -1,10 +1,33 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'brush-parts': `A **brush** is a bundle of settings you pick in one click. Inside it are a **tip** (what the line is made of), for chalk and charcoal a **stick** (what you are drawing with), and the size, smoothing and pointy ends. **Paper** is not in the bundle: it belongs to the sheet.
+
+**The four, in one line each:**
+- **Brush:** the whole bundle, like Sketch pencil or Ink. Picking one replaces the tip, the stick and the rest.
+- **Tip:** what the line is made of: smooth, a pen nib, bristles, chalk, charcoal, watercolour or stamps. Picking one gives the brush that tip with its usual settings.
+- **Stick:** only for the **Chalk** and **Charcoal** tips, and only while **Catch on paper** is on. It is vine charcoal, chalk, pastel, crayon or a pencil, and it decides how the line catches on the paper.
+- **Paper:** the sheet's grain, from **Smooth** to **Rough**. Every tool that catches on paper uses the same one, and picking a brush leaves it alone.
+
+**Parts of this brush:** under the **Brush** picker, **Tip** and **Stick** each say **as it comes** or **changed**. **Changed** has its own small arrow that puts that one part back, and **Back to how it came** puts all of it back. The same words are in the palette (**Ctrl+K**): "back to how the brush came", "put the tip back", "put the stick back".
+
+**Why two parts change at once:** picking a **Chalk** tip also gives the brush the **Chalk** stick, so both say **changed**. Pick the stick you want afterwards and only the tip stays marked.
+
+**See what changed:** when you change the brush, the tip, the stick or the paper, the preview at the top shows a tag with what changed, like **Tip: Chalk**, and the row you used lights up for a moment. With **Reduce motion** on, the tag still shows and nothing pulses.
+
+**What the pictures show:** each tip is drawn as a plain stroke, each stick as a stroke at its own width on the smoothest paper, each paper as a swatch of its grain. Only the preview at the top shows what you will really get.
+
+**Good to know:**
+- The marks survive closing Frameling, as long as the brush was a saved one.
+- If **Changing a saved brush** is set to save every change, a brush of yours never shows as changed, because it is saved as you go. The ones that come with Frameling always can.
+- Size is part of the brush, so moving it also shows **Back to how it came**.
+
+Next: [Saved brushes](help:brush-presets), [Brush tips](help:brush-tips), [Paper](help:paper).`,
+
   'brush-presets': `A **saved brush** is the brush you like, kept under a name. Ink for outlines, a soft marker for shading, a thin pencil for sketching: one click to swap, instead of moving four sliders back and forth.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
+**Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, shows the brush you are using, with a stroke of it. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they export as plain vector shapes.
+**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them.
 
 **Soft edges:** airbrush, highlighter, soft brush and smudge are [pixel tools](help:soft-paint), since a vector line can't fade.
 
@@ -13,7 +36,7 @@ export const bodies: Record<string, string> = {
 2. Press **Save as...**, under **Size** (or **Ctrl+K** and type "save this brush").
 3. Give it a name, and a group if you want one, and press **Enter**.
 
-**Changed it afterwards?** A small dot on the brush's name says you've moved a slider since you picked it. Press **Update** to keep the change in that brush, or **Revert** to go back to how it was saved. Your brush in the options always shows what you are drawing with, whatever the saved one says.
+**Changed it afterwards?** The **Tip** and **Stick** under **Parts of this brush** say **changed**. Press **Back to how it came** to go back, or **Update** to keep the change. See [A brush, its tip, its stick and its paper](help:brush-parts).
 
 **Rather it saved every change by itself?** Open **Preferences, Behaviour** and set **Changing a saved brush** to **Yes, save every change**.
 
@@ -59,15 +82,15 @@ You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pa
 help:brush-presets help:brush-tips help:tool-options`,
   'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. Chalk and charcoal catch on paper like the real thing, and stay lines you can reshape.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, shows every tip as a real stroke, including four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
+**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, shows every tip as a plain stroke on its own, including four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 
-**Chalk and Charcoal:** a line that catches on paper. **Stick** is another picker under **Tip**: vine or compressed charcoal, chalk, soft or oil pastel, crayon, or one of three pencils, each as a real stroke. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Each line carries a **Paper tooth** [effect](help:effects). Off gives the older grain of tiny shapes.
+**Chalk and Charcoal:** a line that catches on paper. The **Stick** picker, under **Tip**, picks vine or compressed charcoal, chalk, pastel, crayon or a pencil. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Picking one of these tips gives the brush its usual stick, so both say **changed**: see [A brush, its tip, its stick and its paper](help:brush-parts).
 
-**Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
+**Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is.
 
-**Stamp:** repeats a shape along the line, like a leaf, star or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** taper the ends.
+**Stamp:** repeats a shape along the line, like a leaf, star or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin.
 
-**Matte finish:** any tip. Dries paler and chalkier, with a faint velvety grain, like gouache, and still covers what is under it. Each line carries it as [effects](help:effects).
+**Matte finish:** any tip. Dries paler and chalkier, with a faint velvety grain, like gouache, and still covers what is under it.
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.
