@@ -84,7 +84,7 @@ same file goes on to be boiled down at once, so no big buffer outlives the call.
   (reduced to 256 by `tipFrom` when there are more). A picture with see-through parts is taken as its own shape; a solid one asks
   once (`brush.imageTipReading`: dark parts, light parts or the whole picture), and several colours ask `brush.pixelStampColours`.
 - **Grain and dual from a picture** (`src/dab/texturePicture.ts`): `Grain.picture` and `Dual.picture` are a `TexturePicture`, a square of
-  lightness 8, 16, 32 or 64 across (see-through counts as white paper), saved as base 64 (at most 5.5 KB). `grainTileFromPicture`
+  lightness 8, 16, 32 or 64 across (see-through counts as white paper), saved as base 64 (at most 5.5 KB). A grain read from a brush file may be 128 or 256 across (the whole tile, about 87 KB), so a photographed paper keeps its tooth. `grainTileFromPicture`
   evens the greys out (histogram equalising, like the papers) and repeats them into the 256 tile; the paint catches on the dark
   parts, as it does on a paper's low values. `dualTileFromPicture` lets paint through the darkest `density` of the picture, scaled 1,
   2, 4 or 8 times as far as it fits the tile. `invert` swaps light and dark. Both end as the same `Uint8Array(256*256)` the dab loop

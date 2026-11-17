@@ -21,7 +21,19 @@ const checker = (x: number, y: number): number => ((x >> 2) + (y >> 2)) % 2 === 
 
 describe('a picture boiled down to a texture', () => {
   it('picks the nearest power of two from 8 to 64', () => {
-    expect([1, 5, 8, 11, 12, 30, 45, 64, 100, 4000].map(sideFor)).toEqual([8, 8, 8, 8, 16, 32, 32, 64, 64, 64]);
+    expect([1, 5, 8, 11, 12, 30, 45, 64, 100, 4000].map((n) => sideFor(n))).toEqual([8, 8, 8, 8, 16, 32, 32, 64, 64, 64]);
+  });
+
+  it('a grain read from a brush file may keep the whole tile, 256 across, and reads back', () => {
+    expect([64, 100, 200, 4000].map((n) => sideFor(n, 256))).toEqual([64, 128, 256, 256]);
+    const px = new Uint8ClampedArray(512 * 512 * 4);
+    for (let i = 0; i < 512 * 512; i++) px.set([(i * 31) % 256, (i * 31) % 256, (i * 31) % 256, 255], i * 4);
+    const big = pictureFromPixels(512, 512, px, 256);
+    expect(big.ok && big.picture.side).toBe(256);
+    expect(big.ok && cleanPicture(big.picture)).toEqual(big.ok && big.picture);
+    // A picture you pick yourself is still boiled down to 64.
+    const small = pictureFromPixels(512, 512, px);
+    expect(small.ok && small.picture.side).toBe(64);
   });
 
   it('keeps a small picture as it is and averages a big one', () => {

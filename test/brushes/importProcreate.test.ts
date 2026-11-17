@@ -614,7 +614,13 @@ describe('settings, built to the layout', () => {
     // The depth is the file's own, and the paper thins the paint the way Procreate's does. Movement runs from stamped
     // (0) to rolling (1), and rolling is a paper that stays put.
     expect(withPicture.grain).toMatchObject({ scale: 2, moving: false, invert: true, thin: true, depth: 0.5 });
-    expect(one(brush({ textureMovement: 0.1 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ moving: true });
+    // A grain picture stays put whatever its movement says: Barely There is nearly stamped (0.16) and its picture is
+    // a sparse wisp, which only a paper that stays put and holds the stroke back gives.
+    expect(one(brush({ textureMovement: 0.1 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ moving: false });
+    // It keeps up to the whole tile, 256 across, so its fine tooth survives.
+    const fine = new Uint8ClampedArray(512 * 512 * 4);
+    for (let i = 0; i < 512 * 512; i++) fine.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);
+    expect(one(brush({}, { 'Grain.png': encodePng({ width: 512, height: 512, pixels: fine }) })).dab.grain?.picture?.side).toBe(256);
     expect(withPicture.grain?.picture?.side).toBeGreaterThanOrEqual(8);
     // The grain's brightness is baked into the picture: lifted all the way, there is nothing left to catch on.
     expect(one(brush({ textureBrightness: 1 }, { 'Grain.png': grainPng })).dab.grain).toBe(null);
@@ -630,7 +636,14 @@ describe('settings, built to the layout', () => {
     expect(one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg' }, {}, false)).dab.hardness).toBe(0.65);
     expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
     // A weave thins the paint, at 0.7 of the depth.
-    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7 });
+    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Canvas.jpg', grainDepth: 1, textureScale: 3 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7, scale: 1 });
+    // A soft paper (pastel, watercolour) is drawn from a recipe, fibres and a tooth, because no tidy paper looks like one.
+    const soft = one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 }, {}, false));
+    expect(soft.dab.grain).toMatchObject({ thin: true, depth: 1, scale: 1 });
+    expect(soft.dab.grain!.picture!.side).toBe(256);
+    expect(soft.dab.grain!.paper).toBeUndefined();
+    expect(soft.dab.hardness).toBe(0.3);
+    expect(soft.changed.join(' ')).toMatch(/soft fibrous paper/);
     // A name that says nothing about tooth gets no stand in, and says so.
     const vague = one(brush({ bundledGrainPath: 'Brush-Artery-Ribbons.png', grainDepth: 0.7 }));
     expect(vague.dab.grain).toBe(null);

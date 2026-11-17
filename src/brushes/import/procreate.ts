@@ -12,12 +12,13 @@ import { cleanDab } from '../../dab/maths';
 import type { PaperKind } from '../../dry/paper';
 import { cleanCurve } from '../../dab/curve';
 import { type DynRoute, type DynSource, type DynTarget, MAX_ROUTES } from '../../dab/dynamics';
-import { pictureFromPixels } from '../../dab/texturePicture';
+import { MAX_FILE_TEXTURE_SIDE, pictureFromPixels } from '../../dab/texturePicture';
 import { parsePlist, PlistDate, Uid, unarchive, type PlistDict, type PlistValue } from './bplist';
 import { decodeTipPng } from './krita';
 import { tipFrom, type PixelReader } from './tip';
 import { MAX_SOFT_STAMP } from '../stamps';
 import { BrushProblem, plural, type ImportedBrush, type ImportResult } from './types';
+import { fibrePaper } from './standInPaper';
 import { openZip, type Zip, type ZipItem } from './zip';
 
 /** The most one brush's settings may unpack to (the biggest real ones are about 10 KB). */
@@ -84,16 +85,19 @@ const BLANK_GRAIN = /blank/i;
  * names it and draws a smooth line, but that is its grain being stamped (movement 0.04), where every dab finds new
  * paper and they fill each other in. Dry Ink 1 names the same paper, rolling, and its stroke is rough all through.
  */
-const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; grit: boolean; share: number; what: string }[] = [
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; grit: boolean; share: number; what: string }[] = [
   // Grit (charcoal, graphite, sand): the paint catches on the peaks first, so the soft edge of the tip and a light
   // touch break into specks, and the middle of a firm stroke fills in nearly solid. That is Procreate's own picture of
   // the 6B Pencil: 97% covered in the middle with pin holes through it, ragged and speckled at the edge and the ends.
   // So it keeps Frameling's own way with paper (see `grainCut`), and holds the whole stroke back only a little.
   { words: /charcoal|coarse|corse|rough|grit|chalk|sand|noise|grain|graphite|pencil|concrete|stone|gravel|splatter/i, paper: 'fine', grit: true, share: 0.75, what: 'a gritty paper' },
-  // A weave thins the paint, as Procreate's grain does. Frameling's laid paper has its bumps spread evenly from pit to
-  // peak, which bites harder than a photograph of paper, so it takes 0.7 of the depth: Procreate's own picture of
-  // Shenbot's Background brush (Pastel Paper, full depth) is about two thirds covered in the middle of the stroke.
-  { words: /pastel|canvas|cotton|linen|watercolou?r|laid|weave|paper|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
+  // A soft paper (pastel, watercolour, cotton) is drawn here, with fibres and a tooth (see standInPaper.ts), because
+  // none of Frameling's tidy papers looks like one: the laid paper that stood in at first is a ruled grid, and
+  // Procreate's own picture of Shenbot's Background brush (Pastel Paper) is wavy fibres lying across the stroke.
+  { words: /pastel|watercolou?r|cotton|paper|fibre|fiber|felt|wash/i, paper: 'laid', fibre: true, grit: false, share: 1, what: 'a soft fibrous paper' },
+  // A weave (canvas, linen) is Frameling's laid paper, thinning the paint as Procreate's grain does. Its bumps are
+  // spread evenly from pit to peak, which bites harder than a photograph of cloth, so it takes 0.7 of the depth.
+  { words: /canvas|linen|laid|weave|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
 ];
 
 /** How much of a gritty stand in's depth holds the whole stroke back: enough for pin holes, not enough to grey it. */
@@ -288,7 +292,9 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     // A brush with a paper is a pencil or a chalk, and Procreate's tips for those fade at the edge, which is where the
     // paper shows through. A pen with no paper keeps a hard edge.
     const hasPaper = !!pics.grain || (!!s.str('bundledGrainPath') && !BLANK_GRAIN.test(s.str('bundledGrainPath') ?? '') && PAPER_STAND_INS.some((g) => g.words.test(s.str('bundledGrainPath') ?? '')));
-    raw.hardness = hasPaper ? 0.65 : 1;
+    // A soft paper's brush is softer still: Background's edge is a blur in Procreate's picture, the pencils' a ragged line.
+    const softPaper = !pics.grain && !!PAPER_STAND_INS.find((g) => g.words.test(s.str('bundledGrainPath') ?? ''))?.fibre;
+    raw.hardness = softPaper ? 0.3 : hasPaper ? 0.65 : 1;
     const named = (s.str('bundledShapePath') ?? '').replace(/^.*[/\\]/, '').slice(0, 40);
     changed.push(`Its tip is one of Procreate's own built in shapes${named ? ` ("${named}")` : ''}, which is not in the file, so it came as a plain round tip.`);
   }
@@ -456,16 +462,19 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
         const k = 1 + contrast;
         for (let i = 0; i < g.px.length; i += 4) for (let c = 0; c < 3; c++) g.px[i + c] = clamp((g.px[i + c] - 127.5) * k + 127.5 + bright * 255, 0, 255);
       }
-      const r = pictureFromPixels(g.w, g.h, g.px);
+      // The whole tile's worth of the picture is kept (256 across), not the 64 a picture you pick is boiled down to:
+      // the fine tooth is what makes Barely There a wisp of specks, and at 64 it was a few grey lumps.
+      const r = pictureFromPixels(g.w, g.h, g.px, MAX_FILE_TEXTURE_SIDE);
       if (r.ok) {
         raw.grain = {
           picture: r.picture,
           ...(s.bool('textureInverted') ? { invert: true } : {}),
           depth: clamp(s.num('grainDepth', 0.8), 0, 1),
           scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
-          // Procreate's movement runs from stamped (0: every dab carries the grain with it) to rolling (1: the grain
-          // lies still under the stroke like paper). So rolling is our paper that stays put.
-          moving: s.num('textureMovement', 1) < 0.5,
+          // A grain picture stays put under the stroke. Procreate's movement runs from stamped (0) to rolling (1),
+          // but Barely There is nearly stamped (0.16) and its picture is a sparse wisp, which only a paper that
+          // stays put and holds the stroke back gives: one that moved filled it in solid.
+          moving: false,
           thin: true,
         };
         changed.push('Its grain picture came as a small repeating paper. Which way round the light and dark parts catch the paint, and how big the paper is, have not been checked against Procreate.');
@@ -478,9 +487,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     const stand = PAPER_STAND_INS.find((g) => g.words.test(grainName));
     if (stand) {
       raw.grain = {
-        paper: stand.paper,
+        ...(stand.fibre ? { picture: fibrePaper() } : { paper: stand.paper }),
         depth: clamp(s.num('grainDepth', 1) * stand.share, 0.1, 1),
-        scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
+        // `textureScale` is about Procreate's own picture of the paper, so it says nothing about a stand in's.
+        scale: 1,
         moving: s.num('textureMovement', 1) < 0.5,
         ...(stand.grit ? { hold: GRIT_HOLD } : { thin: true }),
       };

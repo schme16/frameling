@@ -6,8 +6,11 @@
  */
 import { TILE } from '../dry/paper';
 
-export const TEXTURE_SIDES = [8, 16, 32, 64] as const;
+export const TEXTURE_SIDES = [8, 16, 32, 64, 128, 256] as const;
+/** The most a picture you pick is boiled down to. */
 export const MAX_TEXTURE_SIDE = 64;
+/** The most a grain read from a brush file keeps: the whole tile, so the fine tooth of a photographed paper survives. */
+export const MAX_FILE_TEXTURE_SIDE = 256;
 const SIDE_MIN = TEXTURE_SIDES[0];
 
 /** A texture picture as it is saved: `data` is how light each pixel is (0 black, 255 white), one byte a pixel, row by row, in base 64. */
@@ -55,9 +58,9 @@ export function cleanPicture(raw: unknown): TexturePicture | null {
 export const samePicture = (a: TexturePicture | undefined, b: TexturePicture | undefined): boolean => (!a || !b ? !a && !b : a.side === b.side && a.data === b.data);
 
 /** The side a picture of this longer side is boiled down to: the nearest power of two, from 8 to 64. */
-export function sideFor(longer: number): number {
+export function sideFor(longer: number, most: number = MAX_TEXTURE_SIDE): number {
   const p = 2 ** Math.round(Math.log2(Math.max(1, longer)));
-  return Math.min(MAX_TEXTURE_SIDE, Math.max(SIDE_MIN, p));
+  return Math.min(most, Math.max(SIDE_MIN, p));
 }
 
 export type PictureResult = { ok: true; picture: TexturePicture } | { ok: false; why: 'empty' | 'flat' };
@@ -67,9 +70,9 @@ export type PictureResult = { ok: true; picture: TexturePicture } | { ok: false;
  * see-through counting as white paper, so a dark shape on a clear background is dark where the shape is. Flat pictures are
  * refused: they would make no texture at all.
  */
-export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array): PictureResult {
+export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array, most: number = MAX_TEXTURE_SIDE): PictureResult {
   if (!(w >= 1 && h >= 1) || rgba.length < w * h * 4) return { ok: false, why: 'empty' };
-  const side = sideFor(Math.max(w, h));
+  const side = sideFor(Math.max(w, h), most);
   const out = new Uint8Array(side * side);
   let lo = 255;
   let hi = 0;
