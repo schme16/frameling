@@ -69,6 +69,7 @@ export const HISTORY: History = {
     { on: D, n: 561, why: 'selection-gradients: the selection edge card (Ctrl+Alt+F), saving a selection and the saved list. The two angular gradient commands are palette only, left out of the menus because the Angular buttons do the same job and Tools is at its cap.' },
     { on: D, n: 577, why: 'pixel-brush-engine: sixteen more ready-made pixel brushes in the picker (Pen and speed, Grain and texture, Colour), each one a palette command to use it, in a still and in a drawing with animation alike (a brush has nothing to do with animation), so the gap between the two is unchanged. The six commands that flip a setting need a pixel layer, so they are not counted here.' },
     { on: D, n: 579, why: 'diamond-gradient: the two diamond gradient commands (the Diamond button in the Colours panel, and the Diamond shape in the pixel Gradient options). Palette only, like the angular ones, because the buttons do the same job and Tools is at its cap.' },
+    { on: '2026-11-17', n: 588, why: 'sketch-and-ink: nine more ready-made pixel brushes in a new Sketch and ink group (inking pens, pencils, a felt marker, a dry bristle brush, a canvas brush), each one a palette command to use it, like the sixteen pixel-brush-engine added. Nothing came out instead: a brush in the library is a command so it can be found by name.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -87,6 +88,7 @@ export const HISTORY: History = {
     { on: D, n: 735, why: 'brush-engine2: Change how the pen feels is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
     { on: D, n: 736, why: 'brush-engine2: Next paint mode is one more entry in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
     { on: '2026-11-16', n: 719, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, so a still has 17 fewer menu entries and the same palette.' },
+    { on: '2026-11-17', n: 728, why: 'sketch-and-ink: the same nine brushes each have an entry under the brush lists, as every brush in the library does.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -99,6 +101,7 @@ export const HISTORY: History = {
     { on: D, n: 610, why: 'selection-gradients: the same three as a still gains, because selecting and gradients have nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 626, why: 'pixel-brush-engine: the same sixteen as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 628, why: 'diamond-gradient: the same two as a still gains, because gradients have nothing to do with animation, so the gap between the two sides does not move.' },
+    { on: '2026-11-17', n: 637, why: 'sketch-and-ink: the same nine as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -117,6 +120,7 @@ export const HISTORY: History = {
     { on: D, n: 859, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: D, n: 860, why: 'brush-engine2: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: '2026-11-16', n: 843, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, and none of them has anything to do with animation.' },
+    { on: '2026-11-17', n: 852, why: 'sketch-and-ink: the same nine as a still gains, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };
