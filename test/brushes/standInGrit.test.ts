@@ -97,6 +97,32 @@ describe('the pastel paper', () => {
   it('lies a little longer along the line than down it', () => {
     expect(link(p, 3, 0)).toBeGreaterThan(link(p, 0, 3) + 0.05);
   });
+  it('has a faint knit in it: rows of stitches about 14 pixels apart, 20 across, that repeat on their own', () => {
+    // Procreate's picture of Background has rows about 14 pixels apart with stitches about 20 across (an
+    // autocorrelation peak of 0.19 at a 20 pixel step along the line). A tile has 18 rows and 13 stitches.
+    const at = read(p);
+    const corr = (dx: number, dy: number): number => {
+      let sum = 0;
+      let a = 0;
+      let b = 0;
+      let mean = 0;
+      for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) mean += at(x, y) / 65536;
+      for (let y = 0; y < 256; y++)
+        for (let x = 0; x < 256; x++) {
+          const u = at(x, y) - mean;
+          const v = at(x + dx, y + dy) - mean;
+          sum += u * v;
+          a += u * u;
+          b += v * v;
+        }
+      return sum / Math.sqrt(a * b);
+    };
+    // A whole row (256 / 18) and a whole stitch (256 / 13) are not whole pixels, so look at the nearest step.
+    const along = Math.max(corr(20, 0), corr(19, 0), corr(21, 0));
+    const away = Math.min(corr(10, 0), corr(0, 7));
+    expect(along).toBeGreaterThan(0.1);
+    expect(along).toBeGreaterThan(away + 0.1);
+  });
 });
 
 describe('the charcoal paper', () => {

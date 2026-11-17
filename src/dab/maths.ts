@@ -26,6 +26,8 @@ export interface Taper {
   size: number;
   /** 0 to 1: how much of the opacity it takes away at the very tip. */
   opacity: number;
+  /** The same at the start of the line, when it differs (a Procreate taper fades the end it has a length for). Left out: the same as `opacity`. */
+  startOpacity?: number;
 }
 export const TAPER_RANGE = { min: 0, max: 60 };
 export const DEFAULT_TAPER: Taper = { start: 4, end: 4, size: 1, opacity: 0 };
@@ -36,17 +38,19 @@ export function cleanTaper(raw: unknown): Taper | null {
   const r = raw as Record<string, unknown>;
   const n = (v: unknown, hi: number, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(hi, Math.max(0, v)) * 1000) / 1000 : d);
   const t: Taper = { start: n(r.start, TAPER_RANGE.max, 0), end: n(r.end, TAPER_RANGE.max, 0), size: n(r.size, 1, 1), opacity: n(r.opacity, 1, 0) };
+  const so = typeof r.startOpacity === 'number' && Number.isFinite(r.startOpacity) ? n(r.startOpacity, 1, t.opacity) : t.opacity;
+  if (so !== t.opacity) t.startOpacity = so;
   return (t.start > 0 || t.end > 0) && (t.size > 0 || t.opacity > 0) ? t : null;
 }
-export const sameTaper = (a: Taper | null | undefined, b: Taper | null | undefined): boolean => (!a || !b ? !a === !b : a.start === b.start && a.end === b.end && a.size === b.size && a.opacity === b.opacity);
+export const sameTaper = (a: Taper | null | undefined, b: Taper | null | undefined): boolean => (!a || !b ? !a === !b : a.start === b.start && a.end === b.end && a.size === b.size && a.opacity === b.opacity && (a.startOpacity ?? a.opacity) === (b.startOpacity ?? b.opacity));
 
 /** True when the brush's paper stops paint that cannot reach a pit (see texture.ts), so faint paint is specks on the peaks. */
 export const gritty = (b: DabBrush): boolean => !!b.grain && b.grain.depth > 0 && !b.grain.thin;
 
 /** How much of a dab's width and opacity is left `along` pixels into a taper `length` pixels long (the tip is at 0). */
-export function taperAt(t: Taper, along: number, length: number): { size: number; cap: number } {
+export function taperAt(t: Taper, along: number, length: number, opacity: number = t.opacity): { size: number; cap: number } {
   const k = length <= 0 ? 1 : Math.min(1, Math.max(0, along / length));
-  return { size: 1 - t.size * (1 - k), cap: 1 - t.opacity * (1 - k) };
+  return { size: 1 - t.size * (1 - k), cap: 1 - opacity * (1 - k) };
 }
 export const TIP_SHAPES: TipShape[] = ['round', 'square', 'picture'];
 
@@ -503,7 +507,7 @@ export class DabPath {
     let cap = 1;
     const t = this.b.taper;
     if (t && t.start > 0) {
-      const k = taperAt(t, this.travelled, t.start * this.b.size);
+      const k = taperAt(t, this.travelled, t.start * this.b.size, t.startOpacity);
       size = Math.max(0.5, size * k.size);
       // Under a paper that stops the paint a fainter tip is fewer specks, not an even grey: there it thins the flow.
       if (gritty(this.b)) flow *= k.cap;
