@@ -6,7 +6,7 @@ import { unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { parseBplist, parsePlist, parsePlistXml, PLIST_LIMITS, PlistDate, Uid, unarchive, type PlistValue } from '../../src/brushes/import/bplist';
 import { readBrushFile, sniff } from '../../src/brushes/import';
-import { PIXELS_PER_SIZE } from '../../src/brushes/import/procreate';
+import { Budget, brushFromArchive, PIXELS_PER_SIZE } from '../../src/brushes/import/procreate';
 import { bufferSurface, DabStroke } from '../../src/dab/stroke';
 import { encodePng } from '../../src/io/png';
 
@@ -632,16 +632,178 @@ describe('settings, built to the layout', () => {
     for (const w of [/smoothing/, /metallic/, /burnt edges/, /wet edges/, /glazing/, /bleed and blur/, /direction or roll/, /fixed tip angle/]) expect(said).toMatch(w);
   });
 
-  it('a blend mode is left out with its number, a dual brush is left out, the wet mix is kept', () => {
+  it('a blend mode is left out with its number, the wet mix is kept, and a dual brush is a laid second tip', () => {
     const files = { 'Sub01/Brush.archive': archive({ name: 'Second' }), 'Sub01/Shape.png': discPng(32, 255, 0) };
     const b = one(brush({ blendMode: 11, dynamicsMix: 0.6 }, files));
     expect(b.dropped.join(' ')).toMatch(/blend mode \(number 11\)/);
-    expect(b.dropped.join(' ')).toMatch(/dual brush/);
+    expect(b.dropped.join(' ')).not.toMatch(/dual brush/);
+    expect(b.changed.join(' ')).toMatch(/dual brush/);
+    expect(b.dab.dual?.laid).toBeDefined();
     expect(b.dab.wet).toBe(0.6);
     expect(b.dab.blend).toBe('normal');
     // Procreate's inner brush is not a brush of its own in a set.
     const r = readBrushFile(brush({}, files), 'x.brush');
     expect(r.ok && r.brushes).toHaveLength(1);
+  });
+
+  describe('a dual brush (Sub01)', () => {
+    /** A plus sign: not a disc, so the second tip stays a picture. */
+    const plusPng = (side: number): Uint8Array => {
+      const px = new Uint8ClampedArray(side * side * 4);
+      for (let y = 0; y < side; y++)
+        for (let x = 0; x < side; x++) {
+          const on = Math.abs(x - side / 2) < side * 0.08 || Math.abs(y - side / 2) < side * 0.08;
+          px.set([on ? 255 : 0, on ? 255 : 0, on ? 255 : 0, 255], (y * side + x) * 4);
+        }
+      return encodePng({ width: side, height: side, pixels: px });
+    };
+    const sub = (settings: Record<string, Plain>, shape: Uint8Array | null = discPng(64, 255, 0)) => ({
+      'Sub01/Brush.archive': archive({ name: 'Second', ...settings }),
+      ...(shape ? { 'Sub01/Shape.png': shape } : {}),
+    });
+    const main = { paintSize: 0.4, maxSize: 1, plotSpacing: 0.1 };
+    const plain = one(brush(main));
+
+    it('is read: its tip, its size against the first, its spacing and scatter', () => {
+      const b = one(brush(main, sub({ paintSize: 0.2, maxSize: 1, plotSpacing: 0.25, plotJitter: 0.5, shapeScatter: 0.3 })));
+      const l = b.dab.dual?.laid;
+      expect(l).toBeDefined();
+      // A plain disc tip is a round tip; half the first brush's size; spacing counted in what shows of the tip (a disc fills 70% of its picture).
+      expect(l?.tip).toBe('round');
+      expect(l?.size).toBeCloseTo(0.5, 1);
+      expect(l?.spacing).toBeGreaterThan(0.3);
+      expect(l?.spacing).toBeLessThan(0.45);
+      expect(l?.scatter).toBeGreaterThan(0);
+      expect(l?.angleJitter).toBeCloseTo(0.3, 2);
+      const said = b.changed.join(' | ');
+      expect(said).toMatch(/dual brush \(a second brush the first is painted through\) came as a second round tip/);
+      expect(said).toMatch(/have not been checked against Procreate/);
+      expect(b.dropped.join(' ')).not.toMatch(/dual/);
+    });
+
+    it('a textured second tip is kept as a picture, read light with the same gamma as the first', () => {
+      const b = one(brush(main, sub({ paintSize: 0.2, maxSize: 1 }, plusPng(64))));
+      const l = b.dab.dual?.laid;
+      expect(l?.tip).toBe('picture');
+      expect(l?.picture?.w).toBeGreaterThan(8);
+      // The plus has paint in its arms and none in its corners (white paints).
+      const st = l!.picture!;
+      expect(st.cells[Math.floor(st.h / 2) * st.w + Math.floor(st.w / 2)]).not.toBe(0);
+      expect(st.cells[0]).toBe(0);
+    });
+
+    it('an inverted second tip paints where it is dark', () => {
+      const a = one(brush(main, sub({ paintSize: 0.2, maxSize: 1 }, plusPng(64)))).dab.dual?.laid?.picture;
+      const b = one(brush(main, sub({ paintSize: 0.2, maxSize: 1, shapeInverted: true }, plusPng(64)))).dab.dual?.laid?.picture;
+      expect(a && b).toBeTruthy();
+      expect(a!.cells[0]).toBe(0);
+      expect(b!.cells[0]).not.toBe(0);
+    });
+
+    it('count and spacing go together, as they do for the first brush', () => {
+      const one1 = one(brush(main, sub({ paintSize: 0.2, plotSpacing: 0.8 }))).dab.dual!.laid!;
+      const five = one(brush(main, sub({ paintSize: 0.2, plotSpacing: 0.8, shapeCount: 4 / 15 }))).dab.dual!.laid!;
+      expect(five.spacing).toBeCloseTo(one1.spacing / 5, 1);
+    });
+
+    it('a plain disc far wider than the first brush lets all of it through, so it is left out and says so', () => {
+      const b = one(brush(main, sub({ paintSize: 0.9, maxSize: 1 })));
+      expect(b.dab.dual).toBeNull();
+      expect(b.changed.join(' ')).toMatch(/lets all of it through/);
+      expect(b.dropped.join(' ')).not.toMatch(/dual/);
+    });
+
+    it('with no size of its own to go by, the two are taken as the same width', () => {
+      const l = one(brush({ paintSize: 0.3 }, sub({}))).dab.dual?.laid;
+      expect(l?.size).toBeCloseTo(1, 1);
+    });
+
+    it('a blend mode other than the plain one is named, and the mask is laid all the same', () => {
+      const ten = one(brush({ ...main, dualBlendMode: 10 }, sub({ paintSize: 0.2 })));
+      expect(ten.dab.dual?.laid).toBeDefined();
+      expect(ten.changed.join(' ')).toMatch(/blend mode number 10/);
+      expect(ten.changed.join(' ')).toMatch(/only as a mask/);
+      const zero = one(brush({ ...main, dualBlendMode: 0 }, sub({ paintSize: 0.2 })));
+      expect(zero.changed.join(' ')).not.toMatch(/blend mode number/);
+    });
+
+    it('a second brush that is not readable costs only the dual brush', () => {
+      for (const files of [
+        { 'Sub01/Brush.archive': text('not a property list at all'), 'Sub01/Shape.png': discPng(32, 255, 0) },
+        { 'Sub01/Brush.archive': bplist({ hello: 'world' }) },
+        sub({ paintSize: 0.2 }, text('not a png')),
+        sub({ paintSize: 0.2 }, (() => {
+          const head = discPng(8, 255, 0).slice();
+          new DataView(head.buffer).setUint32(16, 100000, false);
+          new DataView(head.buffer).setUint32(20, 100000, false);
+          return head;
+        })()),
+      ]) {
+        const b = one(brush(main, files));
+        expect(b.dab.dual).toBeNull();
+        expect(b.dropped.join(' ')).toMatch(/dual brush/);
+        // The first brush is exactly what it was without a second one.
+        expect(b.dab).toEqual(plain.dab);
+      }
+    });
+
+    it('a second brush that is not there at all (a Sub01 folder holding only a picture) costs only the dual brush', () => {
+      const b = one(brush(main, { 'Sub01/Brush.archive': archive({ name: 'Second' }).slice(0, 0) }));
+      expect(b.dab.dual).toBeNull();
+      expect(b.dab).toEqual(plain.dab);
+    });
+
+    it('a brush with no Sub01 is unchanged, and keeps no dual', () => {
+      expect(plain.dab.dual).toBeNull();
+      expect(plain.changed.join(' ')).not.toMatch(/dual/);
+      expect(plain.dropped.join(' ')).not.toMatch(/dual/);
+    });
+
+    it('the first brush is the same with a second one as without it (only the dual is added)', () => {
+      const b = one(brush(main, sub({ paintSize: 0.2 })));
+      expect({ ...b.dab, dual: null }).toEqual({ ...plain.dab, dual: null });
+    });
+
+    it('the second tip counts against the file\'s pixel budget; running out costs only the dual brush', () => {
+      const first = readBrushFile(brush(main, sub({ paintSize: 0.2 })), 'x.brush');
+      expect(first.ok).toBe(true);
+      const budget = new Budget();
+      budget.left = 64 * 64 + 100;
+      const b = brushFromArchive(
+        archive({ name: 'Built', ...main }),
+        { shape: discPng(64, 255, 0), grain: null, thumb: null, sub: true, subArchive: archive({ name: 'Second', paintSize: 0.2 }), subShape: discPng(64, 255, 0) },
+        'x',
+        budget,
+      );
+      expect(b.dab.dual).toBeNull();
+      expect(b.dropped.join(' ')).toMatch(/dual brush \(a second brush the first is painted through\): That file has more tip pictures/);
+      expect(b.dab.tip).toBe('picture');
+    });
+
+    it('a zip bomb as the second tip still ends the file, as it does for the first', () => {
+      const z = zipSync({ 'Brush.archive': archive({ name: 'B' }), 'Sub01/Brush.archive': archive({ name: 'S' }), 'Sub01/Shape.png': new Uint8Array(60 * 1024 * 1024) }, { level: 9 });
+      const r = readBrushFile(z, 'x.brush');
+      expect(r.ok).toBe(false);
+      expect(!r.ok && r.error).toMatch(/far more than/);
+    });
+
+    it('its second brush is laid in a real stroke: paint stays near the line', () => {
+      const b = one(brush({ paintSize: 0.3, maxSize: 1, plotSpacing: 0.1 }, sub({ paintSize: 0.1, maxSize: 1, plotSpacing: 0.05 })));
+      expect(b.dab.dual?.laid).toBeDefined();
+      const W = 200;
+      const H = 140;
+      const run = (dab: typeof b.dab): number => {
+        const px = new Uint8ClampedArray(W * H * 4).fill(255);
+        const s = new DabStroke(bufferSurface(px, W, H), { brush: { ...dab, size: 40, dynamics: [], taper: null }, color: [0, 0, 0, 255], edge: 'smooth', seed: 3 });
+        for (let i = 0; i <= 10; i++) s.moveTo({ x: 30 + i * 14, y: 70 }, 40, 1);
+        s.finish();
+        let far = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.abs(y - 70) > 14 && px[(y * W + x) * 4] < 200) far++;
+        return far;
+      };
+      expect(run({ ...b.dab, dual: null })).toBeGreaterThan(0);
+      expect(run(b.dab)).toBe(0);
+    });
   });
 
   it('a grain picture becomes the paper, with a note; a named built in grain is left out; the blank one is no grain', () => {

@@ -5,6 +5,7 @@
  * paper added there turns up here, and the other way round. Pure functions, no DOM.
  */
 import { isPaper, paperTile, TILE, type PaperKind } from '../dry/paper';
+import { cleanLaid, sameLaid, type LaidTip } from './dualLaid';
 import { cleanPicture, dualPictureScale, dualTileFromPicture, grainTileFromPicture, samePicture, scaleTile, type TexturePicture } from './texturePicture';
 
 /** A paper the paint catches on. */
@@ -56,6 +57,11 @@ export interface Dual {
   invert?: boolean;
   /** With a picture: how many pixels one picture pixel covers (1, 2, 4 or 8, as far as the picture fits the tile). */
   scale?: number;
+  /**
+   * A second brush laid along the stroke on its own spacing, instead of a field of dots: the first brush only paints where
+   * this one's stroke is (its paint is multiplied by it). Set, `tip`, `size`, `density`, `picture` and `cut` do not count.
+   */
+  laid?: LaidTip;
 }
 
 export const GRAIN_SCALE = { min: 1, max: 8 };
@@ -92,8 +98,10 @@ export function cleanDual(raw: unknown): Dual | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   const picture = cleanPicture(r.picture);
+  const laid = cleanLaid(r.laid);
   return {
     ...(picture ? { picture, ...(r.invert === true ? { invert: true } : {}), scale: dualPictureScale(picture.side, typeof r.scale === 'number' ? r.scale : 1) } : {}),
+    ...(laid ? { laid } : {}),
     tip: r.tip === 'square' ? 'square' : 'round',
     size: Math.round(num(r.size, DUAL_SIZE.min, DUAL_SIZE.max, DEFAULT_DUAL.size)),
     density: r3(num(r.density, DUAL_DENSITY.min, DUAL_DENSITY.max, DEFAULT_DUAL.density)),
@@ -102,7 +110,7 @@ export function cleanDual(raw: unknown): Dual | null {
 }
 
 export const sameGrain = (a: Grain | null, b: Grain | null): boolean => (a === null || b === null ? a === b : a.paper === b.paper && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && Math.abs(a.depth - b.depth) < 1e-6 && a.scale === b.scale && !!a.smooth === !!b.smooth && a.moving === b.moving && !!a.thin === !!b.thin && Math.abs((a.hold ?? 1) - (b.hold ?? 1)) < 1e-6);
-export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null || b === null ? a === b : a.tip === b.tip && a.size === b.size && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && (a.scale ?? 1) === (b.scale ?? 1) && Math.abs(a.density - b.density) < 1e-6 && a.cut === b.cut);
+export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null || b === null ? a === b : a.tip === b.tip && a.size === b.size && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && (a.scale ?? 1) === (b.scale ?? 1) && Math.abs(a.density - b.density) < 1e-6 && a.cut === b.cut && sameLaid(a.laid, b.laid));
 
 /**
  * How much of a dab's paint a pixel catches, given the paint on offer (0 to 1) and the paper's height there (0 a pit, 1 a

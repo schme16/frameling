@@ -14,7 +14,8 @@ import type { BlendMode } from '../core/format';
 import { blendPaint } from './blend';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
-import { DabPath, gritty, makeRng, mirrorDabs, samplerFor, snapAxis, taperAt, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
+import { cleanDab, DabPath, gritty, makeRng, mirrorDabs, samplerFor, snapAxis, taperAt, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
+import { LAID_MAX_PIXELS } from './dualLaid';
 import { dualAt, dualTile, grainCut, grainIsSmooth, grainTile, tileSide } from './texture';
 import { TILE, type PaperKind } from '../dry/paper';
 
@@ -139,6 +140,11 @@ export class DabStroke {
   private readonly dual: Uint8Array | null;
   private readonly dualOx: number;
   private readonly dualOy: number;
+  // A dual brush laid along the stroke: its own path of dabs, and what it has drawn so far (how much of the first brush may land on each pixel).
+  private readonly laidPath: DabPath | null;
+  private readonly laidBrush: DabBrush | null;
+  private readonly laidShare: number;
+  private readonly maskTiles: (Float32Array | undefined)[] | null;
   private gOx = 0;
   private gOy = 0;
   private readonly look: () => number;
@@ -171,6 +177,7 @@ export class DabStroke {
     this.h = surface.height;
     this.across = Math.ceil(this.w / TS);
     this.tiles = new Array(this.across * Math.ceil(this.h / TS));
+    this.maskTiles = p.brush.dual?.laid ? new Array(this.tiles.length) : null;
     this.crisp = p.edge === 'crisp';
     this.mixTiles = p.brush.wet > 0 && !p.pick && !(p.brush.tip === 'picture' && p.brush.picture?.keep) ? new Array(this.tiles.length) : null;
     this.blend = p.brush.blend;
@@ -186,7 +193,11 @@ export class DabStroke {
     this.grainThin = !!g?.thin;
     this.grainHold = (g?.depth ?? 0) * (g?.hold ?? 1);
     const d = p.brush.dual;
-    this.dual = d ? dualTile(d) : null;
+    this.dual = d && !d.laid ? dualTile(d) : null;
+    const l = d?.laid;
+    this.laidBrush = l ? cleanDab({ tip: l.tip, picture: l.picture ?? null, size: 1, hardness: l.hardness, roundness: l.roundness, spacing: l.spacing, scatter: l.scatter, angleJitter: l.angleJitter, follow: l.follow, aliased: false, dynamics: [], taper: null }) : null;
+    this.laidShare = l ? l.size : 0;
+    this.laidPath = this.laidBrush ? new DabPath(this.laidBrush, makeRng((p.seed ?? 1) + 313)) : null;
     const start = makeRng((p.seed ?? 1) + 77);
     this.dualOx = (start() * TILE) | 0;
     this.dualOy = (start() * TILE) | 0;
@@ -322,6 +333,7 @@ export class DabStroke {
     const goy = this.gOy;
     const dox = this.dualOx;
     const doy = this.dualOy;
+    const mask = this.maskTiles;
     for (let y = y0; y <= y1; y++) {
       const dy = y + 0.5 - d.y;
       let x0 = Math.floor(d.x - reach);
@@ -372,8 +384,73 @@ export class DabStroke {
             if (!this.grainMoving) ceiling = dabCap * (1 - hold * (1 - height));
           }
         }
+        if (mask !== null) {
+          // The second brush's stroke is a mask on the whole stroke: the pixel can only get as much paint as the mask lets through.
+          const m = this.maskAt(x, y);
+          if (m <= 0) continue;
+          ceiling *= m;
+        }
         this.touch(x, y, add, cell, ceiling);
       }
+    }
+  }
+
+  /** How much of the second brush's stroke is on a pixel so far, 0 to 1. */
+  private maskAt(x: number, y: number): number {
+    if (this.wrapEdges) {
+      x = wrap(x, this.w);
+      y = wrap(y, this.h);
+    } else if (x < 0 || y < 0 || x >= this.w || y >= this.h) return 0;
+    const t = this.maskTiles![(y >> SHIFT) * this.across + (x >> SHIFT)];
+    return t ? t[(y & MASK) * TS + (x & MASK)] : 0;
+  }
+
+  /** One dab of the second brush: adds what its tip covers to the mask (two dabs over a pixel make it more covered, never less). */
+  private stampMask(d: Dab, sm: Sampler): void {
+    const reach = sm.reach + 1;
+    const y0 = Math.floor(d.y - reach);
+    const y1 = Math.ceil(d.y + reach);
+    const circle = this.laidBrush!.tip === 'round' && this.laidBrush!.roundness === 1;
+    const r2 = reach * reach;
+    const tiles = this.maskTiles!;
+    for (let y = y0; y <= y1; y++) {
+      const dy = y + 0.5 - d.y;
+      let x0 = Math.floor(d.x - reach);
+      let x1 = Math.ceil(d.x + reach);
+      if (circle) {
+        const c = Math.sqrt(Math.max(0, r2 - dy * dy));
+        x0 = Math.max(x0, Math.floor(d.x - c));
+        x1 = Math.min(x1, Math.ceil(d.x + c));
+      }
+      let py = y;
+      if (this.wrapEdges) py = wrap(y, this.h);
+      else if (y < 0 || y >= this.h) continue;
+      if (!this.wrapEdges) {
+        x0 = Math.max(x0, 0);
+        x1 = Math.min(x1, this.w - 1);
+      }
+      for (let x = x0; x <= x1; x++) {
+        const c = sm.cov(x + 0.5 - d.x, dy);
+        if (c <= 0) continue;
+        const px = this.wrapEdges ? wrap(x, this.w) : x;
+        const ti = (py >> SHIFT) * this.across + (px >> SHIFT);
+        let t = tiles[ti];
+        if (!t) t = tiles[ti] = new Float32Array(TS * TS);
+        const i = (py & MASK) * TS + (px & MASK);
+        const have = t[i];
+        if (have < 1) t[i] = have + c * (1 - have);
+      }
+    }
+  }
+
+  /** Lays the second brush's dabs into the mask (mirrored like the first brush's). */
+  private layMask(dabs: Dab[]): void {
+    const b = this.laidBrush!;
+    const m = this.p.mirror;
+    for (const d of dabs) {
+      const sm = samplerFor(b, d.size, d.angle, this.crisp);
+      if (!m || m.mode === 'off') this.stampMask(d, sm);
+      else mirrorDabs(m.mode, m.ax2, m.ay2, d).forEach((e, i) => this.stampMask(e, i === 0 ? sm : samplerFor(b, e.size, e.angle, this.crisp)));
     }
   }
 
@@ -507,11 +584,13 @@ export class DabStroke {
 
   /** Moves the brush to `to` (art pixels, fractions allowed), laying dabs on the way. `size` is how wide it is now; `flow` is the paint per dab, 0 to 1; `sense` is what the pen and hand are doing, for the brush's dynamics. */
   moveTo(to: Pt, size: number, flow: number, sense?: Sense): void {
+    if (this.laidPath) this.layMask(this.laidPath.to(to, Math.min(LAID_MAX_PIXELS, Math.max(0.5, size * this.laidShare)), 1));
     this.lay(this.path.to(to, size, flow, sense));
   }
 
   /** The stroke is over. A click with no movement still lays its dab. */
   finish(): void {
+    if (this.laidPath) this.layMask(this.laidPath.end());
     this.lay(this.path.end());
     if (this.tailOn) this.taperEnd();
   }

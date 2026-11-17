@@ -11,6 +11,7 @@ import { DEFAULT_TAPER, type DabBrush } from './maths';
 import { setDab, useDab } from './settings';
 import { DEFAULT_DUAL, DEFAULT_GRAIN, DUAL_DENSITY, DUAL_SIZE, GRAIN_SCALE } from './texture';
 import { dualPictureScale } from './texturePicture';
+import { LAID_SCATTER, LAID_SIZE, LAID_SPACING } from './dualLaid';
 import { TextureSwatch } from './TextureSwatch';
 import { dualFromPicture, grainFromPicture } from './pictureTip';
 import './dab.css';
@@ -205,7 +206,17 @@ export function TextureSection() {
       <Toggle label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
       {d && (
         <div className="dab-sub">
-          {d.picture ? (
+          {d.laid ? (
+            <>
+              <Tip stays>This dual tip is a second brush laid along your line (it came with an imported brush). The brush only paints where the second brush has been.</Tip>
+              <Slider label="Second brush width" value={Math.round(d.laid.size * 100)} min={Math.round(LAID_SIZE.min * 100)} max={Math.round(LAID_SIZE.max * 100)} curve format={(v) => `${v}% as wide as the brush`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, size: v / 100 } } })} />
+              <Slider label="Second brush spacing" value={Math.round(d.laid.spacing * 100)} min={Math.round(LAID_SPACING.min * 100)} max={Math.round(LAID_SPACING.max * 100)} curve format={(v) => `${v}% of its width apart`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, spacing: v / 100 } } })} />
+              <Slider label="Second brush scatter" value={Math.round(d.laid.scatter * 100)} min={0} max={Math.round(LAID_SCATTER.max * 100)} format={(v) => (v === 0 ? 'on the line' : `up to ${v}% of its width off it`)} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, scatter: v / 100 } } })} />
+              <ActionButton onClick={() => setDab({ dual: { ...d, laid: undefined } })} title="Go back to round or square dots">
+                Back to plain dots
+              </ActionButton>
+            </>
+          ) : d.picture ? (
             <>
               <TextureSwatch picture={d.picture} invert={d.invert} label="The picture the dots come from" />
               <Tip stays>The dots come from your picture: its dark parts, as much of it as How much of the picture says.</Tip>
@@ -227,8 +238,8 @@ export function TextureSection() {
               </ActionButton>
             </>
           )}
-          <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />
-          <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />
+          {!d.laid && <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />}
+          {!d.laid && <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />}
         </div>
       )}
     </MoreOptions>

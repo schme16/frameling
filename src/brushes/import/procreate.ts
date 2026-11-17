@@ -23,6 +23,7 @@ import { standInTip } from './standInTip';
 import { canvasPaper, charcoalPaper, pastelPaper, splatterPaper } from './standInGrit';
 import type { TexturePicture } from '../../dab/texturePicture';
 import { openZip, type Zip, type ZipItem } from './zip';
+import { LAID_SIZE, LAID_SPACING, type LaidTip } from '../../dab/dualLaid';
 
 /** The most one brush's settings may unpack to (the biggest real ones are about 10 KB). */
 const MAX_ARCHIVE_BYTES = 2 * 1024 * 1024;
@@ -212,6 +213,10 @@ export interface Pictures {
   thumb: Uint8Array | null;
   /** The brush has a second brush inside it (a dual brush). */
   sub: boolean;
+  /** The dual brush's own `Sub01/Brush.archive`, `Sub01/Shape.png` and why they could not be read, when the file has them. */
+  subArchive?: Uint8Array | null;
+  subShape?: Uint8Array | null;
+  subProblem?: string;
 }
 
 /** Spends the file's pixel budget; throws a plain message when it is gone. */
@@ -598,7 +603,12 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     raw.wet = clamp(mix, 0, 1);
     changed.push("Its wet mix came as Frameling's wet setting at the same amount. How the two compare has not been checked.");
   }
-  if (pics.sub) dropped.push('Its dual brush (a second brush the first is painted through). Frameling reads only the main brush of a Procreate dual brush.');
+  if (pics.sub) {
+    const dual = laidFromSub(s, pics, share, raw.scatter as number, budget);
+    if (dual.laid) raw.dual = { ...DUAL_PLAIN, laid: dual.laid };
+    changed.push(...dual.changed);
+    dropped.push(...dual.dropped);
+  }
   const blend = s.num('blendMode', 0);
   const ext = s.num('extendedBlend', 0);
   if (blend !== 0 || ext !== 0) dropped.push(`Its blend mode (number ${Math.round(blend || ext)}). Frameling has not checked how Procreate numbers its blend modes.`);
@@ -610,6 +620,101 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   }
 
   return { name, dab: cleanDab(raw), dropped, changed };
+}
+
+// ---------------------------------------------------------------- the dual brush
+
+/** The plain dots a `dual` carries when it is a laid brush: they do not count, the laid brush does. */
+const DUAL_PLAIN = { tip: 'round', size: 3, density: 0.4, cut: false };
+
+/** Whether a tip picture is a plain solid disc (a dual brush's usual second tip), so a round tip can stand for it. */
+function isDisc(st: { w: number; h: number; cells: number[] }): boolean {
+  if (Math.abs(st.w - st.h) > 1 || st.w < 4) return false;
+  const c = (st.w - 1) / 2;
+  const half = (st.w - 1) / 2 + 0.5;
+  let wrong = 0;
+  for (let y = 0; y < st.h; y++)
+    for (let x = 0; x < st.w; x++) {
+      const r = Math.hypot(x - c, y - c);
+      const on = st.cells[y * st.w + x] !== 0;
+      if ((r < half * 0.9 && !on) || (r > half * 1.1 && on)) wrong++;
+    }
+  return wrong <= st.w * st.h * 0.01;
+}
+
+/**
+ * The second brush of a dual brush (`Sub01/`), as a brush laid along the stroke on its own spacing that the first
+ * brush is painted through. Read the way the main brush is: the same tip reading (light, gamma 2.2), the same spacing
+ * and jitter. Only the size is new: it is the second brush's own size against the first's, taken off the two files'
+ * `paintSize` and `maxSize`, which has not been checked against Procreate. A problem with the second brush costs only the dual.
+ */
+function laidFromSub(main: Settings, pics: Pictures, mainShare: number, mainScatter: number, budget: Budget): { laid: LaidTip | null; changed: string[]; dropped: string[] } {
+  const changed: string[] = [];
+  const dropped: string[] = [];
+  const none = (why: string): { laid: null; changed: string[]; dropped: string[] } => ({ laid: null, changed, dropped: [...dropped, `Its dual brush (a second brush the first is painted through): ${why}`] });
+  if (pics.subProblem) return none(pics.subProblem);
+  if (!pics.subArchive) return none('Frameling could not find its settings.');
+  let sub: Settings;
+  try {
+    sub = settingsOf(pics.subArchive);
+  } catch (e) {
+    if (!(e instanceof BrushProblem)) throw e;
+    return none(e.message);
+  }
+  let tip: LaidTip['tip'] = 'round';
+  let picture: LaidTip['picture'] = null;
+  let share = 1;
+  const hardness = 1;
+  if (pics.subShape) {
+    try {
+      const t = shapeTip(pics.subShape, sub.bool('shapeInverted'), budget);
+      if (t.solid) tip = 'square';
+      else {
+        share = clamp(t.tip.size / Math.max(t.w, t.h), 0.02, 1);
+        if (!isDisc(t.tip.stamp)) {
+          tip = 'picture';
+          picture = t.tip.stamp;
+        }
+      }
+    } catch (e) {
+      if (!(e instanceof BrushProblem)) throw e;
+      return none(e.message);
+    }
+  } else changed.push("The second brush's tip is one of Procreate's own built in shapes, which is not in the file, so it came as a plain round one.");
+  // How wide it is against the first brush: their own sizes against each other, and how much of its picture each tip shows.
+  const own = (x: Settings): number => x.num('paintSize', 0) * x.num('maxSize', 1);
+  const ratio = own(main) > 0 && own(sub) > 0 ? (own(sub) / own(main)) * (share / Math.max(0.02, mainShare)) : 1;
+  const size = clamp(ratio, LAID_SIZE.min, LAID_SIZE.max);
+  const count = 1 + Math.round(clamp(sub.num('shapeCount', 0), 0, 1) * 15);
+  const spacing = clamp(sub.num('plotSpacing', 0.1) / count / share, LAID_SPACING.min, LAID_SPACING.max);
+  const scatter = clamp(throwOf(sub.num('plotJitter', 0)) / share, 0, 2);
+  const turn = sub.bool('shapeRandomise') ? 1 : clamp(sub.num('shapeScatter', 0), 0, 1);
+  const laid: LaidTip = {
+    tip,
+    ...(tip === 'picture' ? { picture } : {}),
+    size: Math.round(size * 1000) / 1000,
+    hardness,
+    roundness: clamp(sub.num('shapeRoundness', 1), 0.05, 1),
+    spacing: Math.round(spacing * 1000) / 1000,
+    scatter: Math.round(scatter * 1000) / 1000,
+    angleJitter: Math.round(turn * 1000) / 1000,
+    follow: sub.num('shapeRotation', 0) >= 0.5,
+  };
+  const mode = Math.round(main.num('dualBlendMode', 0));
+  const modeNote = `Its dual brush asks for blend mode number ${mode}. Frameling lays a dual brush only as a mask (Multiply) and has not checked what that number is in Procreate, so Procreate may combine the two differently.`;
+  // A plain disc or square at least twice as wide as everything the first brush lays across the line lets all of it
+  // through (Graphite ink's is eight times as wide): drawing it would only cost time.
+  if ((tip === 'round' || tip === 'square') && laid.roundness >= 0.9 && ratio >= 2 * (1 + 2 * mainScatter)) {
+    changed.push(`Its dual brush (a second brush the first is painted through) is a plain ${tip === 'square' ? 'square' : 'disc'} ${Math.round(ratio * 100)}% as wide as the first, wider than all of what the first paints, so it lets all of it through and Frameling left it out. That size comparison has not been checked against Procreate.`);
+    if (mode !== 0) changed.push(modeNote);
+    return { laid: null, changed, dropped };
+  }
+  changed.push(
+    `Its dual brush (a second brush the first is painted through) came as a second ${tip === 'picture' ? 'tip picture' : tip === 'square' ? 'square' : 'round'} tip laid along the line on its own spacing, ${Math.round(laid.size * 100)}% as wide as the first, and the first only paints where it has been. Its size against the first, and the way the two are combined, have not been checked against Procreate.`,
+  );
+  if (mode !== 0) changed.push(modeNote);
+  if (ratio !== size) changed.push(`Its dual brush came out ${Math.round(ratio * 100)}% as wide as the first, more than Frameling goes, so it came at ${Math.round(size * 100)}%.`);
+  return { laid, changed, dropped };
 }
 
 // ---------------------------------------------------------------- the files
@@ -669,6 +774,18 @@ function orderFolders(zip: Zip, folders: string[]): { order: string[]; name: str
   }
 }
 
+/** The dual brush's own files (`Sub01/`). A file that cannot be unpacked costs only the dual brush, unless it is the ceiling on the whole file. */
+function readSub(zip: Zip, find: (n: string) => ZipItem | undefined): Partial<Pictures> {
+  try {
+    const arch = find('Sub01/Brush.archive');
+    const shape = find('Sub01/Shape.png');
+    return { subArchive: arch ? zip.read(arch, MAX_ARCHIVE_BYTES) : null, subShape: shape ? zip.read(shape, MAX_PICTURE_BYTES) : null };
+  } catch (e) {
+    if (!(e instanceof BrushProblem) || /far more than/.test(e.message)) throw e;
+    return { subProblem: e.message };
+  }
+}
+
 function readZipBrushes(bytes: Uint8Array, fileName: string, expectSet: boolean): ImportResult {
   const zip = openZip(bytes, 'Procreate brush');
   const folders = brushFolders(zip);
@@ -694,6 +811,7 @@ function readZipBrushes(bytes: Uint8Array, fileName: string, expectSet: boolean)
         thumb: thumb ? zip.read(thumb, MAX_PICTURE_BYTES) : null,
         sub: zip.items.some((i) => i.name.toLowerCase().startsWith(`${folder}sub`.toLowerCase()) && /\/Brush\.archive$/i.test(i.name)),
       };
+      if (pics.sub) Object.assign(pics, readSub(zip, find));
       const fallback = folder.replace(/\/$/, '').split('/').pop() || fileName;
       brushes.push(brushFromArchive(zip.read(arch, MAX_ARCHIVE_BYTES), pics, isSet ? fallback.slice(0, 40) : fileName, budget));
     } catch (e) {
