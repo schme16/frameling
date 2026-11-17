@@ -1,0 +1,413 @@
+{
+  "env": {
+    "label": "before-2",
+    "electron": "45.3.0",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "renderer": "/tmp/claude-1000/-mnt-109313D2109313D2-projects-frameling/51641969-29e2-4bea-b9dc-379871bd755d/scratchpad/renderer-before",
+    "doc": "undo-test.frameling",
+    "when": "2026-11-17T22:56:43.961Z"
+  },
+  "counts": {
+    "layers": 1,
+    "drawings": 1,
+    "shapes": 56,
+    "points": 2834,
+    "artboards": 0,
+    "width": 1920,
+    "height": 1080,
+    "ui": 0.39479166666666665
+  },
+  "results": {
+    "notch": {
+      "rafDelta": {
+        "n": 8,
+        "mean": 637.48,
+        "p50": 583.4,
+        "p95": 1100,
+        "p99": 1100,
+        "max": 1100
+      },
+      "rafDeltaAll": {
+        "n": 8,
+        "mean": 637.48,
+        "p50": 583.4,
+        "p95": 1100,
+        "p99": 1100,
+        "max": 1100
+      },
+      "mainDrawMs": {
+        "n": 11,
+        "mean": 572.87,
+        "p50": 474.7,
+        "p95": 1088.3,
+        "p99": 1088.3,
+        "max": 1088.3
+      },
+      "slowDraws": [
+        [
+          0,
+          743.9
+        ],
+        [
+          1,
+          1088.3
+        ],
+        [
+          2,
+          987.3
+        ],
+        [
+          3,
+          576.1
+        ],
+        [
+          4,
+          474.7
+        ],
+        [
+          5,
+          359.1
+        ],
+        [
+          6,
+          430.9
+        ],
+        [
+          7,
+          361.6
+        ],
+        [
+          8,
+          425
+        ],
+        [
+          9,
+          525.2
+        ],
+        [
+          10,
+          329.5
+        ]
+      ],
+      "longTasks": 10,
+      "longTaskMaxMs": 1091,
+      "bitmapBuilds": 2,
+      "zoomRange": [
+        1.48,
+        8.59
+      ],
+      "zoomTrace": [
+        1.48
+      ],
+      "framesOver33": 8
+    },
+    "pinch": {
+      "rafDelta": {
+        "n": 12,
+        "mean": 477.75,
+        "p50": 433.3,
+        "p95": 1566.6,
+        "p99": 1566.6,
+        "max": 1566.6
+      },
+      "rafDeltaAll": {
+        "n": 12,
+        "mean": 477.75,
+        "p50": 433.3,
+        "p95": 1566.6,
+        "p99": 1566.6,
+        "max": 1566.6
+      },
+      "mainDrawMs": {
+        "n": 15,
+        "mean": 542.56,
+        "p50": 568.6,
+        "p95": 1541.6,
+        "p99": 1541.6,
+        "max": 1541.6
+      },
+      "slowDraws": [
+        [
+          6,
+          1541.6
+        ],
+        [
+          7,
+          1383
+        ],
+        [
+          8,
+          756.3
+        ],
+        [
+          9,
+          398.5
+        ],
+        [
+          10,
+          634.5
+        ],
+        [
+          11,
+          568.6
+        ],
+        [
+          12,
+          919.8
+        ],
+        [
+          13,
+          1228.6
+        ],
+        [
+          14,
+          701.1
+        ]
+      ],
+      "longTasks": 7,
+      "longTaskMaxMs": 1567,
+      "bitmapBuilds": 3,
+      "zoomRange": [
+        0.61,
+        8.59
+      ],
+      "zoomTrace": [
+        0.61
+      ],
+      "framesOver33": 11
+    },
+    "settle1.5": {
+      "reachedZoom": 3.56,
+      "frameMs": {
+        "n": 4,
+        "mean": 537.48,
+        "p50": 583.3,
+        "p95": 650,
+        "p99": 650,
+        "max": 650
+      },
+      "longTasks": 6,
+      "longTaskMaxMs": 743,
+      "owedAll": 0,
+      "framesAll": 9,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [
+        [
+          0,
+          450
+        ],
+        [
+          1,
+          467
+        ],
+        [
+          2,
+          583
+        ],
+        [
+          3,
+          650
+        ]
+      ],
+      "sharpAfterMs": null,
+      "framesOver33": 4
+    },
+    "settle3": {
+      "reachedZoom": 3.88,
+      "frameMs": {
+        "n": 4,
+        "mean": 570.83,
+        "p50": 566.7,
+        "p95": 716.7,
+        "p99": 716.7,
+        "max": 716.7
+      },
+      "longTasks": 7,
+      "longTaskMaxMs": 1089,
+      "owedAll": 0,
+      "framesAll": 75,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [
+        [
+          0,
+          450
+        ],
+        [
+          1,
+          567
+        ],
+        [
+          2,
+          550
+        ],
+        [
+          3,
+          717
+        ]
+      ],
+      "sharpAfterMs": null,
+      "framesOver33": 4
+    },
+    "settle8": {
+      "reachedZoom": 10.33,
+      "frameMs": {
+        "n": 10,
+        "mean": 238.32,
+        "p50": 200,
+        "p95": 466.6,
+        "p99": 466.6,
+        "max": 466.6
+      },
+      "longTasks": 13,
+      "longTaskMaxMs": 464,
+      "owedAll": 0,
+      "framesAll": 33,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [
+        [
+          0,
+          467
+        ],
+        [
+          1,
+          350
+        ],
+        [
+          2,
+          217
+        ],
+        [
+          3,
+          183
+        ],
+        [
+          4,
+          200
+        ],
+        [
+          5,
+          200
+        ],
+        [
+          6,
+          200
+        ],
+        [
+          7,
+          183
+        ],
+        [
+          8,
+          200
+        ],
+        [
+          9,
+          183
+        ]
+      ],
+      "sharpAfterMs": null,
+      "framesOver33": 10
+    },
+    "settle24": {
+      "reachedZoom": 33.34,
+      "frameMs": {
+        "n": 24,
+        "mean": 115.97,
+        "p50": 183.3,
+        "p95": 183.4,
+        "p99": 216.7,
+        "max": 216.7
+      },
+      "longTasks": 16,
+      "longTaskMaxMs": 193,
+      "owedAll": 0,
+      "framesAll": 61,
+      "owedFrames": 0,
+      "lastOwedAt": 0,
+      "slow": [
+        [
+          0,
+          183
+        ],
+        [
+          1,
+          183
+        ],
+        [
+          2,
+          183
+        ],
+        [
+          3,
+          183
+        ],
+        [
+          4,
+          183
+        ],
+        [
+          5,
+          217
+        ],
+        [
+          6,
+          183
+        ],
+        [
+          7,
+          183
+        ],
+        [
+          8,
+          183
+        ],
+        [
+          9,
+          50
+        ],
+        [
+          19,
+          167
+        ],
+        [
+          20,
+          183
+        ],
+        [
+          21,
+          183
+        ],
+        [
+          22,
+          183
+        ],
+        [
+          23,
+          183
+        ]
+      ],
+      "sharpAfterMs": null,
+      "framesOver33": 15
+    }
+  },
+  "consoleErrors": []
+}

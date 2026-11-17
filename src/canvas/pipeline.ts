@@ -31,6 +31,8 @@ import { blitEntry, blitEntryStretched } from './bitmapBlit';
 import { perf } from './perf';
 import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
 import { cssVar } from './theme';
+import { runSliced } from '../core/slice';
+import { giveUp, overviewSize, SLICE_MS, visibleSlice } from './zoomProxy';
 
 export interface FrameParams {
   doc: Doc;
@@ -395,11 +397,152 @@ export class FramePainter {
     return done;
   }
 
+  /**
+   * The zoomed in view that is drawn from the shapes (no whole-stage bitmap fits) can stand in for a moment on the
+   * overview instead of being drawn: while the zoom moves, and while the sharp one is worked out in slices after it stops.
+   * Only the plain case: no pen stroke going in, no tiled copies, no playing, no camera.
+   */
+  private proxyFor(p: FrameParams): boolean {
+    return !p.tileMode && !p.live && !p.playing && !p.camera && !p.pasteboard && !this.isCacheable(p.rect, p.width, p.height) && this.hasSlowLook(p);
+  }
+
+  /** Per drawing: does any shape have effects of its own (paper tooth, grain...), the kind that costs a new picture per zoom step? */
+  private shapeFxMemo = new WeakMap<Drawing, boolean>();
+
+  /**
+   * Whether the picture has something that is slow to draw again at every zoom step: effects on a shape, or on a layer or
+   * folder. Plain shapes are cheap to draw straight, and pixel art should stay crisp while the zoom moves, so neither
+   * is put on the overview.
+   */
+  private hasSlowLook(p: FrameParams): boolean {
+    const { doc, frame } = p;
+    if (needsCompositor(doc)) return true;
+    for (const layer of doc.layers) {
+      if (!layer.visible || layer.kind !== 'vector') continue;
+      const d = poseAt(doc, layer, frame);
+      if (d?.kind !== 'vector') continue;
+      let slow = this.shapeFxMemo.get(d);
+      if (slow === undefined) this.shapeFxMemo.set(d, (slow = d.shapes.some((sh) => !!sh.effects?.length)));
+      if (slow) return true;
+    }
+    return false;
+  }
+
+  /** What the overview was drawn from: it is made again when any of these change. */
+  private overviewKey(p: FrameParams, w: number, h: number): unknown[] {
+    return [p.doc, p.frame, w, h, JSON.stringify(p.onion), p.activeLayerId ?? '', ...(p.ghost ?? []).map((x) => x.drawing), '|', ...(p.lightTable?.items ?? []).map((x) => x.drawing), p.lightTable?.alpha ?? 0, p.lightTable?.tint ?? ''];
+  }
+
+  private overviewFresh(p: FrameParams, w: number, h: number): boolean {
+    const o = this.overview;
+    if (!o) return false;
+    const key = this.overviewKey(p, w, h);
+    return o.key.length === key.length && o.key.every((v, i) => v === key[i]);
+  }
+
+  /**
+   * The overview's size. Once chosen it stays (an edit then adds a stroke to the bitmap it has, instead of drawing the page
+   * again). First choice is the size the stage last had while it still fit a bitmap, because the bitmaps for that size are
+   * already made and the overview then costs a few blits; if that is much smaller than a screen the overview is a screen's worth.
+   */
+  private overviewDims(p: FrameParams): { w: number; h: number } {
+    const o = this.overview;
+    if (o && o.screenW === p.width && o.screenH === p.height && o.stageW === p.doc.width && o.stageH === p.doc.height) return o;
+    const base = overviewSize(p.rect.w, p.rect.h, p.width, p.height);
+    const l = this.lastFit;
+    return l && l.docW === p.doc.width && l.docH === p.doc.height && l.w * l.h >= base.w * base.h * 0.3 && l.w * l.h <= base.w * base.h * 1.5 ? { w: l.w, h: l.h } : base;
+  }
+
+  /** The whole stage at a size that is cheap to keep (the normal bitmap path draws it), made again only when the picture changed. */
+  private overviewFor(p: FrameParams): { canvas: Canvas2; w: number; h: number } {
+    const { w, h } = this.overviewDims(p);
+    if (!this.overviewFresh(p, w, h)) {
+      const c = this.overview && this.overview.w === w && this.overview.h === h ? this.overview.canvas : makeCanvas(w, h);
+      const og = ctxOf(c);
+      og.setTransform(1, 0, 0, 1, 0, 0);
+      og.clearRect(0, 0, w, h);
+      const q: FrameParams = { ...p, rect: { x: 0, y: 0, w, h }, width: w, height: h, zooming: false, live: null, tileMode: false, camera: undefined, pasteboard: undefined };
+      this.paintStage(og as CanvasRenderingContext2D, q, false);
+      this.overview = { key: this.overviewKey(p, w, h), canvas: c, w, h, screenW: p.width, screenH: p.height, stageW: p.doc.width, stageH: p.doc.height };
+    }
+    return { canvas: this.overview!.canvas, w, h };
+  }
+
+  /** Draws the stage stretched from the overview, only the part that lands on the screen. */
+  private paintProxy(g: CanvasRenderingContext2D, p: FrameParams): void {
+    const o = this.overviewFor(p);
+    const v = visibleSlice(p.rect, o, { w: p.width, h: p.height });
+    if (!v) return;
+    g.drawImage(o.canvas as CanvasImageSource, v.sx, v.sy, v.sw, v.sh, v.dx, v.dy, v.dw, v.dh);
+  }
+
+  /**
+   * One slice of working out the sharp zoomed in picture, drawn off screen so nobody sees it half done. True when it all
+   * got done (the real draw then finds every picture ready), or when it is taking too long to be worth slicing.
+   */
+  private catchUp(p: FrameParams): boolean {
+    const c = (this.warmCanvas = this.sized(this.warmCanvas, p.width, p.height));
+    const wg = ctxOf(c);
+    wg.setTransform(1, 0, 0, 1, 0, 0);
+    wg.clearRect(0, 0, p.width, p.height);
+    const done = runSliced(SLICE_MS, () => this.paintStage(wg as CanvasRenderingContext2D, p, false));
+    this.slices++;
+    return done || giveUp(this.slices, performance.now() - this.owedSince);
+  }
+
+  /** True when the zoomed in picture is still waiting to get sharp, so the next frame should come at once. */
+  catchingUp = false;
+  private owed = false;
+  private owedSince = 0;
+  private slices = 0;
+  private overview: { key: unknown[]; canvas: Canvas2; w: number; h: number; screenW: number; screenH: number; stageW: number; stageH: number } | null = null;
+  /** The stage's size the last time it was drawn from bitmaps that were all ready (so the overview can be made from them cheaply). */
+  private lastFit: { w: number; h: number; docW: number; docH: number } | null = null;
+  private warmCanvas: Canvas2 | null = null;
+  private lastParams: FrameParams | null = null;
+
+  /** Whether the overview is worth making while the machine is idle: zoomed in, still, and it is missing or out of date. */
+  wantsOverview(): boolean {
+    const p = this.lastParams;
+    if (!p || !this.proxyFor(p) || p.zooming) return false;
+    const { w, h } = this.overviewDims(p);
+    return !this.overviewFresh(p, w, h);
+  }
+
+  /** Makes the overview ahead of time (in an idle moment), so the first zoom step after a change has it to hand. */
+  warmOverview(): void {
+    if (this.lastParams && this.wantsOverview()) this.overviewFor(this.lastParams);
+  }
+
   /** Draws the stage content (onion skin and layers). Returns false if it used stale bitmaps and wants another go. */
   paint(g: CanvasRenderingContext2D, p: FrameParams): boolean {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, p.width, p.height);
-    if (!p.tileMode) return this.paintStage(g, p, false);
+    this.catchingUp = false;
+    this.lastParams = p;
+    if (this.proxyFor(p)) {
+      if (p.zooming) {
+        // The zoom is moving: the overview, stretched, and the sharp picture once it stops.
+        this.owed = true;
+        this.owedSince = performance.now();
+        this.slices = 0;
+        this.paintProxy(g, p);
+        return false;
+      }
+      if (this.owed) {
+        if (!this.catchUp(p)) {
+          this.paintProxy(g, p);
+          this.catchingUp = true;
+          return false;
+        }
+        this.owed = false;
+      }
+    } else this.owed = false;
+    if (!p.tileMode) {
+      const settled = this.paintStage(g, p, false);
+      if (settled && !p.live && this.isCacheable(p.rect, p.width, p.height)) this.lastFit = { w: p.rect.w, h: p.rect.h, docW: p.doc.width, docH: p.doc.height };
+      return settled;
+    }
     // Tile mode: the eight copies around the stage first (each the same bitmaps, so it's just more blits).
     let settled = true;
     const r = p.rect;
@@ -776,5 +919,7 @@ export class FramePainter {
     this.onionCache = [];
     this.scratch = this.scratch2 = null;
     this.lastVector.clear();
+    this.overview = this.warmCanvas = this.lastParams = this.lastFit = null;
+    this.owed = this.catchingUp = false;
   }
 }

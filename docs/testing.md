@@ -937,6 +937,24 @@ The first dab of a big pixel brush is pinned in vitest by `test/pixel/first-dab.
 through `paint`: the same pixels, changed rectangle and tiles, with a mirror, a selection, tile mode and other inks), and the
 fill-only path by `test/canvas/fill-path.test.ts`.
 
+## Zooming a heavy drawing: scripts/perf/zoomfile.cjs and test/canvas/zoom-proxy.test.ts
+
+Zooming into a drawing whose lines carry paper tooth (chalk, charcoal) or other per-shape effects used to cost a fifth of a
+second to most of a second a frame: once the stage is too big for a bitmap the page is drawn from its shapes, and each zoom
+step needs a new tooth picture per line. Now, while the zoom moves, the page is drawn from a small overview stretched to size
+(`overviewFor` in `src/canvas/pipeline.ts`), and once it stops the sharp picture is worked out a few milliseconds a frame
+(`src/core/slice.ts`, `catchUp`) and swapped in when ready, so the settled picture is the same as before. Plain shapes and
+pixel art skip this and draw straight, as they always did.
+
+`scripts/perf/zoomfile.cjs` zooms a real file with a wheel (notches) and a pinch, in and out, then zooms to four depths and
+stops, and reports frame times for each. `ZOOM_DOC=/path/to/file.frameling` measures that file where it is; without it a
+stand-in with the same kinds of lines is used. `--check` fails when a gesture's p95 frame is over 40 ms or a frame after the
+zoom stops is over 150 ms (the check for the lag coming back; it fails on a build from before the fix). `ZOOM_HASH=1`
+prints a hash of the settled picture at five views, to compare two builds exactly. `ZOOM_CLIP=1` runs the gesture to film
+(see `/shots`). The two graphics variables from the perf skill go in front of `xvfb-run`; `PERF_RENDERER` points at another
+build. `test/canvas/zoom-proxy.test.ts` covers the sums (overview size, which part of it shows, when slicing gives up, the
+time slice).
+
 ## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
 
 The second window (the picture window, `src/popout/`, `src/main/popout.ts`) needs the real main process (two windows and the

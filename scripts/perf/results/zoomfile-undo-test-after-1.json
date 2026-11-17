@@ -1,0 +1,274 @@
+{
+  "env": {
+    "label": "after-1",
+    "electron": "45.3.0",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "enabled_on",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+    },
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/zoom-lag/dist/renderer",
+    "doc": "undo-test.frameling",
+    "when": "2026-11-17T23:05:03.326Z"
+  },
+  "counts": {
+    "layers": 1,
+    "drawings": 1,
+    "shapes": 56,
+    "points": 2834,
+    "artboards": 0,
+    "width": 1920,
+    "height": 1080,
+    "ui": 0.39479166666666665
+  },
+  "results": {
+    "notch": {
+      "rafDelta": {
+        "n": 287,
+        "mean": 16.67,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 16.8
+      },
+      "rafDeltaAll": {
+        "n": 309,
+        "mean": 17.21,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 33.4
+      },
+      "mainDrawMs": {
+        "n": 59,
+        "mean": 0.09,
+        "p50": 0.1,
+        "p95": 0.2,
+        "p99": 0.6,
+        "max": 0.6
+      },
+      "slowDraws": [],
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 3,
+      "zoomRange": [
+        0.05,
+        64
+      ],
+      "zoomTrace": [
+        0.39,
+        1.19,
+        2.86,
+        6.89,
+        16.62,
+        40.07,
+        64,
+        64,
+        64,
+        64,
+        41.22,
+        17.1,
+        7.09,
+        2.36,
+        0.98,
+        0.41,
+        0.17,
+        0.07,
+        0.05,
+        0.05,
+        0.05
+      ],
+      "framesOver33": 0
+    },
+    "pinch": {
+      "rafDelta": {
+        "n": 290,
+        "mean": 21.67,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 33.5
+      },
+      "rafDeltaAll": {
+        "n": 290,
+        "mean": 21.67,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 33.5
+      },
+      "mainDrawMs": {
+        "n": 168,
+        "mean": 0.07,
+        "p50": 0.1,
+        "p95": 0.2,
+        "p99": 0.2,
+        "max": 0.5
+      },
+      "slowDraws": [],
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "bitmapBuilds": 3,
+      "zoomRange": [
+        0.05,
+        64
+      ],
+      "zoomTrace": [
+        0.05,
+        0.05,
+        0.05,
+        0.18,
+        0.62,
+        2.16,
+        7.59,
+        26.62,
+        64,
+        64,
+        64,
+        64,
+        64,
+        64,
+        64,
+        18.24,
+        5.2,
+        1.48,
+        0.42,
+        0.12
+      ],
+      "framesOver33": 16
+    },
+    "settle1.5": {
+      "reachedZoom": 2.1,
+      "frameMs": {
+        "n": 164,
+        "mean": 18.19,
+        "p50": 16.7,
+        "p95": 33.2,
+        "p99": 66.6,
+        "max": 83.4
+      },
+      "longTasks": 2,
+      "longTaskMaxMs": 83,
+      "owedAll": 27,
+      "framesAll": 242,
+      "owedFrames": 25,
+      "lastOwedAt": 665,
+      "slow": [
+        [
+          16,
+          83
+        ],
+        [
+          18,
+          50
+        ],
+        [
+          22,
+          67
+        ]
+      ],
+      "sharpAfterMs": 682,
+      "framesOver33": 5
+    },
+    "settle3": {
+      "reachedZoom": 3.56,
+      "frameMs": {
+        "n": 172,
+        "mean": 17.34,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 49.9,
+        "max": 66.6
+      },
+      "longTasks": 1,
+      "longTaskMaxMs": 61,
+      "owedAll": 39,
+      "framesAll": 210,
+      "owedFrames": 18,
+      "lastOwedAt": 410,
+      "slow": [
+        [
+          10,
+          50
+        ],
+        [
+          15,
+          67
+        ]
+      ],
+      "sharpAfterMs": 427,
+      "framesOver33": 3
+    },
+    "settle8": {
+      "reachedZoom": 8.59,
+      "frameMs": {
+        "n": 160,
+        "mean": 18.75,
+        "p50": 16.7,
+        "p95": 33.3,
+        "p99": 66.6,
+        "max": 83.3
+      },
+      "longTasks": 2,
+      "longTaskMaxMs": 89,
+      "owedAll": 52,
+      "framesAll": 212,
+      "owedFrames": 17,
+      "lastOwedAt": 452,
+      "slow": [
+        [
+          8,
+          83
+        ],
+        [
+          9,
+          50
+        ],
+        [
+          14,
+          67
+        ]
+      ],
+      "sharpAfterMs": 468,
+      "framesOver33": 7
+    },
+    "settle24": {
+      "reachedZoom": 25.81,
+      "frameMs": {
+        "n": 173,
+        "mean": 17.34,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.4,
+        "max": 66.6
+      },
+      "longTasks": 1,
+      "longTaskMaxMs": 62,
+      "owedAll": 68,
+      "framesAll": 243,
+      "owedFrames": 15,
+      "lastOwedAt": 352,
+      "slow": [
+        [
+          13,
+          67
+        ]
+      ],
+      "sharpAfterMs": 368,
+      "framesOver33": 2
+    }
+  },
+  "consoleErrors": []
+}

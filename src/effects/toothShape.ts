@@ -11,6 +11,7 @@ import { strokeDabs, toothParams, toothStroke, type ToothPicture, type View, typ
 import { trimActive, trimStrokePoints } from '../geometry/trim';
 import { ctx2, makeCanvas, type Canvas2, type Ctx } from './apply';
 import { EffectCache, paintThroughEffects } from './composite';
+import { mayBuild } from '../core/slice';
 
 type Values = Record<string, number | string>;
 type Fx = { kind: string; v: Values };
@@ -139,6 +140,8 @@ export function drawToothStroke(g: Ctx, s: StrokeShape, v: Values, rest: Fx[], s
   const key = `${local.a},${local.b},${local.c},${local.d},${local.e.toFixed(2)},${local.f.toFixed(2)}|${big ? `${w}x${h}` : ''}|${JSON.stringify(v)}|${sig}`;
   let pic = cache.get(s, key);
   if (!pic) {
+    // A sliced redraw (src/core/slice.ts) that has spent its time leaves this line for the next one.
+    if (!mayBuild()) return;
     // Big: the part of the canvas that shows. Otherwise the whole line, however far off the canvas it runs, so panning to it reuses this.
     const made = toothPicture(s, v, local, big ? { w, h } : undefined);
     if (!made) {
