@@ -82,6 +82,15 @@ export function reachOf(st: { w: number; h: number; cells: number[] }): number {
 const TAPER_PIXELS = 530;
 
 /**
+ * A taper's fade (`pencilTaperOpacity`) counts only for a taper whose size is under this: the thinning leaves a tip to
+ * fade. At 1 it comes to a point (the 6B Pencil, Dry Ink 1: as dark at the tip as in the middle). At 0 there is no
+ * thinning at all (Shenbot's Background: only the pressure fades it, which fits Procreate's picture to 0.05 rms
+ * against 0.16 with the taper fading it as well). In between, the fade is `opacity x size`: Inking Pen, Inking Pen 1
+ * and Dry Ink v2 (all 0.829) end grey and wide where a point would end solid and thin.
+ */
+const TAPER_FADE_MAX = 0.95;
+
+/**
  * How far Procreate's jitter throws a dab off the line, as a share of the brush width for a jitter of 1. Settled by
  * eye against Procreate's own pictures: Graphite ink (0.54) is a loose cloud about half as wide again as its tip, and
  * Basic 01 (1.67) has a ragged edge but is still one stroke.
@@ -478,14 +487,26 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   const tStart = oneLength ? tEnd : clamp(s.num(`${pen}StartLength`, 0), 0, 1);
   const tSize = clamp(s.num(`${pen}Size`, 0), 0, 1);
   const tOpacity = clamp(s.num(`${pen}Opacity`, 0), 0, 1);
-  if ((tStart > 0.01 || tEnd > 0.01) && (tSize > 0.01 || tOpacity > 0.01)) {
+  // The fade a taper asks for (see TAPER_FADE_MAX): as strong as the thinning, and only when there is a tip left to fade.
+  // Measured on the Inking Pens and Dry Ink v2 (size 0.829, a grey end), against the 6B Pencil and Dry Ink 1 (size 1,
+  // as dark at the tip as in the middle) and Shenbot's Background (size 0, its end is the pressure and nothing more).
+  const tFade = tSize > 0.01 && tSize < TAPER_FADE_MAX ? tOpacity * tSize : 0;
+  if ((tStart > 0.01 || tEnd > 0.01) && (tSize > 0.01 || tFade > 0.01)) {
     const size = raw.size as number;
-    // A taper that thins the line does not fade it as well: the 6B Pencil, Dry Ink 1 and Dry Ink v2 all ask for a full
-    // fade and Procreate's pictures of them are as dark at the tip as in the middle. One that only fades does fade:
-    // Shenbot's Background keeps its width and its picture goes soft at both ends.
-    raw.taper = { start: tStart > 0.01 ? (tStart * TAPER_PIXELS) / size : 0, end: tEnd > 0.01 ? (tEnd * TAPER_PIXELS) / size : 0, size: tSize, opacity: tSize > 0.01 ? 0 : tOpacity };
+    // The fade belongs to the end the file gives a length for: a start taper that was only borrowed from the end
+    // (`oneLength` above, Dry Ink v2's start is 0 in its file) does not fade. Dry Ink v2's picture is solid where it
+    // starts and grey where it ends.
+    raw.taper = {
+      start: tStart > 0.01 ? (tStart * TAPER_PIXELS) / size : 0,
+      end: tEnd > 0.01 ? (tEnd * TAPER_PIXELS) / size : 0,
+      size: tSize,
+      opacity: tFade,
+      ...(oneLength && tFade > 0.01 ? { startOpacity: 0 } : {}),
+    };
     changed.push("Its taper came across: the line thins to a point at each end. The end is drawn when you lift the pen. How long a taper is was measured off Procreate's own pictures, at the size the brush came in at.");
+    if (tFade > 0.01) changed.push(`Its taper also fades the line toward its tip (${pct(tFade)}), as Procreate's pictures of brushes like it do. How strongly was measured on only a few brushes.`);
   }
+  if (tOpacity > 0.05 && tFade < 0.01 && (tStart > 0.01 || tEnd > 0.01)) dropped.push("Its taper's fade. Procreate's own picture of the stroke shows none, so the line only thins (or, when it does not thin, keeps its strength to the end).");
   const fixed = s.num('shapeAngle', 0);
   if (Math.abs(fixed) > 0.001) dropped.push('Its fixed tip angle. Frameling has not seen how Procreate stores it, so the tip came at its own angle.');
 

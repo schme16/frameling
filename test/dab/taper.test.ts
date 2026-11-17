@@ -3,7 +3,7 @@
 // draws exactly as before, the widths at the start, middle and end, and that taking the tail back leaves the pixels
 // under it as they were.
 import { describe, expect, it } from 'vitest';
-import { cleanDab, cleanTaper, DEFAULT_DAB, sameDab, taperAt, type DabBrush, type Taper } from '../../src/dab/maths';
+import { cleanDab, cleanTaper, DEFAULT_DAB, sameDab, sameTaper, taperAt, type DabBrush, type Taper } from '../../src/dab/maths';
 import { bufferSurface, DabStroke } from '../../src/dab/stroke';
 
 const W = 400;
@@ -32,6 +32,11 @@ describe('taper: the numbers', () => {
     expect(cleanTaper({ start: 0, end: 0, size: 1, opacity: 0 })).toBeNull();
     expect(cleanTaper({ start: 4, end: 4, size: 0, opacity: 0 })).toBeNull();
     expect(cleanTaper('yes')).toBeNull();
+    // The start can fade differently from the end; when it does not, nothing extra is kept.
+    expect(cleanTaper({ ...taper, opacity: 0.6, startOpacity: 0 })).toEqual({ ...taper, opacity: 0.6, startOpacity: 0 });
+    expect(cleanTaper({ ...taper, opacity: 0.6, startOpacity: 0.6 })).toEqual({ ...taper, opacity: 0.6 });
+    expect(cleanTaper({ ...taper, opacity: 0.6, startOpacity: 9 })).toEqual({ ...taper, opacity: 0.6, startOpacity: 1 });
+    expect(sameTaper({ ...taper, opacity: 0.6 }, { ...taper, opacity: 0.6, startOpacity: 0 })).toBe(false);
   });
 
   it('a brush keeps its taper when it is cleaned, an older brush has none, and switching it off takes it away', () => {
@@ -47,6 +52,8 @@ describe('taper: the numbers', () => {
     expect(taperAt(taper, 40, 80).size).toBeCloseTo(0.5);
     expect(taperAt(taper, 200, 80).size).toBe(1);
     expect(taperAt({ ...taper, size: 0.5, opacity: 1 }, 0, 80)).toEqual({ size: 0.5, cap: 0 });
+    // The start may fade by its own amount.
+    expect(taperAt({ ...taper, size: 0.5, opacity: 1 }, 0, 80, 0)).toEqual({ size: 0.5, cap: 1 });
   });
 });
 
@@ -73,6 +80,18 @@ describe('taper: the line', () => {
     const px = draw({ taper: { ...taper, start: 0 } });
     expect(width(px, 46)).toBeGreaterThanOrEqual(19);
     expect(width(px, 354)).toBeLessThan(5);
+  });
+
+  it('a fade at the end only: the start stays solid, the end goes faint (a start of its own can be left unfaded)', () => {
+    const faint = (px: Uint8ClampedArray, x: number): number => px[((H / 2) * W + x) * 4 + 3];
+    const both = draw({ taper: { start: 4, end: 4, size: 0.5, opacity: 1 } });
+    const endOnly = draw({ taper: { start: 4, end: 4, size: 0.5, opacity: 1, startOpacity: 0 } });
+    // Right at the start the line is thin but, with startOpacity 0, as strong as the middle.
+    expect(faint(endOnly, 48)).toBeGreaterThan(200);
+    expect(faint(both, 48)).toBeLessThan(120);
+    // The end fades the same either way.
+    expect(faint(endOnly, 352)).toBeLessThan(120);
+    expect(faint(endOnly, 352)).toBe(faint(both, 352));
   });
 
   it('taking the tail back puts the picture under it back exactly', () => {

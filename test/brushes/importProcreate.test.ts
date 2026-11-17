@@ -611,14 +611,27 @@ describe('settings, built to the layout', () => {
     const size = b.dab.size;
     expect(b.dab.taper!.start).toBeCloseTo((0.2 * 530) / size, 1);
     expect(b.dab.taper!.end).toBeCloseTo((0.4 * 530) / size, 1);
-    // The fade is left out: Procreate's own pictures are as dark at the tip as in the middle.
+    // A taper that thins all the way to a point has no fade: Procreate's own pictures of the 6B Pencil and Dry Ink 1
+    // are as dark at the tip as in the middle.
     expect(b.dab.taper).toMatchObject({ size: 1, opacity: 0 });
     expect(b.changed.join(' ')).toMatch(/taper came across/);
+    expect(b.dropped.join(' ')).toMatch(/taper's fade/);
     // An older file keeps one length that counts at both ends.
     const old = one(brush({ pencilTaperStartLength: 0.01, pencilTaperEndLength: 0.4, pencilTaperSize: 1 })).dab.taper!;
     expect(old.start).toBe(old.end);
-    // One that only fades does fade (Shenbot's Background keeps its width and goes soft at both ends).
-    expect(one(brush({ taperVersion: 1, pencilTaperEndLength: 0.4, pencilTaperSize: 0, pencilTaperOpacity: 1 })).dab.taper).toMatchObject({ size: 0, opacity: 1 });
+    // A taper that only fades fades nothing: Shenbot's Background has the pressure and no taper at all in its picture.
+    const bg = one(brush({ taperVersion: 1, pencilTaperEndLength: 0.4, pencilTaperSize: 0, pencilTaperOpacity: 1 }));
+    expect(bg.dab.taper).toBeUndefined();
+    expect(bg.dropped.join(' ')).toMatch(/taper's fade/);
+    // One that thins and leaves a tip fades that tip, as strongly as it thins (Inking Pen, Dry Ink v2: size 0.829, a grey end).
+    const pen = one(brush({ taperVersion: 1, pencilTaperStartLength: 0.2, pencilTaperEndLength: 0.4, pencilTaperSize: 0.8, pencilTaperOpacity: 1 })).dab.taper!;
+    expect(pen.opacity).toBeCloseTo(0.8, 2);
+    expect(pen.startOpacity).toBeUndefined();
+    // A start the file does not give (borrowed from the end, as Dry Ink v2's is) stays solid: only the end fades.
+    const dv2 = one(brush({ pencilTaperStartLength: 0, pencilTaperEndLength: 0.4, pencilTaperSize: 0.8, pencilTaperOpacity: 1 })).dab.taper!;
+    expect(dv2.start).toBe(dv2.end);
+    expect(dv2.opacity).toBeCloseTo(0.8, 2);
+    expect(dv2.startOpacity).toBe(0);
     // No taper, or one that thins nothing, is no taper.
     expect(one(brush({})).dab.taper).toBeUndefined();
     expect(one(brush({ taperVersion: 1, pencilTaperEndLength: 0.4, pencilTaperSize: 0 })).dab.taper).toBeUndefined();

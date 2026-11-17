@@ -65,19 +65,46 @@ export function spread(field: Float32Array, curve: [number, number][]): Uint8Arr
 
 const picture = (bytes: Uint8Array): TexturePicture => ({ side: SIDE, data: encodeBytes(bytes) });
 
+/**
+ * A faint knit for the pastel paper: rows of stitches, 18 to a tile (14 pixels apart) and 13 stitches to a row (20
+ * pixels), each row half a stitch along from the last and leaning the other way, so the rows read as chevrons. 0 to 1.
+ * Measured on Procreate's picture of Shenbot's Background (the middle of the stroke, straightened, with the slow
+ * changes taken out): the autocorrelation peaks at a step of 20 across (0.19) and at 7 to 11 across and 13 to 15 down
+ * (0.15 to 0.16), and a quarter of the pattern's power is rows (stripes across the line). Only the numbers were
+ * taken, never the picture.
+ */
+const KNIT_ROWS = 18;
+const KNIT_STITCHES = 13;
+/** How far a stitch leans across its row. */
+const KNIT_LEAN = 0.6;
+/** How much of a stitch is the row it sits in (a ridge all along the line) against the bump of the stitch itself. */
+const KNIT_ROW = 0.55;
+/** How much of the pastel field is the knit (the rest is the noise). 0.24 gives an autocorrelation peak of 0.13 at 20 across, with the fine and coarse parts of the spectrum within a few points of Procreate's. */
+const PASTEL_KNIT = 0.24;
+function knit(x: number, y: number): number {
+  const gy = (y / SIDE) * KNIT_ROWS;
+  const row = Math.floor(gy);
+  const v = gy - row;
+  const lean = (row % 2 === 0 ? 1 : -1) * (v - 0.5) * KNIT_LEAN;
+  const u = (x / SIDE) * KNIT_STITCHES + (row % 2) * 0.5 + lean;
+  return Math.sin(Math.PI * v) * (KNIT_ROW + (1 - KNIT_ROW) * Math.sin(Math.PI * (u - Math.floor(u))));
+}
+
 let pastel: TexturePicture | null = null;
 /**
  * The tooth of a pastel paper: a fine, even bite a few pixels across, a little longer along the line than down it, with
- * pale pin specks where the paper is lowest. Procreate's Background brush on it is dense and dark, with a spread of
- * pale specks, not streaks, so this has none of the long fibres the watercolour paper has.
+ * pale pin specks where the paper is lowest, and a faint knit over it (see `knit`). Procreate's Background brush on it
+ * is dense and dark, with a spread of pale specks, not streaks, so this has none of the long fibres the watercolour
+ * paper has. The heights are poured into the spread of Procreate's picture in the middle of the stroke (where the
+ * pressure is full): about a quarter of it above 0.9, half above 0.8, and a thin tail down to 0.3.
  */
 export function pastelPaper(): TexturePicture {
   if (pastel) return pastel;
   const field = draw((x, y) => {
     const wx = x + (noise(x, y, 8, 8, 21) - 0.5) * 6;
-    return noise(wx, y, 100, 170, 31) * 0.28 + noise(wx, y, 64, 128, 32) * 0.28 + noise(wx, y, 28, 85, 35) * 0.2 + noise(wx, y, 12, 48, 33) * 0.12 + hash(x, y, 34) * 0.12;
+    return noise(wx, y, 100, 170, 31) * 0.28 + noise(wx, y, 64, 128, 32) * 0.28 + noise(wx, y, 28, 85, 35) * 0.2 + noise(wx, y, 12, 48, 33) * 0.12 + hash(x, y, 34) * 0.25 + knit(x, y) * PASTEL_KNIT;
   });
-  pastel = picture(spread(field, [[0, 0.15], [0.02, 0.45], [0.1, 0.65], [0.25, 0.78], [0.5, 0.9], [0.75, 0.97], [0.97, 1], [1, 1]]));
+  pastel = picture(spread(field, [[0, 0.3], [0.02, 0.4], [0.06, 0.5], [0.15, 0.6], [0.29, 0.7], [0.47, 0.8], [0.73, 0.9], [1, 1]]));
   return pastel;
 }
 
