@@ -14,8 +14,9 @@ import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
 import { FLOW_RANGE, ROUND_RANGE, SCATTER_RANGE, SIZE_RANGE, SPACING_RANGE, type TipShape } from './maths';
 import { drivesFrom } from './dynamics';
-import { ColourSection, DynamicsSection, TextureSection } from './DynamicsOptions';
+import { ColourSection, DynamicsSection, PaperSection, TextureSection } from './DynamicsOptions';
 import { setDab, useDab } from './settings';
+import { editPictureTip, pictureTipFromFile } from './pictureTip';
 
 /** The tip made from the selection, kept in the brush (so a saved brush carries its picture). */
 export function pictureFromSelection(): boolean {
@@ -62,9 +63,15 @@ function PictureTip() {
           </span>
         </div>
       ) : (
-        <Tip stays>Select some pixels with the Select tool, then press the button to make them the brush.</Tip>
+        <Tip stays>Draw a tip on a little grid, start from a picture file, or use the pixels you have selected.</Tip>
       )}
       {picture && hasColours(picture) && <Toggle label="Its own colours" checked={picture.keep} onChange={(keep) => setDab({ picture: { ...picture, keep } })} hint="On: it stamps the picture as it was drawn. Off: only its shape counts, painted in the colour you picked." />}
+      <ActionButton command="pixelbrush.picture.edit" onClick={editPictureTip} title="Draw the tip, or change the one you have, on a grid (up to 32 by 32)">
+        {picture ? 'Edit the picture...' : 'Draw a picture...'}
+      </ActionButton>
+      <ActionButton command="pixelbrush.picture.file" onClick={() => void pictureTipFromFile()} title="Start from a picture file: a PNG, GIF, JPEG, WebP or BMP. It is shrunk to fit and opens in the editor.">
+        From a picture file...
+      </ActionButton>
       <ActionButton onClick={() => void pictureFromSelection()} title="Turn the pixels you have selected into the tip (up to 32 by 32)">
         {picture ? 'Use the selection instead' : 'Make from the selection'}
       </ActionButton>
@@ -83,9 +90,9 @@ export function DabOptionsPanel() {
         options={[
           { value: 'round', label: 'Round', title: 'A round dab. Hardness sets how firm its edge is.' },
           { value: 'square', label: 'Square', title: 'A square dab, with corners. Turn it with Angle for a diamond or a chisel.' },
-          { value: 'picture', label: 'Picture', title: 'A little picture of your own, stamped along the line. Make one from a selection.' },
+          { value: 'picture', label: 'Picture', title: 'A little picture of your own, stamped along the line. Draw one, or start from a picture file or a selection.' },
         ]}
-        onChange={(tip) => setDab(tip === 'picture' && !b.picture ? { tip: 'round' } : { tip })}
+        onChange={(tip) => (tip === 'picture' && !b.picture ? editPictureTip() : setDab({ tip }))}
       />
       {b.tip === 'picture' && <PictureTip />}
       <Slider label="Size" value={b.size} min={SIZE_RANGE.min} max={Math.min(SIZE_RANGE.max, 120)} typeMax={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ size: v })} hint={b.tip === 'picture' ? 'The longer side of the picture. A picture the same size as it was drawn goes down pixel for pixel.' : undefined} />
@@ -121,6 +128,7 @@ export function DabOptionsPanel() {
         <Slider label="Opacity" value={Math.round(b.opacity * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ opacity: v / 100 })} hint="The most paint any pixel can get in one stroke, however many dabs cross it. Flow is how fast it builds, opacity is where it stops." />
       </MoreOptions>
       <DynamicsSection />
+      <PaperSection />
       <TextureSection />
       <ColourSection />
       <MirrorOptions />

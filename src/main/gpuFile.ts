@@ -20,8 +20,10 @@ interface Where {
  * Frameling/gpu-off; elsewhere it sits in the app's data folder, which is where the same name is read at start-up.
  */
 export function gpuOffPath(w: Where): string {
-  const base = w.platform === 'linux' ? w.env.XDG_CONFIG_HOME || path.join(w.home, '.config') : w.appData;
-  return path.join(base, 'Frameling', GPU_OFF_FILE);
+  // Built for the named platform, whatever machine this runs on, so asking for the Linux path on Windows gives /home/a/...
+  const p = w.platform === 'win32' ? path.win32 : path.posix;
+  const base = w.platform === 'linux' ? w.env.XDG_CONFIG_HOME || p.join(w.home, '.config') : w.appData;
+  return p.join(base, 'Frameling', GPU_OFF_FILE);
 }
 
 /** Is hardware drawing switched off, and by what? */

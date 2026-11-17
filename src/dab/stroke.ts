@@ -10,11 +10,13 @@ import { tileModeOn, wrap } from '../tiles/state';
 import { PixelSession } from '../tools/pixelSession';
 import { threshold, paintOver, mixTowards, type EdgeMode } from '../soft/maths';
 import { palettePicker, type Pt } from '../soft/stroke';
+import type { BlendMode } from '../core/format';
+import { blendPaint } from './blend';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
 import { DabPath, makeRng, mirrorDabs, samplerFor, snapAxis, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
-import { dualAt, dualTile, grainCut } from './texture';
-import { paperTile, TILE } from '../dry/paper';
+import { dualAt, dualTile, grainCut, grainTile } from './texture';
+import { TILE, type PaperKind } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
 export interface Surface {
@@ -23,6 +25,8 @@ export interface Surface {
   /** The pixel as it was before the stroke, written into `out` (r, g, b, a). */
   read(x: number, y: number, out: Uint8ClampedArray | number[]): void;
   write(x: number, y: number, r: number, g: number, b: number, a: number): void;
+  /** The pixel as it is now, with what this stroke has already put there. Left out: the same as `read`. */
+  now?(x: number, y: number, out: Uint8ClampedArray | number[]): void;
 }
 
 /** A pixel session as a surface. */
@@ -33,6 +37,13 @@ export function sessionSurface(s: PixelSession): Surface {
     height: s.height,
     read(x, y, out) {
       s.baseInto(x, y, out);
+    },
+    now(x, y, out) {
+      const c = s.get(x, y);
+      out[0] = c[0];
+      out[1] = c[1];
+      out[2] = c[2];
+      out[3] = c[3];
     },
     write(x, y, r, g, b, a) {
       px[0] = r;
@@ -57,6 +68,13 @@ export function bufferSurface(pixels: Uint8ClampedArray, width: number, height: 
       out[2] = was[i + 2];
       out[3] = was[i + 3];
     },
+    now(x, y, out) {
+      const i = (y * width + x) * 4;
+      out[0] = pixels[i];
+      out[1] = pixels[i + 1];
+      out[2] = pixels[i + 2];
+      out[3] = pixels[i + 3];
+    },
     write(x, y, r, g, b, a) {
       const i = (y * width + x) * 4;
       pixels[i] = r;
@@ -74,6 +92,8 @@ export interface DabParams {
   back?: RGBA | null;
   /** Crisp: a pixel is all or nothing. Smooth: see-through edges. */
   edge: EdgeMode;
+  /** The sheet's paper, for a grain that does not keep one of its own. Medium when left out. */
+  sheet?: PaperKind;
   mirror?: { mode: 'off' | 'h' | 'v' | 'both'; ax2: number; ay2: number };
   /** Turns a pixel into one from the layer's palette, when the palette is locked. */
   snap?: ReturnType<typeof palettePicker>;
@@ -95,6 +115,8 @@ const MASK = TS - 1;
 export class DabStroke {
   private readonly path: DabPath;
   private readonly tiles: (Float32Array | undefined)[];
+  // Wet paint: the colour this stroke has laid on each pixel (a paint-weighted mix of every dab that touched it), in the same blocks.
+  private readonly mixTiles: (Float32Array | undefined)[] | null;
   private readonly across: number;
   private readonly w: number;
   private readonly h: number;
@@ -103,6 +125,7 @@ export class DabStroke {
   private readonly col: [number, number, number, number] = [0, 0, 0, 0];
   private readonly crisp: boolean;
   private readonly keep: boolean;
+  private readonly blend: BlendMode;
   private readonly wrapEdges: boolean;
   // Texture: the paper and the dual dots, looked up per pixel, and where this stroke's own scatter of dots starts.
   private readonly grainTile: Uint8Array | null;
@@ -118,6 +141,10 @@ export class DabStroke {
   // Colour: the one a dab paints with, which dynamics and wet mode can move away from the colour picked.
   private readonly colourFx: boolean;
   private readonly cur: Rgb;
+  // Counts dabs from 1, so a pixel's wet stamp says which dab last put paint on it (0 is never).
+  private dabNo = 0;
+  // A dab only picks up its own stroke's paint from pixels laid at least this many dabs ago: the trail just behind it is the brush's own wake, not paint it has met.
+  private readonly wake: number;
   private readonly load: Rgb;
   private readonly under = new Uint8ClampedArray(4);
 
@@ -131,10 +158,12 @@ export class DabStroke {
     this.across = Math.ceil(this.w / TS);
     this.tiles = new Array(this.across * Math.ceil(this.h / TS));
     this.crisp = p.edge === 'crisp';
+    this.mixTiles = p.brush.wet > 0 && !p.pick && !(p.brush.tip === 'picture' && p.brush.picture?.keep) ? new Array(this.tiles.length) : null;
+    this.blend = p.brush.blend;
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
     const g = p.brush.grain;
-    this.grainTile = g && g.depth > 0 ? paperTile(g.paper) : null;
+    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet) : null;
     this.grainDepth = g?.depth ?? 0;
     this.grainScale = g?.scale ?? 1;
     this.grainMoving = !!g?.moving;
@@ -144,6 +173,7 @@ export class DabStroke {
     this.dualOx = (start() * TILE) | 0;
     this.dualOy = (start() * TILE) | 0;
     this.look = makeRng((p.seed ?? 1) + 991);
+    this.wake = Math.max(2, Math.ceil(1 / Math.max(0.05, p.brush.spacing)) + 1);
     this.colourFx = touchesColour(p.brush.dynamics) || p.brush.wet > 0;
     this.cur = [p.color[0], p.color[1], p.color[2]];
     this.load = [p.color[0], p.color[1], p.color[2]];
@@ -167,6 +197,26 @@ export class DabStroke {
     if (next <= have) return;
     t[i] = next;
     let s = next;
+    // Wet: this dab's paint joins the paint the stroke already laid here, in proportion to how much of each there is.
+    let own: Float32Array | undefined;
+    if (this.mixTiles) {
+      let m = this.mixTiles[ti];
+      if (!m) m = this.mixTiles[ti] = new Float32Array(TS * TS * 4);
+      own = m;
+      const k = (y & MASK) * TS * 4 + (x & MASK) * 4;
+      const share = (next - have) / next;
+      const cu = this.cur;
+      m[k + 3] = this.dabNo;
+      if (have <= 0) {
+        m[k] = cu[0];
+        m[k + 1] = cu[1];
+        m[k + 2] = cu[2];
+      } else {
+        m[k] += (cu[0] - m[k]) * share;
+        m[k + 1] += (cu[1] - m[k + 1]) * share;
+        m[k + 2] += (cu[2] - m[k + 2]) * share;
+      }
+    }
     // A smooth pixel whose paint moved by less than one step of see-through looks just the same: leave it be.
     if (!this.crisp && !this.keep && ((next * 255 + 0.5) | 0) === ((have * 255 + 0.5) | 0)) return;
     if (this.crisp) {
@@ -186,6 +236,12 @@ export class DabStroke {
       c[1] = cell[1];
       c[2] = cell[2];
       c[3] = Math.round((cell[3] * pc[3]) / 255);
+    } else if (own) {
+      const k = (y & MASK) * TS * 4 + (x & MASK) * 4;
+      c[0] = Math.round(own[k]);
+      c[1] = Math.round(own[k + 1]);
+      c[2] = Math.round(own[k + 2]);
+      c[3] = pc[3];
     } else {
       c[0] = this.cur[0];
       c[1] = this.cur[1];
@@ -196,7 +252,8 @@ export class DabStroke {
     if (this.p.pick) {
       this.p.pick(x, y, b, c);
       mixTowards(b, c, s, o);
-    } else paintOver(b, 0, c, s, o);
+    } else if (this.blend !== 'normal') blendPaint(this.blend, b, c, s, o);
+    else paintOver(b, 0, c, s, o);
     this.p.snap?.(o);
     this.surface.write(x, y, o[0], o[1], o[2], o[3]);
   }
@@ -259,6 +316,7 @@ export class DabStroke {
 
   /** The colour this dab paints with: the one picked, mixed toward the back colour, shifted in hue, saturation and lightness, and carrying what it picked up when wet. */
   private colourFor(d: Dab): void {
+    this.dabNo++;
     const pc = this.p.color;
     const cur = this.cur;
     cur[0] = pc[0];
@@ -270,7 +328,11 @@ export class DabStroke {
       const x = Math.floor(d.x);
       const y = Math.floor(d.y);
       if (x >= 0 && y >= 0 && x < this.w && y < this.h) {
-        this.surface.read(x, y, this.under);
+        // Paint this stroke laid a while ago counts as paint under the brush (a loop smears its own earlier line); its wake does not.
+        const m = this.mixTiles?.[(y >> SHIFT) * this.across + (x >> SHIFT)];
+        const stamp = m ? m[((y & MASK) * TS + (x & MASK)) * 4 + 3] : 0;
+        if (stamp > 0 && this.dabNo - stamp >= this.wake && this.surface.now) this.surface.now(x, y, this.under);
+        else this.surface.read(x, y, this.under);
         pickUp(this.load, this.under);
       }
       mixRgb(pc, this.load, wet, cur);

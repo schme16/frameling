@@ -47,10 +47,21 @@ function below(limit: number, random: Random): number {
   }
 }
 
-/** A new code from the system's random numbers (`random` is for tests only). */
+/**
+ * A new code from the system's random numbers (`random` is for tests only). Every word in a code is different: a
+ * repeat is weaker, it is harder to say aloud, and a secret word that also shows in the meeting half is no secret.
+ */
 export function makeCode(random: Random = systemRandom): ShareCode {
-  const pick = (n: number) => Array.from({ length: n }, () => WORDS[below(WORDS.length, random)]);
-  return { meet: pick(MEET_WORDS), secret: pick(SECRET_WORDS) };
+  // Each word is drawn, then walked forward to the next one not already used. Walking rather than drawing again
+  // means this always finishes, even where the numbers coming in repeat themselves.
+  const used = new Set<number>();
+  const all = Array.from({ length: MEET_WORDS + SECRET_WORDS }, () => {
+    let i = below(WORDS.length, random);
+    while (used.has(i)) i = (i + 1) % WORDS.length;
+    used.add(i);
+    return WORDS[i];
+  });
+  return { meet: all.slice(0, MEET_WORDS), secret: all.slice(MEET_WORDS) };
 }
 
 /** The code as people say it: river-lantern-copper-owl. */

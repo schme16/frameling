@@ -2,15 +2,15 @@
 export const bodies: Record<string, string> = {
   'brush-presets': `A **saved brush** is the brush you like, kept under a name. Ink for outlines, a soft marker for shading, a thin pencil for sketching: one click to swap, instead of moving four sliders back and forth.
 
-**Pick one:** choose the **Brush** tool (**B**). The **brush picker** at the top of its options shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
+**Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they stay plain vector shapes when you export.
+**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they export as plain vector shapes.
 
 **Soft edges:** airbrush, highlighter, soft brush and smudge are [pixel tools](help:soft-paint), since a vector line can't fade.
 
 **Save your own:**
 1. Set the brush how you like it.
-2. Press **Save as...** (or **Ctrl+K** and type "save this brush").
+2. Press **Save as...**, under **Size** (or **Ctrl+K** and type "save this brush").
 3. Give it a name, and a group if you want one, and press **Enter**.
 
 **Changed it afterwards?** A small dot on the brush's name says you've moved a slider since you picked it. Press **Update** to keep the change in that brush, or **Revert** to go back to how it was saved. Your brush in the options always shows what you are drawing with, whatever the saved one says.
@@ -21,7 +21,7 @@ export const bodies: Record<string, string> = {
 
 **From the keyboard:** **Alt+Down** moves to the next brush and **Alt+Up** to the one before, and **Alt+P** opens the picker. In the command palette, every brush has a command called **Brush: Ink** and so on, which also switches to the Brush tool for you.
 
-**Share them:** open **Share your brushes** under the row. **Save as a file** and **Copy as text** make something you can send a friend (or a plugin). **Add from a file...** and **Paste from text** add ones you were sent, under new names if yours clash. The starters aren't included, because everyone has them. Your saved brushes also go in the settings backup in **Preferences, General**.
+**Share them:** open **Share your brushes**, under **Save as...**. **Save as a file** and **Copy as text** make something you can send a friend (or a plugin). **Add from a file...** and **Paste from text** add ones you were sent, under new names if yours clash. The starters aren't included, because everyone has them. Your saved brushes also go in the settings backup in **Preferences, General**.
 
 **Good to know:**
 - A saved brush holds the size, smoothing, pressure, pointy ends, end caps and the [tip](help:brush-tips) (chalk, stamps, a shape you made and so on). The colour, the mirror and your pen curves stay as they are.
@@ -30,7 +30,7 @@ export const bodies: Record<string, string> = {
 - Pixel brushes live in this picker too: see the [Pixel brush](help:pixel-brush).
 
 help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet help:brush-import`,
-  'brush-picker': `The **brush picker** is the button at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
+  'brush-picker': `The **brush picker** is the button under the preview, at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
 
 **Open it:** click the button, press **Alt+P**, or press **Ctrl+K** and type "brush picker". Pick a brush and it closes. **Esc** or a click away closes it without picking.
 
@@ -57,15 +57,17 @@ help:brush-picker help:brush-tips help:tool-options help:remembered-settings hel
 You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pack keep their group when you add them.
 
 help:brush-presets help:brush-tips help:tool-options`,
-  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. The chalk and charcoal tips catch on paper like the real thing, and stay lines you can reshape.
+  'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. Chalk and charcoal catch on paper like the real thing, and stay lines you can reshape.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Tip** button under the preview shows the tip you use. Click it to see every tip as a real stroke: Plain, Chalk, Charcoal, Watercolour, each stamp shape, and four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
+**Pick one:** choose the **Brush** tool (**B**). The **Tip** button, under the Brush picker, shows every tip as a real stroke, including four you [build yourself](help:brush-own). Click one and draw. **Alt+Shift+Down** and **Alt+Shift+Up** step through them.
 
-**Chalk and Charcoal:** a line that catches on paper. **Catch on paper** picks the stick (vine or compressed charcoal, chalk, pastel, crayon, pencil) and **Grain size** how coarse the paper is. Press lightly for specks, firmly to fill in. The paper sits on the page, so two lines over each other meet the same bumps. Each line carries a **Paper tooth** [effect](help:effects) you can change afterwards. Off gives the older grain of tiny shapes.
+**Chalk and Charcoal:** a line that catches on paper. **Stick** is another picker under **Tip**: vine or compressed charcoal, chalk, soft or oil pastel, crayon, or one of three pencils, each as a real stroke. **Catch on paper** switches the paper on and **Grain size** sets how coarse it is. Press lightly for specks, firmly to fill in. Each line carries a **Paper tooth** [effect](help:effects). Off gives the older grain of tiny shapes.
 
 **Watercolour:** a see-through wash that is darker and bolder at the edge, where paint gathers. **Edge** sets how strong that is. Go over it again for a deeper colour.
 
-**Stamp:** repeats a shape along the line: a leaf, dash, dot, star, diamond, heart or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** shrink the stamps at the ends.
+**Stamp:** repeats a shape along the line, like a leaf, star or paw print. **Spacing** is how far apart, **Size variety** and **Wander** make it look placed by hand, and **Turn** decides whether stamps follow the line, stay upright or spin. **Pointy start** and **Pointy end** taper the ends.
+
+**Matte finish:** any tip. Dries paler and chalkier, with a faint velvety grain, like gouache, and still covers what is under it. Each line carries it as [effects](help:effects).
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.
@@ -82,7 +84,7 @@ A pixel brush with more than one colour asks once whether to keep its own colour
 - Tips are for drawing layers. On a pixel layer the brush paints pixels.
 - On a merge layer a line joins what it touches and comes out as plain shapes.
 - A shape you made into a brush is a silhouette: it takes the colour you have picked.
-- Tips can't be changed on a line once it is drawn. Undo, pick another tip, and draw it again.
+- Tips can't be changed on a line once it is drawn: undo, pick another, draw it again.
 
 help:brush-presets help:brush-own help:tool-brush help:exporting`,
   'brush-own': `**Brushes you build yourself.** Pick a tip, or turn a drawing of your own into a brush, and a line becomes a calligraphy stroke, a ribbon, a chain or a dry paintbrush. Every one comes out as plain shapes, so it stays sharp at any size and exports anywhere.
@@ -122,7 +124,7 @@ They land in your [brush picker](help:brush-picker) beside the ones that come re
 **What comes across:**
 - The tip: a round or square shape, or a picture. A picture tip is shrunk to fit 32 by 32 pixels, with its soft shading kept (so a charcoal or sponge tip still has its texture).
 - Size, hardness, angle, roundness and spacing.
-- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, as straight lines.
+- Photoshop's pen controls (fade, tilt, direction, pen rotation) for size, flow and angle, and its jitter, scatter, minimum diameter, flow and opacity. Krita's pen controls, for size, opacity, flow and rotation, with the bend of each curve (a long curve is thinned to its nearest 8 points, and says so).
 - A texture becomes one of the [papers](help:pixel-brush-texture), and a dual brush with a textured tip becomes a field of dots, both with a note saying so.
 
 **What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, roundness jitter, count, a pipe of several pictures (GIMP and Krita pick between them as you paint; Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes, and every brush engine that isn't the pixel brush. Each one is named in the window when a brush had it.

@@ -35,7 +35,7 @@ describe('the button set', () => {
       for (const n of readdirSync(d)) {
         const p = join(d, n);
         if (statSync(p).isDirectory()) walk(p);
-        else if (/\.tsx?$/.test(n) && !p.includes('/streamboard/')) files.push(p);
+        else if (/\.tsx?$/.test(n) && !p.replace(/\\/g, '/').includes('/streamboard/')) files.push(p);
       }
     };
     walk('src');

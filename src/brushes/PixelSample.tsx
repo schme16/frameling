@@ -1,8 +1,8 @@
-// The sample pictures for pixel brushes in the picker: a long stroke and a single dab, drawn by the real dab engine at the
-// brush's own pixel size, so a pixel brush looks like pixels and a scatter brush shows its scatter (see src/dab/sample.ts).
+// The sample pictures for pixel brushes in the picker: a long stroke and a single dab. A pixel brush is drawn by the dab engine
+// (so a scatter brush shows its scatter); soft paint and dry media are drawn by their own tools (see pixelPreview.ts).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { renderSample, type SampleKind } from '../dab/sample';
 import type { PixelSpec } from '../dab/spec';
+import { renderPixelPreview, type SampleKind } from './pixelPreview';
 import { inkFor, parseCssColour, useThemeTick } from './ink';
 import { useSeen } from './Stroke';
 
@@ -13,7 +13,7 @@ function paint(c: HTMLCanvasElement, spec: PixelSpec, kind: SampleKind, w: numbe
   const g = c.getContext('2d');
   if (!g || w < 1 || h < 1) return;
   const ink = parseCssColour(inkFor(c)) ?? [0, 0, 0, 1];
-  const px = renderSample(spec, kind, w, h, [Math.round(ink[0]), Math.round(ink[1]), Math.round(ink[2])]);
+  const px = renderPixelPreview(spec, kind, w, h, [Math.round(ink[0]), Math.round(ink[1]), Math.round(ink[2])]);
   const img = g.createImageData(w, h);
   img.data.set(px);
   g.putImageData(img, 0, 0);

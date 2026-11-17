@@ -48,6 +48,33 @@ describe('chalk and charcoal pictures', () => {
   });
 });
 
+describe('bristle pictures', () => {
+  const bristly = STARTERS.filter((b) => b.brush.tip?.kind === 'bristle');
+
+  it('has bristle brushes in the Paint and Bristles folders, oil paint and hog bristle among them', () => {
+    const ids = bristly.map((b) => b.id.replace('starter:', ''));
+    for (const id of ['oil', 'bristle', 'hog', 'dry-bristle', 'fan', 'rake']) expect(ids).toContain(id);
+  });
+
+  it('draws the round thumbnail of every one as a short stroke across the box, not a small lined square', () => {
+    for (const b of bristly) {
+      vi.mocked(drawShapeFx).mockClear();
+      thumbFor(b.brush, 'dab', 44, 30, 1, '#222');
+      const shape = vi.mocked(drawShapeFx).mock.calls[0][1] as { points: { x: number; y: number }[] };
+      const xs = shape.points.map((p) => p.x);
+      expect(Math.max(...xs) - Math.min(...xs), b.id).toBeGreaterThan(44 * 0.7);
+    }
+  });
+
+  it('leaves the dab of a tip that is not bristles as it was', () => {
+    const round = STARTERS.find((b) => b.id === 'starter:chalk')!;
+    vi.mocked(drawShapeFx).mockClear();
+    thumbFor(round.brush, 'dab', 44, 30, 1, '#222');
+    const xs = (vi.mocked(drawShapeFx).mock.calls[0][1] as { points: { x: number }[] }).points.map((p) => p.x);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(44 * 0.7);
+  });
+});
+
 describe('no picture skips the effects', () => {
   it('no brush picture calls drawShape on a built stroke', () => {
     for (const f of ['src/brushes/thumbs.ts', 'src/tools/options/BrushOptions.tsx', 'src/brushes/TipOptions.tsx', 'src/brushes/BrushPickerPanel.tsx']) {

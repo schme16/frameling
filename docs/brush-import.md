@@ -16,9 +16,9 @@ palette); it takes Frameling's own `.json` brush files too. Code: `src/brushes/i
 | `.abr` v1, v2 | Photoshop | Done to the layout, **checked only against files built to that layout**: no real old file turned up. | Adobe's Photoshop 6 notes (as AbrKit writes them up) |
 | `.kpp` | Krita | Done for the pixel brush engine. A PNG with the settings in a `preset` text chunk. The tip picture is **not** in the file (Krita names it), so a lone `.kpp` brings in only the generated (round or square) tips and says so for a picture tip. | The options Krita documents, and real presets from Krita's own CC0 default bundles |
 | `.bundle` | Krita | Done. A zip of presets and the tip pictures they name (`.png`, `.gbr`, `.gih`). An SVG tip, and every brush engine that is not the pixel brush (and the smudge one, which comes as its tip with a note), are left out and counted in the file's note. | Real bundles shipped with Krita |
-| `.brush`, `.brushset` | Procreate | **Not done, on purpose.** A zip holding an Apple keyed archive (`Brush.archive`) and its pictures; no public description of the keys, no real file on this machine and no freely licensed one found. A guessed layout would make wrong brushes without saying so. | |
-| `.sut` | Clip Studio | **Not done, on purpose.** No public description and no real file to check against. | |
-| `.afbrushes` | Affinity | **Not done, on purpose.** Nothing public and no real file. | |
+| `.brush`, `.brushset` | Procreate | **Not done, on purpose.** A zip holding an Apple keyed archive (`Brush.archive`) and its pictures. The layout is written up by others, the setting values are not. Free real files do exist (see [what is known](#procreate-clip-studio-and-affinity-what-is-known-and-not-yet-checked)), but nothing has been checked against them yet. A guessed layout would make wrong brushes without saying so. | |
+| `.sut` | Clip Studio | **Not done, on purpose.** A SQLite database with the settings in it, found by others. Units and the pen-control blobs are not settled and no free real file turned up. | |
+| `.afbrushes` | Affinity | **Not done, on purpose.** Nothing public found at all, and no real file. | |
 
 No GPL code was read or copied (Frameling is MIT). GIMP's own loader is GPL, so the GIMP formats come from the format
 descriptions GIMP publishes, and from the brushes that ship with GIMP (CC0, per `gimp-data/LICENSE`). Fixtures and their
@@ -72,7 +72,7 @@ spacing. A sampled tip's `Dmtr` is across the whole picture, so `size = Dmtr x v
 - Jitters: size `szVr` is `sizeJitter`; angle `angleDynamics` is `angleJitter`; scatter `scatterDynamics` jitter is `scatter`
   (held to 200%); opacity `opVr` and flow `prVr` are both flow (a `random` route for the jitter), with a note for opacity;
   mix `mxVr` is `mix`. Pressure on both opacity and flow is one route, not two.
-- `useTexture` is `grain` (the medium paper, `textureDepth`, scale, and `TxtC` "each tip" as `moving`), with a note that the
+- `useTexture` is `grain` (no paper of its own, so it follows the sheet; `textureDepth`, scale, and `TxtC` "each tip" as `moving`), with a note that the
   pattern picture is not kept. `dualBrush` with a sampled (textured) second tip is `dual`: round dots no bigger than a quarter
   of the brush, density 60% (more with a count), `cut` for subtract; the second tip's own picture, spacing, scatter and blend mode
   are dropped with a note. A plain round second tip is left out altogether (a field of dots would look nothing like it), with a note.
@@ -96,9 +96,16 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   Flow also when their `<Name>UseCurve` is true (the flags real presets use for those two). The sensor is the `<Name>Sensor`
   text: `pressure`, `xtilt`/`ytilt`/`declination` (tilt), `speed`, `drawingangle` (direction; for Rotation it is `follow`),
   `rotation` (twist), `fuzzy`/`fuzzystroke` (random), `fade` (its `length` in dabs, as `fadeLength` pixels); a list of sensors is
-  one route each. A curve is the straight line from its value at 0 to its value at 1 (`amount = 1 - low / high`, `invert` when it
-  falls), and a curve that bends away from that by more than 10% says so. Opacity dynamics come as flow dynamics, with a note.
-- Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (medium paper,
+  one route each. A sensor's curve is kept as the route's `curve` (`routeOf` in `krita.ts`): the lowest and highest the line
+  reaches give `amount = 1 - low / high`, `invert` is on when it ends lower than it starts, and the bend between is the points
+  held to 0 to 1 across that range, so a jump early in Krita jumps early here. Points out of range or out of order are mended,
+  a curve that starts after 0 or stops before 1 holds its end heights out to the edges, and a straight curve leaves the route
+  without one. More than 8 points are thinned to the nearest 8, with a note. The route is scaled to the curve's own high point, so a
+  curve that tops out below full (at half, say) scales the brush's own size, flow or opacity by that height instead
+  (`height` from `routeOf`), with a note: a half-height size curve gives half the saved size, which is what multiplying
+  the setting by the curve does. Several sensors on one option each scale it, as Krita multiplies sensors. Opacity dynamics
+  come as flow dynamics, with a note.
+- Scatter keeps its `ScatterValue` and drops (with a note) a pen control on it. `Texture/Pattern` is `grain` (no paper of its own, so it follows the sheet;
   `Strength`, `Scale`, random offset as `moving`), with a note that the pattern picture is not kept.
 - Dropped with a note when on: Softness, Sharpness, Roundness, Spacing, Flip, Darken, Colour mixing, Airbrush rate, Hue,
   Saturation and Value dynamics, the sensors `ascension`, `distance`, `time`, `perspective` and barrel pressure, a masking brush,
@@ -114,8 +121,18 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
   `hfade` 1; the "Opacity" and "Flow" brushes switch those on with `UseCurve`), not from Krita's documentation of the file, and
   not checked by painting the same stroke in Krita. The direction of a turned tip is taken as clockwise, unchecked. `ScatterValue`
   is taken as a share of the brush size. A fade's `length` is taken as dabs.
-- **Krita curves are straight lines here.** A pressure curve that jumps early (Krita's `Basic-5 Size` flow) comes as a slow ramp,
-  which the note names.
+- **Krita curves are kept, but not checked against Krita.** `Basic-5 Size`'s flow curve (it jumps to nearly full by a 7%
+  press) comes with that jump, and its size curve with its late rise, as the route curves the engine draws. Frameling joins the
+  points with its own smooth line, which may differ a little from Krita's between two points. A curve that tops out below 1 scales the
+  brush by its height (see above), which matches Krita's flow and opacity multiplying with their curves and the Size option
+  being "the curve for how it is affected"; no preset we hold has such a curve, so this is tested on made-up presets only.
+- **`SizeValue` (the strength beside the size curve) is not applied.** Every real preset we hold has it at 1, so nothing shows
+  how Krita combines it with the curve. A preset that sets it to anything else comes at its saved size, with a note. A real
+  preset with `SizeValue` below 1 and a known stroke in Krita would settle it.
+
+- **Photoshop and GIMP files carry no curves.** A real Photoshop 2026 `.abr` keeps, for each control, only the control menu, the
+  jitter, the minimum and the step count (see `photoshop_dynamics.abr`), and GIMP's `.vbr` has no pen controls at all, so there is
+  nothing for those readers to keep or flatten. If a Photoshop file with a curve turns up, its key is not read yet.
 
 - **The direction of an angle.** GIMP's `.vbr` angle is taken as counter-clockwise (turned the other way for Frameling);
   Photoshop's `Angl` is taken as clockwise (AbrKit's note). Neither was checked against the program, which is not on this
@@ -126,6 +143,166 @@ one does, is read and the note says so). `spacing` is `spacing` (automatic spaci
 - **Colour dynamics** are dropped for want of a real file to read the key names from. They could map to the `hue`, `saturation`,
   `lightness` and `mix` routes.
 - Version 1 and 2 `.abr` have no real fixture.
+
+## Procreate, Clip Studio and Affinity: what is known, and not yet checked
+
+**Nothing in this section is built, and none of it has been checked against Frameling's engine.** It is what could be found in
+public, written down so the next person starts from it and does not repeat the search. None of the three makers publishes the format, so
+everything below comes from other people reading files.
+
+How sure each line is:
+
+- **Seen**: found by opening a real file during this research. Three Procreate files, named below. Nothing for the other two.
+- **Two sources**: two readers that did not copy each other say the same.
+- **One source**: said once. Treat it as a hint.
+- **Guess**: inferred from a name, or from what a converter's author did. Not evidence.
+
+No GPL or AGPL code was read, the same rule as above. (CSPBrushExtract, the best known `.sut` tool, is AGPL, so only its README
+was read.) The one piece of code that was read (CSP2PC) is MIT, and topsd's notes are CC BY 4.0.
+
+### Where the evidence comes from
+
+| Source | What it is | Licence | How far to trust it |
+|---|---|---|---|
+| [topsd/procreate-format](https://github.com/topsd/procreate-format) `docs/brushes.md` | Notes on `.brush` and `.brushset`, with a label on every claim and the sample files named | CC BY 4.0 | Best of the lot: honest about what it did not decode. Its checks were on real, public files, three of which were re-opened here |
+| [Leon-Schoenbrunn/CSP2PC](https://github.com/Leon-Schoenbrunn/CSP2PC) (`csp2procreate.py`, `Seed.brush`) | Turns a `.sut` into a `.brush`: the only working code found that reads one **and** writes the other | MIT | Real code against real files, but a hobby tool: it takes the first settings row only, and its own number handling is inconsistent (see below) |
+| [Brushfactory](https://brushfactory.co/formats/brush), [and `/sut`](https://brushfactory.co/formats/sut) | Format pages from a brush site's own parser | n/a | One vendor, says "built against the applications' own source and real files", cannot be checked, lists no settings |
+| [CSP Brush Info](https://kenevans.net/opensource/CSPBrushInfo/Help/Overview.html) | A reader of CSP's own settings files and `.sut` | not checked | Says plainly its guesses may be wrong, and that it saw CSP 1.8.8 on Windows 10 only |
+| [luce-procreate](https://github.com/dymokomi/luce-procreate), [gddg](https://github.com/smallertrixie/gddg) | Procreate readers | MIT or Apache; none stated | Tested **only on files their own scripts made**, so they show the layout and prove nothing about values |
+| [Pipelines-Plugin PR 23](https://github.com/groot99-droid/Pipelines-Plugin/pull/23) | A byte for byte round trip of 1,071 real `Brush.archive` files, 260 distinct keys | n/a | Real files, so the layout and the key count are solid. It says itself that nothing was opened in Procreate and "many stroke rules are inferred from key names and thumbnails" |
+| Procreate's [Brush Studio handbook](https://help.procreate.com/procreate/handbook/brushes/brush-studio) | What each setting is called on screen | n/a | The names a person sees, not the file's keys |
+
+### Procreate (`.brush`, `.brushset`)
+
+**Container.** A zip. A `.brush` has the brush at the top; a `.brushset` has `brushset.plist` (the set's name and the brush order, as
+an XML plist) and one folder per brush, named by a UUID and laid out like a `.brush`. The single `.brush` layout was seen in all three files here; the `.brushset` layout was **not seen** by us (topsd saw it in a real set). Also in luce, gddg and VarunVF's `brush_converter` notes: **two sources**.
+
+| Part | What it is | How sure |
+|---|---|---|
+| `Brush.archive` | The settings. An Apple binary plist (`bplist00`) in `NSKeyedArchiver` form: a `$objects` list, a `$top` root, values that point at each other by `UID`, `UID(0)` meaning nothing, arrays as `NS.objects`, the date as `NS.time`. Root class `SilicaBrush` | Seen, and two sources |
+| `Shape.png`, `Grain.png` | The tip and the grain. 8 bit grey, **white paints** (1024 pixels square in 2015 files, 2048 in the 2020s one) | Seen (size, grey). White paints: one source (topsd), from comparing against the thumbnails |
+| `shapeInverted`, `textureInverted` | Flip those. `Sequins.brush` has `shapeInverted` true and a dark-on-light shape | Seen for the shape; the grain flag is **a guess** (topsd says it was not checked) |
+| `bundledShapePath`, `bundledGrainPath` | A built in tip or grain, **named but not in the file** (`Brush-Preset-Blank.png` is the blank grain in the files seen) | Seen. A brush that uses one has no picture for us to read |
+| `QuickLook/Thumbnail.png` | The stroke Procreate drew for its own library: white on see-through, 440 by 276 in the old files, 1060 by 324 in the new one | Seen |
+| `Sub01/` (and its own `Brush.archive`, `Shape.png`, `Grain.png`) | The second brush of a dual brush | One source (topsd); not present in the files seen. Whether `Sub02` exists is open |
+| `Reset/`, `Signature/` | A copy to reset to, the author's signature picture | One source; the signature folder was seen in the new file |
+
+**Settings.** About 220 top level keys in the 2020s file (219 counted), 44 in the 2015 ones, 260 across every era in the round trip
+PR. So a reader has to take any key to be missing and have a default for it. Names are in camelCase, and a name often shows the
+group it sits in: `shape*`, `texture*`/`grain*`, `plot*`, `dynamics*`, `taper*`, `pencilTaper*`, `rendering*`, `smudge*`, `dual*`,
+`metallic*`, `burntEdges*`, `wetEdges*`. Almost every number is a plain 0 to 1 style value, **not pixels or percent**, and **no
+source says how they turn into the numbers Brush Studio shows** (topsd lists this first among its unknowns). That is the biggest
+gap, and reading cannot close it.
+
+What the keys are, with the name as the only evidence (so every line here is a **guess** until compared with a thumbnail):
+
+| Procreate key (seen) | Ours | Note |
+|---|---|---|
+| `Shape.png` (+ `shapeInverted`) | `tip: 'picture'`, a soft tip (`PixelStamp.soft`) through `tip.ts` | The tip is white-paints, so no flip is needed unless inverted. Shrunk from 1024 or 2048 down to 32 by 32 |
+| `bundledShapePath` with no `Shape.png` | a round tip, with a note | The named picture is not in the file |
+| `paintSize`, `maxSize`, `minSize` | `size` | Three size keys. In the 2015 files `paintSize` sits between `minSize` and `maxSize` (Sequins 0.39, 0, 0.99; Plain Stitch 0.24, 0.009, 0.49), which is **all that is known**. Which one is "the size", and in what units, is open |
+| `plotSpacing`, `plotSpacingVersion` | `spacing` | Values seen: 0.0026, 0.55, 1.006. The `...Version` key (1 in the new file) says the meaning has changed once, so it must be read. One source (gddg) says "stored squared"; 0.0026 read that way is 5%, a believable spacing, which fits and proves nothing |
+| `plotJitter`, `shapeScatter` | `scatter` | Which of the two is Procreate's "jitter" and which its "scatter" is not settled |
+| `shapeRotation`, `shapeRandomise`, `shapeAzimuth`, `shapeRoll`, `shapeOrientation` | `angle`, `angleJitter`, `follow`, a `twist` route | Names only |
+| `shapeRoundness`, `dynamicsPressureShapeRoundness*`, `dynamicsTiltShapeRoundness*` | `roundness` | |
+| `paintOpacity`, `maxOpacity`, `minOpacity`, `dynamicsPressureOpacity`, `dynamicsTiltOpacity`, `dynamicsSpeedOpacity`, `dynamicsJitterOpacity` | `opacity`, and `flow` routes | As for Photoshop: opacity dynamics come as flow dynamics, with a note |
+| `dynamicsPressureSize`, `dynamicsTiltSize`, `dynamicsSpeedSize`, `dynamicsJitterSize`, `dynamicsRollSize` | size routes from `pressure`, `tilt`, `speed`, `random`, `twist` | Same for hue, saturation and brightness (our `hue`, `saturation`, `lightness`) |
+| `dynamicsPressureSizeCurve` and its kind (`ValkyrieMagnitudinalCurve`) | a route's `curve` | **Seen**: a `points` array of strings like `"{0.000000, 0.000000}"`, here the straight line from 0 to 1. A bent one has not been seen. Procreate is a good fit for our curves (see pixel-brush.md) |
+| Negative dynamics values | `invert` | One source (Brushfactory, "stock `dynamicsSpeedSize` is -0.004"); that file here has 0.0. Unconfirmed |
+| `textureScale`, `textureMovement`, `textureZoom`, `grainDepth`, `grainDepthMinimum`, `textureRotation`, `textureApplication`, `grainBlendMode` | `grain` (`scale`, `depth`, `moving`), with `Grain.png` as `Grain.picture` | Our grain follows the sheet's paper unless a picture is given, and now takes one, so this is one of the better fits. A built in grain (no `Grain.png`) comes as the paper, with a note |
+| `Sub01/` | `dual`, from its `Shape.png` | Only the nearest thing, as for Photoshop: our dual is a tile of dots, not a second brush with its own spacing |
+| `dynamicsMix`, `dynamicsLoad`, `dynamicsWetAccumulation`, `dynamicsPressureMix`, `dynamicsMixSoftening`, `smudgeSize`, `smudgeOpacity` | `wet` | CSP2PC's author guessed this grouping too. Names only |
+| `blendMode`, `extendedBlend` | `blend` | topsd has the integer table for layers (with Photoshop names). That the brush uses the same table is **a guess** |
+
+No equivalent on our side, and so dropped with a note: `taperStartLength`/`taperEndLength`/`taperSize` and the `pencilTaper*` set
+(we have a start fade, not an end taper, the same as Photoshop's), `shapeCount`/`shapeCountJitter` and the flip jitters,
+`plotSmoothing` and the other smoothing keys (the stabiliser is the tool's), `rendering*` glaze modes, `metallic*`,
+`burntEdges*`, `wetEdges*`, `roughness*`, `height*`, `hoverOutline`, and the separate saved erase and smudge sizes (a Procreate brush
+is three brushes in one: paint, smudge and erase). **Ours with nothing to fill it from**: `aliased` and `hardness` (Procreate's tip is a
+picture), a `grain.paper` choice, `fadeLength`. They keep their defaults.
+
+**What a real file settles that reading cannot.** The units, all of them. Free real files **are** obtainable, and that changes the
+answer to "do we have one": the three below were opened here, are not in the repo, and could become fixtures once there is a reader.
+
+| Pack | Licence | How to get it | What it is good for |
+|---|---|---|---|
+| [Versluis stitch and sequin brushes](https://www.versluis.com/2015/01/procreate-stitch-and-sequin-brushes/): 12 single `.brush` files, 2015 (opened `Sequins.brush`, `Plain_Stitch.brush`) | CC0 (stated on the page) | Direct links on the page, e.g. `.../wp-content/uploads/2015/01/Sequins.brush` | The old, small key set (44 keys). Inverted tip, scatter, spacing over 1 |
+| `Seed.brush` in the CSP2PC repo (opened) | MIT | In the repo | The new, full key set (219), 2048 pixel tip. Mostly defaults, so it names keys more than it shows values |
+| [Catherine's Basic Procreate Brushes](https://coborski.itch.io/catherines-basic-procreate-brushes), `cats-basics.brushset`, 18 MB, 2024 (**not opened**) | CC0 (stated on the page) | itch.io, by the page's download button (no direct link) | A `.brushset`, so the set layout and `brushset.plist`, and six modern brushes |
+
+The cheap way to find the units without owning Procreate: **every one of those brushes carries Procreate's own picture of its
+stroke**, `QuickLook/Thumbnail.png`. Draw the same stroke through our engine with a guessed mapping, lay it beside the
+thumbnail, and move the mapping until they agree. That settles size, spacing and scatter by eye, and the card's A/B looks already do
+the laying side by side. What it cannot settle is anything the thumbnail does not show: pen controls, grain, dual, wet mix. For
+those the ask is **two exports of one brush that differ by one slider** (from someone with Procreate), which names the key and
+its direction in one go. Also open: whether `.brushlibrary` has the same layout (one source says unknown).
+
+Lead only, not checked: Procreate's own older official sets, said (in the PR above) to be on `download-assets.procreate.art`. The
+licence on them was not looked at, and they would be for checking against, not for the repo.
+
+### Clip Studio Paint (`.sut`)
+
+| Claim | How sure | Source |
+|---|---|---|
+| A `.sut` holds a SQLite database | **Two sources**, and working code | CSP Brush Info; Brushfactory; CSP2PC |
+| It is **not** a bare SQLite file. CSP2PC finds the database by searching the file for the text `SQLite format 3` and reading from there on, so there are bytes before it that nobody wrote down | One source (inferred from that code) | CSP2PC |
+| Tables `Node` (the brush: `NodeName`, `NodeVariantId`, `NodeInitVariantId`, ...) and `Variant` (one row of settings per variant, a column per setting) | Two sources | CSP Brush Info; Brushfactory |
+| The `Variant` columns **differ between Clip Studio versions**, so a reader has to ask the database which it has | Two sources | CSP Brush Info ("changes with the versions"); Brushfactory |
+| Tip and texture pictures are in table `MaterialFile` (`_PW_ID`, `FileData`). `FileData` is a plain tar of PNGs; some are wrapped in Celsys's own `.c2f` container | One source for the tar and the wrapper | Brushfactory. CSP2PC finds the picture another way, by scanning the blob for a PNG, which agrees that a PNG is in there |
+| A `.sut` can hold several tips (one `MaterialFile` row each) | One source | CSP2PC makes one brush per row |
+| Pen controls (pressure, tilt, speed, angle) are in **binary blobs** in the `*Effector` columns, big endian, not in plain columns. Brush angle flags: `0x10` pen direction, `0x20` barrel rotation, `0x40` stroke direction | Two sources agree on blobs; the flags are one | Brushfactory; CSP Brush Info ("partially decoded", and the layout changes by version) |
+| `.sutg` holds several brushes | One source | `brush_converter` notes |
+
+**Settings.** Column names that CSP2PC reads, all `Brush...`: `BrushSize`, `BrushInterval`, `BrushFlow`, `BrushRotation`,
+`BrushRotationRandomScale`, `BrushRotationInSpray`, `BrushRotationRandomInSpray`, `BrushUseSpray`, `BrushSprayBias`,
+`BrushPatternOrderType`, `BrushRevision`, `BrushUseIn`/`BrushUseOut`, `BrushInLength`/`BrushOutLength`, `BrushInRatio`/`BrushOutRatio`,
+`BrushUseWaterColor`, `BrushMixColor`, `BrushMixAlpha`, `BrushRotationEffector`. One source, so names only.
+
+The **units are the open question**, and the one working reader does not know them either. It treats `BrushFlow` as 0 to 1 in one
+place, 0 to 100 in another and 0 to 1000 in a third. It turns `BrushInterval` into a spacing by dividing by `BrushSize` and then
+multiplying by a "fudge factor" it picked by size, which is what someone does when the numbers do not line up. Take that as
+the honest state of things: a size in pixels, an interval in pixels, and the rest unknown.
+
+Mapping, by what the Clip Studio screen calls them, so **guesses**: brush size and interval are `size` and `spacing`; rotation and
+random rotation are `angle` and `angleJitter`; flow is `flow`; spray is `scatter`; the start and end fade-in and fade-out are our `fade` source
+at the start, with **no end taper** on our side; the water colour and colour mixing group is `wet`. The tip picture is probably
+dark-paints (CSP2PC inverts the brightness and multiplies by the see-through to get a Procreate tip), which matches how Krita and GIMP masks work and
+would suit the soft tip: one source. **No equivalent**: Clip Studio's multiple-brush and pattern sequencing, vector and ruler
+behaviour, correction (stabilising), the watercolour edge and the layer composite it chooses. **Ours with nothing to fill it**:
+`grain` (CSP2PC found no paper in the file to read), `dual`, curves (they are in the effector blobs, which no source decodes),
+`hardness`, `aliased`.
+
+**What a real file settles.** The units of every column; what comes before the SQLite header; whether a `Variant` has more than one
+row and which is current; and the effector blobs, which hold every pressure, tilt and speed curve. Without those a `.sut` would bring
+in a tip, a size and a spacing and **lose every pen control**, which is most of what makes a Clip Studio brush that brush. The ask:
+two or three `.sut` files from **different Clip Studio versions** (the columns move), ideally with the matching pictures of the Sub
+Tool Detail window, and a pair that differ by one setting.
+
+Real files: no CC0 pack was found. Free ones exist on the makers' own terms (check each before keeping a copy): [5x free brushes for
+Clip Studio Paint](https://ed-of-all.itch.io/5x-free-brushes-for-clip-studio-paint) (itch.io, pay what you like), [a free pack on
+Gumroad](https://lonelyshootingstar.gumroad.com/l/FREEBRUSHPACK), and anything from Clip Studio ASSETS (needs an account). None was
+downloaded or opened. Clip Studio also reads Photoshop `.abr`, so a pack that ships both already works through the Photoshop reader.
+
+### Affinity (`.afbrushes`)
+
+Nothing public was found. Searches turned up the file extension sites (which only say "a brush file for Affinity Photo and Designer, raster
+or vector", with a generic type and no header or magic bytes), Serif's forum (a staff reply that it is a cross app sharing format, not
+something to open elsewhere), and tutorials for importing it. No reverse engineering write up, no open source reader, no format
+note. Whether it is a zip, a Serif container or something else is **not known**, and no file was available to look at. The one useful
+fact is on the Affinity side: Affinity imports Photoshop `.abr` for its raster brushes, so a pack that ships both formats
+already comes in through the Photoshop reader. A pack that is `.afbrushes` only does not.
+
+A real file would settle all of it, and the first question is only what the first bytes are. Ask for one free pack in
+`.afbrushes`, and if the maker also ships the same brushes as `.abr`, that one too: the pair gives a free comparison of Affinity's
+settings against ones we already read. Free packs found, none opened and none stated CC0: [Frontier Scum brushes](https://makedatanotlore.itch.io/frontier-scum-brushes)
+(says free for personal and commercial use, no licence needed). Do not plan on this one until a file shows that it can be read.
+
+### A small thing this turned up
+
+`sniff` (`index.ts`) calls any zip that is not a `.zip` a **Krita bundle**. A `.brush` or `.brushset` is a zip, so if one gets past the
+file picker (drag and drop, or "all files") the person is told "That Krita bundle has no brush presets in it", which is
+wrong and confusing. The same file ending is the cue Frameling already has to say "that is a Procreate brush, which Frameling
+cannot read yet". Not changed here, because this was research only. It is a few lines, and it is worth doing whichever way the question to the user goes.
 
 ## Adding another format
 

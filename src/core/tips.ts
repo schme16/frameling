@@ -10,6 +10,9 @@ export function setTipOutliner(fn: OutlineFn): void {
   outliner = fn;
 }
 
+/** A tipped line with an effect of its own (a matte finish, a blur) stays one line, so the effect runs on the whole of it; drawing it swaps in its shapes inside the effect. */
+const keepsLine = (s: StrokeShape): boolean => onPaper(s) || !!s.effects?.some((e) => e.on !== false);
+
 const parts = new WeakMap<StrokeShape, Shape[] | null>();
 
 /** A line with Paper tooth switched on is drawn as pigment on paper straight from its points (effects/toothShape.ts), so it is not swapped for shapes. */
@@ -34,12 +37,12 @@ export function withTips(d: Drawing): Drawing {
   const known = expanded.get(d);
   if (known) return known;
   let any = false;
-  for (const s of d.shapes) if (s.type === 'stroke' && s.brush.tip && !onPaper(s)) any = true;
+  for (const s of d.shapes) if (s.type === 'stroke' && s.brush.tip && !keepsLine(s)) any = true;
   let out: Drawing = d;
   if (any) {
     const shapes: Shape[] = [];
     for (const s of d.shapes) {
-      const p = s.type === 'stroke' && s.brush.tip && !onPaper(s) ? strokeParts(s) : null;
+      const p = s.type === 'stroke' && s.brush.tip && !keepsLine(s) ? strokeParts(s) : null;
       if (p) shapes.push(...p);
       else shapes.push(s);
     }

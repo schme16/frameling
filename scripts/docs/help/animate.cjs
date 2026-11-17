@@ -1,6 +1,6 @@
 // Help pictures and clips for symbols, tweens, camera, artboards, clip flow, rigging, sound and lip sync.
 const L = require('./_lib.cjs');
-const { FROM_STAGE, edge } = require('./_shapes.cjs');
+const { FROM_STAGE, edge, view, at, away } = require('./_shapes.cjs');
 
 /** Selects the first instance on `layer` at `frame` (0-based) with the Select tool, and goes to that frame. */
 const pick = (layer, frame) => L.js(`(() => { const s = __frameling.store(); const { doc } = s.get(); const l = doc.layers.find((x) => x.name === ${JSON.stringify(layer)}); const cel = l.cels.find((c) => c.start <= ${frame} && ${frame} < c.start + c.length); const d = doc.drawings[cel.drawingId]; s.setUi({ tool: 'select', activeLayerId: l.id, frame: ${frame}, selection: d.shapes.filter((x) => x.type === 'instance').slice(0, 1).map((x) => x.id) }); return true; })()`);
@@ -30,14 +30,30 @@ const standing = () => L.js(`(() => { const s = __frameling.store(); s.update('s
 /** Scrolls the Properties panel to the very bottom. */
 const scrollEnd = () => L.js(`(() => { const sc = document.querySelector('.rd-scroll'); sc.scrollTop = sc.scrollHeight; return true; })()`);
 
+/**
+ * Where a spot of the 720 x 540 stage (the puppet, the noodle, the star) lands, written the way these clips first
+ * wrote it: a window position from when the page was fitted at 65% with the document's middle at (495, 269). It is a
+ * stage point now, so it follows whatever the stage and the zoom are when the step runs. Call view() first.
+ */
+const old65 = (x, y) => at(360 + (x - 495) / 0.65, 270 + (y - 269) / 0.65);
+/** The same for the 1280 x 720 documents (blank-vector), shown at 50%: the middle (495, 269) is (640, 360). */
+const old50 = (x, y) => at(640 + (x - 495) * 2, 360 + (y - 269) * 2);
+/** Press play (the timeline's own button, found by its test id) and move away so no tooltip sits over the picture. */
+const PLAY = [{ clickOn: '[data-testid="timeline.play"]', after: 150 }, { move: away.move }];
+/** Scrolls the Properties panel so a section sits at the top, found by its title. */
+const showSection = (title) => scrollTo(title, 4);
+
+/** Scrolls the Properties panel so one of the Rig panel's headings (Bones, Parts, Pose library) sits `pad` pixels under the top. */
+const rigHead = (title, pad = 6) => L.js(`(() => { const h = [...document.querySelectorAll('h3.rg-head')].find((e) => e.textContent.trim() === ${JSON.stringify(title)}); const sc = document.querySelector('.rd-scroll'); if (!h || !sc) return 'missing'; sc.scrollTop += h.getBoundingClientRect().top - sc.getBoundingClientRect().top - ${pad}; return true; })()`);
+
 /** A striped noodle on one layer (720 x 540 stage), to give bones to. */
 const noodle = () => L.js(`(() => { const s = __frameling.store(); s.update('setup', (d) => { d.width = 720; d.height = 540; d.background = '#fff4e0'; const l = d.layers.find((x) => x.name === 'Lines'); l.name = 'Noodle'; const dr = d.drawings[l.cels[0].drawingId]; const N = 24, X0 = 130, X1 = 590, W = 38; const top = [], bot = []; for (let i = 0; i <= N; i++) { const t = i / N; const x = X0 + (X1 - X0) * t; const y = 270 + 16 * Math.sin(t * Math.PI * 3); top.push({ x, y: y - W / 2 }); bot.unshift({ x, y: y + W / 2 }); } let k = 0; const id = () => 'noodle' + k++; dr.shapes.push({ id: id(), type: 'path', paths: [{ closed: true, points: [...top, ...bot] }], fill: '#4fd1a5', stroke: { color: '#1d1b26', width: 4, join: 'round', cap: 'round' }, opacity: 1 }); for (let i = 1; i < N - 1; i += 3) dr.shapes.push({ id: id(), type: 'path', paths: [{ closed: true, points: [top[i], top[i + 1], bot[N - i - 1], bot[N - i]] }], fill: '#ffc94a', stroke: null, opacity: 1 }); }); s.load(s.get().doc); s.setUi({ activeLayerId: s.get().doc.layers.find((x) => x.name === 'Noodle').id }); return true; })()`);
 /** Three bones along the noodle, drawn with the Bone tool. */
 const noodleBones = (after = 600) => [
   L.js(`__frameling.store().setUi({ tool: 'bone' })`),
-  { drag: [[353, 269], [443, 269]], steps: 8, delay: 40, after },
-  { drag: [[443, 269], [540, 269]], steps: 8, delay: 40, after },
-  { drag: [[540, 269], [637, 269]], steps: 8, delay: 40, after: after + 300 },
+  { drag: [old65(353, 269), old65(443, 269)], steps: 8, delay: 40, after },
+  { drag: [old65(443, 269), old65(540, 269)], steps: 8, delay: 40, after },
+  { drag: [old65(540, 269), old65(637, 269)], steps: 8, delay: 40, after: after + 300 },
 ];
 /** Makes the noodle bend with the bones. */
 const bendNoodle = () => L.js(`(() => { const s = __frameling.store(); s.setUi({ activeLayerId: s.get().doc.layers.find((x) => x.name === 'Noodle').id }); __frameling.run('rig.bendLayer'); return true; })()`);
@@ -49,8 +65,11 @@ const speech = () => L.js(`(async () => { const b = atob(${JSON.stringify(requir
 // The pictures made from the stage are cropped from the stage as the running app has it (FROM_STAGE in _shapes.cjs). The other
 // numbers in this file are for a 1280 x 800 window: the right side x 886-1196, the timeline y 500-760.
 const CANVAS = FROM_STAGE({});
-// The puppet's stage and a little around it (720 x 540 document, fitted).
-const STAGE = [203, 47, 584, 444];
+// The puppet's stage, and the stage with the panel beside it (for a tool's own options).
+const STAGE = FROM_STAGE({});
+const WITH_PANEL = FROM_STAGE({ rightGap: 8 });
+// The 720 x 540 stage at 65%, the zoom these clips were first aimed at, with the document's middle in the middle.
+const puppetView = () => view(0.65, 360, 270);
 
 const entries = [
   {
@@ -90,34 +109,35 @@ const entries = [
     steps: [
       L.template('bouncing-logo'),
       L.wait(300),
+      view(0.5, 360, 230),
       pick('Logo', 4),
       L.cmd('tween.drawPath'),
       L.wait(300),
-      { drag: [[495, 50], [592, 110], [642, 200], [582, 280], [495, 314]], steps: 8, delay: 12 },
+      { drag: [old65(495, 50), old65(592, 110), old65(642, 200), old65(582, 280), old65(495, 314)], steps: 8, delay: 12 },
       L.wait(300),
       pick('Logo', 8),
       L.wait(600),
       scrollTo('Easing', 25),
       L.wait(1200),
-      { shot: '@', crop: [108, 44, 1164, 450] },
+      { shot: '@', crop: FROM_STAGE({ rightGap: 8, down: 150 }) },
     ],
   },
   {
     name: 'tweens',
     steps: [
       L.template('blank-vector'),
-      fit(),
+      view(0.4, 640, 360),
       L.js(`__frameling.store().setUi({ tool: 'ellipse' })`),
       L.wait(500),
-      { rec: '@', crop: [108, 44, 1172, 716], every: 80 },
+      { rec: '@', crop: FROM_STAGE({ rightGap: 8, down: 360 }), every: 80 },
       L.wait(700),
-      { drag: [[242, 250], [322, 330]], steps: 12, delay: 30 },
+      { drag: [old50(242, 250), old50(322, 330)], steps: 12, delay: 30 },
       L.wait(900),
       { key: 'T', mods: ['control', 'shift'], after: 1800 },
       L.js(`__frameling.store().setUi({ tool: 'select' })`),
-      { drag: [[282, 290], [522, 200], [722, 290]], steps: 14, delay: 40, after: 1200 },
+      { drag: [old50(282, 290), old50(522, 200), old50(722, 290)], steps: 14, delay: 40, after: 1200 },
       L.wait(800),
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 3500 },
+      ...PLAY, L.wait(3500),
       { rec: 'stop' },
     ],
   },
@@ -125,10 +145,10 @@ const entries = [
     name: 'one-click-motions',
     steps: [
       L.template('blank-vector'),
-      fit(),
+      view(0.4, 640, 360),
       L.js(`__frameling.store().setUi({ tool: 'ellipse', fillColor: '#ff6f91' })`),
       L.wait(400),
-      { drag: [[457, 220], [537, 300]], steps: 8, delay: 12, after: 300 },
+      { drag: [old50(457, 220), old50(537, 300)], steps: 8, delay: 12, after: 300 },
       L.js(`__frameling.store().setUi({ tool: 'select' })`),
       L.wait(600),
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
@@ -137,7 +157,7 @@ const entries = [
       { clickOn: '[role=menu] [role=menuitem]', text: 'Ready-made motion', hover: true, after: 1000 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', hover: true, after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', after: 1800 },
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 3500 },
+      ...PLAY, L.wait(3500),
       { rec: 'stop' },
     ],
   },
@@ -145,13 +165,13 @@ const entries = [
     name: 'shape-tweens',
     steps: [
       L.template('morphing-shapes'),
-      fit(),
+      view(0.5, 400, 280),
       goto('Shape', 0),
       L.wait(500),
       L.wait(800),
-      { rec: '@', crop: [108, 44, 782, 716], every: 80 },
+      { rec: '@', crop: FROM_STAGE({ down: 170 }), every: 80 },
       L.wait(1200),
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 4800 },
+      ...PLAY, L.wait(4800),
       { rec: 'stop' },
     ],
   },
@@ -166,7 +186,7 @@ const entries = [
       L.wait(500),
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
       L.wait(1200),
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 6500 },
+      ...PLAY, L.wait(6500),
       { rec: 'stop' },
     ],
   },
@@ -304,11 +324,11 @@ const entries = [
   },
   {
     name: 'rig-attach',
-    steps: [L.template('puppet'), L.panel('rig'), rigged(), L.wait(500), scrollTo('Parts', 20), L.wait(500), scrollTo('Left lower arm', 40), L.js(`document.querySelector('.rd-scroll').scrollTop += 40`), L.wait(800), { shot: '@', crop: [886, 50, 310, 700] }],
+    steps: [L.template('puppet'), L.panel('rig'), rigged(), L.wait(500), scrollTo('Parts', 20), L.wait(500), scrollTo('Left lower arm', 40), L.js(`document.querySelector('.rd-scroll').scrollTop += 40`), L.wait(800), { shot: '@', crop: FROM_STAGE({ of: '.rd-scroll' }) }],
   },
   {
     name: 'rig-pose-library',
-    steps: [L.template('puppet'), L.panel('rig'), rigged(), L.wait(500), scrollTo('Pose library', 220), L.wait(800), { shot: '@', crop: [886, 258, 310, 200] }],
+    steps: [L.template('puppet'), L.panel('rig'), rigged(), L.wait(500), rigHead('Pose library', 8), L.wait(800), { shot: '@', crop: FROM_STAGE({ of: '.rg-poses', top: -44, down: 110 }) }],
   },
   {
     name: 'rig-posing',
@@ -316,15 +336,15 @@ const entries = [
       L.template('puppet'),
       standing(),
       rigged('pose'),
-      fit(),
+      puppetView(),
       L.wait(800),
       { rec: '@', crop: STAGE, every: 80 },
       L.wait(900),
-      { drag: [[496, 213], [522, 222]], steps: 10, delay: 40, after: 800 },
-      { drag: [[541, 300], [567, 235]], steps: 12, delay: 40, after: 800 },
-      { drag: [[457, 386], [457, 386]], mods: ['alt'], after: 600 },
-      { drag: [[540, 370], [540, 370]], mods: ['alt'], after: 600 },
-      { drag: [[494, 298], [494, 335]], steps: 14, delay: 40, after: 1500 },
+      { drag: [old65(496, 213), old65(522, 222)], steps: 10, delay: 40, after: 800 },
+      { drag: [old65(541, 300), old65(567, 235)], steps: 12, delay: 40, after: 800 },
+      { drag: [old65(457, 386), old65(457, 386)], mods: ['alt'], after: 600 },
+      { drag: [old65(540, 370), old65(540, 370)], mods: ['alt'], after: 600 },
+      { drag: [old65(494, 298), old65(494, 335)], steps: 14, delay: 40, after: 1500 },
       { rec: 'stop' },
     ],
   },
@@ -334,13 +354,16 @@ const entries = [
       L.template('puppet'),
       standing(),
       rigged('pose'),
-      fit(),
-      L.wait(800),
-      { rec: '@', crop: [108, 47, 1088, 444], every: 80 },
+      puppetView(),
+      L.wait(300),
+      showSection('Tool options'),
+      L.wait(500),
+      { rec: '@', crop: WITH_PANEL, every: 80 },
       L.wait(900),
-      { drag: [[494, 285], [494, 262]], mods: ['shift'], steps: 12, delay: 45, after: 1300 },
-      { drag: [[1010, 254], [934, 254]], steps: 14, delay: 40, after: 1300 },
-      { drag: [[934, 254], [973, 254]], steps: 8, delay: 40, after: 1300 },
+      { drag: [old65(494, 285), old65(494, 262)], mods: ['shift'], steps: 12, delay: 45, after: 1300 },
+      // The picked bone's slider: pulled down to squash it, then up a little (the box is 25% to 300%, so 0.4 is about 135%).
+      { dragOn: 'input.cv-slider', text: 'Squash and stretch', at: 0.4, to: 'input.cv-slider', toText: 'Squash and stretch', toAt: 0.1, steps: 14, delay: 40, hold: 300, after: 1300 },
+      { dragOn: 'input.cv-slider', text: 'Squash and stretch', at: 0.1, to: 'input.cv-slider', toText: 'Squash and stretch', toAt: 0.26, steps: 8, delay: 40, hold: 300, after: 1300 },
       { rec: 'stop' },
     ],
   },
@@ -350,22 +373,22 @@ const entries = [
       L.template('puppet'),
       bare(),
       L.js(`__frameling.store().setUi({ tool: 'bone' })`),
-      fit(),
+      puppetView(),
       L.wait(800),
       { rec: '@', crop: STAGE, every: 80 },
       L.wait(800),
       // Hips, then a chain up the spine to the head, then an arm and a leg, each from the previous tip.
-      { drag: [[495, 291], [495, 264]], steps: 8, delay: 40, after: 900 },
-      { drag: [[495, 264], [495, 233]], steps: 8, delay: 40, after: 400 },
-      { drag: [[495, 233], [495, 172]], steps: 10, delay: 40, after: 600 },
-      { drag: [[495, 242], [493, 273]], steps: 8, delay: 40, after: 400 },
-      { drag: [[493, 273], [495, 314]], steps: 8, delay: 40, after: 600 },
-      { drag: [[495, 291], [498, 335]], steps: 8, delay: 40, after: 400 },
-      { drag: [[498, 335], [495, 376]], steps: 8, delay: 40, after: 400 },
-      { drag: [[495, 376], [511, 376]], steps: 6, delay: 40, after: 1000 },
+      { drag: [old65(495, 291), old65(495, 264)], steps: 8, delay: 40, after: 900 },
+      { drag: [old65(495, 264), old65(495, 233)], steps: 8, delay: 40, after: 400 },
+      { drag: [old65(495, 233), old65(495, 172)], steps: 10, delay: 40, after: 600 },
+      { drag: [old65(495, 242), old65(493, 273)], steps: 8, delay: 40, after: 400 },
+      { drag: [old65(493, 273), old65(495, 314)], steps: 8, delay: 40, after: 600 },
+      { drag: [old65(495, 291), old65(498, 335)], steps: 8, delay: 40, after: 400 },
+      { drag: [old65(498, 335), old65(495, 376)], steps: 8, delay: 40, after: 400 },
+      { drag: [old65(495, 376), old65(511, 376)], steps: 6, delay: 40, after: 1000 },
       { key: 'A', mods: ['shift'], after: 1000 },
       L.js(`__frameling.store().setUi({ tool: 'pose' })`),
-      { drag: [[495, 314], [542, 262]], steps: 12, delay: 40, after: 1500 },
+      { drag: [old65(495, 314), old65(542, 262)], steps: 12, delay: 40, after: 1500 },
       { rec: 'stop' },
     ],
   },
@@ -377,26 +400,27 @@ const entries = [
       L.template('puppet'),
       bare(),
       L.js(`__frameling.store().setUi({ tool: 'bone' })`),
-      fit(),
-      // A little closer, so the bones read clearly: the character stays centred in the canvas.
-      L.js(`__frameling.store().setUi({ zoom: 1, panX: 8, panY: -61 })`),
+      // A little closer than the whole page, so the bones read clearly: from the head to the knees.
+      view(0.8, 360, 255),
+      L.wait(300),
+      showSection('Tool options'),
+      L.wait(500),
+      { rec: '@', crop: FROM_STAGE({ rightGap: 8, down: 40 }), every: 80 },
       L.wait(800),
-      { rec: '@', crop: [143, 47, 1053, 444], every: 80 },
-      L.wait(800),
-      { drag: [[511, 296], [511, 252]], steps: 8, delay: 40, after: 400 },
-      { drag: [[511, 252], [511, 200]], steps: 8, delay: 40, after: 400 },
-      { drag: [[511, 200], [511, 122]], steps: 10, delay: 40, after: 700 },
-      { drag: [[511, 296], [513, 350]], steps: 8, delay: 40, after: 800 },
+      { drag: [at(360, 304), at(360, 260)], steps: 8, delay: 40, after: 400 },
+      { drag: [at(360, 260), at(360, 208)], steps: 8, delay: 40, after: 400 },
+      { drag: [at(360, 208), at(360, 130)], steps: 10, delay: 40, after: 700 },
+      { drag: [at(360, 304), at(362, 358)], steps: 8, delay: 40, after: 800 },
       { clickOn: 'button.cv-action', text: 'Add next bone', after: 1200 },
       { clickOn: 'button.cv-choice-btn', text: 'Edit', after: 900 },
-      { drag: [[513, 350], [531, 343]], steps: 10, delay: 40, after: 900 },
+      { drag: [at(362, 358), at(380, 351)], steps: 10, delay: 40, after: 900 },
       { clickOn: 'input[data-bone-name]', after: 300 },
       { key: 'a', mods: ['control'], after: 200 },
       { type: 'Left leg', after: 600 },
       { key: 'Enter', after: 1000 },
       { clickOn: 'button.cv-choice-btn', text: 'Remove', after: 700 },
-      { move: [511, 160], after: 1000 },
-      { click: [511, 160], after: 1200 },
+      { move: at(360, 168), after: 1000 },
+      { click: at(360, 168), after: 1200 },
       { key: 'z', mods: ['control'], after: 1600 },
       { rec: 'stop' },
     ],
@@ -406,12 +430,12 @@ const entries = [
     steps: [
       L.template('puppet'),
       L.panel('rig'),
-      fit(),
+      puppetView(),
       L.wait(800),
-      { rec: '@', crop: [108, 47, 1088, 444], every: 80 },
+      { rec: '@', crop: WITH_PANEL, every: 80 },
       L.wait(800),
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 3500 },
-      { click: [207, 560], after: 150 }, { move: [150, 120], after: 600 },
+      ...PLAY, L.wait(3500),
+      ...PLAY, L.wait(600),
       rigged('pose'),
       L.wait(1800),
       { rec: 'stop' },
@@ -422,7 +446,7 @@ const entries = [
     steps: [
       L.template('blank-vector'),
       noodle(),
-      fit(),
+      view(0.65, 360, 270),
       L.wait(800),
       { rec: '@', crop: STAGE, every: 80 },
       L.wait(900),
@@ -431,8 +455,8 @@ const entries = [
       bendNoodle(),
       L.js(`__frameling.store().setUi({ tool: 'pose' })`),
       L.wait(1200),
-      { drag: [[398, 269], [398, 269]], mods: ['alt'], after: 800 },
-      { drag: [[637, 269], [607, 175]], steps: 16, delay: 45, after: 1000 },
+      { drag: [old65(398, 269), old65(398, 269)], mods: ['alt'], after: 800 },
+      { drag: [old65(637, 269), old65(607, 175)], steps: 16, delay: 45, after: 1000 },
       L.js(`(() => { const s = __frameling.store(); s.setUi({ tool: 'select', activeLayerId: s.get().doc.layers.find((x) => x.name === 'Colour').id }); return true; })()`),
       L.wait(1500),
       { rec: 'stop' },
@@ -443,25 +467,27 @@ const entries = [
     steps: [
       L.template('blank-vector'),
       noodle(),
-      fit(),
+      view(0.65, 360, 270),
       L.wait(500),
       ...noodleBones(300),
       bendNoodle(),
       L.js(`__frameling.store().setUi({ tool: 'pose' })`),
       L.wait(600),
-      { drag: [[398, 269], [398, 269]], mods: ['alt'], after: 500 },
-      { drag: [[637, 269], [607, 175]], steps: 12, delay: 30, after: 800 },
+      { drag: [old65(398, 269), old65(398, 269)], mods: ['alt'], after: 500 },
+      { drag: [old65(637, 269), old65(607, 175)], steps: 12, delay: 30, after: 800 },
       L.js(`(() => { const s = __frameling.store(); s.setUi({ activeLayerId: s.get().doc.layers.find((x) => x.name === 'Noodle').id }); __frameling.run('rig.paintWeights'); return true; })()`),
       L.wait(6000),
-      { rec: '@', crop: [108, 47, 1088, 444], every: 80 },
+      showSection('Tool options'),
+      L.wait(400),
+      { rec: '@', crop: WITH_PANEL, every: 80 },
       L.wait(1000),
-      { drag: [[557, 218], [607, 178]], steps: 14, delay: 45, after: 600 },
-      { drag: [[562, 214], [602, 182]], steps: 10, delay: 45, after: 900 },
-      { click: [1035, 202], after: 700 },
-      { drag: [[452, 258], [517, 242]], steps: 14, delay: 45, after: 900 },
-      { click: [1125, 202], after: 700 },
-      { drag: [[417, 262], [542, 238]], steps: 18, delay: 45, after: 600 },
-      { drag: [[542, 238], [417, 262]], steps: 18, delay: 45, after: 1500 },
+      { drag: [old65(557, 218), old65(607, 178)], steps: 14, delay: 45, after: 600 },
+      { drag: [old65(562, 214), old65(602, 182)], steps: 10, delay: 45, after: 900 },
+      { clickOn: 'button.cv-choice-btn', text: 'Less', after: 700 },
+      { drag: [old65(452, 258), old65(517, 242)], steps: 14, delay: 45, after: 900 },
+      { clickOn: 'button.cv-choice-btn', text: 'Smooth', after: 700 },
+      { drag: [old65(417, 262), old65(542, 238)], steps: 18, delay: 45, after: 600 },
+      { drag: [old65(542, 238), old65(417, 262)], steps: 18, delay: 45, after: 1500 },
       { rec: 'stop' },
     ],
   },
@@ -481,9 +507,9 @@ const entries = [
       L.wait(1000),
       { rec: '@', crop: [60, 47, 1220, 715], every: 80 },
       L.wait(1200),
-      { click: [1135, 130], after: 2800 },
-      { click: [921, 727], after: 700 },
-      { click: [206, 539], after: 150 }, { move: [150, 120], after: 4200 },
+      { clickOn: 'button.ls-auto', after: 2800 },
+      { clickOn: '.ui-toast-x', after: 700 },
+      ...PLAY, L.wait(4200),
       { rec: 'stop' },
     ],
   },

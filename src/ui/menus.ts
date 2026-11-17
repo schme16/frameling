@@ -272,7 +272,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   brushtips: {
     label: 'Brush tips',
-    items: ['brush.tip.plain', 'brush.tip.chalk', 'brush.tip.charcoal', 'brush.tip.watercolour', 'brush.tip.stamp', 'brush.tip.nib', 'brush.tip.along', 'brush.tip.edged', 'brush.tip.bristle', '-', 'brush.tipNext', 'brush.tipPrevious', '-', 'brush.fromSelection', 'brush.makeAlong', 'brush.edged.sides', 'brush.edged.start', 'brush.edged.end', 'brush.edged.inner', 'brush.edged.outer', '-', 'brush.flatten', 'brush.pixelReset'],
+    items: ['brush.tipNext', 'brush.tipPrevious', '-', 'brush.flatten'],
     prefixes: ['brush.tip.'],
   },
   toolopts: {
@@ -384,7 +384,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   pixelbrush: {
     label: 'Pixel brush',
-    items: ['tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', '-', 'pixelbrush.pen', 'pixelbrush.fade', 'pixelbrush.grain', 'pixelbrush.dual', 'pixelbrush.wobble', 'pixelbrush.wet'],
+    items: ['tools.pixel-brush', 'pixelbrush.tip.round', 'pixelbrush.tip.square', 'pixelbrush.tip.picture', 'pixelbrush.smooth', 'pixelbrush.follow', 'pixelbrush.scatter', 'pixelbrush.spacing.closer', 'pixelbrush.spacing.wider', '-', 'pixelbrush.pen', 'pixelbrush.feel', 'pixelbrush.fade', 'pixelbrush.grain', 'pixelbrush.dual', 'pixelbrush.wobble', 'pixelbrush.wet', 'pixelbrush.blend'],
   },
   range: {
     label: 'Play range',

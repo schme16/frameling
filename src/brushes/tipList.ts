@@ -4,9 +4,10 @@
 import type { BrushSettings, BrushTip, StampShape, TipKind } from '../core/format';
 import { defaultTip, resolveTip, STAMPS, TIPS } from '../geometry/tip';
 import type { BrushPreset } from './model';
+import { activeStick, stickHint, stickIdOf, stickRows } from './stickList';
 
-/** What a picker lists: the vector brushes, the pixel brushes, or the pen tips. */
-export type PickerSide = 'vector' | 'pixel' | 'tip';
+/** What a picker lists: the vector brushes, the pixel brushes, the pen tips, or the sticks chalk and charcoal catch paper with. */
+export type PickerSide = 'vector' | 'pixel' | 'tip' | 'stick';
 
 /** The groups the tips sit in, in the order the picker lists them. */
 export const TIP_GROUPS = ['Pen and paintbrush', 'Dry and wet', 'Stamps', 'Your own drawing'] as const;
@@ -68,3 +69,19 @@ export function tipHint(id: string): string {
   if (p.kind === 'stamp') return p.shape === 'custom' ? 'Scatters the drawing you made along the line.' : `Scatters a ${(STAMPS.find((s) => s.id === p.shape)?.label ?? 'leaf').toLowerCase()} along the line, a little off it and a little turned.`;
   return TIPS.find((t) => t.id === p.kind)?.hint ?? '';
 }
+
+/** The two short fixed pickers: the tips and the sticks. Everything the picker needs to treat them alike. */
+export const isFixedSide = (side: PickerSide): side is 'tip' | 'stick' => side === 'tip' || side === 'stick';
+
+/** Their rows, the row in use, and a plain line for a row's tooltip. */
+export function fixedRows(side: PickerSide, live: BrushSettings, custom?: number[][]): BrushPreset[] {
+  return side === 'stick' ? stickRows(live) : side === 'tip' ? tipRows(live, custom) : [];
+}
+export const fixedActiveId = (side: PickerSide, live: BrushSettings): string => (side === 'stick' ? stickIdOf(activeStick(live.tip)) : tipIdOf(live.tip));
+export const fixedHint = (side: PickerSide, id: string): string => (side === 'stick' ? stickHint(id) : tipHint(id));
+
+/** The words a fixed picker uses about itself. */
+export const FIXED_WORDS: Record<'tip' | 'stick', { noun: string; button: string; dialog: string; list: string; none: string }> = {
+  tip: { noun: 'tip', button: 'Pick a pen tip by what it draws', dialog: 'Pick a pen tip', list: 'Tips', none: 'No tip called that. Try a shorter word, like "stamp".' },
+  stick: { noun: 'stick', button: 'Pick the stick, from vine charcoal to a colour pencil, by what it draws', dialog: 'Pick a stick', list: 'Sticks', none: 'No stick called that. Try a shorter word, like "pencil".' },
+};

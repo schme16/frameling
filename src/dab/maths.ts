@@ -5,6 +5,8 @@
  */
 import { readPixelStamp, type PixelStamp } from '../brushes/stamps';
 import { MIN_SMOOTH_EDGE, mirrorCentres } from '../soft/maths';
+import type { BlendMode } from '../core/format';
+import { cleanBlend } from './blend';
 import { cleanRoutes, effectsOf, FADE_DEFAULT, FADE_RANGE, lerpInputs, newEffects, NEUTRAL, sameRoutes, type DynRoute, type Effects, type Inputs } from './dynamics';
 import { cleanDual, cleanGrain, sameDual, sameGrain, type Dual, type Grain } from './texture';
 
@@ -50,6 +52,8 @@ export interface DabBrush {
   dual: Dual | null;
   /** 0 (paints its own colour) to 1 (carries the colour it passes over along the stroke, like wet paint). */
   wet: number;
+  /** How the paint joins what is on the layer: normal, or a blend mode like a layer's (see blend.ts). */
+  blend: BlendMode;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
@@ -80,6 +84,7 @@ export const DEFAULT_DAB: DabBrush = {
   grain: null,
   dual: null,
   wet: 0,
+  blend: 'normal',
 };
 
 const num = (v: unknown, lo: number, hi: number, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback);
@@ -113,6 +118,7 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
     grain: r.grain === undefined ? base.grain : cleanGrain(r.grain),
     dual: r.dual === undefined ? base.dual : cleanDual(r.dual),
     wet: round3(num(r.wet, 0, 1, base.wet)),
+    blend: cleanBlend(r.blend, base.blend),
   };
 }
 
@@ -124,7 +130,7 @@ export function sameDab(a: DabBrush, b: DabBrush): boolean {
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
-    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet)
+    sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend
   );
 }
 
@@ -264,7 +270,12 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
       },
     };
   }
-  const r = Math.max(0.5, size / 2);
+  // A smooth dab under two pixels wide is drawn as a two pixel one with its paint scaled by how much narrower it is. Its own
+  // edge (at least a pixel wide) would otherwise leave no pixel under a thin line that falls between two rows, so a hair
+  // line came and went with where the pen happened to be. A crisp dab sits on whole pixels already and is left as it is.
+  const thin = !crisp && size < 2;
+  const gain = thin ? Math.max(0.5, size) / 2 : 1;
+  const r = thin ? 1 : Math.max(0.5, size / 2);
   const w = Math.max((1 - b.hardness) * r, crisp ? 0 : MIN_SMOOTH_EDGE);
   const inner = r - w;
   const inner2 = inner > 0 ? inner * inner : -1;
@@ -288,13 +299,13 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
       if (square) {
         const d = Math.max(Math.abs(u), Math.abs(v));
         if (d >= r) return 0;
-        if (w <= 0 || d <= inner) return 1;
-        return fall(d);
+        if (w <= 0 || d <= inner) return gain;
+        return fall(d) * gain;
       }
       const d2 = u * u + v * v;
       if (d2 >= r2) return 0;
-      if (w <= 0 || d2 <= inner2) return 1;
-      return fall(Math.sqrt(d2));
+      if (w <= 0 || d2 <= inner2) return gain;
+      return fall(Math.sqrt(d2)) * gain;
     },
   };
 }

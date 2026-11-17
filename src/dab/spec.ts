@@ -14,7 +14,7 @@ const isSoft = (v: unknown): v is SoftKind => typeof v === 'string' && (SOFT_KIN
 export type PixelSpec =
   | { kind: 'dab'; dab: DabBrush }
   | { kind: 'soft'; tool: SoftKind; size: number; hardness: number; flow: number }
-  | { kind: 'dry'; medium: DryId; paper: PaperKind; size: number; hardness: number; press: number };
+  | { kind: 'dry'; medium: DryId; /** The paper it was saved on. Left out, it uses whatever the sheet is on. */ paper?: PaperKind; size: number; hardness: number; press: number };
 
 const num = (v: unknown, lo: number, hi: number): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null);
 const r3 = (v: number): number => Math.round(v * 1000) / 1000;
@@ -30,7 +30,7 @@ export function cleanSpec(raw: unknown): PixelSpec | null {
   }
   if (r.kind === 'dry') {
     if (!isMedium(r.medium)) return null;
-    return { kind: 'dry', medium: r.medium, paper: isPaper(r.paper) ? r.paper : 'medium', size: Math.round(num(r.size, DRY_SIZE.min, DRY_SIZE.max) ?? 20), hardness: r3(num(r.hardness, 0, 1) ?? 0.3), press: r3(num(r.press, PRESS_RANGE.min, PRESS_RANGE.max) ?? 0.7) };
+    return { kind: 'dry', medium: r.medium, ...(isPaper(r.paper) ? { paper: r.paper } : {}), size: Math.round(num(r.size, DRY_SIZE.min, DRY_SIZE.max) ?? 20), hardness: r3(num(r.hardness, 0, 1) ?? 0.3), press: r3(num(r.press, PRESS_RANGE.min, PRESS_RANGE.max) ?? 0.7) };
   }
   return null;
 }
@@ -40,7 +40,7 @@ export function sameSpec(a: PixelSpec, b: PixelSpec): boolean {
   const close = (x: number, y: number) => Math.abs(x - y) < 1e-6;
   if (a.kind === 'dab' && b.kind === 'dab') return sameDab(a.dab, b.dab);
   if (a.kind === 'soft' && b.kind === 'soft') return a.tool === b.tool && a.size === b.size && close(a.hardness, b.hardness) && close(a.flow, b.flow);
-  if (a.kind === 'dry' && b.kind === 'dry') return a.medium === b.medium && a.paper === b.paper && a.size === b.size && close(a.hardness, b.hardness) && close(a.press, b.press);
+  if (a.kind === 'dry' && b.kind === 'dry') return a.medium === b.medium && (a.paper === undefined || b.paper === undefined || a.paper === b.paper) && a.size === b.size && close(a.hardness, b.hardness) && close(a.press, b.press);
   return false;
 }
 

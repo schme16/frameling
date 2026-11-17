@@ -181,3 +181,23 @@ describe('a locked palette with everything switched on', () => {
     }
   });
 });
+
+describe('the paper a grain catches on', () => {
+  const grain = { depth: 1, scale: 1, moving: false };
+  const light = { flow: 0.4, size: 9 };
+  const same = (a: Uint8ClampedArray, b: Uint8ClampedArray) => a.every((v, i) => v === b[i]);
+  it('with no paper of its own it follows the sheet, so another sheet gives another pattern', () => {
+    const onRough = draw({ ...light, grain }, { sheet: 'rough' });
+    const onSmooth = draw({ ...light, grain }, { sheet: 'smooth' });
+    expect(same(onRough, onSmooth)).toBe(false);
+  });
+  it('with no paper of its own and no sheet given it is medium, the paper it always had', () => {
+    expect(same(draw({ ...light, grain }), draw({ ...light, grain: { ...grain, paper: 'medium' } }))).toBe(true);
+    expect(same(draw({ ...light, grain }, { sheet: 'medium' }), draw({ ...light, grain }))).toBe(true);
+  });
+  it('a paper of its own wins, whatever the sheet is', () => {
+    const pinned = { ...grain, paper: 'fine' as const };
+    expect(same(draw({ ...light, grain: pinned }, { sheet: 'rough' }), draw({ ...light, grain: pinned }, { sheet: 'smooth' }))).toBe(true);
+    expect(same(draw({ ...light, grain: pinned }, { sheet: 'rough' }), draw({ ...light, grain }, { sheet: 'fine' }))).toBe(true);
+  });
+});

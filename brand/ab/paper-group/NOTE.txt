@@ -1,0 +1,3 @@
+options-dark/light.png: the tool options for chalk and charcoal and for the pixel brush with grain on, before (a Paper row in one, a brush-only Paper inside a fold in the other) and after (the same Paper box in both, saying which paper you are on).
+strokes-dark/light.png: charcoal and the pixel brush, each on smooth and on rough paper, after the change (the pixel brush follows the sheet's paper).
+Made with scripts/docs/ab-paper-group (help-media.cjs --entries), before from development at 4c2e3664.

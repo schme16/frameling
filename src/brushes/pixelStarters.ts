@@ -50,7 +50,7 @@ const soft = (tool: 'soft-brush' | 'airbrush' | 'highlighter', name: string): Br
 
 const dry = (medium: DryId, name: string): BrushPreset => {
   const m = MEDIA.find((x) => x.id === medium)!;
-  return spec(medium, name, 'Dry media', { kind: 'dry', medium, paper: 'medium', size: m.size, hardness: m.hardness, press: m.press });
+  return spec(medium, name, 'Dry media', { kind: 'dry', medium, size: m.size, hardness: m.hardness, press: m.press });
 };
 
 export const PIXEL_STARTERS: readonly BrushPreset[] = [
@@ -77,12 +77,13 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   dab('pressure-pencil', 'Pressure pencil', 'Pen and speed', { size: 5, spacing: 0.12, dynamics: [r('pressure', 'size', 0.8)] }),
   dab('tapered-ink', 'Tapered ink', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('fade', 'size', 1)], fadeLength: 160 }),
   dab('speed-nib', 'Fast is thin', 'Pen and speed', { size: 9, spacing: 0.1, dynamics: [r('speed', 'size', 0.75, true)] }),
-  dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 14, spacing: 0.8, scatter: 0.4, dynamics: [r('pressure', 'scatter', 0.8), r('pressure', 'flow', 0.5)] }),
+  // Many small dots flung about the line (a size-14 disc at a wide spacing was a row of discs, not a spray). A harder press flings them further and lays them thicker.
+  dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 2, spacing: 0.25, scatter: 2, dynamics: [r('pressure', 'scatter', 1), r('pressure', 'flow', 0.4)] }),
   dab('pressure-felt', 'Pressure felt tip', 'Pen and speed', { size: 12, hardness: 0.8, aliased: false, spacing: 0.08, dynamics: [r('pressure', 'size', 0.5), r('pressure', 'flow', 0.7)] }),
 
   dab('chalk-grain', 'Chalk grain', 'Grain and texture', { size: 12, spacing: 0.12, flow: 0.5, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } }),
   dab('pencil-paper', 'Pencil on paper', 'Grain and texture', { size: 3, spacing: 0.12, flow: 0.65, grain: { paper: 'fine', depth: 0.9, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
-  dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { paper: 'medium', depth: 1, scale: 2, moving: true } }),
+  dab('sponge', 'Pixel sponge', 'Grain and texture', { size: 18, spacing: 0.3, flow: 0.55, grain: { depth: 1, scale: 2, moving: true } }),
   dab('spatter', 'Pixel spatter', 'Grain and texture', { size: 16, spacing: 0.2, dual: { tip: 'round', size: 2, density: 0.25, cut: false } }),
   dab('bristles', 'Pixel bristles', 'Grain and texture', { tip: 'picture', picture: COMB, size: 12, spacing: 0.1, follow: true }),
   dab('cracked', 'Cracked paint', 'Grain and texture', { size: 14, spacing: 0.15, dual: { tip: 'round', size: 3, density: 0.2, cut: true } }),

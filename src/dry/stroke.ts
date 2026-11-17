@@ -7,9 +7,8 @@
 import type { Doc, PixelLayer } from '../core/format';
 import type { RGBA } from '../canvas/pixels';
 import { tileModeOn, wrap } from '../tiles/state';
-import { PixelSession } from '../tools/pixelSession';
 import { dabStep, eachDabPixel, holdAt, mirrorCentres, MIN_SMOOTH_EDGE, paintOver, type EdgeMode } from '../soft/maths';
-import { palettePicker, Walker, type Pt } from '../soft/stroke';
+import { palettePicker, Walker, type PaintSurface, type Pt } from '../soft/stroke';
 import { deposit, pitDepth, streakAt, type Medium } from './maths';
 import { paperInfo, paperTile, TILE, type PaperKind } from './paper';
 
@@ -19,6 +18,8 @@ export interface DryParams {
   color: RGBA;
   hardness: number;
   edge: EdgeMode;
+  /** Which stick the streaks come from. Left out, each stroke picks its own; a picture of a brush fixes it so it never changes. */
+  seed?: number;
 }
 
 export class DryStroke {
@@ -35,15 +36,16 @@ export class DryStroke {
   private dirX = 1;
   private dirY = 0;
   private prev: Pt | null = null;
-  private readonly seed = (Math.random() * 1e9) | 0;
+  private readonly seed: number;
 
   constructor(
-    readonly session: PixelSession,
-    doc: Doc,
-    layer: PixelLayer,
+    readonly session: PaintSurface,
+    doc: Doc | null,
+    layer: PixelLayer | null,
     private readonly p: DryParams,
   ) {
     this.snap = palettePicker(doc, layer);
+    this.seed = p.seed ?? (Math.random() * 1e9) | 0;
     this.w = session.width;
     this.h = session.height;
     this.tile = paperTile(p.paper);

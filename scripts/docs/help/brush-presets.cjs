@@ -27,9 +27,12 @@ module.exports = [
       ...pick('Marker', 'Markers'), L.wait(700), wave(330), L.wait(500),
       ...pick('Tapered', 'Paint'), L.wait(700), wave(470), L.wait(600),
       L.js("__frameling.store().setUi((u) => ({ brush: { ...u.brush, size: 22, thinning: 0 } }))"), L.wait(900),
+      // Save as... sits under Size, below the pickers: bring it into view for the clip, then back to the top for the last wave.
+      L.js("document.querySelector('[data-testid=\"brush-keep\"]').scrollIntoView({ block: 'center' })"), L.wait(900),
       L.js("[...document.querySelectorAll('.bp-actions button')].find((b) => b.textContent === 'Save as...').click()"), L.wait(900),
       { type: 'Fat pen' }, L.wait(900),
       L.js("[...document.querySelectorAll('.bp-name-go button')].find((b) => b.textContent === 'Save').click()"), L.wait(1100),
+      L.js("document.querySelector('[data-panel-id=\"tool-options\"]').scrollIntoView({ block: 'start' })"), L.wait(900),
       wave(600, 30), L.wait(1500),
       { rec: 'stop' },
     ],

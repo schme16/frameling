@@ -95,7 +95,8 @@ describe('putting the AppImage in place', () => {
     fs.writeFileSync(part, elf);
     expect(placeAppImage(part, target).ok).toBe(true);
     expect(fs.readFileSync(target).equals(elf)).toBe(true);
-    expect(fs.statSync(target).mode & 0o111).not.toBe(0);
+    // Windows has no run bit to set (every file reports 0o666), so this one check is for the systems that have one.
+    if (process.platform !== 'win32') expect(fs.statSync(target).mode & 0o111).not.toBe(0);
     expect(fs.existsSync(part)).toBe(false);
   });
   it('leaves the old file alone and says so when it cannot', () => {

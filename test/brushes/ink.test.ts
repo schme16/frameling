@@ -47,3 +47,29 @@ describe('the ink', () => {
     for (const panel of ['#000000', '#ffffff', '#7a7a7a', '#2d6a4f', '#ffe066']) expect(contrast(inkAgainst(panel, '#808080', 4.5), panel)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('a dark paint colour on the picker rows', () => {
+  // The picker draws its samples in the row's own text colour (inkFor without a paint colour), and the brush options
+  // preview asks for the paint colour first. Neither may ever draw near black on a near black row.
+  const PAINTS = ['#000000', '#0b0a10', '#1b1a20', '#2b2833', '#7a7a7a', '#ffffff'];
+  it('keeps a sample readable on every row state of every built-in theme, whatever the paint colour', () => {
+    for (const t of BUILT_IN_THEMES) {
+      const rows: [string, string, string][] = [
+        ['raised', t.tokens.raised, t.tokens.text],
+        ['hover', t.tokens['hover-bg'] ?? t.tokens.raised, t.tokens.text],
+        ['chosen', t.tokens['chosen-bg'], t.tokens['chosen-fg']],
+      ];
+      for (const [state, bg, text] of rows) {
+        if (!/^#[0-9a-f]{6}$/i.test(bg)) continue;
+        // The picker: the row's own text colour, nudged only if it needs it.
+        expect(contrast(inkAgainst(bg, text), bg), `${t.name} ${state} picker`).toBeGreaterThanOrEqual(4.5);
+        // The brush options preview: the paint colour while it shows, the text colour when it would vanish.
+        for (const paint of PAINTS) expect(contrast(inkAgainst(bg, paint, 3, text), bg), `${t.name} ${state} ${paint}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+  it('lets a dark paint colour through on a light theme and swaps it for the text colour on a dark one', () => {
+    expect(inkAgainst('#fffaf0', '#1b1a20', 3, '#2a1a10')).toBe('#1b1a20');
+    expect(inkAgainst('#322d43', '#1b1a20', 3, '#f4efe6')).toBe('#f4efe6');
+  });
+});

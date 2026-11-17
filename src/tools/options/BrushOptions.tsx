@@ -10,7 +10,7 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
-import { BrushPresetRow } from '../../brushes/BrushPresetRow';
+import { BrushPresetActions, BrushPresetPicker } from '../../brushes/BrushPresetRow';
 import { TipOptions } from '../../brushes/TipOptions';
 import { PixelStampOptions } from '../../brushes/PixelStampOptions';
 import { readPixelStamp } from '../../brushes/stamps';
@@ -67,10 +67,11 @@ function VectorBrushOptions() {
   const range = useBrushRange(false);
   return (
     <div className="cv-options">
-      <BrushPresetRow />
       <BrushPreview brush={brush} color={color} />
+      <BrushPresetPicker title="Brush" />
       <TipOptions />
       <Slider label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+      <BrushPresetActions />
       <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />

@@ -3,6 +3,7 @@
  * finished stroke will have, and commits one StrokeShape as a single undo step. Brush and pencil both use it.
  */
 import type { BrushSettings, LayerEffect, StrokePoint, StrokeShape } from '../core/format';
+import { getDry } from '../dry/settings';
 import { toothValues } from '../dry/tooth';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
@@ -59,13 +60,33 @@ export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void 
 export function toothEffects(brush: BrushSettings, seed = Math.floor(Math.random() * 1000)): LayerEffect[] | undefined {
   const t = brush.tip;
   if (!t?.dry || (t.kind !== 'chalk' && t.kind !== 'charcoal')) return undefined;
-  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak) }];
+  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak, getDry().paper) }];
+}
+
+/**
+ * A matte tip (gouache) finishes the line as dried paint: a little paler, chalkier and quieter than it went on, with a
+ * faint velvety grain. Both are plain effects on the line, so the Effects panel can change or remove them, and the
+ * line's colour stays fully solid so it covers what is underneath.
+ */
+export function matteEffects(brush: BrushSettings, seed = 0): LayerEffect[] | undefined {
+  const m = brush.tip?.matte ?? 0;
+  if (!(m > 0)) return undefined;
+  return [
+    { id: uid('fx'), kind: 'adjust', values: { hue: 0, saturation: Math.round(100 - 12 * m), brightness: Math.round(100 + 16 * m), contrast: Math.round(100 - 4 * m) } },
+    { id: uid('fx'), kind: 'grain', values: { amount: Math.round(9 * m), size: 1, colour: 0, change: 0, seed: seed % 1000 } },
+  ];
+}
+
+/** Everything a line carries from its brush: paper tooth first (it draws the line itself), then the matte finish. */
+export function lineEffects(brush: BrushSettings, seed?: number): LayerEffect[] | undefined {
+  const all = [...(toothEffects(brush, seed) ?? []), ...(matteEffects(brush, seed) ?? [])];
+  return all.length ? all : undefined;
 }
 
 export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false, seed?: number): StrokeShape {
   // A lone click becomes a dot: two identical points make perfect-freehand draw a round dab.
   const pts = points.length === 1 ? [points[0], { ...points[0] }] : points;
-  const effects = toothEffects(brush, seed);
+  const effects = lineEffects(brush, seed);
   return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), ...(effects ? { effects } : {}), color, opacity };
 }
 

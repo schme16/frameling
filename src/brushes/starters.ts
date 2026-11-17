@@ -54,7 +54,8 @@ export const STARTERS: readonly BrushPreset[] = [
   // Paint
   make('tapered', 'Tapered brush', 'Paint', { size: 14, thinning: 0.6, smoothing: 0.6, streamline: 0.6, taperStart: 40, taperEnd: 60 }),
   make('round-brush', 'Round brush', 'Paint', { size: 16, thinning: 0.7, smoothing: 0.6, streamline: 0.6, taperStart: 12, taperEnd: 50 }),
-  make('gouache', 'Gouache', 'Paint', { size: 26, thinning: 0.15, smoothing: 0.6, streamline: 0.55 }),
+  // Gouache is flat, opaque and matte: fat bristles closed into one solid body with only a trace of brush marks, finished chalky and velvety. Marker is the glossy flat one.
+  make('gouache', 'Gouache', 'Paint', { size: 26, thinning: 0.15, smoothing: 0.6, streamline: 0.55, tip: { ...defaultTip('bristle'), count: 30, stiffness: 0.9, amount: 0, body: 1, tone: 0.05, matte: 1 } }),
   // Oil paint is a full brush of paint: bristles fat enough to close into one solid body, run lighter and darker in broad streaks, with blunt rounded ends.
   make('oil', 'Oil paint', 'Paint', { size: 30, thinning: 0.3, smoothing: 0.55, streamline: 0.5, taperStart: 10, taperEnd: 26, tip: { ...defaultTip('bristle'), count: 36, stiffness: 0.85, amount: 0, body: 0.6, tone: 1 } }),
   // A bristle brush is separate hairs: a few dark lines and gaps between them, streaking along the line.
