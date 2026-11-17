@@ -13,6 +13,16 @@
 //   --keep-going         do not refuse when Illustrator or Wine seems to be running for the prefix (never use this
 //                        when someone may be working in Illustrator)
 //
+// On Windows with Illustrator installed, no Wine is needed: leave ILLUSTRATOR_PREFIX unset and run
+//
+//   npm run build
+//   npx electron scripts/e2e/illustrator.cjs [outDir] [--only=a,b]
+//
+// It drives Illustrator through its COM scripting interface (PowerShell), and refuses to start when Illustrator is
+// already open (someone may be working in it) unless --keep-going is given; then it leaves Illustrator open. Pictures
+// are compared in plain Node (scripts/lib/png-node.cjs), since Windows has no ImageMagick, so the side by sides have no
+// caption and the layer tree pictures are not drawn. The PDF reader check needs pdftoppm on PATH and is skipped without it.
+//
 // Outputs in outDir: <case>/*.ai, <case>/*.png (Frameling), illustrator/*.png (Illustrator), side-by-side/*.png,
 // report.json. Runs Illustrator in an xvfb screen inside a Wine virtual desktop, never on the real desktop. Exits non-zero on failure.
 const { app, BrowserWindow } = require('electron');
@@ -22,12 +32,16 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { fixtures } = require('./illustrator-fixtures.cjs');
+const pngNode = require('../lib/png-node.cjs');
 
 const root = path.resolve(__dirname, '../..');
 const argv = process.argv.slice(2).filter((a) => !a.endsWith('illustrator.cjs'));
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-ai-')));
 const ONLY = argv.find((a) => a.startsWith('--only='))?.split('=')[1]?.split(',');
 const PREFIX = process.env.ILLUSTRATOR_PREFIX;
+// Windows: the real Illustrator through COM, and pictures compared in Node (no ImageMagick there).
+const WINDOWS = process.platform === 'win32';
+const NATIVE = !PREFIX && WINDOWS;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 fs.rmSync(outDir, { recursive: true, force: true });
@@ -153,7 +167,9 @@ async function exportCase(c) {
       if (check(zips.length === 1, `expected one zip, found: ${files(aiDir)}`)) {
         const out = path.join(aiDir, 'unzipped');
         fs.mkdirSync(out, { recursive: true });
-        sh('unzip', ['-o', path.join(aiDir, zips[0]), '-d', out]);
+        // Windows' own tar reads zips; Git's tar, often first on PATH, does not.
+        if (WINDOWS) sh(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', path.join(aiDir, zips[0]), '-C', out]);
+        else sh('unzip', ['-o', path.join(aiDir, zips[0]), '-d', out]);
         ais = files(out).filter((f) => f.endsWith('.ai')).map((f) => path.join('unzipped', f));
         check(ais.length === frames, `the zip holds ${ais.length} .ai files, expected ${frames}`);
       }
@@ -192,7 +208,8 @@ async function exportCase(c) {
       if (c.expect.pdfReader && how !== 'pages') {
         const base = path.join(dir, `reader-${path.basename(ai, '.ai')}`);
         const r = sh('pdftoppm', ['-r', '72', '-png', '-singlefile', path.join(aiDir, ai), base]);
-        if (check(r.status === 0 && fs.existsSync(`${base}.png`), `pdftoppm could not read ${ai}: ${r.stderr || r.error}`)) {
+        if (r.error?.code === 'ENOENT') note('pdftoppm is not installed, so the PDF reader check was skipped');
+        else if (check(r.status === 0 && fs.existsSync(`${base}.png`), `pdftoppm could not read ${ai}: ${r.stderr || r.error}`)) {
           const d = rmse(path.join(dir, `png-${wantFrames[0]}`, files(path.join(dir, `png-${wantFrames[0]}`)).find((x) => x.endsWith('.png'))), `${base}.png`);
           if (check(d.rmse !== null, `the PDF reader's picture differs in size: ${d.size}`)) {
             note(`pdftoppm RMSE vs Frameling ${d.rmse.toFixed(4)}`);
@@ -261,10 +278,43 @@ function runIllustrator(todo) {
   return { ...JSON.parse(fs.readFileSync(resultFile, 'utf8')), entries };
 }
 
+/** Windows: is Illustrator open? */
+function illustratorOpen() {
+  return /Illustrator\.exe/i.test(sh('tasklist', ['/FI', 'IMAGENAME eq Illustrator.exe', '/NH']).stdout ?? '');
+}
+
+/** Windows: the same script, run by the real Illustrator through COM. Quits Illustrator after unless it was open before. */
+function runIllustratorNative(todo, wasOpen) {
+  const work = path.join(outDir, 'illustrator');
+  fs.mkdirSync(work, { recursive: true });
+  const fwd = (p) => p.replace(/\\/g, '/');
+  const entries = todo.map((t, i) => ({ id: t.id, file: fwd(t.file), page: t.page, artboard: t.artboard ?? null, png: fwd(path.join(work, `${i}-${t.id.replace(/\W+/g, '_')}-p${t.page}.png`)), transparent: t.transparent }));
+  const manifest = path.join(work, 'manifest.json');
+  fs.writeFileSync(manifest, JSON.stringify({ files: entries }));
+  const jsx = path.join(work, 'run.jsx');
+  fs.writeFileSync(jsx, `var MANIFEST = ${JSON.stringify(fwd(manifest))};\nvar KEEP_OPEN = true;\n` + fs.readFileSync(path.join(__dirname, 'illustrator-check.jsx'), 'utf8'));
+  const ps1 = path.join(work, 'run.ps1');
+  fs.writeFileSync(
+    ps1,
+    [
+      '$ErrorActionPreference = "Stop"',
+      '$ai = New-Object -ComObject Illustrator.Application',
+      `$null = $ai.DoJavaScriptFile('${jsx.replace(/'/g, "''")}')`,
+      wasOpen ? '' : '$ai.Quit()',
+    ].join('\r\n'),
+  );
+  const r = sh('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ps1], { timeout: 1000000 });
+  fs.writeFileSync(path.join(work, 'runner.log'), `${r.stdout}\n${r.stderr}`);
+  const resultFile = manifest + '.result.json';
+  if (!fs.existsSync(resultFile)) return { error: `Illustrator did not finish the script (see ${path.join(work, 'runner.log')})`, entries };
+  return { ...JSON.parse(fs.readFileSync(resultFile, 'utf8')), entries };
+}
+
 // ---------------------------------------------------------------- comparing
 
 /** Normalised RMSE (0 to 1) between two pictures, both flattened on magenta so see-through counts. */
 function rmse(a, b) {
+  if (WINDOWS) return pngNode.rmse(a, b);
   const flat = (f, o) => sh('convert', [f, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', o]);
   const fa = path.join(os.tmpdir(), `fl-ai-${process.pid}-a.png`);
   const fb = path.join(os.tmpdir(), `fl-ai-${process.pid}-b.png`);
@@ -297,6 +347,7 @@ function findLayer(list, name) {
 
 /** The layers Illustrator found, indented, top first (the way its Layers panel lists them), as a picture. */
 function layerTreePicture(t, found) {
+  if (WINDOWS) return; // needs ImageMagick to draw the text
   const lines = [{ text: `${t.label}: the layers Illustrator found`, depth: 0 }, { text: ' ', depth: 0 }];
   const walk = (list, depth) => {
     for (const l of list) {
@@ -402,6 +453,10 @@ function sideBySide(todo) {
   for (const t of todo) {
     if (!t.illustratorPng || !fs.existsSync(t.illustratorPng)) continue;
     const name = `${t.id.replace(/\W+/g, '-')}${t.pdfOnly ? `-p${t.page}` : t.artboard !== undefined ? `-a${t.artboard + 1}` : t.frameIndex ? `-f${t.frameIndex + 1}` : ''}.png`;
+    if (WINDOWS) {
+      pngNode.sideBySide(t.frameling, t.illustratorPng, path.join(dir, name));
+      continue;
+    }
     const flat = (f, o) => sh('convert', [f, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', o]);
     const a = path.join(dir, '.a.png');
     const b = path.join(dir, '.b.png');
@@ -432,7 +487,20 @@ function report() {
     await startApp();
     const todo = [];
     for (const c of cases) todo.push(...(await exportCase(c)));
-    if (!PREFIX) {
+    if (NATIVE) {
+      begin('illustrator start');
+      const wasOpen = illustratorOpen();
+      if (wasOpen && !argv.includes('--keep-going')) check(false, 'Illustrator is already open, and someone may be working in it: close it, or pass --keep-going');
+      else {
+        const out = runIllustratorNative(todo, wasOpen);
+        if (out.error) check(false, out.error);
+        else {
+          note(`Illustrator ${out.version} (Windows, through COM)`);
+          out.results.forEach((got, i) => judge(todo[i], got, out.entries[i]));
+          sideBySide(todo);
+        }
+      }
+    } else if (!PREFIX) {
       begin('illustrator');
       note('ILLUSTRATOR_PREFIX is not set, so only the .ai files and PNGs were written');
     } else {
