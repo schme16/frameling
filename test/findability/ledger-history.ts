@@ -70,6 +70,7 @@ export const HISTORY: History = {
     { on: D, n: 577, why: 'pixel-brush-engine: sixteen more ready-made pixel brushes in the picker (Pen and speed, Grain and texture, Colour), each one a palette command to use it, in a still and in a drawing with animation alike (a brush has nothing to do with animation), so the gap between the two is unchanged. The six commands that flip a setting need a pixel layer, so they are not counted here.' },
     { on: D, n: 579, why: 'diamond-gradient: the two diamond gradient commands (the Diamond button in the Colours panel, and the Diamond shape in the pixel Gradient options). Palette only, like the angular ones, because the buttons do the same job and Tools is at its cap.' },
     { on: '2026-11-17', n: 588, why: 'sketch-and-ink: nine more ready-made pixel brushes in a new Sketch and ink group (inking pens, pencils, a felt marker, a dry bristle brush, a canvas brush), each one a palette command to use it, like the sixteen pixel-brush-engine added. Nothing came out instead: a brush in the library is a command so it can be found by name.' },
+    { on: '2026-11-17', n: 596, why: 'hide-animation-only-ui: the lip sync commands, the Draw on and Clip flow panels and the motion tools used to be greyed on a still and now stay usable, because choosing one offers Add animation and carries on to it. Eight more commands that work, none of them in the way: they are out of the menus, the rail and the panels until animation is added.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -90,6 +91,7 @@ export const HISTORY: History = {
     { on: '2026-11-16', n: 719, why: 'tips-palette: the same 17 Brush tips entries left the menu for the palette, because a control on screen already does each job, so a still has 17 fewer menu entries and the same palette.' },
     { on: '2026-11-17', n: 728, why: 'sketch-and-ink: the same nine brushes each have an entry under the brush lists, as every brush in the library does.' },
     { on: '2026-11-17', n: 729, why: 'taper: Thin to a point at the ends is one more switch in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
+    { on: '2026-11-17', n: 727, why: 'hide-animation-only-ui: Lip sync, Draw on and Clip flow panels are not offered under View > Panels on a still (two entries fewer than before); they come back with animation.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [

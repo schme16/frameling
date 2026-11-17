@@ -741,7 +741,7 @@ See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-wor
 
 ## Groups
 
-Tools that belong together sit together under a small name: **Draw**, **Colour**, **Shapes**, **Select**, **Pen and edit**, **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
+Tools that belong together sit together under a small name: **Select**, **Draw**, **Colour**, **Shapes** (with the Pen), **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
 
 The strip starts wide enough to read every name on one line. A longer name of your own drops to a second line before anything is cut short.
 

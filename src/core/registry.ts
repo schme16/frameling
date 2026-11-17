@@ -232,7 +232,7 @@ export interface Tool {
   /** Toolbar order (lower first). */
   order?: number;
   /**
-   * Which group of the tool rail it starts in: 'draw', 'extras' (Colour), 'shapes', 'select', 'pen', 'rig' or 'view' (src/ui/toolArrange.ts
+   * Which group of the tool rail it starts in: 'draw', 'extras' (Colour), 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
    * names them). Missing means Other. People can still move it.
    */
   group?: string;

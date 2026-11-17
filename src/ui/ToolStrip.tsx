@@ -4,6 +4,8 @@ import { allTools, getTool } from '../core/registry';
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store, useStore } from '../core/store';
+import { isAnimated } from '../core/animation';
+import { animationOnlyTools } from '../core/animationOnly';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
@@ -246,7 +248,9 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
   const wsId = dock.use((d) => d.workspaceId);
   // Vector and pixel layers get the same rail; what doesn't work on this layer is greyed out where it sits.
-  const everything = allTools() as RailTool[];
+  // The tools that only mean something with animation are left off the rail while the drawing is a still (src/core/animationOnly.ts).
+  const still = useStore((s) => !isAnimated(s.doc));
+  const everything = (still ? allTools().filter((t) => !animationOnlyTools().has(t.id)) : allTools()) as RailTool[];
   const only = kind && wsId ? currentWorkspace()?.tools?.[kind] : undefined;
   const greyOut = usePrefs((p) => p.toolsOffLayer === 'grey');
   const rail = railFor(everything, kind, only, greyOut);

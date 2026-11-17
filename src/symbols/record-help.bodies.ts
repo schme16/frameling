@@ -27,5 +27,7 @@ Press **Record again** on the bar (or **Record the move again** in the palette) 
 - Sound doesn't play while you record. Press Play afterwards to check it against the music.
 - If the move runs over drawings later on the layer, Frameling asks once whether it should take their place or push them along. You can change the answer in Preferences.
 - Pixel art is turned into a symbol first, like the [one-click motions](help:one-click-motions).
-- Everything it makes is ordinary [keys and in-betweens](help:tweens), so you can change any of them afterwards.`,
+- Everything it makes is ordinary [keys and in-betweens](help:tweens), so you can change any of them afterwards.
+
+**Good to know:** the Record a move tool shows once the drawing has animation. On a picture, **Add animation** brings it (it also offers that if you search for it).`,
 };

@@ -318,8 +318,8 @@ function poly(gx: CanvasRenderingContext2D, pts: Pt[]): void {
 
 export const transformTool: Tool = {
   id: 'transform',
-  group: 'pen',
-  // After the ways of picking (0 to 4) and before the Points tool.
+  group: 'select',
+  // After the ways of picking (0 to 4): it moves and reshapes what they pick up. It used to share a group with the Pen.
   groupAt: 4.5,
   label: 'Transform',
   commandLabel: 'Transform (move, turn, stretch, slant)',

@@ -12,6 +12,7 @@ import { useLocked } from './lockState';
 import { Icon } from './icons';
 import { PanelScope } from './explain/ExplainIcon';
 import { createStore, readRaw, writeJson } from './mini';
+import { useStillFloats } from './stillDock';
 
 /**
  * How a floating window looks. `titled` (the default): a title bar with the window's name, and a row of tabs under it
@@ -37,7 +38,7 @@ function useWindowSize(): { w: number; h: number } {
 
 /** Every floating window, over the canvas and under menus and dialogs. */
 export function FloatLayer({ children }: { children?: ReactNode }) {
-  const floats = dock.use((d) => d.layout.floats);
+  const floats = useStillFloats();
   const away = panelsAway.use((v) => v);
   const win = useWindowSize();
   // Drawn in a steady order with the front one decided by z-index, so bringing one forward never moves its panel in the page.

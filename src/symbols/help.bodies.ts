@@ -166,7 +166,9 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
 
 **Straight line again** removes the path.
 
-Make a key partway along (draw on an in-between, or drop a timeline diamond there) and the path is cut where the object is: each half gets its own piece and keeps turning to face along it.`,
+Make a key partway along (draw on an in-between, or drop a timeline diamond there) and the path is cut where the object is: each half gets its own piece and keeps turning to face along it.
+
+**Good to know:** the Path to follow tool shows once the drawing has animation. On a picture, **Add animation** brings it (it also offers that if you search for it).`,
   'shape-tweens': `**Morphing** turns one drawing into another: a square into a circle, a closed eye into an open one, a puddle into a splash. Animators call it a *shape tween*.
 
 1. Draw the first shape and hold it for a few frames.
@@ -193,5 +195,7 @@ If the morph twists, crumples or turns inside out, add [shape hints](help:shape-
 Tips:
 - Go round the shape in the same direction on both keys (a, b, c clockwise on both). Hints that cross over each other are left out.
 - Two or three hints usually do it. Put them on corners and tips.
-- **Alt-click** a marker to remove it, or **Remove all hints** in the panel.`,
+- **Alt-click** a marker to remove it, or **Remove all hints** in the panel.
+
+**Good to know:** the Shape hints tool shows once the drawing has animation. On a picture, **Add animation** brings it (it also offers that if you search for it).`,
 };
