@@ -28,6 +28,9 @@ import { addShared, allPresets, brushesToText, MAX_PRESETS, movePreset, parseBru
 const mk = (id: string, name: string, group?: string): BrushPreset => ({ id, name, tool: 'brush', brush: { ...DEFAULT_BRUSH }, ...(group ? { group } : {}) });
 const big = (n: number): BrushPreset[] => allPresets(Array.from({ length: n }, (_, i) => mk(`m${i}`, `Brush ${i}`, i % 2 ? 'Inking' : i % 3 ? 'Painting' : undefined)));
 
+// The two sides share some group names (Pencils, Pens...), and a shared group sits where the vector list has it.
+const SHARED_ORDER = [...new Set<string>([...STARTER_GROUPS, ...PIXEL_GROUPS])];
+
 describe('groups', () => {
   it('puts each starter in its own group (Pens, Paint...) and a brush with no group in My brushes', () => {
     expect(groupOf(STARTERS.find((s) => s.id === 'starter:ink')!)).toBe('Pens');
@@ -46,7 +49,7 @@ describe('groups', () => {
   });
   it('orders the groups: My brushes, the ones that come with Frameling, then yours by name', () => {
     const names = groupsOf(big(10)).map((g) => g.name);
-    expect(names).toEqual([MY_GROUP, ...STARTER_GROUPS, ...PIXEL_GROUPS, 'Inking', 'Painting']);
+    expect(names).toEqual([MY_GROUP, ...SHARED_ORDER, 'Inking', 'Painting']);
   });
   it('lists the group names of your own once each, for suggesting one', () => {
     expect(groupNames([mk('a', 'A', 'Inking'), mk('b', 'B', 'inking'), mk('c', 'C', 'Aqua'), mk('d', 'D')])).toEqual(['Aqua', 'Inking']);
@@ -170,7 +173,7 @@ describe('what the list shows', () => {
     expect(flatten(sections).every((i) => i.kind === 'row')).toBe(true);
   });
   it('lists every foldable section for fold all and open all', () => {
-    expect(foldableKeys({ all })).toEqual(['favourites', 'recent', groupKey(MY_GROUP), ...STARTER_GROUPS.map(groupKey), ...PIXEL_GROUPS.map(groupKey), groupKey('Inking'), groupKey('Painting')]);
+    expect(foldableKeys({ all })).toEqual(['favourites', 'recent', groupKey(MY_GROUP), ...SHARED_ORDER.map(groupKey), groupKey('Inking'), groupKey('Painting')]);
   });
   it('stays cheap with 400 brushes: rows only for the open group', () => {
     const lots = big(400);
@@ -216,7 +219,7 @@ describe('keyboard order', () => {
 describe('capitals', () => {
   it('make no new group', () => {
     const g = groupsOf(allPresets([mk('a', 'A', 'Inking'), mk('b', 'B', 'inking')]));
-    expect(g.map((x) => x.name)).toEqual([...STARTER_GROUPS, ...PIXEL_GROUPS, 'Inking']);
+    expect(g.map((x) => x.name)).toEqual([...SHARED_ORDER, 'Inking']);
     expect(g.at(-1)!.brushes).toHaveLength(2);
   });
 });

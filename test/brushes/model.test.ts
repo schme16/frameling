@@ -52,10 +52,10 @@ describe('starters', () => {
   });
   it('are plain brushes or one of the tips, so every one exports as ordinary vector shapes', () => {
     for (const s of STARTERS) expect([undefined, 'chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle']).toContain(s.brush.tip?.kind);
-    for (const s of STARTERS) if (s.brush.tip?.kind === 'stamp') expect(s.brush.tip.shape).not.toBe('custom');
+    for (const s of STARTERS) if (s.brush.tip?.kind === 'stamp') if (s.brush.tip.shape === 'custom') expect(s.brush.tip.custom?.length).toBeGreaterThan(0);
     // The popular kinds are all there: a pencil, a pen, a marker, a paint brush, chalk, charcoal, a wash and a stamp.
     // Edged is the one small group: a single drawing-based brush so far.
-    for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(group === 'Edged' ? 1 : 4);
+    for (const group of STARTER_GROUPS) expect(STARTERS.filter((s) => s.group === group).length).toBeGreaterThanOrEqual(['Edged', 'Shapes', 'Scatter and spray', 'Pen and speed'].includes(group) ? 1 : 4);
   });
   it('do not match each other', () => {
     for (const a of STARTERS) for (const b of STARTERS) expect(sameBrush(a.brush, b.brush)).toBe(a === b);

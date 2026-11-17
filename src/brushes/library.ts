@@ -124,11 +124,15 @@ export interface PickerFacts {
   query: string;
 }
 
-/** My brushes first, then the groups that come with Frameling in their own order, then groups of your own by name. */
-function groupOrder(name: string): number {
+/**
+ * My brushes first, then the groups that come with Frameling in their own order, then groups of your own by name. A list of
+ * pixel brushes only puts the pixel groups first (Pixel basics at the top); any other list puts the vector groups first.
+ * Groups the two sides share (Pencils, Pens...) take the place they have on the side being shown.
+ */
+function groupOrder(name: string, pixelSide: boolean): number {
   if (name === MY_GROUP) return 0;
   if (name === STARTERS_GROUP) return 1;
-  const groups: readonly string[] = [...STARTER_GROUPS, ...PIXEL_GROUPS, ...TIP_GROUPS, ...STICK_GROUPS];
+  const groups: readonly string[] = pixelSide ? [...PIXEL_GROUPS, ...STARTER_GROUPS, ...TIP_GROUPS, ...STICK_GROUPS] : [...STARTER_GROUPS, ...PIXEL_GROUPS, ...TIP_GROUPS, ...STICK_GROUPS];
   const own = groups.findIndex((g) => g.toLowerCase() === name.toLowerCase());
   return own >= 0 ? 2 + own : 2 + groups.length;
 }
@@ -139,6 +143,7 @@ export const groupKey = (name: string): string => `group:${name.toLowerCase()}`;
 /** The groups and how many brushes each holds, in the order the picker lists them. */
 export function groupsOf(all: readonly BrushPreset[]): { name: string; brushes: BrushPreset[] }[] {
   const map = new Map<string, { name: string; brushes: BrushPreset[] }>();
+  const pixelSide = all.length > 0 && all.every((p) => p.tool === 'pixel');
   for (const p of all) {
     const g = groupOf(p);
     const have = map.get(g.toLowerCase());
@@ -146,7 +151,7 @@ export function groupsOf(all: readonly BrushPreset[]): { name: string; brushes: 
     else map.set(g.toLowerCase(), { name: g, brushes: [p] });
   }
   return [...map.values()]
-    .sort((a, b) => groupOrder(a.name) - groupOrder(b.name) || a.name.localeCompare(b.name));
+    .sort((a, b) => groupOrder(a.name, pixelSide) - groupOrder(b.name, pixelSide) || a.name.localeCompare(b.name));
 }
 
 /** Every section key that can be folded or opened (for "fold all" and "open all"). */

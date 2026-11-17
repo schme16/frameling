@@ -7,11 +7,32 @@ import type { PixelSpec } from '../dab/spec';
 import type { DynRoute } from '../dab/dynamics';
 import { MEDIA, type DryId } from '../dry/maths';
 import { DEFAULT_SOFT } from '../soft/settings';
+import { stampRings } from '../geometry/tipShapes';
 import type { PixelStamp } from './stamps';
 import type { BrushPreset } from './model';
 
 /** The groups the pixel starters sit in, in the order the picker lists them. */
-export const PIXEL_GROUPS = ['Pixel basics', 'Shapes', 'Scatter and spray', 'Picture tips', 'Pen and speed', 'Sketch and ink', 'Grain and texture', 'Colour', 'Smooth edges', 'Soft paint', 'Dry media'] as const;
+export const PIXEL_GROUPS = [
+  'Pixel basics',
+  'Shapes',
+  'Scatter and spray',
+  'Picture tips',
+  'Pen and speed',
+  'Sketch and ink',
+  'Grain and texture',
+  'Colour',
+  'Smooth edges',
+  'Soft paint',
+  'Dry media',
+  // The groups the vector brushes have too, with the same names, so the two lists pair up.
+  'Pencils',
+  'Pens',
+  'Markers',
+  'Paint',
+  'Chalk and charcoal',
+  'Stamps and texture',
+  'Calligraphy',
+] as const;
 export type PixelGroup = (typeof PIXEL_GROUPS)[number];
 
 /** A one-colour picture from rows of text: `#` is paint, anything else is clear. */
@@ -41,6 +62,33 @@ export function softPicture(w: number, h: number, paint: (x: number, y: number) 
   return { w, h, colours, cells, keep: false, soft: true };
 }
 
+/**
+ * A vector stamp (a leaf, a paw, a dash) as a soft picture tip: the same outlines the vector brush draws, one unit across
+ * and centred, laid on a square of `side` cells and sampled four by four a cell, so the pixel brush stamps the same shape.
+ */
+export function stampPicture(shape: string, side = 32): PixelStamp {
+  const rings = stampRings(shape, []);
+  const inside = (x: number, y: number): boolean => {
+    let n = 0;
+    for (const r of rings) {
+      for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+        const xi = r[i];
+        const yi = r[i + 1];
+        const xj = r[j];
+        const yj = r[j + 1];
+        if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) n++;
+      }
+    }
+    return n % 2 === 1;
+  };
+  const SUB = 4;
+  return softPicture(side, side, (cx, cy) => {
+    let hit = 0;
+    for (let sy = 0; sy < SUB; sy++) for (let sx = 0; sx < SUB; sx++) if (inside((cx + (sx + 0.5) / SUB) / side - 0.5, (cy + (sy + 0.5) / SUB) / side - 0.5)) hit++;
+    return hit / (SUB * SUB);
+  });
+}
+
 /** The same numbers every time, so a built-in tip never changes between runs. */
 function seeded(seed: number): () => number {
   let s = seed >>> 0;
@@ -68,6 +116,28 @@ const MARKER = softPicture(6, 24, (x, y) => {
 
 const r = (from: DynRoute['from'], to: DynRoute['to'], amount: number, invert = false): DynRoute => ({ from, to, amount, invert });
 
+/**
+ * The settings of a pixel brush that draws what a vector brush of the same name draws. The vector line is `size` wide at
+ * full pressure, and `thinning` lets a lighter press thin it to `1 - thinning` of that and a harder press fatten it to
+ * `1 + thinning`. A size route only goes from `1 - amount` up to 1, so the dab is `1 + thinning` times the size with
+ * `amount = 2 * thinning / (1 + thinning)`, and a pen then draws the same share of the vector width at every pressure (a dab is a whole
+ * number of pixels, so the size is rounded, and the width is within a few tenths of a pixel of the vector line). Tapers are in brush widths.
+ * A thinning of 0 still gets the route, at amount 0: a size route (even one that does nothing) tells the engine the brush looks
+ * after the pen's pressure itself, so the Pen page's own pressure on size is left off, as a vector line with no thinning leaves it. The same goes for flow,
+ * which a vector line has no pressure on either.
+ */
+const likeVector = (size: number, thinning: number, taper?: { start: number; end: number }): Partial<DabBrush> => {
+  // A dab is a whole number of pixels, so the size is rounded and the rest follows from the rounded one.
+  const big = Math.max(1, Math.round(size * (1 + thinning)));
+  return {
+    size: big,
+    aliased: false,
+    spacing: 0.05,
+    dynamics: [r('pressure', 'size', Math.round(((2 * thinning) / (1 + thinning)) * 1000) / 1000), r('pressure', 'flow', 0)],
+    ...(taper ? { taper: { start: Math.round((taper.start / big) * 100) / 100, end: Math.round((taper.end / big) * 100) / 100, size: 1, opacity: 0 } } : {}),
+  };
+};
+
 const dab = (id: string, name: string, group: PixelGroup, b: Partial<DabBrush>): BrushPreset => ({
   id: `starter:px-${id}`,
   name,
@@ -85,9 +155,9 @@ const soft = (tool: 'soft-brush' | 'airbrush' | 'highlighter', name: string): Br
   return spec(tool, name, 'Soft paint', { kind: 'soft', tool, size: o.size, hardness: o.hardness, flow: o.flow });
 };
 
-const dry = (medium: DryId, name: string): BrushPreset => {
+const dry = (medium: DryId, name: string, group: PixelGroup = 'Dry media', o: { id?: string; size?: number } = {}): BrushPreset => {
   const m = MEDIA.find((x) => x.id === medium)!;
-  return spec(medium, name, 'Dry media', { kind: 'dry', medium, size: m.size, hardness: m.hardness, press: m.press });
+  return spec(o.id ?? medium, name, group, { kind: 'dry', medium, size: o.size ?? m.size, hardness: m.hardness, press: m.press });
 };
 
 export const PIXEL_STARTERS: readonly BrushPreset[] = [
@@ -158,4 +228,28 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   dry('soft-pastel', 'Soft pastel on paper'),
   dry('crayon', 'Crayon on paper'),
   dry('soft-pencil', 'Soft pencil on paper'),
+
+  // The vector brushes of the same names and groups, drawn with the pixel engine, so the two lists pair up. Each one is laid
+  // beside its vector brush in brand/ab/brush-parity/presets/.
+  dab('mechanical', 'Mechanical pencil', 'Pencils', likeVector(1.6, 0.1)),
+  dry('colour-pencil', 'Colour pencil', 'Pencils', { size: 4 }),
+  dry('sketch-pencil', 'Sketch pencil', 'Pencils', { id: 'sketch-pencil-medium', size: 3 }),
+  dab('gel', 'Gel pen', 'Pens', likeVector(3.5, 0.3)),
+  dab('ballpoint', 'Ballpoint pen', 'Pens', likeVector(2.2, 0.15)),
+  dab('brush-pen', 'Brush pen', 'Pens', likeVector(12, 0.8, { start: 20, end: 70 })),
+  dab('dip-pen', 'Dip pen', 'Pens', likeVector(9, 0.9, { start: 6, end: 24 })),
+  dab('fine-marker', 'Fine marker', 'Markers', likeVector(5, 0)),
+  dab('block-marker', 'Block marker', 'Markers', { ...likeVector(40, 0), tip: 'square', follow: true, spacing: 0.1 }),
+  dab('brush-marker', 'Brush marker', 'Markers', likeVector(14, 0.4, { start: 0, end: 25 })),
+  dab('tapered', 'Tapered brush', 'Paint', likeVector(14, 0.6, { start: 40, end: 60 })),
+  dab('round-brush', 'Round brush', 'Paint', likeVector(16, 0.7, { start: 12, end: 50 })),
+  dry('crayon', 'Dry brush', 'Paint', { id: 'dry-brush-crayon', size: 34 }),
+  dry('compressed-charcoal', 'Charcoal', 'Chalk and charcoal', { id: 'charcoal', size: 22 }),
+  dry('oil-pastel', 'Oil pastel', 'Chalk and charcoal', { size: 22 }),
+  dab('leaves', 'Leaves', 'Stamps and texture', { tip: 'picture', picture: stampPicture('leaf'), size: 22, spacing: 0.9, sizeJitter: 0.245, scatter: 0.3, follow: true, angleJitter: 0.05, aliased: false, dynamics: [r('pressure', 'size', 0), r('pressure', 'flow', 0)] }),
+  dab('falling-leaves', 'Falling leaves', 'Stamps and texture', { tip: 'picture', picture: stampPicture('leaf'), size: 18, spacing: 1.3, sizeJitter: 0.28, scatter: 0.9, angleJitter: 1, aliased: false, dynamics: [r('pressure', 'size', 0), r('pressure', 'flow', 0)] }),
+  dab('paw-prints', 'Paw prints', 'Stamps and texture', { tip: 'picture', picture: stampPicture('paw'), size: 24, spacing: 1.7, sizeJitter: 0.07, follow: true, angle: 90, aliased: false, dynamics: [r('pressure', 'size', 0), r('pressure', 'flow', 0)] }),
+  dab('dashed-line', 'Dashed line', 'Stamps and texture', { tip: 'picture', picture: stampPicture('dash'), size: 7, spacing: 1.9, follow: true, aliased: false, dynamics: [r('pressure', 'size', 0), r('pressure', 'flow', 0)] }),
+  dab('broad-nib', 'Broad nib', 'Calligraphy', { tip: 'square', size: 22, roundness: 0.12, angle: 30, spacing: 0.05, aliased: false, dynamics: [r('pressure', 'size', 0), r('pressure', 'flow', 0)] }),
+  dab('round-nib', 'Round nib', 'Calligraphy', likeVector(8, 0.5)),
 ];

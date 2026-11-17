@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, shows the brush you are using. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
 
-**Ready to use:** over sixty brushes come with Frameling, in eleven groups: **Pencils**, **Pens**, **Markers**, **Paint**, **Chalk and charcoal**, **Watercolour**, **Stamps and texture**, **Calligraphy**, **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they export as plain vector shapes.
+**Ready to use:** over sixty brushes come with Frameling, in fourteen groups, from **Pencils**, **Pens** and **Markers** to **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them, and they export as plain vector shapes. Pixel layers have most of them too.
 
 **Soft edges:** airbrush, highlighter, soft brush and smudge are [pixel tools](help:soft-paint), since a vector line can't fade.
 
