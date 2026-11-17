@@ -73,10 +73,10 @@ describe('noticing the first drawing', () => {
     expect(getPrefs().firstDrawn).toBe(true);
     off();
   });
-  it('offers to fold the explanations away once, and "Tuck them away" does it', () => {
+  it('does not ask about the explanations after a first drawing, and leaves the preference alone', () => {
     toasts.set([]);
     const off = watchFirstDrawing();
-    expect(getPrefs().showExplanations).toBe(true); // a new person has them on show
+    expect(getPrefs().showExplanations).toBe(false); // they start tucked away
     store().update('Rename', (x) => void (x.name = 'x'));
     // A blank page does not count as drawing, so nothing yet; put a shape on it.
     const doc = store().get().doc;
@@ -84,9 +84,8 @@ describe('noticing the first drawing', () => {
     d.shapes = [stroke([[1, 1], [20, 20]])];
     store().load({ ...doc, drawings: { ...doc.drawings, [d.id]: d } });
     store().update('Rename again', (x) => void (x.name = 'y'));
-    const offer = toasts.get().find((t) => t.action?.id === 'explanations-away');
-    expect(offer).toBeTruthy();
-    offer!.action!.run();
+    expect(toasts.get()).toEqual([]);
+    expect(getPrefs().firstDrawn).toBe(true);
     expect(getPrefs().showExplanations).toBe(false);
     off();
   });

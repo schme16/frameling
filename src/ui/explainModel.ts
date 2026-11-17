@@ -49,12 +49,11 @@ export const wordsIn = (scope: string | null | undefined): string => (scope ? jo
 export const useWordsIn = (scope: string | null | undefined): string => scopes.use((all) => (scope ? joinWords((all[scope] ?? []).map((e) => e.words)) : ''));
 
 /**
- * Whether the explanations are on show, from the preference. A new person starts with them on (they should meet the
- * words once); someone who was already here before the switch existed starts with them tucked away. Pure, so it is tested.
+ * Whether the explanations are on show, from the preference. They start tucked away behind the ? icons for everyone;
+ * anyone who chose either way keeps their choice. Pure, so it is tested.
  */
-export function showExplanationsDefault(stored: { showExplanations?: unknown; onboarded?: unknown }): boolean {
-  if (typeof stored.showExplanations === 'boolean') return stored.showExplanations;
-  return stored.onboarded !== true;
+export function showExplanationsDefault(stored: { showExplanations?: unknown }): boolean {
+  return typeof stored.showExplanations === 'boolean' ? stored.showExplanations : false;
 }
 
 /** The tooltip for a scope's icon: the one-line blurb first, then whatever explainers were written inside it. */

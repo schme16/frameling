@@ -192,7 +192,7 @@ const entries = [
   },
   {
     name: 'artboards',
-    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
+    prefs: { firstDrawn: true }, // a first drawing is already done
     steps: [
       L.js(`__framelingArtboards.load('sprites')`),
       L.wait(400),
@@ -223,7 +223,7 @@ const entries = [
   {
     // Three sprites at 6, 12 and 24 fps: the panel names each board's speed, and the Speed box is under the list.
     name: 'artboards-speed',
-    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
+    prefs: { firstDrawn: true }, // a first drawing is already done
     steps: [
       L.js(`__framelingArtboards.load('speeds')`),
       L.wait(400),
@@ -248,7 +248,7 @@ const entries = [
     // Variations: the original and two linked copies side by side; open one to see what it changes; then recolour the
     // original's ground and watch both variations follow (the orange one keeps its own fainter ground).
     name: 'variations',
-    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
+    prefs: { firstDrawn: true }, // a first drawing is already done
     steps: [
       L.js(`__framelingArtboards.load('variations')`),
       L.wait(400),

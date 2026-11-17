@@ -22,13 +22,13 @@ const every = () => flat(resolveGroups(undefined, allTools())).sort();
 
 describe('the three defaults', () => {
   it('Draw: select first, then drawing and the standard order', () => {
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'extras', 'shapes', 'pen', 'rig', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'extras', 'shapes', 'rig', 'view']);
     expect(currentGroups()[1].tools.slice(0, 4)).toEqual(['pencil', 'brush', 'eraser', 'fill']);
   });
   it('Animate: select first, then drawing, rig and motion, then the rest', () => {
     applyWorkspace('animate');
     const g = currentGroups();
-    expect(ids(g)).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
+    expect(ids(g)).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
     expect(g[2].tools).toEqual(['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints']);
   });
   it('Pixel: the ways of selecting first, then the pixel tools, vector-only tools later', () => {
@@ -62,7 +62,7 @@ describe('changes belong to the workspace they were made in', () => {
     expect(isCustomArrangement()).toBe(true);
     applyWorkspace('animate');
     expect(isCustomArrangement()).toBe(false);
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
     applyWorkspace('draw');
     expect(currentGroups()[0].tools).toEqual(['hand']);
   });
@@ -83,7 +83,7 @@ describe('changes belong to the workspace they were made in', () => {
     applyWorkspace('animate');
     moveToolTo('hand', { newGroupAt: 0 });
     resetToolArrangement();
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
     expect(isCustomArrangement()).toBe(false);
     applyWorkspace('pixel');
     expect(isCustomArrangement()).toBe(true);

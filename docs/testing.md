@@ -203,6 +203,29 @@ audit passed the whole time a panel could not be found.
 `FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
 rail and how many greyed commands say why.
 
+### Brush parity: test/brushes/parity.test.tsx and test/brushes/parityGaps.ts
+
+The vector Brush and the pixel brush are meant to offer the same brushes and the same controls (see `brand/ab/brush-parity/table.md`
+and `plan.md`). This test keeps count of what still isn't the same, so the gap can only close.
+
+**Controls.** Every control in the brush options carries an optional `control` prop (`Slider`, `Toggle`, `Choice`, `ActionButton`,
+`Field` in `src/canvas/controls.tsx`), which shows up as `data-control="size"` on the element and is read by nothing but this
+test. Ids are plain kebab case, and the same id on two panels means the same control (`size`, `spacing`, `mirror`, `save-as`).
+The test mounts the vector Brush (every tip, Catch on paper on and off, a saved brush that has been changed) and the pixel side
+(the plain Brush on a pixel layer, the Pixel brush with a picture tip, paper, dynamics, taper, dual tip and a locked palette,
+every Soft paint kind, Chalk and charcoal) with every fold open, plus the brush list's drop down, and collects the ids. An id on
+one side only has to be in `parityGaps.ts`; an id in `parityGaps.ts` that is now on both sides has to come out.
+
+**Brushes.** Every vector starter and every pixel starter is either in `BRUSH_PAIRS` (the same job on both sides) or in
+`ONE_SIDED_VECTOR_BRUSHES` / `ONE_SIDED_PIXEL_BRUSHES`.
+
+**Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
+(`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
+test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For
+a brush, add a pair to `BRUSH_PAIRS` and delete its entry. A new control with no `control` id isn't seen, so give every new control
+one. To see what the test found, run `PARITY_PRINT=1 npx vitest run test/brushes/parity.test.tsx`: it prints the ids on each
+side. The pen toggles (shown only once a pen has been used) and the name box for saving aren't covered yet.
+
 ### Case-sensitive imports
 
 `test/case-sensitive-imports.test.ts` checks every relative import in `src/` and `test/` names the file with exactly
@@ -1533,7 +1556,7 @@ own pictures, `capture` taking the throwaway frame first). `stageCrop` also take
 `of: ".ui-canvas"` (the stage with its tool bar, for the Pixel workspace), and `FROM_STAGE({...})` writes one. Aim with `at(x, y)`
 (a stage point), `edge(x, y)` (screen pixels from the stage's top left, for the rulers) or `pixelGrid(w, h, cell).at(x, y)` (the middle of
 an art pixel), never a window number; the sums are tested in `test/ui/harness-crops.test.ts`. The harness turns `firstDrawn` on for every
-entry, so the "fold the explanations away" offer that comes with the first edit never lands over a picture. `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
+entry, and turns `showExplanations` on (they start tucked away for a person, but the help pictures were made with them on show); an entry that wants them tucked away says so in its `prefs`. `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
 someone else's build. Preferences go into `localStorage` (`frameling.prefs.v1`) and the page reloads. `SHOT_W`,
 `SHOT_H` (default 1280 x 800) and `SHOT_WAIT` (ms before the steps, default 3000) apply. Its window is hidden

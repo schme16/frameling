@@ -30,7 +30,6 @@ export const DEFAULT_GROUPS: { id: string; name: string }[] = [
   // are colour tools too: they change the colour of pixels, and they sit here on a pixel layer so the strip stays put.
   { id: 'extras', name: 'Colour' },
   { id: 'shapes', name: 'Shapes' },
-  { id: 'pen', name: 'Pen and edit' },
   { id: 'rig', name: 'Rig and motion' },
   { id: 'view', name: 'View' },
 ];
@@ -50,12 +49,12 @@ export interface ToolRef {
  * that start there (their `group` and `groupAt`) fill it. Draw is the standard order.
  */
 export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
-  // Select first, then drawing, colour, shapes, pen and edit, rig, view.
+  // Select first, then drawing, colour, shapes (the pen and point editing are in there too), rig, view.
   draw: DEFAULT_GROUPS.map((g) => ({ id: g.id, tools: [] })),
-  // Select first, then drawing, rig and motion straight after, then pen and edit, shapes, colour and view.
-  animate: ['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
+  // Select first, then drawing, rig and motion straight after, then shapes (with the pen), colour and view.
+  animate: ['select', 'draw', 'rig', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
   // Pixel select first, then the pixel tools: draw with the eyedropper in reach, shade, dither, then shapes; the
-  // vector-only tools (pen, rig) come after.
+  // vector-only tools (the pen and point editing join Shapes, then rig) come after.
   pixel: [
     { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand', 'transform'] },
     { id: 'draw', tools: ['pencil', 'eraser', 'fill', 'eyedropper'] },
@@ -63,7 +62,6 @@ export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },
-    { id: 'pen', tools: [] },
     { id: 'rig', tools: [] },
   ],
 };
@@ -79,6 +77,9 @@ const isId = (v: unknown): v is string => typeof v === 'string' && ID.test(v) &&
  * turns up later goes where it would have gone then, not at the top.
  */
 const LEGACY_ORDER = ['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view'];
+
+/** Groups the rail used to start with. A rail saved with one keeps it, under the name it had (its tools are in Shapes for a rail that starts fresh). */
+const LEGACY_NAMES: Record<string, string> = { pen: 'Pen and edit' };
 
 const rankOfGroup = (id: string, order: readonly string[] = DEFAULT_GROUPS.map((g) => g.id)): number => {
   const i = order.indexOf(id);
@@ -142,6 +143,7 @@ export function groupName(g: ToolGroup, groups: ToolGroup[]): string {
 function usualName(g: ToolGroup, groups: ToolGroup[]): string {
   const d = DEFAULT_GROUPS.find((x) => x.id === g.id);
   if (d) return d.name;
+  if (LEGACY_NAMES[g.id]) return LEGACY_NAMES[g.id];
   if (g.id === OTHER_GROUP.id) return OTHER_GROUP.name;
   return `Group ${groups.findIndex((x) => x.id === g.id) + 1}`;
 }

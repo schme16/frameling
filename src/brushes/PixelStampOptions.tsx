@@ -41,13 +41,13 @@ export function PixelStampOptions() {
               Your brush, {stamp.w} by {stamp.h}
             </span>
           </div>
-          {hasColours(stamp) && <Toggle label="Its own colours" checked={stamp.keep} onChange={setPixelStampKeep} hint="On: it stamps the picture as it was. Off: only its shape counts, painted in the colour you picked." />}
-          <ActionButton command="brush.pixelReset" onClick={clearPixelStamp} title="Go back to the square or round brush">
+          {hasColours(stamp) && <Toggle control="picture-own-colours" label="Its own colours" checked={stamp.keep} onChange={setPixelStampKeep} hint="On: it stamps the picture as it was. Off: only its shape counts, painted in the colour you picked." />}
+          <ActionButton control="stamp-reset" command="brush.pixelReset" onClick={clearPixelStamp} title="Go back to the square or round brush">
             Back to the usual brush
           </ActionButton>
         </>
       )}
-      <ActionButton command="brush.fromSelection" onClick={() => void makeBrushFromSelection()} title="Turn the pixels you have selected into a brush (up to 32 by 32)">
+      <ActionButton control="tip-from-selection" command="brush.fromSelection" onClick={() => void makeBrushFromSelection()} title="Turn the pixels you have selected into a brush (up to 32 by 32)">
         Brush from selection
       </ActionButton>
     </div>

@@ -11,6 +11,7 @@ import { zoneTabs } from './dockModel';
 import { leftOutForStill } from './stillZone';
 import { useShownZone } from './roomFolds';
 import { rightStyle } from './rightStyle';
+import { useStillZone } from './stillDock';
 
 export function DockZoneView({ zone }: { zone: DockZone }) {
   const style = rightStyle.use((v) => v);
@@ -24,12 +25,11 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
 function useLeftOut(zone: DockZone): boolean {
   const animated = useStore((s) => isAnimated(s.doc));
   const room = dock.use((d) => d.workspaceId);
-  const tabs = dock.use((d) => zoneTabs(d.layout.zones[zone]).join('\n'));
-  return leftOutForStill(zone, tabs ? tabs.split('\n') : [], animated, room);
+  return leftOutForStill(zone, zoneTabs(useStillZone(zone)), animated, room);
 }
 
 function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: boolean }) {
-  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const z = useShownZone(useStillZone(zone), zone);
   const leftOut = useLeftOut(zone);
   // An empty zone takes no room. While something is dragged, the bands over the canvas edges stand in for it.
   if (!z.tabs.length || leftOut) return null;
@@ -45,7 +45,7 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
 
 /** The thin line between a zone and the canvas. */
 export function Splitter({ zone }: { zone: DockZone }) {
-  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const z = useShownZone(useStillZone(zone), zone);
   const away = panelsAway.use((v) => v);
   const leftOut = useLeftOut(zone);
   const horizontal = zone === 'bottom' || zone === 'top';

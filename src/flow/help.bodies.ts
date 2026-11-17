@@ -21,7 +21,9 @@ Arrows from a looping clip start out as triggers named after where they go, sinc
 ${ix('- **Export for Interactives** puts the flow in the package, so Interactives can play it.\n')}
 **Reacting to the game:** arrows can also check [inputs](help:clip-flow-inputs), like speed or health, and a hurt clip can play from any clip.
 
-Frameling's own play button still plays the whole timeline or the picked clip, so the flow never gets in the way while you animate.`,
+Frameling's own play button still plays the whole timeline or the picked clip, so the flow never gets in the way while you animate.
+
+**Good to know:** the Clip flow panel shows once the drawing has animation. On a picture, **Add animation** brings it (it also offers that if you search for it).`,
   'clip-flow-inputs': `**Inputs** are values your game sets while it plays: **speed**, **grounded**, **health**. Arrows in the [clip flow](help:clip-flow) can check them, so a character reacts instead of just following a script. Game makers call these *parameters* and *conditions*.
 
 **Add an input:** in the Clip flow panel, under **Inputs**, press **Add on/off** (a switch, like grounded) or **Add number** (like speed). Give it a name. It also sits in the command palette as **Add a clip flow input**.

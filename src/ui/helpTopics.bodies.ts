@@ -117,7 +117,7 @@ The **Help** panel sits with the other panels, handy while you work. Press the l
 ## Searching
 
 Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K** to search the commands and the help at the same time.`,
-  explanations: `Panels and settings used to explain themselves all the time. Now the words fold away behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
+  explanations: `Panels and settings keep their explanations behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
 
 ## Read one
 
@@ -127,7 +127,7 @@ A panel's **?** sits in its title bar. A section inside a panel has its own besi
 
 ## Keep them on show
 
-When you are new, the explanations sit on show where they always did, so you meet them once. After your first drawing Frameling offers to tuck them away, and you can say no. Any time you know your way round, tuck them away yourself: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it back on any time.
+The explanations start tucked away, and Frameling never asks about it. If you'd rather read them as you go, turn them on: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it off the same way any time. A choice you make is remembered.
 
 ## Good to know
 
@@ -741,7 +741,7 @@ See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-wor
 
 ## Groups
 
-Tools that belong together sit together under a small name: **Draw**, **Colour**, **Shapes**, **Select**, **Pen and edit**, **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
+Tools that belong together sit together under a small name: **Select**, **Draw**, **Colour**, **Shapes** (with the Pen), **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
 
 The strip starts wide enough to read every name on one line. A longer name of your own drops to a second line before anything is cut short.
 

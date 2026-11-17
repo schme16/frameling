@@ -24,6 +24,8 @@ Starters that are animations come with animation already on. Nothing to add and 
 
 While animation is off, the animation tools in the command search are greyed, and each says "Add animation first". Press one and the message has an **Add animation** button.
 
+The **Lip sync**, **Draw on** and **Clip flow** panels and the **Path to follow**, **Record a move** and **Shape hints** tools wait out of sight too, and come back with the timeline. They are still in the command search: choose one and it offers **Add animation**, then carries on to what you asked for. The Rigging menu and the rig tools stay, because a picture can be posed.
+
 ## Which drawings start as pictures?
 
 - **Doodle** and **Square** start as one picture.

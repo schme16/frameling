@@ -55,7 +55,7 @@ function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 
   const extra = b.dynamics.filter((x) => x.to === to).length - 1;
   return (
     <div className="dab-route" data-testid={`dab-route-${to}`}>
-      <Field label={words.label} hint={r ? SOURCE_WORDS[r.from].hint : words.hint}>
+      <Field control={`${to}-follows`} label={words.label} hint={r ? SOURCE_WORDS[r.from].hint : words.hint}>
         <select
           className="dab-select"
           aria-label={words.label}
@@ -72,11 +72,11 @@ function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 
       </Field>
       {r && (
         <div className="dab-sub">
-          <Slider label="Amount" value={Math.round(r.amount * 100)} min={5} max={100} format={(v) => words.amount(v, r.invert)} onChange={(v) => set({ dynamics: withRoute(b.dynamics, to, { amount: v / 100 }) })} />
-          <Toggle label="The other way round" checked={r.invert} onChange={(invert) => set({ dynamics: withRoute(b.dynamics, to, { invert }) })} hint="Flips it: a pen that makes the mark bigger when pressed harder makes it smaller instead." />
+          <Slider control={`${to}-follows-amount`} label="Amount" value={Math.round(r.amount * 100)} min={5} max={100} format={(v) => words.amount(v, r.invert)} onChange={(v) => set({ dynamics: withRoute(b.dynamics, to, { amount: v / 100 }) })} />
+          <Toggle control={`${to}-follows-invert`} label="The other way round" checked={r.invert} onChange={(invert) => set({ dynamics: withRoute(b.dynamics, to, { invert }) })} hint="Flips it: a pen that makes the mark bigger when pressed harder makes it smaller instead." />
           {r.from !== 'random' && (
             <MoreOptions name={`pixel-brush-curve-${to}`} label={r.curve ? 'Shape of the response (bent)' : 'Shape of the response'} hint="Bend the line so a light press does more, or less, than a hard one.">
-              <CurveEditor curve={r.curve} inLabel={SOURCE_WORDS[r.from].label.toLowerCase()} outLabel={words.label.replace(/ follows$/, '').toLowerCase()} onChange={(curve) => set({ dynamics: withRoute(b.dynamics, to, { curve: curve ?? undefined }) })} />
+              <CurveEditor control={`${to}-follows-curve`} curve={r.curve} inLabel={SOURCE_WORDS[r.from].label.toLowerCase()} outLabel={words.label.replace(/ follows$/, '').toLowerCase()} onChange={(curve) => set({ dynamics: withRoute(b.dynamics, to, { curve: curve ?? undefined }) })} />
             </MoreOptions>
           )}
         </div>
@@ -90,7 +90,7 @@ function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 
 function Wobble({ b, to, label, hint, format }: { b: DabBrush; to: 'hue' | 'saturation' | 'lightness'; label: string; hint: string; format: (v: number) => string }) {
   const r = routeFor(b.dynamics, to);
   const v = r ? Math.round(r.amount * 100) : 0;
-  return <Slider label={label} value={v} min={0} max={100} format={(x) => (x === 0 ? 'None' : format(x))} onChange={(x) => setDab({ dynamics: x === 0 ? withRoute(b.dynamics, to, null) : withRoute(b.dynamics, to, r ? { amount: x / 100 } : { from: 'random', amount: x / 100 }) })} hint={hint} />;
+  return <Slider control={`${to}-wobble`} label={label} value={v} min={0} max={100} format={(x) => (x === 0 ? 'None' : format(x))} onChange={(x) => setDab({ dynamics: x === 0 ? withRoute(b.dynamics, to, null) : withRoute(b.dynamics, to, r ? { amount: x / 100 } : { from: 'random', amount: x / 100 }) })} hint={hint} />;
 }
 
 /** Where a brush's settings live, so the same options can sit on the pixel brush and on the retouch brushes (which each keep their own brush). */
@@ -115,16 +115,16 @@ export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle 
       <RouteRow b={b} to="opacity" set={set} />
       <RouteRow b={b} to="angle" set={set} />
       <RouteRow b={b} to="scatter" set={set} />
-      <Toggle label="Thin to a point at the ends" checked={!!b.taper} onChange={(on) => set({ taper: on ? DEFAULT_TAPER : null })} hint="The line starts and ends in a point, whatever the pen is doing, so a mouse draws a tapered line too. The end is drawn when you let go." />
+      <Toggle control="taper" label="Thin to a point at the ends" checked={!!b.taper} onChange={(on) => set({ taper: on ? DEFAULT_TAPER : null })} hint="The line starts and ends in a point, whatever the pen is doing, so a mouse draws a tapered line too. The end is drawn when you let go." />
       {b.taper && (
         <>
-          <Slider label="Start taper" value={Math.round(b.taper.start * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, start: v / 10 } })} hint="How far the line runs before it is full width." />
-          <Slider label="End taper" value={Math.round(b.taper.end * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, end: v / 10 } })} hint="How far before its end the line begins to thin." />
-          <Slider label="How thin the tip gets" value={Math.round(b.taper.size * 100)} min={0} max={100} format={(v) => (v >= 100 ? 'A point' : `${100 - v}% of the width`)} onChange={(v) => set({ taper: { ...b.taper!, size: v / 100 } })} />
-          <Slider label="How faint the tip gets" value={Math.round(b.taper.opacity * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Not at all' : `down to ${100 - v}%`)} onChange={(v) => set({ taper: { ...b.taper!, opacity: v / 100 } })} />
+          <Slider control="taper-start" label="Start taper" value={Math.round(b.taper.start * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, start: v / 10 } })} hint="How far the line runs before it is full width." />
+          <Slider control="taper-end" label="End taper" value={Math.round(b.taper.end * 10)} min={0} max={300} curve format={(v) => (v === 0 ? 'None' : `${v / 10} brush widths`)} onChange={(v) => set({ taper: { ...b.taper!, end: v / 10 } })} hint="How far before its end the line begins to thin." />
+          <Slider control="taper-thin" label="How thin the tip gets" value={Math.round(b.taper.size * 100)} min={0} max={100} format={(v) => (v >= 100 ? 'A point' : `${100 - v}% of the width`)} onChange={(v) => set({ taper: { ...b.taper!, size: v / 100 } })} />
+          <Slider control="taper-faint" label="How faint the tip gets" value={Math.round(b.taper.opacity * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Not at all' : `down to ${100 - v}%`)} onChange={(v) => set({ taper: { ...b.taper!, opacity: v / 100 } })} />
         </>
       )}
-      {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
+      {usesFade && <Slider control="fade-length" label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
     </MoreOptions>
   );
 }
@@ -138,8 +138,8 @@ export function ColourSection() {
       <Wobble b={b} to="lightness" label="Lightness wobble" format={(v) => `${Math.round(v / 2)}% either way`} hint="Each dab is a little lighter or darker." />
       <Wobble b={b} to="saturation" label="Colourfulness wobble" format={(v) => `${v}% either way`} hint="Each dab is a little more or less colourful (saturation)." />
       <RouteRow b={b} to="mix" />
-      <Slider label="Wet paint" value={Math.round(b.wet * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Dry: paints its own colour' : `${v}%`)} onChange={(v) => setDab({ wet: v / 100 })} hint="The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other, like a mixing brush. It mixes with its own paint too, so a loop that crosses its own line smears it." />
-      <Field label="How the paint joins what is there" hint={blendInfo(b.blend).description}>
+      <Slider control="wet-paint" label="Wet paint" value={Math.round(b.wet * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Dry: paints its own colour' : `${v}%`)} onChange={(v) => setDab({ wet: v / 100 })} hint="The brush picks up colour from the paint it crosses and carries it along, so strokes smear into each other, like a mixing brush. It mixes with its own paint too, so a loop that crosses its own line smears it." />
+      <Field control="blend" label="How the paint joins what is there" hint={blendInfo(b.blend).description}>
         <select className="dab-select" aria-label="How the paint joins what is there" value={b.blend} onChange={(e) => setDab({ blend: e.target.value as DabBrush['blend'] })}>
           {BRUSH_BLENDS.map((m) => (
             <option key={m} value={m}>
@@ -168,8 +168,8 @@ export function PaperSection() {
             <div className="dab-sub">
               <TextureSwatch picture={g.picture} invert={g.invert} label="The picture this brush catches on" />
               <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the light parts of it, the way it catches on the high points of paper.</Tip>
-              <Toggle label="Catch on the dark parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round: dark for the high points." />
-              <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Pick another picture file to catch on">
+              <Toggle control="paper-invert" label="Catch on the dark parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round: dark for the high points." />
+              <ActionButton control="paper-picture" command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Pick another picture file to catch on">
                 Use another picture...
               </ActionButton>
               <ActionButton onClick={() => setDab({ grain: { ...g, picture: undefined, invert: undefined } })} title="Go back to catching on paper">
@@ -177,19 +177,19 @@ export function PaperSection() {
               </ActionButton>
             </div>
           ) : (
-            <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Catch on a picture of your own instead of a paper: a canvas weave, a leaf, a scribble">
+            <ActionButton control="paper-picture" command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Catch on a picture of your own instead of a paper: a canvas weave, a leaf, a scribble">
               Use a picture as the paper...
             </ActionButton>
           )}
-          <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
-          <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
+          <Slider control="paper-amount" label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
+          <Slider control="paper-grain-size" label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
           {g.scale > 1 && (
-            <Toggle label="Soften the bumps of a bigger paper" checked={!!g.smooth} onChange={(smooth) => setDab({ grain: { ...g, smooth: smooth || undefined } })} hint="Off: each bump is a sharp block of whole pixels, which is right for pixel art. On: the paper is blown up softly, so a big soft pencil keeps a soft grain. A sharp pixel brush always uses blocks." />
+            <Toggle control="paper-soften" label="Soften the bumps of a bigger paper" checked={!!g.smooth} onChange={(smooth) => setDab({ grain: { ...g, smooth: smooth || undefined } })} hint="Off: each bump is a sharp block of whole pixels, which is right for pixel art. On: the paper is blown up softly, so a big soft pencil keeps a soft grain. A sharp pixel brush always uses blocks." />
           )}
-          <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
-          <Toggle label="Thin the paint instead of stopping it" checked={!!g.thin} onChange={(thin) => setDab({ grain: { ...g, thin: thin || undefined } })} hint="Off: light paint only lands on the high points, so a light touch is specks. On: the paper thins every dab a little, so a light touch is an even grey with the paper showing through. Brushes from Procreate come with this on." />
+          <Toggle control="paper-new-patch" label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
+          <Toggle control="paper-thin" label="Thin the paint instead of stopping it" checked={!!g.thin} onChange={(thin) => setDab({ grain: { ...g, thin: thin || undefined } })} hint="Off: light paint only lands on the high points, so a light touch is specks. On: the paper thins every dab a little, so a light touch is an even grey with the paper showing through. Brushes from Procreate come with this on." />
           {!g.moving && (
-            <Slider label="How much it holds the whole line back" value={Math.round((g.hold ?? 1) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, hold: v >= 100 ? undefined : v / 100 } })} hint="At the top a dip in the paper never takes more than the paper lets it, however long you work the spot. At the bottom, going over and over fills every dip in the end." />
+            <Slider control="paper-hold" label="How much it holds the whole line back" value={Math.round((g.hold ?? 1) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, hold: v >= 100 ? undefined : v / 100 } })} hint="At the top a dip in the paper never takes more than the paper lets it, however long you work the spot. At the bottom, going over and over fills every dip in the end." />
           )}
         </>
       )}
@@ -203,15 +203,15 @@ export function TextureSection() {
   const d = b.dual;
   return (
     <MoreOptions name="pixel-brush-texture" label="Dual tip" hint="A second tip that speckles the first.">
-      <Toggle label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
+      <Toggle control="dual-tip" label="Dual tip" checked={!!d} onChange={(on) => setDab({ dual: on ? DEFAULT_DUAL : null })} hint="A second tip of little dots. The brush only paints where its dots are, which is most of what makes a Photoshop spatter or bristle brush look the way it does." />
       {d && (
         <div className="dab-sub">
           {d.laid ? (
             <>
               <Tip stays>This dual tip is a second brush laid along your line (it came with an imported brush). The brush only paints where the second brush has been.</Tip>
-              <Slider label="Second brush width" value={Math.round(d.laid.size * 100)} min={Math.round(LAID_SIZE.min * 100)} max={Math.round(LAID_SIZE.max * 100)} curve format={(v) => `${v}% as wide as the brush`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, size: v / 100 } } })} />
-              <Slider label="Second brush spacing" value={Math.round(d.laid.spacing * 100)} min={Math.round(LAID_SPACING.min * 100)} max={Math.round(LAID_SPACING.max * 100)} curve format={(v) => `${v}% of its width apart`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, spacing: v / 100 } } })} />
-              <Slider label="Second brush scatter" value={Math.round(d.laid.scatter * 100)} min={0} max={Math.round(LAID_SCATTER.max * 100)} format={(v) => (v === 0 ? 'on the line' : `up to ${v}% of its width off it`)} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, scatter: v / 100 } } })} />
+              <Slider control="dual-laid-width" label="Second brush width" value={Math.round(d.laid.size * 100)} min={Math.round(LAID_SIZE.min * 100)} max={Math.round(LAID_SIZE.max * 100)} curve format={(v) => `${v}% as wide as the brush`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, size: v / 100 } } })} />
+              <Slider control="dual-laid-spacing" label="Second brush spacing" value={Math.round(d.laid.spacing * 100)} min={Math.round(LAID_SPACING.min * 100)} max={Math.round(LAID_SPACING.max * 100)} curve format={(v) => `${v}% of its width apart`} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, spacing: v / 100 } } })} />
+              <Slider control="dual-laid-scatter" label="Second brush scatter" value={Math.round(d.laid.scatter * 100)} min={0} max={Math.round(LAID_SCATTER.max * 100)} format={(v) => (v === 0 ? 'on the line' : `up to ${v}% of its width off it`)} onChange={(v) => setDab({ dual: { ...d, laid: { ...d.laid!, scatter: v / 100 } } })} />
               <ActionButton onClick={() => setDab({ dual: { ...d, laid: undefined } })} title="Go back to round or square dots">
                 Back to plain dots
               </ActionButton>
@@ -220,9 +220,9 @@ export function TextureSection() {
             <>
               <TextureSwatch picture={d.picture} invert={d.invert} label="The picture the dots come from" />
               <Tip stays>The dots come from your picture: its dark parts, as much of it as How much of the picture says.</Tip>
-              <Toggle label="Use the light parts instead" checked={!!d.invert} onChange={(invert) => setDab({ dual: { ...d, invert } })} hint="Swap light and dark in the picture, for a white shape on black." />
-              <Slider label="Picture size" value={dualPictureScale(d.picture.side, d.scale)} min={1} max={4} format={(v) => (v === 1 ? 'As it is' : `${v} times bigger`)} onChange={(v) => setDab({ dual: { ...d, scale: v } })} hint="Makes each pixel of the picture a block of pixels. It steps 1, 2 and 4, as far as the picture fits." />
-              <ActionButton command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Pick another picture file for the dots">
+              <Toggle control="dual-invert" label="Use the light parts instead" checked={!!d.invert} onChange={(invert) => setDab({ dual: { ...d, invert } })} hint="Swap light and dark in the picture, for a white shape on black." />
+              <Slider control="dual-picture-size" label="Picture size" value={dualPictureScale(d.picture.side, d.scale)} min={1} max={4} format={(v) => (v === 1 ? 'As it is' : `${v} times bigger`)} onChange={(v) => setDab({ dual: { ...d, scale: v } })} hint="Makes each pixel of the picture a block of pixels. It steps 1, 2 and 4, as far as the picture fits." />
+              <ActionButton control="dual-picture" command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Pick another picture file for the dots">
                 Use another picture...
               </ActionButton>
               <ActionButton onClick={() => setDab({ dual: { ...d, picture: undefined, invert: undefined, scale: undefined } })} title="Go back to round or square dots">
@@ -231,15 +231,15 @@ export function TextureSection() {
             </>
           ) : (
             <>
-              <Choice<'round' | 'square'> label="Dot shape" value={d.tip} options={[{ value: 'round', label: 'Round' }, { value: 'square', label: 'Square' }]} onChange={(tip) => setDab({ dual: { ...d, tip } })} />
-              <Slider label="Dot size" value={d.size} min={DUAL_SIZE.min} max={DUAL_SIZE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ dual: { ...d, size: v } })} />
-              <ActionButton command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Use a picture of your own for the dots: a leaf, a scribble, a bristle pattern">
+              <Choice<'round' | 'square'> control="dual-dot-shape" label="Dot shape" value={d.tip} options={[{ value: 'round', label: 'Round' }, { value: 'square', label: 'Square' }]} onChange={(tip) => setDab({ dual: { ...d, tip } })} />
+              <Slider control="dual-dot-size" label="Dot size" value={d.size} min={DUAL_SIZE.min} max={DUAL_SIZE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ dual: { ...d, size: v } })} />
+              <ActionButton control="dual-picture" command="pixelbrush.dual.picture" onClick={() => void dualFromPicture()} title="Use a picture of your own for the dots: a leaf, a scribble, a bristle pattern">
                 Use a picture for the dots...
               </ActionButton>
             </>
           )}
-          {!d.laid && <Slider label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />}
-          {!d.laid && <Toggle label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />}
+          {!d.laid && <Slider control="dual-amount" label={d.picture ? 'How much of the picture' : 'How many dots'} value={Math.round(d.density * 100)} min={Math.round(DUAL_DENSITY.min * 100)} max={100} format={(v) => (d.picture ? `the darkest ${v}% counts` : `covers about ${v}%`)} onChange={(v) => setDab({ dual: { ...d, density: v / 100 } })} />}
+          {!d.laid && <Toggle control="dual-cut" label="Cut holes instead" checked={d.cut} onChange={(cut) => setDab({ dual: { ...d, cut } })} hint="The dots become holes in the brush, so it paints everywhere except them." />}
         </div>
       )}
     </MoreOptions>

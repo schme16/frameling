@@ -26,6 +26,7 @@ import { ZoneStack } from './DockGroup';
 import { folded, foldAll, onlyOpen, panelPicker, setFolded, togglePicker, type RightStyle } from './rightStyle';
 import './rightDock.css';
 import { useShownZone } from './roomFolds';
+import { useStillZone } from './stillDock';
 
 export const RAIL_W = 68;
 const PROPS = '__properties';
@@ -43,7 +44,7 @@ const bodyId = (group: number): string => (group === 0 ? 'rd-body' : `rd-body-${
  * every group's panels under that group's heading.
  */
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
-  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const z = useShownZone(useStillZone(zone), zone);
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
   const merge = style === 'inspector';
   const railAt = dock.use((d) => d.layout.railAt);
@@ -103,7 +104,7 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
 /** The one rail down the whole side. With stacked groups, each group's places sit under its own heading. */
 function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
   const locked = useLocked('panels');
-  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
+  const z = useShownZone(useStillZone(zone), zone);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
   const dropAts = dragState.use((d) => plans.map((p) => dropIndexFor(d, { zone, group: p.index }, p.tabs.length) ?? '').join(','));
