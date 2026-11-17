@@ -58,7 +58,17 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
     g.fillRect(x, y, rw, rh);
     g.restore();
     if (!ad.background) paintChecker(g, x, y, rw, rh, dpr);
-    const key = [a.content, frame, k, doc.symbols, doc.palette, doc.tileset, doc.folders, doc.sharedLayers ? stackLook(doc.layers) : null];
+    // What the picture is made of, not the box it came in. `a.content` is a fresh object every time you switch
+    // artboards (the one you leave has its content taken out of the document again), so keying on it threw this
+    // bitmap away and redrew an artboard that had not changed on every single switch. The parts inside it are
+    // shared between one document and the next, so going back and forth now hits.
+    //
+    // Measured, and it buys nothing you can see: counted over six switches the rebuilds go 7 to 0, but on every
+    // document in the perf stress set a rebuild is only a millisecond or two, because the bitmap is the artboard at
+    // screen size and a pixel artboard draws in one go. switch-artboard costs the same either way (160 and 170 ms on
+    // two artboards at 4x, inside the noise). It is kept because a cache that never hits is work for nothing, and a
+    // big artboard zoomed in is the case where it would cost. Don't come back here looking for a speed-up.
+    const key = [ad.layers, ad.clips, ad.width, ad.height, ad.length, ad.background, frame, k, doc.symbols, doc.palette, doc.tileset, doc.folders, doc.sharedLayers ? stackLook(doc.layers) : null];
     let hit = bitmaps.get(a.id);
     if (rw <= MAX_BITMAP && rh <= MAX_BITMAP) {
       if (!hit || !same(hit.key, key) || hit.canvas.width !== rw || hit.canvas.height !== rh) {
