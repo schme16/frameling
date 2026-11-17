@@ -1142,3 +1142,25 @@ describe("size from Procreate's own picture of the stroke", () => {
     expect(one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(900, 800, 700) })).dab.size).toBe(300);
   });
 });
+
+// ---------------------------------------------------------------- a tip of a few specks (Graphite ink)
+
+describe('a tip that is a few specks is sampled as it is', () => {
+  /** A page of little white specks on black: a speck every 16 pixels, 3 across, so about 4% of the page. */
+  function specksPng(side: number): Uint8Array {
+    const px = new Uint8ClampedArray(side * side * 4);
+    for (let y = 0; y < side; y++)
+      for (let x = 0; x < side; x++) {
+        const v = x % 16 < 3 && y % 16 < 3 ? 255 : 0;
+        px.set([v, v, v, 255], (y * side + x) * 4);
+      }
+    return encodePng({ width: side, height: side, pixels: px });
+  }
+  it('keeps its specks crisp (sharp), where a solid or soft tip is smoothed as before', () => {
+    expect(one(brush({}, { 'Shape.png': specksPng(256) })).dab.sharp).toBe(true);
+    expect(one(brush({}, { 'Shape.png': discPng(64, 255, 0) })).dab.sharp).toBeUndefined();
+  });
+  it('a tip from a recipe (a stand in) is not switched', () => {
+    expect(one(brush({}, {}, false)).dab.sharp).toBeUndefined();
+  });
+});

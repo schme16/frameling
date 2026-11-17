@@ -64,6 +64,16 @@ const HALO_MIN = 1.15;
 /** ...and the brush is at least this many pixels across: on a thinner line the haze is under a pixel wide (Fuzzy ink, 18 pixels, keeps its ragged edge). */
 const HALO_MIN_SIZE = 40;
 
+/** A tip under this share covered (cells with over a tenth of paint) is a few specks on empty paper: Graphite ink 4%, Velvet int 14%, the solid tips 30% and up. */
+export const SPECKLED_UNDER = 0.1;
+/** True for a tip that is mostly empty, a scatter of specks (see SPECKLED_UNDER). */
+export function speckled(st: { colours: string[]; cells: number[] }): boolean {
+  const strong = st.colours.map((h) => (h.length > 7 ? parseInt(h.slice(7, 9), 16) : 255) > 25);
+  let n = 0;
+  for (const c of st.cells) if (c > 0 && strong[c - 1]) n++;
+  return st.cells.length > 0 && n / st.cells.length < SPECKLED_UNDER;
+}
+
 /** How far the tip's farthest visible cell is from its centre, as a share of half its longer side (1 is a tip that fills its square). */
 export function reachOf(st: { w: number; h: number; cells: number[] }): number {
   const cx = (st.w - 1) / 2;
@@ -362,6 +372,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     } else {
       raw.tip = 'picture';
       raw.picture = t.tip.stamp;
+      // Procreate paints a tip without smoothing it down, so a tip that is a few specks (Graphite ink) keeps crisp black dots
+      // where Frameling's smoothing made a soft grey haze: 56% of its ink pixels are fully dark in Procreate's picture, 40%
+      // smoothed, 57% sampled as it is. A solid or soft shape looks the same either way, so only a speckled tip is switched.
+      if (speckled(t.tip.stamp)) raw.sharp = true;
       hazy = t.hazy;
       halo = t.halo;
       tipSide = Math.max(t.w, t.h);

@@ -97,6 +97,11 @@ export interface DabBrush {
   blend: BlendMode;
   /** The line thins to a point at its ends. Left out or null: it does not. */
   taper?: Taper | null;
+  /**
+   * A picture tip is sampled as it was saved, cell by cell, with no smoothing and no smaller copy for a small dab, so the fine
+   * specks of a tip stay crisp the way they do in Procreate. Left out or false: the tip is smoothed as before.
+   */
+  sharp?: boolean;
 }
 
 export const SIZE_RANGE = { min: 1, max: 300 };
@@ -166,6 +171,7 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
       const t = r.taper === undefined ? (base.taper ?? null) : cleanTaper(r.taper);
       return t ? { taper: t } : {};
     })(),
+    ...((r.sharp === undefined ? base.sharp : r.sharp === true) ? { sharp: true } : {}),
   };
 }
 
@@ -177,6 +183,7 @@ export function sameDab(a: DabBrush, b: DabBrush): boolean {
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
+    !!a.sharp === !!b.sharp &&
     sameRoutes(a.dynamics, b.dynamics) && close(a.fadeLength, b.fadeLength) && sameGrain(a.grain, b.grain) && sameDual(a.dual, b.dual) && close(a.wet, b.wet) && a.blend === b.blend && sameTaper(a.taper, b.taper)
   );
 }
@@ -332,7 +339,8 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
     const pic = pictureOf(b.picture);
     const s = Math.max(0.01, size) / Math.max(pic.w, pic.h);
     // A crisp dab takes the saved tip as it is; a smooth one much smaller than the tip takes a smaller copy of it.
-    const level = crisp ? 0 : levelFor(pic, s);
+    const sharp = crisp || !!b.sharp;
+    const level = sharp ? 0 : levelFor(pic, s);
     const k = 1 / (1 << level);
     const hw = (pic.w / 2) * k;
     const hh = (pic.h / 2) * k;
@@ -354,7 +362,7 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
         let ix = Math.floor(fx);
         let iy = Math.floor(fy);
         let c: number;
-        if (crisp) {
+        if (sharp) {
           c = at(ix, iy);
         } else {
           // Smooth: blend the four cells round this spot, so a turned or resized picture has a soft edge. The colour comes
