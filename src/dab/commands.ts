@@ -235,7 +235,7 @@ registerCommands([
     id: 'pixelbrush.grain.picture',
     help: 'pixel-brush-texture',
     label: 'Pixel brush: grain from a picture',
-    description: 'Pick a picture file and the brush catches on it instead of paper: it catches on the dark parts. Switches grain on if it was off.',
+    description: 'Pick a picture file and the brush catches on it instead of paper: it catches on the light parts. Switches grain on if it was off.',
     keywords: ['pixel brush', 'grain', 'texture', 'picture', 'image', 'pattern', 'canvas', 'weave', 'custom texture', 'photoshop', 'krita'],
     run: () => {
       open();

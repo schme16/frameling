@@ -11,9 +11,9 @@ import { cleanPicture, dualPictureScale, dualTileFromPicture, grainTileFromPictu
 export interface Grain {
   /** A paper this brush keeps for itself. Left out, the brush catches on the sheet's paper, the same one chalk and charcoal use. */
   paper?: PaperKind;
-  /** A picture the paint catches on instead of any paper: it catches on the dark parts. Set, `paper` and the sheet's paper do not count. */
+  /** A picture the paint catches on instead of any paper: it catches on the light parts. Set, `paper` and the sheet's paper do not count. */
   picture?: TexturePicture;
-  /** With a picture: it catches on the light parts instead of the dark ones. */
+  /** With a picture: it catches on the dark parts instead of the light ones. */
   invert?: boolean;
   /** 0 (paper makes no difference) to 1 (paint only lands on the high points the dab reaches). */
   depth: number;
@@ -83,18 +83,18 @@ export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null
 
 /**
  * How much of a dab's paint a pixel catches, given the paint on offer (0 to 1) and the paper's height there (0 a pit, 1 a
- * peak). At depth 0 every pixel takes all of it. At depth 1 a pixel takes nothing until the paint reaches its height, so
- * light paint lands in the pits first and pressing harder (more flow) reaches the peaks.
+ * peak). At depth 0 every pixel takes all of it. At depth 1 a pixel takes nothing until the paint reaches how deep its
+ * pit is, so light paint lands on the peaks first and pressing harder (more flow) reaches down into the pits.
  *
- * That is the opposite way round from the dry media, where `pitDepth` in src/dry/maths.ts takes pigment on the peaks
- * first, the way real chalk catches on the tooth of the paper. Nothing else calls this, so the two have never had to
- * agree: chalk and charcoal are the dry media and never come through here. On the built-in papers the two directions
- * are impossible to tell apart, because the tiles are evenly spread, so only a picture used as grain shows it. See the
- * board card grain-peaks-or-pits, and test/dab/grain-direction.test.ts, which pins what it does today rather than
- * claiming it is right.
+ * That is the same way round as the dry media, where `pitDepth` in src/dry/maths.ts takes pigment on the peaks first,
+ * the way real chalk catches on the tooth of the paper. It used to be the other way: see the board card
+ * grain-peaks-or-pits and the look look-grain-dir. On the built-in papers the two directions are impossible to tell
+ * apart, because the tiles are evenly spread, so only a picture used as grain shows it, and there the paint now catches
+ * on the light parts (a photo of canvas lights the thread tops), with `invert` to swap it back.
+ * test/dab/grain-direction.test.ts pins the direction so it cannot drift again.
  */
 export function grainCut(add: number, height: number, depth: number): number {
-  const lift = depth * height;
+  const lift = depth * (1 - height);
   if (add <= lift) return 0;
   return (add - lift) / (1 - lift);
 }

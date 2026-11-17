@@ -146,8 +146,8 @@ export function repeatInto(src: Uint8Array, side: number, scale = 1): Uint8Array
 
 /**
  * The paper tile for a grain made from a picture. Light parts are the high values and dark parts the low ones (flipped with
- * `invert`), and the paint lands on the low values first, the same way it does on a paper, so the dark parts of a picture
- * are where it catches.
+ * `invert`), and the paint lands on the high values first, the same way it does on a paper, so the light parts of a picture
+ * are where it catches: a photo of canvas lights the thread tops, and that is where the paint lands.
  */
 export function grainTileFromPicture(pic: TexturePicture, invert: boolean): Uint8Array {
   return keep(`g|${pic.side}|${invert ? 1 : 0}|${pic.data}`, () => repeatInto(evenOut(greys(pic, invert)), pic.side));

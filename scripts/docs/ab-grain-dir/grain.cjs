@@ -1,6 +1,7 @@
 // Grain peaks or pits (board card grain-peaks-or-pits): the dab engine's grain on three papers at three strengths of paint,
 // each stroke straight so the grain is the only thing to look at. The same entry is run against two renderer builds (as it is,
 // and with grainCut's comparison flipped) and the two pictures are laid side by side by scripts/docs/ab-grain-dir/
+// The look look-grain-dir settled this: paint catches on the peaks, which is what the build as it is now does.
 //   SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-grain-dir --renderer <dir> --out <dir>
 const P = require('../ab-pixel-picture/_pics.cjs');
 const { L, start, draw, whole, wave, away, shot } = P;

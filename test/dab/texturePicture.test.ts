@@ -232,7 +232,7 @@ describe('strokes with a picture for grain or dots', () => {
   /** The paint in each column of the page, in a stroke across the middle. */
   const columns = (g: Uint8ClampedArray): number[] => Array.from({ length: W }, (_, x) => { let n = 0; for (let y = 0; y < H; y++) if (g[(y * W + x) * 4 + 3]) n++; return n; });
 
-  it('a grain picture catches light paint on its dark stripes and skips its light ones, and always the same way', () => {
+  it('a grain picture catches light paint on its light stripes and skips its dark ones, and always the same way', () => {
     // Four pixels of white, four of black, across.
     const p = made(16, 16, (x) => (x % 8 < 4 ? 255 : 0));
     const grain = { depth: 1, scale: 1, moving: false, picture: p };
@@ -240,11 +240,11 @@ describe('strokes with a picture for grain or dots', () => {
     const c = columns(a);
     const dark = c.filter((_, x) => x % 8 >= 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0);
     const light = c.filter((_, x) => x % 8 < 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0);
-    expect(dark).toBeGreaterThan(light * 3);
+    expect(light).toBeGreaterThan(dark * 3);
     expect(Array.from(draw({ grain }))).toEqual(Array.from(a));
-    // Turned round, it catches on the light stripes.
+    // Turned round, it catches on the dark stripes.
     const c2 = columns(draw({ grain: { ...grain, invert: true } }));
-    expect(c2.filter((_, x) => x % 8 < 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0)).toBeGreaterThan(c2.filter((_, x) => x % 8 >= 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0) * 3);
+    expect(c2.filter((_, x) => x % 8 >= 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0)).toBeGreaterThan(c2.filter((_, x) => x % 8 < 4 && x > 12 && x < 84).reduce((n, v) => n + v, 0) * 3);
   });
 
   it('a dual picture only paints where its dark parts are', () => {

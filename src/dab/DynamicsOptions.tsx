@@ -154,8 +154,8 @@ export function PaperSection() {
           {g.picture ? (
             <div className="dab-sub">
               <TextureSwatch picture={g.picture} invert={g.invert} label="The picture this brush catches on" />
-              <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the dark parts of it.</Tip>
-              <Toggle label="Catch on the light parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round." />
+              <Tip stays>A picture is the paper for this brush, so the paper above does not count. The paint catches on the light parts of it, the way it catches on the high points of paper.</Tip>
+              <Toggle label="Catch on the dark parts instead" checked={!!g.invert} onChange={(invert) => setDab({ grain: { ...g, invert } })} hint="Swap light and dark in the picture, for a picture drawn the other way round: dark for the high points." />
               <ActionButton command="pixelbrush.grain.picture" onClick={() => void grainFromPicture()} title="Pick another picture file to catch on">
                 Use another picture...
               </ActionButton>
