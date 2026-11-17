@@ -117,7 +117,7 @@ The **Help** panel sits with the other panels, handy while you work. Press the l
 ## Searching
 
 Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K** to search the commands and the help at the same time.`,
-  explanations: `Panels and settings used to explain themselves all the time. Now the words fold away behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
+  explanations: `Panels and settings keep their explanations behind a small **?** icon, so a panel is its controls, and nothing is lost: it is the same words, one point away.
 
 ## Read one
 
@@ -127,7 +127,7 @@ A panel's **?** sits in its title bar. A section inside a panel has its own besi
 
 ## Keep them on show
 
-When you are new, the explanations sit on show where they always did, so you meet them once. After your first drawing Frameling offers to tuck them away, and you can say no. Any time you know your way round, tuck them away yourself: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it back on any time.
+The explanations start tucked away, and Frameling never asks about it. If you'd rather read them as you go, turn them on: **View, Show the explanations**, or **Preferences, General, Explanations**. Turn it off the same way any time. A choice you make is remembered.
 
 ## Good to know
 

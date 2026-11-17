@@ -38,8 +38,8 @@ export interface Prefs {
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
   /**
-   * Keep the little explanations on show in panels and under controls. Off tucks them behind the help icon (the words
-   * are the same, in a tooltip). On for a new person, so they meet the words once; off for someone who was here first.
+   * Keep the little explanations on show in panels and under controls. Off (the default) tucks them behind the help icon
+   * (the words are the same, in a tooltip). Someone who turned them on keeps them on.
    */
   showExplanations: boolean;
   /** The workspace switcher beside the document name: small tabs, one chip with the name, or hidden. */
@@ -130,7 +130,7 @@ export const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
-  showExplanations: true,
+  showExplanations: false,
   workspaceSwitcher: 'tabs',
   showTextures: true,
   showQuill: true,

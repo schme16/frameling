@@ -349,7 +349,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
       </Row>
-      <Row label="Explanations" hint="The little lines that say what a panel or a setting is for. Off tucks them behind the ? icons: point at one to read it. Handy once you know your way round.">
+      <Row label="Explanations" hint="The little lines that say what a panel or a setting is for. Off (the usual) tucks them behind the ? icons: point at one to read it. On keeps them in view.">
         <Switch label="Explanations" on={p.showExplanations} onChange={(showExplanations) => setPrefs({ showExplanations })} />
       </Row>
       <Row label="Workspace switcher" hint="Which workspace you are in, beside the drawing's name. Tabs show them all at once, Chip shows just the one you are in, and Hidden leaves it to the View menu. A narrow window uses the chip.">
