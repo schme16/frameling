@@ -126,6 +126,19 @@ function strokePng(w: number, h: number, wide: number, gapEvery = 0): Uint8Array
   return encodePng({ width: w, height: h, pixels: px });
 }
 
+/** A solid little core with a faint speckle of dust out to the corners of a square round it, the way Velvet int's claw has dust far from its strokes. */
+function hazyPng(side: number): Uint8Array {
+  const px = new Uint8ClampedArray(side * side * 4);
+  for (let y = 0; y < side; y++)
+    for (let x = 0; x < side; x++) {
+      const r = Math.hypot(x - side / 2 + 0.5, y - side / 2 + 0.5);
+      const square = Math.max(Math.abs(x - side / 2 + 0.5), Math.abs(y - side / 2 + 0.5)) < side * 0.4;
+      const v = r < side * 0.1 ? 255 : square && (x + y) % 2 === 0 ? 51 : 0;
+      px.set([v, v, v, 255], (y * side + x) * 4);
+    }
+  return encodePng({ width: side, height: side, pixels: px });
+}
+
 /** A .brush built by hand. */
 function brush(settings: Record<string, Plain>, files: Record<string, Uint8Array> = {}, withShape = true): Uint8Array {
   return zipSync({ 'Brush.archive': archive({ name: 'Built', paintSize: 0.3, plotSpacing: 0.2, ...settings }), ...(withShape ? { 'Shape.png': discPng(64, 255, 0) } : {}), ...files });
@@ -847,6 +860,32 @@ describe('a damaged or hostile Procreate file is refused in plain words, and not
 });
 
 // ---------------------------------------------------------------- the size, off Procreate's own stroke picture
+
+describe('a faint haze round a tip (the soft cloud of Velvet int)', () => {
+  const settings = { paintSize: 0.3, shapeScatter: 1, shapeCount: 0, plotSpacing: 0.05 };
+  it('is kept on a wide brush, and the size comes down by how much further out the tip now reaches', () => {
+    const wide = one(brush(settings, { 'Shape.png': hazyPng(256), 'QuickLook/Thumbnail.png': strokePng(600, 200, 80) })).dab;
+    const core = one(brush(settings, { 'Shape.png': hazyPng(256), 'QuickLook/Thumbnail.png': strokePng(600, 200, 30) })).dab;
+    // The haze is in the tip: it is a lot bigger than the core alone (a thin brush keeps the core only, below).
+    expect(wide.picture!.w).toBeGreaterThan(core.picture!.w * 2);
+    // A tip that turns at random sweeps its reach, so the same cloud in the picture needs a smaller brush.
+    expect(wide.size).toBeLessThan(80);
+    expect(wide.size).toBeGreaterThan(10);
+  });
+
+  it('is left out on a thin brush (under a pixel wide there) and on a tip with no haze', () => {
+    const thin = one(brush(settings, { 'Shape.png': hazyPng(256), 'QuickLook/Thumbnail.png': strokePng(600, 200, 20) })).dab;
+    const wide = one(brush(settings, { 'Shape.png': hazyPng(256), 'QuickLook/Thumbnail.png': strokePng(600, 200, 80) })).dab;
+    expect(thin.picture!.w).toBeLessThan(wide.picture!.w);
+    const disc = one(brush(settings, { 'Shape.png': discPng(128, 255, 0), 'QuickLook/Thumbnail.png': strokePng(600, 200, 80) })).dab;
+    expect(disc.size).toBe(80);
+  });
+
+  it('does not shrink a tip that does not turn', () => {
+    const still = one(brush({ ...settings, shapeScatter: 0 }, { 'Shape.png': hazyPng(256), 'QuickLook/Thumbnail.png': strokePng(600, 200, 80) })).dab;
+    expect(still.size).toBe(80);
+  });
+});
 
 describe("size from Procreate's own picture of the stroke", () => {
   it('takes the width of one dab across the line, not paintSize', () => {

@@ -101,6 +101,23 @@ describe('taper: the line', () => {
     expect(width(px, 97)).toBeLessThan(width(px, 70));
   });
 
+  it('a wet brush comes to a point as well (Dry Ink v2 is wet and tapers), and its tail keeps the ink colour over a coloured sheet', () => {
+    const under = new Uint8ClampedArray(W * H * 4);
+    for (let i = 0; i < W * H; i++) under.set([200, 120, 40, 255], i * 4);
+    const px = draw({ taper, wet: 0.5 }, 360, under);
+    const dark = (x: number): number => {
+      let n = 0;
+      for (let y = 0; y < H; y++) if (Math.abs(px[(y * W + x) * 4] - 200) > 40) n++;
+      return n;
+    };
+    expect(dark(354)).toBeLessThan(5);
+    expect(dark(200)).toBeGreaterThanOrEqual(19);
+    // The tail is as dark as the line before it: the second laying did not lose its paint or tint it with the sheet.
+    const at = (x: number): number => px[((H / 2) * W + x) * 4];
+    expect(Math.abs(at(330) - at(200))).toBeLessThan(40);
+    expect(at(200)).toBeLessThan(160);
+  });
+
   it('a sharp pixel line is left as it was drawn', () => {
     const sharp = draw({ aliased: true, taper: { ...taper, start: 0 } });
     expect(width(sharp, 354)).toBeGreaterThanOrEqual(17);
