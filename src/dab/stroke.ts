@@ -15,7 +15,7 @@ import { blendPaint } from './blend';
 import { shiftColour, mixRgb, pickUp, type Rgb } from './colour';
 import { touchesColour } from './dynamics';
 import { DabPath, gritty, makeRng, mirrorDabs, samplerFor, snapAxis, taperAt, type Dab, type DabBrush, type Sampler, type Sense } from './maths';
-import { dualAt, dualTile, grainCut, grainTile } from './texture';
+import { dualAt, dualTile, grainCut, grainIsSmooth, grainTile, tileSide } from './texture';
 import { TILE, type PaperKind } from '../dry/paper';
 
 /** Somewhere a stroke reads the old picture from and writes new pixels to: a pixel session, or any buffer. */
@@ -131,6 +131,8 @@ export class DabStroke {
   private readonly grainTile: Uint8Array | null;
   private readonly grainDepth: number;
   private readonly grainScale: number;
+  /** A smooth paper arrives already scaled, this many pixels across (0 when the loop scales a plain tile itself). */
+  private readonly grainSide: number;
   private readonly grainMoving: boolean;
   private readonly grainThin: boolean;
   private readonly grainHold: number;
@@ -175,9 +177,11 @@ export class DabStroke {
     this.keep = p.brush.tip === 'picture' && !!p.brush.picture?.keep;
     this.wrapEdges = tileModeOn();
     const g = p.brush.grain;
-    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet) : null;
+    this.grainTile = g && g.depth > 0 ? grainTile(g, p.sheet, p.brush.aliased) : null;
+    const smooth = !!g && grainIsSmooth(g, p.brush.aliased);
+    this.grainSide = smooth && this.grainTile ? tileSide(this.grainTile) : 0;
     this.grainDepth = g?.depth ?? 0;
-    this.grainScale = g?.scale ?? 1;
+    this.grainScale = smooth ? 1 : g?.scale ?? 1;
     this.grainMoving = !!g?.moving;
     this.grainThin = !!g?.thin;
     this.grainHold = (g?.depth ?? 0) * (g?.hold ?? 1);
@@ -307,6 +311,7 @@ export class DabStroke {
     const dual = this.dual;
     const grain = this.grainTile;
     const gs = this.grainScale;
+    const gside = this.grainSide;
     const depth = this.grainDepth;
     const thin = this.grainThin;
     const hold = this.grainHold;
@@ -340,9 +345,19 @@ export class DabStroke {
         let add = c * d.flow;
         let ceiling = dabCap;
         if (grain !== null) {
-          const sx = gs > 1 ? Math.floor(x / gs) : x;
-          const sy = gs > 1 ? Math.floor(y / gs) : y;
-          const height = grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255;
+          let height: number;
+          if (gside === 0) {
+            const sx = gs > 1 ? Math.floor(x / gs) : x;
+            const sy = gs > 1 ? Math.floor(y / gs) : y;
+            height = grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255;
+          } else {
+            // A smooth paper, already scaled: a square `gside` across, any size, so it wraps with a remainder.
+            let sx = (x + gox) % gside;
+            if (sx < 0) sx += gside;
+            let sy = (y + goy) % gside;
+            if (sy < 0) sy += gside;
+            height = grain[sy * gside + sx] / 255;
+          }
           if (thin) {
             // A paper that thins: every dab leaves a share of its paint wherever it lands, so a light touch is an
             // even grey with the paper showing through, not specks on the peaks. One that stays put still says how
@@ -476,8 +491,9 @@ export class DabStroke {
       if (this.tailOn) this.note(d);
       if (this.colourFx) this.colourFor(d);
       if (this.grainMoving) {
-        this.gOx = (this.look() * TILE) | 0;
-        this.gOy = (this.look() * TILE) | 0;
+        const span = this.grainSide || TILE;
+        this.gOx = (this.look() * span) | 0;
+        this.gOy = (this.look() * span) | 0;
       }
       const sm = samplerFor(brush, d.size, d.angle, this.crisp);
       // An aliased brush puts its middle on the pixel grid, so its shape is the same wherever it lands. Snap first and

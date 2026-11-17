@@ -104,13 +104,21 @@ export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray 
 // ---------------------------------------------------------------- tiles
 
 const MAX_KEPT = 24;
+/** A scaled paper can be 2048 pixels across (4 MB), so what is kept is capped by size as well as by count. */
+const MAX_KEPT_BYTES = 48 * 1024 * 1024;
 const kept = new Map<string, Uint8Array>();
+let keptBytes = 0;
 function keep(key: string, make: () => Uint8Array): Uint8Array {
   const have = kept.get(key);
   if (have) return have;
   const t = make();
-  if (kept.size >= MAX_KEPT) kept.delete(kept.keys().next().value as string);
+  while (kept.size > 0 && (kept.size >= MAX_KEPT || keptBytes + t.length > MAX_KEPT_BYTES)) {
+    const old = kept.keys().next().value as string;
+    keptBytes -= kept.get(old)!.length;
+    kept.delete(old);
+  }
   kept.set(key, t);
+  keptBytes += t.length;
   return t;
 }
 
@@ -145,6 +153,63 @@ export function repeatInto(src: Uint8Array, side: number, scale = 1): Uint8Array
     for (let x = 0; x < TILE; x++) t[y * TILE + x] = src[sy * side + Math.floor((x % span) / scale)];
   }
   return t;
+}
+
+/**
+ * A square tile of greys (`TILE` across, repeating) scaled by `scale` into one `round(TILE * scale)` across that still repeats
+ * without a seam, so it can be read a pixel at a time. Bigger than 1 blows it up with bilinear filtering (soft, not blocks);
+ * smaller averages the pixels each new one covers. `even` spreads the greys evenly again afterwards, since smoothing pulls
+ * them toward the middle and a paper's share of pixels reached at a given pressure is meant to stay the same. At scale 1 it
+ * is the tile itself. Made once and kept, under `key`.
+ */
+export function scaleTile(key: string, src: Uint8Array, scale: number, even = true): Uint8Array {
+  const n = Math.max(8, Math.min(TILE * 8, Math.round(TILE * scale)));
+  if (n === TILE) return src;
+  return keep(`s|${n}|${even ? 1 : 0}|${key}`, () => {
+    const out = scaled(src, n);
+    return even ? evenOut(out) : out;
+  });
+}
+
+/** `src` (TILE square, wrapping) resampled to `n` square, wrapping. */
+export function scaled(src: Uint8Array, n: number): Uint8Array {
+  const out = new Uint8Array(n * n);
+  const ratio = TILE / n;
+  // Taps along each axis: one bilinear read when blowing up, enough to cover the footprint when shrinking.
+  const taps = Math.max(1, Math.ceil(ratio));
+  const i0 = new Int32Array(n * taps);
+  const i1 = new Int32Array(n * taps);
+  const f = new Float32Array(n * taps);
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < taps; k++) {
+      // The middle of this output pixel (or this slice of it) in source pixels, the centre of a source pixel being at .5.
+      const u = (i + (k + 0.5) / taps) * ratio - 0.5;
+      const fl = Math.floor(u);
+      i0[i * taps + k] = ((fl % TILE) + TILE) % TILE;
+      i1[i * taps + k] = (((fl + 1) % TILE) + TILE) % TILE;
+      f[i * taps + k] = u - fl;
+    }
+  const share = 1 / (taps * taps);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let sum = 0;
+      for (let ky = 0; ky < taps; ky++) {
+        const a = y * taps + ky;
+        const r0 = i0[a] * TILE;
+        const r1 = i1[a] * TILE;
+        const fy = f[a];
+        for (let kx = 0; kx < taps; kx++) {
+          const b = x * taps + kx;
+          const fx = f[b];
+          const top = src[r0 + i0[b]] * (1 - fx) + src[r0 + i1[b]] * fx;
+          const bot = src[r1 + i0[b]] * (1 - fx) + src[r1 + i1[b]] * fx;
+          sum += top * (1 - fy) + bot * fy;
+        }
+      }
+      out[y * n + x] = Math.round(sum * share);
+    }
+  }
+  return out;
 }
 
 /**

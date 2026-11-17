@@ -112,14 +112,14 @@ See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-pr
   'pixel-brush-texture': `**Grain** and a **dual tip** are the two ways to make a brush speckled, rough or bristly instead of smooth. Grain is the **Paper** box in the [Pixel brush](help:pixel-brush) options, and the dual tip is under it.
 
 **Catch on paper:** switch it on in the **Paper** box and the paint catches on the high points of the sheet's paper, so light strokes break into specks and pressing harder fills the dips in. The paper holds back the whole stroke, not each dab, so a chalky line stays chalky. It is the same paper as [chalk and charcoal](help:paper).
-- **Paper:** smooth, fine, medium, laid or rough. This is the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper if you want this brush to stay put when the sheet changes.
+- **Paper:** smooth, fine, medium, laid or rough. It follows the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper to stop that.
 - **How much it catches:** at the top the paint only lands on the high points. Lower the **Flow** to see it best.
-- **Grain size:** makes each bump a block of pixels, for a chunkier paper.
+- **Grain size:** makes each bump a block of pixels, for a chunkier paper. **Soften the bumps** blows it up softly instead of in sharp blocks.
 - **Use a picture as the paper...:** pick a picture file (a canvas weave, a scribble) and the brush catches on its light parts. **Catch on the dark parts instead** swaps them.
 - **A new patch of paper for every dab:** off, the paper is fixed to the page, so the dips stay light. On, dabs fill each other in, like a sponge.
 - **Thin the paint instead of stopping it:** a light touch is an even wash, not specks. **How much it holds the whole line back:** lower lets a firm line fill in.
 
-**Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
+**Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots, and the brush only paints where they are. It is most of what makes a spatter or bristle brush.
 - **Dot shape, Dot size** and **How many dots** set the dots. Every stroke gets its own scatter of them.
 - **Use a picture for the dots...:** pick a picture file and the dots come from it. The darkest parts of the picture count first, as much of it as **How much of the picture** says, and **Use the light parts instead** swaps them, and **Picture size** makes each picture pixel a bigger block. **Back to plain dots** goes back.
 - **Cut holes instead:** the dots become holes in the brush, so it paints everywhere except them.

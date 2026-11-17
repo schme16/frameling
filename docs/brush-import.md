@@ -214,7 +214,9 @@ Asked straight: is the paper system the limit? Partly. Looked at brush by brush 
 - **`textureScale` is not carried to a stand in.** It is about Procreate's own picture of the paper. Applied to ours it made three pixel blocks.
 - **Tried and dropped: glaze** (a pixel takes its darkest dab, so dabs never build up). It would explain soft edges, but it turned Velvet int and Graphite ink grey where Procreate's are black, so Procreate's dabs do build up.
 
-What is still short, and would need engine work to close: a paper scales in whole pixels with no smoothing (fine for pixel art, coarse for a 100 pixel pencil); the stand ins are three (grit, fibre, weave) where Procreate has dozens of named papers and tips; and a tip is kept at 128 pixels.
+A paper can now be scaled smoothly (`Grain.smooth`, off for every old brush and for pixel brushes): the tile is blown up once with bilinear filtering, to a seamless `256 x scale` square that is kept beside the other tiles, and the scale may have a fraction (0.25 to 8). The importer does not use it yet, because `textureScale` and `textureZoom` have no settled units. Only three brushes in the files at hand carry a grain picture, and the thumbnails cannot fit them: Graphite ink (depth 0.16) and Basic 01 (lifted by 0.75) draw the same at every scale from 0.5 to 6, and Barely There is the only one that answers, but its ink swings from 70 to 260 for scales 1 to 3 while its look differs from Procreate's for other reasons (scatter, gaps). So `textureScale` is still read as a whole number and `textureZoom` is not read.
+
+What is still short, and would need engine work to close: the stand ins are three (grit, fibre, weave) where Procreate has dozens of named papers and tips; and a tip is kept at 128 pixels.
 
 ### Taper, and the pen Procreate draws its pictures with
 

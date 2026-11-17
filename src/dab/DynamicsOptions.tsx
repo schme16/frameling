@@ -182,6 +182,9 @@ export function PaperSection() {
           )}
           <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
           <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
+          {g.scale > 1 && (
+            <Toggle label="Soften the bumps of a bigger paper" checked={!!g.smooth} onChange={(smooth) => setDab({ grain: { ...g, smooth: smooth || undefined } })} hint="Off: each bump is a sharp block of whole pixels, which is right for pixel art. On: the paper is blown up softly, so a big soft pencil keeps a soft grain. A sharp pixel brush always uses blocks." />
+          )}
           <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
           <Toggle label="Thin the paint instead of stopping it" checked={!!g.thin} onChange={(thin) => setDab({ grain: { ...g, thin: thin || undefined } })} hint="Off: light paint only lands on the high points, so a light touch is specks. On: the paper thins every dab a little, so a light touch is an even grey with the paper showing through. Brushes from Procreate come with this on." />
           {!g.moving && (

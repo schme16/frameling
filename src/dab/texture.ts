@@ -5,7 +5,7 @@
  * paper added there turns up here, and the other way round. Pure functions, no DOM.
  */
 import { isPaper, paperTile, TILE, type PaperKind } from '../dry/paper';
-import { cleanPicture, dualPictureScale, dualTileFromPicture, grainTileFromPicture, samePicture, type TexturePicture } from './texturePicture';
+import { cleanPicture, dualPictureScale, dualTileFromPicture, grainTileFromPicture, samePicture, scaleTile, type TexturePicture } from './texturePicture';
 
 /** A paper the paint catches on. */
 export interface Grain {
@@ -17,8 +17,14 @@ export interface Grain {
   invert?: boolean;
   /** 0 (paper makes no difference) to 1 (paint only lands on the high points the dab reaches). */
   depth: number;
-  /** Whole pixels of page one pixel of the paper covers: 1 is the finest grain. */
+  /** Pixels of page one pixel of the paper covers: 1 is the finest grain. Whole pixels, unless `smooth` is on. */
   scale: number;
+  /**
+   * True: a paper bigger than the finest is blown up smoothly, so a big soft pencil has a soft grain, and `scale` may have
+   * a fraction. Left out: it is blown up in sharp blocks of whole pixels, which is right for pixel art. A pixel (aliased)
+   * brush always uses blocks.
+   */
+  smooth?: boolean;
   /** False: the paper is fixed to the page, so strokes over each other catch on the same bumps. True: every dab finds the paper in a new place. */
   moving: boolean;
   /**
@@ -53,6 +59,8 @@ export interface Dual {
 }
 
 export const GRAIN_SCALE = { min: 1, max: 8 };
+/** The sizes a smooth paper may be, fractions included. Under 1 the paper is shrunk, over it blown up. */
+export const SMOOTH_GRAIN_SCALE = { min: 0.25, max: 8 };
 export const DUAL_SIZE = { min: 1, max: 64 };
 export const DUAL_DENSITY = { min: 0.05, max: 1 };
 export const DUAL_PICTURE_SCALE = { min: 1, max: 8 };
@@ -71,8 +79,9 @@ export function cleanGrain(raw: unknown): Grain | null {
     ...(isPaper(r.paper) ? { paper: r.paper } : {}),
     ...(picture ? { picture, ...(r.invert === true ? { invert: true } : {}) } : {}),
     depth: r3(num(r.depth, 0, 1, DEFAULT_GRAIN.depth)),
-    scale: Math.round(num(r.scale, GRAIN_SCALE.min, GRAIN_SCALE.max, 1)),
+    scale: r.smooth === true ? r3(num(r.scale, SMOOTH_GRAIN_SCALE.min, SMOOTH_GRAIN_SCALE.max, 1)) : Math.round(num(r.scale, GRAIN_SCALE.min, GRAIN_SCALE.max, 1)),
     moving: r.moving === true,
+    ...(r.smooth === true ? { smooth: true } : {}),
     ...(r.thin === true ? { thin: true } : {}),
     ...(typeof r.hold === 'number' && Number.isFinite(r.hold) && r.hold < 1 ? { hold: r3(Math.max(0, r.hold)) } : {}),
   };
@@ -92,7 +101,7 @@ export function cleanDual(raw: unknown): Dual | null {
   };
 }
 
-export const sameGrain = (a: Grain | null, b: Grain | null): boolean => (a === null || b === null ? a === b : a.paper === b.paper && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && Math.abs(a.depth - b.depth) < 1e-6 && a.scale === b.scale && a.moving === b.moving && !!a.thin === !!b.thin && Math.abs((a.hold ?? 1) - (b.hold ?? 1)) < 1e-6);
+export const sameGrain = (a: Grain | null, b: Grain | null): boolean => (a === null || b === null ? a === b : a.paper === b.paper && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && Math.abs(a.depth - b.depth) < 1e-6 && a.scale === b.scale && !!a.smooth === !!b.smooth && a.moving === b.moving && !!a.thin === !!b.thin && Math.abs((a.hold ?? 1) - (b.hold ?? 1)) < 1e-6);
 export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null || b === null ? a === b : a.tip === b.tip && a.size === b.size && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && (a.scale ?? 1) === (b.scale ?? 1) && Math.abs(a.density - b.density) < 1e-6 && a.cut === b.cut);
 
 /**
@@ -113,8 +122,24 @@ export function grainCut(add: number, height: number, depth: number): number {
   return (add - lift) / (1 - lift);
 }
 
-/** The tile a grain catches on: its own picture when it has one, else its paper, else the sheet's. */
-export const grainTile = (g: Grain, sheet?: PaperKind): Uint8Array => (g.picture ? grainTileFromPicture(g.picture, !!g.invert, !!g.thin) : paperTile(g.paper ?? sheet ?? 'medium'));
+/** Whether a grain is drawn smoothly: it asks for it, is not at the finest size, and the brush is not a pixel (aliased) one. */
+export const grainIsSmooth = (g: Grain, aliased = false): boolean => !!g.smooth && !aliased && g.scale !== 1;
+
+/**
+ * The tile a grain catches on: its own picture when it has one, else its paper, else the sheet's. A smooth grain bigger or
+ * smaller than the finest comes back already scaled (blown up with bilinear filtering), so it is `256 * scale` pixels across
+ * and the loop reads it a pixel at a time with no scale of its own. Otherwise it is the 256 pixel tile, and the loop does the scale.
+ */
+export function grainTile(g: Grain, sheet?: PaperKind, aliased = false): Uint8Array {
+  const base = g.picture ? grainTileFromPicture(g.picture, !!g.invert, !!g.thin) : paperTile(g.paper ?? sheet ?? 'medium');
+  if (!grainIsSmooth(g, aliased)) return base;
+  // A paper and a picture left as they are are not spread evenly; the rest are, and stay so after they are smoothed.
+  const key = g.picture ? `${g.picture.side}|${g.invert ? 1 : 0}|${g.thin ? 1 : 0}|${g.picture.data}` : `p|${g.paper ?? sheet ?? 'medium'}`;
+  return scaleTile(key, base, g.scale, !(g.picture && g.thin));
+}
+
+/** How many pixels across a grain tile is: 256 for a plain one, more or fewer for a smooth one that was scaled. */
+export const tileSide = (t: Uint8Array): number => Math.round(Math.sqrt(t.length));
 
 /** The paper height (0 to 1) under page pixel (x, y), with the grain's scale and an offset for a paper that moves. */
 export function grainHeight(g: { paper: PaperKind; scale: number }, x: number, y: number, ox = 0, oy = 0): number {
