@@ -1,0 +1,840 @@
+{
+ "label": "sweep",
+ "when": "2026-11-17T05:30:36.352Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 4,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "undo-delete-layer",
+   "busyMs": 321.7,
+   "worstTaskMs": 80.1,
+   "runs": [
+    346.8,
+    314.4,
+    314.5,
+    321.7
+   ],
+   "unit": "undos",
+   "units": 3,
+   "perUnitMs": 107.22,
+   "topSelf": [
+    [
+     "(program) :0",
+     87.1
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:11710",
+     86
+    ],
+    [
+     "isDraftable index-CseDY-EJ.js:11686",
+     30.7
+    ],
+    [
+     "shallowCopy index-CseDY-EJ.js:11743",
+     22.4
+    ],
+    [
+     "deepClonePatchValue index-CseDY-EJ.js:12505",
+     21.7
+    ],
+    [
+     "allDrawingsBlank index-CseDY-EJ.js:85184",
+     6.9
+    ],
+    [
+     "(garbage collector) :0",
+     4.6
+    ],
+    [
+     "drawImage :0",
+     2.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     176.3
+    ],
+    [
+     "undo index-CseDY-EJ.js:13457",
+     176.1
+    ],
+    [
+     "run index-CseDY-EJ.js:17766",
+     176.1
+    ],
+    [
+     "run index-CseDY-EJ.js:128844",
+     176.1
+    ],
+    [
+     "run index-CseDY-EJ.js:132909",
+     176.1
+    ],
+    [
+     "run debug-p5oRHpVS.js:1673",
+     176.1
+    ],
+    [
+     "runStep index-CseDY-EJ.js:13064",
+     170.5
+    ],
+    [
+     "Immer2.produce index-CseDY-EJ.js:12137",
+     170.5
+    ],
+    [
+     "applyPatches index-CseDY-EJ.js:12240",
+     170.5
+    ],
+    [
+     "applyKeepingQuiet index-CseDY-EJ.js:12972",
+     170.5
+    ],
+    [
+     "processResult index-CseDY-EJ.js:11844",
+     88.5
+    ],
+    [
+     "finalize index-CseDY-EJ.js:11861",
+     88.3
+    ],
+    [
+     "handleValue index-CseDY-EJ.js:11942",
+     88.1
+    ],
+    [
+     "(program) :0",
+     87.1
+    ],
+    [
+     "each index-CseDY-EJ.js:11706",
+     87.1
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:11710",
+     86.1
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     49.7
+    ],
+    [
+     "FireAnimationFrame",
+     16.6
+    ],
+    [
+     "Layerize",
+     14.2
+    ],
+    [
+     "Layout",
+     13.2
+    ],
+    [
+     "HitTest",
+     8.3
+    ],
+    [
+     "PrePaint",
+     7.1
+    ],
+    [
+     "MinorGC",
+     3.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     3.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     3.6
+    ],
+    [
+     "#UpdateLayoutTree",
+     3.5
+    ],
+    [
+     "UpdateLayoutTree",
+     3.4
+    ],
+    [
+     "#Layout",
+     3
+    ],
+    [
+     "Commit",
+     2.7
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.8
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-delete-key",
+   "busyMs": 112.7,
+   "worstTaskMs": 19.9,
+   "runs": [
+    112.7,
+    158.6,
+    100.9,
+    93.6
+   ],
+   "unit": "undos",
+   "units": 3,
+   "perUnitMs": 37.55,
+   "topSelf": [
+    [
+     "(program) :0",
+     60.9
+    ],
+    [
+     "(garbage collector) :0",
+     7.9
+    ],
+    [
+     "ensure index-CseDY-EJ.js:61025",
+     1.9
+    ],
+    [
+     "isDraftable index-CseDY-EJ.js:11686",
+     1.7
+    ],
+    [
+     "updateProperties index-CseDY-EJ.js:9427",
+     1.4
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:57788",
+     1.4
+    ],
+    [
+     "drawImage :0",
+     1.4
+    ],
+    [
+     "draw index-CseDY-EJ.js:119748",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     60.9
+    ],
+    [
+     "processRootScheduleInMicrotask index-CseDY-EJ.js:8535",
+     25.6
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:8605",
+     25.6
+    ],
+    [
+     "performSyncWorkOnRoot index-CseDY-EJ.js:8600",
+     25.5
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-CseDY-EJ.js:8509",
+     25.5
+    ],
+    [
+     "performWorkOnRoot index-CseDY-EJ.js:7771",
+     25.2
+    ],
+    [
+     "renderRootSync index-CseDY-EJ.js:7973",
+     18.7
+    ],
+    [
+     "workLoopSync index-CseDY-EJ.js:8021",
+     18.7
+    ],
+    [
+     "beginWork index-CseDY-EJ.js:5620",
+     17.5
+    ],
+    [
+     "updateFunctionComponent index-CseDY-EJ.js:5198",
+     12.7
+    ],
+    [
+     "renderWithHooks index-CseDY-EJ.js:3799",
+     12.4
+    ],
+    [
+     "run index-CseDY-EJ.js:128844",
+     10.5
+    ],
+    [
+     "run index-CseDY-EJ.js:132909",
+     10.5
+    ],
+    [
+     "run debug-p5oRHpVS.js:1673",
+     10.5
+    ],
+    [
+     "(anon) :0",
+     10.5
+    ],
+    [
+     "undo index-CseDY-EJ.js:13457",
+     10.4
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     15.5
+    ],
+    [
+     "Layerize",
+     15.5
+    ],
+    [
+     "HitTest",
+     11.7
+    ],
+    [
+     "FireAnimationFrame",
+     5.5
+    ],
+    [
+     "Commit",
+     5.2
+    ],
+    [
+     "Layout",
+     5
+    ],
+    [
+     "#UpdateLayoutTree",
+     4
+    ],
+    [
+     "#Layout",
+     3.3
+    ],
+    [
+     "MajorGC",
+     3.2
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     3
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     3
+    ],
+    [
+     "PrePaint",
+     2.4
+    ],
+    [
+     "UpdateLayoutTree",
+     1.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.4
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.1
+    ],
+    [
+     "MinorGC",
+     0.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     0.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     0.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     0.8
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     0.6
+    ],
+    [
+     "UpdateLayer",
+     0.5
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     0.5
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 137.9,
+   "worstTaskMs": 33.4,
+   "runs": [
+    137.9,
+    121.1,
+    147.1,
+    126.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 45.98,
+   "topSelf": [
+    [
+     "(program) :0",
+     79.1
+    ],
+    [
+     "pruneDrawings index-CseDY-EJ.js:12779",
+     9.6
+    ],
+    [
+     "useLayers index-CseDY-EJ.js:12781",
+     3.5
+    ],
+    [
+     "setAttribute :0",
+     2
+    ],
+    [
+     "updateProperties index-CseDY-EJ.js:9427",
+     1.3
+    ],
+    [
+     "syncDynamicCommands index-CseDY-EJ.js:61045",
+     1.1
+    ],
+    [
+     "recursivelyTraverseMutationEffects index-CseDY-EJ.js:6950",
+     1.1
+    ],
+    [
+     "ensure index-CseDY-EJ.js:61025",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     79.1
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:8605",
+     26.5
+    ],
+    [
+     "processRootScheduleInMicrotask index-CseDY-EJ.js:8535",
+     26.5
+    ],
+    [
+     "performSyncWorkOnRoot index-CseDY-EJ.js:8600",
+     26.2
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-CseDY-EJ.js:8509",
+     26.2
+    ],
+    [
+     "performWorkOnRoot index-CseDY-EJ.js:7771",
+     26
+    ],
+    [
+     "run index-CseDY-EJ.js:134093",
+     20.6
+    ],
+    [
+     "run debug-p5oRHpVS.js:1673",
+     20.6
+    ],
+    [
+     "(anon) :0",
+     20.6
+    ],
+    [
+     "deleteLayer index-CseDY-EJ.js:67785",
+     20.6
+    ],
+    [
+     "update index-CseDY-EJ.js:67616",
+     19.3
+    ],
+    [
+     "update index-CseDY-EJ.js:13154",
+     19.3
+    ],
+    [
+     "workLoopSync index-CseDY-EJ.js:8021",
+     18.4
+    ],
+    [
+     "renderRootSync index-CseDY-EJ.js:7973",
+     18.4
+    ],
+    [
+     "Immer2.produce index-CseDY-EJ.js:12137",
+     15.1
+    ],
+    [
+     "Immer2.produceWithPatches index-CseDY-EJ.js:12179",
+     15.1
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     43.4
+    ],
+    [
+     "Layerize",
+     16.7
+    ],
+    [
+     "Layout",
+     8.6
+    ],
+    [
+     "PrePaint",
+     7.3
+    ],
+    [
+     "HitTest",
+     5.9
+    ],
+    [
+     "FireAnimationFrame",
+     4.4
+    ],
+    [
+     "UpdateLayoutTree",
+     3.9
+    ],
+    [
+     "Commit",
+     3.1
+    ],
+    [
+     "#UpdateLayoutTree",
+     3
+    ],
+    [
+     "#Layout",
+     3
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 466.1,
+   "worstTaskMs": 66.3,
+   "runs": [
+    447.3,
+    422,
+    466.1,
+    516.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 77.68,
+   "topSelf": [
+    [
+     "(program) :0",
+     177
+    ],
+    [
+     "paintUnderlay index-CseDY-EJ.js:94155",
+     76.6
+    ],
+    [
+     "removeChild :0",
+     12.2
+    ],
+    [
+     "setAttribute :0",
+     12.2
+    ],
+    [
+     "(garbage collector) :0",
+     10.9
+    ],
+    [
+     "fit index-CseDY-EJ.js:142029",
+     9
+    ],
+    [
+     "artboardDoc index-CseDY-EJ.js:39746",
+     9
+    ],
+    [
+     "tally index-CseDY-EJ.js:34377",
+     8.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     177
+    ],
+    [
+     "performWorkOnRoot index-CseDY-EJ.js:7771",
+     123.3
+    ],
+    [
+     "processRootScheduleInMicrotask index-CseDY-EJ.js:8535",
+     101.7
+    ],
+    [
+     "(anon) index-CseDY-EJ.js:8605",
+     101.7
+    ],
+    [
+     "flushSyncWorkAcrossRoots_impl index-CseDY-EJ.js:8509",
+     100.9
+    ],
+    [
+     "performSyncWorkOnRoot index-CseDY-EJ.js:8600",
+     100.9
+    ],
+    [
+     "draw index-CseDY-EJ.js:94251",
+     96.3
+    ],
+    [
+     "paintUnderlay index-CseDY-EJ.js:94155",
+     95.9
+    ],
+    [
+     "renderRootSync index-CseDY-EJ.js:7973",
+     81.3
+    ],
+    [
+     "workLoopSync index-CseDY-EJ.js:8021",
+     80.7
+    ],
+    [
+     "beginWork index-CseDY-EJ.js:5620",
+     43.4
+    ],
+    [
+     "completeRootWhenReady index-CseDY-EJ.js:7850",
+     42
+    ],
+    [
+     "commitRoot index-CseDY-EJ.js:8227",
+     41.8
+    ],
+    [
+     "completeRoot index-CseDY-EJ.js:8210",
+     41.8
+    ],
+    [
+     "completeWork index-CseDY-EJ.js:5809",
+     34.5
+    ],
+    [
+     "goToArtboard index-CseDY-EJ.js:80946",
+     34
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     135.6
+    ],
+    [
+     "FireAnimationFrame",
+     106
+    ],
+    [
+     "Layout",
+     85.9
+    ],
+    [
+     "Layerize",
+     31.2
+    ],
+    [
+     "PrePaint",
+     21.4
+    ],
+    [
+     "#UpdateLayoutTree",
+     15
+    ],
+    [
+     "#Layout",
+     15
+    ],
+    [
+     "Commit",
+     9.8
+    ],
+    [
+     "HitTest",
+     4.6
+    ],
+    [
+     "UpdateLayoutTree",
+     4.5
+    ],
+    [
+     "MinorGC",
+     3.8
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     3.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     3.6
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     3.1
+    ],
+    [
+     "MajorGC",
+     3.1
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     3
+    ],
+    [
+     "UpdateLayer",
+     2.5
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     2.1
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     1.7
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.1
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     0.7
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.6
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     0.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_FINALIZE",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

@@ -73,7 +73,13 @@ from `ipcRenderer` and exposes it with `contextBridge`.
   document dirty and notifies listeners. Auto-freeze is off because pixel drawings hold typed arrays.
 - **UI state** (`setUi`) is a shallow merge with no undo: frame, tool, selection, zoom, pan, playing, and so on.
 - **Undo and redo** apply the inverse or forward patches. 300 steps are kept. Every undoable change must go through
-  `update`.
+  `update`. The patches are run by `patch.ts`, not by immer: immer's `applyPatches` works inside a `produce`, so it
+  drafts the document and then walks the whole result afterwards, which costs the same whether the step moved one
+  number or put a whole layer back (107 ms an undo on the 40 by 240 document). `applyPatchesHere` copies only the
+  containers along each patch's path, keeps immer's deep copy of a value going in so the history and the document
+  never share a mutable object, freezes what it made when the old document was frozen (the strict-mode net), and
+  returns null for anything it does not handle so immer runs instead. `quiet.ts` sits on top for a live reviewer's
+  notes.
 - **Coalescing**: two updates with the same `coalesce` key within 1.2 s merge into one step, so a drag or typing is
   one undo. Keys are chosen by the caller (`depth-<layerId>`, `type-<session>`, `rig-joint-<bone>-<end>`).
 - **No transactions.** A multi-part change is one recipe. Tools keep gesture state out of the doc with the canvas's

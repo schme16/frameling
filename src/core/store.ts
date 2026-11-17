@@ -12,6 +12,7 @@ import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
 import { existingSelection, followSelection, type FollowMemory } from './followSelection';
+import { applyPatchesHere } from './patch';
 import { applyKeepingQuiet } from './quiet';
 
 enablePatches();
@@ -427,7 +428,7 @@ export class Store {
     const last = this.undoStack[this.undoStack.length - 1];
     if (id === null || !last || last.id !== id) return false;
     this.undoStack.pop();
-    this.afterHistory(applyPatches(this.state.doc, last.inverse), last.inverse);
+    this.afterHistory(applyPatchesHere(this.state.doc, last.inverse) ?? applyPatches(this.state.doc, last.inverse), last.inverse);
     if (last.undoUi) this.setUi(last.undoUi);
     return true;
   }

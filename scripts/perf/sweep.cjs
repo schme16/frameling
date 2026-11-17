@@ -571,6 +571,46 @@ const ACTIONS = {
       for (let i = 0; i < 6; i++) { await run('edit.redo'); await sleep(60); }
     },
   },
+  // Undoing a structural change: putting three deleted layers back. The fifth pass of the extreme perf review
+  // claimed the timeline's wholesale rebuild was shared with structural undo, and never measured it. This is that
+  // measurement, away from the delete that set it up (the delete is in setup, which is not timed).
+  'undo-delete-layer': {
+    edits: true,
+    kinds: ['vector', 'pixel'], unit: 'undos', units: 3,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ tool: 'select', selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      for (let i = 0; i < 3; i++) { await run('layers.delete'); await sleep(80); }
+      await sleep(150);
+    },
+    async act() { for (let i = 0; i < 3; i++) { await run('edit.undo'); await sleep(80); } },
+  },
+  // The same for a deleted drawing rather than a whole layer: one row's cels change instead of the layer list, so
+  // this says whether the cost is the rebuild of every row or just the row that moved.
+  'undo-delete-key': {
+    edits: true,
+    kinds: ['vector', 'pixel'], unit: 'undos', units: 3,
+    async setup() {
+      await ev(`(() => { const S = window.__frameling.store(); S.setUi({ frame: 3, selection: [], activeLayerId: window.__sw.last().id }); return true; })()`);
+      await ev(`(() => { const r = document.querySelector('.tl-rows [data-layer="' + window.__sw.last().id + '"]'); if (r) r.scrollIntoView({ block: 'center' }); return true; })()`);
+      await sleep(250);
+      const n = await ev(`(() => {
+        const S = window.__frameling.store(), l = window.__sw.last();
+        let done = 0;
+        for (let i = 0; i < 3; i++) {
+          const d = S.get().doc.layers.find((x) => x.id === l.id);
+          const c = d && d.cels.find((c) => c.start === 3 + i);
+          if (!c) break;
+          S.update('Delete drawing', (doc) => { const y = doc.layers.find((x) => x.id === l.id); const k = y.cels.findIndex((z) => z.id === c.id); if (k >= 0) y.cels.splice(k, 1); });
+          done++;
+        }
+        return done;
+      })()`);
+      if (!n) throw new Skip('no drawing to delete');
+      this.n = n;
+      await sleep(150);
+    },
+    async act() { for (let i = 0; i < this.n; i++) { await run('edit.undo'); await sleep(80); } },
+  },
   'switch-artboard': {
     kinds: ['vector', 'pixel'], unit: 'switches', units: 6,
     async setup() {

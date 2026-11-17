@@ -8,6 +8,10 @@
 // So a reviewer's note is never lost to somebody else's Undo, and never becomes an Undo of its own.
 import { applyPatches, produce, type Patch } from 'immer';
 import type { Doc } from './format';
+import { applyPatchesHere } from './patch';
+
+/** Patches run without immer where that is safe, and through immer where it is not. See src/core/patch.ts. */
+const apply = (doc: Doc, patches: readonly Patch[]): Doc => applyPatchesHere(doc, patches) ?? applyPatches(doc, patches as Patch[]);
 
 /** Quiet items carry this at the start of their id (then the reviewer's seat and their own id). */
 export const QUIET_PREFIX = 'rq';
@@ -48,20 +52,20 @@ function idsInStep(opposite: readonly Patch[], where: Path): Set<string> {
  * direction of the same step (its patches when this is its inverse, and the other way round).
  */
 export function applyKeepingQuiet(doc: Doc, patches: readonly Patch[], opposite: readonly Patch[] = []): Doc {
-  if (!patches.some((p) => wholeList(p))) return applyPatches(doc, patches as Patch[]);
+  if (!patches.some((p) => wholeList(p))) return apply(doc, patches);
   let cur = doc;
   let from = 0;
   patches.forEach((p, i) => {
     const where = wholeList(p);
     if (!where) return;
-    if (i > from) cur = applyPatches(cur, patches.slice(from, i) as Patch[]);
+    if (i > from) cur = apply(cur, patches.slice(from, i));
     from = i + 1;
     const held = idsInStep(opposite, where);
     const before = at(cur, where);
     // A cut keeps what is before the cut; only the quiet ones past it are at risk, and the rest are not looked at.
     const cut = p.op === 'replace' && p.path[p.path.length - 1] === 'length' ? (p.value as number) : 0;
     const quiet = Array.isArray(before) ? before.slice(cut).filter((x) => isQuietId((x as { id?: unknown })?.id) && !held.has((x as { id: string }).id)) : [];
-    cur = applyPatches(cur, [p]);
+    cur = apply(cur, [p]);
     if (!quiet.length) return;
     const now = new Set(idsOf(at(cur, where)));
     const lost = quiet.filter((x) => !now.has((x as { id: string }).id));
@@ -75,6 +79,6 @@ export function applyKeepingQuiet(doc: Doc, patches: readonly Patch[], opposite:
       else parent[key] = [...lost];
     });
   });
-  if (from < patches.length) cur = applyPatches(cur, patches.slice(from) as Patch[]);
+  if (from < patches.length) cur = apply(cur, patches.slice(from));
   return cur;
 }
