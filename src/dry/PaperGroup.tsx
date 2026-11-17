@@ -53,7 +53,7 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
   };
 
   return (
-    <section className="pg" aria-label="Paper" data-testid="paper-group" data-source={open ? now.source : 'off'}>
+    <section className="pg" aria-label="Paper" data-testid="paper-group" data-control="paper" data-source={open ? now.source : 'off'}>
       <header className="pg-head">
         <span className="pg-title">Paper</span>
         {open && (
@@ -62,10 +62,10 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
           </span>
         )}
       </header>
-      {toggle && <Toggle label="Catch on paper" checked={toggle.checked} onChange={toggle.onChange} hint={toggle.hint} />}
+      {toggle && <Toggle control="catch-on-paper" label="Catch on paper" checked={toggle.checked} onChange={toggle.onChange} hint={toggle.hint} />}
       {open && (
         <>
-          <div className="cv-choice" role="radiogroup" aria-label="Paper" ref={row}>
+          <div className="cv-choice" role="radiogroup" aria-label="Paper" data-control="paper-choice" ref={row}>
             {PAPERS.map((p) => (
               <button key={p.id} type="button" role="radio" aria-checked={p.id === now.paper} className="cv-choice-btn" data-on={p.id === now.paper} title={p.hint} onClick={() => pick(p.id)}>
                 {p.label}
@@ -74,9 +74,9 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
           </div>
           <Tip>{`${paperInfo(now.paper).hint} ${tip ?? ''}`.trim()}</Tip>
           <Tip stays={now.source === 'brush'}>{paperSaid(now, sheet)}</Tip>
-          {onOwn && now.source === 'brush' && <ActionButton onClick={() => onOwn(undefined)} title="Let this brush use the sheet's paper again">Use the sheet&rsquo;s paper</ActionButton>}
+          {onOwn && now.source === 'brush' && <ActionButton control="paper-keep" onClick={() => onOwn(undefined)} title="Let this brush use the sheet's paper again">Use the sheet&rsquo;s paper</ActionButton>}
           {onOwn && now.source === 'sheet' && (
-            <ActionButton onClick={() => onOwn(sheet)} title="Keep this brush on this paper, even when you change the sheet">
+            <ActionButton control="paper-keep" onClick={() => onOwn(sheet)} title="Keep this brush on this paper, even when you change the sheet">
               Keep this brush on {paperInfo(sheet).label}
             </ActionButton>
           )}

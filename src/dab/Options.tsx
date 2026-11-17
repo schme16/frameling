@@ -44,7 +44,7 @@ function EdgeNote() {
   return (
     <>
       <Tip stays>{note}</Tip>
-      {!locked && <ActionButton onClick={() => setChoice(SOFT_EDGE_CHOICE, 'smooth')} title="Make the smooth edge out of see-through pixels, even with Pixel perfect on">Make the edge smooth instead</ActionButton>}
+      {!locked && <ActionButton control="edge-smooth-button" onClick={() => setChoice(SOFT_EDGE_CHOICE, 'smooth')} title="Make the smooth edge out of see-through pixels, even with Pixel perfect on">Make the edge smooth instead</ActionButton>}
     </>
   );
 }
@@ -65,14 +65,14 @@ function PictureTip() {
       ) : (
         <Tip stays>Draw a tip on a little grid, start from a picture file, or use the pixels you have selected.</Tip>
       )}
-      {picture && hasColours(picture) && <Toggle label="Its own colours" checked={picture.keep} onChange={(keep) => setDab({ picture: { ...picture, keep } })} hint="On: it stamps the picture as it was drawn. Off: only its shape counts, painted in the colour you picked." />}
-      <ActionButton command="pixelbrush.picture.edit" onClick={editPictureTip} title="Draw the tip, or change the one you have, on a grid (up to 32 by 32)">
+      {picture && hasColours(picture) && <Toggle control="picture-own-colours" label="Its own colours" checked={picture.keep} onChange={(keep) => setDab({ picture: { ...picture, keep } })} hint="On: it stamps the picture as it was drawn. Off: only its shape counts, painted in the colour you picked." />}
+      <ActionButton control="picture-draw" command="pixelbrush.picture.edit" onClick={editPictureTip} title="Draw the tip, or change the one you have, on a grid (up to 32 by 32)">
         {picture ? 'Edit the picture...' : 'Draw a picture...'}
       </ActionButton>
-      <ActionButton command="pixelbrush.picture.file" onClick={() => void pictureTipFromFile()} title="Start from a picture file: a PNG, GIF, JPEG, WebP or BMP. It is shrunk to fit and opens in the editor.">
+      <ActionButton control="picture-file" command="pixelbrush.picture.file" onClick={() => void pictureTipFromFile()} title="Start from a picture file: a PNG, GIF, JPEG, WebP or BMP. It is shrunk to fit and opens in the editor.">
         From a picture file...
       </ActionButton>
-      <ActionButton onClick={() => void pictureFromSelection()} title="Turn the pixels you have selected into the tip (up to 32 by 32)">
+      <ActionButton control="tip-from-selection" onClick={() => void pictureFromSelection()} title="Turn the pixels you have selected into the tip (up to 32 by 32)">
         {picture ? 'Use the selection instead' : 'Make from the selection'}
       </ActionButton>
     </div>
@@ -85,18 +85,20 @@ export function DabOptionsPanel() {
     <div className="cv-options">
       <BrushPresetRow side="pixel" />
       <Choice<TipShape>
+        control="tip-picker"
         label="Tip"
         value={b.tip}
         options={[
           { value: 'round', label: 'Round', title: 'A round dab. Hardness sets how firm its edge is.' },
-          { value: 'square', label: 'Square', title: 'A square dab, with corners. Turn it with Angle for a diamond or a chisel.' },
+          { control: 'tip-square', value: 'square', label: 'Square', title: 'A square dab, with corners. Turn it with Angle for a diamond or a chisel.' },
           { value: 'picture', label: 'Picture', title: 'A little picture of your own, stamped along the line. Draw one, or start from a picture file or a selection.' },
         ]}
         onChange={(tip) => (tip === 'picture' && !b.picture ? editPictureTip() : setDab({ tip }))}
       />
       {b.tip === 'picture' && <PictureTip />}
-      <Slider label="Size" value={b.size} min={SIZE_RANGE.min} max={Math.min(SIZE_RANGE.max, 120)} typeMax={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ size: v })} hint={b.tip === 'picture' ? 'The longer side of the picture. A picture the same size as it was drawn goes down pixel for pixel.' : undefined} />
+      <Slider control="size" label="Size" value={b.size} min={SIZE_RANGE.min} max={Math.min(SIZE_RANGE.max, 120)} typeMax={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ size: v })} hint={b.tip === 'picture' ? 'The longer side of the picture. A picture the same size as it was drawn goes down pixel for pixel.' : undefined} />
       <Slider
+        control="spacing"
         label="Spacing"
         value={Math.round(b.spacing * 100)}
         min={Math.round(SPACING_RANGE.min * 100)}
@@ -107,6 +109,7 @@ export function DabOptionsPanel() {
         hint="How far apart the dabs go, as a share of the size. Low is a smooth line, 100% puts them side by side, and more leaves gaps, like a dotted line."
       />
       <Choice<'sharp' | 'smooth'>
+        control="edges"
         label="Edges"
         value={b.aliased ? 'sharp' : 'smooth'}
         options={[
@@ -115,17 +118,17 @@ export function DabOptionsPanel() {
         ]}
         onChange={(v) => setDab({ aliased: v === 'sharp' })}
       />
-      {b.tip !== 'picture' && <Slider label="Hardness" value={Math.round(b.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setDab({ hardness: v / 100 })} hint={b.aliased ? 'How firm the edge is. With sharp pixels a soft edge becomes a pattern of dots instead of a fade.' : 'How much of the dab is solid before it fades.'} />}
+      {b.tip !== 'picture' && <Slider control="hardness" label="Hardness" value={Math.round(b.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setDab({ hardness: v / 100 })} hint={b.aliased ? 'How firm the edge is. With sharp pixels a soft edge becomes a pattern of dots instead of a fade.' : 'How much of the dab is solid before it fades.'} />}
       <EdgeNote />
       <MoreOptions name="pixel-brush" label="Shape, scatter and flow" hint="Angle, flat tips, turning with the line, scatter, size jitter, flow and opacity.">
-        <Slider label="Angle" value={b.angle} min={0} max={359} format={(v) => `${v}°`} onChange={(v) => setDab({ angle: v })} hint="Turns the tip. A square at 45° is a diamond." />
-        <Slider label="Roundness" value={Math.round(b.roundness * 100)} min={Math.round(ROUND_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ roundness: v / 100 })} hint="How flat the tip is. 100% is a full circle or square; low is a thin chisel." />
-        <Toggle label="Turn with the line" checked={b.follow} onChange={(follow) => setDab({ follow })} hint="The tip points along the way you draw, on top of its own angle, like a pen nib kept flat to the page." />
-        <Slider label="Scatter" value={Math.round(b.scatter * 100)} min={SCATTER_RANGE.min * 100} max={SCATTER_RANGE.max * 100} format={(v) => (v === 0 ? 'None: on the line' : `${v}% of the size`)} onChange={(v) => setDab({ scatter: v / 100 })} hint="How far each dab may land away from the line." />
-        <Slider label="Size jitter" value={Math.round(b.sizeJitter * 100)} min={0} max={100} format={(v) => (v === 0 ? 'None: all one size' : `down to ${100 - v}%`)} onChange={(v) => setDab({ sizeJitter: v / 100 })} hint="Each dab may be smaller than the size, by up to this much." />
-        <Slider label="Angle jitter" value={Math.round(b.angleJitter * 100)} min={0} max={100} format={(v) => (v === 0 ? 'None' : pct(v))} onChange={(v) => setDab({ angleJitter: v / 100 })} hint="Each dab may turn a little, up to half a turn at 100%." />
-        <Slider label="Flow" value={Math.round(b.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ flow: v / 100 })} hint="How much paint one dab lays down. Low flow is see-through and builds up as dabs overlap." />
-        <Slider label="Opacity" value={Math.round(b.opacity * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ opacity: v / 100 })} hint="The most paint any pixel can get in one stroke, however many dabs cross it. Flow is how fast it builds, opacity is where it stops." />
+        <Slider control="angle" label="Angle" value={b.angle} min={0} max={359} format={(v) => `${v}°`} onChange={(v) => setDab({ angle: v })} hint="Turns the tip. A square at 45° is a diamond." />
+        <Slider control="roundness" label="Roundness" value={Math.round(b.roundness * 100)} min={Math.round(ROUND_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ roundness: v / 100 })} hint="How flat the tip is. 100% is a full circle or square; low is a thin chisel." />
+        <Toggle control="turn" label="Turn with the line" checked={b.follow} onChange={(follow) => setDab({ follow })} hint="The tip points along the way you draw, on top of its own angle, like a pen nib kept flat to the page." />
+        <Slider control="scatter" label="Scatter" value={Math.round(b.scatter * 100)} min={SCATTER_RANGE.min * 100} max={SCATTER_RANGE.max * 100} format={(v) => (v === 0 ? 'None: on the line' : `${v}% of the size`)} onChange={(v) => setDab({ scatter: v / 100 })} hint="How far each dab may land away from the line." />
+        <Slider control="size-jitter" label="Size jitter" value={Math.round(b.sizeJitter * 100)} min={0} max={100} format={(v) => (v === 0 ? 'None: all one size' : `down to ${100 - v}%`)} onChange={(v) => setDab({ sizeJitter: v / 100 })} hint="Each dab may be smaller than the size, by up to this much." />
+        <Slider control="angle-jitter" label="Angle jitter" value={Math.round(b.angleJitter * 100)} min={0} max={100} format={(v) => (v === 0 ? 'None' : pct(v))} onChange={(v) => setDab({ angleJitter: v / 100 })} hint="Each dab may turn a little, up to half a turn at 100%." />
+        <Slider control="flow" label="Flow" value={Math.round(b.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ flow: v / 100 })} hint="How much paint one dab lays down. Low flow is see-through and builds up as dabs overlap." />
+        <Slider control="opacity" label="Opacity" value={Math.round(b.opacity * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={pct} onChange={(v) => setDab({ opacity: v / 100 })} hint="The most paint any pixel can get in one stroke, however many dabs cross it. Flow is how fast it builds, opacity is where it stops." />
       </MoreOptions>
       <DynamicsSection />
       <PaperSection />

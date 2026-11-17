@@ -17,10 +17,11 @@ function useHint(label: string, hint?: string): { line: ReactNode; icon: ReactNo
   return show ? { line: <div className="cv-field-hint">{hint}</div>, icon: null } : { line: null, icon: <ExplainIcon title={label} words={hint} size={13} className="cv-explain" /> };
 }
 
-export function Field({ label, value, children, hint }: { label: string; value?: ReactNode; children: ReactNode; hint?: string }) {
+/** `control` on any of these is a plain kebab-case id, put on the element as `data-control` and seen by nothing but the tests (test/brushes/parity.test.tsx): the same id on two panels means the same control. */
+export function Field({ label, value, children, hint, control }: { label: string; value?: ReactNode; children: ReactNode; hint?: string; control?: string }) {
   const h = useHint(label, hint);
   return (
-    <div className="cv-field">
+    <div className="cv-field" data-control={control}>
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
         {h.icon}
@@ -72,7 +73,7 @@ const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(
  * A slider with its value shown as a button: click the number to type one in (Enter keeps it, Escape cancels).
  * Drag with Shift for big steps, Alt or Ctrl for fine control; the arrow keys do the same (Shift x10, Alt/Ctrl a tenth).
  */
-export function Slider({ label, value, min, max, step = 1, onChange, format, hint, curve = false, typeMax = max }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string; curve?: boolean; typeMax?: number }) {
+export function Slider({ label, value, min, max, step = 1, onChange, format, hint, curve = false, typeMax = max, control }: { control?: string;  label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string; curve?: boolean; typeMax?: number }) {
   const h = useHint(label, hint);
   const [typing, setTyping] = useState<string | null>(null);
   const fine = useRef<{ x: number; value: number } | null>(null);
@@ -124,7 +125,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
     onChange(clampTo(value + dir * by, min, max));
   };
   return (
-    <div className="cv-field">
+    <div className="cv-field" data-control={control}>
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
         {h.icon}
@@ -166,10 +167,10 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
   );
 }
 
-export function Toggle({ label, checked, onChange, hint, command }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string; /** The command that does the same thing as this switch. */ command?: string }) {
+export function Toggle({ label, checked, onChange, hint, command, control }: { control?: string; label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string; /** The command that does the same thing as this switch. */ command?: string }) {
   const h = useHint(label, hint);
   return (
-    <div className="cv-field">
+    <div className="cv-field" data-control={control}>
       <div className="cv-toggle-row" data-wraps>
         <label className="cv-toggle" data-on={checked}>
           <input type="checkbox" checked={checked} data-command={command} onChange={(e) => onChange(e.target.checked)} />
@@ -185,15 +186,15 @@ export function Toggle({ label, checked, onChange, hint, command }: { label: str
   );
 }
 
-export function Choice<T extends string>({ label, value, options, onChange, command }: { label: string; value: T; /** The command that does the same job as this whole row (one that steps through the choices, or flips between two), so the row and the command are known to be one. */ command?: string; options: { value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
+export function Choice<T extends string>({ label, value, options, onChange, command, control }: { control?: string; label: string; value: T; /** The command that does the same job as this whole row (one that steps through the choices, or flips between two), so the row and the command are known to be one. */ command?: string; options: { control?: string; value: T; label: string; title?: string; /** The command that does the same thing, so the control and the command are known to be one. */ command?: string }[]; onChange: (v: T) => void }) {
   // The words stay on one line; when they do not fit side by side the buttons stack one per line instead.
   const row = useRef<HTMLDivElement>(null);
   useStackWhenTight(row, [options.map((o) => o.label).join('|')]);
   return (
-    <Field label={label}>
+    <Field label={label} control={control}>
       <div className="cv-choice" role="radiogroup" aria-label={label} data-command={command} ref={row}>
         {options.map((o) => (
-          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} data-command={o.command} title={o.title} onClick={() => onChange(o.value)}>
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className="cv-choice-btn" data-on={o.value === value} data-command={o.command} data-control={o.control} title={o.title} onClick={() => onChange(o.value)}>
             {o.label}
           </button>
         ))}
@@ -213,9 +214,9 @@ export function Tip({ children, stays }: { children: ReactNode; stays?: boolean 
   return stays ? <p className="cv-tip">{words}</p> : <Explainer>{words}</Explainer>;
 }
 
-export function ActionButton({ children, onClick, disabled, title, pressed, command }: { children: ReactNode; /** The command that does the same thing as this button. */ command?: string; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
+export function ActionButton({ children, onClick, disabled, title, pressed, command, control }: { control?: string; children: ReactNode; /** The command that does the same thing as this button. */ command?: string; onClick: () => void; disabled?: boolean; title?: string; /** A button that stays on or off: shown pressed when true. */ pressed?: boolean }) {
   return (
-    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed} data-command={command}>
+    <button type="button" className={pressed ? 'cv-action is-on' : 'cv-action'} onClick={onClick} disabled={disabled} title={title} aria-pressed={pressed} data-command={command} data-control={control}>
       {children}
     </button>
   );

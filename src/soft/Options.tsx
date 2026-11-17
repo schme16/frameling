@@ -53,6 +53,7 @@ function Edge({ kind }: { kind: SoftKind }) {
       <Tip stays>{note}</Tip>
       {!locked && (
         <ActionButton
+          control="edge-smooth-button"
           onClick={() => {
             setChoice(SOFT_EDGE_CHOICE, 'smooth');
           }}
@@ -72,10 +73,10 @@ function Options({ kind }: { kind: SoftKind }) {
   return (
     <div className="cv-options">
       <BrushPresetRow side="pixel" />
-      <Slider label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setSoftTool(kind, { size: v })} />
-      {kind !== 'smudge' && <Slider label="Hardness" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setSoftTool(kind, { hardness: v / 100 })} hint="How much of the brush is solid before it starts to fade. Low is soft and airy, high is firm with a thin fade." />}
-      <Slider label={words.label} value={Math.round(o.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={(v) => `${v}%`} onChange={(v) => setSoftTool(kind, { flow: v / 100 })} hint={words.hint} />
-      {kind === 'airbrush' && <Toggle label="Builds up while you hold still" checked={hold} onChange={setHoldBuilds} hint="Keep the pen or mouse down in one place and the colour gets denser, like a real airbrush." />}
+      <Slider control="size" label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setSoftTool(kind, { size: v })} />
+      {kind !== 'smudge' && <Slider control="hardness" label="Hardness" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setSoftTool(kind, { hardness: v / 100 })} hint="How much of the brush is solid before it starts to fade. Low is soft and airy, high is firm with a thin fade." />}
+      <Slider control="flow" label={words.label} value={Math.round(o.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={(v) => `${v}%`} onChange={(v) => setSoftTool(kind, { flow: v / 100 })} hint={words.hint} />
+      {kind === 'airbrush' && <Toggle control="builds-up" label="Builds up while you hold still" checked={hold} onChange={setHoldBuilds} hint="Keep the pen or mouse down in one place and the colour gets denser, like a real airbrush." />}
       {kind !== 'smudge' && <MirrorOptions />}
       <Edge kind={kind} />
       <Tip>{TIPS[kind]}</Tip>

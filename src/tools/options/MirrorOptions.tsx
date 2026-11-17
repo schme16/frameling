@@ -36,6 +36,7 @@ export function MirrorOptions() {
   return (
     <div className="px-mirror">
       <Choice<SymmetryMode>
+        control="mirror"
         label="Mirror drawing"
         command="pixel.mirror"
         value={mode}
@@ -50,12 +51,12 @@ export function MirrorOptions() {
       {mode !== 'off' && w > 0 && (
         <>
           {(mode === 'h' || mode === 'both') && (
-            <Slider label="Mirror line across" value={ax ?? w / 2} min={lo} max={vector ? w : w - 0.5} step={step} format={(v) => (ax === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setX(v)} />
+            <Slider control="mirror-line-across" label="Mirror line across" value={ax ?? w / 2} min={lo} max={vector ? w : w - 0.5} step={step} format={(v) => (ax === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setX(v)} />
           )}
           {(mode === 'v' || mode === 'both') && (
-            <Slider label="Mirror line down" value={ay ?? h / 2} min={lo} max={vector ? h : h - 0.5} step={step} format={(v) => (ay === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setY(v)} />
+            <Slider control="mirror-line-down" label="Mirror line down" value={ay ?? h / 2} min={lo} max={vector ? h : h - 0.5} step={step} format={(v) => (ay === null ? `Middle (${fmt(v)})` : fmt(v))} onChange={(v) => setY(v)} />
           )}
-          {(ax !== null || ay !== null) && <ActionButton onClick={() => (setX(null), setY(null))}>Back to the middle</ActionButton>}
+          {(ax !== null || ay !== null) && <ActionButton control="mirror-reset" onClick={() => (setX(null), setY(null))}>Back to the middle</ActionButton>}
         </>
       )}
     </div>
