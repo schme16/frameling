@@ -1515,7 +1515,7 @@ own pictures, `capture` taking the throwaway frame first). `stageCrop` also take
 `of: ".ui-canvas"` (the stage with its tool bar, for the Pixel workspace), and `FROM_STAGE({...})` writes one. Aim with `at(x, y)`
 (a stage point), `edge(x, y)` (screen pixels from the stage's top left, for the rulers) or `pixelGrid(w, h, cell).at(x, y)` (the middle of
 an art pixel), never a window number; the sums are tested in `test/ui/harness-crops.test.ts`. The harness turns `firstDrawn` on for every
-entry, so the "fold the explanations away" offer that comes with the first edit never lands over a picture. `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
+entry, and turns `showExplanations` on (they start tucked away for a person, but the help pictures were made with them on show); an entry that wants them tucked away says so in its `prefs`. `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
 someone else's build. Preferences go into `localStorage` (`frameling.prefs.v1`) and the page reloads. `SHOT_W`,
 `SHOT_H` (default 1280 x 800) and `SHOT_WAIT` (ms before the steps, default 3000) apply. Its window is hidden

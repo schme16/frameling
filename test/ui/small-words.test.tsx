@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe('wording that used to contradict itself', () => {
   it('the Sounds preference does not say "off" while its switch is on', async () => {
-    setPrefs({ sounds: true });
+    setPrefs({ sounds: true, showExplanations: true }); // the hint under the switch is on show only with the explanations on
     await act(async () => {
       root.render(<PrefsModal />);
       openPrefs('general');
@@ -44,6 +44,7 @@ describe('wording that used to contradict itself', () => {
     expect(text).not.toContain('Off unless you turn them on');
   });
   it('the Artboards tip does not repeat the panel blurb', () => {
+    setPrefs({ showExplanations: true });
     act(() => root.render(<ArtboardsPanel />));
     const tip = host.textContent ?? '';
     const blurb = infoFor({ id: 'artboards', title: 'Artboards' }).blurb;

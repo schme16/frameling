@@ -10,6 +10,7 @@ import { useBrushRange } from '../tools/options/useBrushRange';
 import type { BrushSettings } from '../core/format';
 import { store, useStore } from '../core/store';
 import { usePopover } from '../ui/popover';
+import { placePopup, type PopupPlace } from '../ui/placePopup';
 import {
   BOX,
   buildSections,
@@ -207,29 +208,40 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const spot = () => {
-    const r = anchor.getBoundingClientRect();
-    return { top: r.bottom + 6, right: r.right };
-  };
-  const [pos, setPos] = useState<{ top: number; right: number }>(spot);
   const [box, setBox] = useState<{ w: number; h: number | null }>(() => panelBox() ?? { w: 380, h: null });
   const grip = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const searching = query.trim().length > 0;
+  // Where it goes: under the button or over it, whichever has room, and always inside the window (see placePopup).
+  // A short list is as tall as its rows come to, so that is measured; a big one asks for the size it was left at.
+  const spot = useCallback((): PopupPlace => {
+    const el = ref.current;
+    const list = listRef.current;
+    const natural = el && list ? el.offsetHeight - list.clientHeight + list.scrollHeight : 420;
+    return placePopup({ anchor: anchor.getBoundingClientRect(), win: { w: window.innerWidth, h: window.innerHeight }, width: box.w, height: big ? (box.h ?? 580) : natural });
+  }, [anchor, box.w, box.h, big]);
+  const [pos, setPos] = useState<PopupPlace>(spot);
+  const place = useCallback(() => {
+    const n = spot();
+    setPos((p) => (p.left === n.left && p.width === n.width && p.top === n.top && p.bottom === n.bottom && p.maxHeight === n.maxHeight && p.opens === n.opens ? p : n));
+  }, [spot]);
 
   const shut = useCallback(() => onClose(true), [onClose]);
   usePopover(ref, shut);
 
-  // Under the button, growing left and down: the panel hangs off the right-hand dock.
-  const place = useCallback(() => {
-    const r = anchor.getBoundingClientRect();
-    setPos((p) => (p.top === r.bottom + 6 && p.right === r.right ? p : { top: r.bottom + 6, right: r.right }));
-  }, [anchor]);
+  // Placed again after each draw (the rows can change its height) unless the grip is being dragged, and when the window
+  // is resized or anything scrolls (the options panel the button is in, say).
   useLayoutEffect(() => {
+    if (!grip.current) place();
+  });
+  useLayoutEffect(() => {
+    const moved = (e: Event) => {
+      if (!(e.target instanceof Node && ref.current?.contains(e.target))) place();
+    };
     window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, true);
+    window.addEventListener('scroll', moved, true);
     return () => {
       window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('scroll', moved, true);
     };
   }, [place]);
   // Focus goes to the search box (or the list when there is none) before the popover looks for somewhere to put it.
@@ -363,12 +375,14 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
     ));
   }
 
-  const width = Math.min(box.w, pos.right - 8);
-  const maxH = window.innerHeight - pos.top - 10;
+  const width = pos.width;
+  const maxH = pos.maxHeight;
   const height = big ? Math.min(box.h ?? 580, maxH) : undefined;
+  // Opening upward grows up from the button; a big list has its height, so it is placed by its top and the grip follows the pointer.
+  const edge = pos.top !== undefined ? { top: pos.top } : height !== undefined ? { top: window.innerHeight - (pos.bottom ?? 0) - height } : { bottom: pos.bottom };
   const activeRow = hotIdx !== undefined ? `pk-i${hotIdx}` : undefined;
   return createPortal(
-    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? words.dialog : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ top: pos.top, left: pos.right - width, width, height, maxHeight: maxH, zIndex: flyoutLayer(anchor) }} onKeyDown={onKeyDown}>
+    <div ref={ref} className="pk-pop" data-big={big} role="dialog" aria-label={tips ? words.dialog : side === 'pixel' ? 'Pick a pixel brush' : 'Pick a brush'} style={{ ...edge, left: pos.left, width, height, maxHeight: maxH, zIndex: flyoutLayer(anchor) }} onKeyDown={onKeyDown}>
       {!tips && (
         <div className="pk-live">
           <div className="pk-dial" aria-hidden="true">

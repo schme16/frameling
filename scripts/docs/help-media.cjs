@@ -81,8 +81,10 @@ async function capture(win, e, mode, tmp, lib) {
     darkTheme: DEFAULT_THEME.dark,
     lightTheme: DEFAULT_THEME.light,
     showWelcome: false,
-    // The "fold the explanations away" toast comes with the first edit; with it on, any picture that makes an edit gets it over the timeline.
+    // A first drawing is already done, so the Welcome sheet shows its usual cards and no lesson is pinned to it.
     firstDrawn: true,
+    // Explanations start tucked away for a new person now; the pictures were made with them on show, so that stays until one asks for the other.
+    showExplanations: true,
     ...(e.prefs ?? {}),
   };
   // The first-time "Workspace follows the drawing" question would pop up over any pixel art; the pictures keep the

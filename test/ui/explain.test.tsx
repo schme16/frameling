@@ -42,20 +42,23 @@ describe('words carried to a scope', () => {
 });
 
 describe('who starts with the explanations on', () => {
-  it('is a new person, and not someone who was already here', () => {
-    expect(showExplanationsDefault({})).toBe(true);
-    expect(showExplanationsDefault({ onboarded: false })).toBe(true);
-    expect(showExplanationsDefault({ onboarded: true })).toBe(false);
+  it('is nobody: they start tucked away, new person or not', () => {
+    expect(showExplanationsDefault({})).toBe(false);
+    expect(showExplanationsDefault({ onboarded: false } as never)).toBe(false);
+    expect(showExplanationsDefault({ onboarded: true } as never)).toBe(false);
   });
   it('keeps what was chosen, either way', () => {
-    expect(showExplanationsDefault({ onboarded: true, showExplanations: true })).toBe(true);
-    expect(showExplanationsDefault({ onboarded: false, showExplanations: false })).toBe(false);
+    expect(showExplanationsDefault({ showExplanations: true })).toBe(true);
+    expect(showExplanationsDefault({ showExplanations: false })).toBe(false);
   });
   it('reads into the preferences the same way', () => {
-    expect(migratePrefs({}).showExplanations).toBe(true);
+    expect(migratePrefs({}).showExplanations).toBe(false);
     expect(migratePrefs({ onboarded: true }).showExplanations).toBe(false);
+    expect(migratePrefs({ onboarded: false }).showExplanations).toBe(false);
+    expect(migratePrefs({ showExplanations: true }).showExplanations).toBe(true);
     expect(migratePrefs({ onboarded: true, showExplanations: true }).showExplanations).toBe(true);
-    expect(migratePrefs({ showExplanations: 'yes' }).showExplanations).toBe(true);
+    expect(migratePrefs({ showExplanations: false }).showExplanations).toBe(false);
+    expect(migratePrefs({ showExplanations: 'yes' }).showExplanations).toBe(false);
   });
 });
 
