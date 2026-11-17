@@ -211,12 +211,25 @@ Asked straight: is the paper system the limit? Partly. Looked at brush by brush 
 - **A grain picture was boiled down to 64 pixels.** That is right for a picture you pick (a saved brush stays small), and wrong for a 2048 pixel photograph of paper: Barely There came out as a few grey lumps where Procreate draws a wisp of specks. A grain read from a file now keeps the whole tile, 256 across (`MAX_FILE_TEXTURE_SIDE`; about 87 KB in a saved brush).
 - **A grain picture stays put**, whatever `textureMovement` says. Barely There is nearly stamped (0.16) and only a paper that stays put and holds the stroke back gives its sparse wisp; one that moved filled it in solid. (A stand in paper still follows the movement: that is what keeps the Inking Pen smooth.)
 - **Frameling's papers are tidy patterns**: a ruled grid, an even speckle, made for chalk on pixel art, with their bumps spread evenly from pit to peak. A photographed paper has fibres lying one way, bumps at several sizes at once, and is mostly mid height. So the laid paper that stood in for Pastel Paper drew Shenbot's Background as a tartan. A soft paper (pastel, watercolour, cotton) is now drawn from a recipe of its own (`standInPaper.ts`: wavy fibres across the sheet with a fine tooth over them, 256 across, seamless), and its stand in tip is softer (hardness 0.3). Canvas and linen keep the laid paper.
+- **More stand ins, drawn from recipes** (`standInGrit.ts` for papers, `standInTip.ts` for tips; nothing is copied from Procreate, each was matched by eye against Procreate's own picture of a brush that uses it). A name picks one, first match wins:
+
+  | Procreate names | Stand in |
+  | --- | --- |
+  | paper `Brush-Artery-Charcoal-Corse` (6B Pencil) | `charcoalPaper`: grit in clumps at several sizes. Stays gritty (paint on the peaks first), depth 0.9, holds the stroke back only 0.05, so the middle is dark with scattered pin holes and the ends are sparse specks |
+  | paper `Brush-Artery-Splatters` (Dry Inks, Inking Pen) | `splatterPaper`: nearly all tooth with scattered pin pricks, same way of working as charcoal, depth 0.98 |
+  | paper `Brush-Preset-Pastel-Paper` (Background) | `pastelPaper`: a fine even tooth two to five pixels across, a little longer along the line than down it, dense and dark with pale specks. It replaces the long fibres for pastel: those read as smeared streaks. Watercolour, cotton and the other soft words keep the fibrous paper |
+  | paper words canvas, linen, weave, cloth | `canvasPaper`: a basket weave whose threads wander and vary, not a ruled grid, depth 0.7. Laid keeps Frameling's own laid paper |
+  | tip `Brush-Preset-Blotch` under a soft paper (Background) | a blotch with a ragged soft edge |
+  | tip `Brush-Preset-Blotch` under any other paper (the inking pens) | a round with a rough, nearly hard edge |
+  | tip `Brush-Pocket-Brick` (6B Pencil) | a blunt rounded block with a rough edge |
+
+  The brick is square, not an oblong: a first try twice as long as it was tall drew the 6B Pencil's stroke twice as wide as Procreate's, because the tip turns with the line and Procreate's brush has a scatter. What the picture of the stroke shows is the blunt, rubbed edge, so that is what is kept. `Brush-Preset-Ink2` (Ink Bleed) is not drawn: its stand in was not clearly closer, so it stays a plain round. The rough edge of a tip is coarse on purpose: a 40 pixel pen is the 128 pixel stamp shrunk threefold, and finer specks vanish.
 - **`textureScale` is not carried to a stand in.** It is about Procreate's own picture of the paper. Applied to ours it made three pixel blocks.
 - **Tried and dropped: glaze** (a pixel takes its darkest dab, so dabs never build up). It would explain soft edges, but it turned Velvet int and Graphite ink grey where Procreate's are black, so Procreate's dabs do build up.
 
 A paper can now be scaled smoothly (`Grain.smooth`, off for every old brush and for pixel brushes): the tile is blown up once with bilinear filtering, to a seamless `256 x scale` square that is kept beside the other tiles, and the scale may have a fraction (0.25 to 8). The importer does not use it yet, because `textureScale` and `textureZoom` have no settled units. Only three brushes in the files at hand carry a grain picture, and the thumbnails cannot fit them: Graphite ink (depth 0.16) and Basic 01 (lifted by 0.75) draw the same at every scale from 0.5 to 6, and Barely There is the only one that answers, but its ink swings from 70 to 260 for scales 1 to 3 while its look differs from Procreate's for other reasons (scatter, gaps). So `textureScale` is still read as a whole number and `textureZoom` is not read.
 
-What is still short, and would need engine work to close: the stand ins are three (grit, fibre, weave) where Procreate has dozens of named papers and tips; and a tip is kept at 128 pixels.
+What is still short, and would need engine work to close: the stand ins are a handful (charcoal, splatter, pastel, fibre, canvas, laid; blotch, brick, a rough round) where Procreate has dozens of named papers and tips; and a tip is kept at 128 pixels.
 
 ### Taper, and the pen Procreate draws its pictures with
 
