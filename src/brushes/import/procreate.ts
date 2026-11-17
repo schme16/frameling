@@ -50,6 +50,27 @@ const MAX_SIZE = 300;
  */
 const TIP_GAMMA = 2.2;
 const TIP_LIGHT = Array.from({ length: 256 }, (_, v) => 255 * Math.pow(v / 255, TIP_GAMMA));
+/**
+ * The faint speckle round a soft tip (the dust at the edge of Velvet int's claw) is thrown away by that curve, and it is
+ * what makes Procreate's soft cloud: where only a few dabs reach, a faint speckle is a haze, and the solid middle is
+ * built from the strong parts of the same dabs. So the curve keeps this much of the straight value as a floor. It is
+ * taken only when it adds a halo that is really there (see HALO_MIN); every other tip is read as before.
+ */
+export const TIP_HAZE = 0.4;
+const TIP_LIGHT_HAZE = TIP_LIGHT.map((v, i) => Math.max(v, 255 * TIP_HAZE * (i / 255)));
+/** A haze counts when it pushes the furthest reach of the tip out by at least this much... */
+const HALO_MIN = 1.15;
+/** ...and the brush is at least this many pixels across: on a thinner line the haze is under a pixel wide (Fuzzy ink, 18 pixels, keeps its ragged edge). */
+const HALO_MIN_SIZE = 40;
+
+/** How far the tip's farthest visible cell is from its centre, as a share of half its longer side (1 is a tip that fills its square). */
+export function reachOf(st: { w: number; h: number; cells: number[] }): number {
+  const cx = (st.w - 1) / 2;
+  const cy = (st.h - 1) / 2;
+  let far = 0;
+  for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) if (st.cells[y * st.w + x]) far = Math.max(far, Math.hypot(x - cx, y - cy));
+  return far / Math.max(0.5, (Math.max(st.w, st.h) - 1) / 2);
+}
 
 /**
  * How long a taper of 1 is, in pixels of Procreate's own picture of the stroke (which is the scale a brush's size is
@@ -90,12 +111,12 @@ const BLANK_GRAIN = /blank/i;
  * names it and draws a smooth line, but that is its grain being stamped (movement 0.04), where every dab finds new
  * paper and they fill each other in. Dry Ink 1 names the same paper, rolling, and its stroke is rough all through.
  */
-const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; make?: () => TexturePicture; thin?: boolean; hold?: number; grit: boolean; share: number; what: string }[] = [
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; crisp?: boolean; fibre?: boolean; make?: () => TexturePicture; thin?: boolean; hold?: number; grit: boolean; share: number; what: string }[] = [
   // Papers drawn here (standInGrit.ts), each matched by eye to Procreate's picture of a stroke made with it, so they
   // come before the general words below. Charcoal is the 6B Pencil's paper, Splatters the Dry Inks', Pastel Paper the
   // Background brush's.
   { words: /charcoal|corse|coarse/i, paper: 'fine', make: charcoalPaper, hold: 0.05, grit: true, share: 0.9, what: 'a gritty paper drawn to look like charcoal paper' },
-  { words: /splatter/i, paper: 'fine', make: splatterPaper, hold: 0.05, grit: true, share: 0.98, what: 'a speckled paper' },
+  { words: /splatter/i, paper: 'fine', crisp: true, make: splatterPaper, hold: 0.05, grit: true, share: 0.98, what: 'a speckled paper' },
   { words: /pastel/i, paper: 'laid', make: pastelPaper, fibre: true, grit: false, share: 1, what: 'a fine toothed paper drawn to look like pastel paper' },
   { words: /canvas|linen|weave|cloth/i, paper: 'laid', make: canvasPaper, grit: false, share: 0.7, what: 'a canvas weave' },
   // Grit (charcoal, graphite, sand): the paint catches on the peaks first, so the soft edge of the tip and a light
@@ -111,6 +132,17 @@ const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; make?
   // spread evenly from pit to peak, which bites harder than a photograph of cloth, so it takes 0.7 of the depth.
   { words: /canvas|linen|laid|weave|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
 ];
+
+/**
+ * The stand in for a named paper. A crisp one (pin pricks a pixel or two across) is only for a brush that does not
+ * filter its paper: Dry Ink 1 has `textureFilter` off and is speckled all through in Procreate's picture, where the
+ * Inking Pens name the same paper with it on and draw a solid line, the pricks smoothed away. Those go on to the
+ * general grit.
+ */
+function standInFor(s: Settings, name: string): (typeof PAPER_STAND_INS)[number] | undefined {
+  const filtered = s.bool('textureFilter');
+  return PAPER_STAND_INS.find((g) => g.words.test(name) && !(g.crisp && filtered));
+}
 
 /** Whether the brush's named paper is a soft one (pastel, watercolour), which is the kind that gets the blotch tip's soft edge. */
 const onSoftPaper = (s: Settings): boolean => !!PAPER_STAND_INS.find((g) => g.words.test(s.str('bundledGrainPath') ?? ''))?.fibre;
@@ -196,16 +228,22 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
   const { w, h, px } = decodeTipPng(png);
   budget.spend(w * h);
   const lum = (i: number): number => (px[i] * 77 + px[i + 1] * 151 + px[i + 2] * 28) >> 8;
-  const paint = (i: number): number => (TIP_LIGHT[inverted ? 255 - lum(i) : lum(i)] * px[i + 3]) / 255;
+  const paintWith = (light: number[]) => (i: number): number => (light[inverted ? 255 - lum(i) : lum(i)] * px[i + 3]) / 255;
+  const paint = paintWith(TIP_LIGHT);
   // A tip that is white all over (some brushes paint with a plain square) is a square, not a picture of one.
   let weakest = 255;
   for (let i = 0; i < px.length && weakest > 250; i += 4) weakest = Math.min(weakest, paint(i));
-  const read: PixelReader = (x, y, out) => {
+  const readWith = (f: (i: number) => number): PixelReader => (x, y, out) => {
     out[0] = out[1] = out[2] = 0;
-    out[3] = paint((y * w + x) * 4);
+    out[3] = f((y * w + x) * 4);
   };
   if (weakest > 250) return { solid: true as const, w, h };
-  return { solid: false as const, w, h, tip: tipFrom(w, h, read, false, MAX_SOFT_STAMP) };
+  const plain = tipFrom(w, h, readWith(paint), false, MAX_SOFT_STAMP);
+  // Does the faint speckle add a halo? Then keep it, and say how much further out the tip now reaches: a tip that turns
+  // sweeps a cloud as wide as its reach, so the size measured off the picture has to come down by as much.
+  const hazy = tipFrom(w, h, readWith(paintWith(TIP_LIGHT_HAZE)), false, MAX_SOFT_STAMP);
+  const halo = reachOf(hazy.stamp) / Math.max(0.01, reachOf(plain.stamp));
+  return { solid: false as const, w, h, tip: plain, hazy: halo >= HALO_MIN ? hazy : null, halo };
 }
 
 /**
@@ -298,6 +336,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   // ---- the tip
   const inverted = s.bool('shapeInverted');
   let share = 1;
+  // How much further out a hazy tip reaches than its strong part does (1 when it adds nothing).
+  let hazy: ReturnType<typeof tipFrom> | null = null;
+  let halo = 1;
+  let tipSide = 1;
   if (pics.shape) {
     const t = shapeTip(pics.shape, inverted, budget);
     if (t.solid) {
@@ -306,6 +348,9 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     } else {
       raw.tip = 'picture';
       raw.picture = t.tip.stamp;
+      hazy = t.hazy;
+      halo = t.halo;
+      tipSide = Math.max(t.w, t.h);
       share = clamp(t.tip.size / Math.max(t.w, t.h), 0.02, 1);
       if (t.tip.shrunk) changed.push(`Its tip picture was shrunk from ${t.w} by ${t.h} to ${t.tip.stamp.w} by ${t.tip.stamp.h} pixels, the most a picture tip holds, so fine detail is lost.`);
     }
@@ -380,12 +425,21 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
         wide /= Math.max(0.2, most);
       }
       // The picture shows the tip and the throw together; most dabs land well inside the furthest throw.
+      // A tip that turns at random sweeps a cloud as wide as its reach, haze included.
       if (wide !== null) measured = Math.round(clamp(wide / (across + (thrown ? (1.5 * throwOf(jitter)) / share : 0)), MIN_SIZE, MAX_SIZE));
     } catch (e) {
       if (!(e instanceof BrushProblem)) throw e;
     }
   }
   const wanted = Math.round(paintSize * PIXELS_PER_SIZE * share);
+  // A wide brush with a haze round its tip takes the haze (see TIP_HAZE). The tip is bigger with it, and one that turns
+  // at random sweeps a cloud as wide as its reach, so the size measured off the picture comes down by as much.
+  if (hazy && measured !== null && measured >= HALO_MIN_SIZE) {
+    raw.picture = hazy.stamp;
+    share = clamp(hazy.size / tipSide, 0.02, 1);
+    if (s.bool('shapeRandomise') || s.num('shapeScatter', 0) >= 0.5) measured = Math.max(MIN_SIZE, Math.round(measured / halo));
+    changed.push('Its tip keeps the faint speckle round its edge, which is what makes the soft cloud round the line in Procreate.');
+  }
   raw.size = measured ?? Math.max(MIN_SIZE, wanted);
   if (measured !== null)
     changed.push(
@@ -444,7 +498,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   raw.flow = 1;
   // Under a gritty paper a lighter touch reaches fewer of the peaks, so the line breaks into specks instead of going
   // evenly faint: there Procreate's opacity controls come as flow. Everywhere else they come as opacity.
-  const standIn = pics.grain ? undefined : PAPER_STAND_INS.find((g) => g.words.test((s.str('bundledGrainPath') ?? '').replace(/^.*[/\\]/, '')));
+  const standIn = pics.grain ? undefined : standInFor(s, (s.str('bundledGrainPath') ?? '').replace(/^.*[/\\]/, ''));
   const fade: DynTarget = standIn?.grit && !BLANK_GRAIN.test(s.str('bundledGrainPath') ?? '') ? 'flow' : 'opacity';
   const routes: DynRoute[] = [];
   const used: string[] = [];
@@ -522,7 +576,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       dropped.push(`Its grain picture: ${e.message}`);
     }
   } else if (grainName && !BLANK_GRAIN.test(grainName)) {
-    const stand = PAPER_STAND_INS.find((g) => g.words.test(grainName));
+    const stand = standInFor(s, grainName);
     if (stand) {
       raw.grain = {
         ...(stand.make ? { picture: stand.make() } : stand.fibre ? { picture: fibrePaper() } : { paper: stand.paper }),

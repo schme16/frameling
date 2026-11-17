@@ -195,9 +195,10 @@ export class DabStroke {
     const tp = p.brush.taper;
     this.tailLen = tp && tp.end > 0 ? tp.end * p.brush.size : 0;
     this.runLen = Math.max(16, this.tailLen / 3);
-    // Not for a wet, picked, coloured picture or sharp pixel line: those are left as they were drawn, because drawing
-    // the tail again would not give the same paint back.
-    this.tailOn = this.tailLen > 0 && !this.crisp && !this.mixTiles && !p.pick && !this.keep;
+    // Not for a picked, coloured picture or sharp pixel line: those are left as they were drawn, because drawing
+    // the tail again would not give the same paint back. A wet brush gets its tail: the colour it picks up is only
+    // slightly different the second time round, and an inking pen with a wet mix (Dry Ink v2) must still come to a point.
+    this.tailOn = this.tailLen > 0 && !this.crisp && !p.pick && !this.keep;
     this.tileRun = this.tailOn ? new Int32Array(this.tiles.length).fill(-1) : new Int32Array(0);
     this.colourFx = touchesColour(p.brush.dynamics) || p.brush.wet > 0;
     this.cur = [p.color[0], p.color[1], p.color[2]];
