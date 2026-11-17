@@ -1,5 +1,5 @@
-// The pixel brushes that come with Frameling: a few plain pixel brushes, some shapes, scatter and picture tips, smooth
-// edged brushes, and the soft paint and dry media tools as ready-made brushes. They sit in the same library as the
+// The pixel brushes that come with Frameling: a few plain pixel brushes, some shapes, scatter and picture tips, sketching
+// and inking brushes, smooth edged brushes, and the soft paint and dry media tools as ready-made brushes. They sit in the same library as the
 // vector starters and, like them, never change and can't be deleted; save a copy to make it your own.
 import { DEFAULT_BRUSH } from '../core/doc';
 import { DEFAULT_DAB, cleanDab, type DabBrush } from '../dab/maths';
@@ -11,7 +11,7 @@ import type { PixelStamp } from './stamps';
 import type { BrushPreset } from './model';
 
 /** The groups the pixel starters sit in, in the order the picker lists them. */
-export const PIXEL_GROUPS = ['Pixel basics', 'Shapes', 'Scatter and spray', 'Picture tips', 'Pen and speed', 'Grain and texture', 'Colour', 'Smooth edges', 'Soft paint', 'Dry media'] as const;
+export const PIXEL_GROUPS = ['Pixel basics', 'Shapes', 'Scatter and spray', 'Picture tips', 'Pen and speed', 'Sketch and ink', 'Grain and texture', 'Colour', 'Smooth edges', 'Soft paint', 'Dry media'] as const;
 export type PixelGroup = (typeof PIXEL_GROUPS)[number];
 
 /** A one-colour picture from rows of text: `#` is paint, anything else is clear. */
@@ -28,6 +28,43 @@ const STAR = pictureFromRows(['..#..', '.###.', '#####', '.###.', '#...#']);
 const HEART = pictureFromRows(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']);
 const SPARKLE = pictureFromRows(['..#..', '..#..', '#####', '..#..', '..#..']);
 const DIAMOND = pictureFromRows(['..#..', '.###.', '#####', '.###.', '..#..']);
+
+/**
+ * A soft picture tip drawn by a rule: `paint(x, y)` says how much paint each cell lays down, 0 to 1, in the colour picked.
+ * Kept to eight steps of see-through so the picture stays small when it is saved.
+ */
+export function softPicture(w: number, h: number, paint: (x: number, y: number) => number): PixelStamp {
+  const STEPS = 8;
+  const colours = Array.from({ length: STEPS }, (_, i) => `#000000${Math.round(((i + 1) / STEPS) * 255).toString(16).padStart(2, '0')}`);
+  const cells: number[] = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) cells.push(Math.round(Math.min(1, Math.max(0, paint(x, y))) * STEPS));
+  return { w, h, colours, cells, keep: false, soft: true };
+}
+
+/** The same numbers every time, so a built-in tip never changes between runs. */
+function seeded(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 2 ** 32;
+  };
+}
+
+// A flat brush of loose bristles, lying across the line (it turns with `follow`): each bristle its own strength and
+// length, so a stroke drags streaks with ragged ends, the way a dry paint brush does.
+const BRISTLES = (() => {
+  const rnd = seeded(11);
+  const strength = Array.from({ length: 32 }, () => 0.6 + rnd() * 0.4);
+  const reach = Array.from({ length: 32 }, () => 3 + rnd() * 3);
+  return softPicture(8, 32, (x, y) => strength[y] * Math.max(0, Math.min(1, reach[y] - Math.abs(x - 3.5))));
+})();
+
+// A felt marker's broad side: an even bar with a soft edge and faint lines along it, so the stroke shows the felt.
+const MARKER = softPicture(6, 24, (x, y) => {
+  const edge = Math.min(1, (Math.min(y, 23 - y) + 1) / 4);
+  const felt = y % 3 === 0 ? 0.75 : 1;
+  return 0.8 * edge * felt * (x === 0 || x === 5 ? 0.6 : 1);
+});
 
 const r = (from: DynRoute['from'], to: DynRoute['to'], amount: number, invert = false): DynRoute => ({ from, to, amount, invert });
 
@@ -80,6 +117,19 @@ export const PIXEL_STARTERS: readonly BrushPreset[] = [
   // Many small dots flung about the line (a size-14 disc at a wide spacing was a row of discs, not a spray). A harder press flings them further and lays them thicker.
   dab('pressure-spray', 'Pressure spray', 'Pen and speed', { size: 2, spacing: 0.25, scatter: 2, dynamics: [r('pressure', 'scatter', 1), r('pressure', 'flow', 0.4)] }),
   dab('pressure-felt', 'Pressure felt tip', 'Pen and speed', { size: 12, hardness: 0.8, aliased: false, spacing: 0.08, dynamics: [r('pressure', 'size', 0.5), r('pressure', 'flow', 0.7)] }),
+
+  // Modelled on the kinds of brush Procreate artists reach for first (inking pens, a soft 6B, a felt marker, a dry paint
+  // brush), tuned by laying each beside Procreate's own picture of such a stroke. Every setting and tip here is Frameling's
+  // own: nothing is copied out of a brush file.
+  dab('inking-pen', 'Inking pen', 'Sketch and ink', { size: 10, aliased: false, spacing: 0.05, dynamics: [r('pressure', 'size', 1)] }),
+  dab('dry-ink', 'Dry ink', 'Sketch and ink', { size: 14, aliased: false, spacing: 0.05, dual: { tip: 'round', size: 1, density: 0.1, cut: true }, dynamics: [r('pressure', 'size', 1)] }),
+  dab('ink-bleed', 'Ink bleed', 'Sketch and ink', { size: 12, hardness: 0.25, aliased: false, spacing: 0.05, dynamics: [r('pressure', 'size', 0.9)] }),
+  dab('colouring-pen', 'Colouring pen', 'Sketch and ink', { size: 12, hardness: 0.9, aliased: false, spacing: 0.05, dynamics: [r('pressure', 'size', 0.6)] }),
+  dab('soft-6b', 'Soft 6B pencil', 'Sketch and ink', { size: 26, aliased: false, spacing: 0.08, dual: { tip: 'round', size: 1, density: 0.5, cut: false }, dynamics: [r('pressure', 'size', 0.9)] }),
+  dab('sketch-pencil', 'Light sketch pencil', 'Sketch and ink', { size: 6, hardness: 0.6, aliased: false, spacing: 0.1, flow: 0.5, opacity: 0.8, dual: { tip: 'round', size: 1, density: 0.6, cut: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
+  dab('felt-marker', 'Felt marker', 'Sketch and ink', { tip: 'picture', picture: MARKER, size: 16, aliased: false, spacing: 0.05, follow: true, opacity: 0.9 }),
+  dab('dry-brush', 'Dry bristle brush', 'Sketch and ink', { tip: 'picture', picture: BRISTLES, size: 30, aliased: false, spacing: 0.05, follow: true, dynamics: [r('pressure', 'size', 0.4), r('pressure', 'flow', 0.6)] }),
+  dab('canvas-brush', 'Canvas brush', 'Sketch and ink', { size: 40, hardness: 0, aliased: false, spacing: 0.08, flow: 0.3, grain: { paper: 'laid', depth: 0.5, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
 
   dab('chalk-grain', 'Chalk grain', 'Grain and texture', { size: 12, spacing: 0.12, flow: 0.5, grain: { paper: 'rough', depth: 1, scale: 1, moving: false } }),
   dab('pencil-paper', 'Pencil on paper', 'Grain and texture', { size: 3, spacing: 0.12, flow: 0.65, grain: { paper: 'fine', depth: 0.9, scale: 1, moving: false }, dynamics: [r('pressure', 'flow', 0.6)] }),
