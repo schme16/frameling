@@ -5,7 +5,7 @@
 // A paper that "thins" the paint (`thin: true`) leaves a stroke exactly as dark as the paper is high, where a stroke
 // settles. So those are drawn to a target spread of heights (`spread`), which is the quickest way to match how dark and
 // how pitted a stroke is in Procreate's picture.
-import { encodeBytes, type TexturePicture } from '../../dab/texturePicture';
+import { pictureFromBytes, type TexturePicture } from '../../dab/texturePicture';
 
 const SIDE = 256;
 
@@ -63,7 +63,7 @@ export function spread(field: Float32Array, curve: [number, number][]): Uint8Arr
   return out;
 }
 
-const picture = (bytes: Uint8Array): TexturePicture => ({ side: SIDE, data: encodeBytes(bytes) });
+const picture = (bytes: Uint8Array): TexturePicture => pictureFromBytes(SIDE, bytes);
 
 let pastel: TexturePicture | null = null;
 /**
