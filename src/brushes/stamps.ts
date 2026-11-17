@@ -1,13 +1,12 @@
 // Brushes made from a selection. On a vector layer the selected shapes become a stamp (one silhouette, 1 unit across,
 // that goes along a line in the brush's colour). On a pixel layer the selected pixels become a small picture the pixel
 // brush paints with. Pure, no DOM.
-import { deflateSync, inflateSync } from 'fflate';
 import type { Shape } from '../core/format';
 import { rdp } from '../geometry/bezier';
 import { geomBox, shapeParts, union, type Geom } from '../geometry/merge';
 import { MAX_CUSTOM_POINTS, MAX_CUSTOM_RINGS, MAX_TILE_POINTS, MAX_TILE_RINGS } from '../geometry/tip';
 import type { RGBA } from '../canvas/pixels';
-import { encodeBytes } from '../dab/texturePicture';
+import { packBytes, unpackBytes } from '../dab/texturePicture';
 import { maskBounds, type Mask } from '../select/mask';
 
 // ---------------------------------------------------------------- vector
@@ -86,7 +85,6 @@ export const MAX_SOFT_STAMP = 256;
 // ---------------------------------------------------------------- packed cells
 
 /** What a packed list of cells starts with when it is saved, so a later way of packing can be told apart. */
-const PACKED = 'z1:';
 
 /**
  * The cells of a soft tip, as a plain list of numbers that knows how to save itself small. A soft tip from a brush file
@@ -100,7 +98,7 @@ export class SoftCells extends Array<number> {
   }
   toJSON(): string {
     let text = packed.get(this);
-    if (text === undefined) packed.set(this, (text = PACKED + encodeBytes(deflateSync(Uint8Array.from(this), { level: 9 }))));
+    if (text === undefined) packed.set(this, (text = packBytes(Uint8Array.from(this))));
     return text;
   }
 }
@@ -116,25 +114,14 @@ export function packCells(cells: readonly number[]): number[] {
   return out;
 }
 
-const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
 
 /** `count` cells from a packed string (`"z1:..."`), or null when it is not one, is not exactly that long or is made up. */
 export function unpackCells(text: string, count: number): number[] | null {
-  if (!text.startsWith(PACKED)) return null;
-  const b64 = text.slice(PACKED.length);
-  // A squeezed list can be a touch longer than the bytes it holds when they will not squeeze; never much more.
-  if (b64.length > 4 * Math.ceil((count + 64) / 3) || !B64.test(b64)) return null;
-  try {
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    // The output goes into a buffer one byte over the size claimed, so a squeezed bomb stops there and a long one is told by its length.
-    const raw = inflateSync(bytes, { out: new Uint8Array(count + 1) });
-    if (raw.length !== count) return null;
-    const out = new SoftCells(count);
-    for (let i = 0; i < count; i++) out[i] = raw[i];
-    return out;
-  } catch {
-    return null;
-  }
+  const raw = unpackBytes(text, count);
+  if (!raw) return null;
+  const out = new SoftCells(count);
+  for (let i = 0; i < count; i++) out[i] = raw[i];
+  return out;
 }
 
 export interface PixelStamp {

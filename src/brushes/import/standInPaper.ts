@@ -2,7 +2,7 @@
 // patterns (a grid, an even speckle) made for chalk on pixel art; a photographed paper is neither tidy nor even. It
 // has fibres that run one way, bumps at several sizes at once, and most of it is mid height. This draws one like that
 // from a fixed recipe, so it is the same every time and nothing is copied out of Procreate. Pure, no DOM.
-import { encodeBytes, type TexturePicture } from '../../dab/texturePicture';
+import { pictureFromBytes, type TexturePicture } from '../../dab/texturePicture';
 
 const SIDE = 256;
 
@@ -51,6 +51,6 @@ export function fibrePaper(): TexturePicture {
       // Stretched so the ridges reach full height and the troughs go right down, the way a rubbing of paper does.
       out[y * SIDE + x] = Math.round(255 * Math.min(1, Math.max(0, (h - 0.2) / 0.42)));
     }
-  fibre = { side: SIDE, data: encodeBytes(out) };
+  fibre = pictureFromBytes(SIDE, out);
   return fibre;
 }

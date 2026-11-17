@@ -4,6 +4,7 @@
  * never grow the brush, then repeated into the same 256 by 256 tile the papers and the dots use. The dab loop never sees
  * it: it only ever looks up a tile. Pure functions, no DOM.
  */
+import { deflateSync, inflateSync } from 'fflate';
 import { TILE } from '../dry/paper';
 
 export const TEXTURE_SIDES = [8, 16, 32, 64, 128, 256] as const;
@@ -13,9 +14,9 @@ export const MAX_TEXTURE_SIDE = 64;
 export const MAX_FILE_TEXTURE_SIDE = 256;
 const SIDE_MIN = TEXTURE_SIDES[0];
 
-/** A texture picture as it is saved: `data` is how light each pixel is (0 black, 255 white), one byte a pixel, row by row, in base 64. */
+/** A texture picture as it is saved: `data` is how light each pixel is (0 black, 255 white), one byte a pixel, row by row, in base 64. When that is shorter squeezed it is saved packed, as `"z1:..."` (the same packing a soft tip's cells get). A picture is held in the form it is saved in, so nothing is packed or unpacked until a tile is made. */
 export interface TexturePicture {
-  /** Pixels across and down: 8, 16, 32 or 64. */
+  /** Pixels across and down: 8 to 256, a power of two. */
   side: number;
   data: string;
 }
@@ -23,14 +24,48 @@ export interface TexturePicture {
 const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
 const b64Length = (bytes: number): number => 4 * Math.ceil(bytes / 3);
 
+/** What a packed list of bytes starts with when it is saved, so a later way of packing can be told apart. */
+export const PACKED = 'z1:';
+
+/** The bytes squeezed (deflate) and in base 64 after `"z1:"`. The same text for the same bytes. */
+export function packBytes(bytes: Uint8Array): string {
+  return PACKED + encodeBytes(deflateSync(bytes, { level: 9 }));
+}
+
+/** `length` bytes from a packed string (`"z1:..."`), or null when it is not one, is not exactly that long or is made up. The size is checked before anything is allocated, and a squeezed bomb stops at one byte over. */
+export function unpackBytes(text: string, length: number): Uint8Array | null {
+  if (!text.startsWith(PACKED)) return null;
+  const b64 = text.slice(PACKED.length);
+  // A squeezed list can be a touch longer than the bytes it holds when they will not squeeze; never much more.
+  if (b64.length > b64Length(length + 64) || !B64.test(b64)) return null;
+  try {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const raw = inflateSync(bytes, { out: new Uint8Array(length + 1) });
+    return raw.length === length ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 export function encodeBytes(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 3000) s += String.fromCharCode(...bytes.subarray(i, i + 3000));
   return btoa(s);
 }
 
-/** The bytes in a base 64 string, or null when it is not base 64 or is not exactly `length` bytes. Never allocates by what the string claims. */
+/** A picture's text: packed when that is shorter than plain base 64, plain otherwise. */
+export function packedData(bytes: Uint8Array): string {
+  const plain = encodeBytes(bytes);
+  const packed = packBytes(bytes);
+  return packed.length < plain.length ? packed : plain;
+}
+
+/** A texture picture of this side from its bytes, held in the form it is saved in. */
+export const pictureFromBytes = (side: number, bytes: Uint8Array): TexturePicture => ({ side, data: packedData(bytes) });
+
+/** The bytes in a picture's text (plain base 64 or packed), or null when it is neither or is not exactly `length` bytes. Never allocates by what the string claims. */
 export function decodeBytes(data: string, length: number): Uint8Array | null {
+  if (data.startsWith(PACKED)) return unpackBytes(data, length);
   if (data.length !== b64Length(length) || !B64.test(data)) return null;
   let s: string;
   try {
@@ -51,8 +86,10 @@ export function cleanPicture(raw: unknown): TexturePicture | null {
   const side = r.side;
   if (typeof side !== 'number' || !(TEXTURE_SIDES as readonly number[]).includes(side)) return null;
   if (typeof r.data !== 'string') return null;
-  if (!decodeBytes(r.data, side * side)) return null;
-  return { side, data: r.data };
+  const bytes = decodeBytes(r.data, side * side);
+  if (!bytes) return null;
+  // An older picture is plain base 64; held packed it saves packed next time.
+  return r.data.startsWith(PACKED) ? { side, data: r.data } : pictureFromBytes(side, bytes);
 }
 
 export const samePicture = (a: TexturePicture | undefined, b: TexturePicture | undefined): boolean => (!a || !b ? !a && !b : a.side === b.side && a.data === b.data);
@@ -98,7 +135,7 @@ export function pictureFromPixels(w: number, h: number, rgba: Uint8ClampedArray 
     }
   }
   if (hi - lo < 8) return { ok: false, why: 'flat' };
-  return { ok: true, picture: { side, data: encodeBytes(out) } };
+  return { ok: true, picture: pictureFromBytes(side, out) };
 }
 
 // ---------------------------------------------------------------- tiles
