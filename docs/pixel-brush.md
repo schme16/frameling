@@ -43,7 +43,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 - Mapping rule for importers: one control per property is one route. A "minimum" of `m` is `amount = 1 - m`. A curve goes in `curve` as its points, never flattened
   to a straight line (Krita's reader does this, see `routeOf`). Opacity and flow are both `flow` here, so
   a file that puts pressure on both gets one route, not two. The full mapping is in [brush-import.md](brush-import.md).
-- `angle` is clockwise on screen. Photoshop's control numbers and GIMP's counter-clockwise angle are in brush-import.md.
+- `angle` is clockwise on screen. Photoshop's and GIMP's angles are counter-clockwise (Photoshop's checked in Photoshop), so both come in negated; the control numbers are in brush-import.md.
 - The Pen page's pressure for size and flow is skipped when the brush has its own pressure or tilt route to that target, so it
   never counts twice (`drivesFrom`).
 - The back colour is the Fill colour (Photoshop's background).
