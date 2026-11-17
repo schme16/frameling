@@ -1,0 +1,366 @@
+{
+ "label": "open-split",
+ "when": "2026-11-17T02:21:23.286Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 6,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  },
+  "stress-pixel": {
+   "nodes": 1216,
+   "timelineNodes": 246,
+   "keys": 36,
+   "rows": 1,
+   "hittable": 246,
+   "parts": [
+    [
+     "tl-cel",
+     36
+    ],
+    [
+     "tl-dkey-cell",
+     36
+    ],
+    [
+     "tl-dkey",
+     36
+    ],
+    [
+     "tl-cel-handle",
+     36
+    ],
+    [
+     "circle",
+     16
+    ],
+    [
+     "svg",
+     11
+    ],
+    [
+     "rect",
+     11
+    ],
+    [
+     "tl-num",
+     8
+    ],
+    [
+     "tl-btn",
+     5
+    ],
+    [
+     "path",
+     5
+    ]
+   ],
+   "layers": 1
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 618.5,
+   "runs": [
+    618.5,
+    625.8,
+    584.8,
+    590.1,
+    627,
+    597
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 618.46,
+   "topSelf": [
+    [
+     "M3e index-CzRQpJRt.js:169",
+     347
+    ],
+    [
+     "decode :0",
+     64.3
+    ],
+    [
+     "(garbage collector) :0",
+     35.9
+    ],
+    [
+     "F3e index-CzRQpJRt.js:169",
+     28.1
+    ],
+    [
+     "Z3e index-CzRQpJRt.js:169",
+     14.9
+    ],
+    [
+     "$2e index-CzRQpJRt.js:169",
+     11
+    ]
+   ],
+   "topIncl": [
+    [
+     "M3e index-CzRQpJRt.js:169",
+     498.4
+    ],
+    [
+     "P3e index-CzRQpJRt.js:169",
+     75.4
+    ],
+    [
+     "F3e index-CzRQpJRt.js:169",
+     70.4
+    ],
+    [
+     "decode :0",
+     64.3
+    ],
+    [
+     "rk index-CzRQpJRt.js:150",
+     64.3
+    ],
+    [
+     "(anon) index-CzRQpJRt.js:9",
+     43.2
+    ],
+    [
+     "Xd index-CzRQpJRt.js:9",
+     36.4
+    ],
+    [
+     "$d index-CzRQpJRt.js:9",
+     36.4
+    ],
+    [
+     "Yd index-CzRQpJRt.js:9",
+     36.4
+    ],
+    [
+     "ld index-CzRQpJRt.js:9",
+     36.4
+    ],
+    [
+     "(garbage collector) :0",
+     35.9
+    ],
+    [
+     "zee index-CzRQpJRt.js:9",
+     32
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 551,
+   "longBlocks": 1,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 0,
+    "pngWait": 0,
+    "zipWait": 0,
+    "held": 0,
+    "posts": 1,
+    "pngs": 0,
+    "saves": 0,
+    "openScan": 0.2,
+    "openJson": 436.6,
+    "openUnzip": 0.6,
+    "openBuild": 75.6,
+    "openHistory": 0,
+    "openJsonWait": 88,
+    "openPngWait": 0,
+    "openHeld": 513,
+    "opens": 1
+   },
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "open-file",
+   "busyMs": 109.5,
+   "runs": [
+    109.5,
+    93.1,
+    84.6,
+    273.8,
+    125.2,
+    103.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 109.53,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     45.2
+    ],
+    [
+     "(program) :0",
+     38.5
+    ],
+    [
+     "J$e index-CzRQpJRt.js:164",
+     4.9
+    ],
+    [
+     "postMessage :0",
+     4.3
+    ],
+    [
+     "b_ index-CzRQpJRt.js:137",
+     4
+    ],
+    [
+     "K_ index-CzRQpJRt.js:137",
+     4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     45.2
+    ],
+    [
+     "(program) :0",
+     38.5
+    ],
+    [
+     "(anon) index-CzRQpJRt.js:9",
+     20
+    ],
+    [
+     "Xd index-CzRQpJRt.js:9",
+     19.2
+    ],
+    [
+     "ld index-CzRQpJRt.js:9",
+     19
+    ],
+    [
+     "$d index-CzRQpJRt.js:9",
+     19
+    ],
+    [
+     "Yd index-CzRQpJRt.js:9",
+     19
+    ],
+    [
+     "bd index-CzRQpJRt.js:9",
+     15.9
+    ],
+    [
+     "zee index-CzRQpJRt.js:9",
+     15.7
+    ],
+    [
+     "Rc index-CzRQpJRt.js:9",
+     15
+    ],
+    [
+     "_c index-CzRQpJRt.js:9",
+     14
+    ],
+    [
+     "ko index-CzRQpJRt.js:9",
+     13.7
+    ]
+   ],
+   "rendering": [],
+   "cache": null,
+   "longestMs": 0,
+   "longBlocks": 0,
+   "io": {
+    "trim": 0,
+    "history": 0,
+    "docjson": 0,
+    "files": 0,
+    "pngCopy": 0,
+    "post": 3.6,
+    "pngWait": 0,
+    "zipWait": 0,
+    "held": 3.6,
+    "posts": 100,
+    "pngs": 0,
+    "saves": 0,
+    "openScan": 0.1,
+    "openJson": 0.5,
+    "openUnzip": 3.1,
+    "openBuild": 5,
+    "openHistory": 0,
+    "openJsonWait": 0,
+    "openPngWait": 314.3,
+    "openHeld": 8.7,
+    "opens": 1
+   },
+   "note": ""
+  }
+ ]
+}

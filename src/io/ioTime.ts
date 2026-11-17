@@ -19,13 +19,27 @@ export const ioTime = {
   post: 0,
   pngWait: 0,
   zipWait: 0,
+  openScan: 0,
+  openJson: 0,
+  openDecode: 0,
+  openDocBytes: 0,
+  openUnzip: 0,
+  openBuild: 0,
+  openHistory: 0,
+  openJsonWait: 0,
+  openPngWait: 0,
   /** How many jobs went to a worker, and how many PNGs had to be made (the rest came from the cache). */
   posts: 0,
   pngs: 0,
   saves: 0,
+  opens: 0,
   /** The time the page was held, which is the part a person feels. */
   get held(): number {
     return ioTime.trim + ioTime.history + ioTime.docjson + ioTime.files + ioTime.pngCopy + ioTime.post;
+  },
+  /** The same for opening: the time the page was held, which is the part a person feels. */
+  get openHeld(): number {
+    return ioTime.openScan + ioTime.openJson + ioTime.openUnzip + ioTime.openBuild + ioTime.openHistory;
   },
   reset(): void {
     ioTime.trim = 0;
@@ -39,6 +53,16 @@ export const ioTime = {
     ioTime.posts = 0;
     ioTime.pngs = 0;
     ioTime.saves = 0;
+    ioTime.opens = 0;
+    ioTime.openScan = 0;
+    ioTime.openJson = 0;
+    ioTime.openDecode = 0;
+    ioTime.openDocBytes = 0;
+    ioTime.openUnzip = 0;
+    ioTime.openBuild = 0;
+    ioTime.openHistory = 0;
+    ioTime.openJsonWait = 0;
+    ioTime.openPngWait = 0;
   },
 };
 

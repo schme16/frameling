@@ -468,6 +468,7 @@ export const loadTuning = { minDocJson: 1 << 20 };
 /** What `doc.json` inflates to, from the zip's directory alone (nothing is inflated); 0 when it cannot say. */
 function docJsonSize(bytes: Uint8Array): number {
   let size = 0;
+  const t = nowMs();
   try {
     unzipSync(bytes, {
       filter: (f) => {
@@ -476,8 +477,10 @@ function docJsonSize(bytes: Uint8Array): number {
       },
     });
   } catch {
+    ioTime.openScan += nowMs() - t;
     return 0;
   }
+  ioTime.openScan += nowMs() - t;
   return size;
 }
 
@@ -491,25 +494,39 @@ export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
   let parsed: { raw: unknown } | null = null;
   if (docJsonSize(bytes) >= loadTuning.minDocJson) {
     try {
+      const tWait = nowMs();
       const inflated = await inflateDocInWorker(bytes);
-      if (inflated) parsed = { raw: JSON.parse(strFromU8(inflated)) };
+      ioTime.openJsonWait += nowMs() - tWait;
+      if (inflated) {
+        const tJson = nowMs();
+        ioTime.openDocBytes += inflated.length;
+        const text = strFromU8(inflated);
+        ioTime.openDecode += nowMs() - tJson;
+        parsed = { raw: JSON.parse(text) };
+        ioTime.openJson += nowMs() - tJson;
+      }
     } catch {
       // Left for the plain path below, which reports it.
     }
   }
   const entries = unzipFile(bytes, !!parsed);
+  const tPng = nowMs();
   const decoded = await decodePngsInWorkers(entries);
+  ioTime.openPngWait += nowMs() - tPng;
   return loadEntries(entries, decoded, parsed ?? undefined);
 }
 
 /** The entries of a file that matter. With `skipDoc` (its JSON was read elsewhere) `doc.json` is left uninflated. */
 function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
+  const t = nowMs();
   try {
     entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/') || f.name.startsWith('history/')) });
   } catch {
+    ioTime.openUnzip += nowMs() - t;
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
+  ioTime.openUnzip += nowMs() - t;
   if (!entries['manifest.json'] || (!skipDoc && !entries['doc.json'])) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   return entries;
 }
@@ -517,21 +534,29 @@ function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Arra
 function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>, parsed?: { raw: unknown }): LoadedFile {
   let manifest: Manifest;
   let raw: any;
+  const tJson = nowMs();
   try {
     manifest = JSON.parse(strFromU8(entries['manifest.json']));
     raw = parsed?.raw ?? JSON.parse(strFromU8(entries['doc.json']));
   } catch {
+    ioTime.openJson += nowMs() - tJson;
     throw damaged();
   }
+  ioTime.openJson += nowMs() - tJson;
   if (!isObj(manifest) || manifest.format !== 'frameling' || !isObj(raw)) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   const version = manifest.version;
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw damaged();
   if (version > NEWEST_FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
 
   const warnings: string[] = [];
+  const tBuild = nowMs();
   raw = migrate(raw, version);
   const doc = buildDoc(raw, entries, warnings, decoded);
+  ioTime.openBuild += nowMs() - tBuild;
+  const tHist = nowMs();
   const history = raw.history === undefined ? undefined : readHistory(doc, raw.history, entries[HISTORY_STEPS_ENTRY], entries[HISTORY_DATA_ENTRY]);
+  ioTime.openHistory += nowMs() - tHist;
+  ioTime.opens++;
   return { doc, manifest, warnings, ...(history ? { history } : {}) };
 }
 
