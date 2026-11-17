@@ -1,0 +1,302 @@
+{
+ "label": "r2-switch-before",
+ "when": "2026-11-17T09:05:10.613Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "stress-vector": {
+   "nodes": 2961,
+   "timelineNodes": 2145,
+   "keys": 385,
+   "rows": 48,
+   "hittable": 2145,
+   "parts": [
+    [
+     "tl-cel",
+     385
+    ],
+    [
+     "tl-dkey-cell",
+     385
+    ],
+    [
+     "tl-dkey",
+     385
+    ],
+    [
+     "tl-cel-handle",
+     385
+    ],
+    [
+     "circle",
+     184
+    ],
+    [
+     "svg",
+     87
+    ],
+    [
+     "tl-icon-btn",
+     63
+    ],
+    [
+     "path",
+     48
+    ],
+    [
+     "tl-row",
+     48
+    ],
+    [
+     "tl-layer",
+     40
+    ]
+   ],
+   "layers": 40
+  }
+ },
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 489.4,
+   "worstTaskMs": 67,
+   "runs": [
+    489.4,
+    529.6,
+    480.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 81.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     191.2
+    ],
+    [
+     "Y$e index-D9QDUvx6.js:165",
+     86.1
+    ],
+    [
+     "removeChild :0",
+     13.2
+    ],
+    [
+     "(garbage collector) :0",
+     13.1
+    ],
+    [
+     "setAttribute :0",
+     11.9
+    ],
+    [
+     "ece index-D9QDUvx6.js:138",
+     8.7
+    ],
+    [
+     "i index-D9QDUvx6.js:180",
+     8.5
+    ],
+    [
+     "(anon) index-D9QDUvx6.js:180",
+     6.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     191.2
+    ],
+    [
+     "(anon) index-D9QDUvx6.js:9",
+     138.8
+    ],
+    [
+     "yd index-D9QDUvx6.js:9",
+     135.8
+    ],
+    [
+     "lf index-D9QDUvx6.js:9",
+     109.3
+    ],
+    [
+     "ff index-D9QDUvx6.js:9",
+     108.6
+    ],
+    [
+     "cf index-D9QDUvx6.js:9",
+     108.6
+    ],
+    [
+     "r index-D9QDUvx6.js:165",
+     99.7
+    ],
+    [
+     "Y$e index-D9QDUvx6.js:165",
+     99.3
+    ],
+    [
+     "Ad index-D9QDUvx6.js:9",
+     90.8
+    ],
+    [
+     "jd index-D9QDUvx6.js:9",
+     90.5
+    ],
+    [
+     "Kc index-D9QDUvx6.js:9",
+     53.3
+    ],
+    [
+     "Rd index-D9QDUvx6.js:9",
+     45
+    ],
+    [
+     "bd index-D9QDUvx6.js:9",
+     45
+    ],
+    [
+     "jee index-D9QDUvx6.js:9",
+     44.6
+    ],
+    [
+     "Ec index-D9QDUvx6.js:9",
+     42
+    ],
+    [
+     "(anon) index-D9QDUvx6.js:180",
+     40.9
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     122.7
+    ],
+    [
+     "FireAnimationFrame",
+     107.2
+    ],
+    [
+     "Layout",
+     89.5
+    ],
+    [
+     "Layerize",
+     32.4
+    ],
+    [
+     "PrePaint",
+     21.7
+    ],
+    [
+     "#UpdateLayoutTree",
+     18.7
+    ],
+    [
+     "#Layout",
+     15.3
+    ],
+    [
+     "Commit",
+     8.7
+    ],
+    [
+     "HitTest",
+     5.7
+    ],
+    [
+     "UpdateLayoutTree",
+     5.4
+    ],
+    [
+     "MajorGC",
+     4.2
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     4
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     3.6
+    ],
+    [
+     "MinorGC",
+     3
+    ],
+    [
+     "V8.GC_SCAVENGER",
+     2.8
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE",
+     2.8
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     2
+    ],
+    [
+     "UpdateLayer",
+     1.6
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+     1.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     1.4
+    ],
+    [
+     "V8.GC_SCAVENGER_SCAVENGE_ROOTS",
+     1.1
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     1.1
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_START",
+     0.8
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+     0.7
+    ],
+    [
+     "V8.GC_MC_MARK",
+     0.7
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     0.5
+    ],
+    [
+     "V8.GC_MC_FINISH",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}

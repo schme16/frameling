@@ -1,0 +1,242 @@
+{
+ "label": "r2-switch-two-after",
+ "when": "2026-11-17T09:12:03.286Z",
+ "gpu": {
+  "mode": "card",
+  "requested": "card",
+  "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+  "software": false,
+  "compositing": "enabled",
+  "canvas2d": "enabled",
+  "rasterization": "enabled",
+  "vulkan": "enabled_on",
+  "webgl2": true,
+  "colourProfile": "sRGB (pinned)",
+  "platform": "linux",
+  "session": "x11",
+  "electron": "45.3.0",
+  "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan enabled_on | sRGB (pinned) | x11"
+ },
+ "cpuSlowdown": 4,
+ "reps": 3,
+ "pages": {
+  "two-boards": {
+   "nodes": 1369,
+   "timelineNodes": 379,
+   "keys": 41,
+   "rows": 3,
+   "hittable": 379,
+   "parts": [
+    [
+     "circle",
+     42
+    ],
+    [
+     "tl-cel",
+     41
+    ],
+    [
+     "tl-dkey-cell",
+     41
+    ],
+    [
+     "tl-dkey",
+     41
+    ],
+    [
+     "tl-cel-handle",
+     41
+    ],
+    [
+     "svg",
+     27
+    ],
+    [
+     "rect",
+     21
+    ],
+    [
+     "tl-icon-btn",
+     15
+    ],
+    [
+     "path",
+     13
+    ],
+    [
+     "tl-clip-edge",
+     10
+    ]
+   ],
+   "layers": 3
+  }
+ },
+ "results": [
+  {
+   "doc": "two-boards",
+   "action": "switch-artboard",
+   "busyMs": 170.5,
+   "worstTaskMs": 16.2,
+   "runs": [
+    170.5,
+    183.8,
+    160.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 28.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     87.6
+    ],
+    [
+     "(garbage collector) :0",
+     4.5
+    ],
+    [
+     "removeChild :0",
+     4.2
+    ],
+    [
+     "Y$e index-DIv_ME6d.js:165",
+     3.3
+    ],
+    [
+     "HM index-DIv_ME6d.js:152",
+     3.3
+    ],
+    [
+     "Sje index-DIv_ME6d.js:152",
+     2.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     87.6
+    ],
+    [
+     "(anon) index-DIv_ME6d.js:9",
+     56.5
+    ],
+    [
+     "lf index-DIv_ME6d.js:9",
+     52.7
+    ],
+    [
+     "ff index-DIv_ME6d.js:9",
+     52.6
+    ],
+    [
+     "cf index-DIv_ME6d.js:9",
+     52.6
+    ],
+    [
+     "yd index-DIv_ME6d.js:9",
+     52.5
+    ],
+    [
+     "Ad index-DIv_ME6d.js:9",
+     37.3
+    ],
+    [
+     "jd index-DIv_ME6d.js:9",
+     37.2
+    ],
+    [
+     "Kc index-DIv_ME6d.js:9",
+     29.1
+    ],
+    [
+     "Ec index-DIv_ME6d.js:9",
+     21.6
+    ],
+    [
+     "Ro index-DIv_ME6d.js:9",
+     21.5
+    ],
+    [
+     "Nd index-DIv_ME6d.js:9",
+     20
+    ]
+   ],
+   "rendering": [
+    [
+     "Paint",
+     35.9
+    ],
+    [
+     "Layout",
+     23.2
+    ],
+    [
+     "#UpdateLayoutTree",
+     12
+    ],
+    [
+     "#Layout",
+     12
+    ],
+    [
+     "FireAnimationFrame",
+     10.2
+    ],
+    [
+     "Layerize",
+     9.4
+    ],
+    [
+     "PrePaint",
+     7.8
+    ],
+    [
+     "Commit",
+     4.4
+    ],
+    [
+     "HitTest",
+     2.5
+    ],
+    [
+     "MajorGC",
+     2.4
+    ],
+    [
+     "V8.GC_MARK_COMPACTOR",
+     2.4
+    ],
+    [
+     "UpdateLayoutTree",
+     1.3
+    ],
+    [
+     "UpdateLayer",
+     1.2
+    ],
+    [
+     "V8.GC_MC_EVACUATE",
+     1.2
+    ],
+    [
+     "V8.GC_MC_INCREMENTAL",
+     0.9
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS",
+     0.9
+    ],
+    [
+     "V8.GC_MC_CLEAR",
+     0.5
+    ],
+    [
+     "V8.GC_MC_EVACUATE_UPDATE_POINTERS_TO_NEW_ROOTS",
+     0.5
+    ]
+   ],
+   "cache": null,
+   "note": ""
+  }
+ ]
+}
