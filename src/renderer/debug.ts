@@ -62,6 +62,7 @@ import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
 import { pickKeys, setTl } from '../timeline/state';
+import { setToothBudget } from '../effects/toothShape';
 import { celRef } from '../timeline/tracks';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
 import { allChoices, askAgain, forgetAnswers } from '../core/choices';
@@ -73,6 +74,8 @@ if (new URLSearchParams(location.search).has('debug')) {
   saveGuard.freeze = !new URLSearchParams(location.search).has('nofreeze');
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
+    // How many pixels of paper tooth pictures are kept, for the zoom check's small cache run (scripts/perf/zoomfile.cjs).
+    toothBudget: setToothBudget,
     run: (id: string) => getCommand(id)?.run(),
     // Turns down Quill's offer of the pen check, so a shot drawn with a pretend pen is not covered by it.
     declinePenCheck: () => setCheckMemory({ declined: true }),

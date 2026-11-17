@@ -26,6 +26,7 @@ import { tipReach } from '../geometry/tip';
 import { setTipOutliner, strokeParts } from './tips';
 import { setRepeatHelpers } from './repeats';
 import { moveForRepeat, shapeCentre } from '../canvas/repeatMove';
+import { unitBegin, unitEnd } from './slice';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -288,16 +289,34 @@ export function drawShapeFx(g: Ctx2D, s: Shape, at?: DrawContext): void {
 
 /** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
 export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
+  // Each shape (or a whole pixel or tile drawing) is a unit a progressive redraw can stop after and pick up from (src/core/slice.ts).
   if (d.kind === 'vector') {
-    for (const s of d.shapes) drawShapeFx(g, s, at);
-  } else if (d.kind === 'tilemap') {
-    if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
-  } else if (d.kind === 'pixel') {
-    if (d.width < 1 || d.height < 1) return;
-    const prev = g.imageSmoothingEnabled;
-    g.imageSmoothingEnabled = false;
-    g.drawImage(pixelCanvas(d), (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize, d.width * pixelSize, d.height * pixelSize);
-    g.imageSmoothingEnabled = prev;
+    for (const s of d.shapes) {
+      const u = unitBegin();
+      if (u === 'skip') continue;
+      if (u === 'stop') return;
+      try {
+        drawShapeFx(g, s, at);
+      } finally {
+        unitEnd();
+      }
+    }
+    return;
+  }
+  const u = unitBegin();
+  if (u !== 'draw') return;
+  try {
+    if (d.kind === 'tilemap') {
+      if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
+    } else if (d.kind === 'pixel') {
+      if (d.width < 1 || d.height < 1) return;
+      const prev = g.imageSmoothingEnabled;
+      g.imageSmoothingEnabled = false;
+      g.drawImage(pixelCanvas(d), (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize, d.width * pixelSize, d.height * pixelSize);
+      g.imageSmoothingEnabled = prev;
+    }
+  } finally {
+    unitEnd();
   }
 }
 

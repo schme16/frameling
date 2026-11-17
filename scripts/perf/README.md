@@ -177,6 +177,20 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
   exactly the outline the finished stroke gets. It stays well under a millisecond at 2,000 points on a fast CPU and
   about 1.3 ms with the CPU throttled 4x, so it was left alone.
 
+## Zooming a heavy drawing: zoomfile.cjs
+
+`zoomfile.cjs` zooms a drawing with paper tooth on its lines (a real file with `ZOOM_DOC=/path/file.frameling`, or a stand-in) by
+wheel notches and by a pinch, in and out, then stops at four depths and watches the frames while the sharp picture catches up.
+`--check` fails when drawing a frame takes too long (p95, worst, long tasks), when the sharp picture does not land after a stop,
+or when anything is still owed or drawn while idle; the limits scale with how slow the page's JavaScript measures at the start, so
+a busy machine does not fail it (details in docs/testing.md). `ZOOM_HASH=1` hashes the settled picture at five views;
+`ZOOM_PROFILE=1` prints a CPU profile; `ZOOM_DPR=2`, `ZOOM_THROTTLE=4` and `ZOOM_TOOTH_BUDGET=3000000` stand in for a sharper
+screen, a slower machine and a drawing with more lines than the cache holds.
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/zoomfile.cjs --check --out scripts/perf/results/zoomfile.json
+```
+
 ## Big brushes: brushsize.cjs
 
 `brushsize.cjs` draws one stroke per tip and size with real pointer events and reports what each pointer move costs: the
