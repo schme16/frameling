@@ -62,7 +62,9 @@ const TAPER_PIXELS = 530;
  * eye against Procreate's own pictures: Graphite ink (0.54) is a loose cloud about half as wide again as its tip, and
  * Basic 01 (1.67) has a ragged edge but is still one stroke.
  */
-const JITTER_THROW = 0.25;
+const JITTER_THROW = 0.19;
+/** How far a jitter throws a dab, as a share of the brush width: it grows faster than the slider does (see JITTER_THROW). */
+const throwOf = (jitter: number): number => JITTER_THROW * Math.pow(jitter, 1.5);
 
 /**
  * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
@@ -99,6 +101,13 @@ const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; grit:
   // spread evenly from pit to peak, which bites harder than a photograph of cloth, so it takes 0.7 of the depth.
   { words: /canvas|linen|laid|weave|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
 ];
+
+/**
+ * A grain picture this shallow (under a quarter of the way down) is left out. Graphite ink asks for 0.16, and Procreate's
+ * own picture of it is solid black in the middle, 56% of its ink fully dark; Frameling's paper at that depth held the
+ * whole stroke back to about 0.9 and greyed it. A paper that shallow barely shows in Procreate, so it comes without one.
+ */
+const SHALLOW_GRAIN = 0.25;
 
 /** How much of a gritty stand in's depth holds the whole stroke back: enough for pin holes, not enough to grey it. */
 const GRIT_HOLD = 0.12;
@@ -314,7 +323,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   // first, which is what made inking pens arrive as clouds (their scatter is 1 and their jitter 0) and then, once
   // scatter was tied to the spacing to stop that, left Graphite ink (jitter 0.54) as a tight band with no cloud.
   const jitter = s.num('plotJitter', 0);
-  let scatter = (jitter * JITTER_THROW) / share;
+  let scatter = throwOf(jitter) / share;
   // Files from before Procreate 5 (they have no `shapeCount`) had one scatter that threw the tip as well as turning it:
   // Sequins (2015) has scatter 0.877, no jitter, and its sequins sit above and below the line. There the throw goes
   // with the spacing, which fits Sequins as it was measured, because its dabs sit a whole width apart.
@@ -323,7 +332,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   if (pics.thumb) {
     try {
       // Only a new file's jitter makes a cloud; an old file's scatter goes with wide spacing, where each dab stands alone.
-      const thrown = (jitter * JITTER_THROW) / share > 0.05;
+      const thrown = throwOf(jitter) / share > 0.1;
       const ran = { length: 0 };
       let wide = strokeWidth(pics.thumb, budget, thrown, across < 0.5 && s.num('shapeRotation', 0) >= 0.5, ran);
       // The picture is drawn with the taper on, so its widest point may be short of the brush's real width. A short
@@ -345,7 +354,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
         wide /= Math.max(0.2, most);
       }
       // The picture shows the tip and the throw together; most dabs land well inside the furthest throw.
-      if (wide !== null) measured = Math.round(clamp(wide / (across + (thrown ? (1.5 * jitter * JITTER_THROW) / share : 0)), MIN_SIZE, MAX_SIZE));
+      if (wide !== null) measured = Math.round(clamp(wide / (across + (thrown ? (1.5 * throwOf(jitter)) / share : 0)), MIN_SIZE, MAX_SIZE));
     } catch (e) {
       if (!(e instanceof BrushProblem)) throw e;
     }
@@ -450,7 +459,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
 
   // ---- grain (the paper)
   const grainName = (s.str('bundledGrainPath') ?? '').replace(/^.*[/\\]/, '').slice(0, 40);
-  if (pics.grain) {
+  const grainDepth = clamp(s.num('grainDepth', 0.8), 0, 1);
+  if (pics.grain && grainDepth < SHALLOW_GRAIN) {
+    changed.push(`Its grain picture is only ${pct(grainDepth)} deep, so faint that Procreate's own picture of the stroke shows none of it, and here it greyed the line. It came without the paper.`);
+  } else if (pics.grain) {
     try {
       const g = decodeTipPng(pics.grain);
       budget.spend(g.w * g.h);
@@ -469,7 +481,7 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
         raw.grain = {
           picture: r.picture,
           ...(s.bool('textureInverted') ? { invert: true } : {}),
-          depth: clamp(s.num('grainDepth', 0.8), 0, 1),
+          depth: grainDepth,
           scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
           // A grain picture stays put under the stroke. Procreate's movement runs from stamped (0) to rolling (1),
           // but Barely There is nearly stamped (0.16) and its picture is a sparse wisp, which only a paper that

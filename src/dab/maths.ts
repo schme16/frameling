@@ -169,7 +169,7 @@ export function cleanDab(raw: unknown, base: DabBrush = DEFAULT_DAB): DabBrush {
 export function sameDab(a: DabBrush, b: DabBrush): boolean {
   const close = (x: number, y: number) => Math.abs(x - y) < 1e-6;
   // The picture only counts when a picture tip is using it.
-  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && !!a.picture.soft === !!b.picture.soft && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join());
+  const pic = (a.tip !== 'picture' && b.tip !== 'picture') || (a.picture === null && b.picture === null) || (!!a.picture && !!b.picture && (a.picture === b.picture || (a.picture.w === b.picture.w && a.picture.h === b.picture.h && a.picture.keep === b.picture.keep && !!a.picture.soft === !!b.picture.soft && a.picture.cells.join() === b.picture.cells.join() && a.picture.colours.join() === b.picture.colours.join())));
   return (
     a.tip === b.tip && pic && close(a.size, b.size) && close(a.hardness, b.hardness) && close(a.angle, b.angle) && close(a.roundness, b.roundness) && a.follow === b.follow &&
     close(a.spacing, b.spacing) && close(a.scatter, b.scatter) && close(a.sizeJitter, b.sizeJitter) && close(a.angleJitter, b.angleJitter) && close(a.flow, b.flow) && close(a.opacity, b.opacity) && a.aliased === b.aliased &&
@@ -185,15 +185,63 @@ export const snapAxis = (v: number, across: number): number => (Math.round(acros
 
 // ---------------------------------------------------------------- the picture tip
 
-/** A picture tip made ready to sample: which cells have paint, and the colour and see-through of each. */
-export interface Picture {
+/** One resolution of a picture tip: which cells have paint, and the colour and see-through of each. */
+export interface PictureLevel {
   w: number;
   h: number;
   /** 1 where the picture has paint, 0 where it is clear (a soft tip has the shades between). */
   mask: Float32Array;
   /** Each cell's own colour (r, g, b, a), for a picture that keeps its colours. */
   rgba: Uint8Array;
+}
+
+/** A picture tip made ready to sample: the tip as it is saved, and smaller copies of it for dabs much smaller than it. */
+export interface Picture extends PictureLevel {
   keep: boolean;
+  /** The tip, then the same tip halved, then halved again (up to two smaller copies; only a tip too big to draw by hand has them). */
+  levels: PictureLevel[];
+}
+
+/** Tips this big or smaller are drawn by hand or are pixel art, and are always sampled as they are. */
+const MIN_LEVELLED_SIDE = 33;
+const MAX_HALVINGS = 2;
+
+/** A level at half the width and height: each cell the average of the four under it (past the edge counts as clear), colour weighted by paint. */
+function halve(l: PictureLevel): PictureLevel {
+  const w = Math.ceil(l.w / 2);
+  const h = Math.ceil(l.h / 2);
+  const mask = new Float32Array(w * h);
+  const rgba = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      let a = 0;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let dy = 0; dy < 2; dy++)
+        for (let dx = 0; dx < 2; dx++) {
+          const sx = x * 2 + dx;
+          const sy = y * 2 + dy;
+          if (sx >= l.w || sy >= l.h) continue;
+          const i = sy * l.w + sx;
+          const ca = l.rgba[i * 4 + 3];
+          m += l.mask[i];
+          a += ca;
+          r += l.rgba[i * 4] * ca;
+          g += l.rgba[i * 4 + 1] * ca;
+          b += l.rgba[i * 4 + 2] * ca;
+        }
+      const o = y * w + x;
+      mask[o] = m / 4;
+      if (a > 0) {
+        rgba[o * 4] = Math.round(r / a);
+        rgba[o * 4 + 1] = Math.round(g / a);
+        rgba[o * 4 + 2] = Math.round(b / a);
+        rgba[o * 4 + 3] = Math.round(a / 4);
+      }
+    }
+  return { w, h, mask, rgba };
 }
 
 const made = new WeakMap<PixelStamp, Picture>();
@@ -217,9 +265,21 @@ export function pictureOf(st: PixelStamp): Picture {
       rgba[i * 4 + 3] = c[3];
     }
   }
-  const p = { w: st.w, h: st.h, mask, rgba, keep: st.keep };
+  const levels: PictureLevel[] = [{ w: st.w, h: st.h, mask, rgba }];
+  if (Math.max(st.w, st.h) >= MIN_LEVELLED_SIDE) for (let i = 0; i < MAX_HALVINGS; i++) levels.push(halve(levels[i]));
+  const p: Picture = { w: st.w, h: st.h, mask, rgba, keep: st.keep, levels };
   made.set(st, p);
   return p;
+}
+
+/**
+ * Which copy of a picture to sample for a dab drawn `s` pixels to a cell (a dab's width over the picture's longer side): the
+ * saved tip down to half a pixel a cell, then a copy halved once, then twice. A tip sampled from four cells while it is
+ * drawn at a quarter of its size skips most of it, and a stroke of such dabs shimmers; each halving takes the average first.
+ */
+export function levelFor(pic: Picture, s: number): number {
+  const want = s >= 0.5 ? 0 : s >= 0.25 ? 1 : 2;
+  return Math.min(want, pic.levels.length - 1);
 }
 
 // ---------------------------------------------------------------- one dab
@@ -267,11 +327,14 @@ export function samplerFor(b: DabBrush, size: number, angle: number, crisp: bool
   if (b.tip === 'picture' && b.picture) {
     const pic = pictureOf(b.picture);
     const s = Math.max(0.01, size) / Math.max(pic.w, pic.h);
-    const hw = pic.w / 2;
-    const hh = pic.h / 2;
-    const inv = 1 / s;
+    // A crisp dab takes the saved tip as it is; a smooth one much smaller than the tip takes a smaller copy of it.
+    const level = crisp ? 0 : levelFor(pic, s);
+    const k = 1 / (1 << level);
+    const hw = (pic.w / 2) * k;
+    const hh = (pic.h / 2) * k;
+    const inv = k / s;
     const invRho = inv / rho;
-    const { mask, rgba, w, h } = pic;
+    const { mask, rgba, w, h } = pic.levels[level];
     const reach = Math.hypot(pic.w * s, pic.h * s * rho) / 2;
     const at = (ix: number, iy: number): number => (ix < 0 || iy < 0 || ix >= w || iy >= h ? 0 : mask[iy * w + ix]);
     return {

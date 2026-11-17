@@ -101,8 +101,8 @@ describe('a pen control on opacity', () => {
 
 describe('a soft tip from a brush file may be finer than one drawn by hand', () => {
   const stamp = (side: number, soft: boolean) => ({ w: side, h: side, colours: ['#00000080'], cells: new Array(side * side).fill(1), keep: false, ...(soft ? { soft: true } : {}) });
-  it('reads back at up to 128 across when it is soft, and at 32 when it is not', () => {
-    expect(MAX_SOFT_STAMP).toBe(128);
+  it('reads back at up to 256 across when it is soft, and at 32 when it is not', () => {
+    expect(MAX_SOFT_STAMP).toBe(256);
     expect(readPixelStamp(stamp(MAX_SOFT_STAMP, true))).not.toBeNull();
     expect(readPixelStamp(stamp(MAX_SOFT_STAMP + 1, true))).toBeNull();
     expect(readPixelStamp(stamp(MAX_STAMP, false))).not.toBeNull();
