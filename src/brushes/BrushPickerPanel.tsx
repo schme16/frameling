@@ -390,11 +390,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
           </div>
           <div className="pk-sliders">
             {liveSpec ? (
-              <Slider label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
+              <Slider control="picker-size" label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
             ) : (
               <>
-                <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-                <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
+                <Slider control="picker-size" label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+                <Slider control="picker-smoothing" label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
               </>
             )}
           </div>

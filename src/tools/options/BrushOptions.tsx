@@ -48,7 +48,7 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
     drawPreviewStroke(g, pts, { ...brush, size }, inkFor(c, color, 3));
   }, [brush, color, theme]);
-  return <canvas className="cv-preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
+  return <canvas className="cv-preview" data-control="preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }
 
 export function BrushOptions() {
@@ -70,15 +70,15 @@ function VectorBrushOptions() {
       <BrushPreview brush={brush} color={color} />
       <BrushPresetPicker title="Brush" />
       <TipOptions />
-      <Slider label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+      <Slider control="size" label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
       <BrushPresetActions />
       <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
-        <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
-        <Toggle label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
-        {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
-        <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
-        <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+        <Slider control="smoothing" label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
+        <Toggle control="size-follows" label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
+        {pressure && <Slider control="size-follows-amount" label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
+        <Slider control="taper-start" label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
+        <Slider control="taper-end" label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
         <HoldToTidyOptions />
         <PenOptions tool="brush" opacity />
         <MirrorOptions />
@@ -95,9 +95,10 @@ function PixelBrushOptions() {
   const range = useBrushRange(true);
   return (
     <div className="cv-options">
-      {!stamp && <Slider label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />}
+      {!stamp && <Slider control="size" label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />}
       {!stamp && size > 2 && (
         <Choice
+          control="plain-shape"
           label="Shape"
           value={shape}
           options={[
@@ -107,7 +108,7 @@ function PixelBrushOptions() {
           onChange={(v) => setToolSettings({ pixelBrushShape: v })}
         />
       )}
-      {!stamp && <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />}
+      {!stamp && <Toggle control="pixel-perfect" label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />}
       <PixelStampOptions />
       <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>
       <PenOptions tool="brush" size />

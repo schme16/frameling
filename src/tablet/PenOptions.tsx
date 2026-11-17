@@ -18,6 +18,7 @@ export function PenOptions({ tool, size, opacity, flow }: PenOptionsProps) {
   return (
     <div className="tb-options">
       <Slider
+        control="stabilizer"
         label="Stabilizer"
         value={t.stabilizer}
         min={0}
@@ -28,6 +29,7 @@ export function PenOptions({ tool, size, opacity, flow }: PenOptionsProps) {
       />
       {t.stabilizer > 0 && (
         <Choice
+          control="stabilizer-style"
           label="Stabilizer style"
           value={t.stabMode}
           options={[
@@ -37,10 +39,10 @@ export function PenOptions({ tool, size, opacity, flow }: PenOptionsProps) {
           onChange={(v) => setToolPen(tool, { stabMode: v })}
         />
       )}
-      {seen && size && <Toggle label="Pressure changes size" checked={t.size} onChange={(v) => setToolPen(tool, { size: v })} hint={t.size ? 'Press harder for a bigger mark. Set how pressure feels in Preferences, Pen and tablet.' : undefined} />}
-      {seen && opacity && <Toggle label="Pressure changes strength" checked={t.opacity} onChange={(v) => setToolPen(tool, { opacity: v })} hint={t.opacity ? 'A light touch makes a fainter line. It applies to the whole line.' : undefined} />}
-      {seen && flow && <Toggle label="Pressure changes how much" checked={t.flow} onChange={(v) => setToolPen(tool, { flow: v })} hint={t.flow ? 'Press harder to spray more.' : undefined} />}
-      {seen && <Toggle label="Leaning changes size" checked={t.tilt} onChange={(v) => setToolPen(tool, { tilt: v })} hint={t.tilt ? 'Lean the pen over for a bigger mark, like shading with the side of a pencil.' : undefined} />}
+      {seen && size && <Toggle control="pen-size" label="Pressure changes size" checked={t.size} onChange={(v) => setToolPen(tool, { size: v })} hint={t.size ? 'Press harder for a bigger mark. Set how pressure feels in Preferences, Pen and tablet.' : undefined} />}
+      {seen && opacity && <Toggle control="pen-strength" label="Pressure changes strength" checked={t.opacity} onChange={(v) => setToolPen(tool, { opacity: v })} hint={t.opacity ? 'A light touch makes a fainter line. It applies to the whole line.' : undefined} />}
+      {seen && flow && <Toggle control="pen-flow" label="Pressure changes how much" checked={t.flow} onChange={(v) => setToolPen(tool, { flow: v })} hint={t.flow ? 'Press harder to spray more.' : undefined} />}
+      {seen && <Toggle control="pen-tilt" label="Leaning changes size" checked={t.tilt} onChange={(v) => setToolPen(tool, { tilt: v })} hint={t.tilt ? 'Lean the pen over for a bigger mark, like shading with the side of a pencil.' : undefined} />}
     </div>
   );
 }
