@@ -188,6 +188,8 @@ export interface Dab {
   size: number;
   angle: number;
   flow: number;
+  /** The most paint this dab may leave on a pixel (a share of the brush's opacity), left out when nothing drives it. */
+  cap?: number;
   /** Colour pushes from the brush's dynamics, left out when there are none (see dynamics.ts). */
   mix?: number;
   hue?: number;
@@ -459,6 +461,7 @@ export class DabPath {
     if (b.angleJitter > 0) angle += (rng() * 2 - 1) * Math.PI * b.angleJitter;
     const d: Dab = { x, y, size: s, angle, flow: at.flow };
     const fx = at.fx;
+    if (fx.opacity < 1) d.cap = fx.opacity;
     if (fx.mix) d.mix = fx.mix;
     if (fx.hue) d.hue = fx.hue;
     if (fx.sat) d.sat = fx.sat;

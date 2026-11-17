@@ -29,6 +29,7 @@ export const SOURCE_WORDS: Record<DynSource, { label: string; hint: string }> = 
 const OFFERED: Record<DynTarget, DynSource[]> = {
   size: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   flow: ['pressure', 'tilt', 'speed', 'fade', 'random'],
+  opacity: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   angle: ['pressure', 'tilt', 'twist', 'speed', 'direction', 'random'],
   scatter: ['pressure', 'tilt', 'speed', 'fade', 'random'],
   mix: DYN_SOURCES,
@@ -37,16 +38,17 @@ const OFFERED: Record<DynTarget, DynSource[]> = {
   lightness: ['random'],
 };
 
-const ROW: Record<'size' | 'flow' | 'angle' | 'scatter' | 'mix', { label: string; hint: string; amount: (v: number, backwards: boolean) => string }> = {
+const ROW: Record<'size' | 'flow' | 'opacity' | 'angle' | 'scatter' | 'mix', { label: string; hint: string; amount: (v: number, backwards: boolean) => string }> = {
   size: { label: 'Size follows', hint: 'What makes the dab bigger or smaller as you draw.', amount: (v) => `down to ${100 - v}%` },
   flow: { label: 'Flow follows', hint: 'What makes the paint heavier or lighter as you draw.', amount: (v) => `down to ${100 - v}%` },
+  opacity: { label: 'Opacity follows', hint: 'What makes the whole line fainter or stronger as you draw. Unlike flow, going over the same spot does not build it back up.', amount: (v) => `down to ${100 - v}%` },
   angle: { label: 'Angle follows', hint: 'What turns the tip as you draw.', amount: (v) => `${Math.round(v * 3.6)}° of turn` },
   scatter: { label: 'Scatter follows', hint: 'What lets the dabs wander off the line.', amount: (v) => `${v}% of the size` },
   mix: { label: 'Colour mixes toward the fill colour', hint: 'Paints in the colour you picked and shifts toward the Fill colour as the source rises.', amount: (v) => `${v}% of the way` },
 };
 
 /** One setting driven by one source: a picker for the source, and how much of the range it uses. */
-function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 'angle' | 'scatter' | 'mix'; set?: (patch: Partial<DabBrush>) => void }) {
+function RouteRow({ b, to, set = setDab }: { b: DabBrush; to: 'size' | 'flow' | 'opacity' | 'angle' | 'scatter' | 'mix'; set?: (patch: Partial<DabBrush>) => void }) {
   const r = routeFor(b.dynamics, to);
   const words = ROW[to];
   const extra = b.dynamics.filter((x) => x.to === to).length - 1;
@@ -109,6 +111,7 @@ export function DynamicsSection({ handle = PIXEL_HANDLE }: { handle?: DabHandle 
     <MoreOptions name={handle.fold} label="Pen, speed and fade" hint="Pressure, tilt, speed or a fade-out changing the size, flow, angle or scatter.">
       <RouteRow b={b} to="size" set={set} />
       <RouteRow b={b} to="flow" set={set} />
+      <RouteRow b={b} to="opacity" set={set} />
       <RouteRow b={b} to="angle" set={set} />
       <RouteRow b={b} to="scatter" set={set} />
       {usesFade && <Slider label="Fade length" value={b.fadeLength} min={FADE_RANGE.min} max={Math.min(FADE_RANGE.max, 600)} typeMax={FADE_RANGE.max} curve format={(v) => `${v} pixels of line`} onChange={(v) => set({ fadeLength: v })} hint="How far the stroke goes before a fade has run out." />}
@@ -171,6 +174,10 @@ export function PaperSection() {
           <Slider label="How much it catches" value={Math.round(g.depth * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, depth: v / 100 } })} hint="At the top the paint only lands on the high points. Lower the flow to see it best." />
           <Slider label="Grain size" value={g.scale} min={GRAIN_SCALE.min} max={GRAIN_SCALE.max} format={(v) => (v === 1 ? 'Finest' : `${v} pixels a bump`)} onChange={(v) => setDab({ grain: { ...g, scale: v } })} />
           <Toggle label="A new patch of paper for every dab" checked={g.moving} onChange={(moving) => setDab({ grain: { ...g, moving } })} hint="Off: the paper is fixed to the page, so two strokes over each other catch on the same bumps. On: it is different at every dab, so overlapping dabs fill each other in." />
+          <Toggle label="Thin the paint instead of stopping it" checked={!!g.thin} onChange={(thin) => setDab({ grain: { ...g, thin: thin || undefined } })} hint="Off: light paint only lands on the high points, so a light touch is specks. On: the paper thins every dab a little, so a light touch is an even grey with the paper showing through. Brushes from Procreate come with this on." />
+          {!g.moving && (
+            <Slider label="How much it holds the whole line back" value={Math.round((g.hold ?? 1) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setDab({ grain: { ...g, hold: v >= 100 ? undefined : v / 100 } })} hint="At the top a dip in the paper never takes more than the paper lets it, however long you work the spot. At the bottom, going over and over fills every dip in the end." />
+          )}
         </>
       )}
     </PaperGroup>

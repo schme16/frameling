@@ -132,6 +132,8 @@ export class DabStroke {
   private readonly grainDepth: number;
   private readonly grainScale: number;
   private readonly grainMoving: boolean;
+  private readonly grainThin: boolean;
+  private readonly grainHold: number;
   private readonly dual: Uint8Array | null;
   private readonly dualOx: number;
   private readonly dualOy: number;
@@ -167,6 +169,8 @@ export class DabStroke {
     this.grainDepth = g?.depth ?? 0;
     this.grainScale = g?.scale ?? 1;
     this.grainMoving = !!g?.moving;
+    this.grainThin = !!g?.thin;
+    this.grainHold = (g?.depth ?? 0) * (g?.hold ?? 1);
     const d = p.brush.dual;
     this.dual = d ? dualTile(d) : null;
     const start = makeRng((p.seed ?? 1) + 77);
@@ -181,6 +185,7 @@ export class DabStroke {
 
   /** Adds this much paint to a pixel (up to the opacity) and repaints it when its look changed. */
   private touch(x: number, y: number, add: number, cell: Uint8Array, ceiling = 1): void {
+    // `ceiling` already holds the dab's own opacity when a pen control drives it (see stampAt).
     if (this.wrapEdges) {
       x = wrap(x, this.w);
       y = wrap(y, this.h);
@@ -281,6 +286,10 @@ export class DabStroke {
     const grain = this.grainTile;
     const gs = this.grainScale;
     const depth = this.grainDepth;
+    const thin = this.grainThin;
+    const hold = this.grainHold;
+    // A pen control on opacity: this dab can only take a pixel so far, however many like it overlap. A heavier dab later lifts it.
+    const dabCap = d.cap ?? 1;
     const gox = this.gOx;
     const goy = this.gOy;
     const dox = this.dualOx;
@@ -307,14 +316,23 @@ export class DabStroke {
         const c = sm.cov(x + 0.5 - d.x, dy);
         if (c <= 0) continue;
         let add = c * d.flow;
-        let ceiling = 1;
+        let ceiling = dabCap;
         if (grain !== null) {
           const sx = gs > 1 ? Math.floor(x / gs) : x;
           const sy = gs > 1 ? Math.floor(y / gs) : y;
           const height = grain[(((sy + goy) & (TILE - 1)) * TILE) + ((sx + gox) & (TILE - 1))] / 255;
-          add = grainCut(add, height, depth);
-          if (add <= 0) continue;
-          if (!this.grainMoving) ceiling = 1 - depth * (1 - height);
+          if (thin) {
+            // A paper that thins: every dab leaves a share of its paint wherever it lands, so a light touch is an
+            // even grey with the paper showing through, not specks on the peaks. One that stays put still says how
+            // dark each pixel may get in the stroke.
+            add *= 1 - depth * (1 - height);
+            if (add <= 0) continue;
+            if (!this.grainMoving) ceiling = dabCap * (1 - hold * (1 - height));
+          } else {
+            add = grainCut(add, height, depth);
+            if (add <= 0) continue;
+            if (!this.grainMoving) ceiling = dabCap * (1 - hold * (1 - height));
+          }
         }
         this.touch(x, y, add, cell, ceiling);
       }

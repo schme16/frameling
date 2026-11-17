@@ -22,12 +22,12 @@ export interface Tip {
 const FAINT = 6;
 const hex2 = (n: number): string => n.toString(16).padStart(2, '0');
 
-export function tipFrom(w: number, h: number, read: PixelReader, colour: boolean): Tip {
+export function tipFrom(w: number, h: number, read: PixelReader, colour: boolean, most: number = MAX_STAMP): Tip {
   if (!(w >= 1 && h >= 1)) throw new BrushProblem('That brush has no picture in it.');
   const longer = Math.max(w, h);
-  const f = longer > MAX_STAMP ? longer / MAX_STAMP : 1;
-  const ow = Math.max(1, Math.min(MAX_STAMP, Math.round(w / f)));
-  const oh = Math.max(1, Math.min(MAX_STAMP, Math.round(h / f)));
+  const f = longer > most ? longer / most : 1;
+  const ow = Math.max(1, Math.min(most, Math.round(w / f)));
+  const oh = Math.max(1, Math.min(most, Math.round(h / f)));
   const sum = new Float64Array(ow * oh * 4);
   const count = new Float64Array(ow * oh);
   const px = [0, 0, 0, 0];

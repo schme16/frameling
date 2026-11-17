@@ -52,6 +52,7 @@ Nothing changes until you press **Use this tip**. Escape throws the changes away
 
 **What it moves:**
 - **Size** and **Flow:** **How much** says how small or light it gets when the source is at its lowest. 80% goes down to a fifth. **The other way round** flips it, so a fast hand makes a thin line.
+- **Opacity:** like flow, but for the whole line: a light touch stays faint however closely the dabs sit, the way a pencil does.
 - **Angle:** turns the tip, up to a full turn.
 - **Scatter:** lets dabs wander off the line.
 
@@ -113,8 +114,9 @@ See also [layer blend modes](help:blend-modes) and [saved brushes](help:brush-pr
 - **Paper:** smooth, fine, medium, laid or rough. This is the sheet's paper, so it changes for every tool that uses it. **Keep this brush on** one paper if you want this brush to stay put when the sheet changes.
 - **How much it catches:** at the top the paint only lands on the high points. Lower the **Flow** to see it best.
 - **Grain size:** makes each bump a block of pixels, for a chunkier paper.
-- **Use a picture as the paper...:** pick a picture file (a canvas weave, a scribble) and the brush catches on its light parts instead of a paper, the same way it catches on the high points of paper. **Catch on the dark parts instead** swaps them.
-- **A new patch of paper for every dab:** off, the paper is fixed to the page: the dips stay light however long you work a spot. On, every dab finds new paper, so dabs fill each other in, like a sponge.
+- **Use a picture as the paper...:** pick a picture file (a canvas weave, a scribble) and the brush catches on its light parts. **Catch on the dark parts instead** swaps them.
+- **A new patch of paper for every dab:** off, the paper is fixed to the page, so the dips stay light. On, dabs fill each other in, like a sponge.
+- **Thin the paint instead of stopping it:** a light touch is an even wash, not specks. **How much it holds the whole line back:** lower lets a firm line fill in.
 
 **Dual tip:** open **Dual tip** under the Paper box. It is a second tip of little dots. The brush only paints where its dots are. It is most of what makes a Photoshop spatter or bristle brush look the way it does.
 - **Dot shape, Dot size** and **How many dots** set the dots. Every stroke gets its own scatter of them.

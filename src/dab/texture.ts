@@ -21,6 +21,18 @@ export interface Grain {
   scale: number;
   /** False: the paper is fixed to the page, so strokes over each other catch on the same bumps. True: every dab finds the paper in a new place. */
   moving: boolean;
+  /**
+   * True: the paper thins every dab instead of stopping it, so a light touch is an even grey with the paper showing
+   * through. That is how Procreate's grain works, and a brush read from one of its files has it set. Left out: the
+   * paper stops paint that cannot reach a pit, so a light touch is specks on the peaks. Either way a paper that stays
+   * put says how dark a pixel may ever get in one stroke.
+   */
+  thin?: boolean;
+  /**
+   * With a paper that stays put: how much of its depth holds the whole stroke back, 0 (dabs over each other fill every
+   * pit in the end) to 1 (a pit never takes more than the paper lets it). Left out: 1.
+   */
+  hold?: number;
 }
 
 /** A second tip: dots that the first tip is let through (or cut by). */
@@ -61,6 +73,8 @@ export function cleanGrain(raw: unknown): Grain | null {
     depth: r3(num(r.depth, 0, 1, DEFAULT_GRAIN.depth)),
     scale: Math.round(num(r.scale, GRAIN_SCALE.min, GRAIN_SCALE.max, 1)),
     moving: r.moving === true,
+    ...(r.thin === true ? { thin: true } : {}),
+    ...(typeof r.hold === 'number' && Number.isFinite(r.hold) && r.hold < 1 ? { hold: r3(Math.max(0, r.hold)) } : {}),
   };
 }
 
@@ -78,7 +92,7 @@ export function cleanDual(raw: unknown): Dual | null {
   };
 }
 
-export const sameGrain = (a: Grain | null, b: Grain | null): boolean => (a === null || b === null ? a === b : a.paper === b.paper && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && Math.abs(a.depth - b.depth) < 1e-6 && a.scale === b.scale && a.moving === b.moving);
+export const sameGrain = (a: Grain | null, b: Grain | null): boolean => (a === null || b === null ? a === b : a.paper === b.paper && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && Math.abs(a.depth - b.depth) < 1e-6 && a.scale === b.scale && a.moving === b.moving && !!a.thin === !!b.thin && Math.abs((a.hold ?? 1) - (b.hold ?? 1)) < 1e-6);
 export const sameDual = (a: Dual | null, b: Dual | null): boolean => (a === null || b === null ? a === b : a.tip === b.tip && a.size === b.size && samePicture(a.picture, b.picture) && !!a.invert === !!b.invert && (a.scale ?? 1) === (b.scale ?? 1) && Math.abs(a.density - b.density) < 1e-6 && a.cut === b.cut);
 
 /**
@@ -100,7 +114,7 @@ export function grainCut(add: number, height: number, depth: number): number {
 }
 
 /** The tile a grain catches on: its own picture when it has one, else its paper, else the sheet's. */
-export const grainTile = (g: Grain, sheet?: PaperKind): Uint8Array => (g.picture ? grainTileFromPicture(g.picture, !!g.invert) : paperTile(g.paper ?? sheet ?? 'medium'));
+export const grainTile = (g: Grain, sheet?: PaperKind): Uint8Array => (g.picture ? grainTileFromPicture(g.picture, !!g.invert, !!g.thin) : paperTile(g.paper ?? sheet ?? 'medium'));
 
 /** The paper height (0 to 1) under page pixel (x, y), with the grain's scale and an offset for a paper that moves. */
 export function grainHeight(g: { paper: PaperKind; scale: number }, x: number, y: number, ox = 0, oy = 0): number {

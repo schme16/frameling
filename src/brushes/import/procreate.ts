@@ -16,6 +16,7 @@ import { pictureFromPixels } from '../../dab/texturePicture';
 import { parsePlist, PlistDate, Uid, unarchive, type PlistDict, type PlistValue } from './bplist';
 import { decodeTipPng } from './krita';
 import { tipFrom, type PixelReader } from './tip';
+import { MAX_SOFT_STAMP } from '../stamps';
 import { BrushProblem, plural, type ImportedBrush, type ImportResult } from './types';
 import { openZip, type Zip, type ZipItem } from './zip';
 
@@ -38,24 +39,20 @@ export const PIXELS_PER_SIZE = 100;
 const MAX_SIZE = 300;
 
 /**
- * How much of a Procreate paper's depth a stand in paper takes. Procreate's grain bites far less at the same number
- * than Frameling's does, so a 6B pencil at full depth came out as a dotted scrape rather than a gritty line. Settled
- * by eye against Procreate's own picture of the 6B Pencil and the Sketch pencil. It came down from 0.45 once a paper
- * that stays put began holding the whole stroke back as well as each dab (see stroke.ts): with both working at once a
- * deep paper never let the middle of a pencil line go dark, so the stroke read as flat grey where Procreate's has a
- * dark heart and a speckled fringe.
+ * Procreate keeps a tip as a grey picture with the usual screen gamma on it, and paints with it as light, not as the
+ * number in the file: a grey of 20 in 255 lays down under half a percent of paint, not eight. Graphite ink and Velvet int
+ * both have a tip that is 20 all over where it looks black, and Procreate's own pictures of their strokes are clean
+ * between the specks. Read as the plain number, that haze piled up dab on dab into a solid band.
  */
-const GRAIN_DEPTH_SHARE = 0.25;
+const TIP_GAMMA = 2.2;
+const TIP_LIGHT = Array.from({ length: 256 }, (_, v) => 255 * Math.pow(v / 255, TIP_GAMMA));
 
 /**
- * The same again for a grain picture the file carries itself. Procreate's own depth number is on its own scale: Cat
- * Thorne's Basic 01 asks for all of it and still draws a dense black stroke in Procreate, while at full depth here the
- * paper shredded it into patches. A third of the file's depth draws the stroke Procreate shows, ragged edge and all.
+ * How far Procreate's jitter throws a dab off the line, as a share of the brush width for a jitter of 1. Settled by
+ * eye against Procreate's own pictures: Graphite ink (0.54) is a loose cloud about half as wide again as its tip, and
+ * Basic 01 (1.67) has a ragged edge but is still one stroke.
  */
-const PICTURE_DEPTH_SHARE = 0.35;
-
-/** A deep grain picture takes the share; a shallow one is near enough as the file has it. */
-const pictureDepth = (d: number): number => d * (PICTURE_DEPTH_SHARE + (1 - PICTURE_DEPTH_SHARE) * (1 - d));
+const JITTER_THROW = 0.25;
 
 /**
  * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
@@ -74,18 +71,24 @@ const BLANK_GRAIN = /blank/i;
  *
  * So a named paper is matched by its words to the nearest paper Frameling draws itself, and the brush says which one it
  * asked for and which one stood in. Frameling's papers are its own (see texture.ts); nothing is copied out of Procreate.
- * A paper whose words say nothing about tooth (splatters, drips) gets no stand in: Shenbot's Inking Pen names
- * "Brush-Artery-Splatters.png" and Procreate's own picture of its stroke is smooth, so guessing a paper there made the
- * pens speckly in a way the file never asked for.
+ * A paper whose words say nothing about tooth gets no stand in. Splatters does count as grit: Shenbot's Inking Pen
+ * names it and draws a smooth line, but that is its grain being stamped (movement 0.04), where every dab finds new
+ * paper and they fill each other in. Dry Ink 1 names the same paper, rolling, and its stroke is rough all through.
  */
-const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; what: string }[] = [
-  // Frameling's papers are tooth on the page, the same size whatever brush crosses them, while Procreate's grain is
-  // scaled to the brush. So the paper is picked by how the stroke reads, not by the name: the fine tooth is what grit
-  // looks like under a pencil, and the coarse ones come out as blobs at any brush size worth drawing with. Settled by
-  // eye against Procreate's own picture of the 6B Pencil (139 pixels across) and the Sketch pencil (17).
-  { words: /charcoal|coarse|corse|rough|grit|chalk|sand|noise|grain|graphite|pencil|concrete|stone|gravel/i, paper: 'fine', what: 'a gritty paper' },
-  { words: /pastel|canvas|cotton|linen|watercolou?r|laid|weave|paper|cloth/i, paper: 'laid', what: 'a paper with a weave' },
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; grit: boolean; share: number; what: string }[] = [
+  // Grit (charcoal, graphite, sand): the paint catches on the peaks first, so the soft edge of the tip and a light
+  // touch break into specks, and the middle of a firm stroke fills in nearly solid. That is Procreate's own picture of
+  // the 6B Pencil: 97% covered in the middle with pin holes through it, ragged and speckled at the edge and the ends.
+  // So it keeps Frameling's own way with paper (see `grainCut`), and holds the whole stroke back only a little.
+  { words: /charcoal|coarse|corse|rough|grit|chalk|sand|noise|grain|graphite|pencil|concrete|stone|gravel|splatter/i, paper: 'fine', grit: true, share: 0.75, what: 'a gritty paper' },
+  // A weave thins the paint, as Procreate's grain does. Frameling's laid paper has its bumps spread evenly from pit to
+  // peak, which bites harder than a photograph of paper, so it takes 0.7 of the depth: Procreate's own picture of
+  // Shenbot's Background brush (Pastel Paper, full depth) is about two thirds covered in the middle of the stroke.
+  { words: /pastel|canvas|cotton|linen|watercolou?r|laid|weave|paper|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
 ];
+
+/** How much of a gritty stand in's depth holds the whole stroke back: enough for pin holes, not enough to grey it. */
+const GRIT_HOLD = 0.12;
 
 // ---------------------------------------------------------------- the settings
 
@@ -158,7 +161,7 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
   const { w, h, px } = decodeTipPng(png);
   budget.spend(w * h);
   const lum = (i: number): number => (px[i] * 77 + px[i + 1] * 151 + px[i + 2] * 28) >> 8;
-  const paint = (i: number): number => ((inverted ? 255 - lum(i) : lum(i)) * px[i + 3]) / 255;
+  const paint = (i: number): number => (TIP_LIGHT[inverted ? 255 - lum(i) : lum(i)] * px[i + 3]) / 255;
   // A tip that is white all over (some brushes paint with a plain square) is a square, not a picture of one.
   let weakest = 255;
   for (let i = 0; i < px.length && weakest > 250; i += 4) weakest = Math.min(weakest, paint(i));
@@ -167,7 +170,7 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
     out[3] = paint((y * w + x) * 4);
   };
   if (weakest > 250) return { solid: true as const, w, h };
-  return { solid: false as const, w, h, tip: tipFrom(w, h, read, false) };
+  return { solid: false as const, w, h, tip: tipFrom(w, h, read, false, MAX_SOFT_STAMP) };
 }
 
 /**
@@ -182,7 +185,7 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
  * Checked against the three brushes whose dabs were measured by hand off their pictures: Sequins comes out 57 where the
  * hand said 57, Seed 219 where the hand said 190, Plain Stitch 27 where the hand said 34.
  */
-function strokeWidth(png: Uint8Array, budget: Budget): number | null {
+function strokeWidth(png: Uint8Array, budget: Budget, thrown = false, slanted = false): number | null {
   const { w, h, px } = decodeTipPng(png);
   budget.spend(w * h);
   if (w < 8 || h < 8) return null;
@@ -190,17 +193,25 @@ function strokeWidth(png: Uint8Array, budget: Budget): number | null {
   for (let x = 0; x < w; x++) {
     let best = 0;
     let run = 0;
+    let first = -1;
+    let last = -1;
     for (let y = 0; y < h; y++) {
       if (px[(y * w + x) * 4 + 3] > 12) {
         run++;
         if (run > best) best = run;
+        if (first < 0) first = y;
+        last = y;
       } else run = 0;
     }
-    if (best > 0) runs.push(best);
+    // A brush that throws its dabs off the line draws a cloud: there the longest unbroken run is one speck, so the
+    // whole reach of the cloud is measured instead, and the caller takes the throw back off it.
+    if (best > 0) runs.push(thrown ? last - first + 1 : best);
   }
   if (runs.length < 8) return null;
   runs.sort((a, b) => a - b);
-  const wide = runs[Math.floor(runs.length * 0.9)];
+  // A long thin tip that turns along the line (a stitch, a dash) is cut on the slant by most columns, which reads it
+  // thicker than it is: there the middle column is the fair one, not the ninth of ten.
+  const wide = runs[Math.floor(runs.length * (slanted ? 0.5 : 0.9))];
   // A stroke that fills the picture top to bottom was drawn bigger than the picture: it cannot say how wide the dab is.
   return wide > 0 && wide < h - 1 ? wide : null;
 }
@@ -219,7 +230,7 @@ const SOURCES: { word: string; from: DynSource; what: string }[] = [
 ];
 const TARGETS: { words: string[]; to: DynTarget; what: string }[] = [
   { words: ['Size'], to: 'size', what: 'size' },
-  { words: ['Opacity'], to: 'flow', what: 'opacity' },
+  { words: ['Opacity'], to: 'opacity', what: 'opacity' },
   { words: ['Hue'], to: 'hue', what: 'hue' },
   { words: ['Saturation'], to: 'saturation', what: 'saturation' },
   { words: ['Brightness', 'Lightness'], to: 'lightness', what: 'brightness' },
@@ -228,7 +239,6 @@ const TARGETS: { words: string[]; to: DynTarget; what: string }[] = [
 /** Settings that Frameling has nothing for, said only when the brush really uses them (more than this). */
 const DROPS: { keys: string[]; flag?: boolean; over?: number; words: string }[] = [
   { keys: ['taperStartLength', 'taperEndLength', 'pencilTaperStartLength', 'pencilTaperEndLength'], over: 0.001, words: 'Its taper (the line thinning out at the start and end of a stroke).' },
-  { keys: ['shapeCount', 'shapeCountJitter'], over: 0.001, words: 'Its count (several stamps at each spot).' },
   { keys: ['shapeFlipXJitter', 'shapeFlipYJitter'], flag: true, words: 'Its random flipping of the tip.' },
   { keys: ['shapeAzimuth', 'shapeRoll'], flag: true, words: "Its tip turning with the pen's direction or roll." },
   { keys: ['plotSmoothing', 'plotMovingAverageStabilization', 'plotFFTSmoothingAmount', 'dynamicsPressureSmoothing'], over: 0.01, words: "Its stroke smoothing. Frameling's stabiliser is a setting of the tool, not of the brush." },
@@ -266,7 +276,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     }
   } else {
     raw.tip = 'round';
-    raw.hardness = 1;
+    // A brush with a paper is a pencil or a chalk, and Procreate's tips for those fade at the edge, which is where the
+    // paper shows through. A pen with no paper keeps a hard edge.
+    const hasPaper = !!pics.grain || (!!s.str('bundledGrainPath') && !BLANK_GRAIN.test(s.str('bundledGrainPath') ?? '') && PAPER_STAND_INS.some((g) => g.words.test(s.str('bundledGrainPath') ?? '')));
+    raw.hardness = hasPaper ? 0.65 : 1;
     const named = (s.str('bundledShapePath') ?? '').replace(/^.*[/\\]/, '').slice(0, 40);
     changed.push(`Its tip is one of Procreate's own built in shapes${named ? ` ("${named}")` : ''}, which is not in the file, so it came as a plain round tip.`);
   }
@@ -281,11 +294,24 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   // The size comes from Procreate's own picture of the stroke when the file has one, measured across the line, because
   // `paintSize` cannot be turned into pixels. Without a picture it falls back to the plain `paintSize` reading.
   const paintSize = s.num('paintSize', 0.2);
+  // How far a dab lands off the line is Procreate's jitter (Stroke path), a share of the brush width. Its scatter
+  // (Shape) is something else: how far the tip is turned at random for each dab. The two were read as one thing at
+  // first, which is what made inking pens arrive as clouds (their scatter is 1 and their jitter 0) and then, once
+  // scatter was tied to the spacing to stop that, left Graphite ink (jitter 0.54) as a tight band with no cloud.
+  const jitter = s.num('plotJitter', 0);
+  let scatter = (jitter * JITTER_THROW) / share;
+  // Files from before Procreate 5 (they have no `shapeCount`) had one scatter that threw the tip as well as turning it:
+  // Sequins (2015) has scatter 0.877, no jitter, and its sequins sit above and below the line. There the throw goes
+  // with the spacing, which fits Sequins as it was measured, because its dabs sit a whole width apart.
+  if (!s.has('shapeCount')) scatter += (s.num('shapeScatter', 0) * s.num('plotSpacing', 0.1)) / share;
   let measured: number | null = null;
   if (pics.thumb) {
     try {
-      const wide = strokeWidth(pics.thumb, budget);
-      if (wide !== null) measured = Math.round(clamp(wide / across, MIN_SIZE, MAX_SIZE));
+      // Only a new file's jitter makes a cloud; an old file's scatter goes with wide spacing, where each dab stands alone.
+      const thrown = (jitter * JITTER_THROW) / share > 0.05;
+      const wide = strokeWidth(pics.thumb, budget, thrown, across < 0.5 && s.num('shapeRotation', 0) >= 0.5);
+      // The picture shows the tip and the throw together; most dabs land well inside the furthest throw.
+      if (wide !== null) measured = Math.round(clamp(wide / (across + (thrown ? (1.5 * jitter * JITTER_THROW) / share : 0)), MIN_SIZE, MAX_SIZE));
     } catch (e) {
       if (!(e instanceof BrushProblem)) throw e;
     }
@@ -298,52 +324,42 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     );
   else if (wanted < MIN_SIZE) changed.push(`It asked for a brush ${wanted} pixel${wanted === 1 ? '' : 's'} across, too small to draw with, so it came at ${MIN_SIZE}. Procreate's sizes are a share of its own slider and do not say how many pixels they are, so set the size you want after it lands.`);
   // Procreate counts spacing and scatter in the whole tip picture; ours count in the part you can see, which is `share` of it.
-  const spacing = s.num('plotSpacing', 0.1);
+  // Procreate can stamp the tip several times at each step (count, 1 to 16), each turned its own way. Frameling lays
+  // one dab a step, so the same number of dabs comes from steps that many times closer.
+  const count = 1 + Math.round(clamp(s.num('shapeCount', 0), 0, 1) * 15);
+  const spacing = s.num('plotSpacing', 0.1) / count;
+  if (count > 1) changed.push(`It stamps its tip ${count} times at each step. Frameling lays one dab a step, so its steps came ${count} times closer instead.`);
   raw.spacing = spacing / share;
   if ((raw.spacing as number) > 4) changed.push(`Its spacing of ${pct(spacing)} was wider than Frameling goes, so it came at the widest, 400%.`);
   if (s.num('plotSpacingVersion', 0) >= 1 && (raw.spacing as number) > 0.06) changed.push('This file keeps its spacing the way newer Procreate does. That has not been checked, so the dabs may sit closer or further apart than in Procreate.');
-  // How far a dab lands off the line, and this is the part that used to make inking pens arrive as wide clouds.
-  //
-  // `shapeScatter` is not a share of the brush width on its own: it goes with the spacing. Procreate's own picture of
-  // the stroke, which every .brush file carries, settles it both ways. Sequins has shapeScatter 0.877 with the dabs a
-  // whole width apart, and its sequins really do sit above and below the line. Shenbot's Dry Ink v2 has shapeScatter 1,
-  // more than Sequins, with spacing 0, and its stroke is a clean thin tapered line with nothing off it. The same
-  // number cannot mean the same throw in both. Multiplying by the spacing fits every real file seen: a brush whose
-  // dabs sit on top of each other has nowhere to scatter to, and one that stamps a shape every width or so scatters
-  // as far as the gap. It also leaves Sequins where it was measured, because its spacing is almost exactly 1.
-  //
-  // This is a model fitted to the real files, not something Procreate documents, so the brush says so.
-  const rawSpacing = s.num('plotSpacing', 0.1);
-  let scatter = (s.num('shapeScatter', 0) * rawSpacing) / share;
-  const jitter = s.num('plotJitter', 0);
-  if (jitter > 0.001) {
-    scatter += (jitter * rawSpacing) / share;
-    changed.push('Its jitter came as scatter, which spreads dabs in every direction, not only across the line.');
-  }
   raw.scatter = clamp(scatter, 0, 2);
-  if (scatter > 0.01) changed.push("How far its dabs land off the line was worked out from the scatter and the spacing together, matched against Procreate's own picture of the stroke in the file. Procreate does not say how it does this, so a very scattered brush may sit differently.");
+  if (scatter > 0.01) changed.push("Its jitter came as scatter, which spreads dabs in every direction, not only across the line. How far it throws them was matched by eye against Procreate's own picture of the stroke.");
   if (scatter > 2) changed.push('Its scatter was more than Frameling goes, so it came at the most, 200%.');
   const rot = s.num('shapeRotation', 0);
   if (rot >= 0.5) raw.follow = true;
   if (rot > 0.01 && rot < 0.99) changed.push(`Its tip follows the line ${pct(rot)} of the way; Frameling's tip either follows it or does not, so it came as ${rot >= 0.5 ? 'following' : 'not following'}.`);
-  // Procreate's scatter turns the tip as well as throwing it. Its own pictures say so: Cat Thorne's sequins lie at a
-  // different angle in every stamp, and Graphite ink, whose tip is a page of little scratches, draws a cloud of specks
-  // rather than the rows of combed scratches an unturned tip gives. A brush that leaves scatter alone (Plain Stitch)
-  // keeps its stitches lined up along the line. Frameling turns a tip at random or not at all, so any scatter at all
-  // means the whole way round.
-  if (s.bool('shapeRandomise') || (s.num('shapeScatter', 0) > 0.01 && !raw.follow)) {
-    raw.angleJitter = 1;
-    changed.push('Its tip is turned at random for every dab. Frameling turns a tip the whole way round or not at all, so a brush that only turned its tip a little now turns it the whole way.');
-  }
+  // Procreate's scatter turns the tip at random for each dab, up to the whole way round at 1. Its own pictures say
+  // so: Cat Thorne's sequins lie at a different angle in every stamp, and Graphite ink, whose tip is a page of little
+  // scratches, draws a cloud of specks rather than rows of combed scratches. A brush that leaves scatter alone (Plain
+  // Stitch) keeps its stitches lined up along the line.
+  const turn = s.bool('shapeRandomise') ? 1 : clamp(s.num('shapeScatter', 0), 0, 1);
+  if (turn > 0.01) raw.angleJitter = turn;
   const fixed = s.num('shapeAngle', 0);
   if (Math.abs(fixed) > 0.001) dropped.push('Its fixed tip angle. Frameling has not seen how Procreate stores it, so the tip came at its own angle.');
 
   // ---- opacity and what the pen does
-  raw.opacity = clamp(s.num('paintOpacity', 1), 0.05, 1);
+  // `paintOpacity` is where the opacity slider was left, like `paintSize` for size: Procreate's own picture of the
+  // stroke is drawn at full strength whatever it says (the Sketch pencil is saved at 53% and its picture is black).
+  raw.opacity = 1;
+  const slider = s.num('paintOpacity', 1);
+  if (slider < 0.97) changed.push(`It was saved with the opacity slider at ${pct(slider)}. It came at full strength, as in Procreate's own picture of the stroke: turn the opacity down if you want it as it was left.`);
   raw.flow = 1;
+  // Under a gritty paper a lighter touch reaches fewer of the peaks, so the line breaks into specks instead of going
+  // evenly faint: there Procreate's opacity controls come as flow. Everywhere else they come as opacity.
+  const standIn = pics.grain ? undefined : PAPER_STAND_INS.find((g) => g.words.test((s.str('bundledGrainPath') ?? '').replace(/^.*[/\\]/, '')));
+  const fade: DynTarget = standIn?.grit && !BLANK_GRAIN.test(s.str('bundledGrainPath') ?? '') ? 'flow' : 'opacity';
   const routes: DynRoute[] = [];
   const used: string[] = [];
-  let opacityRoute = false;
   for (const src of SOURCES)
     for (const tg of TARGETS) {
       const key = tg.words.map((w) => `dynamics${src.word}${w}`).find((k) => s.has(k));
@@ -351,7 +367,9 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       const v = s.num(key, 0);
       const amount = Math.abs(v);
       if (amount < 0.02) continue;
-      const route: DynRoute = { from: src.from, to: tg.to, amount: Math.min(1, amount), invert: v < 0 };
+      // Procreate's speed runs the other way from its pressure: a positive number thins or fades the line as the hand
+      // goes faster, so a slow hand draws at full strength.
+      const route: DynRoute = { from: src.from, to: tg.to === 'opacity' ? fade : tg.to, amount: Math.min(1, amount), invert: src.from === 'speed' ? v > 0 : v < 0 };
       const curve = cleanCurve(s.curve(`${key}Curve`));
       if (curve) route.curve = curve;
       if (routes.length >= MAX_ROUTES) {
@@ -360,17 +378,15 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       }
       routes.push(route);
       used.push(`${src.what} on ${tg.what}`);
-      if (tg.to === 'flow') opacityRoute = true;
     }
   raw.dynamics = routes;
   if (used.length)
-    changed.push(`Its pen controls (${used.slice(0, 6).join(', ')}${used.length > 6 ? ', and more' : ''}) are read by their names only: they have not been checked against Procreate, so they may feel different.${opacityRoute ? ' Opacity controls came as flow ones: the paint thins per dab, so on a brush with close dabs a fade is shorter than in Procreate.' : ''}`);
+    changed.push(`Its pen controls (${used.slice(0, 6).join(', ')}${used.length > 6 ? ', and more' : ''}) are read by their names only: they have not been checked against Procreate, so they may feel different.`);
   const jSize = Math.abs(s.num('dynamicsJitterSize', 0));
   if (jSize >= 0.02) raw.sizeJitter = Math.min(1, jSize);
   const jOpacity = Math.abs(s.num('dynamicsJitterOpacity', 0));
   if (jOpacity >= 0.02 && routes.length < MAX_ROUTES) {
-    routes.push({ from: 'random', to: 'flow', amount: Math.min(1, jOpacity), invert: false });
-    changed.push('Its opacity jitter came as flow jitter.');
+    routes.push({ from: 'random', to: fade, amount: Math.min(1, jOpacity), invert: false });
   }
   for (const [word, to] of [['Hue', 'hue'], ['Saturation', 'saturation'], ['Lightness', 'lightness'], ['Brightness', 'lightness']] as const) {
     const j = Math.abs(s.num(`dynamicsJitter${word}`, 0));
@@ -385,14 +401,25 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     try {
       const g = decodeTipPng(pics.grain);
       budget.spend(g.w * g.h);
+      // Procreate's brightness and contrast for the grain are baked into the picture: Basic 01 lifts its grain by
+      // three quarters, which is why it draws a dense stroke with only the darkest threads of the paper showing.
+      const bright = clamp(s.num('textureBrightness', 0), -1, 1);
+      const contrast = clamp(s.num('textureContrast', 0), -1, 1);
+      if (Math.abs(bright) > 0.01 || Math.abs(contrast) > 0.01) {
+        const k = 1 + contrast;
+        for (let i = 0; i < g.px.length; i += 4) for (let c = 0; c < 3; c++) g.px[i + c] = clamp((g.px[i + c] - 127.5) * k + 127.5 + bright * 255, 0, 255);
+      }
       const r = pictureFromPixels(g.w, g.h, g.px);
       if (r.ok) {
         raw.grain = {
           picture: r.picture,
           ...(s.bool('textureInverted') ? { invert: true } : {}),
-          depth: clamp(pictureDepth(s.num('grainDepth', 0.8)), 0, 1),
+          depth: clamp(s.num('grainDepth', 0.8), 0, 1),
           scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
-          moving: s.num('textureMovement', 0) >= 0.5,
+          // Procreate's movement runs from stamped (0: every dab carries the grain with it) to rolling (1: the grain
+          // lies still under the stroke like paper). So rolling is our paper that stays put.
+          moving: s.num('textureMovement', 1) < 0.5,
+          thin: true,
         };
         changed.push('Its grain picture came as a small repeating paper. Which way round the light and dark parts catch the paint, and how big the paper is, have not been checked against Procreate.');
       }
@@ -405,11 +432,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     if (stand) {
       raw.grain = {
         paper: stand.paper,
-        depth: clamp(s.num('grainDepth', 1) * GRAIN_DEPTH_SHARE, 0.1, 1),
+        depth: clamp(s.num('grainDepth', 1) * stand.share, 0.1, 1),
         scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
-        // A stand in paper stays put. Frameling's moving grain picks a fresh spot on the paper for every dab, and a
-        // pencil lays its dabs a twentieth of its width apart, so a moving paper averages itself away to a solid line.
-        moving: false,
+        moving: s.num('textureMovement', 1) < 0.5,
+        ...(stand.grit ? { hold: GRIT_HOLD } : { thin: true }),
       };
       changed.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, so ${stand.what} of Frameling's own stood in for it. Pick another in the brush options if it is not the tooth you wanted.`);
     } else {

@@ -9,9 +9,9 @@ FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 BOLD = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 PAD, HEAD, FOOT = 16, 34, 6
 TITLES = {
-    'Sequins': 'Sequins (CC0, versluis.com)',
+    'Sequins': 'Scatter matches. The tip is read as light now (through the screen gamma), which is why the thumbnail looked half as bright as the tip picture.',
     'Plain_Stitch': 'Plain Stitch (CC0, versluis.com)',
-    'Seed': 'Seed (MIT, CSP2PC)',
+    'Seed': 'The press fades the stroke in and out in both. It comes as opacity now, so the fade is as long as the press, however close the dabs.',
 }
 PANELS = [
     ('thumb', "Procreate's own picture of the stroke"),

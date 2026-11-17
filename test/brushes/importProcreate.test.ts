@@ -358,9 +358,9 @@ describe('the real Procreate brushes', () => {
     expect(d.follow).toBe(true);
     // The stitch is a long thin shape: about half the picture wide and a seventh of that tall.
     expect(d.picture!.w).toBeGreaterThan(d.picture!.h * 2);
-    // Measured off Procreate's picture: the stitch is 12 pixels across the line, and the tip's longer side (the brush's
-    // size) is about three and a half times that.
-    expect(d.size).toBe(43);
+    // Measured off Procreate's picture, down the middle column of ten because most columns cut a turned stitch on the
+    // slant. A stitch read off the picture by hand is 34 pixels long.
+    expect(d.size).toBe(39);
     // 0.551 of the whole picture is nearly one stitch length (0.54 of the picture), so the stitches sit end to end with a gap.
     expect(d.spacing).toBeGreaterThan(0.9);
     expect(d.spacing).toBeLessThan(1.1);
@@ -399,14 +399,13 @@ describe('the real Procreate brushes', () => {
     expect(b.changed.join(' ')).toMatch(/measured off Procreate's own picture/);
     // plotSpacing 0.0026 is closer than Frameling's closest, which is 1%.
     expect(d.spacing).toBe(0.01);
-    expect(d.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 1, invert: false }]);
+    expect(d.dynamics).toEqual([{ from: 'pressure', to: 'opacity', amount: 1, invert: false }]);
     // grainDepth is 1, but the grain is Procreate's blank one, which catches nothing: so there is no grain.
     expect(d.grain).toBe(null);
     expect(d.dual).toBe(null);
     expect(d.wet).toBe(0);
     expect(b.dropped).toEqual([]);
     expect(b.changed.join(' ')).toMatch(/read by their names only/);
-    expect(b.changed.join(' ')).toMatch(/flow/);
   });
 
   it('is found by the file ending, and by what is inside when the ending says nothing', () => {
@@ -422,9 +421,13 @@ describe('the real Procreate brushes', () => {
 describe('settings, built to the layout', () => {
   it('size, opacity and roundness', () => {
     // No stroke picture in this made up file, so the size falls back to paintSize.
-    const d = one(brush({ paintSize: 0.5, paintOpacity: 0.6, shapeRoundness: 0.4 })).dab;
+    const b = one(brush({ paintSize: 0.5, paintOpacity: 0.6, shapeRoundness: 0.4 }));
+    const d = b.dab;
     expect(d.size).toBeCloseTo(0.5 * PIXELS_PER_SIZE * 0.7, -1);
-    expect(d.opacity).toBe(0.6);
+    // paintOpacity is where the slider was left, like paintSize: Procreate's own picture of the stroke is drawn at
+    // full strength whatever it says. So the brush comes at full strength and says where the slider was.
+    expect(d.opacity).toBe(1);
+    expect(b.changed.join(' ')).toMatch(/opacity slider at 60%/);
     expect(d.roundness).toBe(0.4);
   });
 
@@ -438,6 +441,27 @@ describe('settings, built to the layout', () => {
     // The wrong way round paints the corners and not the disc.
     const wrong = one(brush({ shapeInverted: true }, { 'Shape.png': discPng(64, 255, 0) })).dab;
     expect(wrong.picture!.cells.join()).not.toBe(white.picture!.cells.join());
+  });
+
+  it('the tip is read as light, not as the number in the file: a dark grey haze is next to nothing', () => {
+    // Graphite ink and Velvet int are 20 in 255 all over where they look black. As the plain number that is 8% of
+    // paint on every dab, which piled up into a solid band; as light it is under half a percent, and is trimmed away.
+    const hazy = one(brush({}, { 'Shape.png': discPng(64, 255, 20) })).dab;
+    const clean = one(brush({}, { 'Shape.png': discPng(64, 255, 0) })).dab;
+    expect(hazy.picture!.w).toBe(clean.picture!.w);
+    expect(hazy.picture!.cells.join()).toBe(clean.picture!.cells.join());
+    // A mid grey lays down about a fifth of the paint, not half.
+    const mid = one(brush({}, { 'Shape.png': discPng(64, 128, 0) })).dab;
+    const alpha = parseInt(mid.picture!.colours[mid.picture!.cells[Math.floor(mid.picture!.cells.length / 2)] - 1].slice(7, 9), 16) / 255;
+    expect(alpha).toBeGreaterThan(0.15);
+    expect(alpha).toBeLessThan(0.3);
+  });
+
+  it('a big tip keeps up to 128 pixels across, so scratches and bristles survive', () => {
+    const d = one(brush({}, { 'Shape.png': discPng(512, 255, 0) })).dab;
+    expect(d.picture!.soft).toBe(true);
+    expect(Math.max(d.picture!.w, d.picture!.h)).toBeGreaterThan(64);
+    expect(Math.max(d.picture!.w, d.picture!.h)).toBeLessThanOrEqual(128);
   });
 
   it('a shape that is all see-through has nothing to paint with, so it is refused', () => {
@@ -457,33 +481,43 @@ describe('settings, built to the layout', () => {
     expect(b.changed.join(' ')).toMatch(/Brush-Preset-Soft\.png.*round tip/);
   });
 
-  it('scatter, jitter, rotation and the random turn', () => {
-    const b = one(brush({ shapeScatter: 0.3, plotJitter: 0.1, plotSpacing: 1, shapeRotation: 1, shapeRandomise: true }));
-    expect(b.dab.scatter).toBeGreaterThan(0.3);
+  it('jitter throws the dabs, scatter turns the tip, rotation follows the line', () => {
+    const b = one(brush({ shapeCount: 0, shapeScatter: 0.3, plotJitter: 1, plotSpacing: 1, shapeRotation: 1 }));
+    // A quarter of the width for a jitter of 1 (in the part of the tip you can see), whatever the spacing.
+    expect(b.dab.scatter).toBeGreaterThan(0.24);
+    expect(b.dab.scatter).toBeLessThan(0.5);
+    expect(one(brush({ shapeCount: 0, plotJitter: 1, plotSpacing: 0 })).dab.scatter).toBe(b.dab.scatter);
     expect(b.dab.follow).toBe(true);
-    expect(b.dab.angleJitter).toBe(1);
+    expect(b.dab.angleJitter).toBe(0.3);
     expect(b.changed.join(' ')).toMatch(/jitter came as scatter/);
-    expect(b.changed.join(' ')).toMatch(/turned at random/);
+    expect(one(brush({ shapeCount: 0, shapeRandomise: true })).dab.angleJitter).toBe(1);
   });
 
-  it('scatter turns the tip too, unless the tip follows the line', () => {
-    // Procreate's scatter turns the shape as well as throwing it, so any scatter at all means a full random turn.
-    expect(one(brush({ shapeScatter: 0.3, plotSpacing: 1 })).dab.angleJitter).toBe(1);
-    // A tip told to follow the line keeps following it: the two cannot both happen, and following is the clearer ask.
-    expect(one(brush({ shapeScatter: 0.3, plotSpacing: 1, shapeRotation: 1 })).dab.angleJitter).toBe(0);
-    expect(one(brush({ shapeScatter: 0, plotSpacing: 1 })).dab.angleJitter).toBe(0);
+  // The finding that fixed Graphite ink and the inking pens together. In a file from Procreate 5 on, scatter (Shape) is
+  // how far the tip is turned at random and jitter (Stroke path) is how far a dab is thrown off the line. Dry Ink v2
+  // has scatter 1 and jitter 0 and draws a clean line; Graphite ink has jitter 0.54 and draws a cloud.
+  it('in a newer file scatter never throws a dab, however far apart the dabs are', () => {
+    const d = one(brush({ shapeCount: 0, shapeScatter: 1, plotSpacing: 1 })).dab;
+    expect(d.scatter).toBe(0);
+    expect(d.angleJitter).toBe(1);
+    expect(one(brush({ shapeCount: 0, shapeScatter: 0, plotSpacing: 1 })).dab.angleJitter).toBe(0);
   });
 
-  // The finding that fixed the inking pens. Procreate's own picture of the stroke, which every .brush carries, shows
-  // Sequins (scatter 0.877, dabs a width apart) throwing its sequins off the line, and Dry Ink v2 (scatter 1, spacing
-  // 0) drawing a clean thin line with nothing off it. So the number is not a share of the brush width on its own: it
-  // goes with the spacing, and a brush whose dabs sit on top of each other has nowhere to scatter to.
-  it('scatter goes with the spacing: the same number scatters a stamped brush and not a solid one', () => {
+  // Files from before Procreate 5 have no `shapeCount`, and one scatter that threw the tip as well as turning it:
+  // Sequins (2015) has scatter 0.877, no jitter, and its sequins sit above and below the line. There the throw goes
+  // with the spacing.
+  it('in an older file scatter throws the dabs too, and goes with the spacing', () => {
     const stamped = one(brush({ shapeScatter: 1, plotSpacing: 1 }));
     const solid = one(brush({ shapeScatter: 1, plotSpacing: 0 }));
     expect(stamped.dab.scatter).toBeGreaterThan(0.8);
     expect(solid.dab.scatter).toBe(0);
-    expect(stamped.changed.join(' ')).toMatch(/scatter and the spacing together/);
+    expect(stamped.dab.angleJitter).toBe(1);
+  });
+
+  it('count is that many times more dabs: the steps come that much closer', () => {
+    const one1 = one(brush({ shapeCount: 0, plotSpacing: 0.8 })).dab;
+    const many = one(brush({ shapeCount: 1, plotSpacing: 0.8 })).dab;
+    expect(many.spacing).toBeCloseTo(one1.spacing / 16, 2);
   });
 
   it('a scatter or spacing past what Frameling goes is held, and says so', () => {
@@ -504,8 +538,11 @@ describe('settings, built to the layout', () => {
     const r = b.dab.dynamics;
     expect(r.find((x) => x.from === 'pressure' && x.to === 'size')).toMatchObject({ amount: 0.6, invert: false });
     expect(r.find((x) => x.from === 'pressure' && x.to === 'size')?.curve).toBeTruthy();
-    expect(r.find((x) => x.from === 'tilt' && x.to === 'flow')).toMatchObject({ amount: 0.5, invert: true });
-    expect(r.find((x) => x.from === 'speed' && x.to === 'hue')).toBeTruthy();
+    // Opacity comes as opacity: a light touch stays faint however closely the dabs sit.
+    expect(r.find((x) => x.from === 'tilt' && x.to === 'opacity')).toMatchObject({ amount: 0.5, invert: true });
+    // Speed runs the other way from pressure in Procreate: a positive number fades the line as the hand goes faster.
+    expect(r.find((x) => x.from === 'speed' && x.to === 'hue')).toMatchObject({ invert: true });
+    expect(one(brush({ dynamicsSpeedSize: -0.4 })).dab.dynamics[0]).toMatchObject({ from: 'speed', to: 'size', invert: false });
     expect(r.find((x) => x.from === 'twist')).toBeUndefined();
     expect(b.changed.join(' ')).toMatch(/pressure on size, tilt on opacity, speed on hue/);
   });
@@ -515,7 +552,7 @@ describe('settings, built to the layout', () => {
     expect(d.sizeJitter).toBe(0.4);
     expect(d.dynamics).toEqual(
       expect.arrayContaining([
-        { from: 'random', to: 'flow', amount: 0.5, invert: false },
+        { from: 'random', to: 'opacity', amount: 0.5, invert: false },
         { from: 'random', to: 'hue', amount: 0.2, invert: false },
       ]),
     );
@@ -532,9 +569,9 @@ describe('settings, built to the layout', () => {
   it('what has no equivalent is named, only when the brush really uses it', () => {
     const plain = one(brush({}));
     expect(plain.dropped).toEqual([]);
-    const b = one(brush({ taperStartLength: 0.5, shapeCount: 0.3, plotSmoothing: 0.4, metallicAmount: 0.7, burntEdgesAmount: 0.2, wetEdgesAmount: 0.3, dynamicsGlaze: true, dynamicsBlur: 0.5, shapeAzimuth: true, shapeAngle: 1.2 }));
+    const b = one(brush({ taperStartLength: 0.5, plotSmoothing: 0.4, metallicAmount: 0.7, burntEdgesAmount: 0.2, wetEdgesAmount: 0.3, dynamicsGlaze: true, dynamicsBlur: 0.5, shapeAzimuth: true, shapeAngle: 1.2 }));
     const said = b.dropped.join(' | ');
-    for (const w of [/taper/, /count/, /smoothing/, /metallic/, /burnt edges/, /wet edges/, /glazing/, /bleed and blur/, /direction or roll/, /fixed tip angle/]) expect(said).toMatch(w);
+    for (const w of [/taper/, /smoothing/, /metallic/, /burnt edges/, /wet edges/, /glazing/, /bleed and blur/, /direction or roll/, /fixed tip angle/]) expect(said).toMatch(w);
   });
 
   it('a blend mode is left out with its number, a dual brush is left out, the wet mix is kept', () => {
@@ -554,23 +591,35 @@ describe('settings, built to the layout', () => {
     for (let i = 0; i < 64 * 64; i++) noise.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);
     const grainPng = encodePng({ width: 64, height: 64, pixels: noise });
     const withPicture = one(brush({ grainDepth: 0.5, textureScale: 2, textureMovement: 1, textureInverted: true }, { 'Grain.png': grainPng })).dab;
-    // A file's own grain picture comes in gentler too: Procreate's depth number bites far less there than here.
-    expect(withPicture.grain).toMatchObject({ scale: 2, moving: true, invert: true });
-    expect(withPicture.grain!.depth).toBeCloseTo(0.3375, 2);
+    // The depth is the file's own, and the paper thins the paint the way Procreate's does. Movement runs from stamped
+    // (0) to rolling (1), and rolling is a paper that stays put.
+    expect(withPicture.grain).toMatchObject({ scale: 2, moving: false, invert: true, thin: true, depth: 0.5 });
+    expect(one(brush({ textureMovement: 0.1 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ moving: true });
     expect(withPicture.grain?.picture?.side).toBeGreaterThanOrEqual(8);
+    // The grain's brightness is baked into the picture: lifted all the way, there is nothing left to catch on.
+    expect(one(brush({ textureBrightness: 1 }, { 'Grain.png': grainPng })).dab.grain).toBe(null);
     // Procreate's own papers are not in the file, only named. A name that says what tooth it has gets the nearest
     // paper Frameling draws itself, so a pencil arrives gritty rather than smooth, and the brush says which stood in.
-    const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1 }));
-    expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false });
-    // A stand in paper is gentler than the file asks, because Frameling's papers bite harder than Procreate's.
-    expect(named.dab.grain!.depth).toBeCloseTo(0.25, 2);
+    const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1, dynamicsPressureOpacity: 0.5 }));
+    // Grit keeps Frameling's own way with paper (specks on the peaks first) and holds the whole stroke back only a
+    // little, so a firm stroke fills in nearly solid. Under it, opacity controls come as flow.
+    expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false, depth: 0.75, hold: 0.12 });
+    expect(named.dab.grain!.thin).toBeUndefined();
+    expect(named.dab.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 0.5, invert: false }]);
+    // A pencil's stand in tip fades at the edge, which is where the paper shows through.
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg' }, {}, false)).dab.hardness).toBe(0.65);
     expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
-    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid' });
-    // A name that says nothing about tooth gets no stand in: Shenbot's Inking Pen names "Brush-Artery-Splatters.png"
-    // and Procreate's own picture of its stroke is smooth, so guessing a paper there made the pens speckly.
-    const vague = one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', grainDepth: 0.7 }));
+    // A weave thins the paint, at 0.7 of the depth.
+    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7 });
+    // A name that says nothing about tooth gets no stand in, and says so.
+    const vague = one(brush({ bundledGrainPath: 'Brush-Artery-Ribbons.png', grainDepth: 0.7 }));
     expect(vague.dab.grain).toBe(null);
-    expect(vague.dropped.join(' ')).toMatch(/Brush-Artery-Splatters\.png.*no paper/);
+    expect(vague.dropped.join(' ')).toMatch(/Brush-Artery-Ribbons\.png.*no paper/);
+    // Splatters is grit. Shenbot's Inking Pen names it and draws a smooth line, which looked like a reason to leave it
+    // out, but the pen is smooth because its grain is stamped (movement 0.04): every dab finds new paper and they fill
+    // each other in. Dry Ink 1 names the same paper with the grain rolling, and its stroke is rough all through.
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 0.04 })).dab.grain).toMatchObject({ paper: 'fine', moving: true });
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 1 })).dab.grain).toMatchObject({ paper: 'fine', moving: false });
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Blank.png', grainDepth: 1 })).dab.grain).toBe(null);
     // A grain picture with nothing in it (flat grey) catches nothing, so there is no grain.
     const flatPng = encodePng({ width: 32, height: 32, pixels: new Uint8ClampedArray(32 * 32 * 4).fill(128) });

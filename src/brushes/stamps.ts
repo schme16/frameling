@@ -74,6 +74,11 @@ function simplifyRing(r: { x: number; y: number }[], eps: number): { x: number; 
 
 /** The most a pixel brush picture can be, each way. */
 export const MAX_STAMP = 32;
+/**
+ * A soft tip (one read from a brush file) may be this big. A tip drawn by hand is pixels you place one at a time, so 32
+ * is plenty; a tip from a painting app is a photograph of bristles or scratches, and at 32 across the scratches are gone.
+ */
+export const MAX_SOFT_STAMP = 128;
 
 export interface PixelStamp {
   w: number;
@@ -131,7 +136,9 @@ export function readPixelStamp(raw: unknown): PixelStamp | null {
   const r = raw as Record<string, unknown>;
   const w = r.w;
   const h = r.h;
-  if (typeof w !== 'number' || typeof h !== 'number' || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > MAX_STAMP || h > MAX_STAMP) return null;
+  if (typeof w !== 'number' || typeof h !== 'number' || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1) return null;
+  const most = r.soft === true ? MAX_SOFT_STAMP : MAX_STAMP;
+  if (w > most || h > most) return null;
   if (!Array.isArray(r.colours) || r.colours.length > 256 || !r.colours.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c))) return null;
   if (!Array.isArray(r.cells) || r.cells.length !== w * h) return null;
   const n = r.colours.length;

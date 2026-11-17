@@ -19,7 +19,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 | `aliased` | Sharp pixels (all or nothing). The default, and a first-class switch | none: a pixel art switch |
 | `dynamics` (routes) | What drives what. See below | PS Control menus and minimum values, Krita sensors, Procreate pressure/speed/tilt curves |
 | `fadeLength` | Pixels of line a `fade` source takes to run out | PS Fade steps (steps are dabs, so steps times spacing times size), Krita fade sensor |
-| `grain` (`paper`, `depth`, `scale`, `moving`) | A paper the paint catches on | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
+| `grain` (`paper`, `depth`, `scale`, `moving`, `thin`, `hold`) | A paper the paint catches on. `thin`: the paper multiplies each dab instead of stopping paint that cannot reach a pit (Procreate's way). `hold` (0 to 1, left out is 1): how much of the depth caps the whole stroke when the paper stays put | PS Texture (pattern, scale, depth, texture each tip), Krita texture, Procreate grain |
 | `dual` (`tip`, `size`, `density`, `cut`) | A second tip of dots the first is let through | PS Dual brush (tip, diameter, scatter, count), Krita masking brush |
 | `wet` 0 to 1 | Carries colour from under the brush along the stroke, and mixes with the stroke's own paint | PS Mixer brush wetness and load, Krita colour smudge, Procreate blend |
 | `blend` (any layer blend mode but Add; `normal` is paint over) | How the paint joins what is on the layer | PS brush Mode, Krita composite op, Procreate brush blend mode |
@@ -32,9 +32,11 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
   stroke start to 0 at `fadeLength`), `random`. A source the device lacks (a mouse has no tilt) leaves its routes out, so a
   mouse gets the plain brush, never a missing one.
 - Targets: `size`, `flow` (multiply: at source 0 the dab is `1 - amount` of its own; Photoshop's "minimum" is `1 - amount`),
+  `opacity` (multiplies too, but it is the most this dab may leave on a pixel, a share of the brush's opacity: overlapping
+  dabs do not build past it and a firmer dab later lifts it. Procreate's opacity controls land here),
   `angle` (adds up to a full turn), `scatter` (adds up to a whole size), `mix` (toward the back colour), `hue`, `saturation`,
   `lightness` (swing both ways round the middle of the source, so a `random` source is a plain jitter).
-- Several routes to one target multiply (size, flow) or add (the rest). The options show the first route per target and say
+- Several routes to one target multiply (size, flow, opacity) or add (the rest). The options show the first route per target and say
   when a brush file brought more.
 - A route can carry a `curve` (`src/dab/curve.ts`): a list of 2 to 8 `[x, y]` points, x from 0 (first point) to 1 (last), y 0 to 1,
   joined by a monotone smooth line. It bends the source before the flip (`invert`), so the graph always reads as drawn. A straight
