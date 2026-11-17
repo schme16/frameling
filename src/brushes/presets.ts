@@ -330,7 +330,7 @@ export function addBrushesFromText(text: string): boolean {
   return true;
 }
 
-/** Adds brushes that were read from another program's file (GIMP, Photoshop, Krita...), in a group of their own. Says how many went in. */
+/** Adds brushes that were read from another program's file (GIMP, Photoshop, Krita, Procreate...), in a group of their own. Says how many went in. */
 export function addImportedBrushes(items: readonly { name: string; dab: DabBrush }[], group: string): number {
   const incoming = items.map((it) => ({ name: it.name, brush: DEFAULT_BRUSH, pixel: { kind: 'dab' as const, dab: it.dab }, group: cleanGroup(group) }));
   const { list, added } = addShared(mine, incoming, () => uid('b'));

@@ -4,12 +4,13 @@
 import { readAbrFile } from './abr';
 import { readGbrFile, readGihFile, readVbrFile } from './gimp';
 import { readBundleFile, readKppFile } from './krita';
+import { readBrushsetFile, readProcreateFile } from './procreate';
 import { BrushProblem, FORMAT_NAMES, MAX_BRUSHES_PER_FILE, MAX_FILE_BYTES, type BrushFormat, type ImportResult } from './types';
 
 export * from './types';
 
 /** The file endings the Add brushes picker offers, besides Frameling's own .json. */
-export const IMPORT_EXTS = ['.gbr', '.gih', '.vbr', '.abr', '.kpp', '.bundle'];
+export const IMPORT_EXTS = ['.gbr', '.gih', '.vbr', '.abr', '.kpp', '.bundle', '.brush', '.brushset'];
 
 const extOf = (name: string): string => {
   const m = /\.[A-Za-z0-9]+$/.exec(name);
@@ -18,13 +19,8 @@ const extOf = (name: string): string => {
 
 const stripExt = (name: string): string => name.replace(/\.[A-Za-z0-9]+$/, '').replace(/[_]+/g, ' ').trim();
 
-/**
- * Brush files we can tell apart but cannot read yet, and the app each belongs to. A Procreate brush is a zip like a
- * Krita bundle, so without this it was called a damaged Krita bundle, which sends a person looking in the wrong place.
- */
+/** Brush files we can tell apart but cannot read yet, and the app each belongs to, so the message names the right app. */
 export const NOT_READ_YET: Record<string, string> = {
-  '.brush': 'Procreate',
-  '.brushset': 'Procreate',
   '.sut': 'Clip Studio Paint',
   '.afbrushes': 'Affinity',
 };
@@ -33,11 +29,17 @@ export const NOT_READ_YET: Record<string, string> = {
 export function knownButUnread(bytes: Uint8Array, fileName: string): string | null {
   const byExt = NOT_READ_YET[extOf(fileName)];
   if (byExt) return byExt;
-  // A Clip Studio file carries a SQLite database; a Procreate zip holds a Brush.archive.
-  const text = String.fromCharCode(...bytes.subarray(0, 4096));
-  if (text.includes('SQLite format 3')) return 'Clip Studio Paint';
-  if (String.fromCharCode(...bytes.subarray(0, 2)) === 'PK' && text.includes('Brush.archive')) return 'Procreate';
+  // A Clip Studio file carries a SQLite database.
+  if (String.fromCharCode(...bytes.subarray(0, 4096)).includes('SQLite format 3')) return 'Clip Studio Paint';
   return null;
+}
+
+/** A zip is a Procreate brush when `Brush.archive` is named in it: the first entry (the start of the file) or in the list of contents at the end. */
+function looksProcreate(bytes: Uint8Array): boolean {
+  if (String.fromCharCode(...bytes.subarray(0, 2)) !== 'PK') return false;
+  const head = String.fromCharCode(...bytes.subarray(0, 4096));
+  const tail = String.fromCharCode(...bytes.subarray(Math.max(0, bytes.length - 16384)));
+  return head.includes('Brush.archive') || tail.includes('Brush.archive');
 }
 
 /** Which brush format this looks like, from its ending and then its first bytes. Null when it is none we know. */
@@ -51,11 +53,13 @@ export function sniff(bytes: Uint8Array, fileName: string): BrushFormat | null {
   if (ext === '.abr') return 'abr';
   if (ext === '.kpp') return 'kpp';
   if (ext === '.bundle') return 'bundle';
+  if (ext === '.brush' || ext === '.brushset') return 'procreate';
   // A .gbr has its version in the second word and (version 2) GIMP at byte 20.
   const gbr = (be32(4) === 1 || be32(4) === 2 || be32(4) === 3) && be32(0) >= 20 && be32(0) < 4096 && (be32(4) === 1 || head(24).endsWith('GIMP'));
   if (ext === '.gbr' || gbr) return 'gbr';
   // A Krita preset is a PNG; a Krita bundle is a zip whose first entry is its mimetype file.
   if (head(8) === '\x89PNG\r\n\x1a\n' && ext !== '.png') return 'kpp';
+  if (looksProcreate(bytes)) return 'procreate';
   if (head(2) === 'PK' && ext !== '.zip' && !knownButUnread(bytes, fileName)) return 'bundle';
   // A modern Photoshop set has its version, then 8BIM sections.
   if ([6, 7, 9, 10].includes((bytes[0] << 8) | bytes[1]) && head(8).slice(4) === '8BIM') return 'abr';
@@ -67,9 +71,9 @@ export function readBrushFile(bytes: Uint8Array, fileName: string): ImportResult
   if (bytes.length > MAX_FILE_BYTES) return { ok: false, error: 'That file is too big to be a brush file.' };
   if (bytes.length < 8) return { ok: false, error: 'That file is too small to be a brush file.' };
   const notYet = knownButUnread(bytes, fileName);
-  if (notYet) return { ok: false, error: `That is a ${notYet} brush file, and Frameling cannot read those yet. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr) and Krita (.kpp, .bundle) brushes.` };
+  if (notYet) return { ok: false, error: `That is a ${notYet} brush file, and Frameling cannot read those yet. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr), Krita (.kpp, .bundle) and Procreate (.brush, .brushset) brushes.` };
   const format = sniff(bytes, fileName);
-  if (!format) return { ok: false, error: `Frameling could not tell what kind of brush file "${fileName.slice(0, 60)}" is. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr) and Krita (.kpp, .bundle) brushes.` };
+  if (!format) return { ok: false, error: `Frameling could not tell what kind of brush file "${fileName.slice(0, 60)}" is. It reads GIMP (.gbr, .gih, .vbr), Photoshop (.abr), Krita (.kpp, .bundle) and Procreate (.brush, .brushset) brushes.` };
   const base = stripExt(fileName) || FORMAT_NAMES[format].what;
   try {
     const r =
@@ -78,6 +82,7 @@ export function readBrushFile(bytes: Uint8Array, fileName: string): ImportResult
       : format === 'abr' ? readAbrFile(bytes, base)
       : format === 'kpp' ? readKppFile(bytes, base)
       : format === 'bundle' ? readBundleFile(bytes, base)
+      : format === 'procreate' ? (extOf(fileName) === '.brushset' ? readBrushsetFile(bytes, base) : readProcreateFile(bytes, base))
       : readVbrFile(bytes, base);
     if (r.ok && r.brushes.length > MAX_BRUSHES_PER_FILE) return { ...r, brushes: r.brushes.slice(0, MAX_BRUSHES_PER_FILE), notes: [...r.notes, `Only the first ${MAX_BRUSHES_PER_FILE} brushes were kept.`] };
     return r;

@@ -1,0 +1,1 @@
+Procreate's own picture of each stroke (left), the same stroke with the first guess for spacing and scatter (middle), and with what the importer does now (right), in dark and light. Made by `sh scripts/docs/ab-procreate/make.sh`. Size is set to the size the thumbnail shows, so the shapes can be compared.
