@@ -13,6 +13,7 @@ import type { PaperKind } from '../../dry/paper';
 import { cleanCurve } from '../../dab/curve';
 import { type DynRoute, type DynSource, type DynTarget, MAX_ROUTES } from '../../dab/dynamics';
 import { MAX_FILE_TEXTURE_SIDE, pictureFromPixels } from '../../dab/texturePicture';
+import { paperScale, pngWidth } from './procreatePaper';
 import { parsePlist, PlistDate, Uid, unarchive, type PlistDict, type PlistValue } from './bplist';
 import { decodeTipPng } from './krita';
 import { tipFrom, type PixelReader } from './tip';
@@ -111,14 +112,16 @@ const BLANK_GRAIN = /blank/i;
  * names it and draws a smooth line, but that is its grain being stamped (movement 0.04), where every dab finds new
  * paper and they fill each other in. Dry Ink 1 names the same paper, rolling, and its stroke is rough all through.
  */
-const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; crisp?: boolean; fibre?: boolean; make?: () => TexturePicture; thin?: boolean; hold?: number; grit: boolean; share: number; what: string }[] = [
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; crisp?: boolean; fibre?: boolean; make?: () => TexturePicture; thin?: boolean; hold?: number; scale?: number; grit: boolean; share: number; what: string }[] = [
   // Papers drawn here (standInGrit.ts), each matched by eye to Procreate's picture of a stroke made with it, so they
   // come before the general words below. Charcoal is the 6B Pencil's paper, Splatters the Dry Inks', Pastel Paper the
   // Background brush's.
   { words: /charcoal|corse|coarse/i, paper: 'fine', make: charcoalPaper, hold: 0.05, grit: true, share: 0.9, what: 'a gritty paper drawn to look like charcoal paper' },
   { words: /splatter/i, paper: 'fine', crisp: true, make: splatterPaper, hold: 0.05, grit: true, share: 0.98, what: 'a speckled paper' },
   { words: /pastel/i, paper: 'laid', make: pastelPaper, fibre: true, grit: false, share: 1, what: 'a fine toothed paper drawn to look like pastel paper' },
-  { words: /canvas|linen|weave|cloth/i, paper: 'laid', make: canvasPaper, grit: false, share: 0.7, what: 'a canvas weave' },
+  // Canvas, drawn with threads 8 pixels apart and blown up a quarter: in Procreate's picture of Simple Oil Blender (the one
+  // of the six brushes naming Canvas that shows the weave) the lattice is 11 across by 9 down, so about 10.
+  { words: /canvas|linen|weave|cloth/i, paper: 'laid', make: canvasPaper, scale: 1.25, grit: false, share: 0.7, what: 'a canvas weave' },
   // Grit (charcoal, graphite, sand): the paint catches on the peaks first, so the soft edge of the tip and a light
   // touch break into specks, and the middle of a firm stroke fills in nearly solid. That is Procreate's own picture of
   // the 6B Pencil: 97% covered in the middle with pin holes through it, ragged and speckled at the edge and the ends.
@@ -562,14 +565,24 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
           picture: r.picture,
           ...(s.bool('textureInverted') ? { invert: true } : {}),
           depth: grainDepth,
-          scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
+          // Procreate's scale is a fraction of its own preview canvas (see procreatePaper.ts), so it is carried smoothly.
+          scale: paperScale(s.num('textureScale', 1), pics.thumb ? pngWidth(pics.thumb) : null, Math.max(g.w, g.h), r.picture.side),
+          smooth: true,
           // A grain picture stays put under the stroke. Procreate's movement runs from stamped (0) to rolling (1),
           // but Barely There is nearly stamped (0.16) and its picture is a sparse wisp, which only a paper that
-          // stays put and holds the stroke back gives: one that moved filled it in solid.
+          // stays put and holds the stroke back gives: one that moved filled it in solid. Matching the paper in
+          // Barely There's own picture (0.16) found it fixed to the canvas too, as the rolling brushes were.
           moving: false,
           thin: true,
         };
-        changed.push('Its grain picture came as a small repeating paper. Which way round the light and dark parts catch the paint, and how big the paper is, have not been checked against Procreate.');
+        // Its size was read off 20 texture brushes and Barely There (see procreatePaper.ts). What Procreate's Zoom means when
+        // the brush is resized is not settled: every picture is drawn at one size, so none shows it.
+        const zoom = s.has('textureZoom') ? clamp(s.num('textureZoom', 0), 0, 1) : 0;
+        changed.push(
+          `Its grain picture came as a repeating paper, at the size Procreate's own picture of the stroke shows. Which way round the light and dark parts catch the paint has not been checked against Procreate.${
+            zoom > 0.01 ? ` Procreate's Zoom for the paper is ${pct(zoom)}, which may make the paper grow and shrink with the brush; here it keeps its size when the brush is resized.` : ''
+          }`,
+        );
       }
     } catch (e) {
       if (!(e instanceof BrushProblem)) throw e;
@@ -581,8 +594,10 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       raw.grain = {
         ...(stand.make ? { picture: stand.make() } : stand.fibre ? { picture: fibrePaper() } : { paper: stand.paper }),
         depth: clamp(s.num('grainDepth', 1) * stand.share, 0.1, 1),
-        // `textureScale` is about Procreate's own picture of the paper, so it says nothing about a stand in's.
-        scale: 1,
+        // `textureScale` is about Procreate's own picture of the paper, so it says nothing about a stand in's. A recipe
+        // may say what size it should be drawn at, a fraction of a pixel included.
+        scale: stand.scale ?? 1,
+        ...(stand.scale ? { smooth: true } : {}),
         moving: s.num('textureMovement', 1) < 0.5,
         ...(stand.thin ?? !stand.grit ? { thin: true } : { hold: stand.hold ?? GRIT_HOLD }),
       };

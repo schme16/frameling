@@ -651,7 +651,18 @@ describe('settings, built to the layout', () => {
     const withPicture = one(brush({ grainDepth: 0.5, textureScale: 2, textureMovement: 1, textureInverted: true }, { 'Grain.png': grainPng })).dab;
     // The depth is the file's own, and the paper thins the paint the way Procreate's does. Movement runs from stamped
     // (0) to rolling (1), and rolling is a paper that stays put.
-    expect(withPicture.grain).toMatchObject({ scale: 2, moving: false, invert: true, thin: true, depth: 0.5 });
+    // Its size is Procreate's textureScale of a 1500 pixel preview canvas, shrunk to the picture's 1060 (none here): 2 x 1060 / 1500.
+    expect(withPicture.grain).toMatchObject({ scale: 1.413, smooth: true, moving: false, invert: true, thin: true, depth: 0.5 });
+    // The picture's own width decides it: 327 wide is 327 / 1500 (the Triumvirate and Pixel Perfect sets), and a 512 pixel
+    // grain kept at 256 has two of its pixels in each kept one. The note says what Zoom may mean when it is not 0.
+    const small = new Uint8ClampedArray(327 * 100 * 4);
+    small.fill(255);
+    const wideGrain = new Uint8ClampedArray(512 * 512 * 4);
+    for (let i = 0; i < 512 * 512; i++) wideGrain.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);
+    const lace = one(brush({ textureScale: 1, textureZoom: 1 }, { 'Grain.png': encodePng({ width: 512, height: 512, pixels: wideGrain }), 'QuickLook/Thumbnail.png': encodePng({ width: 327, height: 100, pixels: small }) }));
+    expect(lace.dab.grain?.scale).toBeCloseTo((327 / 1500) * 2, 3);
+    expect(lace.changed.join(' ')).toMatch(/Zoom for the paper is 100%.*keeps its size/);
+    expect(one(brush({ textureScale: 2, textureZoom: 0 }, { 'Grain.png': grainPng })).changed.join(' ')).not.toMatch(/Zoom/);
     // A grain picture stays put whatever its movement says: Barely There is nearly stamped (0.16) and its picture is
     // a sparse wisp, which only a paper that stays put and holds the stroke back gives.
     expect(one(brush({ textureMovement: 0.1 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ moving: false });
@@ -684,7 +695,7 @@ describe('settings, built to the layout', () => {
     expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*charcoal paper/);
     // A weave thins the paint, at 0.7 of the depth, and is drawn here as a canvas, not a ruled grid.
     const canvas = one(brush({ bundledGrainPath: 'Brush-Preset-Canvas.jpg', grainDepth: 1, textureScale: 3 })).dab.grain;
-    expect(canvas).toMatchObject({ thin: true, depth: 0.7, scale: 1 });
+    expect(canvas).toMatchObject({ thin: true, depth: 0.7, scale: 1.25, smooth: true });
     expect(canvas!.picture!.side).toBe(256);
     // Laid paper (ruled by name) keeps Frameling's own laid paper.
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Laid.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7 });
