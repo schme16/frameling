@@ -481,6 +481,20 @@ describe('settings, built to the layout', () => {
     expect(b.changed.join(' ')).toMatch(/Brush-Preset-Soft\.png.*round tip/);
   });
 
+  it('Procreate\'s Blotch and Brick shapes are drawn here as picture tips; any other built in shape stays round', () => {
+    // Under a soft paper the blotch is soft and frayed; under anything else (the inking pens) it is a rough clean line.
+    const soft = one(brush({ bundledShapePath: 'Brush-Preset-Blotch.jpg', bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg' }, {}, false));
+    const pen = one(brush({ bundledShapePath: 'Brush-Preset-Blotch.jpg', bundledGrainPath: 'Brush-Artery-Splatters.png' }, {}, false));
+    expect(soft.dab.tip).toBe('picture');
+    expect(pen.dab.tip).toBe('picture');
+    expect(soft.dab.picture!.cells.join()).not.toBe(pen.dab.picture!.cells.join());
+    expect(soft.changed.join(' ')).toMatch(/Brush-Preset-Blotch\.jpg.*ragged soft edge/);
+    const brick = one(brush({ bundledShapePath: 'Brush-Pocket-Brick.png', bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg' }, {}, false));
+    expect(brick.dab.tip).toBe('picture');
+    expect(brick.changed.join(' ')).toMatch(/Brush-Pocket-Brick\.png.*rough edge/);
+    expect(one(brush({ bundledShapePath: 'Brush-Preset-Ink2.jpg' }, {}, false)).dab.tip).toBe('round');
+  });
+
   it('jitter throws the dabs, scatter turns the tip, rotation follows the line', () => {
     const b = one(brush({ shapeCount: 0, shapeScatter: 0.3, plotJitter: 1, plotSpacing: 1, shapeRotation: 1 }));
     // A quarter of the width for a jitter of 1 (in the part of the tip you can see), whatever the spacing.
@@ -627,23 +641,30 @@ describe('settings, built to the layout', () => {
     // Procreate's own papers are not in the file, only named. A name that says what tooth it has gets the nearest
     // paper Frameling draws itself, so a pencil arrives gritty rather than smooth, and the brush says which stood in.
     const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1, dynamicsPressureOpacity: 0.5 }));
-    // Grit keeps Frameling's own way with paper (specks on the peaks first) and holds the whole stroke back only a
-    // little, so a firm stroke fills in nearly solid. Under it, opacity controls come as flow.
-    expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false, depth: 0.75, hold: 0.12 });
+    // Charcoal paper is drawn here (standInGrit.ts). It keeps Frameling's own way with paper (specks on the peaks
+    // first) and holds the whole stroke back only a little, so a firm stroke fills in nearly solid with pin holes.
+    // Under it, opacity controls come as flow.
+    expect(named.dab.grain).toMatchObject({ moving: false, depth: 0.9, hold: 0.05 });
+    expect(named.dab.grain!.picture!.side).toBe(256);
+    expect(named.dab.grain!.paper).toBeUndefined();
     expect(named.dab.grain!.thin).toBeUndefined();
     expect(named.dab.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 0.5, invert: false }]);
     // A pencil's stand in tip fades at the edge, which is where the paper shows through.
     expect(one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg' }, {}, false)).dab.hardness).toBe(0.65);
-    expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
-    // A weave thins the paint, at 0.7 of the depth.
-    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Canvas.jpg', grainDepth: 1, textureScale: 3 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7, scale: 1 });
+    expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*charcoal paper/);
+    // A weave thins the paint, at 0.7 of the depth, and is drawn here as a canvas, not a ruled grid.
+    const canvas = one(brush({ bundledGrainPath: 'Brush-Preset-Canvas.jpg', grainDepth: 1, textureScale: 3 })).dab.grain;
+    expect(canvas).toMatchObject({ thin: true, depth: 0.7, scale: 1 });
+    expect(canvas!.picture!.side).toBe(256);
+    // Laid paper (ruled by name) keeps Frameling's own laid paper.
+    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Laid.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid', thin: true, depth: 0.7 });
     // A soft paper (pastel, watercolour) is drawn from a recipe, fibres and a tooth, because no tidy paper looks like one.
     const soft = one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 }, {}, false));
     expect(soft.dab.grain).toMatchObject({ thin: true, depth: 1, scale: 1 });
     expect(soft.dab.grain!.picture!.side).toBe(256);
     expect(soft.dab.grain!.paper).toBeUndefined();
     expect(soft.dab.hardness).toBe(0.3);
-    expect(soft.changed.join(' ')).toMatch(/soft fibrous paper/);
+    expect(soft.changed.join(' ')).toMatch(/fine toothed paper/);
     // A name that says nothing about tooth gets no stand in, and says so.
     const vague = one(brush({ bundledGrainPath: 'Brush-Artery-Ribbons.png', grainDepth: 0.7 }));
     expect(vague.dab.grain).toBe(null);
@@ -651,8 +672,9 @@ describe('settings, built to the layout', () => {
     // Splatters is grit. Shenbot's Inking Pen names it and draws a smooth line, which looked like a reason to leave it
     // out, but the pen is smooth because its grain is stamped (movement 0.04): every dab finds new paper and they fill
     // each other in. Dry Ink 1 names the same paper with the grain rolling, and its stroke is rough all through.
-    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 0.04 })).dab.grain).toMatchObject({ paper: 'fine', moving: true });
-    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 1 })).dab.grain).toMatchObject({ paper: 'fine', moving: false });
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 0.04 })).dab.grain).toMatchObject({ moving: true });
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 1 })).dab.grain).toMatchObject({ moving: false });
+    expect(one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', textureMovement: 1 })).dab.grain!.picture!.side).toBe(256);
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Blank.png', grainDepth: 1 })).dab.grain).toBe(null);
     // A grain picture with nothing in it (flat grey) catches nothing, so there is no grain.
     const flatPng = encodePng({ width: 32, height: 32, pixels: new Uint8ClampedArray(32 * 32 * 4).fill(128) });

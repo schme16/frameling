@@ -19,6 +19,9 @@ import { tipFrom, type PixelReader } from './tip';
 import { MAX_SOFT_STAMP } from '../stamps';
 import { BrushProblem, plural, type ImportedBrush, type ImportResult } from './types';
 import { fibrePaper } from './standInPaper';
+import { standInTip } from './standInTip';
+import { canvasPaper, charcoalPaper, pastelPaper, splatterPaper } from './standInGrit';
+import type { TexturePicture } from '../../dab/texturePicture';
 import { openZip, type Zip, type ZipItem } from './zip';
 
 /** The most one brush's settings may unpack to (the biggest real ones are about 10 KB). */
@@ -85,7 +88,14 @@ const BLANK_GRAIN = /blank/i;
  * names it and draws a smooth line, but that is its grain being stamped (movement 0.04), where every dab finds new
  * paper and they fill each other in. Dry Ink 1 names the same paper, rolling, and its stroke is rough all through.
  */
-const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; grit: boolean; share: number; what: string }[] = [
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; make?: () => TexturePicture; thin?: boolean; hold?: number; grit: boolean; share: number; what: string }[] = [
+  // Papers drawn here (standInGrit.ts), each matched by eye to Procreate's picture of a stroke made with it, so they
+  // come before the general words below. Charcoal is the 6B Pencil's paper, Splatters the Dry Inks', Pastel Paper the
+  // Background brush's.
+  { words: /charcoal|corse|coarse/i, paper: 'fine', make: charcoalPaper, hold: 0.05, grit: true, share: 0.9, what: 'a gritty paper drawn to look like charcoal paper' },
+  { words: /splatter/i, paper: 'fine', make: splatterPaper, hold: 0.05, grit: true, share: 0.98, what: 'a speckled paper' },
+  { words: /pastel/i, paper: 'laid', make: pastelPaper, fibre: true, grit: false, share: 1, what: 'a fine toothed paper drawn to look like pastel paper' },
+  { words: /canvas|linen|weave|cloth/i, paper: 'laid', make: canvasPaper, grit: false, share: 0.7, what: 'a canvas weave' },
   // Grit (charcoal, graphite, sand): the paint catches on the peaks first, so the soft edge of the tip and a light
   // touch break into specks, and the middle of a firm stroke fills in nearly solid. That is Procreate's own picture of
   // the 6B Pencil: 97% covered in the middle with pin holes through it, ragged and speckled at the edge and the ends.
@@ -99,6 +109,9 @@ const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; fibre?: boolean; grit:
   // spread evenly from pit to peak, which bites harder than a photograph of cloth, so it takes 0.7 of the depth.
   { words: /canvas|linen|laid|weave|cloth/i, paper: 'laid', grit: false, share: 0.7, what: 'a paper with a weave' },
 ];
+
+/** Whether the brush's named paper is a soft one (pastel, watercolour), which is the kind that gets the blotch tip's soft edge. */
+const onSoftPaper = (s: Settings): boolean => !!PAPER_STAND_INS.find((g) => g.words.test(s.str('bundledGrainPath') ?? ''))?.fibre;
 
 /** How much of a gritty stand in's depth holds the whole stroke back: enough for pin holes, not enough to grey it. */
 const GRIT_HOLD = 0.12;
@@ -287,6 +300,19 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       share = clamp(t.tip.size / Math.max(t.w, t.h), 0.02, 1);
       if (t.tip.shrunk) changed.push(`Its tip picture was shrunk from ${t.w} by ${t.h} to ${t.tip.stamp.w} by ${t.tip.stamp.h} pixels, the most a picture tip holds, so fine detail is lost.`);
     }
+  } else if (standInTip((s.str('bundledShapePath') ?? '').replace(/^.*[/\\]/, ''), onSoftPaper(s))) {
+    // A shape Procreate keeps to itself, drawn here from a recipe (standInTip.ts): it goes through the same reading as a
+    // tip picture from a file, so its size and spacing are worked out the same way.
+    const named = (s.str('bundledShapePath') ?? '').replace(/^.*[/\\]/, '').slice(0, 40);
+    const made = standInTip(named, onSoftPaper(s))!;
+    const tip = tipFrom(made.w, made.h, (x, y, out) => {
+      out[0] = out[1] = out[2] = 0;
+      out[3] = made.paint(x, y);
+    }, false, MAX_SOFT_STAMP);
+    raw.tip = 'picture';
+    raw.picture = tip.stamp;
+    share = clamp(tip.size / Math.max(made.w, made.h), 0.02, 1);
+    changed.push(`Its tip is one of Procreate's own built in shapes ("${named}"), which is not in the file, so ${made.what} of Frameling's own stood in for it.`);
   } else {
     raw.tip = 'round';
     // A brush with a paper is a pencil or a chalk, and Procreate's tips for those fade at the edge, which is where the
@@ -487,12 +513,12 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
     const stand = PAPER_STAND_INS.find((g) => g.words.test(grainName));
     if (stand) {
       raw.grain = {
-        ...(stand.fibre ? { picture: fibrePaper() } : { paper: stand.paper }),
+        ...(stand.make ? { picture: stand.make() } : stand.fibre ? { picture: fibrePaper() } : { paper: stand.paper }),
         depth: clamp(s.num('grainDepth', 1) * stand.share, 0.1, 1),
         // `textureScale` is about Procreate's own picture of the paper, so it says nothing about a stand in's.
         scale: 1,
         moving: s.num('textureMovement', 1) < 0.5,
-        ...(stand.grit ? { hold: GRIT_HOLD } : { thin: true }),
+        ...(stand.thin ?? !stand.grit ? { thin: true } : { hold: stand.hold ?? GRIT_HOLD }),
       };
       changed.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, so ${stand.what} of Frameling's own stood in for it. Pick another in the brush options if it is not the tooth you wanted.`);
     } else {
