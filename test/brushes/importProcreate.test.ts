@@ -347,7 +347,8 @@ describe('the real Procreate brushes', () => {
     expect(d.dynamics).toEqual([]);
     expect(d.grain).toBe(null);
     expect(b.dropped).toEqual([]);
-    expect(b.changed.join(' ')).toMatch(/shrunk/);
+    // Its tip is under 256 across in the file, so it is kept whole.
+    expect(b.changed.join(' ')).not.toMatch(/shrunk/);
   });
 
   it('Plain Stitch: a thin stitch that turns along the line, spacing counted in the stitch', () => {
@@ -360,7 +361,7 @@ describe('the real Procreate brushes', () => {
     expect(d.picture!.w).toBeGreaterThan(d.picture!.h * 2);
     // Measured off Procreate's picture, down the middle column of ten because most columns cut a turned stitch on the
     // slant. A stitch read off the picture by hand is 34 pixels long.
-    expect(d.size).toBe(39);
+    expect(d.size).toBe(38);
     // 0.551 of the whole picture is nearly one stitch length (0.54 of the picture), so the stitches sit end to end with a gap.
     expect(d.spacing).toBeGreaterThan(0.9);
     expect(d.spacing).toBeLessThan(1.1);
@@ -457,11 +458,12 @@ describe('settings, built to the layout', () => {
     expect(alpha).toBeLessThan(0.3);
   });
 
-  it('a big tip keeps up to 128 pixels across, so scratches and bristles survive', () => {
+  it('a big tip keeps up to 256 pixels across, so scratches and bristles survive', () => {
     const d = one(brush({}, { 'Shape.png': discPng(512, 255, 0) })).dab;
     expect(d.picture!.soft).toBe(true);
     expect(Math.max(d.picture!.w, d.picture!.h)).toBeGreaterThan(64);
-    expect(Math.max(d.picture!.w, d.picture!.h)).toBeLessThanOrEqual(128);
+    expect(Math.max(d.picture!.w, d.picture!.h)).toBeLessThanOrEqual(256);
+    expect(Math.max(d.picture!.w, d.picture!.h)).toBeGreaterThan(128);
   });
 
   it('a shape that is all see-through has nothing to paint with, so it is refused', () => {
@@ -497,9 +499,17 @@ describe('settings, built to the layout', () => {
 
   it('jitter throws the dabs, scatter turns the tip, rotation follows the line', () => {
     const b = one(brush({ shapeCount: 0, shapeScatter: 0.3, plotJitter: 1, plotSpacing: 1, shapeRotation: 1 }));
-    // A quarter of the width for a jitter of 1 (in the part of the tip you can see), whatever the spacing.
-    expect(b.dab.scatter).toBeGreaterThan(0.24);
+    // About a fifth of the width for a jitter of 1 (in the part of the tip you can see), whatever the spacing.
+    expect(b.dab.scatter).toBeGreaterThan(0.18);
     expect(b.dab.scatter).toBeLessThan(0.5);
+    // The throw grows faster than the slider: a jitter three times as big throws more than five times as far, so Basic
+    // 01's 1.67 is a ragged edge but Graphite ink's 0.54 throws only a little, where a straight line from the first had
+    // it a loose, splattered cloud.
+    const at = (plotJitter: number) => one(brush({ shapeCount: 0, plotJitter, plotSpacing: 0 })).dab.scatter;
+    expect(at(1.67) / at(0.54)).toBeGreaterThan(5);
+    expect(at(0.54)).toBeLessThan(0.15);
+    expect(at(0.54)).toBeGreaterThan(0.03);
+    expect(at(0.15)).toBeLessThan(0.03);
     expect(one(brush({ shapeCount: 0, plotJitter: 1, plotSpacing: 0 })).dab.scatter).toBe(b.dab.scatter);
     expect(b.dab.follow).toBe(true);
     expect(b.dab.angleJitter).toBe(0.3);
@@ -631,6 +641,12 @@ describe('settings, built to the layout', () => {
     // A grain picture stays put whatever its movement says: Barely There is nearly stamped (0.16) and its picture is
     // a sparse wisp, which only a paper that stays put and holds the stroke back gives.
     expect(one(brush({ textureMovement: 0.1 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ moving: false });
+    // A grain this shallow (Graphite ink's is 0.16) is left out, with a note: Procreate's own picture shows none of it
+    // and Frameling's paper at that depth held the whole stroke back, so a black line came grey.
+    const shallow = one(brush({ grainDepth: 0.16 }, { 'Grain.png': grainPng }));
+    expect(shallow.dab.grain).toBe(null);
+    expect(shallow.changed.join(' ')).toMatch(/only 16% deep/);
+    expect(one(brush({ grainDepth: 0.3 }, { 'Grain.png': grainPng })).dab.grain).toMatchObject({ depth: 0.3 });
     // It keeps up to the whole tile, 256 across, so its fine tooth survives.
     const fine = new Uint8ClampedArray(512 * 512 * 4);
     for (let i = 0; i < 512 * 512; i++) fine.set([(i * 97) % 256, (i * 97) % 256, (i * 97) % 256, 255], i * 4);

@@ -11,7 +11,7 @@ brushes did (`src/retouch/`, see the end of this page). This page is what they l
 
 | Field | Meaning | Maps from |
 |---|---|---|
-| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
+| `tip` `'round' \| 'square' \| 'picture'`, `picture` (a `PixelStamp`, up to 32 by 32, or 256 by 256 when `soft`; `soft` makes each cell's see-through the amount of paint, in the colour picked, so a tip from a brush file keeps its shading, and a soft tip is saved packed as `cells: "z1:..."`, see `docs/brush-import.md`) | The shape one dab has | PS tip shape and sampled tips, Krita auto and predefined brushes, GIMP `.gbr` pixmap and mask |
 | `size` 1 to 300 px, `hardness` 0 to 1, `angle`, `roundness` 0.05 to 1, `follow` | Size, edge, rotation, flattening, turning with the line | PS diameter, hardness, angle, roundness; Krita size, fade, rotation, ratio |
 | `spacing` 0.01 to 4 (a share of the size) | Gap between dabs; follows the live size, so a thin end is not dotted | PS spacing, Krita spacing, Procreate spacing |
 | `scatter` 0 to 2 (share of size), `sizeJitter`, `angleJitter` | Random position, size and angle per dab | PS shape dynamics jitter, scattering; Krita scatter |
