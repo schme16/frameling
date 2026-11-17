@@ -98,11 +98,12 @@ for (const [name, b] of Object.entries(BRUSHES)) {
   const thumb = E.decodePng(new Uint8Array(zip['QuickLook/Thumbnail.png']));
   const { width: W, height: H } = thumb;
   const strokes = b.strokes.map((s) => (s.seed ? seedStroke(thumb) : s.pts.map(([x, y]) => [x, y, 1])));
-  // B: the units this import settled on, with the size set to the size the thumbnail shows so the shapes can be compared.
-  const settled = { ...imported, size: b.dab };
+  // B: the brush as it comes in, size and all. The size is measured off this same thumbnail now, so nothing is forced:
+  // `b.dab` stays here only as the size that was read off the picture by hand, to check the measuring against.
+  const settled = imported;
   // A: the first guess from the research notes, at the same size.
-  const guess = { ...settled, spacing: Math.min(4, Math.max(0.05, b.first.spacing)), scatter: b.first.scatter };
-  layout[name] = { dab: b.dab, imported: { size: imported.size, spacing: imported.spacing, scatter: imported.scatter, follow: imported.follow, dynamics: imported.dynamics.length }, first: b.first, thumb: { w: W, h: H } };
+  const guess = { ...settled, size: b.dab, spacing: Math.min(4, Math.max(0.05, b.first.spacing)), scatter: b.first.scatter };
+  layout[name] = { dab: b.dab, measured: imported.size, imported: { size: imported.size, spacing: imported.spacing, scatter: imported.scatter, follow: imported.follow, dynamics: imported.dynamics.length }, first: b.first, thumb: { w: W, h: H } };
   for (const [theme, t] of Object.entries(THEMES)) {
     const save = (panel, rgba) => fs.writeFileSync(path.join(OUT, `${name}-${theme}-${panel}.png`), E.encodePng({ width: W, height: H, pixels: rgba }));
     save('thumb', over(thumb.pixels, W, H, t.bg, t.ink, true));

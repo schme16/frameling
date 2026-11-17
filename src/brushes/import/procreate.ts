@@ -9,6 +9,7 @@
 // own thumbnail of the same brush (docs/brush-import.md says what that settled and what is still a guess). Anything that
 // could not be mapped honestly is left out with a note, never guessed at silently. Pure, no DOM.
 import { cleanDab } from '../../dab/maths';
+import type { PaperKind } from '../../dry/paper';
 import { cleanCurve } from '../../dab/curve';
 import { type DynRoute, type DynSource, type DynTarget, MAX_ROUTES } from '../../dab/dynamics';
 import { pictureFromPixels } from '../../dab/texturePicture';
@@ -26,11 +27,22 @@ const MAX_LIST_BYTES = 4 * 1024 * 1024;
 const MAX_PIXEL_BUDGET = 256 * 1024 * 1024;
 
 /**
- * How big a brush comes in. Procreate keeps the size as a 0 to 1 number (`paintSize`) and says nowhere how many pixels that
- * is. Its own thumbnails do not settle it either: they draw every brush at the same size on screen, whatever its `paintSize`.
- * So this is a choice, not a finding: 1 is a hundred pixels, which puts the real brushes seen (0.24 to 1) between 24 and 100.
+ * How big a brush comes in when there is nothing better to go on. Procreate keeps the size as a 0 to 1 number
+ * (`paintSize`) and says nowhere how many pixels that is, and the same brush saved at two different sizes keeps the same
+ * stroke picture, so `paintSize` cannot be turned into pixels. This is a choice, not a finding: 1 is a hundred pixels.
+ * Nearly every real file carries a stroke picture, so this is the fallback, not the usual road: see `strokeWidth`.
  */
 export const PIXELS_PER_SIZE = 100;
+
+/** The widest a brush comes in at, whatever its stroke picture shows. */
+const MAX_SIZE = 300;
+
+/**
+ * How much of a Procreate paper's depth a stand in paper takes. Procreate's own papers are gentler at the same number
+ * than Frameling's, so a 6B pencil at full depth came out as a dotted scrape rather than a gritty line. Settled by eye
+ * against Procreate's own picture of the 6B Pencil and the Sketch pencil.
+ */
+const GRAIN_DEPTH_SHARE = 0.7;
 
 /**
  * The smallest a brush comes in at. Some files ask for a size near nothing (Cat Thorne's Basic 01 asks for 0.0177 of
@@ -41,6 +53,26 @@ const MIN_SIZE = 6;
 
 /** The built in blank grain Procreate names when a brush has no paper: nothing to catch on. */
 const BLANK_GRAIN = /blank/i;
+
+/**
+ * Procreate's own papers are not inside a .brush: the file only names one (`Brush-Artery-Charcoal-Corse.jpg`), and the
+ * picture itself stays in Procreate. A pencil that arrives with no paper at all is smooth where Procreate's is gritty,
+ * which is the single biggest thing that made an imported pencil look wrong.
+ *
+ * So a named paper is matched by its words to the nearest paper Frameling draws itself, and the brush says which one it
+ * asked for and which one stood in. Frameling's papers are its own (see texture.ts); nothing is copied out of Procreate.
+ * A paper whose words say nothing about tooth (splatters, drips) gets no stand in: Shenbot's Inking Pen names
+ * "Brush-Artery-Splatters.png" and Procreate's own picture of its stroke is smooth, so guessing a paper there made the
+ * pens speckly in a way the file never asked for.
+ */
+const PAPER_STAND_INS: { words: RegExp; paper: PaperKind; what: string }[] = [
+  // Frameling's papers are tooth on the page, the same size whatever brush crosses them, while Procreate's grain is
+  // scaled to the brush. So the paper is picked by how the stroke reads, not by the name: the fine tooth is what grit
+  // looks like under a pencil, and the coarse ones come out as blobs at any brush size worth drawing with. Settled by
+  // eye against Procreate's own picture of the 6B Pencil (139 pixels across) and the Sketch pencil (17).
+  { words: /charcoal|coarse|corse|rough|grit|chalk|sand|noise|grain|graphite|pencil|concrete|stone|gravel/i, paper: 'fine', what: 'a gritty paper' },
+  { words: /pastel|canvas|cotton|linen|watercolou?r|laid|weave|paper|cloth/i, paper: 'laid', what: 'a paper with a weave' },
+];
 
 // ---------------------------------------------------------------- the settings
 
@@ -93,6 +125,8 @@ function settingsOf(bytes: Uint8Array): Settings {
 export interface Pictures {
   shape: Uint8Array | null;
   grain: Uint8Array | null;
+  /** Procreate's own picture of a stroke with this brush (`QuickLook/Thumbnail.png`), when the file carries one. */
+  thumb: Uint8Array | null;
   /** The brush has a second brush inside it (a dual brush). */
   sub: boolean;
 }
@@ -121,6 +155,41 @@ function shapeTip(png: Uint8Array, inverted: boolean, budget: Budget) {
   };
   if (weakest > 250) return { solid: true as const, w, h };
   return { solid: false as const, w, h, tip: tipFrom(w, h, read, false) };
+}
+
+/**
+ * How wide one dab is in Procreate's own picture of the stroke, in pixels, or null when the picture cannot say.
+ *
+ * Every .brush carries `QuickLook/Thumbnail.png`: Procreate drawing one stroke with this brush. `paintSize` cannot be
+ * turned into pixels (the same brush saved at two sizes keeps one picture), but the picture itself can be measured, and
+ * it is the picture the artist chose the brush by. Down each column, the longest unbroken run of paint is one dab across
+ * the line: a gap between scattered dabs breaks the run, so scatter does not widen it. The ninth of ten is taken rather
+ * than the widest, so a blotch on one column cannot decide the whole brush, and the thin tapered ends are left out.
+ *
+ * Checked against the three brushes whose dabs were measured by hand off their pictures: Sequins comes out 57 where the
+ * hand said 57, Seed 219 where the hand said 190, Plain Stitch 27 where the hand said 34.
+ */
+function strokeWidth(png: Uint8Array, budget: Budget): number | null {
+  const { w, h, px } = decodeTipPng(png);
+  budget.spend(w * h);
+  if (w < 8 || h < 8) return null;
+  const runs: number[] = [];
+  for (let x = 0; x < w; x++) {
+    let best = 0;
+    let run = 0;
+    for (let y = 0; y < h; y++) {
+      if (px[(y * w + x) * 4 + 3] > 12) {
+        run++;
+        if (run > best) best = run;
+      } else run = 0;
+    }
+    if (best > 0) runs.push(best);
+  }
+  if (runs.length < 8) return null;
+  runs.sort((a, b) => a - b);
+  const wide = runs[Math.floor(runs.length * 0.9)];
+  // A stroke that fills the picture top to bottom was drawn bigger than the picture: it cannot say how wide the dab is.
+  return wide > 0 && wide < h - 1 ? wide : null;
 }
 
 // ---------------------------------------------------------------- one brush
@@ -190,10 +259,31 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   }
 
   // ---- size, spacing, scatter, angle
+  const roundness = clamp(s.num('shapeRoundness', 1), 0.05, 1);
+  raw.roundness = roundness;
+  // How much of the brush's own size one dab actually lays across the line: a picture tip's longer side runs along the
+  // line, so only its shorter side shows across, and roundness squashes either tip the same way.
+  const stamp = raw.picture as { w: number; h: number } | undefined;
+  const across = clamp((stamp ? stamp.h / Math.max(stamp.w, stamp.h) : 1) * roundness, 0.05, 1);
+  // The size comes from Procreate's own picture of the stroke when the file has one, measured across the line, because
+  // `paintSize` cannot be turned into pixels. Without a picture it falls back to the plain `paintSize` reading.
   const paintSize = s.num('paintSize', 0.2);
+  let measured: number | null = null;
+  if (pics.thumb) {
+    try {
+      const wide = strokeWidth(pics.thumb, budget);
+      if (wide !== null) measured = Math.round(clamp(wide / across, MIN_SIZE, MAX_SIZE));
+    } catch (e) {
+      if (!(e instanceof BrushProblem)) throw e;
+    }
+  }
   const wanted = Math.round(paintSize * PIXELS_PER_SIZE * share);
-  raw.size = Math.max(MIN_SIZE, wanted);
-  if (wanted < MIN_SIZE) changed.push(`It asked for a brush ${wanted} pixel${wanted === 1 ? '' : 's'} across, too small to draw with, so it came at ${MIN_SIZE}. Procreate's sizes are a share of its own slider and do not say how many pixels they are, so set the size you want after it lands.`);
+  raw.size = measured ?? Math.max(MIN_SIZE, wanted);
+  if (measured !== null)
+    changed.push(
+      `It came ${measured} pixels across, measured off Procreate's own picture of the stroke in the file. Procreate's size is a share of its own slider and never says how many pixels it is, so the picture is the closest thing to an answer the file has. Set the size you want after it lands.`,
+    );
+  else if (wanted < MIN_SIZE) changed.push(`It asked for a brush ${wanted} pixel${wanted === 1 ? '' : 's'} across, too small to draw with, so it came at ${MIN_SIZE}. Procreate's sizes are a share of its own slider and do not say how many pixels they are, so set the size you want after it lands.`);
   // Procreate counts spacing and scatter in the whole tip picture; ours count in the part you can see, which is `share` of it.
   const spacing = s.num('plotSpacing', 0.1);
   raw.spacing = spacing / share;
@@ -220,7 +310,6 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
   raw.scatter = clamp(scatter, 0, 2);
   if (scatter > 0.01) changed.push("How far its dabs land off the line was worked out from the scatter and the spacing together, matched against Procreate's own picture of the stroke in the file. Procreate does not say how it does this, so a very scattered brush may sit differently.");
   if (scatter > 2) changed.push('Its scatter was more than Frameling goes, so it came at the most, 200%.');
-  raw.roundness = clamp(s.num('shapeRoundness', 1), 0.05, 1);
   const rot = s.num('shapeRotation', 0);
   if (rot >= 0.5) raw.follow = true;
   if (rot > 0.01 && rot < 0.99) changed.push(`Its tip follows the line ${pct(rot)} of the way; Frameling's tip either follows it or does not, so it came as ${rot >= 0.5 ? 'following' : 'not following'}.`);
@@ -294,11 +383,20 @@ export function brushFromArchive(archive: Uint8Array, pics: Pictures, fallbackNa
       dropped.push(`Its grain picture: ${e.message}`);
     }
   } else if (grainName && !BLANK_GRAIN.test(grainName)) {
-    // Procreate's own papers are not in the file, and standing your sheet's paper in for one is worse than having
-    // none: Shenbot's Inking Pen names "Brush-Artery-Splatters.png", and Procreate's own picture of its stroke in the
-    // file is smooth and solid, while the paper underneath turned it speckly. A brush that arrives plain and says so
-    // is closer to the file than one that arrives grainy in a way the file never asked for.
-    dropped.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, so this brush came with no paper. Pick one in the brush options if you want the paint to catch.`);
+    const stand = PAPER_STAND_INS.find((g) => g.words.test(grainName));
+    if (stand) {
+      raw.grain = {
+        paper: stand.paper,
+        depth: clamp(s.num('grainDepth', 1) * GRAIN_DEPTH_SHARE, 0.1, 1),
+        scale: clamp(Math.round(s.num('textureScale', 1)), 1, 8),
+        // A stand in paper stays put. Frameling's moving grain picks a fresh spot on the paper for every dab, and a
+        // pencil lays its dabs a twentieth of its width apart, so a moving paper averages itself away to a solid line.
+        moving: false,
+      };
+      changed.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, so ${stand.what} of Frameling's own stood in for it. Pick another in the brush options if it is not the tooth you wanted.`);
+    } else {
+      dropped.push(`Its paper ("${grainName}") is one of Procreate's own, which is not in the file, and its name says nothing about the tooth it has, so this brush came with no paper. Pick one in the brush options if you want the paint to catch.`);
+    }
   }
 
   // ---- wet mix, dual brush, blend
@@ -396,9 +494,11 @@ function readZipBrushes(bytes: Uint8Array, fileName: string, expectSet: boolean)
       if (!arch) continue;
       const shape = find('Shape.png');
       const grain = find('Grain.png');
+      const thumb = find('QuickLook/Thumbnail.png');
       const pics: Pictures = {
         shape: shape ? zip.read(shape, MAX_PICTURE_BYTES) : null,
         grain: grain ? zip.read(grain, MAX_PICTURE_BYTES) : null,
+        thumb: thumb ? zip.read(thumb, MAX_PICTURE_BYTES) : null,
         sub: zip.items.some((i) => i.name.toLowerCase().startsWith(`${folder}sub`.toLowerCase()) && /\/Brush\.archive$/i.test(i.name)),
       };
       const fallback = folder.replace(/\/$/, '').split('/').pop() || fileName;

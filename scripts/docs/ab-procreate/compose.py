@@ -68,7 +68,7 @@ for name, info in layout.items():
         label_lines = max(len(wrap(d0, l, f, pw)) for _, l in PANELS)
         head = 12 + label_lines * 18
         rows = 1 if across else len(ims)
-        foot_lines = wrap(d0, f"Size is not settled by the thumbnail: it arrives at {info['imported']['size']} px, and here it is set to the size the thumbnail shows. Spacing {round(info['imported']['spacing'] * 100)}% and scatter {round(info['imported']['scatter'] * 100)}% of the visible tip. " + NOTES[name], f, total_w - 2 * PAD)
+        foot_lines = wrap(d0, f"Size is measured off this same picture: it arrives at {info['measured']} px, where one dab was read off by hand at {info['dab']} px. Spacing {round(info['imported']['spacing'] * 100)}% and scatter {round(info['imported']['scatter'] * 100)}% of the visible tip. " + NOTES[name], f, total_w - 2 * PAD)
         canvas = Image.new('RGB', (total_w, 44 + rows * (head + h + PAD) + 12 + len(foot_lines) * 18 + PAD), bg)
         d = ImageDraw.Draw(canvas)
         d.text((PAD, 12), TITLES[name], font=fb, fill=fg)

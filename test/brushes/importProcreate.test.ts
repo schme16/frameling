@@ -111,6 +111,21 @@ function discPng(side: number, ink: number, ground: number, alpha = 255): Uint8A
   return encodePng({ width: side, height: side, pixels: px });
 }
 
+/**
+ * Procreate's own picture of a stroke, as a .brush carries it: a straight bar `wide` pixels thick on clear, with a gap
+ * in it every so often so the measuring sees separate dabs, the way a scattered brush's picture does.
+ */
+function strokePng(w: number, h: number, wide: number, gapEvery = 0): Uint8Array {
+  const px = new Uint8ClampedArray(w * h * 4);
+  const mid = h / 2;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const on = y >= mid - wide / 2 && y < mid + wide / 2 && x > 4 && x < w - 5 && !(gapEvery && x % gapEvery >= gapEvery - 2);
+      if (on) px.set([0, 0, 0, 255], (y * w + x) * 4);
+    }
+  return encodePng({ width: w, height: h, pixels: px });
+}
+
 /** A .brush built by hand. */
 function brush(settings: Record<string, Plain>, files: Record<string, Uint8Array> = {}, withShape = true): Uint8Array {
   return zipSync({ 'Brush.archive': archive({ name: 'Built', paintSize: 0.3, plotSpacing: 0.2, ...settings }), ...(withShape ? { 'Shape.png': discPng(64, 255, 0) } : {}), ...files });
@@ -322,9 +337,9 @@ describe('the real Procreate brushes', () => {
     // The picture is the dark sequin on white (shapeInverted), so the part that paints is the round sequin, not the square.
     expect(d.picture!.w).toBeGreaterThanOrEqual(28);
     expect(d.picture!.cells.filter((c) => c === 0).length).toBeGreaterThan(20);
-    // Size is paintSize 0.388 of the 100 pixels a whole tip gets, times the share of the picture the sequin fills.
-    expect(d.size).toBe(36);
-    expect(d.size).toBeLessThan(0.3885 * PIXELS_PER_SIZE);
+    // The size is measured off Procreate's own picture of the stroke: one sequin is 57 pixels across there, which is
+    // what the dab was measured at by hand when the scatter was settled.
+    expect(d.size).toBe(57);
     // Spacing 1.006 and scatter 0.877 are counted in the whole picture; here in the part you see (about 93% of it).
     expect(d.spacing).toBeCloseTo(1.006 / 0.93, 1);
     expect(d.scatter).toBeCloseTo(0.877 / 0.93, 1);
@@ -343,7 +358,9 @@ describe('the real Procreate brushes', () => {
     expect(d.follow).toBe(true);
     // The stitch is a long thin shape: about half the picture wide and a seventh of that tall.
     expect(d.picture!.w).toBeGreaterThan(d.picture!.h * 2);
-    expect(d.size).toBe(14);
+    // Measured off Procreate's picture: the stitch is 12 pixels across the line, and the tip's longer side (the brush's
+    // size) is about three and a half times that.
+    expect(d.size).toBe(43);
     // 0.551 of the whole picture is nearly one stitch length (0.54 of the picture), so the stitches sit end to end with a gap.
     expect(d.spacing).toBeGreaterThan(0.9);
     expect(d.spacing).toBeLessThan(1.1);
@@ -353,29 +370,33 @@ describe('the real Procreate brushes', () => {
 
   it('Plain Stitch drawn: separate stitches, not a solid line', () => {
     const d = read('Plain_Stitch.brush').dab;
-    const W = 200;
-    const H = 30;
+    const W = 600;
+    const H = 90;
     const px = new Uint8ClampedArray(W * H * 4);
     const s = new DabStroke(bufferSurface(px, W, H), { brush: d, color: [0, 0, 0, 255], edge: 'smooth', seed: 1 });
-    for (let x = 10; x < 190; x++) s.moveTo({ x, y: 15 }, d.size, 1, { pressure: 1, speed: 0.4 });
+    for (let x = 30; x < 570; x++) s.moveTo({ x, y: 45 }, d.size, 1, { pressure: 1, speed: 0.4 });
     s.finish();
-    // Walk along the middle row: there are gaps between stitches.
+    // Walk along the middle row: the paint thins between one stitch and the next rather than running solid.
+    const row: number[] = [];
+    for (let x = 60; x < 540; x++) row.push(px[(45 * W + x) * 4 + 3]);
+    const peak = Math.max(...row);
     let gaps = 0;
     let inGap = false;
-    for (let x = 20; x < 180; x++) {
-      const a = px[(15 * W + x) * 4 + 3];
-      if (a < 40 && !inGap) (gaps++, (inGap = true));
-      if (a > 120) inGap = false;
+    for (const a of row) {
+      if (a < peak * 0.6 && !inGap) (gaps++, (inGap = true));
+      if (a > peak * 0.9) inGap = false;
     }
     expect(gaps).toBeGreaterThanOrEqual(5);
     void meanRow;
   });
 
-  it('Seed: a plain square, size from paintSize, the press on opacity, nothing else', () => {
+  it('Seed: a plain square, size off its stroke picture, the press on opacity, nothing else', () => {
     const b = read('Seed.brush');
     const d = b.dab;
     expect(d.tip).toBe('square');
-    expect(d.size).toBe(PIXELS_PER_SIZE);
+    // Procreate's picture of this stroke is a 219 pixel ribbon; paintSize is 1, which would have said 100.
+    expect(d.size).toBe(219);
+    expect(b.changed.join(' ')).toMatch(/measured off Procreate's own picture/);
     // plotSpacing 0.0026 is closer than Frameling's closest, which is 5%.
     expect(d.spacing).toBe(0.05);
     expect(d.dynamics).toEqual([{ from: 'pressure', to: 'flow', amount: 1, invert: false }]);
@@ -400,6 +421,7 @@ describe('the real Procreate brushes', () => {
 
 describe('settings, built to the layout', () => {
   it('size, opacity and roundness', () => {
+    // No stroke picture in this made up file, so the size falls back to paintSize.
     const d = one(brush({ paintSize: 0.5, paintOpacity: 0.6, shapeRoundness: 0.4 })).dab;
     expect(d.size).toBeCloseTo(0.5 * PIXELS_PER_SIZE * 0.7, -1);
     expect(d.opacity).toBe(0.6);
@@ -526,12 +548,18 @@ describe('settings, built to the layout', () => {
     const withPicture = one(brush({ grainDepth: 0.5, textureScale: 2, textureMovement: 1, textureInverted: true }, { 'Grain.png': grainPng })).dab;
     expect(withPicture.grain).toMatchObject({ depth: 0.5, scale: 2, moving: true, invert: true });
     expect(withPicture.grain?.picture?.side).toBeGreaterThanOrEqual(8);
-    // Procreate's own papers are not in the file, and standing the sheet's paper in for one made inking pens speckly
-    // when Procreate's own picture of the stroke shows them smooth. The brush comes with no paper and names the one
-    // it wanted, so nothing arrives grainy in a way the file never asked for.
-    const named = one(brush({ bundledGrainPath: 'Brush-Preset-Rough.png', grainDepth: 0.7 }));
-    expect(named.dab.grain).toBe(null);
-    expect(named.dropped.join(' ')).toMatch(/Brush-Preset-Rough\.png.*no paper/);
+    // Procreate's own papers are not in the file, only named. A name that says what tooth it has gets the nearest
+    // paper Frameling draws itself, so a pencil arrives gritty rather than smooth, and the brush says which stood in.
+    const named = one(brush({ bundledGrainPath: 'Brush-Artery-Charcoal-Corse.jpg', grainDepth: 1 }));
+    expect(named.dab.grain).toMatchObject({ paper: 'fine', moving: false });
+    expect(named.dab.grain!.depth).toBeGreaterThan(0.5);
+    expect(named.changed.join(' ')).toMatch(/Charcoal-Corse\.jpg.*gritty paper/);
+    expect(one(brush({ bundledGrainPath: 'Brush-Preset-Pastel-Paper.jpg', grainDepth: 1 })).dab.grain).toMatchObject({ paper: 'laid' });
+    // A name that says nothing about tooth gets no stand in: Shenbot's Inking Pen names "Brush-Artery-Splatters.png"
+    // and Procreate's own picture of its stroke is smooth, so guessing a paper there made the pens speckly.
+    const vague = one(brush({ bundledGrainPath: 'Brush-Artery-Splatters.png', grainDepth: 0.7 }));
+    expect(vague.dab.grain).toBe(null);
+    expect(vague.dropped.join(' ')).toMatch(/Brush-Artery-Splatters\.png.*no paper/);
     expect(one(brush({ bundledGrainPath: 'Brush-Preset-Blank.png', grainDepth: 1 })).dab.grain).toBe(null);
     // A grain picture with nothing in it (flat grey) catches nothing, so there is no grain.
     const flatPng = encodePng({ width: 32, height: 32, pixels: new Uint8ClampedArray(32 * 32 * 4).fill(128) });
@@ -722,5 +750,46 @@ describe('a damaged or hostile Procreate file is refused in plain words, and not
       const z = zipSync({ 'Brush.archive': arch, 'Shape.png': k % 2 ? shape : inner['Shape.png'] });
       expect(() => readBrushFile(z, 'x.brush')).not.toThrow();
     }
+  });
+});
+
+// ---------------------------------------------------------------- the size, off Procreate's own stroke picture
+
+describe("size from Procreate's own picture of the stroke", () => {
+  it('takes the width of one dab across the line, not paintSize', () => {
+    // paintSize 0.3 would say 30 pixels (and 21 after the disc's share of the picture); the picture says 40.
+    const b = one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 40) }));
+    expect(b.dab.size).toBe(40);
+    expect(b.changed.join(' ')).toMatch(/40 pixels across, measured off Procreate's own picture/);
+  });
+
+  it('a gap between scattered dabs does not widen it', () => {
+    const solid = one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 30) })).dab.size;
+    const dashed = one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 30, 20) })).dab.size;
+    expect(solid).toBe(30);
+    expect(dashed).toBe(30);
+  });
+
+  it('a squashed tip is measured across the line, so the brush comes in wider than the mark', () => {
+    const d = one(brush({ paintSize: 0.3, shapeRoundness: 0.5 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 30) })).dab;
+    expect(d.roundness).toBe(0.5);
+    expect(d.size).toBe(60);
+  });
+
+  it('falls back to paintSize when there is no picture, or when the picture cannot say', () => {
+    expect(one(brush({ paintSize: 0.5 })).dab.size).toBeCloseTo(0.5 * PIXELS_PER_SIZE * 0.7, -1);
+    // A stroke that fills the picture top to bottom was drawn bigger than the picture.
+    const full = one(brush({ paintSize: 0.5 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 200) }));
+    expect(full.dab.size).toBeCloseTo(0.5 * PIXELS_PER_SIZE * 0.7, -1);
+    expect(full.changed.join(' ')).not.toMatch(/measured off/);
+  });
+
+  it('a picture too small to measure is ignored rather than trusted', () => {
+    expect(one(brush({ paintSize: 0.5 }, { 'QuickLook/Thumbnail.png': strokePng(6, 6, 2) })).dab.size).toBeCloseTo(0.5 * PIXELS_PER_SIZE * 0.7, -1);
+  });
+
+  it('never comes in smaller than the smallest or wider than the widest', () => {
+    expect(one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(400, 120, 2) })).dab.size).toBe(6);
+    expect(one(brush({ paintSize: 0.3 }, { 'QuickLook/Thumbnail.png': strokePng(900, 800, 700) })).dab.size).toBe(300);
   });
 });
