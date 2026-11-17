@@ -32,7 +32,8 @@ function make(): Doc {
 }
 
 const saved = (doc: Doc, reuse: boolean) => JSON.parse(strFromU8(unzipSync(saveFile(doc, 't', NOW, reuse ? REUSE : {}))['doc.json']));
-const pointX = (doc: Doc, reuse = true) => saved(doc, reuse).drawings.d0.shapes[0].points[0].x;
+// Points are written as flat numbers (src/io/packPoints.ts): the first stroke's first x is the list's first number.
+const pointX = (doc: Doc, reuse = true) => saved(doc, reuse).drawings.d0.shapes[0].points[0];
 
 /** Saves with reuse, runs `change` on the store, saves with reuse again: the file must show the new x, like a plain save. */
 function check(change: (s: Store) => void, expectX: number, doc: Doc = make()) {

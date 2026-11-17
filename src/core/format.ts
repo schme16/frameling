@@ -11,8 +11,14 @@
 export const FORMAT_VERSION = 3;
 /** What a file that uses a key's `offset` is saved as, so an older Frameling refuses it instead of drawing parts in the wrong place. Files that don't use one stay at `FORMAT_VERSION`. */
 export const OFFSET_FORMAT_VERSION = 4;
+/**
+ * What a file whose points are packed is saved as: a stroke's line and a curve are written as flat lists of numbers
+ * rather than a little object each (see src/io/packPoints.ts). The same coordinates exactly, a fifth off the file and
+ * half the work of opening it; an older Frameling would read the numbers as points, so it is sent to update instead.
+ */
+export const PACKED_POINTS_FORMAT_VERSION = 5;
 /** The newest version this build can open. */
-export const NEWEST_FORMAT_VERSION = OFFSET_FORMAT_VERSION;
+export const NEWEST_FORMAT_VERSION = PACKED_POINTS_FORMAT_VERSION;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */

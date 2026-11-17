@@ -4,9 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
 import { produce } from 'immer';
 import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorDrawing } from '../../src/core/doc';
-import type { Doc } from '../../src/core/format';
+import { PACKED_POINTS_FORMAT_VERSION, type Doc } from '../../src/core/format';
 import { loadFile, saveFile, saveFileAsync } from '../../src/io/file';
 import { shapesForSave } from '../../src/io/ext';
+import { packShapes } from '../../src/io/packPoints';
 import { setAutoFreeze } from 'immer';
 
 setAutoFreeze(false);
@@ -53,12 +54,13 @@ function reference(doc: Doc, bytesOf: Uint8Array): string {
   for (const [id, d] of Object.entries(doc.drawings)) {
     if (d.kind === 'pixel') drawings[id] = saved.drawings[id];
     else if (d.kind === 'tilemap') drawings[id] = { ...d, cells: Array.from(d.cells) };
-    else if (d.kind === 'vector' && d.kept?.length) {
+    else if (d.kind === 'vector') {
       const { kept: _k, ...rest } = d;
-      drawings[id] = { ...rest, shapes: shapesForSave(d) };
+      drawings[id] = { ...rest, shapes: packShapes(shapesForSave(d)) };
     } else drawings[id] = d;
   }
-  return JSON.stringify({ ...doc, drawings, audio: undefined });
+  // Points written as flat numbers raise the file's version (src/io/packPoints.ts).
+  return JSON.stringify({ ...doc, version: PACKED_POINTS_FORMAT_VERSION, drawings, audio: undefined });
 }
 
 const docJson = (bytes: Uint8Array) => strFromU8(unzipSync(bytes)['doc.json']);
@@ -127,9 +129,10 @@ describe('saving with kept drawing text', () => {
     doc.drawings.v2 = cold;
     expect(docJson(saveFile(doc, 't', NOW))).toBe(reference(doc, saveFile(doc, 't', NOW)));
     (cold.shapes[0] as any).points[0].x = 77;
-    expect(JSON.parse(docJson(saveFile(doc, 't', NOW))).drawings.v2.shapes[0].points[0].x).toBe(77);
+    // The points are a flat list of numbers, so the first x is the list's first number.
+    expect(JSON.parse(docJson(saveFile(doc, 't', NOW))).drawings.v2.shapes[0].points[0]).toBe(77);
     // And a plain save left nothing behind for a later reusing save to serve.
-    expect(JSON.parse(docJson(saveFile(doc, 't', NOW, REUSE))).drawings.v2.shapes[0].points[0].x).toBe(77);
+    expect(JSON.parse(docJson(saveFile(doc, 't', NOW, REUSE))).drawings.v2.shapes[0].points[0]).toBe(77);
   });
 
   it('opens back to the same document', () => {

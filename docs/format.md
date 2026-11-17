@@ -296,6 +296,7 @@ sets the offset of every layer under it on that frame, so the group moves as one
 
 **Version.** A file that uses an offset anywhere (stage, symbols, artboards, what a variation changes) is saved as
 version 4 (`OFFSET_FORMAT_VERSION`); a file that doesn't stays version 3, so nothing changes for anyone not using it.
+(A file with any points in it is saved as version 5 for packed points, see below, which covers almost every drawing.)
 `versionFor` in `core/offset.ts` decides. An older Frameling refuses a version 4 file with the "made with a newer
 Frameling" message. That is on purpose: opening it anyway would drop the offsets without a word, draw every moved part
 in the wrong place, and take the moves out of the file for good on the next save. `NEWEST_FORMAT_VERSION` is the
@@ -395,6 +396,18 @@ when comparing two drawings for "same look" (as `id` is ignored).
   ring's radius or the copy's distance from the line. Cleaned on open by `cleanRepeat` (`src/geometry/repeat.ts`), which
   drops one that makes no sense. An older file has none. See `test/repeat/`.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
+- **Points in the file are flat numbers** (`src/io/packPoints.ts`). In memory a point is an object, as above. In a saved
+  file every point list is written as a list of numbers instead: a stroke is `x, y, p, x, y, p, ...`, and a curve point
+  starts with which controls it has (0 none, 1 just `c1`, 2 just `c2`, 3 both), then its own `x, y`, then those
+  controls. `{"x":1,"y":2,"p":0.5}` is seven things for a parser to make (an object, three key strings, three numbers);
+  `1,2,0.5` is three, and a curve point drops from seventeen to seven. Nothing is rounded and nothing is guessed: the
+  numbers are written exactly as they were, so the drawing that comes back is the drawing that was saved, to the last
+  decimal place. On the 40 layer by 240 key stress animation it takes `doc.json` from 34.9 MB to 27.4 and halves the
+  parse. It covers a stroke's `points`, the subpaths of a fill or a path, and the curve words follow
+  (`onPath.curve`); the shapes a variation adds in its overrides, and the undo steps in `history/`, stay objects. The
+  reader takes both shapes (a point list whose first item is a number is packed), so every file ever saved still opens,
+  and a shape of a kind this build doesn't know is kept and written back exactly as it came. A damaged packed list
+  loses its tail rather than the whole shape. See `test/io/packed-points.test.ts`.
 - `Gradient` is `{kind: 'linear' | 'radial' | 'angular' | 'diamond', stops: {at, color}[], from, to}` in document pixels, so it moves with
   the shape. Linear runs `from` to `to`; radial is a circle round `from` out to `to`; angular (conic) sweeps once round `from`,
   clockwise on screen, starting in the direction of `to` (stops 0 and 1 meet there), so how far `to` is only places the handle.

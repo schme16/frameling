@@ -12,7 +12,7 @@ import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook, withShapeEffects } from '../effects/io';
 import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
+import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, PACKED_POINTS_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, encodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { ioTime, nowMs } from './ioTime';
@@ -27,6 +27,7 @@ import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
 import { packPictures, readLayerPicture, unpackPictures } from './pictures-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
+import { packShapes, unpackRawShape, usesPackedPoints } from './packPoints';
 import { packArtboards, readArtboards } from '../artboards/io';
 import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
@@ -311,19 +312,22 @@ function filesToSave(open: Doc, appVersion: string, now: Date, opts: SaveOptions
     } else if (d.kind === 'tilemap') {
       // Not cached: its cells are a typed array, which nothing stops from being written in place.
       entries.push({ id, value: () => ({ ...d, cells: Array.from(d.cells) }) });
-    } else if (d.kind === 'vector' && d.kept?.length) {
+    } else if (d.kind === 'vector') {
+      // Points go in as flat numbers (src/io/packPoints.ts), with any shapes of a kind this build does not know put
+      // back where they were.
       entries.push(
         keep(id, d, () => {
           const { kept: _kept, ...rest } = d;
-          return { ...rest, shapes: shapesForSave(d) };
+          return { ...rest, shapes: packShapes(shapesForSave(d)) };
         }),
       );
     } else {
-      entries.push(d.kind === 'vector' ? keep(id, d, () => d) : { id, value: () => d });
+      entries.push({ id, value: () => d });
     }
   }
-  // The usual version, or the next when a key has an offset, so an older Frameling refuses the file instead of drawing parts in the wrong place.
-  const version = versionFor(doc);
+  // The usual version, or a later one when the file holds something an older Frameling would read wrongly rather than
+  // refuse: a key with an offset, or points written as flat numbers.
+  const version = Math.max(versionFor(doc), usesPackedPoints(doc) ? PACKED_POINTS_FORMAT_VERSION : 0);
   const manifest: Manifest = { format: 'frameling', version, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   // A small picture of the drawing for lists of files. Stored as it is (a PNG is already packed), and older versions skip it.
@@ -581,6 +585,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
+          // Points written as flat numbers become point objects again, in place (see src/io/packPoints.ts).
+          unpackRawShape(s);
           const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
           if (read) shapes.push(withRepeat(withShapeEffects(withExt(read, s, warnings), s), s));
           else lost = true;
