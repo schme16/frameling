@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { flyoutLayer } from '../layers';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyEvent, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { alphaByte, alphaPercent, hexToHsv, hsvToHex, readColourText, solidOf, withAlpha, withAlphaPercent, type HSV } from '../../canvas/colors';
+import { clampPercent, nudgePercent, parsePercent } from '../../canvas/paintKinds';
 import { usePopover } from '../popover';
 import '../../canvas/canvas.css';
 import './colourPicker.css';
@@ -93,7 +94,48 @@ function HexBox({ value, alpha, onCommit, onEnd }: { value: string; alpha: boole
   );
 }
 
-export function ColourPicker({ value, onChange, onEnd, alpha = true, why, note }: { value: string; onChange: (hex: string) => void; onEnd?: () => void } & ColourRules) {
+/** The opacity as a number you can type: a whole percent, 0 to 100. The arrow keys nudge it (Shift for ten), and what is typed is clamped. */
+function OpacityBox({ pct, onCommit }: { pct: number; onCommit: (n: number) => void }) {
+  const [text, setText] = useState(String(pct));
+  const typing = useRef(false);
+  useEffect(() => {
+    if (!typing.current) setText(String(pct));
+  }, [pct]);
+  return (
+    <label className="cp-alpha-box" title="Opacity: how solid the colour is. Type a number from 0 to 100." data-control="opacity-box">
+      <input
+        className="cp-alpha-input"
+        value={text}
+        inputMode="numeric"
+        aria-label="Opacity, a number from 0 to 100"
+        onFocus={(e) => {
+          typing.current = true;
+          e.target.select();
+        }}
+        onChange={(e) => {
+          setText(e.target.value);
+          const n = parsePercent(e.target.value);
+          if (n !== null) onCommit(n);
+        }}
+        onBlur={() => {
+          typing.current = false;
+          setText(String(pct));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const n = nudgePercent(pct, e.key === 'ArrowUp' ? 1 : -1, e.shiftKey);
+            setText(String(n));
+            onCommit(n);
+          } else if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+      />
+      <i aria-hidden="true">%</i>
+    </label>
+  );
+}
+
+export function ColourPicker({ value, onChange, onEnd, alpha = true, why, note, extra }: { value: string; onChange: (hex: string) => void; onEnd?: () => void; /** Something that sits beside the hex box (the Colours panel puts the eyedropper there). */ extra?: ReactNode } & ColourRules) {
   const solid = solidOf(value);
   const a = alpha ? alphaByte(value) : 255;
   // The hue and saturation are kept here because greys and blacks have no hue of their own: dragging down to black
@@ -160,13 +202,20 @@ export function ColourPicker({ value, onChange, onEnd, alpha = true, why, note }
             <div className="cp-alpha" style={{ '--cp': solid } as CSSProperties} {...op} role="slider" aria-label="Opacity" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-valuetext={`${pct}% solid`} tabIndex={0} onKeyDown={onOpKey}>
               <div className="cp-alpha-knob" style={{ left: `${pct}%`, '--cp': full } as CSSProperties} />
             </div>
-            <output className="cp-alpha-val">{pct}%</output>
+            <OpacityBox
+              pct={pct}
+              onCommit={(n) => {
+                send(hsv, (clampPercent(n) / 100) * 255);
+                onEnd?.();
+              }}
+            />
           </div>
         )}
       </div>
       <div className="cp-hex-row">
         <span className="cp-chip cp-chip-static" style={{ '--chip': full } as CSSProperties} aria-hidden="true" />
         <HexBox value={value} alpha={alpha} onCommit={(hex) => send(hexToHsv(hex) ?? hsv, alpha ? alphaByte(hex) : 255)} onEnd={onEnd} />
+        {extra}
       </div>
       {!alpha && why && (
         <p className="cp-note" data-kind="why">

@@ -5,6 +5,7 @@ import { Choice, Slider, Tip } from '../../canvas/controls';
 import type { PlaneChoice } from '../../canvas/perspectivePlane';
 import { useViewSettings } from '../../canvas/viewSettings';
 import { Wells } from '../../canvas/panels/Wells';
+import { PaintKinds } from '../../canvas/panels/PaintKinds';
 import { setToolSettings, useToolSettings } from '../settings';
 import { DrawModeToggle } from './DrawModeToggle';
 import { MirrorOptions } from './MirrorOptions';
@@ -47,6 +48,7 @@ export function ShapeOptions() {
     <div className="cv-options">
       <DrawModeToggle />
       <Wells />
+      <PaintKinds inOptions />
       {(isLine || strokeOn) && <Slider label={isLine ? 'Thickness' : 'Outline thickness'} value={stroke} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: typedSize(v) })} />}
       {(isLine || strokeOn) && <LineStyleOptions arrows={isLine} />}
       {tool === 'rect' && <Slider label="Rounded corners" value={radius} min={0} max={200} format={(v) => (v ? `${v}px` : 'Square')} onChange={(v) => setToolSettings({ cornerRadius: v })} />}

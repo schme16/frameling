@@ -3,6 +3,7 @@ import { typedSize } from '../brushRange';
 import { useBrushRange } from './useBrushRange';
 import { Slider, Tip } from '../../canvas/controls';
 import { Wells } from '../../canvas/panels/Wells';
+import { PaintKinds } from '../../canvas/panels/PaintKinds';
 import { setToolSettings, useToolSettings } from '../settings';
 import { PixelOutlineOptions, useLayerKind } from '../../pixel/ToolOptions';
 import { DrawModeToggle } from './DrawModeToggle';
@@ -20,6 +21,7 @@ export function PolyStarOptions() {
     <div className="cv-options">
       <DrawModeToggle />
       <Wells />
+      <PaintKinds inOptions />
       {star ? (
         <>
           <Slider label="Points" value={t.starPoints} min={3} max={24} onChange={(v) => setToolSettings({ starPoints: v })} />

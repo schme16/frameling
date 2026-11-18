@@ -5,9 +5,13 @@ import { noteColorUsed, useRecentColors } from '../../tools/recent';
 import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
+import { PaintKinds } from './PaintKinds';
+import { EyedropperButton } from './EyedropperButton';
+import { usePaintColour } from './usePaintColour';
+import { swatchesCount, swatchesWhere } from '../paintKinds';
 import { GradientEditor } from './GradientEditor';
 import { isAnimated } from '../../core/animation';
-import { endGradientGesture, paintView, setStopColor, showsPicker, stopColor, usePaintView, useGradientWells } from '../../tools/gradient-wells';
+import { endGradientGesture, paintView, setStopColor, showsPicker, stopColor, usePaintView } from '../../tools/gradient-wells';
 import { openRecolour } from '../../tools/recolour-open';
 import { usePopover } from '../../ui/popover';
 import { ColourPicker } from '../../ui/colour/ColourPicker';
@@ -91,13 +95,10 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
 export function ColorsPanel() {
   // The picker shows the box in front. When that box is "none", show the stroke colour so the picker has a
   // starting point; picking any colour turns "none" off.
-  const plain = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   const well = useStore((s) => s.ui.activeWell);
   const animated = useStore((s) => isAnimated(s.doc));
-  // Re-read when the gradient changes, so the picker follows the marker being edited.
   const view = usePaintView(well);
-  useGradientWells((s) => s.stop[well]);
-  const color = stopColor(well) ?? (view.from === 'colour' ? view.color : plain);
+  const color = usePaintColour();
   const swatches = useStore((s) => s.doc.swatches);
   const recent = useRecentColors();
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -106,11 +107,16 @@ export function ColorsPanel() {
   return (
     <div className="cv-panel cv-colors">
       <Wells />
-      {showsPicker(view) && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} />}
+      <PaintKinds />
+      {showsPicker(view) && <ColourPicker value={color} onChange={setColor} onEnd={noteNow} alpha={rules.alpha} why={rules.why} note={rules.note} extra={<EyedropperButton />} />}
       <GradientEditor />
 
       <div className="cv-field-head">
         <span className="cv-field-label">Swatches</span>
+        <span className="cv-field-value" data-control="swatches-where">
+          {swatchesWhere(swatches.length)}
+          <span className="cv-where-count">{swatchesCount(swatches.length)}</span>
+        </span>
       </div>
       <div className="cv-swatches">
         {swatches.map((s) => (

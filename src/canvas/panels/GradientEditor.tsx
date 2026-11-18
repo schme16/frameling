@@ -1,14 +1,14 @@
-// The gradient part of the Colours panel: Solid / Linear / Radial for the box in front, and for a gradient a bar of
+// The gradient part of the Colours panel: for a gradient a bar of
 // its colours with a marker per colour. Click a marker to change its colour with the picker above, drag it to move
 // it, drag it off the bar (or press its x) to take it away, and click the bar to add a colour there. Shapes you have
 // picked come first: when they share a gradient the bar is theirs, and when they differ it says so and offers to match.
 import { useRef, type PointerEvent as RPointerEvent } from 'react';
 import { gradientCss } from '../../core/gradient';
 import { hasAlpha } from '../colors';
-import { Choice, Slider, Tip } from '../controls';
+import { Slider, Tip } from '../controls';
 import { getCommand } from '../../core/registry';
 import { useStore } from '../../core/store';
-import { addStop, bareWords, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, setPaintKind, showsPaintKind, useGradientWells, usePaintView, type PaintKind } from '../../tools/gradient-wells';
+import { addStop, bareWords, endGradientGesture, moveStop, removeStop, reverseStops, selectStop, setAngle, useGradientWells, usePaintView } from '../../tools/gradient-wells';
 
 /** How far below the bar (in screen pixels) a dragged marker has to go to be taken away. */
 const DRAG_OFF = 36;
@@ -28,7 +28,6 @@ export function GradientEditor() {
   const bar = useRef<HTMLDivElement>(null);
   const drag = useRef<{ i: number; moved: boolean; off: boolean } | null>(null);
   const mixed = view.from === 'differ' || view.from === 'colours';
-  const kind: PaintKind = g?.kind ?? 'solid';
 
   const atOf = (clientX: number) => {
     const r = bar.current!.getBoundingClientRect();
@@ -60,23 +59,6 @@ export function GradientEditor() {
 
   return (
     <div className="cv-gradient" data-quest="gradient-editor">
-      {showsPaintKind(view) && (
-        <Choice<PaintKind>
-          label={well === 'fill' ? 'Fill' : 'Stroke'}
-          value={mixed ? ('' as PaintKind) : kind}
-          options={[
-            { value: 'solid', label: 'Solid', title: 'One colour' },
-            { value: 'linear', label: 'Linear', title: 'Colours blending along a straight line (linear gradient)' },
-            { value: 'radial', label: 'Radial', title: 'Colours blending out from the middle in a circle (radial gradient)' },
-            { value: 'angular', label: 'Angular', title: 'Colours sweeping round the middle like a colour wheel or a pie (angular, or conic, gradient)', command: 'colors.angular' },
-            { value: 'diamond', label: 'Diamond', title: 'Colours stepping out from the middle in a square turned on its corner (diamond gradient)', command: 'colors.diamond' },
-          ]}
-          onChange={(k) => {
-            setPaintKind(well, k);
-            endGradientGesture();
-          }}
-        />
-      )}
       {bareWords(view, well) && (
         <p className="cv-tip" data-testid="paint-bare">
           {bareWords(view, well)}

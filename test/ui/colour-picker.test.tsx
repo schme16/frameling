@@ -30,7 +30,7 @@ describe('the opacity slider', () => {
     const s = slider('Opacity')!;
     expect(s).toBeTruthy();
     expect(s.getAttribute('aria-valuenow')).toBe('50');
-    expect(host.querySelector('.cp-alpha-val')?.textContent).toBe('50%');
+    expect((host.querySelector('input[aria-label^="Opacity, a number"]') as HTMLInputElement).value).toBe('50');
   });
 
   it('a six digit colour reads as fully solid', () => {
@@ -73,6 +73,65 @@ describe('the opacity slider', () => {
   it('shows a note about what see-through means here, when there is one', () => {
     act(() => root.render(<ColourPicker value="#336699" note="Palette notes." onChange={() => undefined} />));
     expect(host.textContent).toContain('Palette notes.');
+  });
+});
+
+describe('the opacity box', () => {
+  const box = () => host.querySelector('input[aria-label^="Opacity, a number"]') as HTMLInputElement;
+  const type = (el: HTMLInputElement, text: string) =>
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, text);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+  it('takes a typed number and moves the colour to it', () => {
+    const out: string[] = [];
+    act(() => root.render(<ColourPicker value="#336699" onChange={(c) => out.push(c)} />));
+    type(box(), '50');
+    expect(out.at(-1)).toBe('#33669980');
+    type(box(), '0');
+    expect(out.at(-1)).toBe('#33669900');
+  });
+
+  it('clamps what is typed to 0 to 100', () => {
+    const out: string[] = [];
+    act(() => root.render(<ColourPicker value="#33669980" onChange={(c) => out.push(c)} />));
+    type(box(), '250');
+    expect(out.at(-1)).toBe('#336699');
+    type(box(), '-5');
+    expect(out.at(-1)).toBe('#33669900');
+  });
+
+  it('leaves a half typed box alone and sets it back when you leave it', () => {
+    const out: string[] = [];
+    act(() => root.render(<ColourPicker value="#33669980" onChange={(c) => out.push(c)} />));
+    act(() => box().focus());
+    type(box(), '5x');
+    expect(out).toEqual([]);
+    act(() => box().blur());
+    expect(box().value).toBe('50');
+  });
+
+  it('the arrow keys nudge it by one, and ten with Shift, and stop at the ends', () => {
+    const out: string[] = [];
+    act(() => root.render(<ColourPicker value="#33669980" onChange={(c) => out.push(c)} />));
+    key(box(), 'ArrowUp');
+    expect(out.at(-1)).toBe('#33669982');
+    key(box(), 'ArrowDown', true);
+    expect(out.at(-1)).toBe('#33669966');
+    act(() => root.render(<ColourPicker value="#336699" onChange={(c) => out.push(c)} />));
+    key(box(), 'ArrowUp', true);
+    expect(out.at(-1)).toBe('#336699');
+  });
+
+  it('is left out with the slider where see-through makes no sense', () => {
+    act(() => root.render(<ColourPicker value="#336699" alpha={false} onChange={() => undefined} />));
+    expect(box()).toBeNull();
+  });
+
+  it('shows what is passed beside the hex box', () => {
+    act(() => root.render(<ColourPicker value="#336699" onChange={() => undefined} extra={<button data-testid="extra">i</button>} />));
+    expect(host.querySelector('.cp-hex-row [data-testid=extra]')).toBeTruthy();
   });
 });
 

@@ -1,6 +1,7 @@
 import { useStore } from '../../core/store';
 import { Slider, Tip } from '../../canvas/controls';
 import { Wells } from '../../canvas/panels/Wells';
+import { PaintKinds } from '../../canvas/panels/PaintKinds';
 import { setToolSettings, useToolSettings } from '../settings';
 import { PixelOutlineOptions, useLayerKind } from '../../pixel/ToolOptions';
 import { DrawModeToggle } from './DrawModeToggle';
@@ -18,6 +19,7 @@ export function PenOptions() {
     <div className="cv-options">
       <DrawModeToggle />
       <Wells />
+      <PaintKinds inOptions />
       {pixel ? <PixelOutlineOptions /> : strokeOn && <Slider label="Line thickness" value={stroke} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: typedSize(v) })} />}
       {!pixel && <LineStyleOptions />}
       {!pixel && <MirrorOptions />}

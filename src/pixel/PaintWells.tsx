@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { swapPaintBack } from '../tools/wells';
-import { Icon } from '../ui/icons';
+import { SwapArrow } from '../canvas/panels/WellCorners';
 import { ColourField } from '../ui/colour/ColourPicker';
 import { usePaintRules } from './colourRules';
 import './pixel.css';
@@ -39,11 +39,11 @@ export function PaintWells() {
   }, [paint, back]);
   return (
     <div className="px-wells" data-help="pixel-wells" data-quest="paint-wells">
-      <div className={`px-wells-stack${pop ? ' is-pop' : ''}`} key={pop}>
+      <div className={`px-wells-stack${pop ? ' is-pop' : ''}`} key={pop} data-overlaps>
         <Well which="back" color={back} />
         <Well which="paint" color={paint} />
-        <button type="button" className="px-wells-swap" aria-label="Swap Paint and Back" title="Swap Paint and Back (X)" disabled={!back} onClick={() => void swapPaintBack()}>
-          <Icon name="loop" size={14} />
+        <button type="button" className="px-wells-swap" data-control="swap-colours" aria-keyshortcuts="X" aria-label="Swap Paint and Back" title="Swap Paint and Back (X)" disabled={!back} onClick={() => void swapPaintBack()}>
+          <SwapArrow size={16} />
         </button>
       </div>
       <ul className="px-wells-text">

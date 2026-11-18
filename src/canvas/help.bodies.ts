@@ -106,20 +106,26 @@ See [Snapping](help:snapping) for everything else you can snap to.`,
   'pixel-grid': `When you're on a pixel layer and zoomed in close (each pixel at least 6 screen pixels wide, which is 600% for single-pixel art), Frameling draws thin lines between the pixels so you can see exactly where each one is.
 
 Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never shows up in exports.`,
-  colours: `The big square at the top is the colour you're drawing with.
+  colours: `The Colours panel is where you choose what you draw with. At the top are two boxes, one over the other: the **fill** (insides of shapes) and the **stroke** (lines and outlines). The one with the gold ring is the one you're changing. Click the other to change that instead, or press **X**.
 
-- **Pick a colour** by dragging in the square (left is paler, up is brighter) and sliding the rainbow bar for the hue.
-- **Make it see-through** with the **Opacity** bar under the rainbow: all the way right is solid, all the way left is clear. It is the same picker every colour box opens: see [The colour picker](help:colour-picker).
-- **Type a colour** in the Hex box, like \`#ff9e6d\`, or \`#ff9e6d80\` for half see-through.
-- **Swatches** are this drawing's palette. Click one to use it. Press **+** to add the current colour. **Right-click** a swatch to rename or remove it.
+- **Swap them:** the curved arrow at the top corner of the boxes (**Shift+X**).
+- **Back to the usual colours:** the small black and white pair at the bottom corner (**Shift+D**).
+- **What it's made of:** one row of pictures under the boxes: **None**, **Solid**, **Linear**, **Radial**, **Angular** and **Diamond**, each shown in your colour. Pick **None** for no fill or no outline (or press **/**). Pick a gradient and a bar of its colours appears under Hex: see [Gradients](help:tool-gradient).
+- **Pick a colour** by dragging in the big square (left is paler, up is brighter) and sliding the rainbow bar for the hue.
+- **Make it see-through** with the **Opacity** bar, or type a number from 0 to 100 in the box beside it (the up and down arrows nudge it, **Shift** by ten). It is the same picker every colour box opens: see [The colour picker](help:colour-picker).
+- **Type a colour** in the **Hex** box, like \`#ff9e6d\`, or \`#ff9e6d80\` for half see-through.
+- **Pick one from the drawing** with the eyedropper button beside Hex. It switches to the Eyedropper tool (**I**), so click a colour you can see, then pick your drawing tool again.
+- **Swatches** are this drawing's palette, named above them. Click one to use it. Press **+** to add the current colour. **Right-click** a swatch to rename or remove it.
 - **Recently used** shows the last 8 colours you drew with, so it's easy to go back.
 
-Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
+**Good to know:** in a narrow panel the six pictures sit three and three. They never turn into a long list.
+
+More on the boxes: [Fill and stroke colours](help:fill-and-stroke).`,
   'colour-picker': `Every colour box in Frameling opens this one picker. Click the little swatch and it opens right beside it; click away or press **Escape** to close it.
 
 **Pick a colour:** drag in the square (left is paler, up is brighter), slide the rainbow bar for the hue, or type it in the **Hex** box.
 
-**Make it see-through:** slide the **Opacity** bar. All the way right is solid, all the way left is clear (this is called *alpha*). A see-through colour shows a chequerboard behind it, so you can tell. The Hex box gains two more digits, like \`#ff9e6d80\` for half. A solid colour stays six digits, so older files read exactly as they were.
+**Make it see-through:** slide the **Opacity** bar, or type a number from 0 to 100 in the box beside it. All the way right (100) is solid, all the way left (0) is clear (this is called *alpha*). A see-through colour shows a chequerboard behind it, so you can tell. The Hex box gains two more digits, like \`#ff9e6d80\` for half. A solid colour stays six digits, so older files read exactly as they were.
 
 **Where you can**, you get the Opacity bar: the fill and stroke in the [Colours panel](help:colours), the Paint and Back colours in the Pixel workspace, text, particles, and the colours in your [palette](help:palette).
 
