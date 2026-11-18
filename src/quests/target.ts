@@ -3,6 +3,8 @@ import { store } from '../core/store';
 import { foldedStepOf, moreRequest } from '../timeline/headerMenu';
 import { currentGroups, flyRequest, frontTools } from '../ui/toolRail';
 import { hiddenTools } from '../ui/toolArrange';
+import { currentChoice } from '../core/choices';
+import { STACK_CLICK_CHOICE } from '../ui/toolStacks';
 import type { QuestTarget } from './types';
 
 /** On screen and not hidden. */
@@ -60,16 +62,23 @@ function foldedHeaderButton(list: Element[], sel: string, shown: (el: Element) =
 function stackedToolButton(id: string, shown: (el: Element) => boolean): Element | null {
   const g = currentGroups().find((x) => x.tools.includes(id));
   if (!g) return null;
-  const btn = [...document.querySelectorAll(`.ui-tool.is-stack[data-tool-group="${g.id}"]`)].find(shown);
-  if (!btn) return null;
-  const using = g.tools.includes(store().get().ui.tool);
-  if (!using) {
-    if (frontTools.get()[g.id] !== id) frontTools.set((f) => ({ ...f, [g.id]: id }));
-  } else if (askedFor?.id !== id) {
-    askedFor = { id, using: store().get().ui.tool };
-    flyRequest.set(g.id);
+  // The button it shares: a stack it is in (the Brush and its soft cousins), or the whole group when that is folded into one.
+  const units: { id: string; tools: string[]; stack: boolean }[] = [...(g.stacks ?? []).filter((x) => x.tools.includes(id)).map((x) => ({ id: x.id, tools: x.tools, stack: true })), { id: g.id, tools: g.tools, stack: false }];
+  for (const u of units) {
+    const btn = [...document.querySelectorAll(`.ui-tool.is-stack[data-stack="${u.id}"]`)].find(shown);
+    if (!btn) continue;
+    const using = u.tools.includes(store().get().ui.tool);
+    // A stack whose click always picks the first tool cannot be brought to the front, so its pull-out is opened instead.
+    const fixed = u.stack && currentChoice(STACK_CLICK_CHOICE) === 'first';
+    if (!using && !fixed) {
+      if (frontTools.get()[u.id] !== id) frontTools.set((f) => ({ ...f, [u.id]: id }));
+    } else if (askedFor?.id !== id) {
+      askedFor = { id, using: store().get().ui.tool };
+      flyRequest.set(u.id);
+    }
+    return btn;
   }
-  return btn;
+  return null;
 }
 
 /**

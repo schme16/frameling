@@ -54,7 +54,7 @@ describe('the rail while it is built', () => {
   it('shows the group names out of the box, and a plain divider for a group nobody named', () => {
     mount();
     const heads = [...host.querySelectorAll('.ui-tool-head')].map((h) => h.querySelector('.ui-tool-head-text')?.textContent);
-    expect(heads.slice(0, 3)).toEqual(['Select', 'Draw', 'Colour']);
+    expect(heads.slice(0, 4)).toEqual(['Select', 'Draw', 'Retouch', 'Colour']);
     act(() => startToolGroupHere('ellipse'));
     expect([...host.querySelectorAll('.ui-tool-head')].length).toBe(heads.length);
     expect(host.querySelectorAll('.ui-tool-gap').length).toBeGreaterThan(heads.length - 1);
@@ -70,26 +70,26 @@ describe('the rail while it is built', () => {
   it('a tool put away leaves the rail, a chip counts it, and bringing it back puts it where it was', () => {
     mount();
     const before = ids();
-    act(() => putToolAway('eraser'));
-    expect(ids()).not.toContain('eraser');
+    act(() => putToolAway('fill'));
+    expect(ids()).not.toContain('fill');
     expect(ids().length).toBe(before.length - 1);
     expect(q('.ui-tools-away')?.textContent).toBe('1');
-    expect(host.querySelectorAll('[data-tool-id="eraser"]').length).toBe(0);
-    act(() => bringToolBack('eraser'));
+    expect(host.querySelectorAll('[data-tool-id="fill"]').length).toBe(0);
+    act(() => bringToolBack('fill'));
     expect(ids()).toEqual(before);
     expect(q('.ui-tools-away')).toBeNull();
   });
 
   it('a put-away tool is still on the command and in the arrangement once', () => {
-    act(() => putToolAway('eraser'));
+    act(() => putToolAway('fill'));
     const all = currentGroups().flatMap((g) => g.tools);
-    expect(all.filter((t) => t === 'eraser')).toHaveLength(1);
+    expect(all.filter((t) => t === 'fill')).toHaveLength(1);
   });
 
   it('a quest pointing at a tool that is put away finds the chip', () => {
     mount();
-    act(() => putToolAway('eraser'));
-    expect(resolveTarget("[data-command=\"tools.eraser\"]", () => true)?.className).toContain('ui-tools-away');
+    act(() => putToolAway('fill'));
+    expect(resolveTarget("[data-command=\"tools.fill\"]", () => true)?.className).toContain('ui-tools-away');
   });
 
   it('a folded group is one button, the others stay as they are, and it opens out again', () => {
@@ -97,12 +97,14 @@ describe('the rail while it is built', () => {
     const n = ids().length;
     const g = currentGroups().find((x) => x.tools.includes('rect'))!;
     const inIt = host.querySelectorAll(`[data-tool-group="${g.id}"] button`).length;
+    // The Brush, the Eraser and the Retouch tools already share buttons, so those are stacks before any group is folded.
+    const shared = host.querySelectorAll('.ui-tool.is-stack').length;
     act(() => foldToolGroup(g.id, true));
-    expect(host.querySelectorAll('.ui-tool.is-stack')).toHaveLength(1);
+    expect(host.querySelectorAll('.ui-tool.is-stack')).toHaveLength(shared + 1);
     expect(ids().length).toBe(n - inIt);
-    expect(q('.ui-tool.is-stack')!.className).toContain('has-more');
+    expect(q(`.ui-tool.is-stack[data-stack="${g.id}"]`)!.className).toContain('has-more');
     act(() => foldToolGroup(g.id, false));
-    expect(host.querySelectorAll('.ui-tool.is-stack')).toHaveLength(0);
+    expect(host.querySelectorAll('.ui-tool.is-stack')).toHaveLength(shared);
     expect(ids().length).toBe(n);
   });
 

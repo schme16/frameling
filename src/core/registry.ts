@@ -232,12 +232,17 @@ export interface Tool {
   /** Toolbar order (lower first). */
   order?: number;
   /**
-   * Which group of the tool rail it starts in: 'draw', 'extras' (Colour), 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
+   * Which group of the tool rail it starts in: 'draw', 'retouch', 'extras' (Colour), 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
    * names them). Missing means Other. People can still move it.
    */
   group?: string;
   /** Its place in that group, lower first (tools with none come after, in registration order). */
   groupAt?: number;
+  /**
+   * The stack it starts in: tools next to each other in a group with the same stack share one rail button, with the rest in a
+   * pull-out behind it ('brush', 'eraser', 'retouch'; src/ui/toolStacks.ts).
+   */
+  stack?: string;
   /**
    * A slot on the tool rail shared with the same job on the other kind of layer (the Lasso and the Pixel lasso share
    * one). Tools with the same slot get one button, and the one that works on the layer you're on is the one it picks.

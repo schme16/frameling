@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'chalk-charcoal': `**Chalk and charcoal** is one tool for nine dry drawing things: vine charcoal, compressed charcoal, chalk, soft pastel, oil pastel, crayon, and three pencils. They work on **pixel layers**, and they draw the way the real ones do: the pigment catches on the bumps of the paper and skips the dips.
 
-**Draw with it:** pick **Chalk and charcoal** from the **Pixel tools** (or press **Alt+Shift+T**), choose a **Medium** and a **Paper** in the options, pick a colour, and drag.
+**Draw with it:** pick **Chalk and charcoal** from the **Brush** button's pull-out (or press **Alt+Shift+T**), choose a **Medium** and a **Paper** in the options, pick a colour, and drag.
 
 **Press lightly and you get specks. Press hard and the dips fill in.** That one thing is most of the look. With a pen, pressing harder does it for you. With a mouse, the **Pressure** slider is how hard you're pressing.
 

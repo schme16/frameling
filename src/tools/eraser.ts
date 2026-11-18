@@ -231,6 +231,7 @@ export const eraserTool: Tool = {
   id: 'eraser',
   group: 'draw',
   groupAt: 2,
+  stack: 'eraser',
   label: 'Eraser',
   icon: 'eraser',
   key: 'e',

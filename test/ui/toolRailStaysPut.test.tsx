@@ -323,7 +323,8 @@ describe('the rail on the page', () => {
     mount();
     const vector = ids().map(slotOf);
     expect(host.querySelector('[data-tool-id="shade"]')).toBeNull();
-    expect(host.querySelector('.ui-tool.is-off')).toBeNull();
+    // A tool on its own is hidden; the ones in a stack (the Retouch tools) stay, greyed, in their pull-out.
+    expect(host.querySelector('.ui-tool.is-off:not(.is-stack)')).toBeNull();
     expect(host.querySelector('[data-tool-id="select-lasso"]')).toBeTruthy();
     on(k.pixel);
     const pixel = ids().map(slotOf);

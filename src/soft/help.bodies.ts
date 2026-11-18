@@ -1,8 +1,10 @@
 // The words of the help topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'soft-paint': `**Soft paint** is five tools whose edges fade out instead of stopping: the **Soft brush**, the **Airbrush**, the **Highlighter**, the **Soft eraser** and **Smudge**. They work on **pixel layers**. A vector shape can't hold a fading edge, so on a vector layer they wait out of sight, and picking one takes you to a pixel layer.
+  'soft-paint': `**Soft paint** is five tools whose edges fade out instead of stopping: the **Soft brush**, the **Airbrush**, the **Highlighter**, the **Soft eraser** and **Smudge**. They work on **pixel layers**. A vector shape can't hold a fading edge, so on a vector layer they sit greyed in their pull-out, and choosing one takes you to a pixel layer.
 
-**Paint with them:** pick a tool from the **Pixel tools** (or press its key), choose a colour, and drag.
+**Find them:** each shares a button with its plain cousin. The **Brush** button holds the Soft brush, Airbrush, Highlighter, Chalk and charcoal and Pixel brush. The **Eraser** button holds the Soft eraser. The **Retouch** button holds Smudge, Blur, Sharpen and the Clone stamp. Press and hold a button, or right-click it, and the pull-out shows each tool with its key. See [Buttons with more tools behind them](help:tool-pullouts). They are also in **Tools > Soft paint** and the command search.
+
+**Paint with them:** pick one from its pull-out (or press its key), choose a colour, and drag.
 
 - **Soft brush** (**Shift+F**): a round brush that fades at the edge. **Hardness** sets how much of it is solid before the fade starts.
 - **Airbrush** (**Alt+Shift+A**): soft colour that builds up. Go slowly, or hold still, and it gets denser.

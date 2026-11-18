@@ -22,21 +22,27 @@ const every = () => flat(resolveGroups(undefined, allTools())).sort();
 
 describe('the three defaults', () => {
   it('Draw: select first, then drawing and the standard order', () => {
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'extras', 'shapes', 'rig', 'view']);
-    expect(currentGroups()[1].tools.slice(0, 4)).toEqual(['pencil', 'brush', 'eraser', 'fill']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'retouch', 'extras', 'shapes', 'rig', 'view']);
+    expect(currentGroups()[1].tools.slice(0, 10)).toEqual(['pencil', 'brush', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush', 'eraser', 'soft-eraser', 'fill']);
+    // The Brush and its soft cousins share a button, so do the Eraser and the Soft eraser, and so do the Retouch tools.
+    expect(currentGroups()[1].stacks).toEqual([{ id: 'brush', tools: ['brush', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush'] }, { id: 'eraser', tools: ['eraser', 'soft-eraser'] }]);
+    expect(currentGroups()[2].stacks).toEqual([{ id: 'retouch', tools: ['smudge', 'blur-brush', 'sharpen-brush', 'clone-stamp'] }]);
   });
   it('Animate: select first, then drawing, rig and motion, then the rest', () => {
     applyWorkspace('animate');
     const g = currentGroups();
-    expect(ids(g)).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
-    expect(g[2].tools).toEqual(['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints']);
+    expect(ids(g)).toEqual(['select', 'draw', 'retouch', 'rig', 'shapes', 'extras', 'view']);
+    expect(g[3].tools).toEqual(['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints']);
   });
   it('Pixel: the ways of selecting first, then the pixel tools, vector-only tools later', () => {
     applyWorkspace('pixel');
     const g = currentGroups();
-    expect(ids(g).slice(0, 4)).toEqual(['select', 'draw', 'pixel', 'shapes']);
-    expect(g[1].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
-    expect(g[2].tools).toEqual(['shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush', 'clone-stamp', 'blur-brush', 'sharpen-brush']);
+    expect(ids(g).slice(0, 5)).toEqual(['select', 'draw', 'pixel', 'retouch', 'shapes']);
+    // No Brush on this rail: the Pencil is the pixel brush, so the Brushes stack starts with the Soft brush.
+    expect(g[1].tools.slice(0, 10)).toEqual(['pencil', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush', 'eraser', 'soft-eraser', 'fill', 'eyedropper']);
+    expect(g[1].stacks).toEqual([{ id: 'brush', tools: ['soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush'] }, { id: 'eraser', tools: ['eraser', 'soft-eraser'] }]);
+    expect(g[2].tools).toEqual(['shade', 'dither', 'gradient', 'spray']);
+    expect(g[3].tools).toEqual(['smudge', 'blur-brush', 'sharpen-brush', 'clone-stamp']);
     // Every way of picking is its own tool, and they sit together in the Select group.
     expect(groupOf(g, 'pixel-select-lasso')).toBe('select');
     expect(groupOf(g, 'pixel-select-wand')).toBe('select');
@@ -62,7 +68,7 @@ describe('changes belong to the workspace they were made in', () => {
     expect(isCustomArrangement()).toBe(true);
     applyWorkspace('animate');
     expect(isCustomArrangement()).toBe(false);
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'retouch', 'rig', 'shapes', 'extras', 'view']);
     applyWorkspace('draw');
     expect(currentGroups()[0].tools).toEqual(['hand']);
   });
@@ -83,7 +89,7 @@ describe('changes belong to the workspace they were made in', () => {
     applyWorkspace('animate');
     moveToolTo('hand', { newGroupAt: 0 });
     resetToolArrangement();
-    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'retouch', 'rig', 'shapes', 'extras', 'view']);
     expect(isCustomArrangement()).toBe(false);
     applyWorkspace('pixel');
     expect(isCustomArrangement()).toBe(true);

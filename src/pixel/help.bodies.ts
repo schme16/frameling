@@ -21,7 +21,7 @@ Every pixel you pass over moves **one step along its ramp** in the [Palette](hel
 - Size, Pixel perfect and Mirror drawing work as they do for the pencil.
 
 This is sometimes called a *shading ink*. It works best with palettes laid out in ramps, dark to light.`,
-  'tool-spray': `Pick **Spray** from the Pixel tools, then drag. It scatters a few pixels of your **Paint** colour round the pointer each step, so a slow drag builds up thick and a quick one stays light.
+  'tool-spray': `Pick **Spray** from the **Colour** group of the tool strip, then drag. It scatters a few pixels of your **Paint** colour round the pointer each step, so a slow drag builds up thick and a quick one stays light.
 
 - **Size** is how many pixels across the sprinkle is.
 - It follows [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) like the other pixel tools.

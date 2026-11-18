@@ -1512,6 +1512,36 @@
     "text": "Make in-betweens from the right-click menu or Ctrl+Shift+T instead.",
     "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Offer in-betweens between keys\"."
   },
+  "choice.tools.stackClick.title": { "text": "Clicking a button with more tools behind it", "where": "Name of this choice in Preferences > Behaviour (group: Tools)." },
+  "choice.tools.stackClick.question": {
+    "text": "A button on the tool rail can have more tools behind it (the Brush, with the Soft brush and the Airbrush). What does a plain click pick?",
+    "where": "Never asked: the words under the choice in Preferences > Behaviour."
+  },
+  "choice.tools.stackClick.last.label": { "text": "The one you used last", "where": "Preferences: the button for the answer \"last\" in \"Clicking a button with more tools behind it\"." },
+  "choice.tools.stackClick.last.detail": {
+    "text": "The button shows it, and a click picks it again. Press and hold for the others.",
+    "where": "Preferences: the small line under the \"last\" answer in \"Clicking a button with more tools behind it\"."
+  },
+  "choice.tools.stackClick.first.label": { "text": "Always the first one", "where": "Preferences: the button for the answer \"first\" in \"Clicking a button with more tools behind it\"." },
+  "choice.tools.stackClick.first.detail": {
+    "text": "The button always shows the first tool (the Brush). Press and hold, or use the key, for the others.",
+    "where": "Preferences: the small line under the \"first\" answer in \"Clicking a button with more tools behind it\"."
+  },
+  "choice.tools.stackShare.title": { "text": "Similar tools share a button", "where": "Name of this choice in Preferences > Behaviour (group: Tools)." },
+  "choice.tools.stackShare.question": {
+    "text": "Should similar tools (the brushes, the erasers, the retouch tools) share one button, or have a button each?",
+    "where": "Never asked: the words under the choice in Preferences > Behaviour."
+  },
+  "choice.tools.stackShare.share.label": { "text": "Share a button", "where": "Preferences: the button for the answer \"share\" in \"Similar tools share a button\"." },
+  "choice.tools.stackShare.share.detail": {
+    "text": "A shorter rail. Press and hold a button to pick another tool from it.",
+    "where": "Preferences: the small line under the \"share\" answer in \"Similar tools share a button\"."
+  },
+  "choice.tools.stackShare.apart.label": { "text": "A button each", "where": "Preferences: the button for the answer \"apart\" in \"Similar tools share a button\"." },
+  "choice.tools.stackShare.apart.detail": {
+    "text": "Every tool is on the rail, a longer rail with nothing to hold.",
+    "where": "Preferences: the small line under the \"apart\" answer in \"Similar tools share a button\"."
+  },
   "choice.tools.offLayer.title": { "text": "Tools that do not work on this layer", "where": "Name of this choice in Preferences > Behaviour (group: Tools)." },
   "choice.tools.offLayer.question": {
     "text": "Some tools only work on one kind of layer. Hide the ones that do not work here, or keep them on the rail, greyed out?",

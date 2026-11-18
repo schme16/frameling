@@ -50,7 +50,7 @@ export const TOOLS_WITH_THEIR_FEATURE: readonly string[] = [
   'tools.bone', 'tools.bone-edit', 'tools.bone-remove', 'tools.pose', 'tools.weights',
   'tools.motion-path', 'tools.shape-hints', 'tools.record-move',
   'tools.notes', 'tools.marks',
-  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in the Soft paint menu.
+  // The pixel tools that fade at the edge, chalk and charcoal, and the pixel brush, sit in Tools > Soft paint.
   'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.charcoal', 'tools.pixel-brush',
   // The retouch brushes sit there too: clone, blur and sharpen paint with a brush, on pixel layers.
   'tools.clone-stamp', 'tools.blur-brush', 'tools.sharpen-brush',
@@ -89,16 +89,9 @@ export const MENUS: MenuDef[] = [
     items: [
       'sub:offrail', 'sub:arrange', '-',
       'sub:symbols', 'sub:shapes', 'sub:palette', '-',
+      'sub:softpaint', 'sub:charcoal', 'sub:pixelbrush', 'sub:clonestamp', '-',
       'sub:brushes', 'sub:brushtips', 'sub:toolopts',
     ],
-  },
-  {
-    // Spray, soft paint, chalk and charcoal, and the pixel brush: thirty commands that took Tools over its cap of 150 when
-    // the Pixel menu went. They are one family and they only work on a pixel layer, so they have a menu of their own.
-    label: 'Soft',
-    title: 'Soft paint',
-    categories: [],
-    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-', 'tools.blur-brush', 'tools.sharpen-brush', 'sub:clonestamp', '-', 'sub:charcoal', 'sub:pixelbrush'],
   },
   {
     // The three things this menu is about come first, each a submenu: Layer, Artboards, Tiles. A tile layer is a layer,
@@ -265,6 +258,12 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Symbols',
     items: ['symbols.make', 'symbols.makeFrames', 'symbols.makeOne', 'symbols.edit', 'symbols.exit', 'symbols.exitAll', '-', 'symbols.swap', 'symbols.resetTransform', 'symbols.deleteUnused'],
     prefixes: ['symbols.'],
+  },
+  // What the Soft paint menu held. It was a menu of its own on the bar; the soft tools are now stacks on the rail, so it is a submenu of
+  // Tools, with the settings submenus beside it (a submenu inside it would be four clicks down).
+  softpaint: {
+    label: 'Soft paint',
+    items: ['tools.spray', '-', 'tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', '-', 'tools.blur-brush', 'tools.sharpen-brush'],
   },
   brushes: {
     label: 'Saved brushes',

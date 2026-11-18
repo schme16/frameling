@@ -23,6 +23,7 @@ const Q: [string, string][] = [
   ['bounce', 'easing'], ['theme', 'themes'], ['colours of the app', 'themes'], ['panel', 'panels'], ['missing panel', 'panels'], ['layout', 'workspaces'], ['help', 'using-help'], ['search', 'command-palette'],
   ['plugin', 'plugins'], ['new drawing', 'new-document'], ['template', 'templates-yours'], ['mascot', 'meet-quill'], ['frames', 'timeline-frames'], ['hold', 'timeline-frames'], ['keyframe', 'timeline-frames'],
   ['smooth line', 'tool-brush'], ['pressure', 'tool-brush'], ['calligraphy', 'brush-own'], ['pattern brush', 'brush-own'], ['art brush', 'brush-own'], ['bristle', 'brush-own'], ['pen', 'tool-brush'], ['thin line', 'tool-pencil'], ['sketch', 'tool-pencil'], ['lasso', 'lasso'], ['gap', 'fill-gaps'], ['leak', 'fill-gaps'],
+  ['where is the airbrush', 'tool-pullouts'], ['press and hold a tool', 'tool-pullouts'], ['corner mark', 'tool-pullouts'], ['soft eraser', 'soft-paint'],
   ['record a move', 'record-motion'], ['drag to animate', 'record-motion'], ['perform', 'record-motion'],
   ['pixels on a vector layer', 'draw-anywhere'], ['a layer appeared', 'draw-anywhere'], ['two layers one row', 'draw-anywhere'], ['other half', 'draw-anywhere'],
   ['turn off', 'features'], ['lock', 'lock-layout'], ['unlock', 'lock-layout'], ['stop moving', 'lock-layout'], ['hide a panel i never use', 'features'],

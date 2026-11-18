@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'clone-stamp': `The **Clone stamp** copies one part of your picture onto another as you paint. You choose a spot to copy **from**, then paint where you want the copy to **go**, and the spot you chose follows your hand. It is how you cover a stray mark, mend a gap, or grow more of a pattern. It works on **pixel layers**.
 
-**Use it:** pick the **Clone stamp** (**Alt+Shift+S**). **Alt-click** the part of the picture you want to copy (or **Ctrl-click**; or hold the pointer there and use **Clone stamp: copy from the spot under the pointer**). Then paint where the copy should go. A cross marks the spot you chose, and a dashed ring shows where the copy is coming from as you move. Your first click does the choosing if you have not.
+**Use it:** pick the **Clone stamp** from the **Retouch** button's pull-out (**Alt+Shift+S**). **Alt-click** the part of the picture you want to copy (or **Ctrl-click**; or hold the pointer there and use **Clone stamp: copy from the spot under the pointer**). Then paint where the copy should go. A cross marks the spot you chose, and a dashed ring shows where the copy is coming from as you move. Your first click does the choosing if you have not.
 
 **Copy from:** **This layer** copies only what is on the layer you paint on, so a clone never brings in the colours of the layer below your line art. **Everything you see** copies the picture as it looks, every layer together, and paints the copy onto this layer.
 

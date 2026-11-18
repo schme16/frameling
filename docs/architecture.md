@@ -149,7 +149,7 @@ the layer side, the grid and the header), so `timeline/` imports nothing from it
 for the drawing it embeds). A tool says which rail group it starts in with `group` and `groupAt` (`src/ui/toolArrange.ts`
 only names tools in the Pixel workspace's default, `BUILTIN_RAILS`, and skips any that are not registered). Each workspace has its
 own rail arrangement: `Workspace.rail` is its default, `DockState.rails[workspaceId]` is what the person changed (`railOf`,
-`setToolGroups` in `src/ui/dock.ts`); the old single `layout.tools.groups` migrates into `rails` on load. Turning a feature off parks where its panels were (`parkPanels` in `src/ui/dock.ts`) and turning it on
+`setToolGroups` in `src/ui/dock.ts`); tools that share one rail button are a stack (`Tool.stack` says which one a tool starts in, `ToolGroup.stacks` holds the runs of a rail; the pure rules are in `src/ui/toolStacks.ts`): a click picks the tool used last, press and hold, right click or the menu key opens a pull-out (`Flyout` in `src/ui/ToolStrip.tsx`, placed by `placeBeside` in `src/ui/placePopup.ts`), and a rail someone saved keeps just the stacks it was saved with; the old single `layout.tools.groups` migrates into `rails` on load. Turning a feature off parks where its panels were (`parkPanels` in `src/ui/dock.ts`) and turning it on
 puts them back there; the palette offers "Turn on X" and a lesson of it (`quests` or `Quest.features`) is put down. Opening a drawing whose `usedBy` says it holds data
 of a feature that is off asks "Turn it on?" (`src/features/prompt.ts`, called from `io/document.ts`); help topics of an off
 feature are hidden and a help search offers "Turn on X" (`hiddenHelp()`). `test/features/boundary.test.ts` keeps `core/`
@@ -597,8 +597,8 @@ opens: the element under the pointer or focused, via `data-help` or `data-comman
 - **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
   aren't listed are added at the bottom, except the ones in `src/ui/paletteFirst.ts`: commands a control on screen
   already does (a tick, a button, a right-click row, each carrying `data-command`) stay in the palette and leave the
-  menus. Ten menus on the bar, by id and by the title on screen (File, Edit, View,
-  Draw shown as Tools, Soft shown as Soft paint, Layers shown as Layers and artboards, Animate shown as Animation,
+  menus. Nine menus on the bar, by id and by the title on screen (File, Edit, View,
+  Draw shown as Tools, Layers shown as Layers and artboards, Animate shown as Animation,
   Extras shown as Rigging, Effects, Help), and Streaming before Help while the streaming tools are on; everything else is a one-level submenu
   (`SUBMENUS`, `sub:<key>`). Ids stay put when the words change, because saved menu changes and plugins name them. A
   menu or submenu that moved keeps its old name for features: `MENU_HOMES` sends `registerMenuItems('Rig', ...)` to

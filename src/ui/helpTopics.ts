@@ -269,6 +269,14 @@ registerHelpTopics([
     keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'customise', 'customize', 'builder', 'groups', 'group names', 'divider', 'hide', 'put away', 'fold', 'one button', 'size', 'bigger', 'smaller', 'reset', 'put back', 'slim', 'grey', 'wider', 'width', 'resize', 'narrower', 'drag the edge', 'titles'],
   },
   {
+    id: 'tool-pullouts',
+    title: 'Buttons with more tools behind them',
+    section: 'Basics',
+    media: 'tool-pullouts.mp4',
+    summary: 'The Brush button holds the soft brushes, the Eraser holds the Soft eraser, Retouch holds Smudge and Blur. Click for the one showing, press and hold for the rest.',
+    keywords: ['pull out', 'pullout', 'pull-out', 'flyout', 'fly out', 'stack', 'stacked tools', 'corner mark', 'press and hold', 'hold', 'soft brush', 'airbrush', 'highlighter', 'soft eraser', 'smudge', 'retouch', 'blur', 'sharpen', 'chalk', 'charcoal', 'where is the airbrush', 'last used', 'brush button'],
+  },
+  {
     id: 'tool-arrange',
     title: 'Arrange your tools',
     section: 'Basics',

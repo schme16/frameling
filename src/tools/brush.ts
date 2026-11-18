@@ -122,6 +122,7 @@ export const brushTool: Tool = {
   id: 'brush',
   group: 'draw',
   groupAt: 1,
+  stack: 'brush',
   label: 'Brush',
   icon: 'brush',
   key: 'b',

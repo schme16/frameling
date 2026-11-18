@@ -49,8 +49,9 @@ function dryTool(): Tool {
 
   return {
     id: DRY_TOOL,
-    group: 'extras',
-    groupAt: 11,
+    group: 'draw',
+    groupAt: 1.4,
+    stack: 'brush',
     label: 'Chalk and charcoal',
     commandLabel: 'Draw with chalk, charcoal, pastel or pencil',
     icon: 'charcoal',

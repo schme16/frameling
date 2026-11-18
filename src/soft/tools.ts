@@ -29,6 +29,7 @@ interface Spec {
   key?: string;
   group: string;
   groupAt: number;
+  stack: string;
   order: number;
   icon: string;
   help: string;
@@ -41,11 +42,11 @@ interface Spec {
 
 /** How the tools are built, in rail order. */
 export const SOFT_SPECS: Spec[] = [
-  { kind: 'soft-brush', key: 'Shift+F', group: 'extras', groupAt: 6, order: 27, icon: 'soft-brush', help: 'soft-paint', undo: 'Paint softly', paints: true, what: 'The soft brush' },
-  { kind: 'airbrush', key: 'Alt+Shift+A', group: 'extras', groupAt: 7, order: 28, icon: 'airbrush', help: 'soft-paint', undo: 'Airbrush', paints: true, what: 'The airbrush' },
-  { kind: 'highlighter', key: 'Shift+J', group: 'extras', groupAt: 8, order: 29, icon: 'highlighter', help: 'soft-paint', undo: 'Highlight', paints: true, what: 'The highlighter' },
-  { kind: 'soft-eraser', key: 'Alt+Shift+R', group: 'extras', groupAt: 9, order: 30, icon: 'soft-eraser', help: 'soft-paint', undo: 'Rub out softly', paints: false, what: 'The soft eraser' },
-  { kind: 'smudge', key: 'Shift+Z', group: 'extras', groupAt: 10, order: 31, icon: 'smudge', help: 'soft-paint', undo: 'Smudge', paints: false, what: 'Smudge' },
+  { kind: 'soft-brush', key: 'Shift+F', group: 'draw', groupAt: 1.1, stack: 'brush', order: 27, icon: 'soft-brush', help: 'soft-paint', undo: 'Paint softly', paints: true, what: 'The soft brush' },
+  { kind: 'airbrush', key: 'Alt+Shift+A', group: 'draw', groupAt: 1.2, stack: 'brush', order: 28, icon: 'airbrush', help: 'soft-paint', undo: 'Airbrush', paints: true, what: 'The airbrush' },
+  { kind: 'highlighter', key: 'Shift+J', group: 'draw', groupAt: 1.3, stack: 'brush', order: 29, icon: 'highlighter', help: 'soft-paint', undo: 'Highlight', paints: true, what: 'The highlighter' },
+  { kind: 'soft-eraser', key: 'Alt+Shift+R', group: 'draw', groupAt: 2.1, stack: 'eraser', order: 30, icon: 'soft-eraser', help: 'soft-paint', undo: 'Rub out softly', paints: false, what: 'The soft eraser' },
+  { kind: 'smudge', key: 'Shift+Z', group: 'retouch', groupAt: 0, stack: 'retouch', order: 31, icon: 'smudge', help: 'soft-paint', undo: 'Smudge', paints: false, what: 'Smudge' },
 ];
 
 /** How often a held airbrush adds paint, in milliseconds. */
@@ -103,6 +104,7 @@ function softTool(spec: Spec): Tool {
     id: kind,
     group: spec.group,
     groupAt: spec.groupAt,
+    stack: spec.stack,
     label: KIND_INFO[kind].label,
     icon: spec.icon,
     key: spec.key,
