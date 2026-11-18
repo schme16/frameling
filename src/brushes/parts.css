@@ -1,0 +1,31 @@
+/* The parts of this brush, and the flash after a change. Theme tokens only. */
+.bp-parts { display: flex; flex-direction: column; gap: 8px; margin-left: 10px; padding: 8px 8px 8px 12px; border-left: 2px solid var(--line); border-radius: 0 var(--radius-small) var(--radius-small) 0; background: color-mix(in srgb, var(--panel-2) 55%, transparent); }
+.bp-parts[data-changed='true'] { border-left-color: var(--accent); }
+.bp-parts-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; min-height: 24px; }
+.bp-parts-title { font-size: var(--fs-small); font-weight: 700; color: var(--text); white-space: nowrap; }
+.bp-back { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 3px 9px; border: 1px solid var(--accent); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--accent) 14%, var(--raised)); color: var(--text); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.bp-back:hover { background: color-mix(in srgb, var(--accent) 28%, var(--raised)); }
+.bp-parts-rows { display: flex; flex-direction: column; gap: 8px; }
+.bp-part { display: flex; flex-direction: column; gap: 4px; }
+.bp-part-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.bp-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.bp-st[data-on] { color: var(--text); font-weight: 700; }
+.bp-st i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.bp-reset { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text); cursor: pointer; }
+.bp-reset:hover { background: var(--hover-bg); }
+.bp-parts .pk-btn { padding: 3px 8px; }
+.bp-parts-foot { margin: 0; font-size: 11px; color: var(--muted); }
+
+/* The flash: a ring round the row that changed, and a tag on the preview, whose line is drawn on again (BrushPreview). */
+.bf-box { position: relative; }
+.bf-box[data-lit] .pk-btn { border-color: var(--focus); }
+.bf-ring { position: absolute; inset: -3px; border-radius: calc(var(--radius-small) + 3px); border: 2px solid var(--focus); animation: bf-ring 1.4s ease-out both; pointer-events: none; }
+.bf-prev { position: relative; border-radius: var(--radius-small); }
+.bf-prev .cv-preview { display: block; }
+.bf-tag { position: absolute; left: 8px; top: 8px; max-width: calc(100% - 16px); padding: 2px 9px; border-radius: var(--radius-pill); background: var(--focus); color: var(--chosen-fg, #1d1b26); font-size: 11px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+@keyframes bf-ring { 0% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--focus) 60%, transparent); } 60% { opacity: 1; box-shadow: 0 0 0 7px transparent; } 100% { opacity: 1; box-shadow: 0 0 0 0 transparent; } }
+/* Reduced motion: no drawing on and no pulse. The tag and a plain ring still show for as long as the flash does. */
+:root[data-motion='reduce'] .bf-ring { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bf-ring { animation: none; }
+}

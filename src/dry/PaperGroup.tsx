@@ -1,12 +1,13 @@
 // The Paper group: one control for the paper, the same in every tool that catches on it (chalk and charcoal, the pixel
 // brush with grain on, a chalk or charcoal tip that catches on paper). The paper is the sheet's: picking one here picks it
-// for all of them. A pixel brush can keep a paper of its own, and the group says so in words, never only by a colour.
-import { useRef, type ReactNode } from 'react';
+// for all of them. A brush, vector or pixel, can keep a paper of its own, and the group says so in words, never only by a
+// colour. A brush that keeps one counts it as a part of the brush (`part`): as it comes, or changed, with a small reset.
+import type { ReactNode } from 'react';
 import { ActionButton, Tip, Toggle } from '../canvas/controls';
 import { withChoice } from '../core/choices';
-import { useStackWhenTight } from '../ui/fitRow';
 import { PAPER_PINNED_CHOICE } from './choices';
-import { PAPERS, paperInfo, type PaperKind } from './paper';
+import { paperInfo, type PaperKind } from './paper';
+import { PaperPicker } from './PaperPicker';
 import { paperNow, paperSaid, pickNeedsAnswer, pickPaper } from './sheet';
 import { getDry, setPaper, useDry } from './settings';
 import './paperGroup.css';
@@ -24,13 +25,13 @@ interface Props {
   off?: ReactNode;
   /** Extra words under the paper choice, for what is particular to the tool. */
   tip?: string;
+  /** The paper as a part of a saved brush: whether there is a saved brush to compare with, whether the paper differs from it, and how to put it back. */
+  part?: { saved: boolean; changed: boolean; reset: () => void };
 }
 
-export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
+export function PaperGroup({ own, onOwn, toggle, children, off, tip, part }: Props) {
   const sheet = useDry((s) => s.paper);
-  const row = useRef<HTMLDivElement>(null);
   const open = !toggle || toggle.checked;
-  useStackWhenTight(row, [open]);
   const now = paperNow(sheet, own);
 
   const pick = (picked: PaperKind) => {
@@ -53,7 +54,7 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
   };
 
   return (
-    <section className="pg" aria-label="Paper" data-testid="paper-group" data-source={open ? now.source : 'off'}>
+    <section className="pg" aria-label="Paper" data-testid="paper-group" data-control="paper" data-source={open ? now.source : 'off'}>
       <header className="pg-head">
         <span className="pg-title">Paper</span>
         {open && (
@@ -61,22 +62,30 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
             {paperInfo(now.paper).label}, {now.source === 'sheet' ? 'the sheet’s' : 'this brush’s own'}
           </span>
         )}
+        {part?.saved && own !== undefined && (
+          <span className="bp-st" data-on={part.changed || undefined}>
+            {part.changed && <i aria-hidden="true" />}
+            {part.changed ? 'changed' : 'as it comes'}
+            {part.changed && (
+              <button type="button" className="bp-reset" data-control="reset-paper" data-command="brush.resetPaper" onClick={part.reset} title="Put the paper back as this brush comes" aria-label="Put the paper back as this brush comes">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3.5 6.5h6a3 3 0 0 1 0 6H6" />
+                  <path d="M6 3.5 3.2 6.5 6 9.5" />
+                </svg>
+              </button>
+            )}
+          </span>
+        )}
       </header>
-      {toggle && <Toggle label="Catch on paper" checked={toggle.checked} onChange={toggle.onChange} hint={toggle.hint} />}
+      {toggle && <Toggle control="catch-on-paper" label="Catch on paper" checked={toggle.checked} onChange={toggle.onChange} hint={toggle.hint} />}
       {open && (
         <>
-          <div className="cv-choice" role="radiogroup" aria-label="Paper" ref={row}>
-            {PAPERS.map((p) => (
-              <button key={p.id} type="button" role="radio" aria-checked={p.id === now.paper} className="cv-choice-btn" data-on={p.id === now.paper} title={p.hint} onClick={() => pick(p.id)}>
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <PaperPicker value={now.paper} onPick={pick} />
           <Tip>{`${paperInfo(now.paper).hint} ${tip ?? ''}`.trim()}</Tip>
           <Tip stays={now.source === 'brush'}>{paperSaid(now, sheet)}</Tip>
-          {onOwn && now.source === 'brush' && <ActionButton onClick={() => onOwn(undefined)} title="Let this brush use the sheet's paper again">Use the sheet&rsquo;s paper</ActionButton>}
+          {onOwn && now.source === 'brush' && <ActionButton control="paper-keep" onClick={() => onOwn(undefined)} title="Let this brush use the sheet's paper again">Use the sheet&rsquo;s paper</ActionButton>}
           {onOwn && now.source === 'sheet' && (
-            <ActionButton onClick={() => onOwn(sheet)} title="Keep this brush on this paper, even when you change the sheet">
+            <ActionButton control="paper-keep" onClick={() => onOwn(sheet)} title="Keep this brush on this paper, even when you change the sheet">
               Keep this brush on {paperInfo(sheet).label}
             </ActionButton>
           )}

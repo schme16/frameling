@@ -2,6 +2,7 @@
 // draws are worked out in tipShapes.ts; the picker is in src/brushes.
 import type { BrushSettings, BrushTip, StampAngle, StampShape, TipKind, TipPieces } from '../core/format';
 import { isMedium } from '../dry/maths';
+import { isPaper } from '../dry/paper';
 
 export interface TipInfo {
   id: TipKind;
@@ -247,6 +248,7 @@ export function readTip(raw: unknown): BrushTip | undefined {
   if (grain !== undefined) tip.grain = grain;
   if ((tip.kind === 'chalk' || tip.kind === 'charcoal') && isMedium(r.dry)) {
     tip.dry = r.dry;
+    if (isPaper(r.paper)) tip.paper = r.paper;
     const streak = num(r.streak, 0, 1);
     if (streak !== undefined) tip.streak = streak;
   }
@@ -318,7 +320,7 @@ export function sameTip(a: BrushTip | undefined, b: BrushTip | undefined): boole
   if (a.kind !== b.kind) return false;
   const x = resolveTip(a);
   const y = resolveTip(b);
-  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry || a.streak !== b.streak || !close(a.matte, b.matte, 0)) return false;
+  if (!close(x.amount, y.amount, 0) || !close(x.grain, y.grain, 1) || a.dry !== b.dry || a.paper !== b.paper || a.streak !== b.streak || !close(a.matte, b.matte, 0)) return false;
   if (a.kind === 'nib') return x.angle === y.angle && close(x.roundness, y.roundness, 0.3) && close(x.nibAngle, y.nibAngle, 40);
   if (a.kind === 'bristle') return x.count === y.count && close(x.stiffness, y.stiffness, 0.6) && close(x.body, y.body, 0) && close(x.tone, y.tone, 0);
   if (a.kind === 'along' || a.kind === 'edged') return x.fit === y.fit && JSON.stringify(x.custom) === JSON.stringify(y.custom) && JSON.stringify(x.pieces) === JSON.stringify(y.pieces);

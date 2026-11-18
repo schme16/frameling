@@ -113,7 +113,7 @@ export function BrushPresetPicker({ side = 'vector', title }: { side?: Side; tit
   useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
   return (
-    <div className="bp-row" data-testid="brush-presets">
+    <div className="bp-row" data-testid="brush-presets" data-control="brush-picker">
       {title && <div className="tp-label">{title}</div>}
       <BrushPicker side={side} />
     </div>
@@ -121,7 +121,7 @@ export function BrushPresetPicker({ side = 'vector', title }: { side?: Side; tit
 }
 
 /** What you can do to the brush in use: keep it, update it, put it back, rename it, delete it, and share your brushes. */
-export function BrushPresetActions({ side = 'vector' }: { side?: Side }) {
+export function BrushPresetActions({ side = 'vector', revert = true }: { side?: Side; revert?: boolean }) {
   useStore((s) => s.ui.brush);
   useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
@@ -135,39 +135,39 @@ export function BrushPresetActions({ side = 'vector' }: { side?: Side }) {
         <NameField key={mode} mode={mode} />
       ) : (
         <div className="bp-actions">
-          <ActionButton onClick={() => startNaming('save')} disabled={full} title="Keep the brush you are using, with a name of your own">
+          <ActionButton control="save-as" onClick={() => startNaming('save')} disabled={full} title="Keep the brush you are using, with a name of your own">
             Save as...
           </ActionButton>
           {own && changed && (
-            <ActionButton onClick={() => void updateActive()} title={`Put your changes into "${own.name}"`}>
+            <ActionButton control="update" onClick={() => void updateActive()} title={`Put your changes into "${own.name}"`}>
               Update
             </ActionButton>
           )}
-          {changed && (
-            <ActionButton onClick={() => void revertActive()} title="Go back to this brush as it was saved">
-              Revert
+          {changed && revert && (
+            <ActionButton control="revert" onClick={() => void revertActive()} title="Go back to this brush as it was saved">
+              Back to how it came
             </ActionButton>
           )}
           {own && (
             <>
-              <ActionButton onClick={() => startNaming('rename')} title={`Give "${own.name}" another name`}>
+              <ActionButton control="rename" onClick={() => startNaming('rename')} title={`Give "${own.name}" another name`}>
                 Rename
               </ActionButton>
-              <ActionButton onClick={() => void deleteActive()} title={`Delete "${own.name}". Undo is on the message that appears.`}>
+              <ActionButton control="delete" onClick={() => void deleteActive()} title={`Delete "${own.name}". Undo is on the message that appears.`}>
                 Delete
               </ActionButton>
             </>
           )}
         </div>
       )}
-      <details className="bp-fold">
+      <details className="bp-fold" data-control="share">
         <summary>Share your brushes</summary>
         <p className="bp-fold-hint">Save them as a file or text to send to a friend, or add ones you were sent.</p>
         <div className="bp-share">
-          <ActionButton onClick={() => void saveBrushesFile()}>Save as a file</ActionButton>
-          <ActionButton onClick={() => void copyBrushesText()}>Copy as text</ActionButton>
-          <ActionButton onClick={() => void addBrushesFromFile()}>Add from a file...</ActionButton>
-          <ActionButton onClick={() => void addBrushesFromClipboard()}>Paste from text</ActionButton>
+          <ActionButton control="share-save-file" onClick={() => void saveBrushesFile()}>Save as a file</ActionButton>
+          <ActionButton control="share-copy-text" onClick={() => void copyBrushesText()}>Copy as text</ActionButton>
+          <ActionButton control="share-add-file" onClick={() => void addBrushesFromFile()}>Add from a file...</ActionButton>
+          <ActionButton control="share-paste-text" onClick={() => void addBrushesFromClipboard()}>Paste from text</ActionButton>
         </div>
       </details>
     </div>
@@ -180,7 +180,7 @@ export function BrushPresetRow({ side = 'vector' }: { side?: Side }) {
   useStore((s) => s.ui.tool);
   useBrushPresets(brushesVersion);
   return (
-    <div className="bp-row" data-testid="brush-presets">
+    <div className="bp-row" data-testid="brush-presets" data-control="brush-picker">
       <BrushPicker side={side} />
       <BrushPresetActions side={side} />
     </div>

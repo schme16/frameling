@@ -18,7 +18,7 @@ function pathOf(c: Curve): string {
   return d;
 }
 
-export function CurveEditor({ curve, onChange, inLabel, outLabel }: { curve: Curve | undefined; onChange: (c: Curve | null) => void; inLabel: string; outLabel: string }) {
+export function CurveEditor({ curve, onChange, inLabel, outLabel, control }: { control?: string; curve: Curve | undefined; onChange: (c: Curve | null) => void; inLabel: string; outLabel: string }) {
   const c = curve ?? STRAIGHT;
   const svg = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
@@ -74,7 +74,7 @@ export function CurveEditor({ curve, onChange, inLabel, outLabel }: { curve: Cur
   };
 
   return (
-    <div className="dab-curve" data-testid="dab-curve">
+    <div className="dab-curve" data-testid="dab-curve" data-control={control}>
       <div className="dab-curve-feels" role="group" aria-label="Ready-made feels">
         {FEELS.map((f) => (
           <ActionButton key={f.id} pressed={feel?.id === f.id} title={f.hint} onClick={() => onChange(f.id === 'straight' ? null : f.curve)}>

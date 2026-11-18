@@ -190,6 +190,8 @@ export const STILL_LOAD = {
   // Clip flow panels and the motion tools (path to follow, record a move, shape hints) used to be greyed on a still; they
   // now stay usable, because choosing one offers Add animation and carries on to it, so they count as working. The two menu
   // entries are the Lip sync and Clip flow panels under View > Panels, left out until animation is added.
-  still: { palette: 596, menu: 727, animateMenu: 8 },
-  animated: { palette: 637, menu: 853, animateMenu: 123 },
+  // 18 November 2026, brush-parity piece 3: +26 palette and +26 menu on both sides, twenty-six more ready-made brushes (21 pixel
+  // and 5 vector, same names on both sides), each one a command. Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 622, menu: 753, animateMenu: 8 },
+  animated: { palette: 663, menu: 879, animateMenu: 123 },
 };

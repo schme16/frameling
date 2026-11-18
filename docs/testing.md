@@ -203,6 +203,41 @@ audit passed the whole time a panel could not be found.
 `FINDABILITY_REPORT=1 npx vitest run test/findability` prints the whole table, including every tool that leaves the
 rail and how many greyed commands say why.
 
+### Brush parity: test/brushes/parity.test.tsx and test/brushes/parityGaps.ts
+
+The vector Brush and the pixel brush are meant to offer the same brushes and the same controls (see `brand/ab/brush-parity/table.md`
+and `plan.md`). This test keeps count of what still isn't the same, so the gap can only close.
+
+**Controls.** Every control in the brush options carries an optional `control` prop (`Slider`, `Toggle`, `Choice`, `ActionButton`,
+`Field` in `src/canvas/controls.tsx`), which shows up as `data-control="size"` on the element and is read by nothing but this
+test. Ids are plain kebab case, and the same id on two panels means the same control (`size`, `spacing`, `mirror`, `save-as`).
+The test mounts the vector Brush (every tip, Catch on paper on and off, a saved brush that has been changed) and the pixel side
+(the plain Brush on a pixel layer, the Pixel brush with a picture tip, paper, dynamics, taper, dual tip and a locked palette,
+every Soft paint kind, Chalk and charcoal) with every fold open, plus the brush list's drop down, and collects the ids. An id on
+one side only has to be in `parityGaps.ts`; an id in `parityGaps.ts` that is now on both sides has to come out.
+
+**Brushes.** Every vector starter and every pixel starter is either in `BRUSH_PAIRS` (the same job on both sides) or in
+`ONE_SIDED_VECTOR_BRUSHES` / `ONE_SIDED_PIXEL_BRUSHES`.
+
+**Preset sheets and stroke times.** `scripts/brush-parity-presets.cjs` draws each new pixel brush beside the vector brush of the same name
+(same path, same pen pressure, on white, both at 100%), and `scripts/docs/ab-brush-parity/sheets.py` makes one sheet a group in
+`brand/ab/brush-parity/presets/`. `scripts/docs/ab-brush-parity/timing.cjs` times a 160 move stroke with each of them. Run them in xvfb,
+after `npm run build`; the first lines of each file say how.
+
+**The shared panel and own paper.** `test/brushes/panelSkeleton.test.tsx` holds the vector Brush and the Pixel brush, Soft paint and Chalk and
+charcoal panels to one order (preview, Brush, parts, paper, Size, Save as), and checks the Tip and Stick pickers, the changed marks, the
+resets and Back to how it came on a pixel brush. `test/brushes/pixelParts.test.ts` is the same as pure functions, and
+`test/brushes/ownPaper.test.ts` covers a vector brush that keeps its own paper (reading, saving, the line it draws, the part and its reset).
+`scripts/docs/ab-brush-parity/panel-timing.cjs` times the panel and each list opening on two renderers (`--renderer <dir>` for a before), and
+`panel-shots.cjs` with `sheets-panel.py` lay the panels side by side, before and after, in `brand/ab/brush-parity/panel/`.
+
+**Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
+(`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
+test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For
+a brush, add a pair to `BRUSH_PAIRS` and delete its entry. A new control with no `control` id isn't seen, so give every new control
+one. To see what the test found, run `PARITY_PRINT=1 npx vitest run test/brushes/parity.test.tsx`: it prints the ids on each
+side. The pen toggles (shown only once a pen has been used) and the name box for saving aren't covered yet.
+
 ### Case-sensitive imports
 
 `test/case-sensitive-imports.test.ts` checks every relative import in `src/` and `test/` names the file with exactly
@@ -920,6 +955,19 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/brush-size.cjs /tmp/bs
 ```
 
+## How long the brush lists take to open: scripts/docs/ab-brush-parts/timing.cjs
+
+Opens the Brush, Tip, Stick and Paper lists cold (the first time, pictures not drawn yet) and warm (the second, pictures kept)
+and prints the milliseconds for each, in five fresh pages so a median can be read. The capture window is hidden, so animation
+frames come about once a second and say nothing about the work: the entry turns the visibility watcher off so the rows draw at
+once, and waits on message ports instead. What it times is the script work, building the rows and drawing the pictures.
+`--renderer` takes a private `vite build --outDir`, so a before and an after can be measured without rebuilding between them.
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs \
+  --entries scripts/docs/ab-brush-parts --only t1,t2,t3,t4,t5 --theme dark --renderer /tmp/after-renderer --out /tmp/timing
+```
+
 ## Same pixels after a speed-up: scripts/e2e/tip-same.cjs
 
 Draws chalk and charcoal (everyday and huge sizes, short and long strokes), the other tips, and plain fills and outlined paths
@@ -936,6 +984,35 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/e2e/ti
 The first dab of a big pixel brush is pinned in vitest by `test/pixel/first-dab.test.ts` (whole rows against every pixel
 through `paint`: the same pixels, changed rectangle and tiles, with a mirror, a selection, tile mode and other inks), and the
 fill-only path by `test/canvas/fill-path.test.ts`.
+
+## Zooming a heavy drawing: scripts/perf/zoomfile.cjs and test/canvas/zoom-proxy.test.ts
+
+Zooming into a drawing whose lines carry paper tooth (chalk, charcoal) or other per-shape effects used to cost a fifth of a
+second to most of a second a frame: once the stage is too big for a bitmap the page is drawn from its shapes, and each zoom
+step needs a new tooth picture per line. Now, while the zoom moves, the page is drawn from a small overview stretched to size
+(`overviewFor` in `src/canvas/pipeline.ts`). Once it stops, the sharp picture is drawn a few milliseconds a frame onto a canvas
+that is kept between frames (`runProgressive` in `src/core/slice.ts`: `drawDrawing` counts each shape as a unit, a run skips the
+units already on the canvas and stops after the first one that starts past its 8 ms), and when the last unit is on it the canvas
+is copied over the overview. Because the work is kept on that canvas and not in the picture caches, it finishes however little the
+caches hold (the first version leaned on the tooth cache, and with more lines than the cache holds it never finished and gave up
+after 2.5 s with one long frame). A frame that is not plain (onion skin, layer opacity, blend, effects on a layer) still goes
+through the caches and gives up after 1.5 s. The same slicing covers the stop at a depth where a whole-stage bitmap still fits
+(`BitmapCache.buildSliced`): that used to be one frame of 0.2 to 0.7 s. The settled picture is the same as before (a hash of the
+canvas at five views matches). Plain shapes and pixel art skip all this and draw straight, as they always did.
+
+`scripts/perf/zoomfile.cjs` zooms a real file with a wheel (notches) and a pinch, in and out, then zooms to four depths and
+stops, and reports frame times for each. `ZOOM_DOC=/path/to/file.frameling` measures that file where it is; without it a
+stand-in with the same kinds of lines is used. `--check` is the check for the lag coming back. It judges main thread draw time
+and long tasks, not the raw frame gap, because the frame gap also grows when other programs use the machine and the check must
+not cry wolf then; and it scales those limits by how slow the page's JavaScript measures at the start (a fixed calculation,
+against a quiet machine), so a busy machine or `ZOOM_THROTTLE=4` does not fail it. After each stop it requires the sharp
+picture to land, nothing owed afterwards, and no drawing at all while idle. It runs with the tooth cache shrunk to 3,000,000
+pixels (`ZOOM_TOOTH_BUDGET`) so a drawing with more lines than the cache holds is covered, and it fails on a build from before
+the fix. `ZOOM_DPR=2` runs at that screen scaling (frames are slower there in xvfb whatever the page does; not part of the
+check), `ZOOM_HASH=1` prints a hash of the settled picture at five views to compare two builds exactly, `ZOOM_CLIP=1` runs the
+gesture to film (see `/shots`). The two graphics variables from the perf skill go in front of `xvfb-run`; `PERF_RENDERER` points
+at another build. `test/canvas/zoom-proxy.test.ts` covers the sums (overview size, which part of it shows, when slicing gives
+up, the time slice, the progressive run).
 
 ## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
 
@@ -1566,7 +1643,7 @@ npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the e
 
 `scripts/docs/ab-paw-brush/paw.cjs` shoots the Paw prints brush: its row in the picker (scrolled into view in the Stamps and texture group) and strokes drawn with it picked from the picker, in both themes (`brand/ab/paw-brush`). `scripts/steps/rail-vector.json`, `rail-pixel.json` and `rail-pixel-workspace.json` open a vector layer, a pixel layer and the Pixel workspace for shooting the tool rail with `screen-shoot.cjs` (`brand/ab/select-first`).
 
-`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (62 brushes in 11 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
+`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (67 brushes in 14 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
 
 `scripts/docs/ab-tip-picker/shots.cjs` shoots the Tip picker in the brush options: the options panel with a stamp, a plain and a chalk tip (`stamp`, `plain`, `chalk`, run on the chips build and the picker build at the same crop, with a `log` step printing the Tip block's height in px), the picker open in both row styles (`open`, `open-dense`) and a stamp chosen from it (`chosen`). Build each side with `npx vite build --outDir <dir>` (the before from a detached worktree of the base commit) and run `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-tip-picker --renderer <dir> --out <raw>`. `test/brushes/tipList.test.ts` and `pickerTips.test.tsx` cover the list and the picker.
 

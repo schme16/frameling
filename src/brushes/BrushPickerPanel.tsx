@@ -48,6 +48,7 @@ import {
 import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
 import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, parseTipId, type PickerSide } from './tipList';
 import { pickStick, pickTip } from './tips';
+import { usePixelLive } from './usePixelLive';
 import { currentSpec, putSpec } from '../dab/live';
 import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
 import { specSize, withSize, type PixelSpec } from '../dab/spec';
@@ -55,6 +56,8 @@ import { SIZE_RANGE as SOFT_SIZE } from '../soft/settings';
 import { SIZE_RANGE as DRY_SIZE } from '../dry/settings';
 import { PixelStroke, PixelTip } from './PixelSample';
 import { Stroke, TipThumb } from './Stroke';
+import { StickPicture, TipPicture } from './pictures';
+import { parseStickId } from './stickList';
 import './picker.css';
 
 // ---------------------------------------------------------------- small pieces
@@ -126,6 +129,7 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
   const tip = rows === 'tip';
   // A pen tip row does what the Brush tip command of the same name does (every stamp shape is the Stamp tip).
   const tipKind = tips ? parseTipId(b.id) : null;
+  const stickDry = tips ? parseStickId(b.id) : null;
   const command = tipKind ? `brush.tip.${tipKind.kind ?? 'plain'}` : undefined;
   return (
     <div
@@ -139,9 +143,9 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
       title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >
-      {tip && <Tip brush={brush} spec={spec} scale={scale} on={on} size={!tips} />}
+      {tip && !tips && <Tip brush={brush} spec={spec} scale={scale} on={on} size />}
       <span className="pk-main">
-        {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
+        {spec ? <PixelStroke spec={spec} h={Math.round((tip ? 30 : 26) * scale)} on={on} /> : tips ? (stickDry ? <StickPicture dry={stickDry} h={Math.round((tip ? 30 : 26) * scale)} /> : <TipPicture tip={b.brush.tip} h={Math.round((tip ? 30 : 26) * scale)} />) : <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />}
         <span className="pk-name">
           <span className="pk-name-text">{b.name}</span>
           {showGroup && <em>{groupOf(b)}</em>}
@@ -187,9 +191,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const tips = isFixedSide(side);
   const words = side === 'stick' ? FIXED_WORDS.stick : FIXED_WORDS.tip;
   const custom = customOf(live.tip);
-  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom) : []), [tips, side, live, custom]);
+  const pixelLive = usePixelLive();
+  const pixel = tips ? pixelLive : null;
+  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom, pixel) : []), [tips, side, live, custom, pixel]);
   const all = tips ? tipList : brushesOnSide(side);
-  const { activeId } = tips ? { activeId: fixedActiveId(side, live) } : stateFor(side);
+  const { activeId } = tips ? { activeId: fixedActiveId(side, live, pixel) } : stateFor(side);
   const liveSpec = side === 'pixel' ? currentSpec() : null;
   const big = all.length > SMALL_LIBRARY;
   // The tips have no favourites or recent: it is a short list, shown with every group open at once.
@@ -390,11 +396,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
           </div>
           <div className="pk-sliders">
             {liveSpec ? (
-              <Slider label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
+              <Slider control="picker-size" label="Size" value={specSize(liveSpec)} min={sizeRange(liveSpec).min} max={sizeRange(liveSpec).max} curve format={(v) => `${v}px`} onChange={(v) => putSpec(withSize(liveSpec, v))} />
             ) : (
               <>
-                <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-                <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
+                <Slider control="picker-size" label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
+                <Slider control="picker-smoothing" label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
               </>
             )}
           </div>

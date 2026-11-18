@@ -69,8 +69,12 @@ describe('the pixel side of the picker', () => {
     for (const h of heads()) if (h.getAttribute('aria-expanded') === 'false') act(() => h.click());
     const shown = names();
     expect(shown).toContain(PIXEL_STARTERS[0].name);
-    for (const s of STARTERS) expect(shown).not.toContain(s.name);
-    expect(host.querySelector('.pk-btn-sub')!.textContent).toContain(`${PIXEL_STARTERS.length} brushes`);
+    // Vector brushes that have no pixel brush of the same name never show here.
+    const pixelNames = PIXEL_STARTERS.map((p) => p.name);
+    for (const s of STARTERS) if (!pixelNames.includes(s.name)) expect(shown).not.toContain(s.name);
+    expect(shown).not.toContain('Watercolour');
+    // The count is in the open list, not on the button.
+    expect(document.querySelector('.pk-pop .pk-label')!.textContent).toContain(String(PIXEL_STARTERS.length));
   });
 
   it('lights the brush in use, and says Custom pixel brush when it matches none', () => {

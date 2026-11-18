@@ -97,7 +97,8 @@ Effects (`src/effects/apply.ts`), all in canvas pixels with settings scaled from
 
 Finished effect pictures are cached per layer content (the drawing object), settings and transform
 (`EffectCache`, LRU inside a pixel budget). Holding a drawing with a glow over many frames blurs it once; constant
-effects cost a blit while playing. The editor drops to uncached while zooming.
+effects cost a blit while playing. The editor drops to uncached while zooming; when the page is zoomed in too far for a bitmap, a
+stretched overview stands in while the zoom moves and the sharp picture is built in short slices after (docs/testing.md, "Zooming a heavy drawing").
 
 The editor paints the stage colour into the canvas for composited frames (normally it's the element behind), so blend
 modes mix with it the same way exports do.

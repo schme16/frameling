@@ -3,16 +3,18 @@
 import { findLayer } from '../core/doc';
 import { setChoice, useChoice } from '../core/choices';
 import { useStore } from '../core/store';
-import { ActionButton, Choice, Slider, Tip } from '../canvas/controls';
-import { BrushPresetRow } from '../brushes/BrushPresetRow';
+import { ActionButton, Slider, Tip } from '../canvas/controls';
+import { BrushPanel } from '../brushes/BrushPanel';
+import { PixelPartsBox } from '../brushes/PartsOptions';
+import { PixelPreview } from '../brushes/PixelSample';
 import { MirrorOptions } from '../tools/options/MirrorOptions';
 import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
 import { SOFT_EDGE_CHOICE } from '../soft/choices';
 import { edgeNote } from '../soft/Options';
-import { MEDIA, mediumInfo, type DryId } from './maths';
+import { mediumInfo } from './maths';
 import { PaperGroup } from './PaperGroup';
-import { PRESS_RANGE, SIZE_RANGE, setDryTool, setMedium, useDry } from './settings';
+import { PRESS_RANGE, SIZE_RANGE, setDryTool, useDry } from './settings';
 
 function Edge() {
   const locked = useStore((s) => {
@@ -27,7 +29,7 @@ function Edge() {
     <>
       <Tip stays>{note}</Tip>
       {!locked && (
-        <ActionButton onClick={() => setChoice(SOFT_EDGE_CHOICE, 'smooth')} title="Make the grain out of see-through pixels, even with Pixel perfect on">
+        <ActionButton control="edge-smooth-button" onClick={() => setChoice(SOFT_EDGE_CHOICE, 'smooth')} title="Make the grain out of see-through pixels, even with Pixel perfect on">
           Make the grain smooth instead
         </ActionButton>
       )}
@@ -40,26 +42,36 @@ export function DryOptionsPanel() {
   const o = useDry((s) => s.tools[s.medium]);
   const info = mediumInfo(medium);
   return (
-    <div className="cv-options">
-      <BrushPresetRow side="pixel" />
-      <Choice<DryId> label="Medium" value={medium} options={MEDIA.map((m) => ({ value: m.id, label: m.label, title: m.hint }))} onChange={setMedium} />
-      <Tip>{info.hint}</Tip>
-      <PaperGroup tip="The paper stays put on the page, so strokes over each other meet the same bumps." />
-      <Slider label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDryTool(medium, { size: v })} />
-      <Slider
-        label="Pressure"
-        value={Math.round(o.press * 100)}
-        min={Math.round(PRESS_RANGE.min * 100)}
-        max={100}
-        format={(v) => `${v}%`}
-        onChange={(v) => setDryTool(medium, { press: v / 100 })}
-        hint="How hard you press. Light pressure only catches the high points of the paper, so you get specks. Hard pressure fills the dips in too. With a pen, pressing harder does it for you."
-      />
-      <Slider label="Edge" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setDryTool(medium, { hardness: v / 100 })} hint="How much of the stick is solid before it fades. Low is dusty and wide, high is firm." />
-      <MirrorOptions />
-      <Edge />
-      <Tip>Rub it in with the Smudge tool, or lift it out with the Soft eraser, the way you would with a finger or a putty rubber.</Tip>
-      <PenOptions tool="charcoal" size flow />
-    </div>
+    <BrushPanel
+      side="pixel"
+      preview={<PixelPreview spec={{ kind: 'dry', medium, size: o.size, hardness: o.hardness, press: o.press }} />}
+      parts={<PixelPartsBox tip={false} stick />}
+      paper={<PaperGroup tip="The paper stays put on the page, so strokes over each other meet the same bumps." />}
+      controls={<Tip>{info.hint}</Tip>}
+      size={<Slider control="size" label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDryTool(medium, { size: v })} />}
+      afterSize={
+        <>
+          <Slider
+            control="press"
+            label="Pressure"
+            value={Math.round(o.press * 100)}
+            min={Math.round(PRESS_RANGE.min * 100)}
+            max={100}
+            format={(v) => `${v}%`}
+            onChange={(v) => setDryTool(medium, { press: v / 100 })}
+            hint="How hard you press. Light pressure only catches the high points of the paper, so you get specks. Hard pressure fills the dips in too. With a pen, pressing harder does it for you."
+          />
+          <Slider control="hardness" label="Edge" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setDryTool(medium, { hardness: v / 100 })} hint="How much of the stick is solid before it fades. Low is dusty and wide, high is firm." />
+          <Edge />
+        </>
+      }
+      more={
+        <>
+          <MirrorOptions />
+          <Tip>Rub it in with the Smudge tool, or lift it out with the Soft eraser, the way you would with a finger or a putty rubber.</Tip>
+          <PenOptions tool="charcoal" size flow />
+        </>
+      }
+    />
   );
 }
